@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756649Ab2JKX3H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 19:29:07 -0400
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:57047 "EHLO
+	id S1753177Ab2JKX3E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 19:29:04 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:57328 "EHLO
 	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622Ab2JKX2D (ORCPT
+	with ESMTP id S1751613Ab2JKX2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Oct 2012 19:28:03 -0400
 From: David Sharp <dhsharp@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH v6 3/6] tracing: Format non-nanosec times from tsc clock without a decimal point.
-Date: Thu, 11 Oct 2012 16:27:53 -0700
-Message-Id: <1349998076-15495-4-git-send-email-dhsharp@google.com>
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH v6 1/6] tracing,x86: Add a TSC trace_clock
+Date: Thu, 11 Oct 2012 16:27:51 -0700
+Message-Id: <1349998076-15495-2-git-send-email-dhsharp@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1349998076-15495-1-git-send-email-dhsharp@google.com>
 References: <1349998076-15495-1-git-send-email-dhsharp@google.com>
@@ -21,272 +23,512 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the addition of the "tsc" clock, formatting timestamps to look like
-fractional seconds is misleading. Mark clocks as either in nanoseconds or
-not, and format non-nanosecond timestamps as decimal integers.
+In order to promote interoperability between userspace tracers and ftrace,
+add a trace_clock that reports raw TSC values which will then be recorded
+in the ring buffer. Userspace tracers that also record TSCs are then on
+exactly the same time base as the kernel and events can be unambiguously
+interlaced.
 
-Tested:
-$ cd /sys/kernel/debug/tracing/
-$ cat trace_clock
-[local] global tsc
-$ echo sched_switch > set_event
-$ echo 1 > tracing_enabled ; sleep 0.0005 ; echo 0 > tracing_enabled
-$ cat trace
-          <idle>-0     [000]  6330.555552: sched_switch: prev_comm=swapper prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=bash next_pid=29964 next_prio=120
-           sleep-29964 [000]  6330.555628: sched_switch: prev_comm=bash prev_pid=29964 prev_prio=120 prev_state=S ==> next_comm=swapper next_pid=0 next_prio=120
-  ...
-$ echo 1 > options/latency-format
-$ cat trace
-  <idle>-0       0 4104553247us+: sched_switch: prev_comm=swapper prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=bash next_pid=29964 next_prio=120
-   sleep-29964   0 4104553322us+: sched_switch: prev_comm=bash prev_pid=29964 prev_prio=120 prev_state=S ==> next_comm=swapper next_pid=0 next_prio=120
-  ...
-$ echo tsc > trace_clock
-$ cat trace
-$ echo 1 > tracing_enabled ; sleep 0.0005 ; echo 0 > tracing_enabled
-$ echo 0 > options/latency-format
-$ cat trace
-          <idle>-0     [000] 16490053398357: sched_switch: prev_comm=swapper prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=bash next_pid=31128 next_prio=120
-           sleep-31128 [000] 16490053588518: sched_switch: prev_comm=bash prev_pid=31128 prev_prio=120 prev_state=S ==> next_comm=swapper next_pid=0 next_prio=120
-  ...
-echo 1 > options/latency-format
-$ cat trace
-  <idle>-0       0 91557653238+: sched_switch: prev_comm=swapper prev_pid=0 prev_prio=120 prev_state=R ==> next_comm=bash next_pid=31128 next_prio=120
-   sleep-31128   0 91557843399+: sched_switch: prev_comm=bash prev_pid=31128 prev_prio=120 prev_state=S ==> next_comm=swapper next_pid=0 next_prio=120
-  ...
+Tested: Enabled a tracepoint and the "tsc" trace_clock and saw very large
+timestamp values.
 
 v2:
 Move arch-specific bits out of generic code.
-v4:
-Fix x86_32 build due to 64-bit division.
+v3:
+Rename "x86-tsc", cleanups
 
 Google-Bug-Id: 6980623
 Signed-off-by: David Sharp <dhsharp@google.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/trace_clock.h |    2 +-
- include/linux/ftrace_event.h       |    6 +++
- kernel/trace/trace.c               |   15 +++++-
- kernel/trace/trace.h               |    4 --
- kernel/trace/trace_output.c        |   80 ++++++++++++++++++++++++-----------
- 5 files changed, 74 insertions(+), 33 deletions(-)
+ arch/alpha/include/asm/trace_clock.h      |    6 ++++++
+ arch/arm/include/asm/trace_clock.h        |    6 ++++++
+ arch/avr32/include/asm/trace_clock.h      |    6 ++++++
+ arch/blackfin/include/asm/trace_clock.h   |    6 ++++++
+ arch/c6x/include/asm/trace_clock.h        |    6 ++++++
+ arch/cris/include/asm/trace_clock.h       |    6 ++++++
+ arch/frv/include/asm/trace_clock.h        |    6 ++++++
+ arch/h8300/include/asm/trace_clock.h      |    6 ++++++
+ arch/hexagon/include/asm/trace_clock.h    |    6 ++++++
+ arch/ia64/include/asm/trace_clock.h       |    6 ++++++
+ arch/m32r/include/asm/trace_clock.h       |    6 ++++++
+ arch/m68k/include/asm/trace_clock.h       |    6 ++++++
+ arch/microblaze/include/asm/trace_clock.h |    6 ++++++
+ arch/mips/include/asm/trace_clock.h       |    6 ++++++
+ arch/mn10300/include/asm/trace_clock.h    |    6 ++++++
+ arch/openrisc/include/asm/trace_clock.h   |    6 ++++++
+ arch/parisc/include/asm/trace_clock.h     |    6 ++++++
+ arch/powerpc/include/asm/trace_clock.h    |    6 ++++++
+ arch/s390/include/asm/trace_clock.h       |    6 ++++++
+ arch/score/include/asm/trace_clock.h      |    6 ++++++
+ arch/sh/include/asm/trace_clock.h         |    6 ++++++
+ arch/sparc/include/asm/trace_clock.h      |    6 ++++++
+ arch/tile/include/asm/trace_clock.h       |    6 ++++++
+ arch/um/include/asm/trace_clock.h         |    6 ++++++
+ arch/unicore32/include/asm/trace_clock.h  |    6 ++++++
+ arch/x86/include/asm/trace_clock.h        |   16 ++++++++++++++++
+ arch/x86/kernel/Makefile                  |    1 +
+ arch/x86/kernel/trace_clock.c             |   21 +++++++++++++++++++++
+ arch/xtensa/include/asm/trace_clock.h     |    6 ++++++
+ include/asm-generic/trace_clock.h         |   16 ++++++++++++++++
+ include/linux/trace_clock.h               |    2 ++
+ kernel/trace/trace.c                      |    1 +
+ 32 files changed, 213 insertions(+), 0 deletions(-)
+ create mode 100644 arch/alpha/include/asm/trace_clock.h
+ create mode 100644 arch/arm/include/asm/trace_clock.h
+ create mode 100644 arch/avr32/include/asm/trace_clock.h
+ create mode 100644 arch/blackfin/include/asm/trace_clock.h
+ create mode 100644 arch/c6x/include/asm/trace_clock.h
+ create mode 100644 arch/cris/include/asm/trace_clock.h
+ create mode 100644 arch/frv/include/asm/trace_clock.h
+ create mode 100644 arch/h8300/include/asm/trace_clock.h
+ create mode 100644 arch/hexagon/include/asm/trace_clock.h
+ create mode 100644 arch/ia64/include/asm/trace_clock.h
+ create mode 100644 arch/m32r/include/asm/trace_clock.h
+ create mode 100644 arch/m68k/include/asm/trace_clock.h
+ create mode 100644 arch/microblaze/include/asm/trace_clock.h
+ create mode 100644 arch/mips/include/asm/trace_clock.h
+ create mode 100644 arch/mn10300/include/asm/trace_clock.h
+ create mode 100644 arch/openrisc/include/asm/trace_clock.h
+ create mode 100644 arch/parisc/include/asm/trace_clock.h
+ create mode 100644 arch/powerpc/include/asm/trace_clock.h
+ create mode 100644 arch/s390/include/asm/trace_clock.h
+ create mode 100644 arch/score/include/asm/trace_clock.h
+ create mode 100644 arch/sh/include/asm/trace_clock.h
+ create mode 100644 arch/sparc/include/asm/trace_clock.h
+ create mode 100644 arch/tile/include/asm/trace_clock.h
+ create mode 100644 arch/um/include/asm/trace_clock.h
+ create mode 100644 arch/unicore32/include/asm/trace_clock.h
+ create mode 100644 arch/x86/include/asm/trace_clock.h
+ create mode 100644 arch/x86/kernel/trace_clock.c
+ create mode 100644 arch/xtensa/include/asm/trace_clock.h
+ create mode 100644 include/asm-generic/trace_clock.h
 
-diff --git a/arch/x86/include/asm/trace_clock.h b/arch/x86/include/asm/trace_clock.h
-index 7ee0d8c..45e17f5 100644
---- a/arch/x86/include/asm/trace_clock.h
-+++ b/arch/x86/include/asm/trace_clock.h
-@@ -9,7 +9,7 @@
- extern u64 notrace trace_clock_x86_tsc(void);
- 
- # define ARCH_TRACE_CLOCKS \
--	{ trace_clock_x86_tsc,	"x86-tsc" },
-+	{ trace_clock_x86_tsc,	"x86-tsc",	.in_ns = 0 },
- 
- #endif
- 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 642928c..c760670 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -86,6 +86,12 @@ struct trace_iterator {
- 	cpumask_var_t		started;
- };
- 
-+enum trace_iter_flags {
-+	TRACE_FILE_LAT_FMT	= 1,
-+	TRACE_FILE_ANNOTATE	= 2,
-+	TRACE_FILE_TIME_IN_NS	= 4,
-+};
+diff --git a/arch/alpha/include/asm/trace_clock.h b/arch/alpha/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/alpha/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
 +
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/arm/include/asm/trace_clock.h b/arch/arm/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/arm/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/avr32/include/asm/trace_clock.h b/arch/avr32/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/avr32/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/blackfin/include/asm/trace_clock.h b/arch/blackfin/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/blackfin/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/c6x/include/asm/trace_clock.h b/arch/c6x/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/c6x/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/cris/include/asm/trace_clock.h b/arch/cris/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/cris/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/frv/include/asm/trace_clock.h b/arch/frv/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/frv/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/h8300/include/asm/trace_clock.h b/arch/h8300/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/h8300/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/hexagon/include/asm/trace_clock.h b/arch/hexagon/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/hexagon/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/ia64/include/asm/trace_clock.h b/arch/ia64/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/ia64/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/m32r/include/asm/trace_clock.h b/arch/m32r/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/m32r/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/m68k/include/asm/trace_clock.h b/arch/m68k/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/m68k/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/microblaze/include/asm/trace_clock.h b/arch/microblaze/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/microblaze/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/mips/include/asm/trace_clock.h b/arch/mips/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/mips/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/mn10300/include/asm/trace_clock.h b/arch/mn10300/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/mn10300/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/openrisc/include/asm/trace_clock.h b/arch/openrisc/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/openrisc/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/parisc/include/asm/trace_clock.h b/arch/parisc/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/parisc/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/powerpc/include/asm/trace_clock.h b/arch/powerpc/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/powerpc/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/s390/include/asm/trace_clock.h b/arch/s390/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/s390/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/score/include/asm/trace_clock.h b/arch/score/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/score/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/sh/include/asm/trace_clock.h b/arch/sh/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/sh/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/sparc/include/asm/trace_clock.h b/arch/sparc/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/sparc/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/tile/include/asm/trace_clock.h b/arch/tile/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/tile/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/um/include/asm/trace_clock.h b/arch/um/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/um/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/unicore32/include/asm/trace_clock.h b/arch/unicore32/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/unicore32/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/arch/x86/include/asm/trace_clock.h b/arch/x86/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..7ee0d8c
+--- /dev/null
++++ b/arch/x86/include/asm/trace_clock.h
+@@ -0,0 +1,16 @@
++#ifndef _ASM_X86_TRACE_CLOCK_H
++#define _ASM_X86_TRACE_CLOCK_H
++
++#include <linux/compiler.h>
++#include <linux/types.h>
++
++#ifdef CONFIG_X86_TSC
++
++extern u64 notrace trace_clock_x86_tsc(void);
++
++# define ARCH_TRACE_CLOCKS \
++	{ trace_clock_x86_tsc,	"x86-tsc" },
++
++#endif
++
++#endif  /* _ASM_X86_TRACE_CLOCK_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 8215e56..0ee9344 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -62,6 +62,7 @@ obj-$(CONFIG_X86_REBOOTFIXUPS)	+= reboot_fixups_32.o
+ obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o
+ obj-$(CONFIG_FUNCTION_GRAPH_TRACER) += ftrace.o
+ obj-$(CONFIG_FTRACE_SYSCALLS)	+= ftrace.o
++obj-$(CONFIG_X86_TSC)		+= trace_clock.o
+ obj-$(CONFIG_KEXEC)		+= machine_kexec_$(BITS).o
+ obj-$(CONFIG_KEXEC)		+= relocate_kernel_$(BITS).o crash.o
+ obj-$(CONFIG_CRASH_DUMP)	+= crash_dump_$(BITS).o
+diff --git a/arch/x86/kernel/trace_clock.c b/arch/x86/kernel/trace_clock.c
+new file mode 100644
+index 0000000..25b9937
+--- /dev/null
++++ b/arch/x86/kernel/trace_clock.c
+@@ -0,0 +1,21 @@
++/*
++ * X86 trace clocks
++ */
++#include <asm/trace_clock.h>
++#include <asm/barrier.h>
++#include <asm/msr.h>
++
++/*
++ * trace_clock_x86_tsc(): A clock that is just the cycle counter.
++ *
++ * Unlike the other clocks, this is not in nanoseconds.
++ */
++u64 notrace trace_clock_x86_tsc(void)
++{
++	u64 ret;
++
++	rdtsc_barrier();
++	rdtscll(ret);
++
++	return ret;
++}
+diff --git a/arch/xtensa/include/asm/trace_clock.h b/arch/xtensa/include/asm/trace_clock.h
+new file mode 100644
+index 0000000..f35fab8
+--- /dev/null
++++ b/arch/xtensa/include/asm/trace_clock.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_TRACE_CLOCK_H
++#define _ASM_TRACE_CLOCK_H
++
++#include <asm-generic/trace_clock.h>
++
++#endif
+diff --git a/include/asm-generic/trace_clock.h b/include/asm-generic/trace_clock.h
+new file mode 100644
+index 0000000..6726f1b
+--- /dev/null
++++ b/include/asm-generic/trace_clock.h
+@@ -0,0 +1,16 @@
++#ifndef _ASM_GENERIC_TRACE_CLOCK_H
++#define _ASM_GENERIC_TRACE_CLOCK_H
++/*
++ * Arch-specific trace clocks.
++ */
++
++/*
++ * Additional trace clocks added to the trace_clocks
++ * array in kernel/trace/trace.c
++ * None if the architecture has not defined it.
++ */
++#ifndef ARCH_TRACE_CLOCKS
++# define ARCH_TRACE_CLOCKS
++#endif
++
++#endif  /* _ASM_GENERIC_TRACE_CLOCK_H */
+diff --git a/include/linux/trace_clock.h b/include/linux/trace_clock.h
+index 4eb4902..d563f37 100644
+--- a/include/linux/trace_clock.h
++++ b/include/linux/trace_clock.h
+@@ -12,6 +12,8 @@
+ #include <linux/compiler.h>
+ #include <linux/types.h>
  
- struct trace_event;
- 
++#include <asm/trace_clock.h>
++
+ extern u64 notrace trace_clock_local(void);
+ extern u64 notrace trace_clock(void);
+ extern u64 notrace trace_clock_global(void);
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 4e26df3..cff3427 100644
+index 5c38c81..92fb08e 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -476,10 +476,11 @@ static const char *trace_options[] = {
- static struct {
- 	u64 (*func)(void);
- 	const char *name;
-+	int in_ns;		/* is this clock in nanoseconds? */
- } trace_clocks[] = {
--	{ trace_clock_local,	"local" },
--	{ trace_clock_global,	"global" },
--	{ trace_clock_counter,	"counter" },
-+	{ trace_clock_local,	"local",	1 },
-+	{ trace_clock_global,	"global",	1 },
-+	{ trace_clock_counter,	"counter",	0 },
- 	ARCH_TRACE_CLOCKS
+@@ -480,6 +480,7 @@ static struct {
+ 	{ trace_clock_local,	"local" },
+ 	{ trace_clock_global,	"global" },
+ 	{ trace_clock_counter,	"counter" },
++	ARCH_TRACE_CLOCKS
  };
  
-@@ -2425,6 +2426,10 @@ __tracing_open(struct inode *inode, struct file *file)
- 	if (ring_buffer_overruns(iter->tr->buffer))
- 		iter->iter_flags |= TRACE_FILE_ANNOTATE;
- 
-+	/* Output in nanoseconds only if we are using a clock in nanoseconds. */
-+	if (trace_clocks[trace_clock_id].in_ns)
-+		iter->iter_flags |= TRACE_FILE_TIME_IN_NS;
-+
- 	/* stop the trace while dumping */
- 	tracing_stop();
- 
-@@ -3324,6 +3329,10 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
- 	if (trace_flags & TRACE_ITER_LATENCY_FMT)
- 		iter->iter_flags |= TRACE_FILE_LAT_FMT;
- 
-+	/* Output in nanoseconds only if we are using a clock in nanoseconds. */
-+	if (trace_clocks[trace_clock_id].in_ns)
-+		iter->iter_flags |= TRACE_FILE_TIME_IN_NS;
-+
- 	iter->cpu_file = cpu_file;
- 	iter->tr = &global_trace;
- 	mutex_init(&iter->mutex);
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 55e1f7f..84fefed 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -409,10 +409,6 @@ void tracing_start_sched_switch_record(void);
- int register_tracer(struct tracer *type);
- void unregister_tracer(struct tracer *type);
- int is_tracing_stopped(void);
--enum trace_file_type {
--	TRACE_FILE_LAT_FMT	= 1,
--	TRACE_FILE_ANNOTATE	= 2,
--};
- 
- extern cpumask_var_t __read_mostly tracing_buffer_mask;
- 
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 123b189..c8d2a60 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -610,24 +610,56 @@ lat_print_generic(struct trace_seq *s, struct trace_entry *entry, int cpu)
- 	return trace_print_lat_fmt(s, entry);
- }
- 
--static unsigned long preempt_mark_thresh = 100;
-+static unsigned long preempt_mark_thresh_us = 100;
- 
- static int
--lat_print_timestamp(struct trace_seq *s, u64 abs_usecs,
--		    unsigned long rel_usecs)
-+lat_print_timestamp(struct trace_iterator *iter, u64 next_ts)
- {
--	return trace_seq_printf(s, " %4lldus%c: ", abs_usecs,
--				rel_usecs > preempt_mark_thresh ? '!' :
--				  rel_usecs > 1 ? '+' : ' ');
-+	unsigned long verbose = trace_flags & TRACE_ITER_VERBOSE;
-+	unsigned long in_ns = iter->iter_flags & TRACE_FILE_TIME_IN_NS;
-+	unsigned long long abs_ts = iter->ts - iter->tr->time_start;
-+	unsigned long long rel_ts = next_ts - iter->ts;
-+	struct trace_seq *s = &iter->seq;
-+	int ret;
-+
-+	if (in_ns) {
-+		abs_ts = ns2usecs(abs_ts);
-+		rel_ts = ns2usecs(rel_ts);
-+	}
-+
-+	if (verbose && in_ns) {
-+		unsigned long abs_msec = abs_ts;
-+		unsigned long abs_usec = do_div(abs_msec, USEC_PER_MSEC);
-+		unsigned long rel_msec = rel_ts;
-+		unsigned long rel_usec = do_div(rel_msec, USEC_PER_MSEC);
-+
-+		ret = trace_seq_printf(
-+				s, "[%08llx] %ld.%03ldms (+%ld.%03ldms): ",
-+				ns2usecs(iter->ts),
-+				abs_msec, abs_usec,
-+				rel_msec, rel_usec);
-+	} else if (verbose && !in_ns) {
-+		ret = trace_seq_printf(
-+				s, "[%016llx] %lld (+%lld): ",
-+				iter->ts, abs_ts, rel_ts);
-+	} else if (!verbose && in_ns) {
-+		ret = trace_seq_printf(
-+				s, " %4lldus%c: ",
-+				abs_ts,
-+				rel_ts > preempt_mark_thresh_us ? '!' :
-+				  rel_ts > 1 ? '+' : ' ');
-+	} else { /* !verbose && !in_ns */
-+		ret = trace_seq_printf(s, " %4lld: ", abs_ts);
-+	}
-+	return ret;
- }
- 
- int trace_print_context(struct trace_iterator *iter)
- {
- 	struct trace_seq *s = &iter->seq;
- 	struct trace_entry *entry = iter->ent;
--	unsigned long long t = ns2usecs(iter->ts);
--	unsigned long usec_rem = do_div(t, USEC_PER_SEC);
--	unsigned long secs = (unsigned long)t;
-+	unsigned long long t;
-+	unsigned long secs, usec_rem;
- 	char comm[TASK_COMM_LEN];
- 	int ret;
- 
-@@ -644,8 +676,13 @@ int trace_print_context(struct trace_iterator *iter)
- 			return 0;
- 	}
- 
--	return trace_seq_printf(s, " %5lu.%06lu: ",
--				secs, usec_rem);
-+	if (iter->iter_flags & TRACE_FILE_TIME_IN_NS) {
-+		t = ns2usecs(iter->ts);
-+		usec_rem = do_div(t, USEC_PER_SEC);
-+		secs = (unsigned long)t;
-+		return trace_seq_printf(s, " %5lu.%06lu: ", secs, usec_rem);
-+	} else
-+		return trace_seq_printf(s, " %12llu: ", iter->ts);
- }
- 
- int trace_print_lat_context(struct trace_iterator *iter)
-@@ -659,36 +696,29 @@ int trace_print_lat_context(struct trace_iterator *iter)
- 			   *next_entry = trace_find_next_entry(iter, NULL,
- 							       &next_ts);
- 	unsigned long verbose = (trace_flags & TRACE_ITER_VERBOSE);
--	unsigned long abs_usecs = ns2usecs(iter->ts - iter->tr->time_start);
--	unsigned long rel_usecs;
- 
- 	/* Restore the original ent_size */
- 	iter->ent_size = ent_size;
- 
- 	if (!next_entry)
- 		next_ts = iter->ts;
--	rel_usecs = ns2usecs(next_ts - iter->ts);
- 
- 	if (verbose) {
- 		char comm[TASK_COMM_LEN];
- 
- 		trace_find_cmdline(entry->pid, comm);
- 
--		ret = trace_seq_printf(s, "%16s %5d %3d %d %08x %08lx [%08llx]"
--				       " %ld.%03ldms (+%ld.%03ldms): ", comm,
--				       entry->pid, iter->cpu, entry->flags,
--				       entry->preempt_count, iter->idx,
--				       ns2usecs(iter->ts),
--				       abs_usecs / USEC_PER_MSEC,
--				       abs_usecs % USEC_PER_MSEC,
--				       rel_usecs / USEC_PER_MSEC,
--				       rel_usecs % USEC_PER_MSEC);
-+		ret = trace_seq_printf(
-+				s, "%16s %5d %3d %d %08x %08lx ",
-+				comm, entry->pid, iter->cpu, entry->flags,
-+				entry->preempt_count, iter->idx);
- 	} else {
- 		ret = lat_print_generic(s, entry, iter->cpu);
--		if (ret)
--			ret = lat_print_timestamp(s, abs_usecs, rel_usecs);
- 	}
- 
-+	if (ret)
-+		ret = lat_print_timestamp(iter, next_ts);
-+
- 	return ret;
- }
- 
+ int trace_clock_id;
 -- 
 1.7.7.3
 
