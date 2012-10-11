@@ -1,159 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119Ab2JKJxI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 05:53:08 -0400
-Received: from mail.abmm.hu ([195.228.156.64]:42728 "EHLO mail.abmm.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758214Ab2JKJxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 05:53:06 -0400
-Message-ID: <5076A506.8080808@thx4games.com>
-Date: Thu, 11 Oct 2012 11:52:54 +0100
-From: Viktor Nagy <viktor.nagy@thx4games.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1758278Ab2JKJ5m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 05:57:42 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64321 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758250Ab2JKJ5h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 05:57:37 -0400
+Date: Thu, 11 Oct 2012 10:57:05 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: David Howells <dhowells@redhat.com>,
+        "torvalds@osdl.org" <torvalds@osdl.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "hpa@zytor.com" <hpa@zytor.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "ddaney.cavm@gmail.com" <ddaney.cavm@gmail.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re:
+Message-ID: <20121011095705.GB30598@mudshark.cambridge.arm.com>
+References: <22758.1349565339@warthog.procyon.org.uk>
+ <CAMuHMdX2TgSbTj8yjyRKXT=RJ0E+efR7FH-vzoWL8+-SCUN29w@mail.gmail.com>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        "Darrick J. Wong" <djwong@us.ibm.com>, chris.mason@fusionio.com
-Subject: Re: Linux 3.0+ Disk performance problem - wrong pdflush behaviour
-References: <5073F13C.5050807@thx4games.com> <20121010165750.GD32581@quack.suse.cz> <5075DE39.8090303@thx4games.com> <20121010212725.GA11642@quack.suse.cz>
-In-Reply-To: <20121010212725.GA11642@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdX2TgSbTj8yjyRKXT=RJ0E+efR7FH-vzoWL8+-SCUN29w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Oct 07, 2012 at 07:36:20AM +0100, Geert Uytterhoeven wrote:
+> On Sun, Oct 7, 2012 at 1:15 AM, David Howells <dhowells@redhat.com> wrote:
+> >  (3) m68k turned out to have a header installation problem due to it lacking a
+> >      kvm_para.h file.
+> 
+> Sh also.
 
-On 2012.10.10. 22:27, Jan Kara wrote:
-> On Wed 10-10-12 22:44:41, Viktor Nagy wrote:
->> On 10/10/2012 06:57 PM, Jan Kara wrote:
->>>    Hello,
->>>
->>> On Tue 09-10-12 11:41:16, Viktor Nagy wrote:
->>>> Since Kernel version 3.0 pdflush blocks writes even the dirty bytes
->>>> are well below /proc/sys/vm/dirty_bytes or /proc/sys/vm/dirty_ratio.
->>>> The kernel 2.6.39 works nice.
->>>>
->>>> How this hurt us in the real life: We have a very high performance
->>>> game server where the MySQL have to do many writes along the reads.
->>>> All writes and reads are very simple and have to be very quick. If
->>>> we run the system with Linux 3.2 we get unacceptable performance.
->>>> Now we are stuck with 2.6.32 kernel here because this problem.
->>>>
->>>> I attach the test program wrote by me which shows the problem. The
->>>> program just writes blocks continously to random position to a given
->>>> big file. The write rate limited to 100 MByte/s. In a well-working
->>>> kernel it have to run with constant 100 MBit/s speed for indefinite
->>>> long. The test have to be run on a simple HDD.
->>>>
->>>> Test steps:
->>>> 1. You have to use an XFS, EXT2 or ReiserFS partition for the test,
->>>> Ext4 forces flushes periodically. I recommend to use XFS.
->>>> 2. create a big file on the test partiton. For 8 GByte RAM you can
->>>> create a 2 GByte file. For 2 GB RAM I recommend to create 500MByte
->>>> file. File creation can be done with this command:  dd if=/dev/zero
->>>> of=bigfile2048M.bin bs=1M count=2048
->>>> 3. compile pdflushtest.c: (gcc -o pdflushtest pdflushtest.c)
->>>> 4. run pdflushtest: ./pdflushtest --file=/where/is/the/bigfile2048M.bin
->>>>
->>>> In the beginning there can be some slowness even on well-working
->>>> kernels. If you create the bigfile in the same run then it runs
->>>> usually smootly from the beginning.
->>>>
->>>> I don't know a setting of /proc/sys/vm variables which runs this
->>>> test smootly on a 3.2.29 (3.0+) kernel. I think this is a kernel
->>>> bug, because if I have much more "/proc/sys/vm/dirty_bytes" than the
->>>> testfile size the test program should never be blocked.
->>>    I've run your program and I can confirm your results. As a side note,
->>> your test program as a bug as it uses 'int' for offset arithmetics so when
->>> the file is larger than 2 GB, you can hit some problems but for our case
->>> that's not really important.
->> Sorry for the bug and maybe the poor implementation. I am much
->> better in Pascal than in C.
->> (You can not make such mistake in Pascal (FreePascal). Is there a
->> way (compiler switch) in C/C++ to get there a warning?)
->    Actually I somewhat doubt that even FreePascal is able to give you a
-> warning that arithmetic can overflow...
-Well, you get a hint at least (FPC 2.6).
+and arm64 iirc. It should also affect arm, but we have a horrible dummy
+header to get around it (just includes the asm-generic variant).
 
-program inttest;
+I posted a fix, but then it got derailed by the wildcarding used to generate
+generic headers for kvm (which I was going some way to removing):
 
-var
-   i,j : integer;
+  https://lkml.org/lkml/2012/8/2/173
 
-procedure Test(x : int64);
-begin
-   Writeln('x=',x);
-end;
+  http://marc.info/?l=linux-kernel&m=134393963216492&w=2
 
-begin
-   i := 1000000;
-   j := 1000000;
-   Test(1000000*1000000);
-   Test(int64(i)*j);
-   Test(i*j);  // result is wrong, but you get a hint here
-   Write('Press enter to continue...'); readln;
-end.
-
->
->>> The regression you observe is caused by commit 3d08bcc8 "mm: Wait for
->>> writeback when grabbing pages to begin a write". At the first sight I was
->>> somewhat surprised when I saw that code path in the traces but later when I
->>> did some math it's clear. What the commit does is that when a page is just
->>> being written out to disk, we don't allow it's contents to be changed and
->>> wait for IO to finish before letting next write to proceed. Now if you have
->>> 1 GB file, that's 256000 pages. By the observation from my test machine,
->>> writeback code keeps around 10000 pages in flight to disk at any moment
->>> (this number fluctuates a lot but average is around that number). Your
->>> program dirties about 25600 pages per second. So the probability one of
->>> dirtied pages is a page under writeback is equal to 1 for all practical
->>> purposes (precisely it is 1-(1-10000/256000)^25600). Actually, on average
->>> you are going to hit about 1000 pages under writeback per second which
->>> clearly has a noticeable impact (even single page can have). Pity I didn't
->>> do the math when we were considering those patches.
->>>
->>> There were plans to avoid waiting if underlying storage doesn't need it but
->>> I'm not sure how far that plans got (added a couple of relevant CCs).
->>> Anyway you are about second or third real workload that sees regression due
->>> to "stable pages" so we have to fix that sooner rather than later... Thanks
->>> for your detailed report!
->>>
->>> 								Honza
->> Thank you for your response!
->>
->> I'm very happy that I've found the right people.
->>
->> We develop a game server which gets very high load in some
->> countries. We are trying to serve as much players as possible with
->> one server.
->> Currently the CPU usage is below the 50% at the peak times. And with
->> the old kernel it runs smoothly. The pdflush runs non-stop on the
->> database disk with ~3 MByte/s write (minimal read).
->> This is at 43000 active sockets, 18000 rq/s, ~40000 packets/s.
->> I think we are still below the theoratical limits of this server...
->> but only if the disk writes are never done in sync.
->>
->> I will try the 3.2.31 kernel without the problematic commit
->> (3d08bcc8 "mm: Wait for writeback when grabbing pages to begin a
->> write").
->> Is it a good idea? Will it be worse than 2.6.32?
->    Running without that commit should work just fine unless you use
-> something exotic like DIF/DIX or similar. Whether things will be worse than
-> in 2.6.32 I cannot say. For me, your test program behaves fine without that
-> commit but whether your real workload won't hit some other problem is
-> always a question. But if you hit another regression I'm interested in
-> hearing about it :).
->
-> 								Honza
-I've just tested it. After I've set the dirty_bytes over the file size 
-the writes are never blocked.
-So it's working nice without the mentioned commit.
-
-The problem is that if you read the kernel's documentation about the 
-dirty page handling it does not work that way (with the commit) It works 
-unpredictable.
-
-Best,
-Viktor
-
+Will
