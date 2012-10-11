@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722Ab2JKOl4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 10:41:56 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:60079 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab2JKOlq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 10:41:46 -0400
-Date: Thu, 11 Oct 2012 10:41:32 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/10] x86, mm: get early page table from BRK
-Message-ID: <20121011144130.GB2408@localhost.localdomain>
-References: <1349757558-10856-1-git-send-email-yinghai@kernel.org>
- <1349757558-10856-4-git-send-email-yinghai@kernel.org>
- <20121009160133.GF7639@phenom.dumpdata.com>
- <CAE9FiQW8ubsQmtJk=bvZ5yGdBaBQSNWPpuACku+8sbb6_CG+rA@mail.gmail.com>
- <20121010141707.GH4005@phenom.dumpdata.com>
- <CAE9FiQVTUsYZiU0rAjE645Pez1X5eLwHMhOF0W_EuR62KYdtQQ@mail.gmail.com>
+	id S932870Ab2JKOmH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 10:42:07 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:40855 "EHLO twin.jikos.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751069Ab2JKOl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 10:41:59 -0400
+Date: Thu, 11 Oct 2012 16:41:41 +0200
+From: David Sterba <dave@jikos.cz>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: dave@jikos.cz, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
+        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [RFC v3 01/13] btrfs: add one new mount option '-o hot_track'
+Message-ID: <20121011144141.GD4405@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Zhi Yong Wu <zwu.kernel@gmail.com>, dave@jikos.cz,
+	linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
+	david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
+	Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+ <1349863655-29320-2-git-send-email-zwu.kernel@gmail.com>
+ <20121010162842.GZ4405@twin.jikos.cz>
+ <CAEH94LgJDhB+-mjhBScQnQybqYWE1rJ6ViuqeWNisLjC=8yMkA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQVTUsYZiU0rAjE645Pez1X5eLwHMhOF0W_EuR62KYdtQQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAEH94LgJDhB+-mjhBScQnQybqYWE1rJ6ViuqeWNisLjC=8yMkA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 08:49:05AM -0700, Yinghai Lu wrote:
-> On Wed, Oct 10, 2012 at 7:17 AM, Konrad Rzeszutek Wilk
-> <konrad@kernel.org> wrote:
-> > On Tue, Oct 09, 2012 at 06:03:33PM -0700, Yinghai Lu wrote:
-> 
-> >> good point, i add one line comment to the revised patch.
-> >>
-> >> +/* need 3 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
+On Thu, Oct 11, 2012 at 10:35:28PM +0800, Zhi Yong Wu wrote:
+> >> --- a/fs/btrfs/super.c
+> >> +++ b/fs/btrfs/super.c
+> >> @@ -303,7 +304,7 @@ enum {
+> >>       Opt_notreelog, Opt_ratio, Opt_flushoncommit, Opt_discard,
+> >>       Opt_space_cache, Opt_clear_cache, Opt_user_subvol_rm_allowed,
+> >>       Opt_enospc_debug, Opt_subvolrootid, Opt_defrag, Opt_inode_cache,
+> >> -     Opt_no_space_cache, Opt_recovery, Opt_skip_balance,
+> >> +     Opt_no_space_cache, Opt_recovery, Opt_skip_balance, Opt_hot_track,
 > >
-> > Can you explain the math please? It sounds like this is based on
-> > the assumption that this you are using huge pages. But what if you
-> > are not? What if you can only do 4KB pages?
-> 
-> yes that is some extreme case:
-> assume that 2M range is [2T-2M, 2T),
+> > Please add the new option to the end.
+> To be honest, it can't be added to the end, if you check Opt_err's
+> pattern value, you will find it is NULL, it will cause match_one()
+> return 1. So if we add Opt_hot_track to the end of this array, it will
+> be covered by match_token(), so i prefer to add it to
+> Opt_fatal_errors. Do you think of it?
 
-What is T in here? Terabyte? Is the '[' vs ')' a significance in your
-explanation? Should it be '[2T-2M, 2T]' ?
+Ah, sorry, I was not clear what the 'end' means here. The Opt_err is a
+end-of-the-list token, so yes please add hot_track between
+Opt_fatal_errors and Opt_err.
 
-
-> one page for PGD-[2T-512g, 2T), one for PUD - [2T-1G, 2T), and one for
-> PMD -: [2T-2M, 2T)
-
+david
