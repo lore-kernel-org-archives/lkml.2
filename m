@@ -1,168 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab2JKFhd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 01:37:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61046 "EHLO mga09.intel.com"
+	id S1756364Ab2JKFhi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 01:37:38 -0400
+Received: from mga03.intel.com ([143.182.124.21]:43600 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753980Ab2JKFh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 01:37:29 -0400
+	id S1753980Ab2JKFhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 01:37:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,570,1344236400"; 
-   d="scan'208";a="204195384"
-From: ling.ma@intel.com
-To: mingo@elte.hu
-Cc: hpa@zytor.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        Ma Ling <ling.ma@intel.com>
-Subject: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging instruction sequence and saving register
-Date: Thu, 11 Oct 2012 20:29:08 +0800
-Message-Id: <1349958548-1868-1-git-send-email-ling.ma@intel.com>
-X-Mailer: git-send-email 1.6.5.2
+   d="scan'208";a="154921627"
+Date: Thu, 11 Oct 2012 08:39:47 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
+        viresh kumar <viresh.kumar@linaro.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Subject: Re: [PATCH 1/4] dmaengine: dw_dmac: use helper macro
+ module_platform_driver()
+Message-ID: <20121011053947.GE7771@intel.com>
+References: <1349178121-9105-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1349178121-9105-2-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1349859841.10584.122.camel@smile>
+ <CAOh2x=mNiL4k=v3YGexq7YMZUx131QWBpm11QXupnWLUPuKU4Q@mail.gmail.com>
+ <CAHp75VePqj3FViNrOcicHXhv9BzhJQgSg6KvA31HmdEFf7BXOg@mail.gmail.com>
+ <20121010124002.GF3197@arwen.pp.htv.fi>
+ <CAHp75VdprTQBsmEJudGExceFRRjXiN_xFGaMtU+mcw+vzM1oVg@mail.gmail.com>
+ <20121010134159.GA4114@arwen.pp.htv.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121010134159.GA4114@arwen.pp.htv.fi>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ma Ling <ling.ma@intel.com>
+On Wed, Oct 10, 2012 at 04:42:00PM +0300, Felipe Balbi wrote:
+> Hi,
+> 
+> On Wed, Oct 10, 2012 at 03:52:40PM +0300, Andy Shevchenko wrote:
+> > On Wed, Oct 10, 2012 at 3:40 PM, Felipe Balbi <balbi@ti.com> wrote:
+> > > On Wed, Oct 10, 2012 at 12:21:04PM +0300, Andy Shevchenko wrote:
+> > >> On Wed, Oct 10, 2012 at 12:08 PM, viresh kumar <viresh.kumar@linaro.org> wrote:
+> > >> > On Wed, Oct 10, 2012 at 2:34 PM, Andy Shevchenko
+> > >> > <andriy.shevchenko@linux.intel.com> wrote:
+> > >> >> On Tue, 2012-10-02 at 14:41 +0300, Andy Shevchenko wrote:
+> > >> >>> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> > >> >>>
+> > >> >>> Since v3.2 we have nice macro to define the platform driver's init and exit
+> > >> >>> calls. This patch simplifies the dw_dmac driver by using that macro.
+> > >> >>
+> > >> >> Actually we can't do this. It will break initialization of some other
+> > >> >> drivers.
+> > >> >
+> > >> > why?
+> > >>
+> > >> We have spi, i2c and hsuart devices connected to the DMA controller.
+> > >> In case we would like to use DMA we have to have the dw_dmac loaded
+> > >> before them. Currently we have spi driver on subsys_initcall level,
+> > >> and Mika, who is developing it, will change to module_init_call level.
+> > >> However, it will just hide the potential issue. He also tried to use
+> > >> deferred module loading, but we don't know if it's good solution or
+> > >> not, and that solution requires something to stop deferring at some
+> > >> moment.
+> > >>
+> > >> Might be we missed something and there is a better solution.
+> > >
+> > > if they can only work with DMA, they should return -EPROBE_DEFER so
+> > > their probe() function can be called after DMA driver has finished
+> > > probing.
+> > 
+> > They could work either with DMA or via PIO mode.
+> > How does the driver know when to stop to return -EPROBE_DEFER?
+> 
+> Why would you even allow to work as PIO-only ? Who would even want to
+> use the driver as PIO only ?
 
-Load and write operation occupy about 35% and 10% respectively
-for most industry benchmarks. Fetched 16-aligned bytes code include 
-about 4 instructions, implying 1.34(0.35 * 4) load, 0.4 write.  
-Modern CPU support 2 load and 1 write per cycle, so throughput from write is
-bottleneck for memcpy or copy_page, and some slight CPU only support one mem
-operation per cycle. So it is enough to issue one read and write instruction
-per cycle, and we can save registers. 
+Think about SPI or I2C, if we don't have DMA available we are still able to
+use the driver (and the bus) instead of just failing.
 
-In this patch we also re-arrange instruction sequence to improve performance
-The performance on atom is improved about 11%, 9% on hot/cold-cache case respectively.
+> In any case, you can add a Kconfig choice like WHATEVER_PIO_ONLY and
+> only return -EPROBE_DEFER ifndef WHATEVER_PIO_ONLY.
 
-Signed-off-by: Ma Ling <ling.ma@intel.com>
-
----
- arch/x86/lib/copy_page_64.S |  103 +++++++++++++++++-------------------------
- 1 files changed, 42 insertions(+), 61 deletions(-)
-
-diff --git a/arch/x86/lib/copy_page_64.S b/arch/x86/lib/copy_page_64.S
-index 3da5527..13c97f4 100644
---- a/arch/x86/lib/copy_page_64.S
-+++ b/arch/x86/lib/copy_page_64.S
-@@ -20,76 +20,57 @@ ENDPROC(copy_page_rep)
- 
- ENTRY(copy_page)
- 	CFI_STARTPROC
--	subq	$2*8,	%rsp
--	CFI_ADJUST_CFA_OFFSET 2*8
--	movq	%rbx,	(%rsp)
--	CFI_REL_OFFSET rbx, 0
--	movq	%r12,	1*8(%rsp)
--	CFI_REL_OFFSET r12, 1*8
-+	mov	$(4096/64)-5, %ecx
- 
--	movl	$(4096/64)-5,	%ecx
--	.p2align 4
- .Loop64:
--  	dec	%rcx
--
--	movq	0x8*0(%rsi), %rax
--	movq	0x8*1(%rsi), %rbx
--	movq	0x8*2(%rsi), %rdx
--	movq	0x8*3(%rsi), %r8
--	movq	0x8*4(%rsi), %r9
--	movq	0x8*5(%rsi), %r10
--	movq	0x8*6(%rsi), %r11
--	movq	0x8*7(%rsi), %r12
--
- 	prefetcht0 5*64(%rsi)
--
--	movq	%rax, 0x8*0(%rdi)
--	movq	%rbx, 0x8*1(%rdi)
--	movq	%rdx, 0x8*2(%rdi)
--	movq	%r8,  0x8*3(%rdi)
--	movq	%r9,  0x8*4(%rdi)
--	movq	%r10, 0x8*5(%rdi)
--	movq	%r11, 0x8*6(%rdi)
--	movq	%r12, 0x8*7(%rdi)
--
--	leaq	64 (%rsi), %rsi
--	leaq	64 (%rdi), %rdi
--
-+	decb	%cl
-+
-+	movq	0x8*0(%rsi), %r10
-+	movq	0x8*1(%rsi), %rax
-+	movq	0x8*2(%rsi), %r8
-+	movq	0x8*3(%rsi), %r9
-+	movq	%r10, 0x8*0(%rdi)
-+	movq	%rax, 0x8*1(%rdi)
-+	movq	%r8, 0x8*2(%rdi)
-+	movq	%r9, 0x8*3(%rdi)
-+
-+	movq	0x8*4(%rsi), %r10
-+	movq	0x8*5(%rsi), %rax
-+	movq	0x8*6(%rsi), %r8
-+	movq	0x8*7(%rsi), %r9
-+	leaq	64(%rsi), %rsi
-+	movq	%r10, 0x8*4(%rdi)
-+	movq	%rax, 0x8*5(%rdi)
-+	movq	%r8, 0x8*6(%rdi)
-+	movq	%r9, 0x8*7(%rdi)
-+	leaq	64(%rdi), %rdi
- 	jnz	.Loop64
- 
--	movl	$5, %ecx
--	.p2align 4
-+	mov	$5, %dl
- .Loop2:
--	decl	%ecx
--
--	movq	0x8*0(%rsi), %rax
--	movq	0x8*1(%rsi), %rbx
--	movq	0x8*2(%rsi), %rdx
--	movq	0x8*3(%rsi), %r8
--	movq	0x8*4(%rsi), %r9
--	movq	0x8*5(%rsi), %r10
--	movq	0x8*6(%rsi), %r11
--	movq	0x8*7(%rsi), %r12
--
--	movq	%rax, 0x8*0(%rdi)
--	movq	%rbx, 0x8*1(%rdi)
--	movq	%rdx, 0x8*2(%rdi)
--	movq	%r8,  0x8*3(%rdi)
--	movq	%r9,  0x8*4(%rdi)
--	movq	%r10, 0x8*5(%rdi)
--	movq	%r11, 0x8*6(%rdi)
--	movq	%r12, 0x8*7(%rdi)
--
--	leaq	64(%rdi), %rdi
-+	decb	%dl
-+	movq	0x8*0(%rsi), %r10
-+	movq	0x8*1(%rsi), %rax
-+	movq	0x8*2(%rsi), %r8
-+	movq	0x8*3(%rsi), %r9
-+	movq	%r10, 0x8*0(%rdi)
-+	movq	%rax, 0x8*1(%rdi)
-+	movq	%r8, 0x8*2(%rdi)
-+	movq	%r9, 0x8*3(%rdi)
-+
-+	movq	0x8*4(%rsi), %r10
-+	movq	0x8*5(%rsi), %rax
-+	movq	0x8*6(%rsi), %r8
-+	movq	0x8*7(%rsi), %r9
- 	leaq	64(%rsi), %rsi
-+	movq	%r10, 0x8*4(%rdi)
-+	movq	%rax, 0x8*5(%rdi)
-+	movq	%r8, 0x8*6(%rdi)
-+	movq	%r9, 0x8*7(%rdi)
-+	leaq	64(%rdi), %rdi
- 	jnz	.Loop2
- 
--	movq	(%rsp), %rbx
--	CFI_RESTORE rbx
--	movq	1*8(%rsp), %r12
--	CFI_RESTORE r12
--	addq	$2*8, %rsp
--	CFI_ADJUST_CFA_OFFSET -2*8
- 	ret
- .Lcopy_page_end:
- 	CFI_ENDPROC
--- 
-1.6.5.2
-
+Why would we add more Kconfig options for things that can be checked
+runtime? Distro makers need to select that option anyway so it doesn't gain
+anything, except confuses users.
