@@ -1,37 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758176Ab2JKJ2g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 05:28:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11903 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753630Ab2JKJ2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 05:28:32 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <6AE080B68D46FC4BA2D2769E68D765B7080FA8F8@039-SN2MPN1-023.039d.mgd.msft.net>
-References: <6AE080B68D46FC4BA2D2769E68D765B7080FA8F8@039-SN2MPN1-023.039d.mgd.msft.net> <20121011121841.1b946f996cba995d9a5a2be7@canb.auug.org.au>
-To: Tabi Timur-B04825 <B04825@freescale.com>
-Cc: dhowells@redhat.com, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Alexander Graf <agraf@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: linux-next: manual merge of the kvm-ppc tree with the powerpc-merge tree
-Date: Thu, 11 Oct 2012 10:28:21 +0100
-Message-ID: <13922.1349947701@warthog.procyon.org.uk>
+	id S1758180Ab2JKJ3S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 05:29:18 -0400
+Received: from 5.mo4.mail-out.ovh.net ([188.165.44.50]:37352 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754212Ab2JKJ3R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 05:29:17 -0400
+X-Greylist: delayed 1200 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Oct 2012 05:29:16 EDT
+Date: Thu, 11 Oct 2012 10:50:02 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: [PATCH 4/6] ARM: ux500: Add UART support to the u9540 Device
+ Tree
+Message-ID: <20121011085002.GV12801@game.jcrosoft.org>
+References: <1349882335-6786-1-git-send-email-lee.jones@linaro.org>
+ <1349882335-6786-5-git-send-email-lee.jones@linaro.org>
+ <20121010190325.GT12801@game.jcrosoft.org>
+ <20121011072927.GR9707@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121011072927.GR9707@gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 9852187135470513151
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehuddrvddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehuddrvddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tabi Timur-B04825 <B04825@freescale.com> wrote:
+On 08:29 Thu 11 Oct     , Lee Jones wrote:
+> On Wed, 10 Oct 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> 
+> > On 16:18 Wed 10 Oct     , Lee Jones wrote:
+> > > Add the 3 UART nodes required to enable serial ports on the u9540.
+> > > 
+> > > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > > ---
+> > >  arch/arm/boot/dts/u9540.dts |   13 ++++++++++++-
+> > dts? it's dtsi
+> 
+> No it's not.
+so the name of the file is wrong s u9540 is a SoC name
 
-> What is include/uapi?
-
-Take a look at http://lwn.net/Articles/507794/
-
-David
+Best Regards,
+J.
