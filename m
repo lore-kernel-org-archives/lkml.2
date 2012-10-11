@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932899Ab2JKCLt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:11:49 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54411 "EHLO
+	id S933122Ab2JKCMA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:12:00 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39446 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758226Ab2JKCLm (ORCPT
+	by vger.kernel.org with ESMTP id S932948Ab2JKCLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:11:42 -0400
-X-Sasl-enc: 4DBGy1cg3hYw/R4YaXoc0TMebhzsHOgenYSv3rnlrDZF 1349921501
+	Wed, 10 Oct 2012 22:11:52 -0400
+X-Sasl-enc: KU/PuNLZsQY1s+CrAbuAgy1Bv3VLLl2PENeqS8UbayrY 1349921511
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Davidlohr Bueso <dave@gnu.org>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Martin Michlmayr <tbm@cyrius.com>,
+        Jonathan Nieder <jrnieder@gmail.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 06/84] lib/gcd.c: prevent possible div by 0
-Date: Thu, 11 Oct 2012 11:02:50 +0900
-Message-Id: <20121011015418.190434197@linuxfoundation.org>
+Subject: [ 08/84] drivers/scsi/atp870u.c: fix bad use of udelay
+Date: Thu, 11 Oct 2012 11:02:52 +0900
+Message-Id: <20121011015418.541201856@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -29,38 +31,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Davidlohr Bueso <dave@gnu.org>
+From: Martin Michlmayr <tbm@cyrius.com>
 
-commit e96875677fb2b7cb739c5d7769824dff7260d31d upstream.
+commit 0f6d93aa9d96cc9022b51bd10d462b03296be146 upstream.
 
-Account for all properties when a and/or b are 0:
-gcd(0, 0) = 0
-gcd(a, 0) = a
-gcd(0, b) = b
+The ACARD driver calls udelay() with a value > 2000, which leads to to
+the following compilation error on ARM:
 
-Fixes no known problems in current kernels.
+  ERROR: "__bad_udelay" [drivers/scsi/atp870u.ko] undefined!
+  make[1]: *** [__modpost] Error 1
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
+This is because udelay is defined on ARM, roughly speaking, as
+
+	#define udelay(n) ((n) > 2000 ? __bad_udelay() : \
+		__const_udelay((n) * ((2199023U*HZ)>>11)))
+
+The argument to __const_udelay is the number of jiffies to wait divided
+by 4, but this does not work unless the multiplication does not
+overflow, and that is what the build error is designed to prevent.  The
+intended behavior can be achieved by using mdelay to call udelay
+multiple times in a loop.
+
+[jrnieder@gmail.com: adding context]
+Signed-off-by: Martin Michlmayr <tbm@cyrius.com>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/gcd.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/scsi/atp870u.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/lib/gcd.c
-+++ b/lib/gcd.c
-@@ -9,6 +9,9 @@ unsigned long gcd(unsigned long a, unsig
- 
- 	if (a < b)
- 		swap(a, b);
-+
-+	if (!b)
-+		return a;
- 	while ((r = a % b) != 0) {
- 		a = b;
- 		b = r;
+--- a/drivers/scsi/atp870u.c
++++ b/drivers/scsi/atp870u.c
+@@ -1174,7 +1174,16 @@ wait_io1:
+ 	outw(val, tmport);
+ 	outb(2, 0x80);
+ TCM_SYNC:
+-	udelay(0x800);
++	/*
++	 * The funny division into multiple delays is to accomodate
++	 * arches like ARM where udelay() multiplies its argument by
++	 * a large number to initialize a loop counter.  To avoid
++	 * overflow, the maximum supported udelay is 2000 microseconds.
++	 *
++	 * XXX it would be more polite to find a way to use msleep()
++	 */
++	mdelay(2);
++	udelay(48);
+ 	if ((inb(tmport) & 0x80) == 0x00) {	/* bsy ? */
+ 		outw(0, tmport--);
+ 		outb(0, tmport);
 
 
