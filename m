@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933765Ab2JKBSX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:18:23 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41535 "EHLO
+	id S933778Ab2JKBSd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:18:33 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60092 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933485Ab2JKBSR (ORCPT
+	by vger.kernel.org with ESMTP id S932876Ab2JKBS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:18:17 -0400
-X-Sasl-enc: NKsnqB6OnpJzQJlfcq0PxftPm5dR5UnQcjkKqBdzqLs8 1349918295
+	Wed, 10 Oct 2012 21:18:26 -0400
+X-Sasl-enc: yS1Mv11xPKndPUwK4ZXZRPiEnGkvIkXCk78B7JLPb3XQ 1349918304
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: [ 019/120] workqueue: add missing smp_wmb() in process_one_work()
-Date: Thu, 11 Oct 2012 09:59:31 +0900
-Message-Id: <20121011005828.843920153@linuxfoundation.org>
+        Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 016/120] powerpc/eeh: Fix crash on converting OF node to edev
+Date: Thu, 11 Oct 2012 09:59:28 +0900
+Message-Id: <20121011005828.286701507@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -27,44 +29,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
 
-commit 959d1af8cffc8fd38ed53e8be1cf4ab8782f9c00 upstream.
+commit 1e38b7140185e384da216aff66a711df09b5afc9 upstream.
 
-WORK_STRUCT_PENDING is used to claim ownership of a work item and
-process_one_work() releases it before starting execution.  When
-someone else grabs PENDING, all pre-release updates to the work item
-should be visible and all updates made by the new owner should happen
-afterwards.
+The kernel crash was reported by Alexy. He was testing some feature
+with private kernel, in which Alexy added some code in pci_pm_reset()
+to read the CSR after writting it. The bug could be reproduced on
+Fiber Channel card (Fibre Channel: Emulex Corporation Saturn-X:
+LightPulse Fibre Channel Host Adapter (rev 03)) by the following
+commands.
 
-Grabbing PENDING uses test_and_set_bit() and thus has a full barrier;
-however, clearing doesn't have a matching wmb.  Given the preceding
-spin_unlock and use of clear_bit, I don't believe this can be a
-problem on an actual machine and there hasn't been any related report
-but it still is theretically possible for clear_pending to permeate
-upwards and happen before work->entry update.
+	# echo 1 > /sys/devices/pci0004:01/0004:01:00.0/reset
+	# rmmod lpfc
+	# modprobe lpfc
 
-Add an explicit smp_wmb() before work_clear_pending().
+The history behind the test case is that those additional config
+space reading operations in pci_pm_reset() would cause EEH error,
+but we didn't detect EEH error until "modprobe lpfc". For the case,
+all the PCI devices on PCI bus (0004:01) were removed and added after
+PE reset. Then the EEH devices would be figured out again based on
+the OF nodes. Unfortunately, there were some child OF nodes under
+PCI device (0004:01:00.0), but they didn't have attached PCI_DN since
+they're invisible from PCI domain. However, we were still trying to
+convert OF node to EEH device without checking on the attached PCI_DN.
+Eventually, it caused the kernel crash as follows:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
+Unable to handle kernel paging request for data at address 0x00000030
+Faulting instruction address: 0xc00000000004d888
+cpu 0x0: Vector: 300 (Data Access) at [c000000fc797b950]
+    pc: c00000000004d888: .eeh_add_device_tree_early+0x78/0x140
+    lr: c00000000004d880: .eeh_add_device_tree_early+0x70/0x140
+    sp: c000000fc797bbd0
+   msr: 8000000000009032
+   dar: 30
+ dsisr: 40000000
+  current = 0xc000000fc78d9f70
+  paca    = 0xc00000000edb0000   softe: 0        irq_happened: 0x00
+    pid   = 2951, comm = eehd
+enter ? for help
+[c000000fc797bc50] c00000000004d848 .eeh_add_device_tree_early+0x38/0x140
+[c000000fc797bcd0] c00000000004d848 .eeh_add_device_tree_early+0x38/0x140
+[c000000fc797bd50] c000000000051b54 .pcibios_add_pci_devices+0x34/0x190
+[c000000fc797bde0] c00000000004fb10 .eeh_reset_device+0x100/0x160
+[c000000fc797be70] c0000000000502dc .eeh_handle_event+0x19c/0x300
+[c000000fc797bf00] c000000000050570 .eeh_event_handler+0x130/0x1a0
+[c000000fc797bf90] c000000000020138 .kernel_thread+0x54/0x70
+
+The patch changes of_node_to_eeh_dev() and just returns NULL if the
+passed OF node doesn't have attached PCI_DN.
+
+Reported-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/workqueue.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/powerpc/include/asm/pci-bridge.h |    8 ++++++++
+ arch/powerpc/platforms/pseries/eeh.c  |    2 +-
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1864,7 +1864,9 @@ __acquires(&gcwq->lock)
- 
- 	spin_unlock_irq(&gcwq->lock);
- 
-+	smp_wmb();	/* paired with test_and_set_bit(PENDING) */
- 	work_clear_pending(work);
+--- a/arch/powerpc/include/asm/pci-bridge.h
++++ b/arch/powerpc/include/asm/pci-bridge.h
+@@ -181,6 +181,14 @@ static inline int pci_device_from_OF_nod
+ #if defined(CONFIG_EEH)
+ static inline struct eeh_dev *of_node_to_eeh_dev(struct device_node *dn)
+ {
++	/*
++	 * For those OF nodes whose parent isn't PCI bridge, they
++	 * don't have PCI_DN actually. So we have to skip them for
++	 * any EEH operations.
++	 */
++	if (!dn || !PCI_DN(dn))
++		return NULL;
 +
- 	lock_map_acquire_read(&cwq->wq->lockdep_map);
- 	lock_map_acquire(&lockdep_map);
- 	trace_workqueue_execute_start(work);
+ 	return PCI_DN(dn)->edev;
+ }
+ #endif
+--- a/arch/powerpc/platforms/pseries/eeh.c
++++ b/arch/powerpc/platforms/pseries/eeh.c
+@@ -1029,7 +1029,7 @@ static void eeh_add_device_early(struct
+ {
+ 	struct pci_controller *phb;
+ 
+-	if (!dn || !of_node_to_eeh_dev(dn))
++	if (!of_node_to_eeh_dev(dn))
+ 		return;
+ 	phb = of_node_to_eeh_dev(dn)->phb;
+ 
 
 
