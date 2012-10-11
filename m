@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758867Ab2JKQ3k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 12:29:40 -0400
-Received: from mail.servus.at ([193.170.194.20]:45710 "EHLO mail.servus.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758817Ab2JKQ3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 12:29:38 -0400
-Message-ID: <5076F3AC.8020304@oberhumer.com>
-Date: Thu, 11 Oct 2012 18:28:28 +0200
-From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
-Organization: oberhumer.com
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.8) Gecko/20121005 Thunderbird/10.0.8
+	id S1758863Ab2JKQcu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 12:32:50 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:56667 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757763Ab2JKQcs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 12:32:48 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Johannes Stezenbach <js@sig21.net>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        linux-btrfs@vger.kernel.org, linux-crypto@vger.kernel.org,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Phillip Lougher <phillip@squashfs.org.uk>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH 0/3] Update LZO compression
-References: <cover.1349621096.git.markus@oberhumer.com> <20121009122614.569b9535.akpm@linux-foundation.org> <50748113.80408@oberhumer.com> <201210111141.27270.arnd@arndb.de>
-In-Reply-To: <201210111141.27270.arnd@arndb.de>
+In-Reply-To: <m2fw5mtffg.fsf_-_@firstfloor.org>
+References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>
+ <m2fw5mtffg.fsf_-_@firstfloor.org>
+From: =?UTF-8?B?5p2o6IuP56uLIFlhbmcgU3UgTGk=?= <suli@cs.wisc.edu>
+Date: Thu, 11 Oct 2012 11:32:27 -0500
+X-Google-Sender-Auth: -5-ERIeZRi9hyeUBe3YQLugYDuc
+Message-ID: <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
+Subject: Re: [sqlite] light weight write barriers
+To: General Discussion of SQLite Database <sqlite-users@sqlite.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, drh@hwaci.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Arnd,
+I am not quite whether I should ask this question here, but in terms
+of light weight barrier/fsync, could anyone tell me why the device
+driver / OS provide the barrier interface other than some other
+abstractions anyway? I am sorry if this sounds like a stupid questions
+or it has been discussed before....
 
-On 2012-10-11 13:41, Arnd Bergmann wrote:
-> On Tuesday 09 October 2012, Markus F.X.J. Oberhumer wrote:
->>>
->>> : This commit updates the kernel LZO code to the current upsteam version
->>> : which features a significant speed improvement - benchmarking the Calgary
->>> : and Silesia test corpora typically shows a doubled performance in
->>> : both compression and decompression on modern i386/x86_64/powerpc machines.
->>>
->>> There are significant clients of the LZO library - crypto, btrfs,
->>> jffs2, ubifs, squashfs and zcache.  So let's give all those people a cc
->>> and ask that they test the LZO changes once they land in linux-next. 
->>> For correctness and performance, please.
+I mean, most of the time, we only need some ordering in writes; not
+complete order, but partial,very simple topological order. And a
+barrier seems to be a heavy weighted solution to achieve this anyway:
+you have to finish all writes before the barrier, then start all
+writes issued after the barrier. That is some ordering which is much
+stronger than what we need, isn't it?
+
+As most of the time the order we need do not involve too many blocks
+(certainly a lot less than all the cached blocks in the system or in
+the disk's cache), that topological order isn't likely to be very
+complicated, and I image it could be implemented efficiently in a
+modern device, which already has complicated caching/garbage
+collection/whatever going on internally. Particularly, it seems not
+too hard to be implemented on top of SCSI's ordered/simple task mode?
+(I believe Windows does this to an extent, but not quite sure).
+
+Thanks a lot
+
+Suli
+
+
+On Wed, Oct 10, 2012 at 12:17 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> Richard Hipp writes:
 >>
->> The core compression and decompression code has been thoroughly tested, so I
->> do not expect major problems.
->>
->> Good testing after the merge and feedback about build or performance issues
->> (and improvements!) is highly appreciated.
-> 
-> The addition of the lzo tree to linux-next caused this problem for ARM
-> imx_v6_v7_defconfig:
-> 
-> In file included from /home/arnd/linux-arm/arch/arm/boot/compressed/decompress.c:40:0:
-> /home/arnd/linux-arm/arch/arm/boot/compressed/../../../../lib/decompress_unlzo.c:34:34: fatal error: lzo/lzo1x_decompress.c: No such file or directory
-> 
-> Since the file was renamed, anything including it needs to be updated to the
-> new file name.
-
-I will add that patch to my tree.
-
-Cheers,
-Markus
-
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> 
-> diff --git a/lib/decompress_unlzo.c b/lib/decompress_unlzo.c
-> index 4531294..960183d 100644
-> --- a/lib/decompress_unlzo.c
-> +++ b/lib/decompress_unlzo.c
-> @@ -31,7 +31,7 @@
->   */
->  
->  #ifdef STATIC
-> -#include "lzo/lzo1x_decompress.c"
-> +#include "lzo/lzo1x_decompress_safe.c"
->  #else
->  #include <linux/decompress/unlzo.h>
->  #endif
-
--- 
-Markus Oberhumer, <markus@oberhumer.com>, http://www.oberhumer.com/
+>> We would really, really love to have some kind of write-barrier that is
+>> lighter than fsync().  If there is some method other than fsync() for
+>> forcing a write-barrier on Linux that we don't know about, please enlighten
+>> us.
+>
+> Could you list the requirements of such a light weight barrier?
+> i.e. what would it need to do minimally, what's different from
+> fsync/fdatasync ?
+>
+> -Andi
+>
+> --
+> ak@linux.intel.com -- Speaking for myself only
+> _______________________________________________
+> sqlite-users mailing list
+> sqlite-users@sqlite.org
+> http://sqlite.org:8080/cgi-bin/mailman/listinfo/sqlite-users
