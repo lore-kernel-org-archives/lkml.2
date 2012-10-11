@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477Ab2JKIFZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 04:05:25 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:47779 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754870Ab2JKIFP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 04:05:15 -0400
-From: Qing Zhu <qzhu@marvell.com>
-To: akpm@linux-foundation.org, mingo@kernel.org, ben@decadent.org.uk,
-        markivx@codeaurora.org, ak@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, cxie4@marvell.com, binw@marvell.com,
-        wwang27@marvell.com, njun@marvell.com, Qing Zhu <qzhu@marvell.com>
-Subject: [PATCH] panic: fix incomplete panic log in panic()
-Date: Thu, 11 Oct 2012 16:03:07 +0800
-Message-Id: <1349942587-16134-1-git-send-email-qzhu@marvell.com>
-X-Mailer: git-send-email 1.7.4.1
-X-OriginalArrivalTime: 11 Oct 2012 08:03:22.0715 (UTC) FILETIME=[E2439AB0:01CDA786]
+	id S932507Ab2JKIIE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 04:08:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8544 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754870Ab2JKIH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 04:07:58 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <3A78FAA0EC814D4B8ECC99B3AB32B33208612DA4@fmsmsx110.amr.corp.intel.com>
+References: <3A78FAA0EC814D4B8ECC99B3AB32B33208612DA4@fmsmsx110.amr.corp.intel.com> <30770.1349789450@warthog.procyon.org.uk>
+To: davem@davemloft.net
+Cc: dhowells@redhat.com, linux-wimax <linux-wimax@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Perez-Gonzalez, Inaky" <inaky.perez-gonzalez@intel.com>,
+        netdev@vger.kernel.org
+Subject: [GIT PULL] Disintegrate UAPI for wimax
+Date: Thu, 11 Oct 2012 09:07:52 +0100
+Message-ID: <11849.1349942872@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Panic log should be printed on the console, but if someone lock the
-console when panic, console won't print out panic log.
 
-The incomplete panic log issue will happen in below scenarios:
-1. One task call console_lock(), then panic happend before it call
-console_unlock(). No panic log can be printed.
-2. Cpu 0 call panic()->Cpu 1 call console_lock()->Cpu 0 call
-smp_send_stop()
-Cpu 1 will be stopped and can't unlock console,only top part of panic log
-will be printed.
+Hi Dave,
 
-So unlock console anyway in panic() to keep panic log printed.
+Can you pull wimax as well?
 
-Signed-off-by: Qing Zhu <qzhu@marvell.com>
+Sorry about this, but it seems like the majority of the non-arch trees need to
+go through the networking tree.
+
+Perez-Gonzalez, Inaky <inaky.perez-gonzalez@intel.com> wrote:
+
+> > From: David Howells [mailto:dhowells@redhat.com]
+> > 
+> > Can you merge the following branch into the wimax tree please.
+> > ...
+> 
+> This can be submitted straight to Dave Miller, as there is no separate wimax
+> tree anymore, it is in pure maintenance mode.
+> 
+> BTW: thanks for tackling the UAPI issue
+> 
+> Acked-by: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
+
+Thanks,
+David
 ---
- kernel/panic.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+The following changes since commit 9e2d8656f5e8aa214e66b462680cf86b210b74a8:
 
-diff --git a/kernel/panic.c b/kernel/panic.c
-index e1b2822..3924d25 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -23,6 +23,7 @@
- #include <linux/init.h>
- #include <linux/nmi.h>
- #include <linux/dmi.h>
-+#include <linux/console.h>
- 
- #define PANIC_TIMER_STEP 100
- #define PANIC_BLINK_SPD 18
-@@ -127,6 +128,13 @@ void panic(const char *fmt, ...)
- 
- 	atomic_notifier_call_chain(&panic_notifier_list, 0, buf);
- 
-+	/*
-+	 * Unlock the console anyway here, in case it's occupied by another
-+	 * one which has no chance to unlock the console thus prevents the
-+	 * panic log prints on the console.
-+	 */
-+	console_unlock();
-+
- 	bust_spinlocks(0);
- 
- 	if (!panic_blink)
--- 
-1.7.4.1
+  Merge branch 'akpm' (Andrew's patch-bomb) (2012-10-09 16:23:15 +0900)
 
+are available in the git repository at:
+
+
+  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-wimax-20121009
+
+for you to fetch changes up to 1e256b340d9574fd1bf31b73f16c4c474502692c:
+
+  UAPI: (Scripted) Disintegrate include/linux/wimax (2012-10-09 09:49:08 +0100)
+
+----------------------------------------------------------------
+UAPI Disintegration 2012-10-09
+
+----------------------------------------------------------------
+David Howells (1):
+      UAPI: (Scripted) Disintegrate include/linux/wimax
+
+ include/linux/wimax/Kbuild              | 1 -
+ include/uapi/linux/wimax/Kbuild         | 1 +
+ include/{ => uapi}/linux/wimax/i2400m.h | 0
+ 3 files changed, 1 insertion(+), 1 deletion(-)
+ rename include/{ => uapi}/linux/wimax/i2400m.h (100%)
+.
