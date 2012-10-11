@@ -1,43 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759321Ab2JKUpG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 16:45:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49826 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754856Ab2JKUpC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 16:45:02 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: <linux-pm@vger.kernel.org>, Liam Girdwood <lrg@ti.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PM / OPP: Export symbols for module usage.
-Organization: Deep Root Systems, LLC
-References: <1349962774-19636-1-git-send-email-nm@ti.com>
-Date: Thu, 11 Oct 2012 13:45:05 -0700
-In-Reply-To: <1349962774-19636-1-git-send-email-nm@ti.com> (Nishanth Menon's
-	message of "Thu, 11 Oct 2012 08:39:34 -0500")
-Message-ID: <87k3uwagby.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1759352Ab2JKUtN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 16:49:13 -0400
+Received: from ozlabs.org ([203.10.76.45]:37246 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759263Ab2JKUtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 16:49:09 -0400
+From: Rusty Russell <rusty@ozlabs.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: KY Srinivasan <kys@microsoft.com>,
+        "gregkh\@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel\@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf\@aepfle.de" <olaf@aepfle.de>,
+        "apw\@canonical.com" <apw@canonical.com>,
+        "andi\@firstfloor.org" <andi@firstfloor.org>
+Subject: Re: [PATCH 2/2] Drivers: hv: Add Hyper-V balloon driver
+In-Reply-To: <20121010165616.ffb38603.akpm@linux-foundation.org>
+References: <1349654347-18337-1-git-send-email-kys@microsoft.com> <1349654386-18378-1-git-send-email-kys@microsoft.com> <1349654386-18378-2-git-send-email-kys@microsoft.com> <20121009124449.f54bf8cb.akpm@linux-foundation.org> <426367E2313C2449837CD2DE46E7EAF930A33CC4@SN2PRD0310MB382.namprd03.prod.outlook.com> <20121009181458.e59e7094.akpm@linux-foundation.org> <5076060D.1030101@goop.org> <20121010165616.ffb38603.akpm@linux-foundation.org>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 11 Oct 2012 18:35:45 +1030
+Message-ID: <87r4p577s6.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nishanth Menon <nm@ti.com> writes:
+Andrew Morton <akpm@linux-foundation.org> writes:
+> On Wed, 10 Oct 2012 16:34:37 -0700
+> Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+>
+>> On 10/09/2012 06:14 PM, Andrew Morton wrote:
+>> > On Wed, 10 Oct 2012 00:09:12 +0000 KY Srinivasan <kys@microsoft.com> wrote:
+>> >
+>> >>>> +		if (!pg) {
+>> >>>> +			*alloc_error = true;
+>> >>>> +			return i * alloc_unit;
+>> >>>> +		}
+>> >>>> +
+>> >>>> +		totalram_pages -= alloc_unit;
+>> >>> Well, I'd consider totalram_pages to be an mm-private thing which drivers
+>> >>> shouldn't muck with.  Why is this done?
+>> >> By modifying the totalram_pages, the information presented in /proc/meminfo
+>> >> correctly reflects what is currently assigned to the guest (MemTotal).
+>> > eh?  /proc/meminfo:MemTotal tells you the total memory in the machine. 
+>> > The only thing which should change it after boot is memory hotplug. 
+>> [...]
+>> > Why on earth do balloon drivers do this?  If the amount of memory which
+>> > is consumed by balloons is interesting then it should be exported via a
+>> > standalone metric, not by mucking with totalram_pages.
+>> 
+>> Balloon drivers are trying to fake a form of page-by-page memory
+>> hotplug.  When they allocate memory from the kernel, they're actually
+>> giving the pages back to the hypervisor to redistribute to other
+>> guests.  They reduce totalram_pages to try and reflect that the memory
+>> is no longer the kernel (in Xen, at least, the pfns will no longer have
+>> any physical page underlying them).
+>> 
+>> I agree this is pretty ugly; it would be nice to have some better
+>> interface to indicate what's going on.  At one point I tried to use the
+>> memory hotplug interfaces for larger-scale dynamic transfers of memory
+>> between a domain and the host, but when I last looked at it, it was too
+>> coarse grained and heavyweight to replace the balloon mechanism.
+>> 
+>
+> urgh.
+>
+> I suppose the least we can do here would be to stop directly dinking
+> with totalram_pages and create some sort of interface for this
+> operation.  That interface would run the memory hotplug notifier so
+> that code which cares about changes in the amount of physical memory
+> can take appropriate steps.  The implications would be that the balloon
+> drivers would need to call this interface at low frequency (ie: batch
+> the pages) and in some reasonably lock-free context.
+>
+> I guess that's solving a non-problem at this stage.
 
-> From: Liam Girdwood <lrg@ti.com>
->
-> Export the OPP functions for use by driver modules.
->
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: Kevin Hilman <khilman@ti.com>
-> Cc: linux-pm@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
->
-> [nm@ti.com: expansion of functions exported]
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> Signed-off-by: Liam Girdwood <lrg@ti.com>
+Yep.  drivers/virtio/virtio_balloon manipulates it too.  This, it's best
+practice!
 
-Acked-by: Kevin Hilman <khilman@ti.com>
+Cheers,
+Rusty.
