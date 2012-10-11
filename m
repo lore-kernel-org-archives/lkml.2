@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759219Ab2JKUXx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 16:23:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43094 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178Ab2JKUXw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 16:23:52 -0400
-Date: Thu, 11 Oct 2012 13:23:49 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, liuj97@gmail.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, wency@cn.fujitsu.com
-Subject: Re: [PATCH 1/2]suppress "Device memoryX does not have a release()
- function" warning
-In-Reply-To: <50765797.3080709@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1210111323370.28062@chino.kir.corp.google.com>
-References: <507656D1.5020703@jp.fujitsu.com> <50765797.3080709@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1759275Ab2JKU1p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 16:27:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44943 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757283Ab2JKU1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 16:27:42 -0400
+Message-ID: <50772BB8.6080404@suse.cz>
+Date: Thu, 11 Oct 2012 22:27:36 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Martin Walch <walch.martin@gmx.de>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaud Lacombe <lacombar@gmail.com>
+Subject: Re: Documentation of kconfig language differs from implementation
+ regarding existence of symbols
+References: <1940598.VZE8PFWQyj@tacticalops>
+In-Reply-To: <1940598.VZE8PFWQyj@tacticalops>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Oct 2012, Yasuaki Ishimatsu wrote:
+Dne 10.10.2012 02:17, Martin Walch napsal(a):
+> The file linux/Documentation/kbuild/kconfig-language.txt says:
+> 
+>> The following two methods produce the same kconfig symbol
+>> dependencies but differ greatly in kconfig symbol existence
+>> (production) in the generated config file.
+>> 
+>> case 1:
+>> 
+>> config FOO tristate "about foo" depends on BAR
+>> 
+>> vs. case 2:
+>> 
+>> if BAR config FOO tristate "about foo" endif
+>> 
+>> In case 1, the symbol FOO will always exist in the config file
+>> (given no other dependencies).  In case 2, the symbol FOO will
+>> only exist in the config file if BAR is enabled.
+> 
+> However, I can not reproduce this. The attached file contains both
+> cases. When running make menuconfig, setting BAR0 and BAR1 both to
+> n, and saving the configuration, there is neither FOO0 nor FOO1 in
+> the resulting configuration file.
 
-> When calling remove_memory_block(), the function shows following message at
-> device_release().
-> 
-> "Device 'memory528' does not have a release() function, it is broken and must
-> be fixed."
-> 
-> The reason is memory_block's device struct does not have a release() function.
-> 
-> So the patch registers memory_block_release() to the device's release() function
-> for suppressing the warning message. Additionally, the patch moves kfree(mem)
-> into the release function since the release function is prepared as a means
-> to free a memory_block struct.
-> 
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Indeed, that paragraph seems wrong. I think we should revert commit
+64b81ed. Randy, Arnaud?
 
-Acked-by: David Rientjes <rientjes@google.com>
+Thanks,
+Michal
+
