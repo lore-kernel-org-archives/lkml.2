@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932817Ab2JKBEV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:04:21 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33713 "EHLO
+	id S932849Ab2JKBE3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:04:29 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:32842 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932649Ab2JKBEO (ORCPT
+	by vger.kernel.org with ESMTP id S932820Ab2JKBEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:04:14 -0400
-X-Sasl-enc: qR6GU1VnMzPADzP08YCuCf9a1JNliVnGL/btJXE1mA74 1349917452
+	Wed, 10 Oct 2012 21:04:23 -0400
+X-Sasl-enc: z30NnoR/Coplw0U7H+rhNBfdLUhCo6NVr7GAqkX5/Wr7 1349917461
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Shawn Guo <shawn.guo@linaro.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 012/120] kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()
-Date: Thu, 11 Oct 2012 09:59:24 +0900
-Message-Id: <20121011005827.560993049@linuxfoundation.org>
+Subject: [ 014/120] drivers/dma/dmaengine.c: lower the priority of failed to get dma channel message
+Date: Thu, 11 Oct 2012 09:59:26 +0900
+Message-Id: <20121011005827.906941490@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -29,38 +31,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shawn Guo <shawn.guo@linaro.org>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit f96972f2dc6365421cf2366ebd61ee4cf060c8d5 upstream.
+commit 0eb5a35801df3c438ce3fc91310a415ea4452c00 upstream.
 
-As kernel_power_off() calls disable_nonboot_cpus(), we may also want to
-have kernel_restart() call disable_nonboot_cpus().  Doing so can help
-machines that require boot cpu be the last alive cpu during reboot to
-survive with kernel restart.
+Do the same as commit a03a202e95fd ("dmaengine: failure to get a
+specific DMA channel is not critical") to get rid of the following
+messages during kernel boot:
 
-This fixes one reboot issue seen on imx6q (Cortex-A9 Quad).  The machine
-requires that the restart routine be run on the primary cpu rather than
-secondary ones.  Otherwise, the secondary core running the restart
-routine will fail to come to online after reboot.
+  dmaengine_get: failed to get dma1chan0: (-22)
+  dmaengine_get: failed to get dma1chan1: (-22)
+  dmaengine_get: failed to get dma1chan2: (-22)
+  dmaengine_get: failed to get dma1chan3: (-22)
+  ..
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sys.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/dma/dmaengine.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -365,6 +365,7 @@ EXPORT_SYMBOL(unregister_reboot_notifier
- void kernel_restart(char *cmd)
- {
- 	kernel_restart_prepare(cmd);
-+	disable_nonboot_cpus();
- 	if (!cmd)
- 		printk(KERN_EMERG "Restarting system.\n");
- 	else
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -578,7 +578,7 @@ void dmaengine_get(void)
+ 				list_del_rcu(&device->global_node);
+ 				break;
+ 			} else if (err)
+-				pr_err("%s: failed to get %s: (%d)\n",
++				pr_debug("%s: failed to get %s: (%d)\n",
+ 					__func__, dma_chan_name(chan), err);
+ 		}
+ 	}
 
 
