@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab2JKF5I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 01:57:08 -0400
-Received: from mailxx.hitachi.co.jp ([133.145.228.50]:39002 "EHLO
+	id S1757130Ab2JKF5n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 01:57:43 -0400
+Received: from mailxx.hitachi.co.jp ([133.145.228.50]:39015 "EHLO
 	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756724Ab2JKF5F (ORCPT
+	with ESMTP id S1756739Ab2JKF5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 01:57:05 -0400
-X-AuditID: b753bd60-9544eba000002f78-7d-50765f2abfd3
-X-AuditID: b753bd60-9544eba000002f78-7d-50765f2abfd3
-Content-Type: multipart/mixed; boundary="===============2746783844303274711=="
-MIME-Version: 1.0
+	Thu, 11 Oct 2012 01:57:42 -0400
+X-AuditID: b753bd60-914c2ba0000047ca-c7-50765f3aaab6
+X-AuditID: b753bd60-914c2ba0000047ca-c7-50765f3aaab6
 From: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
+Subject: [RFC PATCH 1/3 V3] livedump: Add the new misc device "livedump"
+To: "Thomas Gleixner" <tglx@linutronix.de>, "Ingo Molnar" <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "Vivek Goyal" <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
 Cc: "Al Viro" <viro@zeniv.linux.org.uk>,
         "Andrew Morton" <akpm@linux-foundation.org>,
         "Andy Lutomirski" <luto@amacapital.net>,
@@ -24,195 +26,160 @@ Cc: "Al Viro" <viro@zeniv.linux.org.uk>,
         "Thomas Gleixner" <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         x86@kernel.org, "Khalid Aziz" <khalid.aziz@hp.com>,
         yrl.pp-manager.tt@hitachi.com
-user-agent: StGIT/0.14.3
-To: "Thomas Gleixner" <tglx@linutronix.de>, "Ingo Molnar" <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        "Vivek Goyal" <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
-date: Thu, 11 Oct 2012 14:53:56 +0900
-message-id: <20121011055356.6719.46214.stgit@t3500.sdl.hitachi.co.jp>
-subject: [RFC PATCH 0/3 V3] introduce: livedump
+Date: Thu, 11 Oct 2012 14:53:56 +0900
+Message-ID: <20121011055356.6719.5640.stgit@t3500.sdl.hitachi.co.jp>
+In-Reply-To: <20121011055356.6719.46214.stgit@t3500.sdl.hitachi.co.jp>
+References: <20121011055356.6719.46214.stgit@t3500.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---===============2746783844303274711==
-Content-Type: text/plain; charset="us-ascii"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
+Introduces the new misc device "livedump".
+This device will be used as interface between livedump and user space.
+Right now, the device only has empty ioctl operation.
 
-The following series introduces the new memory dumping mechanism Live Dump,
-which lets users obtain a consistent memory dump without stopping a running
-system.
+***ATTENTION PLEASE***
+I think debugfs is more suitable for this feature, but currently livedump
+uses the misc device for simplicity. This will be fixed in the future.
 
-
-Changes in V3:
- - The patchset is rebased onto v3.6.
- - crash-6.1.0 is required (which was 6.0.6 previously).
- - Notifier-call-chain in do_page_fault is replaced with the callback
-   dedicated for livedump.
- - The patchset implements the feature of dumping to disk.
-   This version only supports block device as target device.
-
-V2 is here: https://lkml.org/lkml/2012/5/25/104
-
-ToDo:
- - Large page support
-       Currently livedump can dump only 4K pages, and so it splits all
-       pages in kernel space in advance. This causes big TLB overhead.
- - Other target device support
-       Currently livedump can dump only to block device. Practically,
-       dumping to normal file is necessary.
- - Other space/area support
-       Currently livedump write-protect only kernel's straight mapping
-       area. Pages in user space or vmap area cannot be dumped
-       consistently.
- - Other CPU architecture support
-       Currently livedump supports only x86-64.
-
-
-Background:
-This mechanism is useful especially in the case where very important
-systems are consolidated onto a single machine via virtualization.
-Assuming a KVM host runs multiple important VMs on it and one of them
-fails, the other VMs have to keep running. However, at the same time, an
-administrator may want to obtain memory dump of not only the failed guest
-but also the host because possibly the cause of failture is not in the
-guest but in the host or the hardware under it.
-
-
-Mechanism overview:
-Live Dump is based on Copy-on-write technique. Basically processing is
-performed in the following order.
-(1) Suspends processing of all CPUs.
-(2) Makes pages (which you want to dump) read-only.
-(3) Resumes all CPUs
-(4) On page fault, dumps a faulting page.
-(5) Finally, dumps the rest of pages that are not updated.
-
-The kthread named "livedump" is in charge of dumping to disk. It has queue
-to receive dump request from livedump's page fault handler. If ever the
-queue becomes full, livedump simply fails, since livedump's page fault
-can never sleep to wait for space.
-
-
-This series consists of 3 patches.
-
-The 1st patch introduces "livedump" misc device.
-
-The 2nd patch introduces feature of write protection management. This
-enables users to turn on write protection on kernel space and to install a
-hook function that is called every time page fault occurs on each protected
-page.
-
-The 3rd patch introduces memory dumping feature. This patch installs the
-function to dump content of the protected page on page fault.
-
-
-***How to test***
-To test this patch, you have to apply the attached patch to the source code
-of crash[1]. This patch can be applied to the version 6.1.0 of crash.  In
-addition to this, you have to configure your kernel to turn on
-CONFIG_DEBUG_INFO.
-
-[1]crash, http://people.redhat.com/anderson/crash-6.1.0.tar.gz
-
-At first, kick the script tools/livedump/livedump as follows.
- # livedump dump <block device path>
-
-At this point, all memory image has been saved. Then you can analyze
-the image by kicking the patched crash as follows.
- # crash <block device path> System.map vmlinux.o
-
-By the following command, you can release all resources of livedump.
- # livedump release
-
+Signed-off-by: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org
 ---
 
-YOSHIDA Masanori (3):
-      livedump: Add memory dumping functionality
-      livedump: Add write protection management
-      livedump: Add the new misc device "livedump"
-
-
- arch/x86/Kconfig                 |   29 ++
- arch/x86/include/asm/wrprotect.h |   45 +++
- arch/x86/mm/Makefile             |    2 
- arch/x86/mm/fault.c              |    7 
- arch/x86/mm/wrprotect.c          |  548 ++++++++++++++++++++++++++++++++++++++
- kernel/Makefile                  |    1 
- kernel/livedump-memdump.c        |  445 +++++++++++++++++++++++++++++++
- kernel/livedump-memdump.h        |   32 ++
- kernel/livedump.c                |  133 +++++++++
- tools/livedump/livedump          |   38 +++
- 10 files changed, 1280 insertions(+)
- create mode 100644 arch/x86/include/asm/wrprotect.h
- create mode 100644 arch/x86/mm/wrprotect.c
- create mode 100644 kernel/livedump-memdump.c
- create mode 100644 kernel/livedump-memdump.h
+ arch/x86/Kconfig  |   15 +++++++++++
+ kernel/Makefile   |    1 +
+ kernel/livedump.c |   73 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 89 insertions(+)
  create mode 100644 kernel/livedump.c
- create mode 100755 tools/livedump/livedump
 
--- 
-YOSHIDA Masanori
-Linux Technology Center
-Yokohama Research Laboratory
-Hitachi, Ltd.
-
---===============2746783844303274711==
-Content-Type: text/plain; charset="us-ascii"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="crash-6.1.0-livedump.patch"
-
-diff --git a/filesys.c b/filesys.c
-index cc78f7d..21ddb12 100755
---- a/filesys.c
-+++ b/filesys.c
-@@ -168,6 +168,7 @@ memory_source_init(void)
- 			return;
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 50a1d1f..39c0813 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1734,6 +1734,21 @@ config CMDLINE_OVERRIDE
+ 	  This is used to work around broken boot loaders.  This should
+ 	  be set to 'N' under normal conditions.
  
- 		if (!STREQ(pc->live_memsrc, "/dev/mem") &&
-+		    !STRNEQ(pc->live_memsrc, "/dev/sd") &&
- 		     STREQ(pc->live_memsrc, pc->memory_device)) {
- 			if (memory_driver_init())
- 				return;
-@@ -188,6 +189,11 @@ memory_source_init(void)
- 	                                        strerror(errno));
- 	                } else
- 	                        pc->flags |= MFD_RDWR;
-+		} else if (STRNEQ(pc->live_memsrc, "/dev/sd")) {
-+	                if ((pc->mfd = open(pc->live_memsrc, O_RDONLY)) < 0)
-+				error(FATAL, "%s: %s\n",
-+						pc->live_memsrc,
-+						strerror(errno));
- 		} else if (STREQ(pc->live_memsrc, "/proc/kcore")) {
- 			if ((pc->mfd = open("/proc/kcore", O_RDONLY)) < 0)
- 				error(FATAL, "/proc/kcore: %s\n", 
-diff --git a/main.c b/main.c
-index 7650b8c..20266a8 100755
---- a/main.c
-+++ b/main.c
-@@ -449,6 +449,19 @@ main(int argc, char **argv)
- 				pc->writemem = write_dev_mem;
- 				pc->live_memsrc = argv[optind];
- 
-+			} else if (STRNEQ(argv[optind], "/dev/sd")) {
-+				if (pc->flags & MEMORY_SOURCES) {
-+					error(INFO,
-+					    "too many dumpfile arguments\n");
-+					program_usage(SHORT_FORM);
-+				}
-+				pc->flags |= DEVMEM;
-+				pc->dumpfile = NULL;
-+				pc->readmem = read_dev_mem;
-+				pc->writemem = write_dev_mem;
-+				pc->live_memsrc = argv[optind];
-+				pc->program_pid = 1;
++config LIVEDUMP
++	bool "Live Dump support"
++	depends on X86_64
++	---help---
++	  Set this option to 'Y' to allow the kernel support to acquire
++	  a consistent snapshot of kernel space without stopping system.
 +
- 			} else if (is_proc_kcore(argv[optind], KCORE_LOCAL)) {
- 				if (pc->flags & MEMORY_SOURCES) {
- 					error(INFO, 
++	  This feature regularly causes small overhead on kernel.
++
++	  Once this feature is initialized by its special ioctl, it
++	  allocates huge memory for itself and causes much more overhead
++	  on kernel.
++
++	  If in doubt, say N.
++
+ endmenu
+ 
+ config ARCH_ENABLE_MEMORY_HOTPLUG
+diff --git a/kernel/Makefile b/kernel/Makefile
+index c0cc67a..c8bd09b 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -110,6 +110,7 @@ obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
+ obj-$(CONFIG_PADATA) += padata.o
+ obj-$(CONFIG_CRASH_DUMP) += crash_dump.o
+ obj-$(CONFIG_JUMP_LABEL) += jump_label.o
++obj-$(CONFIG_LIVEDUMP) += livedump.o
+ 
+ $(obj)/configs.o: $(obj)/config_data.h
+ 
+diff --git a/kernel/livedump.c b/kernel/livedump.c
+new file mode 100644
+index 0000000..409f7ed
+--- /dev/null
++++ b/kernel/livedump.c
+@@ -0,0 +1,73 @@
++/* livedump.c - Live Dump's main
++ * Copyright (C) 2012 Hitachi, Ltd.
++ * Author: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
++ * MA  02110-1301, USA.
++ */
++
++#include <linux/kernel.h>
++#include <linux/fs.h>
++#include <linux/miscdevice.h>
++#include <linux/reboot.h>
++
++#define DEVICE_NAME	"livedump"
++
++#define LIVEDUMP_IOC(x)	_IO(0xff, x)
++
++static long livedump_ioctl(
++		struct file *file, unsigned int cmd, unsigned long arg)
++{
++	switch (cmd) {
++	default:
++		return -ENOIOCTLCMD;
++	}
++}
++
++static const struct file_operations livedump_fops = {
++	.unlocked_ioctl = livedump_ioctl,
++};
++static struct miscdevice livedump_misc = {
++	.minor = MISC_DYNAMIC_MINOR,
++	.name = DEVICE_NAME,
++	.fops = &livedump_fops,
++};
++
++static int livedump_exit(struct notifier_block *_, unsigned long __, void *___)
++{
++	misc_deregister(&livedump_misc);
++	return NOTIFY_DONE;
++}
++static struct notifier_block livedump_nb = {
++	.notifier_call = livedump_exit
++};
++
++static int __init livedump_init(void)
++{
++	int ret;
++
++	ret = misc_register(&livedump_misc);
++	if (WARN_ON(ret))
++		return ret;
++
++	ret = register_reboot_notifier(&livedump_nb);
++	if (WARN_ON(ret)) {
++		livedump_exit(NULL, 0, NULL);
++		return ret;
++	}
++
++	return 0;
++}
++device_initcall(livedump_init);
 
---===============2746783844303274711==--
