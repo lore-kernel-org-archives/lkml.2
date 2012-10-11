@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933262Ab2JKAi2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:38:28 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42393 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932511Ab2JKAWl (ORCPT
+	id S933276Ab2JKAil (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:38:41 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:49446 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933015Ab2JKAif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:22:41 -0400
-X-Sasl-enc: iJBd94P8GNrLQtyrV+kohQ30XAM9kgYcp5Pb9ObmKFBV 1349914960
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 113/122] mtd: nand: Use the mirror BBT descriptor when reading its version
-Date: Thu, 11 Oct 2012 07:54:39 +0900
-Message-Id: <20121010225358.320758299@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
-References: <20121010225337.989799482@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Wed, 10 Oct 2012 20:38:35 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX19Yk1oqPKNYByKnx9XXl0zqRwB3rmhP+3M2ztMj29
+	3aoj6Qa5o6SXQ/
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+To: linux-fbdev@vger.kernel.org
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Damien Cassou <damien.cassou@lifl.fr>
+Subject: [PATCH] gbefb: fix compile error
+Date: Thu, 11 Oct 2012 00:38:52 +0000
+Message-Id: <1349915932-3598-1-git-send-email-FlorianSchandinat@gmx.de>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <505B9196.3040203@gmx.de>
+References: <505B9196.3040203@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+The patch "drivers/video/gbefb.c: use devm_ functions" caused a
+compile error.
 
-------------------
+drivers/video/gbefb.c:1159:16: error: implicit declaration of function
+'devm_ioremap' [-Werror=implicit-function-declaration]
+drivers/video/gbefb.c:1179:3: error: implicit declaration of function
+'devm_ioremap_nocache' [-Werror=implicit-function-declaration]
 
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Fix it by including linux/io.h which defines those functions.
 
-commit 7bb9c75436212813b38700c34df4bbb6eb82debe upstream.
-
-The code responsible for reading the version of the mirror bbt was
-incorrectly using the descriptor of the main bbt.
-
-Pass the mirror bbt descriptor to 'scan_read_raw' when reading the
-version of the mirror bbt.
-
-Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Damien Cassou <damien.cassou@lifl.fr>
 ---
- drivers/mtd/nand/nand_bbt.c |    2 +-
+ drivers/video/gbefb.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mtd/nand/nand_bbt.c
-+++ b/drivers/mtd/nand/nand_bbt.c
-@@ -390,7 +390,7 @@ static int read_abs_bbts(struct mtd_info
- 	/* Read the mirror version, if available */
- 	if (md && (md->options & NAND_BBT_VERSION)) {
- 		scan_read_raw(mtd, buf, (loff_t)md->pages[0] << this->page_shift,
--			      mtd->writesize, td);
-+			      mtd->writesize, md);
- 		md->version[0] = buf[bbt_get_ver_offs(mtd, md)];
- 		pr_info("Bad block table at page %d, version 0x%02X\n",
- 			 md->pages[0], md->version[0]);
-
+diff --git a/drivers/video/gbefb.c b/drivers/video/gbefb.c
+index 9b79d38..8dc1f7a 100644
+--- a/drivers/video/gbefb.c
++++ b/drivers/video/gbefb.c
+@@ -20,6 +20,7 @@
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
+ #include <linux/module.h>
++#include <linux/io.h>
+ 
+ #ifdef CONFIG_X86
+ #include <asm/mtrr.h>
+@@ -28,7 +29,6 @@
+ #include <asm/addrspace.h>
+ #endif
+ #include <asm/byteorder.h>
+-#include <asm/io.h>
+ #include <asm/tlbflush.h>
+ 
+ #include <video/gbe.h>
+-- 
+1.7.10.4
 
