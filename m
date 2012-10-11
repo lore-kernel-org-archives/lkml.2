@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934122Ab2JKBWR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:22:17 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54936 "EHLO
+	id S934082Ab2JKBVO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:21:14 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45695 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933438Ab2JKBVN (ORCPT
+	by vger.kernel.org with ESMTP id S933425Ab2JKBVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:21:13 -0400
-X-Sasl-enc: MYs9rIsOWT5ji0wotrwyQKajWRwupSt2ncxN0SKNsRP2 1349918471
+	Wed, 10 Oct 2012 21:21:03 -0400
+X-Sasl-enc: sK6vHks7DecjlAquj9ZbIS+M6fy+sk9tHYR8ShRS5HR1 1349918462
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 056/120] SCSI: zfcp: Adapt to new FC_PORTSPEED semantics
-Date: Thu, 11 Oct 2012 10:00:08 +0900
-Message-Id: <20121011005835.981922506@linuxfoundation.org>
+        Ed Cashin <ecashin@coraid.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 054/120] aoe: assert AoE packets marked as requiring no checksum
+Date: Thu, 11 Oct 2012 10:00:06 +0900
+Message-Id: <20121011005835.548902220@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -29,87 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Maier <maier@linux.vnet.ibm.com>
 
-commit d22019778cd9ea04c1dadf7bf453920d5288f8d9 upstream.
+From: Ed Cashin <ecashin@coraid.com>
 
-Commit a9277e7783651d4e0a849f7988340b1c1cf748a4
-"[SCSI] scsi_transport_fc: Getting FC Port Speed in sync with FC-GS"
-changed the semantics of FC_PORTSPEED defines to
-FDMI port attributes of FC-HBA/SM-HBA
-which is different from the previous bit reversed
-Report Port Speed Capabilities (RPSC) ELS of FC-GS/FC-LS.
+[ Upstream commit 8babe8cc6570ed896b7b596337eb8fe730c3ff45 ]
 
-Zfcp showed "10 Gbit" instead of "4 Gbit" for supported_speeds.
-It now uses explicit bit conversion as the other LLDs already
-do, in order to be independent of the kernel bit semantics.
-See also http://marc.info/?l=linux-scsi&m=134452926830730&w=2
+In order for the network layer to see that AoE requires
+no checksumming in a generic way, the packets must be
+marked as requiring no checksum, so we make this requirement
+explicit with the assertion.
 
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Reviewed-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Ed Cashin <ecashin@coraid.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/s390/scsi/zfcp_fsf.c |   34 ++++++++++++++++++++++++++++++++--
- 1 file changed, 32 insertions(+), 2 deletions(-)
+ drivers/block/aoe/aoecmd.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/s390/scsi/zfcp_fsf.c
-+++ b/drivers/s390/scsi/zfcp_fsf.c
-@@ -437,6 +437,34 @@ void zfcp_fsf_req_dismiss_all(struct zfc
+--- a/drivers/block/aoe/aoecmd.c
++++ b/drivers/block/aoe/aoecmd.c
+@@ -35,6 +35,7 @@ new_skb(ulong len)
+ 		skb_reset_mac_header(skb);
+ 		skb_reset_network_header(skb);
+ 		skb->protocol = __constant_htons(ETH_P_AOE);
++		skb_checksum_none_assert(skb);
  	}
+ 	return skb;
  }
- 
-+#define ZFCP_FSF_PORTSPEED_1GBIT	(1 <<  0)
-+#define ZFCP_FSF_PORTSPEED_2GBIT	(1 <<  1)
-+#define ZFCP_FSF_PORTSPEED_4GBIT	(1 <<  2)
-+#define ZFCP_FSF_PORTSPEED_10GBIT	(1 <<  3)
-+#define ZFCP_FSF_PORTSPEED_8GBIT	(1 <<  4)
-+#define ZFCP_FSF_PORTSPEED_16GBIT	(1 <<  5)
-+#define ZFCP_FSF_PORTSPEED_NOT_NEGOTIATED (1 << 15)
-+
-+static u32 zfcp_fsf_convert_portspeed(u32 fsf_speed)
-+{
-+	u32 fdmi_speed = 0;
-+	if (fsf_speed & ZFCP_FSF_PORTSPEED_1GBIT)
-+		fdmi_speed |= FC_PORTSPEED_1GBIT;
-+	if (fsf_speed & ZFCP_FSF_PORTSPEED_2GBIT)
-+		fdmi_speed |= FC_PORTSPEED_2GBIT;
-+	if (fsf_speed & ZFCP_FSF_PORTSPEED_4GBIT)
-+		fdmi_speed |= FC_PORTSPEED_4GBIT;
-+	if (fsf_speed & ZFCP_FSF_PORTSPEED_10GBIT)
-+		fdmi_speed |= FC_PORTSPEED_10GBIT;
-+	if (fsf_speed & ZFCP_FSF_PORTSPEED_8GBIT)
-+		fdmi_speed |= FC_PORTSPEED_8GBIT;
-+	if (fsf_speed & ZFCP_FSF_PORTSPEED_16GBIT)
-+		fdmi_speed |= FC_PORTSPEED_16GBIT;
-+	if (fsf_speed & ZFCP_FSF_PORTSPEED_NOT_NEGOTIATED)
-+		fdmi_speed |= FC_PORTSPEED_NOT_NEGOTIATED;
-+	return fdmi_speed;
-+}
-+
- static int zfcp_fsf_exchange_config_evaluate(struct zfcp_fsf_req *req)
- {
- 	struct fsf_qtcb_bottom_config *bottom = &req->qtcb->bottom.config;
-@@ -456,7 +484,8 @@ static int zfcp_fsf_exchange_config_eval
- 	fc_host_port_name(shost) = nsp->fl_wwpn;
- 	fc_host_node_name(shost) = nsp->fl_wwnn;
- 	fc_host_port_id(shost) = ntoh24(bottom->s_id);
--	fc_host_speed(shost) = bottom->fc_link_speed;
-+	fc_host_speed(shost) =
-+		zfcp_fsf_convert_portspeed(bottom->fc_link_speed);
- 	fc_host_supported_classes(shost) = FC_COS_CLASS2 | FC_COS_CLASS3;
- 
- 	adapter->hydra_version = bottom->adapter_type;
-@@ -580,7 +609,8 @@ static void zfcp_fsf_exchange_port_evalu
- 	} else
- 		fc_host_permanent_port_name(shost) = fc_host_port_name(shost);
- 	fc_host_maxframe_size(shost) = bottom->maximum_frame_size;
--	fc_host_supported_speeds(shost) = bottom->supported_speed;
-+	fc_host_supported_speeds(shost) =
-+		zfcp_fsf_convert_portspeed(bottom->supported_speed);
- 	memcpy(fc_host_supported_fc4s(shost), bottom->supported_fc4_types,
- 	       FC_FC4_LIST_SIZE);
- 	memcpy(fc_host_active_fc4s(shost), bottom->active_fc4_types,
 
 
