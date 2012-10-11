@@ -1,105 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758518Ab2JKNLs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 09:11:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56310 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753938Ab2JKNLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 09:11:47 -0400
-Date: Thu, 11 Oct 2012 15:11:43 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>, devel@openvz.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v4 09/14] memcg: kmem accounting lifecycle management
-Message-ID: <20121011131143.GF29295@dhcp22.suse.cz>
-References: <1349690780-15988-1-git-send-email-glommer@parallels.com>
- <1349690780-15988-10-git-send-email-glommer@parallels.com>
+	id S1758596Ab2JKNNM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 09:13:12 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:65272 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756804Ab2JKNNJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 09:13:09 -0400
+Message-ID: <5076C5D3.6020104@gmail.com>
+Date: Thu, 11 Oct 2012 21:12:51 +0800
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349690780-15988-10-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 5/5] KVM: MMU: introduce FNAME(prefetch_gpte)
+References: <50716EE0.6010504@linux.vnet.ibm.com> <50716FF7.1060704@linux.vnet.ibm.com> <20121010152144.GA29776@amt.cnet>
+In-Reply-To: <20121010152144.GA29776@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 08-10-12 14:06:15, Glauber Costa wrote:
-> Because kmem charges can outlive the cgroup, we need to make sure that
-> we won't free the memcg structure while charges are still in flight.
-> For reviewing simplicity, the charge functions will issue
-> mem_cgroup_get() at every charge, and mem_cgroup_put() at every
-> uncharge.
+On 10/10/2012 11:21 PM, Marcelo Tosatti wrote:
+
+>>  	pgprintk("%s: gpte %llx spte %p\n", __func__, (u64)gpte, spte);
+>> +
+>> +	gfn = gpte_to_gfn(gpte);
+>>  	pte_access = sp->role.access & gpte_access(vcpu, gpte);
+>>  	protect_clean_gpte(&pte_access, gpte);
+>> -	pfn = gfn_to_pfn_atomic(vcpu->kvm, gpte_to_gfn(gpte));
+>> +	pfn = pte_prefetch_gfn_to_pfn(vcpu, gfn,
+>> +			no_dirty_log && (pte_access & ACC_WRITE_MASK));
 > 
-> This can get expensive, however, and we can do better. mem_cgroup_get()
-> only really needs to be issued once: when the first limit is set. In the
-> same spirit, we only need to issue mem_cgroup_put() when the last charge
-> is gone.
-> 
-> We'll need an extra bit in kmem_accounted for that: KMEM_ACCOUNTED_DEAD.
-> it will be set when the cgroup dies, if there are charges in the group.
-> If there aren't, we can proceed right away.
-> 
-> Our uncharge function will have to test that bit every time the charges
-> drop to 0. Because that is not the likely output of
-> res_counter_uncharge, this should not impose a big hit on us: it is
-> certainly much better than a reference count decrease at every
-> operation.
-> 
-> [ v3: merged all lifecycle related patches in one ]
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> CC: Suleiman Souhlal <suleiman@google.com>
+> Is this a bugfix?
 
-OK, I like the optimization. I have just one comment to the
-memcg_kmem_dead naming but other than that
+No. It is a cleanup.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Actually, pte_prefetch_gfn_to_pfn(vcpu, gfn, false) is the same as
+gfn_to_pfn_atomic
 
-[...]
-> +static bool memcg_kmem_dead(struct mem_cgroup *memcg)
-
-The name is tricky because it doesn't tell you that it clears the flag
-which made me scratch my head when reading comment in kmem_cgroup_destroy
-
-> +{
-> +	return test_and_clear_bit(KMEM_ACCOUNTED_DEAD, &memcg->kmem_accounted);
-> +}
->  #endif
->  
->  /* Stuffs for move charges at task migration. */
-[...]
-> @@ -4876,6 +4904,20 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
->  static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
->  {
->  	mem_cgroup_sockets_destroy(memcg);
-> +
-> +	memcg_kmem_mark_dead(memcg);
-> +
-> +	if (res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0)
-> +		return;
-> +
-> +	/*
-> +	 * Charges already down to 0, undo mem_cgroup_get() done in the charge
-> +	 * path here, being careful not to race with memcg_uncharge_kmem: it is
-> +	 * possible that the charges went down to 0 between mark_dead and the
-> +	 * res_counter read, so in that case, we don't need the put
-> +	 */
-> +	if (memcg_kmem_dead(memcg))
-> +		mem_cgroup_put(memcg);
-
--- 
-Michal Hocko
-SUSE Labs
