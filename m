@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934200Ab2JKBZS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:25:18 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44577 "EHLO
+	id S934238Ab2JKBZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:25:26 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57104 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934220Ab2JKBZG (ORCPT
+	by vger.kernel.org with ESMTP id S933959Ab2JKBZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:25:06 -0400
-X-Sasl-enc: Z7M382o1TaXVUB/YqCpvqmnJJlstTEryHNxEywBftruq 1349918705
+	Wed, 10 Oct 2012 21:25:18 -0400
+X-Sasl-enc: C7QGzGxBqT4FPa2FVUqcmLAQ9HiAT3kBNC8pYOMD8OjL 1349918711
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Hillf Danton <dhillf@gmail.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
         David Rientjes <rientjes@google.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 074/120] kpageflags: fix wrong KPF_THP on non-huge compound pages
-Date: Thu, 11 Oct 2012 10:00:26 +0900
-Message-Id: <20121011005839.820273718@linuxfoundation.org>
+Subject: [ 075/120] hugetlb: do not use vma_hugecache_offset() for vma_prio_tree_foreach
+Date: Thu, 11 Oct 2012 10:00:27 +0900
+Message-Id: <20121011005840.036284747@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -32,45 +34,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit 7a71932d5676b7410ab64d149bad8bde6b0d8632 upstream.
+commit 36e4f20af833d1ce196e6a4ade05dc26c44652d1 upstream.
 
-KPF_THP can be set on non-huge compound pages (like slab pages or pages
-allocated by drivers with __GFP_COMP) because PageTransCompound only
-checks PG_head and PG_tail.  Obviously this is a bug and breaks user space
-applications which look for thp via /proc/kpageflags.
+Commit 0c176d52b0b2 ("mm: hugetlb: fix pgoff computation when unmapping
+page from vma") fixed pgoff calculation but it has replaced it by
+vma_hugecache_offset() which is not approapriate for offsets used for
+vma_prio_tree_foreach() because that one expects index in page units
+rather than in huge_page_shift.
 
-This patch rules out setting KPF_THP wrongly by additionally checking
-PageLRU on the head pages.
+Johannes said:
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
+: The resulting index may not be too big, but it can be too small: assume
+: hpage size of 2M and the address to unmap to be 0x200000.  This is regular
+: page index 512 and hpage index 1.  If you have a VMA that maps the file
+: only starting at the second huge page, that VMAs vm_pgoff will be 512 but
+: you ask for offset 1 and miss it even though it does map the page of
+: interest.  hugetlb_cow() will try to unmap, miss the vma, and retry the
+: cow until the allocation succeeds or the skipped vma(s) go away.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Hillf Danton <dhillf@gmail.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: David Rientjes <rientjes@google.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/proc/page.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ mm/hugetlb.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/proc/page.c
-+++ b/fs/proc/page.c
-@@ -115,7 +115,13 @@ u64 stable_page_flags(struct page *page)
- 		u |= 1 << KPF_COMPOUND_TAIL;
- 	if (PageHuge(page))
- 		u |= 1 << KPF_HUGE;
--	else if (PageTransCompound(page))
-+	/*
-+	 * PageTransCompound can be true for non-huge compound pages (slab
-+	 * pages or pages allocated by drivers with __GFP_COMP) because it
-+	 * just checks PG_head/PG_tail, so we need to check PageLRU to make
-+	 * sure a given page is a thp, not a non-huge compound page.
-+	 */
-+	else if (PageTransCompound(page) && PageLRU(compound_trans_head(page)))
- 		u |= 1 << KPF_THP;
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2431,7 +2431,8 @@ static int unmap_ref_private(struct mm_s
+ 	 * from page cache lookup which is in HPAGE_SIZE units.
+ 	 */
+ 	address = address & huge_page_mask(h);
+-	pgoff = vma_hugecache_offset(h, vma, address);
++	pgoff = ((address - vma->vm_start) >> PAGE_SHIFT) +
++			vma->vm_pgoff;
+ 	mapping = vma->vm_file->f_dentry->d_inode->i_mapping;
  
  	/*
 
