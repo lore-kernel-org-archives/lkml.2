@@ -1,798 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758260Ab2JKJv1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 05:51:27 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:11935
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756159Ab2JKJvY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 05:51:24 -0400
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zz98dI936eI1432Ic8kzz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441hbe9i1155h)
-Subject: Re: [Patch v3 2/7] Regulator: DA9055 Regulator driver
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        David Dajun Chen <dchen@diasemi.com>, <linux-kernel@vger.kernel.org>
-In-Reply-To: <1349937387.7957.13.camel@dhruva>
-References: <1349937387.7957.13.camel@dhruva>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Oct 2012 15:32:36 +0530
-Message-ID: <1349949756.7957.16.camel@dhruva>
+	id S932119Ab2JKJxI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 05:53:08 -0400
+Received: from mail.abmm.hu ([195.228.156.64]:42728 "EHLO mail.abmm.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758214Ab2JKJxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 05:53:06 -0400
+Message-ID: <5076A506.8080808@thx4games.com>
+Date: Thu, 11 Oct 2012 11:52:54 +0100
+From: Viktor Nagy <viktor.nagy@thx4games.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+To: Jan Kara <jack@suse.cz>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        "Darrick J. Wong" <djwong@us.ibm.com>, chris.mason@fusionio.com
+Subject: Re: Linux 3.0+ Disk performance problem - wrong pdflush behaviour
+References: <5073F13C.5050807@thx4games.com> <20121010165750.GD32581@quack.suse.cz> <5075DE39.8090303@thx4games.com> <20121010212725.GA11642@quack.suse.cz>
+In-Reply-To: <20121010212725.GA11642@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recalling this post. Wrong patch version got included.
-On Thu, 2012-10-11 at 12:06 +0530, Ashish Jangam wrote:
-> This is the Regulator patch for the DA9055 PMIC and has got dependency on
-> the DA9055 MFD core.
-> 
-> This patch support all of the DA9055 regulators. The output voltages are
-> fully programmable through I2C interface only. The platform data with regulation
-> constraints is passed down from the board to the regulator.
-> 
-> This patch is functionaly tested on SMDK6410 board. DA9055 Evaluation board
-> was connected to the SMDK6410 board.
-> 
-> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
-> ---
-> changes since version v3:
-> - Use of regulator framework API regulator_map_voltage_linear()
->    and regulator_list_voltage_linear().
-> - Modify comments to indicate GPIO pins are muxed.
-> - Get the GPIO number from platform data.
-> changes since v2:
-> - restructuring of GPIO regulator initialization code.
-> ---
->  drivers/regulator/Kconfig            |   10 +
->  drivers/regulator/Makefile           |    1 +
->  drivers/regulator/da9055-regulator.c |  659 ++++++++++++++++++++++++++++++++++
->  include/linux/mfd/da9055/pdata.h     |   27 ++-
->  4 files changed, 694 insertions(+), 3 deletions(-)
->  create mode 100644 drivers/regulator/da9055-regulator.c
-> 
-> diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-> index 129c827..0bd6db1 100644
-> --- a/drivers/regulator/Kconfig
-> +++ b/drivers/regulator/Kconfig
-> @@ -109,6 +109,16 @@ config REGULATOR_DA9052
->  	  This driver supports the voltage regulators of DA9052-BC and
->  	  DA9053-AA/Bx PMIC.
->  
-> +config REGULATOR_DA9055
-> +	tristate "Dialog Semiconductor DA9055 regulators"
-> +	depends on MFD_DA9055
-> +	help
-> +	  Say y here to support the BUCKs and LDOs regulators found on
-> +	  Dialog Semiconductor DA9055 PMIC.
-> +
-> +	  This driver can also be built as a module. If so, the module
-> +	  will be called da9055-regulator.
-> +
->  config REGULATOR_ANATOP
->  	tristate "Freescale i.MX on-chip ANATOP LDO regulators"
->  	depends on MFD_ANATOP
-> diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-> index 3a0dbc5..950b38b 100644
-> --- a/drivers/regulator/Makefile
-> +++ b/drivers/regulator/Makefile
-> @@ -18,6 +18,7 @@ obj-$(CONFIG_REGULATOR_ANATOP) += anatop-regulator.o
->  obj-$(CONFIG_REGULATOR_ARIZONA) += arizona-micsupp.o arizona-ldo1.o
->  obj-$(CONFIG_REGULATOR_DA903X)	+= da903x.o
->  obj-$(CONFIG_REGULATOR_DA9052)	+= da9052-regulator.o
-> +obj-$(CONFIG_REGULATOR_DA9055)	+= da9055-regulator.o
->  obj-$(CONFIG_REGULATOR_DBX500_PRCMU) += dbx500-prcmu.o
->  obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
->  obj-$(CONFIG_REGULATOR_GPIO) += gpio-regulator.o
-> diff --git a/drivers/regulator/da9055-regulator.c b/drivers/regulator/da9055-regulator.c
-> new file mode 100644
-> index 0000000..9129b27
-> --- /dev/null
-> +++ b/drivers/regulator/da9055-regulator.c
-> @@ -0,0 +1,659 @@
-> +/*
-> +* Regulator driver for DA9055 PMIC
-> +*
-> +* Copyright(c) 2012 Dialog Semiconductor Ltd.
-> +*
-> +* Author: David Dajun Chen <dchen@diasemi.com>
-> +*
-> +* This program is free software; you can redistribute it and/or modify
-> +* it under the terms of the GNU General Public License as published by
-> +* the Free Software Foundation; either version 2 of the License, or
-> +* (at your option) any later version.
-> +*
-> +*/
-> +
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/err.h>
-> +#include <linux/gpio.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/regulator/driver.h>
-> +#include <linux/regulator/machine.h>
-> +
-> +#include <linux/mfd/da9055/core.h>
-> +#include <linux/mfd/da9055/reg.h>
-> +#include <linux/mfd/da9055/pdata.h>
-> +
-> +#define DA9055_MIN_UA		0
-> +#define DA9055_MAX_UA		3
-> +
-> +#define DA9055_LDO_MODE_SYNC	0
-> +#define DA9055_LDO_MODE_SLEEP	1
-> +
-> +#define DA9055_BUCK_MODE_SLEEP	1
-> +#define DA9055_BUCK_MODE_SYNC	2
-> +#define DA9055_BUCK_MODE_AUTO	3
-> +
-> +/* DA9055 REGULATOR IDs */
-> +#define DA9055_ID_BUCK1	0
-> +#define DA9055_ID_BUCK2	1
-> +#define DA9055_ID_LDO1		2
-> +#define DA9055_ID_LDO2		3
-> +#define DA9055_ID_LDO3		4
-> +#define DA9055_ID_LDO4		5
-> +#define DA9055_ID_LDO5		6
-> +#define DA9055_ID_LDO6		7
-> +
-> +/* DA9055 BUCK current limit */
-> +static const int da9055_current_limits[] = { 500000, 600000, 700000, 800000 };
-> +
-> +struct da9055_conf_reg {
-> +	int reg;
-> +	int sel_mask;
-> +	int en_mask;
-> +};
-> +
-> +struct da9055_volt_reg {
-> +	int reg_a;
-> +	int reg_b;
-> +	int sl_shift;
-> +	int v_offset;
-> +	int v_mask;
-> +	int v_shift;
-> +};
-> +
-> +struct da9055_mode_reg {
-> +	int reg;
-> +	int mask;
-> +	int shift;
-> +};
-> +
-> +struct da9055_regulator_info {
-> +	struct regulator_desc reg_desc;
-> +	int step_uV;
-> +	int min_uV;
-> +	int max_uV;
-> +	struct da9055_conf_reg conf;
-> +	struct da9055_volt_reg volt;
-> +	struct da9055_mode_reg mode;
-> +};
-> +
-> +struct da9055_regulator {
-> +	struct da9055 *da9055;
-> +	struct da9055_regulator_info *info;
-> +	struct regulator_dev *rdev;
-> +	enum gpio_select reg_rselect;
-> +};
-> +
-> +static unsigned int da9055_buck_get_mode(struct regulator_dev *rdev)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	int ret, mode = 0;
-> +
-> +	ret = da9055_reg_read(regulator->da9055, info->mode.reg);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	switch ((ret & info->mode.mask) >> info->mode.shift) {
-> +	case DA9055_BUCK_MODE_SYNC:
-> +		mode = REGULATOR_MODE_FAST;
-> +		break;
-> +	case DA9055_BUCK_MODE_AUTO:
-> +		mode = REGULATOR_MODE_NORMAL;
-> +		break;
-> +	case DA9055_BUCK_MODE_SLEEP:
-> +		mode = REGULATOR_MODE_STANDBY;
-> +		break;
-> +	}
-> +
-> +	return mode;
-> +}
-> +
-> +static int da9055_buck_set_mode(struct regulator_dev *rdev,
-> +					unsigned int mode)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	int val = 0;
-> +
-> +	switch (mode) {
-> +	case REGULATOR_MODE_FAST:
-> +		val = DA9055_BUCK_MODE_SYNC << info->mode.shift;
-> +		break;
-> +	case REGULATOR_MODE_NORMAL:
-> +		val = DA9055_BUCK_MODE_AUTO << info->mode.shift;
-> +		break;
-> +	case REGULATOR_MODE_IDLE:
-> +	case REGULATOR_MODE_STANDBY:
-> +		val = DA9055_BUCK_MODE_SLEEP << info->mode.shift;
-> +		break;
-> +	}
-> +
-> +	return da9055_reg_update(regulator->da9055, info->mode.reg,
-> +				 info->mode.mask, val);
-> +}
-> +
-> +static unsigned int da9055_ldo_get_mode(struct regulator_dev *rdev)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	int ret;
-> +
-> +	ret = da9055_reg_read(regulator->da9055, info->volt.reg_b);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	if (ret >> info->volt.sl_shift)
-> +		return REGULATOR_MODE_STANDBY;
-> +	else
-> +		return REGULATOR_MODE_NORMAL;
-> +}
-> +
-> +static int da9055_ldo_set_mode(struct regulator_dev *rdev, unsigned int mode)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	struct da9055_volt_reg volt = info->volt;
-> +	int val = 0;
-> +
-> +	switch (mode) {
-> +	case REGULATOR_MODE_NORMAL:
-> +	case REGULATOR_MODE_FAST:
-> +		val = DA9055_LDO_MODE_SYNC;
-> +		break;
-> +	case REGULATOR_MODE_IDLE:
-> +	case REGULATOR_MODE_STANDBY:
-> +		val = DA9055_LDO_MODE_SLEEP;
-> +	}
-> +
-> +	return da9055_reg_update(regulator->da9055, volt.reg_b,
-> +				 1 << volt.sl_shift,
-> +				 val << volt.sl_shift);
-> +}
-> +
-> +static int da9055_buck_get_current_limit(struct regulator_dev *rdev)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	int ret;
-> +
-> +	ret = da9055_reg_read(regulator->da9055, DA9055_REG_BUCK_LIM);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret &= info->mode.mask;
-> +	return da9055_current_limits[ret >> info->mode.shift];
-> +}
-> +
-> +static int da9055_buck_set_current_limit(struct regulator_dev *rdev, int min_uA,
-> +					 int max_uA)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	int i, val = 0;
-> +
-> +	if (min_uA > da9055_current_limits[DA9055_MAX_UA] ||
-> +	    max_uA < da9055_current_limits[DA9055_MIN_UA])
-> +		return -EINVAL;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(da9055_current_limits); i++) {
-> +		if (min_uA <= da9055_current_limits[i]) {
-> +			val = i;
-> +			break;
-> +		}
-> +	}
-> +
-> +	return da9055_reg_update(regulator->da9055, DA9055_REG_BUCK_LIM,
-> +				info->mode.mask, val << info->mode.shift);
-> +}
-> +
-> +static int da9055_regulator_get_voltage_sel(struct regulator_dev *rdev)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	struct da9055_volt_reg volt = info->volt;
-> +	int ret, sel;
-> +
-> +	/*
-> +	 * There are two voltage register set A & B for voltage ramping but
-> +	 * either one of then can be active therefore we first determine
-> +	 * the active register set.
-> +	 */
-> +	ret = da9055_reg_read(regulator->da9055, info->conf.reg);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret &= info->conf.sel_mask;
-> +
-> +	/* Get the voltage for the activer register set A/B */
-> +	if (ret == DA9055_REGUALTOR_SET_A)
-> +		ret = da9055_reg_read(regulator->da9055, volt.reg_a);
-> +	else
-> +		ret = da9055_reg_read(regulator->da9055, volt.reg_b);
-> +
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	sel = ((ret & volt.v_mask) - volt.v_offset);
-> +
-> +	return sel;
-> +}
-> +
-> +static int da9055_regulator_set_voltage_bits(struct regulator_dev *rdev,
-> +					     unsigned int reg,
-> +					     unsigned int selector)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +
-> +	/* Takes care of voltage range that does not start with 0 offset. */
-> +	selector += info->volt.v_offset;
-> +
-> +	/* Set the voltage */
-> +	return da9055_reg_update(regulator->da9055, reg, info->volt.v_mask,
-> +				 selector);
-> +
-> +}
-> +
-> +static int da9055_regulator_set_voltage_sel(struct regulator_dev *rdev,
-> +					    unsigned int selector)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	int ret;
-> +
-> +	/*
-> +	 * Regulator register set A/B is not selected through GPIO therefore
-> +	 * we use default register set A for voltage ramping.
-> +	 */
-> +	if (regulator->reg_rselect == NO_GPIO) {
-> +		/* Select register set A */
-> +		ret = da9055_reg_update(regulator->da9055, info->conf.reg,
-> +					info->conf.sel_mask, DA9055_SEL_REG_A);
-> +		if (ret < 0)
-> +			return ret;
-> +
-> +		/* Set the voltage */
-> +		return da9055_regulator_set_voltage_bits(rdev, info->volt.reg_a,
-> +							 selector);
-> +	}
-> +
-> +	/*
-> +	 * Here regulator register set A/B is selected through GPIO.
-> +	 * Therefore we first determine the selected register set A/B and
-> +	 * then set the desired voltage for that register set A/B.
-> +	 */
-> +	ret = da9055_reg_read(regulator->da9055, info->conf.reg);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret &= info->conf.sel_mask;
-> +
-> +	/* Set the voltage */
-> +	if (ret == DA9055_REGUALTOR_SET_A)
-> +		return da9055_regulator_set_voltage_bits(rdev, info->volt.reg_a,
-> +							 selector);
-> +
-> +	return da9055_regulator_set_voltage_bits(rdev, info->volt.reg_b,
-> +						 selector);
-> +}
-> +
-> +static int da9055_regulator_set_suspend_voltage(struct regulator_dev *rdev,
-> +						int uV)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	int ret;
-> +
-> +	/* Select register set B for suspend voltage ramping. */
-> +	ret = da9055_reg_update(regulator->da9055, info->conf.reg,
-> +				info->conf.sel_mask, DA9055_SEL_REG_B);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = regulator_map_voltage_linear(rdev, uV, uV);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return da9055_regulator_set_voltage_bits(rdev, info->volt.reg_b, ret);
-> +}
-> +
-> +static int da9055_suspend_enable(struct regulator_dev *rdev)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +
-> +	/* Select register set B for voltage ramping. */
-> +	return da9055_reg_update(regulator->da9055, info->conf.reg,
-> +				info->conf.sel_mask, DA9055_SEL_REG_B);
-> +}
-> +
-> +static int da9055_suspend_disable(struct regulator_dev *rdev)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +
-> +	/* Diselect register set B. */
-> +	return da9055_reg_update(regulator->da9055, info->conf.reg,
-> +				info->conf.sel_mask, DA9055_SEL_REG_A);
-> +}
-> +
-> +static struct regulator_ops da9055_buck_ops = {
-> +	.get_mode = da9055_buck_get_mode,
-> +	.set_mode = da9055_buck_set_mode,
-> +
-> +	.get_current_limit = da9055_buck_get_current_limit,
-> +	.set_current_limit = da9055_buck_set_current_limit,
-> +
-> +	.get_voltage_sel = da9055_regulator_get_voltage_sel,
-> +	.set_voltage_sel = da9055_regulator_set_voltage_sel,
-> +	.list_voltage = regulator_list_voltage_linear,
-> +	.map_voltage = regulator_map_voltage_linear,
-> +	.is_enabled = regulator_is_enabled_regmap,
-> +	.enable = regulator_enable_regmap,
-> +	.disable = regulator_disable_regmap,
-> +
-> +	.set_suspend_voltage = da9055_regulator_set_suspend_voltage,
-> +	.set_suspend_enable = da9055_suspend_enable,
-> +	.set_suspend_disable = da9055_suspend_disable,
-> +	.set_suspend_mode = da9055_buck_set_mode,
-> +};
-> +
-> +static struct regulator_ops da9055_ldo_ops = {
-> +	.get_mode = da9055_ldo_get_mode,
-> +	.set_mode = da9055_ldo_set_mode,
-> +
-> +	.get_voltage_sel = da9055_regulator_get_voltage_sel,
-> +	.set_voltage_sel = da9055_regulator_set_voltage_sel,
-> +	.list_voltage = regulator_list_voltage_linear,
-> +	.map_voltage = regulator_map_voltage_linear,
-> +	.is_enabled = regulator_is_enabled_regmap,
-> +	.enable = regulator_enable_regmap,
-> +	.disable = regulator_disable_regmap,
-> +
-> +	.set_suspend_voltage = da9055_regulator_set_suspend_voltage,
-> +	.set_suspend_enable = da9055_suspend_enable,
-> +	.set_suspend_disable = da9055_suspend_disable,
-> +	.set_suspend_mode = da9055_ldo_set_mode,
-> +
-> +};
-> +
-> +#define DA9055_LDO(_id, step, min, max, vbits, voffset) \
-> +{\
-> +	.reg_desc = {\
-> +		.name = #_id,\
-> +		.ops = &da9055_ldo_ops,\
-> +		.type = REGULATOR_VOLTAGE,\
-> +		.id = DA9055_ID_##_id,\
-> +		.n_voltages = (max - min) / step + 1, \
-> +		.enable_reg = DA9055_REG_BCORE_CONT + DA9055_ID_##_id, \
-> +		.enable_mask = 1, \
-> +		.owner = THIS_MODULE,\
-> +	},\
-> +	.conf = {\
-> +		.reg = DA9055_REG_BCORE_CONT + DA9055_ID_##_id, \
-> +		.sel_mask = (1 << 4),\
-> +		.en_mask = 1,\
-> +	},\
-> +	.volt = {\
-> +		.reg_a = DA9055_REG_VBCORE_A + DA9055_ID_##_id, \
-> +		.reg_b = DA9055_REG_VBCORE_B + DA9055_ID_##_id, \
-> +		.sl_shift = 7,\
-> +		.v_offset = (voffset),\
-> +		.v_mask = (1 << (vbits)) - 1,\
-> +		.v_shift = (vbits),\
-> +	},\
-> +	.min_uV = (min) * 1000,\
-> +	.max_uV = (max) * 1000,\
-> +	.step_uV = (step) * 1000,\
-> +}
-> +
-> +#define DA9055_BUCK(_id, step, min, max, vbits, voffset, mbits, sbits) \
-> +{\
-> +	.reg_desc = {\
-> +		.name = #_id,\
-> +		.ops = &da9055_buck_ops,\
-> +		.type = REGULATOR_VOLTAGE,\
-> +		.id = DA9055_ID_##_id,\
-> +		.n_voltages = (max - min) / step + 1, \
-> +		.enable_reg = DA9055_REG_BCORE_CONT + DA9055_ID_##_id, \
-> +		.enable_mask = 1,\
-> +		.owner = THIS_MODULE,\
-> +	},\
-> +	.conf = {\
-> +		.reg = DA9055_REG_BCORE_CONT + DA9055_ID_##_id, \
-> +		.sel_mask = (1 << 4),\
-> +		.en_mask = 1,\
-> +	},\
-> +	.volt = {\
-> +		.reg_a = DA9055_REG_VBCORE_A + DA9055_ID_##_id, \
-> +		.reg_b = DA9055_REG_VBCORE_B + DA9055_ID_##_id, \
-> +		.sl_shift = 7,\
-> +		.v_offset = (voffset),\
-> +		.v_mask = (1 << (vbits)) - 1,\
-> +		.v_shift = (vbits),\
-> +	},\
-> +	.mode = {\
-> +		.reg = DA9055_REG_BCORE_MODE,\
-> +		.mask = (mbits),\
-> +		.shift = (sbits),\
-> +	},\
-> +	.min_uV = (min) * 1000,\
-> +	.max_uV = (max) * 1000,\
-> +	.step_uV = (step) * 1000,\
-> +}
-> +
-> +static struct da9055_regulator_info da9055_regulator_info[] = {
-> +	DA9055_BUCK(BUCK1, 25, 725, 2075, 6, 9, 0xc, 2),
-> +	DA9055_BUCK(BUCK2, 25, 925, 2500, 6, 0, 3, 0),
-> +	DA9055_LDO(LDO1, 50, 900, 3300, 6, 2),
-> +	DA9055_LDO(LDO2, 50, 900, 3300, 6, 3),
-> +	DA9055_LDO(LDO3, 50, 900, 3300, 6, 2),
-> +	DA9055_LDO(LDO4, 50, 900, 3300, 6, 2),
-> +	DA9055_LDO(LDO5, 50, 900, 2750, 6, 2),
-> +	DA9055_LDO(LDO6, 20, 900, 3300, 7, 0),
-> +};
-> +
-> +/*
-> + * Configures regulator to be controlled either through GPIO 1 or 2.
-> + * GPIO can control regulator state and/or select the regulator register
-> + * set A/B for voltage ramping.
-> + */
-> +static __devinit int da9055_gpio_init(struct da9055_regulator *regulator,
-> +				      struct regulator_config *config,
-> +				      struct da9055_pdata *pdata, int id)
-> +{
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	int ret = 0;
-> +
-> +	if (pdata->gpio_ren && pdata->gpio_ren[id]) {
-> +		char name[18];
-> +		int gpio_mux = pdata->gpio_ren[id];
-> +
-> +		config->ena_gpio = pdata->ena_gpio[id];
-> +		config->ena_gpio_flags = GPIOF_OUT_INIT_HIGH;
-> +		config->ena_gpio_invert = 1;
-> +
-> +		/*
-> +		 * GPI pin is muxed with regulator to control the
-> +		 * regulator state.
-> +		 */
-> +		sprintf(name, "DA9055 GPI %d", gpio_mux);
-> +		ret = devm_gpio_request_one(config->dev, gpio_mux, GPIOF_DIR_IN,
-> +					    name);
-> +		if (ret < 0)
-> +			goto err;
-> +
-> +		/*
-> +		 * Let the regulator know that its state is controlled
-> +		 * through GPI.
-> +		 */
-> +		ret = da9055_reg_update(regulator->da9055, info->conf.reg,
-> +					DA9055_E_GPI_MASK,
-> +					pdata->reg_ren[id]
-> +					<< DA9055_E_GPI_SHIFT);
-> +		if (ret < 0)
-> +			goto err;
-> +	}
-> +
-> +	if (pdata->gpio_rsel && pdata->gpio_ren[id]) {
-> +		char name[18];
-> +		int gpio_mux = pdata->gpio_rsel[id];
-> +
-> +		regulator->reg_rselect = pdata->reg_rsel[id];
-> +
-> +		/*
-> +		 * GPI pin is muxed with regulator to select the
-> +		 * regulator register set A/B for voltage ramping.
-> +		 */
-> +		sprintf(name, "DA9055 GPI %d", gpio_mux);
-> +		ret = devm_gpio_request_one(config->dev, gpio_mux, GPIOF_DIR_IN,
-> +					    name);
-> +		if (ret < 0)
-> +			goto err;
-> +
-> +		/*
-> +		 * Let the regulator know that its register set A/B
-> +		 * will be selected through GPI for voltage ramping.
-> +		 */
-> +		ret = da9055_reg_update(regulator->da9055, info->conf.reg,
-> +					DA9055_V_GPI_MASK,
-> +					pdata->reg_rsel[id]
-> +					<< DA9055_V_GPI_SHIFT);
-> +	}
-> +
-> +err:
-> +	return ret;
-> +}
-> +
-> +static irqreturn_t da9055_ldo5_6_oc_irq(int irq, void *data)
-> +{
-> +	struct da9055_regulator *regulator = data;
-> +
-> +	regulator_notifier_call_chain(regulator->rdev,
-> +				      REGULATOR_EVENT_OVER_CURRENT, NULL);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static inline struct da9055_regulator_info *find_regulator_info(int id)
-> +{
-> +	struct da9055_regulator_info *info;
-> +	int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(da9055_regulator_info); i++) {
-> +		info = &da9055_regulator_info[i];
-> +		if (info->reg_desc.id == id)
-> +			return info;
-> +		}
-> +
-> +	return NULL;
-> +}
-> +
-> +static int __devinit da9055_regulator_probe(struct platform_device *pdev)
-> +{
-> +	struct regulator_config config = { };
-> +	struct da9055_regulator *regulator;
-> +	struct da9055 *da9055 = dev_get_drvdata(pdev->dev.parent);
-> +	struct da9055_pdata *pdata = da9055->dev->platform_data;
-> +	int ret, irq;
-> +
-> +	if (pdata == NULL || pdata->regulators[pdev->id] == NULL)
-> +		return -ENODEV;
-> +
-> +	regulator = devm_kzalloc(&pdev->dev, sizeof(struct da9055_regulator),
-> +				 GFP_KERNEL);
-> +	if (!regulator)
-> +		return -ENOMEM;
-> +
-> +	regulator->info = find_regulator_info(pdev->id);
-> +	if (regulator->info == NULL) {
-> +		dev_err(&pdev->dev, "invalid regulator ID specified\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	regulator->da9055 = da9055;
-> +	config.dev = &pdev->dev;
-> +	config.driver_data = regulator;
-> +	config.regmap = da9055->regmap;
-> +
-> +	if (pdata && pdata->regulators)
-> +		config.init_data = pdata->regulators[pdev->id];
-> +
-> +	ret = da9055_gpio_init(regulator, &config, pdata, pdev->id);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	regulator->rdev = regulator_register(&regulator->info->reg_desc,
-> +					     &config);
-> +	if (IS_ERR(regulator->rdev)) {
-> +		dev_err(&pdev->dev, "Failed to register regulator %s\n",
-> +			regulator->info->reg_desc.name);
-> +		ret = PTR_ERR(regulator->rdev);
-> +		return ret;
-> +	}
-> +
-> +	/* Only LDO 5 and 6 has got the over current interrupt */
-> +	if (pdev->id == DA9055_ID_LDO5 || pdev->id ==  DA9055_ID_LDO6) {
-> +		irq = platform_get_irq_byname(pdev, "REGULATOR");
-> +		irq = regmap_irq_get_virq(da9055->irq_data, irq);
-> +		ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-> +						da9055_ldo5_6_oc_irq,
-> +						IRQF_TRIGGER_HIGH |
-> +						IRQF_ONESHOT |
-> +						IRQF_PROBE_SHARED,
-> +						pdev->name, regulator);
-> +		if (ret != 0) {
-> +			if (ret != -EBUSY) {
-> +				dev_err(&pdev->dev,
-> +				"Failed to request Regulator IRQ %d: %d\n",
-> +				irq, ret);
-> +				goto err_regulator;
-> +			}
-> +		}
-> +	}
-> +
-> +	platform_set_drvdata(pdev, regulator);
-> +
-> +	return 0;
-> +
-> +err_regulator:
-> +	regulator_unregister(regulator->rdev);
-> +	return ret;
-> +}
-> +
-> +static int __devexit da9055_regulator_remove(struct platform_device *pdev)
-> +{
-> +	struct da9055_regulator *regulator = platform_get_drvdata(pdev);
-> +
-> +	regulator_unregister(regulator->rdev);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver da9055_regulator_driver = {
-> +	.probe = da9055_regulator_probe,
-> +	.remove = __devexit_p(da9055_regulator_remove),
-> +	.driver = {
-> +		.name = "da9055-regulator",
-> +		.owner = THIS_MODULE,
-> +	},
-> +};
-> +
-> +static int __init da9055_regulator_init(void)
-> +{
-> +	return platform_driver_register(&da9055_regulator_driver);
-> +}
-> +subsys_initcall(da9055_regulator_init);
-> +
-> +static void __exit da9055_regulator_exit(void)
-> +{
-> +	platform_driver_unregister(&da9055_regulator_driver);
-> +}
-> +module_exit(da9055_regulator_exit);
-> +
-> +MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-> +MODULE_DESCRIPTION("Power Regulator driver for Dialog DA9055 PMIC");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:da9055-regulator");
-> diff --git a/include/linux/mfd/da9055/pdata.h b/include/linux/mfd/da9055/pdata.h
-> index 147293b..f87a6c1 100644
-> --- a/include/linux/mfd/da9055/pdata.h
-> +++ b/include/linux/mfd/da9055/pdata.h
-> @@ -25,8 +25,29 @@ struct da9055_pdata {
->  	int gpio_base;
->  
->  	struct regulator_init_data *regulators[DA9055_MAX_REGULATORS];
-> -	bool reset_enable;		/* Enable RTC in RESET Mode */
-> -	enum gpio_select *gpio_rsel;	/* Select regulator set thru GPIO 1/2 */
-> -	enum gpio_select *gpio_ren;	/* Enable regulator thru GPIO 1/2 */
-> +	/* Enable RTC in RESET Mode */
-> +	bool reset_enable;
-> +	/*
-> +	 * GPI muxed pin to control
-> +	 * regulator state A/B, 0 if not available.
-> +	 */
-> +	int *gpio_ren;
-> +	/*
-> +	 * GPI muxed pin to control
-> +	 * regulator set, 0 if not available.
-> +	 */
-> +	int *gpio_rsel;
-> +	/*
-> +	 * Regulator mode control bits value (GPI offset) that
-> +	 * that controls the regulator state, 0 if not available.
-> +	 */
-> +	enum gpio_select *reg_ren;
-> +	/*
-> +	 * Regulator mode control bits value (GPI offset) that
-> +	 * controls the regulator set A/B, 0 if  not available.
-> +	 */
-> +	enum gpio_select *reg_rsel;
-> +	/* GPIOs to enable regulator, 0 if not available */
-> +	int *ena_gpio;
->  };
->  #endif /* __DA9055_PDATA_H */
+Hi,
 
+On 2012.10.10. 22:27, Jan Kara wrote:
+> On Wed 10-10-12 22:44:41, Viktor Nagy wrote:
+>> On 10/10/2012 06:57 PM, Jan Kara wrote:
+>>>    Hello,
+>>>
+>>> On Tue 09-10-12 11:41:16, Viktor Nagy wrote:
+>>>> Since Kernel version 3.0 pdflush blocks writes even the dirty bytes
+>>>> are well below /proc/sys/vm/dirty_bytes or /proc/sys/vm/dirty_ratio.
+>>>> The kernel 2.6.39 works nice.
+>>>>
+>>>> How this hurt us in the real life: We have a very high performance
+>>>> game server where the MySQL have to do many writes along the reads.
+>>>> All writes and reads are very simple and have to be very quick. If
+>>>> we run the system with Linux 3.2 we get unacceptable performance.
+>>>> Now we are stuck with 2.6.32 kernel here because this problem.
+>>>>
+>>>> I attach the test program wrote by me which shows the problem. The
+>>>> program just writes blocks continously to random position to a given
+>>>> big file. The write rate limited to 100 MByte/s. In a well-working
+>>>> kernel it have to run with constant 100 MBit/s speed for indefinite
+>>>> long. The test have to be run on a simple HDD.
+>>>>
+>>>> Test steps:
+>>>> 1. You have to use an XFS, EXT2 or ReiserFS partition for the test,
+>>>> Ext4 forces flushes periodically. I recommend to use XFS.
+>>>> 2. create a big file on the test partiton. For 8 GByte RAM you can
+>>>> create a 2 GByte file. For 2 GB RAM I recommend to create 500MByte
+>>>> file. File creation can be done with this command:  dd if=/dev/zero
+>>>> of=bigfile2048M.bin bs=1M count=2048
+>>>> 3. compile pdflushtest.c: (gcc -o pdflushtest pdflushtest.c)
+>>>> 4. run pdflushtest: ./pdflushtest --file=/where/is/the/bigfile2048M.bin
+>>>>
+>>>> In the beginning there can be some slowness even on well-working
+>>>> kernels. If you create the bigfile in the same run then it runs
+>>>> usually smootly from the beginning.
+>>>>
+>>>> I don't know a setting of /proc/sys/vm variables which runs this
+>>>> test smootly on a 3.2.29 (3.0+) kernel. I think this is a kernel
+>>>> bug, because if I have much more "/proc/sys/vm/dirty_bytes" than the
+>>>> testfile size the test program should never be blocked.
+>>>    I've run your program and I can confirm your results. As a side note,
+>>> your test program as a bug as it uses 'int' for offset arithmetics so when
+>>> the file is larger than 2 GB, you can hit some problems but for our case
+>>> that's not really important.
+>> Sorry for the bug and maybe the poor implementation. I am much
+>> better in Pascal than in C.
+>> (You can not make such mistake in Pascal (FreePascal). Is there a
+>> way (compiler switch) in C/C++ to get there a warning?)
+>    Actually I somewhat doubt that even FreePascal is able to give you a
+> warning that arithmetic can overflow...
+Well, you get a hint at least (FPC 2.6).
+
+program inttest;
+
+var
+   i,j : integer;
+
+procedure Test(x : int64);
+begin
+   Writeln('x=',x);
+end;
+
+begin
+   i := 1000000;
+   j := 1000000;
+   Test(1000000*1000000);
+   Test(int64(i)*j);
+   Test(i*j);  // result is wrong, but you get a hint here
+   Write('Press enter to continue...'); readln;
+end.
+
+>
+>>> The regression you observe is caused by commit 3d08bcc8 "mm: Wait for
+>>> writeback when grabbing pages to begin a write". At the first sight I was
+>>> somewhat surprised when I saw that code path in the traces but later when I
+>>> did some math it's clear. What the commit does is that when a page is just
+>>> being written out to disk, we don't allow it's contents to be changed and
+>>> wait for IO to finish before letting next write to proceed. Now if you have
+>>> 1 GB file, that's 256000 pages. By the observation from my test machine,
+>>> writeback code keeps around 10000 pages in flight to disk at any moment
+>>> (this number fluctuates a lot but average is around that number). Your
+>>> program dirties about 25600 pages per second. So the probability one of
+>>> dirtied pages is a page under writeback is equal to 1 for all practical
+>>> purposes (precisely it is 1-(1-10000/256000)^25600). Actually, on average
+>>> you are going to hit about 1000 pages under writeback per second which
+>>> clearly has a noticeable impact (even single page can have). Pity I didn't
+>>> do the math when we were considering those patches.
+>>>
+>>> There were plans to avoid waiting if underlying storage doesn't need it but
+>>> I'm not sure how far that plans got (added a couple of relevant CCs).
+>>> Anyway you are about second or third real workload that sees regression due
+>>> to "stable pages" so we have to fix that sooner rather than later... Thanks
+>>> for your detailed report!
+>>>
+>>> 								Honza
+>> Thank you for your response!
+>>
+>> I'm very happy that I've found the right people.
+>>
+>> We develop a game server which gets very high load in some
+>> countries. We are trying to serve as much players as possible with
+>> one server.
+>> Currently the CPU usage is below the 50% at the peak times. And with
+>> the old kernel it runs smoothly. The pdflush runs non-stop on the
+>> database disk with ~3 MByte/s write (minimal read).
+>> This is at 43000 active sockets, 18000 rq/s, ~40000 packets/s.
+>> I think we are still below the theoratical limits of this server...
+>> but only if the disk writes are never done in sync.
+>>
+>> I will try the 3.2.31 kernel without the problematic commit
+>> (3d08bcc8 "mm: Wait for writeback when grabbing pages to begin a
+>> write").
+>> Is it a good idea? Will it be worse than 2.6.32?
+>    Running without that commit should work just fine unless you use
+> something exotic like DIF/DIX or similar. Whether things will be worse than
+> in 2.6.32 I cannot say. For me, your test program behaves fine without that
+> commit but whether your real workload won't hit some other problem is
+> always a question. But if you hit another regression I'm interested in
+> hearing about it :).
+>
+> 								Honza
+I've just tested it. After I've set the dirty_bytes over the file size 
+the writes are never blocked.
+So it's working nice without the mentioned commit.
+
+The problem is that if you read the kernel's documentation about the 
+dirty page handling it does not work that way (with the commit) It works 
+unpredictable.
+
+Best,
+Viktor
 
