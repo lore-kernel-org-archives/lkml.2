@@ -1,97 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab2JKIu6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 04:50:58 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54979 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753120Ab2JKIuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 04:50:52 -0400
-Message-ID: <50768850.7030607@ti.com>
-Date: Thu, 11 Oct 2012 14:20:24 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1754070Ab2JKIwh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 04:52:37 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:57915 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab2JKIwc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 04:52:32 -0400
+Message-ID: <507688CC.9000104@suse.cz>
+Date: Thu, 11 Oct 2012 10:52:28 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0a2
 MIME-Version: 1.0
-To: <hs@denx.de>, "Manjunathappa, Prakash" <prakash.pm@ti.com>,
-        Constantine Shulyupin <const@MakeLinux.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>, Sergei Shtylyov <sshtylyov@mvista.com>,
-        Wolfgang Denk <wd@denx.de>
-Subject: Re: [PATCH] usb: remove CONFIG_USB_MUSB_HOST etc
-References: <A73F36158E33644199EB82C5EC81C7BC3E9CA495@DBDE01.ent.ti.com> <507668C3.6080908@denx.de>
-In-Reply-To: <507668C3.6080908@denx.de>
-Content-Type: text/plain; charset="UTF-8"
+To: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: kswapd0: wxcessive CPU usage
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2012 12:05 PM, Heiko Schocher wrote:
-> Hello Manjunathappa
-> 
-> On 11.10.2012 07:42, Manjunathappa, Prakash wrote:
->> Hi,
->> On Mon, Oct 08, 2012 at 18:47:07, Constantine Shulyupin wrote:
->>> From: Constantine Shulyupin<const@MakeLinux.com>
->>>
->>> Remove USB configuration in arch/arm/mach-davinci/usb.c accordingly
->>> CONFIG_USB_MUSB_OTG CONFIG_USB_MUSB_PERIPHERAL CONFIG_USB_MUSB_HOST
->>> and set MUSB_OTG configuration by default
->>> because this configuration options are removed from Kconfig.
->>>
->>> Signed-off-by: Constantine Shulyupin<const@MakeLinux.com>
->>>
->>> ---
->>>   arch/arm/mach-davinci/usb.c |    6 ------
->>>   1 file changed, 6 deletions(-)
->>>
->>> diff --git a/arch/arm/mach-davinci/usb.c b/arch/arm/mach-davinci/usb.c
->>> index f77b953..34509ff 100644
->>> --- a/arch/arm/mach-davinci/usb.c
->>> +++ b/arch/arm/mach-davinci/usb.c
->>> @@ -42,14 +42,8 @@ static struct musb_hdrc_config musb_config = {
->>>   };
->>>
->>>   static struct musb_hdrc_platform_data usb_data = {
->>> -#if defined(CONFIG_USB_MUSB_OTG)
->>>       /* OTG requires a Mini-AB connector */
->>>       .mode           = MUSB_OTG,
->>> -#elif defined(CONFIG_USB_MUSB_PERIPHERAL)
->>> -    .mode           = MUSB_PERIPHERAL,
->>> -#elif defined(CONFIG_USB_MUSB_HOST)
->>> -    .mode           = MUSB_HOST,
->>> -#endif
->>>       .clock        = "usb",
->>>       .config        =&musb_config,
->>>   };
->>
->> Tested it on DM6446-EVM for host mode with MSC thumb drive and gadget
->> mode with g-ether. It works.
->>
->> Acked-by: Manjunathappa, Prakash<prakash.pm@ti.com>
-> 
-> I sent a similiar patch here:
-> 
-> http://comments.gmane.org/gmane.linux.usb.general/54512
-> 
-> If the issues, mentioned from Sergei for my patch, nullified I add my:
+Hi,
 
-The last outstanding issue from Sergei seems to be additional comments
-describing why MUSB_OTG is OK to use.
+with 3.6.0-next-20121008, kswapd0 is spinning my CPU at 100% for 1
+minute or so. If I try to suspend to RAM, this trace appears:
+kswapd0         R  running task        0   577      2 0x00000000
+ 0000000000000000 00000000000000c0 cccccccccccccccd ffff8801c4146800
+ ffff8801c4b15c88 ffffffff8116ee05 0000000000003e32 ffff8801c3a79000
+ ffff8801c4b15ca8 ffffffff8116fdf8 ffff8801c480f398 ffff8801c3a79000
+Call Trace:
+ [<ffffffff8116ee05>] ? put_super+0x25/0x40
+ [<ffffffff8116fdd4>] ? grab_super_passive+0x24/0xa0
+ [<ffffffff8116ff99>] ? prune_super+0x149/0x1b0
+ [<ffffffff81131531>] ? shrink_slab+0xa1/0x2d0
+ [<ffffffff8113452d>] ? kswapd+0x66d/0xb60
+ [<ffffffff81133ec0>] ? try_to_free_pages+0x180/0x180
+ [<ffffffff810a2770>] ? kthread+0xc0/0xd0
+ [<ffffffff810a26b0>] ? kthread_create_on_node+0x130/0x130
+ [<ffffffff816a6c9c>] ? ret_from_fork+0x7c/0x90
+ [<ffffffff810a26b0>] ? kthread_create_on_node+0x130/0x130
 
-Prakash/Constantine,
+# cat /proc/vmstat
+nr_free_pages 239962
+nr_inactive_anon 89825
+nr_active_anon 711136
+nr_inactive_file 60386
+nr_active_file 46668
+nr_unevictable 0
+nr_mlock 0
+nr_anon_pages 500678
+nr_mapped 41319
+nr_file_pages 319317
+nr_dirty 45
+nr_writeback 0
+nr_slab_reclaimable 21909
+nr_slab_unreclaimable 21598
+nr_page_table_pages 12131
+nr_kernel_stack 491
+nr_unstable 0
+nr_bounce 0
+nr_vmscan_write 1674280
+nr_vmscan_immediate_reclaim 301662
+nr_writeback_temp 0
+nr_isolated_anon 0
+nr_isolated_file 0
+nr_shmem 212263
+nr_dirtied 10620227
+nr_written 9260939
+nr_anon_transparent_hugepages 172
+nr_free_cma 0
+nr_dirty_threshold 31459
+nr_dirty_background_threshold 15729
+pgpgin 31311778
+pgpgout 38987552
+pswpin 0
+pswpout 0
+pgalloc_dma 0
+pgalloc_dma32 245169455
+pgalloc_normal 279685864
+pgalloc_movable 0
+pgfree 537318727
+pgactivate 13126755
+pgdeactivate 2482953
+pgfault 645947575
+pgmajfault 193427
+pgrefill_dma 0
+pgrefill_dma32 1124272
+pgrefill_normal 1998033
+pgrefill_movable 0
+pgsteal_kswapd_dma 0
+pgsteal_kswapd_dma32 2531015
+pgsteal_kswapd_normal 3403006
+pgsteal_kswapd_movable 0
+pgsteal_direct_dma 0
+pgsteal_direct_dma32 362488
+pgsteal_direct_normal 1134511
+pgsteal_direct_movable 0
+pgscan_kswapd_dma 0
+pgscan_kswapd_dma32 2693620
+pgscan_kswapd_normal 5836491
+pgscan_kswapd_movable 0
+pgscan_direct_dma 0
+pgscan_direct_dma32 368374
+pgscan_direct_normal 1658486
+pgscan_direct_movable 0
+pgscan_direct_throttle 0
+pginodesteal 258410
+slabs_scanned 86459392
+kswapd_inodesteal 3907549
+kswapd_low_wmark_hit_quickly 15408
+kswapd_high_wmark_hit_quickly 23113
+kswapd_skip_congestion_wait 10
+pageoutrun 2165627235
+allocstall 11256
+pgrotated 219624
+compact_blocks_moved 4862077
+compact_pages_moved 1970005
+compact_pagemigrate_failed 1726156
+compact_stall 21275
+compact_fail 6589
+compact_success 14686
+htlb_buddy_alloc_success 0
+htlb_buddy_alloc_fail 0
+unevictable_pgs_culled 2799
+unevictable_pgs_scanned 0
+unevictable_pgs_rescued 22563
+unevictable_pgs_mlocked 22563
+unevictable_pgs_munlocked 22563
+unevictable_pgs_cleared 0
+unevictable_pgs_stranded 0
+thp_fault_alloc 18725
+thp_fault_fallback 64868
+thp_collapse_alloc 9216
+thp_collapse_alloc_failed 2031
+thp_split 2146
 
-Did you have to make any hardware changes when testing host/gadget on
-DM6446 EVM? Or change in kernel configuration?
+Any ideas what it could be?
 
-It appears that there is no way to choose any of the config option
-affecting the mode setting. Right now it seems to be just defaulting to
-MUSB_UNDEFINED. Setting it to MUSB_OTG would be better than that.
-
-Thanks,
-Sekhar
+-- 
+js
+suse labs
