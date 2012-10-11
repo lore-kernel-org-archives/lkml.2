@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758715Ab2JKNqP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 09:46:15 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:38243 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587Ab2JKNqM (ORCPT
+	id S1758721Ab2JKNrx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 09:47:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37903 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756182Ab2JKNrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 09:46:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121011131509.GB16465@sepie.suse.cz>
-References: <CAAxaTiOsaHOR4cbwcq=xOn-sWxB6PdB4x_UgYf2rUsPQM=WwWA@mail.gmail.com>
-	<20121011131509.GB16465@sepie.suse.cz>
-Date: Thu, 11 Oct 2012 15:46:12 +0200
-X-Google-Sender-Auth: hlZik3z13OgZisT0xdFSybtp5Lo
-Message-ID: <CAAxaTiOYpDZTeWbL2UsL-8FJb4rU4RoZaH-gFScU=khY4+44XQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] Coccicheck: Add the rep+ctxt mode
-From: Nicolas Palix <nicolas.palix@imag.fr>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Julia Lawall <julia.lawall@lip6.fr>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 11 Oct 2012 09:47:51 -0400
+Subject: RE: [PATCH] extcon : callback function to read cable property
+From: anish kumar <anish198519851985@gmail.com>
+To: "Tc, Jenny" <jenny.tc@intel.com>
+Cc: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "cw00.choi@samsung.com" <cw00.choi@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20ADAB092842284E95860F279283C56439BC4A@BGSMSX101.gar.corp.intel.com>
+References: <1349864628-21479-1-git-send-email-jenny.tc@intel.com>
+	 <1349880328.22926.2.camel@anish-Inspiron-N5050>
+	 <20ADAB092842284E95860F279283C56439BC4A@BGSMSX101.gar.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 11 Oct 2012 22:47:40 +0900
+Message-ID: <1349963260.8329.1.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Oct 11, 2012 at 3:34 PM, Michal Marek <mmarek@suse.cz> wrote:
-> On Thu, Sep 20, 2012 at 10:30:46PM +0200, Nicolas Palix wrote:
->> This adds a 'rep+ctxt' mode which prints the warning
->> message followed by the context.
->>
->> Signed-off-by: Nicolas Palix <nicolas.palix@imag.fr>
->> ---
->>  scripts/coccicheck | 3 +++
->>  1 file changed, 3 insertions(+)
->>
->> diff --git a/scripts/coccicheck b/scripts/coccicheck
->> index 823e972..eb43e40 100755
->> --- a/scripts/coccicheck
->> +++ b/scripts/coccicheck
->> @@ -95,6 +95,9 @@ coccinelle () {
->>       $SPATCH -D report  $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff || \
->>       $SPATCH -D context $FLAGS -sp_file $COCCI $OPT $OPTIONS               || \
->>       $SPATCH -D org     $FLAGS -sp_file $COCCI $OPT $OPTIONS
->> -no_show_diff || exit 1
->
-> Your mailer broke this line into two, please try to avoid this next
-> time. Also, please CC lkml when submitting patches. I applied the patch
-> to kbuild.git#misc now.
-
-Ooops.. Sorry. I didn't notice.
-
-The patches are publish on github in my coccicheck branch.
-https://github.com/npalix/linux/commits/coccicheck
-
-Do you prefer a pull request next time to avoid such things ?
-
-
-Nicolas
->
-> Michal
->
->> +    elif [ "$MODE" = "rep+ctxt" ] ; then
->> +     $SPATCH -D report  $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff && \
->> +     $SPATCH -D context $FLAGS -sp_file $COCCI $OPT $OPTIONS
->>  || exit 1
->>      else
->>       $SPATCH -D $MODE   $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
->>      fi
->> --
->> 1.7.11.3
+On Thu, 2012-10-11 at 01:20 +0000, Tc, Jenny wrote:
+> > From: anish kumar [mailto:anish198519851985@gmail.com]
+> > Sent: Wednesday, October 10, 2012 8:15 PM
+> > To: Tc, Jenny
+> > Cc: myungjoo.ham@samsung.com; cw00.choi@samsung.com; linux-
+> > kernel@vger.kernel.org
+> > Subject: Re: [PATCH] extcon : callback function to read cable property
+> > 
+> > I think the reason why we have extcon is in first place is to only notify the
+> > clients of cable connection and disconnection and it is up to the client to
+> > decide what else to do with the cable such as finding which state it is in and
+> > other details.
+> > So I feel this should not be handled in the extcon.
+> > 
+> > However it is up to the maintainer to decide.
+> 
+> Once the consumer gets the notification, it needs to take some action. 
+> One of the action is to read the cable properties. This can be done 
+> by proprietary calls which is known both to the consumer and the provider. 
+> My intention is to avoid this proprietary calls. Since both the provider 
+> and consumer are communicating with the extcon subsystem , I feel having a 
+> callback function of this kind would help to avoid the use of proprietary 
+> calls. Also I agree that extcon notifier chains are used to notify the cable 
+> state (attach/detach). But if a cable has more than two states (like the 
+> charger cable) how do we support it without having a callback function like this? 
+> Let the maintainer take the final decision.
+Well this use case will keep on growing if we start factor in this kind
+of changes and that is why I am opposed to adding any other state.
+Maintainer?
+> 
+> 
 
 
-
--- 
-Nicolas Palix
