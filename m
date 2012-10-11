@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab2JKE0V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 00:26:21 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43466 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753537Ab2JKEZ6 (ORCPT
+	id S1754591Ab2JKE0u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 00:26:50 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:36790 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753204Ab2JKEZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 00:25:58 -0400
+	Thu, 11 Oct 2012 00:25:57 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, peterz@infradead.org, fweisbec@gmail.com,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 8/9] perf stat: move to perf_evlist__open_counters
-Date: Wed, 10 Oct 2012 22:25:34 -0600
-Message-Id: <1349929535-92861-9-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 7/9] perf evlist: add stat unique code to open_counters method
+Date: Wed, 10 Oct 2012 22:25:33 -0600
+Message-Id: <1349929535-92861-8-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1349929535-92861-1-git-send-email-dsahern@gmail.com>
 References: <1349929535-92861-1-git-send-email-dsahern@gmail.com>
@@ -21,8 +21,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes a lot of duplicated code moving to the common
-open method.
+Mainly the addition is an argument to keep going for some open
+failures.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -30,145 +30,91 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- tools/perf/builtin-stat.c |  103 ++++++++++-----------------------------------
- 1 file changed, 22 insertions(+), 81 deletions(-)
+ tools/perf/builtin-record.c |    2 +-
+ tools/perf/builtin-top.c    |    2 +-
+ tools/perf/util/evlist.c    |   16 ++++++++++++++--
+ tools/perf/util/evlist.h    |    3 ++-
+ 4 files changed, 18 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 9727d217..affbada 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -122,55 +122,6 @@ static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
- static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
- static struct stats walltime_nsecs_stats;
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index b9dcc01..663ccc8 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -234,7 +234,7 @@ static int perf_record__open(struct perf_record *rec)
+ 	if (opts->group)
+ 		perf_evlist__set_leader(evlist);
  
--static int create_perf_stat_counter(struct perf_evsel *evsel,
--				    struct perf_evsel *first,
--				    struct perf_record_opts *opts)
--{
--	struct perf_target *target = &opts->target;
--	struct perf_event_attr *attr = &evsel->attr;
--	bool exclude_guest_missing = false;
--	int ret;
--
--	if (scale)
--		attr->read_format = PERF_FORMAT_TOTAL_TIME_ENABLED |
--				    PERF_FORMAT_TOTAL_TIME_RUNNING;
--
--	attr->inherit = !opts->no_inherit;
--
--retry:
--	if (exclude_guest_missing)
--		evsel->attr.exclude_guest = evsel->attr.exclude_host = 0;
--
--	if (perf_target__has_cpu(target)) {
--		ret = perf_evsel__open_per_cpu(evsel,
--					       perf_evsel__cpus(evsel, target));
--		if (ret)
--			goto check_ret;
--		return 0;
--	}
--
--	if (!perf_target__has_task(target) &&
--	    (!opts->group || evsel == first)) {
--		attr->disabled = 1;
--		attr->enable_on_exec = 1;
--	}
--
--	ret = perf_evsel__open_per_thread(evsel, evsel_list->threads);
--	if (!ret)
--		return 0;
--	/* fall through */
--check_ret:
--	if (ret && errno == EINVAL) {
--		if (!exclude_guest_missing &&
--		    (evsel->attr.exclude_guest || evsel->attr.exclude_host)) {
--			pr_debug("Old kernel, cannot exclude "
--				 "guest or host samples.\n");
--			exclude_guest_missing = true;
--			goto retry;
--		}
--	}
--	return ret;
--}
+-	rc = perf_evlist__open_counters(evlist, opts);
++	rc = perf_evlist__open_counters(evlist, opts, false);
+ 	if (rc != 0)
+ 			goto out;
  
- /*
-  * Does the counter have nsecs as a unit?
-@@ -277,6 +228,7 @@ static int run_perf_stat(int argc __maybe_unused,
- 	unsigned long long t0, t1;
- 	struct perf_evsel *counter, *first;
- 	struct cpu_map *cmap;
-+	struct perf_target *target = &opts->target;
- 	int status = 0;
- 	int child_ready_pipe[2], go_pipe[2];
- 	const bool forks = (argc > 0);
-@@ -320,7 +272,7 @@ static int run_perf_stat(int argc __maybe_unused,
- 			exit(-1);
- 		}
- 
--		if (perf_target__none(&opts->target))
-+		if (perf_target__none(target))
- 			evsel_list->threads->map[0] = child_pid;
- 
- 		/*
-@@ -339,38 +291,27 @@ static int run_perf_stat(int argc __maybe_unused,
- 	first = perf_evlist__first(evsel_list);
- 
- 	list_for_each_entry(counter, &evsel_list->entries, node) {
--		if (create_perf_stat_counter(counter, first, opts) < 0) {
--			/*
--			 * PPC returns ENXIO for HW counters until 2.6.37
--			 * (behavior changed with commit b0a873e).
--			 */
--			if (errno == EINVAL || errno == ENOSYS ||
--			    errno == ENOENT || errno == EOPNOTSUPP ||
--			    errno == ENXIO) {
--				if (verbose)
--					ui__warning("%s event is not supported by the kernel.\n",
--						    perf_evsel__name(counter));
--				counter->supported = false;
--				continue;
--			}
--
--			if (errno == EPERM || errno == EACCES) {
--				error("You may not have permission to collect %sstats.\n"
--				      "\t Consider tweaking"
--				      " /proc/sys/kernel/perf_event_paranoid or running as root.",
--				      opts->target.system_wide ? "system-wide " : "");
--			} else {
--				error("open_counter returned with %d (%s). "
--				      "/bin/dmesg may provide additional information.\n",
--				       errno, strerror(errno));
--			}
--			if (child_pid != -1)
--				kill(child_pid, SIGTERM);
--
--			pr_err("Not all events could be opened.\n");
--			return -1;
-+		struct perf_event_attr *attr = &counter->attr;
-+
-+		if (scale)
-+			attr->read_format = PERF_FORMAT_TOTAL_TIME_ENABLED |
-+					    PERF_FORMAT_TOTAL_TIME_RUNNING;
-+
-+		attr->inherit = !opts->no_inherit;
-+
-+		if (perf_target__none(target) &&
-+		    (!opts->group || counter == first)) {
-+			attr->disabled = 1;
-+			attr->enable_on_exec = 1;
- 		}
--		counter->supported = true;
-+	}
-+
-+	if (perf_evlist__open_counters(evsel_list, opts, true) != 0) {
-+		if (child_pid != -1)
-+			kill(child_pid, SIGTERM);
-+
-+		pr_err("Not all events could be opened.\n");
-+		return -1;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 2ffc32e..2c3b3c7 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -921,7 +921,7 @@ static void perf_top__start_counters(struct perf_top *top)
+ 		attr->inherit = !top->opts.no_inherit;
  	}
  
- 	if (perf_evlist__apply_filters(evsel_list)) {
+-	if (perf_evlist__open_counters(evlist, &top->opts) != 0)
++	if (perf_evlist__open_counters(evlist, &top->opts, false) != 0)
+ 		goto out_err;
+ 
+ 	if (perf_evlist__mmap(evlist, top->opts.mmap_pages, false) < 0) {
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index bce2f58..fa0daac 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -840,7 +840,8 @@ size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp)
+ }
+ 
+ int perf_evlist__open_counters(struct perf_evlist *evlist,
+-			       struct perf_record_opts *opts)
++			       struct perf_record_opts *opts,
++			       bool continue_on_fail)
+ {
+ 	struct perf_evsel *pos;
+ 	int rc = 0;
+@@ -872,6 +873,16 @@ try_again:
+ 		if (perf_evsel__open(pos, evlist->cpus, evlist->threads) < 0) {
+ 			int err = errno;
+ 
++			if (continue_on_fail &&
++			    (err == EINVAL || err == ENOSYS || err == ENXIO ||
++			     err == ENOENT || err == EOPNOTSUPP)) {
++				if (verbose)
++					ui__warning("%s event is not supported by the kernel.\n",
++						    perf_evsel__name(pos));
++				pos->supported = false;
++				continue;
++			}
++
+ 			if (err == EPERM || err == EACCES) {
+ 				ui__error_paranoid();
+ 				rc = -err;
+@@ -958,7 +969,8 @@ try_again:
+ 			pr_err("No CONFIG_PERF_EVENTS=y kernel support configured?\n");
+ 			rc = -err;
+ 			goto out;
+-		}
++		} else
++			pos->supported = true;
+ 	}
+ out:
+ 	return rc;
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 270e546..0747b6f 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -137,5 +137,6 @@ static inline struct perf_evsel *perf_evlist__last(struct perf_evlist *evlist)
+ size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp);
+ 
+ int perf_evlist__open_counters(struct perf_evlist *evlist,
+-			       struct perf_record_opts *opts);
++			       struct perf_record_opts *opts,
++			       bool continue_on_fail);
+ #endif /* __PERF_EVLIST_H */
 -- 
 1.7.10.1
 
