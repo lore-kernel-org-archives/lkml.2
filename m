@@ -1,120 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052Ab2JKJHG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 05:07:06 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51970 "EHLO comal.ext.ti.com"
+	id S1756416Ab2JKJNj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 05:13:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47939 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753356Ab2JKJHD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 05:07:03 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: Ivan Djelic <ivan.djelic@parrot.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "Mohammed, Afzal" <afzal@ti.com>
-CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 4/4] mtd: nand: omap2: Add data correction support
-Thread-Topic: [PATCH 4/4] mtd: nand: omap2: Add data correction support
-Thread-Index: AQHNoXboDgXHKDcq00CaQ0Yo4e+M+penmT6AgAFWaxCAAWegIIAAE5sAgAZaH5CAAa98AIABGncg///k1ICAAGJcoA==
-Date: Thu, 11 Oct 2012 09:05:38 +0000
-Deferred-Delivery: Thu, 11 Oct 2012 09:05:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3E9CB982@DBDE01.ent.ti.com>
-References: <1349274589-11389-1-git-send-email-avinashphilip@ti.com>
- <1349274589-11389-5-git-send-email-avinashphilip@ti.com>
- <20121003192044.GB27502@parrot.com>
- <518397C60809E147AF5323E0420B992E3E9B8A65@DBDE01.ent.ti.com>
- <20121005142338.GA7199@parrot.com>
- <518397C60809E147AF5323E0420B992E3E9CA829@DBDE01.ent.ti.com>
- <20121010170806.GB13585@parrot.com>
- <518397C60809E147AF5323E0420B992E3E9CB751@DBDE01.ent.ti.com>
- <20121011082149.GA15609@parrot.com>
-In-Reply-To: <20121011082149.GA15609@parrot.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750739Ab2JKJNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 05:13:35 -0400
+Date: Thu, 11 Oct 2012 11:13:33 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] memcg: oom: fix totalpages calculation for
+ memory.swappiness==0
+Message-ID: <20121011091332.GA29301@dhcp22.suse.cz>
+References: <20121011085038.GA29295@dhcp22.suse.cz>
+ <1349945859-1350-1-git-send-email-mhocko@suse.cz>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349945859-1350-1-git-send-email-mhocko@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 11, 2012 at 13:51:49, Ivan Djelic wrote:
-> On Thu, Oct 11, 2012 at 06:27:13AM +0100, Philip, Avinash wrote:
-> (...)
-> > > Another simple strategy could use the fact that you add a 14th zero byte to
-> > > the 13 BCH bytes for RBL compatibility:
-> > 
-> > RBL compatibility (14th byte) is applicable only for BCH8 ecc scheme.
-> > 
-> > So I am planning adding an extra byte (0) for BCH4 ecc scheme. So with this
-> > we can go for same approaches in BCH4 & BCH8 ecc scheme.
-> > 
-> > If I understood correctly, software BCH ecc scheme is modifying calculated
-> > ecc data to handle bit flips in erased pages.
-> > 
-> > If that is the only reason, whether same logic can go for same ECC calculation
-> > (remove modification of calculated ecc in case of software ecc correction)
-> > by adding an extra byte (0) in spare area to handle erased pages.
-> > 
-> > So can you share if I am missing something?
+On Thu 11-10-12 10:57:39, Michal Hocko wrote:
+> oom_badness takes totalpages argument which says how many pages are
+> available and it uses it as a base for the score calculation. The value
+> is calculated by mem_cgroup_get_limit which considers both limit and
+> total_swap_pages (resp. memsw portion of it).
 > 
-> Yes, the only reason why a constant polynomial is added to hw-generated ECC
-> bytes is to transparently handle bitflips in erased pages.
-> Handling erased pages this way has several benefits over the zero byte hack:
-> - cleaner code, no checking of the zero byte
-> - no expensive scan of data+spare area when reading an erased block: this
->   step can significantly slow down the initial UBI scan (lots of erased
->    pages to read)
-
-Thanks for raising this point.
-In order to reduce scan time of data+spare area when reading an erased block,
-we can follow below steps
-
-1. Create a standard ecc vector for erased page & check against it with calculated
-   ecc of erased page.
-2. If the vectors won't match, go for counting bit flips in erased page.
-3. Again filtering of erased page can done by checking zero at fixed locations
-   in spare area.
-Note:
-Reading of bits in erased page should done only for pages having bitflips.
-
-> - no need to worry about the (very unlikely) possibility of having more
->   than 4 bitflips in the zero byte
+> This is usually correct but since fe35004f (mm: avoid swapping out
+> with swappiness==0) we do not swap when swappiness is 0 which means
+> that we cannot really use up all the totalpages pages. This in turn
+> confuses oom score calculation if the memcg limit is much smaller than
+> the available swap because the used memory (capped by the limit) is
+> negligible comparing to totalpages so the resulting score is too small
+> if adj!=0 (typically task with CAP_SYS_ADMIN or non zero oom_score_adj).
+> A wrong process might be selected as result.
 > 
-> OTOH, having the same ECC codes for both ELM and non-ELM chips with RBL
-> compatibility sounds nice and would also simplify things.
-> Note: on platforms where we use SW BCH correction, we also use the
-> MLC OMAP boot mode, which is more robust and not compatible
-> with 8-bit/4-bit BCH layouts.
+> The same issue exists for the global oom killer as well but it is not
+> that problematic as the amount of the RAM is usually much bigger than
+> the swap space.
 > 
-> I don't know which way is better for the OMAP community:
-> 1. Unifying ECC modes = loosing the constant polynomial benefits,
->    but gaining RBL compat and simplifying code
-> 2. Keeping separate ECC modes = code bloat
+> The problem can be worked around by checking mem_cgroup_swappiness==0
+> and not considering swap at all in such a case.
 > 
-> Tony, do you have an opinion on this ?
-> 
-> BTW, Afzal is submitting a series of patches [1] which are not
-> compatible with your series; is there any plan to merge your patches ?
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> Acked-by: David Rientjes <rientjes@google.com>
+> Cc: stable [3.5+]
 
-My next series will be on top Afzal's changes.
+I have just realized that fe35004f (introduced in 3.5-rc1) has been
+backported to 3.2 and 3.4 stable kernels so this should be [3.2+]
 
-Thanks
-Avinash
-
+> ---
+>  mm/memcontrol.c |   21 +++++++++++++++------
+>  1 file changed, 15 insertions(+), 6 deletions(-)
 > 
-> BR,
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 7acf43b..93a7e36 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1452,17 +1452,26 @@ static int mem_cgroup_count_children(struct mem_cgroup *memcg)
+>  static u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
+>  {
+>  	u64 limit;
+> -	u64 memsw;
+>  
+>  	limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
+> -	limit += total_swap_pages << PAGE_SHIFT;
+>  
+> -	memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
+>  	/*
+> -	 * If memsw is finite and limits the amount of swap space available
+> -	 * to this memcg, return that limit.
+> +	 * Do not consider swap space if we cannot swap due to swappiness
+>  	 */
+> -	return min(limit, memsw);
+> +	if (mem_cgroup_swappiness(memcg)) {
+> +		u64 memsw;
+> +
+> +		limit += total_swap_pages << PAGE_SHIFT;
+> +		memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
+> +
+> +		/*
+> +		 * If memsw is finite and limits the amount of swap space
+> +		 * available to this memcg, return that limit.
+> +		 */
+> +		limit = min(limit, memsw);
+> +	}
+> +
+> +	return limit;
+>  }
+>  
+>  void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+> -- 
+> 1.7.10.4
+> 
 > --
-> Ivan
-> 
-> [1] http://lists.infradead.org/pipermail/linux-mtd/2012-October/044374.html
-> 
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
+-- 
+Michal Hocko
+SUSE Labs
