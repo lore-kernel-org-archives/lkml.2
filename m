@@ -1,98 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab2JKIX5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 04:23:57 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:33546
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751075Ab2JKIXv (ORCPT
+	id S1754875Ab2JKIY3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 04:24:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36276 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261Ab2JKIYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 04:23:51 -0400
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441hbe9i1155h)
-Subject: [alsa-devel] [PATCH] ASoC: codecs: da9055: Minor improvement in
- ALC calibration process
-From: Ashish Chavan <ashish.chavan@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>, lrg <lrg@ti.com>,
-        alsa-devel <alsa-devel@alsa-project.org>
-CC: David Dajun Chen <david.chen@diasemi.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Oct 2012 14:04:37 +0530
-Message-ID: <1349944477.24126.11.camel@matrix>
+	Thu, 11 Oct 2012 04:24:24 -0400
+Date: Thu, 11 Oct 2012 01:24:20 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Christopher Heiny <Cheiny@synaptics.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
+        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Alexandra Chin <alexandra.chin@tw.synaptics.com>
+Subject: Re: [RFC PATCH 01/06] input/rmi4: Public header and documentation
+Message-ID: <20121011082420.GC32175@core.coreip.homeip.net>
+References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com>
+ <1349496603-20775-2-git-send-email-cheiny@synaptics.com>
+ <CACRpkdZb+LOk8v0aNZuPhATjS5jv-h1JJCejoh_9eFZ_fdiZQA@mail.gmail.com>
+ <BFABBC009FBA1C43B207B15FD485ABD922C22BC4@USW-MAIL1.synaptics-inc.local>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.20.243]
-X-OriginatorOrg: kpitcummins.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BFABBC009FBA1C43B207B15FD485ABD922C22BC4@USW-MAIL1.synaptics-inc.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch slightly improves ALC calibration process of da9055 codec
-driver by muting Mic PGAs during calibration.
+On Thu, Oct 11, 2012 at 03:41:41AM +0000, Christopher Heiny wrote:
+> Linus Walleij wrote:
+> > On Sat, Oct 6, 2012 at 6:09 AM, Christopher Heiny <cheiny@synaptics.com> wrote:
+> > 
+> > > +#ifdef CONFIG_RMI4_DEBUG
+> > > +/**
+> > > + * Utility routine to handle writes to read-only attributes.  Hopefully
+> > > + * this will never happen, but if the user does something stupid, we
+> > > don't
+> > > + * want to accept it quietly (which is what can happen if you just put
+> > > NULL + * for the attribute's store function).
+> > > + */
+> > > +static inline ssize_t rmi_store_error(struct device *dev,
+> > > +                       struct device_attribute *attr,
+> > > +                       const char *buf, size_t count)
+> > > +{
+> > > +       dev_warn(dev,
+> > > +                "WARNING: Attempt to write %d characters to read-only
+> > > attribute %s.", +               count, attr->attr.name);
+> > > +       return -EPERM;
+> > > +}
+> > 
+> > Here it looks like you're hiding a lot of stuff that should be dev_warn()?
+> > Consider my earlier point about dynamic debug.
+> 
+> In previous patch submissions, we always used these warning functions.
+> But in the feedback on those patches, we were asked to just make sysfs
+> show/store NULL if the attribute is write/read only.  However, during
+> their development process, our customers want to see the warnings if
+> the attributes are accessed incorrectly.  So we made these warnings a
+> debug option.
 
-Signed-off-by: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
----
- sound/soc/codecs/da9055.c |   22 +++++++++++++++++++++-
- 1 files changed, 21 insertions(+), 1 deletions(-)
+I think it is the case when customer is not always right. Given that
+the attributes are created with S_IRUGO mask how will we even get these
+methods to fire?
 
-diff --git a/sound/soc/codecs/da9055.c b/sound/soc/codecs/da9055.c
-index 27c4454..abf3e43 100644
---- a/sound/soc/codecs/da9055.c
-+++ b/sound/soc/codecs/da9055.c
-@@ -179,6 +179,12 @@
- #define DA9055_AIF_WORD_S24_LE		(2 << 2)
- #define DA9055_AIF_WORD_S32_LE		(3 << 2)
- 
-+/* MIC_L_CTRL bit fields */
-+#define DA9055_MIC_L_MUTE_EN		(1 << 6)
-+
-+/* MIC_R_CTRL bit fields */
-+#define DA9055_MIC_R_MUTE_EN		(1 << 6)
-+
- /* MIXIN_L_CTRL bit fields */
- #define DA9055_MIXIN_L_MIX_EN		(1 << 3)
- 
-@@ -477,7 +483,7 @@ static int da9055_put_alc_sw(struct snd_kcontrol *kcontrol,
- 			     struct snd_ctl_elem_value *ucontrol)
- {
- 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
--	u8 reg_val, adc_left, adc_right;
-+	u8 reg_val, adc_left, adc_right, mic_left, mic_right;
- 	int avg_left_data, avg_right_data, offset_l, offset_r;
- 
- 	if (ucontrol->value.integer.value[0]) {
-@@ -486,6 +492,16 @@ static int da9055_put_alc_sw(struct snd_kcontrol *kcontrol,
- 		 * offsets must be done first
- 		 */
- 
-+		/* Save current values from Mic control registers */
-+		mic_left = snd_soc_read(codec, DA9055_MIC_L_CTRL);
-+		mic_right = snd_soc_read(codec, DA9055_MIC_R_CTRL);
-+
-+		/* Mute Mic PGA Left and Right */
-+		snd_soc_update_bits(codec, DA9055_MIC_L_CTRL,
-+				    DA9055_MIC_L_MUTE_EN, DA9055_MIC_L_MUTE_EN);
-+		snd_soc_update_bits(codec, DA9055_MIC_R_CTRL,
-+				    DA9055_MIC_R_MUTE_EN, DA9055_MIC_R_MUTE_EN);
-+
- 		/* Save current values from ADC control registers */
- 		adc_left = snd_soc_read(codec, DA9055_ADC_L_CTRL);
- 		adc_right = snd_soc_read(codec, DA9055_ADC_R_CTRL);
-@@ -521,6 +537,10 @@ static int da9055_put_alc_sw(struct snd_kcontrol *kcontrol,
- 		/* Restore original values of ADC control registers */
- 		snd_soc_write(codec, DA9055_ADC_L_CTRL, adc_left);
- 		snd_soc_write(codec, DA9055_ADC_R_CTRL, adc_right);
-+
-+		/* Restore original values of Mic control registers */
-+		snd_soc_write(codec, DA9055_MIC_L_CTRL, mic_left);
-+		snd_soc_write(codec, DA9055_MIC_R_CTRL, mic_right);
- 	}
- 
- 	return snd_soc_put_volsw(kcontrol, ucontrol);
 -- 
-1.7.1
-
-
+Dmitry
