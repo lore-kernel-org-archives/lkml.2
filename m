@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431Ab2JKF6D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 01:58:03 -0400
-Received: from mailxx.hitachi.co.jp ([133.145.228.50]:39017 "EHLO
+	id S1757268Ab2JKF70 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 01:59:26 -0400
+Received: from mailxx.hitachi.co.jp ([133.145.228.50]:39027 "EHLO
 	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757313Ab2JKF54 (ORCPT
+	with ESMTP id S1756747Ab2JKF7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 01:57:56 -0400
-X-AuditID: b753bd60-91ec3ba0000047ca-50-50765f5e17c6
-X-AuditID: b753bd60-91ec3ba0000047ca-50-50765f5e17c6
+	Thu, 11 Oct 2012 01:59:24 -0400
+X-AuditID: b753bd60-8ecbeba0000047ca-a4-50765f4ffaf0
+X-AuditID: b753bd60-8ecbeba0000047ca-a4-50765f4ffaf0
 From: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
-Subject: [RFC PATCH 3/3 V3] livedump: Add memory dumping functionality
+Subject: [RFC PATCH 2/3 V3] livedump: Add write protection management
 To: "Thomas Gleixner" <tglx@linutronix.de>, "Ingo Molnar" <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
         "Vivek Goyal" <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
@@ -26,8 +26,8 @@ Cc: "Al Viro" <viro@zeniv.linux.org.uk>,
         "Thomas Gleixner" <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         x86@kernel.org, "Khalid Aziz" <khalid.aziz@hp.com>,
         yrl.pp-manager.tt@hitachi.com
-Date: Thu, 11 Oct 2012 14:53:57 +0900
-Message-ID: <20121011055356.6719.74225.stgit@t3500.sdl.hitachi.co.jp>
+Date: Thu, 11 Oct 2012 14:53:56 +0900
+Message-ID: <20121011055356.6719.45548.stgit@t3500.sdl.hitachi.co.jp>
 In-Reply-To: <20121011055356.6719.46214.stgit@t3500.sdl.hitachi.co.jp>
 References: <20121011055356.6719.46214.stgit@t3500.sdl.hitachi.co.jp>
 User-Agent: StGIT/0.14.3
@@ -39,64 +39,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements memory dumping of kernel space. Faulting pages are
-temporarily pushed into kfifo and they are poped and dumped by kthread
-dedicated to livedump. At the moment, supported target is only block
-device like /dev/sdb.
+This patch makes it possible to write-protect pages in kernel space and to
+install a handler function that is called every time when page fault occurs
+on the protected page. The write protection is executed in the stop-machine
+state to protect all pages consistently.
 
-Memory dumping is executed as follows:
-(1)The handler function is invoked and:
-  - It pops a buffer page from the kfifo "pool".
-  - It copies a faulting page into the buffer page.
-  - It pushes the buffer page into the kfifo "pend".
-(2)The kthread pops the buffer page from the kfifo "pend" and submits
-   bio to dump it.
-(3)The endio returns the buffer page back to the kfifo "pool".
+Processing of write protection and fault handling is executed in the order
+as follows:
 
-At the step (1), if the kfifo "pool" is empty, processing varies depending
-on whether tha handler function is called in the sweep phase or not.
-If it's in the sweep phase, the handler function waits until the kfifo
-"pool" becomes available.
-If not, the livedump simply fails.
+(1) Initialization phase
+  - Sets up data structure for write protection management.
+  - Splits all large pages in kernel space into 4K pages since currently
+    livedump can handle only 4K pages. In the future, this step (page
+    splitting) should be eliminated.
+(2) Write protection phase
+  - Stops machine.
+  - Handles sensitive pages.
+    (described below about sensitive pages)
+  - Sets up write protection.
+  - Resumes machine.
+(3) Page fault exception handling
+  - Calls the handler function before unprotecting the faulted page.
+(4) Sweep phase
+  - Calls the handler function against the rest of pages.
+(5) Uninitialization phase
+  - Cleans up all data structure for write protection management.
+
+This patch exports the following 4 ioctl operations.
+- Ioctl to invoke initialization phase
+- Ioctl to invoke write protection phase
+- Ioctl to invoke sweep phase
+- Ioctl to invoke uninitialization phase
+
+States of processing is as follows. They can transit only in this order.
+- STATE_UNINIT
+- STATE_INITED
+- STATE_STARTED (= write protection already set up)
+- STATE_SWEPT
+
+However, this order is protected by a normal integer variable, therefore,
+to be exact, this code is not yet safe against concurrent operation.
+
+The livedump module has to acquire consistent memory image of kernel space.
+Therefore, write protection is set up while update of memory state is
+suspended. To do so, the livedump uses stop_machine currently.
+
+Causing livedump's page fault (LPF) during LPF handling results in nested
+LPF handling. Since LPF handler uses spinlocks, this situation may cause
+deadlock. Therefore, any pages that can be updated during LPF handling must
+not be write-protected. For the same reason, any pages that can be updated
+during NMI handling must not be write-protected. NMI can happen during LPF
+handling, and so LPF during NMI handling also results in nested LPF
+handling. I call such pages that must not be write-protected
+"sensitive page". Against the sensitive pages, the handler function is
+called during the stop-machine state and they are not write-protected.
+
+I list the sensitive pages in the following:
+
+- Kernel/Exception/Interrupt stacks
+- Page table structure
+- All task_struct
+- ".data" section of kernel
+- per_cpu areas
+
+Pages that are not updated don't cause page fault and so the handler
+function is not invoked against them. To handle these pages, the livedump
+module finally needs to call the handler function against each of them.
+I call this phase "sweep", which is triggered by ioctl operation.
 
 Signed-off-by: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Andy Lutomirski <luto@amacapital.net>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org
 ---
 
- kernel/Makefile           |    2 
- kernel/livedump-memdump.c |  445 +++++++++++++++++++++++++++++++++++++++++++++
- kernel/livedump-memdump.h |   32 +++
- kernel/livedump.c         |   24 ++
- tools/livedump/livedump   |   16 +-
- 5 files changed, 508 insertions(+), 11 deletions(-)
- create mode 100644 kernel/livedump-memdump.c
- create mode 100644 kernel/livedump-memdump.h
+ arch/x86/Kconfig                 |   16 +
+ arch/x86/include/asm/wrprotect.h |   45 +++
+ arch/x86/mm/Makefile             |    2 
+ arch/x86/mm/fault.c              |    7 
+ arch/x86/mm/wrprotect.c          |  548 ++++++++++++++++++++++++++++++++++++++
+ kernel/livedump.c                |   46 +++
+ tools/livedump/livedump          |   32 ++
+ 7 files changed, 695 insertions(+), 1 deletion(-)
+ create mode 100644 arch/x86/include/asm/wrprotect.h
+ create mode 100644 arch/x86/mm/wrprotect.c
+ create mode 100755 tools/livedump/livedump
 
-diff --git a/kernel/Makefile b/kernel/Makefile
-index c8bd09b..e009578 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -110,7 +110,7 @@ obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
- obj-$(CONFIG_PADATA) += padata.o
- obj-$(CONFIG_CRASH_DUMP) += crash_dump.o
- obj-$(CONFIG_JUMP_LABEL) += jump_label.o
--obj-$(CONFIG_LIVEDUMP) += livedump.o
-+obj-$(CONFIG_LIVEDUMP) += livedump.o livedump-memdump.o
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 39c0813..e3b4e33 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1734,9 +1734,23 @@ config CMDLINE_OVERRIDE
+ 	  This is used to work around broken boot loaders.  This should
+ 	  be set to 'N' under normal conditions.
  
- $(obj)/configs.o: $(obj)/config_data.h
- 
-diff --git a/kernel/livedump-memdump.c b/kernel/livedump-memdump.c
++config WRPROTECT
++	bool "Write protection on kernel space"
++	depends on X86_64
++	---help---
++	  Set this option to 'Y' to allow the kernel to write protect
++	  its own memory space and to handle page fault caused by the
++	  write protection.
++
++	  This feature regularly causes small overhead on kernel.
++	  Once this feature is activated, it causes much more overhead
++	  on kernel.
++
++	  If in doubt, say N.
++
+ config LIVEDUMP
+ 	bool "Live Dump support"
+-	depends on X86_64
++	depends on WRPROTECT
+ 	---help---
+ 	  Set this option to 'Y' to allow the kernel support to acquire
+ 	  a consistent snapshot of kernel space without stopping system.
+diff --git a/arch/x86/include/asm/wrprotect.h b/arch/x86/include/asm/wrprotect.h
 new file mode 100644
-index 0000000..13a9413
+index 0000000..f674998
 --- /dev/null
-+++ b/kernel/livedump-memdump.c
-@@ -0,0 +1,445 @@
-+/* livedump-memdump.c - Live Dump's memory dumping management
++++ b/arch/x86/include/asm/wrprotect.h
+@@ -0,0 +1,45 @@
++/* wrprortect.h - Kernel space write protection support
 + * Copyright (C) 2012 Hitachi, Ltd.
 + * Author: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
 + *
@@ -116,575 +186,732 @@ index 0000000..13a9413
 + * MA  02110-1301, USA.
 + */
 +
-+#include "livedump-memdump.h"
++#ifndef _WRPROTECT_H
++#define _WRPROTECT_H
++
++typedef void (*fn_handle_page_t)(unsigned long pfn, int for_sweep);
++
++extern unsigned long *wrprotect_create_page_bitmap(void);
++extern void wrprotect_destroy_page_bitmap(unsigned long *pgbmp);
++
++extern int wrprotect_init(
++		unsigned long *pgbmp,
++		fn_handle_page_t fn_handle_page);
++extern void wrprotect_uninit(void);
++
++extern int wrprotect_start(void);
++extern int wrprotect_sweep(void);
++
++extern void wrprotect_unselect_pages(
++		unsigned long *pgbmp,
++		unsigned long start,
++		unsigned long len);
++
++extern int wrprotect_is_on;
++extern int wrprotect_page_fault_handler(unsigned long error_code);
++
++#endif /* _WRPROTECT_H */
+diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
+index 23d8e5f..58f1428 100644
+--- a/arch/x86/mm/Makefile
++++ b/arch/x86/mm/Makefile
+@@ -28,3 +28,5 @@ obj-$(CONFIG_ACPI_NUMA)		+= srat.o
+ obj-$(CONFIG_NUMA_EMU)		+= numa_emulation.o
+ 
+ obj-$(CONFIG_MEMTEST)		+= memtest.o
++
++obj-$(CONFIG_WRPROTECT)		+= wrprotect.o
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 76dcd9d..fb30c98 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -18,6 +18,7 @@
+ #include <asm/pgalloc.h>		/* pgd_*(), ...			*/
+ #include <asm/kmemcheck.h>		/* kmemcheck_*(), ...		*/
+ #include <asm/fixmap.h>			/* VSYSCALL_START		*/
++#include <asm/wrprotect.h>		/* wrprotect_is_on, ...		*/
+ 
+ /*
+  * Page fault error code bits:
+@@ -1018,6 +1019,12 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ 	/* Get the faulting address: */
+ 	address = read_cr2();
+ 
++#ifdef CONFIG_WRPROTECT
++	if (unlikely(wrprotect_is_on))
++		if (wrprotect_page_fault_handler(error_code))
++			return;
++#endif /* CONFIG_WRPROTECT */
++
+ 	/*
+ 	 * Detect and handle instructions that would cause a page fault for
+ 	 * both a tracked kernel page and a userspace page.
+diff --git a/arch/x86/mm/wrprotect.c b/arch/x86/mm/wrprotect.c
+new file mode 100644
+index 0000000..4431724
+--- /dev/null
++++ b/arch/x86/mm/wrprotect.c
+@@ -0,0 +1,548 @@
++/* wrprotect.c - Kernel space write protection support
++ * Copyright (C) 2012 Hitachi, Ltd.
++ * Author: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
++ * MA  02110-1301, USA.
++ */
++
 +#include <asm/wrprotect.h>
++#include <linux/mm.h>		/* num_physpages, __get_free_page, etc. */
++#include <linux/bitmap.h>	/* bit operations */
++#include <linux/vmalloc.h>	/* vzalloc, vfree */
++#include <linux/hugetlb.h>	/* __flush_tlb_all */
++#include <linux/stop_machine.h>	/* stop_machine */
++#include <asm/sections.h>	/* __per_cpu_* */
 +
-+#include <linux/kthread.h>
-+#include <linux/slab.h>
-+#include <linux/kfifo.h>
-+#include <linux/delay.h>
-+#include <linux/bio.h>
++int wrprotect_is_on;
 +
-+#define MEMDUMP_KFIFO_SIZE 16384 /* in pages */
-+#define SECTOR_SHIFT 9
-+static const char THREAD_NAME[] = "livedump";
-+static struct block_device *memdump_bdev;
++/* wrprotect's stuffs */
++static struct wrprotect {
++	int state;
++#define STATE_UNINIT 0
++#define STATE_INITED 1
++#define STATE_STARTED 2
++#define STATE_SWEPT 3
 +
-+/***** State machine *****/
-+enum MEMDUMP_STATE {
-+	_MEMDUMP_INIT,
-+	MEMDUMP_INACTIVE = _MEMDUMP_INIT,
-+	MEMDUMP_ACTIVATING,
-+	MEMDUMP_ACTIVE,
-+	MEMDUMP_INACTIVATING,
-+	_MEMDUMP_OVERFLOW,
-+};
++	unsigned long *pgbmp;
++#define PGBMP_LEN PAGE_ALIGN(sizeof(long) * BITS_TO_LONGS(num_physpages))
 +
-+static struct memdump_state {
-+	atomic_t val;
-+	atomic_t count;
-+	spinlock_t lock;
-+} __aligned(PAGE_SIZE) memdump_state = {
-+	ATOMIC_INIT(_MEMDUMP_INIT),
-+	ATOMIC_INIT(0),
-+	__SPIN_LOCK_INITIALIZER(memdump_state.lock),
-+};
++	fn_handle_page_t handle_page;
++} __aligned(PAGE_SIZE) wrprotect;
 +
-+/* memdump_state_inc
++/* split_large_pages
 + *
-+ * Increments ACTIVE state refcount.
-+ * The refcount must be zero to transit to next state (INACTIVATING).
++ * This function splits all large pages in straight mapping area into 4K ones.
++ * Currently wrprotect supports only 4K pages, and so this is needed.
 + */
-+static bool memdump_state_inc(void)
++static int split_large_pages(void)
 +{
-+	bool ret;
-+
-+	spin_lock(&memdump_state.lock);
-+	ret = (atomic_read(&memdump_state.val) == MEMDUMP_ACTIVE);
-+	if (ret)
-+		atomic_inc(&memdump_state.count);
-+	spin_unlock(&memdump_state.lock);
-+	return ret;
-+}
-+
-+/* memdump_state_dec
-+ *
-+ * Decrements ACTIVE state refcount
-+ */
-+static void memdump_state_dec(void)
-+{
-+	atomic_dec(&memdump_state.count);
-+}
-+
-+/* memdump_state_transit
-+ *
-+ * Transit to next state.
-+ * If current state isn't assumed state, transition fails.
-+ */
-+static bool memdump_state_transit(enum MEMDUMP_STATE assumed)
-+{
-+	bool ret;
-+
-+	spin_lock(&memdump_state.lock);
-+	ret = (atomic_read(&memdump_state.val) == assumed &&
-+		atomic_read(&memdump_state.count) == 0);
-+	if (ret) {
-+		atomic_inc(&memdump_state.val);
-+		if (atomic_read(&memdump_state.val) == _MEMDUMP_OVERFLOW)
-+			atomic_set(&memdump_state.val, _MEMDUMP_INIT);
-+	}
-+	spin_unlock(&memdump_state.lock);
-+	return ret;
-+}
-+
-+static void memdump_state_transit_back(void)
-+{
-+	atomic_dec(&memdump_state.val);
-+}
-+
-+/***** Request queue *****/
-+
-+/*
-+ * Request queue consists of 2 kfifos: pend, pool
-+ *
-+ * Processing between the two kfifos:
-+ *  (1)handle_page READs one request from POOL.
-+ *  (2)handle_page makes the request and WRITEs it to PEND.
-+ *  (3)kthread READs the request from PEND and submits bio.
-+ *  (4)endio WRITEs the request to POOL.
-+ *
-+ * kfifo permits parallel access by 1 reader and 1 writer.
-+ * Therefore, (1), (2) and (4) must be serialized.
-+ * (3) need not be protected since livedump uses only one kthread.
-+ *
-+ * (1) is protected by pool_r_lock.
-+ * (2) is protected by pend_w_lock.
-+ * (4) is protected by pool_w_lock.
-+ */
-+
-+struct memdump_request {
-+	void *p; /* pointing to buffer (one page) */
 +	unsigned long pfn;
++	for (pfn = 0; pfn < num_physpages; pfn++) {
++		int ret = set_memory_4k((unsigned long)pfn_to_kaddr(pfn), 1);
++		if (ret)
++			return ret;
++	}
++	return 0;
++}
++
++struct sm_context {
++	int leader_cpu;
++	int leader_done;
++	int (*fn_leader)(void *arg);
++	int (*fn_follower)(void *arg);
++	void *arg;
 +};
 +
-+static struct memdump_request_queue {
-+	void *pages[MEMDUMP_KFIFO_SIZE];
-+	STRUCT_KFIFO(struct memdump_request, MEMDUMP_KFIFO_SIZE) pool;
-+	STRUCT_KFIFO(struct memdump_request, MEMDUMP_KFIFO_SIZE) pend;
-+	spinlock_t pool_w_lock;
-+	spinlock_t pool_r_lock;
-+	spinlock_t pend_w_lock;
-+} __aligned(PAGE_SIZE) memdump_req_queue, memdump_req_queue_for_sweep;
-+
-+static void free_req_queue(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < MEMDUMP_KFIFO_SIZE; i++) {
-+		if (memdump_req_queue.pages[i]) {
-+			free_page((unsigned long)memdump_req_queue.pages[i]);
-+			memdump_req_queue.pages[i] = NULL;
-+		}
-+	}
-+	for (i = 0; i < MEMDUMP_KFIFO_SIZE; i++) {
-+		if (memdump_req_queue_for_sweep.pages[i]) {
-+			free_page((unsigned long)memdump_req_queue_for_sweep.
-+					pages[i]);
-+			memdump_req_queue_for_sweep.pages[i] = NULL;
-+		}
-+	}
-+}
-+
-+static long alloc_req_queue(void)
-+{
-+	long ret;
-+	int i;
-+	struct memdump_request req;
-+
-+	/* initialize spinlocks */
-+	spin_lock_init(&memdump_req_queue.pool_w_lock);
-+	spin_lock_init(&memdump_req_queue.pool_r_lock);
-+	spin_lock_init(&memdump_req_queue.pend_w_lock);
-+	spin_lock_init(&memdump_req_queue_for_sweep.pool_w_lock);
-+	spin_lock_init(&memdump_req_queue_for_sweep.pool_r_lock);
-+	spin_lock_init(&memdump_req_queue_for_sweep.pend_w_lock);
-+
-+	/* initialize kfifos */
-+	INIT_KFIFO(memdump_req_queue.pend);
-+	INIT_KFIFO(memdump_req_queue.pool);
-+	INIT_KFIFO(memdump_req_queue_for_sweep.pend);
-+	INIT_KFIFO(memdump_req_queue_for_sweep.pool);
-+
-+	/* allocate pages and push pages into pool */
-+	for (i = 0; i < MEMDUMP_KFIFO_SIZE; i++) {
-+		/* for normal queue */
-+		memdump_req_queue.pages[i]
-+			= (void *)__get_free_page(GFP_KERNEL);
-+		if (!memdump_req_queue.pages[i]) {
-+			ret = -ENOMEM;
-+			goto err;
-+		}
-+
-+		req.p = memdump_req_queue.pages[i];
-+		ret = kfifo_put(&memdump_req_queue.pool, &req);
-+		BUG_ON(!ret);
-+
-+		/* for sweep queue */
-+		memdump_req_queue_for_sweep.pages[i]
-+			= (void *)__get_free_page(GFP_KERNEL);
-+		if (!memdump_req_queue_for_sweep.pages[i]) {
-+			ret = -ENOMEM;
-+			goto err;
-+		}
-+
-+		req.p = memdump_req_queue_for_sweep.pages[i];
-+		ret = kfifo_put(&memdump_req_queue_for_sweep.pool, &req);
-+		BUG_ON(!ret);
-+	}
-+
-+	return 0;
-+
-+err:
-+	free_req_queue();
-+	return ret;
-+}
-+
-+/***** Kernel thread *****/
-+static struct memdump_thread {
-+	struct task_struct *tsk;
-+	bool is_active;
-+	struct completion completion;
-+	wait_queue_head_t waiters;
-+} __aligned(PAGE_SIZE) memdump_thread;
-+
-+static int memdump_thread_func(void *);
-+
-+static long start_memdump_thread(void)
-+{
-+	memdump_thread.is_active = true;
-+	init_completion(&memdump_thread.completion);
-+	init_waitqueue_head(&memdump_thread.waiters);
-+	memdump_thread.tsk = kthread_run(
-+			memdump_thread_func, NULL, THREAD_NAME);
-+	if (IS_ERR(memdump_thread.tsk))
-+		return PTR_ERR(memdump_thread.tsk);
-+	return 0;
-+}
-+
-+static void stop_memdump_thread(void)
-+{
-+	memdump_thread.is_active = false;
-+	wait_for_completion(&memdump_thread.completion);
-+}
-+
-+static void memdump_endio(struct bio *bio, int error)
-+{
-+	struct memdump_request req = { .p = page_address(bio_page(bio)) };
-+	struct memdump_request_queue *queue = (bio->bi_private ?
-+			&memdump_req_queue_for_sweep : &memdump_req_queue);
-+
-+	spin_lock(&queue->pool_w_lock);
-+	kfifo_put(&queue->pool, &req);
-+	spin_unlock(&queue->pool_w_lock);
-+
-+	wake_up(&memdump_thread.waiters);
-+}
-+
-+static int memdump_thread_func(void *_)
-+{
-+	do {
-+		struct memdump_request req;
-+
-+		/* Process request */
-+		while (kfifo_get(&memdump_req_queue.pend, &req)) {
-+			struct bio *bio;
-+
-+			bio = bio_alloc(GFP_KERNEL, 1);
-+			if (WARN_ON(!bio)) {
-+				spin_lock(&memdump_req_queue.pool_w_lock);
-+				kfifo_put(&memdump_req_queue.pool, &req);
-+				spin_unlock(&memdump_req_queue.pool_w_lock);
-+				continue;
-+			}
-+
-+			bio->bi_bdev = memdump_bdev;
-+			bio->bi_end_io = memdump_endio;
-+			bio->bi_sector = req.pfn << (PAGE_SHIFT - SECTOR_SHIFT);
-+			bio_add_page(bio, virt_to_page(req.p), PAGE_SIZE, 0);
-+
-+			submit_bio(REQ_WRITE, bio);
-+		}
-+
-+		/* Process request for sweep*/
-+		while (kfifo_get(&memdump_req_queue_for_sweep.pend, &req)) {
-+			struct bio *bio;
-+
-+			bio = bio_alloc(GFP_KERNEL, 1);
-+			if (WARN_ON(!bio)) {
-+				spin_lock(&memdump_req_queue_for_sweep.
-+						pool_w_lock);
-+				kfifo_put(&memdump_req_queue_for_sweep.pool,
-+						&req);
-+				spin_unlock(&memdump_req_queue_for_sweep.
-+						pool_w_lock);
-+				continue;
-+			}
-+
-+			bio->bi_bdev = memdump_bdev;
-+			bio->bi_end_io = memdump_endio;
-+			bio->bi_sector = req.pfn << (PAGE_SHIFT - SECTOR_SHIFT);
-+			bio->bi_private = (void *)1; /* for sweep */
-+			bio_add_page(bio, virt_to_page(req.p), PAGE_SIZE, 0);
-+
-+			submit_bio(REQ_WRITE, bio);
-+		}
-+
-+		msleep(20);
-+	} while (memdump_thread.is_active);
-+
-+	complete(&memdump_thread.completion);
-+	return 0;
-+}
-+
-+static int select_pages(unsigned long *pgbmp);
-+
-+int livedump_memdump_init(unsigned long *pgbmp, const char *bdevpath)
-+{
-+	long ret;
-+
-+	if (WARN(!memdump_state_transit(MEMDUMP_INACTIVE),
-+				"livedump: memdump is already initialized.\n"))
-+		return -EBUSY;
-+
-+	/* Get bdev */
-+	ret = -ENOENT;
-+	memdump_bdev = blkdev_get_by_path(bdevpath, FMODE_EXCL, &memdump_bdev);
-+	if (!memdump_bdev)
-+		goto err;
-+
-+	/* Allocate request queue */
-+	ret = alloc_req_queue();
-+	if (ret)
-+		goto err_bdev;
-+
-+	/* Start thread */
-+	ret = start_memdump_thread();
-+	if (ret)
-+		goto err_freeq;
-+
-+	/* Select target pages */
-+	select_pages(pgbmp);
-+
-+	memdump_state_transit(MEMDUMP_ACTIVATING); /* always succeeds */
-+	return 0;
-+
-+err_freeq:
-+	free_req_queue();
-+err_bdev:
-+	blkdev_put(memdump_bdev, FMODE_EXCL);
-+err:
-+	memdump_state_transit_back();
-+	return ret;
-+}
-+
-+void livedump_memdump_uninit(void)
-+{
-+	if (!memdump_state_transit(MEMDUMP_ACTIVE))
-+		return;
-+
-+	/* Stop thread */
-+	stop_memdump_thread();
-+
-+	/* Free request queue */
-+	free_req_queue();
-+
-+	/* Put bdev */
-+	blkdev_put(memdump_bdev, FMODE_EXCL);
-+
-+	memdump_state_transit(MEMDUMP_INACTIVATING); /* always succeeds */
-+	return;
-+}
-+
-+void livedump_memdump_handle_page(unsigned long pfn, int for_sweep)
++static int call_leader_follower(void *data)
 +{
 +	int ret;
-+	unsigned long flags;
-+	struct memdump_request req;
-+	struct memdump_request_queue *queue =
-+		(for_sweep ? &memdump_req_queue_for_sweep : &memdump_req_queue);
++	struct sm_context *ctx = data;
 +
-+	if (!memdump_state_inc())
-+		return;
-+
-+	/* Get buffer */
-+retry_after_wait:
-+	spin_lock_irqsave(&queue->pool_r_lock, flags);
-+	ret = kfifo_get(&queue->pool, &req);
-+	spin_unlock_irqrestore(&queue->pool_r_lock, flags);
-+
-+	if (!ret) {
-+		if (WARN_ON_ONCE(!for_sweep))
-+			goto err;
-+		else {
-+			DEFINE_WAIT(wait);
-+			prepare_to_wait(&memdump_thread.waiters, &wait,
-+					TASK_UNINTERRUPTIBLE);
-+			schedule();
-+			finish_wait(&memdump_thread.waiters, &wait);
-+			goto retry_after_wait;
-+		}
++	if (smp_processor_id() == ctx->leader_cpu) {
++		ret = ctx->fn_leader(ctx->arg);
++		ctx->leader_done = 1;
++	} else {
++		while (!ctx->leader_done)
++			cpu_relax();
++		ret = ctx->fn_follower(ctx->arg);
 +	}
 +
-+	/* Make request */
-+	req.pfn = pfn;
-+	memcpy(req.p, pfn_to_kaddr(pfn), PAGE_SIZE);
-+
-+	/* Queue request */
-+	spin_lock_irqsave(&queue->pend_w_lock, flags);
-+	kfifo_put(&queue->pend, &req);
-+	spin_unlock_irqrestore(&queue->pend_w_lock, flags);
-+
-+err:
-+	memdump_state_dec();
-+	return;
++	return ret;
 +}
 +
-+/* select_pages
++/* stop_machine_leader_follower
 + *
-+ * Eliminate pages that contain memdump's stuffs from bitmap.
++ * Calls stop_machine with a leader CPU and follower CPUs
++ * executing different codes.
++ * At first, the leader CPU is selected randomly and executes its code.
++ * After that, follower CPUs execute their codes.
 + */
-+static int select_pages(unsigned long *pgbmp)
++static int stop_machine_leader_follower(
++		int (*fn_leader)(void *),
++		int (*fn_follower)(void *),
++		void *arg)
++{
++	int cpu;
++	struct sm_context ctx;
++
++	preempt_disable();
++	cpu = smp_processor_id();
++	preempt_enable();
++
++	memset(&ctx, 0, sizeof(ctx));
++	ctx.leader_cpu = cpu;
++	ctx.leader_done = 0;
++	ctx.fn_leader = fn_leader;
++	ctx.fn_follower = fn_follower;
++	ctx.arg = arg;
++
++	return stop_machine(call_leader_follower, &ctx, cpu_online_mask);
++}
++
++/* wrprotect_unselect_pages
++ *
++ * This function clears bits corresponding to pages that cover a range
++ * from start to start+len.
++ */
++void wrprotect_unselect_pages(
++		unsigned long *bmp,
++		unsigned long start,
++		unsigned long len)
++{
++	unsigned long addr;
++
++	BUG_ON(start & ~PAGE_MASK);
++	BUG_ON(len & ~PAGE_MASK);
++
++	for (addr = start; addr < start + len; addr += PAGE_SIZE) {
++		unsigned long pfn = __pa(addr) >> PAGE_SHIFT;
++		clear_bit(pfn, bmp);
++	}
++}
++
++/* handle_addr_range
++ *
++ * This function executes wrprotect.handle_page in turns against pages that
++ * cover a range from start to start+len.
++ * At the same time, it clears bits corresponding to the pages.
++ */
++static void handle_addr_range(unsigned long start, unsigned long len)
++{
++	unsigned long end = start + len;
++
++	while (start < end) {
++		unsigned long pfn = __pa(start) >> PAGE_SHIFT;
++		if (test_bit(pfn, wrprotect.pgbmp)) {
++			wrprotect.handle_page(pfn, 0);
++			clear_bit(pfn, wrprotect.pgbmp);
++		}
++		start += PAGE_SIZE;
++	}
++}
++
++/* handle_task
++ *
++ * This function executes handle_addr_range against task_struct & thread_info.
++ */
++static void handle_task(struct task_struct *t)
++{
++	BUG_ON(!t);
++	BUG_ON(!t->stack);
++	BUG_ON((unsigned long)t->stack & ~PAGE_MASK);
++	handle_addr_range((unsigned long)t, sizeof(*t));
++	handle_addr_range((unsigned long)t->stack, THREAD_SIZE);
++}
++
++/* handle_tasks
++ *
++ * This function executes handle_task against all tasks (including idle_task).
++ */
++static void handle_tasks(void)
++{
++	struct task_struct *p, *t;
++	unsigned int cpu;
++
++	do_each_thread(p, t) {
++		handle_task(t);
++	} while_each_thread(p, t);
++
++	for_each_online_cpu(cpu)
++		handle_task(idle_task(cpu));
++}
++
++static void handle_pmd(pmd_t *pmd)
 +{
 +	unsigned long i;
 +
-+	/* Essential area for executing crash with livedump */
-+	bitmap_set(pgbmp, 0, (CONFIG_X86_RESERVE_LOW << 10) >> PAGE_SHIFT);
-+
-+	/* Unselect memdump stuffs */
-+	wrprotect_unselect_pages(pgbmp,
-+			(unsigned long)&memdump_state, sizeof(memdump_state));
-+	wrprotect_unselect_pages(pgbmp,
-+			(unsigned long)&memdump_req_queue,
-+			sizeof(memdump_req_queue));
-+	wrprotect_unselect_pages(pgbmp,
-+			(unsigned long)&memdump_req_queue_for_sweep,
-+			sizeof(memdump_req_queue_for_sweep));
-+	wrprotect_unselect_pages(pgbmp,
-+			(unsigned long)&memdump_thread, sizeof(memdump_thread));
-+	for (i = 0; i < MEMDUMP_KFIFO_SIZE; i++) {
-+		clear_bit(__pa(memdump_req_queue.pages[i]) >> PAGE_SHIFT,
-+				pgbmp);
-+		clear_bit(__pa(memdump_req_queue_for_sweep.pages[i])
-+				>> PAGE_SHIFT, pgbmp);
-+		cond_resched();
++	handle_addr_range((unsigned long)pmd, PAGE_SIZE);
++	for (i = 0; i < PTRS_PER_PMD; i++) {
++		if (pmd_present(pmd[i]) && !pmd_large(pmd[i]))
++			handle_addr_range(pmd_page_vaddr(pmd[i]), PAGE_SIZE);
 +	}
++}
++
++static void handle_pud(pud_t *pud)
++{
++	unsigned long i;
++
++	handle_addr_range((unsigned long)pud, PAGE_SIZE);
++	for (i = 0; i < PTRS_PER_PUD; i++) {
++		if (pud_present(pud[i]) && !pud_large(pud[i]))
++			handle_pmd((pmd_t *)pud_page_vaddr(pud[i]));
++	}
++}
++
++/* handle_page_table
++ *
++ * This function executes wrprotect.handle_page against all pages that make up
++ * page table structure and clears all bits corresponding to the pages.
++ */
++static void handle_page_table(void)
++{
++	pgd_t *pgd;
++	unsigned long i;
++
++	pgd = __va(read_cr3() & PAGE_MASK);
++	handle_addr_range((unsigned long)pgd, PAGE_SIZE);
++	for (i = pgd_index(PAGE_OFFSET); i < PTRS_PER_PGD; i++) {
++		if (pgd_present(pgd[i]))
++			handle_pud((pud_t *)pgd_page_vaddr(pgd[i]));
++	}
++}
++
++/* handle_sensitive_pages
++ *
++ * This function executes wrprotect.handle_page against the following pages and
++ * clears bits corresponding to them.
++ * - All pages that include task_struct & thread_info
++ * - All pages that make up page table structure
++ * - All pages that include per_cpu variables
++ * - All pages that cover kernel's data section
++ */
++static void handle_sensitive_pages(void)
++{
++	handle_tasks();
++	handle_page_table();
++	handle_addr_range((unsigned long)__per_cpu_offset[0], PMD_PAGE_SIZE);
++	handle_addr_range((unsigned long)_sdata, _end - _sdata);
++}
++
++/* protect_page
++ *
++ * Changes a specified page's _PAGE_RW flag and _PAGE_UNUSED1 flag.
++ * If the argument protect is non-zero:
++ *  - _PAGE_RW flag is cleared
++ *  - _PAGE_UNUSED1 flag is set
++ * If the argument protect is zero:
++ *  - _PAGE_RW flag is set
++ *  - _PAGE_UNUSED1 flag is cleared
++ *
++ * The change is executed only when all the following are true.
++ *  - The page is mapped by the straight mapping area.
++ *  - The page is mapped as 4K page.
++ *  - The page is originally writable.
++ *
++ * Returns 1 if the change is actually executed, otherwise returns 0.
++ */
++static int protect_page(unsigned long pfn, int protect)
++{
++	unsigned long addr = (unsigned long)pfn_to_kaddr(pfn);
++	pte_t *ptep, pte;
++	unsigned int level;
++
++	ptep = lookup_address(addr, &level);
++	if (WARN(!ptep, "livedump: Page=%016lx isn't mapped.\n", addr) ||
++	    WARN(!pte_present(*ptep),
++		    "livedump: Page=%016lx isn't mapped.\n", addr) ||
++	    WARN(PG_LEVEL_NONE == level,
++		    "livedump: Page=%016lx isn't mapped.\n", addr) ||
++	    WARN(PG_LEVEL_2M == level,
++		    "livedump: Page=%016lx is consisted of 2M page.\n", addr) ||
++	    WARN(PG_LEVEL_1G == level,
++		    "livedump: Page=%016lx is consisted of 1G page.\n", addr)) {
++		return 0;
++	}
++
++	pte = *ptep;
++	if (protect) {
++		if (pte_write(pte)) {
++			pte = pte_wrprotect(pte);
++			pte = pte_set_flags(pte, _PAGE_UNUSED1);
++		}
++	} else {
++		pte = pte_mkwrite(pte);
++		pte = pte_clear_flags(pte, _PAGE_UNUSED1);
++	}
++	*ptep = pte;
++
++	return 1;
++}
++
++/*
++ * Page fault error code bits:
++ *
++ *   bit 0 ==	 0: no page found	1: protection fault
++ *   bit 1 ==	 0: read access		1: write access
++ *   bit 2 ==	 0: kernel-mode access	1: user-mode access
++ *   bit 3 ==				1: use of reserved bit detected
++ *   bit 4 ==				1: fault was an instruction fetch
++ */
++enum x86_pf_error_code {
++	PF_PROT		=		1 << 0,
++	PF_WRITE	=		1 << 1,
++	PF_USER		=		1 << 2,
++	PF_RSVD		=		1 << 3,
++	PF_INSTR	=		1 << 4,
++};
++
++int wrprotect_page_fault_handler(unsigned long error_code)
++{
++	pte_t *ptep, pte;
++	unsigned int level;
++	unsigned long pfn;
++
++	/*
++	 * Handle only kernel-mode write access
++	 *
++	 * error_code must be:
++	 *  (1) PF_PROT
++	 *  (2) PF_WRITE
++	 *  (3) not PF_USER
++	 *  (4) not PF_SRVD
++	 *  (5) not PF_INSTR
++	 */
++	if (!(PF_PROT  & error_code) ||
++	    !(PF_WRITE & error_code) ||
++	     (PF_USER  & error_code) ||
++	     (PF_RSVD  & error_code) ||
++	     (PF_INSTR & error_code))
++		goto not_processed;
++
++	ptep = lookup_address(read_cr2(), &level);
++	if (!ptep)
++		goto not_processed;
++	pte = *ptep;
++	if (!pte_present(pte) || PG_LEVEL_4K != level)
++		goto not_processed;
++	if (!(pte_flags(pte) & _PAGE_UNUSED1))
++		goto not_processed;
++
++	pfn = pte_pfn(pte);
++	if (test_and_clear_bit(pfn, wrprotect.pgbmp)) {
++		wrprotect.handle_page(pfn, 0);
++		protect_page(pfn, 0);
++	}
++
++	return true;
++
++not_processed:
++	return false;
++}
++
++/* sm_leader
++ *
++ * Is executed by a leader CPU during stop-machine.
++ *
++ * This function does the following:
++ * (1)Handle pages that must not be write-protected.
++ * (2)Turn on the callback in the page fault handler.
++ * (3)Write-protect pages which are specified by the bitmap.
++ * (4)Flush TLB cache of the leader CPU.
++ */
++static int sm_leader(void *arg)
++{
++	unsigned long pfn;
++
++	handle_sensitive_pages();
++
++	wrprotect_is_on = true;
++
++	for_each_set_bit(pfn, wrprotect.pgbmp, num_physpages)
++		if (!protect_page(pfn, 1))
++			clear_bit(pfn, wrprotect.pgbmp);
++
++	__flush_tlb_all();
 +
 +	return 0;
 +}
-diff --git a/kernel/livedump-memdump.h b/kernel/livedump-memdump.h
-new file mode 100644
-index 0000000..ac2f922
---- /dev/null
-+++ b/kernel/livedump-memdump.h
-@@ -0,0 +1,32 @@
-+/* livedump-memdump.h - Live Dump's memory dumping management
-+ * Copyright (C) 2012 Hitachi, Ltd.
-+ * Author: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
++
++/* sm_follower
 + *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-+ * MA  02110-1301, USA.
++ * Is executed by follower CPUs during stop-machine.
++ * Flushes TLB cache of each CPU.
 + */
++static int sm_follower(void *arg)
++{
++	__flush_tlb_all();
++	return 0;
++}
 +
-+#ifndef _LIVEDUMP_MEMDUMP_H
-+#define _LIVEDUMP_MEMDUMP_H
++/* wrprotect_start
++ *
++ * This function sets up write protection on the kernel space during the
++ * stop-machine state.
++ */
++int wrprotect_start(void)
++{
++	int ret;
 +
-+#include <linux/fs.h>
++	if (WARN(STATE_INITED != wrprotect.state,
++				"livedump: wrprotect isn't initialized yet.\n"))
++		return 0;
 +
-+extern int livedump_memdump_init(unsigned long *pgbmp, const char *bdevpath);
++	ret = stop_machine_leader_follower(sm_leader, sm_follower, NULL);
++	if (WARN(ret, "livedump: Failed to protect pages w/errno=%d.\n", ret))
++		return ret;
 +
-+extern void livedump_memdump_uninit(void);
++	wrprotect.state = STATE_STARTED;
++	return 0;
++}
 +
-+extern void livedump_memdump_handle_page(unsigned long pfn, int for_sweep);
++/* wrprotect_sweep
++ *
++ * On every page specified by the bitmap, this function executes the following.
++ *  - Handle the page by calling wrprotect.handle_page.
++ *  - Unprotect the page by calling protect_page.
++ *
++ * The above work may be executed on the same page at the same time
++ * by the notifer-call-chain.
++ * test_and_clear_bit is used for exclusion control.
++ */
++int wrprotect_sweep(void)
++{
++	unsigned long pfn;
 +
-+#endif /* _LIVEDUMP_MEMDUMP_H */
++	if (WARN(STATE_STARTED != wrprotect.state,
++				"livedump: Pages aren't protected yet.\n"))
++		return 0;
++	for_each_set_bit(pfn, wrprotect.pgbmp, num_physpages) {
++		if (!test_and_clear_bit(pfn, wrprotect.pgbmp))
++			continue;
++		wrprotect.handle_page(pfn, 1);
++		protect_page(pfn, 0);
++		if (!(pfn & 0xffUL))
++			cond_resched();
++	}
++	wrprotect.state = STATE_SWEPT;
++	return 0;
++}
++
++/* wrprotect_create_page_bitmap
++ *
++ * This function creates bitmap of which each bit corresponds to physical page.
++ * Here, all ram pages are selected as being write-protected.
++ */
++unsigned long *wrprotect_create_page_bitmap(void)
++{
++	unsigned long *bmp;
++	unsigned long pfn;
++
++	/* allocate on vmap area */
++	bmp = vzalloc(PGBMP_LEN);
++	if (!bmp)
++		return NULL;
++
++	/* select all ram pages */
++	for (pfn = 0; pfn < num_physpages; pfn++) {
++		if (e820_any_mapped(pfn << PAGE_SHIFT,
++				    (pfn + 1) << PAGE_SHIFT,
++				    E820_RAM))
++			set_bit(pfn, bmp);
++		if (!(pfn & 0xffUL))
++			cond_resched();
++	}
++
++	return bmp;
++}
++
++/* wrprotect_destroy_page_bitmap
++ *
++ * This function frees the page bitmap created by wrprotect_create_page_bitmap.
++ */
++void wrprotect_destroy_page_bitmap(unsigned long *bmp)
++{
++	vfree(bmp);
++}
++
++static void default_handle_page(unsigned long pfn, int for_sweep)
++{
++}
++
++/* wrprotect_init
++ *
++ * pgbmp:
++ *   This is a bitmap of which each bit corresponds to a physical page.
++ *   Marked pages are write protected (or handled during stop-machine).
++ *
++ * fn_handle_page:
++ *   This callback is invoked to handle faulting pages.
++ *   This function takes 2 arguments.
++ *   First one is PFN that tells which page caused page fault.
++ *   Second one is a flag that tells whether it's called in the sweep phase.
++ */
++int wrprotect_init(unsigned long *pgbmp, fn_handle_page_t fn_handle_page)
++{
++	int ret;
++
++	if (WARN(STATE_UNINIT != wrprotect.state,
++			"livedump: wrprotect is already initialized.\n"))
++		return 0;
++
++	/* split all large pages in straight mapping area */
++	ret = split_large_pages();
++	if (ret)
++		goto err;
++
++	/* unselect internal stuffs of wrprotect */
++	wrprotect_unselect_pages(
++			pgbmp, (unsigned long)&wrprotect, sizeof(wrprotect));
++
++	wrprotect.pgbmp = pgbmp;
++	wrprotect.handle_page = fn_handle_page ?: default_handle_page;
++
++	wrprotect.state = STATE_INITED;
++	return 0;
++
++err:
++	return ret;
++}
++
++void wrprotect_uninit(void)
++{
++	unsigned long pfn;
++
++	if (STATE_UNINIT == wrprotect.state)
++		return;
++
++	if (STATE_STARTED == wrprotect.state) {
++		for_each_set_bit(pfn, wrprotect.pgbmp, num_physpages) {
++			if (!test_and_clear_bit(pfn, wrprotect.pgbmp))
++				continue;
++			protect_page(pfn, 0);
++			cond_resched();
++		}
++
++		flush_tlb_all();
++	}
++
++	if (STATE_STARTED <= wrprotect.state)
++		wrprotect_is_on = false;
++
++	wrprotect.pgbmp = NULL;
++	wrprotect.handle_page = NULL;
++
++	wrprotect.state = STATE_UNINIT;
++}
 diff --git a/kernel/livedump.c b/kernel/livedump.c
-index 3cf0f53..96167c8 100644
+index 409f7ed..3cf0f53 100644
 --- a/kernel/livedump.c
 +++ b/kernel/livedump.c
-@@ -18,10 +18,12 @@
+@@ -18,6 +18,8 @@
   * MA  02110-1301, USA.
   */
  
-+#include "livedump-memdump.h"
- #include <asm/wrprotect.h>
- 
++#include <asm/wrprotect.h>
++
  #include <linux/kernel.h>
  #include <linux/fs.h>
-+#include <linux/uaccess.h>
  #include <linux/miscdevice.h>
- #include <linux/reboot.h>
+@@ -26,11 +28,54 @@
+ #define DEVICE_NAME	"livedump"
  
-@@ -38,13 +40,14 @@ unsigned long *pgbmp;
- static void do_uninit(void)
- {
- 	wrprotect_uninit();
-+	livedump_memdump_uninit();
- 	if (pgbmp) {
- 		wrprotect_destroy_page_bitmap(pgbmp);
- 		pgbmp = NULL;
- 	}
- }
- 
--static int do_init(void)
-+static int do_init(const char *bdevpath)
- {
- 	int ret;
- 
-@@ -53,7 +56,11 @@ static int do_init(void)
- 	if (!pgbmp)
- 		goto err;
- 
--	ret = wrprotect_init(pgbmp, NULL);
-+	ret = livedump_memdump_init(pgbmp, bdevpath);
-+	if (WARN(ret, "livedump: Failed to initialize Dump manager.\n"))
+ #define LIVEDUMP_IOC(x)	_IO(0xff, x)
++#define LIVEDUMP_IOC_START LIVEDUMP_IOC(1)
++#define LIVEDUMP_IOC_SWEEP LIVEDUMP_IOC(2)
++#define LIVEDUMP_IOC_INIT LIVEDUMP_IOC(100)
++#define LIVEDUMP_IOC_UNINIT LIVEDUMP_IOC(101)
++
++unsigned long *pgbmp;
++
++static void do_uninit(void)
++{
++	wrprotect_uninit();
++	if (pgbmp) {
++		wrprotect_destroy_page_bitmap(pgbmp);
++		pgbmp = NULL;
++	}
++}
++
++static int do_init(void)
++{
++	int ret;
++
++	ret = -ENOMEM;
++	pgbmp = wrprotect_create_page_bitmap();
++	if (!pgbmp)
 +		goto err;
 +
-+	ret = wrprotect_init(pgbmp, livedump_memdump_handle_page);
- 	if (WARN(ret, "livedump: Failed to initialize Protection manager.\n"))
- 		goto err;
- 
-@@ -63,16 +70,23 @@ err:
- 	return ret;
- }
- 
--static long livedump_ioctl(
--		struct file *file, unsigned int cmd, unsigned long arg)
-+static long livedump_ioctl(struct file *_, unsigned int cmd, unsigned long arg)
- {
-+	long ret;
-+	char *path;
++	ret = wrprotect_init(pgbmp, NULL);
++	if (WARN(ret, "livedump: Failed to initialize Protection manager.\n"))
++		goto err;
 +
++	return 0;
++err:
++	do_uninit();
++	return ret;
++}
+ 
+ static long livedump_ioctl(
+ 		struct file *file, unsigned int cmd, unsigned long arg)
+ {
  	switch (cmd) {
- 	case LIVEDUMP_IOC_START:
- 		return wrprotect_start();
- 	case LIVEDUMP_IOC_SWEEP:
- 		return wrprotect_sweep();
- 	case LIVEDUMP_IOC_INIT:
--		return do_init();
-+		path = getname((char __user *)arg);
-+		if (IS_ERR(path))
-+			return PTR_ERR(path);
-+		ret = do_init(path);
-+		putname(path);
-+		return ret;
- 	case LIVEDUMP_IOC_UNINIT:
- 		do_uninit();
- 		return 0;
++	case LIVEDUMP_IOC_START:
++		return wrprotect_start();
++	case LIVEDUMP_IOC_SWEEP:
++		return wrprotect_sweep();
++	case LIVEDUMP_IOC_INIT:
++		return do_init();
++	case LIVEDUMP_IOC_UNINIT:
++		do_uninit();
++		return 0;
+ 	default:
+ 		return -ENOIOCTLCMD;
+ 	}
+@@ -48,6 +93,7 @@ static struct miscdevice livedump_misc = {
+ static int livedump_exit(struct notifier_block *_, unsigned long __, void *___)
+ {
+ 	misc_deregister(&livedump_misc);
++	do_uninit();
+ 	return NOTIFY_DONE;
+ }
+ static struct notifier_block livedump_nb = {
 diff --git a/tools/livedump/livedump b/tools/livedump/livedump
-index 2025fc4..79d9cdc 100755
---- a/tools/livedump/livedump
+new file mode 100755
+index 0000000..2025fc4
+--- /dev/null
 +++ b/tools/livedump/livedump
-@@ -3,8 +3,8 @@
- import sys
- import fcntl
- 
--def ioctl_init(f):
--	fcntl.ioctl(f, 0xff64)
-+def ioctl_init(f, path):
-+	fcntl.ioctl(f, 0xff64, path)
- 
- def ioctl_uninit(f):
- 	fcntl.ioctl(f, 0xff65)
-@@ -20,9 +20,15 @@ if __name__ == '__main__':
- 	f = open('/dev/livedump')
- 	# execute subcommand
- 	subcmd = sys.argv[1]
--	if 'init' == subcmd:
--		ioctl_init(f)
--	elif 'uninit' == subcmd:
-+	if 'dump' == subcmd or 'init' == subcmd:
-+		dumpdisk = sys.argv[2]
-+	if 'dump' == subcmd:
-+		ioctl_init(f, dumpdisk)
+@@ -0,0 +1,32 @@
++#!/usr/bin/python
++
++import sys
++import fcntl
++
++def ioctl_init(f):
++	fcntl.ioctl(f, 0xff64)
++
++def ioctl_uninit(f):
++	fcntl.ioctl(f, 0xff65)
++
++def ioctl_start(f):
++	fcntl.ioctl(f, 0xff01)
++
++def ioctl_sweep(f):
++	fcntl.ioctl(f, 0xff02)
++
++if __name__ == '__main__':
++	# open livedump device file
++	f = open('/dev/livedump')
++	# execute subcommand
++	subcmd = sys.argv[1]
++	if 'init' == subcmd:
++		ioctl_init(f)
++	elif 'uninit' == subcmd:
++		ioctl_uninit(f)
++	elif 'start' == subcmd:
 +		ioctl_start(f)
++	elif 'sweep' == subcmd:
 +		ioctl_sweep(f)
-+	elif 'init' == subcmd:
-+		ioctl_init(f, dumpdisk)
-+	elif 'uninit' == subcmd or 'release' == subcmd:
- 		ioctl_uninit(f)
- 	elif 'start' == subcmd:
- 		ioctl_start(f)
-
++	# close livedump device file
++	f.close
 
