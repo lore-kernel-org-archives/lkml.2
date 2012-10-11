@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933479Ab2JKXSK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 19:18:10 -0400
-Received: from mga09.intel.com ([134.134.136.24]:39286 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758462Ab2JKXSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 19:18:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,573,1344236400"; 
-   d="scan'208";a="204564167"
-Message-ID: <507753AB.2050204@zytor.com>
-Date: Fri, 12 Oct 2012 07:18:03 +0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Jacob Shin <jacob.shin@amd.com>, Tejun Heo <tj@kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/10] x86, mm: get early page table from BRK
-References: <1349757558-10856-1-git-send-email-yinghai@kernel.org> <1349757558-10856-4-git-send-email-yinghai@kernel.org> <20121009160133.GF7639@phenom.dumpdata.com> <CAE9FiQW8ubsQmtJk=bvZ5yGdBaBQSNWPpuACku+8sbb6_CG+rA@mail.gmail.com> <20121010141707.GH4005@phenom.dumpdata.com> <CAE9FiQVTUsYZiU0rAjE645Pez1X5eLwHMhOF0W_EuR62KYdtQQ@mail.gmail.com> <20121011144130.GB2408@localhost.localdomain> <CAE9FiQXWQCdawOw3QX6-c6ajQE73oZd0qrEnbisK0qOyQzUgSQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQXWQCdawOw3QX6-c6ajQE73oZd0qrEnbisK0qOyQzUgSQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S933494Ab2JKXUr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 19:20:47 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:50925 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758506Ab2JKXUp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 19:20:45 -0400
+Date: Fri, 12 Oct 2012 01:20:44 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andi Kleen <andi@firstfloor.org>, David Howells <dhowells@redhat.com>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        James.Bottomley@hansenpartnership.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 03/31] sections: Fix section conflicts in arch/frv
+Message-ID: <20121011232044.GZ16230@one.firstfloor.org>
+References: <1345311022-26328-1-git-send-email-andi@firstfloor.org> <1345311022-26328-4-git-send-email-andi@firstfloor.org> <CAMuHMdWJCLnWpuNFvQQSJU0w4fQLg6rYbDOQF2But1__NrgiAg@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdWJCLnWpuNFvQQSJU0w4fQLg6rYbDOQF2But1__NrgiAg@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2012 06:55 AM, Yinghai Lu wrote:
-> On Thu, Oct 11, 2012 at 7:41 AM, Konrad Rzeszutek Wilk
-> <konrad@kernel.org> wrote:
->> On Wed, Oct 10, 2012 at 08:49:05AM -0700, Yinghai Lu wrote:
->>>
->>> yes that is some extreme case:
->>> assume that 2M range is [2T-2M, 2T),
->>
->> What is T in here? Terabyte? Is the '[' vs ')' a significance in your
->> explanation? Should it be '[2T-2M, 2T]' ?
+> Unfortunately __pminitconst isn't defined at this point:
+> arch/frv/kernel/setup.c:187:47: error: expected '=', ',', ';', 'asm'
+> or '__attribute__' before '*' token
+> arch/frv/kernel/setup.c:386:2: error: 'clock_cmodes' undeclared (first
+> use in this function)
+> arch/frv/kernel/setup.c:571:6: error: 'clock_cmodes' undeclared (first
+> use in this function)
+> make[2]: *** [arch/frv/kernel/setup.o] Error 1
 > 
-> yes, T is terabyte
+> http://kisskb.ellerman.id.au/kisskb/buildresult/7344691/
 > 
-> [2T-2M, 2T) is equal to [2T-2M, 2T-1]
-> 
-> ) mean the boundary is not included.
-> 
+> It seems the __pminit* variants are frv-specific, and don't cover all possible
+> combinations?
 
-Right... and just to defend Yinghai here, this is a standard
-mathematical notation.
+Thanks for reporting.
 
-	-hpa
+Does this fix it? -Andi
 
+---
 
+frv: Fix const sections changhe
+    
+Add __pminitconst to fix the build again.
+    
+Reported by: Geert Uytterhoeven
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+diff --git a/arch/frv/kernel/setup.c b/arch/frv/kernel/setup.c
+index 1f1e5ef..b8993c8 100644
+--- a/arch/frv/kernel/setup.c
++++ b/arch/frv/kernel/setup.c
+@@ -112,9 +112,11 @@ char __initdata redboot_command_line[COMMAND_LINE_SIZE];
+ #ifdef CONFIG_PM
+ #define __pminit
+ #define __pminitdata
++#define __pminitconst
+ #else
+ #define __pminit __init
+ #define __pminitdata __initdata
++#define __pminitconst __initconst
+ #endif
+ 
+ struct clock_cmode {
