@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965041Ab2JKCQg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:16:36 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54565 "EHLO
+	id S965055Ab2JKCQl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:16:41 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47250 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964989Ab2JKCQa (ORCPT
+	by vger.kernel.org with ESMTP id S964974Ab2JKCQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:16:30 -0400
-X-Sasl-enc: XwtSoWYV9lHXu6KIdrS62+/NlmlnqCmy9jVPpJGbaFGy 1349921789
+	Wed, 10 Oct 2012 22:16:27 -0400
+X-Sasl-enc: Sxmw3uL7TudjcBqgotccZMOSCl1FOugoe7iXaZseAn+r 1349921785
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Richard Genoud <richard.genoud@gmail.com>,
+        Alexander Shiyan <shc_work@mail.ru>, Arnd Bergmann <arnd@arndb.de>,
         Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 81/84] mtd: nandsim: bugfix: fail if overridesize is too big
-Date: Thu, 11 Oct 2012 11:04:05 +0900
-Message-Id: <20121011015431.651973251@linuxfoundation.org>
+Subject: [ 80/84] mtd: autcpu12-nvram: Fix compile breakage
+Date: Thu, 11 Oct 2012 11:04:04 +0900
+Message-Id: <20121011015431.466839411@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -29,34 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Genoud <richard.genoud@gmail.com>
+From: Alexander Shiyan <shc_work@mail.ru>
 
-commit bb0a13a13411c4ce24c48c8ff3cdf7b48d237240 upstream.
+commit d1f55c680e5d021e7066f4461dd678d42af18898 upstream.
 
-If override size is too big, the module was actually loaded instead of
-failing, because retval was not set.
+Update driver autcpu12-nvram.c so it compiles; map_read32/map_write32
+no longer exist in the kernel so the driver is totally broken.
+Additionally, map_info name passed to simple_map_init is incorrect.
 
-This lead to memory corruption with the use of the freed structs nandsim
-and nand_chip.
-
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/nandsim.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/mtd/maps/autcpu12-nvram.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
---- a/drivers/mtd/nand/nandsim.c
-+++ b/drivers/mtd/nand/nandsim.c
-@@ -2355,6 +2355,7 @@ static int __init ns_init_module(void)
- 		uint64_t new_size = (uint64_t)nsmtd->erasesize << overridesize;
- 		if (new_size >> overridesize != nsmtd->erasesize) {
- 			NS_ERR("overridesize is too big\n");
-+			retval = -EINVAL;
- 			goto err_exit;
- 		}
- 		/* N.B. This relies on nand_scan not doing anything with the size before we change it */
+--- a/drivers/mtd/maps/autcpu12-nvram.c
++++ b/drivers/mtd/maps/autcpu12-nvram.c
+@@ -43,7 +43,8 @@ struct map_info autcpu12_sram_map = {
+ 
+ static int __init init_autcpu12_sram (void)
+ {
+-	int err, save0, save1;
++	map_word tmp, save0, save1;
++	int err;
+ 
+ 	autcpu12_sram_map.virt = ioremap(0x12000000, SZ_128K);
+ 	if (!autcpu12_sram_map.virt) {
+@@ -51,7 +52,7 @@ static int __init init_autcpu12_sram (vo
+ 		err = -EIO;
+ 		goto out;
+ 	}
+-	simple_map_init(&autcpu_sram_map);
++	simple_map_init(&autcpu12_sram_map);
+ 
+ 	/*
+ 	 * Check for 32K/128K
+@@ -61,20 +62,22 @@ static int __init init_autcpu12_sram (vo
+ 	 * Read	and check result on ofs 0x0
+ 	 * Restore contents
+ 	 */
+-	save0 = map_read32(&autcpu12_sram_map,0);
+-	save1 = map_read32(&autcpu12_sram_map,0x10000);
+-	map_write32(&autcpu12_sram_map,~save0,0x10000);
++	save0 = map_read(&autcpu12_sram_map, 0);
++	save1 = map_read(&autcpu12_sram_map, 0x10000);
++	tmp.x[0] = ~save0.x[0];
++	map_write(&autcpu12_sram_map, tmp, 0x10000);
+ 	/* if we find this pattern on 0x0, we have 32K size
+ 	 * restore contents and exit
+ 	 */
+-	if ( map_read32(&autcpu12_sram_map,0) != save0) {
+-		map_write32(&autcpu12_sram_map,save0,0x0);
++	tmp = map_read(&autcpu12_sram_map, 0);
++	if (!map_word_equal(&autcpu12_sram_map, tmp, save0)) {
++		map_write(&autcpu12_sram_map, save0, 0x0);
+ 		goto map;
+ 	}
+ 	/* We have a 128K found, restore 0x10000 and set size
+ 	 * to 128K
+ 	 */
+-	map_write32(&autcpu12_sram_map,save1,0x10000);
++	map_write(&autcpu12_sram_map, save1, 0x10000);
+ 	autcpu12_sram_map.size = SZ_128K;
+ 
+ map:
 
 
