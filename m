@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757777Ab2JKACT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:02:19 -0400
-Received: from mga02.intel.com ([134.134.136.20]:63515 "EHLO mga02.intel.com"
+	id S1757845Ab2JKAGL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:06:11 -0400
+Received: from mga09.intel.com ([134.134.136.24]:55812 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752400Ab2JKACR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:02:17 -0400
+	id S1757677Ab2JKAGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 20:06:09 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,567,1344236400"; 
-   d="scan'208";a="204112773"
-From: "Perez-Gonzalez, Inaky" <inaky.perez-gonzalez@intel.com>
-To: David Howells <dhowells@redhat.com>
-CC: linux-wimax <linux-wimax@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [GIT PULL] Disintegrate UAPI for wimax
-Thread-Topic: [GIT PULL] Disintegrate UAPI for wimax
-Thread-Index: AQHNpiJXLQNKsYximkG7w9QXVvFJhJezOpzg
-Date: Thu, 11 Oct 2012 00:02:16 +0000
-Message-ID: <3A78FAA0EC814D4B8ECC99B3AB32B33208612DA4@fmsmsx110.amr.corp.intel.com>
-References: <30770.1349789450@warthog.procyon.org.uk>
-In-Reply-To: <30770.1349789450@warthog.procyon.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.108]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+   d="scan'208";a="204113841"
+Subject: RE: [PATCH] fix x2apic defect that Linux kernel doesn't mask 8259A
+ interrupt during the time window between changing VT-d table base address
+ and initializing these VT-d entries(smpboot.c and apic.c )
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "Croxon, Nigel" <nigel.croxon@hp.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>,
+        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
+        "agordeev@redhat.com" <agordeev@redhat.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Date: Wed, 10 Oct 2012 17:07:19 -0700
+In-Reply-To: <92645B27BF79D04FBD2B0F8494FFD0F90FE41E@G2W2429.americas.hpqcorp.net>
+References: <92645B27BF79D04FBD2B0F8494FFD0F90FC806@G2W2429.americas.hpqcorp.net>
+	 <1349740633.11093.43.camel@sbsiddha-desk.sc.intel.com>
+	 <92645B27BF79D04FBD2B0F8494FFD0F90FE41E@G2W2429.americas.hpqcorp.net>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1349914040.3042.12.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello David
+On Wed, 2012-10-10 at 00:26 +0000, Zhang, Lin-Bao (Linux Kernel R&D)
+wrote:
 
-> From: David Howells [mailto:dhowells@redhat.com]
-> 
-> Can you merge the following branch into the wimax tree please.
-> 
-> This is to complete part of the Userspace API (UAPI) disintegration for which
-> the preparatory patches were pulled recently.  After these patches,
-> userspace headers will be segregated into:
-> 
-> 	include/uapi/linux/.../foo.h
-> 
-> for the userspace interface stuff, and:
-> 
-> 	include/linux/.../foo.h
-> 
-> for the strictly kernel internal stuff.
+> So , we can think ,as your patch , during the window , IO-apic is
+> useless or we can think IO-APIC doesn't exist ? 
+> Could you mind please sharing your design details ? thanks very much! 
 
-This can be submitted straight to Dave Miller, as there is no separate wimax tree
-anymore, it is in pure maintenance mode.
+Between the window of interrupt-remapping enabled and the masked IO-APIC
+RTE's are configured properly, linux kernel doesn't wait/depend on any
+external interrupts.
 
-BTW: thanks for tackling the UAPI issue
+> > Can you please apply the appended patch to 2.6.32 kernel and see if the issue
+> > you mentioned gets fixed? If so, we can ask the -stable and OSV's teams to
+> > pick up this fix.
+> Yes , it can resolve current issue. 
 
-Acked-by: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
+Thanks for testing it out.
+
+I will add the appropriate changelog and send the patch out (to 2.6.32
+stable and OSV kernels) with your "Tested-by:" if you are ok.
+
+thanks,
+suresh
+
