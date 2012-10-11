@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964789Ab2JKBZr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:25:47 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51268 "EHLO
+	id S964803Ab2JKBZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:25:59 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38576 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934260Ab2JKBZm (ORCPT
+	by vger.kernel.org with ESMTP id S934260Ab2JKBZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:25:42 -0400
-X-Sasl-enc: rEBiYcyJHqyGEg6NCvkYBTPxaMydC+eRjnqhLhWDOk6C 1349918740
+	Wed, 10 Oct 2012 21:25:50 -0400
+X-Sasl-enc: 0MyUtdcDDwqmx8tlH2B3r/q+SGge0wBQ3Yn4zzTzQnfZ 1349918748
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, lu hua <huax.lu@intel.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 082/120] drm: Destroy the planes prior to destroying the associated CRTC
-Date: Thu, 11 Oct 2012 10:00:34 +0900
-Message-Id: <20121011005841.578728351@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 084/120] drm/radeon: Add MSI quirk for gateway RS690
+Date: Thu, 11 Oct 2012 10:00:36 +0900
+Message-Id: <20121011005842.027814373@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -29,47 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 3184009c36da413724f283e3c7ac9cc60c623bc4 upstream.
+commit 3a6d59df80897cc87812b6826d70085905bed013 upstream.
 
-As during the plane cleanup, we wish to disable the hardware and
-so may modify state on the associated CRTC, that CRTC must continue to
-exist until we are finished.
+Fixes another system on:
+https://bugs.freedesktop.org/show_bug.cgi?id=37679
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=54101
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Tested-by: lu hua <huax.lu@intel.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_crtc.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/radeon_irq_kms.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/gpu/drm/drm_crtc.c
-+++ b/drivers/gpu/drm/drm_crtc.c
-@@ -1028,15 +1028,15 @@ void drm_mode_config_cleanup(struct drm_
- 		fb->funcs->destroy(fb);
- 	}
+--- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+@@ -147,6 +147,12 @@ static bool radeon_msi_ok(struct radeon_
+ 	    (rdev->pdev->subsystem_device == 0x01fd))
+ 		return true;
  
--	list_for_each_entry_safe(crtc, ct, &dev->mode_config.crtc_list, head) {
--		crtc->funcs->destroy(crtc);
--	}
--
- 	list_for_each_entry_safe(plane, plt, &dev->mode_config.plane_list,
- 				 head) {
- 		plane->funcs->destroy(plane);
- 	}
- 
-+	list_for_each_entry_safe(crtc, ct, &dev->mode_config.crtc_list, head) {
-+		crtc->funcs->destroy(crtc);
-+	}
++	/* Gateway RS690 only seems to work with MSIs. */
++	if ((rdev->pdev->device == 0x791f) &&
++	    (rdev->pdev->subsystem_vendor == 0x107b) &&
++	    (rdev->pdev->subsystem_device == 0x0185))
++		return true;
 +
- 	idr_remove_all(&dev->mode_config.crtc_idr);
- 	idr_destroy(&dev->mode_config.crtc_idr);
- }
+ 	/* RV515 seems to have MSI issues where it loses
+ 	 * MSI rearms occasionally. This leads to lockups and freezes.
+ 	 * disable it by default.
 
 
