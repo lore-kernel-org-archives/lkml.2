@@ -1,51 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757962Ab2JKO5z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 10:57:55 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35288 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753926Ab2JKO5s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 10:57:48 -0400
-Date: Thu, 11 Oct 2012 11:57:38 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-To: David Howells <dhowells@redhat.com>
-Cc: Oliver Endriss <o.endriss@gmx.de>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [GIT PULL] Disintegrate UAPI for media
-Message-ID: <20121011115738.76ac0ce3@infradead.org>
-In-Reply-To: <20566.1349964331@warthog.procyon.org.uk>
-References: <20121011093703.24b60232@infradead.org>
-	<30699.1349789424@warthog.procyon.org.uk>
-	<20121009183908.1e402a43@infradead.org>
-	<201210111023.51311.o.endriss@gmx.de>
-	<20566.1349964331@warthog.procyon.org.uk>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.11; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1757197Ab2JKO5q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 10:57:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27850 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753926Ab2JKO5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 10:57:44 -0400
+Date: Thu, 11 Oct 2012 16:56:11 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <pzijlstr@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hillf Danton <dhillf@gmail.com>,
+        Andrew Jones <drjones@redhat.com>, Dan Smith <danms@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 00/33] AutoNUMA27
+Message-ID: <20121011145611.GI1818@redhat.com>
+References: <1349308275-2174-1-git-send-email-aarcange@redhat.com>
+ <20121011101930.GM3317@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121011101930.GM3317@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, 11 Oct 2012 15:05:31 +0100
-David Howells <dhowells@redhat.com> escreveu:
+Hi Mel,
 
-> Mauro Carvalho Chehab <mchehab@infradead.org> wrote:
+On Thu, Oct 11, 2012 at 11:19:30AM +0100, Mel Gorman wrote:
+> As a basic sniff test I added a test to MMtests for the AutoNUMA
+> Benchmark on a 4-node machine and the following fell out.
 > 
-> > My understanding here is that, as the file location will change
-> > with this series, your original concern is now void, as userspace
-> > will require patches to use the new location. So, if we're willing
-> > to do it, let's put this one-driver-only obsolete API on a separate
-> > place.
+>                                      3.6.0                 3.6.0
+>                                    vanilla        autonuma-v33r6
+> User    SMT             82851.82 (  0.00%)    33084.03 ( 60.07%)
+> User    THREAD_ALLOC   142723.90 (  0.00%)    47707.38 ( 66.57%)
+> System  SMT               396.68 (  0.00%)      621.46 (-56.67%)
+> System  THREAD_ALLOC      675.22 (  0.00%)      836.96 (-23.95%)
+> Elapsed SMT              1987.08 (  0.00%)      828.57 ( 58.30%)
+> Elapsed THREAD_ALLOC     3222.99 (  0.00%)     1101.31 ( 65.83%)
+> CPU     SMT              4189.00 (  0.00%)     4067.00 (  2.91%)
+> CPU     THREAD_ALLOC     4449.00 (  0.00%)     4407.00 (  0.94%)
+
+Thanks a lot for the help and for looking into it!
+
+Just curious, why are you running only numa02_SMT and
+numa01_THREAD_ALLOC? And not numa01 and numa02? (the standard version
+without _suffix)
+
 > 
-> As far as userspace is concerned, things will not change.  The header
-> installation step will copy the uapi/ headers to the place it used to copy the
-> non-uapi header.
+> The performance improvements are certainly there for this basic test but
+> I note the System CPU usage is very high.
 
-Ah, ok. Then let's apply it as-is.
+Yes, migrate is expensive, but after convergence has been reached the
+system time should be the same as upstream.
 
-Cheers,
-Mauro
+btw, I improved things further in autonuma28 (new branch in aa.git).
+
+> 
+> The vmstats showed up this
+> 
+> THP fault alloc               81376       86070
+> THP collapse alloc               14       40423
+> THP splits                        8       41792
+> 
+> So we're doing a lot of splits and collapses for THP there. There is a
+> possibility that khugepaged and the autonuma kernel thread are doing some
+> busy work. Not a show-stopped, just interesting.
+> 
+> I've done no analysis at all and this was just to have something to look
+> at before looking at the code closer.
+
+Sure, the idea is to have THP native migration, then we'll do zero
+collapse/splits.
+
+> > The objective of AutoNUMA is to provide out-of-the-box performance as
+> > close as possible to (and potentially faster than) manual NUMA hard
+> > bindings.
+> > 
+> > It is not very intrusive into the kernel core and is well structured
+> > into separate source modules.
+> > 
+> > AutoNUMA was extensively tested against 3.x upstream kernels and other
+> > NUMA placement algorithms such as numad (in userland through cpusets)
+> > and schednuma (in kernel too) and was found superior in all cases.
+> > 
+> > Most important: not a single benchmark showed a regression yet when
+> > compared to vanilla kernels. Not even on the 2 node systems where the
+> > NUMA effects are less significant.
+> > 
+> 
+> Ok, I have not run a general regression test and won't get the chance to
+> soon but hopefully others will. One thing they might want to watch out
+> for is System CPU time. It's possible that your AutoNUMA benchmark
+> triggers a worst-case but it's worth keeping an eye on because any cost
+> from that has to be offset by gains from better NUMA placements.
+
+Good idea to monitor it indeed.
+
+> Is STREAM really a good benchmark in this case? Unless you also ran it in
+> parallel mode, it basically operations against three arrays and not really
+> NUMA friendly once the total size is greater than a NUMA node. I guess
+> it makes sense to run it just to see does autonuma break it :)
+
+The way this is run is that there is 1 stream, then 4 stream, then 8
+until we max out all CPUs.
+
+I think we could run "memhog" instead of "stream" and it'd be the
+same. stream probably better resembles real life computations.
+
+The upstream scheduler lacks any notion of affinity so eventually
+during the 5 min run, on process changes node, it doesn't notice its
+memory was elsewhere so it stays there, and the memory can't follow
+the cpu either. So then it runs much slower.
+
+So it's the simplest test of all to get right, all it requires is some
+notion of node affinity.
+
+It's also the only workload that the home node design in schednuma in
+tip.git can get right (schednuma post current tip.git introduced
+cpu-follow-memory design of AutoNUMA so schednuma will have a chance
+to get right more stuff than just the stream multi instance
+benchmark).
+
+So it's just for a verification than the simple stuff (single threaded
+process computing) is ok and the upstream regression vs hard NUMA
+bindings is fixed.
+
+stream is also one case where we have to perform identical to the hard
+NUMA bindings. No migration of CPU or memory must ever happen with
+AutoNUMA in the stream benchmark. AutoNUMA will just monitor it and
+find that it is already in the best place and it will leave it alone.
+
+With the autonuma-benchmark it's impossible to reach identical
+performance of the _HARD_BIND case because _HARD_BIND doesn't need to
+do any memory migration (I'm 3 seconds away from hard bindings in a
+198 sec run though, just the 3 seconds it takes to migrate 3g of ram ;).
+
+> 
+> > 
+> > == iozone ==
+> > 
+> >                      ALL  INIT   RE             RE   RANDOM RANDOM BACKWD  RECRE STRIDE  F      FRE     F      FRE
+> > FILE     TYPE (KB)  IOS  WRITE  WRITE   READ   READ   READ  WRITE   READ  WRITE   READ  WRITE  WRITE   READ   READ
+> > ====--------------------------------------------------------------------------------------------------------------
+> > noautonuma ALL      2492   1224   1874   2699   3669   3724   2327   2638   4091   3525   1142   1692   2668   3696
+> > autonuma   ALL      2531   1221   1886   2732   3757   3760   2380   2650   4192   3599   1150   1731   2712   3825
+> > 
+> > AutoNUMA can't help much for I/O loads but you can see it seems a
+> > small improvement there too. The important thing for I/O loads, is to
+> > verify that there is no regression.
+> > 
+> 
+> It probably is unreasonable to expect autonuma to handle the case where
+> a file-based workload has not been tuned for NUMA. In too many cases
+> it's going to be read/write based so you're not going to get the
+> statistics you need.
+
+Agreed. Some statistic may still accumulate and it's still better than
+nothing but unless the workload is CPU and memory bound, we can't
+expect to see any difference.
+
+This is meant as a verification that we're not introducing regression
+to I/O bound load.
+
+Andrea
