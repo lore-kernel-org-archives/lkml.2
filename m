@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933923Ab2JKCOA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:14:00 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48774 "EHLO
+	id S934321Ab2JKCXk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:23:40 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33993 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933749Ab2JKCNy (ORCPT
+	by vger.kernel.org with ESMTP id S933925Ab2JKCOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:13:54 -0400
-X-Sasl-enc: XbGMwL9IQAubgx8xwZL7PDxfEScw+PMAlZT4QF6i7Zhn 1349921632
+	Wed, 10 Oct 2012 22:14:02 -0400
+X-Sasl-enc: gPyNaKvQtog0hHWtq2tsCx5RM+v5+iT3aKon5JS016Xk 1349921640
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 45/84] SCSI: zfcp: only access zfcp_scsi_dev for valid scsi_device
-Date: Thu, 11 Oct 2012 11:03:29 +0900
-Message-Id: <20121011015425.124844897@linuxfoundation.org>
+        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 47/84] ext4: online defrag is not supported for journaled files
+Date: Thu, 11 Oct 2012 11:03:31 +0900
+Message-Id: <20121011015425.511543427@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -29,123 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Peschke <mpeschke@linux.vnet.ibm.com>
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-commit d436de8ce25f53a8a880a931886821f632247943 upstream.
+commit f066055a3449f0e5b0ae4f3ceab4445bead47638 upstream.
 
-__scsi_remove_device (e.g. due to dev_loss_tmo) calls
-zfcp_scsi_slave_destroy which in turn sends a close LUN FSF request to
-the adapter. After 30 seconds without response,
-zfcp_erp_timeout_handler kicks the ERP thread failing the close LUN
-ERP action. zfcp_erp_wait in zfcp_erp_lun_shutdown_wait and thus
-zfcp_scsi_slave_destroy returns and then scsi_device is no longer
-valid. Sometime later the response to the close LUN FSF request may
-finally come in. However, commit
-b62a8d9b45b971a67a0f8413338c230e3117dff5
-"[SCSI] zfcp: Use SCSI device data zfcp_scsi_dev instead of zfcp_unit"
-introduced a number of attempts to unconditionally access struct
-zfcp_scsi_dev through struct scsi_device causing a use-after-free.
-This leads to an Oops due to kernel page fault in one of:
-zfcp_fsf_abort_fcp_command_handler, zfcp_fsf_open_lun_handler,
-zfcp_fsf_close_lun_handler, zfcp_fsf_req_trace,
-zfcp_fsf_fcp_handler_common.
-Move dereferencing of zfcp private data zfcp_scsi_dev allocated in
-scsi_device via scsi_transport_reserve_device after the check for
-potentially aborted FSF request and thus no longer valid scsi_device.
-Only then assign sdev_to_zfcp(sdev) to the local auto variable struct
-zfcp_scsi_dev *zfcp_sdev.
+Proper block swap for inodes with full journaling enabled is
+truly non obvious task. In order to be on a safe side let's
+explicitly disable it for now.
 
-Signed-off-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/scsi/zfcp_fsf.c |   19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
+ fs/ext4/move_extent.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/s390/scsi/zfcp_fsf.c
-+++ b/drivers/s390/scsi/zfcp_fsf.c
-@@ -771,12 +771,14 @@ out:
- static void zfcp_fsf_abort_fcp_command_handler(struct zfcp_fsf_req *req)
- {
- 	struct scsi_device *sdev = req->data;
--	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
-+	struct zfcp_scsi_dev *zfcp_sdev;
- 	union fsf_status_qual *fsq = &req->qtcb->header.fsf_status_qual;
- 
- 	if (req->status & ZFCP_STATUS_FSFREQ_ERROR)
- 		return;
- 
-+	zfcp_sdev = sdev_to_zfcp(sdev);
-+
- 	switch (req->qtcb->header.fsf_status) {
- 	case FSF_PORT_HANDLE_NOT_VALID:
- 		if (fsq->word[0] == fsq->word[1]) {
-@@ -1730,13 +1732,15 @@ static void zfcp_fsf_open_lun_handler(st
- {
- 	struct zfcp_adapter *adapter = req->adapter;
- 	struct scsi_device *sdev = req->data;
--	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
-+	struct zfcp_scsi_dev *zfcp_sdev;
- 	struct fsf_qtcb_header *header = &req->qtcb->header;
- 	struct fsf_qtcb_bottom_support *bottom = &req->qtcb->bottom.support;
- 
- 	if (req->status & ZFCP_STATUS_FSFREQ_ERROR)
- 		return;
- 
-+	zfcp_sdev = sdev_to_zfcp(sdev);
-+
- 	atomic_clear_mask(ZFCP_STATUS_COMMON_ACCESS_DENIED |
- 			  ZFCP_STATUS_COMMON_ACCESS_BOXED |
- 			  ZFCP_STATUS_LUN_SHARED |
-@@ -1847,11 +1851,13 @@ out:
- static void zfcp_fsf_close_lun_handler(struct zfcp_fsf_req *req)
- {
- 	struct scsi_device *sdev = req->data;
--	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
-+	struct zfcp_scsi_dev *zfcp_sdev;
- 
- 	if (req->status & ZFCP_STATUS_FSFREQ_ERROR)
- 		return;
- 
-+	zfcp_sdev = sdev_to_zfcp(sdev);
-+
- 	switch (req->qtcb->header.fsf_status) {
- 	case FSF_PORT_HANDLE_NOT_VALID:
- 		zfcp_erp_adapter_reopen(zfcp_sdev->port->adapter, 0, "fscuh_1");
-@@ -1941,7 +1947,7 @@ static void zfcp_fsf_req_trace(struct zf
- {
- 	struct fsf_qual_latency_info *lat_in;
- 	struct latency_cont *lat = NULL;
--	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(scsi->device);
-+	struct zfcp_scsi_dev *zfcp_sdev;
- 	struct zfcp_blk_drv_data blktrc;
- 	int ticks = req->adapter->timer_ticks;
- 
-@@ -1956,6 +1962,7 @@ static void zfcp_fsf_req_trace(struct zf
- 
- 	if (req->adapter->adapter_features & FSF_FEATURE_MEASUREMENT_DATA &&
- 	    !(req->status & ZFCP_STATUS_FSFREQ_ERROR)) {
-+		zfcp_sdev = sdev_to_zfcp(scsi->device);
- 		blktrc.flags |= ZFCP_BLK_LAT_VALID;
- 		blktrc.channel_lat = lat_in->channel_lat * ticks;
- 		blktrc.fabric_lat = lat_in->fabric_lat * ticks;
-@@ -1993,12 +2000,14 @@ static void zfcp_fsf_fcp_handler_common(
- {
- 	struct scsi_cmnd *scmnd = req->data;
- 	struct scsi_device *sdev = scmnd->device;
--	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
-+	struct zfcp_scsi_dev *zfcp_sdev;
- 	struct fsf_qtcb_header *header = &req->qtcb->header;
- 
- 	if (unlikely(req->status & ZFCP_STATUS_FSFREQ_ERROR))
- 		return;
- 
-+	zfcp_sdev = sdev_to_zfcp(sdev);
-+
- 	switch (header->fsf_status) {
- 	case FSF_HANDLE_MISMATCH:
- 	case FSF_PORT_HANDLE_NOT_VALID:
+--- a/fs/ext4/move_extent.c
++++ b/fs/ext4/move_extent.c
+@@ -1209,7 +1209,12 @@ ext4_move_extents(struct file *o_filp, s
+ 			orig_inode->i_ino, donor_inode->i_ino);
+ 		return -EINVAL;
+ 	}
+-
++	/* TODO: This is non obvious task to swap blocks for inodes with full
++	   jornaling enabled */
++	if (ext4_should_journal_data(orig_inode) ||
++	    ext4_should_journal_data(donor_inode)) {
++		return -EINVAL;
++	}
+ 	/* Protect orig and donor inodes against a truncate */
+ 	ret1 = mext_inode_double_lock(orig_inode, donor_inode);
+ 	if (ret1 < 0)
 
 
