@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965064Ab2JKTGZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 15:06:25 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:36138 "EHLO
+	id S964824Ab2JKTEN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 15:04:13 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:54472 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964844Ab2JKTEQ (ORCPT
+	with ESMTP id S1759244Ab2JKTD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 15:04:16 -0400
+	Thu, 11 Oct 2012 15:03:59 -0400
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [RFC PATCH v2 11/16] mmc: omap_hsmmc: limit max_segs with the EDMA DMAC
-Date: Thu, 11 Oct 2012 15:04:36 -0400
-Message-Id: <1349982281-10785-12-git-send-email-mporter@ti.com>
+Subject: [RFC PATCH v2 04/16] ARM: edma: add DT and runtime PM support for AM335x
+Date: Thu, 11 Oct 2012 15:04:29 -0400
+Message-Id: <1349982281-10785-5-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349982281-10785-1-git-send-email-mporter@ti.com>
 References: <1349982281-10785-1-git-send-email-mporter@ti.com>
@@ -37,40 +37,634 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EDMA DMAC has a hardware limitation that prevents supporting
-scatter gather lists with any number of segments. Since the EDMA
-DMA Engine driver sets the maximum segments to 16, we do the
-same.
+Adds support for parsing the TI EDMA DT data into the required
+EDMA private API platform data.
 
-TODO: this will be replaced once the DMA Engine API supports an
-API to query the DMAC's segment size limit.
+Calls runtime PM API only in the DT case in order to unidle the
+associated hwmods on AM335x.
+
+TODO: add AM33XX crossbar support and DT binding
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- drivers/mmc/host/omap_hsmmc.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/arm/common/edma.c                      |  252 +++++++++++++++++++++++++--
+ arch/arm/mach-davinci/board-da830-evm.c     |    4 +-
+ arch/arm/mach-davinci/board-da850-evm.c     |    8 +-
+ arch/arm/mach-davinci/board-dm646x-evm.c    |    4 +-
+ arch/arm/mach-davinci/board-omapl138-hawk.c |    8 +-
+ arch/arm/mach-davinci/devices-da8xx.c       |    8 +-
+ arch/arm/mach-davinci/devices-tnetv107x.c   |    4 +-
+ arch/arm/mach-davinci/dm355.c               |    4 +-
+ arch/arm/mach-davinci/dm365.c               |    4 +-
+ arch/arm/mach-davinci/dm644x.c              |    4 +-
+ arch/arm/mach-davinci/dm646x.c              |    4 +-
+ include/linux/platform_data/edma.h          |    8 +-
+ 12 files changed, 271 insertions(+), 41 deletions(-)
 
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index b327cd0..52bab01 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -1828,6 +1828,16 @@ static int __devinit omap_hsmmc_probe(struct platform_device *pdev)
- 	 * as we want. */
- 	mmc->max_segs = 1024;
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index a3d189d..fd039db 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -24,6 +24,13 @@
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
++#include <linux/edma.h>
++#include <linux/err.h>
++#include <linux/of_address.h>
++#include <linux/of_device.h>
++#include <linux/of_dma.h>
++#include <linux/of_irq.h>
++#include <linux/pm_runtime.h>
  
-+	/* Eventually we should get our max_segs limitation for EDMA by
-+	 * querying the dmaengine API */
-+	if (pdev->dev.of_node) {
-+		struct device_node *parent = pdev->dev.of_node->parent;
-+		struct device_node *node;
-+		node = of_find_node_by_name(parent, "edma");
-+		if (node)
-+			mmc->max_segs = 16;
+ #include <linux/platform_data/edma.h>
+ 
+@@ -1366,30 +1373,237 @@ void edma_clear_event(unsigned channel)
+ EXPORT_SYMBOL(edma_clear_event);
+ 
+ /*-----------------------------------------------------------------------*/
++static int edma_of_read_u32_to_s8_array(const struct device_node *np,
++					 const char *propname, s8 *out_values,
++					 size_t sz)
++{
++	struct property *prop = of_find_property(np, propname, NULL);
++	const __be32 *val;
++
++	if (!prop)
++		return -EINVAL;
++	if (!prop->value)
++		return -ENODATA;
++	if ((sz * sizeof(u32)) > prop->length)
++		return -EOVERFLOW;
++
++	val = prop->value;
++
++	while (sz--)
++		*out_values++ = (s8)(be32_to_cpup(val++) & 0xff);
++
++	/* Terminate it */
++	*out_values++ = -1;
++	*out_values++ = -1;
++
++	return 0;
++}
++
++static int edma_of_read_u32_to_s16_array(const struct device_node *np,
++					 const char *propname, s16 *out_values,
++					 size_t sz)
++{
++	struct property *prop = of_find_property(np, propname, NULL);
++	const __be32 *val;
++
++	if (!prop)
++		return -EINVAL;
++	if (!prop->value)
++		return -ENODATA;
++	if ((sz * sizeof(u32)) > prop->length)
++		return -EOVERFLOW;
++
++	val = prop->value;
++
++	while (sz--)
++		*out_values++ = (s16)(be32_to_cpup(val++) & 0xffff);
++
++	/* Terminate it */
++	*out_values++ = -1;
++	*out_values++ = -1;
++
++	return 0;
++}
++
++static int edma_of_parse_dt(struct device *dev,
++			    struct device_node *node,
++			    struct edma_soc_info *pdata)
++{
++	int ret = 0;
++	u32 value;
++	struct property *prop;
++	size_t sz;
++	struct edma_rsv_info *rsv_info;
++	s16 (*rsv_chans)[2], (*rsv_slots)[2];
++	s8 (*queue_tc_map)[2], (*queue_priority_map)[2];
++
++	ret = of_property_read_u32(node, "dma-channels", &value);
++	if (ret < 0)
++		return ret;
++	pdata->n_channel = value;
++
++	ret = of_property_read_u32(node, "ti,edma-regions", &value);
++	if (ret < 0)
++		return ret;
++	pdata->n_region = value;
++
++	ret = of_property_read_u32(node, "ti,edma-slots", &value);
++	if (ret < 0)
++		return ret;
++	pdata->n_slot = value;
++
++	pdata->n_cc = 1;
++	/* This is unused */
++	pdata->n_tc = 3;
++
++	rsv_info =
++		devm_kzalloc(dev, sizeof(struct edma_rsv_info), GFP_KERNEL);
++	if (!rsv_info)
++		return -ENOMEM;
++	pdata->rsv = rsv_info;
++
++	/* Build the reserved channel/slots arrays */
++	prop = of_find_property(node, "ti,edma-reserved-channels", &sz);
++	if (prop) {
++		rsv_chans = devm_kzalloc(dev,
++					 sz/sizeof(s16) + 2*sizeof(s16),
++					 GFP_KERNEL);
++		if (!rsv_chans)
++			return -ENOMEM;
++		pdata->rsv->rsv_chans = rsv_chans;
++
++		ret = edma_of_read_u32_to_s16_array(node,
++						    "ti,edma-reserved-channels",
++						    (s16 *)rsv_chans,
++						    sz/sizeof(u32));
++		if (ret < 0)
++			return ret;
 +	}
 +
- 	mmc->max_blk_size = 512;       /* Block Length at max can be 1024 */
- 	mmc->max_blk_count = 0xFFFF;    /* No. of Blocks is 16 bits */
- 	mmc->max_req_size = mmc->max_blk_size * mmc->max_blk_count;
++	prop = of_find_property(node, "ti,edma-reserved-slots", &sz);
++	if (prop) {
++		rsv_slots = devm_kzalloc(dev,
++					 sz/sizeof(s16) + 2*sizeof(s16),
++					 GFP_KERNEL);
++		if (!rsv_slots)
++			return -ENOMEM;
++		pdata->rsv->rsv_slots = rsv_slots;
++
++		ret = edma_of_read_u32_to_s16_array(node,
++						    "ti,edma-reserved-slots",
++						    (s16 *)rsv_slots,
++						    sz/sizeof(u32));
++		if (ret < 0)
++			return ret;
++	}
++
++	prop = of_find_property(node, "ti,edma-queue-tc-map", &sz);
++	if (!prop)
++		return -EINVAL;
++
++	queue_tc_map = devm_kzalloc(dev,
++				    sz/sizeof(s8) + 2*sizeof(s8),
++				    GFP_KERNEL);
++	if (!queue_tc_map)
++		return -ENOMEM;
++	pdata->queue_tc_mapping = queue_tc_map;
++
++	ret = edma_of_read_u32_to_s8_array(node,
++					   "ti,edma-queue-tc-map",
++					   (s8 *)queue_tc_map,
++					   sz/sizeof(u32));
++	if (ret < 0)
++		return ret;
++
++	prop = of_find_property(node, "ti,edma-queue-priority-map", &sz);
++	if (!prop)
++		return -EINVAL;
++
++	queue_priority_map = devm_kzalloc(dev,
++					  sz/sizeof(s8) + 2*sizeof(s8),
++					  GFP_KERNEL);
++	if (!queue_priority_map)
++		return -ENOMEM;
++	pdata->queue_priority_mapping = queue_priority_map;
++
++	ret = edma_of_read_u32_to_s8_array(node,
++					   "ti,edma-queue-tc-map",
++					   (s8 *)queue_priority_map,
++					   sz/sizeof(u32));
++	if (ret < 0)
++		return ret;
++
++	ret = of_property_read_u32(node, "ti,edma-default-queue", &value);
++	if (ret < 0)
++		return ret;
++	pdata->default_queue = value;
++
++	return ret;
++}
++
++static struct of_dma_filter_info edma_filter_info = {
++	.filter_fn = edma_filter_fn,
++};
+ 
+ static int __init edma_probe(struct platform_device *pdev)
+ {
+ 	struct edma_soc_info	**info = pdev->dev.platform_data;
+-	const s8		(*queue_priority_mapping)[2];
+-	const s8		(*queue_tc_mapping)[2];
++	s8			(*queue_priority_mapping)[2];
++	s8			(*queue_tc_mapping)[2];
+ 	int			i, j, off, ln, found = 0;
+ 	int			status = -1;
+-	const s16		(*rsv_chans)[2];
+-	const s16		(*rsv_slots)[2];
++	s16			(*rsv_chans)[2];
++	s16			(*rsv_slots)[2];
+ 	int			irq[EDMA_MAX_CC] = {0, 0};
+ 	int			err_irq[EDMA_MAX_CC] = {0, 0};
+ 	struct resource		*r[EDMA_MAX_CC] = {NULL};
++	struct resource		res[EDMA_MAX_CC];
+ 	resource_size_t		len[EDMA_MAX_CC];
+ 	char			res_name[10];
+ 	char			irq_name[10];
++	struct device_node	*node = pdev->dev.of_node;
++	struct device		*dev = &pdev->dev;
++	struct edma_soc_info	*pdata;
++
++	if (node) {
++		int ret;
++		pdata = devm_kzalloc(dev,
++				     sizeof(struct edma_soc_info),
++				     GFP_KERNEL);
++		edma_of_parse_dt(dev, node, pdata);
++		info = &pdata;
++		dma_cap_set(DMA_SLAVE, edma_filter_info.dma_cap);
++		of_dma_controller_register(dev->of_node,
++					   of_dma_simple_xlate,
++					   &edma_filter_info);
++		pm_runtime_enable(dev);
++		ret = pm_runtime_get_sync(dev);
++		if (IS_ERR_VALUE(ret)) {
++			dev_err(dev, "pm_runtime_get_sync() failed\n");
++			return ret;
++		}
++	}
+ 
+ 	if (!info)
+ 		return -ENODEV;
+ 
+ 	for (j = 0; j < EDMA_MAX_CC; j++) {
+-		sprintf(res_name, "edma_cc%d", j);
+-		r[j] = platform_get_resource_byname(pdev, IORESOURCE_MEM,
++		if (node) {
++			int err;
++			err = of_address_to_resource(node, 0, &res[j]);
++			if (err) {
++				dev_err(dev,
++					"unable to find 'reg' property\n");
++				return -EIO;
++			}
++			r[j] = &res[j];
++
++		} else {
++			sprintf(res_name, "edma_cc%d", j);
++			r[j] = platform_get_resource_byname(pdev,
++						IORESOURCE_MEM,
+ 						res_name);
++		}
+ 		if (!r[j] || !info[j]) {
+ 			if (found)
+ 				break;
+@@ -1465,8 +1679,12 @@ static int __init edma_probe(struct platform_device *pdev)
+ 			}
+ 		}
+ 
+-		sprintf(irq_name, "edma%d", j);
+-		irq[j] = platform_get_irq_byname(pdev, irq_name);
++		if (node)
++			irq[j] = irq_of_parse_and_map(node, 0);
++		else {
++			sprintf(irq_name, "edma%d", j);
++			irq[j] = platform_get_irq_byname(pdev, irq_name);
++		}
+ 		edma_cc[j]->irq_res_start = irq[j];
+ 		status = request_irq(irq[j], dma_irq_handler, 0, "edma",
+ 					&pdev->dev);
+@@ -1476,8 +1694,12 @@ static int __init edma_probe(struct platform_device *pdev)
+ 			goto fail;
+ 		}
+ 
+-		sprintf(irq_name, "edma%d_err", j);
+-		err_irq[j] = platform_get_irq_byname(pdev, irq_name);
++		if (node)
++			err_irq[j] = irq_of_parse_and_map(node, 2);
++		else {
++			sprintf(irq_name, "edma%d_err", j);
++			err_irq[j] = platform_get_irq_byname(pdev, irq_name);
++		}
+ 		edma_cc[j]->irq_res_end = err_irq[j];
+ 		status = request_irq(err_irq[j], dma_ccerr_handler, 0,
+ 					"edma_error", &pdev->dev);
+@@ -1538,9 +1760,17 @@ fail1:
+ 	return status;
+ }
+ 
++static const struct of_device_id edma_of_ids[] = {
++	{ .compatible = "ti,edma3", },
++	{}
++};
+ 
+ static struct platform_driver edma_driver = {
+-	.driver.name	= "edma",
++	.driver = {
++		.name	= "edma",
++		.of_match_table = edma_of_ids,
++	},
++	.probe = edma_probe,
+ };
+ 
+ static int __init edma_init(void)
+diff --git a/arch/arm/mach-davinci/board-da830-evm.c b/arch/arm/mach-davinci/board-da830-evm.c
+index 95b5e10..ffcbec1 100644
+--- a/arch/arm/mach-davinci/board-da830-evm.c
++++ b/arch/arm/mach-davinci/board-da830-evm.c
+@@ -512,7 +512,7 @@ static struct davinci_i2c_platform_data da830_evm_i2c_0_pdata = {
+  * example: Timer, GPIO, UART events etc) on da830/omap-l137 EVM, hence
+  * they are being reserved for codecs on the DSP side.
+  */
+-static const s16 da830_dma_rsv_chans[][2] = {
++static s16 da830_dma_rsv_chans[][2] = {
+ 	/* (offset, number) */
+ 	{ 8,  2},
+ 	{12,  2},
+@@ -521,7 +521,7 @@ static const s16 da830_dma_rsv_chans[][2] = {
+ 	{-1, -1}
+ };
+ 
+-static const s16 da830_dma_rsv_slots[][2] = {
++static s16 da830_dma_rsv_slots[][2] = {
+ 	/* (offset, number) */
+ 	{ 8,  2},
+ 	{12,  2},
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index 1295e61..7068c2d 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -1083,7 +1083,7 @@ device_initcall(da850_evm_config_emac);
+  * example: Timer, GPIO, UART events etc) on da850/omap-l138 EVM, hence
+  * they are being reserved for codecs on the DSP side.
+  */
+-static const s16 da850_dma0_rsv_chans[][2] = {
++static s16 da850_dma0_rsv_chans[][2] = {
+ 	/* (offset, number) */
+ 	{ 8,  6},
+ 	{24,  4},
+@@ -1091,7 +1091,7 @@ static const s16 da850_dma0_rsv_chans[][2] = {
+ 	{-1, -1}
+ };
+ 
+-static const s16 da850_dma0_rsv_slots[][2] = {
++static s16 da850_dma0_rsv_slots[][2] = {
+ 	/* (offset, number) */
+ 	{ 8,  6},
+ 	{24,  4},
+@@ -1099,14 +1099,14 @@ static const s16 da850_dma0_rsv_slots[][2] = {
+ 	{-1, -1}
+ };
+ 
+-static const s16 da850_dma1_rsv_chans[][2] = {
++static s16 da850_dma1_rsv_chans[][2] = {
+ 	/* (offset, number) */
+ 	{ 0, 28},
+ 	{30,  2},
+ 	{-1, -1}
+ };
+ 
+-static const s16 da850_dma1_rsv_slots[][2] = {
++static s16 da850_dma1_rsv_slots[][2] = {
+ 	/* (offset, number) */
+ 	{ 0, 28},
+ 	{30, 90},
+diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
+index 9944367..a4dbd3c 100644
+--- a/arch/arm/mach-davinci/board-dm646x-evm.c
++++ b/arch/arm/mach-davinci/board-dm646x-evm.c
+@@ -732,7 +732,7 @@ static struct davinci_uart_config uart_config __initdata = {
+  * example: Timer, GPIO, UART events etc) on dm646x, hence they are being
+  * reserved for codecs on the DSP side.
+  */
+-static const s16 dm646x_dma_rsv_chans[][2] = {
++static s16 dm646x_dma_rsv_chans[][2] = {
+ 	/* (offset, number) */
+ 	{ 0,  4},
+ 	{13,  3},
+@@ -742,7 +742,7 @@ static const s16 dm646x_dma_rsv_chans[][2] = {
+ 	{-1, -1}
+ };
+ 
+-static const s16 dm646x_dma_rsv_slots[][2] = {
++static s16 dm646x_dma_rsv_slots[][2] = {
+ 	/* (offset, number) */
+ 	{ 0,  4},
+ 	{13,  3},
+diff --git a/arch/arm/mach-davinci/board-omapl138-hawk.c b/arch/arm/mach-davinci/board-omapl138-hawk.c
+index dc1208e..09c34f8 100644
+--- a/arch/arm/mach-davinci/board-omapl138-hawk.c
++++ b/arch/arm/mach-davinci/board-omapl138-hawk.c
+@@ -70,7 +70,7 @@ static __init void omapl138_hawk_config_emac(void)
+  * example: Timer, GPIO, UART events etc) on da850/omap-l138 EVM/Hawkboard,
+  * hence they are being reserved for codecs on the DSP side.
+  */
+-static const s16 da850_dma0_rsv_chans[][2] = {
++static s16 da850_dma0_rsv_chans[][2] = {
+ 	/* (offset, number) */
+ 	{ 8,  6},
+ 	{24,  4},
+@@ -78,7 +78,7 @@ static const s16 da850_dma0_rsv_chans[][2] = {
+ 	{-1, -1}
+ };
+ 
+-static const s16 da850_dma0_rsv_slots[][2] = {
++static s16 da850_dma0_rsv_slots[][2] = {
+ 	/* (offset, number) */
+ 	{ 8,  6},
+ 	{24,  4},
+@@ -86,14 +86,14 @@ static const s16 da850_dma0_rsv_slots[][2] = {
+ 	{-1, -1}
+ };
+ 
+-static const s16 da850_dma1_rsv_chans[][2] = {
++static s16 da850_dma1_rsv_chans[][2] = {
+ 	/* (offset, number) */
+ 	{ 0, 28},
+ 	{30,  2},
+ 	{-1, -1}
+ };
+ 
+-static const s16 da850_dma1_rsv_slots[][2] = {
++static s16 da850_dma1_rsv_slots[][2] = {
+ 	/* (offset, number) */
+ 	{ 0, 28},
+ 	{30, 90},
+diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
+index bd2f72b..1f9c6ff 100644
+--- a/arch/arm/mach-davinci/devices-da8xx.c
++++ b/arch/arm/mach-davinci/devices-da8xx.c
+@@ -103,27 +103,27 @@ struct platform_device da8xx_serial_device = {
+ 	},
+ };
+ 
+-static const s8 da8xx_queue_tc_mapping[][2] = {
++static s8 da8xx_queue_tc_mapping[][2] = {
+ 	/* {event queue no, TC no} */
+ 	{0, 0},
+ 	{1, 1},
+ 	{-1, -1}
+ };
+ 
+-static const s8 da8xx_queue_priority_mapping[][2] = {
++static s8 da8xx_queue_priority_mapping[][2] = {
+ 	/* {event queue no, Priority} */
+ 	{0, 3},
+ 	{1, 7},
+ 	{-1, -1}
+ };
+ 
+-static const s8 da850_queue_tc_mapping[][2] = {
++static s8 da850_queue_tc_mapping[][2] = {
+ 	/* {event queue no, TC no} */
+ 	{0, 0},
+ 	{-1, -1}
+ };
+ 
+-static const s8 da850_queue_priority_mapping[][2] = {
++static s8 da850_queue_priority_mapping[][2] = {
+ 	/* {event queue no, Priority} */
+ 	{0, 3},
+ 	{-1, -1}
+diff --git a/arch/arm/mach-davinci/devices-tnetv107x.c b/arch/arm/mach-davinci/devices-tnetv107x.c
+index 59efd7f..d2453c9 100644
+--- a/arch/arm/mach-davinci/devices-tnetv107x.c
++++ b/arch/arm/mach-davinci/devices-tnetv107x.c
+@@ -58,14 +58,14 @@
+ #define TNETV107X_DMACH_SDIO1_RX		28
+ #define TNETV107X_DMACH_SDIO1_TX		29
+ 
+-static const s8 edma_tc_mapping[][2] = {
++static s8 edma_tc_mapping[][2] = {
+ 	/* event queue no	TC no	*/
+ 	{	 0,		 0	},
+ 	{	 1,		 1	},
+ 	{	-1,		-1	}
+ };
+ 
+-static const s8 edma_priority_mapping[][2] = {
++static s8 edma_priority_mapping[][2] = {
+ 	/* event queue no	Prio	*/
+ 	{	 0,		 3	},
+ 	{	 1,		 7	},
+diff --git a/arch/arm/mach-davinci/dm355.c b/arch/arm/mach-davinci/dm355.c
+index b165c27..cdefef3 100644
+--- a/arch/arm/mach-davinci/dm355.c
++++ b/arch/arm/mach-davinci/dm355.c
+@@ -567,7 +567,7 @@ static u8 dm355_default_priorities[DAVINCI_N_AINTC_IRQ] = {
+ 
+ /*----------------------------------------------------------------------*/
+ 
+-static const s8
++static s8
+ queue_tc_mapping[][2] = {
+ 	/* {event queue no, TC no} */
+ 	{0, 0},
+@@ -575,7 +575,7 @@ queue_tc_mapping[][2] = {
+ 	{-1, -1},
+ };
+ 
+-static const s8
++static s8
+ queue_priority_mapping[][2] = {
+ 	/* {event queue no, Priority} */
+ 	{0, 3},
+diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
+index a611716..801e162 100644
+--- a/arch/arm/mach-davinci/dm365.c
++++ b/arch/arm/mach-davinci/dm365.c
+@@ -822,7 +822,7 @@ static u8 dm365_default_priorities[DAVINCI_N_AINTC_IRQ] = {
+ };
+ 
+ /* Four Transfer Controllers on DM365 */
+-static const s8
++static s8
+ dm365_queue_tc_mapping[][2] = {
+ 	/* {event queue no, TC no} */
+ 	{0, 0},
+@@ -832,7 +832,7 @@ dm365_queue_tc_mapping[][2] = {
+ 	{-1, -1},
+ };
+ 
+-static const s8
++static s8
+ dm365_queue_priority_mapping[][2] = {
+ 	/* {event queue no, Priority} */
+ 	{0, 7},
+diff --git a/arch/arm/mach-davinci/dm644x.c b/arch/arm/mach-davinci/dm644x.c
+index 0949dc4..e9cc051 100644
+--- a/arch/arm/mach-davinci/dm644x.c
++++ b/arch/arm/mach-davinci/dm644x.c
+@@ -497,7 +497,7 @@ static u8 dm644x_default_priorities[DAVINCI_N_AINTC_IRQ] = {
+ 
+ /*----------------------------------------------------------------------*/
+ 
+-static const s8
++static s8
+ queue_tc_mapping[][2] = {
+ 	/* {event queue no, TC no} */
+ 	{0, 0},
+@@ -505,7 +505,7 @@ queue_tc_mapping[][2] = {
+ 	{-1, -1},
+ };
+ 
+-static const s8
++static s8
+ queue_priority_mapping[][2] = {
+ 	/* {event queue no, Priority} */
+ 	{0, 3},
+diff --git a/arch/arm/mach-davinci/dm646x.c b/arch/arm/mach-davinci/dm646x.c
+index 08f9dab..b4a4da6 100644
+--- a/arch/arm/mach-davinci/dm646x.c
++++ b/arch/arm/mach-davinci/dm646x.c
+@@ -531,7 +531,7 @@ static u8 dm646x_default_priorities[DAVINCI_N_AINTC_IRQ] = {
+ /*----------------------------------------------------------------------*/
+ 
+ /* Four Transfer Controllers on DM646x */
+-static const s8
++static s8
+ dm646x_queue_tc_mapping[][2] = {
+ 	/* {event queue no, TC no} */
+ 	{0, 0},
+@@ -541,7 +541,7 @@ dm646x_queue_tc_mapping[][2] = {
+ 	{-1, -1},
+ };
+ 
+-static const s8
++static s8
+ dm646x_queue_priority_mapping[][2] = {
+ 	/* {event queue no, Priority} */
+ 	{0, 4},
+diff --git a/include/linux/platform_data/edma.h b/include/linux/platform_data/edma.h
+index 7396f0b3..b20b586 100644
+--- a/include/linux/platform_data/edma.h
++++ b/include/linux/platform_data/edma.h
+@@ -168,8 +168,8 @@ void edma_resume(unsigned channel);
+ 
+ struct edma_rsv_info {
+ 
+-	const s16	(*rsv_chans)[2];
+-	const s16	(*rsv_slots)[2];
++	s16		(*rsv_chans)[2];
++	s16		(*rsv_slots)[2];
+ };
+ 
+ /* platform_data for EDMA driver */
+@@ -191,8 +191,8 @@ struct edma_soc_info {
+ 	/* Resource reservation for other cores */
+ 	struct edma_rsv_info	*rsv;
+ 
+-	const s8	(*queue_tc_mapping)[2];
+-	const s8	(*queue_priority_mapping)[2];
++	s8	(*queue_tc_mapping)[2];
++	s8	(*queue_priority_mapping)[2];
+ };
+ 
+ #endif
 -- 
 1.7.9.5
 
