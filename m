@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964964Ab2JKCUx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:20:53 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47178 "EHLO
+	id S964988Ab2JKCVU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:21:20 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44629 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964831Ab2JKCPJ (ORCPT
+	by vger.kernel.org with ESMTP id S964840Ab2JKCOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:15:09 -0400
-X-Sasl-enc: YFsIT47uk3R7NXZYgpVeEyZ5CYoFOF4z+gfQKWxIe5BL 1349921707
+	Wed, 10 Oct 2012 22:14:53 -0400
+X-Sasl-enc: hFj4lKUuiyZH7F6dkIGEl7TsgjWMvwA0A3s2pRwpmhaF 1349921691
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Francois Romieu <romieu@fr.zoreil.com>, Hayes <hayeswang@realtek.com>,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 62/84] r8169: remove erroneous processing of always set bit.
-Date: Thu, 11 Oct 2012 11:03:46 +0900
-Message-Id: <20121011015428.237978108@linuxfoundation.org>
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 42/84] SCSI: zfcp: Do not wakeup while suspended
+Date: Thu, 11 Oct 2012 11:03:26 +0900
+Message-Id: <20121011015424.633251035@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -29,57 +28,264 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Francois Romieu <romieu@fr.zoreil.com>
+From: Steffen Maier <maier@linux.vnet.ibm.com>
 
-commit e03f33af79f0772156e1a1a1e36bdddf8012b2e4 upstream.
+commit cb45214960bc989af8b911ebd77da541c797717d upstream.
 
-When set, RxFOVF (resp. RxBOVF) is always 1 (resp. 0).
+If the mapping of FCP device bus ID and corresponding subchannel
+is modified while the Linux image is suspended, the resume of FCP
+devices can fail. During resume, zfcp gets callbacks from cio regarding
+the modified subchannels but they can be arbitrarily mixed with the
+restore/resume callback. Since the cio callbacks would trigger
+adapter recovery, zfcp could wakeup before the resume callback.
+Therefore, ignore the cio callbacks regarding subchannels while
+being suspended. We can safely do so, since zfcp does not deal itself
+with subchannels. For problem determination purposes, we still trace the
+ignored callback events.
 
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Hayes <hayeswang@realtek.com>
-Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
-Acked-by: David S. Miller <davem@davemloft.net>
+The following kernel messages could be seen on resume:
+
+kernel: <WWPN>: parent <FCP device bus ID> should not be sleeping
+
+As part of adapter reopen recovery, zfcp performs auto port scanning
+which can erroneously try to register new remote ports with
+scsi_transport_fc and the device core code complains about the parent
+(adapter) still sleeping.
+
+kernel: zfcp.3dff9c: <FCP device bus ID>:\
+ Setting up the QDIO connection to the FCP adapter failed
+<last kernel message repeated 3 more times>
+kernel: zfcp.574d43: <FCP device bus ID>:\
+ ERP cannot recover an error on the FCP device
+
+In such cases, the adapter gave up recovery and remained blocked along
+with its child objects: remote ports and LUNs/scsi devices. Even the
+adapter shutdown as part of giving up recovery failed because the ccw
+device state remained disconnected. Later, the corresponding remote
+ports ran into dev_loss_tmo. As a result, the LUNs were erroneously
+not available again after resume.
+
+Even a manually triggered adapter recovery (e.g. sysfs attribute
+failed, or device offline/online via sysfs) could not recover the
+adapter due to the remaining disconnected state of the corresponding
+ccw device.
+
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/r8169.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -388,6 +388,7 @@ enum rtl_register_content {
- 	RxOK		= 0x0001,
+---
+ drivers/s390/scsi/zfcp_ccw.c |   73 +++++++++++++++++++++++++++++++++++++------
+ drivers/s390/scsi/zfcp_dbf.c |   20 +++++++++++
+ drivers/s390/scsi/zfcp_dbf.h |    1 
+ drivers/s390/scsi/zfcp_def.h |    1 
+ drivers/s390/scsi/zfcp_ext.h |    1 
+ 5 files changed, 86 insertions(+), 10 deletions(-)
+
+--- a/drivers/s390/scsi/zfcp_ccw.c
++++ b/drivers/s390/scsi/zfcp_ccw.c
+@@ -38,17 +38,23 @@ void zfcp_ccw_adapter_put(struct zfcp_ad
+ 	spin_unlock_irqrestore(&zfcp_ccw_adapter_ref_lock, flags);
+ }
  
- 	/* RxStatusDesc */
-+	RxBOVF	= (1 << 24),
- 	RxFOVF	= (1 << 23),
- 	RxRWT	= (1 << 22),
- 	RxRES	= (1 << 21),
-@@ -666,6 +667,7 @@ struct rtl8169_private {
- 	struct mii_if_info mii;
- 	struct rtl8169_counters counters;
- 	u32 saved_wolopts;
-+	u32 opts1_mask;
+-static int zfcp_ccw_activate(struct ccw_device *cdev)
+-
++/**
++ * zfcp_ccw_activate - activate adapter and wait for it to finish
++ * @cdev: pointer to belonging ccw device
++ * @clear: Status flags to clear.
++ * @tag: s390dbf trace record tag
++ */
++static int zfcp_ccw_activate(struct ccw_device *cdev, int clear, char *tag)
+ {
+ 	struct zfcp_adapter *adapter = zfcp_ccw_adapter_by_cdev(cdev);
  
- 	const struct firmware *fw;
- #define RTL_FIRMWARE_UNKNOWN	ERR_PTR(-EAGAIN);
-@@ -3442,6 +3444,9 @@ rtl8169_init_one(struct pci_dev *pdev, c
- 	tp->intr_event = cfg->intr_event;
- 	tp->napi_event = cfg->napi_event;
+ 	if (!adapter)
+ 		return 0;
  
-+	tp->opts1_mask = (tp->mac_version != RTL_GIGA_MAC_VER_01) ?
-+		~(RxBOVF | RxFOVF) : ~0;
++	zfcp_erp_clear_adapter_status(adapter, clear);
+ 	zfcp_erp_set_adapter_status(adapter, ZFCP_STATUS_COMMON_RUNNING);
+ 	zfcp_erp_adapter_reopen(adapter, ZFCP_STATUS_COMMON_ERP_FAILED,
+-				"ccresu2");
++				tag);
+ 	zfcp_erp_wait(adapter);
+ 	flush_work(&adapter->scan_work);
+ 
+@@ -163,26 +169,29 @@ static int zfcp_ccw_set_online(struct cc
+ 	BUG_ON(!zfcp_reqlist_isempty(adapter->req_list));
+ 	adapter->req_no = 0;
+ 
+-	zfcp_ccw_activate(cdev);
++	zfcp_ccw_activate(cdev, 0, "ccsonl1");
+ 	zfcp_ccw_adapter_put(adapter);
+ 	return 0;
+ }
+ 
+ /**
+- * zfcp_ccw_set_offline - set_offline function of zfcp driver
++ * zfcp_ccw_offline_sync - shut down adapter and wait for it to finish
+  * @cdev: pointer to belonging ccw device
++ * @set: Status flags to set.
++ * @tag: s390dbf trace record tag
+  *
+  * This function gets called by the common i/o layer and sets an adapter
+  * into state offline.
+  */
+-static int zfcp_ccw_set_offline(struct ccw_device *cdev)
++static int zfcp_ccw_offline_sync(struct ccw_device *cdev, int set, char *tag)
+ {
+ 	struct zfcp_adapter *adapter = zfcp_ccw_adapter_by_cdev(cdev);
+ 
+ 	if (!adapter)
+ 		return 0;
+ 
+-	zfcp_erp_adapter_shutdown(adapter, 0, "ccsoff1");
++	zfcp_erp_set_adapter_status(adapter, set);
++	zfcp_erp_adapter_shutdown(adapter, 0, tag);
+ 	zfcp_erp_wait(adapter);
+ 
+ 	zfcp_ccw_adapter_put(adapter);
+@@ -190,6 +199,18 @@ static int zfcp_ccw_set_offline(struct c
+ }
+ 
+ /**
++ * zfcp_ccw_set_offline - set_offline function of zfcp driver
++ * @cdev: pointer to belonging ccw device
++ *
++ * This function gets called by the common i/o layer and sets an adapter
++ * into state offline.
++ */
++static int zfcp_ccw_set_offline(struct ccw_device *cdev)
++{
++	return zfcp_ccw_offline_sync(cdev, 0, "ccsoff1");
++}
 +
- 	init_timer(&tp->timer);
- 	tp->timer.data = (unsigned long) dev;
- 	tp->timer.function = rtl8169_phy_timer;
-@@ -4920,7 +4925,7 @@ static int rtl8169_rx_interrupt(struct n
- 		u32 status;
++/**
+  * zfcp_ccw_notify - ccw notify function
+  * @cdev: pointer to belonging ccw device
+  * @event: indicates if adapter was detached or attached
+@@ -206,6 +227,11 @@ static int zfcp_ccw_notify(struct ccw_de
  
- 		rmb();
--		status = le32_to_cpu(desc->opts1);
-+		status = le32_to_cpu(desc->opts1) & tp->opts1_mask;
+ 	switch (event) {
+ 	case CIO_GONE:
++		if (atomic_read(&adapter->status) &
++		    ZFCP_STATUS_ADAPTER_SUSPENDED) { /* notification ignore */
++			zfcp_dbf_hba_basic("ccnigo1", adapter);
++			break;
++		}
+ 		dev_warn(&cdev->dev, "The FCP device has been detached\n");
+ 		zfcp_erp_adapter_shutdown(adapter, 0, "ccnoti1");
+ 		break;
+@@ -215,6 +241,11 @@ static int zfcp_ccw_notify(struct ccw_de
+ 		zfcp_erp_adapter_shutdown(adapter, 0, "ccnoti2");
+ 		break;
+ 	case CIO_OPER:
++		if (atomic_read(&adapter->status) &
++		    ZFCP_STATUS_ADAPTER_SUSPENDED) { /* notification ignore */
++			zfcp_dbf_hba_basic("ccniop1", adapter);
++			break;
++		}
+ 		dev_info(&cdev->dev, "The FCP device is operational again\n");
+ 		zfcp_erp_set_adapter_status(adapter,
+ 					    ZFCP_STATUS_COMMON_RUNNING);
+@@ -250,6 +281,28 @@ static void zfcp_ccw_shutdown(struct ccw
+ 	zfcp_ccw_adapter_put(adapter);
+ }
  
- 		if (status & DescOwn)
- 			break;
++static int zfcp_ccw_suspend(struct ccw_device *cdev)
++{
++	zfcp_ccw_offline_sync(cdev, ZFCP_STATUS_ADAPTER_SUSPENDED, "ccsusp1");
++	return 0;
++}
++
++static int zfcp_ccw_thaw(struct ccw_device *cdev)
++{
++	/* trace records for thaw and final shutdown during suspend
++	   can only be found in system dump until the end of suspend
++	   but not after resume because it's based on the memory image
++	   right after the very first suspend (freeze) callback */
++	zfcp_ccw_activate(cdev, 0, "ccthaw1");
++	return 0;
++}
++
++static int zfcp_ccw_resume(struct ccw_device *cdev)
++{
++	zfcp_ccw_activate(cdev, ZFCP_STATUS_ADAPTER_SUSPENDED, "ccresu1");
++	return 0;
++}
++
+ struct ccw_driver zfcp_ccw_driver = {
+ 	.driver = {
+ 		.owner	= THIS_MODULE,
+@@ -262,7 +315,7 @@ struct ccw_driver zfcp_ccw_driver = {
+ 	.set_offline = zfcp_ccw_set_offline,
+ 	.notify      = zfcp_ccw_notify,
+ 	.shutdown    = zfcp_ccw_shutdown,
+-	.freeze      = zfcp_ccw_set_offline,
+-	.thaw	     = zfcp_ccw_activate,
+-	.restore     = zfcp_ccw_activate,
++	.freeze      = zfcp_ccw_suspend,
++	.thaw	     = zfcp_ccw_thaw,
++	.restore     = zfcp_ccw_resume,
+ };
+--- a/drivers/s390/scsi/zfcp_dbf.c
++++ b/drivers/s390/scsi/zfcp_dbf.c
+@@ -163,6 +163,26 @@ void zfcp_dbf_hba_bit_err(char *tag, str
+ 	spin_unlock_irqrestore(&dbf->hba_lock, flags);
+ }
+ 
++/**
++ * zfcp_dbf_hba_basic - trace event for basic adapter events
++ * @adapter: pointer to struct zfcp_adapter
++ */
++void zfcp_dbf_hba_basic(char *tag, struct zfcp_adapter *adapter)
++{
++	struct zfcp_dbf *dbf = adapter->dbf;
++	struct zfcp_dbf_hba *rec = &dbf->hba_buf;
++	unsigned long flags;
++
++	spin_lock_irqsave(&dbf->hba_lock, flags);
++	memset(rec, 0, sizeof(*rec));
++
++	memcpy(rec->tag, tag, ZFCP_DBF_TAG_LEN);
++	rec->id = ZFCP_DBF_HBA_BASIC;
++
++	debug_event(dbf->hba, 1, rec, sizeof(*rec));
++	spin_unlock_irqrestore(&dbf->hba_lock, flags);
++}
++
+ static void zfcp_dbf_set_common(struct zfcp_dbf_rec *rec,
+ 				struct zfcp_adapter *adapter,
+ 				struct zfcp_port *port,
+--- a/drivers/s390/scsi/zfcp_dbf.h
++++ b/drivers/s390/scsi/zfcp_dbf.h
+@@ -154,6 +154,7 @@ enum zfcp_dbf_hba_id {
+ 	ZFCP_DBF_HBA_RES	= 1,
+ 	ZFCP_DBF_HBA_USS	= 2,
+ 	ZFCP_DBF_HBA_BIT	= 3,
++	ZFCP_DBF_HBA_BASIC	= 4,
+ };
+ 
+ /**
+--- a/drivers/s390/scsi/zfcp_def.h
++++ b/drivers/s390/scsi/zfcp_def.h
+@@ -76,6 +76,7 @@ struct zfcp_reqlist;
+ #define ZFCP_STATUS_ADAPTER_SIOSL_ISSUED	0x00000004
+ #define ZFCP_STATUS_ADAPTER_XCONFIG_OK		0x00000008
+ #define ZFCP_STATUS_ADAPTER_HOST_CON_INIT	0x00000010
++#define ZFCP_STATUS_ADAPTER_SUSPENDED		0x00000040
+ #define ZFCP_STATUS_ADAPTER_ERP_PENDING		0x00000100
+ #define ZFCP_STATUS_ADAPTER_LINK_UNPLUGGED	0x00000200
+ #define ZFCP_STATUS_ADAPTER_DATA_DIV_ENABLED	0x00000400
+--- a/drivers/s390/scsi/zfcp_ext.h
++++ b/drivers/s390/scsi/zfcp_ext.h
+@@ -53,6 +53,7 @@ extern void zfcp_dbf_hba_fsf_uss(char *,
+ extern void zfcp_dbf_hba_fsf_res(char *, struct zfcp_fsf_req *);
+ extern void zfcp_dbf_hba_bit_err(char *, struct zfcp_fsf_req *);
+ extern void zfcp_dbf_hba_berr(struct zfcp_dbf *, struct zfcp_fsf_req *);
++extern void zfcp_dbf_hba_basic(char *, struct zfcp_adapter *);
+ extern void zfcp_dbf_san_req(char *, struct zfcp_fsf_req *, u32);
+ extern void zfcp_dbf_san_res(char *, struct zfcp_fsf_req *);
+ extern void zfcp_dbf_san_in_els(char *, struct zfcp_fsf_req *);
 
 
