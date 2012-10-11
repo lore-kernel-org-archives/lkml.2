@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759412Ab2JKVdA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 17:33:00 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:42595 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759398Ab2JKVc5 (ORCPT
+	id S1759425Ab2JKVdH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 17:33:07 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:39237 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759399Ab2JKVc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 17:32:57 -0400
+	Thu, 11 Oct 2012 17:32:58 -0400
 From: Matt Porter <mporter@ti.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>, gururaja.hebbar@ti.com,
         Sekhar Nori <nsekhar@ti.com>
@@ -16,9 +16,9 @@ Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
 	<davinci-linux-open-source@linux.davincidsp.com>,
         Ben Gardiner <bengardiner@nanometrics.ca>,
         Daniel Mack <zonque@gmail.com>
-Subject: [PATCH v2 1/2] ASoC: davinci: replace private sram api with genalloc
-Date: Thu, 11 Oct 2012 17:33:48 -0400
-Message-Id: <1349991229-32107-2-git-send-email-mporter@ti.com>
+Subject: [PATCH v2 2/2] ARM: davinci: enable SRAM ping ping buffering on DA850
+Date: Thu, 11 Oct 2012 17:33:49 -0400
+Message-Id: <1349991229-32107-3-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349991229-32107-1-git-send-email-mporter@ti.com>
 References: <1349991229-32107-1-git-send-email-mporter@ti.com>
@@ -26,152 +26,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes the DaVinci private SRAM API and replaces it with
-the genalloc API. The SRAM gen_pool is passed in pdata since
-DaVinci is in the early stages of DT conversion.
+Passes the DA850 shared SRAM gen_pool to the McASP driver
+and enables the ping-pong buffer DMA support.
 
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- include/linux/platform_data/davinci_asp.h |    3 +++
- sound/soc/davinci/davinci-mcasp.c         |    2 ++
- sound/soc/davinci/davinci-pcm.c           |   18 ++++++++++++------
- sound/soc/davinci/davinci-pcm.h           |    2 ++
- 4 files changed, 19 insertions(+), 6 deletions(-)
+ arch/arm/mach-davinci/board-da850-evm.c |   25 +++++++++++++++----------
+ 1 file changed, 15 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/platform_data/davinci_asp.h b/include/linux/platform_data/davinci_asp.h
-index d0c5825..f3d6e4f 100644
---- a/include/linux/platform_data/davinci_asp.h
-+++ b/include/linux/platform_data/davinci_asp.h
-@@ -16,6 +16,8 @@
- #ifndef __DAVINCI_ASP_H
- #define __DAVINCI_ASP_H
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index 9e7f954..df87866 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -41,6 +41,7 @@
+ #include <mach/cp_intc.h>
+ #include <mach/da8xx.h>
+ #include <mach/mux.h>
++#include <mach/sram.h>
  
-+#include <linux/genalloc.h>
-+
- struct snd_platform_data {
- 	u32 tx_dma_offset;
- 	u32 rx_dma_offset;
-@@ -30,6 +32,7 @@ struct snd_platform_data {
- 	unsigned enable_channel_combine:1;
- 	unsigned sram_size_playback;
- 	unsigned sram_size_capture;
-+	struct gen_pool *sram_pool;
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+@@ -749,16 +750,19 @@ static u8 da850_iis_serializer_direction[] = {
+ };
  
- 	/*
- 	 * If McBSP peripheral gets the clock from an external pin,
-diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
-index 714e51e..52194bb 100644
---- a/sound/soc/davinci/davinci-mcasp.c
-+++ b/sound/soc/davinci/davinci-mcasp.c
-@@ -1098,6 +1098,7 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
- 	dma_data = &dev->dma_params[SNDRV_PCM_STREAM_PLAYBACK];
- 	dma_data->asp_chan_q = pdata->asp_chan_q;
- 	dma_data->ram_chan_q = pdata->ram_chan_q;
-+	dma_data->sram_pool = pdata->sram_pool;
- 	dma_data->sram_size = pdata->sram_size_playback;
- 	dma_data->dma_addr = (dma_addr_t) (pdata->tx_dma_offset +
- 							mem->start);
-@@ -1115,6 +1116,7 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
- 	dma_data = &dev->dma_params[SNDRV_PCM_STREAM_CAPTURE];
- 	dma_data->asp_chan_q = pdata->asp_chan_q;
- 	dma_data->ram_chan_q = pdata->ram_chan_q;
-+	dma_data->sram_pool = pdata->sram_pool;
- 	dma_data->sram_size = pdata->sram_size_capture;
- 	dma_data->dma_addr = (dma_addr_t)(pdata->rx_dma_offset +
- 							mem->start);
-diff --git a/sound/soc/davinci/davinci-pcm.c b/sound/soc/davinci/davinci-pcm.c
-index 93ea3bf..d2cc169 100644
---- a/sound/soc/davinci/davinci-pcm.c
-+++ b/sound/soc/davinci/davinci-pcm.c
-@@ -16,6 +16,7 @@
- #include <linux/slab.h>
- #include <linux/dma-mapping.h>
- #include <linux/kernel.h>
-+#include <linux/genalloc.h>
+ static struct snd_platform_data da850_evm_snd_data = {
+-	.tx_dma_offset	= 0x2000,
+-	.rx_dma_offset	= 0x2000,
+-	.op_mode	= DAVINCI_MCASP_IIS_MODE,
+-	.num_serializer	= ARRAY_SIZE(da850_iis_serializer_direction),
+-	.tdm_slots	= 2,
+-	.serial_dir	= da850_iis_serializer_direction,
+-	.asp_chan_q	= EVENTQ_0,
+-	.version	= MCASP_VERSION_2,
+-	.txnumevt	= 1,
+-	.rxnumevt	= 1,
++	.tx_dma_offset		= 0x2000,
++	.rx_dma_offset		= 0x2000,
++	.op_mode		= DAVINCI_MCASP_IIS_MODE,
++	.num_serializer		= ARRAY_SIZE(da850_iis_serializer_direction),
++	.tdm_slots		= 2,
++	.serial_dir		= da850_iis_serializer_direction,
++	.asp_chan_q		= EVENTQ_0,
++	.ram_chan_q		= EVENTQ_1,
++	.version		= MCASP_VERSION_2,
++	.txnumevt		= 1,
++	.rxnumevt		= 1,
++	.sram_size_playback	= SZ_8K,
++	.sram_size_capture	= SZ_8K,
+ };
  
- #include <sound/core.h>
- #include <sound/pcm.h>
-@@ -23,7 +24,6 @@
- #include <sound/soc.h>
+ static const short da850_evm_mcasp_pins[] __initconst = {
+@@ -1333,6 +1337,7 @@ static __init void da850_evm_init(void)
+ 		pr_warning("da850_evm_init: mcasp mux setup failed: %d\n",
+ 				ret);
  
- #include <asm/dma.h>
--#include <mach/sram.h>
++	da850_evm_snd_data.sram_pool = sram_get_gen_pool();
+ 	da8xx_register_mcasp(0, &da850_evm_snd_data);
  
- #include "davinci-pcm.h"
- 
-@@ -259,7 +259,8 @@ static void davinci_pcm_dma_irq(unsigned link, u16 ch_status, void *data)
- 	}
- }
- 
--static int allocate_sram(struct snd_pcm_substream *substream, unsigned size,
-+static int allocate_sram(struct snd_pcm_substream *substream,
-+		struct gen_pool *sram_pool, unsigned size,
- 		struct snd_pcm_hardware *ppcm)
- {
- 	struct snd_dma_buffer *buf = &substream->dma_buffer;
-@@ -271,9 +272,10 @@ static int allocate_sram(struct snd_pcm_substream *substream, unsigned size,
- 		return 0;
- 
- 	ppcm->period_bytes_max = size;
--	iram_virt = sram_alloc(size, &iram_phys);
-+	iram_virt = (void *)gen_pool_alloc(sram_pool, size);
- 	if (!iram_virt)
- 		goto exit1;
-+	iram_phys = gen_pool_virt_to_phys(sram_pool, (unsigned)iram_virt);
- 	iram_dma = kzalloc(sizeof(*iram_dma), GFP_KERNEL);
- 	if (!iram_dma)
- 		goto exit2;
-@@ -285,7 +287,7 @@ static int allocate_sram(struct snd_pcm_substream *substream, unsigned size,
- 	return 0;
- exit2:
- 	if (iram_virt)
--		sram_free(iram_virt, size);
-+		gen_pool_free(sram_pool, (unsigned)iram_virt, size);
- exit1:
- 	return -ENOMEM;
- }
-@@ -676,7 +678,7 @@ static int davinci_pcm_open(struct snd_pcm_substream *substream)
- 
- 	ppcm = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ?
- 			&pcm_hardware_playback : &pcm_hardware_capture;
--	allocate_sram(substream, params->sram_size, ppcm);
-+	allocate_sram(substream, params->sram_pool, params->sram_size, ppcm);
- 	snd_soc_set_runtime_hwparams(substream, ppcm);
- 	/* ensure that buffer size is a multiple of period size */
- 	ret = snd_pcm_hw_constraint_integer(runtime,
-@@ -819,7 +821,11 @@ static void davinci_pcm_free(struct snd_pcm *pcm)
- 		buf->area = NULL;
- 		iram_dma = buf->private_data;
- 		if (iram_dma) {
--			sram_free(iram_dma->area, iram_dma->bytes);
-+			struct davinci_runtime_data *prtd =
-+				substream->runtime->private_data;
-+			struct gen_pool *sram_pool = prtd->params->sram_pool;
-+			gen_pool_free(sram_pool, (unsigned)iram_dma->area,
-+				      iram_dma->bytes);
- 			kfree(iram_dma);
- 		}
- 	}
-diff --git a/sound/soc/davinci/davinci-pcm.h b/sound/soc/davinci/davinci-pcm.h
-index fc4d01c..b6ef703 100644
---- a/sound/soc/davinci/davinci-pcm.h
-+++ b/sound/soc/davinci/davinci-pcm.h
-@@ -12,6 +12,7 @@
- #ifndef _DAVINCI_PCM_H
- #define _DAVINCI_PCM_H
- 
-+#include <linux/genalloc.h>
- #include <linux/platform_data/davinci_asp.h>
- #include <mach/edma.h>
- 
-@@ -20,6 +21,7 @@ struct davinci_pcm_dma_params {
- 	unsigned short acnt;
- 	dma_addr_t dma_addr;		/* device physical address for DMA */
- 	unsigned sram_size;
-+	struct gen_pool *sram_pool;	/* SRAM gen_pool for ping pong */
- 	enum dma_event_q asp_chan_q;	/* event queue number for ASP channel */
- 	enum dma_event_q ram_chan_q;	/* event queue number for RAM channel */
- 	unsigned char data_type;	/* xfer data type */
+ 	ret = davinci_cfg_reg_list(da850_lcdcntl_pins);
 -- 
 1.7.9.5
 
