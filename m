@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934238Ab2JKBZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:25:26 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57104 "EHLO
+	id S934250Ab2JKBZb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:25:31 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40267 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933959Ab2JKBZS (ORCPT
+	by vger.kernel.org with ESMTP id S934220Ab2JKBZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:25:18 -0400
-X-Sasl-enc: C7QGzGxBqT4FPa2FVUqcmLAQ9HiAT3kBNC8pYOMD8OjL 1349918711
+	Wed, 10 Oct 2012 21:25:22 -0400
+X-Sasl-enc: JRI0rCsYr3YAw79EdJM/j0cJsP1M4Y55FJWOKoqTzoVG 1349918721
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Michal Hocko <mhocko@suse.cz>, Hillf Danton <dhillf@gmail.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 075/120] hugetlb: do not use vma_hugecache_offset() for vma_prio_tree_foreach
-Date: Thu, 11 Oct 2012 10:00:27 +0900
-Message-Id: <20121011005840.036284747@linuxfoundation.org>
+Subject: [ 077/120] mm: thp: fix pmd_present for split_huge_page and PROT_NONE with THP
+Date: Thu, 11 Oct 2012 10:00:29 +0900
+Message-Id: <20121011005840.481980857@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -34,52 +31,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit 36e4f20af833d1ce196e6a4ade05dc26c44652d1 upstream.
+commit 027ef6c87853b0a9df53175063028edb4950d476 upstream.
 
-Commit 0c176d52b0b2 ("mm: hugetlb: fix pgoff computation when unmapping
-page from vma") fixed pgoff calculation but it has replaced it by
-vma_hugecache_offset() which is not approapriate for offsets used for
-vma_prio_tree_foreach() because that one expects index in page units
-rather than in huge_page_shift.
+In many places !pmd_present has been converted to pmd_none.  For pmds
+that's equivalent and pmd_none is quicker so using pmd_none is better.
 
-Johannes said:
+However (unless we delete pmd_present) we should provide an accurate
+pmd_present too.  This will avoid the risk of code thinking the pmd is non
+present because it's under __split_huge_page_map, see the pmd_mknotpresent
+there and the comment above it.
 
-: The resulting index may not be too big, but it can be too small: assume
-: hpage size of 2M and the address to unmap to be 0x200000.  This is regular
-: page index 512 and hpage index 1.  If you have a VMA that maps the file
-: only starting at the second huge page, that VMAs vm_pgoff will be 512 but
-: you ask for offset 1 and miss it even though it does map the page of
-: interest.  hugetlb_cow() will try to unmap, miss the vma, and retry the
-: cow until the allocation succeeds or the skipped vma(s) go away.
+If the page has been mprotected as PROT_NONE, it would also lead to a
+pmd_present false negative in the same way as the race with
+split_huge_page.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Hillf Danton <dhillf@gmail.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Because the PSE bit stays on at all times (both during split_huge_page and
+when the _PAGE_PROTNONE bit get set), we could only check for the PSE bit,
+but checking the PROTNONE bit too is still good to remember pmd_present
+must always keep PROT_NONE into account.
+
+This explains a not reproducible BUG_ON that was seldom reported on the
+lists.
+
+The same issue is in pmd_large, it would go wrong with both PROT_NONE and
+if it races with split_huge_page.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/hugetlb.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/pgtable.h |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2431,7 +2431,8 @@ static int unmap_ref_private(struct mm_s
- 	 * from page cache lookup which is in HPAGE_SIZE units.
- 	 */
- 	address = address & huge_page_mask(h);
--	pgoff = vma_hugecache_offset(h, vma, address);
-+	pgoff = ((address - vma->vm_start) >> PAGE_SHIFT) +
-+			vma->vm_pgoff;
- 	mapping = vma->vm_file->f_dentry->d_inode->i_mapping;
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -146,8 +146,7 @@ static inline unsigned long pmd_pfn(pmd_
  
- 	/*
+ static inline int pmd_large(pmd_t pte)
+ {
+-	return (pmd_flags(pte) & (_PAGE_PSE | _PAGE_PRESENT)) ==
+-		(_PAGE_PSE | _PAGE_PRESENT);
++	return pmd_flags(pte) & _PAGE_PSE;
+ }
+ 
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+@@ -415,7 +414,13 @@ static inline int pte_hidden(pte_t pte)
+ 
+ static inline int pmd_present(pmd_t pmd)
+ {
+-	return pmd_flags(pmd) & _PAGE_PRESENT;
++	/*
++	 * Checking for _PAGE_PSE is needed too because
++	 * split_huge_page will temporarily clear the present bit (but
++	 * the _PAGE_PSE flag will remain set at all times while the
++	 * _PAGE_PRESENT bit is clear).
++	 */
++	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE);
+ }
+ 
+ static inline int pmd_none(pmd_t pmd)
 
 
