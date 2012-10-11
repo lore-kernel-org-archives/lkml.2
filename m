@@ -1,32 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934388Ab2JKC0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:26:42 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38739 "EHLO
+	id S934414Ab2JKC1D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:27:03 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33515 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933994Ab2JKC00 (ORCPT
+	by vger.kernel.org with ESMTP id S933452Ab2JKC0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:26:26 -0400
-X-Sasl-enc: PiXkMaKKN8A+/I7UkSWcukJ0eefRCzfzq7mPiZZi36eZ 1349922385
+	Wed, 10 Oct 2012 22:26:54 -0400
+X-Sasl-enc: t4MjPZuse0PEXrDlGINzb4zGo67XF8aCgRkLY70DMn57 1349922412
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sameer Nanda <snanda@chromium.org>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Hayes Wang <hayeswang@realtek.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Subject: =?UTF-8?q?=5B=2069/84=5D=20r8169=3A=20runtime=20resume=20before=20shutdown=2E?=
-Date: Thu, 11 Oct 2012 11:03:53 +0900
-Message-Id: <20121011015429.496759307@linuxfoundation.org>
+        Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Josh Boyer <jwboyer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 75/84] mempolicy: remove mempolicy sharing
+Date: Thu, 11 Oct 2012 11:03:59 +0900
+Message-Id: <20121011015430.572152637@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,56 +31,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-From: françois romieu <romieu@fr.zoreil.com>
+commit 869833f2c5c6e4dd09a5378cfc665ffb4615e5d2 upstream.
 
-commit 2a15cd2ff488a9fdb55e5e34060f499853b27c77 upstream.
+Dave Jones' system call fuzz testing tool "trinity" triggered the
+following bug error with slab debugging enabled
 
-With runtime PM, if the ethernet cable is disconnected, the device is
-transitioned to D3 state to conserve energy. If the system is shutdown
-in this state, any register accesses in rtl_shutdown are dropped on
-the floor. As the device was programmed by .runtime_suspend() to wake
-on link changes, it is thus brought back up as soon as the link recovers.
+    =============================================================================
+    BUG numa_policy (Not tainted): Poison overwritten
+    -----------------------------------------------------------------------------
 
-Resuming every suspended device through the driver core would slow things
-down and it is not clear how many devices really need it now.
+    INFO: 0xffff880146498250-0xffff880146498250. First byte 0x6a instead of 0x6b
+    INFO: Allocated in mpol_new+0xa3/0x140 age=46310 cpu=6 pid=32154
+     __slab_alloc+0x3d3/0x445
+     kmem_cache_alloc+0x29d/0x2b0
+     mpol_new+0xa3/0x140
+     sys_mbind+0x142/0x620
+     system_call_fastpath+0x16/0x1b
 
-Original report and D0 transition patch by Sameer Nanda. Patch has been
-changed to comply with advices by Rafael J. Wysocki and the PM folks.
+    INFO: Freed in __mpol_put+0x27/0x30 age=46268 cpu=6 pid=32154
+     __slab_free+0x2e/0x1de
+     kmem_cache_free+0x25a/0x260
+     __mpol_put+0x27/0x30
+     remove_vma+0x68/0x90
+     exit_mmap+0x118/0x140
+     mmput+0x73/0x110
+     exit_mm+0x108/0x130
+     do_exit+0x162/0xb90
+     do_group_exit+0x4f/0xc0
+     sys_exit_group+0x17/0x20
+     system_call_fastpath+0x16/0x1b
 
-Reported-by: Sameer Nanda <snanda@chromium.org>
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Hayes Wang <hayeswang@realtek.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
+    INFO: Slab 0xffffea0005192600 objects=27 used=27 fp=0x          (null) flags=0x20000000004080
+    INFO: Object 0xffff880146498250 @offset=592 fp=0xffff88014649b9d0
+
+The problem is that the structure is being prematurely freed due to a
+reference count imbalance. In the following case mbind(addr, len) should
+replace the memory policies of both vma1 and vma2 and thus they will
+become to share the same mempolicy and the new mempolicy will have the
+MPOL_F_SHARED flag.
+
+  +-------------------+-------------------+
+  |     vma1          |     vma2(shmem)   |
+  +-------------------+-------------------+
+  |                                       |
+ addr                                 addr+len
+
+alloc_pages_vma() uses get_vma_policy() and mpol_cond_put() pair for
+maintaining the mempolicy reference count.  The current rule is that
+get_vma_policy() only increments refcount for shmem VMA and
+mpol_conf_put() only decrements refcount if the policy has
+MPOL_F_SHARED.
+
+In above case, vma1 is not shmem vma and vma->policy has MPOL_F_SHARED!
+The reference count will be decreased even though was not increased
+whenever alloc_page_vma() is called.  This has been broken since commit
+[52cd3b07: mempolicy: rework mempolicy Reference Counting] in 2008.
+
+There is another serious bug with the sharing of memory policies.
+Currently, mempolicy rebind logic (it is called from cpuset rebinding)
+ignores a refcount of mempolicy and override it forcibly.  Thus, any
+mempolicy sharing may cause mempolicy corruption.  The bug was
+introduced by commit [68860ec1: cpusets: automatic numa mempolicy
+rebinding].
+
+Ideally, the shared policy handling would be rewritten to either
+properly handle COW of the policy structures or at least reference count
+MPOL_F_SHARED based exclusively on information within the policy.
+However, this patch takes the easier approach of disabling any policy
+sharing between VMAs.  Each new range allocated with sp_alloc will
+allocate a new policy, set the reference count to 1 and drop the
+reference count of the old policy.  This increases the memory footprint
+but is not expected to be a major problem as mbind() is unlikely to be
+used for fine-grained ranges.  It is also inefficient because it means
+we allocate a new policy even in cases where mbind_range() could use the
+new_policy passed to it.  However, it is more straight-forward and the
+change should be invisible to the user.
+
+[mgorman@suse.de: Edited changelog]
+Reported-by: Dave Jones <davej@redhat.com>
+Cc: Christoph Lameter <cl@linux.com>
+Reviewed-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: Josh Boyer <jwboyer@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/r8169.c |    5 +++++
- 1 file changed, 5 insertions(+)
 
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -5570,6 +5570,9 @@ static void rtl_shutdown(struct pci_dev
- 	struct net_device *dev = pci_get_drvdata(pdev);
- 	struct rtl8169_private *tp = netdev_priv(dev);
- 	void __iomem *ioaddr = tp->mmio_addr;
-+	struct device *d = &pdev->dev;
-+
-+	pm_runtime_get_sync(d);
- 
- 	rtl8169_net_suspend(dev);
- 
-@@ -5598,6 +5601,8 @@ static void rtl_shutdown(struct pci_dev
- 		pci_wake_from_d3(pdev, true);
- 		pci_set_power_state(pdev, PCI_D3hot);
- 	}
-+
-+	pm_runtime_put_noidle(d);
+---
+ mm/mempolicy.c |   52 ++++++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 38 insertions(+), 14 deletions(-)
+
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -606,24 +606,39 @@ check_range(struct mm_struct *mm, unsign
+ 	return first;
  }
  
- static struct pci_driver rtl8169_pci_driver = {
+-/* Apply policy to a single VMA */
+-static int policy_vma(struct vm_area_struct *vma, struct mempolicy *new)
++/*
++ * Apply policy to a single VMA
++ * This must be called with the mmap_sem held for writing.
++ */
++static int vma_replace_policy(struct vm_area_struct *vma,
++						struct mempolicy *pol)
+ {
+-	int err = 0;
+-	struct mempolicy *old = vma->vm_policy;
++	int err;
++	struct mempolicy *old;
++	struct mempolicy *new;
+ 
+ 	pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
+ 		 vma->vm_start, vma->vm_end, vma->vm_pgoff,
+ 		 vma->vm_ops, vma->vm_file,
+ 		 vma->vm_ops ? vma->vm_ops->set_policy : NULL);
+ 
+-	if (vma->vm_ops && vma->vm_ops->set_policy)
++	new = mpol_dup(pol);
++	if (IS_ERR(new))
++		return PTR_ERR(new);
++
++	if (vma->vm_ops && vma->vm_ops->set_policy) {
+ 		err = vma->vm_ops->set_policy(vma, new);
+-	if (!err) {
+-		mpol_get(new);
+-		vma->vm_policy = new;
+-		mpol_put(old);
++		if (err)
++			goto err_out;
+ 	}
++
++	old = vma->vm_policy;
++	vma->vm_policy = new; /* protected by mmap_sem */
++	mpol_put(old);
++
++	return 0;
++ err_out:
++	mpol_put(new);
+ 	return err;
+ }
+ 
+@@ -666,7 +681,7 @@ static int mbind_range(struct mm_struct
+ 			if (err)
+ 				goto out;
+ 		}
+-		err = policy_vma(vma, new_pol);
++		err = vma_replace_policy(vma, new_pol);
+ 		if (err)
+ 			goto out;
+ 	}
+@@ -2091,15 +2106,24 @@ static void sp_delete(struct shared_poli
+ static struct sp_node *sp_alloc(unsigned long start, unsigned long end,
+ 				struct mempolicy *pol)
+ {
+-	struct sp_node *n = kmem_cache_alloc(sn_cache, GFP_KERNEL);
++	struct sp_node *n;
++	struct mempolicy *newpol;
+ 
++	n = kmem_cache_alloc(sn_cache, GFP_KERNEL);
+ 	if (!n)
+ 		return NULL;
++
++	newpol = mpol_dup(pol);
++	if (IS_ERR(newpol)) {
++		kmem_cache_free(sn_cache, n);
++		return NULL;
++	}
++	newpol->flags |= MPOL_F_SHARED;
++
+ 	n->start = start;
+ 	n->end = end;
+-	mpol_get(pol);
+-	pol->flags |= MPOL_F_SHARED;	/* for unref */
+-	n->policy = pol;
++	n->policy = newpol;
++
+ 	return n;
+ }
+ 
 
 
