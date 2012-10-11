@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933663Ab2JKBfH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:35:07 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52471 "EHLO
+	id S933820Ab2JKBSx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:18:53 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56983 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933818Ab2JKBTI (ORCPT
+	by vger.kernel.org with ESMTP id S933689Ab2JKBSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:19:08 -0400
-X-Sasl-enc: zj+TU2/aHY5lijQU288t3LkF3beDhxVHrAsgUTVjJ8wy 1349918346
+	Wed, 10 Oct 2012 21:18:48 -0400
+X-Sasl-enc: AQQIyV5/NIkKZolR7XW1fEX6TiMOMzB9C8VFTokMScie 1349918327
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mathias Krause <minipli@googlemail.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+        Li RongQing <roy.qing.li@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 025/120] xfrm_user: return error pointer instead of NULL #2
-Date: Thu, 11 Oct 2012 09:59:37 +0900
-Message-Id: <20121011005830.070140001@linuxfoundation.org>
+Subject: [ 026/120] xfrm: fix a read lock imbalance in make_blackhole
+Date: Thu, 11 Oct 2012 09:59:38 +0900
+Message-Id: <20121011005830.284424398@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -30,45 +29,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Li RongQing <roy.qing.li@gmail.com>
 
-[ Upstream commit c25463722509fef0ed630b271576a8c9a70236f3 ]
+[ Upstream commit 433a19548061bb5457b6ab77ed7ea58ca6e43ddb ]
 
-When dump_one_policy() returns an error, e.g. because of a too small
-buffer to dump the whole xfrm policy, xfrm_policy_netlink() returns
-NULL instead of an error pointer. But its caller expects an error
-pointer and therefore continues to operate on a NULL skbuff.
+if xfrm_policy_get_afinfo returns 0, it has already released the read
+lock, xfrm_policy_put_afinfo should not be called again.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/xfrm/xfrm_user.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/xfrm/xfrm_policy.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/xfrm/xfrm_user.c
-+++ b/net/xfrm/xfrm_user.c
-@@ -1531,6 +1531,7 @@ static struct sk_buff *xfrm_policy_netli
- {
- 	struct xfrm_dump_info info;
- 	struct sk_buff *skb;
-+	int err;
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -1761,7 +1761,7 @@ static struct dst_entry *make_blackhole(
  
- 	skb = nlmsg_new(NLMSG_DEFAULT_SIZE, GFP_KERNEL);
- 	if (!skb)
-@@ -1541,9 +1542,10 @@ static struct sk_buff *xfrm_policy_netli
- 	info.nlmsg_seq = seq;
- 	info.nlmsg_flags = 0;
- 
--	if (dump_one_policy(xp, dir, 0, &info) < 0) {
-+	err = dump_one_policy(xp, dir, 0, &info);
-+	if (err) {
- 		kfree_skb(skb);
--		return NULL;
-+		return ERR_PTR(err);
+ 	if (!afinfo) {
+ 		dst_release(dst_orig);
+-		ret = ERR_PTR(-EINVAL);
++		return ERR_PTR(-EINVAL);
+ 	} else {
+ 		ret = afinfo->blackhole_route(net, dst_orig);
  	}
- 
- 	return skb;
 
 
