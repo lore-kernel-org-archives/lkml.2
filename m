@@ -1,51 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758574Ab2JKLda (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 07:33:30 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:24793 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758351Ab2JKLd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 07:33:29 -0400
-Message-ID: <5076AE3B.5040509@imgtec.com>
-Date: Thu, 11 Oct 2012 12:32:11 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1758604Ab2JKLlz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 07:41:55 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:49951 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758422Ab2JKLlw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 07:41:52 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+Subject: Re: [PATCH 0/3] Update LZO compression
+Date: Thu, 11 Oct 2012 11:41:27 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Johannes Stezenbach <js@sig21.net>,
+        "richard -rw- weinberger" <richard.weinberger@gmail.com>,
+        linux-btrfs@vger.kernel.org, linux-crypto@vger.kernel.org,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Phillip Lougher <phillip@squashfs.org.uk>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+References: <cover.1349621096.git.markus@oberhumer.com> <20121009122614.569b9535.akpm@linux-foundation.org> <50748113.80408@oberhumer.com>
+In-Reply-To: <50748113.80408@oberhumer.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH] scsi: make struct scsi_varlen_cdb_hdr packed
-References: <1349946933-30314-1-git-send-email-james.hogan@imgtec.com> <1349951069.2425.44.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1349951069.2425.44.camel@dabdike.int.hansenpartnership.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2012_10_11_12_33_23
+Message-Id: <201210111141.27270.arnd@arndb.de>
+X-Provags-ID: V02:K0:8GKu/vARVrq6R81RPHg/WH9jJn7nFLN2fTDb3fIYgyc
+ r02WO4djIyj4+pZ5BAUjQqoko3opqX0VMpFcP9A0guaNeuvpcw
+ pfCV8Gzd9fDnYG5TrG12gVPyGyeVXfmAaTdNMLsYBSBAOa9CO3
+ qV+b/1Fcp4npDDqnN/CgL4bv11C4JFwsP0B/lxNTFhiqosZ9/q
+ Re4/6Mm1rlMCrLP7RHa9lWMeXd50IlLk95EVv4oC+hlCkRDwhI
+ RUCoSUgpzLHxpBUbD4cZOyDIxY/GhabyLjxy2iQ7GXxlA/eMj5
+ G9ge52DKfO1jBSegEd5mdSZjvLaqItbckH4hmdH1ZqvkwbWRBy
+ m+9udYt6Jxj+WeOYW44o=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/12 11:24, James Bottomley wrote:
-> On Thu, 2012-10-11 at 10:15 +0100, James Hogan wrote:
->> The struct scsi_varlen_cdb_hdr is expected to be exactly 10 bytes when
->> used in struct osd_cdb_head, but it isn't marked as packed. Some
->> architectures will round the struct size up which triggers BUILD_BUG_ON
->> compile errors in osd_initiator.c when the outer structs are unexpected
->> sizes. This is fixed by marking struct scsi_varlen_cdb_hdr as __packed.
+On Tuesday 09 October 2012, Markus F.X.J. Oberhumer wrote:
+> > 
+> > : This commit updates the kernel LZO code to the current upsteam version
+> > : which features a significant speed improvement - benchmarking the Calgary
+> > : and Silesia test corpora typically shows a doubled performance in
+> > : both compression and decompression on modern i386/x86_64/powerpc machines.
+> > 
+> > There are significant clients of the LZO library - crypto, btrfs,
+> > jffs2, ubifs, squashfs and zcache.  So let's give all those people a cc
+> > and ask that they test the LZO changes once they land in linux-next. 
+> > For correctness and performance, please.
 > 
-> What actual problem have you encountered? The structure is {u8[8], u16}
-> which is naturally packed on every architecture I know about.  I've even
-> built osd_initiator without problem on parisc, which has some of the
-> most rigid alignment rules I've seen.
+> The core compression and decompression code has been thoroughly tested, so I
+> do not expect major problems.
+> 
+> Good testing after the merge and feedback about build or performance issues
+> (and improvements!) is highly appreciated.
 
-Hi James,
+The addition of the lzo tree to linux-next caused this problem for ARM
+imx_v6_v7_defconfig:
 
-The alignment is fine (the offset of the u16 is 8 bytes), but
-unfortunately with the metag port of gcc, sizeof(struct
-scsi_varlen_cdb_hdr) is rounded up to a 4 byte boundary (even though the
-largest data member alignment is only 2 bytes), which is 12 bytes
-instead of 10.
+In file included from /home/arnd/linux-arm/arch/arm/boot/compressed/decompress.c:40:0:
+/home/arnd/linux-arm/arch/arm/boot/compressed/../../../../lib/decompress_unlzo.c:34:34: fatal error: lzo/lzo1x_decompress.c: No such file or directory
 
-Cheers
-James
+Since the file was renamed, anything including it needs to be updated to the
+new file name.
 
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+diff --git a/lib/decompress_unlzo.c b/lib/decompress_unlzo.c
+index 4531294..960183d 100644
+--- a/lib/decompress_unlzo.c
++++ b/lib/decompress_unlzo.c
+@@ -31,7 +31,7 @@
+  */
+ 
+ #ifdef STATIC
+-#include "lzo/lzo1x_decompress.c"
++#include "lzo/lzo1x_decompress_safe.c"
+ #else
+ #include <linux/decompress/unlzo.h>
+ #endif
