@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933757Ab2JKBQg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:16:36 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35604 "EHLO
+	id S933693Ab2JKBOp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:14:45 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41821 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933564Ab2JKBO7 (ORCPT
+	by vger.kernel.org with ESMTP id S933672Ab2JKBOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:14:59 -0400
-X-Sasl-enc: WuiuRSG9Yo8vwfhe5MqDofkq7lUomdJSnSOWNw9983Ts 1349918098
+	Wed, 10 Oct 2012 21:14:37 -0400
+X-Sasl-enc: chqGjPhikpR+dQ2ifzBDzMGVN742r5P2uG/fEC4kY8Dn 1349918075
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Brian Norris <computersforpeace@gmail.com>,
+        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 116/120] JFFS2: dont fail on bitflips in OOB
-Date: Thu, 11 Oct 2012 10:01:08 +0900
-Message-Id: <20121011005848.869628669@linuxfoundation.org>
+Subject: [ 111/120] mtd: nand: Use the mirror BBT descriptor when reading its version
+Date: Thu, 11 Oct 2012 10:01:03 +0900
+Message-Id: <20121011005847.752897040@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -29,53 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Norris <computersforpeace@gmail.com>
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
 
-commit 74d83beaa229aac7d126ac1ed9414658ff1a89d2 upstream.
+commit 7bb9c75436212813b38700c34df4bbb6eb82debe upstream.
 
-JFFS2 was designed without thought for OOB bitflips, it seems, but they
-can occur and will be reported to JFFS2 via mtd_read_oob()[1]. We don't
-want to fail on these transactions, since the data was corrected.
+The code responsible for reading the version of the mirror bbt was
+incorrectly using the descriptor of the main bbt.
 
-[1] Few drivers report bitflips for OOB-only transactions. With such
-    drivers, this patch should have no effect.
+Pass the mirror bbt descriptor to 'scan_read_raw' when reading the
+version of the mirror bbt.
 
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jffs2/wbuf.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/mtd/nand/nand_bbt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/jffs2/wbuf.c
-+++ b/fs/jffs2/wbuf.c
-@@ -1043,10 +1043,10 @@ int jffs2_check_oob_empty(struct jffs2_s
- 	ops.datbuf = NULL;
- 
- 	ret = mtd_read_oob(c->mtd, jeb->offset, &ops);
--	if (ret || ops.oobretlen != ops.ooblen) {
-+	if ((ret && !mtd_is_bitflip(ret)) || ops.oobretlen != ops.ooblen) {
- 		pr_err("cannot read OOB for EB at %08x, requested %zd bytes, read %zd bytes, error %d\n",
- 		       jeb->offset, ops.ooblen, ops.oobretlen, ret);
--		if (!ret)
-+		if (!ret || mtd_is_bitflip(ret))
- 			ret = -EIO;
- 		return ret;
- 	}
-@@ -1085,10 +1085,10 @@ int jffs2_check_nand_cleanmarker(struct
- 	ops.datbuf = NULL;
- 
- 	ret = mtd_read_oob(c->mtd, jeb->offset, &ops);
--	if (ret || ops.oobretlen != ops.ooblen) {
-+	if ((ret && !mtd_is_bitflip(ret)) || ops.oobretlen != ops.ooblen) {
- 		pr_err("cannot read OOB for EB at %08x, requested %zd bytes, read %zd bytes, error %d\n",
- 		       jeb->offset, ops.ooblen, ops.oobretlen, ret);
--		if (!ret)
-+		if (!ret || mtd_is_bitflip(ret))
- 			ret = -EIO;
- 		return ret;
- 	}
+--- a/drivers/mtd/nand/nand_bbt.c
++++ b/drivers/mtd/nand/nand_bbt.c
+@@ -390,7 +390,7 @@ static int read_abs_bbts(struct mtd_info
+ 	/* Read the mirror version, if available */
+ 	if (md && (md->options & NAND_BBT_VERSION)) {
+ 		scan_read_raw(mtd, buf, (loff_t)md->pages[0] << this->page_shift,
+-			      mtd->writesize, td);
++			      mtd->writesize, md);
+ 		md->version[0] = buf[bbt_get_ver_offs(mtd, md)];
+ 		pr_info("Bad block table at page %d, version 0x%02X\n",
+ 			 md->pages[0], md->version[0]);
 
 
