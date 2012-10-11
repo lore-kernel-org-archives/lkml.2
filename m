@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964795Ab2JKB1A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:27:00 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44112 "EHLO
+	id S934262Ab2JKB1S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:27:18 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34206 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934214Ab2JKBZ3 (ORCPT
+	by vger.kernel.org with ESMTP id S934232Ab2JKBZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:25:29 -0400
-X-Sasl-enc: J0vVTcJoP9rtZb/NwxVFeEbPlxRl99Oett6xgjkvJUmI 1349918728
+	Wed, 10 Oct 2012 21:25:25 -0400
+X-Sasl-enc: 8ReeLzsgkdnhwDBTte6rGnPKcMBwtYPSDwzSbV8so2rP 1349918724
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 079/120] ALSA: hda/realtek - Fix detection of ALC271X codec
-Date: Thu, 11 Oct 2012 10:00:31 +0900
-Message-Id: <20121011005840.933646048@linuxfoundation.org>
+        Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>,
+        Vinod Koul <vinod.koul@linux.intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 078/120] ALSA: aloop - add locking to timer access
+Date: Thu, 11 Oct 2012 10:00:30 +0900
+Message-Id: <20121011005840.708937293@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -29,57 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+From: Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>
 
-commit 9f720bb9409ea5923361fbd3fdbc505ca36cf012 upstream.
+commit d4f1e48bd11e3df6a26811f7a1f06c4225d92f7d upstream.
 
-In commit af741c1 ("ALSA: hda/realtek - Call alc_auto_parse_customize_define()
-always after fixup"), alc_auto_parse_customize_define was moved after
-detection of ALC271X.
+When the loopback timer handler is running, calling del_timer() (for STOP
+trigger) will not wait for the handler to complete before deactivating the
+timer. The timer gets rescheduled in the handler as usual. Then a subsequent
+START trigger will try to start the timer using add_timer() with a timer pending
+leading to a kernel panic.
 
-The problem is that detection of ALC271X relies on spec->cdefine.platform_type,
-and it's set on alc_auto_parse_customize_define.
+Serialize the calls to add_timer() and del_timer() using a spin lock to avoid
+this.
 
-Move the alc_auto_parse_customize_define and its required fixup setup
-before the block doing the ALC271X and other codec setup.
-
-BugLink: https://bugs.launchpad.net/bugs/1006690
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Reviewed-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>
+Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ sound/drivers/aloop.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6307,6 +6307,12 @@ static int patch_alc269(struct hda_codec
- 	if (err < 0)
- 		goto error;
+--- a/sound/drivers/aloop.c
++++ b/sound/drivers/aloop.c
+@@ -119,6 +119,7 @@ struct loopback_pcm {
+ 	unsigned int period_size_frac;
+ 	unsigned long last_jiffies;
+ 	struct timer_list timer;
++	spinlock_t timer_lock;
+ };
  
-+	alc_pick_fixup(codec, alc269_fixup_models,
-+		       alc269_fixup_tbl, alc269_fixups);
-+	alc_apply_fixup(codec, ALC_FIXUP_ACT_PRE_PROBE);
-+
-+	alc_auto_parse_customize_define(codec);
-+
- 	if (codec->vendor_id == 0x10ec0269) {
- 		spec->codec_variant = ALC269_TYPE_ALC269VA;
- 		switch (alc_get_coef0(codec) & 0x00f0) {
-@@ -6331,12 +6337,6 @@ static int patch_alc269(struct hda_codec
- 		alc269_fill_coef(codec);
- 	}
+ static struct platform_device *devices[SNDRV_CARDS];
+@@ -169,6 +170,7 @@ static void loopback_timer_start(struct
+ 	unsigned long tick;
+ 	unsigned int rate_shift = get_rate_shift(dpcm);
  
--	alc_pick_fixup(codec, alc269_fixup_models,
--		       alc269_fixup_tbl, alc269_fixups);
--	alc_apply_fixup(codec, ALC_FIXUP_ACT_PRE_PROBE);
--
--	alc_auto_parse_customize_define(codec);
--
- 	/* automatic parse from the BIOS config */
- 	err = alc269_parse_auto_config(codec);
- 	if (err < 0)
++	spin_lock(&dpcm->timer_lock);
+ 	if (rate_shift != dpcm->pcm_rate_shift) {
+ 		dpcm->pcm_rate_shift = rate_shift;
+ 		dpcm->period_size_frac = frac_pos(dpcm, dpcm->pcm_period_size);
+@@ -181,12 +183,15 @@ static void loopback_timer_start(struct
+ 	tick = (tick + dpcm->pcm_bps - 1) / dpcm->pcm_bps;
+ 	dpcm->timer.expires = jiffies + tick;
+ 	add_timer(&dpcm->timer);
++	spin_unlock(&dpcm->timer_lock);
+ }
+ 
+ static inline void loopback_timer_stop(struct loopback_pcm *dpcm)
+ {
++	spin_lock(&dpcm->timer_lock);
+ 	del_timer(&dpcm->timer);
+ 	dpcm->timer.expires = 0;
++	spin_unlock(&dpcm->timer_lock);
+ }
+ 
+ #define CABLE_VALID_PLAYBACK	(1 << SNDRV_PCM_STREAM_PLAYBACK)
+@@ -659,6 +664,7 @@ static int loopback_open(struct snd_pcm_
+ 	dpcm->substream = substream;
+ 	setup_timer(&dpcm->timer, loopback_timer_function,
+ 		    (unsigned long)dpcm);
++	spin_lock_init(&dpcm->timer_lock);
+ 
+ 	cable = loopback->cables[substream->number][dev];
+ 	if (!cable) {
 
 
