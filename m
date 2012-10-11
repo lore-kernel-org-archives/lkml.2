@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934026Ab2JKBUc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:20:32 -0400
-Received: from mga14.intel.com ([143.182.124.37]:47307 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933883Ab2JKBUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:20:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,567,1344236400"; 
-   d="scan'208";a="203050536"
-From: "Tc, Jenny" <jenny.tc@intel.com>
-To: anish kumar <anish198519851985@gmail.com>
-CC: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "cw00.choi@samsung.com" <cw00.choi@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] extcon : callback function to read cable property
-Thread-Topic: [PATCH] extcon : callback function to read cable property
-Thread-Index: AQHNpqL6iLZgSIxMH0GKmzwm7ve2K5eyQk0AgAEKtWA=
-Date: Thu, 11 Oct 2012 01:20:15 +0000
-Message-ID: <20ADAB092842284E95860F279283C56439BC4A@BGSMSX101.gar.corp.intel.com>
-References: <1349864628-21479-1-git-send-email-jenny.tc@intel.com>
- <1349880328.22926.2.camel@anish-Inspiron-N5050>
-In-Reply-To: <1349880328.22926.2.camel@anish-Inspiron-N5050>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S934039Ab2JKBUg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:20:36 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:53166 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933986Ab2JKBUR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 21:20:17 -0400
+X-Sasl-enc: SNBXNx508DeX53IIxukTRBaYd3EiEfi/OWQGp3YEPUZ0 1349918416
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Antonio Quartulli <ordex@autistici.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 039/120] 8021q: fix mac_len recomputation in vlan_untag()
+Date: Thu, 11 Oct 2012 09:59:51 +0900
+Message-Id: <20121011005832.692548838@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
+References: <20121011005825.364610894@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9B1Kasm007060
 
-> From: anish kumar [mailto:anish198519851985@gmail.com]
-> Sent: Wednesday, October 10, 2012 8:15 PM
-> To: Tc, Jenny
-> Cc: myungjoo.ham@samsung.com; cw00.choi@samsung.com; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH] extcon : callback function to read cable property
-> 
-> I think the reason why we have extcon is in first place is to only notify the
-> clients of cable connection and disconnection and it is up to the client to
-> decide what else to do with the cable such as finding which state it is in and
-> other details.
-> So I feel this should not be handled in the extcon.
-> 
-> However it is up to the maintainer to decide.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Once the consumer gets the notification, it needs to take some action. One of the action is to read the cable properties. This can be done by proprietary calls which is known both to the consumer and the provider. My intention is to avoid this proprietary calls. Since both the provider and consumer are communicating with the extcon subsystem , I feel having a callback function of this kind would help to avoid the use of proprietary calls. Also I agree that extcon notifier chains are used to notify the cable state (attach/detach). But if a cable has more than two states (like the charger cable) how do we support it without having a callback function like this? Let the maintainer take the final decision.
+------------------
 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+From: Antonio Quartulli <ordex@autistici.org>
+
+[ Upstream commit 5316cf9a5197eb80b2800e1acadde287924ca975 ]
+
+skb_reset_mac_len() relies on the value of the skb->network_header pointer,
+therefore we must wait for such pointer to be recalculated before computing
+the new mac_len value.
+
+Signed-off-by: Antonio Quartulli <ordex@autistici.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/8021q/vlan_core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/net/8021q/vlan_core.c
++++ b/net/8021q/vlan_core.c
+@@ -106,7 +106,6 @@ static struct sk_buff *vlan_reorder_head
+ 		return NULL;
+ 	memmove(skb->data - ETH_HLEN, skb->data - VLAN_ETH_HLEN, 2 * ETH_ALEN);
+ 	skb->mac_header += VLAN_HLEN;
+-	skb_reset_mac_len(skb);
+ 	return skb;
+ }
+ 
+@@ -140,6 +139,8 @@ struct sk_buff *vlan_untag(struct sk_buf
+ 
+ 	skb_reset_network_header(skb);
+ 	skb_reset_transport_header(skb);
++	skb_reset_mac_len(skb);
++
+ 	return skb;
+ 
+ err_free:
+
+
