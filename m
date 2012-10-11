@@ -1,131 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932842Ab2JKBHR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:07:17 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56657 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758143Ab2JKBDe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:03:34 -0400
-X-Sasl-enc: 7exLJW93YQfz9WiWxq5ruCyUIk6Ql2LJK937pRzTV18O 1349917412
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Christoph Lameter <cl@linux.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: [ 004/120] slab: fix the DEADLOCK issue on l3 alien lock
-Date: Thu, 11 Oct 2012 09:59:16 +0900
-Message-Id: <20121011005826.156478516@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
-References: <20121011005825.364610894@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S932800Ab2JKBKp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:10:45 -0400
+Received: from ozlabs.org ([203.10.76.45]:46465 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932125Ab2JKBKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 21:10:42 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: kvm@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <levinsasha928@gmail.com>,
+        virtualization@lists.linux-foundation.org,
+        Thomas Lendacky <tahm@linux.vnet.ibm.com>, avi@redhat.com
+Subject: Re: [PATCH 0/3] virtio-net: inline header support
+In-Reply-To: <5073D1D8.3060905@redhat.com>
+References: <cover.1348824232.git.mst@redhat.com> <87vces2gxq.fsf__45058.6618776017$1349247807$gmane$org@rustcorp.com.au> <506C192E.5060700@redhat.com> <87bogj2j1b.fsf@rustcorp.com.au> <506D3610.7000103@redhat.com> <87ipaq1jtt.fsf@rustcorp.com.au> <506D8DD5.20904@redhat.com> <87391t1nkq.fsf__40391.6521034718$1349505001$gmane$org@rustcorp.com.au> <507029EB.2050405@redhat.com> <878vbg8cma.fsf@rustcorp.com.au> <5073D1D8.3060905@redhat.com>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 11 Oct 2012 10:33:31 +1030
+Message-ID: <87k3ux98oc.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Paolo Bonzini <pbonzini@redhat.com> writes:
+> Il 09/10/2012 06:59, Rusty Russell ha scritto:
+>> Paolo Bonzini <pbonzini@redhat.com> writes:
+>>> Il 05/10/2012 07:43, Rusty Russell ha scritto:
+>>>> That's good.  But virtio_blk's scsi command is insoluble AFAICT.  As I
+>>>> said to Anthony, the best rules are "always" and "never", so I'd really
+>>>> rather not have to grandfather that in.
+>>>
+>>> It is, but we can add a rule that if the (transport) flag
+>>> VIRTIO_RING_F_ANY_HEADER_SG is set, the cdb field is always 32 bytes in
+>>> virtio-blk.
+>> 
+>> Could we do that?  It's the cmd length I'm concerned about; is it always
+>> 32 in practice for some reason?
+>
+> It is always 32 or less except in very obscure cases that are pretty
+> much confined to iSCSI.  We don't care about the obscure cases, and the
+> extra bytes don't hurt.
+>
+> BTW, 32 is the default cdb_size used by virtio-scsi.
+>
+>> Currently qemu does:
+>> 
+>>     struct sg_io_hdr hdr;
+>>     memset(&hdr, 0, sizeof(struct sg_io_hdr));
+>>     hdr.interface_id = 'S';
+>>     hdr.cmd_len = req->elem.out_sg[1].iov_len;
+>>     hdr.cmdp = req->elem.out_sg[1].iov_base;
+>>     hdr.dxfer_len = 0;
+>> 
+>> If it's a command which expects more output data, there's no way to
+>> guess where the boundary is between that command and the data.
+>
+> Yep, so I understood the problem right.
 
-------------------
+OK.  Well, Anthony wants qemu to be robust in this regard, so I am
+tempted to rework all the qemu drivers to handle arbitrary layouts.
+They could use a good audit anyway.
 
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
+This would become a glaring exception, but I'm tempted to fix it to 32
+bytes at the same time as we get the new pci layout (ie. for the virtio
+1.0 spec).  The Linux driver would carefully be backwards compatible, of
+course, and the spec would document why.
 
-commit 947ca1856a7e60aa6d20536785e6a42dff25aa6e upstream.
-
-DEADLOCK will be report while running a kernel with NUMA and LOCKDEP enabled,
-the process of this fake report is:
-
-	   kmem_cache_free()	//free obj in cachep
-	-> cache_free_alien()	//acquire cachep's l3 alien lock
-	-> __drain_alien_cache()
-	-> free_block()
-	-> slab_destroy()
-	-> kmem_cache_free()	//free slab in cachep->slabp_cache
-	-> cache_free_alien()	//acquire cachep->slabp_cache's l3 alien lock
-
-Since the cachep and cachep->slabp_cache's l3 alien are in the same lock class,
-fake report generated.
-
-This should not happen since we already have init_lock_keys() which will
-reassign the lock class for both l3 list and l3 alien.
-
-However, init_lock_keys() was invoked at a wrong position which is before we
-invoke enable_cpucache() on each cache.
-
-Since until set slab_state to be FULL, we won't invoke enable_cpucache()
-on caches to build their l3 alien while creating them, so although we invoked
-init_lock_keys(), the l3 alien lock class won't change since we don't have
-them until invoked enable_cpucache() later.
-
-This patch will invoke init_lock_keys() after we done enable_cpucache()
-instead of before to avoid the fake DEADLOCK report.
-
-Michael traced the problem back to a commit in release 3.0.0:
-
-commit 30765b92ada267c5395fc788623cb15233276f5c
-Author: Peter Zijlstra <peterz@infradead.org>
-Date:   Thu Jul 28 23:22:56 2011 +0200
-
-    slab, lockdep: Annotate the locks before using them
-
-    Fernando found we hit the regular OFF_SLAB 'recursion' before we
-    annotate the locks, cure this.
-
-    The relevant portion of the stack-trace:
-
-    > [    0.000000]  [<c085e24f>] rt_spin_lock+0x50/0x56
-    > [    0.000000]  [<c04fb406>] __cache_free+0x43/0xc3
-    > [    0.000000]  [<c04fb23f>] kmem_cache_free+0x6c/0xdc
-    > [    0.000000]  [<c04fb2fe>] slab_destroy+0x4f/0x53
-    > [    0.000000]  [<c04fb396>] free_block+0x94/0xc1
-    > [    0.000000]  [<c04fc551>] do_tune_cpucache+0x10b/0x2bb
-    > [    0.000000]  [<c04fc8dc>] enable_cpucache+0x7b/0xa7
-    > [    0.000000]  [<c0bd9d3c>] kmem_cache_init_late+0x1f/0x61
-    > [    0.000000]  [<c0bba687>] start_kernel+0x24c/0x363
-    > [    0.000000]  [<c0bba0ba>] i386_start_kernel+0xa9/0xaf
-
-    Reported-by: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-    Acked-by: Pekka Enberg <penberg@kernel.org>
-    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-    Link: http://lkml.kernel.org/r/1311888176.2617.379.camel@laptop
-    Signed-off-by: Ingo Molnar <mingo@elte.hu>
-
-The commit moved init_lock_keys() before we build up the alien, so we
-failed to reclass it.
-
-Acked-by: Christoph Lameter <cl@linux.com>
-Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- mm/slab.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1685,9 +1685,6 @@ void __init kmem_cache_init_late(void)
- 
- 	g_cpucache_up = LATE;
- 
--	/* Annotate slab for lockdep -- annotate the malloc caches */
--	init_lock_keys();
--
- 	/* 6) resize the head arrays to their final sizes */
- 	mutex_lock(&cache_chain_mutex);
- 	list_for_each_entry(cachep, &cache_chain, next)
-@@ -1695,6 +1692,9 @@ void __init kmem_cache_init_late(void)
- 			BUG();
- 	mutex_unlock(&cache_chain_mutex);
- 
-+	/* Annotate slab for lockdep -- annotate the malloc caches */
-+	init_lock_keys();
-+
- 	/* Done! */
- 	g_cpucache_up = FULL;
- 
-
+Cheers,
+Rusty.
 
