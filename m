@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933678Ab2JKBOi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:14:38 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47984 "EHLO
+	id S933665Ab2JKBOd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:14:33 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50446 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933642Ab2JKBOV (ORCPT
+	by vger.kernel.org with ESMTP id S932423Ab2JKBO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:14:21 -0400
-X-Sasl-enc: jVv4V0Rqbkm75rmCW+a1gNOINoiGBtYCcsTfkSZ3YtSX 1349918060
+	Wed, 10 Oct 2012 21:14:27 -0400
+X-Sasl-enc: 3yJk0emvHf/hSvaEW4RJ61NiisSLrJur+SFoQd4oja7W 1349918065
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Christoph Lameter <cl@linux.com>,
-        Josh Boyer <jwboyer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 103/120] mempolicy: fix refcount leak in mpol_set_shared_policy()
-Date: Thu, 11 Oct 2012 10:00:55 +0900
-Message-Id: <20121011005846.031707189@linuxfoundation.org>
+        Alexander Shiyan <shc_work@mail.ru>, Arnd Bergmann <arnd@arndb.de>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 109/120] mtd: autcpu12-nvram: Fix compile breakage
+Date: Thu, 11 Oct 2012 10:01:01 +0900
+Message-Id: <20121011005847.329832883@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -31,72 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Alexander Shiyan <shc_work@mail.ru>
 
-commit 63f74ca21f1fad36d075e063f06dcc6d39fe86b2 upstream.
+commit d1f55c680e5d021e7066f4461dd678d42af18898 upstream.
 
-When shared_policy_replace() fails to allocate new->policy is not freed
-correctly by mpol_set_shared_policy().  The problem is that shared
-mempolicy code directly call kmem_cache_free() in multiple places where
-it is easy to make a mistake.
+Update driver autcpu12-nvram.c so it compiles; map_read32/map_write32
+no longer exist in the kernel so the driver is totally broken.
+Additionally, map_info name passed to simple_map_init is incorrect.
 
-This patch creates an sp_free wrapper function and uses it. The bug was
-introduced pre-git age (IOW, before 2.6.12-rc2).
-
-[mgorman@suse.de: Editted changelog]
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Cc: Josh Boyer <jwboyer@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mempolicy.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ drivers/mtd/maps/autcpu12-nvram.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2131,12 +2131,17 @@ mpol_shared_policy_lookup(struct shared_
- 	return pol;
- }
+--- a/drivers/mtd/maps/autcpu12-nvram.c
++++ b/drivers/mtd/maps/autcpu12-nvram.c
+@@ -43,7 +43,8 @@ struct map_info autcpu12_sram_map = {
  
-+static void sp_free(struct sp_node *n)
-+{
-+	mpol_put(n->policy);
-+	kmem_cache_free(sn_cache, n);
-+}
-+
- static void sp_delete(struct shared_policy *sp, struct sp_node *n)
+ static int __init init_autcpu12_sram (void)
  {
- 	pr_debug("deleting %lx-l%lx\n", n->start, n->end);
- 	rb_erase(&n->nd, &sp->root);
--	mpol_put(n->policy);
--	kmem_cache_free(sn_cache, n);
-+	sp_free(n);
- }
+-	int err, save0, save1;
++	map_word tmp, save0, save1;
++	int err;
  
- static struct sp_node *sp_alloc(unsigned long start, unsigned long end,
-@@ -2275,7 +2280,7 @@ int mpol_set_shared_policy(struct shared
+ 	autcpu12_sram_map.virt = ioremap(0x12000000, SZ_128K);
+ 	if (!autcpu12_sram_map.virt) {
+@@ -51,7 +52,7 @@ static int __init init_autcpu12_sram (vo
+ 		err = -EIO;
+ 		goto out;
  	}
- 	err = shared_policy_replace(info, vma->vm_pgoff, vma->vm_pgoff+sz, new);
- 	if (err && new)
--		kmem_cache_free(sn_cache, new);
-+		sp_free(new);
- 	return err;
- }
+-	simple_map_init(&autcpu_sram_map);
++	simple_map_init(&autcpu12_sram_map);
  
-@@ -2292,9 +2297,7 @@ void mpol_free_shared_policy(struct shar
- 	while (next) {
- 		n = rb_entry(next, struct sp_node, nd);
- 		next = rb_next(&n->nd);
--		rb_erase(&n->nd, &p->root);
--		mpol_put(n->policy);
--		kmem_cache_free(sn_cache, n);
-+		sp_delete(p, n);
+ 	/*
+ 	 * Check for 32K/128K
+@@ -61,20 +62,22 @@ static int __init init_autcpu12_sram (vo
+ 	 * Read	and check result on ofs 0x0
+ 	 * Restore contents
+ 	 */
+-	save0 = map_read32(&autcpu12_sram_map,0);
+-	save1 = map_read32(&autcpu12_sram_map,0x10000);
+-	map_write32(&autcpu12_sram_map,~save0,0x10000);
++	save0 = map_read(&autcpu12_sram_map, 0);
++	save1 = map_read(&autcpu12_sram_map, 0x10000);
++	tmp.x[0] = ~save0.x[0];
++	map_write(&autcpu12_sram_map, tmp, 0x10000);
+ 	/* if we find this pattern on 0x0, we have 32K size
+ 	 * restore contents and exit
+ 	 */
+-	if ( map_read32(&autcpu12_sram_map,0) != save0) {
+-		map_write32(&autcpu12_sram_map,save0,0x0);
++	tmp = map_read(&autcpu12_sram_map, 0);
++	if (!map_word_equal(&autcpu12_sram_map, tmp, save0)) {
++		map_write(&autcpu12_sram_map, save0, 0x0);
+ 		goto map;
  	}
- 	mutex_unlock(&p->mutex);
- }
+ 	/* We have a 128K found, restore 0x10000 and set size
+ 	 * to 128K
+ 	 */
+-	map_write32(&autcpu12_sram_map,save1,0x10000);
++	map_write(&autcpu12_sram_map, save1, 0x10000);
+ 	autcpu12_sram_map.size = SZ_128K;
+ 
+ map:
 
 
