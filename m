@@ -1,48 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933755Ab2JKBk6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:40:58 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36916 "EHLO
+	id S933798Ab2JKBlZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:41:25 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43424 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933254Ab2JKBkz (ORCPT
+	by vger.kernel.org with ESMTP id S933120Ab2JKBNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:40:55 -0400
-X-Sasl-enc: i7JcIcKdjx6wQh0ZdPAwq482o6NylyZ0Cd9OPW3UazEp 1349919653
-Date: Thu, 11 Oct 2012 10:40:50 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [GIT PULL] extcon fixes for Linux 3.6
-Message-ID: <20121011014050.GA16454@kroah.com>
-References: <50762167.8060806@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50762167.8060806@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 10 Oct 2012 21:13:08 -0400
+X-Sasl-enc: HNChG9Fw8uJhn+ClU1maCzbGBwvyMULqKFYKG3Ks/8WM 1349917987
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        m68k <linux-m68k@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [ 092/120] m68k: Add missing RCU idle APIs on idle loop
+Date: Thu, 11 Oct 2012 10:00:44 +0900
+Message-Id: <20121011005843.704754281@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
+References: <20121011005825.364610894@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 11, 2012 at 10:31:19AM +0900, Chanwoo Choi wrote:
-> Hi Greg,
-> 
-> Please pull extcon fixes for Linux 3.6 from:
-> 
->     git://git.infradead.org/users/kmpark/linux-samsung extcon-for-next
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Linux 3.6 has been released already, I can't take any patches for it. :)
+------------------
 
-Are these for 3.7 instead?
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-And is your gpg key in the public servers so that I "know" this is
-really the set of patches you want me to pull, and that you are "you"?
+commit 5b57ba37e82a15f345a6a2eb8c01a2b2d94c5eeb upstream.
 
-If you are at LinuxCon Korea the next two days, I'll be glad to sign
-your key to solve this issue...
+In the old times, the whole idle task was considered
+as an RCU quiescent state. But as RCU became more and
+more successful overtime, some RCU read side critical
+section have been added even in the code of some
+architectures idle tasks, for tracing for example.
 
-thanks,
+So nowadays, rcu_idle_enter() and rcu_idle_exit() must
+be called by the architecture to tell RCU about the part
+in the idle loop that doesn't make use of rcu read side
+critical sections, typically the part that puts the CPU
+in low power mode.
 
-greg k-h
+This is necessary for RCU to find the quiescent states in
+idle in order to complete grace periods.
+
+Add this missing pair of calls in the m68k's idle loop.
+
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: m68k <linux-m68k@lists.linux-m68k.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/m68k/kernel/process.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/arch/m68k/kernel/process.c
++++ b/arch/m68k/kernel/process.c
+@@ -25,6 +25,7 @@
+ #include <linux/reboot.h>
+ #include <linux/init_task.h>
+ #include <linux/mqueue.h>
++#include <linux/rcupdate.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/traps.h>
+@@ -75,8 +76,10 @@ void cpu_idle(void)
+ {
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
++		rcu_idle_enter();
+ 		while (!need_resched())
+ 			idle();
++		rcu_idle_exit();
+ 		schedule_preempt_disabled();
+ 	}
+ }
+
+
