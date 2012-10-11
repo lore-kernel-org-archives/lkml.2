@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934229Ab2JKB32 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:29:28 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60353 "EHLO
+	id S934242Ab2JKB3t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:29:49 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56781 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934029Ab2JKBY2 (ORCPT
+	by vger.kernel.org with ESMTP id S934142Ab2JKBYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:24:28 -0400
-X-Sasl-enc: kwN0xQr482KS2NUL/AE7dhMwVailMmPLpFWpXcOXmP7O 1349918667
+	Wed, 10 Oct 2012 21:24:12 -0400
+X-Sasl-enc: WrcOfSHKa7U8XTz+ZyDnLFkp4kM378jVEXYdqOw4LpEh 1349918651
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Yongqiang Yang <xiaoqiangnk@gmail.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 066/120] ext4: avoid duplicate writes of the backup bg descriptor blocks
-Date: Thu, 11 Oct 2012 10:00:18 +0900
-Message-Id: <20121011005838.135913092@linuxfoundation.org>
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 058/120] SCSI: zfcp: Bounds checking for deferred error trace
+Date: Thu, 11 Oct 2012 10:00:10 +0900
+Message-Id: <20121011005836.391651263@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -27,43 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+From: Steffen Maier <maier@linux.vnet.ibm.com>
 
-commit 2ebd1704ded88a8ae29b5f3998b13959c715c4be upstream.
+commit 01e60527f0a49b3d7df603010bd6079bb4b6cf07 upstream.
 
-The resize code was needlessly writing the backup block group
-descriptor blocks multiple times (once per block group) during an
-online resize.
+The pl vector has scount elements, i.e. pl[scount-1] is the last valid
+element. For maximum sized requests, payload->counter == scount after
+the last loop iteration. Therefore, do bounds checking first (with
+boolean shortcut) to not access the invalid element pl[scount].
 
-Signed-off-by: Yongqiang Yang <xiaoqiangnk@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Do not trust the maximum sbale->scount value from the HBA
+but ensure we won't access the pl vector out of our allocated bounds.
+While at it, clean up scoping and prevent unnecessary memset.
+
+Minor fix for 86a9668a8d29ea711613e1cb37efa68e7c4db564
+"[SCSI] zfcp: support for hardware data router"
+
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Reviewed-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/resize.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/s390/scsi/zfcp_dbf.c  |    2 +-
+ drivers/s390/scsi/zfcp_qdio.c |   16 ++++++++++------
+ 2 files changed, 11 insertions(+), 7 deletions(-)
 
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -1302,13 +1302,15 @@ exit_journal:
- 		err = err2;
+--- a/drivers/s390/scsi/zfcp_dbf.c
++++ b/drivers/s390/scsi/zfcp_dbf.c
+@@ -191,7 +191,7 @@ void zfcp_dbf_hba_def_err(struct zfcp_ad
+ 	length = min((u16)sizeof(struct qdio_buffer),
+ 		     (u16)ZFCP_DBF_PAY_MAX_REC);
  
- 	if (!err) {
--		int i;
-+		int gdb_num = group / EXT4_DESC_PER_BLOCK(sb);
-+		int gdb_num_end = ((group + flex_gd->count - 1) /
-+				   EXT4_DESC_PER_BLOCK(sb));
+-	while ((char *)pl[payload->counter] && payload->counter < scount) {
++	while (payload->counter < scount && (char *)pl[payload->counter]) {
+ 		memcpy(payload->data, (char *)pl[payload->counter], length);
+ 		debug_event(dbf->pay, 1, payload, zfcp_dbf_plen(length));
+ 		payload->counter++;
+--- a/drivers/s390/scsi/zfcp_qdio.c
++++ b/drivers/s390/scsi/zfcp_qdio.c
+@@ -102,18 +102,22 @@ static void zfcp_qdio_int_resp(struct cc
+ {
+ 	struct zfcp_qdio *qdio = (struct zfcp_qdio *) parm;
+ 	struct zfcp_adapter *adapter = qdio->adapter;
+-	struct qdio_buffer_element *sbale;
+ 	int sbal_no, sbal_idx;
+-	void *pl[ZFCP_QDIO_MAX_SBALS_PER_REQ + 1];
+-	u64 req_id;
+-	u8 scount;
+ 
+ 	if (unlikely(qdio_err)) {
+-		memset(pl, 0, ZFCP_QDIO_MAX_SBALS_PER_REQ * sizeof(void *));
+ 		if (zfcp_adapter_multi_buffer_active(adapter)) {
++			void *pl[ZFCP_QDIO_MAX_SBALS_PER_REQ + 1];
++			struct qdio_buffer_element *sbale;
++			u64 req_id;
++			u8 scount;
 +
- 		update_backups(sb, sbi->s_sbh->b_blocknr, (char *)es,
- 			       sizeof(struct ext4_super_block));
--		for (i = 0; i < flex_gd->count; i++, group++) {
-+		for (; gdb_num <= gdb_num_end; gdb_num++) {
- 			struct buffer_head *gdb_bh;
--			int gdb_num;
--			gdb_num = group / EXT4_BLOCKS_PER_GROUP(sb);
-+
- 			gdb_bh = sbi->s_group_desc[gdb_num];
- 			update_backups(sb, gdb_bh->b_blocknr, gdb_bh->b_data,
- 				       gdb_bh->b_size);
++			memset(pl, 0,
++			       ZFCP_QDIO_MAX_SBALS_PER_REQ * sizeof(void *));
+ 			sbale = qdio->res_q[idx]->element;
+ 			req_id = (u64) sbale->addr;
+-			scount = sbale->scount + 1; /* incl. signaling SBAL */
++			scount = min(sbale->scount + 1,
++				     ZFCP_QDIO_MAX_SBALS_PER_REQ + 1);
++				     /* incl. signaling SBAL */
+ 
+ 			for (sbal_no = 0; sbal_no < scount; sbal_no++) {
+ 				sbal_idx = (idx + sbal_no) %
 
 
