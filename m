@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933707Ab2JKBOt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:14:49 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52984 "EHLO
+	id S933723Ab2JKBO4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:14:56 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41456 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933642Ab2JKBOl (ORCPT
+	by vger.kernel.org with ESMTP id S933708Ab2JKBOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:14:41 -0400
-X-Sasl-enc: R2uiH6I3vraXmNw3LZ4zrv1gIzc8f7Nb/wD4LTRLB50Q 1349918080
+	Wed, 10 Oct 2012 21:14:50 -0400
+X-Sasl-enc: Zig2PQUmwSKTrpn47rkUzmbmifERFj96UfM8hyxXraU0 1349918089
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Huang Shijie <shijie8@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 108/120] mtd: mtdpart: break it as soon as we parse out the partitions
-Date: Thu, 11 Oct 2012 10:01:00 +0900
-Message-Id: <20121011005847.121935390@linuxfoundation.org>
+        Vaibhav Bedia <vaibhav.bedia@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        Venkatraman S <svenkatr@ti.com>, Chris Ball <cjb@laptop.org>
+Subject: [ 114/120] mmc: omap_hsmmc: Pass on the suspend failure to the PM core
+Date: Thu, 11 Oct 2012 10:01:06 +0900
+Message-Id: <20121011005848.416788252@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -29,64 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huang Shijie <shijie8@gmail.com>
+From: Vaibhav Bedia <vaibhav.bedia@ti.com>
 
-commit c51803ddba10d80d9f246066802c6e359cf1d44c upstream.
+commit c4c8eeb4df00aabb641553d6fbcd46f458e56cd9 upstream.
 
-We may cause a memory leak when the @types has more then one parser.
+In some cases mmc_suspend_host() is not able to claim the
+host and proceed with the suspend process. The core returns
+-EBUSY to the host controller driver. Unfortunately, the
+host controller driver does not pass on this information
+to the PM core and hence the system suspend process continues.
 
-Take the `default_mtd_part_types` for example. The default_mtd_part_types has
-two parsers now: `cmdlinepart` and `ofpart`.
+	ret = mmc_suspend_host(host->mmc);
+	if (ret) {
+		host->suspended = 0;
+		if (host->pdata->resume) {
+			ret = host->pdata->resume(dev, host->slot_id);
 
-Assume the following case:
-The kernel command line sets the partitions like:
-	#gpmi-nand:20m(boot),20m(kernel),1g(rootfs),-(user)
-But the devicetree file(such as arch/arm/boot/dts/imx28-evk.dts) also sets
-the same partitions as the kernel command line does.
+The return status from mmc_suspend_host() is overwritten by return
+status from host->pdata->resume. So the original return status is lost.
 
-In the current code, the partitions parsed out by the `ofpart` will
-overwrite the @pparts which has already set by the `cmdlinepart` parser,
-and the the partitions parsed out by the `cmdlinepart` is missed.
-A memory leak occurs.
+In these cases the MMC core gets to an unexpected state
+during resume and multiple issues related to MMC crop up.
+1. Host controller driver starts accessing the device registers
+before the clocks are enabled which leads to a prefetch abort.
+2. A file copy thread which was launched before suspend gets
+stuck due to the host not being reclaimed during resume.
 
-So we should break the code as soon as we parse out the partitions,
-In actually, this patch makes a priority order between the parsers.
-If one parser has already parsed out the partitions successfully,
-it's no need to use another parser anymore.
+To avoid such problems pass on the -EBUSY status to the PM core
+from the host controller driver. With this change, MMC core
+suspend might still fail but it does not end up making the
+system unusable. Suspend gets aborted and the user can try
+suspending the system again.
 
-Signed-off-by: Huang Shijie <shijie8@gmail.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Vaibhav Bedia <vaibhav.bedia@ti.com>
+Signed-off-by: Hebbar, Gururaja <gururaja.hebbar@ti.com>
+Acked-by: Venkatraman S <svenkatr@ti.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/mtdpart.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/mmc/host/omap_hsmmc.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/mtd/mtdpart.c
-+++ b/drivers/mtd/mtdpart.c
-@@ -709,6 +709,8 @@ static const char *default_mtd_part_type
-  * partition parsers, specified in @types. However, if @types is %NULL, then
-  * the default list of parsers is used. The default list contains only the
-  * "cmdlinepart" and "ofpart" parsers ATM.
-+ * Note: If there are more then one parser in @types, the kernel only takes the
-+ * partitions parsed out by the first parser.
-  *
-  * This function may return:
-  * o a negative error code in case of failure
-@@ -733,11 +735,12 @@ int parse_mtd_partitions(struct mtd_info
- 		if (!parser)
- 			continue;
- 		ret = (*parser->parse_fn)(master, pparts, data);
-+		put_partition_parser(parser);
- 		if (ret > 0) {
- 			printk(KERN_NOTICE "%d %s partitions found on MTD device %s\n",
- 			       ret, parser->name, master->name);
-+			break;
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -2097,8 +2097,7 @@ static int omap_hsmmc_suspend(struct dev
+ 	if (ret) {
+ 		host->suspended = 0;
+ 		if (host->pdata->resume) {
+-			ret = host->pdata->resume(dev, host->slot_id);
+-			if (ret)
++			if (host->pdata->resume(dev, host->slot_id))
+ 				dev_dbg(dev, "Unmask interrupt failed\n");
  		}
--		put_partition_parser(parser);
- 	}
- 	return ret;
- }
+ 		goto err;
 
 
