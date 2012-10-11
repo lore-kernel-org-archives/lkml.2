@@ -1,52 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab2JKQGQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 12:06:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22886 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751351Ab2JKQGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 12:06:14 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <4C573632-7629-4E7A-8A67-FD4698B7430D@suse.de>
-References: <4C573632-7629-4E7A-8A67-FD4698B7430D@suse.de> <20121011120502.0211f1267dedf3776e4cf85b@canb.auug.org.au> <13876.1349947620@warthog.procyon.org.uk>
-To: Alexander Graf <agraf@suse.de>
-Cc: dhowells@redhat.com, Stephen Rothwell <sfr@canb.auug.org.au>,
-        B04825@freescale.com, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Liu Yu <yu.liu@freescale.com>,
-        Stuart Yoder <stuart.yoder@freescale.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: linux-next: manual merge of the kvm-ppc tree with the powerpc-merge tree
-Date: Thu, 11 Oct 2012 17:05:57 +0100
-Message-ID: <14077.1349971557@warthog.procyon.org.uk>
+	id S1755679Ab2JKQGn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 12:06:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55318 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639Ab2JKQGk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 12:06:40 -0400
+Date: Thu, 11 Oct 2012 17:06:33 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] efivarfs: efivarfs_fill_super() ensure we clean up
+ correctly on error
+Message-ID: <20121011160633.GA23494@dm>
+References: <1349416496.810727.310563927016.1.gpush@pecola>
+ <1349951541-20498-1-git-send-email-apw@canonical.com>
+ <1349951541-20498-6-git-send-email-apw@canonical.com>
+ <5076D1EC.1060100@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5076D1EC.1060100@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexander Graf <agraf@suse.de> wrote:
+On Thu, Oct 11, 2012 at 10:04:28PM +0800, Jeremy Kerr wrote:
+> Hi Andy,
+> 
+> >@@ -969,16 +970,18 @@
+> >  		return -ENOMEM;
+> >
+> >  	list_for_each_entry_safe(entry, n, &efivars->list, list) {
+> >-		struct inode *inode;
+> >  		struct dentry *dentry, *root = efivarfs_sb->s_root;
+> >-		char *name;
+> >  		unsigned long size = 0;
+> >  		int len, i;
+> >
+> >+		inode = NULL;
+> >+
+> >  		len = utf16_strlen(entry->var.VariableName);
+> >
+> >  		/* GUID plus trailing NULL */
+> >  		name = kmalloc(len + 38, GFP_ATOMIC);
+> >+		if (!name)
+> >+			goto fail;
+> >
+> >  		for (i = 0; i < len; i++)
+> >  			name[i] = entry->var.VariableName[i] & 0xFF;
+> >@@ -991,7 +994,13 @@
+> >
+> >  		inode = efivarfs_get_inode(efivarfs_sb, root->d_inode,
+> >  					  S_IFREG | 0644, 0);
+> >+		if (!inode)
+> >+			goto fail_name;
+> >+			
+> >  		dentry = d_alloc_name(root, name);
+> >+		if (!dentry)
+> >+			goto fail_inode;
+> >+
+> >  		/* copied by the above to local storage in the dentry. */
+> >  		kfree(name);
+> 
+> If we break out of the loop on the second (and onwards) iteration,
+> won't we still have the other inodes and dentries remaining
+> allocated?
 
-> Do I have to move them to their own header file or can I just #ifdef
-> __KERNEL__ around the place where __ASSEMBLY__ starts to the end of the
-> file?
+As we calling this from the mount_single() wrapper:
 
-That depends on whether it happens before or after my disintegration script is
-run on the header.  Ben has pulled my powerpc thing into the powerpc tree
-already.  If he doesn't mind repulling, then if you give me a patch or a git
-branch to fix it, I can apply that and regenerate the powerpc branch.
+        return mount_single(fs_type, flags, data, efivarfs_fill_super);
 
-Otherwise, you need to disintegrate manually:
 
- (1) Move the public part to arch/powerpc/include/uapi/asm/epapr_hcalls.h
+which does this:
 
- (2) #include the public part from arch/powerpc/include/asm/epapr_hcalls.h
+    struct dentry *mount_single(struct file_system_type *fs_type,
+	    int flags, void *data,
+	    int (*fill_super)(struct super_block *, void *, int))
+    {
+    [...]
+		    error = fill_super(s, data, flags & MS_SILENT ? 1 : 0);
+		    if (error) {
+			    deactivate_locked_super(s);
+			    return ERR_PTR(error);
+		    }
+    [...]
 
- (3) Move the "headers-y += epapr_hcalls.h" line from .../asm/Kbuild to
-     .../uapi/asm/Kbuild.
+I am expecting us to get called back via deactivate_locked_super(),
+which calls sb->kill_sb() which is:
 
-You should not then need __KERNEL__ guards in either header.
+    static void efivarfs_kill_sb(struct super_block *sb)
+    {       
+	    kill_litter_super(sb);
+	    efivarfs_sb = NULL;
+    }       
 
-David
+Which I believe will clean them up.
+
+-apw
+
