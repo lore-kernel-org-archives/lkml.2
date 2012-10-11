@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933723Ab2JKBO4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:14:56 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41456 "EHLO
+	id S933734Ab2JKBPD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:15:03 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47459 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933708Ab2JKBOu (ORCPT
+	by vger.kernel.org with ESMTP id S933717Ab2JKBOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:14:50 -0400
-X-Sasl-enc: Zig2PQUmwSKTrpn47rkUzmbmifERFj96UfM8hyxXraU0 1349918089
+	Wed, 10 Oct 2012 21:14:54 -0400
+X-Sasl-enc: EQO+61QZtnQlKh+B//KJDKlG3Vq195NQchYw7azoiSTi 1349918093
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Vaibhav Bedia <vaibhav.bedia@ti.com>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        Venkatraman S <svenkatr@ti.com>, Chris Ball <cjb@laptop.org>
-Subject: [ 114/120] mmc: omap_hsmmc: Pass on the suspend failure to the PM core
-Date: Thu, 11 Oct 2012 10:01:06 +0900
-Message-Id: <20121011005848.416788252@linuxfoundation.org>
+        Tetsuyuki Kobayashi <koba@kmckk.co.jp>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Chris Ball <cjb@laptop.org>
+Subject: [ 115/120] mmc: sh-mmcif: avoid oops on spurious interrupts
+Date: Thu, 11 Oct 2012 10:01:07 +0900
+Message-Id: <20121011005848.642245704@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -29,59 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vaibhav Bedia <vaibhav.bedia@ti.com>
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-commit c4c8eeb4df00aabb641553d6fbcd46f458e56cd9 upstream.
+commit 8464dd52d3198dd05cafb005371d76e5339eb842 upstream.
 
-In some cases mmc_suspend_host() is not able to claim the
-host and proceed with the suspend process. The core returns
--EBUSY to the host controller driver. Unfortunately, the
-host controller driver does not pass on this information
-to the PM core and hence the system suspend process continues.
+On some systems, e.g., kzm9g, MMCIF interfaces can produce spurious
+interrupts without any active request. To prevent the Oops, that results
+in such cases, don't dereference the mmc request pointer until we make
+sure, that we are indeed processing such a request.
 
-	ret = mmc_suspend_host(host->mmc);
-	if (ret) {
-		host->suspended = 0;
-		if (host->pdata->resume) {
-			ret = host->pdata->resume(dev, host->slot_id);
-
-The return status from mmc_suspend_host() is overwritten by return
-status from host->pdata->resume. So the original return status is lost.
-
-In these cases the MMC core gets to an unexpected state
-during resume and multiple issues related to MMC crop up.
-1. Host controller driver starts accessing the device registers
-before the clocks are enabled which leads to a prefetch abort.
-2. A file copy thread which was launched before suspend gets
-stuck due to the host not being reclaimed during resume.
-
-To avoid such problems pass on the -EBUSY status to the PM core
-from the host controller driver. With this change, MMC core
-suspend might still fail but it does not end up making the
-system unusable. Suspend gets aborted and the user can try
-suspending the system again.
-
-Signed-off-by: Vaibhav Bedia <vaibhav.bedia@ti.com>
-Signed-off-by: Hebbar, Gururaja <gururaja.hebbar@ti.com>
-Acked-by: Venkatraman S <svenkatr@ti.com>
+Reported-by: Tetsuyuki Kobayashi <koba@kmckk.co.jp>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/omap_hsmmc.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/mmc/host/sh_mmcif.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -2097,8 +2097,7 @@ static int omap_hsmmc_suspend(struct dev
- 	if (ret) {
- 		host->suspended = 0;
- 		if (host->pdata->resume) {
--			ret = host->pdata->resume(dev, host->slot_id);
--			if (ret)
-+			if (host->pdata->resume(dev, host->slot_id))
- 				dev_dbg(dev, "Unmask interrupt failed\n");
- 		}
- 		goto err;
+--- a/drivers/mmc/host/sh_mmcif.c
++++ b/drivers/mmc/host/sh_mmcif.c
+@@ -1191,6 +1191,10 @@ static irqreturn_t sh_mmcif_intr(int irq
+ 		host->sd_error = true;
+ 		dev_dbg(&host->pd->dev, "int err state = %08x\n", state);
+ 	}
++	if (host->state == STATE_IDLE) {
++		dev_info(&host->pd->dev, "Spurious IRQ status 0x%x", state);
++		return IRQ_HANDLED;
++	}
+ 	if (state & ~(INT_CMD12RBE | INT_CMD12CRE)) {
+ 		if (!host->dma_active)
+ 			return IRQ_WAKE_THREAD;
 
 
