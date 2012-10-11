@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965010Ab2JKCQZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:16:25 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44510 "EHLO
+	id S965061Ab2JKCR1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:17:27 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39751 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964875Ab2JKCQT (ORCPT
+	by vger.kernel.org with ESMTP id S965000Ab2JKCQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:16:19 -0400
-X-Sasl-enc: JZOobOHrURGr2WbgpJh+AdqHCGFTly3WhLBPcXTHy88a 1349921778
+	Wed, 10 Oct 2012 22:16:23 -0400
+X-Sasl-enc: uQA65XtuL3gyBRUrJbilw2ATTQfJnhb9TNcXfu1tvV4H 1349921781
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Christoph Lameter <cl@linux.com>,
-        Josh Boyer <jwboyer@gmail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 78/84] mempolicy: fix a memory corruption by refcount imbalance in alloc_pages_vma()
-Date: Thu, 11 Oct 2012 11:04:02 +0900
-Message-Id: <20121011015431.105009966@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: [ 79/84] CPU hotplug, cpusets, suspend: Dont modify cpusets during suspend/resume
+Date: Thu, 11 Oct 2012 11:04:03 +0900
+Message-Id: <20121011015431.293100623@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -31,54 +32,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 
-commit 00442ad04a5eac08a98255697c510e708f6082e2 upstream.
+commit d35be8bab9b0ce44bed4b9453f86ebf64062721e upstream.
 
-Commit cc9a6c877661 ("cpuset: mm: reduce large amounts of memory barrier
-related damage v3") introduced a potential memory corruption.
-shmem_alloc_page() uses a pseudo vma and it has one significant unique
-combination, vma->vm_ops=NULL and vma->policy->flags & MPOL_F_SHARED.
+In the event of CPU hotplug, the kernel modifies the cpusets' cpus_allowed
+masks as and when necessary to ensure that the tasks belonging to the cpusets
+have some place (online CPUs) to run on. And regular CPU hotplug is
+destructive in the sense that the kernel doesn't remember the original cpuset
+configurations set by the user, across hotplug operations.
 
-get_vma_policy() does NOT increase a policy ref when vma->vm_ops=NULL
-and mpol_cond_put() DOES decrease a policy ref when a policy has
-MPOL_F_SHARED.  Therefore, when a cpuset update race occurs,
-alloc_pages_vma() falls in 'goto retry_cpuset' path, decrements the
-reference count and frees the policy prematurely.
+However, suspend/resume (which uses CPU hotplug) is a special case in which
+the kernel has the responsibility to restore the system (during resume), to
+exactly the same state it was in before suspend.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Cc: Josh Boyer <jwboyer@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+In order to achieve that, do the following:
+
+1. Don't modify cpusets during suspend/resume. At all.
+   In particular, don't move the tasks from one cpuset to another, and
+   don't modify any cpuset's cpus_allowed mask. So, simply ignore cpusets
+   during the CPU hotplug operations that are carried out in the
+   suspend/resume path.
+
+2. However, cpusets and sched domains are related. We just want to avoid
+   altering cpusets alone. So, to keep the sched domains updated, build
+   a single sched domain (containing all active cpus) during each of the
+   CPU hotplug operations carried out in s/r path, effectively ignoring
+   the cpusets' cpus_allowed masks.
+
+   (Since userspace is frozen while doing all this, it will go unnoticed.)
+
+3. During the last CPU online operation during resume, build the sched
+   domains by looking up the (unaltered) cpusets' cpus_allowed masks.
+   That will bring back the system to the same original state as it was in
+   before suspend.
+
+Ultimately, this will not only solve the cpuset problem related to suspend
+resume (ie., restores the cpusets to exactly what it was before suspend, by
+not touching it at all) but also speeds up suspend/resume because we avoid
+running cpuset update code for every CPU being offlined/onlined.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/20120524141611.3692.20155.stgit@srivatsabhat.in.ibm.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- mm/mempolicy.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1511,8 +1511,18 @@ struct mempolicy *get_vma_policy(struct
- 									addr);
- 			if (vpol)
- 				pol = vpol;
--		} else if (vma->vm_policy)
-+		} else if (vma->vm_policy) {
- 			pol = vma->vm_policy;
+---
+ kernel/cpuset.c |    3 +++
+ kernel/sched.c  |   40 ++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 39 insertions(+), 4 deletions(-)
+
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2080,6 +2080,9 @@ static void scan_for_empty_cpusets(struc
+  * (of no affect) on systems that are actively using CPU hotplug
+  * but making no active use of cpusets.
+  *
++ * The only exception to this is suspend/resume, where we don't
++ * modify cpusets at all.
++ *
+  * This routine ensures that top_cpuset.cpus_allowed tracks
+  * cpu_active_mask on each CPU hotplug (cpuhp) event.
+  *
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -7777,34 +7777,66 @@ int __init sched_create_sysfs_power_savi
+ }
+ #endif /* CONFIG_SCHED_MC || CONFIG_SCHED_SMT */
+ 
++static int num_cpus_frozen;	/* used to mark begin/end of suspend/resume */
 +
-+			/*
-+			 * shmem_alloc_page() passes MPOL_F_SHARED policy with
-+			 * a pseudo vma whose vma->vm_ops=NULL. Take a reference
-+			 * count on these policies which will be dropped by
-+			 * mpol_cond_put() later
-+			 */
-+			if (mpol_needs_cond_ref(pol))
-+				mpol_get(pol);
+ /*
+  * Update cpusets according to cpu_active mask.  If cpusets are
+  * disabled, cpuset_update_active_cpus() becomes a simple wrapper
+  * around partition_sched_domains().
++ *
++ * If we come here as part of a suspend/resume, don't touch cpusets because we
++ * want to restore it back to its original state upon resume anyway.
+  */
+ static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
+ 			     void *hcpu)
+ {
+-	switch (action & ~CPU_TASKS_FROZEN) {
++	switch (action) {
++	case CPU_ONLINE_FROZEN:
++	case CPU_DOWN_FAILED_FROZEN:
++
++		/*
++		 * num_cpus_frozen tracks how many CPUs are involved in suspend
++		 * resume sequence. As long as this is not the last online
++		 * operation in the resume sequence, just build a single sched
++		 * domain, ignoring cpusets.
++		 */
++		num_cpus_frozen--;
++		if (likely(num_cpus_frozen)) {
++			partition_sched_domains(1, NULL, NULL);
++			break;
 +		}
++
++		/*
++		 * This is the last CPU online operation. So fall through and
++		 * restore the original sched domains by considering the
++		 * cpuset configurations.
++		 */
++
+ 	case CPU_ONLINE:
+ 	case CPU_DOWN_FAILED:
+ 		cpuset_update_active_cpus();
+-		return NOTIFY_OK;
++		break;
+ 	default:
+ 		return NOTIFY_DONE;
  	}
- 	if (!pol)
- 		pol = &default_policy;
++	return NOTIFY_OK;
+ }
+ 
+ static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
+ 			       void *hcpu)
+ {
+-	switch (action & ~CPU_TASKS_FROZEN) {
++	switch (action) {
+ 	case CPU_DOWN_PREPARE:
+ 		cpuset_update_active_cpus();
+-		return NOTIFY_OK;
++		break;
++	case CPU_DOWN_PREPARE_FROZEN:
++		num_cpus_frozen++;
++		partition_sched_domains(1, NULL, NULL);
++		break;
+ 	default:
+ 		return NOTIFY_DONE;
+ 	}
++	return NOTIFY_OK;
+ }
+ 
+ static int update_runtime(struct notifier_block *nfb,
 
 
