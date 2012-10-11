@@ -1,97 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758683Ab2JKNke (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 09:40:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57647 "EHLO mx2.suse.de"
+	id S1758690Ab2JKNk4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 09:40:56 -0400
+Received: from mga09.intel.com ([134.134.136.24]:35022 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753986Ab2JKNka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 09:40:30 -0400
-Date: Thu, 11 Oct 2012 15:40:28 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>, devel@openvz.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v4 10/14] memcg: use static branches when code not in use
-Message-ID: <20121011134028.GH29295@dhcp22.suse.cz>
-References: <1349690780-15988-1-git-send-email-glommer@parallels.com>
- <1349690780-15988-11-git-send-email-glommer@parallels.com>
+	id S1753616Ab2JKNky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 09:40:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,571,1344236400"; 
+   d="scan'208";a="204341801"
+From: Andi Kleen <andi@firstfloor.org>
+To: ling.ma@intel.com
+Cc: mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging instruction sequence and saving register
+References: <1349958548-1868-1-git-send-email-ling.ma@intel.com>
+Date: Thu, 11 Oct 2012 06:40:52 -0700
+In-Reply-To: <1349958548-1868-1-git-send-email-ling.ma@intel.com> (ling ma's
+	message of "Thu, 11 Oct 2012 20:29:08 +0800")
+Message-ID: <m2bog9t9cr.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349690780-15988-11-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 08-10-12 14:06:16, Glauber Costa wrote:
-> We can use static branches to patch the code in or out when not used.
-> 
-> Because the _ACTIVE bit on kmem_accounted is only set after the
-> increment is done, we guarantee that the root memcg will always be
-> selected for kmem charges until all call sites are patched (see
-> memcg_kmem_enabled).  This guarantees that no mischarges are applied.
-> 
-> static branch decrement happens when the last reference count from the
-> kmem accounting in memcg dies. This will only happen when the charges
-> drop down to 0.
-> 
-> When that happen, we need to disable the static branch only on those
-> memcgs that enabled it. To achieve this, we would be forced to
-> complicate the code by keeping track of which memcgs were the ones
-> that actually enabled limits, and which ones got it from its parents.
-> 
-> It is a lot simpler just to do static_key_slow_inc() on every child
-> that is accounted.
-> 
-> [ v4: adapted this patch to the changes in kmem_accounted ]
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> CC: Suleiman Souhlal <suleiman@google.com>
+ling.ma@intel.com writes:
 
-Looks reasonable to me
-Acked-by: Michal Hocko <mhocko@suse.cz>
+> From: Ma Ling <ling.ma@intel.com>
+>
+> Load and write operation occupy about 35% and 10% respectively
+> for most industry benchmarks. Fetched 16-aligned bytes code include 
+> about 4 instructions, implying 1.34(0.35 * 4) load, 0.4 write.  
+> Modern CPU support 2 load and 1 write per cycle, so throughput from write is
+> bottleneck for memcpy or copy_page, and some slight CPU only support one mem
+> operation per cycle. So it is enough to issue one read and write instruction
+> per cycle, and we can save registers. 
 
-Just a little nit.
+I don't think "saving registers" is a useful goal here.
 
-[...]
+>
+> In this patch we also re-arrange instruction sequence to improve performance
+> The performance on atom is improved about 11%, 9% on hot/cold-cache
+> case respectively.
 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 634c7b5..724a08b 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -344,11 +344,15 @@ struct mem_cgroup {
->  /* internal only representation about the status of kmem accounting. */
->  enum {
->  	KMEM_ACCOUNTED_ACTIVE = 0, /* accounted by this cgroup itself */
-> +	KMEM_ACCOUNTED_ACTIVATED, /* static key enabled. */
->  	KMEM_ACCOUNTED_DEAD, /* dead memcg, pending kmem charges */
->  };
->  
-> -/* first bit */
-> -#define KMEM_ACCOUNTED_MASK 0x1
-> +/*
-> + * first two bits. We account when limit is on, but only after
-> + * call sites are patched
-> + */
-> +#define KMEM_ACCOUNTED_MASK 0x3
+That's great, but the question is what happened to the older CPUs that
+also this sequence. It may be safer to add a new variant for Atom,
+unless you can benchmark those too.
 
-The names are long but why not use KMEM_ACCOUNTED_ACTIVE*
-#define KMEM_ACCOUNTED_MASK 1<<KMEM_ACCOUNTED_ACTIVE | 1<<KMEM_ACCOUNTED_ACTIVATED
+-Andi
 
-[...]
+
 -- 
-Michal Hocko
-SUSE Labs
+ak@linux.intel.com -- Speaking for myself only
