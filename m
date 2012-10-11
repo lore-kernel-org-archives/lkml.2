@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932225Ab2JKNPN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 09:15:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56441 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756353Ab2JKNPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 09:15:10 -0400
-Date: Thu, 11 Oct 2012 15:15:09 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Nicolas Palix <nicolas.palix@imag.fr>
-Cc: Julia Lawall <julia.lawall@lip6.fr>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] Coccicheck: Add the rep+ctxt mode
-Message-ID: <20121011131509.GB16465@sepie.suse.cz>
-References: <CAAxaTiOsaHOR4cbwcq=xOn-sWxB6PdB4x_UgYf2rUsPQM=WwWA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAxaTiOsaHOR4cbwcq=xOn-sWxB6PdB4x_UgYf2rUsPQM=WwWA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758620Ab2JKNPu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 09:15:50 -0400
+Received: from mail.netcomga.sk ([217.118.103.2]:39026 "EHLO netcomga.sk"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756353Ab2JKNPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 09:15:47 -0400
+Message-ID: <1349961347.29045.8.camel@pluto.netcomga.sk>
+Subject: Re: [PATCH] Platform: hp-wmi: add rfkill support for integrated GPS
+From: =?ISO-8859-1?Q?Trep=E1k?= Vilmos <trepo@netcomga.sk>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 11 Oct 2012 15:15:47 +0200
+In-Reply-To: <20121011123415.GA6056@srcf.ucam.org>
+References: <1349952660.1577.43.camel@pluto.netcomga.sk>
+	 <20121011123415.GA6056@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 20, 2012 at 10:30:46PM +0200, Nicolas Palix wrote:
-> This adds a 'rep+ctxt' mode which prints the warning
-> message followed by the context.
+On Thu, 2012-10-11 at 13:34 +0100, Matthew Garrett wrote:
+> On Thu, Oct 11, 2012 at 12:51:00PM +0200, Trepák Vilmos wrote:
+> > @@ -663,6 +669,24 @@ static int __devinit hp_wmi_rfkill_setup
+> >  			goto register_bluetooth_error;
+> >  	}
+> >  
+> > +	if (wireless & 0x3) {
+> > +		gps_rfkill = rfkill_alloc("hp-gps", &device->dev,
+> > +						RFKILL_TYPE_GPS,
+> > +						&hp_wmi_rfkill_ops,
+> > +						(void *) HPWMI_GPS);
 > 
-> Signed-off-by: Nicolas Palix <nicolas.palix@imag.fr>
-> ---
->  scripts/coccicheck | 3 +++
->  1 file changed, 3 insertions(+)
+> I don't think this bit is right - in this codepath, wireless is a mask, 
+> so 0x3 would mean wifi and bluetooth, not gps. I'd expect gps to be 0x8.
+
+And you'd expect right. Re-tested with 0x8, it works.
+
+>  
+> The rest looks good, though.
 > 
-> diff --git a/scripts/coccicheck b/scripts/coccicheck
-> index 823e972..eb43e40 100755
-> --- a/scripts/coccicheck
-> +++ b/scripts/coccicheck
-> @@ -95,6 +95,9 @@ coccinelle () {
->  	$SPATCH -D report  $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff || \
->  	$SPATCH -D context $FLAGS -sp_file $COCCI $OPT $OPTIONS               || \
->  	$SPATCH -D org     $FLAGS -sp_file $COCCI $OPT $OPTIONS
-> -no_show_diff || exit 1
 
-Your mailer broke this line into two, please try to avoid this next
-time. Also, please CC lkml when submitting patches. I applied the patch
-to kbuild.git#misc now.
+Of course it does, it's just copy & paste & replace... I don't even
+think I deserve credit for it.
 
-Michal
+Is it worth it to resubmit the patch for a 1-byte change or will you
+just take care of it yourself? If it's easier for you, I'll resubmit.
 
-> +    elif [ "$MODE" = "rep+ctxt" ] ; then
-> +	$SPATCH -D report  $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff && \
-> +	$SPATCH -D context $FLAGS -sp_file $COCCI $OPT $OPTIONS
->  || exit 1
->      else
->  	$SPATCH -D $MODE   $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
->      fi
-> -- 
-> 1.7.11.3
+
+-- 
+Trepák Vilmos <trepo@netcomga.sk>
+
