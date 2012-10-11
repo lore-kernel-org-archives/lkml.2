@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934262Ab2JKB1S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:27:18 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34206 "EHLO
+	id S934281Ab2JKB1l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:27:41 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52877 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934232Ab2JKBZZ (ORCPT
+	by vger.kernel.org with ESMTP id S934137Ab2JKBZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:25:25 -0400
-X-Sasl-enc: 8ReeLzsgkdnhwDBTte6rGnPKcMBwtYPSDwzSbV8so2rP 1349918724
+	Wed, 10 Oct 2012 21:25:18 -0400
+X-Sasl-enc: v2L2+swAyIQKfw5JGlGHZZSAKghx2LEmggFA8iyi4YdR 1349918716
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 078/120] ALSA: aloop - add locking to timer access
-Date: Thu, 11 Oct 2012 10:00:30 +0900
-Message-Id: <20121011005840.708937293@linuxfoundation.org>
+        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 071/120] ext4: always set i_op in ext4_mknod()
+Date: Thu, 11 Oct 2012 10:00:23 +0900
+Message-Id: <20121011005839.191778365@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -28,69 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
 
-commit d4f1e48bd11e3df6a26811f7a1f06c4225d92f7d upstream.
+commit 6a08f447facb4f9e29fcc30fb68060bb5a0d21c2 upstream.
 
-When the loopback timer handler is running, calling del_timer() (for STOP
-trigger) will not wait for the handler to complete before deactivating the
-timer. The timer gets rescheduled in the handler as usual. Then a subsequent
-START trigger will try to start the timer using add_timer() with a timer pending
-leading to a kernel panic.
+ext4_special_inode_operations have their own ifdef CONFIG_EXT4_FS_XATTR
+to mask those methods. And ext4_iget also always sets it, so there is
+an inconsistency.
 
-Serialize the calls to add_timer() and del_timer() using a spin lock to avoid
-this.
-
-Signed-off-by: Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>
-Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/drivers/aloop.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/ext4/namei.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/sound/drivers/aloop.c
-+++ b/sound/drivers/aloop.c
-@@ -119,6 +119,7 @@ struct loopback_pcm {
- 	unsigned int period_size_frac;
- 	unsigned long last_jiffies;
- 	struct timer_list timer;
-+	spinlock_t timer_lock;
- };
- 
- static struct platform_device *devices[SNDRV_CARDS];
-@@ -169,6 +170,7 @@ static void loopback_timer_start(struct
- 	unsigned long tick;
- 	unsigned int rate_shift = get_rate_shift(dpcm);
- 
-+	spin_lock(&dpcm->timer_lock);
- 	if (rate_shift != dpcm->pcm_rate_shift) {
- 		dpcm->pcm_rate_shift = rate_shift;
- 		dpcm->period_size_frac = frac_pos(dpcm, dpcm->pcm_period_size);
-@@ -181,12 +183,15 @@ static void loopback_timer_start(struct
- 	tick = (tick + dpcm->pcm_bps - 1) / dpcm->pcm_bps;
- 	dpcm->timer.expires = jiffies + tick;
- 	add_timer(&dpcm->timer);
-+	spin_unlock(&dpcm->timer_lock);
- }
- 
- static inline void loopback_timer_stop(struct loopback_pcm *dpcm)
- {
-+	spin_lock(&dpcm->timer_lock);
- 	del_timer(&dpcm->timer);
- 	dpcm->timer.expires = 0;
-+	spin_unlock(&dpcm->timer_lock);
- }
- 
- #define CABLE_VALID_PLAYBACK	(1 << SNDRV_PCM_STREAM_PLAYBACK)
-@@ -659,6 +664,7 @@ static int loopback_open(struct snd_pcm_
- 	dpcm->substream = substream;
- 	setup_timer(&dpcm->timer, loopback_timer_function,
- 		    (unsigned long)dpcm);
-+	spin_lock_init(&dpcm->timer_lock);
- 
- 	cable = loopback->cables[substream->number][dev];
- 	if (!cable) {
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -1801,9 +1801,7 @@ retry:
+ 	err = PTR_ERR(inode);
+ 	if (!IS_ERR(inode)) {
+ 		init_special_inode(inode, inode->i_mode, rdev);
+-#ifdef CONFIG_EXT4_FS_XATTR
+ 		inode->i_op = &ext4_special_inode_operations;
+-#endif
+ 		err = ext4_add_nondir(handle, dentry, inode);
+ 	}
+ 	ext4_journal_stop(handle);
 
 
