@@ -1,39 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab2JKOFr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 10:05:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62675 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751819Ab2JKOFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 10:05:42 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20121011093703.24b60232@infradead.org>
-References: <20121011093703.24b60232@infradead.org> <30699.1349789424@warthog.procyon.org.uk> <20121009183908.1e402a43@infradead.org> <201210111023.51311.o.endriss@gmx.de>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: dhowells@redhat.com, Oliver Endriss <o.endriss@gmx.de>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [GIT PULL] Disintegrate UAPI for media
-Date: Thu, 11 Oct 2012 15:05:31 +0100
-Message-ID: <20566.1349964331@warthog.procyon.org.uk>
+	id S932271Ab2JKOFy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 10:05:54 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:1729 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758679Ab2JKOFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 10:05:45 -0400
+Message-ID: <1349963912.23493.26.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2] acpi : acpi_bus_trim() stops removing devices when
+ failing to remove the device
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org,
+        wency@cn.fujitsu.com, vasilis.liaskovitis@profitbricks.com
+Date: Thu, 11 Oct 2012 07:58:32 -0600
+In-Reply-To: <50769B8C.2060901@jp.fujitsu.com>
+References: <50769B8C.2060901@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mauro Carvalho Chehab <mchehab@infradead.org> wrote:
+On Thu, 2012-10-11 at 19:12 +0900, Yasuaki Ishimatsu wrote:
+> acpi_bus_trim() stops removing devices, when acpi_bus_remove() return error
+> number. But acpi_bus_remove() cannot return error number correctly.
+> acpi_bus_remove() only return -EINVAL, when dev argument is NULL. Thus even if
+> device cannot be removed correctly, acpi_bus_trim() ignores and continues to
+> remove devices. acpi_bus_hot_remove_device() uses acpi_bus_trim() for removing
+> devices. Therefore acpi_bus_hot_remove_device() can send "_EJ0" to firmware,
+> even if the device is running on the system. In this case, the system cannot
+> work well.
+> 
+> Vasilis hit the bug at memory hotplug and reported it as follow:
+> https://lkml.org/lkml/2012/9/26/318
+> 
+> So acpi_bus_trim() should check whether device was removed or not correctly.
+> The patch adds error check into some functions to remove the device.
+> 
+> Applying the patch, acpi_bus_trim() stops removing devices when failing
+> to remove the device. But I think there is no impact with the
+> exceptionof CPU and Memory hotplug path. Because other device also fails
+> but the fail is an irregular case like device is NULL.
+> 
+> v1->v2
+> - add a rollback for reinstalling a notify handler.
+> 
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-> My understanding here is that, as the file location will change
-> with this series, your original concern is now void, as userspace
-> will require patches to use the new location. So, if we're willing
-> to do it, let's put this one-driver-only obsolete API on a separate
-> place.
+Thanks for the update. Looks good.
 
-As far as userspace is concerned, things will not change.  The header
-installation step will copy the uapi/ headers to the place it used to copy the
-non-uapi header.
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
 
-David
+-Toshi
+
+> 
+> ---
+>  drivers/acpi/scan.c    |   21 ++++++++++++++++++---
+>  drivers/base/dd.c      |   22 +++++++++++++++++-----
+>  include/linux/device.h |    2 +-
+>  3 files changed, 36 insertions(+), 9 deletions(-)
+> 
+> Index: linux-3.6/drivers/acpi/scan.c
+> ===================================================================
+> --- linux-3.6.orig/drivers/acpi/scan.c	2012-10-11 18:31:40.189019503 +0900
+> +++ linux-3.6/drivers/acpi/scan.c	2012-10-11 18:42:35.669041641 +0900
+> @@ -445,18 +445,29 @@ static int acpi_device_remove(struct dev
+>  {
+>  	struct acpi_device *acpi_dev = to_acpi_device(dev);
+>  	struct acpi_driver *acpi_drv = acpi_dev->driver;
+> +	int ret;
+>  
+>  	if (acpi_drv) {
+>  		if (acpi_drv->ops.notify)
+>  			acpi_device_remove_notify_handler(acpi_dev);
+> -		if (acpi_drv->ops.remove)
+> -			acpi_drv->ops.remove(acpi_dev, acpi_dev->removal_type);
+> +		if (acpi_drv->ops.remove) {
+> +			ret = acpi_drv->ops.remove(acpi_dev,
+> +						   acpi_dev->removal_type);
+> +			if (ret)
+> +				goto rollback;
+> +		}
+>  	}
+>  	acpi_dev->driver = NULL;
+>  	acpi_dev->driver_data = NULL;
+>  
+>  	put_device(dev);
+>  	return 0;
+> +
+> +rollback:
+> +	if (acpi_drv->ops.notify)
+> +		acpi_device_install_notify_handler(acpi_dev);
+> +
+> +	return ret;
+>  }
+>  
+>  struct bus_type acpi_bus_type = {
+> @@ -1226,11 +1237,15 @@ static int acpi_device_set_context(struc
+>  
+>  static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
+>  {
+> +	int ret;
+> +
+>  	if (!dev)
+>  		return -EINVAL;
+>  
+>  	dev->removal_type = ACPI_BUS_REMOVAL_EJECT;
+> -	device_release_driver(&dev->dev);
+> +	ret = device_release_driver(&dev->dev);
+> +	if (ret)
+> +		return ret;
+>  
+>  	if (!rmdevice)
+>  		return 0;
+> Index: linux-3.6/drivers/base/dd.c
+> ===================================================================
+> --- linux-3.6.orig/drivers/base/dd.c	2012-10-11 18:31:40.191019505 +0900
+> +++ linux-3.6/drivers/base/dd.c	2012-10-11 18:31:46.873020548 +0900
+> @@ -475,9 +475,10 @@ EXPORT_SYMBOL_GPL(driver_attach);
+>   * __device_release_driver() must be called with @dev lock held.
+>   * When called for a USB interface, @dev->parent lock must be held as well.
+>   */
+> -static void __device_release_driver(struct device *dev)
+> +static int __device_release_driver(struct device *dev)
+>  {
+>  	struct device_driver *drv;
+> +	int ret = 0;
+>  
+>  	drv = dev->driver;
+>  	if (drv) {
+> @@ -493,9 +494,11 @@ static void __device_release_driver(stru
+>  		pm_runtime_put_sync(dev);
+>  
+>  		if (dev->bus && dev->bus->remove)
+> -			dev->bus->remove(dev);
+> +			ret = dev->bus->remove(dev);
+>  		else if (drv->remove)
+> -			drv->remove(dev);
+> +			ret = drv->remove(dev);
+> +		if (ret)
+> +			goto rollback;
+>  		devres_release_all(dev);
+>  		dev->driver = NULL;
+>  		dev_set_drvdata(dev, NULL);
+> @@ -506,6 +509,12 @@ static void __device_release_driver(stru
+>  						     dev);
+>  
+>  	}
+> +
+> +	return ret;
+> +
+> +rollback:
+> +	driver_sysfs_add(dev);
+> +	return ret;
+>  }
+>  
+>  /**
+> @@ -515,16 +524,19 @@ static void __device_release_driver(stru
+>   * Manually detach device from driver.
+>   * When called for a USB interface, @dev->parent lock must be held.
+>   */
+> -void device_release_driver(struct device *dev)
+> +int device_release_driver(struct device *dev)
+>  {
+> +	int ret;
+>  	/*
+>  	 * If anyone calls device_release_driver() recursively from
+>  	 * within their ->remove callback for the same device, they
+>  	 * will deadlock right here.
+>  	 */
+>  	device_lock(dev);
+> -	__device_release_driver(dev);
+> +	ret = __device_release_driver(dev);
+>  	device_unlock(dev);
+> +
+> +	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(device_release_driver);
+>  
+> Index: linux-3.6/include/linux/device.h
+> ===================================================================
+> --- linux-3.6.orig/include/linux/device.h	2012-10-11 18:31:40.194019508 +0900
+> +++ linux-3.6/include/linux/device.h	2012-10-11 18:31:46.881020556 +0900
+> @@ -834,7 +834,7 @@ static inline void *dev_get_platdata(con
+>   * for information on use.
+>   */
+>  extern int __must_check device_bind_driver(struct device *dev);
+> -extern void device_release_driver(struct device *dev);
+> +extern int device_release_driver(struct device *dev);
+>  extern int  __must_check device_attach(struct device *dev);
+>  extern int __must_check driver_attach(struct device_driver *drv);
+>  extern int __must_check device_reprobe(struct device *dev);
+> 
+
+
