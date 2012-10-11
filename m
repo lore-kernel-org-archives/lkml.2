@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933507Ab2JKCbd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:31:33 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43569 "EHLO
+	id S933311Ab2JKCcP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:32:15 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33138 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932094Ab2JKCLr (ORCPT
+	by vger.kernel.org with ESMTP id S1756874Ab2JKCLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:11:47 -0400
-X-Sasl-enc: 9IB4alrGvdd/sk8Dx8aIzczjStu8/Md608ybxRZlvWYC 1349921506
+	Wed, 10 Oct 2012 22:11:23 -0400
+X-Sasl-enc: WPEOrh/sQ5Y6hf7v0ttfdLZz4tBmIxGCluEzoEYhsPgv 1349921482
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 07/84] kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()
-Date: Thu, 11 Oct 2012 11:02:51 +0900
-Message-Id: <20121011015418.364808562@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 14/84] xfrm_user: fix info leak in copy_to_user_auth()
+Date: Thu, 11 Oct 2012 11:02:58 +0900
+Message-Id: <20121011015419.620018482@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -29,38 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shawn Guo <shawn.guo@linaro.org>
 
-commit f96972f2dc6365421cf2366ebd61ee4cf060c8d5 upstream.
+From: Mathias Krause <minipli@googlemail.com>
 
-As kernel_power_off() calls disable_nonboot_cpus(), we may also want to
-have kernel_restart() call disable_nonboot_cpus().  Doing so can help
-machines that require boot cpu be the last alive cpu during reboot to
-survive with kernel restart.
+[ Upstream commit 4c87308bdea31a7b4828a51f6156e6f721a1fcc9 ]
 
-This fixes one reboot issue seen on imx6q (Cortex-A9 Quad).  The machine
-requires that the restart routine be run on the primary cpu rather than
-secondary ones.  Otherwise, the secondary core running the restart
-routine will fail to come to online after reboot.
+copy_to_user_auth() fails to initialize the remainder of alg_name and
+therefore discloses up to 54 bytes of heap memory via netlink to
+userland.
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Use strncpy() instead of strcpy() to fill the trailing bytes of alg_name
+with null bytes.
+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/sys.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/xfrm/xfrm_user.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -334,6 +334,7 @@ void kernel_restart_prepare(char *cmd)
- void kernel_restart(char *cmd)
- {
- 	kernel_restart_prepare(cmd);
-+	disable_nonboot_cpus();
- 	if (!cmd)
- 		printk(KERN_EMERG "Restarting system.\n");
- 	else
+--- a/net/xfrm/xfrm_user.c
++++ b/net/xfrm/xfrm_user.c
+@@ -742,7 +742,7 @@ static int copy_to_user_auth(struct xfrm
+ 		return -EMSGSIZE;
+ 
+ 	algo = nla_data(nla);
+-	strcpy(algo->alg_name, auth->alg_name);
++	strncpy(algo->alg_name, auth->alg_name, sizeof(algo->alg_name));
+ 	memcpy(algo->alg_key, auth->alg_key, (auth->alg_key_len + 7) / 8);
+ 	algo->alg_key_len = auth->alg_key_len;
+ 
 
 
