@@ -1,62 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756617Ab2JKJ1Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 05:27:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22822 "EHLO mx1.redhat.com"
+	id S1758186Ab2JKJ1g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 05:27:36 -0400
+Received: from stator.leun.net ([85.214.203.199]:44008 "EHLO stator.leun.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752451Ab2JKJ1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 05:27:20 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20121011120502.0211f1267dedf3776e4cf85b@canb.auug.org.au>
-References: <20121011120502.0211f1267dedf3776e4cf85b@canb.auug.org.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, B04825@freescale.com
-Cc: dhowells@redhat.com, Alexander Graf <agraf@suse.de>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Liu Yu <yu.liu@freescale.com>,
-        Stuart Yoder <stuart.yoder@freescale.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: linux-next: manual merge of the kvm-ppc tree with the powerpc-merge tree
-Date: Thu, 11 Oct 2012 10:27:00 +0100
-Message-ID: <13876.1349947620@warthog.procyon.org.uk>
+	id S1756663Ab2JKJ1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 05:27:32 -0400
+Date: Thu, 11 Oct 2012 11:26:49 +0200
+From: Michael Leun <lkml20120218@newton.leun.net>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [3.5 regression / mcs7830 / bisected] bridge constantly
+ toggeling between disabled and forwarding
+Message-ID: <20121011112649.7d50d605@xenia.leun.net>
+In-Reply-To: <201210111014.14533.linux@rainbow-software.org>
+References: <20120723091504.2d035d28@xenia.leun.net>
+	<201210090921.31415.linux@rainbow-software.org>
+	<20121009105606.247658ca@xenia.leun.net>
+	<201210111014.14533.linux@rainbow-software.org>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Thu, 11 Oct 2012 10:14:14 +0200
+Ondrej Zary <linux@rainbow-software.org> wrote:
 
-> I just removed epapr_hcalls.h from the Kbuild file as I am not sure how
-> it should be broken up.  David, can you have a look at this, please?
+> On Tuesday 09 October 2012, Michael Leun wrote:
+> > On Tue, 9 Oct 2012 09:21:31 +0200
+> >
+> > Ondrej Zary <linux@rainbow-software.org> wrote:
+> > > On Tuesday 09 October 2012, Michael Leun wrote:
+> > > > On Thu, 27 Sep 2012 10:39:05 -0700
+> > > >
+> > > > Greg KH <gregkh@linuxfoundation.org> wrote:
+> > > > > On Tue, Jul 24, 2012 at 01:36:34AM +0200, Michael Leun wrote:
+> > > > > > On Mon, 23 Jul 2012 09:15:04 +0200
+> > > > > > Michael Leun <lkml20120218@newton.leun.net> wrote:
+> > > > > >
+> > > > > > [see issue description below]
+> > > > > >
+> > > > > > Bisecting yielded
+> > > > > >
+> > > > > > b1ff4f96fd1c63890d78d8939c6e0f2b44ce3113 is the first bad
+> > > > > > commit commit b1ff4f96fd1c63890d78d8939c6e0f2b44ce3113
+> > > > > > Author: Ondrej Zary <linux@rainbow-software.org>
+> > > > > > Date:   Fri Jun 1 10:29:08 2012 +0000
+> > > > > >
+> > > > > >     mcs7830: Implement link state detection
+> > > > > >
+> > > > > >     Add .status callback that detects link state changes.
+> > > > > >     Tested with MCS7832CV-AA chip (9710:7830, identified as
+> > > > > > rev.C by the driver). Fixes
+> > > > > > https://bugzilla.kernel.org/show_bug.cgi?id=28532
+> > > > > >
+> > > > > >     Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> > > > > >     Signed-off-by: David S. Miller <davem@davemloft.net>
+> > > > > >
+> > > > > > :040000 040000 5480780cb5e75c57122a621fc3bab0108c16be27
+> > > > > >
+> > > > > > d97efd9cc0a465dff76bcd3a3c547f718f2a5345 M    drivers
+> > > > > >
+> > > > > >
+> > > > > > Reverting that from 3.5 makes the issue go away.
+> > > > >
+> > > > > Did this ever get resolved in 3.6-rc7 or any older kernel?  I
+> > > > > can't revert the patch from 3.5.y unless it's also fixed in
+> > > > > Linus's tree.
+> > > >
+> > > > Please excuse me for answering a bit late.
+> > > >
+> > > > No, that never got resolved, I still have the problem with 3.6
+> > > > but I'm not shure about the correct solution.
+> > > >
+> > > > Maybe link state detection just does not work with some of that
+> > > > devices and we should have an possibility to enable/disable it
+> > > > per device, maybe it can be handeled with an blacklist of not
+> > > > working devices, maybe it could be fixed - I do not know and
+> > > > also do not know how to find out.
+> > > >
+> > > > But I'm willing to test.
+> > >
+> > > Does the problem appear only in a bridge? Or the link state
+> > > detection
+> > >is completely wrong?
+> >
+> > As testing with patch below shows, it also happens without bridge,
+> > but I did not notice so far, because that log message I was
+> > complainig about originally of course comes from the bridge code.
+> >
+> > > Can you please apply this debug patch and provide the output?
+> > >
+> > > --- a/drivers/net/usb/mcs7830.c
+> > > +++ b/drivers/net/usb/mcs7830.c
+> > > @@ -638,6 +638,7 @@ static void mcs7830_status(struct usbnet *dev,
+> > > struct urb *urb) return;
+> > >
+> > >  	link = !(buf[1] & 0x20);
+> > > +	printk("netif_carrier_ok=%d, link=%d, buf[0]=0x%02x,
+> > > buf[1]=0x%02x\n", netif_carrier_ok(dev->net), link, buf[0],
+> > > buf[1]); if (netif_carrier_ok(dev->net) != link) { if (link) {
+> > >  			netif_carrier_on(dev->net);
+> >
+> > As far as I've seen:
+> >
+> > Bring device up - link state toggles a few times and stabilizes to
+> > up
+> >
+> > Start ping - link state toggles for every packet
+> >
+> > Test below done without bridge involved.
+> >
+> > Note: I renamed the interface to ue7 (I happen to have several of
+> > that devices).
+> 
+> Please try this patch, it should fix the problem.
+> (Remove the previous debug patch first.)
+> 
+> 
+> mcs7830: Fix link state detection
 
-Files should be broken up along around __KERNEL__ conditionals.  If there are
-no __KERNEL__ conditionals, it is assumed that the file is entirely UAPI and
-can just be moved.
+For me this works. I've tested with the original bridged setup and do
+not longer see that bridge port state changes.
 
-The problem appears to be this commit:
+I would pretty much appreciate to see this in mainline and then 3.5 and
+3.6 stable ASAP.
 
-	https://github.com/agraf/linux-2.6/commit/4c09029a5639c955fcf6d65205796e4f1208aed3
+Thank you!
 
-	From: Liu Yu <yu.liu@freescale.com>
-	Subject: KVM: PPC: Add support for ePAPR idle hcall in host kernel
+-- 
+MfG,
 
-Just makes epapr_hcalls.h part of the userspace API in its entirety by this bit
-of the patch:
+Michael Leun
 
-	+header-y += epapr_hcalls.h
-
-whilst not adding any __KERNEL__ guards - which is almost certainly incorrect.
-
-At the very least, I would say that the global variable declarations need
-limiting to kernel space, and thus so do the inline functions as they emit
-inline assembly to jump somewhere specified by one of the global variables
-(actually a code array).
-
-So for manual splitting purposes, I would go with just moving all the #defines
-prior to the __ASSEMBLY__ guard out to uapi.  Everything within the
-__ASSEMBLY__ guard is KABI only by the looks of it.
-
-David
