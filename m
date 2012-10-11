@@ -1,87 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758604Ab2JKLlz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 07:41:55 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:49951 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758422Ab2JKLlw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 07:41:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
-Subject: Re: [PATCH 0/3] Update LZO compression
-Date: Thu, 11 Oct 2012 11:41:27 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Johannes Stezenbach <js@sig21.net>,
-        "richard -rw- weinberger" <richard.weinberger@gmail.com>,
-        linux-btrfs@vger.kernel.org, linux-crypto@vger.kernel.org,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Phillip Lougher <phillip@squashfs.org.uk>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-References: <cover.1349621096.git.markus@oberhumer.com> <20121009122614.569b9535.akpm@linux-foundation.org> <50748113.80408@oberhumer.com>
-In-Reply-To: <50748113.80408@oberhumer.com>
+	id S1758525Ab2JKLtf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 07:49:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59070 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754578Ab2JKLte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 07:49:34 -0400
+Message-ID: <5076B241.1080506@redhat.com>
+Date: Thu, 11 Oct 2012 13:49:21 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Bryan Venteicher <bryan.venteicher@gmail.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Cong Meng <mc@linux.vnet.ibm.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Bryan Venteicher <bryanv@daemoninthecloset.org>
+Subject: Re: [PATCH] [SCSI] virtio-scsi: Add real 2-clause BSD license to
+ header
+References: <1349937691-60084-1-git-send-email-bryanv@daemoninthecloset.org>
+In-Reply-To: <1349937691-60084-1-git-send-email-bryanv@daemoninthecloset.org>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-Message-Id: <201210111141.27270.arnd@arndb.de>
-X-Provags-ID: V02:K0:8GKu/vARVrq6R81RPHg/WH9jJn7nFLN2fTDb3fIYgyc
- r02WO4djIyj4+pZ5BAUjQqoko3opqX0VMpFcP9A0guaNeuvpcw
- pfCV8Gzd9fDnYG5TrG12gVPyGyeVXfmAaTdNMLsYBSBAOa9CO3
- qV+b/1Fcp4npDDqnN/CgL4bv11C4JFwsP0B/lxNTFhiqosZ9/q
- Re4/6Mm1rlMCrLP7RHa9lWMeXd50IlLk95EVv4oC+hlCkRDwhI
- RUCoSUgpzLHxpBUbD4cZOyDIxY/GhabyLjxy2iQ7GXxlA/eMj5
- G9ge52DKfO1jBSegEd5mdSZjvLaqItbckH4hmdH1ZqvkwbWRBy
- m+9udYt6Jxj+WeOYW44o=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 October 2012, Markus F.X.J. Oberhumer wrote:
-> > 
-> > : This commit updates the kernel LZO code to the current upsteam version
-> > : which features a significant speed improvement - benchmarking the Calgary
-> > : and Silesia test corpora typically shows a doubled performance in
-> > : both compression and decompression on modern i386/x86_64/powerpc machines.
-> > 
-> > There are significant clients of the LZO library - crypto, btrfs,
-> > jffs2, ubifs, squashfs and zcache.  So let's give all those people a cc
-> > and ask that they test the LZO changes once they land in linux-next. 
-> > For correctness and performance, please.
+Il 11/10/2012 08:41, Bryan Venteicher ha scritto:
+> This is analogous to commit a1b383870a made by Rusty Russell to all
+> the VirtIO headers at the time. This eases the use of the header as
+> is by other OSes.
 > 
-> The core compression and decompression code has been thoroughly tested, so I
-> do not expect major problems.
+> Signed-off-by: Bryan Venteicher <bryanv@daemoninthecloset.org>
+
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+
+> ---
+>  include/linux/virtio_scsi.h | 28 ++++++++++++++++++++++++++--
+>  1 file changed, 26 insertions(+), 2 deletions(-)
 > 
-> Good testing after the merge and feedback about build or performance issues
-> (and improvements!) is highly appreciated.
+> diff --git a/include/linux/virtio_scsi.h b/include/linux/virtio_scsi.h
+> index dc8d305..a91fb52 100644
+> --- a/include/linux/virtio_scsi.h
+> +++ b/include/linux/virtio_scsi.h
+> @@ -1,7 +1,31 @@
+> +/*
+> + * This header is BSD licensed so anyone can use the definitions to implement
+> + * compatible drivers/servers.
+> + *
+> + * Redistribution and use in source and binary forms, with or without
+> + * modification, are permitted provided that the following conditions
+> + * are met:
+> + * 1. Redistributions of source code must retain the above copyright
+> + *    notice, this list of conditions and the following disclaimer.
+> + * 2. Redistributions in binary form must reproduce the above copyright
+> + *    notice, this list of conditions and the following disclaimer in the
+> + *    documentation and/or other materials provided with the distribution.
+> + *
+> + * THIS SOFTWARE IS PROVIDED BY AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+> + * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+> + * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+> + * ARE DISCLAIMED.  IN NO EVENT SHALL AUTHOR OR CONTRIBUTORS BE LIABLE
+> + * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+> + * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+> + * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+> + * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+> + * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+> + * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+> + * SUCH DAMAGE.
+> + */
+> +
+>  #ifndef _LINUX_VIRTIO_SCSI_H
+>  #define _LINUX_VIRTIO_SCSI_H
+> -/* This header is BSD licensed so anyone can use the definitions to implement
+> - * compatible drivers/servers. */
+>  
+>  #define VIRTIO_SCSI_CDB_SIZE   32
+>  #define VIRTIO_SCSI_SENSE_SIZE 96
+> 
 
-The addition of the lzo tree to linux-next caused this problem for ARM
-imx_v6_v7_defconfig:
-
-In file included from /home/arnd/linux-arm/arch/arm/boot/compressed/decompress.c:40:0:
-/home/arnd/linux-arm/arch/arm/boot/compressed/../../../../lib/decompress_unlzo.c:34:34: fatal error: lzo/lzo1x_decompress.c: No such file or directory
-
-Since the file was renamed, anything including it needs to be updated to the
-new file name.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-
-diff --git a/lib/decompress_unlzo.c b/lib/decompress_unlzo.c
-index 4531294..960183d 100644
---- a/lib/decompress_unlzo.c
-+++ b/lib/decompress_unlzo.c
-@@ -31,7 +31,7 @@
-  */
- 
- #ifdef STATIC
--#include "lzo/lzo1x_decompress.c"
-+#include "lzo/lzo1x_decompress_safe.c"
- #else
- #include <linux/decompress/unlzo.h>
- #endif
