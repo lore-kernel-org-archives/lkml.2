@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934082Ab2JKBVO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:21:14 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45695 "EHLO
+	id S934109Ab2JKBWr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:22:47 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57270 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933425Ab2JKBVD (ORCPT
+	by vger.kernel.org with ESMTP id S934060Ab2JKBUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:21:03 -0400
-X-Sasl-enc: sK6vHks7DecjlAquj9ZbIS+M6fy+sk9tHYR8ShRS5HR1 1349918462
+	Wed, 10 Oct 2012 21:20:48 -0400
+X-Sasl-enc: ag9GTflOh7/OPXMbRwXAyMypWxrdI9LCcX+lLC5/b3YL 1349918447
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ed Cashin <ecashin@coraid.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 054/120] aoe: assert AoE packets marked as requiring no checksum
-Date: Thu, 11 Oct 2012 10:00:06 +0900
-Message-Id: <20121011005835.548902220@linuxfoundation.org>
+Subject: [ 051/120] l2tp: fix a typo in l2tp_eth_dev_recv()
+Date: Thu, 11 Oct 2012 10:00:03 +0900
+Message-Id: <20121011005834.877950731@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -29,31 +29,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Ed Cashin <ecashin@coraid.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 8babe8cc6570ed896b7b596337eb8fe730c3ff45 ]
+[ Upstream commit c0cc88a7627c333de50b07b7c60b1d49d9d2e6cc ]
 
-In order for the network layer to see that AoE requires
-no checksumming in a generic way, the packets must be
-marked as requiring no checksum, so we make this requirement
-explicit with the assertion.
+While investigating l2tp bug, I hit a bug in eth_type_trans(),
+because not enough bytes were pulled in skb head.
 
-Signed-off-by: Ed Cashin <ecashin@coraid.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/block/aoe/aoecmd.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/l2tp/l2tp_eth.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/aoe/aoecmd.c
-+++ b/drivers/block/aoe/aoecmd.c
-@@ -35,6 +35,7 @@ new_skb(ulong len)
- 		skb_reset_mac_header(skb);
- 		skb_reset_network_header(skb);
- 		skb->protocol = __constant_htons(ETH_P_AOE);
-+		skb_checksum_none_assert(skb);
+--- a/net/l2tp/l2tp_eth.c
++++ b/net/l2tp/l2tp_eth.c
+@@ -132,7 +132,7 @@ static void l2tp_eth_dev_recv(struct l2t
+ 		printk("\n");
  	}
- 	return skb;
- }
+ 
+-	if (!pskb_may_pull(skb, sizeof(ETH_HLEN)))
++	if (!pskb_may_pull(skb, ETH_HLEN))
+ 		goto error;
+ 
+ 	secpath_reset(skb);
 
 
