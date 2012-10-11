@@ -1,170 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504Ab2JKTy6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 15:54:58 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:55299 "EHLO gir.skynet.ie"
+	id S1754675Ab2JKTzJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 15:55:09 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:43992 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751968Ab2JKTyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 15:54:53 -0400
-Date: Thu, 11 Oct 2012 20:54:50 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <pzijlstr@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hillf Danton <dhillf@gmail.com>,
-        Andrew Jones <drjones@redhat.com>, Dan Smith <danms@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Christoph Lameter <cl@linux.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 05/33] autonuma: pte_numa() and pmd_numa()
-Message-ID: <20121011195450.GM3317@csn.ul.ie>
-References: <1349308275-2174-1-git-send-email-aarcange@redhat.com>
- <1349308275-2174-6-git-send-email-aarcange@redhat.com>
- <20121011111545.GR3317@csn.ul.ie>
- <20121011165847.GO1818@redhat.com>
+	id S1752901Ab2JKTy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 15:54:57 -0400
+Message-ID: <50772350.1070903@us.ibm.com>
+Date: Thu, 11 Oct 2012 12:51:44 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121011165847.GO1818@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Prarit Bhargava <prarit@redhat.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, paulmck@linux.vnet.ibm.com
+Subject: Re: RCU NOHZ, tsc, and clock_gettime
+References: <5077157A.7060401@redhat.com>
+In-Reply-To: <5077157A.7060401@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12101119-1976-0000-0000-000012491898
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 11, 2012 at 06:58:47PM +0200, Andrea Arcangeli wrote:
-> On Thu, Oct 11, 2012 at 12:15:45PM +0100, Mel Gorman wrote:
-> > huh?
-> > 
-> > #define _PAGE_NUMA     _PAGE_PROTNONE
-> > 
-> > so this is effective _PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PROTNONE
-> > 
-> > I suspect you are doing this because there is no requirement for
-> > _PAGE_NUMA == _PAGE_PROTNONE for other architectures and it was best to
-> > describe your intent. Is that really the case or did I miss something
-> > stupid?
-> 
-> Exactly.
-> 
-> It reminds that we need to return true in pte_present when the NUMA
-> hinting page fault is on.
-> 
-> Hardwiring _PAGE_NUMA to _PAGE_PROTNONE conceptually is not necessary
-> and it's actually an artificial restrictions. Other archs without a
-> bitflag for _PAGE_PROTNONE, may want to use something else and they'll
-> have to deal with pte_present too, somehow. So this is a reminder for
-> them as well.
-> 
+On 10/11/2012 11:52 AM, Prarit Bhargava wrote:
+> I've been tracking an odd bug that may involve the RCU NOHZ code and
+> just want to know if you have any ideas on debugging and/or what might be
+> wrong.  Note the bug happens on *BOTH* upstream and the current RHEL6 tree.
+> The data in this email is from running on RHEL6 because that's what I happen
+> to be running ATM.  The result, however, is _identical_ to that of linux.git
+> latest.
+>
+> The attached program compares userspace TSC reads to the time returned from
+> the REALTIME_CLOCK[1].  The test does the following
+>
+> read tsc1
+> get REALTIME_CLOCK value
+> read tsc2
+>
+> and then does a comparison between the tsc read and the REALTIME_CLOCK value
+> to see if they are in sync with each other.
+>
+> [I'm leaving out the guts of the analysis here.  It is sufficient to show
+> examples of "good" data and "bad" data IMO.]
+>
+> On a good run, we see little variance in between the values:
+>
+>      0   144       0.1
+>      1   138       1.8
+>      2   147      -2.9
+[snip]
+>     29   144      -0.6
+> n: 30, slope: 0.50 (1.99 GHz), dev: 1.1 ns, max: 2.9 ns
+>
+>
+> On a bad run, there is a lot of variance between the values:
+>
+>      0   144    -346.0
+>      1   138    1410.8
+>      2   138    -806.9
+>      3   141    4006.6
+>      4   147   -3996.1
+[snip]
+>     29   141     -50.3
+> n: 30, slope: 0.50 (1.99 GHz), dev: 1231.4 ns, max: 4006.6 ns
 
-That's all very reasonable.
 
-> > >  static inline int pte_hidden(pte_t pte)
-> > > @@ -420,7 +421,63 @@ static inline int pmd_present(pmd_t pmd)
-> > >  	 * the _PAGE_PSE flag will remain set at all times while the
-> > >  	 * _PAGE_PRESENT bit is clear).
-> > >  	 */
-> > > -	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE);
-> > > +	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE |
-> > > +				 _PAGE_NUMA);
-> > > +}
-> > > +
-> > > +#ifdef CONFIG_AUTONUMA
-> > > +/*
-> > > + * _PAGE_NUMA works identical to _PAGE_PROTNONE (it's actually the
-> > > + * same bit too). It's set only when _PAGE_PRESET is not set and it's
-> > 
-> > same bit on x86, not necessarily anywhere else.
-> 
-> Yep. In fact before using _PAGE_PRESENT the two bits were different
-> even on x86. But I unified them. If I vary them then they will become
-> _PAGE_PTE_NUMA/_PAGE_PMD_NUMA and the above will fail to build without
-> risk of errors.
-> 
+Do you see the same noisy variance when instead of doing:
+     rdtsc()
+     clock_gettime()
+     rdtsc()
 
-Ok.
+you do:
+     clock_gettime()
+     clock_gettime()
 
-> > 
-> > _PAGE_PRESENT?
-> 
-> good eye ;) corrected.
-> 
-> > > +/*
-> > > + * pte/pmd_mknuma sets the _PAGE_ACCESSED bitflag automatically
-> > > + * because they're called by the NUMA hinting minor page fault.
-> > 
-> > automatically or atomically?
-> > 
-> > I assume you meant atomically but what stops two threads faulting at the
-> > same time and doing to the same update? mmap_sem will be insufficient in
-> > that case so what is guaranteeing the atomicity. PTL?
-> 
-> I meant automatically. I explained myself wrong and automatically may
-> be the wrong word. It also is atomic of course but it wasn't about the
-> atomic part.
-> 
-> So the thing is: the numa hinting page fault hooking point is this:
-> 
-> 	if (pte_numa(entry))
-> 		return pte_numa_fixup(mm, vma, address, entry, pte, pmd);
-> 
-> It won't get this far:
-> 
-> 	entry = pte_mkyoung(entry);
-> 	if (ptep_set_access_flags(vma, address, pte, entry, flags & FAULT_FLAG_WRITE)) {
-> 
-> So if I don't set _PAGE_ACCESSED in pte/pmd_mknuma, the TLB miss
-> handler will have to set _PAGE_ACCESSED itself with an additional
-> write on the pte/pmd later when userland touches the page. And that
-> will slow us down for no good.
-> 
+And calculate the delta of the timestamp results?
 
-All clear now. Letting it fall through to reach that point would be
-convulated and messy. This is a better option.
+Also does this behavior change if you select different clocksources on 
+the system?
 
-> Because mknuma is only called in the numa hinting page fault context,
-> it's optimal to set _PAGE_ACCESSED too, not only _PAGE_PRESENT (and
-> clearing _PAGE_NUMA of course).
-> 
-> The basic idea, is that the numa hinting page fault can only trigger
-> if userland touches the page, and after such an event, _PAGE_ACCESSED
-> would be set by the hardware no matter if there is a NUMA hinting page
-> fault or not (so we can optimize away the hardware action when the NUMA
-> hinting page fault triggers).
-> 
-> I tried to reword it:
-> 
-> diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-> index cf1d3f0..3dc6a9b 100644
-> --- a/arch/x86/include/asm/pgtable.h
-> +++ b/arch/x86/include/asm/pgtable.h
-> @@ -449,12 +449,12 @@ static inline int pmd_numa(pmd_t pmd)
->  #endif
->  
->  /*
-> - * pte/pmd_mknuma sets the _PAGE_ACCESSED bitflag automatically
-> - * because they're called by the NUMA hinting minor page fault. If we
-> - * wouldn't set the _PAGE_ACCESSED bitflag here, the TLB miss handler
-> - * would be forced to set it later while filling the TLB after we
-> - * return to userland. That would trigger a second write to memory
-> - * that we optimize away by setting _PAGE_ACCESSED here.
-> + * pte/pmd_mknuma sets the _PAGE_ACCESSED bitflag too because they're
-> + * only called by the NUMA hinting minor page fault. If we wouldn't
-> + * set the _PAGE_ACCESSED bitflag here, the TLB miss handler would be
-> + * forced to set it later while filling the TLB after we return to
-> + * userland. That would trigger a second write to memory that we
-> + * optimize away by setting _PAGE_ACCESSED here.
->   */
->  static inline pte_t pte_mknonnuma(pte_t pte)
->  {
-> 
+> It was noted by the bug reporter that specifying "nohz=off" resolved the
+> problem.  I tested with "nohz=off" and AFAICT it fixes the issue.  I started
+> out debugging by assuming that delays in the c-state transitions were not being
+> properly accounted for in the timing calculations.
+>
+> I ran a baseline test on an unmodified kernel (with no extra boot options) and
+> confirmed that powertop shows the CPUs entering deep c-states while the test was
+> running for 300 runs.
+>
+> I then instrumented the PM QoS and the power management code (specifically
+> cpuidle).  I put in a large # of printk's to monitor the CPU transitions, and
+> monitored the power states via powertop in order to verify that the system was
+> behaving correctly wrt PM QoS.
+>
+> If you modify the tstsc script to run 300 times with this modified kernel, and
+> run powertop in the middle of the script, you will see that the processors do
+> NOT enter deep c-states.  **This means that PM QoS is doing its job correctly**.
 
-Much better.
+So its not clear here,  do you see the same noisier latencies when using 
+PM QoS to limit deep c-states?
 
--- 
-Mel Gorman
-SUSE Labs
+Finally, how many cpus are on the machine you see this with?  Does the 
+effect go away with maxcpus=1?
+
+It looks like the TSC clocksource is being used, just because the 
+latencies are so low, but Is the same clocksource being used in all of 
+these cases?
+
+One possibility is that if the cpu we're doing our timekeeping 
+accumulation on is different then the one running the test, we might go 
+into deeper idle for longer periods of time. Then when we accumulate 
+time, we have more then a single tick to accumulate and that might 
+require holding the timekeeper/xtime lock for longer times.
+
+And the max 2.9ns variance seems particularly low, given that we do call 
+update_vsyscall every so often, and that should block clock_gettime() 
+callers while we update the vsyscall data.  Could it be that the test is 
+too short to see the locking effect, so you're just getting lucky, and 
+that adding nohz is jostling the regularity of the execution so you then 
+see the lock wait times?  If you increase the samples and sample loops 
+by 1000 does that change the behavior?
+
+thanks
+-john
+
