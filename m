@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557Ab2JKUKX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 16:10:23 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:37973 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668Ab2JKUKU convert rfc822-to-8bit (ORCPT
+	id S1757248Ab2JKUKa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 16:10:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45461 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668Ab2JKUKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 16:10:20 -0400
-MIME-Version: 1.0
-Message-ID: <1a20296e-60c2-4b03-b322-5ac060b38b52@default>
-Date: Thu, 11 Oct 2012 13:10:02 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org
-Subject: RE: [PATCH -next] staging: ramster: depends on NET
-References: <20121011140604.f5093233badade406c3d06f7@canb.auug.org.au>
- <5076F503.3070808@xenotime.net>
-In-Reply-To: <5076F503.3070808@xenotime.net>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6661.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Thu, 11 Oct 2012 16:10:25 -0400
+Date: Thu, 11 Oct 2012 13:10:24 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrew Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [PATCH] pidns: limit a size of pid to one page
+Message-Id: <20121011131024.719863b4.akpm@linux-foundation.org>
+In-Reply-To: <1349864654-1333268-1-git-send-email-avagin@openvz.org>
+References: <1349864654-1333268-1-git-send-email-avagin@openvz.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Randy Dunlap [mailto:rdunlap@xenotime.net]
-> Sent: Thursday, October 11, 2012 10:34 AM
-> To: Stephen Rothwell
-> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Dan Magenheimer; Konrad Wilk; Greg
-> Kroah-Hartman; devel@driverdev.osuosl.org
-> Subject: [PATCH -next] staging: ramster: depends on NET
-> 
-> From: Randy Dunlap <rdunlap@xenotime.net>
-> 
-> ramster uses network interfaces that are only present when
-> CONFIG_NET is enabled, so it should depend on NET.
+On Wed, 10 Oct 2012 14:24:14 +0400
+Andrew Vagin <avagin@openvz.org> wrote:
 
-Yep, thanks for catching!
+> A size of pid depends on a level of pidns and now a level of pidns
+> is not limited, so it can be more than one page.
+> 
+> Looks reasonable, that it should be limited to a page size.  On x86_64
+> it will allow to create 125 nested pid namespaces.  I don't know a
+> usecase for which, it will be not enough. When someone finds a
+> reasonable use case, we can add a config option or a sysctl parameter.
+> 
+> In addition it will reduce effect of another problem, when we have many
+> nested namespaces and the oldest one starts dying.  zap_pid_ns_processe
+> will be called for each namespace and find_vpid will be called for each
+> process in a namespace. find_vpid will be called minimum max_level^2 / 2
+> times. The reason of that is that when we found a bit in pidmap, we
+> can't determine this pidns is top for this process or it isn't.
+> 
+> vpid is a heavy operation, so a fork bomb, which create many nested
+> namespace, can do a system inaccessible for a long time.
+> 
+> For example my system becomes inaccessible for a few minutes with
+> 4000 processes.
 
-Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
- 
-> Fixes these build errors:
-> 
-> drivers/built-in.o: In function `sc_kref_release':
-> tcp.c:(.text+0x24b9af): undefined reference to `sock_release'
-> drivers/built-in.o: In function `r2net_open_listening_sock':
-> tcp.c:(.text+0x24ca2b): undefined reference to `sock_create'
-> tcp.c:(.text+0x24cb91): undefined reference to `sock_release'
-> drivers/built-in.o: In function `r2net_recv_tcp_msg':
-> tcp.c:(.text+0x24cdbd): undefined reference to `sock_recvmsg'
-> drivers/built-in.o: In function `r2net_send_tcp_msg':
-> tcp.c:(.text+0x24d341): undefined reference to `sock_sendmsg'
-> drivers/built-in.o: In function `r2net_start_connect':
-> tcp.c:(.text+0x24d8fa): undefined reference to `sock_create'
-> drivers/built-in.o: In function `r2net_shutdown_sc':
-> tcp.c:(.text+0x24e30c): undefined reference to `kernel_sock_shutdown'
-> drivers/built-in.o: In function `r2net_accept_one':
-> tcp.c:(.text+0x24f392): undefined reference to `sock_create_lite'
-> tcp.c:(.text+0x24f3c3): undefined reference to `sock_release'
-> drivers/built-in.o: In function `r2net_stop_listening':
-> (.text+0x250f63): undefined reference to `sock_release'
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> Cc: dan.magenheimer@oracle.com
-> Cc: konrad.wilk@oracle.com
-> ---
->  drivers/staging/ramster/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- linux-next-20121011.orig/drivers/staging/ramster/Kconfig
-> +++ linux-next-20121011/drivers/staging/ramster/Kconfig
-> @@ -18,6 +18,7 @@ config ZCACHE2
->  config RAMSTER
->  	bool "Cross-machine RAM capacity sharing, aka peer-to-peer tmem"
->  	depends on CONFIGFS_FS=y && SYSFS=y && !HIGHMEM && ZCACHE2=y
-> +	depends on NET
->  	# must ensure struct page is 8-byte aligned
->  	select HAVE_ALIGNED_STRUCT_PAGE if !64_BIT
->  	default n
+This changelog is a bit hard to follow.  After reading the code, I see
+that `struct pid' is a "variable sized struct" - a header with an array
+of upids at the end.  I suggest this be explained in the changelog so
+others don't scratch their heads in the way I did.
+
+Really, what the patch actually does is to limit the nesting depth of
+pid namespaces, yes?  If so I think that is the way the patch should be
+presented - the restriction of the storage size of a struct pid is an
+implementation detail.
+
+> --- a/kernel/pid_namespace.c
+> +++ b/kernel/pid_namespace.c
+> @@ -70,12 +70,18 @@ err_alloc:
+>  	return NULL;
+>  }
+>  
+> +/* Limit a size of pid to one page */
+> +#define MAX_PID_NS_LEVEL ((PAGE_SIZE - sizeof(struct pid)) / sizeof(struct upid))
+
+I don't it was a good choice to use PAGE_SIZE here.  PAGE_SIZE can vary
+from 4k to 64k, which is a large range.  This choice introduces the
+risk that an application will pass testing on one architecture/config
+but will later fail when deployed on other archs/configs.  And it means
+that large PAGE_SIZE setups might still experience the problems which
+you have identified.
+
+And the use of sizeof(struct upid) and sizeof(struct pid) mean that if
+we later change the size of those structures, the kernel's userspace
+interface will be accidentally changed in subtle and surprising ways.
+
+So I suggest you do
+
+#define MAX_PID_NS_LEVEL 128
+
+and leave it at that?
+
+And the comment for MAX_PID_NS_LEVEL should tell the reader *why* we did
+this, not what we did (which is pretty obvious from reading the definition).
