@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964810Ab2JKCOQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:14:16 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42586 "EHLO
+	id S934337Ab2JKCO1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:14:27 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43727 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933030Ab2JKCOK (ORCPT
+	by vger.kernel.org with ESMTP id S933478Ab2JKCOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:14:10 -0400
-X-Sasl-enc: KqoyLDgmyTT+wsrF+OLMQWLnMLplPp/Tuzuq4KSyoxjM 1349921648
+	Wed, 10 Oct 2012 22:14:21 -0400
+X-Sasl-enc: 5Ja5NsrJcdEqOpBSUwPJ25WkhAQzNjqfohx1U1Jz/EZ8 1349921660
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Kristian Nielsen <knielsen@knielsen-hq.org>, Jan Kara <jack@suse.cz>
-Subject: [ 49/84] ext4: fix fdatasync() for files with only i_size changes
-Date: Thu, 11 Oct 2012 11:03:33 +0900
-Message-Id: <20121011015425.873653248@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 35/84] ipv6: mip6: fix mip6_mh_filter()
+Date: Thu, 11 Oct 2012 11:03:19 +0900
+Message-Id: <20121011015423.398965076@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -27,56 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
 
-commit b71fc079b5d8f42b2a52743c8d2f1d35d655b1c5 upstream.
+From: Eric Dumazet <edumazet@google.com>
 
-Code tracking when transaction needs to be committed on fdatasync(2) forgets
-to handle a situation when only inode's i_size is changed. Thus in such
-situations fdatasync(2) doesn't force transaction with new i_size to disk
-and that can result in wrong i_size after a crash.
+[ Upstream commit 96af69ea2a83d292238bdba20e4508ee967cf8cb ]
 
-Fix the issue by updating inode's i_datasync_tid whenever its size is
-updated.
+mip6_mh_filter() should not modify its input, or else its caller
+would need to recompute ipv6_hdr() if skb->head is reallocated.
 
-Reported-by: Kristian Nielsen <knielsen@knielsen-hq.org>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Use skb_header_pointer() instead of pskb_may_pull()
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/ext4/inode.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ net/ipv6/mip6.c |   20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -5151,6 +5151,7 @@ static int ext4_do_update_inode(handle_t
- 	struct ext4_inode_info *ei = EXT4_I(inode);
- 	struct buffer_head *bh = iloc->bh;
- 	int err = 0, rc, block;
-+	int need_datasync = 0;
+--- a/net/ipv6/mip6.c
++++ b/net/ipv6/mip6.c
+@@ -84,28 +84,30 @@ static int mip6_mh_len(int type)
  
- 	/* For fields not not tracking in the in-memory inode,
- 	 * initialise them to zero for new inodes. */
-@@ -5199,7 +5200,10 @@ static int ext4_do_update_inode(handle_t
- 		raw_inode->i_file_acl_high =
- 			cpu_to_le16(ei->i_file_acl >> 32);
- 	raw_inode->i_file_acl_lo = cpu_to_le32(ei->i_file_acl);
--	ext4_isize_set(raw_inode, ei->i_disksize);
-+	if (ei->i_disksize != ext4_isize(raw_inode)) {
-+		ext4_isize_set(raw_inode, ei->i_disksize);
-+		need_datasync = 1;
-+	}
- 	if (ei->i_disksize > 0x7fffffffULL) {
- 		struct super_block *sb = inode->i_sb;
- 		if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
-@@ -5252,7 +5256,7 @@ static int ext4_do_update_inode(handle_t
- 		err = rc;
- 	ext4_clear_inode_state(inode, EXT4_STATE_NEW);
+ static int mip6_mh_filter(struct sock *sk, struct sk_buff *skb)
+ {
+-	struct ip6_mh *mh;
++	struct ip6_mh _hdr;
++	const struct ip6_mh *mh;
  
--	ext4_update_inode_fsync_trans(handle, inode, 0);
-+	ext4_update_inode_fsync_trans(handle, inode, need_datasync);
- out_brelse:
- 	brelse(bh);
- 	ext4_std_error(inode->i_sb, err);
+-	if (!pskb_may_pull(skb, (skb_transport_offset(skb)) + 8) ||
+-	    !pskb_may_pull(skb, (skb_transport_offset(skb) +
+-				 ((skb_transport_header(skb)[1] + 1) << 3))))
++	mh = skb_header_pointer(skb, skb_transport_offset(skb),
++				sizeof(_hdr), &_hdr);
++	if (!mh)
+ 		return -1;
+ 
+-	mh = (struct ip6_mh *)skb_transport_header(skb);
++	if (((mh->ip6mh_hdrlen + 1) << 3) > skb->len)
++		return -1;
+ 
+ 	if (mh->ip6mh_hdrlen < mip6_mh_len(mh->ip6mh_type)) {
+ 		LIMIT_NETDEBUG(KERN_DEBUG "mip6: MH message too short: %d vs >=%d\n",
+ 			       mh->ip6mh_hdrlen, mip6_mh_len(mh->ip6mh_type));
+-		mip6_param_prob(skb, 0, ((&mh->ip6mh_hdrlen) -
+-					 skb_network_header(skb)));
++		mip6_param_prob(skb, 0, offsetof(struct ip6_mh, ip6mh_hdrlen) +
++				skb_network_header_len(skb));
+ 		return -1;
+ 	}
+ 
+ 	if (mh->ip6mh_proto != IPPROTO_NONE) {
+ 		LIMIT_NETDEBUG(KERN_DEBUG "mip6: MH invalid payload proto = %d\n",
+ 			       mh->ip6mh_proto);
+-		mip6_param_prob(skb, 0, ((&mh->ip6mh_proto) -
+-					 skb_network_header(skb)));
++		mip6_param_prob(skb, 0, offsetof(struct ip6_mh, ip6mh_proto) +
++				skb_network_header_len(skb));
+ 		return -1;
+ 	}
+ 
 
 
