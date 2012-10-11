@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412Ab2JKHT4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 03:19:56 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52700 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab2JKHTx convert rfc822-to-8bit (ORCPT
+	id S1755189Ab2JKH2a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 03:28:30 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:62120 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905Ab2JKH23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 03:19:53 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-Subject: Re: Meaningless load?
-From: Simon Klinkert <simon.klinkert@gmail.com>
-In-Reply-To: <1349886164.1279.20.camel@twins>
-Date: Thu, 11 Oct 2012 09:19:49 +0200
-Cc: LKML <linux-kernel@vger.kernel.org>, mingo@redhat.com,
-        Trond.Myklebust@netapp.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <8CCB73B0-34AD-47E2-9379-DB6F02DB35F5@gmail.com>
-References: <98F2F644-D531-42FE-B080-9561142D71C8@gmail.com> <1349886164.1279.20.camel@twins>
-To: Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>
-X-Mailer: Apple Mail (2.1499)
+	Thu, 11 Oct 2012 03:28:29 -0400
+Date: Thu, 11 Oct 2012 08:28:24 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, arnd@arndb.de
+Subject: Re: [PATCH 5/6] ARM: ux500: Enable SDI4 port on the u9540 when
+ booting with Device Tree
+Message-ID: <20121011072824.GQ9707@gmail.com>
+References: <1349882335-6786-1-git-send-email-lee.jones@linaro.org>
+ <1349882335-6786-6-git-send-email-lee.jones@linaro.org>
+ <20121010190437.GU12801@game.jcrosoft.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121010190437.GU12801@game.jcrosoft.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 10 Oct 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
 
-On 10.10.2012, at 18:22, Peter Zijlstra  wrote:
+> On 16:18 Wed 10 Oct     , Lee Jones wrote:
+> > Here we add the device node for the SDI4 (MMC) port to the u9540
+> > Device Tree source file. This will allow successful probing of
+> > the internal MMC storage device when booting with DT enabled.
+> > 
+> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  arch/arm/boot/dts/u9540.dts |   12 +++++++++++-
+> >  1 file changed, 11 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/arm/boot/dts/u9540.dts b/arch/arm/boot/dts/u9540.dts
+> > index 28efe20..2dade76 100644
+> > --- a/arch/arm/boot/dts/u9540.dts
+> > +++ b/arch/arm/boot/dts/u9540.dts
+> > @@ -21,7 +21,6 @@
+> >  	};
+> >  
+> >  	soc-u9500 {
+> > -
+> why?
 
-> On Wed, 2012-10-10 at 17:44 +0200, Simon Klinkert wrote:
->> I'm just wondering if the 'load' is really meaningful in this
->> scenario. The machine is the whole time fully responsive and looks
->> fine to me but maybe I didn't understand correctly what the load
->> should mean. Is there any sensible interpretation of the load?
-> 
-> I'll leave meaningful aside, but uninterruptible (D state) is part of
-> how the load thing is defined, so your 500 result is correct.
+My OCD shining though. It's either this or I create a seperate patch
+for it. I think sneaking it in here is better.
 
-Yes, the calculation of the load is correct but I still don't know how I should interpret the load…
+> >  		uart@80120000 {
+> >  			status = "okay";
+> >  		};
+> > @@ -33,5 +32,16 @@
+> >  		uart@80007000 {
+> >  			status = "okay";
+> >  		};
+> > +
+> > +		// On-board eMMC
+> no c++ comment
 
-On 11.10.2012, at 06:02, Mike Galbraith wrote:
+Single line comments are perfectly valid in DTS(I) files.
 
-> Makes perfect sense to me.  Work _is_ stack this high.  We don't and
-> can't know whether the mountain is made of popcorn balls or boulders.
+See: Documentation/devicetree/booting-without-of.txt
 
-That's the point. Afaik the D state never represents 'work'. These processes are waiting for something.
+> > +		sdi4_per2@80114000 {
+> > +			arm,primecell-periphid = <0x10480180>;
+> > +		        max-frequency = <50000000>;
+> > +			bus-width = <8>;
+> > +			mmc-cap-mmc-highspeed;
+> > +			vmmc-supply = <&ab8500_ldo_aux2_reg>;
+> you need add the pinctrl here
 
-Let's say we have 10,000 processes in the D state (and thus a load of ~10,000) doing nothing. What should the load tell me? The machine is under fire? There is nothing to do? There might be something to do but the machine doesn't know?
+Pinctrl will come in time. We have a priority list.
 
-Simon
-
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
