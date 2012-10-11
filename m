@@ -1,56 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758690Ab2JKNk4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 09:40:56 -0400
-Received: from mga09.intel.com ([134.134.136.24]:35022 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753616Ab2JKNky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 09:40:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,571,1344236400"; 
-   d="scan'208";a="204341801"
-From: Andi Kleen <andi@firstfloor.org>
-To: ling.ma@intel.com
-Cc: mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging instruction sequence and saving register
-References: <1349958548-1868-1-git-send-email-ling.ma@intel.com>
-Date: Thu, 11 Oct 2012 06:40:52 -0700
-In-Reply-To: <1349958548-1868-1-git-send-email-ling.ma@intel.com> (ling ma's
-	message of "Thu, 11 Oct 2012 20:29:08 +0800")
-Message-ID: <m2bog9t9cr.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1758705Ab2JKNlI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 09:41:08 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45846 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753616Ab2JKNlE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 09:41:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20121010162842.GZ4405@twin.jikos.cz>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+	<1349863655-29320-2-git-send-email-zwu.kernel@gmail.com>
+	<20121010162842.GZ4405@twin.jikos.cz>
+Date: Thu, 11 Oct 2012 21:41:01 +0800
+Message-ID: <CAEH94LiFvUfNA1vjJ37y3U0r0cw+k_w6hoboOXPO75=CQwoXSg@mail.gmail.com>
+Subject: Re: [RFC v3 01/13] btrfs: add one new mount option '-o hot_track'
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: dave@jikos.cz, zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+        viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
+        cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ling.ma@intel.com writes:
-
-> From: Ma Ling <ling.ma@intel.com>
+On Thu, Oct 11, 2012 at 12:28 AM, David Sterba <dave@jikos.cz> wrote:
+> Hi,
 >
-> Load and write operation occupy about 35% and 10% respectively
-> for most industry benchmarks. Fetched 16-aligned bytes code include 
-> about 4 instructions, implying 1.34(0.35 * 4) load, 0.4 write.  
-> Modern CPU support 2 load and 1 write per cycle, so throughput from write is
-> bottleneck for memcpy or copy_page, and some slight CPU only support one mem
-> operation per cycle. So it is enough to issue one read and write instruction
-> per cycle, and we can save registers. 
-
-I don't think "saving registers" is a useful goal here.
-
+> On Wed, Oct 10, 2012 at 06:07:23PM +0800, zwu.kernel@gmail.com wrote:
+>> --- a/fs/btrfs/ctree.h
+>> +++ b/fs/btrfs/ctree.h
+>> @@ -1726,6 +1726,7 @@ struct btrfs_ioctl_defrag_range_args {
+>>  #define BTRFS_MOUNT_CHECK_INTEGRITY  (1 << 20)
+>>  #define BTRFS_MOUNT_CHECK_INTEGRITY_INCLUDING_EXTENT_DATA (1 << 21)
+>>  #define BTRFS_MOUNT_PANIC_ON_FATAL_ERROR     (1 << 22)
+>> +#define BTRFS_MOUNT_HOT_TRACK                (1 << 23)
 >
-> In this patch we also re-arrange instruction sequence to improve performance
-> The performance on atom is improved about 11%, 9% on hot/cold-cache
-> case respectively.
+> Please don't forget to add new options to btrfs_show_options(),
+> otherwise we can't tell what filesystems have hot tracking enabled.
+Great catch, thanks.
+>
+>> --- a/fs/btrfs/super.c
+>> +++ b/fs/btrfs/super.c
+>> @@ -303,7 +304,7 @@ enum {
+>>       Opt_notreelog, Opt_ratio, Opt_flushoncommit, Opt_discard,
+>>       Opt_space_cache, Opt_clear_cache, Opt_user_subvol_rm_allowed,
+>>       Opt_enospc_debug, Opt_subvolrootid, Opt_defrag, Opt_inode_cache,
+>> -     Opt_no_space_cache, Opt_recovery, Opt_skip_balance,
+>> +     Opt_no_space_cache, Opt_recovery, Opt_skip_balance, Opt_hot_track,
+>
+> Please add the new option to the end.
+OK.
+>
+>>       Opt_check_integrity, Opt_check_integrity_including_extent_data,
+>>       Opt_check_integrity_print_mask, Opt_fatal_errors,
+>>       Opt_err,
+>> @@ -342,6 +343,7 @@ static match_table_t tokens = {
+>>       {Opt_no_space_cache, "nospace_cache"},
+>>       {Opt_recovery, "recovery"},
+>>       {Opt_skip_balance, "skip_balance"},
+>> +     {Opt_hot_track, "hot_track"},
+>
+> (also this one)
+ditto.
+>
+>>       {Opt_check_integrity, "check_int"},
+>>       {Opt_check_integrity_including_extent_data, "check_int_data"},
+>>       {Opt_check_integrity_print_mask, "check_int_print_mask=%d"},
+>> @@ -553,6 +555,9 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
+>>               case Opt_skip_balance:
+>>                       btrfs_set_opt(info->mount_opt, SKIP_BALANCE);
+>>                       break;
+>> +             case Opt_hot_track:
+>
+> It's a common patter in the surrounding code that a message is printed
+> when enabling options, but the vfs prints its own, so I'm not sure if
+> it's needed here as well. Just thinking, leave it as it is now.
+OK
+>
+>> +                     btrfs_set_opt(info->mount_opt, HOT_TRACK);
+>> +                     break;
+>>  #ifdef CONFIG_BTRFS_FS_CHECK_INTEGRITY
+>>               case Opt_check_integrity_including_extent_data:
+>>                       printk(KERN_INFO "btrfs: enabling check integrity"
+>
+> david
 
-That's great, but the question is what happened to the older CPUs that
-also this sequence. It may be safer to add a new variant for Atom,
-unless you can benchmark those too.
-
--Andi
 
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Regards,
+
+Zhi Yong Wu
