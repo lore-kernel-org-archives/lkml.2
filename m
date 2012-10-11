@@ -1,106 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934125Ab2JKBXy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:23:54 -0400
-Received: from mxsmtp1.mxic.com.tw ([220.228.149.226]:61455 "EHLO
-	twhmllg3.macronix.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934065Ab2JKBXu (ORCPT
+	id S934145Ab2JKBYO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:24:14 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60517 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934127Ab2JKBYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:23:50 -0400
-Subject: [PATCH] m25p80: Add support of Macronix SPI flash
-To: linux-kernel@vger.kernel.org
-X-Mailer: Lotus Notes Release 7.0.3 September 26, 2007
-Message-ID: <OFCF342E85.1FAC4670-ON48257A94.00073D54-48257A94.0007A9E7@mxic.com.tw>
-From: jimkuo@mxic.com.tw
-Date: Thu, 11 Oct 2012 09:23:50 +0800
-X-MIMETrack: Serialize by Router on MXML01A/TAIWAN/MXIC(Release 7.0.4FP2|June 06, 2010) at
- 2012/10/11 09:23:42
-MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
-X-MAIL: twhmllg3.macronix.com q9B1NgNr031047
+	Wed, 10 Oct 2012 21:24:07 -0400
+X-Sasl-enc: 4ILj4yNf/KXeM8FwbEulMv4rU3a3PgNE6tY4BcXetafK 1349918646
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 061/120] SCSI: zfcp: restore refcount check on port_remove
+Date: Thu, 11 Oct 2012 10:00:13 +0900
+Message-Id: <20121011005837.055058933@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
+References: <20121011005825.364610894@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Hello,
-I'm an engineer of Macronix. I just verified our serial nor flashes with
-Linux m25p80 driver.
-Could you please commit the changes to next version of Linux?
+------------------
 
-I replace the old JEDEC id with our new product's.
-Two of our products have different page size, so I add the "if statement"
-before page size assignment.
-The following is my patch which diff from Linux-3.6 kernel. Thank you!
+From: Steffen Maier <maier@linux.vnet.ibm.com>
+
+commit d99b601b63386f3395dc26a699ae703a273d9982 upstream.
+
+Upstream commit f3450c7b917201bb49d67032e9f60d5125675d6a
+"[SCSI] zfcp: Replace local reference counting with common kref"
+accidentally dropped a reference count check before tearing down
+zfcp_ports that are potentially in use by zfcp_units.
+Even remote ports in use can be removed causing
+unreachable garbage objects zfcp_ports with zfcp_units.
+Thus units won't come back even after a manual port_rescan.
+The kref of zfcp_port->dev.kobj is already used by the driver core.
+We cannot re-use it to track the number of zfcp_units.
+Re-introduce our own counter for units per port
+and check on port_remove.
+
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Reviewed-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
+ drivers/s390/scsi/zfcp_aux.c   |    1 +
+ drivers/s390/scsi/zfcp_def.h   |    1 +
+ drivers/s390/scsi/zfcp_ext.h   |    1 +
+ drivers/s390/scsi/zfcp_sysfs.c |   18 ++++++++++++++++--
+ drivers/s390/scsi/zfcp_unit.c  |   36 ++++++++++++++++++++++++++----------
+ 5 files changed, 45 insertions(+), 12 deletions(-)
 
---- drivers/mtd/devices/m25p80.c.orig     2012-09-28 11:29:03.391552000
-+0800
-+++ drivers/mtd/devices/m25p80.c    2012-09-28 14:27:42.470208000 +0800
-@@ -648,13 +648,31 @@ static const struct spi_device_id m25p_i
-      { "640s33b",  INFO(0x898913, 0, 64 * 1024, 128, 0) },
+--- a/drivers/s390/scsi/zfcp_aux.c
++++ b/drivers/s390/scsi/zfcp_aux.c
+@@ -519,6 +519,7 @@ struct zfcp_port *zfcp_port_enqueue(stru
+ 
+ 	rwlock_init(&port->unit_list_lock);
+ 	INIT_LIST_HEAD(&port->unit_list);
++	atomic_set(&port->units, 0);
+ 
+ 	INIT_WORK(&port->gid_pn_work, zfcp_fc_port_did_lookup);
+ 	INIT_WORK(&port->test_link_work, zfcp_fc_link_test_work);
+--- a/drivers/s390/scsi/zfcp_def.h
++++ b/drivers/s390/scsi/zfcp_def.h
+@@ -205,6 +205,7 @@ struct zfcp_port {
+ 	struct zfcp_adapter    *adapter;       /* adapter used to access port */
+ 	struct list_head	unit_list;	/* head of logical unit list */
+ 	rwlock_t		unit_list_lock; /* unit list lock */
++	atomic_t		units;	       /* zfcp_unit count */
+ 	atomic_t	       status;	       /* status of this remote port */
+ 	u64		       wwnn;	       /* WWNN if known */
+ 	u64		       wwpn;	       /* WWPN */
+--- a/drivers/s390/scsi/zfcp_ext.h
++++ b/drivers/s390/scsi/zfcp_ext.h
+@@ -159,6 +159,7 @@ extern void zfcp_scsi_dif_sense_error(st
+ extern struct attribute_group zfcp_sysfs_unit_attrs;
+ extern struct attribute_group zfcp_sysfs_adapter_attrs;
+ extern struct attribute_group zfcp_sysfs_port_attrs;
++extern struct mutex zfcp_sysfs_port_units_mutex;
+ extern struct device_attribute *zfcp_sysfs_sdev_attrs[];
+ extern struct device_attribute *zfcp_sysfs_shost_attrs[];
+ 
+--- a/drivers/s390/scsi/zfcp_sysfs.c
++++ b/drivers/s390/scsi/zfcp_sysfs.c
+@@ -227,6 +227,8 @@ static ssize_t zfcp_sysfs_port_rescan_st
+ static ZFCP_DEV_ATTR(adapter, port_rescan, S_IWUSR, NULL,
+ 		     zfcp_sysfs_port_rescan_store);
+ 
++DEFINE_MUTEX(zfcp_sysfs_port_units_mutex);
++
+ static ssize_t zfcp_sysfs_port_remove_store(struct device *dev,
+ 					    struct device_attribute *attr,
+ 					    const char *buf, size_t count)
+@@ -249,6 +251,16 @@ static ssize_t zfcp_sysfs_port_remove_st
+ 	else
+ 		retval = 0;
+ 
++	mutex_lock(&zfcp_sysfs_port_units_mutex);
++	if (atomic_read(&port->units) > 0) {
++		retval = -EBUSY;
++		mutex_unlock(&zfcp_sysfs_port_units_mutex);
++		goto out;
++	}
++	/* port is about to be removed, so no more unit_add */
++	atomic_set(&port->units, -1);
++	mutex_unlock(&zfcp_sysfs_port_units_mutex);
++
+ 	write_lock_irq(&adapter->port_list_lock);
+ 	list_del(&port->list);
+ 	write_unlock_irq(&adapter->port_list_lock);
+@@ -289,12 +301,14 @@ static ssize_t zfcp_sysfs_unit_add_store
+ {
+ 	struct zfcp_port *port = container_of(dev, struct zfcp_port, dev);
+ 	u64 fcp_lun;
++	int retval;
+ 
+ 	if (strict_strtoull(buf, 0, (unsigned long long *) &fcp_lun))
+ 		return -EINVAL;
+ 
+-	if (zfcp_unit_add(port, fcp_lun))
+-		return -EINVAL;
++	retval = zfcp_unit_add(port, fcp_lun);
++	if (retval)
++		return retval;
+ 
+ 	return count;
+ }
+--- a/drivers/s390/scsi/zfcp_unit.c
++++ b/drivers/s390/scsi/zfcp_unit.c
+@@ -104,7 +104,7 @@ static void zfcp_unit_release(struct dev
+ {
+ 	struct zfcp_unit *unit = container_of(dev, struct zfcp_unit, dev);
+ 
+-	put_device(&unit->port->dev);
++	atomic_dec(&unit->port->units);
+ 	kfree(unit);
+ }
+ 
+@@ -119,16 +119,27 @@ static void zfcp_unit_release(struct dev
+ int zfcp_unit_add(struct zfcp_port *port, u64 fcp_lun)
+ {
+ 	struct zfcp_unit *unit;
++	int retval = 0;
++
++	mutex_lock(&zfcp_sysfs_port_units_mutex);
++	if (atomic_read(&port->units) == -1) {
++		/* port is already gone */
++		retval = -ENODEV;
++		goto out;
++	}
+ 
+ 	unit = zfcp_unit_find(port, fcp_lun);
+ 	if (unit) {
+ 		put_device(&unit->dev);
+-		return -EEXIST;
++		retval = -EEXIST;
++		goto out;
+ 	}
+ 
+ 	unit = kzalloc(sizeof(struct zfcp_unit), GFP_KERNEL);
+-	if (!unit)
+-		return -ENOMEM;
++	if (!unit) {
++		retval = -ENOMEM;
++		goto out;
++	}
+ 
+ 	unit->port = port;
+ 	unit->fcp_lun = fcp_lun;
+@@ -139,28 +150,33 @@ int zfcp_unit_add(struct zfcp_port *port
+ 	if (dev_set_name(&unit->dev, "0x%016llx",
+ 			 (unsigned long long) fcp_lun)) {
+ 		kfree(unit);
+-		return -ENOMEM;
++		retval = -ENOMEM;
++		goto out;
+ 	}
+ 
+-	get_device(&port->dev);
+-
+ 	if (device_register(&unit->dev)) {
+ 		put_device(&unit->dev);
+-		return -ENOMEM;
++		retval = -ENOMEM;
++		goto out;
+ 	}
+ 
+ 	if (sysfs_create_group(&unit->dev.kobj, &zfcp_sysfs_unit_attrs)) {
+ 		device_unregister(&unit->dev);
+-		return -EINVAL;
++		retval = -EINVAL;
++		goto out;
+ 	}
+ 
++	atomic_inc(&port->units); /* under zfcp_sysfs_port_units_mutex ! */
++
+ 	write_lock_irq(&port->unit_list_lock);
+ 	list_add_tail(&unit->list, &port->unit_list);
+ 	write_unlock_irq(&port->unit_list_lock);
+ 
+ 	zfcp_unit_scsi_scan(unit);
+ 
+-	return 0;
++out:
++	mutex_unlock(&zfcp_sysfs_port_units_mutex);
++	return retval;
+ }
+ 
+ /**
 
-      /* Macronix */
--     { "mx25l2005a",  INFO(0xc22012, 0, 64 * 1024,   4, SECT_4K) },
--     { "mx25l4005a",  INFO(0xc22013, 0, 64 * 1024,   8, SECT_4K) },
--     { "mx25l8005",   INFO(0xc22014, 0, 64 * 1024,  16, 0) },
--     { "mx25l1606e",  INFO(0xc22015, 0, 64 * 1024,  32, SECT_4K) },
--     { "mx25l3205d",  INFO(0xc22016, 0, 64 * 1024,  64, 0) },
--     { "mx25l6405d",  INFO(0xc22017, 0, 64 * 1024, 128, 0) },
--     { "mx25l12805d", INFO(0xc22018, 0, 64 * 1024, 256, 0) },
-+     { "mx25l512e",   INFO(0xc22010, 0, 64 * 1024,   1, SECT_4K) },
-+     { "mx25l5121e",  INFO(0xc22210, 0, 64 * 1024,   1, SECT_4K) },
-+     { "mx25l1006e",  INFO(0xc22011, 0, 64 * 1024,   2, SECT_4K) },
-+     { "mx25l1021e",  INFO(0xc22211, 0, 64 * 1024,   2, SECT_4K) },
-+     { "mx25l2006e",  INFO(0xc22012, 0, 64 * 1024,   4, SECT_4K) },
-+     { "mx25l4006e",  INFO(0xc22013, 0, 64 * 1024,   8, SECT_4K) },
-+     { "mx25u4035",   INFO(0xc22533, 0, 64 * 1024,   8, SECT_4K) },
-+     { "mx25v4035",   INFO(0xc22553, 0, 64 * 1024,   8, SECT_4K) },
-+     { "mx25l8006e",  INFO(0xc22014, 0, 64 * 1024,  16, 0) },
-+     { "mx25u8035",   INFO(0xc22534, 0, 64 * 1024,  16, 0) },
-+     { "mx25v8035",   INFO(0xc22554, 0, 64 * 1024,  16, 0) },
-+     { "mx25l1606e",  INFO(0xc22015, 0, 64 * 1024,  32, 0) },
-+     { "mx25l1633e",  INFO(0xc22415, 0, 64 * 1024,  32, 0) },
-+     { "mx25l1635e",  INFO(0xc22515, 0, 64 * 1024,  32, 0) },
-+     { "mx25u1635e",  INFO(0xc22535, 0, 64 * 1024,  32, 0) },
-+     { "mx25l1655d",  INFO(0xc22615, 0, 64 * 1024,  32, 0) },
-+     { "mx25l3206e",  INFO(0xc22016, 0, 64 * 1024,  64, 0) },
-+     { "mx25l3239e",  INFO(0xc22536, 0, 64 * 1024,  64, 0) },
-+     { "mx25l3225d",  INFO(0xc25e16, 0, 64 * 1024,  64, 0) },
-+     { "mx25l3255d",  INFO(0xc29e16, 0, 64 * 1024,  64, 0) },
-+     { "mx25l6406e",  INFO(0xc22017, 0, 64 * 1024, 128, 0) },
-+     { "mx25l6439e",  INFO(0xc22537, 0, 64 * 1024, 128, 0) },
-+     { "mx25l6455e",  INFO(0xc22617, 0, 64 * 1024, 128, 0) },
-+     { "mx25l12806e", INFO(0xc22018, 0, 64 * 1024, 256, 0) },
-+     { "mx25u12835f", INFO(0xc22538, 0, 64 * 1024, 256, 0) },
-      { "mx25l12855e", INFO(0xc22618, 0, 64 * 1024, 256, 0) },
-      { "mx25l25635e", INFO(0xc22019, 0, 64 * 1024, 512, 0) },
-      { "mx25l25655e", INFO(0xc22619, 0, 64 * 1024, 512, 0) },
-@@ -905,7 +923,11 @@ static int __devinit m25p_probe(struct s
-
-      ppdata.of_node = spi->dev.of_node;
-      flash->mtd.dev.parent = &spi->dev;
--     flash->page_size = info->page_size;
-+     /* small size page of Macronix chip */
-+     if (info->jedec_id == 0xc22210 || info->jedec_id == 0xc22211)
-+           flash->page_size = 32;
-+     else
-+           flash->page_size = info->page_size;
-      flash->mtd.writebufsize = flash->page_size;
-
-      if (info->addr_width)
-
---
-
-
-
-============================================================================
-
-CONFIDENTIALITY NOTE:
-
-This e-mail and any attachments may contain confidential information and may be protected by legal privilege. If you are not the intended addressee (or authorized to receive for the addressee), be aware that any disclosure, copying, distribution or use of this e-mail or any attachment is prohibited. If you have received this e-mail in error, please notify us immediately by returning it to the sender and delete this copy from your system. Thank you for your cooperation.
-
-Macronix International Co., Ltd.
-
-=====================================================================
 
