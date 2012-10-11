@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964841Ab2JKUes (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 16:34:48 -0400
-Received: from mga11.intel.com ([192.55.52.93]:32842 "EHLO mga11.intel.com"
+	id S1759282Ab2JKUeL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 16:34:11 -0400
+Received: from mga09.intel.com ([134.134.136.24]:64734 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756361Ab2JKUel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 16:34:41 -0400
+	id S1756036Ab2JKUeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 16:34:07 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,573,1344236400"; 
-   d="scan'208";a="233703388"
+   d="scan'208";a="204510459"
 From: Alexander Duyck <alexander.h.duyck@intel.com>
-Subject: [PATCH v2 7/7] swiotlb: Do not export swiotlb_bounce since there are
-	no external consumers
+Subject: [PATCH v2 0/7] Improve swiotlb performance by using physical addresses
 To: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
         hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
         joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
         fujita.tomonori@lab.ntt.co.jp
 Cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Date: Thu, 11 Oct 2012 13:34:58 -0700
-Message-ID: <20121011203458.12444.96883.stgit@gitlad.jf.intel.com>
-In-Reply-To: <20121011203010.12444.15503.stgit@gitlad.jf.intel.com>
-References: <20121011203010.12444.15503.stgit@gitlad.jf.intel.com>
+Date: Thu, 11 Oct 2012 13:34:03 -0700
+Message-ID: <20121011203010.12444.15503.stgit@gitlad.jf.intel.com>
 User-Agent: StGIT/0.14.2
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -29,134 +26,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently swiotlb is the only consumer for swiotlb_bounce.  Since that is the
-case it doesn't make much sense to be exporting it so make it a static
-function only.
+While working on 10Gb/s routing performance I found a significant amount of
+time was being spent in the swiotlb DMA handler. Further digging found that a
+significant amount of this was due to virtual to physical address translation
+and calling the function that did it. It accounted for nearly 60% of the
+total swiotlb overhead.
 
-In addition we can save a few more lines of code by making it so that it
-accepts the DMA address as a physical address instead of a virtual one.  This
-is the last piece in essentially pushing all of the DMA address values to use
-physical addresses in swiotlb.
+This patch set works to resolve that by replacing the io_tlb_start and
+io_tlb_end virtual addresses with a physical addresses. In addition it changes
+the io_tlb_overflow_buffer from a virtual to a physical address. I followed
+through with the cleanup to the point that the only functions that really
+require the virtual address for the DMA buffer are the init, free, and
+bounce functions.
 
-In order to clarify things since we now have 2 physical addresses in use
-inside of swiotlb_bounce I am renaming phys to orig_addr, and dma_addr to
-tlb_addr.  This way is should be clear that orig_addr is contained within
-io_orig_addr and tlb_addr is an address within the io_tlb_addr buffer.
+In the case of devices that are using the bounce buffers these patches should
+result in only a slight performance gain if any. This is due to the locking
+overhead required to map and unmap the buffers.
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+In the case of devices that are not making use of bounce buffers these patches
+can significantly reduce their overhead. In the case of an ixgbe routing test
+for example, these changes result in 7 fewer calls to __phys_addr and
+allow is_swiotlb_buffer to become inlined due to a reduction in the number of
+instructions. When running a routing throughput test using small packets I
+saw roughly a 6% increase in packets rates after applying these patches. This
+appears to match up with the CPU overhead reduction I was tracking via perf.
+
+Before:
+Results 10.0Mpps
+
+After:
+Results 10.6Mpps
+
+Finally, I updated the parameter names for several of the core function calls
+as there was some ambiguity in naming. Specifically virtual address pointers
+were named dma_addr. When I changed these pointers to physical I instead used
+the name tlb_addr as this value represented a physical address in the
+io_tlb_start region and is less likely to be confused with a bus address.
+
+v2:
+I reviewed the changes and realized that the first patch that was dropping
+io_tlb_end and calculating the value didn't actually gain me much once I had
+gone through and translated the rest of the addresses to physical addresses.
+As such I have updated the patch so that it instead is converting io_tlb_end
+from a virtual address to a physical address.  This actually helps to reduce
+the overhead for is_swiotlb_buffer and swiotlb_dma_supported by several
+instructions.
+
 ---
 
- include/linux/swiotlb.h |    3 ---
- lib/swiotlb.c           |   35 ++++++++++++++++-------------------
- 2 files changed, 16 insertions(+), 22 deletions(-)
+Alexander Duyck (7):
+      swiotlb:  Do not export swiotlb_bounce since there are no external consumers
+      swiotlb: Use physical addresses instead of virtual in swiotlb_tbl_sync_single
+      swiotlb: Use physical addresses for swiotlb_tbl_unmap_single
+      swiotlb: Return physical addresses when calling swiotlb_tbl_map_single
+      swiotlb: Make io_tlb_overflow_buffer a physical address
+      swiotlb: Make io_tlb_start a physical address instead of a virtual one
+      swiotlb: Make io_tlb_end a physical address instead of a virtual one
 
-diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
-index e0ac98f..071d62c 100644
---- a/include/linux/swiotlb.h
-+++ b/include/linux/swiotlb.h
-@@ -53,9 +53,6 @@ extern void swiotlb_tbl_sync_single(struct device *hwdev,
- 				    enum dma_sync_target target);
- 
- /* Accessory functions. */
--extern void swiotlb_bounce(phys_addr_t phys, char *dma_addr, size_t size,
--			   enum dma_data_direction dir);
--
- extern void
- *swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 			dma_addr_t *dma_handle, gfp_t flags);
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index a81138f..fc31bdf 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -355,14 +355,15 @@ static int is_swiotlb_buffer(phys_addr_t paddr)
- /*
-  * Bounce: copy the swiotlb buffer back to the original dma location
-  */
--void swiotlb_bounce(phys_addr_t phys, char *dma_addr, size_t size,
--		    enum dma_data_direction dir)
-+static void swiotlb_bounce(phys_addr_t orig_addr, phys_addr_t tlb_addr,
-+			   size_t size, enum dma_data_direction dir)
- {
--	unsigned long pfn = PFN_DOWN(phys);
-+	unsigned long pfn = PFN_DOWN(orig_addr);
-+	unsigned char *vaddr = phys_to_virt(tlb_addr);
- 
- 	if (PageHighMem(pfn_to_page(pfn))) {
- 		/* The buffer does not have a mapping.  Map it in and copy */
--		unsigned int offset = phys & ~PAGE_MASK;
-+		unsigned int offset = orig_addr & ~PAGE_MASK;
- 		char *buffer;
- 		unsigned int sz = 0;
- 		unsigned long flags;
-@@ -373,25 +374,23 @@ void swiotlb_bounce(phys_addr_t phys, char *dma_addr, size_t size,
- 			local_irq_save(flags);
- 			buffer = kmap_atomic(pfn_to_page(pfn));
- 			if (dir == DMA_TO_DEVICE)
--				memcpy(dma_addr, buffer + offset, sz);
-+				memcpy(vaddr, buffer + offset, sz);
- 			else
--				memcpy(buffer + offset, dma_addr, sz);
-+				memcpy(buffer + offset, vaddr, sz);
- 			kunmap_atomic(buffer);
- 			local_irq_restore(flags);
- 
- 			size -= sz;
- 			pfn++;
--			dma_addr += sz;
-+			vaddr += sz;
- 			offset = 0;
- 		}
-+	} else if (dir == DMA_TO_DEVICE) {
-+		memcpy(vaddr, phys_to_virt(orig_addr), size);
- 	} else {
--		if (dir == DMA_TO_DEVICE)
--			memcpy(dma_addr, phys_to_virt(phys), size);
--		else
--			memcpy(phys_to_virt(phys), dma_addr, size);
-+		memcpy(phys_to_virt(orig_addr), vaddr, size);
- 	}
- }
--EXPORT_SYMBOL_GPL(swiotlb_bounce);
- 
- phys_addr_t swiotlb_tbl_map_single(struct device *hwdev,
- 				   dma_addr_t tbl_dma_addr,
-@@ -493,8 +492,7 @@ found:
- 	for (i = 0; i < nslots; i++)
- 		io_tlb_orig_addr[index+i] = orig_addr + (i << IO_TLB_SHIFT);
- 	if (dir == DMA_TO_DEVICE || dir == DMA_BIDIRECTIONAL)
--		swiotlb_bounce(orig_addr, phys_to_virt(tlb_addr), size,
--			       DMA_TO_DEVICE);
-+		swiotlb_bounce(orig_addr, tlb_addr, size, DMA_TO_DEVICE);
- 
- 	return tlb_addr;
- }
-@@ -526,9 +524,8 @@ void swiotlb_tbl_unmap_single(struct device *hwdev, phys_addr_t tlb_addr,
- 	/*
- 	 * First, sync the memory before unmapping the entry
- 	 */
--	if (phys && ((dir == DMA_FROM_DEVICE) || (dir == DMA_BIDIRECTIONAL)))
--		swiotlb_bounce(orig_addr, phys_to_virt(tlb_addr),
--			       size, DMA_FROM_DEVICE);
-+	if (orig_addr && ((dir == DMA_FROM_DEVICE) || (dir == DMA_BIDIRECTIONAL)))
-+		swiotlb_bounce(orig_addr, tlb_addr, size, DMA_FROM_DEVICE);
- 
- 	/*
- 	 * Return the buffer to the free list by setting the corresponding
-@@ -569,14 +566,14 @@ void swiotlb_tbl_sync_single(struct device *hwdev, phys_addr_t tlb_addr,
- 	switch (target) {
- 	case SYNC_FOR_CPU:
- 		if (likely(dir == DMA_FROM_DEVICE || dir == DMA_BIDIRECTIONAL))
--			swiotlb_bounce(orig_addr, phys_to_virt(tlb_addr),
-+			swiotlb_bounce(orig_addr, tlb_addr,
- 				       size, DMA_FROM_DEVICE);
- 		else
- 			BUG_ON(dir != DMA_TO_DEVICE);
- 		break;
- 	case SYNC_FOR_DEVICE:
- 		if (likely(dir == DMA_TO_DEVICE || dir == DMA_BIDIRECTIONAL))
--			swiotlb_bounce(orig_addr, phys_to_virt(tlb_addr),
-+			swiotlb_bounce(orig_addr, tlb_addr,
- 				       size, DMA_TO_DEVICE);
- 		else
- 			BUG_ON(dir != DMA_FROM_DEVICE);
 
+ drivers/xen/swiotlb-xen.c |   25 ++--
+ include/linux/swiotlb.h   |   20 ++-
+ lib/swiotlb.c             |  269 +++++++++++++++++++++++----------------------
+ 3 files changed, 163 insertions(+), 151 deletions(-)
+
+-- 
