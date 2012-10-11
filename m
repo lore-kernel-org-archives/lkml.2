@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933771Ab2JKBPy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:15:54 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49922 "EHLO
+	id S933775Ab2JKBQV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:16:21 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35639 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933752Ab2JKBPU (ORCPT
+	by vger.kernel.org with ESMTP id S933670Ab2JKBPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:15:20 -0400
-X-Sasl-enc: SyZlE/bwzUqvU0AIznayD6T2KL35fPOcx3lXTW4s1IMi 1349918118
+	Wed, 10 Oct 2012 21:15:09 -0400
+X-Sasl-enc: g25gecz6/wCVYN+2OsKcxyZm41d122kb7I9BXiFs8im6 1349918108
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mike Galbraith <mgalbraith@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 120/120] sched: Fix migration thread runtime bogosity
-Date: Thu, 11 Oct 2012 10:01:12 +0900
-Message-Id: <20121011005849.725606407@linuxfoundation.org>
+        Frediano Ziglio <frediano.ziglio@citrix.com>,
+        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [ 118/120] Convert properly UTF-8 to UTF-16
+Date: Thu, 11 Oct 2012 10:01:10 +0900
+Message-Id: <20121011005849.300681770@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -30,86 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Galbraith <mgalbraith@suse.de>
+From: Frediano Ziglio <frediano.ziglio@citrix.com>
 
-commit 8f6189684eb4e85e6c593cd710693f09c944450a upstream.
+commit fd3ba42c76d3d4b776120c2b24c1791e7bb3deb1 upstream.
 
-Make stop scheduler class do the same accounting as other classes,
+wchar_t is currently 16bit so converting a utf8 encoded characters not
+in plane 0 (>= 0x10000) to wchar_t (that is calling char2uni) lead to a
+-EINVAL return. This patch detect utf8 in cifs_strtoUTF16 and add special
+code calling utf8s_to_utf16s.
 
-Migration threads can be caught in the act while doing exec balancing,
-leading to the below due to use of unmaintained ->se.exec_start.  The
-load that triggered this particular instance was an apparently out of
-control heavily threaded application that does system monitoring in
-what equated to an exec bomb, with one of the VERY frequently migrated
-tasks being ps.
-
-%CPU   PID USER     CMD
-99.3    45 root     [migration/10]
-97.7    53 root     [migration/12]
-97.0    57 root     [migration/13]
-90.1    49 root     [migration/11]
-89.6    65 root     [migration/15]
-88.7    17 root     [migration/3]
-80.4    37 root     [migration/8]
-78.1    41 root     [migration/9]
-44.2    13 root     [migration/2]
-
-Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1344051854.6739.19.camel@marge.simpson.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Frediano Ziglio <frediano.ziglio@citrix.com>
+Acked-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/stop_task.c |   22 +++++++++++++++++++++-
- 1 file changed, 21 insertions(+), 1 deletion(-)
+ fs/cifs/cifs_unicode.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
---- a/kernel/sched/stop_task.c
-+++ b/kernel/sched/stop_task.c
-@@ -27,8 +27,10 @@ static struct task_struct *pick_next_tas
- {
- 	struct task_struct *stop = rq->stop;
+--- a/fs/cifs/cifs_unicode.c
++++ b/fs/cifs/cifs_unicode.c
+@@ -203,6 +203,27 @@ cifs_strtoUTF16(__le16 *to, const char *
+ 	int i;
+ 	wchar_t wchar_to; /* needed to quiet sparse */
  
--	if (stop && stop->on_rq)
-+	if (stop && stop->on_rq) {
-+		stop->se.exec_start = rq->clock_task;
- 		return stop;
++	/* special case for utf8 to handle no plane0 chars */
++	if (!strcmp(codepage->charset, "utf8")) {
++		/*
++		 * convert utf8 -> utf16, we assume we have enough space
++		 * as caller should have assumed conversion does not overflow
++		 * in destination len is length in wchar_t units (16bits)
++		 */
++		i  = utf8s_to_utf16s(from, len, UTF16_LITTLE_ENDIAN,
++				       (wchar_t *) to, len);
++
++		/* if success terminate and exit */
++		if (i >= 0)
++			goto success;
++		/*
++		 * if fails fall back to UCS encoding as this
++		 * function should not return negative values
++		 * currently can fail only if source contains
++		 * invalid encoded characters
++		 */
 +	}
++
+ 	for (i = 0; len && *from; i++, from += charlen, len -= charlen) {
+ 		charlen = codepage->char2uni(from, len, &wchar_to);
+ 		if (charlen < 1) {
+@@ -215,6 +236,7 @@ cifs_strtoUTF16(__le16 *to, const char *
+ 		put_unaligned_le16(wchar_to, &to[i]);
+ 	}
  
- 	return NULL;
++success:
+ 	put_unaligned_le16(0, &to[i]);
+ 	return i;
  }
-@@ -52,6 +54,21 @@ static void yield_task_stop(struct rq *r
- 
- static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
- {
-+	struct task_struct *curr = rq->curr;
-+	u64 delta_exec;
-+
-+	delta_exec = rq->clock_task - curr->se.exec_start;
-+	if (unlikely((s64)delta_exec < 0))
-+		delta_exec = 0;
-+
-+	schedstat_set(curr->se.statistics.exec_max,
-+			max(curr->se.statistics.exec_max, delta_exec));
-+
-+	curr->se.sum_exec_runtime += delta_exec;
-+	account_group_exec_runtime(curr, delta_exec);
-+
-+	curr->se.exec_start = rq->clock_task;
-+	cpuacct_charge(curr, delta_exec);
- }
- 
- static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
-@@ -60,6 +77,9 @@ static void task_tick_stop(struct rq *rq
- 
- static void set_curr_task_stop(struct rq *rq)
- {
-+	struct task_struct *stop = rq->stop;
-+
-+	stop->se.exec_start = rq->clock_task;
- }
- 
- static void switched_to_stop(struct rq *rq, struct task_struct *p)
 
 
