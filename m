@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933250Ab2JKBNS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:13:18 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41457 "EHLO
+	id S933320Ab2JKBNZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:13:25 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41857 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933189Ab2JKBNN (ORCPT
+	by vger.kernel.org with ESMTP id S933249Ab2JKBNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:13:13 -0400
-X-Sasl-enc: ATqhwNt4fDE78/1gGQ2wiqlyxe1BsfJStW/h3vCtcNEB 1349917991
+	Wed, 10 Oct 2012 21:13:18 -0400
+X-Sasl-enc: hpaHEvEwCf36C9+mhtE8FCjuJ7Pu4+bePPUFToQh6yYi 1349917997
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Michael Cree <mcree@orcon.net.nz>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, alpha <linux-alpha@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [ 093/120] alpha: Add missing RCU idle APIs on idle loop
-Date: Thu, 11 Oct 2012 10:00:45 +0900
-Message-Id: <20121011005843.929066826@linuxfoundation.org>
+        Chris Zankel <chris@zankel.net>, Josh Triplett <josh@joshtriplett.org>
+Subject: [ 089/120] xtensa: Add missing RCU idle APIs on idle loop
+Date: Thu, 11 Oct 2012 10:00:41 +0900
+Message-Id: <20121011005843.096683393@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -34,7 +31,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 4c94cada48f7c660eca582be6032427a5e367117 upstream.
+commit 11ad47a0edbd62bfc0547cfcdf227a911433f207 upstream.
 
 In the old times, the whole idle task was considered
 as an RCU quiescent state. But as RCU became more and
@@ -51,43 +48,38 @@ in low power mode.
 This is necessary for RCU to find the quiescent states in
 idle in order to complete grace periods.
 
-Add this missing pair of calls in the Alpha's idle loop.
+Add this missing pair of calls in the xtensa's idle loop.
 
 Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Tested-by: Michael Cree <mcree@orcon.net.nz>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Matt Turner <mattst88@gmail.com>
-Cc: alpha <linux-alpha@vger.kernel.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Chris Zankel <chris@zankel.net>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/alpha/kernel/process.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/xtensa/kernel/process.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/alpha/kernel/process.c
-+++ b/arch/alpha/kernel/process.c
-@@ -28,6 +28,7 @@
- #include <linux/tty.h>
- #include <linux/console.h>
+--- a/arch/xtensa/kernel/process.c
++++ b/arch/xtensa/kernel/process.c
+@@ -31,6 +31,7 @@
+ #include <linux/mqueue.h>
+ #include <linux/fs.h>
  #include <linux/slab.h>
 +#include <linux/rcupdate.h>
  
- #include <asm/reg.h>
+ #include <asm/pgtable.h>
  #include <asm/uaccess.h>
-@@ -54,8 +55,11 @@ cpu_idle(void)
- 		/* FIXME -- EV6 and LCA45 know how to power down
- 		   the CPU.  */
+@@ -110,8 +111,10 @@ void cpu_idle(void)
  
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
 +		rcu_idle_enter();
  		while (!need_resched())
- 			cpu_relax();
-+
+ 			platform_idle();
 +		rcu_idle_exit();
- 		schedule();
+ 		schedule_preempt_disabled();
  	}
  }
 
