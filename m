@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933714Ab2JKBSE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:18:04 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60032 "EHLO
+	id S933728Ab2JKBSO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:18:14 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57145 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933620Ab2JKBON (ORCPT
+	by vger.kernel.org with ESMTP id S933620Ab2JKBSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:14:13 -0400
-X-Sasl-enc: tL7JtmP6cgtbsok9IL9Ri+HSA4B7b8GE/w8YLULfHqr4 1349918051
+	Wed, 10 Oct 2012 21:18:08 -0400
+X-Sasl-enc: uh2E12n/Vm1ofPOOomlaILHyrem/o/KHMeng1tHasT76 1349918287
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Seiji Aguchi <seiji.aguchi@hds.com>, Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>, Ivan Hu <ivan.hu@canonical.com>
-Subject: [ 106/120] efi: initialize efi.runtime_version to make query_variable_info/update_capsule workable
-Date: Thu, 11 Oct 2012 10:00:58 +0900
-Message-Id: <20121011005846.688947782@linuxfoundation.org>
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 017/120] rapidio/rionet: fix multicast packet transmit logic
+Date: Thu, 11 Oct 2012 09:59:29 +0900
+Message-Id: <20121011005828.502438804@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -28,45 +31,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seiji Aguchi <seiji.aguchi@hds.com>
+From: Alexandre Bounine <alexandre.bounine@idt.com>
 
-commit d6cf86d8f23253225fe2a763d627ecf7dfee9dae upstream.
+commit 7c4a6106d6451fc03c491e61df37c044505d843a upstream.
 
-A value of efi.runtime_version is checked before calling
-update_capsule()/query_variable_info() as follows.
-But it isn't initialized anywhere.
+Fix multicast packet transmit logic to account for repetitive transmission
+of single skb:
+- correct check for available buffers (this bug may produce NULL pointer
+  crash dump in case of heavy traffic);
+- update skb user count (incorrect user counter causes a warning dump from
+  net_tx_action routine during multicast transfers in systems with three or
+  more rionet participants).
 
-<snip>
-static efi_status_t virt_efi_query_variable_info(u32 attr,
-                                                 u64 *storage_space,
-                                                 u64 *remaining_space,
-                                                 u64 *max_variable_size)
-{
-        if (efi.runtime_version < EFI_2_00_SYSTEM_TABLE_REVISION)
-                return EFI_UNSUPPORTED;
-<snip>
-
-This patch initializes a value of efi.runtime_version at boot time.
-
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-Acked-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: Ivan Hu <ivan.hu@canonical.com>
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/platform/efi/efi.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/rionet.c |   20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
 
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -890,6 +890,7 @@ void __init efi_enter_virtual_mode(void)
- 	 *
- 	 * Call EFI services through wrapper functions.
- 	 */
-+	efi.runtime_version = efi_systab.fw_revision;
- 	efi.get_time = virt_efi_get_time;
- 	efi.set_time = virt_efi_set_time;
- 	efi.get_wakeup_time = virt_efi_get_wakeup_time;
+--- a/drivers/net/rionet.c
++++ b/drivers/net/rionet.c
+@@ -79,6 +79,7 @@ static int rionet_capable = 1;
+  * on system trade-offs.
+  */
+ static struct rio_dev **rionet_active;
++static int nact;	/* total number of active rionet peers */
+ 
+ #define is_rionet_capable(src_ops, dst_ops)			\
+ 			((src_ops & RIO_SRC_OPS_DATA_MSG) &&	\
+@@ -175,6 +176,7 @@ static int rionet_start_xmit(struct sk_b
+ 	struct ethhdr *eth = (struct ethhdr *)skb->data;
+ 	u16 destid;
+ 	unsigned long flags;
++	int add_num = 1;
+ 
+ 	local_irq_save(flags);
+ 	if (!spin_trylock(&rnet->tx_lock)) {
+@@ -182,7 +184,10 @@ static int rionet_start_xmit(struct sk_b
+ 		return NETDEV_TX_LOCKED;
+ 	}
+ 
+-	if ((rnet->tx_cnt + 1) > RIONET_TX_RING_SIZE) {
++	if (is_multicast_ether_addr(eth->h_dest))
++		add_num = nact;
++
++	if ((rnet->tx_cnt + add_num) > RIONET_TX_RING_SIZE) {
+ 		netif_stop_queue(ndev);
+ 		spin_unlock_irqrestore(&rnet->tx_lock, flags);
+ 		printk(KERN_ERR "%s: BUG! Tx Ring full when queue awake!\n",
+@@ -191,11 +196,16 @@ static int rionet_start_xmit(struct sk_b
+ 	}
+ 
+ 	if (is_multicast_ether_addr(eth->h_dest)) {
++		int count = 0;
+ 		for (i = 0; i < RIO_MAX_ROUTE_ENTRIES(rnet->mport->sys_size);
+ 				i++)
+-			if (rionet_active[i])
++			if (rionet_active[i]) {
+ 				rionet_queue_tx_msg(skb, ndev,
+ 						    rionet_active[i]);
++				if (count)
++					atomic_inc(&skb->users);
++				count++;
++			}
+ 	} else if (RIONET_MAC_MATCH(eth->h_dest)) {
+ 		destid = RIONET_GET_DESTID(eth->h_dest);
+ 		if (rionet_active[destid])
+@@ -220,14 +230,17 @@ static void rionet_dbell_event(struct ri
+ 	if (info == RIONET_DOORBELL_JOIN) {
+ 		if (!rionet_active[sid]) {
+ 			list_for_each_entry(peer, &rionet_peers, node) {
+-				if (peer->rdev->destid == sid)
++				if (peer->rdev->destid == sid) {
+ 					rionet_active[sid] = peer->rdev;
++					nact++;
++				}
+ 			}
+ 			rio_mport_send_doorbell(mport, sid,
+ 						RIONET_DOORBELL_JOIN);
+ 		}
+ 	} else if (info == RIONET_DOORBELL_LEAVE) {
+ 		rionet_active[sid] = NULL;
++		nact--;
+ 	} else {
+ 		if (netif_msg_intr(rnet))
+ 			printk(KERN_WARNING "%s: unhandled doorbell\n",
+@@ -523,6 +536,7 @@ static int rionet_probe(struct rio_dev *
+ 
+ 		rc = rionet_setup_netdev(rdev->net->hport, ndev);
+ 		rionet_check = 1;
++		nact = 0;
+ 	}
+ 
+ 	/*
 
 
