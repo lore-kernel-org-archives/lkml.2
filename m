@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965024Ab2JKCQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:16:28 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51830 "EHLO
+	id S965041Ab2JKCQg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:16:36 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54565 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964989Ab2JKCQP (ORCPT
+	by vger.kernel.org with ESMTP id S964989Ab2JKCQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:16:15 -0400
-X-Sasl-enc: RN0RoXqkcThuRbfAWkgpg4D6odQ4KmlA0M80HHgcqJx1 1349921773
+	Wed, 10 Oct 2012 22:16:30 -0400
+X-Sasl-enc: XwtSoWYV9lHXu6KIdrS62+/NlmlnqCmy9jVPpJGbaFGy 1349921789
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sasha Levin <levinsasha928@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>, Ying Han <yinghan@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 51/84] mm: fix invalidate_complete_page2() lock ordering
-Date: Thu, 11 Oct 2012 11:03:35 +0900
-Message-Id: <20121011015426.253086395@linuxfoundation.org>
+        Richard Genoud <richard.genoud@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 81/84] mtd: nandsim: bugfix: fail if overridesize is too big
+Date: Thu, 11 Oct 2012 11:04:05 +0900
+Message-Id: <20121011015431.651973251@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -32,63 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Richard Genoud <richard.genoud@gmail.com>
 
-commit ec4d9f626d5908b6052c2973f37992f1db52e967 upstream.
+commit bb0a13a13411c4ce24c48c8ff3cdf7b48d237240 upstream.
 
-In fuzzing with trinity, lockdep protested "possible irq lock inversion
-dependency detected" when isolate_lru_page() reenabled interrupts while
-still holding the supposedly irq-safe tree_lock:
+If override size is too big, the module was actually loaded instead of
+failing, because retval was not set.
 
-invalidate_inode_pages2
-  invalidate_complete_page2
-    spin_lock_irq(&mapping->tree_lock)
-    clear_page_mlock
-      isolate_lru_page
-        spin_unlock_irq(&zone->lru_lock)
+This lead to memory corruption with the use of the freed structs nandsim
+and nand_chip.
 
-isolate_lru_page() is correct to enable interrupts unconditionally:
-invalidate_complete_page2() is incorrect to call clear_page_mlock() while
-holding tree_lock, which is supposed to nest inside lru_lock.
-
-Both truncate_complete_page() and invalidate_complete_page() call
-clear_page_mlock() before taking tree_lock to remove page from radix_tree.
- I guess invalidate_complete_page2() preferred to test PageDirty (again)
-under tree_lock before committing to the munlock; but since the page has
-already been unmapped, its state is already somewhat inconsistent, and no
-worse if clear_page_mlock() moved up.
-
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Deciphered-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Ying Han <yinghan@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/truncate.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/mtd/nand/nandsim.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -398,11 +398,12 @@ invalidate_complete_page2(struct address
- 	if (page_has_private(page) && !try_to_release_page(page, GFP_KERNEL))
- 		return 0;
- 
-+	clear_page_mlock(page);
-+
- 	spin_lock_irq(&mapping->tree_lock);
- 	if (PageDirty(page))
- 		goto failed;
- 
--	clear_page_mlock(page);
- 	BUG_ON(page_has_private(page));
- 	__delete_from_page_cache(page);
- 	spin_unlock_irq(&mapping->tree_lock);
+--- a/drivers/mtd/nand/nandsim.c
++++ b/drivers/mtd/nand/nandsim.c
+@@ -2355,6 +2355,7 @@ static int __init ns_init_module(void)
+ 		uint64_t new_size = (uint64_t)nsmtd->erasesize << overridesize;
+ 		if (new_size >> overridesize != nsmtd->erasesize) {
+ 			NS_ERR("overridesize is too big\n");
++			retval = -EINVAL;
+ 			goto err_exit;
+ 		}
+ 		/* N.B. This relies on nand_scan not doing anything with the size before we change it */
 
 
