@@ -1,92 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759282Ab2JKUeL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 16:34:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64734 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756036Ab2JKUeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 16:34:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,573,1344236400"; 
-   d="scan'208";a="204510459"
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-Subject: [PATCH v2 0/7] Improve swiotlb performance by using physical addresses
-To: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
-        joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
-        fujita.tomonori@lab.ntt.co.jp
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Date: Thu, 11 Oct 2012 13:34:03 -0700
-Message-ID: <20121011203010.12444.15503.stgit@gitlad.jf.intel.com>
-User-Agent: StGIT/0.14.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1759304Ab2JKUnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 16:43:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9521 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754856Ab2JKUnF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 16:43:05 -0400
+X-Authority-Analysis: v=2.0 cv=a96yBDuF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=3qt6UQL6dIsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NrfBHxz3jJsA:10 a=06tA6L26wezkRAk1y2AA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1349988183.24256.68.camel@gandalf.local.home>
+Subject: Re: [PATCH v5 3/3] tracing: Format non-nanosec times from tsc clock
+ without a decimal point.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Sharp <dhsharp@google.com>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Date: Thu, 11 Oct 2012 16:43:03 -0400
+In-Reply-To: <1349148680-9509-3-git-send-email-dhsharp@google.com>
+References: <1349148680-9509-1-git-send-email-dhsharp@google.com>
+	 <1349148680-9509-3-git-send-email-dhsharp@google.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While working on 10Gb/s routing performance I found a significant amount of
-time was being spent in the swiotlb DMA handler. Further digging found that a
-significant amount of this was due to virtual to physical address translation
-and calling the function that did it. It accounted for nearly 60% of the
-total swiotlb overhead.
+On Mon, 2012-10-01 at 20:31 -0700, David Sharp wrote:
 
-This patch set works to resolve that by replacing the io_tlb_start and
-io_tlb_end virtual addresses with a physical addresses. In addition it changes
-the io_tlb_overflow_buffer from a virtual to a physical address. I followed
-through with the cleanup to the point that the only functions that really
-require the virtual address for the DMA buffer are the init, free, and
-bounce functions.
+>  static int
+> -lat_print_timestamp(struct trace_seq *s, u64 abs_usecs,
+> -		    unsigned long rel_usecs)
+> +lat_print_timestamp(struct trace_iterator *iter, u64 next_ts)
+>  {
+> -	return trace_seq_printf(s, " %4lldus%c: ", abs_usecs,
+> -				rel_usecs > preempt_mark_thresh ? '!' :
+> -				  rel_usecs > 1 ? '+' : ' ');
+> +	unsigned long verbose = trace_flags & TRACE_ITER_VERBOSE;
+> +	unsigned long in_ns = iter->iter_flags & TRACE_FILE_TIME_IN_NS;
+> +	unsigned long long abs_ts = iter->ts - iter->tr->time_start;
+> +	unsigned long long rel_ts = next_ts - iter->ts;
+> +	struct trace_seq *s = &iter->seq;
+> +	unsigned long mark_thresh;
+> +	int ret;
+> +
+> +	if (in_ns) {
+> +		abs_ts = ns2usecs(abs_ts);
+> +		rel_ts = ns2usecs(rel_ts);
+> +	}
+> +
+> +	if (verbose && in_ns) {
+> +		unsigned long abs_msec = abs_ts;
+> +		unsigned long abs_usec = do_div(abs_msec, USEC_PER_MSEC);
+> +		unsigned long rel_msec = rel_ts;
+> +		unsigned long rel_usec = do_div(rel_msec, USEC_PER_MSEC);
+> +
+> +		ret = trace_seq_printf(
+> +				s, "[%08llx] %ld.%03ldms (+%ld.%03ldms): ",
+> +				ns2usecs(iter->ts),
+> +				abs_msec, abs_usec,
+> +				rel_msec, rel_usec);
+> +	} else if (verbose && !in_ns) {
+> +		ret = trace_seq_printf(
+> +				s, "[%016llx] %lld (+%lld): ",
+> +				iter->ts, abs_ts, rel_ts);
+> +	} else if (!verbose && in_ns) {
+> +		ret = trace_seq_printf(
+> +				s, " %4lldus: ",
 
-In the case of devices that are using the bounce buffers these patches should
-result in only a slight performance gain if any. This is due to the locking
-overhead required to map and unmap the buffers.
+Missing %c.
 
-In the case of devices that are not making use of bounce buffers these patches
-can significantly reduce their overhead. In the case of an ixgbe routing test
-for example, these changes result in 7 fewer calls to __phys_addr and
-allow is_swiotlb_buffer to become inlined due to a reduction in the number of
-instructions. When running a routing throughput test using small packets I
-saw roughly a 6% increase in packets rates after applying these patches. This
-appears to match up with the CPU overhead reduction I was tracking via perf.
+> +				abs_ts,
+> +				rel_ts > preempt_mark_thresh_us ? '!' :
+> +				  rel_ts > 1 ? '+' : ' ');
+> +	} else { /* !verbose && !in_ns */
+> +		ret = trace_seq_printf(s, " %4lld%s%c: ", abs_ts);
 
-Before:
-Results 10.0Mpps
+Um, "%s%c" with no matching arguments.
 
-After:
-Results 10.6Mpps
+-- Steve
 
-Finally, I updated the parameter names for several of the core function calls
-as there was some ambiguity in naming. Specifically virtual address pointers
-were named dma_addr. When I changed these pointers to physical I instead used
-the name tlb_addr as this value represented a physical address in the
-io_tlb_start region and is less likely to be confused with a bus address.
-
-v2:
-I reviewed the changes and realized that the first patch that was dropping
-io_tlb_end and calculating the value didn't actually gain me much once I had
-gone through and translated the rest of the addresses to physical addresses.
-As such I have updated the patch so that it instead is converting io_tlb_end
-from a virtual address to a physical address.  This actually helps to reduce
-the overhead for is_swiotlb_buffer and swiotlb_dma_supported by several
-instructions.
-
----
-
-Alexander Duyck (7):
-      swiotlb:  Do not export swiotlb_bounce since there are no external consumers
-      swiotlb: Use physical addresses instead of virtual in swiotlb_tbl_sync_single
-      swiotlb: Use physical addresses for swiotlb_tbl_unmap_single
-      swiotlb: Return physical addresses when calling swiotlb_tbl_map_single
-      swiotlb: Make io_tlb_overflow_buffer a physical address
-      swiotlb: Make io_tlb_start a physical address instead of a virtual one
-      swiotlb: Make io_tlb_end a physical address instead of a virtual one
+> +	}
+> +	return ret;
+>  }
+>  
 
 
- drivers/xen/swiotlb-xen.c |   25 ++--
- include/linux/swiotlb.h   |   20 ++-
- lib/swiotlb.c             |  269 +++++++++++++++++++++++----------------------
- 3 files changed, 163 insertions(+), 151 deletions(-)
-
--- 
