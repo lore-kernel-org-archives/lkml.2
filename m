@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758837Ab2JKQ0r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 12:26:47 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:52899 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757643Ab2JKQ0q (ORCPT
+	id S1758843Ab2JKQ3B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 12:29:01 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60369 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755814Ab2JKQ27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 12:26:46 -0400
+	Thu, 11 Oct 2012 12:28:59 -0400
+Date: Thu, 11 Oct 2012 09:28:53 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-input@vger.kernel.org, David Dajun Chen <dchen@diasemi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Patch v3 7/7] Onkey: DA9055 Onkey driver
+Message-ID: <20121011162852.GB15588@core.coreip.homeip.net>
+References: <1349952316.9228.7.camel@dhruva>
 MIME-Version: 1.0
-In-Reply-To: <CAEk6gTD-ko5MXteB3DOTUkF1bJSj9Yga3wh0JTKD=D+YWjy6jQ@mail.gmail.com>
-References: <CAEk6gTD-Qqdm24VuPpLd9WCRG5NEwAZxi5V1_p-gMj1hhb+Krg@mail.gmail.com>
-	<CACRpkdY+niVs58Ay3gVNYeQPx8T7RppBJft0Bwii_RwrT2zfdw@mail.gmail.com>
-	<CAEk6gTDOCEk84yuhNudxVjABFSs4f1-Dhvc0JmZCv++SgM694Q@mail.gmail.com>
-	<CACRpkdb+txD9hfhs7pfnzmDuU59VXEdzJc86z=tdy2yqYBCqOg@mail.gmail.com>
-	<CAEk6gTD-ko5MXteB3DOTUkF1bJSj9Yga3wh0JTKD=D+YWjy6jQ@mail.gmail.com>
-Date: Thu, 11 Oct 2012 18:26:44 +0200
-Message-ID: <CACRpkdZG6Oz1XTCGim2offVpRxw-X17omAVe7zqR5m9TwwPobw@mail.gmail.com>
-Subject: Re: [PATCH][GPIO] Add IRQ edge setter to gpiolib
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Drasko DRASKOVIC <drasko.draskovic@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349952316.9228.7.camel@dhruva>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 9, 2012 at 4:22 PM, Drasko DRASKOVIC
-<drasko.draskovic@gmail.com> wrote:
-> [Me]
->> So can you explain exactly why userspace want to configure
->> GPIO pins in interrupt mode, when there is no way whatsoever
->> for userspace to handle these IRQs?
->
-> Maybe I understand something wrong, but explicit configuration of GPIO
-> interrupt trigger type visible in sysfs is possible __only__ from the
-> userspace today, and that is exactly limitation I am addressing.
+Hi Ashish,
 
-So this is the real problem is it not?
+On Thu, Oct 11, 2012 at 04:15:16PM +0530, Ashish Jangam wrote:
+> This is the ONKEY driver of the Dialog DA9055 PMIC and depends on the DA9055 MFD
+> core driver.
+> 
+> This patch is functionally tested on SMDK6410 board.
+> 
+> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+> ---
+> changes since v3:
+> - used of module_platform_driver macro
+> - add regmap virtual irq function
+> changes since v2:
+> - add support for button release
+> - use of devm_request_threaded_irq API
 
-So if we consider this:
+This API does not make any sense for your driver as you are scheduling
+delayed work from the IRQ handler. In such cases you need _first_ free
+IRQ and _then_ cancel the work but with devm_* you do it in opposite
+order.
 
-static irqreturn_t my_callback(int irq, void *dev_id)
-{
-        return IRQ_HANDLED;
-}
+Also, I think I mentioned this before - this driver looks like twin
+brother for da9055_onkey.c. How many of such parts do you have (or will
+you have)? Is there way to unify them?
 
-int my_gpio, my_irq, ret;
+Thanks.
 
-my_gpio = 17; /* For some reason I like this pin */
-ret = gpio_request(my_gpio);
-ret = gpio_direction_input(my_gpio);
-my_irq = gpio_to_irq(my_gpio);
-ret = request_any_context_irq(my_irq,
-    my_callback,
-    IRQF_TRIGGER_FALLING,
-    "my gpio thing");
-
-(some error handling removed, based on drivers/mmc/host/mmci.c)
-
-What is wrong with this picture? Do you mean that the problem is
-that the trigger type I just set up for the IRQ connected to the pin
-is not reflected in GPIO sysfs?
-
-Yours,
-Linus Walleij
+-- 
+Dmitry
