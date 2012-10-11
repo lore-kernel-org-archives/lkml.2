@@ -1,62 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758549Ab2JKKdG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 06:33:06 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:38762 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758478Ab2JKKdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 06:33:03 -0400
-X-IronPort-AV: E=Sophos;i="4.80,571,1344182400"; 
-   d="scan'208";a="5983666"
-From: wency@cn.fujitsu.com
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Cc: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, bhelgaas@google.com,
-        hpa@zytor.com, Wen Congyang <wency@cn.fujitsu.com>
-Subject: [RESEND PATCH v2 1/2] update mem= option's spec
-Date: Thu, 11 Oct 2012 18:38:32 +0800
-Message-Id: <1349951913-12485-1-git-send-email-wency@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.1
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/11 18:32:49,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/11 18:32:50,
-	Serialize complete at 2012/10/11 18:32:50
+	id S1758584Ab2JKKdO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 06:33:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53485 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758487Ab2JKKc1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 06:32:27 -0400
+From: Andy Whitcroft <apw@canonical.com>
+To: Matthew Garrett <mjg@redhat.com>, Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: Andy Whitcroft <apw@canonical.com>, Matt Fleming <matt.fleming@intel.com>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/5] efivarfs: efivarfs_fill_super() ensure we clean up correctly on error
+Date: Thu, 11 Oct 2012 11:32:21 +0100
+Message-Id: <1349951541-20498-6-git-send-email-apw@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1349951541-20498-1-git-send-email-apw@canonical.com>
+References: <1349416496.810727.310563927016.1.gpush@pecola>
+ <1349951541-20498-1-git-send-email-apw@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wen Congyang <wency@cn.fujitsu.com>
+Ensure we free both the name and inode on error when building the
+individual variables.
 
-Current mem= implementation seems buggy because specification and
-implementation doesn't match. Current mem= has been working
-for many years and it's not buggy, it works as expected. So
-we should update the specification.
-
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-Sort-of-tentatively-acked-by: Rob Landley <rob@landley.net>
-
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
 ---
- Documentation/kernel-parameters.txt |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/firmware/efivars.c |   20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index a92c5eb..924b1a4 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1471,9 +1471,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	mem=nn[KMG]	[KNL,BOOT] Force usage of a specific amount of memory
- 			Amount of memory to be used when the kernel is not able
- 			to see the whole system memory or for test.
--			[X86-32] Use together with memmap= to avoid physical
--			address space collisions. Without memmap= PCI devices
--			could be placed at addresses belonging to unused RAM.
-+			[X86-32] Work as limiting max address. Use together
-+			with memmap= to avoid physical address space collisions.
-+			Without memmap= PCI devices could be placed at addresses
-+			belonging to unused RAM.
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index dcb34ae..0cad5d9 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -948,6 +948,7 @@ int efivarfs_fill_super(struct super_block *sb, void *data, int silent)
+ 	struct dentry *root;
+ 	struct efivar_entry *entry, *n;
+ 	struct efivars *efivars = &__efivars;
++	char *name;
  
- 	mem=nopentium	[BUGS=X86-32] Disable usage of 4MB pages for kernel
- 			memory.
+ 	efivarfs_sb = sb;
+ 
+@@ -969,16 +970,18 @@ int efivarfs_fill_super(struct super_block *sb, void *data, int silent)
+ 		return -ENOMEM;
+ 
+ 	list_for_each_entry_safe(entry, n, &efivars->list, list) {
+-		struct inode *inode;
+ 		struct dentry *dentry, *root = efivarfs_sb->s_root;
+-		char *name;
+ 		unsigned long size = 0;
+ 		int len, i;
+ 
++		inode = NULL;
++
+ 		len = utf16_strlen(entry->var.VariableName);
+ 
+ 		/* GUID plus trailing NULL */
+ 		name = kmalloc(len + 38, GFP_ATOMIC);
++		if (!name)
++			goto fail;
+ 
+ 		for (i = 0; i < len; i++)
+ 			name[i] = entry->var.VariableName[i] & 0xFF;
+@@ -991,7 +994,13 @@ int efivarfs_fill_super(struct super_block *sb, void *data, int silent)
+ 
+ 		inode = efivarfs_get_inode(efivarfs_sb, root->d_inode,
+ 					  S_IFREG | 0644, 0);
++		if (!inode)
++			goto fail_name;
++			
+ 		dentry = d_alloc_name(root, name);
++		if (!dentry)
++			goto fail_inode;
++
+ 		/* copied by the above to local storage in the dentry. */
+ 		kfree(name);
+ 
+@@ -1009,6 +1018,13 @@ int efivarfs_fill_super(struct super_block *sb, void *data, int silent)
+ 	}
+ 
+ 	return 0;
++
++fail_inode:
++	iput(inode);
++fail_name:
++	kfree(name);
++fail:
++	return -ENOMEM;
+ }
+ 
+ static struct dentry *efivarfs_mount(struct file_system_type *fs_type,
 -- 
-1.7.1
+1.7.9.5
 
