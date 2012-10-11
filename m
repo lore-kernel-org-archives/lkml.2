@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965058Ab2JKCRF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:17:05 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36950 "EHLO
+	id S965010Ab2JKCQZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:16:25 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44510 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965027Ab2JKCQe (ORCPT
+	by vger.kernel.org with ESMTP id S964875Ab2JKCQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:16:34 -0400
-X-Sasl-enc: dwewq4k64kQR8h/ISamZFVsrx+sio5Aq7PCqEbB2KSMM 1349921793
+	Wed, 10 Oct 2012 22:16:19 -0400
+X-Sasl-enc: JZOobOHrURGr2WbgpJh+AdqHCGFTly3WhLBPcXTHy88a 1349921778
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 82/84] mtd: nand: Use the mirror BBT descriptor when reading its version
-Date: Thu, 11 Oct 2012 11:04:06 +0900
-Message-Id: <20121011015431.856045607@linuxfoundation.org>
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Christoph Lameter <cl@linux.com>,
+        Josh Boyer <jwboyer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 78/84] mempolicy: fix a memory corruption by refcount imbalance in alloc_pages_vma()
+Date: Thu, 11 Oct 2012 11:04:02 +0900
+Message-Id: <20121011015431.105009966@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -30,36 +31,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 7bb9c75436212813b38700c34df4bbb6eb82debe upstream.
+commit 00442ad04a5eac08a98255697c510e708f6082e2 upstream.
 
-The code responsible for reading the version of the mirror bbt was
-incorrectly using the descriptor of the main bbt.
+Commit cc9a6c877661 ("cpuset: mm: reduce large amounts of memory barrier
+related damage v3") introduced a potential memory corruption.
+shmem_alloc_page() uses a pseudo vma and it has one significant unique
+combination, vma->vm_ops=NULL and vma->policy->flags & MPOL_F_SHARED.
 
-Pass the mirror bbt descriptor to 'scan_read_raw' when reading the
-version of the mirror bbt.
+get_vma_policy() does NOT increase a policy ref when vma->vm_ops=NULL
+and mpol_cond_put() DOES decrease a policy ref when a policy has
+MPOL_F_SHARED.  Therefore, when a cpuset update race occurs,
+alloc_pages_vma() falls in 'goto retry_cpuset' path, decrements the
+reference count and frees the policy prematurely.
 
-Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Christoph Lameter <cl@linux.com>
+Cc: Josh Boyer <jwboyer@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/nand_bbt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/mempolicy.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/drivers/mtd/nand/nand_bbt.c
-+++ b/drivers/mtd/nand/nand_bbt.c
-@@ -429,7 +429,7 @@ static int read_abs_bbts(struct mtd_info
- 	/* Read the mirror version, if available */
- 	if (md && (md->options & NAND_BBT_VERSION)) {
- 		scan_read_raw(mtd, buf, (loff_t)md->pages[0] << this->page_shift,
--			      mtd->writesize, td);
-+			      mtd->writesize, md);
- 		md->version[0] = buf[bbt_get_ver_offs(mtd, md)];
- 		printk(KERN_DEBUG "Bad block table at page %d, version 0x%02X\n",
- 		       md->pages[0], md->version[0]);
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1511,8 +1511,18 @@ struct mempolicy *get_vma_policy(struct
+ 									addr);
+ 			if (vpol)
+ 				pol = vpol;
+-		} else if (vma->vm_policy)
++		} else if (vma->vm_policy) {
+ 			pol = vma->vm_policy;
++
++			/*
++			 * shmem_alloc_page() passes MPOL_F_SHARED policy with
++			 * a pseudo vma whose vma->vm_ops=NULL. Take a reference
++			 * count on these policies which will be dropped by
++			 * mpol_cond_put() later
++			 */
++			if (mpol_needs_cond_ref(pol))
++				mpol_get(pol);
++		}
+ 	}
+ 	if (!pol)
+ 		pol = &default_policy;
 
 
