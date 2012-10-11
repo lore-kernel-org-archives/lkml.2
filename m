@@ -1,112 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758787Ab2JKPns (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 11:43:48 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:17999 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754241Ab2JKPnq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 11:43:46 -0400
-Message-ID: <1349969788.23493.54.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2 0/4] ACPI: Refactor system notify handling
-From: Toshi Kani <toshi.kani@hp.com>
-To: linux-acpi@vger.kernel.org
-Cc: lenb@kernel.org, linux-kernel@vger.kernel.org, bhelgaas@google.com,
-        liuj97@gmail.com, isimatu.yasuaki@jp.fujitsu.com
-Date: Thu, 11 Oct 2012 09:36:28 -0600
-In-Reply-To: <1349790916.23493.5.camel@misato.fc.hp.com>
-References: <1346974828-12500-1-git-send-email-toshi.kani@hp.com>
-	 <1349790916.23493.5.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758807Ab2JKPrM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 11:47:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35278 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754241Ab2JKPrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 11:47:10 -0400
+Date: Thu, 11 Oct 2012 17:47:07 +0200
+From: Jan Kara <jack@suse.cz>
+To: Viktor Nagy <viktor.nagy@thx4games.com>
+Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, "Darrick J. Wong" <djwong@us.ibm.com>,
+        chris.mason@fusionio.com
+Subject: Re: Linux 3.0+ Disk performance problem - wrong pdflush behaviour
+Message-ID: <20121011154707.GB8001@quack.suse.cz>
+References: <5073F13C.5050807@thx4games.com>
+ <20121010165750.GD32581@quack.suse.cz>
+ <5075DE39.8090303@thx4games.com>
+ <20121010212725.GA11642@quack.suse.cz>
+ <5076A506.8080808@thx4games.com>
+ <20121011101005.GB16624@quack.suse.cz>
+ <5076C258.1070405@thx4games.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5076C258.1070405@thx4games.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Len,
-
-Can you please review this patchset?
-
-Thanks,
--Toshi
-
-
-On Tue, 2012-10-09 at 07:55 -0600, Toshi Kani wrote:
-> Hi Len,
+On Thu 11-10-12 13:58:00, Viktor Nagy wrote:
+> >>>>>The regression you observe is caused by commit 3d08bcc8 "mm: Wait for
+> >>>>>writeback when grabbing pages to begin a write". At the first sight I was
+> >>>>>somewhat surprised when I saw that code path in the traces but later when I
+> >>>>>did some math it's clear. What the commit does is that when a page is just
+> >>>>>being written out to disk, we don't allow it's contents to be changed and
+> >>>>>wait for IO to finish before letting next write to proceed. Now if you have
+> >>>>>1 GB file, that's 256000 pages. By the observation from my test machine,
+> >>>>>writeback code keeps around 10000 pages in flight to disk at any moment
+> >>>>>(this number fluctuates a lot but average is around that number). Your
+> >>>>>program dirties about 25600 pages per second. So the probability one of
+> >>>>>dirtied pages is a page under writeback is equal to 1 for all practical
+> >>>>>purposes (precisely it is 1-(1-10000/256000)^25600). Actually, on average
+> >>>>>you are going to hit about 1000 pages under writeback per second which
+> >>>>>clearly has a noticeable impact (even single page can have). Pity I didn't
+> >>>>>do the math when we were considering those patches.
+> >>>>>
+> >>>>>There were plans to avoid waiting if underlying storage doesn't need it but
+> >>>>>I'm not sure how far that plans got (added a couple of relevant CCs).
+> >>>>>Anyway you are about second or third real workload that sees regression due
+> >>>>>to "stable pages" so we have to fix that sooner rather than later... Thanks
+> >>>>>for your detailed report!
+> >>>>We develop a game server which gets very high load in some
+> >>>>countries. We are trying to serve as much players as possible with
+> >>>>one server.
+> >>>>Currently the CPU usage is below the 50% at the peak times. And with
+> >>>>the old kernel it runs smoothly. The pdflush runs non-stop on the
+> >>>>database disk with ~3 MByte/s write (minimal read).
+> >>>>This is at 43000 active sockets, 18000 rq/s, ~40000 packets/s.
+> >>>>I think we are still below the theoratical limits of this server...
+> >>>>but only if the disk writes are never done in sync.
+> >>>>
+> >>>>I will try the 3.2.31 kernel without the problematic commit
+> >>>>(3d08bcc8 "mm: Wait for writeback when grabbing pages to begin a
+> >>>>write").
+> >>>>Is it a good idea? Will it be worse than 2.6.32?
+> >>>   Running without that commit should work just fine unless you use
+> >>>something exotic like DIF/DIX or similar. Whether things will be worse than
+> >>>in 2.6.32 I cannot say. For me, your test program behaves fine without that
+> >>>commit but whether your real workload won't hit some other problem is
+> >>>always a question. But if you hit another regression I'm interested in
+> >>>hearing about it :).
+> >>I've just tested it. After I've set the dirty_bytes over the file
+> >>size the writes are never blocked.
+> >>So it's working nice without the mentioned commit.
+> >>
+> >>The problem is that if you read the kernel's documentation about the
+> >>dirty page handling it does not work that way (with the commit) It
+> >>works unpredictable.
+> >   Which documentation do you mean exatly? The process won't be throttled
+> >because of dirtying too much memory but we can still block it for other
+> >reasons - e.g. because we decide to evict it's code from memory and have to
+> >reload it again when the process gets scheduled. Or we can block during
+> >memory allocation (which may be needed to allocate a page you write to) if
+> >we find it necessary. There are no promises really...
+> >
+> Ok, it is very hard to get an overview about this whole thing.
+> I thought I understood the behaviour checking the file
+> Documentation/sysctl/vm.txt:
 > 
-> Can you please review this patchset?  Please let me know if you have any
-> concern/question.
+> "
+> dirty_bytes
 > 
-> Thanks,
-> -Toshi
+> Contains the amount of dirty memory at which a process generating
+> disk writes
+> will itself start writeback.
+> ...
+> "
 > 
+> Ok, it not says exactly that other things can influence too.
 > 
-> On Thu, 2012-09-06 at 17:40 -0600, Toshi Kani wrote:
-> > This patchset updates the ACPI system-level (ex. hotplug)
-> > notify handling with a new .sys_notify interface.  It provides
-> > the following changes:
-> > 
-> > - Allow ACPI drivers to register their system-level (hotplug)
-> >   notify handlers to a new .sys_notify interface through their
-> >   acpi_driver table.  This removes redundant ACPI namespace
-> >   walks from ACPI drivers for faster booting.  The global notify
-> >   handler acpi_bus_notify() is called for all system-level ACPI
-> >   device notifications, which then calls an appropriate driver's
-> >   handler if any.  ACPI drivers no longer need to register or
-> >   unregister driver's handlers to each device object in ACPI
-> >   namespace.
-> >  
-> > - Support dynamic ACPI namespace with LoadTable & Unload opcode
-> >   without any changes in ACPI drivers.  There is no need to 
-> >   register / unregister handlers to ACPI device objects that are
-> >   being loaded to / unloaded from ACPI namespace.
-> > 
-> > - Allow ACPI drivers to use a common hotplug handler when it is
-> >   implemented.  It removes functional conflict between driver's
-> >   notify handler and the global notify handler acpi_bus_notify().
-> >   acpi_bus_notify() only calls an appropriate notify handler if
-> >   any.
-> > 
-> > Note that the changes maintain backward compatibility for ACPI
-> > drivers.  Any drivers registered their hotplug handlers through
-> > the existing interfaces, such as acpi_install_notify_handler()
-> > and register_acpi_bus_notifier(), will continue to work as before.
-> > 
-> > v2:
-> >  - Protected unbound driver from unloading when calling .sys_notify.
-> >  - Changed acpi_bus_notify() to call acpi_bus_notify_list first for
-> >    maintaining the original order.
-> > 
-> > ---
-> > Toshi Kani (4):
-> >  ACPI: Support system notify handler via .sys_notify
-> >  ACPI: Update processor_driver to use .sys_notify
-> >  ACPI: Update acpi_memhotplug to use .sys_notify
-> >  ACPI: Update container to use .sys_notify
-> > 
-> > ---
-> >  drivers/acpi/acpi_memhotplug.c  |   93 +-------------------------------------
-> >  drivers/acpi/bus.c              |   64 ++++++++++++++++++++-------
-> >  drivers/acpi/container.c        |   66 +--------------------------
-> >  drivers/acpi/processor_driver.c |   82 +++-------------------------------
-> >  drivers/acpi/scan.c             |   83 ++++++++++++++++++++++++++++++++++
-> >  include/acpi/acpi_bus.h         |    6 +++
-> >  6 files changed, 150 insertions(+), 244 deletions(-)
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> > 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Several people are trying to get over the problem caused by the
+> commit with setting the value of /sys/block/sda/queue/nr_requests to
+> 4 (from 128).
+> This helped a lot but was not enough for us.
+  Yes, that reduces amount of IO in flight at any moment so it reduces
+chances you will wait in grab_cache_page_write_begin(). But it also reduces
+throughput...
 
+> I attach two performance graphs which shows our own CPU usage
+> measurement (red). One minute averages, the blue line is the SQL
+> time %.
+> 
+> And a nice question: Without reverting the patch is it possible to
+> get a smooth performance (in our case)?
+  I don't know how to fix the issue without reverting the patch. Sorry.
 
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
