@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933287Ab2JKCNC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:13:02 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38085 "EHLO
+	id S933498Ab2JKCNK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:13:10 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44218 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933437Ab2JKCMz (ORCPT
+	by vger.kernel.org with ESMTP id S933360Ab2JKCNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:12:55 -0400
-X-Sasl-enc: do3inyEVfNFvhtJ6aQudqTVw2tqcEH42rrMnzcy6jLpn 1349921574
+	Wed, 10 Oct 2012 22:13:05 -0400
+X-Sasl-enc: ik0mZJwkHpBxGVQg9nssNI1A9h5O1awZ1Gdn8WZIug50 1349921583
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Mathias Krause <minipli@googlemail.com>,
+        Brad Spengler <spender@grsecurity.net>,
         Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 16/84] xfrm_user: fix info leak in copy_to_user_policy()
-Date: Thu, 11 Oct 2012 11:03:00 +0900
-Message-Id: <20121011015419.991138826@linuxfoundation.org>
+Subject: [ 17/84] xfrm_user: fix info leak in copy_to_user_tmpl()
+Date: Thu, 11 Oct 2012 11:03:01 +0900
+Message-Id: <20121011015420.171804539@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -32,14 +33,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 7b789836f434c87168eab067cfbed1ec4783dffd ]
+[ Upstream commit 1f86840f897717f86d523a13e99a447e6a5d2fa5 ]
 
-The memory reserved to dump the xfrm policy includes multiple padding
-bytes added by the compiler for alignment (padding bytes in struct
-xfrm_selector and struct xfrm_userpolicy_info). Add an explicit
-memset(0) before filling the buffer to avoid the heap info leak.
+The memory used for the template copy is a local stack variable. As
+struct xfrm_user_tmpl contains multiple holes added by the compiler for
+alignment, not initializing the memory will lead to leaking stack bytes
+to userland. Add an explicit memset(0) to avoid the info leak.
+
+Initial version of the patch by Brad Spengler.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Brad Spengler <spender@grsecurity.net>
 Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -49,13 +53,13 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/net/xfrm/xfrm_user.c
 +++ b/net/xfrm/xfrm_user.c
-@@ -1300,6 +1300,7 @@ static void copy_from_user_policy(struct
+@@ -1405,6 +1405,7 @@ static int copy_to_user_tmpl(struct xfrm
+ 		struct xfrm_user_tmpl *up = &vec[i];
+ 		struct xfrm_tmpl *kp = &xp->xfrm_vec[i];
  
- static void copy_to_user_policy(struct xfrm_policy *xp, struct xfrm_userpolicy_info *p, int dir)
- {
-+	memset(p, 0, sizeof(*p));
- 	memcpy(&p->sel, &xp->selector, sizeof(p->sel));
- 	memcpy(&p->lft, &xp->lft, sizeof(p->lft));
- 	memcpy(&p->curlft, &xp->curlft, sizeof(p->curlft));
++		memset(up, 0, sizeof(*up));
+ 		memcpy(&up->id, &kp->id, sizeof(up->id));
+ 		up->family = kp->encap_family;
+ 		memcpy(&up->saddr, &kp->saddr, sizeof(up->saddr));
 
 
