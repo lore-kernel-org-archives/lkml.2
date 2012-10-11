@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647Ab2JKGpt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 02:45:49 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:2557 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751584Ab2JKGpr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 02:45:47 -0400
-X-IronPort-AV: E=Sophos;i="4.80,570,1344204000"; 
-   d="scan'208";a="176739786"
-Date: Thu, 11 Oct 2012 08:45:43 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-cc: Julia Lawall <julia.lawall@lip6.fr>, Ryan Mallon <rmallon@gmail.com>,
-        Joe Perches <joe@perches.com>, walter harms <wharms@bfs.de>,
-        ben-linux@fluff.org, w.sang@pengutronix.de, linux-i2c@vger.kernel.org,
-        khali@linux-fr.org, Antti Palosaari <crope@iki.fi>,
-        kernel-janitors@vger.kernel.org, shubhrajyoti@ti.com,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/13] drivers/media/tuners/e4000.c: use macros for
- i2c_msg initialization
-In-Reply-To: <20121009203238.63d2275f@infradead.org>
-Message-ID: <alpine.DEB.2.02.1210110836030.2010@hadrien>
-References: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr> <1349624323-15584-3-git-send-email-Julia.Lawall@lip6.fr> <5071AEF3.6080108@bfs.de> <alpine.DEB.2.02.1210071839040.2745@localhost6.localdomain6> <5071B834.1010200@bfs.de>
- <alpine.DEB.2.02.1210071917040.2745@localhost6.localdomain6> <1349633780.15802.8.camel@joe-AO722> <alpine.DEB.2.02.1210072053550.2745@localhost6.localdomain6> <1349645970.15802.12.camel@joe-AO722> <alpine.DEB.2.02.1210072342460.2745@localhost6.localdomain6>
- <1349646718.15802.16.camel@joe-AO722> <20121007225639.364a41b4@infradead.org> <50723661.6040107@gmail.com> <alpine.DEB.2.02.1210081028340.1989@hadrien> <20121009203238.63d2275f@infradead.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754705Ab2JKGui (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 02:50:38 -0400
+Received: from foo.stuge.se ([212.116.89.98]:33326 "HELO foo.stuge.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751584Ab2JKGuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 02:50:35 -0400
+Message-ID: <20121011065033.2168.qmail@stuge.se>
+Date: Thu, 11 Oct 2012 08:50:33 +0200
+From: Peter Stuge <peter@stuge.se>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: REGRESSION: usbdevfs:
+	Use-scatter-gather-lists-for-large-bulk-transfers
+Mail-Followup-To: Henrik Rydberg <rydberg@euromail.se>,
+	Hans de Goede <hdegoede@redhat.com>,
+	Alan Stern <stern@rowland.harvard.edu>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20121010203118.GA792@polaris.bitmath.org> <20121010203459.20663.qmail@stuge.se> <20121011054403.GA1680@polaris.bitmath.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121011054403.GA1680@polaris.bitmath.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I found 6 cases where there are more than 2 messages in the array.  I
-didn't check how many cases where there are two messages but there is
-something other than one read and one write.
+Henrik Rydberg wrote:
+> > What is the programming cable and software that uses it?
+> 
+> The programmer is impact, using libusbx-1.0.14-1.
 
-Perhaps a reasonable option would be to use
+Do you know for a fact that your version calls libusb-1.0? Did you
+establish this with e.g. strace? ISE 11.1 impact uses only libusb.so,
+ie. libusb-0.1.
 
-I2C_MSG_READ
-I2C_MSG_WRITE
-I2C_MSG_READ_OP
-I2C_MSG_WRITE_OP
+Depending on what distribution you are using you may or may not have
+libusb-compat-0.1, without which the libusbx package isn't involved
+at all.
 
-The last two are for the few cases where more flags are specified.  As
-compared to the original proposal of I2C_MSG_OP, these keep the READ or
-WRITE idea in the macro name.  The additional argument to the OP macros
-would be or'd with the read or write (nothing to do in this case) flags as
-appropriate.
+Many distributions still ship libusb-0.1.12 or some patched variant
+thereof, which of course knows nothing about the kernel changes.
 
-Mauro proposed INIT_I2C_READ_SUBADDR for the very common case where a
-message array has one read and one write.  I think that putting one
-I2C_MSG_READ and one I2C_MSG_WRITE in this case is readable enough, and
-avoids the need to do something special for the cases that don't match the
-expectations of INIT_I2C_READ_SUBADDR.
 
-I propose not to do anything for the moment either for sizes or for
-message or buffer arrays that contain only one element.
 
-julia
+> The patch is pretty generic, so I am suprised the problem has not
+> shown up earlier.
+
+There are several explanations. There is clearly a problem with Hans'
+patch(es) for some cases, but those are perhaps not so common.
+
+I've reviewed Hans' patch that he added to libusbx and which is in
+libusbx-1.0.14, but I am not sure that it is correct, which is why
+I haven't included it in libusb yet.
+
+But it isn't certain that is is involved at all. If your impact
+version uses libusb.so like in ISE 11.1 then it will not be. One way
+to test is by trying to generate a libusb debug log. See
+https://libusb.org/wiki/debug for instructions which are for libusb,
+but which work also for libusbx since the code is nearly the same.
+(Just replace the repository to clone from.)
+
+Another factor is the host controller. Is the device connected to a
+USB 3.0 port or a USB 2.0 port? USB 3.0 still has some gotchas which
+may or may not be what you are seeing.
+
+
+Looking forward to more information
+
+//Peter
