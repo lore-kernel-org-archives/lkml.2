@@ -1,56 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759518Ab2JKXLU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 19:11:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:39036 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758462Ab2JKXLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 19:11:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,573,1344236400"; 
-   d="scan'208";a="204562024"
-Message-ID: <50775210.4060007@zytor.com>
-Date: Fri, 12 Oct 2012 07:11:12 +0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Willy Tarreau <w@1wt.eu>
-CC: Greg KH <greg@kroah.com>, Romain Francoise <romain@orebokech.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: Linux 2.6.32.60
-References: <20121009094453.GA4289@1wt.eu> <87y5jeqv6b.fsf@silenus.orebokech.com> <20121011062916.GG8938@1wt.eu> <20121011105804.GB28546@kroah.com> <20121011113106.GR8938@1wt.eu>
-In-Reply-To: <20121011113106.GR8938@1wt.eu>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S933457Ab2JKXPy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 19:15:54 -0400
+Received: from mail-gg0-f202.google.com ([209.85.161.202]:64257 "EHLO
+	mail-gg0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758462Ab2JKXPw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 19:15:52 -0400
+Subject: mmotm 2012-10-11-16-14 uploaded
+To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org
+From: akpm@linux-foundation.org
+Date: Thu, 11 Oct 2012 16:15:50 -0700
+Message-Id: <20121011231551.641101E0048@wpzn4.hot.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2012 07:31 PM, Willy Tarreau wrote:
-> On Thu, Oct 11, 2012 at 07:58:04PM +0900, Greg KH wrote:
->> On Thu, Oct 11, 2012 at 08:29:16AM +0200, Willy Tarreau wrote:
->>> If you think these patches constitute a regression, I can revert them.
->>> However I'd like convincing arguments since they're here to help address
->>> a real issue.
->>
->> If I missed these when doing the random number generation backport for
->> 3.0, and I should add them there as well, please let me know.
-> 
-> At least I think they should not be in 2.6.32 without being in 3.0.
-> Probably that Peter's opinion will help us decide whether they should
-> go into 3.0 or 2.6.32 should revert them.
-> 
+The mm-of-the-moment snapshot 2012-10-11-16-14 has been uploaded to
 
-I would strongly argue for at least one of the RDRAND-enabling versions
-being in all supported kernels; the second (with Ted Ts'o's changes) is
-better, but touches a *lot* of subsystems; the plain one is
-self-contained but only helps RDRAND-enabled hardware.
+   http://www.ozlabs.org/~akpm/mmotm/
 
-Without these patches the random subsystem has a critical security flaw,
-which puts it into the scope for stable.
+mmotm-readme.txt says
 
-	-hpa
+README for mm-of-the-moment:
+
+http://www.ozlabs.org/~akpm/mmotm/
+
+This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+more than once a week.
+
+You will need quilt to apply these patches to the latest Linus release (3.x
+or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
+http://ozlabs.org/~akpm/mmotm/series
+
+The file broken-out.tar.gz contains two datestamp files: .DATE and
+.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
+followed by the base kernel version against which this patch series is to
+be applied.
+
+This tree is partially included in linux-next.  To see which patches are
+included in linux-next, consult the `series' file.  Only the patches
+within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
+linux-next.
+
+A git tree which contains the memory management portion of this tree is
+maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+by Michal Hocko.  It contains the patches which are between the
+"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
+file, http://www.ozlabs.org/~akpm/mmotm/series.
+
+
+A full copy of the full kernel tree with the linux-next and mmotm patches
+already applied is available through git within an hour of the mmotm
+release.  Individual mmotm releases are tagged.  The master branch always
+points to the latest release, so it's constantly rebasing.
+
+http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
+
+To develop on top of mmotm git:
+
+  $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+  $ git remote update mmotm
+  $ git checkout -b topic mmotm/master
+  <make changes, commit>
+  $ git send-email mmotm/master.. [...]
+
+To rebase a branch with older patches to a new mmotm release:
+
+  $ git remote update mmotm
+  $ git rebase --onto mmotm/master <topic base> topic
 
 
 
+
+The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
+contains daily snapshots of the -mm tree.  It is updated more frequently
+than mmotm, and is untested.
+
+A git copy of this tree is available at
+
+	http://git.cmpxchg.org/?p=linux-mmots.git;a=summary
+
+and use of this tree is similar to
+http://git.cmpxchg.org/?p=linux-mmotm.git, described above.
+
+
+This mmotm tree contains the following patches against 3.6:
+(patches marked "*" will be included in linux-next)
+
+  origin.patch
+  linux-next.patch
+  linux-next-git-rejects.patch
+  i-need-old-gcc.patch
+  arch-alpha-kernel-systblss-remove-debug-check.patch
+* linux-coredumph-needs-asm-siginfoh.patch
+* memstick-remove-unused-field-from-state-struct.patch
+* memstick-ms_block-fix-complile-issue.patch
+* memstick-use-after-free-in-msb_disk_release.patch
+* memstick-memory-leak-on-error-in-msb_ftl_scan.patch
+* kernel-sysc-fix-stack-memory-content-leak-via-uname26.patch
+* drivers-video-backlight-lm3639_blc-return-proper-error-in-lm3639_bled_mode_store-error-paths.patch
+* pidns-remove-recursion-from-free_pid_ns-v5.patch
+* pidns-remove-recursion-from-free_pid_ns-v5-fix.patch
+* cris-fix-i-o-macros.patch
+* selinux-fix-sel_netnode_insert-suspicious-rcu-dereference.patch
+* mm-slab-release-slab_mutex-earlier-in-kmem_cache_destroy.patch
+* nohz-fix-idle-ticks-in-cpu-summary-line-of-proc-stat.patch
+* vfs-d_obtain_alias-needs-to-use-as-default-name.patch
+* cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved.patch
+* cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved-fix.patch
+* acpi_memhotplugc-fix-memory-leak-when-memory-device-is-unbound-from-the-module-acpi_memhotplug.patch
+* acpi_memhotplugc-free-memory-device-if-acpi_memory_enable_device-failed.patch
+* acpi_memhotplugc-remove-memory-info-from-list-before-freeing-it.patch
+* acpi_memhotplugc-dont-allow-to-eject-the-memory-device-if-it-is-being-used.patch
+* acpi_memhotplugc-bind-the-memory-device-when-the-driver-is-being-loaded.patch
+* acpi_memhotplugc-auto-bind-the-memory-device-which-is-hotplugged-before-the-driver-is-loaded.patch
+* arch-x86-platform-iris-irisc-register-a-platform-device-and-a-platform-driver.patch
+* x86-numa-dont-check-if-node-is-numa_no_node.patch
+* arch-x86-tools-insn_sanityc-identify-source-of-messages.patch
+* uv-fix-incorrect-tlb-flush-all-issue.patch
+* olpc-fix-olpc-xo1-scic-build-errors.patch
+* fs-debugsfs-remove-unnecessary-inode-i_private-initialization.patch
+* pcmcia-move-unbind-rebind-into-dev_pm_opscomplete.patch
+* drm-i915-optimize-div_round_closest-call.patch
+* drm-fix-radeon-printk-format-warnings.patch
+  cyber2000fb-avoid-palette-corruption-at-higher-clocks.patch
+* timeconstpl-remove-deprecated-defined-array.patch
+* time-dont-inline-export_symbol-functions.patch
+* h8300-select-generic-atomic64_t-support.patch
+* cciss-cleanup-bitops-usage.patch
+* cciss-use-check_signature.patch
+* block-store-partition_meta_infouuid-as-a-string.patch
+* init-reduce-partuuid-min-length-to-1-from-36.patch
+* block-partition-msdos-provide-uuids-for-partitions.patch
+* drbd-use-copy_highpage.patch
+* vfs-increment-iversion-when-a-file-is-truncated.patch
+* fs-change-return-values-from-eacces-to-eperm.patch
+* fs-block_devc-need-not-to-check-inode-i_bdev-in-bd_forget.patch
+* mm-slab-remove-duplicate-check.patch
+  mm.patch
+* writeback-remove-nr_pages_dirtied-arg-from-balance_dirty_pages_ratelimited_nr.patch
+* mm-show-migration-types-in-show_mem.patch
+* memory-hotplug-suppress-device-memoryx-does-not-have-a-release-function-warning.patch
+* memory-hotplug-suppress-device-nodex-does-not-have-a-release-function-warning.patch
+* mm-memcg-make-mem_cgroup_out_of_memory-static.patch
+* swap-add-a-simple-detector-for-inappropriate-swapin-readahead.patch
+* swap-add-a-simple-detector-for-inappropriate-swapin-readahead-fix.patch
+* mm-memblock-reduce-overhead-in-binary-search.patch
+* compat-generic-compat_sys_sched_rr_get_interval-implementation.patch
+* drivers-firmware-dmi_scanc-check-dmi-version-when-get-system-uuid.patch
+* drivers-firmware-dmi_scanc-check-dmi-version-when-get-system-uuid-fix.patch
+* drivers-firmware-dmi_scanc-fetch-dmi-version-from-smbios-if-it-exists.patch
+* drivers-firmware-dmi_scanc-fetch-dmi-version-from-smbios-if-it-exists-checkpatch-fixes.patch
+* hfsplus-add-on-disk-layout-declarations-related-to-attributes-tree.patch
+* hfsplus-add-functionality-of-manipulating-by-records-in-attributes-tree.patch
+* hfsplus-rework-functionality-of-getting-setting-and-deleting-of-extended-attributes.patch
+* hfsplus-add-support-of-manipulation-by-attributes-file.patch
+* hfsplus-add-support-of-manipulation-by-attributes-file-checkpatch-fixes.patch
+* hfsplus-code-style-fixes-reworked-support-of-extended-attributes.patch
+* fat-modify-nfs-mount-option.patch
+* fat-exportfs-rebuild-inode-if-ilookup-fails.patch
+* fat-exportfs-rebuild-inode-if-ilookup-fails-fix.patch
+* fat-exportfs-rebuild-directory-inode-if-fat_dget-fails.patch
+* documentation-update-nfs-option-in-filesystem-vfattxt.patch
+* kstrto-add-documentation.patch
+* simple_strto-annotate-function-as-obsolete.patch
+* proc-dont-show-nonexistent-capabilities.patch
+* ipc-semc-alternatives-to-preempt_disable.patch
+* dma-debug-new-interfaces-to-debug-dma-mapping-errors.patch
+* linux-compilerh-add-__must_hold-macro-for-functions-called-with-a-lock-held.patch
+  make-sure-nobodys-leaking-resources.patch
+  journal_add_journal_head-debug.patch
+  releasing-resources-with-children.patch
+  make-frame_pointer-default=y.patch
+  kernel-forkc-export-kernel_thread-to-modules.patch
+  mutex-subsystem-synchro-test-module.patch
+  mutex-subsystem-synchro-test-module-fix.patch
+  mutex-subsystem-synchro-test-module-fix-2.patch
+  slab-leaks3-default-y.patch
+  put_bh-debug.patch
+  add-debugging-aid-for-memory-initialisation-problems.patch
+  workaround-for-a-pci-restoring-bug.patch
+  single_open-seq_release-leak-diagnostics.patch
+  add-a-refcount-check-in-dput.patch
