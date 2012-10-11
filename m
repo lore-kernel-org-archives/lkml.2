@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933875Ab2JKBTS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:19:18 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33015 "EHLO
+	id S933900Ab2JKBTc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:19:32 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57321 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933843Ab2JKBTN (ORCPT
+	by vger.kernel.org with ESMTP id S933840Ab2JKBT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:19:13 -0400
-X-Sasl-enc: fwHjmt20Xqf9eTZKBhvYT/5X3xMwQnX6P14sEgljNE+c 1349918351
+	Wed, 10 Oct 2012 21:19:28 -0400
+X-Sasl-enc: qR7Kkhk+0xuEHo67YiOPMHCGmxLG+KW47hh6PUyyM4Lt 1349918366
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mathias Krause <minipli@googlemail.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 031/120] xfrm_user: dont copy esn replay window twice for new states
-Date: Thu, 11 Oct 2012 09:59:43 +0900
-Message-Id: <20121011005831.262175872@linuxfoundation.org>
+        Tao Hou <hotforest@gmail.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 033/120] net: ethernet: davinci_cpdma: decrease the desc count when cleaning up the remaining packets
+Date: Thu, 11 Oct 2012 09:59:45 +0900
+Message-Id: <20121011005831.616979391@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -30,55 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Mathias Krause <minipli@googlemail.com>
+From: htbegin <hotforest@gmail.com>
 
-[ Upstream commit e3ac104d41a97b42316915020ba228c505447d21 ]
+[ Upstream commit ffb5ba90017505a19e238e986e6d33f09e4df765 ]
 
-The ESN replay window was already fully initialized in
-xfrm_alloc_replay_state_esn(). No need to copy it again.
+chan->count is used by rx channel. If the desc count is not updated by
+the clean up loop in cpdma_chan_stop, the value written to the rxfree
+register in cpdma_chan_start will be incorrect.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: Tao Hou <hotforest@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/xfrm/xfrm_user.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/ti/davinci_cpdma.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/xfrm/xfrm_user.c
-+++ b/net/xfrm/xfrm_user.c
-@@ -442,10 +442,11 @@ static void copy_from_user_state(struct
-  * somehow made shareable and move it to xfrm_state.c - JHS
-  *
- */
--static void xfrm_update_ae_params(struct xfrm_state *x, struct nlattr **attrs)
-+static void xfrm_update_ae_params(struct xfrm_state *x, struct nlattr **attrs,
-+				  int update_esn)
- {
- 	struct nlattr *rp = attrs[XFRMA_REPLAY_VAL];
--	struct nlattr *re = attrs[XFRMA_REPLAY_ESN_VAL];
-+	struct nlattr *re = update_esn ? attrs[XFRMA_REPLAY_ESN_VAL] : NULL;
- 	struct nlattr *lt = attrs[XFRMA_LTIME_VAL];
- 	struct nlattr *et = attrs[XFRMA_ETIMER_THRESH];
- 	struct nlattr *rt = attrs[XFRMA_REPLAY_THRESH];
-@@ -555,7 +556,7 @@ static struct xfrm_state *xfrm_state_con
- 		goto error;
+--- a/drivers/net/ethernet/ti/davinci_cpdma.c
++++ b/drivers/net/ethernet/ti/davinci_cpdma.c
+@@ -851,6 +851,7 @@ int cpdma_chan_stop(struct cpdma_chan *c
  
- 	/* override default values from above */
--	xfrm_update_ae_params(x, attrs);
-+	xfrm_update_ae_params(x, attrs, 0);
+ 		next_dma = desc_read(desc, hw_next);
+ 		chan->head = desc_from_phys(pool, next_dma);
++		chan->count--;
+ 		chan->stats.teardown_dequeue++;
  
- 	return x;
- 
-@@ -1801,7 +1802,7 @@ static int xfrm_new_ae(struct sk_buff *s
- 		goto out;
- 
- 	spin_lock_bh(&x->lock);
--	xfrm_update_ae_params(x, attrs);
-+	xfrm_update_ae_params(x, attrs, 1);
- 	spin_unlock_bh(&x->lock);
- 
- 	c.event = nlh->nlmsg_type;
+ 		/* issue callback without locks held */
 
 
