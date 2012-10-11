@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab2JKCEg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:04:36 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44807 "EHLO
+	id S1756718Ab2JKCLR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:11:17 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59138 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756263Ab2JKCEc (ORCPT
+	by vger.kernel.org with ESMTP id S1753070Ab2JKCLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:04:32 -0400
-X-Sasl-enc: syrQLgUqkAyrSclaxu/pMxnbmSkbKgIDxmxHVq0kEP6p 1349921071
+	Wed, 10 Oct 2012 22:11:14 -0400
+X-Sasl-enc: CHhzMBPndIQjEfVt9cBvkjk/3/xmeqIlHp48Ulur86X1 1349921473
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tony Breeds <tony@bakeyournoodle.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 01/84] mn10300: only add -mmem-funcs to KBUILD_CFLAGS if gcc supports it
-Date: Thu, 11 Oct 2012 11:02:45 +0900
-Message-Id: <20121011015417.297003217@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 12/84] xfrm_user: return error pointer instead of NULL #2
+Date: Thu, 11 Oct 2012 11:02:56 +0900
+Message-Id: <20121011015419.265457263@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -32,38 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 9957423f035c2071f6d1c5d2f095cdafbeb25ad7 upstream.
+From: Mathias Krause <minipli@googlemail.com>
 
-It seems the current (gcc 4.6.3) no longer provides this so make it
-conditional.
+[ Upstream commit c25463722509fef0ed630b271576a8c9a70236f3 ]
 
-As reported by Tony before, the mn10300 architecture cross-compiles with
-gcc-4.6.3 if -mmem-funcs is not added to KBUILD_CFLAGS.
+When dump_one_policy() returns an error, e.g. because of a too small
+buffer to dump the whole xfrm policy, xfrm_policy_netlink() returns
+NULL instead of an error pointer. But its caller expects an error
+pointer and therefore continues to operate on a NULL skbuff.
 
-Reported-by: Tony Breeds <tony@bakeyournoodle.com>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/mn10300/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/xfrm/xfrm_user.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/arch/mn10300/Makefile
-+++ b/arch/mn10300/Makefile
-@@ -26,7 +26,7 @@ CHECKFLAGS	+=
- PROCESSOR	:= unset
- UNIT		:= unset
+--- a/net/xfrm/xfrm_user.c
++++ b/net/xfrm/xfrm_user.c
+@@ -1531,6 +1531,7 @@ static struct sk_buff *xfrm_policy_netli
+ {
+ 	struct xfrm_dump_info info;
+ 	struct sk_buff *skb;
++	int err;
  
--KBUILD_CFLAGS	+= -mam33 -mmem-funcs -DCPU=AM33
-+KBUILD_CFLAGS	+= -mam33 -DCPU=AM33 $(call cc-option,-mmem-funcs,)
- KBUILD_AFLAGS	+= -mam33 -DCPU=AM33
+ 	skb = nlmsg_new(NLMSG_DEFAULT_SIZE, GFP_KERNEL);
+ 	if (!skb)
+@@ -1541,9 +1542,10 @@ static struct sk_buff *xfrm_policy_netli
+ 	info.nlmsg_seq = seq;
+ 	info.nlmsg_flags = 0;
  
- ifeq ($(CONFIG_MN10300_CURRENT_IN_E2),y)
+-	if (dump_one_policy(xp, dir, 0, &info) < 0) {
++	err = dump_one_policy(xp, dir, 0, &info);
++	if (err) {
+ 		kfree_skb(skb);
+-		return NULL;
++		return ERR_PTR(err);
+ 	}
+ 
+ 	return skb;
 
 
