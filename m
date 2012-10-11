@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758602Ab2JKKej (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 06:34:39 -0400
-Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:42976 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758567Ab2JKKeL (ORCPT
+	id S1758535Ab2JKKfq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 06:35:46 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43412 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758491Ab2JKKfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 06:34:11 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: "Andreas Mohr" <andi@lisas.de>
-Subject: [PATCH] mcs7830: Fix link state detection
-Date: Thu, 11 Oct 2012 12:33:28 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: "Greg KH" <gregkh@linuxfoundation.org>, davem@davemloft.net,
-        Michael Leun <lkml20120218@newton.leun.net>, netdev@vger.kernel.org,
-        Michael Leun <lkml20120218@newton.leun.net>,
-        linux-kernel@vger.kernel.org
+	Thu, 11 Oct 2012 06:35:44 -0400
+Message-ID: <5076A0DE.4070900@ti.com>
+Date: Thu, 11 Oct 2012 16:05:10 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: Sekhar Nori <nsekhar@ti.com>
+CC: Murali Karicheri <m-karicheri2@ti.com>, <khilman@ti.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <mturquette@linaro.org>, <linux-c6x-dev@linux-c6x.org>,
+        <arnd@arndb.de>, <linus.walleij@linaro.org>,
+        <linux-kernel@vger.kernel.org>, <rob.herring@calxeda.com>,
+        <linux-keystone@list.ti.com>, <viresh.linux@gmail.com>,
+        <linux@arm.linux.org.uk>, <akpm@linux-foundation.org>,
+        <shawn.guo@linaro.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 01/13] clk: davinci - add Main PLL clock driver
+References: <1348682889-9509-1-git-send-email-m-karicheri2@ti.com> <1348682889-9509-2-git-send-email-m-karicheri2@ti.com> <507563C3.2000305@ti.com>
+In-Reply-To: <507563C3.2000305@ti.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201210111233.28652.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The device had an undocumented "feature": it can provide a sequence of
-spurious link-down status data even if the link is up all the time.
-A sequence of 10 was seen so update the link state only after the device
-reports the same link state 20 times.
+On 10/10/2012 5:32 PM, Sekhar Nori wrote:
+> Hi Murali,
+> 
+> On 9/26/2012 11:37 PM, Murali Karicheri wrote:
+>> This is the driver for the main PLL clock hardware found on DM SoCs.
+>> This driver borrowed code from arch/arm/mach-davinci/clock.c and
+>> implemented the driver as per common clock provider API. The main PLL
+>> hardware typically has a multiplier, a pre-divider and a post-divider.
+>> Some of the SoCs has the divider fixed meaning they can not be
+>> configured through a register. HAS_PREDIV and HAS_POSTDIV flags are used
+>> to tell the driver if a hardware has these dividers present or not.
+>> Driver is configured through the structure clk_davinci_pll_data
+>> that has the platform data for the driver.
+>>
+>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> 
+> Are you using git-format-patch to generate the patches? It should have
+> added a diffstat here by default which is very useful in quickly
+> understanding what the patch is touching.
+>>
+>> diff --git a/drivers/clk/davinci/clk-davinci-pll.c b/drivers/clk/davinci/clk-davinci-pll.c
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-Reported-by: Michael Leun <lkml20120218@newton.leun.net>
-Tested-by: Michael Leun <lkml20120218@newton.leun.net>
----
- drivers/net/usb/mcs7830.c |   21 ++++++++++++++-------
- 1 files changed, 14 insertions(+), 7 deletions(-)
+Looking at how common clock framework for mxs has been implemented, this
+file should simply be clk-pll.c. That makes sense as you are creating a
+davinci folder anyway. Similar change required for psc as well.
 
-diff --git a/drivers/net/usb/mcs7830.c b/drivers/net/usb/mcs7830.c
-index 03c2d8d..3a02a5d 100644
---- a/drivers/net/usb/mcs7830.c
-+++ b/drivers/net/usb/mcs7830.c
-@@ -117,6 +117,7 @@ enum {
- struct mcs7830_data {
- 	u8 multi_filter[8];
- 	u8 config;
-+	u8 link_counter;
- };
- 
- static const char driver_name[] = "MOSCHIP usb-ethernet driver";
-@@ -633,19 +634,25 @@ static void mcs7830_status(struct usbnet *dev, struct 
-urb *urb)
- {
- 	u8 *buf = urb->transfer_buffer;
- 	bool link;
-+	struct mcs7830_data *data = mcs7830_get_data(dev);
- 
- 	if (urb->actual_length < 16)
- 		return;
- 
- 	link = !(buf[1] & 0x20);
- 	if (netif_carrier_ok(dev->net) != link) {
--		if (link) {
--			netif_carrier_on(dev->net);
--			usbnet_defer_kevent(dev, EVENT_LINK_RESET);
--		} else
--			netif_carrier_off(dev->net);
--		netdev_dbg(dev->net, "Link Status is: %d\n", link);
--	}
-+		data->link_counter++;
-+		if (data->link_counter > 20) {
-+			data->link_counter = 0;
-+			if (link) {
-+				netif_carrier_on(dev->net);
-+				usbnet_defer_kevent(dev, EVENT_LINK_RESET);
-+			} else
-+				netif_carrier_off(dev->net);
-+			netdev_dbg(dev->net, "Link Status is: %d\n", link);
-+		}
-+	} else
-+		data->link_counter = 0;
- }
- 
- static const struct driver_info moschip_info = {
--- 
-Ondrej Zary
+Thanks,
+Sekhar
