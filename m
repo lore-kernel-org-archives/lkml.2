@@ -1,73 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab2JKIup (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 04:50:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46345 "EHLO mx2.suse.de"
+	id S1754380Ab2JKIu6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 04:50:58 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:54979 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751355Ab2JKIul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 04:50:41 -0400
-Date: Thu, 11 Oct 2012 10:50:38 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-mm@kvack.org, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] memcg: oom: fix totalpages calculation for
- swappiness==0
-Message-ID: <20121011085038.GA29295@dhcp22.suse.cz>
-References: <20121010141142.GG23011@dhcp22.suse.cz>
- <alpine.DEB.2.00.1210101346010.31237@chino.kir.corp.google.com>
+	id S1753120Ab2JKIuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 04:50:52 -0400
+Message-ID: <50768850.7030607@ti.com>
+Date: Thu, 11 Oct 2012 14:20:24 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1210101346010.31237@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <hs@denx.de>, "Manjunathappa, Prakash" <prakash.pm@ti.com>,
+        Constantine Shulyupin <const@MakeLinux.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>, Sergei Shtylyov <sshtylyov@mvista.com>,
+        Wolfgang Denk <wd@denx.de>
+Subject: Re: [PATCH] usb: remove CONFIG_USB_MUSB_HOST etc
+References: <A73F36158E33644199EB82C5EC81C7BC3E9CA495@DBDE01.ent.ti.com> <507668C3.6080908@denx.de>
+In-Reply-To: <507668C3.6080908@denx.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 10-10-12 13:50:21, David Rientjes wrote:
-> On Wed, 10 Oct 2012, Michal Hocko wrote:
+On 10/11/2012 12:05 PM, Heiko Schocher wrote:
+> Hello Manjunathappa
 > 
-> > Hi,
-> > I am sending the patch below as an RFC because I am not entirely happy
-> > about myself and maybe somebody can come up with a different approach
-> > which would be less hackish.
+> On 11.10.2012 07:42, Manjunathappa, Prakash wrote:
+>> Hi,
+>> On Mon, Oct 08, 2012 at 18:47:07, Constantine Shulyupin wrote:
+>>> From: Constantine Shulyupin<const@MakeLinux.com>
+>>>
+>>> Remove USB configuration in arch/arm/mach-davinci/usb.c accordingly
+>>> CONFIG_USB_MUSB_OTG CONFIG_USB_MUSB_PERIPHERAL CONFIG_USB_MUSB_HOST
+>>> and set MUSB_OTG configuration by default
+>>> because this configuration options are removed from Kconfig.
+>>>
+>>> Signed-off-by: Constantine Shulyupin<const@MakeLinux.com>
+>>>
+>>> ---
+>>>   arch/arm/mach-davinci/usb.c |    6 ------
+>>>   1 file changed, 6 deletions(-)
+>>>
+>>> diff --git a/arch/arm/mach-davinci/usb.c b/arch/arm/mach-davinci/usb.c
+>>> index f77b953..34509ff 100644
+>>> --- a/arch/arm/mach-davinci/usb.c
+>>> +++ b/arch/arm/mach-davinci/usb.c
+>>> @@ -42,14 +42,8 @@ static struct musb_hdrc_config musb_config = {
+>>>   };
+>>>
+>>>   static struct musb_hdrc_platform_data usb_data = {
+>>> -#if defined(CONFIG_USB_MUSB_OTG)
+>>>       /* OTG requires a Mini-AB connector */
+>>>       .mode           = MUSB_OTG,
+>>> -#elif defined(CONFIG_USB_MUSB_PERIPHERAL)
+>>> -    .mode           = MUSB_PERIPHERAL,
+>>> -#elif defined(CONFIG_USB_MUSB_HOST)
+>>> -    .mode           = MUSB_HOST,
+>>> -#endif
+>>>       .clock        = "usb",
+>>>       .config        =&musb_config,
+>>>   };
+>>
+>> Tested it on DM6446-EVM for host mode with MSC thumb drive and gadget
+>> mode with g-ether. It works.
+>>
+>> Acked-by: Manjunathappa, Prakash<prakash.pm@ti.com>
 > 
-> I don't see this as hackish, 
-
-I didn't like how swappiness spreads outside of the LRU scanning code...
-
-> if memory.swappiness limits access to swap then this shouldn't be
-> factored into the calculation, and that's what your patch fixes.
+> I sent a similiar patch here:
 > 
-> The reason why the process with the largest rss isn't killed in this case 
-> is because all processes have CAP_SYS_ADMIN so they get a 3% bonus;
-
-OK I should have mentioned that I have tested it as root which makes a
-big difference with the current upstream as totalpages are considered
-only if adj!=0. 
-I have originally seen the problem in 3.0 kernel (with fe35004f applied)
-where the calculation is different (missing a7f638f9) and we always
-consider total_pages there so it doesn't depend on root or oom_score_adj.
-
-> when factoring swap into the calculation and subtracting 3% from
-> the score in oom_badness(), they all end up having an internal
-> score of 1 so they are all considered equal.  It appears like the
-> cgroup_iter_next() iteration for memcg ooms does this in reverse
-> order, which is actually helpful so it will select the task that is
-> newer.
+> http://comments.gmane.org/gmane.linux.usb.general/54512
 > 
-> The only suggestion I have to make is specify this is for 
-> memory.swappiness in the patch title, otherwise:
+> If the issues, mentioned from Sergei for my patch, nullified I add my:
 
-OK. I will also update the changelog to mention oom_score_adj and
-CAP_SYS_ADMIN, mark the patch for stable and repost it.
+The last outstanding issue from Sergei seems to be additional comments
+describing why MUSB_OTG is OK to use.
 
-> Acked-by: David Rientjes <rientjes@google.com>
+Prakash/Constantine,
 
-Thanks
--- 
-Michal Hocko
-SUSE Labs
+Did you have to make any hardware changes when testing host/gadget on
+DM6446 EVM? Or change in kernel configuration?
+
+It appears that there is no way to choose any of the config option
+affecting the mode setting. Right now it seems to be just defaulting to
+MUSB_UNDEFINED. Setting it to MUSB_OTG would be better than that.
+
+Thanks,
+Sekhar
