@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933380Ab2JKBNd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:13:33 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59078 "EHLO
+	id S933466Ab2JKBNs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:13:48 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51459 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933141Ab2JKBN1 (ORCPT
+	by vger.kernel.org with ESMTP id S933028Ab2JKBNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:13:27 -0400
-X-Sasl-enc: tYw8Rpu6J2FjTx1MRzE9b43S0bngZsVQ1VYCYVNZBJjJ 1349918006
+	Wed, 10 Oct 2012 21:13:43 -0400
+X-Sasl-enc: jCY0RCkJU6tx6yxJrda6897MboYb5HrZD2yxX6UhvTT8 1349918022
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [ 096/120] score: Add missing RCU idle APIs on idle loop
-Date: Thu, 11 Oct 2012 10:00:48 +0900
-Message-Id: <20121011005844.548249656@linuxfoundation.org>
+        Hayes Wang <hayeswang@realtek.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 099/120] r8169: 8168c and later require bit 0x20 to be set in Config2 for PME signaling.
+Date: Thu, 11 Oct 2012 10:00:51 +0900
+Message-Id: <20121011005845.160604557@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -30,60 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Francois Romieu <romieu@fr.zoreil.com>
 
-commit 0ee23fda59740767324b4340247ca41a2f498ca6 upstream.
+commit d387b427c973974dd619a33549c070ac5d0e089f upstream.
 
-In the old times, the whole idle task was considered
-as an RCU quiescent state. But as RCU became more and
-more successful overtime, some RCU read side critical
-section have been added even in the code of some
-architectures idle tasks, for tracing for example.
+The new 84xx stopped flying below the radars.
 
-So nowadays, rcu_idle_enter() and rcu_idle_exit() must
-be called by the architecture to tell RCU about the part
-in the idle loop that doesn't make use of rcu read side
-critical sections, typically the part that puts the CPU
-in low power mode.
-
-This is necessary for RCU to find the quiescent states in
-idle in order to complete grace periods.
-
-Add this missing pair of calls in scores's idle loop.
-
-Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Cc: Lennox Wu <lennox.wu@gmail.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Hayes Wang <hayeswang@realtek.com>
+Acked-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/score/kernel/process.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/realtek/r8169.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/arch/score/kernel/process.c
-+++ b/arch/score/kernel/process.c
-@@ -27,6 +27,7 @@
- #include <linux/reboot.h>
- #include <linux/elfcore.h>
- #include <linux/pm.h>
-+#include <linux/rcupdate.h>
- 
- void (*pm_power_off)(void);
- EXPORT_SYMBOL(pm_power_off);
-@@ -50,9 +51,10 @@ void __noreturn cpu_idle(void)
- {
- 	/* endless idle loop with no priority at all */
- 	while (1) {
-+		rcu_idle_enter();
- 		while (!need_resched())
- 			barrier();
--
-+		rcu_idle_exit();
- 		schedule_preempt_disabled();
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -319,6 +319,8 @@ enum rtl_registers {
+ 	Config0		= 0x51,
+ 	Config1		= 0x52,
+ 	Config2		= 0x53,
++#define PME_SIGNAL			(1 << 5)	/* 8168c and later */
++
+ 	Config3		= 0x54,
+ 	Config4		= 0x55,
+ 	Config5		= 0x56,
+@@ -1426,6 +1428,10 @@ static void __rtl8169_set_wol(struct rtl
+ 		RTL_W8(Config1, options);
+ 		break;
+ 	default:
++		options = RTL_R8(Config2) & ~PME_SIGNAL;
++		if (wolopts)
++			options |= PME_SIGNAL;
++		RTL_W8(Config2, options);
+ 		break;
  	}
- }
+ 
 
 
