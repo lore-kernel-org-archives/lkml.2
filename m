@@ -1,72 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758887Ab2JKQe2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 12:34:28 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:41286 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758830Ab2JKQeX (ORCPT
+	id S1758901Ab2JKQel (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 12:34:41 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:40543 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758853Ab2JKQek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 12:34:23 -0400
-Message-ID: <5076F503.3070808@xenotime.net>
-Date: Thu, 11 Oct 2012 09:34:11 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dan.magenheimer@oracle.com, konrad.wilk@oracle.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Subject: [PATCH -next] staging: ramster: depends on NET
-References: <20121011140604.f5093233badade406c3d06f7@canb.auug.org.au>
-In-Reply-To: <20121011140604.f5093233badade406c3d06f7@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Thu, 11 Oct 2012 12:34:40 -0400
+From: Constantine Shulyupin <const@MakeLinux.com>
+To: nsekhar@ti.com, gregkh@linuxfoundation.org, sshtylyov@mvista.com
+Cc: Constantine Shulyupin <const@MakeLinux.com>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v7] Enable USB peripheral mode on dm365 EVM
+Date: Thu, 11 Oct 2012 18:34:34 +0200
+Message-Id: <1349973274-24936-1-git-send-email-const@MakeLinux.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Identified-User: {1470:box668.bluehost.com:makelinu:makelinux.net} {sentby:smtp auth 84.229.113.105 authed with poster@makelinux.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+From: Constantine Shulyupin <const@MakeLinux.com>
 
-ramster uses network interfaces that are only present when
-CONFIG_NET is enabled, so it should depend on NET.
+Sets USB PHY clock source to 24 MHz clock.
 
-Fixes these build errors:
+Tested with OTG configuration, usb gadget g_zero on DM365 EVM connected to PC.
 
-drivers/built-in.o: In function `sc_kref_release':
-tcp.c:(.text+0x24b9af): undefined reference to `sock_release'
-drivers/built-in.o: In function `r2net_open_listening_sock':
-tcp.c:(.text+0x24ca2b): undefined reference to `sock_create'
-tcp.c:(.text+0x24cb91): undefined reference to `sock_release'
-drivers/built-in.o: In function `r2net_recv_tcp_msg':
-tcp.c:(.text+0x24cdbd): undefined reference to `sock_recvmsg'
-drivers/built-in.o: In function `r2net_send_tcp_msg':
-tcp.c:(.text+0x24d341): undefined reference to `sock_sendmsg'
-drivers/built-in.o: In function `r2net_start_connect':
-tcp.c:(.text+0x24d8fa): undefined reference to `sock_create'
-drivers/built-in.o: In function `r2net_shutdown_sc':
-tcp.c:(.text+0x24e30c): undefined reference to `kernel_sock_shutdown'
-drivers/built-in.o: In function `r2net_accept_one':
-tcp.c:(.text+0x24f392): undefined reference to `sock_create_lite'
-tcp.c:(.text+0x24f3c3): undefined reference to `sock_release'
-drivers/built-in.o: In function `r2net_stop_listening':
-(.text+0x250f63): undefined reference to `sock_release'
+To active the patch need to call davinci_setup_usb from dm365_evm_init
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: dan.magenheimer@oracle.com
-Cc: konrad.wilk@oracle.com
+References:
+
+Definition of USB_PHY_CTRL and PHYCLKFREQ:
+- http://www.makelinux.com/lib/ti/DM36x_ARM/doc-141
+
+Original patch by miguel.aguilar@ridgerun.com three years ago:
+- http://www.mail-archive.com/davinci-linux-open-source@linux.davincidsp.com/msg14741.html
+
+Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
 ---
- drivers/staging/ramster/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
 
---- linux-next-20121011.orig/drivers/staging/ramster/Kconfig
-+++ linux-next-20121011/drivers/staging/ramster/Kconfig
-@@ -18,6 +18,7 @@ config ZCACHE2
- config RAMSTER
- 	bool "Cross-machine RAM capacity sharing, aka peer-to-peer tmem"
- 	depends on CONFIGFS_FS=y && SYSFS=y && !HIGHMEM && ZCACHE2=y
-+	depends on NET
- 	# must ensure struct page is 8-byte aligned
- 	select HAVE_ALIGNED_STRUCT_PAGE if !64_BIT
- 	default n
+Note:
+
+Changelog
+
+Changes since v6
+- moved call to davinci_setup_usb from dm365_evm_init to another patch accordinly request of Sergei
+ 
+Changes since v5 http://www.spinics.net/lists/kernel/msg1413120.html
+accordingy feedback of nsekhar@ti.com http://www.spinics.net/lists/kernel/msg1414914.html
+- phy configuration moved to drivers/usb/musb/davinci.c
+- USB_OTG configuration is submitted in separated patch: http://www.spinics.net/lists/kernel/msg1414964.html
+- Setting current limit to 1000 mA. Any way the current is limited to 510 mA in davinci_setup_usb.
+
+Changes since v4 http://www.spinics.net/lists/kernel/msg1412995.html
+- removed fix of dev_info in musb_init_controller
+
+Changes since v3 http://www.spinics.net/lists/kernel/msg1412544.html:
+- removed optional altering of pr_info
+
+Changes since v1  http://marc.info/?l=linux-kernel&m=130894150803661&w=2:
+- removed optional code and reordered
+- removed alternation of GPIO33, which is multiplexed with DRVVBUS, because is not need for peripheral USB
+
+This patch is based on code from projects Arago, Angstom and RidgeRun.
+
+---
+ drivers/usb/musb/davinci.c              |    3 +++
+ drivers/usb/musb/davinci.h              |    1 +
+
+diff --git a/drivers/usb/musb/davinci.c b/drivers/usb/musb/davinci.c
+index 472c8b4..af09ebf 100644
+--- a/drivers/usb/musb/davinci.c
++++ b/drivers/usb/musb/davinci.c
+@@ -428,6 +428,9 @@ static int davinci_musb_init(struct musb *musb)
+ 		__raw_writel(deepsleep, DM355_DEEPSLEEP);
+ 	}
+ 
++	if (machine_is_davinci_dm365_evm())
++		writel(readl(USB_PHY_CTRL) | USBPHY_CLKFREQ_24MHZ, USB_PHY_CTRL);
++
+ 	/* reset the controller */
+ 	musb_writel(tibase, DAVINCI_USB_CTRL_REG, 0x1);
+ 
+diff --git a/drivers/usb/musb/davinci.h b/drivers/usb/musb/davinci.h
+index 371baa0..e737d97 100644
+--- a/drivers/usb/musb/davinci.h
++++ b/drivers/usb/musb/davinci.h
+@@ -16,6 +16,7 @@
+ 
+ /* Integrated highspeed/otg PHY */
+ #define USBPHY_CTL_PADDR	0x01c40034
++#define USBPHY_CLKFREQ_24MHZ	BIT(13)
+ #define USBPHY_DATAPOL		BIT(11)	/* (dm355) switch D+/D- */
+ #define USBPHY_PHYCLKGD		BIT(8)
+ #define USBPHY_SESNDEN		BIT(7)	/* v(sess_end) comparator */
+-- 
+1.7.9.5
+
