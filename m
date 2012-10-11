@@ -1,111 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932981Ab2JKP3h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 11:29:37 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:36309 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756791Ab2JKP3d (ORCPT
+	id S1758768Ab2JKPct (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 11:32:49 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:47490 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739Ab2JKPcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 11:29:33 -0400
-Message-ID: <1349968938.23493.52.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v5 0/5] ACPI: hotplug messages improvement
-From: Toshi Kani <toshi.kani@hp.com>
-To: lenb@kernel.org
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, joe@perches.com,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        vijaymohan.pandarathil@hp.com, shaohua.li@intel.com
-Date: Thu, 11 Oct 2012 09:22:18 -0600
-In-Reply-To: <1349790175.23493.1.camel@misato.fc.hp.com>
-References: <1346180581-12641-1-git-send-email-toshi.kani@hp.com>
-	 <1349790175.23493.1.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Oct 2012 11:32:48 -0400
+From: "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "Croxon, Nigel" <nigel.croxon@hp.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>,
+        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
+        "agordeev@redhat.com" <agordeev@redhat.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>
+Subject: RE: [PATCH] fix x2apic defect that Linux kernel doesn't mask 8259A
+ interrupt during the time window between changing VT-d table base address
+ and initializing these VT-d entries(smpboot.c and apic.c )
+Thread-Topic: [PATCH] fix x2apic defect that Linux kernel doesn't mask 8259A
+ interrupt during the time window between changing VT-d table base address
+ and initializing these VT-d entries(smpboot.c and apic.c )
+Thread-Index: AQHNpbB+Rz0tU9hpbEaEjcKbxJEEKZexnhfwgAGfSYCAADrVcIAAHmoAgACmZlA=
+Date: Thu, 11 Oct 2012 15:32:09 +0000
+Message-ID: <92645B27BF79D04FBD2B0F8494FFD0F9102AE1@G2W2429.americas.hpqcorp.net>
+References: <92645B27BF79D04FBD2B0F8494FFD0F90FC806@G2W2429.americas.hpqcorp.net>
+ <1349740633.11093.43.camel@sbsiddha-desk.sc.intel.com>
+ <92645B27BF79D04FBD2B0F8494FFD0F90FE41E@G2W2429.americas.hpqcorp.net>
+ <1349914040.3042.12.camel@sbsiddha-desk.sc.intel.com>
+ <92645B27BF79D04FBD2B0F8494FFD0F910292C@G2W2429.americas.hpqcorp.net>
+ <c76ab9ca-d85a-4327-a775-dc5b7d1d5a56@email.android.com>
+In-Reply-To: <c76ab9ca-d85a-4327-a775-dc5b7d1d5a56@email.android.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.193.232.10]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-Hi Len,
-
-Can you please review this patchset?
-
-Thanks,
--Toshi
-
-On Tue, 2012-10-09 at 07:42 -0600, Toshi Kani wrote:
-> Hi Len,
-> 
-> Can you please review this patch?  Please let me know if there is
-> anything I need to do for 3.7.
-> 
-> Thanks,
-> -Toshi
-> 
-> 
-> On Tue, 2012-08-28 at 13:02 -0600, Toshi Kani wrote:
-> > This patchset improves logging messages for ACPI CPU, Memory, 
-> > Container and Dock hotplug notify handlers.  The patchset 
-> > introduces a set of new macro interfaces, acpi_pr_<level>(),
-> > and uses them to update the notify handlers.  acpi_pr_<level>()
-> > appends "ACPI" prefix and ACPI object path to the messages,
-> > which has similar usage model as dev_<level>().  This improves
-> > diagnosis of hotplug operations since an error message in 
-> > a log file now identifies an object that caused an issue.
-> > 
-> > v5:
-> >  - Added update for ACPI Dock hotplug error messages.
-> >  - Added error status / ID info to the messages where needed.
-> >  - Rebased on 3.6-rc3.
-> > 
-> > v4:
-> >  - Changed to use dev_<level>() where it is appropriate.
-> > 
-> > v3:
-> >  - Changed acpi_pr_debug() to NOP when !DEBUG and !DYNAMIC_DEBUG.
-> >    DYNAMIC_DEBUG will be supported later when necessary.
-> >  - Added const to a path variable in acpi_printk().
-> >  - Added more descriptions to the change log of patch 1/4.
-> > 
-> > v2:
-> >  - Set buffer.pointer to NULL in acpi_printk().
-> >  - Added acpi_pr_debug().
-> > 
-> > ---
-> > This patchset applies on top of the patch below.
-> > 
-> > [PATCH v2] ACPI: Add ACPI CPU hot-remove support
-> > https://lkml.org/lkml/2012/8/24/419
-> > 
-> > ---
-> > Toshi Kani (5):
-> >  ACPI: Add acpi_pr_<level>() interfaces
-> >  ACPI: Update CPU hotplug error messages
-> >  ACPI: Update Memory hotplug error messages
-> >  ACPI: Update Container hotplug error messages
-> >  ACPI: Update Dock hotplug error messages
-> > 
-> > ---
-> >  drivers/acpi/acpi_memhotplug.c  |   25 +++++++++++++------------
-> >  drivers/acpi/container.c        |   10 ++--------
-> >  drivers/acpi/dock.c             |   29 +++++++++++++----------------
-> >  drivers/acpi/processor_driver.c |   38 +++++++++++++++++++++++---------------
-> >  drivers/acpi/utils.c            |   34 ++++++++++++++++++++++++++++++++++
-> >  include/acpi/acpi_bus.h         |   31 +++++++++++++++++++++++++++++++
-> >  6 files changed, 116 insertions(+), 51 deletions(-)
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> > 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9BFWtwD011607
 
 
+> -----Original Message-----
+> From: H. Peter Anvin [mailto:hpa@zytor.com]
+> Sent: 2012å¹´10æœˆ10æ—¥ 23:27
+> To: Zhang, Lin-Bao (Linux Kernel R&D); Suresh Siddha
+> Cc: linux-kernel@vger.kernel.org; alan@lxorguk.ukuu.org.uk;
+> mingo@redhat.com; Croxon, Nigel; tglx@linutronix.de; x86@kernel.org;
+> a.p.zijlstra@chello.nl; Sakkinen, Jarkko; joerg.roedel@amd.com;
+> agordeev@redhat.com; yinghai@kernel.org
+> Subject: RE: [PATCH] fix x2apic defect that Linux kernel doesn't mask 8259A
+> interrupt during the time window between changing VT-d table base address
+> and initializing these VT-d entries(smpboot.c and apic.c )
+> 
+> OSV = Operating System Vendor ime. red Hat, SUSE etc.
+> 
+Thanks Peter very much.
+
+ 
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
