@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab2JKFLp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 01:11:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58122 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753620Ab2JKFLm (ORCPT
+	id S1754090Ab2JKFTv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 01:19:51 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60776 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753620Ab2JKFTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 01:11:42 -0400
-Message-ID: <1349932292.8495.2.camel@phoenix>
-Subject: [PATCH] backlight: lm3639: Return proper error in
- lm3639_bled_mode_store error paths
-From: Axel Lin <axel.lin@ingics.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "G.Shark Jeong" <gshark.jeong@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>, Daniel Jeong <daniel.jeong@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 11 Oct 2012 13:11:32 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Thu, 11 Oct 2012 01:19:50 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <507656D1.5020703@jp.fujitsu.com>
+Date: Thu, 11 Oct 2012 14:19:13 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+CC: <rientjes@google.com>, <liuj97@gmail.com>, <minchan.kim@gmail.com>,
+        <akpm@linux-foundation.org>, <kosaki.motohiro@jp.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <wency@cn.fujitsu.com>
+Subject: [PATCH v2 0/2] Suppress "Device <device name> does not have a release()
+ function" warning
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/video/backlight/lm3639_bl.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+This patch-set is patches to which [1] and [2] are updated
+  [1] memory-hotplug: add memory_block_release
+  [2] memory-hotplug: add node_device_release
+from following patch-set.
 
-diff --git a/drivers/video/backlight/lm3639_bl.c b/drivers/video/backlight/lm3639_bl.c
-index c6915c6..585949b 100644
---- a/drivers/video/backlight/lm3639_bl.c
-+++ b/drivers/video/backlight/lm3639_bl.c
-@@ -206,11 +206,11 @@ static ssize_t lm3639_bled_mode_store(struct device *dev,
- 
- out:
- 	dev_err(pchip->dev, "%s:i2c access fail to register\n", __func__);
--	return size;
-+	return ret;
- 
- out_input:
- 	dev_err(pchip->dev, "%s:input conversion fail\n", __func__);
--	return size;
-+	return ret;
- 
- }
- 
--- 
-1.7.9.5
+https://lkml.org/lkml/2012/9/27/39
 
+So the patch-set version is v2.
+
+v1 -> v2
+[PATCH 1/2]
+- change subject to Suppress "Device memoryX does not have a release()
+  function" warning.
+- Add detail information into description
+- change function name from release_memory_block() to memory_block_release(),
+  because other device release() function is named to <device_name>_release()
+[PATCH 2/2]
+- change subject to Suppress "Device nodeX does not have a release() function"
+  warning.
+- Add detail information into description
+- Remove memset() to initialize a node struct from node_device_release()
+- Add memset() to initialize a node struct into register_node()
 
 
