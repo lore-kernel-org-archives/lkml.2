@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933947Ab2JKBeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:34:09 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34219 "EHLO
+	id S933663Ab2JKBfH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:35:07 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52471 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933919Ab2JKBTl (ORCPT
+	by vger.kernel.org with ESMTP id S933818Ab2JKBTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:19:41 -0400
-X-Sasl-enc: 3GkhtVtoC6Y9ge9dE+SzWsPBYcc6/Kwp6gz3+siJtXUt 1349918380
+	Wed, 10 Oct 2012 21:19:08 -0400
+X-Sasl-enc: zj+TU2/aHY5lijQU288t3LkF3beDhxVHrAsgUTVjJ8wy 1349918346
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Denys Fedoryschenko <denys@visp.net.lb>,
-        Eric Dumazet <edumazet@google.com>,
+        Mathias Krause <minipli@googlemail.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 036/120] net-sched: sch_cbq: avoid infinite loop
-Date: Thu, 11 Oct 2012 09:59:48 +0900
-Message-Id: <20121011005832.152586451@linuxfoundation.org>
+Subject: [ 025/120] xfrm_user: return error pointer instead of NULL #2
+Date: Thu, 11 Oct 2012 09:59:37 +0900
+Message-Id: <20121011005830.070140001@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -30,48 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit bdfc87f7d1e253e0a61e2fc6a75ea9d76f7fc03a ]
+[ Upstream commit c25463722509fef0ed630b271576a8c9a70236f3 ]
 
-Its possible to setup a bad cbq configuration leading to
-an infinite loop in cbq_classify()
+When dump_one_policy() returns an error, e.g. because of a too small
+buffer to dump the whole xfrm policy, xfrm_policy_netlink() returns
+NULL instead of an error pointer. But its caller expects an error
+pointer and therefore continues to operate on a NULL skbuff.
 
-DEV_OUT=eth0
-ICMP="match ip protocol 1 0xff"
-U32="protocol ip u32"
-DST="match ip dst"
-tc qdisc add dev $DEV_OUT root handle 1: cbq avpkt 1000 \
-	bandwidth 100mbit
-tc class add dev $DEV_OUT parent 1: classid 1:1 cbq \
-	rate 512kbit allot 1500 prio 5 bounded isolated
-tc filter add dev $DEV_OUT parent 1: prio 3 $U32 \
-	$ICMP $DST 192.168.3.234 flowid 1:
-
-Reported-by: Denys Fedoryschenko <denys@visp.net.lb>
-Tested-by: Denys Fedoryschenko <denys@visp.net.lb>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sched/sch_cbq.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ net/xfrm/xfrm_user.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/sched/sch_cbq.c
-+++ b/net/sched/sch_cbq.c
-@@ -250,10 +250,11 @@ cbq_classify(struct sk_buff *skb, struct
- 			else if ((cl = defmap[res.classid & TC_PRIO_MAX]) == NULL)
- 				cl = defmap[TC_PRIO_BESTEFFORT];
+--- a/net/xfrm/xfrm_user.c
++++ b/net/xfrm/xfrm_user.c
+@@ -1531,6 +1531,7 @@ static struct sk_buff *xfrm_policy_netli
+ {
+ 	struct xfrm_dump_info info;
+ 	struct sk_buff *skb;
++	int err;
  
--			if (cl == NULL || cl->level >= head->level)
-+			if (cl == NULL)
- 				goto fallback;
- 		}
--
-+		if (cl->level >= head->level)
-+			goto fallback;
- #ifdef CONFIG_NET_CLS_ACT
- 		switch (result) {
- 		case TC_ACT_QUEUED:
+ 	skb = nlmsg_new(NLMSG_DEFAULT_SIZE, GFP_KERNEL);
+ 	if (!skb)
+@@ -1541,9 +1542,10 @@ static struct sk_buff *xfrm_policy_netli
+ 	info.nlmsg_seq = seq;
+ 	info.nlmsg_flags = 0;
+ 
+-	if (dump_one_policy(xp, dir, 0, &info) < 0) {
++	err = dump_one_policy(xp, dir, 0, &info);
++	if (err) {
+ 		kfree_skb(skb);
+-		return NULL;
++		return ERR_PTR(err);
+ 	}
+ 
+ 	return skb;
 
 
