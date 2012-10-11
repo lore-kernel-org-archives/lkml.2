@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934054Ab2JKBUp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:20:45 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46208 "EHLO
+	id S934068Ab2JKBUv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:20:51 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50955 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934036Ab2JKBUg (ORCPT
+	by vger.kernel.org with ESMTP id S934042Ab2JKBUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:20:36 -0400
-X-Sasl-enc: nJH7S6F/mJ+2wxmQgl4K+MxzRz7BGEUByq+pqlTCiD59 1349918434
+	Wed, 10 Oct 2012 21:20:40 -0400
+X-Sasl-enc: gU7cqnkEtb2IUAiPia+RGWjMBKThLXeL3FdNIRbkqNrA 1349918439
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Thomas Graf <tgraf@suug.ch>, Vlad Yasevich <vyasevic@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        David Miller <davem@davemloft.net>,
-        Vlad Yasevich <vyasevich@gmail.com>
-Subject: [ 044/120] sctp: Dont charge for data in sndbuf again when transmitting packet
-Date: Thu, 11 Oct 2012 09:59:56 +0900
-Message-Id: <20121011005833.582106288@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 049/120] ipv6: raw: fix icmpv6_filter()
+Date: Thu, 11 Oct 2012 10:00:01 +0900
+Message-Id: <20121011005834.522470365@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -31,84 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Thomas Graf <tgraf@suug.ch>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 4c3a5bdae293f75cdf729c6c00124e8489af2276 ]
+[ Upstream commit 1b05c4b50edbddbdde715c4a7350629819f6655e ]
 
-SCTP charges wmem_alloc via sctp_set_owner_w() in sctp_sendmsg() and via
-skb_set_owner_w() in sctp_packet_transmit(). If a sender runs out of
-sndbuf it will sleep in sctp_wait_for_sndbuf() and expects to be waken up
-by __sctp_write_space().
+icmpv6_filter() should not modify its input, or else its caller
+would need to recompute ipv6_hdr() if skb->head is reallocated.
 
-Buffer space charged via sctp_set_owner_w() is released in sctp_wfree()
-which calls __sctp_write_space() directly.
+Use skb_header_pointer() instead of pskb_may_pull() and
+change the prototype to make clear both sk and skb are const.
 
-Buffer space charged via skb_set_owner_w() is released via sock_wfree()
-which calls sk->sk_write_space() _if_ SOCK_USE_WRITE_QUEUE is not set.
-sctp_endpoint_init() sets SOCK_USE_WRITE_QUEUE on all sockets.
+Also, if icmpv6 header cannot be found, do not deliver the packet,
+as we do in IPv4.
 
-Therefore if sctp_packet_transmit() manages to queue up more than sndbuf
-bytes, sctp_wait_for_sndbuf() will never be woken up again unless it is
-interrupted by a signal.
-
-This could be fixed by clearing the SOCK_USE_WRITE_QUEUE flag but ...
-
-Charging for the data twice does not make sense in the first place, it
-leads to overcharging sndbuf by a factor 2. Therefore this patch only
-charges a single byte in wmem_alloc when transmitting an SCTP packet to
-ensure that the socket stays alive until the packet has been released.
-
-This means that control chunks are no longer accounted for in wmem_alloc
-which I believe is not a problem as skb->truesize will typically lead
-to overcharging anyway and thus compensates for any control overhead.
-
-Signed-off-by: Thomas Graf <tgraf@suug.ch>
-CC: Vlad Yasevich <vyasevic@redhat.com>
-CC: Neil Horman <nhorman@tuxdriver.com>
-CC: David Miller <davem@davemloft.net>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/output.c |   21 ++++++++++++++++++++-
- 1 file changed, 20 insertions(+), 1 deletion(-)
+ net/ipv6/raw.c |   21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
---- a/net/sctp/output.c
-+++ b/net/sctp/output.c
-@@ -334,6 +334,25 @@ finish:
- 	return retval;
+--- a/net/ipv6/raw.c
++++ b/net/ipv6/raw.c
+@@ -107,21 +107,20 @@ found:
+  *	0 - deliver
+  *	1 - block
+  */
+-static __inline__ int icmpv6_filter(struct sock *sk, struct sk_buff *skb)
++static int icmpv6_filter(const struct sock *sk, const struct sk_buff *skb)
+ {
+-	struct icmp6hdr *icmph;
+-	struct raw6_sock *rp = raw6_sk(sk);
++	struct icmp6hdr *_hdr;
++	const struct icmp6hdr *hdr;
+ 
+-	if (pskb_may_pull(skb, sizeof(struct icmp6hdr))) {
+-		__u32 *data = &rp->filter.data[0];
+-		int bit_nr;
++	hdr = skb_header_pointer(skb, skb_transport_offset(skb),
++				 sizeof(_hdr), &_hdr);
++	if (hdr) {
++		const __u32 *data = &raw6_sk(sk)->filter.data[0];
++		unsigned int type = hdr->icmp6_type;
+ 
+-		icmph = (struct icmp6hdr *) skb->data;
+-		bit_nr = icmph->icmp6_type;
+-
+-		return (data[bit_nr >> 5] & (1 << (bit_nr & 31))) != 0;
++		return (data[type >> 5] & (1U << (type & 31))) != 0;
+ 	}
+-	return 0;
++	return 1;
  }
  
-+static void sctp_packet_release_owner(struct sk_buff *skb)
-+{
-+	sk_free(skb->sk);
-+}
-+
-+static void sctp_packet_set_owner_w(struct sk_buff *skb, struct sock *sk)
-+{
-+	skb_orphan(skb);
-+	skb->sk = sk;
-+	skb->destructor = sctp_packet_release_owner;
-+
-+	/*
-+	 * The data chunks have already been accounted for in sctp_sendmsg(),
-+	 * therefore only reserve a single byte to keep socket around until
-+	 * the packet has been transmitted.
-+	 */
-+	atomic_inc(&sk->sk_wmem_alloc);
-+}
-+
- /* All packets are sent to the network through this function from
-  * sctp_outq_tail().
-  *
-@@ -375,7 +394,7 @@ int sctp_packet_transmit(struct sctp_pac
- 	/* Set the owning socket so that we know where to get the
- 	 * destination IP address.
- 	 */
--	skb_set_owner_w(nskb, sk);
-+	sctp_packet_set_owner_w(nskb, sk);
- 
- 	if (!sctp_transport_dst_check(tp)) {
- 		sctp_transport_route(tp, NULL, sctp_sk(sk));
+ #if defined(CONFIG_IPV6_MIP6) || defined(CONFIG_IPV6_MIP6_MODULE)
 
 
