@@ -1,217 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933415Ab2JKA36 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:29:58 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34349 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933417Ab2JKAZY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:25:24 -0400
-X-Sasl-enc: kUCVsh7KpiQADbXDG9HyLxRSPUwUk4a0Xg6pG4Svl5b+ 1349915123
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Christoph Lameter <cl@linux.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Josh Boyer <jwboyer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 100/122] mempolicy: remove mempolicy sharing
-Date: Thu, 11 Oct 2012 07:54:26 +0900
-Message-Id: <20121010225356.038235458@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
-References: <20121010225337.989799482@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S933573Ab2JKAaI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:30:08 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:33849 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933411Ab2JKAaC convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 20:30:02 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Ulf Hansson <ulf.hansson@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+From: Mike Turquette <mturquette@ti.com>
+In-Reply-To: <CAPDyKFr+Eb5=Cz5jHpyVmpX_-v9i8R6-qmK6ZfX75jw218S46g@mail.gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>,
+        Philippe Begnic <philippe.begnic@st.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+References: <1348497799-32143-1-git-send-email-ulf.hansson@stericsson.com>
+ <1348497799-32143-2-git-send-email-ulf.hansson@stericsson.com>
+ <CAPDyKFr+Eb5=Cz5jHpyVmpX_-v9i8R6-qmK6ZfX75jw218S46g@mail.gmail.com>
+Message-ID: <20121011002936.11595.76308@nucleus>
+User-Agent: alot/0.3.2+
+Subject: Re: [PATCH 1/3] mfd: dbx500: Export prmcu_request_ape_opp_100_voltage
+Date: Wed, 10 Oct 2012 17:29:36 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+Quoting Ulf Hansson (2012-10-04 05:03:05)
+> Hi Sam and Linus,
+> 
+> Do you see any issues with this patch? Can we advise Mike to merge it
+> though his clock tree?
+> 
 
-------------------
+Thanks for the re-ping and gathering Ack's.  I'll pull into my clk-next
+as soon as I push out a new branch towards 3.8.
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Regards,
+Mike
 
-commit 869833f2c5c6e4dd09a5378cfc665ffb4615e5d2 upstream.
-
-Dave Jones' system call fuzz testing tool "trinity" triggered the
-following bug error with slab debugging enabled
-
-    =============================================================================
-    BUG numa_policy (Not tainted): Poison overwritten
-    -----------------------------------------------------------------------------
-
-    INFO: 0xffff880146498250-0xffff880146498250. First byte 0x6a instead of 0x6b
-    INFO: Allocated in mpol_new+0xa3/0x140 age=46310 cpu=6 pid=32154
-     __slab_alloc+0x3d3/0x445
-     kmem_cache_alloc+0x29d/0x2b0
-     mpol_new+0xa3/0x140
-     sys_mbind+0x142/0x620
-     system_call_fastpath+0x16/0x1b
-
-    INFO: Freed in __mpol_put+0x27/0x30 age=46268 cpu=6 pid=32154
-     __slab_free+0x2e/0x1de
-     kmem_cache_free+0x25a/0x260
-     __mpol_put+0x27/0x30
-     remove_vma+0x68/0x90
-     exit_mmap+0x118/0x140
-     mmput+0x73/0x110
-     exit_mm+0x108/0x130
-     do_exit+0x162/0xb90
-     do_group_exit+0x4f/0xc0
-     sys_exit_group+0x17/0x20
-     system_call_fastpath+0x16/0x1b
-
-    INFO: Slab 0xffffea0005192600 objects=27 used=27 fp=0x          (null) flags=0x20000000004080
-    INFO: Object 0xffff880146498250 @offset=592 fp=0xffff88014649b9d0
-
-The problem is that the structure is being prematurely freed due to a
-reference count imbalance. In the following case mbind(addr, len) should
-replace the memory policies of both vma1 and vma2 and thus they will
-become to share the same mempolicy and the new mempolicy will have the
-MPOL_F_SHARED flag.
-
-  +-------------------+-------------------+
-  |     vma1          |     vma2(shmem)   |
-  +-------------------+-------------------+
-  |                                       |
- addr                                 addr+len
-
-alloc_pages_vma() uses get_vma_policy() and mpol_cond_put() pair for
-maintaining the mempolicy reference count.  The current rule is that
-get_vma_policy() only increments refcount for shmem VMA and
-mpol_conf_put() only decrements refcount if the policy has
-MPOL_F_SHARED.
-
-In above case, vma1 is not shmem vma and vma->policy has MPOL_F_SHARED!
-The reference count will be decreased even though was not increased
-whenever alloc_page_vma() is called.  This has been broken since commit
-[52cd3b07: mempolicy: rework mempolicy Reference Counting] in 2008.
-
-There is another serious bug with the sharing of memory policies.
-Currently, mempolicy rebind logic (it is called from cpuset rebinding)
-ignores a refcount of mempolicy and override it forcibly.  Thus, any
-mempolicy sharing may cause mempolicy corruption.  The bug was
-introduced by commit [68860ec1: cpusets: automatic numa mempolicy
-rebinding].
-
-Ideally, the shared policy handling would be rewritten to either
-properly handle COW of the policy structures or at least reference count
-MPOL_F_SHARED based exclusively on information within the policy.
-However, this patch takes the easier approach of disabling any policy
-sharing between VMAs.  Each new range allocated with sp_alloc will
-allocate a new policy, set the reference count to 1 and drop the
-reference count of the old policy.  This increases the memory footprint
-but is not expected to be a major problem as mbind() is unlikely to be
-used for fine-grained ranges.  It is also inefficient because it means
-we allocate a new policy even in cases where mbind_range() could use the
-new_policy passed to it.  However, it is more straight-forward and the
-change should be invisible to the user.
-
-[mgorman@suse.de: Edited changelog]
-Reported-by: Dave Jones <davej@redhat.com>,
-Cc: Christoph Lameter <cl@linux.com>,
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Cc: Josh Boyer <jwboyer@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- mm/mempolicy.c |   52 ++++++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 38 insertions(+), 14 deletions(-)
-
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -607,24 +607,39 @@ check_range(struct mm_struct *mm, unsign
- 	return first;
- }
- 
--/* Apply policy to a single VMA */
--static int policy_vma(struct vm_area_struct *vma, struct mempolicy *new)
-+/*
-+ * Apply policy to a single VMA
-+ * This must be called with the mmap_sem held for writing.
-+ */
-+static int vma_replace_policy(struct vm_area_struct *vma,
-+						struct mempolicy *pol)
- {
--	int err = 0;
--	struct mempolicy *old = vma->vm_policy;
-+	int err;
-+	struct mempolicy *old;
-+	struct mempolicy *new;
- 
- 	pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
- 		 vma->vm_start, vma->vm_end, vma->vm_pgoff,
- 		 vma->vm_ops, vma->vm_file,
- 		 vma->vm_ops ? vma->vm_ops->set_policy : NULL);
- 
--	if (vma->vm_ops && vma->vm_ops->set_policy)
-+	new = mpol_dup(pol);
-+	if (IS_ERR(new))
-+		return PTR_ERR(new);
-+
-+	if (vma->vm_ops && vma->vm_ops->set_policy) {
- 		err = vma->vm_ops->set_policy(vma, new);
--	if (!err) {
--		mpol_get(new);
--		vma->vm_policy = new;
--		mpol_put(old);
-+		if (err)
-+			goto err_out;
- 	}
-+
-+	old = vma->vm_policy;
-+	vma->vm_policy = new; /* protected by mmap_sem */
-+	mpol_put(old);
-+
-+	return 0;
-+ err_out:
-+	mpol_put(new);
- 	return err;
- }
- 
-@@ -676,7 +691,7 @@ static int mbind_range(struct mm_struct
- 			if (err)
- 				goto out;
- 		}
--		err = policy_vma(vma, new_pol);
-+		err = vma_replace_policy(vma, new_pol);
- 		if (err)
- 			goto out;
- 	}
-@@ -2153,15 +2168,24 @@ static void sp_delete(struct shared_poli
- static struct sp_node *sp_alloc(unsigned long start, unsigned long end,
- 				struct mempolicy *pol)
- {
--	struct sp_node *n = kmem_cache_alloc(sn_cache, GFP_KERNEL);
-+	struct sp_node *n;
-+	struct mempolicy *newpol;
- 
-+	n = kmem_cache_alloc(sn_cache, GFP_KERNEL);
- 	if (!n)
- 		return NULL;
-+
-+	newpol = mpol_dup(pol);
-+	if (IS_ERR(newpol)) {
-+		kmem_cache_free(sn_cache, n);
-+		return NULL;
-+	}
-+	newpol->flags |= MPOL_F_SHARED;
-+
- 	n->start = start;
- 	n->end = end;
--	mpol_get(pol);
--	pol->flags |= MPOL_F_SHARED;	/* for unref */
--	n->policy = pol;
-+	n->policy = newpol;
-+
- 	return n;
- }
- 
-
-
+> Kind regards
+> Ulf Hansson
+> 
+> On 24 September 2012 16:43, Ulf Hansson <ulf.hansson@stericsson.com> wrote:
+> > From: Ulf Hansson <ulf.hansson@linaro.org>
+> >
+> > This function needs to be exported to let clients be able to
+> > request the ape opp 100 voltage.
+> >
+> > Cc: Samuel Ortiz <sameo@linux.intel.com>
+> > Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+> > ---
+> >  drivers/mfd/db8500-prcmu.c       |    4 ++--
+> >  include/linux/mfd/db8500-prcmu.h |    4 ++--
+> >  include/linux/mfd/dbx500-prcmu.h |   10 ++++++++++
+> >  3 files changed, 14 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+> > index e7f9539..0b8e0a0 100644
+> > --- a/drivers/mfd/db8500-prcmu.c
+> > +++ b/drivers/mfd/db8500-prcmu.c
+> > @@ -1167,12 +1167,12 @@ int db8500_prcmu_get_ape_opp(void)
+> >  }
+> >
+> >  /**
+> > - * prcmu_request_ape_opp_100_voltage - Request APE OPP 100% voltage
+> > + * db8500_prcmu_request_ape_opp_100_voltage - Request APE OPP 100% voltage
+> >   * @enable: true to request the higher voltage, false to drop a request.
+> >   *
+> >   * Calls to this function to enable and disable requests must be balanced.
+> >   */
+> > -int prcmu_request_ape_opp_100_voltage(bool enable)
+> > +int db8500_prcmu_request_ape_opp_100_voltage(bool enable)
+> >  {
+> >         int r = 0;
+> >         u8 header;
+> > diff --git a/include/linux/mfd/db8500-prcmu.h b/include/linux/mfd/db8500-prcmu.h
+> > index b82f6ee..6ee4247 100644
+> > --- a/include/linux/mfd/db8500-prcmu.h
+> > +++ b/include/linux/mfd/db8500-prcmu.h
+> > @@ -515,7 +515,6 @@ enum romcode_read prcmu_get_rc_p2a(void);
+> >  enum ap_pwrst prcmu_get_xp70_current_state(void);
+> >  bool prcmu_has_arm_maxopp(void);
+> >  struct prcmu_fw_version *prcmu_get_fw_version(void);
+> > -int prcmu_request_ape_opp_100_voltage(bool enable);
+> >  int prcmu_release_usb_wakeup_state(void);
+> >  void prcmu_configure_auto_pm(struct prcmu_auto_pm_config *sleep,
+> >         struct prcmu_auto_pm_config *idle);
+> > @@ -564,6 +563,7 @@ int db8500_prcmu_set_arm_opp(u8 opp);
+> >  int db8500_prcmu_get_arm_opp(void);
+> >  int db8500_prcmu_set_ape_opp(u8 opp);
+> >  int db8500_prcmu_get_ape_opp(void);
+> > +int db8500_prcmu_request_ape_opp_100_voltage(bool enable);
+> >  int db8500_prcmu_set_ddr_opp(u8 opp);
+> >  int db8500_prcmu_get_ddr_opp(void);
+> >
+> > @@ -610,7 +610,7 @@ static inline int db8500_prcmu_get_ape_opp(void)
+> >         return APE_100_OPP;
+> >  }
+> >
+> > -static inline int prcmu_request_ape_opp_100_voltage(bool enable)
+> > +static inline int db8500_prcmu_request_ape_opp_100_voltage(bool enable)
+> >  {
+> >         return 0;
+> >  }
+> > diff --git a/include/linux/mfd/dbx500-prcmu.h b/include/linux/mfd/dbx500-prcmu.h
+> > index c410d99..c202d6c 100644
+> > --- a/include/linux/mfd/dbx500-prcmu.h
+> > +++ b/include/linux/mfd/dbx500-prcmu.h
+> > @@ -336,6 +336,11 @@ static inline int prcmu_get_ape_opp(void)
+> >         return db8500_prcmu_get_ape_opp();
+> >  }
+> >
+> > +static inline int prcmu_request_ape_opp_100_voltage(bool enable)
+> > +{
+> > +       return db8500_prcmu_request_ape_opp_100_voltage(enable);
+> > +}
+> > +
+> >  static inline void prcmu_system_reset(u16 reset_code)
+> >  {
+> >         return db8500_prcmu_system_reset(reset_code);
+> > @@ -507,6 +512,11 @@ static inline int prcmu_get_ape_opp(void)
+> >         return APE_100_OPP;
+> >  }
+> >
+> > +static inline int prcmu_request_ape_opp_100_voltage(bool enable)
+> > +{
+> > +       return 0;
+> > +}
+> > +
+> >  static inline int prcmu_set_arm_opp(u8 opp)
+> >  {
+> >         return 0;
+> > --
+> > 1.7.10
+> >
