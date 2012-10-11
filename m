@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758757Ab2JKOKw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 10:10:52 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:43164 "EHLO multi.imgtec.com"
+	id S932240Ab2JKOLg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 10:11:36 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38229 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758742Ab2JKOKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 10:10:50 -0400
-Message-ID: <5076D360.2010804@imgtec.com>
-Date: Thu, 11 Oct 2012 15:10:40 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1751539Ab2JKOLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 10:11:34 -0400
+From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+CC: "Hilman, Kevin" <khilman@ti.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-keystone@list.ti.com - Linux developers for Keystone family of
+	devices (May contain non-TIers)" <linux-keystone@list.ti.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH 01/13] clk: davinci - add Main PLL clock driver
+Thread-Topic: [PATCH 01/13] clk: davinci - add Main PLL clock driver
+Thread-Index: AQHNp5wfJJvjOOrf7UiEit6UQh9q7Je0JG6g
+Date: Thu, 11 Oct 2012 14:10:16 +0000
+Message-ID: <3E54258959B69E4282D79E01AB1F32B7041FDA2E@DFLE12.ent.ti.com>
+References: <1348682889-9509-1-git-send-email-m-karicheri2@ti.com>
+ <1348682889-9509-2-git-send-email-m-karicheri2@ti.com>
+ <507563C3.2000305@ti.com> <5076A0DE.4070900@ti.com>
+In-Reply-To: <5076A0DE.4070900@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH] scsi: make struct scsi_varlen_cdb_hdr packed
-References: <1349946933-30314-1-git-send-email-james.hogan@imgtec.com>  <1349951069.2425.44.camel@dabdike.int.hansenpartnership.com>  <5076AE3B.5040509@imgtec.com> <1349960296.2425.53.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1349960296.2425.53.camel@dabdike.int.hansenpartnership.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2012_10_11_15_10_42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9BEBeCp011271
 
-On 11/10/12 13:58, James Bottomley wrote:
-> On Thu, 2012-10-11 at 12:32 +0100, James Hogan wrote:
->> On 11/10/12 11:24, James Bottomley wrote:
->>> On Thu, 2012-10-11 at 10:15 +0100, James Hogan wrote:
->>>> The struct scsi_varlen_cdb_hdr is expected to be exactly 10 bytes when
->>>> used in struct osd_cdb_head, but it isn't marked as packed. Some
->>>> architectures will round the struct size up which triggers BUILD_BUG_ON
->>>> compile errors in osd_initiator.c when the outer structs are unexpected
->>>> sizes. This is fixed by marking struct scsi_varlen_cdb_hdr as __packed.
->>>
->>> What actual problem have you encountered? The structure is {u8[8], u16}
->>> which is naturally packed on every architecture I know about.  I've even
->>> built osd_initiator without problem on parisc, which has some of the
->>> most rigid alignment rules I've seen.
->>
->> Hi James,
->>
->> The alignment is fine (the offset of the u16 is 8 bytes), but
->> unfortunately with the metag port of gcc, sizeof(struct
->> scsi_varlen_cdb_hdr) is rounded up to a 4 byte boundary (even though the
->> largest data member alignment is only 2 bytes), which is 12 bytes
->> instead of 10.
-> 
-> That sounds to be a bug in your compiler ... it shouldn't be rounding up
-> structure sizes if the structure can fit in 10 bytes.  This isn't
-> happening in any other architecture that I know of (otherwise we'd have
-> had a reported build break).
+>> -----Original Message-----
+>> From: Nori, Sekhar
+>> Sent: Thursday, October 11, 2012 6:35 AM
+>> To: Nori, Sekhar
+>> Cc: Karicheri, Muralidharan; Hilman, Kevin; davinci-linux-open-
+>> source@linux.davincidsp.com; mturquette@linaro.org; linux-c6x-dev@linux-c6x.org;
+>> arnd@arndb.de; linus.walleij@linaro.org; linux-kernel@vger.kernel.org;
+>> rob.herring@calxeda.com; linux-keystone@list.ti.com - Linux developers for Keystone
+>> family of devices (May contain non-TIers); viresh.linux@gmail.com;
+>> linux@arm.linux.org.uk; akpm@linux-foundation.org; shawn.guo@linaro.org; linux-arm-
+>> kernel@lists.infradead.org
+>> Subject: Re: [PATCH 01/13] clk: davinci - add Main PLL clock driver
+>> 
+>> On 10/10/2012 5:32 PM, Sekhar Nori wrote:
+>> > Hi Murali,
+>> >
+>> > On 9/26/2012 11:37 PM, Murali Karicheri wrote:
+>> >> This is the driver for the main PLL clock hardware found on DM SoCs.
+>> >> This driver borrowed code from arch/arm/mach-davinci/clock.c and
+>> >> implemented the driver as per common clock provider API. The main PLL
+>> >> hardware typically has a multiplier, a pre-divider and a post-divider.
+>> >> Some of the SoCs has the divider fixed meaning they can not be
+>> >> configured through a register. HAS_PREDIV and HAS_POSTDIV flags are
+>> >> used to tell the driver if a hardware has these dividers present or not.
+>> >> Driver is configured through the structure clk_davinci_pll_data that
+>> >> has the platform data for the driver.
+>> >>
+>> >> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>> >
+>> > Are you using git-format-patch to generate the patches? It should have
+>> > added a diffstat here by default which is very useful in quickly
+>> > understanding what the patch is touching.
+>> >>
+>> >> diff --git a/drivers/clk/davinci/clk-davinci-pll.c
+>> >> b/drivers/clk/davinci/clk-davinci-pll.c
+>> 
+>> Looking at how common clock framework for mxs has been implemented, this file should
+>> simply be clk-pll.c. That makes sense as you are creating a davinci folder anyway. Similar
+>> change required for psc as well.
+>> 
 
-This was my initial thought, and I share your feeling that this isn't
-ideal compiler behaviour, however it's pretty much set in stone as part
-of our ABI now. Having talked to one of our compiler folk about it
-here's what he had to say:
-> In GCC 4.2 the following backends have STRUCTURE_SIZE_BOUNDARY set to >=32 which will trigger this behaviour:
-> 
-> Alpha+unicos
-> Arm prior to AAPCS
-> Mt
-> 
-> This is within standards to my knowledge.
+Alternately, do we need  a davinci folder? Can't we just add it to the clk/ directory? These IPs are re-used in c6x and keystone architectures. So it make sense to keep in the clk folder. If agree, I can make this change in v3.
 
-Cheers
-James
-
+>> Thanks,
+>> Sekhar
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
