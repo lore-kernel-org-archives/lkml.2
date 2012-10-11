@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934250Ab2JKBZb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:25:31 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40267 "EHLO
+	id S934151Ab2JKBZm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:25:42 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45428 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934220Ab2JKBZW (ORCPT
+	by vger.kernel.org with ESMTP id S934252Ab2JKBZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:25:22 -0400
-X-Sasl-enc: JRI0rCsYr3YAw79EdJM/j0cJsP1M4Y55FJWOKoqTzoVG 1349918721
+	Wed, 10 Oct 2012 21:25:33 -0400
+X-Sasl-enc: QrjBE1sOftomnrQTRvqfoqFmQ6TrOs93cGm+ZxIgUi/4 1349918732
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>,
+        Sasha Levin <levinsasha928@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>, Ying Han <yinghan@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 077/120] mm: thp: fix pmd_present for split_huge_page and PROT_NONE with THP
-Date: Thu, 11 Oct 2012 10:00:29 +0900
-Message-Id: <20121011005840.481980857@linuxfoundation.org>
+Subject: [ 076/120] mm: fix invalidate_complete_page2() lock ordering
+Date: Thu, 11 Oct 2012 10:00:28 +0900
+Message-Id: <20121011005840.271913784@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -31,72 +32,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit 027ef6c87853b0a9df53175063028edb4950d476 upstream.
+commit ec4d9f626d5908b6052c2973f37992f1db52e967 upstream.
 
-In many places !pmd_present has been converted to pmd_none.  For pmds
-that's equivalent and pmd_none is quicker so using pmd_none is better.
+In fuzzing with trinity, lockdep protested "possible irq lock inversion
+dependency detected" when isolate_lru_page() reenabled interrupts while
+still holding the supposedly irq-safe tree_lock:
 
-However (unless we delete pmd_present) we should provide an accurate
-pmd_present too.  This will avoid the risk of code thinking the pmd is non
-present because it's under __split_huge_page_map, see the pmd_mknotpresent
-there and the comment above it.
+invalidate_inode_pages2
+  invalidate_complete_page2
+    spin_lock_irq(&mapping->tree_lock)
+    clear_page_mlock
+      isolate_lru_page
+        spin_unlock_irq(&zone->lru_lock)
 
-If the page has been mprotected as PROT_NONE, it would also lead to a
-pmd_present false negative in the same way as the race with
-split_huge_page.
+isolate_lru_page() is correct to enable interrupts unconditionally:
+invalidate_complete_page2() is incorrect to call clear_page_mlock() while
+holding tree_lock, which is supposed to nest inside lru_lock.
 
-Because the PSE bit stays on at all times (both during split_huge_page and
-when the _PAGE_PROTNONE bit get set), we could only check for the PSE bit,
-but checking the PROTNONE bit too is still good to remember pmd_present
-must always keep PROT_NONE into account.
+Both truncate_complete_page() and invalidate_complete_page() call
+clear_page_mlock() before taking tree_lock to remove page from radix_tree.
+ I guess invalidate_complete_page2() preferred to test PageDirty (again)
+under tree_lock before committing to the munlock; but since the page has
+already been unmapped, its state is already somewhat inconsistent, and no
+worse if clear_page_mlock() moved up.
 
-This explains a not reproducible BUG_ON that was seldom reported on the
-lists.
-
-The same issue is in pmd_large, it would go wrong with both PROT_NONE and
-if it races with split_huge_page.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Mel Gorman <mgorman@suse.de>
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Deciphered-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Ying Han <yinghan@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/pgtable.h |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ mm/truncate.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -146,8 +146,7 @@ static inline unsigned long pmd_pfn(pmd_
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -394,11 +394,12 @@ invalidate_complete_page2(struct address
+ 	if (page_has_private(page) && !try_to_release_page(page, GFP_KERNEL))
+ 		return 0;
  
- static inline int pmd_large(pmd_t pte)
- {
--	return (pmd_flags(pte) & (_PAGE_PSE | _PAGE_PRESENT)) ==
--		(_PAGE_PSE | _PAGE_PRESENT);
-+	return pmd_flags(pte) & _PAGE_PSE;
- }
++	clear_page_mlock(page);
++
+ 	spin_lock_irq(&mapping->tree_lock);
+ 	if (PageDirty(page))
+ 		goto failed;
  
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-@@ -415,7 +414,13 @@ static inline int pte_hidden(pte_t pte)
- 
- static inline int pmd_present(pmd_t pmd)
- {
--	return pmd_flags(pmd) & _PAGE_PRESENT;
-+	/*
-+	 * Checking for _PAGE_PSE is needed too because
-+	 * split_huge_page will temporarily clear the present bit (but
-+	 * the _PAGE_PSE flag will remain set at all times while the
-+	 * _PAGE_PRESENT bit is clear).
-+	 */
-+	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE);
- }
- 
- static inline int pmd_none(pmd_t pmd)
+-	clear_page_mlock(page);
+ 	BUG_ON(page_has_private(page));
+ 	__delete_from_page_cache(page);
+ 	spin_unlock_irq(&mapping->tree_lock);
 
 
