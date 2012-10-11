@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934151Ab2JKBZm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:25:42 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45428 "EHLO
+	id S964789Ab2JKBZr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:25:47 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51268 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934252Ab2JKBZd (ORCPT
+	by vger.kernel.org with ESMTP id S934260Ab2JKBZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:25:33 -0400
-X-Sasl-enc: QrjBE1sOftomnrQTRvqfoqFmQ6TrOs93cGm+ZxIgUi/4 1349918732
+	Wed, 10 Oct 2012 21:25:42 -0400
+X-Sasl-enc: rEBiYcyJHqyGEg6NCvkYBTPxaMydC+eRjnqhLhWDOk6C 1349918740
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sasha Levin <levinsasha928@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>, Ying Han <yinghan@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 076/120] mm: fix invalidate_complete_page2() lock ordering
-Date: Thu, 11 Oct 2012 10:00:28 +0900
-Message-Id: <20121011005840.271913784@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, lu hua <huax.lu@intel.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 082/120] drm: Destroy the planes prior to destroying the associated CRTC
+Date: Thu, 11 Oct 2012 10:00:34 +0900
+Message-Id: <20121011005841.578728351@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -32,63 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit ec4d9f626d5908b6052c2973f37992f1db52e967 upstream.
+commit 3184009c36da413724f283e3c7ac9cc60c623bc4 upstream.
 
-In fuzzing with trinity, lockdep protested "possible irq lock inversion
-dependency detected" when isolate_lru_page() reenabled interrupts while
-still holding the supposedly irq-safe tree_lock:
+As during the plane cleanup, we wish to disable the hardware and
+so may modify state on the associated CRTC, that CRTC must continue to
+exist until we are finished.
 
-invalidate_inode_pages2
-  invalidate_complete_page2
-    spin_lock_irq(&mapping->tree_lock)
-    clear_page_mlock
-      isolate_lru_page
-        spin_unlock_irq(&zone->lru_lock)
-
-isolate_lru_page() is correct to enable interrupts unconditionally:
-invalidate_complete_page2() is incorrect to call clear_page_mlock() while
-holding tree_lock, which is supposed to nest inside lru_lock.
-
-Both truncate_complete_page() and invalidate_complete_page() call
-clear_page_mlock() before taking tree_lock to remove page from radix_tree.
- I guess invalidate_complete_page2() preferred to test PageDirty (again)
-under tree_lock before committing to the munlock; but since the page has
-already been unmapped, its state is already somewhat inconsistent, and no
-worse if clear_page_mlock() moved up.
-
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Deciphered-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Ying Han <yinghan@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=54101
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Tested-by: lu hua <huax.lu@intel.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/truncate.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/drm_crtc.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -394,11 +394,12 @@ invalidate_complete_page2(struct address
- 	if (page_has_private(page) && !try_to_release_page(page, GFP_KERNEL))
- 		return 0;
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -1028,15 +1028,15 @@ void drm_mode_config_cleanup(struct drm_
+ 		fb->funcs->destroy(fb);
+ 	}
  
-+	clear_page_mlock(page);
+-	list_for_each_entry_safe(crtc, ct, &dev->mode_config.crtc_list, head) {
+-		crtc->funcs->destroy(crtc);
+-	}
+-
+ 	list_for_each_entry_safe(plane, plt, &dev->mode_config.plane_list,
+ 				 head) {
+ 		plane->funcs->destroy(plane);
+ 	}
+ 
++	list_for_each_entry_safe(crtc, ct, &dev->mode_config.crtc_list, head) {
++		crtc->funcs->destroy(crtc);
++	}
 +
- 	spin_lock_irq(&mapping->tree_lock);
- 	if (PageDirty(page))
- 		goto failed;
- 
--	clear_page_mlock(page);
- 	BUG_ON(page_has_private(page));
- 	__delete_from_page_cache(page);
- 	spin_unlock_irq(&mapping->tree_lock);
+ 	idr_remove_all(&dev->mode_config.crtc_idr);
+ 	idr_destroy(&dev->mode_config.crtc_idr);
+ }
 
 
