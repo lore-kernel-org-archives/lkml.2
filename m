@@ -1,529 +1,796 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301Ab2JKGVW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 02:21:22 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52403 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757212Ab2JKGVU (ORCPT
+	id S1757543Ab2JKGZT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 02:25:19 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:50925
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757212Ab2JKGZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 02:21:20 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50766432.9000706@jp.fujitsu.com>
-Date: Thu, 11 Oct 2012 15:16:18 +0900
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Thu, 11 Oct 2012 02:25:16 -0400
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+X-SpamScore: 4
+X-BigFish: VPS4(zzc8kzz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441hbe9i1155h)
+Subject: [Patch v3 2/7] Regulator: DA9055 Regulator driver
+From: Ashish Jangam <ashish.jangam@kpitcummins.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        David Dajun Chen <dchen@diasemi.com>, <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 11 Oct 2012 12:06:27 +0530
+Message-ID: <1349937387.7957.13.camel@dhruva>
 MIME-Version: 1.0
-To: khalid@gonehiking.org
-CC: linux-pci@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        martin.wilck@ts.fujitsu.com, kexec@lists.infradead.org,
-        hbabu@us.ibm.com, andi@firstfloor.org, ddutile@redhat.com,
-        ishii.hironobu@jp.fujitsu.com, hpa@zytor.com, bhelgaas@google.com,
-        tglx@linutronix.de, mingo@redhat.com, vgoyal@redhat.com
-Subject: Re: [PATCH v3 1/2] x86, pci: Reset PCIe devices at boot time
-References: <20121010074553.1084.52175.sendpatchset@indoh>  <20121010074603.1084.92389.sendpatchset@indoh> <1349899704.25679.14.camel@rhapsody>
-In-Reply-To: <1349899704.25679.14.camel@rhapsody>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.38.47]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/10/11 5:08), Khalid Aziz wrote:
-> Please see comments inline:
->
-> On Wed, 2012-10-10 at 16:51 +0900, Takao Indoh wrote:
->> This patch resets PCIe devices at boot time by hot reset when
->> "reset_devices" is specified.
->>
->>
->> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
->> ---
->>   arch/x86/include/asm/pci-direct.h |    1
->>   arch/x86/kernel/setup.c           |    3
->>   arch/x86/pci/early.c              |  299 ++++++++++++++++++++++++++++
->>   drivers/pci/pci.c                 |   18 -
->>   include/linux/pci.h               |   18 +
->>   init/main.c                       |    4
->>   6 files changed, 323 insertions(+), 20 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/pci-direct.h b/arch/x86/include/asm/pci-direct.h
->> index b1e7a45..de30db2 100644
->> --- a/arch/x86/include/asm/pci-direct.h
->> +++ b/arch/x86/include/asm/pci-direct.h
->> @@ -18,4 +18,5 @@ extern int early_pci_allowed(void);
->>   extern unsigned int pci_early_dump_regs;
->>   extern void early_dump_pci_device(u8 bus, u8 slot, u8 func);
->>   extern void early_dump_pci_devices(void);
->> +extern void early_reset_pcie_devices(void);
->>   #endif /* _ASM_X86_PCI_DIRECT_H */
->> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
->> index f4b9b80..24b011c 100644
->> --- a/arch/x86/kernel/setup.c
->> +++ b/arch/x86/kernel/setup.c
->> @@ -988,6 +988,9 @@ void __init setup_arch(char **cmdline_p)
->>   	generic_apic_probe();
->>
->>   	early_quirks();
->> +#ifdef CONFIG_PCI
->> +	early_reset_pcie_devices();
->> +#endif
->>
->>   	/*
->>   	 * Read APIC and some other early information from ACPI tables.
->> diff --git a/arch/x86/pci/early.c b/arch/x86/pci/early.c
->> index d1067d5..584f16b 100644
->> --- a/arch/x86/pci/early.c
->> +++ b/arch/x86/pci/early.c
->> @@ -1,5 +1,6 @@
->>   #include <linux/kernel.h>
->>   #include <linux/pci.h>
->> +#include <linux/bootmem.h>
->>   #include <asm/pci-direct.h>
->>   #include <asm/io.h>
->>   #include <asm/pci_x86.h>
->> @@ -109,3 +110,301 @@ void early_dump_pci_devices(void)
->>   		}
->>   	}
->>   }
->> +
->> +struct save_config {
->> +	u32 pci[16];
->> +	u16 pcie[PCI_EXP_SAVE_REGS];
->> +};
->> +
->> +struct devinfo {
->> +	int pcie_pos;   /* position of PCI Express capability */
->> +	int pcie_flags; /* PCI_EXP_FLAGS */
->> +	struct save_config *save;
->> +};
->> +
->> +static struct save_config *save_cfg;
->> +static void __init pci_udelay(int loops)
->> +{
->> +	while (loops--) {
->> +		/* Approximately 1 us */
->> +		native_io_delay();
->> +	}
->> +}
->> +
->> +/* Derived from drivers/pci/pci.c */
->> +#define PCI_FIND_CAP_TTL	48
->> +static int __init __pci_find_next_cap_ttl(u8 bus, u8 slot, u8 func,
->> +					  u8 pos, int cap, int *ttl)
->> +{
->> +	u8 id;
->> +
->> +	while ((*ttl)--) {
->> +		pos = read_pci_config_byte(bus, slot, func, pos);
->> +		if (pos < 0x40)
->> +			break;
->> +		pos &= ~3;
->> +		id = read_pci_config_byte(bus, slot, func,
->> +					pos + PCI_CAP_LIST_ID);
->> +		if (id == 0xff)
->> +			break;
->> +		if (id == cap)
->> +			return pos;
->> +		pos += PCI_CAP_LIST_NEXT;
->> +	}
->> +	return 0;
->> +}
->> +
->> +static int __init __pci_find_next_cap(u8 bus, u8 slot, u8 func, u8 pos, int cap)
->> +{
->> +	int ttl = PCI_FIND_CAP_TTL;
->> +
->> +	return __pci_find_next_cap_ttl(bus, slot, func, pos, cap, &ttl);
->> +}
->> +
->> +static int __init __pci_bus_find_cap_start(u8 bus, u8 slot, u8 func,
->> +					   u8 hdr_type)
->> +{
->> +	u16 status;
->> +
->> +	status = read_pci_config_16(bus, slot, func, PCI_STATUS);
->> +	if (!(status & PCI_STATUS_CAP_LIST))
->> +		return 0;
->> +
->> +	switch (hdr_type) {
->> +	case PCI_HEADER_TYPE_NORMAL:
->> +	case PCI_HEADER_TYPE_BRIDGE:
->> +		return PCI_CAPABILITY_LIST;
->> +	case PCI_HEADER_TYPE_CARDBUS:
->> +		return PCI_CB_CAPABILITY_LIST;
->> +	default:
->> +		return 0;
->> +	}
->> +
->> +	return 0;
->> +}
->> +
->> +static int __init early_pci_find_capability(u8 bus, u8 slot, u8 func, int cap)
->> +{
->> +	int pos;
->> +	u8 type = read_pci_config_byte(bus, slot, func, PCI_HEADER_TYPE);
->> +
->> +	pos = __pci_bus_find_cap_start(bus, slot, func, type & 0x7f);
->> +	if (pos)
->> +		pos = __pci_find_next_cap(bus, slot, func, pos, cap);
->> +
->> +	return pos;
->> +}
->> +
->> +static void __init do_reset(u8 bus, u8 slot, u8 func)
->> +{
->> +	u16 ctrl;
->> +
->> +	printk(KERN_INFO "pci 0000:%02x:%02x.%d reset\n", bus, slot, func);
->> +
->> +	/* Assert Secondary Bus Reset */
->> +	ctrl = read_pci_config_16(bus, slot, func, PCI_BRIDGE_CONTROL);
->> +	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
->> +	write_pci_config_16(bus, slot, func, PCI_BRIDGE_CONTROL, ctrl);
->> +
->> +	pci_udelay(5000);
->> +
->> +	/* De-assert Secondary Bus Reset */
->> +	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
->> +	write_pci_config_16(bus, slot, func, PCI_BRIDGE_CONTROL, ctrl);
->> +
->> +	pci_udelay(500000);
->
-> This is 0.5 second. This will add up quickly on larger servers with
-> multiple busses. Is 0.5 second required by the spec?
-> aer_do_secondary_bus_reset() holds PCI_BRIDGE_CTL_BUS_RESET for 2 ms and
-> then waits another 200 ms after de-asserting it. Still long, but less
-> than half of the delay in above code..
+This is the Regulator patch for the DA9055 PMIC and has got dependency on
+the DA9055 MFD core.
 
-According to PCIe spec, they should be more than 1ms and 100ms. The reason
-why they're 2ms and 200ms in aer_do_secondary_bus_reset() is that it's a
-kind of safety margin, I think.
+This patch support all of the DA9055 regulators. The output voltages are
+fully programmable through I2C interface only. The platform data with regulation
+constraints is passed down from the board to the regulator.
 
-At first these delay were 2ms and 200ms as well as
-aer_do_secondary_bus_reset(), but I found a problem that on certain
-machine it was not enough. I think this problem occurs because
-native_io_delay() is not precise. Therefore I extended them to have more
-margin.
+This patch is functionaly tested on SMDK6410 board. DA9055 Evaluation board
+was connected to the SMDK6410 board.
 
-If this delay should be shortened, I have two solutions.
+Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+---
+changes since version v3:
+- Use of regulator framework API regulator_map_voltage_linear()
+   and regulator_list_voltage_linear().
+- Modify comments to indicate GPIO pins are muxed.
+- Get the GPIO number from platform data.
+changes since v2:
+- restructuring of GPIO regulator initialization code.
+---
+ drivers/regulator/Kconfig            |   10 +
+ drivers/regulator/Makefile           |    1 +
+ drivers/regulator/da9055-regulator.c |  659 ++++++++++++++++++++++++++++++++++
+ include/linux/mfd/da9055/pdata.h     |   27 ++-
+ 4 files changed, 694 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/regulator/da9055-regulator.c
 
-1)
-Call early_reset_pcie_devices() after calibrate_delay() so that we can
-use precise mdelay. Personally I don't want to do this because I think
-DMA should be stopped asap.
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 129c827..0bd6db1 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -109,6 +109,16 @@ config REGULATOR_DA9052
+ 	  This driver supports the voltage regulators of DA9052-BC and
+ 	  DA9053-AA/Bx PMIC.
+ 
++config REGULATOR_DA9055
++	tristate "Dialog Semiconductor DA9055 regulators"
++	depends on MFD_DA9055
++	help
++	  Say y here to support the BUCKs and LDOs regulators found on
++	  Dialog Semiconductor DA9055 PMIC.
++
++	  This driver can also be built as a module. If so, the module
++	  will be called da9055-regulator.
++
+ config REGULATOR_ANATOP
+ 	tristate "Freescale i.MX on-chip ANATOP LDO regulators"
+ 	depends on MFD_ANATOP
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 3a0dbc5..950b38b 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -18,6 +18,7 @@ obj-$(CONFIG_REGULATOR_ANATOP) += anatop-regulator.o
+ obj-$(CONFIG_REGULATOR_ARIZONA) += arizona-micsupp.o arizona-ldo1.o
+ obj-$(CONFIG_REGULATOR_DA903X)	+= da903x.o
+ obj-$(CONFIG_REGULATOR_DA9052)	+= da9052-regulator.o
++obj-$(CONFIG_REGULATOR_DA9055)	+= da9055-regulator.o
+ obj-$(CONFIG_REGULATOR_DBX500_PRCMU) += dbx500-prcmu.o
+ obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
+ obj-$(CONFIG_REGULATOR_GPIO) += gpio-regulator.o
+diff --git a/drivers/regulator/da9055-regulator.c b/drivers/regulator/da9055-regulator.c
+new file mode 100644
+index 0000000..9129b27
+--- /dev/null
++++ b/drivers/regulator/da9055-regulator.c
+@@ -0,0 +1,659 @@
++/*
++* Regulator driver for DA9055 PMIC
++*
++* Copyright(c) 2012 Dialog Semiconductor Ltd.
++*
++* Author: David Dajun Chen <dchen@diasemi.com>
++*
++* This program is free software; you can redistribute it and/or modify
++* it under the terms of the GNU General Public License as published by
++* the Free Software Foundation; either version 2 of the License, or
++* (at your option) any later version.
++*
++*/
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/err.h>
++#include <linux/gpio.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/machine.h>
++
++#include <linux/mfd/da9055/core.h>
++#include <linux/mfd/da9055/reg.h>
++#include <linux/mfd/da9055/pdata.h>
++
++#define DA9055_MIN_UA		0
++#define DA9055_MAX_UA		3
++
++#define DA9055_LDO_MODE_SYNC	0
++#define DA9055_LDO_MODE_SLEEP	1
++
++#define DA9055_BUCK_MODE_SLEEP	1
++#define DA9055_BUCK_MODE_SYNC	2
++#define DA9055_BUCK_MODE_AUTO	3
++
++/* DA9055 REGULATOR IDs */
++#define DA9055_ID_BUCK1	0
++#define DA9055_ID_BUCK2	1
++#define DA9055_ID_LDO1		2
++#define DA9055_ID_LDO2		3
++#define DA9055_ID_LDO3		4
++#define DA9055_ID_LDO4		5
++#define DA9055_ID_LDO5		6
++#define DA9055_ID_LDO6		7
++
++/* DA9055 BUCK current limit */
++static const int da9055_current_limits[] = { 500000, 600000, 700000, 800000 };
++
++struct da9055_conf_reg {
++	int reg;
++	int sel_mask;
++	int en_mask;
++};
++
++struct da9055_volt_reg {
++	int reg_a;
++	int reg_b;
++	int sl_shift;
++	int v_offset;
++	int v_mask;
++	int v_shift;
++};
++
++struct da9055_mode_reg {
++	int reg;
++	int mask;
++	int shift;
++};
++
++struct da9055_regulator_info {
++	struct regulator_desc reg_desc;
++	int step_uV;
++	int min_uV;
++	int max_uV;
++	struct da9055_conf_reg conf;
++	struct da9055_volt_reg volt;
++	struct da9055_mode_reg mode;
++};
++
++struct da9055_regulator {
++	struct da9055 *da9055;
++	struct da9055_regulator_info *info;
++	struct regulator_dev *rdev;
++	enum gpio_select reg_rselect;
++};
++
++static unsigned int da9055_buck_get_mode(struct regulator_dev *rdev)
++{
++	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9055_regulator_info *info = regulator->info;
++	int ret, mode = 0;
++
++	ret = da9055_reg_read(regulator->da9055, info->mode.reg);
++	if (ret < 0)
++		return ret;
++
++	switch ((ret & info->mode.mask) >> info->mode.shift) {
++	case DA9055_BUCK_MODE_SYNC:
++		mode = REGULATOR_MODE_FAST;
++		break;
++	case DA9055_BUCK_MODE_AUTO:
++		mode = REGULATOR_MODE_NORMAL;
++		break;
++	case DA9055_BUCK_MODE_SLEEP:
++		mode = REGULATOR_MODE_STANDBY;
++		break;
++	}
++
++	return mode;
++}
++
++static int da9055_buck_set_mode(struct regulator_dev *rdev,
++					unsigned int mode)
++{
++	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9055_regulator_info *info = regulator->info;
++	int val = 0;
++
++	switch (mode) {
++	case REGULATOR_MODE_FAST:
++		val = DA9055_BUCK_MODE_SYNC << info->mode.shift;
++		break;
++	case REGULATOR_MODE_NORMAL:
++		val = DA9055_BUCK_MODE_AUTO << info->mode.shift;
++		break;
++	case REGULATOR_MODE_IDLE:
++	case REGULATOR_MODE_STANDBY:
++		val = DA9055_BUCK_MODE_SLEEP << info->mode.shift;
++		break;
++	}
++
++	return da9055_reg_update(regulator->da9055, info->mode.reg,
++				 info->mode.mask, val);
++}
++
++static unsigned int da9055_ldo_get_mode(struct regulator_dev *rdev)
++{
++	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9055_regulator_info *info = regulator->info;
++	int ret;
++
++	ret = da9055_reg_read(regulator->da9055, info->volt.reg_b);
++	if (ret < 0)
++		return ret;
++
++	if (ret >> info->volt.sl_shift)
++		return REGULATOR_MODE_STANDBY;
++	else
++		return REGULATOR_MODE_NORMAL;
++}
++
++static int da9055_ldo_set_mode(struct regulator_dev *rdev, unsigned int mode)
++{
++	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9055_regulator_info *info = regulator->info;
++	struct da9055_volt_reg volt = info->volt;
++	int val = 0;
++
++	switch (mode) {
++	case REGULATOR_MODE_NORMAL:
++	case REGULATOR_MODE_FAST:
++		val = DA9055_LDO_MODE_SYNC;
++		break;
++	case REGULATOR_MODE_IDLE:
++	case REGULATOR_MODE_STANDBY:
++		val = DA9055_LDO_MODE_SLEEP;
++	}
++
++	return da9055_reg_update(regulator->da9055, volt.reg_b,
++				 1 << volt.sl_shift,
++				 val << volt.sl_shift);
++}
++
++static int da9055_buck_get_current_limit(struct regulator_dev *rdev)
++{
++	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9055_regulator_info *info = regulator->info;
++	int ret;
++
++	ret = da9055_reg_read(regulator->da9055, DA9055_REG_BUCK_LIM);
++	if (ret < 0)
++		return ret;
++
++	ret &= info->mode.mask;
++	return da9055_current_limits[ret >> info->mode.shift];
++}
++
++static int da9055_buck_set_current_limit(struct regulator_dev *rdev, int min_uA,
++					 int max_uA)
++{
++	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9055_regulator_info *info = regulator->info;
++	int i, val = 0;
++
++	if (min_uA > da9055_current_limits[DA9055_MAX_UA] ||
++	    max_uA < da9055_current_limits[DA9055_MIN_UA])
++		return -EINVAL;
++
++	for (i = 0; i < ARRAY_SIZE(da9055_current_limits); i++) {
++		if (min_uA <= da9055_current_limits[i]) {
++			val = i;
++			break;
++		}
++	}
++
++	return da9055_reg_update(regulator->da9055, DA9055_REG_BUCK_LIM,
++				info->mode.mask, val << info->mode.shift);
++}
++
++static int da9055_regulator_get_voltage_sel(struct regulator_dev *rdev)
++{
++	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9055_regulator_info *info = regulator->info;
++	struct da9055_volt_reg volt = info->volt;
++	int ret, sel;
++
++	/*
++	 * There are two voltage register set A & B for voltage ramping but
++	 * either one of then can be active therefore we first determine
++	 * the active register set.
++	 */
++	ret = da9055_reg_read(regulator->da9055, info->conf.reg);
++	if (ret < 0)
++		return ret;
++
++	ret &= info->conf.sel_mask;
++
++	/* Get the voltage for the activer register set A/B */
++	if (ret == DA9055_REGUALTOR_SET_A)
++		ret = da9055_reg_read(regulator->da9055, volt.reg_a);
++	else
++		ret = da9055_reg_read(regulator->da9055, volt.reg_b);
++
++	if (ret < 0)
++		return ret;
++
++	sel = ((ret & volt.v_mask) - volt.v_offset);
++
++	return sel;
++}
++
++static int da9055_regulator_set_voltage_bits(struct regulator_dev *rdev,
++					     unsigned int reg,
++					     unsigned int selector)
++{
++	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9055_regulator_info *info = regulator->info;
++
++	/* Takes care of voltage range that does not start with 0 offset. */
++	selector += info->volt.v_offset;
++
++	/* Set the voltage */
++	return da9055_reg_update(regulator->da9055, reg, info->volt.v_mask,
++				 selector);
++
++}
++
++static int da9055_regulator_set_voltage_sel(struct regulator_dev *rdev,
++					    unsigned int selector)
++{
++	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9055_regulator_info *info = regulator->info;
++	int ret;
++
++	/*
++	 * Regulator register set A/B is not selected through GPIO therefore
++	 * we use default register set A for voltage ramping.
++	 */
++	if (regulator->reg_rselect == NO_GPIO) {
++		/* Select register set A */
++		ret = da9055_reg_update(regulator->da9055, info->conf.reg,
++					info->conf.sel_mask, DA9055_SEL_REG_A);
++		if (ret < 0)
++			return ret;
++
++		/* Set the voltage */
++		return da9055_regulator_set_voltage_bits(rdev, info->volt.reg_a,
++							 selector);
++	}
++
++	/*
++	 * Here regulator register set A/B is selected through GPIO.
++	 * Therefore we first determine the selected register set A/B and
++	 * then set the desired voltage for that register set A/B.
++	 */
++	ret = da9055_reg_read(regulator->da9055, info->conf.reg);
++	if (ret < 0)
++		return ret;
++
++	ret &= info->conf.sel_mask;
++
++	/* Set the voltage */
++	if (ret == DA9055_REGUALTOR_SET_A)
++		return da9055_regulator_set_voltage_bits(rdev, info->volt.reg_a,
++							 selector);
++
++	return da9055_regulator_set_voltage_bits(rdev, info->volt.reg_b,
++						 selector);
++}
++
++static int da9055_regulator_set_suspend_voltage(struct regulator_dev *rdev,
++						int uV)
++{
++	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9055_regulator_info *info = regulator->info;
++	int ret;
++
++	/* Select register set B for suspend voltage ramping. */
++	ret = da9055_reg_update(regulator->da9055, info->conf.reg,
++				info->conf.sel_mask, DA9055_SEL_REG_B);
++	if (ret < 0)
++		return ret;
++
++	ret = regulator_map_voltage_linear(rdev, uV, uV);
++	if (ret < 0)
++		return ret;
++
++	return da9055_regulator_set_voltage_bits(rdev, info->volt.reg_b, ret);
++}
++
++static int da9055_suspend_enable(struct regulator_dev *rdev)
++{
++	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9055_regulator_info *info = regulator->info;
++
++	/* Select register set B for voltage ramping. */
++	return da9055_reg_update(regulator->da9055, info->conf.reg,
++				info->conf.sel_mask, DA9055_SEL_REG_B);
++}
++
++static int da9055_suspend_disable(struct regulator_dev *rdev)
++{
++	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
++	struct da9055_regulator_info *info = regulator->info;
++
++	/* Diselect register set B. */
++	return da9055_reg_update(regulator->da9055, info->conf.reg,
++				info->conf.sel_mask, DA9055_SEL_REG_A);
++}
++
++static struct regulator_ops da9055_buck_ops = {
++	.get_mode = da9055_buck_get_mode,
++	.set_mode = da9055_buck_set_mode,
++
++	.get_current_limit = da9055_buck_get_current_limit,
++	.set_current_limit = da9055_buck_set_current_limit,
++
++	.get_voltage_sel = da9055_regulator_get_voltage_sel,
++	.set_voltage_sel = da9055_regulator_set_voltage_sel,
++	.list_voltage = regulator_list_voltage_linear,
++	.map_voltage = regulator_map_voltage_linear,
++	.is_enabled = regulator_is_enabled_regmap,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++
++	.set_suspend_voltage = da9055_regulator_set_suspend_voltage,
++	.set_suspend_enable = da9055_suspend_enable,
++	.set_suspend_disable = da9055_suspend_disable,
++	.set_suspend_mode = da9055_buck_set_mode,
++};
++
++static struct regulator_ops da9055_ldo_ops = {
++	.get_mode = da9055_ldo_get_mode,
++	.set_mode = da9055_ldo_set_mode,
++
++	.get_voltage_sel = da9055_regulator_get_voltage_sel,
++	.set_voltage_sel = da9055_regulator_set_voltage_sel,
++	.list_voltage = regulator_list_voltage_linear,
++	.map_voltage = regulator_map_voltage_linear,
++	.is_enabled = regulator_is_enabled_regmap,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++
++	.set_suspend_voltage = da9055_regulator_set_suspend_voltage,
++	.set_suspend_enable = da9055_suspend_enable,
++	.set_suspend_disable = da9055_suspend_disable,
++	.set_suspend_mode = da9055_ldo_set_mode,
++
++};
++
++#define DA9055_LDO(_id, step, min, max, vbits, voffset) \
++{\
++	.reg_desc = {\
++		.name = #_id,\
++		.ops = &da9055_ldo_ops,\
++		.type = REGULATOR_VOLTAGE,\
++		.id = DA9055_ID_##_id,\
++		.n_voltages = (max - min) / step + 1, \
++		.enable_reg = DA9055_REG_BCORE_CONT + DA9055_ID_##_id, \
++		.enable_mask = 1, \
++		.owner = THIS_MODULE,\
++	},\
++	.conf = {\
++		.reg = DA9055_REG_BCORE_CONT + DA9055_ID_##_id, \
++		.sel_mask = (1 << 4),\
++		.en_mask = 1,\
++	},\
++	.volt = {\
++		.reg_a = DA9055_REG_VBCORE_A + DA9055_ID_##_id, \
++		.reg_b = DA9055_REG_VBCORE_B + DA9055_ID_##_id, \
++		.sl_shift = 7,\
++		.v_offset = (voffset),\
++		.v_mask = (1 << (vbits)) - 1,\
++		.v_shift = (vbits),\
++	},\
++	.min_uV = (min) * 1000,\
++	.max_uV = (max) * 1000,\
++	.step_uV = (step) * 1000,\
++}
++
++#define DA9055_BUCK(_id, step, min, max, vbits, voffset, mbits, sbits) \
++{\
++	.reg_desc = {\
++		.name = #_id,\
++		.ops = &da9055_buck_ops,\
++		.type = REGULATOR_VOLTAGE,\
++		.id = DA9055_ID_##_id,\
++		.n_voltages = (max - min) / step + 1, \
++		.enable_reg = DA9055_REG_BCORE_CONT + DA9055_ID_##_id, \
++		.enable_mask = 1,\
++		.owner = THIS_MODULE,\
++	},\
++	.conf = {\
++		.reg = DA9055_REG_BCORE_CONT + DA9055_ID_##_id, \
++		.sel_mask = (1 << 4),\
++		.en_mask = 1,\
++	},\
++	.volt = {\
++		.reg_a = DA9055_REG_VBCORE_A + DA9055_ID_##_id, \
++		.reg_b = DA9055_REG_VBCORE_B + DA9055_ID_##_id, \
++		.sl_shift = 7,\
++		.v_offset = (voffset),\
++		.v_mask = (1 << (vbits)) - 1,\
++		.v_shift = (vbits),\
++	},\
++	.mode = {\
++		.reg = DA9055_REG_BCORE_MODE,\
++		.mask = (mbits),\
++		.shift = (sbits),\
++	},\
++	.min_uV = (min) * 1000,\
++	.max_uV = (max) * 1000,\
++	.step_uV = (step) * 1000,\
++}
++
++static struct da9055_regulator_info da9055_regulator_info[] = {
++	DA9055_BUCK(BUCK1, 25, 725, 2075, 6, 9, 0xc, 2),
++	DA9055_BUCK(BUCK2, 25, 925, 2500, 6, 0, 3, 0),
++	DA9055_LDO(LDO1, 50, 900, 3300, 6, 2),
++	DA9055_LDO(LDO2, 50, 900, 3300, 6, 3),
++	DA9055_LDO(LDO3, 50, 900, 3300, 6, 2),
++	DA9055_LDO(LDO4, 50, 900, 3300, 6, 2),
++	DA9055_LDO(LDO5, 50, 900, 2750, 6, 2),
++	DA9055_LDO(LDO6, 20, 900, 3300, 7, 0),
++};
++
++/*
++ * Configures regulator to be controlled either through GPIO 1 or 2.
++ * GPIO can control regulator state and/or select the regulator register
++ * set A/B for voltage ramping.
++ */
++static __devinit int da9055_gpio_init(struct da9055_regulator *regulator,
++				      struct regulator_config *config,
++				      struct da9055_pdata *pdata, int id)
++{
++	struct da9055_regulator_info *info = regulator->info;
++	int ret = 0;
++
++	if (pdata->gpio_ren && pdata->gpio_ren[id]) {
++		char name[18];
++		int gpio_mux = pdata->gpio_ren[id];
++
++		config->ena_gpio = pdata->ena_gpio[id];
++		config->ena_gpio_flags = GPIOF_OUT_INIT_HIGH;
++		config->ena_gpio_invert = 1;
++
++		/*
++		 * GPI pin is muxed with regulator to control the
++		 * regulator state.
++		 */
++		sprintf(name, "DA9055 GPI %d", gpio_mux);
++		ret = devm_gpio_request_one(config->dev, gpio_mux, GPIOF_DIR_IN,
++					    name);
++		if (ret < 0)
++			goto err;
++
++		/*
++		 * Let the regulator know that its state is controlled
++		 * through GPI.
++		 */
++		ret = da9055_reg_update(regulator->da9055, info->conf.reg,
++					DA9055_E_GPI_MASK,
++					pdata->reg_ren[id]
++					<< DA9055_E_GPI_SHIFT);
++		if (ret < 0)
++			goto err;
++	}
++
++	if (pdata->gpio_rsel && pdata->gpio_ren[id]) {
++		char name[18];
++		int gpio_mux = pdata->gpio_rsel[id];
++
++		regulator->reg_rselect = pdata->reg_rsel[id];
++
++		/*
++		 * GPI pin is muxed with regulator to select the
++		 * regulator register set A/B for voltage ramping.
++		 */
++		sprintf(name, "DA9055 GPI %d", gpio_mux);
++		ret = devm_gpio_request_one(config->dev, gpio_mux, GPIOF_DIR_IN,
++					    name);
++		if (ret < 0)
++			goto err;
++
++		/*
++		 * Let the regulator know that its register set A/B
++		 * will be selected through GPI for voltage ramping.
++		 */
++		ret = da9055_reg_update(regulator->da9055, info->conf.reg,
++					DA9055_V_GPI_MASK,
++					pdata->reg_rsel[id]
++					<< DA9055_V_GPI_SHIFT);
++	}
++
++err:
++	return ret;
++}
++
++static irqreturn_t da9055_ldo5_6_oc_irq(int irq, void *data)
++{
++	struct da9055_regulator *regulator = data;
++
++	regulator_notifier_call_chain(regulator->rdev,
++				      REGULATOR_EVENT_OVER_CURRENT, NULL);
++
++	return IRQ_HANDLED;
++}
++
++static inline struct da9055_regulator_info *find_regulator_info(int id)
++{
++	struct da9055_regulator_info *info;
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(da9055_regulator_info); i++) {
++		info = &da9055_regulator_info[i];
++		if (info->reg_desc.id == id)
++			return info;
++		}
++
++	return NULL;
++}
++
++static int __devinit da9055_regulator_probe(struct platform_device *pdev)
++{
++	struct regulator_config config = { };
++	struct da9055_regulator *regulator;
++	struct da9055 *da9055 = dev_get_drvdata(pdev->dev.parent);
++	struct da9055_pdata *pdata = da9055->dev->platform_data;
++	int ret, irq;
++
++	if (pdata == NULL || pdata->regulators[pdev->id] == NULL)
++		return -ENODEV;
++
++	regulator = devm_kzalloc(&pdev->dev, sizeof(struct da9055_regulator),
++				 GFP_KERNEL);
++	if (!regulator)
++		return -ENOMEM;
++
++	regulator->info = find_regulator_info(pdev->id);
++	if (regulator->info == NULL) {
++		dev_err(&pdev->dev, "invalid regulator ID specified\n");
++		return -EINVAL;
++	}
++
++	regulator->da9055 = da9055;
++	config.dev = &pdev->dev;
++	config.driver_data = regulator;
++	config.regmap = da9055->regmap;
++
++	if (pdata && pdata->regulators)
++		config.init_data = pdata->regulators[pdev->id];
++
++	ret = da9055_gpio_init(regulator, &config, pdata, pdev->id);
++	if (ret < 0)
++		return ret;
++
++	regulator->rdev = regulator_register(&regulator->info->reg_desc,
++					     &config);
++	if (IS_ERR(regulator->rdev)) {
++		dev_err(&pdev->dev, "Failed to register regulator %s\n",
++			regulator->info->reg_desc.name);
++		ret = PTR_ERR(regulator->rdev);
++		return ret;
++	}
++
++	/* Only LDO 5 and 6 has got the over current interrupt */
++	if (pdev->id == DA9055_ID_LDO5 || pdev->id ==  DA9055_ID_LDO6) {
++		irq = platform_get_irq_byname(pdev, "REGULATOR");
++		irq = regmap_irq_get_virq(da9055->irq_data, irq);
++		ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
++						da9055_ldo5_6_oc_irq,
++						IRQF_TRIGGER_HIGH |
++						IRQF_ONESHOT |
++						IRQF_PROBE_SHARED,
++						pdev->name, regulator);
++		if (ret != 0) {
++			if (ret != -EBUSY) {
++				dev_err(&pdev->dev,
++				"Failed to request Regulator IRQ %d: %d\n",
++				irq, ret);
++				goto err_regulator;
++			}
++		}
++	}
++
++	platform_set_drvdata(pdev, regulator);
++
++	return 0;
++
++err_regulator:
++	regulator_unregister(regulator->rdev);
++	return ret;
++}
++
++static int __devexit da9055_regulator_remove(struct platform_device *pdev)
++{
++	struct da9055_regulator *regulator = platform_get_drvdata(pdev);
++
++	regulator_unregister(regulator->rdev);
++
++	return 0;
++}
++
++static struct platform_driver da9055_regulator_driver = {
++	.probe = da9055_regulator_probe,
++	.remove = __devexit_p(da9055_regulator_remove),
++	.driver = {
++		.name = "da9055-regulator",
++		.owner = THIS_MODULE,
++	},
++};
++
++static int __init da9055_regulator_init(void)
++{
++	return platform_driver_register(&da9055_regulator_driver);
++}
++subsys_initcall(da9055_regulator_init);
++
++static void __exit da9055_regulator_exit(void)
++{
++	platform_driver_unregister(&da9055_regulator_driver);
++}
++module_exit(da9055_regulator_exit);
++
++MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
++MODULE_DESCRIPTION("Power Regulator driver for Dialog DA9055 PMIC");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:da9055-regulator");
+diff --git a/include/linux/mfd/da9055/pdata.h b/include/linux/mfd/da9055/pdata.h
+index 147293b..f87a6c1 100644
+--- a/include/linux/mfd/da9055/pdata.h
++++ b/include/linux/mfd/da9055/pdata.h
+@@ -25,8 +25,29 @@ struct da9055_pdata {
+ 	int gpio_base;
+ 
+ 	struct regulator_init_data *regulators[DA9055_MAX_REGULATORS];
+-	bool reset_enable;		/* Enable RTC in RESET Mode */
+-	enum gpio_select *gpio_rsel;	/* Select regulator set thru GPIO 1/2 */
+-	enum gpio_select *gpio_ren;	/* Enable regulator thru GPIO 1/2 */
++	/* Enable RTC in RESET Mode */
++	bool reset_enable;
++	/*
++	 * GPI muxed pin to control
++	 * regulator state A/B, 0 if not available.
++	 */
++	int *gpio_ren;
++	/*
++	 * GPI muxed pin to control
++	 * regulator set, 0 if not available.
++	 */
++	int *gpio_rsel;
++	/*
++	 * Regulator mode control bits value (GPI offset) that
++	 * that controls the regulator state, 0 if not available.
++	 */
++	enum gpio_select *reg_ren;
++	/*
++	 * Regulator mode control bits value (GPI offset) that
++	 * controls the regulator set A/B, 0 if  not available.
++	 */
++	enum gpio_select *reg_rsel;
++	/* GPIOs to enable regulator, 0 if not available */
++	int *ena_gpio;
+ };
+ #endif /* __DA9055_PDATA_H */
+-- 
+1.7.0.4
 
-2)
-Make it tuneable. For exmple, improve "reset_devices"
-     reset_devices=reset_delay=500
-or something like that. As default, 200ms is enough as far as I tested.
-But if it is not enough, we can adjust delay time using this.
-
-Any other idea?
-
->> +}
->> +
->> +static void __init save_state(unsigned bus, unsigned slot, unsigned func,
->> +		struct devinfo *info)
->> +{
->> +	int i;
->> +	int pcie, flags, pcie_type;
->> +	struct save_config *save;
->> +
->> +	pcie = info->pcie_pos;
->> +	flags = info->pcie_flags;
->> +	pcie_type = (flags & PCI_EXP_FLAGS_TYPE) >> 4;
->> +	save = info->save;
->> +
->> +	printk(KERN_INFO "pci 0000:%02x:%02x.%d save state\n", bus, slot, func);
->> +
->> +	for (i = 0; i < 16; i++)
->> +		save->pci[i] = read_pci_config(bus, slot, func, i * 4);
->> +	i = 0;
->> +	if (pcie_cap_has_devctl(pcie_type, flags))
->> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
->> +						      pcie + PCI_EXP_DEVCTL);
->> +	if (pcie_cap_has_lnkctl(pcie_type, flags))
->> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
->> +						      pcie + PCI_EXP_LNKCTL);
->> +	if (pcie_cap_has_sltctl(pcie_type, flags))
->> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
->> +						      pcie + PCI_EXP_SLTCTL);
->> +	if (pcie_cap_has_rtctl(pcie_type, flags))
->> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
->> +						      pcie + PCI_EXP_RTCTL);
->> +
->> +	if ((flags & PCI_EXP_FLAGS_VERS) >= 2) {
->> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
->> +						      pcie + PCI_EXP_DEVCTL2);
->> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
->> +						      pcie + PCI_EXP_LNKCTL2);
->> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
->> +						      pcie + PCI_EXP_SLTCTL2);
->> +	}
->> +}
->> +
->> +static void __init restore_state(unsigned bus, unsigned slot, unsigned func,
->> +		struct devinfo *info)
->> +{
->> +	int i = 0;
->> +	int pcie, flags, pcie_type;
->> +	struct save_config *save;
->> +
->> +	pcie = info->pcie_pos;
->> +	flags = info->pcie_flags;
->> +	pcie_type = (flags & PCI_EXP_FLAGS_TYPE) >> 4;
->> +	save = info->save;
->> +
->> +	printk(KERN_INFO "pci 0000:%02x:%02x.%d restore state\n",
->> +	       bus, slot, func);
->> +
->> +	if (pcie_cap_has_devctl(pcie_type, flags))
->> +		write_pci_config_16(bus, slot, func,
->> +				    pcie + PCI_EXP_DEVCTL, save->pcie[i++]);
->> +	if (pcie_cap_has_lnkctl(pcie_type, flags))
->> +		write_pci_config_16(bus, slot, func,
->> +				    pcie + PCI_EXP_LNKCTL, save->pcie[i++]);
->> +	if (pcie_cap_has_sltctl(pcie_type, flags))
->> +		write_pci_config_16(bus, slot, func,
->> +				    pcie + PCI_EXP_SLTCTL, save->pcie[i++]);
->> +	if (pcie_cap_has_rtctl(pcie_type, flags))
->> +		write_pci_config_16(bus, slot, func,
->> +				    pcie + PCI_EXP_RTCTL, save->pcie[i++]);
->> +
->> +	if ((flags & PCI_EXP_FLAGS_VERS) >= 2) {
->> +		write_pci_config_16(bus, slot, func,
->> +				    pcie + PCI_EXP_DEVCTL2, save->pcie[i++]);
->> +		write_pci_config_16(bus, slot, func,
->> +				    pcie + PCI_EXP_LNKCTL2, save->pcie[i++]);
->> +		write_pci_config_16(bus, slot, func,
->> +				    pcie + PCI_EXP_SLTCTL2, save->pcie[i++]);
->> +	}
->> +
->> +	for (i = 15; i >= 0; i--)
->> +		write_pci_config(bus, slot, func, i * 4, save->pci[i]);
->> +}
->> +
->> +static void __init reset_pcie_device(unsigned bus, unsigned slot, unsigned func)
->> +{
->> +	int f, count;
->> +	int pcie, pcie_type;
->> +	u8 type;
->> +	u16 vendor, flags;
->> +	u32 class;
->> +	int secondary;
->> +	struct devinfo child[8];
->> +
->> +	pcie = early_pci_find_capability(bus, slot, func, PCI_CAP_ID_EXP);
->> +	if (!pcie)
->> +		return;
->> +
->> +	flags = read_pci_config_16(bus, slot, func, pcie + PCI_EXP_FLAGS);
->> +	pcie_type = (flags & PCI_EXP_FLAGS_TYPE) >> 4;
->> +	if ((pcie_type != PCI_EXP_TYPE_ROOT_PORT) &&
->> +	    (pcie_type != PCI_EXP_TYPE_DOWNSTREAM))
->> +		return;
->> +
->> +	type = read_pci_config_byte(bus, slot, func, PCI_HEADER_TYPE);
->> +	if ((type & 0x7f) != PCI_HEADER_TYPE_BRIDGE)
->> +		return;
->> +	secondary = read_pci_config_byte(bus, slot, func, PCI_SECONDARY_BUS);
->> +	memset(child, 0, sizeof(child));
->> +	for (count = 0, f = 0; f < 8; f++) {
->
-> Can we use a constant instead of "8" in the loop here? There are a few
-> other places in kernel code with very similar loops enumerating over PCI
-> functions that again use "8" instead of a constant like
-> PCI_MAX_FUNCTIONS. I would suggest we use a constant at least in the new
-> code.
-
-Ok, I'll fix it.
-
->> +		vendor = read_pci_config_16(secondary, 0, f, PCI_VENDOR_ID);
->> +		if (vendor == 0xffff)
->> +			continue;
->> +
->> +		pcie = early_pci_find_capability(secondary, 0, f,
->> +				PCI_CAP_ID_EXP);
->> +		if (!pcie)
->> +			continue;
->> +
->> +		flags = read_pci_config_16(secondary, 0, f,
->> +				pcie + PCI_EXP_FLAGS);
->> +		pcie_type = (flags & PCI_EXP_FLAGS_TYPE) >> 4;
->> +		if ((pcie_type == PCI_EXP_TYPE_UPSTREAM) ||
->> +		    (pcie_type == PCI_EXP_TYPE_PCI_BRIDGE))
->> +			/* Don't reset switch, bridge */
->> +			return;
->> +
->> +		class = read_pci_config(secondary, 0, f, PCI_CLASS_REVISION);
->> +		if ((class >> 24) == PCI_BASE_CLASS_DISPLAY)
->> +			/* Don't reset VGA device */
->> +			return;
->> +
->> +		count++;
->> +		child[f].pcie_pos = pcie;
->> +		child[f].pcie_flags = flags;
->> +		child[f].save = save_cfg + f;
->> +	}
->> +
->> +	if (!count)
->> +		return;
->> +
->> +	/* save */
->> +	for (f = 0; f < 8; f++)
->> +		if (child[f].pcie_pos)
->> +			save_state(secondary, 0, f, &child[f]);
->> +
->> +	do_reset(bus, slot, func);
->> +
->> +	/* restore */
->> +	for (f = 0; f < 8; f++)
->> +		if (child[f].pcie_pos)
->> +			restore_state(secondary, 0, f, &child[f]);
->> +}
->> +
->> +void __init early_reset_pcie_devices(void)
->> +{
->> +	unsigned bus, slot, func;
->> +	int size;
->> +
->> +	if (!early_pci_allowed() || !reset_devices)
->> +		return;
->> +
->> +	/* alloc space to save config */
->> +	size = sizeof(struct save_config)*8;
->
-> Use a constant instead of "8", please.
-
-Will do.
-
->
->> +	save_cfg = (struct save_config *)alloc_bootmem(size);
->> +	if (save_cfg == NULL) {
->> +		printk(KERN_ERR "reset_pcie: alloc_bootmem failed\n");
->> +		return;
->> +	}
->> +
->> +	for (bus = 0; bus < 256; bus++) {
->> +		for (slot = 0; slot < 32; slot++) {
->> +			for (func = 0; func < 8; func++) {
->> +				u16 vendor;
->> +				u8 type;
->> +				vendor = read_pci_config_16(bus, slot, func,
->> +						PCI_VENDOR_ID);
->> +
->> +				if (vendor == 0xffff)
->> +					continue;
->> +
->> +				reset_pcie_device(bus, slot, func);
->> +
->> +				if (func == 0) {
->> +					type = read_pci_config_byte(bus, slot,
->> +								    func,
->> +							       PCI_HEADER_TYPE);
->> +					if (!(type & 0x80))
->> +						break;
->> +				}
->> +			}
->> +		}
->> +	}
->> +
->> +	free_bootmem(__pa(save_cfg), size);
->> +}
->> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
->> index ab4bf5a..a7a4125 100644
->> --- a/drivers/pci/pci.c
->> +++ b/drivers/pci/pci.c
->> @@ -852,24 +852,6 @@ pci_power_t pci_choose_state(struct pci_dev *dev, pm_message_t state)
->>
->>   EXPORT_SYMBOL(pci_choose_state);
->>
->> -#define PCI_EXP_SAVE_REGS	7
->> -
->> -#define pcie_cap_has_devctl(type, flags)	1
->> -#define pcie_cap_has_lnkctl(type, flags)		\
->> -		((flags & PCI_EXP_FLAGS_VERS) > 1 ||	\
->> -		 (type == PCI_EXP_TYPE_ROOT_PORT ||	\
->> -		  type == PCI_EXP_TYPE_ENDPOINT ||	\
->> -		  type == PCI_EXP_TYPE_LEG_END))
->> -#define pcie_cap_has_sltctl(type, flags)		\
->> -		((flags & PCI_EXP_FLAGS_VERS) > 1 ||	\
->> -		 ((type == PCI_EXP_TYPE_ROOT_PORT) ||	\
->> -		  (type == PCI_EXP_TYPE_DOWNSTREAM &&	\
->> -		   (flags & PCI_EXP_FLAGS_SLOT))))
->> -#define pcie_cap_has_rtctl(type, flags)			\
->> -		((flags & PCI_EXP_FLAGS_VERS) > 1 ||	\
->> -		 (type == PCI_EXP_TYPE_ROOT_PORT ||	\
->> -		  type == PCI_EXP_TYPE_RC_EC))
->> -
->>   static struct pci_cap_saved_state *pci_find_saved_cap(
->>   	struct pci_dev *pci_dev, char cap)
->>   {
->> diff --git a/include/linux/pci.h b/include/linux/pci.h
->> index 5faa831..8e10401 100644
->> --- a/include/linux/pci.h
->> +++ b/include/linux/pci.h
->> @@ -1790,5 +1790,23 @@ static inline struct eeh_dev *pci_dev_to_eeh_dev(struct pci_dev *pdev)
->>    */
->>   struct pci_dev *pci_find_upstream_pcie_bridge(struct pci_dev *pdev);
->>
->> +#define PCI_EXP_SAVE_REGS	7
->> +
->> +#define pcie_cap_has_devctl(type, flags)	1
->> +#define pcie_cap_has_lnkctl(type, flags)		\
->> +		((flags & PCI_EXP_FLAGS_VERS) > 1 ||	\
->> +		 (type == PCI_EXP_TYPE_ROOT_PORT ||	\
->> +		  type == PCI_EXP_TYPE_ENDPOINT ||	\
->> +		  type == PCI_EXP_TYPE_LEG_END))
->> +#define pcie_cap_has_sltctl(type, flags)		\
->> +		((flags & PCI_EXP_FLAGS_VERS) > 1 ||	\
->> +		 ((type == PCI_EXP_TYPE_ROOT_PORT) ||	\
->> +		  (type == PCI_EXP_TYPE_DOWNSTREAM &&	\
->> +		   (flags & PCI_EXP_FLAGS_SLOT))))
->> +#define pcie_cap_has_rtctl(type, flags)			\
->> +		((flags & PCI_EXP_FLAGS_VERS) > 1 ||	\
->> +		 (type == PCI_EXP_TYPE_ROOT_PORT ||	\
->> +		  type == PCI_EXP_TYPE_RC_EC))
->> +
->>   #endif /* __KERNEL__ */
->>   #endif /* LINUX_PCI_H */
->> diff --git a/init/main.c b/init/main.c
->> index b286730..ebaf067 100644
->> --- a/init/main.c
->> +++ b/init/main.c
->> @@ -144,10 +144,10 @@ EXPORT_SYMBOL(reset_devices);
->>   static int __init set_reset_devices(char *str)
->>   {
->>   	reset_devices = 1;
->> -	return 1;
->> +	return 0;
->>   }
->>
->> -__setup("reset_devices", set_reset_devices);
->> +early_param("reset_devices", set_reset_devices);
->>
->>   static const char * argv_init[MAX_INIT_ARGS+2] = { "init", NULL, };
->>   const char * envp_init[MAX_INIT_ENVS+2] = { "HOME=/", "TERM=linux", NULL, };
->>
->>
->> _______________________________________________
->> kexec mailing list
->> kexec@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/kexec
->
-> We have been seeing problems with kexec/kdump kernel for quite some time
-> that are related to I/O devices not being quiesced before kexec. I had
-> added code to clear Bus Master bit to help stop runaway DMAs which
-> helped many cases, but obviously not all. If resetting downstream ports
-> helps stop runaway I/O from PCIe devices, I am all for this approach.
-> This patch still doesn't do anything for old PCI devices though.
-
-This patch does not reset PCI devices because of VGA problem. As I wrote
-in patch description, the monitor blacks out when VGA controller is
-reset. So when VGA device is found we need to skip it. In the case of
-PCIe, we can decide whether we do bus reset or not on each device, but
-we cannot in the case of PCI.
-
-Thanks,
-Takao Indoh
 
