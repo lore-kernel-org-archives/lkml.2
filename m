@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933025Ab2JKPuR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 11:50:17 -0400
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:47285
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758761Ab2JKPuN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 11:50:13 -0400
+	id S1752370Ab2JKPzw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 11:55:52 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:2885 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751160Ab2JKPzr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 11:55:47 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1202h1d1ah1d2ahzzz2dh2a8h668h839h944hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1155h)
-Date: Thu, 11 Oct 2012 10:50:03 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: linux-next: manual merge of the kvm-ppc tree with the
- powerpc-merge tree
+X-SpamScore: 2
+X-BigFish: VS2(zz98dIzz1202h1d1ah1d2ah1082kzzz2dh2a8h668h839hd25he5bhf0ah107ah1288h12a5h12a9h12bdh137ah13b6h1441h1155h)
+Message-ID: <5076EBFE.5060208@freescale.com>
+Date: Thu, 11 Oct 2012 10:55:42 -0500
+From: Timur Tabi <B04825@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
+MIME-Version: 1.0
 To: Alexander Graf <agraf@suse.de>
-CC: Tabi Timur-B04825 <B04825@freescale.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yoder Stuart-B08248 <B08248@freescale.com>,
         David Howells <dhowells@redhat.com>,
         "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-In-Reply-To: <6201AAAD-F575-4D2C-9A97-3EB41DA3491C@suse.de> (from
-	agraf@suse.de on Thu Oct 11 08:04:58 2012)
-X-Mailer: Balsa 2.4.11
-Message-ID: <1349970603.6903.2@snotra>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+Subject: Re: linux-next: manual merge of the kvm-ppc tree with the powerpc-merge
+ tree
+References: <20121011121841.1b946f996cba995d9a5a2be7@canb.auug.org.au> <6AE080B68D46FC4BA2D2769E68D765B7080FA8F8@039-SN2MPN1-023.039d.mgd.msft.net> <20121011134754.2e2cbb24842fa991e61cf97c@canb.auug.org.au> <6AE080B68D46FC4BA2D2769E68D765B7080FA9F8@039-SN2MPN1-023.039d.mgd.msft.net> <6201AAAD-F575-4D2C-9A97-3EB41DA3491C@suse.de>
+In-Reply-To: <6201AAAD-F575-4D2C-9A97-3EB41DA3491C@suse.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2012 08:04:58 AM, Alexander Graf wrote:
-> 
-> On 11.10.2012, at 05:32, Tabi Timur-B04825 wrote:
-> 
-> > On Wed, Oct 10, 2012 at 9:47 PM, Stephen Rothwell  
-> <sfr@canb.auug.org.au> wrote:
-> >
-> >> Commit 549d62d889b4 ("KVM: PPC: use definitions in epapr header
-> >> for hcalls") from the kvm-ppc tree added an include of  
-> asm/epapr_hcall.h
-> >> to the user visible part of asm/kvm_para.h so asm/epapr_hcall.h  
-> became a
-> >> user visible header file.
-> >
-> > Any real user-space code that tries to call any of the functions in
-> > epapr_hcall.h will cause an exception.
+Alexander Graf wrote:
 
-Actually it'll cause a linker error, as of the "Don't use hardcoded  
-opcode for ePAPR hcall invocation" patch.
 
-> > Claiming that kernel header files that KVM needs are suddenly
-> > user-space header files doesn't make much sense to me, but I guess
-> > it's not my decision.
-> 
-> This is about kvm_host.h, which is the part that is exported to user  
-> space. It usually contains constants and structs that are required  
-> for the API.
+> This is about kvm_host.h, which is the part that is exported to user
+> space. It usually contains constants and structs that are required for
+> the API.
 
-s/kvm_host/kvm_para/
+Which API?  I'm not familiar with KVM internals.
 
-I'm not sure anything in kvm_para.h or epapr_hcalls.h would be of use  
-to userspace, but it would be of use to the guest OS, so it's still not  
-kernel-internal.
+My concern is that when I think of a user-space header file, I think of a
+user-space application that calls ioctls.  I know that KVM guest kernels
+run as user-space processes, but that does not seem like a reason to
+combine all of the header files that the KVM guest kernel needs with
+"real" user-space header files.
 
-The variable externs should be #ifdef __KERNEL__ as David points out.   
-The asm stuff could still be useful in a guest OS if the guest provides  
-epapr_hypercall_start.
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
 
--Scott
