@@ -1,97 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508Ab2JKOfe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 10:35:34 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48248 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753739Ab2JKOfa (ORCPT
+	id S932779Ab2JKOfq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 10:35:46 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:41646 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753989Ab2JKOfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 10:35:30 -0400
+	Thu, 11 Oct 2012 10:35:42 -0400
+Date: Thu, 11 Oct 2012 10:35:28 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: ling.ma@intel.com
+Cc: mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging
+ instruction sequence and saving register
+Message-ID: <20121011143527.GA2408@localhost.localdomain>
+References: <1349958548-1868-1-git-send-email-ling.ma@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20121010162842.GZ4405@twin.jikos.cz>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
-	<1349863655-29320-2-git-send-email-zwu.kernel@gmail.com>
-	<20121010162842.GZ4405@twin.jikos.cz>
-Date: Thu, 11 Oct 2012 22:35:28 +0800
-Message-ID: <CAEH94LgJDhB+-mjhBScQnQybqYWE1rJ6ViuqeWNisLjC=8yMkA@mail.gmail.com>
-Subject: Re: [RFC v3 01/13] btrfs: add one new mount option '-o hot_track'
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: dave@jikos.cz, zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-        viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
-        cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349958548-1868-1-git-send-email-ling.ma@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 11, 2012 at 12:28 AM, David Sterba <dave@jikos.cz> wrote:
-> Hi,
->
-> On Wed, Oct 10, 2012 at 06:07:23PM +0800, zwu.kernel@gmail.com wrote:
->> --- a/fs/btrfs/ctree.h
->> +++ b/fs/btrfs/ctree.h
->> @@ -1726,6 +1726,7 @@ struct btrfs_ioctl_defrag_range_args {
->>  #define BTRFS_MOUNT_CHECK_INTEGRITY  (1 << 20)
->>  #define BTRFS_MOUNT_CHECK_INTEGRITY_INCLUDING_EXTENT_DATA (1 << 21)
->>  #define BTRFS_MOUNT_PANIC_ON_FATAL_ERROR     (1 << 22)
->> +#define BTRFS_MOUNT_HOT_TRACK                (1 << 23)
->
-> Please don't forget to add new options to btrfs_show_options(),
-> otherwise we can't tell what filesystems have hot tracking enabled.
->
->> --- a/fs/btrfs/super.c
->> +++ b/fs/btrfs/super.c
->> @@ -303,7 +304,7 @@ enum {
->>       Opt_notreelog, Opt_ratio, Opt_flushoncommit, Opt_discard,
->>       Opt_space_cache, Opt_clear_cache, Opt_user_subvol_rm_allowed,
->>       Opt_enospc_debug, Opt_subvolrootid, Opt_defrag, Opt_inode_cache,
->> -     Opt_no_space_cache, Opt_recovery, Opt_skip_balance,
->> +     Opt_no_space_cache, Opt_recovery, Opt_skip_balance, Opt_hot_track,
->
-> Please add the new option to the end.
-To be honest, it can't be added to the end, if you check Opt_err's
-pattern value, you will find it is NULL, it will cause match_one()
-return 1. So if we add Opt_hot_track to the end of this array, it will
-be covered by match_token(), so i prefer to add it to
-Opt_fatal_errors. Do you think of it?
->
->>       Opt_check_integrity, Opt_check_integrity_including_extent_data,
->>       Opt_check_integrity_print_mask, Opt_fatal_errors,
->>       Opt_err,
->> @@ -342,6 +343,7 @@ static match_table_t tokens = {
->>       {Opt_no_space_cache, "nospace_cache"},
->>       {Opt_recovery, "recovery"},
->>       {Opt_skip_balance, "skip_balance"},
->> +     {Opt_hot_track, "hot_track"},
->
-> (also this one)
->
->>       {Opt_check_integrity, "check_int"},
->>       {Opt_check_integrity_including_extent_data, "check_int_data"},
->>       {Opt_check_integrity_print_mask, "check_int_print_mask=%d"},
->> @@ -553,6 +555,9 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
->>               case Opt_skip_balance:
->>                       btrfs_set_opt(info->mount_opt, SKIP_BALANCE);
->>                       break;
->> +             case Opt_hot_track:
->
-> It's a common patter in the surrounding code that a message is printed
-> when enabling options, but the vfs prints its own, so I'm not sure if
-> it's needed here as well. Just thinking, leave it as it is now.
->
->> +                     btrfs_set_opt(info->mount_opt, HOT_TRACK);
->> +                     break;
->>  #ifdef CONFIG_BTRFS_FS_CHECK_INTEGRITY
->>               case Opt_check_integrity_including_extent_data:
->>                       printk(KERN_INFO "btrfs: enabling check integrity"
->
-> david
+On Thu, Oct 11, 2012 at 08:29:08PM +0800, ling.ma@intel.com wrote:
+> From: Ma Ling <ling.ma@intel.com>
+> 
+> Load and write operation occupy about 35% and 10% respectively
+> for most industry benchmarks. Fetched 16-aligned bytes code include 
+> about 4 instructions, implying 1.34(0.35 * 4) load, 0.4 write.  
+> Modern CPU support 2 load and 1 write per cycle, so throughput from write is
+> bottleneck for memcpy or copy_page, and some slight CPU only support one mem
+> operation per cycle. So it is enough to issue one read and write instruction
+> per cycle, and we can save registers. 
 
-
-
--- 
-Regards,
-
-Zhi Yong Wu
+So is that also true for AMD CPUs?
+> 
+> In this patch we also re-arrange instruction sequence to improve performance
+> The performance on atom is improved about 11%, 9% on hot/cold-cache case respectively.
+> 
+> Signed-off-by: Ma Ling <ling.ma@intel.com>
+> 
+> ---
+>  arch/x86/lib/copy_page_64.S |  103 +++++++++++++++++-------------------------
+>  1 files changed, 42 insertions(+), 61 deletions(-)
+> 
+> diff --git a/arch/x86/lib/copy_page_64.S b/arch/x86/lib/copy_page_64.S
+> index 3da5527..13c97f4 100644
+> --- a/arch/x86/lib/copy_page_64.S
+> +++ b/arch/x86/lib/copy_page_64.S
+> @@ -20,76 +20,57 @@ ENDPROC(copy_page_rep)
+>  
+>  ENTRY(copy_page)
+>  	CFI_STARTPROC
+> -	subq	$2*8,	%rsp
+> -	CFI_ADJUST_CFA_OFFSET 2*8
+> -	movq	%rbx,	(%rsp)
+> -	CFI_REL_OFFSET rbx, 0
+> -	movq	%r12,	1*8(%rsp)
+> -	CFI_REL_OFFSET r12, 1*8
+> +	mov	$(4096/64)-5, %ecx
+>  
+> -	movl	$(4096/64)-5,	%ecx
+> -	.p2align 4
+>  .Loop64:
+> -  	dec	%rcx
+> -
+> -	movq	0x8*0(%rsi), %rax
+> -	movq	0x8*1(%rsi), %rbx
+> -	movq	0x8*2(%rsi), %rdx
+> -	movq	0x8*3(%rsi), %r8
+> -	movq	0x8*4(%rsi), %r9
+> -	movq	0x8*5(%rsi), %r10
+> -	movq	0x8*6(%rsi), %r11
+> -	movq	0x8*7(%rsi), %r12
+> -
+>  	prefetcht0 5*64(%rsi)
+> -
+> -	movq	%rax, 0x8*0(%rdi)
+> -	movq	%rbx, 0x8*1(%rdi)
+> -	movq	%rdx, 0x8*2(%rdi)
+> -	movq	%r8,  0x8*3(%rdi)
+> -	movq	%r9,  0x8*4(%rdi)
+> -	movq	%r10, 0x8*5(%rdi)
+> -	movq	%r11, 0x8*6(%rdi)
+> -	movq	%r12, 0x8*7(%rdi)
+> -
+> -	leaq	64 (%rsi), %rsi
+> -	leaq	64 (%rdi), %rdi
+> -
+> +	decb	%cl
+> +
+> +	movq	0x8*0(%rsi), %r10
+> +	movq	0x8*1(%rsi), %rax
+> +	movq	0x8*2(%rsi), %r8
+> +	movq	0x8*3(%rsi), %r9
+> +	movq	%r10, 0x8*0(%rdi)
+> +	movq	%rax, 0x8*1(%rdi)
+> +	movq	%r8, 0x8*2(%rdi)
+> +	movq	%r9, 0x8*3(%rdi)
+> +
+> +	movq	0x8*4(%rsi), %r10
+> +	movq	0x8*5(%rsi), %rax
+> +	movq	0x8*6(%rsi), %r8
+> +	movq	0x8*7(%rsi), %r9
+> +	leaq	64(%rsi), %rsi
+> +	movq	%r10, 0x8*4(%rdi)
+> +	movq	%rax, 0x8*5(%rdi)
+> +	movq	%r8, 0x8*6(%rdi)
+> +	movq	%r9, 0x8*7(%rdi)
+> +	leaq	64(%rdi), %rdi
+>  	jnz	.Loop64
+>  
+> -	movl	$5, %ecx
+> -	.p2align 4
+> +	mov	$5, %dl
+>  .Loop2:
+> -	decl	%ecx
+> -
+> -	movq	0x8*0(%rsi), %rax
+> -	movq	0x8*1(%rsi), %rbx
+> -	movq	0x8*2(%rsi), %rdx
+> -	movq	0x8*3(%rsi), %r8
+> -	movq	0x8*4(%rsi), %r9
+> -	movq	0x8*5(%rsi), %r10
+> -	movq	0x8*6(%rsi), %r11
+> -	movq	0x8*7(%rsi), %r12
+> -
+> -	movq	%rax, 0x8*0(%rdi)
+> -	movq	%rbx, 0x8*1(%rdi)
+> -	movq	%rdx, 0x8*2(%rdi)
+> -	movq	%r8,  0x8*3(%rdi)
+> -	movq	%r9,  0x8*4(%rdi)
+> -	movq	%r10, 0x8*5(%rdi)
+> -	movq	%r11, 0x8*6(%rdi)
+> -	movq	%r12, 0x8*7(%rdi)
+> -
+> -	leaq	64(%rdi), %rdi
+> +	decb	%dl
+> +	movq	0x8*0(%rsi), %r10
+> +	movq	0x8*1(%rsi), %rax
+> +	movq	0x8*2(%rsi), %r8
+> +	movq	0x8*3(%rsi), %r9
+> +	movq	%r10, 0x8*0(%rdi)
+> +	movq	%rax, 0x8*1(%rdi)
+> +	movq	%r8, 0x8*2(%rdi)
+> +	movq	%r9, 0x8*3(%rdi)
+> +
+> +	movq	0x8*4(%rsi), %r10
+> +	movq	0x8*5(%rsi), %rax
+> +	movq	0x8*6(%rsi), %r8
+> +	movq	0x8*7(%rsi), %r9
+>  	leaq	64(%rsi), %rsi
+> +	movq	%r10, 0x8*4(%rdi)
+> +	movq	%rax, 0x8*5(%rdi)
+> +	movq	%r8, 0x8*6(%rdi)
+> +	movq	%r9, 0x8*7(%rdi)
+> +	leaq	64(%rdi), %rdi
+>  	jnz	.Loop2
+>  
+> -	movq	(%rsp), %rbx
+> -	CFI_RESTORE rbx
+> -	movq	1*8(%rsp), %r12
+> -	CFI_RESTORE r12
+> -	addq	$2*8, %rsp
+> -	CFI_ADJUST_CFA_OFFSET -2*8
+>  	ret
+>  .Lcopy_page_end:
+>  	CFI_ENDPROC
+> -- 
+> 1.6.5.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
