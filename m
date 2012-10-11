@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934145Ab2JKBYO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:24:14 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60517 "EHLO
+	id S934156Ab2JKBYW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:24:22 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51727 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934127Ab2JKBYH (ORCPT
+	by vger.kernel.org with ESMTP id S933951Ab2JKBYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:24:07 -0400
-X-Sasl-enc: 4ILj4yNf/KXeM8FwbEulMv4rU3a3PgNE6tY4BcXetafK 1349918646
+	Wed, 10 Oct 2012 21:24:16 -0400
+X-Sasl-enc: 1OM4uUTkaYLKE6lGhuqnO+HWJ70AulzlLq7A8EjuxGmy 1349918655
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 061/120] SCSI: zfcp: restore refcount check on port_remove
-Date: Thu, 11 Oct 2012 10:00:13 +0900
-Message-Id: <20121011005837.055058933@linuxfoundation.org>
+        "Brian C. Huffman" <bhuffman@graze.net>, VL <vl.homutov@gmail.com>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 063/120] PCI: Check P2P bridge for invalid secondary/subordinate range
+Date: Thu, 11 Oct 2012 10:00:15 +0900
+Message-Id: <20121011005837.468768118@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -29,191 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Maier <maier@linux.vnet.ibm.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit d99b601b63386f3395dc26a699ae703a273d9982 upstream.
+commit 1965f66e7db08d1ebccd24a59043eba826cc1ce8 upstream.
 
-Upstream commit f3450c7b917201bb49d67032e9f60d5125675d6a
-"[SCSI] zfcp: Replace local reference counting with common kref"
-accidentally dropped a reference count check before tearing down
-zfcp_ports that are potentially in use by zfcp_units.
-Even remote ports in use can be removed causing
-unreachable garbage objects zfcp_ports with zfcp_units.
-Thus units won't come back even after a manual port_rescan.
-The kref of zfcp_port->dev.kobj is already used by the driver core.
-We cannot re-use it to track the number of zfcp_units.
-Re-introduce our own counter for units per port
-and check on port_remove.
+For bridges with "secondary > subordinate", i.e., invalid bus number
+apertures, we don't enumerate anything behind the bridge unless the
+user specified "pci=assign-busses".
 
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Reviewed-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+This patch makes us automatically try to reassign the downstream bus
+numbers in this case (just for that bridge, not for all bridges as
+"pci=assign-busses" does).
+
+We don't discover all the devices on the Intel DP43BF motherboard
+without this change (or "pci=assign-busses") because its BIOS configures
+a bridge as:
+
+    pci 0000:00:1e.0: PCI bridge to [bus 20-08] (subtractive decode)
+
+[bhelgaas: changelog, change message to dev_info]
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=18412
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=625754
+Reported-by: Brian C. Huffman <bhuffman@graze.net>
+Reported-by: VL <vl.homutov@gmail.com>
+Tested-by: VL <vl.homutov@gmail.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 
 ---
- drivers/s390/scsi/zfcp_aux.c   |    1 +
- drivers/s390/scsi/zfcp_def.h   |    1 +
- drivers/s390/scsi/zfcp_ext.h   |    1 +
- drivers/s390/scsi/zfcp_sysfs.c |   18 ++++++++++++++++--
- drivers/s390/scsi/zfcp_unit.c  |   36 ++++++++++++++++++++++++++----------
- 5 files changed, 45 insertions(+), 12 deletions(-)
+ drivers/pci/probe.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/s390/scsi/zfcp_aux.c
-+++ b/drivers/s390/scsi/zfcp_aux.c
-@@ -519,6 +519,7 @@ struct zfcp_port *zfcp_port_enqueue(stru
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -749,8 +749,10 @@ int __devinit pci_scan_bridge(struct pci
  
- 	rwlock_init(&port->unit_list_lock);
- 	INIT_LIST_HEAD(&port->unit_list);
-+	atomic_set(&port->units, 0);
- 
- 	INIT_WORK(&port->gid_pn_work, zfcp_fc_port_did_lookup);
- 	INIT_WORK(&port->test_link_work, zfcp_fc_link_test_work);
---- a/drivers/s390/scsi/zfcp_def.h
-+++ b/drivers/s390/scsi/zfcp_def.h
-@@ -205,6 +205,7 @@ struct zfcp_port {
- 	struct zfcp_adapter    *adapter;       /* adapter used to access port */
- 	struct list_head	unit_list;	/* head of logical unit list */
- 	rwlock_t		unit_list_lock; /* unit list lock */
-+	atomic_t		units;	       /* zfcp_unit count */
- 	atomic_t	       status;	       /* status of this remote port */
- 	u64		       wwnn;	       /* WWNN if known */
- 	u64		       wwpn;	       /* WWPN */
---- a/drivers/s390/scsi/zfcp_ext.h
-+++ b/drivers/s390/scsi/zfcp_ext.h
-@@ -159,6 +159,7 @@ extern void zfcp_scsi_dif_sense_error(st
- extern struct attribute_group zfcp_sysfs_unit_attrs;
- extern struct attribute_group zfcp_sysfs_adapter_attrs;
- extern struct attribute_group zfcp_sysfs_port_attrs;
-+extern struct mutex zfcp_sysfs_port_units_mutex;
- extern struct device_attribute *zfcp_sysfs_sdev_attrs[];
- extern struct device_attribute *zfcp_sysfs_shost_attrs[];
- 
---- a/drivers/s390/scsi/zfcp_sysfs.c
-+++ b/drivers/s390/scsi/zfcp_sysfs.c
-@@ -227,6 +227,8 @@ static ssize_t zfcp_sysfs_port_rescan_st
- static ZFCP_DEV_ATTR(adapter, port_rescan, S_IWUSR, NULL,
- 		     zfcp_sysfs_port_rescan_store);
- 
-+DEFINE_MUTEX(zfcp_sysfs_port_units_mutex);
-+
- static ssize_t zfcp_sysfs_port_remove_store(struct device *dev,
- 					    struct device_attribute *attr,
- 					    const char *buf, size_t count)
-@@ -249,6 +251,16 @@ static ssize_t zfcp_sysfs_port_remove_st
- 	else
- 		retval = 0;
- 
-+	mutex_lock(&zfcp_sysfs_port_units_mutex);
-+	if (atomic_read(&port->units) > 0) {
-+		retval = -EBUSY;
-+		mutex_unlock(&zfcp_sysfs_port_units_mutex);
-+		goto out;
-+	}
-+	/* port is about to be removed, so no more unit_add */
-+	atomic_set(&port->units, -1);
-+	mutex_unlock(&zfcp_sysfs_port_units_mutex);
-+
- 	write_lock_irq(&adapter->port_list_lock);
- 	list_del(&port->list);
- 	write_unlock_irq(&adapter->port_list_lock);
-@@ -289,12 +301,14 @@ static ssize_t zfcp_sysfs_unit_add_store
- {
- 	struct zfcp_port *port = container_of(dev, struct zfcp_port, dev);
- 	u64 fcp_lun;
-+	int retval;
- 
- 	if (strict_strtoull(buf, 0, (unsigned long long *) &fcp_lun))
- 		return -EINVAL;
- 
--	if (zfcp_unit_add(port, fcp_lun))
--		return -EINVAL;
-+	retval = zfcp_unit_add(port, fcp_lun);
-+	if (retval)
-+		return retval;
- 
- 	return count;
- }
---- a/drivers/s390/scsi/zfcp_unit.c
-+++ b/drivers/s390/scsi/zfcp_unit.c
-@@ -104,7 +104,7 @@ static void zfcp_unit_release(struct dev
- {
- 	struct zfcp_unit *unit = container_of(dev, struct zfcp_unit, dev);
- 
--	put_device(&unit->port->dev);
-+	atomic_dec(&unit->port->units);
- 	kfree(unit);
- }
- 
-@@ -119,16 +119,27 @@ static void zfcp_unit_release(struct dev
- int zfcp_unit_add(struct zfcp_port *port, u64 fcp_lun)
- {
- 	struct zfcp_unit *unit;
-+	int retval = 0;
-+
-+	mutex_lock(&zfcp_sysfs_port_units_mutex);
-+	if (atomic_read(&port->units) == -1) {
-+		/* port is already gone */
-+		retval = -ENODEV;
-+		goto out;
-+	}
- 
- 	unit = zfcp_unit_find(port, fcp_lun);
- 	if (unit) {
- 		put_device(&unit->dev);
--		return -EEXIST;
-+		retval = -EEXIST;
-+		goto out;
+ 	/* Check if setup is sensible at all */
+ 	if (!pass &&
+-	    (primary != bus->number || secondary <= bus->number)) {
+-		dev_dbg(&dev->dev, "bus configuration invalid, reconfiguring\n");
++	    (primary != bus->number || secondary <= bus->number ||
++	     secondary > subordinate)) {
++		dev_info(&dev->dev, "bridge configuration invalid ([bus %02x-%02x]), reconfiguring\n",
++			 secondary, subordinate);
+ 		broken = 1;
  	}
  
- 	unit = kzalloc(sizeof(struct zfcp_unit), GFP_KERNEL);
--	if (!unit)
--		return -ENOMEM;
-+	if (!unit) {
-+		retval = -ENOMEM;
-+		goto out;
-+	}
- 
- 	unit->port = port;
- 	unit->fcp_lun = fcp_lun;
-@@ -139,28 +150,33 @@ int zfcp_unit_add(struct zfcp_port *port
- 	if (dev_set_name(&unit->dev, "0x%016llx",
- 			 (unsigned long long) fcp_lun)) {
- 		kfree(unit);
--		return -ENOMEM;
-+		retval = -ENOMEM;
-+		goto out;
- 	}
- 
--	get_device(&port->dev);
--
- 	if (device_register(&unit->dev)) {
- 		put_device(&unit->dev);
--		return -ENOMEM;
-+		retval = -ENOMEM;
-+		goto out;
- 	}
- 
- 	if (sysfs_create_group(&unit->dev.kobj, &zfcp_sysfs_unit_attrs)) {
- 		device_unregister(&unit->dev);
--		return -EINVAL;
-+		retval = -EINVAL;
-+		goto out;
- 	}
- 
-+	atomic_inc(&port->units); /* under zfcp_sysfs_port_units_mutex ! */
-+
- 	write_lock_irq(&port->unit_list_lock);
- 	list_add_tail(&unit->list, &port->unit_list);
- 	write_unlock_irq(&port->unit_list_lock);
- 
- 	zfcp_unit_scsi_scan(unit);
- 
--	return 0;
-+out:
-+	mutex_unlock(&zfcp_sysfs_port_units_mutex);
-+	return retval;
- }
- 
- /**
 
 
