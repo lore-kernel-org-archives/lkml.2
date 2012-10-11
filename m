@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933426Ab2JKBNk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:13:40 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:42691 "EHLO
+	id S933504Ab2JKBN6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:13:58 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41666 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933369Ab2JKBNc (ORCPT
+	by vger.kernel.org with ESMTP id S932768Ab2JKBNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:13:32 -0400
-X-Sasl-enc: TGDJMGHHW1CHK3NoagFkFdS+8aNN8K2pZXW51C8yHyMb 1349918011
+	Wed, 10 Oct 2012 21:13:52 -0400
+X-Sasl-enc: CJ09KYnssk3g6OSrzz7nDv1akbYeS6gpsNqqZuR6NYBK 1349918030
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Becky Bruce <bgillbruce@gmail.com>,
-        Subodh Nijsure <snijsure@grid-net.com>, Paul Walmsley <paul@pwsan.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [ 097/120] rcu: Fix day-one dyntick-idle stall-warning bug
-Date: Thu, 11 Oct 2012 10:00:49 +0900
-Message-Id: <20121011005844.760264316@linuxfoundation.org>
+        Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Josh Boyer <jwboyer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 101/120] mempolicy: remove mempolicy sharing
+Date: Thu, 11 Oct 2012 10:00:53 +0900
+Message-Id: <20121011005845.597445577@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -30,84 +31,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit a10d206ef1a83121ab7430cb196e0376a7145b22 upstream.
+commit 869833f2c5c6e4dd09a5378cfc665ffb4615e5d2 upstream.
 
-Each grace period is supposed to have at least one callback waiting
-for that grace period to complete.  However, if CONFIG_NO_HZ=n, an
-extra callback-free grace period is no big problem -- it will chew up
-a tiny bit of CPU time, but it will complete normally.  In contrast,
-CONFIG_NO_HZ=y kernels have the potential for all the CPUs to go to
-sleep indefinitely, in turn indefinitely delaying completion of the
-callback-free grace period.  Given that nothing is waiting on this grace
-period, this is also not a problem.
+Dave Jones' system call fuzz testing tool "trinity" triggered the
+following bug error with slab debugging enabled
 
-That is, unless RCU CPU stall warnings are also enabled, as they are
-in recent kernels.  In this case, if a CPU wakes up after at least one
-minute of inactivity, an RCU CPU stall warning will result.  The reason
-that no one noticed until quite recently is that most systems have enough
-OS noise that they will never remain absolutely idle for a full minute.
-But there are some embedded systems with cut-down userspace configurations
-that consistently get into this situation.
+    =============================================================================
+    BUG numa_policy (Not tainted): Poison overwritten
+    -----------------------------------------------------------------------------
 
-All this begs the question of exactly how a callback-free grace period
-gets started in the first place.  This can happen due to the fact that
-CPUs do not necessarily agree on which grace period is in progress.
-If a CPU still believes that the grace period that just completed is
-still ongoing, it will believe that it has callbacks that need to wait for
-another grace period, never mind the fact that the grace period that they
-were waiting for just completed.  This CPU can therefore erroneously
-decide to start a new grace period.  Note that this can happen in
-TREE_RCU and TREE_PREEMPT_RCU even on a single-CPU system:  Deadlock
-considerations mean that the CPU that detected the end of the grace
-period is not necessarily officially informed of this fact for some time.
+    INFO: 0xffff880146498250-0xffff880146498250. First byte 0x6a instead of 0x6b
+    INFO: Allocated in mpol_new+0xa3/0x140 age=46310 cpu=6 pid=32154
+     __slab_alloc+0x3d3/0x445
+     kmem_cache_alloc+0x29d/0x2b0
+     mpol_new+0xa3/0x140
+     sys_mbind+0x142/0x620
+     system_call_fastpath+0x16/0x1b
 
-Once this CPU notices that the earlier grace period completed, it will
-invoke its callbacks.  It then won't have any callbacks left.  If no
-other CPU has any callbacks, we now have a callback-free grace period.
+    INFO: Freed in __mpol_put+0x27/0x30 age=46268 cpu=6 pid=32154
+     __slab_free+0x2e/0x1de
+     kmem_cache_free+0x25a/0x260
+     __mpol_put+0x27/0x30
+     remove_vma+0x68/0x90
+     exit_mmap+0x118/0x140
+     mmput+0x73/0x110
+     exit_mm+0x108/0x130
+     do_exit+0x162/0xb90
+     do_group_exit+0x4f/0xc0
+     sys_exit_group+0x17/0x20
+     system_call_fastpath+0x16/0x1b
 
-This commit therefore makes CPUs check more carefully before starting a
-new grace period.  This new check relies on an array of tail pointers
-into each CPU's list of callbacks.  If the CPU is up to date on which
-grace periods have completed, it checks to see if any callbacks follow
-the RCU_DONE_TAIL segment, otherwise it checks to see if any callbacks
-follow the RCU_WAIT_TAIL segment.  The reason that this works is that
-the RCU_WAIT_TAIL segment will be promoted to the RCU_DONE_TAIL segment
-as soon as the CPU is officially notified that the old grace period
-has ended.
+    INFO: Slab 0xffffea0005192600 objects=27 used=27 fp=0x          (null) flags=0x20000000004080
+    INFO: Object 0xffff880146498250 @offset=592 fp=0xffff88014649b9d0
 
-This change is to cpu_needs_another_gp(), which is called in a number
-of places.  The only one that really matters is in rcu_start_gp(), where
-the root rcu_node structure's ->lock is held, which prevents any
-other CPU from starting or completing a grace period, so that the
-comparison that determines whether the CPU is missing the completion
-of a grace period is stable.
+The problem is that the structure is being prematurely freed due to a
+reference count imbalance. In the following case mbind(addr, len) should
+replace the memory policies of both vma1 and vma2 and thus they will
+become to share the same mempolicy and the new mempolicy will have the
+MPOL_F_SHARED flag.
 
-Reported-by: Becky Bruce <bgillbruce@gmail.com>
-Reported-by: Subodh Nijsure <snijsure@grid-net.com>
-Reported-by: Paul Walmsley <paul@pwsan.com>
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Tested-by: Paul Walmsley <paul@pwsan.com>
+  +-------------------+-------------------+
+  |     vma1          |     vma2(shmem)   |
+  +-------------------+-------------------+
+  |                                       |
+ addr                                 addr+len
+
+alloc_pages_vma() uses get_vma_policy() and mpol_cond_put() pair for
+maintaining the mempolicy reference count.  The current rule is that
+get_vma_policy() only increments refcount for shmem VMA and
+mpol_conf_put() only decrements refcount if the policy has
+MPOL_F_SHARED.
+
+In above case, vma1 is not shmem vma and vma->policy has MPOL_F_SHARED!
+The reference count will be decreased even though was not increased
+whenever alloc_page_vma() is called.  This has been broken since commit
+[52cd3b07: mempolicy: rework mempolicy Reference Counting] in 2008.
+
+There is another serious bug with the sharing of memory policies.
+Currently, mempolicy rebind logic (it is called from cpuset rebinding)
+ignores a refcount of mempolicy and override it forcibly.  Thus, any
+mempolicy sharing may cause mempolicy corruption.  The bug was
+introduced by commit [68860ec1: cpusets: automatic numa mempolicy
+rebinding].
+
+Ideally, the shared policy handling would be rewritten to either
+properly handle COW of the policy structures or at least reference count
+MPOL_F_SHARED based exclusively on information within the policy.
+However, this patch takes the easier approach of disabling any policy
+sharing between VMAs.  Each new range allocated with sp_alloc will
+allocate a new policy, set the reference count to 1 and drop the
+reference count of the old policy.  This increases the memory footprint
+but is not expected to be a major problem as mbind() is unlikely to be
+used for fine-grained ranges.  It is also inefficient because it means
+we allocate a new policy even in cases where mbind_range() could use the
+new_policy passed to it.  However, it is more straight-forward and the
+change should be invisible to the user.
+
+[mgorman@suse.de: Edited changelog]
+Reported-by: Dave Jones <davej@redhat.com>
+Cc: Christoph Lameter <cl@linux.com>
+Reviewed-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: Josh Boyer <jwboyer@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/rcutree.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/mempolicy.c |   52 ++++++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 38 insertions(+), 14 deletions(-)
 
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -295,7 +295,9 @@ cpu_has_callbacks_ready_to_invoke(struct
- static int
- cpu_needs_another_gp(struct rcu_state *rsp, struct rcu_data *rdp)
- {
--	return *rdp->nxttail[RCU_DONE_TAIL] && !rcu_gp_in_progress(rsp);
-+	return *rdp->nxttail[RCU_DONE_TAIL +
-+			     ACCESS_ONCE(rsp->completed) != rdp->completed] &&
-+	       !rcu_gp_in_progress(rsp);
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -607,24 +607,39 @@ check_range(struct mm_struct *mm, unsign
+ 	return first;
  }
  
- /*
+-/* Apply policy to a single VMA */
+-static int policy_vma(struct vm_area_struct *vma, struct mempolicy *new)
++/*
++ * Apply policy to a single VMA
++ * This must be called with the mmap_sem held for writing.
++ */
++static int vma_replace_policy(struct vm_area_struct *vma,
++						struct mempolicy *pol)
+ {
+-	int err = 0;
+-	struct mempolicy *old = vma->vm_policy;
++	int err;
++	struct mempolicy *old;
++	struct mempolicy *new;
+ 
+ 	pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
+ 		 vma->vm_start, vma->vm_end, vma->vm_pgoff,
+ 		 vma->vm_ops, vma->vm_file,
+ 		 vma->vm_ops ? vma->vm_ops->set_policy : NULL);
+ 
+-	if (vma->vm_ops && vma->vm_ops->set_policy)
++	new = mpol_dup(pol);
++	if (IS_ERR(new))
++		return PTR_ERR(new);
++
++	if (vma->vm_ops && vma->vm_ops->set_policy) {
+ 		err = vma->vm_ops->set_policy(vma, new);
+-	if (!err) {
+-		mpol_get(new);
+-		vma->vm_policy = new;
+-		mpol_put(old);
++		if (err)
++			goto err_out;
+ 	}
++
++	old = vma->vm_policy;
++	vma->vm_policy = new; /* protected by mmap_sem */
++	mpol_put(old);
++
++	return 0;
++ err_out:
++	mpol_put(new);
+ 	return err;
+ }
+ 
+@@ -676,7 +691,7 @@ static int mbind_range(struct mm_struct
+ 			if (err)
+ 				goto out;
+ 		}
+-		err = policy_vma(vma, new_pol);
++		err = vma_replace_policy(vma, new_pol);
+ 		if (err)
+ 			goto out;
+ 	}
+@@ -2127,15 +2142,24 @@ static void sp_delete(struct shared_poli
+ static struct sp_node *sp_alloc(unsigned long start, unsigned long end,
+ 				struct mempolicy *pol)
+ {
+-	struct sp_node *n = kmem_cache_alloc(sn_cache, GFP_KERNEL);
++	struct sp_node *n;
++	struct mempolicy *newpol;
+ 
++	n = kmem_cache_alloc(sn_cache, GFP_KERNEL);
+ 	if (!n)
+ 		return NULL;
++
++	newpol = mpol_dup(pol);
++	if (IS_ERR(newpol)) {
++		kmem_cache_free(sn_cache, n);
++		return NULL;
++	}
++	newpol->flags |= MPOL_F_SHARED;
++
+ 	n->start = start;
+ 	n->end = end;
+-	mpol_get(pol);
+-	pol->flags |= MPOL_F_SHARED;	/* for unref */
+-	n->policy = pol;
++	n->policy = newpol;
++
+ 	return n;
+ }
+ 
 
 
