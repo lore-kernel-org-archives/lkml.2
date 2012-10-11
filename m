@@ -1,162 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360Ab2JKWBW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 18:01:22 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:48149 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab2JKWBU (ORCPT
+	id S1756482Ab2JKWCO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 18:02:14 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:28423 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738Ab2JKWCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 18:01:20 -0400
-Date: Thu, 11 Oct 2012 15:01:13 -0700
+	Thu, 11 Oct 2012 18:02:13 -0400
+Date: Thu, 11 Oct 2012 15:02:07 -0700
 From: Mukesh Rathor <mukesh.rathor@oracle.com>
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH V2 6/7]: PVH: balloon and grant changes
-Message-ID: <20121011150113.4d525407@mantra.us.oracle.com>
+Subject: [PATCH V2 7/7]: PVH: privcmd changes.
+Message-ID: <20121011150207.431a087b@mantra.us.oracle.com>
 Organization: Oracle Corporation
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PVH: balloon and grant changes. For balloon changes we skip setting of
-local p2m as it's updated in xen. For grant, the shared grant frame is
-the pfn and not mfn, hence its mapped via the same code path as HVM
+PVH: privcmd changes. PVH only supports the batch interface. To map a
+foreign page to a process, pfn must be allocated. PVH path uses
+ballooning for that purpose. The returned pfn is then mapped to the
+foreign page. xen_unmap_domain_mfn_range() is introduced to unmap these
+pages via the privcmd close call.
 
 Signed-off-by: Mukesh R <mukesh.rathor@oracle.com>
 ---
- drivers/xen/balloon.c     |   18 +++++++++++-------
- drivers/xen/gntdev.c      |    3 ++-
- drivers/xen/grant-table.c |   25 +++++++++++++++++++++----
- 3 files changed, 34 insertions(+), 12 deletions(-)
+ drivers/xen/privcmd.c |   70 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 68 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-index 31ab82f..9b895ad 100644
---- a/drivers/xen/balloon.c
-+++ b/drivers/xen/balloon.c
-@@ -358,10 +358,13 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
- 		BUG_ON(!xen_feature(XENFEAT_auto_translated_physmap) &&
- 		       phys_to_machine_mapping_valid(pfn));
+diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
+index 63d9ee8..b76d33c 100644
+--- a/drivers/xen/privcmd.c
++++ b/drivers/xen/privcmd.c
+@@ -33,11 +33,14 @@
+ #include <xen/features.h>
+ #include <xen/page.h>
+ #include <xen/xen-ops.h>
++#include <xen/balloon.h>
  
--		set_phys_to_machine(pfn, frame_list[i]);
-+		if (!xen_feature(XENFEAT_auto_translated_physmap))
-+			set_phys_to_machine(pfn, frame_list[i]);
+ #include "privcmd.h"
  
- 		/* Link back into the page tables if not highmem. */
--		if (xen_pv_domain() && !PageHighMem(page)) {
-+		if (xen_pv_domain() && !PageHighMem(page) &&
-+		    !xen_feature(XENFEAT_auto_translated_physmap)) {
+ MODULE_LICENSE("GPL");
+ 
++#define PRIV_VMA_LOCKED ((void *)1)
 +
- 			int ret;
- 			ret = HYPERVISOR_update_va_mapping(
- 				(unsigned long)__va(pfn << PAGE_SHIFT),
-@@ -418,12 +421,13 @@ static enum bp_state decrease_reservation(unsigned long nr_pages, gfp_t gfp)
- 		scrub_page(page);
+ #ifndef HAVE_ARCH_PRIVCMD_MMAP
+ static int privcmd_enforce_singleshot_mapping(struct vm_area_struct *vma);
+ #endif
+@@ -199,6 +202,10 @@ static long privcmd_ioctl_mmap(void __user *udata)
+ 	if (!xen_initial_domain())
+ 		return -EPERM;
  
- 		if (xen_pv_domain() && !PageHighMem(page)) {
--			ret = HYPERVISOR_update_va_mapping(
--				(unsigned long)__va(pfn << PAGE_SHIFT),
--				__pte_ma(0), 0);
--			BUG_ON(ret);
-+			if (!xen_feature(XENFEAT_auto_translated_physmap)) {
-+				ret = HYPERVISOR_update_va_mapping(
-+					(unsigned long)__va(pfn << PAGE_SHIFT),
-+					__pte_ma(0), 0);
-+				BUG_ON(ret);
-+			}
- 		}
--
++	/* We only support privcmd_ioctl_mmap_batch for auto translated. */
++	if (xen_feature(XENFEAT_auto_translated_physmap))
++		return -ENOSYS;
++
+ 	if (copy_from_user(&mmapcmd, udata, sizeof(mmapcmd)))
+ 		return -EFAULT;
+ 
+@@ -246,6 +253,7 @@ struct mmap_batch_state {
+ 	domid_t domain;
+ 	unsigned long va;
+ 	struct vm_area_struct *vma;
++	int index;
+ 	/* A tristate:
+ 	 *      0 for no errors
+ 	 *      1 if at least one error has happened (and no
+@@ -260,15 +268,24 @@ struct mmap_batch_state {
+ 	xen_pfn_t __user *user_mfn;
+ };
+ 
++/* auto translated dom0 note: if domU being created is PV, then mfn is
++ * mfn(addr on bus). If it's auto xlated, then mfn is pfn (input to HAP).
++ */
+ static int mmap_batch_fn(void *data, void *state)
+ {
+ 	xen_pfn_t *mfnp = data;
+ 	struct mmap_batch_state *st = state;
++	struct vm_area_struct *vma = st->vma;
++	struct page **pages = vma->vm_private_data;
++	struct page *cur_page = NULL;
+ 	int ret;
+ 
++	if (xen_feature(XENFEAT_auto_translated_physmap))
++		cur_page = pages[st->index++];
++
+ 	ret = xen_remap_domain_mfn_range(st->vma, st->va & PAGE_MASK, *mfnp, 1,
+ 					 st->vma->vm_page_prot, st->domain,
+-					 NULL);
++					 &cur_page);
+ 
+ 	/* Store error code for second pass. */
+ 	*(st->err++) = ret;
+@@ -304,6 +321,32 @@ static int mmap_return_errors_v1(void *data, void *state)
+ 	return __put_user(*mfnp, st->user_mfn++);
+ }
+ 
++/* Allocate pfns that are then mapped with gmfns from foreign domid. Update
++ * the vma with the page info to use later.
++ * Returns: 0 if success, otherwise -errno
++ */
++static int alloc_empty_pages(struct vm_area_struct *vma, int numpgs)
++{
++	int rc;
++	struct page **pages;
++
++	pages = kcalloc(numpgs, sizeof(pages[0]), GFP_KERNEL);
++	if (pages == NULL)
++		return -ENOMEM;
++
++	rc = alloc_xenballooned_pages(numpgs, pages, 0);
++	if (rc != 0) {
++		pr_warn("%s Could not alloc %d pfns rc:%d\n", __func__,
++			numpgs, rc);
++		kfree(pages);
++		return -ENOMEM;
++	}
++	BUG_ON(vma->vm_private_data != PRIV_VMA_LOCKED);
++	vma->vm_private_data = pages;
++
++	return 0;
++}
++
+ static struct vm_operations_struct privcmd_vm_ops;
+ 
+ static long privcmd_ioctl_mmap_batch(void __user *udata, int version)
+@@ -371,10 +414,18 @@ static long privcmd_ioctl_mmap_batch(void __user *udata, int version)
+ 		up_write(&mm->mmap_sem);
+ 		goto out;
  	}
- 
- 	/* Ensure that ballooned highmem pages don't have kmaps. */
-diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
-index 5df9fd8..36ec380 100644
---- a/drivers/xen/gntdev.c
-+++ b/drivers/xen/gntdev.c
-@@ -803,7 +803,8 @@ static int __init gntdev_init(void)
- 	if (!xen_domain())
- 		return -ENODEV;
- 
--	use_ptemod = xen_pv_domain();
-+	use_ptemod = xen_pv_domain() &&
-+		     !xen_feature(XENFEAT_auto_translated_physmap);
- 
- 	err = misc_register(&gntdev_miscdev);
- 	if (err != 0) {
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index f37faf6..feaebeb 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -976,14 +976,19 @@ static void gnttab_unmap_frames_v2(void)
- static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
- {
- 	struct gnttab_setup_table setup;
--	unsigned long *frames;
-+	unsigned long *frames, start_gpfn;
- 	unsigned int nr_gframes = end_idx + 1;
- 	int rc;
- 
--	if (xen_hvm_domain()) {
-+	if (xen_hvm_domain() || xen_feature(XENFEAT_auto_translated_physmap)) {
- 		struct xen_add_to_physmap xatp;
- 		unsigned int i = end_idx;
- 		rc = 0;
-+
-+		if (xen_hvm_domain())
-+			start_gpfn = xen_hvm_resume_frames >> PAGE_SHIFT;
-+		else
-+			start_gpfn = virt_to_pfn(gnttab_shared.addr);
- 		/*
- 		 * Loop backwards, so that the first hypercall has the largest
- 		 * index, ensuring that the table will grow only once.
-@@ -992,7 +997,7 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
- 			xatp.domid = DOMID_SELF;
- 			xatp.idx = i;
- 			xatp.space = XENMAPSPACE_grant_table;
--			xatp.gpfn = (xen_hvm_resume_frames >> PAGE_SHIFT) + i;
-+			xatp.gpfn = start_gpfn + i;
- 			rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp);
- 			if (rc != 0) {
- 				printk(KERN_WARNING
-@@ -1055,7 +1060,7 @@ static void gnttab_request_version(void)
- 	int rc;
- 	struct gnttab_set_version gsv;
- 
--	if (xen_hvm_domain())
-+	if (xen_hvm_domain() || xen_feature(XENFEAT_auto_translated_physmap))
- 		gsv.version = 1;
- 	else
- 		gsv.version = 2;
-@@ -1083,12 +1088,24 @@ static void gnttab_request_version(void)
- int gnttab_resume(void)
- {
- 	unsigned int max_nr_gframes;
-+	char *kmsg = "Failed to kmalloc pages for pv in hvm grant frames\n";
- 
- 	gnttab_request_version();
- 	max_nr_gframes = gnttab_max_grant_frames();
- 	if (max_nr_gframes < nr_grant_frames)
- 		return -ENOSYS;
- 
-+	/* PVH note: xen will free existing kmalloc'd mfn in
-+	 * XENMEM_add_to_physmap */
-+	if (xen_pv_domain() && xen_feature(XENFEAT_auto_translated_physmap) &&
-+	    !gnttab_shared.addr) {
-+		gnttab_shared.addr =
-+			kmalloc(max_nr_gframes * PAGE_SIZE, GFP_KERNEL);
-+		if (!gnttab_shared.addr) {
-+			pr_warn("%s", kmsg);
-+			return -ENOMEM;
++	if (xen_feature(XENFEAT_auto_translated_physmap)) {
++		ret = alloc_empty_pages(vma, m.num);
++		if (ret < 0) {
++			up_write(&mm->mmap_sem);
++			goto out;
 +		}
 +	}
- 	if (xen_pv_domain())
- 		return gnttab_map(0, nr_grant_frames - 1);
  
+ 	state.domain        = m.dom;
+ 	state.vma           = vma;
+ 	state.va            = m.addr;
++	state.index         = 0;
+ 	state.global_error  = 0;
+ 	state.err           = err_array;
+ 
+@@ -439,6 +490,20 @@ static long privcmd_ioctl(struct file *file,
+ 	return ret;
+ }
+ 
++static void privcmd_close(struct vm_area_struct *vma)
++{
++	struct page **pages = vma ? vma->vm_private_data : NULL;
++	int numpgs = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
++
++	if (!pages || !numpgs || !xen_feature(XENFEAT_auto_translated_physmap))
++		return;
++
++	xen_unmap_domain_mfn_range(vma);
++	while (numpgs--)
++		free_xenballooned_pages(1, &pages[numpgs]);
++	kfree(pages);
++}
++
+ static int privcmd_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ {
+ 	printk(KERN_DEBUG "privcmd_fault: vma=%p %lx-%lx, pgoff=%lx, uv=%p\n",
+@@ -449,6 +514,7 @@ static int privcmd_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ }
+ 
+ static struct vm_operations_struct privcmd_vm_ops = {
++	.close = privcmd_close,
+ 	.fault = privcmd_fault
+ };
+ 
+@@ -465,7 +531,7 @@ static int privcmd_mmap(struct file *file, struct vm_area_struct *vma)
+ 
+ static int privcmd_enforce_singleshot_mapping(struct vm_area_struct *vma)
+ {
+-	return (xchg(&vma->vm_private_data, (void *)1) == NULL);
++	return !cmpxchg(&vma->vm_private_data, NULL, PRIV_VMA_LOCKED);
+ }
+ 
+ const struct file_operations xen_privcmd_fops = {
 -- 
 1.7.2.3
 
