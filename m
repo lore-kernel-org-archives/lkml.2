@@ -1,191 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758229Ab2JKIKo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 04:10:44 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57355 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758197Ab2JKIK1 (ORCPT
+	id S932579Ab2JKINi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 04:13:38 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:51711 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756263Ab2JKINe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 04:10:27 -0400
-Date: Thu, 11 Oct 2012 09:10:21 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 07/10] input: Enable STMPE keypad driver for Device Tree
-Message-ID: <20121011081021.GT9707@gmail.com>
-References: <1349451107-8009-1-git-send-email-lee.jones@linaro.org>
- <1349451107-8009-8-git-send-email-lee.jones@linaro.org>
- <20121010165004.GE19335@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+	Thu, 11 Oct 2012 04:13:34 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18M58Vpxv8MZ78OT/sn2gsZZrLhl3MF6EJbn7aR8T
+	SUDj8BXi+ieMD7
+Message-ID: <1349943207.6989.77.camel@marge.simpson.net>
+Subject: Re: Meaningless load?
+From: Mike Galbraith <efault@gmx.de>
+To: Simon Klinkert <simon.klinkert@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        mingo@redhat.com, Trond.Myklebust@netapp.com
+Date: Thu, 11 Oct 2012 10:13:27 +0200
+In-Reply-To: <8CCB73B0-34AD-47E2-9379-DB6F02DB35F5@gmail.com>
+References: <98F2F644-D531-42FE-B080-9561142D71C8@gmail.com>
+	 <1349886164.1279.20.camel@twins>
+	 <8CCB73B0-34AD-47E2-9379-DB6F02DB35F5@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121010165004.GE19335@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Oct 2012, Dmitry Torokhov wrote:
-
-> Hi Lee,
+On Thu, 2012-10-11 at 09:19 +0200, Simon Klinkert wrote:
+> On 10.10.2012, at 18:22, Peter Zijlstra wrote:
 > 
-> On Fri, Oct 05, 2012 at 04:31:43PM +0100, Lee Jones wrote:
-> > This patch allows the STMPE driver to be successfully probed and
-> > initialised when Device Tree support is enabled. Besides the usual
-> > platform data changes, we also separate the process of filling in
-> > the 'in use' pin bitmap, as we have to extract the information from
-> > Device Tree in the DT boot case.
-> 
-> 
-> This generally looks OK although I wonder if we could not unify DT and
-> non-DT case by doing:
-> 
-> 	for (row = 0; row < STMPE_KEYPAD_MAX_ROWS; row++) {
-> 		if (col = 0; col < STMPE_KEYPAD_MAX_COLS; col++) {
-> 			int code = MATRIX_SCAN_CODE(row, col,
-> 						STMPE_KEYPAD_ROW_SHIFT);
-> 			if (keypad->keymap[code] != KEY_RESERVED) {
-> 				keypad->rows |= 1 << row;
-> 				keypad->cols |= 1 << col;
-> 			}
-> 		}
-> 	}
-
-Looks like it could work. I have a quite a long TODO list at the
-moment, but I will add testing this to it.
-
-> BTW, am I supposed to merge it or ack it?
-
-If you Ack it, I can carry it for you no problem.
-
-> > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > Cc: linux-input@vger.kernel.org
-> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  drivers/input/keyboard/stmpe-keypad.c |   67 ++++++++++++++++++++++++++++-----
-> >  drivers/mfd/stmpe.c                   |    1 +
-> >  2 files changed, 59 insertions(+), 9 deletions(-)
+> > On Wed, 2012-10-10 at 17:44 +0200, Simon Klinkert wrote:
+> >> I'm just wondering if the 'load' is really meaningful in this
+> >> scenario. The machine is the whole time fully responsive and looks
+> >> fine to me but maybe I didn't understand correctly what the load
+> >> should mean. Is there any sensible interpretation of the load?
 > > 
-> > diff --git a/drivers/input/keyboard/stmpe-keypad.c b/drivers/input/keyboard/stmpe-keypad.c
-> > index 470a877..c722d23 100644
-> > --- a/drivers/input/keyboard/stmpe-keypad.c
-> > +++ b/drivers/input/keyboard/stmpe-keypad.c
-> > @@ -257,19 +257,73 @@ static int __devinit stmpe_keypad_chip_init(struct stmpe_keypad *keypad)
-> >  			      (plat->debounce_ms << 1));
-> >  }
-> >  
-> > +static int stmpe_keypad_fill_used_pins(struct platform_device *pdev,
-> > +				struct stmpe_keypad *keypad,
-> > +				struct stmpe_keypad_platform_data *plat)
-> > +{
-> > +	struct device_node *np = pdev->dev.of_node;
-> > +	unsigned int proplen;
-> > +	const __be32 *prop;
-> > +	int i;
-> > +
-> > +	if (np) {
-> > +		prop = of_get_property(np, "linux,keymap", &proplen);
-> > +		if (!prop) {
-> > +			dev_err(&pdev->dev,
-> > +				"linux,keymap property not defined\n");
-> > +			return -EINVAL;
-> > +		}
-> > +
-> > +		for (i = 0; i < proplen / sizeof(u32); i++) {
-> > +			unsigned int key = be32_to_cpup(prop + i);
-> > +
-> > +			keypad->cols |= 1 << KEY_COL(key);
-> > +			keypad->rows |= 1 << KEY_ROW(key);
-> > +		}
-> > +	} else {
-> > +		for (i = 0; i < plat->keymap_data->keymap_size; i++) {
-> > +			unsigned int key = plat->keymap_data->keymap[i];
-> > +
-> > +			keypad->cols |= 1 << KEY_COL(key);
-> > +			keypad->rows |= 1 << KEY_ROW(key);
-> > +		}
-> > +	}
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static void __devinit stmpe_keypad_of_probe(struct device_node *np,
-> > +				struct stmpe_keypad_platform_data *plat)
-> > +{
-> > +	of_property_read_u32(np, "debounce-interval", &plat->debounce_ms);
-> > +	of_property_read_u32(np, "stericsson,scan-count", &plat->scan_count);
-> > +
-> > +	if (of_get_property(np, "stericsson,no-autorepeat", NULL))
-> > +		plat->no_autorepeat = true;
-> > +}
-> > +
-> >  static int __devinit stmpe_keypad_probe(struct platform_device *pdev)
-> >  {
-> >  	struct stmpe *stmpe = dev_get_drvdata(pdev->dev.parent);
-> >  	struct stmpe_keypad_platform_data *plat;
-> > +	struct device_node *np = pdev->dev.of_node;
-> >  	struct stmpe_keypad *keypad;
-> >  	struct input_dev *input;
-> >  	int ret;
-> >  	int irq;
-> > -	int i;
-> >  
-> >  	plat = stmpe->pdata->keypad;
-> > -	if (!plat)
-> > -		return -ENODEV;
-> > +	if (!plat) {
-> > +		if (np) {
-> > +			plat = devm_kzalloc(&pdev->dev,
-> > +					sizeof(*plat), GFP_KERNEL);
-> > +			if (!plat)
-> > +				return -ENOMEM;
-> > +
-> > +			stmpe_keypad_of_probe(np, plat);
-> > +		} else
-> > +			return -ENODEV;
-> > +	}
-> >  
-> >  	irq = platform_get_irq(pdev, 0);
-> >  	if (irq < 0)
-> > @@ -300,12 +354,7 @@ static int __devinit stmpe_keypad_probe(struct platform_device *pdev)
-> >  	if (!plat->no_autorepeat)
-> >  		__set_bit(EV_REP, input->evbit);
-> >  
-> > -	for (i = 0; i < plat->keymap_data->keymap_size; i++) {
-> > -		unsigned int key = plat->keymap_data->keymap[i];
-> > -
-> > -		keypad->cols |= 1 << KEY_COL(key);
-> > -		keypad->rows |= 1 << KEY_ROW(key);
-> > -	}
-> > +	stmpe_keypad_fill_used_pins(pdev, keypad, plat);
-> >  
-> >  	keypad->stmpe = stmpe;
-> >  	keypad->plat = plat;
-> > diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-> > index ba157d4..b03cc64 100644
-> > --- a/drivers/mfd/stmpe.c
-> > +++ b/drivers/mfd/stmpe.c
-> > @@ -321,6 +321,7 @@ static struct resource stmpe_keypad_resources[] = {
-> >  
-> >  static struct mfd_cell stmpe_keypad_cell = {
-> >  	.name		= "stmpe-keypad",
-> > +	.of_compatible  = "st,stmpe-keypad",
-> >  	.resources	= stmpe_keypad_resources,
-> >  	.num_resources	= ARRAY_SIZE(stmpe_keypad_resources),
-> >  };
-> > -- 
-> > 1.7.9.5
-> > 
+> > I'll leave meaningful aside, but uninterruptible (D state) is part
+> of
+> > how the load thing is defined, so your 500 result is correct.
 > 
-> -- 
-> Dmitry
+> Yes, the calculation of the load is correct but I still don't know how
+> I should interpret the load…
+> 
+> On 11.10.2012, at 06:02, Mike Galbraith wrote:
+> 
+> > Makes perfect sense to me. Work _is_ stack this high. We don't and
+> > can't know whether the mountain is made of popcorn balls or
+> boulders.
+> 
+> That's the point. Afaik the D state never represents 'work'. These
+> processes are waiting for something.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yeah, the whole pile is waiting, but they're not idle.  There are N
+tasks pointed at CPUs.
+> 
+> Let's say we have 10,000 processes in the D state (and thus a load of
+> ~10,000) doing nothing. What should the load tell me? The machine is
+> under fire? There is nothing to do? There might be something to do but
+> the machine doesn't know?
+
+They are doing something, just not at the particular instant you see
+them in D state.  D state pushing load through the roof tells you that
+you have a bottleneck.  Whether the bottleneck is a bit of spinning rust
+or insufficient NR_CPUS doesn't matter much, both are bottlenecks.
+
+-Mike
+
