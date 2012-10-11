@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757757Ab2JKAAg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:00:36 -0400
-Received: from mga14.intel.com ([143.182.124.37]:41231 "EHLO mga14.intel.com"
+	id S1757848Ab2JKAAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:00:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12799 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757637Ab2JKAAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:00:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,567,1344236400"; 
-   d="scan'208";a="203021212"
-Subject: RE: [PATCH] fix x2apic defect that Linux kernel doesn't mask 8259A
- interrupt during the time window between changing VT-d table base address
- and initializing these VT-d entries(smpboot.c and apic.c )
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "Croxon, Nigel" <nigel.croxon@hp.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "agordeev@redhat.com" <agordeev@redhat.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>
-Date: Wed, 10 Oct 2012 17:01:39 -0700
-In-Reply-To: <92645B27BF79D04FBD2B0F8494FFD0F9102841@G2W2429.americas.hpqcorp.net>
-References: <92645B27BF79D04FBD2B0F8494FFD0F90FC806@G2W2429.americas.hpqcorp.net>
-	 <1349740633.11093.43.camel@sbsiddha-desk.sc.intel.com>
-	  <92645B27BF79D04FBD2B0F8494FFD0F9102841@G2W2429.americas.hpqcorp.net>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+	id S1757777Ab2JKAAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 20:00:37 -0400
+From: Ian Kent <ikent@redhat.com>
+Subject: [PATCH] autofs4 - fix reset pending flag on mount fail
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: autofs mailing list <autofs@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org
+Date: Thu, 11 Oct 2012 08:00:33 +0800
+Message-ID: <20121011000033.3407.91516.stgit@perseus.themaw.net>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-ID: <1349913700.3042.7.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-10 at 16:02 -0700, Zhang, Lin-Bao (Linux Kernel R&D)
-wrote:
-> > As I mentioned earlier, the current design already ensures that all the IO-APIC
-> > RTE's are masked between the time we enable interrupt-remapping to the time
-> > when the IO-APIC RTE's are configured correctly.
-> >
-> > So I looked at why you are seeing the problem with v2.6.32 but not with the
-> > recent kernels. And I think I found out the reason.
-> 
-> I want to know what masking IO-APIC means?
+From: Ian Kent <raven@themaw.net>
 
-As the platform is configured to use virtual-wire B and the
-corresponding IO-APIC RTE is masked, that interrupt will be dropped.
+In autofs4_d_automount(), if a mount fail occurs the AUTOFS_INF_PENDING
+mount pending flag is not cleared.
 
-thanks,
-suresh
+One effect of this is when using the "browse" option, directory entry
+attributes show up with all "?"s due to the incorrect callback and
+subsequent failure return (when in fact no callback should be made).
+
+Signed-off-by: Ian Kent <ikent@redhat.com>
+Cc: stable@vger.kernel.org
+---
+
+ 0 files changed, 0 insertions(+), 0 deletions(-)
+
+diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+index e7396cf..91b1165 100644
+--- a/fs/autofs4/root.c
++++ b/fs/autofs4/root.c
+@@ -392,10 +392,12 @@ static struct vfsmount *autofs4_d_automount(struct path *path)
+ 		ino->flags |= AUTOFS_INF_PENDING;
+ 		spin_unlock(&sbi->fs_lock);
+ 		status = autofs4_mount_wait(dentry);
+-		if (status)
+-			return ERR_PTR(status);
+ 		spin_lock(&sbi->fs_lock);
+ 		ino->flags &= ~AUTOFS_INF_PENDING;
++		if (status) {
++			spin_unlock(&sbi->fs_lock);
++			return ERR_PTR(status);
++		}
+ 	}
+ done:
+ 	if (!(ino->flags & AUTOFS_INF_EXPIRING)) {
 
