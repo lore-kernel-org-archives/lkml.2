@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113Ab2JKJAB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 05:00:01 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54631 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954Ab2JKI74 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 04:59:56 -0400
-Date: Thu, 11 Oct 2012 09:59:51 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com
-Subject: Re: [PATCH 6/6] mfd: Differentiate between u8500 and u9540 TCDM
- address mapping
-Message-ID: <20121011085951.GU9707@gmail.com>
-References: <1349882335-6786-1-git-send-email-lee.jones@linaro.org>
- <1349882335-6786-7-git-send-email-lee.jones@linaro.org>
- <201210101834.40749.arnd@arndb.de>
+	id S1755684Ab2JKJBJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 05:01:09 -0400
+Received: from ozlabs.org ([203.10.76.45]:57066 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752777Ab2JKJBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 05:01:05 -0400
+Date: Thu, 11 Oct 2012 20:00:23 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arch@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [RFC][CFT][CFReview] execve and kernel_thread unification work
+Message-ID: <20121011090023.GA28427@bloggs.ozlabs.ibm.com>
+References: <20121001213809.GA31155@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201210101834.40749.arnd@arndb.de>
+In-Reply-To: <20121001213809.GA31155@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Oct 2012, Arnd Bergmann wrote:
+I just looked through the "powerpc: split ret_from_fork" commit in
+your for-next branch, and I have a couple of comments.
 
-> On Wednesday 10 October 2012, Lee Jones wrote:
-> > @@ -2688,7 +2688,11 @@ void __init db8500_prcmu_early_init(void)
-> >                         iounmap(tcpm_base);
-> >                 }
-> >  
-> > -               tcdm_base = __io_address(U8500_PRCMU_TCDM_BASE);
-> > +               if (cpu_is_u9540())
-> > +                       tcdm_base = ioremap_nocache(U8500_PRCMU_TCDM_BASE,
-> > +                                               SZ_4K + SZ_8K) + SZ_8K;
-> > +               else
-> > +                       tcdm_base = __io_address(U8500_PRCMU_TCDM_BASE);
-> >         } else {
-> >                 pr_err("prcmu: Unsupported chip version\n");
-> >                 BUG();
-> 
-> Would it be possible to get the base out of the device tree and always
-> map it from there? Adding another dependency on a fixed constant is
-> just going to make the conversion to multiplatform harder, since it
-> was decided that device drivers should not have access to platform
-> header files in the multiplatform case.
+First, on 64-bit powerpc, if kernel_thread() is called on a function
+in a module, and that function returns, we'll then jump to do_exit
+with r2 pointing to the module's TOC rather than the main kernel's
+TOC, with disastrous results.  It would be easily solved by adding a
 
->From what I understand, this code has to be called before Device
-Tree kicks in. Actually, this code is mearly a stand-in until Loic
-has finished with the PRCMU re-vamp. Once that's complete, this
-stuff will be passed from init_IRQ(), which is invoked directly in
-start_kernel().
+	ld	r2,PACATOC(r13)
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+before the branch to .do_exit in the 64-bit ret_from_kernel_thread().
+Maybe no-one ever calls kernel_thread() on a function in a module
+today, but I don't want to rely on that being true forever, especially
+since it's only one more instruction to guard against the possibility.
+
+Secondly, while the code as you have it is correct, to my mind it
+would be cleaner to put the function descriptor address in r14 on
+64-bit, rather than the function text address, and then dereference it
+to get the TOC and text address at the point of doing the call.  That
+would reduce the differences between 32-bit and 64-bit in
+copy_thread() and make it more obvious that ret_from_kernel_thread()
+is setting the right TOC value in r2.
+
+In fact copy_thread() doesn't need to set r2 in the 32-bit case, since
+_switch() sets r2 to the task_struct for the task it's switching to,
+and ignores the r2 value in the stack frame.  So with my suggestion
+copy_thread() wouldn't need to set childregs->gpr[2] at all (for the
+kernel thread case).
+
+Paul.
