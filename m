@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab2JKNfx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 09:35:53 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60379 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab2JKNft (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 09:35:49 -0400
+	id S1754450Ab2JKNjG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 09:39:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57554 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752652Ab2JKNjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 09:39:02 -0400
+Date: Thu, 11 Oct 2012 15:38:56 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Johannes Weiner <hannes@cmpxchg.org>,
+        Greg Thelen <gthelen@google.com>, devel@openvz.org,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v4 04/14] kmem accounting basic infrastructure
+Message-ID: <20121011133855.GG29295@dhcp22.suse.cz>
+References: <1349690780-15988-1-git-send-email-glommer@parallels.com>
+ <1349690780-15988-5-git-send-email-glommer@parallels.com>
+ <20121011101119.GB29295@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20121010153450.GY4405@twin.jikos.cz>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
-	<1349863655-29320-3-git-send-email-zwu.kernel@gmail.com>
-	<20121010153450.GY4405@twin.jikos.cz>
-Date: Thu, 11 Oct 2012 21:35:47 +0800
-Message-ID: <CAEH94Lh8=Ww_wFH_Q6KkOFxbcZ9Tdh66M5yCe30aaSB-tUFg1Q@mail.gmail.com>
-Subject: Re: [RFC v3 02/13] vfs: introduce private radix tree structures
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: dave@jikos.cz, zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-        viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
-        cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121011101119.GB29295@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 11:34 PM, David Sterba <dave@jikos.cz> wrote:
-> On Wed, Oct 10, 2012 at 06:07:24PM +0800, zwu.kernel@gmail.com wrote:
->> +void hot_track_init(struct super_block *sb)
->> +{
-> ...
->> +}
->
->> +void hot_track_exit(struct super_block *sb)
->> +{
->> +     hot_cache_exit();
->> +}
->
-> Needs to be exported if btrfs is built as a module, otherwise does not
-> link
->
->   LDS     arch/x86/boot/compressed/vmlinux.lds
->   AS      arch/x86/boot/compressed/head_64.o
->   CC      arch/x86/boot/compressed/misc.o
->   CC      arch/x86/boot/compressed/string.o
->   CC      arch/x86/boot/compressed/cmdline.o
->   CC      arch/x86/boot/compressed/early_serial_console.o
->   OBJCOPY arch/x86/boot/compressed/vmlinux.bin
-> ERROR: "hot_track_init" [fs/btrfs/btrfs.ko] undefined!
-> ERROR: "hot_track_exit" [fs/btrfs/btrfs.ko] undefined!
-> make[1]: *** [__modpost] Error 1
-> make: *** [modules] Error 2
-> make: *** Waiting for unfinished jobs....
-Sorry for late response at first. Great, thanks.
+On Thu 11-10-12 12:11:19, Michal Hocko wrote:
+> On Mon 08-10-12 14:06:10, Glauber Costa wrote:
 
->
->
-> david
+> > +	cgroup_lock();
+> > +	mutex_lock(&set_limit_mutex);
+> > +	if (!memcg->kmem_accounted && val != RESOURCE_MAX) {
+> 
+> Just a nit but wouldn't memcg_kmem_is_accounted(memcg) be better than
+> directly checking kmem_accounted?
 
-
-
+OK, I see that jump lable patch changes this and we set activated inside
+the conditional so kmem_accounted check catches both flags. That could
+be changed to memcg_kmem_is_activated in that patch but what ever.
 -- 
-Regards,
-
-Zhi Yong Wu
+Michal Hocko
+SUSE Labs
