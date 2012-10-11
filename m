@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab2JKGow (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 02:44:52 -0400
-Received: from b.relay.invitel.net ([62.77.203.4]:35757 "EHLO
-	b.relay.invitel.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607Ab2JKGou (ORCPT
+	id S1754647Ab2JKGpt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 02:45:49 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:2557 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751584Ab2JKGpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 02:44:50 -0400
-X-Greylist: delayed 531 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Oct 2012 02:44:50 EDT
-Date: Thu, 11 Oct 2012 08:35:47 +0200
-From: Heiko Schocher <hs@denx.de>
-Subject: Re: RE: [PATCH] usb: remove CONFIG_USB_MUSB_HOST etc
-In-reply-to: <A73F36158E33644199EB82C5EC81C7BC3E9CA495@DBDE01.ent.ti.com>
-To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-Cc: Constantine Shulyupin <const@MakeLinux.com>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>, Sergei Shtylyov <sshtylyov@mvista.com>,
-        Wolfgang Denk <wd@denx.de>
-Reply-to: hs@denx.de
-Message-id: <507668C3.6080908@denx.de>
-Organization: DENX Software Engineering
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7BIT
-References: <A73F36158E33644199EB82C5EC81C7BC3E9CA495@DBDE01.ent.ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421
- Thunderbird/12.0
+	Thu, 11 Oct 2012 02:45:47 -0400
+X-IronPort-AV: E=Sophos;i="4.80,570,1344204000"; 
+   d="scan'208";a="176739786"
+Date: Thu, 11 Oct 2012 08:45:43 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+cc: Julia Lawall <julia.lawall@lip6.fr>, Ryan Mallon <rmallon@gmail.com>,
+        Joe Perches <joe@perches.com>, walter harms <wharms@bfs.de>,
+        ben-linux@fluff.org, w.sang@pengutronix.de, linux-i2c@vger.kernel.org,
+        khali@linux-fr.org, Antti Palosaari <crope@iki.fi>,
+        kernel-janitors@vger.kernel.org, shubhrajyoti@ti.com,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 13/13] drivers/media/tuners/e4000.c: use macros for
+ i2c_msg initialization
+In-Reply-To: <20121009203238.63d2275f@infradead.org>
+Message-ID: <alpine.DEB.2.02.1210110836030.2010@hadrien>
+References: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr> <1349624323-15584-3-git-send-email-Julia.Lawall@lip6.fr> <5071AEF3.6080108@bfs.de> <alpine.DEB.2.02.1210071839040.2745@localhost6.localdomain6> <5071B834.1010200@bfs.de>
+ <alpine.DEB.2.02.1210071917040.2745@localhost6.localdomain6> <1349633780.15802.8.camel@joe-AO722> <alpine.DEB.2.02.1210072053550.2745@localhost6.localdomain6> <1349645970.15802.12.camel@joe-AO722> <alpine.DEB.2.02.1210072342460.2745@localhost6.localdomain6>
+ <1349646718.15802.16.camel@joe-AO722> <20121007225639.364a41b4@infradead.org> <50723661.6040107@gmail.com> <alpine.DEB.2.02.1210081028340.1989@hadrien> <20121009203238.63d2275f@infradead.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Manjunathappa
+I found 6 cases where there are more than 2 messages in the array.  I
+didn't check how many cases where there are two messages but there is
+something other than one read and one write.
 
-On 11.10.2012 07:42, Manjunathappa, Prakash wrote:
-> Hi,
-> On Mon, Oct 08, 2012 at 18:47:07, Constantine Shulyupin wrote:
->> From: Constantine Shulyupin<const@MakeLinux.com>
->>
->> Remove USB configuration in arch/arm/mach-davinci/usb.c accordingly
->> CONFIG_USB_MUSB_OTG CONFIG_USB_MUSB_PERIPHERAL CONFIG_USB_MUSB_HOST
->> and set MUSB_OTG configuration by default
->> because this configuration options are removed from Kconfig.
->>
->> Signed-off-by: Constantine Shulyupin<const@MakeLinux.com>
->>
->> ---
->>   arch/arm/mach-davinci/usb.c |    6 ------
->>   1 file changed, 6 deletions(-)
->>
->> diff --git a/arch/arm/mach-davinci/usb.c b/arch/arm/mach-davinci/usb.c
->> index f77b953..34509ff 100644
->> --- a/arch/arm/mach-davinci/usb.c
->> +++ b/arch/arm/mach-davinci/usb.c
->> @@ -42,14 +42,8 @@ static struct musb_hdrc_config musb_config = {
->>   };
->>
->>   static struct musb_hdrc_platform_data usb_data = {
->> -#if defined(CONFIG_USB_MUSB_OTG)
->>   	/* OTG requires a Mini-AB connector */
->>   	.mode           = MUSB_OTG,
->> -#elif defined(CONFIG_USB_MUSB_PERIPHERAL)
->> -	.mode           = MUSB_PERIPHERAL,
->> -#elif defined(CONFIG_USB_MUSB_HOST)
->> -	.mode           = MUSB_HOST,
->> -#endif
->>   	.clock		= "usb",
->>   	.config		=&musb_config,
->>   };
->
-> Tested it on DM6446-EVM for host mode with MSC thumb drive and gadget
-> mode with g-ether. It works.
->
-> Acked-by: Manjunathappa, Prakash<prakash.pm@ti.com>
+Perhaps a reasonable option would be to use
 
-I sent a similiar patch here:
+I2C_MSG_READ
+I2C_MSG_WRITE
+I2C_MSG_READ_OP
+I2C_MSG_WRITE_OP
 
-http://comments.gmane.org/gmane.linux.usb.general/54512
+The last two are for the few cases where more flags are specified.  As
+compared to the original proposal of I2C_MSG_OP, these keep the READ or
+WRITE idea in the macro name.  The additional argument to the OP macros
+would be or'd with the read or write (nothing to do in this case) flags as
+appropriate.
 
-If the issues, mentioned from Sergei for my patch, nullified I add my:
+Mauro proposed INIT_I2C_READ_SUBADDR for the very common case where a
+message array has one read and one write.  I think that putting one
+I2C_MSG_READ and one I2C_MSG_WRITE in this case is readable enough, and
+avoids the need to do something special for the cases that don't match the
+expectations of INIT_I2C_READ_SUBADDR.
 
-Acked-by: Heiko Schocher <hs@denx.de>
+I propose not to do anything for the moment either for sizes or for
+message or buffer arrays that contain only one element.
 
-for this patch.
-
-bye,
-Heiko
--- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+julia
