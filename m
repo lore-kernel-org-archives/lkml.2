@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932920Ab2JKBFV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:05:21 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55080 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932421Ab2JKBFO (ORCPT
+	id S932935Ab2JKBFn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:05:43 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38983 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932790Ab2JKBES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:05:14 -0400
-Date: Thu, 11 Oct 2012 12:05:02 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alexander Graf <agraf@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Liu Yu <yu.liu@freescale.com>,
-        Stuart Yoder <stuart.yoder@freescale.com>,
-        David Howells <dhowells@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: linux-next: manual merge of the kvm-ppc tree with the powerpc-merge
- tree
-Message-Id: <20121011120502.0211f1267dedf3776e4cf85b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__11_Oct_2012_12_05_02_+1100_.g+TGX+A3MBhmGq+"
+	Wed, 10 Oct 2012 21:04:18 -0400
+X-Sasl-enc: XwAog6apuLnzelkyqAaQBNP9ME6aHUHsW7wFq7n7f2vJ 1349917457
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Martin Michlmayr <tbm@cyrius.com>,
+        Jonathan Nieder <jrnieder@gmail.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 013/120] drivers/scsi/atp870u.c: fix bad use of udelay
+Date: Thu, 11 Oct 2012 09:59:25 +0900
+Message-Id: <20121011005827.729965619@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
+References: <20121011005825.364610894@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__11_Oct_2012_12_05_02_+1100_.g+TGX+A3MBhmGq+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Hi Alexander,
+------------------
 
-Today's linux-next merge of the kvm-ppc tree got a conflict in
-arch/powerpc/include/asm/Kbuild between commit c3617f72036c ("UAPI:
-(Scripted) Disintegrate arch/powerpc/include/asm") from the powerpc-merge
-tree and commit 4c09029a5639 ("KVM: PPC: Add support for ePAPR idle hcall
-in host kernel") from the kvm-ppc tree.
+From: Martin Michlmayr <tbm@cyrius.com>
 
-I just removed epapr_hcalls.h from the Kbuild file as I am not sure how
-it should be broken up.  David, can you have a look at this, please?
+commit 0f6d93aa9d96cc9022b51bd10d462b03296be146 upstream.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The ACARD driver calls udelay() with a value > 2000, which leads to to
+the following compilation error on ARM:
 
---Signature=_Thu__11_Oct_2012_12_05_02_+1100_.g+TGX+A3MBhmGq+
-Content-Type: application/pgp-signature
+  ERROR: "__bad_udelay" [drivers/scsi/atp870u.ko] undefined!
+  make[1]: *** [__modpost] Error 1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+This is because udelay is defined on ARM, roughly speaking, as
 
-iQIcBAEBCAAGBQJQdhs+AAoJEECxmPOUX5FE9CMP/RifbCd1MZc2msyU/IPpKEPL
-SNhJg2edkuKAUVpbxDj1uwCqlj19M6hDNXH6I9cIb+P/obnIlHYdAxIc+W77MfDp
-aLyxnDkSB9Zwp73C1u7IzsHUs4EQeGb0AdKp0QbNm1j59zbD6U1QmAjm3zGzUFbp
-ZJD+WtHW6ZwvwuemKQSL2wUpwce/GFZLtlBcSNUOX4FtSdK6oB17FDpZjU9e7SVZ
-rpskzwWYvGld43mc9VpFAi/wC+gy+2qrlLOTYesLJwE6EJ6a0TLG1rCBm9cofv/u
-AQtGhR0WKpC84Q58ccXaFFRLVHS1HNorDr3wc0ttpHHBNATKW/aS7z5j4P9bIQE0
-j8IuoVttqSdQ3FIOJmVgEbIYVT8pMT5+DsDocFamxAwhlfU5OulThPrEC/PfPFnr
-xhoObhMkI0Y2LqM3zcRE3YP/zZyc/FEfkPKyO/ap6ePTrPee7mIjMYGjDFyJLl3P
-sUp+xq6ZLdATGr3oQp9cyLRF6/gcmUu+SecKy3z6o+bGg1hYN4ndBV1ZD9Z9Jvk3
-9P2yAqxA+A85emxAZRg+omi1ACOXW6cCmBPg7ut7zL3Lv8RisXb9emxBsNp2Ybb4
-ypzOqxmjBxr7EFp3b7l6c7XdC5MPQpp3Smy9n0SUkn76N+xRh3nSouVYC+wNUgfa
-RzR9WodpNV71nd3v5pPu
-=nW0A
------END PGP SIGNATURE-----
+	#define udelay(n) ((n) > 2000 ? __bad_udelay() : \
+		__const_udelay((n) * ((2199023U*HZ)>>11)))
 
---Signature=_Thu__11_Oct_2012_12_05_02_+1100_.g+TGX+A3MBhmGq+--
+The argument to __const_udelay is the number of jiffies to wait divided
+by 4, but this does not work unless the multiplication does not
+overflow, and that is what the build error is designed to prevent.  The
+intended behavior can be achieved by using mdelay to call udelay
+multiple times in a loop.
+
+[jrnieder@gmail.com: adding context]
+Signed-off-by: Martin Michlmayr <tbm@cyrius.com>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/scsi/atp870u.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+--- a/drivers/scsi/atp870u.c
++++ b/drivers/scsi/atp870u.c
+@@ -1173,7 +1173,16 @@ wait_io1:
+ 	outw(val, tmport);
+ 	outb(2, 0x80);
+ TCM_SYNC:
+-	udelay(0x800);
++	/*
++	 * The funny division into multiple delays is to accomodate
++	 * arches like ARM where udelay() multiplies its argument by
++	 * a large number to initialize a loop counter.  To avoid
++	 * overflow, the maximum supported udelay is 2000 microseconds.
++	 *
++	 * XXX it would be more polite to find a way to use msleep()
++	 */
++	mdelay(2);
++	udelay(48);
+ 	if ((inb(tmport) & 0x80) == 0x00) {	/* bsy ? */
+ 		outw(0, tmport--);
+ 		outb(0, tmport);
+
+
