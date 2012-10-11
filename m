@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933508Ab2JKCav (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:30:51 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34352 "EHLO
+	id S933437Ab2JKCbM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:31:12 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44009 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933178Ab2JKCMF (ORCPT
+	by vger.kernel.org with ESMTP id S933019Ab2JKCL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:12:05 -0400
-X-Sasl-enc: kBdedpgmOqtx/JTGDoDHw0YthDmUEjOCdM0tsJP26McH 1349921524
+	Wed, 10 Oct 2012 22:11:56 -0400
+X-Sasl-enc: I/Ec1ko706U1IWy+X1ocs84p0As6Qv7cniUGGVDTi4uD 1349921515
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mathias Krause <minipli@googlemail.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 11/84] xfrm_user: return error pointer instead of NULL
-Date: Thu, 11 Oct 2012 11:02:55 +0900
-Message-Id: <20121011015419.093061763@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: [ 09/84] workqueue: add missing smp_wmb() in process_one_work()
+Date: Thu, 11 Oct 2012 11:02:53 +0900
+Message-Id: <20121011015418.736767695@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -29,50 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Tejun Heo <tj@kernel.org>
 
-From: Mathias Krause <minipli@googlemail.com>
+commit 959d1af8cffc8fd38ed53e8be1cf4ab8782f9c00 upstream.
 
-[ Upstream commit 864745d291b5ba80ea0bd0edcbe67273de368836 ]
+WORK_STRUCT_PENDING is used to claim ownership of a work item and
+process_one_work() releases it before starting execution.  When
+someone else grabs PENDING, all pre-release updates to the work item
+should be visible and all updates made by the new owner should happen
+afterwards.
 
-When dump_one_state() returns an error, e.g. because of a too small
-buffer to dump the whole xfrm state, xfrm_state_netlink() returns NULL
-instead of an error pointer. But its callers expect an error pointer
-and therefore continue to operate on a NULL skbuff.
+Grabbing PENDING uses test_and_set_bit() and thus has a full barrier;
+however, clearing doesn't have a matching wmb.  Given the preceding
+spin_unlock and use of clear_bit, I don't believe this can be a
+problem on an actual machine and there hasn't been any related report
+but it still is theretically possible for clear_pending to permeate
+upwards and happen before work->entry update.
 
-This could lead to a privilege escalation (execution of user code in
-kernel context) if the attacker has CAP_NET_ADMIN and is able to map
-address 0.
+Add an explicit smp_wmb() before work_clear_pending().
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/xfrm/xfrm_user.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/xfrm/xfrm_user.c
-+++ b/net/xfrm/xfrm_user.c
-@@ -862,6 +862,7 @@ static struct sk_buff *xfrm_state_netlin
- {
- 	struct xfrm_dump_info info;
- 	struct sk_buff *skb;
-+	int err;
+---
+ kernel/workqueue.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1868,7 +1868,9 @@ __acquires(&gcwq->lock)
  
- 	skb = nlmsg_new(NLMSG_DEFAULT_SIZE, GFP_ATOMIC);
- 	if (!skb)
-@@ -872,9 +873,10 @@ static struct sk_buff *xfrm_state_netlin
- 	info.nlmsg_seq = seq;
- 	info.nlmsg_flags = 0;
+ 	spin_unlock_irq(&gcwq->lock);
  
--	if (dump_one_state(x, 0, &info)) {
-+	err = dump_one_state(x, 0, &info);
-+	if (err) {
- 		kfree_skb(skb);
--		return NULL;
-+		return ERR_PTR(err);
- 	}
- 
- 	return skb;
++	smp_wmb();	/* paired with test_and_set_bit(PENDING) */
+ 	work_clear_pending(work);
++
+ 	lock_map_acquire_read(&cwq->wq->lockdep_map);
+ 	lock_map_acquire(&lockdep_map);
+ 	trace_workqueue_execute_start(work);
 
 
