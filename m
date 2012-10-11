@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759427Ab2JKVlF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 17:41:05 -0400
-Received: from foo.stuge.se ([212.116.89.98]:40774 "HELO foo.stuge.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1759399Ab2JKVlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 17:41:02 -0400
-Message-ID: <20121011214059.2038.qmail@stuge.se>
-Date: Thu, 11 Oct 2012 23:40:59 +0200
-From: Peter Stuge <peter@stuge.se>
-To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: REGRESSION: usbdevfs:
-	Use-scatter-gather-lists-for-large-bulk-transfers
-Mail-Followup-To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20121010203118.GA792@polaris.bitmath.org> <5076819C.9010504@redhat.com> <20121011213707.GA2187@polaris.bitmath.org>
+	id S1759439Ab2JKVsi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 17:48:38 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:56228 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759414Ab2JKVsf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 17:48:35 -0400
+Date: Thu, 11 Oct 2012 17:49:30 -0400
+From: Matt Porter <mporter@ti.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Robert Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Dan Williams <djbw@fb.com>, spi-devel-general@lists.sourceforge.net,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH v2 00/16] DMA Engine support for AM33xx
+Message-ID: <20121011214930.GF13724@beef>
+References: <1349982281-10785-1-git-send-email-mporter@ti.com>
+ <CACxGe6vL2ieaYN_YhZn9=e7=prwdfwZtgPr4Ei3VMNnViib6XA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121011213707.GA2187@polaris.bitmath.org>
+In-Reply-To: <CACxGe6vL2ieaYN_YhZn9=e7=prwdfwZtgPr4Ei3VMNnViib6XA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Henrik Rydberg wrote:
-> Hi Hans,
+On Thu, Oct 11, 2012 at 10:31:58PM +0100, Grant Likely wrote:
+> Hey Matt,
 > 
-> > Oh what fun (not). The best way to figure out what really is going
-> > on is to get some usb level traces. Note my first hunch is that what
-> > you're seeing is a device firmware bug, as this patch together with
-> > a new libusb (which you seem to also have) will make bulk transfers
-> > run slightly faster, which might be just enough to overwhelm your
-> > device ...
-> 
-> Or, the large bulk transfer actually never worked in the first place.
-> The list you gave me seemed boringly long, so I read the patch more
-> closely instead. The fix below is the result. Greg, will you please
-> take it through your tree?
-> 
-> Thanks,
-> Henrik
-> 
-> From 40b70394747eea51fdd07cc8213dd6afd24b1b30 Mon Sep 17 00:00:00 2001
-> From: Henrik Rydberg <rydberg@euromail.se>
-> Date: Thu, 11 Oct 2012 23:27:04 +0200
-> Subject: [PATCH] usbdevfs: Fix broken scatter-gather transfer
-> 
-> The recently introduced handling of large bulk transfers is completely
-> broken; the same user page is read over and over again. Fixed with
-> this patch.
-> 
-> Cc: stable@kernel.org
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> Do you know now similar are the EDMA engines on the am33xx and am389x? I've
+> been working on am389x upstreaming and I'll try these patches out if it is
+> the same engine.
 
-Acked-by: Peter Stuge <peter@stuge.se>
+Hi Grant,
+
+It's the same one. am389x/ti816x and am387x/ti814x are part of the same
+architectural family as am33xx. They've just never had a lot of upstream
+support from TI. I heard rumors that you might be working with am389x
+and I'm glad you're confirming that for me! ;)
+
+The only differences between am33xx's implementation and the others is
+going to be the number PaRAM slots, number of TCs, the channel mapping,
+and then the crossbar mapping. As you can see from the TODO list, I
+don't yet support the crossbar, but it'll be in the next version of this
+series. The other items are already covered in the DT binding so it
+should be straightforward to hook this up for am389x assuming your hwmod
+and clock data is good for that part.
+
+-Matt
