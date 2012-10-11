@@ -1,112 +1,607 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756416Ab2JKJNj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 05:13:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47939 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750739Ab2JKJNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 05:13:35 -0400
-Date: Thu, 11 Oct 2012 11:13:33 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] memcg: oom: fix totalpages calculation for
- memory.swappiness==0
-Message-ID: <20121011091332.GA29301@dhcp22.suse.cz>
-References: <20121011085038.GA29295@dhcp22.suse.cz>
- <1349945859-1350-1-git-send-email-mhocko@suse.cz>
+	id S1757226Ab2JKJP3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 05:15:29 -0400
+Received: from hotel311.server4you.de ([85.25.146.15]:36441 "EHLO
+	hotel311.server4you.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab2JKJPW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 05:15:22 -0400
+Message-ID: <50768E24.3020308@monom.org>
+Date: Thu, 11 Oct 2012 17:15:16 +0800
+From: Daniel Wagner <wagi@monom.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349945859-1350-1-git-send-email-mhocko@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: cpufreq@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: ondemand 'regression' after firmware upgrade on MBA
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 11-10-12 10:57:39, Michal Hocko wrote:
-> oom_badness takes totalpages argument which says how many pages are
-> available and it uses it as a base for the score calculation. The value
-> is calculated by mem_cgroup_get_limit which considers both limit and
-> total_swap_pages (resp. memsw portion of it).
-> 
-> This is usually correct but since fe35004f (mm: avoid swapping out
-> with swappiness==0) we do not swap when swappiness is 0 which means
-> that we cannot really use up all the totalpages pages. This in turn
-> confuses oom score calculation if the memcg limit is much smaller than
-> the available swap because the used memory (capped by the limit) is
-> negligible comparing to totalpages so the resulting score is too small
-> if adj!=0 (typically task with CAP_SYS_ADMIN or non zero oom_score_adj).
-> A wrong process might be selected as result.
-> 
-> The same issue exists for the global oom killer as well but it is not
-> that problematic as the amount of the RAM is usually much bigger than
-> the swap space.
-> 
-> The problem can be worked around by checking mem_cgroup_swappiness==0
-> and not considering swap at all in such a case.
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> Acked-by: David Rientjes <rientjes@google.com>
-> Cc: stable [3.5+]
+Hi,
 
-I have just realized that fe35004f (introduced in 3.5-rc1) has been
-backported to 3.2 and 3.4 stable kernels so this should be [3.2+]
+I updated the firmware of Macbook Air Mid 2012 model to 
+version 2.5. The changelog from Apple
 
-> ---
->  mm/memcontrol.c |   21 +++++++++++++++------
->  1 file changed, 15 insertions(+), 6 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 7acf43b..93a7e36 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1452,17 +1452,26 @@ static int mem_cgroup_count_children(struct mem_cgroup *memcg)
->  static u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
->  {
->  	u64 limit;
-> -	u64 memsw;
->  
->  	limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
-> -	limit += total_swap_pages << PAGE_SHIFT;
->  
-> -	memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
->  	/*
-> -	 * If memsw is finite and limits the amount of swap space available
-> -	 * to this memcg, return that limit.
-> +	 * Do not consider swap space if we cannot swap due to swappiness
->  	 */
-> -	return min(limit, memsw);
-> +	if (mem_cgroup_swappiness(memcg)) {
-> +		u64 memsw;
-> +
-> +		limit += total_swap_pages << PAGE_SHIFT;
-> +		memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
-> +
-> +		/*
-> +		 * If memsw is finite and limits the amount of swap space
-> +		 * available to this memcg, return that limit.
-> +		 */
-> +		limit = min(limit, memsw);
-> +	}
-> +
-> +	return limit;
->  }
->  
->  void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
-> -- 
-> 1.7.10.4
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+http://support.apple.com/kb/DL1592
 
--- 
-Michal Hocko
-SUSE Labs
+"This update fixes an issue where Turbo Boost does not
+activate when using Boot Camp" 
+
+indicates that they changed stuff on the ACPI tables.
+
+Now I have noticed that after updating the firmware the CPU
+frequency stays at 800 MHz even when compiling the kernel.
+
+I tried to debug what's going on. Here is my current results
+and I am kind of stuck how to proceed from here. Any ideas to
+go on from here?
+
+cheers,
+daniel
+
+And here the results:
+
+(complete logs and tables are here: http://www.monom.org/misc/acpi/ )
+
+- When I change the governor to 'conservative' the CPU will
+  be run eventually on max speed.
+
+- With lowering the threshold from 95 to 70, I see again clock
+  speed changes
+
+  echo 70 > /sys/devices/system/cpu/cpufreq/ondemand/up_threshold
+
+- The ACPI tables seem to have changed. Unfortunately, I have
+  only retrieved the new one.  I have an old dmesg 
+  output (3.6.0-rc6+) compared with new dmesg output (3.6.0-rc7+):
+
+Old:
+
+ACPI: RSDP 000000008ad8e014 00024 (v02 APPLE )
+ACPI: XSDT 000000008ad8e1c0 000B4 (v01 APPLE   Apple00 00000000      01000013)
+ACPI: FACP 000000008ad8c000 000F4 (v04 APPLE   Apple00 00000000 Loki 0000005F)
+ACPI: DSDT 000000008ad82000 04708 (v01 APPLE  MacBookA 00050001 INTL 20100915)
+ACPI: FACS 000000008ad1c000 00040
+ACPI: HPET 000000008ad8b000 00038 (v01 APPLE   Apple00 00000001 Loki 0000005F)
+ACPI: APIC 000000008ad8a000 000BC (v02 APPLE   Apple00 00000001 Loki 0000005F)
+ACPI: SBST 000000008ad88000 00030 (v01 APPLE   Apple00 00000001 Loki 0000005F)
+ACPI: ECDT 000000008ad87000 00053 (v01 APPLE   Apple00 00000001 Loki 0000005F)
+ACPI: SSDT 000000008ad7f000 001EE (v01 APPLE  SataAhci 00001000 INTL 20100915)
+ACPI: SSDT 000000008ad7e000 00024 (v01 APPLE   SmcDppt 00001000 INTL 20100915)
+ACPI: SSDT 000000008ad78000 00D74 (v01 APPLE  UsbSdPpt 00001000 INTL 20100915)
+ACPI: SSDT 000000008ad77000 00159 (v02 APPLE     IGHda 00001000 INTL 20100915)
+ACPI: SSDT 000000008ad75000 00032 (v01 APPLE    SsdtS3 00001000 INTL 20100915)
+ACPI: SSDT 000000008ad73000 015EB (v02 APPLE  SsdtIGPU 00001000 INTL 20100915)
+ACPI: SSDT 000000008ad72000 00F0D (v01 APPLE   PcieTbt 00001000 INTL 20100915)
+ACPI: SSDT 000000008ad6f000 006DB (v01  PmRef  Cpu0Ist 00003000 INTL 20100915)
+ACPI: SSDT 000000008ad6e000 00B3D (v01  PmRef    CpuPm 00003000 INTL 20100915)
+ACPI: SSDT 000000008ad6d000 00315 (v01  PmRef  Cpu0Tst 00003000 INTL 20100915)
+ACPI: SSDT 000000008ad6c000 0037A (v01  PmRef    ApTst 00003000 INTL 20100915)
+ACPI: DMAR 000000008ad6b000 000B8 (v01 APPLE      IVB  00000001 AAPL 00000001)
+ACPI: MCFG 000000008ad89000 0003C (v01 APPLE   Apple00 00000001 Loki 0000005F)
+
+
+New:
+
+ACPI: RSDP 000000008ad8e014 00024 (v02 APPLE )
+ACPI: XSDT 000000008ad8e1c0 000B4 (v01 APPLE   Apple00 00000000      01000013)
+ACPI: FACP 000000008ad8c000 000F4 (v04 APPLE   Apple00 00000000 Loki 0000005F)
+ACPI: DSDT 000000008ad82000 04708 (v01 APPLE  MacBookA 00050001 INTL 20100915)
+ACPI: FACS 000000008ad1c000 00040
+ACPI: HPET 000000008ad8b000 00038 (v01 APPLE   Apple00 00000001 Loki 0000005F)
+ACPI: APIC 000000008ad8a000 000BC (v02 APPLE   Apple00 00000001 Loki 0000005F)
+ACPI: SBST 000000008ad88000 00030 (v01 APPLE   Apple00 00000001 Loki 0000005F)
+ACPI: ECDT 000000008ad87000 00053 (v01 APPLE   Apple00 00000001 Loki 0000005F)
+ACPI: SSDT 000000008ad7f000 001EE (v01 APPLE  SataAhci 00001000 INTL 20100915)
+ACPI: SSDT 000000008ad7e000 00024 (v01 APPLE   SmcDppt 00001000 INTL 20100915)
+ACPI: SSDT 000000008ad78000 00D74 (v01 APPLE  UsbSdPpt 00001000 INTL 20100915)
+ACPI: SSDT 000000008ad77000 00159 (v02 APPLE     IGHda 00001000 INTL 20100915)
+ACPI: SSDT 000000008ad75000 00032 (v01 APPLE    SsdtS3 00001000 INTL 20100915)
+ACPI: SSDT 000000008ad73000 015EB (v02 APPLE  SsdtIGPU 00001000 INTL 20100915)
+ACPI: SSDT 000000008ad72000 00F0D (v01 APPLE   PcieTbt 00001000 INTL 20100915)
+ACPI: SSDT 000000008ad6f000 00615 (v01  PmRef  Cpu0Ist 00003000 INTL 20100915)
+ACPI: SSDT 000000008ad6e000 00B3D (v01  PmRef    CpuPm 00003000 INTL 20100915)
+ACPI: SSDT 000000008ad6d000 00315 (v01  PmRef  Cpu0Tst 00003000 INTL 20100915)
+ACPI: SSDT 000000008ad6c000 0037A (v01  PmRef    ApTst 00003000 INTL 20100915)
+ACPI: DMAR 000000008ad6b000 00088 (v01 APPLE      IVB  00000001 AAPL 00000001)
+ACPI: MCFG 000000008ad89000 0003C (v01 APPLE   Apple00 00000001 Loki 0000005F)
+
+The first PmRef has changed in size. The rest looks pretty the same. So here
+is the disassembly of this table. 
+
+/*
+ * Intel ACPI Component Architecture
+ * AML Disassembler version 20100528
+ *
+ * Disassembly of SSDT8.dat, Wed Oct 10 15:24:22 2012
+ *
+ *
+ * Original Table Header:
+ *     Signature        "SSDT"
+ *     Length           0x00000615 (1557)
+ *     Revision         0x01
+ *     Checksum         0xC0
+ *     OEM ID           "PmRef"
+ *     OEM Table ID     "Cpu0Ist"
+ *     OEM Revision     0x00003000 (12288)
+ *     Compiler ID      "INTL"
+ *     Compiler Version 0x20100915 (537921813)
+ */
+DefinitionBlock ("SSDT8.aml", "SSDT", 1, "PmRef", "Cpu0Ist", 0x00003000)
+{
+    External (PDC0)
+    External (TCNT, IntObj)
+    External (CPLT, IntObj)
+    External (\_PR_.CPU0, DeviceObj)
+
+    Scope (\_PR.CPU0)
+    {
+        Method (_PPC, 0, NotSerialized)
+        {
+            Return (CPLT)
+        }
+
+        Name (_PCT, Package (0x02)
+        {
+            ResourceTemplate ()
+            {
+                Register (FFixedHW, 
+                    0x10,               // Bit Width
+                    0x00,               // Bit Offset
+                    0x0000000000000199, // Address
+                    ,)
+            }, 
+
+            ResourceTemplate ()
+            {
+                Register (FFixedHW, 
+                    0x10,               // Bit Width
+                    0x00,               // Bit Offset
+                    0x0000000000000198, // Address
+                    ,)
+            }
+        })
+        Name (_PSS, Package (0x0E)
+        {
+            Package (0x06)
+            {
+                0x000007D1, 
+                0x00004268, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00002000, 
+                0x00002000
+            }, 
+
+            Package (0x06)
+            {
+                0x000007D0, 
+                0x00004268, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001400, 
+                0x00001400
+            }, 
+
+            Package (0x06)
+            {
+                0x0000076C, 
+                0x00003E5E, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001300, 
+                0x00001300
+            }, 
+
+            Package (0x06)
+            {
+                0x00000708, 
+                0x00003A69, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001200, 
+                0x00001200
+            }, 
+
+            Package (0x06)
+            {
+                0x000006A4, 
+                0x00003688, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001100, 
+                0x00001100
+            }, 
+
+            Package (0x06)
+            {
+                0x00000640, 
+                0x000032BA, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001000, 
+                0x00001000
+            }, 
+
+            Package (0x06)
+            {
+                0x000005DC, 
+                0x00002F01, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00000F00, 
+                0x00000F00
+            }, 
+
+            Package (0x06)
+            {
+                0x00000578, 
+                0x00002B5E, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00000E00, 
+                0x00000E00
+            }, 
+
+            Package (0x06)
+            {
+                0x00000514, 
+                0x000027CB, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00000D00, 
+                0x00000D00
+            }, 
+
+            Package (0x06)
+            {
+                0x000004B0, 
+                0x0000244C, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00000C00, 
+                0x00000C00
+            }, 
+
+            Package (0x06)
+            {
+                0x0000044C, 
+                0x000020E1, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00000B00, 
+                0x00000B00
+            }, 
+
+            Package (0x06)
+            {
+                0x000003E8, 
+                0x00001D88, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00000A00, 
+                0x00000A00
+            }, 
+
+            Package (0x06)
+            {
+                0x00000384, 
+                0x00001A43, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00000900, 
+                0x00000900
+            }, 
+
+            Package (0x06)
+            {
+                0x00000320, 
+                0x00001710, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00000800, 
+                0x00000800
+            }
+        })
+        Name (APSS, Package (0x19)
+        {
+            Package (0x06)
+            {
+                0x00000C80, 
+                0x00004268, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00002000, 
+                0x00002000
+            }, 
+
+            Package (0x06)
+            {
+                0x00000C1C, 
+                0x00004268, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001F00, 
+                0x00001F00
+            }, 
+
+            Package (0x06)
+            {
+                0x00000BB8, 
+                0x00004268, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001E00, 
+                0x00001E00
+            }, 
+
+            Package (0x06)
+            {
+                0x00000B54, 
+                0x00004268, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001D00, 
+                0x00001D00
+            }, 
+
+            Package (0x06)
+            {
+                0x00000AF0, 
+                0x00004268, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001C00, 
+                0x00001C00
+            }, 
+
+            Package (0x06)
+            {
+                0x00000A8C, 
+                0x00004268, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001B00, 
+                0x00001B00
+            }, 
+
+            Package (0x06)
+            {
+                0x00000A28, 
+                0x00004268, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001A00, 
+                0x00001A00
+            }, 
+
+            Package (0x06)
+            {
+                0x000009C4, 
+                0x00004268, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001900, 
+                0x00001900
+            }, 
+
+            Package (0x06)
+            {
+                0x00000960, 
+                0x00004268, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001800, 
+                0x00001800
+            }, 
+
+            Package (0x06)
+            {
+                0x000008FC, 
+                0x00004268, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001700, 
+                0x00001700
+            }, 
+
+            Package (0x06)
+            {
+                0x00000898, 
+                0x00004268, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001600, 
+                0x00001600
+            }, 
+
+            Package (0x06)
+            {
+                0x00000834, 
+                0x00004268, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001500, 
+                0x00001500
+            }, 
+
+            Package (0x06)
+            {
+                0x000007D0, 
+                0x00004268, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001400, 
+                0x00001400
+            }, 
+
+            Package (0x06)
+            {
+                0x0000076C, 
+                0x00003E5E, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001300, 
+                0x00001300
+            }, 
+
+            Package (0x06)
+            {
+                0x00000708, 
+                0x00003A69, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001200, 
+                0x00001200
+            }, 
+
+            Package (0x06)
+            {
+                0x000006A4, 
+                0x00003688, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001100, 
+                0x00001100
+            }, 
+
+            Package (0x06)
+            {
+                0x00000640, 
+                0x000032BA, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00001000, 
+                0x00001000
+            }, 
+
+            Package (0x06)
+            {
+                0x000005DC, 
+                0x00002F01, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00000F00, 
+                0x00000F00
+            }, 
+
+            Package (0x06)
+            {
+                0x00000578, 
+                0x00002B5E, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00000E00, 
+                0x00000E00
+            }, 
+
+            Package (0x06)
+            {
+                0x00000514, 
+                0x000027CB, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00000D00, 
+                0x00000D00
+            }, 
+
+            Package (0x06)
+            {
+                0x000004B0, 
+                0x0000244C, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00000C00, 
+                0x00000C00
+            }, 
+
+            Package (0x06)
+            {
+                0x0000044C, 
+                0x000020E1, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00000B00, 
+                0x00000B00
+            }, 
+
+            Package (0x06)
+            {
+                0x000003E8, 
+                0x00001D88, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00000A00, 
+                0x00000A00
+            }, 
+
+            Package (0x06)
+            {
+                0x00000384, 
+                0x00001A43, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00000900, 
+                0x00000900
+            }, 
+
+            Package (0x06)
+            {
+                0x00000320, 
+                0x00001710, 
+                0x0000000A, 
+                0x0000000A, 
+                0x00000800, 
+                0x00000800
+            }
+        })
+        Name (APSN, 0x0C)
+        Name (APLF, 0x00)
+        Name (PSDF, 0x00)
+        Method (_PSD, 0, NotSerialized)
+        {
+            If (LNot (PSDF))
+            {
+                Store (TCNT, Index (DerefOf (Index (HPSD, 0x00)), 0x04))
+                Store (TCNT, Index (DerefOf (Index (SPSD, 0x00)), 0x04))
+                Store (Ones, PSDF)
+            }
+
+            If (And (PDC0, 0x0800))
+            {
+                Return (HPSD)
+            }
+
+            Return (SPSD)
+        }
+
+        Name (HPSD, Package (0x01)
+        {
+            Package (0x05)
+            {
+                0x05, 
+                0x00, 
+                0x00, 
+                0xFE, 
+                0x80
+            }
+        })
+        Name (SPSD, Package (0x01)
+        {
+            Package (0x05)
+            {
+                0x05, 
+                0x00, 
+                0x00, 
+                0xFC, 
+                0x80
+            }
+        })
+    }
+}
+
+
