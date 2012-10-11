@@ -1,60 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525Ab2JKUEa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 16:04:30 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:49707 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab2JKUE3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 16:04:29 -0400
+	id S1755117Ab2JKUGO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 16:06:14 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:55459 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753091Ab2JKUGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 16:06:12 -0400
+Date: Thu, 11 Oct 2012 21:06:08 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <pzijlstr@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hillf Danton <dhillf@gmail.com>,
+        Andrew Jones <drjones@redhat.com>, Dan Smith <danms@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 07/33] autonuma: mm_autonuma and task_autonuma data
+ structures
+Message-ID: <20121011200608.GO3317@csn.ul.ie>
+References: <1349308275-2174-1-git-send-email-aarcange@redhat.com>
+ <1349308275-2174-8-git-send-email-aarcange@redhat.com>
+ <20121011122827.GT3317@csn.ul.ie>
+ <20121011171519.GQ1818@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1349982438-2062-1-git-send-email-j.glisse@gmail.com>
-References: <1349982438-2062-1-git-send-email-j.glisse@gmail.com>
-Date: Thu, 11 Oct 2012 16:04:28 -0400
-Message-ID: <CAH3drwaFsaS3w6NeHJXNAjEXaYORYS3R3MCOKenYAhzP_bhyeQ@mail.gmail.com>
-Subject: Re: [PATCH] coredump: always kill the task no matter what
-From: Jerome Glisse <j.glisse@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: roland@redhat.com, Jerome Glisse <jglisse@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121011171519.GQ1818@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 11, 2012 at 3:07 PM,  <j.glisse@gmail.com> wrote:
-> From: Jerome Glisse <jglisse@redhat.com>
->
-> If do_coredump fails for any reason make sure that the task
-> is actualy wakeup and properly kill otherwise we endup with
-> zombies task.
->
-> Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-> ---
->  fs/coredump.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/fs/coredump.c b/fs/coredump.c
-> index fd37fac..4b61468 100644
-> --- a/fs/coredump.c
-> +++ b/fs/coredump.c
-> @@ -643,11 +643,11 @@ fail_dropcount:
->  fail_unlock:
->         kfree(cn.corename);
->  fail_corename:
-> -       coredump_finish(mm);
->         revert_creds(old_cred);
->  fail_creds:
->         put_cred(cred);
->  fail:
-> +       coredump_finish(mm);
->         return;
->  }
->
-> --
-> 1.7.12.1
->
+On Thu, Oct 11, 2012 at 07:15:20PM +0200, Andrea Arcangeli wrote:
+> On Thu, Oct 11, 2012 at 01:28:27PM +0100, Mel Gorman wrote:
+> > s/togehter/together/
+> 
+> Fixed.
+> 
+> > 
+> > > + * knumad_scan structure.
+> > > + */
+> > > +struct mm_autonuma {
+> > 
+> > Nit but this is very similar in principle to mm_slot for transparent
+> > huge pages. It might be worth renaming both to mm_thp_slot and
+> > mm_autonuma_slot to set the expectation they are very similar in nature.
+> > Could potentially be made generic but probably overkill.
+> 
+> Agreed. A plain rename to mm_autonuma_slot would have the only cons of
+> making some code spill over 80 col ;).
+> 
 
-Actually wrong patch, this one does not solve my issue.
+Fair enough :)
 
-Cheers,
-Jerome
+> > > +	/* link for knuma_scand's list of mm structures to scan */
+> > > +	struct list_head mm_node;
+> > > +	/* Pointer to associated mm structure */
+> > > +	struct mm_struct *mm;
+> > > +
+> > > +	/*
+> > > +	 * Zeroed from here during allocation, check
+> > > +	 * mm_autonuma_reset() if you alter the below.
+> > > +	 */
+> > > +
+> > > +	/*
+> > > +	 * Pass counter for this mm. This exist only to be able to
+> > > +	 * tell when it's time to apply the exponential backoff on the
+> > > +	 * task_autonuma statistics.
+> > > +	 */
+> > > +	unsigned long mm_numa_fault_pass;
+> > > +	/* Total number of pages that will trigger NUMA faults for this mm */
+> > > +	unsigned long mm_numa_fault_tot;
+> > > +	/* Number of pages that will trigger NUMA faults for each [nid] */
+> > > +	unsigned long mm_numa_fault[0];
+> > > +	/* do not add more variables here, the above array size is dynamic */
+> > > +};
+> > 
+> > How cache hot is this structure? nodes are sharing counters in the same
+> > cache lines so if updates are frequent this will bounce like a mad yoke.
+> > Profiles will tell for sure but it's possible that some sort of per-cpu
+> > hilarity will be necessary here in the future.
+> 
+> On autonuma27 this is only written by knuma_scand so it won't risk to
+> bounce.
+> 
+> On autonuma28 however it's updated by the numa hinting page fault
+> locklessy and so your concern is very real, and the cacheline bounces
+> will materialize.
+
+It will be related to the knuma_scan thing though so once every 10
+seconds, we might see a sudden spike in cache conflicts. Is that
+accurate? Something like perf top might detect when this happens but it
+can be inferred using perf probe on the fault handler too.
+
+> It'll cause more interconnect traffic before the
+> workload converges too. I thought about that, but I wanted the
+> mm_autonuma updated in real time as migration happens otherwise it
+> converges more slowly if we have to wait until the next pass to bring
+> mm_autonuma statistical data in sync with the migration
+> activities. Converging more slowly looked worse than paying more
+> cacheline bounces.
+> 
+
+You could argue that slower converging also means more cross-node
+traffic so it costs either way.
+
+> It's a tradeoff. And if it's not a good one, we can go back to
+> autonuma27 mm_autonuma stat gathering method and converge slower but
+> without any cacheline bouncing in the NUMA hinting page faults. At
+> least it's lockless.
+> 
+
+Yep.
+
+> > > +	unsigned long task_numa_fault_pass;
+> > > +	/* Total number of eligible pages that triggered NUMA faults */
+> > > +	unsigned long task_numa_fault_tot;
+> > > +	/* Number of pages that triggered NUMA faults for each [nid] */
+> > > +	unsigned long task_numa_fault[0];
+> > > +	/* do not add more variables here, the above array size is dynamic */
+> > > +};
+> > > +
+> > 
+> > Same question about cache hotness.
+> 
+> Here it's per-thread, so there won't be risk of accesses interleaved
+> by different CPUs.
+> 
+
+Ok thanks. With that clarification
+
+Acked-by: Mel Gorman <mgorman@suse.de>
+
+While I still have concerns about the cache behaviour of this the basic
+intent of the structure will not change no matter how the problem is
+addressed.
+
+-- 
+Mel Gorman
+SUSE Labs
