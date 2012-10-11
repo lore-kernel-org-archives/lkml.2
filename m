@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757848Ab2JKAAm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:00:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12799 "EHLO mx1.redhat.com"
+	id S1757777Ab2JKACT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:02:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:63515 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757777Ab2JKAAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:00:37 -0400
-From: Ian Kent <ikent@redhat.com>
-Subject: [PATCH] autofs4 - fix reset pending flag on mount fail
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: autofs mailing list <autofs@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Date: Thu, 11 Oct 2012 08:00:33 +0800
-Message-ID: <20121011000033.3407.91516.stgit@perseus.themaw.net>
-User-Agent: StGIT/0.14.3
+	id S1752400Ab2JKACR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 20:02:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,567,1344236400"; 
+   d="scan'208";a="204112773"
+From: "Perez-Gonzalez, Inaky" <inaky.perez-gonzalez@intel.com>
+To: David Howells <dhowells@redhat.com>
+CC: linux-wimax <linux-wimax@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [GIT PULL] Disintegrate UAPI for wimax
+Thread-Topic: [GIT PULL] Disintegrate UAPI for wimax
+Thread-Index: AQHNpiJXLQNKsYximkG7w9QXVvFJhJezOpzg
+Date: Thu, 11 Oct 2012 00:02:16 +0000
+Message-ID: <3A78FAA0EC814D4B8ECC99B3AB32B33208612DA4@fmsmsx110.amr.corp.intel.com>
+References: <30770.1349789450@warthog.procyon.org.uk>
+In-Reply-To: <30770.1349789450@warthog.procyon.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.200.108]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Kent <raven@themaw.net>
+Hello David
 
-In autofs4_d_automount(), if a mount fail occurs the AUTOFS_INF_PENDING
-mount pending flag is not cleared.
+> From: David Howells [mailto:dhowells@redhat.com]
+> 
+> Can you merge the following branch into the wimax tree please.
+> 
+> This is to complete part of the Userspace API (UAPI) disintegration for which
+> the preparatory patches were pulled recently.  After these patches,
+> userspace headers will be segregated into:
+> 
+> 	include/uapi/linux/.../foo.h
+> 
+> for the userspace interface stuff, and:
+> 
+> 	include/linux/.../foo.h
+> 
+> for the strictly kernel internal stuff.
 
-One effect of this is when using the "browse" option, directory entry
-attributes show up with all "?"s due to the incorrect callback and
-subsequent failure return (when in fact no callback should be made).
+This can be submitted straight to Dave Miller, as there is no separate wimax tree
+anymore, it is in pure maintenance mode.
 
-Signed-off-by: Ian Kent <ikent@redhat.com>
-Cc: stable@vger.kernel.org
----
+BTW: thanks for tackling the UAPI issue
 
- 0 files changed, 0 insertions(+), 0 deletions(-)
-
-diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index e7396cf..91b1165 100644
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -392,10 +392,12 @@ static struct vfsmount *autofs4_d_automount(struct path *path)
- 		ino->flags |= AUTOFS_INF_PENDING;
- 		spin_unlock(&sbi->fs_lock);
- 		status = autofs4_mount_wait(dentry);
--		if (status)
--			return ERR_PTR(status);
- 		spin_lock(&sbi->fs_lock);
- 		ino->flags &= ~AUTOFS_INF_PENDING;
-+		if (status) {
-+			spin_unlock(&sbi->fs_lock);
-+			return ERR_PTR(status);
-+		}
- 	}
- done:
- 	if (!(ino->flags & AUTOFS_INF_EXPIRING)) {
-
+Acked-by: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
