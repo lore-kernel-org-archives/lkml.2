@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab2JKF1M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 01:27:12 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36882 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684Ab2JKF1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 01:27:07 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50765896.4000300@jp.fujitsu.com>
-Date: Thu, 11 Oct 2012 14:26:46 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1755299Ab2JKF1e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 01:27:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36382 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751684Ab2JKF1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 01:27:32 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <92645B27BF79D04FBD2B0F8494FFD0F910292C@G2W2429.americas.hpqcorp.net>
+References: <92645B27BF79D04FBD2B0F8494FFD0F90FC806@G2W2429.americas.hpqcorp.net> <1349740633.11093.43.camel@sbsiddha-desk.sc.intel.com> <92645B27BF79D04FBD2B0F8494FFD0F90FE41E@G2W2429.americas.hpqcorp.net> <1349914040.3042.12.camel@sbsiddha-desk.sc.intel.com> <92645B27BF79D04FBD2B0F8494FFD0F910292C@G2W2429.americas.hpqcorp.net>
 MIME-Version: 1.0
-To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, <rientjes@google.com>,
-        <liuj97@gmail.com>, <minchan.kim@gmail.com>,
-        <akpm@linux-foundation.org>, <kosaki.motohiro@jp.fujitsu.com>,
-        <wency@cn.fujitsu.com>
-Subject: [PATCH 2/2]suppress "Device nodeX does not have a release() function"
- warning
-References: <507656D1.5020703@jp.fujitsu.com>
-In-Reply-To: <507656D1.5020703@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: RE: [PATCH] fix x2apic defect that Linux kernel doesn't mask 8259A interrupt during the time window between changing VT-d table base address and initializing these VT-d entries(smpboot.c and apic.c )
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 11 Oct 2012 13:26:44 +0800
+To: "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "Croxon, Nigel" <nigel.croxon@hp.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>,
+        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
+        "agordeev@redhat.com" <agordeev@redhat.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>
+Message-ID: <c76ab9ca-d85a-4327-a775-dc5b7d1d5a56@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When calling unregister_node(), the function shows following message at
-device_release().
+OSV = Operating System Vendor ime. red Hat, SUSE etc.
 
-"Device 'node2' does not have a release() function, it is broken and must
-be fixed."
+"Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com> wrote:
 
-The reason is node's device struct does not have a release() function.
+>
+>> -----Original Message-----
+>> From: Suresh Siddha [mailto:suresh.b.siddha@intel.com]
+>> > > Can you please apply the appended patch to 2.6.32 kernel and see
+>if
+>> > > the issue you mentioned gets fixed? If so, we can ask the -stable
+>> > > and OSV's teams to pick up this fix.
+>> > Yes , it can resolve current issue.
+>> 
+>> Thanks for testing it out.
+>> 
+>You are welcome!
+>
+>> I will add the appropriate changelog and send the patch out (to
+>2.6.32 stable
+>> and OSV kernels) with your "Tested-by:" if you are ok.
+>> 
+>Sure, it is my pleasure .Please go ahead!
+>BTW , what's OSV kernels ? I can't find its meaning by searching
+>google.  
+>Once your patch has been included by 2.6 git, kindly inform me. Thanks.
+>
+>
+>> thanks,
+>> suresh
 
-So the patch registers node_device_release() to the device's release()
-function for suppressing the warning message. Additionally, the patch adds
-memset() to initialize a node struct into register_node(). Because the node
-struct is part of node_devices[] array and it cannot be freed by
-node_device_release(). So if system reuses the node struct, it has a garbage.
-
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- drivers/base/node.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
-
-Index: linux-3.6/drivers/base/node.c
-===================================================================
---- linux-3.6.orig/drivers/base/node.c	2012-10-11 10:04:02.149758748 +0900
-+++ linux-3.6/drivers/base/node.c	2012-10-11 10:20:34.111806931 +0900
-@@ -252,6 +252,14 @@ static inline void hugetlb_register_node
- static inline void hugetlb_unregister_node(struct node *node) {}
- #endif
- 
-+static void node_device_release(struct device *dev)
-+{
-+#if defined(CONFIG_MEMORY_HOTPLUG_SPARSE) && defined(CONFIG_HUGETLBFS)
-+	struct node *node_dev = to_node(dev);
-+
-+	flush_work(&node_dev->node_work);
-+#endif
-+}
- 
- /*
-  * register_node - Setup a sysfs device for a node.
-@@ -263,8 +271,11 @@ int register_node(struct node *node, int
- {
- 	int error;
- 
-+	memset(node, 0, sizeof(*node));
-+
- 	node->dev.id = num;
- 	node->dev.bus = &node_subsys;
-+	node->dev.release = node_device_release;
- 	error = device_register(&node->dev);
- 
- 	if (!error){
-
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
