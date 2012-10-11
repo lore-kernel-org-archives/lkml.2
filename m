@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549Ab2JKIU2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 04:20:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27696 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751035Ab2JKIUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 04:20:23 -0400
-Message-ID: <5076819C.9010504@redhat.com>
-Date: Thu, 11 Oct 2012 10:21:48 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1753841Ab2JKIU7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 04:20:59 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:39092 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752791Ab2JKIUz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 04:20:55 -0400
+Date: Thu, 11 Oct 2012 01:20:51 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Christopher Heiny <cheiny@synaptics.com>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
+        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
+        Alexandra Chen <alexandra.chen@tw.synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Subject: Re: [RFC PATCH 01/06] input/rmi4: Public header and documentation
+Message-ID: <20121011082051.GB32175@core.coreip.homeip.net>
+References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com>
+ <1349496603-20775-2-git-send-email-cheiny@synaptics.com>
 MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: REGRESSION: usbdevfs: Use-scatter-gather-lists-for-large-bulk-transfers
-References: <20121010203118.GA792@polaris.bitmath.org>
-In-Reply-To: <20121010203118.GA792@polaris.bitmath.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349496603-20775-2-git-send-email-cheiny@synaptics.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Oct 05, 2012 at 09:09:58PM -0700, Christopher Heiny wrote:
+> +
+> +	int (*write_block)(struct rmi_phys_device *phys, u16 addr, u8 *buf,
+> +			   int len);
+> +	int (*read_block)(struct rmi_phys_device *phys, u16 addr, u8 *buf,
+> +			  int len);
+> +
 
-On 10/10/2012 10:31 PM, Henrik Rydberg wrote:
-> Hi Hans, Alan, Greg,
->
-> commit 3d97ff63f8997761f12c8fbe8082996c6eeaba1a
-> Author: Hans de Goede <hdegoede@redhat.com>
-> Date:   Wed Jul 4 09:18:03 2012 +0200
->
->      usbdevfs: Use scatter-gather lists for large bulk transfers
->
-> breaks an usb programming cable over here. The problem is reported as
-> "bulk tranfer failed" [sic] by the tool, and bisection leads to this
-> commit. Reverting on top of 3.6 solves it for me.
+If you declare your buffer as [const] void * instead of u8 * I think you
+will be able to get rid of most of your unions.
 
-Oh what fun (not). The best way to figure out what really is going
-on is to get some usb level traces. Note my first hunch is that what
-you're seeing is a device firmware bug, as this patch together with
-a new libusb (which you seem to also have) will make bulk transfers
-run slightly faster, which might be just enough to overwhelm your
-device ...
+> +
+> +/**
+> + * Helper fn to convert a byte array representing a 16 bit value in the RMI
+> + * endian-ness to a 16-bit value in the native processor's specific endianness.
+> + * We don't use ntohs/htons here because, well, we're not dealing with
+> + * a pair of 16 bit values. Casting dest to u16* wouldn't work, because
+> + * that would imply knowing the byte order of u16 in the first place.  The
+> + * same applies for using shifts and masks.
+> + */
+> +static inline u16 batohs(u8 *src)
+> +{
+> +	return src[1] * 0x100 + src[0];
+> +}
+> +
+> +/**
+> + * Helper function to convert a 16 bit value (in host processor endianess) to
+> + * a byte array in the RMI endianess for u16s.  See above comment for
+> + * why we dont us htons or something like that.
+> + */
+> +static inline void hstoba(u8 *dest, u16 src)
+> +{
+> +	dest[0] = src % 0x100;
+> +	dest[1] = src / 0x100;
+> +}
 
-Can you please do the following:
-1) unplug as many usb devices as possible
-2) plug in the programmer
-3) run lsusb, note the programmer bus number
-4) if the programmer is one the same bus as another device (other then
-    a hub), try a different port
-5) ideally rinse repeat until it is on a bus of its own, or atleast
-    a bus with a device which generate little trafic
-6) Writedown the bus number, and keep using the same port for
-    all further tests
+These are not used anymore, right?
 
-Then:
-1) start wireshark as root, tell it to start capturing on the USB bus
-you've ended up using
-2) Do what you always do with the programmer
-3) When finished, or when things have failed stop wireshark capture and
-save the capture to a file
-
-Repeat 2 times once with a kernel with the problematic commit, once without.
-
-Then send me the 2 wireshark captures. Note:
-
-1) Privacy warning: In theory I might be able to reconstruct what you're sending
-over the captured USB bus when you send me these captures
-2) Less is more, so if you can find some mini mini program to send to the
-device you're programming that makes live easier (and should make 1 less of
-an issue too).
-
-Regards,
-
-Hans
+-- 
+Dmitry
