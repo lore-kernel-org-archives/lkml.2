@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221Ab2JKISo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 04:18:44 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:59604 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953Ab2JKISi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 04:18:38 -0400
-Message-ID: <1349943507.27003.0.camel@phoenix>
-Subject: [PATCH] power: generic-adc-battery: Fix checking return value of
- request_any_context_irq
-From: Axel Lin <axel.lin@ingics.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Anton Vorontsov <cbou@mail.ru>, anish kumar <anish198519851985@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 11 Oct 2012 16:18:27 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1752549Ab2JKIU2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 04:20:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27696 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751035Ab2JKIUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 04:20:23 -0400
+Message-ID: <5076819C.9010504@redhat.com>
+Date: Thu, 11 Oct 2012 10:21:48 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: REGRESSION: usbdevfs: Use-scatter-gather-lists-for-large-bulk-transfers
+References: <20121010203118.GA792@polaris.bitmath.org>
+In-Reply-To: <20121010203118.GA792@polaris.bitmath.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On failure, request_any_context_irq() returns a negative value.
-On success, it returns either IRQC_IS_HARDIRQ or IRQC_IS_NESTED.
+Hi,
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/power/generic-adc-battery.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On 10/10/2012 10:31 PM, Henrik Rydberg wrote:
+> Hi Hans, Alan, Greg,
+>
+> commit 3d97ff63f8997761f12c8fbe8082996c6eeaba1a
+> Author: Hans de Goede <hdegoede@redhat.com>
+> Date:   Wed Jul 4 09:18:03 2012 +0200
+>
+>      usbdevfs: Use scatter-gather lists for large bulk transfers
+>
+> breaks an usb programming cable over here. The problem is reported as
+> "bulk tranfer failed" [sic] by the tool, and bisection leads to this
+> commit. Reverting on top of 3.6 solves it for me.
 
-diff --git a/drivers/power/generic-adc-battery.c b/drivers/power/generic-adc-battery.c
-index 9bdf444..4a00ef7 100644
---- a/drivers/power/generic-adc-battery.c
-+++ b/drivers/power/generic-adc-battery.c
-@@ -327,7 +327,7 @@ static int __devinit gab_probe(struct platform_device *pdev)
- 		ret = request_any_context_irq(irq, gab_charged,
- 				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
- 				"battery charged", adc_bat);
--		if (ret)
-+		if (ret < 0)
- 			goto err_gpio;
- 	}
- 
--- 
-1.7.9.5
+Oh what fun (not). The best way to figure out what really is going
+on is to get some usb level traces. Note my first hunch is that what
+you're seeing is a device firmware bug, as this patch together with
+a new libusb (which you seem to also have) will make bulk transfers
+run slightly faster, which might be just enough to overwhelm your
+device ...
 
+Can you please do the following:
+1) unplug as many usb devices as possible
+2) plug in the programmer
+3) run lsusb, note the programmer bus number
+4) if the programmer is one the same bus as another device (other then
+    a hub), try a different port
+5) ideally rinse repeat until it is on a bus of its own, or atleast
+    a bus with a device which generate little trafic
+6) Writedown the bus number, and keep using the same port for
+    all further tests
 
+Then:
+1) start wireshark as root, tell it to start capturing on the USB bus
+you've ended up using
+2) Do what you always do with the programmer
+3) When finished, or when things have failed stop wireshark capture and
+save the capture to a file
 
+Repeat 2 times once with a kernel with the problematic commit, once without.
+
+Then send me the 2 wireshark captures. Note:
+
+1) Privacy warning: In theory I might be able to reconstruct what you're sending
+over the captured USB bus when you send me these captures
+2) Less is more, so if you can find some mini mini program to send to the
+device you're programming that makes live easier (and should make 1 less of
+an issue too).
+
+Regards,
+
+Hans
