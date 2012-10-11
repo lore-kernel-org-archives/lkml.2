@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933288Ab2JKDxK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 23:53:10 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:4625 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756385Ab2JKDxH (ORCPT
+	id S933355Ab2JKDy2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 23:54:28 -0400
+Received: from us-mx3.synaptics.com ([12.239.217.85]:23640 "EHLO
+	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933149Ab2JKDyZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 23:53:07 -0400
-From: "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "Croxon, Nigel" <nigel.croxon@hp.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "Sakkinen, Jarkko" <jarkko.sakkinen@intel.com>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "agordeev@redhat.com" <agordeev@redhat.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>
-Subject: RE: [PATCH] fix x2apic defect that Linux kernel doesn't mask 8259A
- interrupt during the time window between changing VT-d table base address
- and initializing these VT-d entries(smpboot.c and apic.c )
-Thread-Topic: [PATCH] fix x2apic defect that Linux kernel doesn't mask 8259A
- interrupt during the time window between changing VT-d table base address
- and initializing these VT-d entries(smpboot.c and apic.c )
-Thread-Index: AQHNpbB+Rz0tU9hpbEaEjcKbxJEEKZexnhfwgAGfSYCAADrVcA==
-Date: Thu, 11 Oct 2012 03:52:09 +0000
-Message-ID: <92645B27BF79D04FBD2B0F8494FFD0F910292C@G2W2429.americas.hpqcorp.net>
-References: <92645B27BF79D04FBD2B0F8494FFD0F90FC806@G2W2429.americas.hpqcorp.net>
-	 <1349740633.11093.43.camel@sbsiddha-desk.sc.intel.com>
-	 <92645B27BF79D04FBD2B0F8494FFD0F90FE41E@G2W2429.americas.hpqcorp.net>
- <1349914040.3042.12.camel@sbsiddha-desk.sc.intel.com>
-In-Reply-To: <1349914040.3042.12.camel@sbsiddha-desk.sc.intel.com>
-Accept-Language: zh-CN, en-US
+	Wed, 10 Oct 2012 23:54:25 -0400
+X-PGP-Universal: processed;
+	by securemail.synaptics.com on Wed, 10 Oct 2012 20:21:29 -0700
+From: Christopher Heiny <Cheiny@synaptics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
+        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Alexandra Chin <alexandra.chin@tw.synaptics.com>
+Subject: RE: [RFC PATCH 01/06] input/rmi4: Public header and documentation
+Thread-Topic: [RFC PATCH 01/06] input/rmi4: Public header and documentation
+Thread-Index: AQHNo3hc5XW/z7cpP0CALRtkIzq7N5exEeCAgAAMXICAAmLQUw==
+Date: Thu, 11 Oct 2012 03:56:22 +0000
+Message-ID: <BFABBC009FBA1C43B207B15FD485ABD922C22BE7@USW-MAIL1.synaptics-inc.local>
+References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com>
+ <1349496603-20775-2-git-send-email-cheiny@synaptics.com>
+ <CACRpkdZb+LOk8v0aNZuPhATjS5jv-h1JJCejoh_9eFZ_fdiZQA@mail.gmail.com>,<20121009082719.GC8237@opensource.wolfsonmicro.com>
+In-Reply-To: <20121009082719.GC8237@opensource.wolfsonmicro.com>
+Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [15.217.50.30]
-Content-Type: text/plain; charset="utf-8"
+x-originating-ip: [10.20.10.35]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9B3rL1M008826
 
-
-> -----Original Message-----
-> From: Suresh Siddha [mailto:suresh.b.siddha@intel.com]
-> > > Can you please apply the appended patch to 2.6.32 kernel and see if
-> > > the issue you mentioned gets fixed? If so, we can ask the -stable
-> > > and OSV's teams to pick up this fix.
-> > Yes , it can resolve current issue.
+Mark Brown wrote:
+> On Tue, Oct 09, 2012 at 09:43:13AM +0200, Linus Walleij wrote:
+> > On Sat, Oct 6, 2012 at 6:09 AM, Christopher Heiny <cheiny@synaptics.com> wrote:
+> > > + * @cs_assert - For systems where the SPI subsystem does not control
+> > > the CS/SSB + * line, or where such control is broken, you can provide a
+> > > custom routine to + * handle a GPIO as CS/SSB.  This routine will be
+> > > called at the beginning and + * end of each SPI transaction.  The RMI
+> > > SPI implementation will wait + * pre_delay_us after this routine
+> > > returns before starting the SPI transfer; + * and post_delay_us after
+> > > completion of the SPI transfer(s) before calling it + * with
+> > > assert==FALSE.
+> > 
+> > Hm hm, can you describe the case where this happens?
+> > 
+> > Usually we don't avoid fixes for broken drivers by duct-taping
+> > solutions into other drivers, instead we fix the SPI driver.
+> > 
+> > I can think of systems where CS is asserted not by using
+> > GPIO but by poking some special register for example, which
+> > is a valid reason for including this, but working around broken
+> > SPI drivers is not a valid reason to include this.
+> > 
+> > (Paging Mark about it.)
 > 
-> Thanks for testing it out.
+> Yeah, this seems silly - by this logic we'd have to go round implementing
+> manual /CS control in every single SPI client driver which isn't
+> terribly sensible.  The driver should just assume that the SPI
+> controller does what it's told.  As you say if there's an issue the
+> relevant controller driver should take care of things.
 > 
-You are welcome!
-
-> I will add the appropriate changelog and send the patch out (to 2.6.32 stable
-> and OSV kernels) with your "Tested-by:" if you are ok.
+> We should also have generic support in the SPI framework for GPIO based
+> /CS, there's enough drivers open coding this already either due to
+> hardware limitations or to support extra chip selects.
 > 
-Sure, it is my pleasure .Please go ahead!
-BTW , what's OSV kernels ? I can't find its meaning by searching google.  
-Once your patch has been included by 2.6 git, kindly inform me. Thanks. 
+> The ability of SPI hardware and driver authors to get /CS right is
+> pretty depressing :/
 
-> thanks,
-> suresh
+You will get no argument at all from me on that point.  I'll even add board layout engineers to the list ("it wasn't convenient to run CS, so we just used a different pin.  You can just mux it, right?").  Basically this feature exists to help get prototype systems up and running while the SPI hardware/driver/layout matures.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+If this feature is a deal-breaker, we can take it out.  In the absence of a generic GPIO implementation for CS, though, I'd much rather leave it in.  Once generic GPIO CS arrives, we'll remove it pretty quickly.  
+
