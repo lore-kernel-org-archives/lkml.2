@@ -1,86 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758919Ab2JKSUV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 14:20:21 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:35892 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756379Ab2JKSUT (ORCPT
+	id S1759102Ab2JKSWe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 14:22:34 -0400
+Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:36784 "HELO
+	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756379Ab2JKSWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 14:20:19 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Jiri Slaby <jirislaby@gmail.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: kswapd0: wxcessive CPU usage
-In-Reply-To: Your message of "Thu, 11 Oct 2012 19:59:33 +0200."
-             <50770905.5070904@suse.cz>
-From: Valdis.Kletnieks@vt.edu
-References: <507688CC.9000104@suse.cz> <106695.1349963080@turing-police.cc.vt.edu> <5076E700.2030909@suse.cz> <118079.1349978211@turing-police.cc.vt.edu>
-            <50770905.5070904@suse.cz>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1349979570_1985P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Thu, 11 Oct 2012 14:22:31 -0400
+Message-ID: <50770E5C.4040302@xenotime.net>
+Date: Thu, 11 Oct 2012 11:22:20 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Nishanth Menon <nm@ti.com>
+CC: linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kevin Hilman <khilman@ti.com>, MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PM / devfreq: kernel-doc typo corrections
+References: <1349962755-19598-1-git-send-email-nm@ti.com>
+In-Reply-To: <1349962755-19598-1-git-send-email-nm@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Thu, 11 Oct 2012 14:19:30 -0400
-Message-ID: <119175.1349979570@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020201.50770DB3.0124,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1349979570_1985P
-Content-Type: text/plain; charset="us-ascii"
-Content-Id: <119168.1349979570.1@turing-police.cc.vt.edu>
+On 10/11/2012 06:39 AM, Nishanth Menon wrote:
 
-On Thu, 11 Oct 2012 19:59:33 +0200, Jiri Slaby said:
-> On 10/11/2012 07:56 PM, Valdis.Kletnieks@vt.edu wrote:
-> > On Thu, 11 Oct 2012 17:34:24 +0200, Jiri Slaby said:
-> >> On 10/11/2012 03:44 PM, Valdis.Kletnieks@vt.edu wrote:
-> >>> So at least we know we're not hallucinating. :)
-> >>
-> >> Just a thought? Do you have raid?
-> >
-> > Nope, just a 160G laptop spinning hard drive. Filesystems are ext4
-> > on LVM on a cryptoLUKS partition on /dev/sda2.
->
-> Ok, it's maybe compaction. Do you have CONFIG_COMPACTION=y?
-
-# zgrep COMPAC /proc/config.gz
-CONFIG_COMPACTION=y
-
-Hope that tells you something useful.
+> Parameter documentation needs a ':' for scripts/kernel-doc
+> to parse properly.
+> 
+> Minor fixes for ones warned by:
+> ./scripts/kernel-doc -text drivers/devfreq/devfreq.c>/dev/null
+> 
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: Kevin Hilman <khilman@ti.com>
+> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-pm@vger.kernel.org
+> 
+> Signed-off-by: Nishanth Menon <nm@ti.com>
 
 
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
---==_Exmh_1349979570_1985P
-Content-Type: application/pgp-signature
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+> ---
+>  drivers/devfreq/devfreq.c |   22 +++++++++++-----------
+>  1 file changed, 11 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+> index 70c31d4..e4d48d2 100644
+> --- a/drivers/devfreq/devfreq.c
+> +++ b/drivers/devfreq/devfreq.c
+> @@ -123,9 +123,9 @@ int update_devfreq(struct devfreq *devfreq)
+>  /**
+>   * devfreq_notifier_call() - Notify that the device frequency requirements
+>   *			   has been changed out of devfreq framework.
+> - * @nb		the notifier_block (supposed to be devfreq->nb)
+> - * @type	not used
+> - * @devp	not used
+> + * @nb:		the notifier_block (supposed to be devfreq->nb)
+> + * @type:	not used
+> + * @devp:	not used
+>   *
+>   * Called by a notifier that uses devfreq->nb.
+>   */
+> @@ -431,7 +431,7 @@ err_out:
+>  
+>  /**
+>   * devfreq_remove_device() - Remove devfreq feature from a device.
+> - * @devfreq	the devfreq instance to be removed
+> + * @devfreq:	the devfreq instance to be removed
+>   */
+>  int devfreq_remove_device(struct devfreq *devfreq)
+>  {
+> @@ -641,9 +641,9 @@ module_exit(devfreq_exit);
+>  /**
+>   * devfreq_recommended_opp() - Helper function to get proper OPP for the
+>   *			     freq value given to target callback.
+> - * @dev		The devfreq user device. (parent of devfreq)
+> - * @freq	The frequency given to target function
+> - * @flags	Flags handed from devfreq framework.
+> + * @dev:	The devfreq user device. (parent of devfreq)
+> + * @freq:	The frequency given to target function
+> + * @flags:	Flags handed from devfreq framework.
+>   *
+>   */
+>  struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq,
+> @@ -674,8 +674,8 @@ struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq,
+>   * devfreq_register_opp_notifier() - Helper function to get devfreq notified
+>   *				   for any changes in the OPP availability
+>   *				   changes
+> - * @dev		The devfreq user device. (parent of devfreq)
+> - * @devfreq	The devfreq object.
+> + * @dev:	The devfreq user device. (parent of devfreq)
+> + * @devfreq:	The devfreq object.
+>   */
+>  int devfreq_register_opp_notifier(struct device *dev, struct devfreq *devfreq)
+>  {
+> @@ -690,8 +690,8 @@ int devfreq_register_opp_notifier(struct device *dev, struct devfreq *devfreq)
+>   * devfreq_unregister_opp_notifier() - Helper function to stop getting devfreq
+>   *				     notified for any changes in the OPP
+>   *				     availability changes anymore.
+> - * @dev		The devfreq user device. (parent of devfreq)
+> - * @devfreq	The devfreq object.
+> + * @dev:	The devfreq user device. (parent of devfreq)
+> + * @devfreq:	The devfreq object.
+>   *
+>   * At exit() callback of devfreq_dev_profile, this must be included if
+>   * devfreq_recommended_opp is used.
 
-iQIVAwUBUHcNsgdmEQWDXROgAQKPxxAAi/iFROmawBnICQaf90Mxx3QxFj7Wunob
-uYgQ+31FZ2txxUvTD/X3CNBhrQMUo9RKProRG1YrmzqP21q6JAUkYyce8dT7F/XS
-bQO7Z31Qe0zm3OJNVou1HVtOnjoqGvdiG0W6eQfHUwrEQ1Pv12xgYb3nONDkqm+/
-OpSOPJ7QuRkQMvgGWdXuwZgVn196IloXaicPHb/oZS9pwLEck6dWMG9tCM4LP1lN
-8IfYja7p7jXySaoC7N9E6ZU9ZjtdtnnADLK9EHLt1uvTZT3DIu54hXPL/q4pwZBj
-6tVSc+5fpMeDEkDZra6xOMvysCOMi0DmmZx38UHc0BKWUhOsfTXZgQl4+IbkCEP4
-7p7rb1Y69dHTNeB1Q6+AXW1vdy/gPjicsgh+4lGeqqn16qtARl8uJTtS69YFXs/D
-pMhnCMORoVrqDnRk4NkwQALmVaux1xUkEltRhLH8O4lVmA87F3v16OSi+OOwT0cb
-sARzr/6ZRFpeMf2A/lLn1JPjYvIIffBg0no51MElExIZpq/qobn1k8V5oBVTXebr
-ZP3J2RFavlY/rRqmwlRwUUA6ZsF4fNYHSF02jrgS0E+qDkgrXE8bVpLAOm5w1/nP
-LULidsf9Xr5K1W81JLQZX533NrFEIj/ZRwWJlOivO0jcDUxorMYs5C4+g3PgnnsC
-5kYiU0eGqWo=
-=7uB1
------END PGP SIGNATURE-----
 
---==_Exmh_1349979570_1985P--
 
+-- 
+~Randy
