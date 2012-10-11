@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759448Ab2JKVth (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 17:49:37 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:39059 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759414Ab2JKVtg (ORCPT
+	id S1759452Ab2JKVwI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 17:52:08 -0400
+Received: from smtprelay-b11.telenor.se ([62.127.194.20]:49753 "EHLO
+	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759414Ab2JKVwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 17:49:36 -0400
-Date: Thu, 11 Oct 2012 14:49:29 -0700
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH V2 0/7]: PVH: PV guest with extensions
-Message-ID: <20121011144929.06e71a9e@mantra.us.oracle.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 11 Oct 2012 17:52:03 -0400
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgWfAIQ+d1BV5h1yPGdsb2JhbABEDoo+tAcEfRkBAQEBHxkNJ4IgAQEEATocKAsIAxguFCUKGgEJiAcKuVgUizMvA4UOYAOVbIVyjHE9
+X-IronPort-AV: E=Sophos;i="4.80,574,1344204000"; 
+   d="scan'208";a="204235969"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Thu, 11 Oct 2012 23:54:39 +0200
+To: Hans de Goede <hdegoede@redhat.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: REGRESSION: usbdevfs:
+ Use-scatter-gather-lists-for-large-bulk-transfers
+Message-ID: <20121011215439.GA505@polaris.bitmath.org>
+References: <20121010203118.GA792@polaris.bitmath.org>
+ <20121010203459.20663.qmail@stuge.se>
+ <20121011054403.GA1680@polaris.bitmath.org>
+ <20121011065033.2168.qmail@stuge.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121011065033.2168.qmail@stuge.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Thu, Oct 11, 2012 at 08:50:33AM +0200, Peter Stuge wrote:
+> Henrik Rydberg wrote:
+> > > What is the programming cable and software that uses it?
+> > 
+> > The programmer is impact, using libusbx-1.0.14-1.
+> 
+> Do you know for a fact that your version calls libusb-1.0? Did you
+> establish this with e.g. strace? ISE 11.1 impact uses only libusb.so,
+> ie. libusb-0.1.
 
-Ok, I've made all the changes from prev RFC patch submissions. Tested
-all the combinations. The patches are organized slightly differently
-from prev version because of the nature of changes after last review. I
-am building xen patch just for the corresponding header file changes.
-Following that I'll refresh xen tree, debug, test, and send patches.
+I modified libusbx during testing, and yes, it is really used.
 
-For linux kernel mailing list introduction, PVH is a PV guest that can
-run in an HVM container, uses native pagetables, uses callback vector,
-native IDT, and native syscalls.
+> > The patch is pretty generic, so I am suprised the problem has not
+> > shown up earlier.
+> 
+> There are several explanations. There is clearly a problem with Hans'
+> patch(es) for some cases, but those are perhaps not so common.
 
-They were built on top of 89d0307af2b9957d59bfb2a86aaa57464ff921de
-commit.
+As it turned out, all cases of large bulk transfers, so I guess 3.6
+has not been that widely tested yet. ;-)
 
-thanks,
-Mukesh
+> I've reviewed Hans' patch that he added to libusbx and which is in
+> libusbx-1.0.14, but I am not sure that it is correct, which is why
+> I haven't included it in libusb yet.
+
+I looked at it for a while, it does seem correct.
+
+Thanks,
+Henrik
