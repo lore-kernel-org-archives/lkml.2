@@ -1,92 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755715Ab2JKIeR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 04:34:17 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38865 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678Ab2JKIeM (ORCPT
+	id S1755988Ab2JKIlk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 04:41:40 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:53935 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656Ab2JKIlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 04:34:12 -0400
-Message-ID: <5076847A.3010705@gmail.com>
-Date: Thu, 11 Oct 2012 10:34:02 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Thu, 11 Oct 2012 04:41:35 -0400
 MIME-Version: 1.0
-To: Sebastian Hesselbarh <sebastian.hesselbarth@googlemail.com>
-CC: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, mturquette@ti.com
-Subject: Re: [RFC] Common clock framework for external clock generators
-References: <4FAB15DB.5050702@googlemail.com>
-In-Reply-To: <4FAB15DB.5050702@googlemail.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201210111023.51311.o.endriss@gmx.de>
+References: <30699.1349789424@warthog.procyon.org.uk>
+	<20121009183908.1e402a43@infradead.org>
+	<201210111023.51311.o.endriss@gmx.de>
+Date: Thu, 11 Oct 2012 14:11:34 +0530
+Message-ID: <CAHFNz9JbLwWPocr3b2F0Kz_5VEcYadQRHePsvBfXA5h1NUwGnA@mail.gmail.com>
+Subject: Re: Re: [GIT PULL] Disintegrate UAPI for media
+From: Manu Abraham <abraham.manu@gmail.com>
+To: Oliver Endriss <o.endriss@gmx.de>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David Howells <dhowells@redhat.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hans Verkuil <hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+On Thu, Oct 11, 2012 at 1:53 PM, Oliver Endriss <o.endriss@gmx.de> wrote:
+> Mauro Carvalho Chehab <mchehab@infradead.org> wrote:
+>> Em Tue, 09 Oct 2012 14:30:24 +0100
+>> David Howells <dhowells@redhat.com> escreveu:
+>>
+>> > Can you merge the following branch into the media tree please.
+>> >
+>> > This is to complete part of the Userspace API (UAPI) disintegration for which
+>> > the preparatory patches were pulled recently.  After these patches, userspace
+>> > headers will be segregated into:
+>> >
+>> >     include/uapi/linux/.../foo.h
+>> >
+>> > for the userspace interface stuff, and:
+>> >
+>> >     include/linux/.../foo.h
+>> >
+>> > for the strictly kernel internal stuff.
+>> >
+>> > ---
+>> > The following changes since commit 9e2d8656f5e8aa214e66b462680cf86b210b74a8:
+>> >
+>> >   Merge branch 'akpm' (Andrew's patch-bomb) (2012-10-09 16:23:15 +0900)
+>> >
+>> > are available in the git repository at:
+>> >
+>> >
+>> >   git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-media-20121009
+>> >
+>> > for you to fetch changes up to 1c436decd49665be131887b08d172a7989cdceee:
+>> >
+>> >   UAPI: (Scripted) Disintegrate include/linux/dvb (2012-10-09 09:48:42 +0100)
+>> >
+>> > ----------------------------------------------------------------
+>> > UAPI Disintegration 2012-10-09
+>> >
+>> > ----------------------------------------------------------------
+>> > David Howells (1):
+>> >       UAPI: (Scripted) Disintegrate include/linux/dvb
+>> >
+>> >  include/linux/dvb/Kbuild                |   8 -
+>> >  include/linux/dvb/dmx.h                 | 130 +--------------
+>> >  include/linux/dvb/video.h               | 249 +----------------------------
+>> >  include/uapi/linux/dvb/Kbuild           |   8 +
+>> >  include/{ => uapi}/linux/dvb/audio.h    |   0
+>> >  include/{ => uapi}/linux/dvb/ca.h       |   0
+>> >  include/uapi/linux/dvb/dmx.h            | 155 ++++++++++++++++++
+>> >  include/{ => uapi}/linux/dvb/frontend.h |   0
+>> >  include/{ => uapi}/linux/dvb/net.h      |   0
+>> >  include/{ => uapi}/linux/dvb/osd.h      |   0
+>> >  include/{ => uapi}/linux/dvb/version.h  |   0
+>> >  include/uapi/linux/dvb/video.h          | 274 ++++++++++++++++++++++++++++++++
+>> >  12 files changed, 439 insertions(+), 385 deletions(-)
+>> >  rename include/{ => uapi}/linux/dvb/audio.h (100%)
+>> >  rename include/{ => uapi}/linux/dvb/ca.h (100%)
+>> >  create mode 100644 include/uapi/linux/dvb/dmx.h
+>> >  rename include/{ => uapi}/linux/dvb/frontend.h (100%)
+>> >  rename include/{ => uapi}/linux/dvb/net.h (100%)
+>> >  rename include/{ => uapi}/linux/dvb/osd.h (100%)
+>> >  rename include/{ => uapi}/linux/dvb/version.h (100%)
+>> >  create mode 100644 include/uapi/linux/dvb/video.h
+>>
+>> Hmm... last year, it was decided that we would be putting the DVB av7110-only
+>> API files on a separate place, as the API there conflicts with V4L/alsa APIs
+>
+> Wrong! Hans Verkuil and you tried to do it, without caring that it would
+> break userspace, and it was NAKed.
+>
+> Btw, if there is an API conflict, you guys created it.
+>
+> Anyone, who is interested in the _true_ history, should have a look at
+> the GIT changelog:
+> - dvb/{video.h,audio.h,osd.h} was the original decoder API.
+> - Then Hans extended this API, still using the same files.
+> - Later the v4l guys decided to create a new API.
+> - Now they want to (re)move the old one, breaking userspace.
+>
+> I explicitly NAK any attempt to break userspace applications and tools!
+> There is no reason to do it!
+>
+>> and are used only by one upstream driver (there were two drivers using them,
+>> at that time). As you might notice, av7110 hardware is really old, not
+>> manufactured anymore since maybe 10 years ago, and it is an unmaintained
+>> driver.
+>
+> The driver works fine, and it will continue to do so, unless someone
+> tampers with it. It does not require maintenance.
+> The hardware is old, but it is still in use, as it is easy to create a
+> pc-based settopbox with it.
 
-On 10.05.2012 03:11, Sebastian Hesselbarh wrote:
-> first of all I apologize for the quite long attachment but I think
-> it is useful for the following discussion.
-> 
-> I recently read about the newly introduced common clock framework (ccf)
-> and wondered if this could be also used for external, e.g. i2c attached,
-> clock generators.
-> 
-> Based on my current understanding of the framework I wrote such a
-> driver and now I want to present it here for clarification of some
-> remarks I have regarding the framework itself.
 
-May I kindly ask what happened to this driver? Are you planning to do
-another spin for submission?
+As of writing; the av7110 is the only driver in-kernel, but there is more to it:
+Such drivers are hard to bring up and takes an awful amount of time. There
+is already one driver which is nearing completion based on the same interface.
 
 
-Many thanks,
-Daniel
+>
+>> Some developers complained, arguing that moving it to a separate file would
+>> be breaking the compilation on existing tools (they're basically concerned with
+>> it due to out-of-tree drivers - mostly propietary ones, that use this API).
+>
+> It you move the API somewhere else, you will break userspace applications
+> like VDR. This is not acceptable.
+>
+>> Now that we're moving everything, it does make sense to do that, moving
+>> dvb/(audio|osd|video).h to someplace else (maybe linux/dvb/av7110.h or
+>> linux/dvb/legacy/*.h).
+>
+> As far as I understand the original patchset, it will not break
+> userspace, as it will simply move all files somewhere else, preserving
+> file names and the position of the files in the tree.
+>
+> Mauro is trying to the move the old decoder API somewhere else, possibly
+> into a different file, which will definitely break userspace.
+> NAK for this!
 
 
+I completely agree with Oliver on this and NAK the suggestion put forward
+by Mauro (and Hans)
 
 
-> Please do not see this driver as mature but as some kind of
-> proof-of-concept. I have the driver somewhat running but stumbled
-> upon some issues.
-> 
-> First I want to give a brief overview of the intended use case of
-> this driver:
-> 
-> It is a driver for a clock generator that is externally attached to
-> a Marvell Dove (arm/mach-dove) SoC. It will provide driver configurable
-> clocks that are connected to dedicated clock inputs of the SoC, e.g.
-> external audio clock for i2s controller.
-> 
-> The basic intention I had in mind when writing this driver was to
-> add it during platform init and pass a list of clock aliases and clock
-> hierarchy description to allow the receiving driver, e.g. i2s, to set
-> the rate of the supplied clock without poking the clock generator
-> directly.
-> 
-> Please comment on the following aspects:
-> - there is no clk_unregister which is okay for platform clocks but
-> should be there since clock generators can be detached
-> - the clock generator has two plls and up to 8 clocks; inside the
-> clk_ops it is quite hard to find the correct struct clk_hw when
-> using container_of()
-> - most of clk_ops are spin-locked but i2c drivers tend to sleep
-> during read or write; this causes a "BUG: scheduling while atomic"
-> 
-> I know that ccf is quite new but it is well suited for generic,
-> i.e. platform independent, external clock generator drivers. Maybe
-> I got the overall concept just wrong but maybe this RFC helps
-> to straighten things up for future drivers.
-> 
-> Regards,
->      Sebastian
-> 
-> 
-> 
-> 
-> 
-> 
-
+Regards,
+Manu
