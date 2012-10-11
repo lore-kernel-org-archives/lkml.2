@@ -1,79 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875Ab2JKIY3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 04:24:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36276 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261Ab2JKIYY (ORCPT
+	id S1754732Ab2JKI0b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 04:26:31 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:50205 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751656Ab2JKI01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 04:24:24 -0400
-Date: Thu, 11 Oct 2012 01:24:20 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Christopher Heiny <Cheiny@synaptics.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Alexandra Chin <alexandra.chin@tw.synaptics.com>
-Subject: Re: [RFC PATCH 01/06] input/rmi4: Public header and documentation
-Message-ID: <20121011082420.GC32175@core.coreip.homeip.net>
-References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com>
- <1349496603-20775-2-git-send-email-cheiny@synaptics.com>
- <CACRpkdZb+LOk8v0aNZuPhATjS5jv-h1JJCejoh_9eFZ_fdiZQA@mail.gmail.com>
- <BFABBC009FBA1C43B207B15FD485ABD922C22BC4@USW-MAIL1.synaptics-inc.local>
+	Thu, 11 Oct 2012 04:26:27 -0400
+X-Authenticated: #476490
+X-Provags-ID: V01U2FsdGVkX181Y9RCBIs14zl2XcQfXCIMdnSqsY8UaqQNrN8YuF
+	RmWzysgZHjmM/A
+From: Oliver Endriss <o.endriss@gmx.de>
+Organization: Escape GmbH
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: Re: Re: [GIT PULL] Disintegrate UAPI for media
+Date: Thu, 11 Oct 2012 10:23:50 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-486; KDE/4.8.4; i686; ; )
+Cc: David Howells <dhowells@redhat.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hans Verkuil <hverkuil@xs4all.nl>
+References: <30699.1349789424@warthog.procyon.org.uk> <20121009183908.1e402a43@infradead.org>
+In-Reply-To: <20121009183908.1e402a43@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BFABBC009FBA1C43B207B15FD485ABD922C22BC4@USW-MAIL1.synaptics-inc.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210111023.51311.o.endriss@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 11, 2012 at 03:41:41AM +0000, Christopher Heiny wrote:
-> Linus Walleij wrote:
-> > On Sat, Oct 6, 2012 at 6:09 AM, Christopher Heiny <cheiny@synaptics.com> wrote:
-> > 
-> > > +#ifdef CONFIG_RMI4_DEBUG
-> > > +/**
-> > > + * Utility routine to handle writes to read-only attributes.  Hopefully
-> > > + * this will never happen, but if the user does something stupid, we
-> > > don't
-> > > + * want to accept it quietly (which is what can happen if you just put
-> > > NULL + * for the attribute's store function).
-> > > + */
-> > > +static inline ssize_t rmi_store_error(struct device *dev,
-> > > +                       struct device_attribute *attr,
-> > > +                       const char *buf, size_t count)
-> > > +{
-> > > +       dev_warn(dev,
-> > > +                "WARNING: Attempt to write %d characters to read-only
-> > > attribute %s.", +               count, attr->attr.name);
-> > > +       return -EPERM;
-> > > +}
-> > 
-> > Here it looks like you're hiding a lot of stuff that should be dev_warn()?
-> > Consider my earlier point about dynamic debug.
+Mauro Carvalho Chehab <mchehab@infradead.org> wrote:
+> Em Tue, 09 Oct 2012 14:30:24 +0100
+> David Howells <dhowells@redhat.com> escreveu:
 > 
-> In previous patch submissions, we always used these warning functions.
-> But in the feedback on those patches, we were asked to just make sysfs
-> show/store NULL if the attribute is write/read only.  However, during
-> their development process, our customers want to see the warnings if
-> the attributes are accessed incorrectly.  So we made these warnings a
-> debug option.
+> > Can you merge the following branch into the media tree please.
+> > 
+> > This is to complete part of the Userspace API (UAPI) disintegration for which
+> > the preparatory patches were pulled recently.  After these patches, userspace
+> > headers will be segregated into:
+> > 
+> > 	include/uapi/linux/.../foo.h
+> > 
+> > for the userspace interface stuff, and:
+> > 
+> > 	include/linux/.../foo.h
+> > 
+> > for the strictly kernel internal stuff.
+> > 
+> > ---
+> > The following changes since commit 9e2d8656f5e8aa214e66b462680cf86b210b74a8:
+> > 
+> >   Merge branch 'akpm' (Andrew's patch-bomb) (2012-10-09 16:23:15 +0900)
+> > 
+> > are available in the git repository at:
+> > 
+> > 
+> >   git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-media-20121009
+> > 
+> > for you to fetch changes up to 1c436decd49665be131887b08d172a7989cdceee:
+> > 
+> >   UAPI: (Scripted) Disintegrate include/linux/dvb (2012-10-09 09:48:42 +0100)
+> > 
+> > ----------------------------------------------------------------
+> > UAPI Disintegration 2012-10-09
+> > 
+> > ----------------------------------------------------------------
+> > David Howells (1):
+> >       UAPI: (Scripted) Disintegrate include/linux/dvb
+> > 
+> >  include/linux/dvb/Kbuild                |   8 -
+> >  include/linux/dvb/dmx.h                 | 130 +--------------
+> >  include/linux/dvb/video.h               | 249 +----------------------------
+> >  include/uapi/linux/dvb/Kbuild           |   8 +
+> >  include/{ => uapi}/linux/dvb/audio.h    |   0
+> >  include/{ => uapi}/linux/dvb/ca.h       |   0
+> >  include/uapi/linux/dvb/dmx.h            | 155 ++++++++++++++++++
+> >  include/{ => uapi}/linux/dvb/frontend.h |   0
+> >  include/{ => uapi}/linux/dvb/net.h      |   0
+> >  include/{ => uapi}/linux/dvb/osd.h      |   0
+> >  include/{ => uapi}/linux/dvb/version.h  |   0
+> >  include/uapi/linux/dvb/video.h          | 274 ++++++++++++++++++++++++++++++++
+> >  12 files changed, 439 insertions(+), 385 deletions(-)
+> >  rename include/{ => uapi}/linux/dvb/audio.h (100%)
+> >  rename include/{ => uapi}/linux/dvb/ca.h (100%)
+> >  create mode 100644 include/uapi/linux/dvb/dmx.h
+> >  rename include/{ => uapi}/linux/dvb/frontend.h (100%)
+> >  rename include/{ => uapi}/linux/dvb/net.h (100%)
+> >  rename include/{ => uapi}/linux/dvb/osd.h (100%)
+> >  rename include/{ => uapi}/linux/dvb/version.h (100%)
+> >  create mode 100644 include/uapi/linux/dvb/video.h
+> 
+> Hmm... last year, it was decided that we would be putting the DVB av7110-only
+> API files on a separate place, as the API there conflicts with V4L/alsa APIs
 
-I think it is the case when customer is not always right. Given that
-the attributes are created with S_IRUGO mask how will we even get these
-methods to fire?
+Wrong! Hans Verkuil and you tried to do it, without caring that it would
+break userspace, and it was NAKed.
+
+Btw, if there is an API conflict, you guys created it.
+
+Anyone, who is interested in the _true_ history, should have a look at
+the GIT changelog:
+- dvb/{video.h,audio.h,osd.h} was the original decoder API.
+- Then Hans extended this API, still using the same files.
+- Later the v4l guys decided to create a new API.
+- Now they want to (re)move the old one, breaking userspace.
+
+I explicitly NAK any attempt to break userspace applications and tools!
+There is no reason to do it!
+
+> and are used only by one upstream driver (there were two drivers using them,
+> at that time). As you might notice, av7110 hardware is really old, not 
+> manufactured anymore since maybe 10 years ago, and it is an unmaintained
+> driver.
+
+The driver works fine, and it will continue to do so, unless someone
+tampers with it. It does not require maintenance.
+The hardware is old, but it is still in use, as it is easy to create a
+pc-based settopbox with it.
+
+> Some developers complained, arguing that moving it to a separate file would
+> be breaking the compilation on existing tools (they're basically concerned with
+> it due to out-of-tree drivers - mostly propietary ones, that use this API).
+
+It you move the API somewhere else, you will break userspace applications
+like VDR. This is not acceptable.
+
+> Now that we're moving everything, it does make sense to do that, moving 
+> dvb/(audio|osd|video).h to someplace else (maybe linux/dvb/av7110.h or
+> linux/dvb/legacy/*.h).
+
+As far as I understand the original patchset, it will not break
+userspace, as it will simply move all files somewhere else, preserving
+file names and the position of the files in the tree.
+
+Mauro is trying to the move the old decoder API somewhere else, possibly
+into a different file, which will definitely break userspace.
+NAK for this!
+
+Regards,
+Oliver
 
 -- 
-Dmitry
+----------------------------------------------------------------
+VDR Remote Plugin 0.4.0: http://www.escape-edv.de/endriss/vdr/
+4 MByte Mod: http://www.escape-edv.de/endriss/dvb-mem-mod/
+Full-TS Mod: http://www.escape-edv.de/endriss/dvb-full-ts-mod/
+----------------------------------------------------------------
