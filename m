@@ -1,188 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758363Ab2JKKL2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 06:11:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50159 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758257Ab2JKKLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 06:11:23 -0400
-Date: Thu, 11 Oct 2012 12:11:19 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>, devel@openvz.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v4 04/14] kmem accounting basic infrastructure
-Message-ID: <20121011101119.GB29295@dhcp22.suse.cz>
-References: <1349690780-15988-1-git-send-email-glommer@parallels.com>
- <1349690780-15988-5-git-send-email-glommer@parallels.com>
+	id S1758369Ab2JKKNS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 06:13:18 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37008 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758309Ab2JKKNO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 06:13:14 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50769B8C.2060901@jp.fujitsu.com>
+Date: Thu, 11 Oct 2012 19:12:28 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349690780-15988-5-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <toshi.kani@hp.com>, <lenb@kernel.org>, <wency@cn.fujitsu.com>,
+        <vasilis.liaskovitis@profitbricks.com>
+Subject: [PATCH v2] acpi : acpi_bus_trim() stops removing devices when failing
+ to remove the device
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 08-10-12 14:06:10, Glauber Costa wrote:
-> This patch adds the basic infrastructure for the accounting of the slab
-> caches. To control that, the following files are created:
-> 
->  * memory.kmem.usage_in_bytes
->  * memory.kmem.limit_in_bytes
->  * memory.kmem.failcnt
->  * memory.kmem.max_usage_in_bytes
-> 
-> They have the same meaning of their user memory counterparts. They
-> reflect the state of the "kmem" res_counter.
-> 
-> Per cgroup slab memory accounting is not enabled until a limit is set
+acpi_bus_trim() stops removing devices, when acpi_bus_remove() return error
+number. But acpi_bus_remove() cannot return error number correctly.
+acpi_bus_remove() only return -EINVAL, when dev argument is NULL. Thus even if
+device cannot be removed correctly, acpi_bus_trim() ignores and continues to
+remove devices. acpi_bus_hot_remove_device() uses acpi_bus_trim() for removing
+devices. Therefore acpi_bus_hot_remove_device() can send "_EJ0" to firmware,
+even if the device is running on the system. In this case, the system cannot
+work well.
 
-s/slab/kmem/ right?
+Vasilis hit the bug at memory hotplug and reported it as follow:
+https://lkml.org/lkml/2012/9/26/318
 
-> for the group. Once the limit is set the accounting cannot be disabled
-> for that group.  This means that after the patch is applied, no
-> behavioral changes exists for whoever is still using memcg to control
-> their memory usage, until memory.kmem.limit_in_bytes is set for the
-> first time.
-> 
-> We always account to both user and kernel resource_counters. This
-> effectively means that an independent kernel limit is in place when the
-> limit is set to a lower value than the user memory. A equal or higher
-> value means that the user limit will always hit first, meaning that kmem
-> is effectively unlimited.
-> 
-> People who want to track kernel memory but not limit it, can set this
-> limit to a very high number (like RESOURCE_MAX - 1page - that no one
-> will ever hit, or equal to the user memory)
-> 
-> [ v4: make kmem files part of the main array;
->       do not allow limit to be set for non-empty cgroups ]
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c | 123 +++++++++++++++++++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 122 insertions(+), 1 deletion(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 71d259e..ba855cc 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-[...]
-> @@ -332,6 +337,26 @@ struct mem_cgroup {
->  #endif
->  };
->  
-> +/* internal only representation about the status of kmem accounting. */
-> +enum {
-> +	KMEM_ACCOUNTED_ACTIVE = 0, /* accounted by this cgroup itself */
-> +};
-> +
-> +/* first bit */
-> +#define KMEM_ACCOUNTED_MASK 0x1
-> +
-> +#ifdef CONFIG_MEMCG_KMEM
-> +static void memcg_kmem_set_active(struct mem_cgroup *memcg)
-> +{
-> +	set_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_accounted);
-> +}
-> +
-> +static bool memcg_kmem_is_accounted(struct mem_cgroup *memcg)
-> +{
-> +	return test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_accounted);
-> +}
-> +#endif
+So acpi_bus_trim() should check whether device was removed or not correctly.
+The patch adds error check into some functions to remove the device.
 
-set_active vs. is_accounted. Is there any reason for inconsistency here?
+Applying the patch, acpi_bus_trim() stops removing devices when failing
+to remove the device. But I think there is no impact with the
+exceptionof CPU and Memory hotplug path. Because other device also fails
+but the fail is an irregular case like device is NULL.
 
-> +
->  /* Stuffs for move charges at task migration. */
->  /*
->   * Types of charges to be moved. "move_charge_at_immitgrate" is treated as a
-[...]
-> @@ -3947,6 +3980,58 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
->  	len = scnprintf(str, sizeof(str), "%llu\n", (unsigned long long)val);
->  	return simple_read_from_buffer(buf, nbytes, ppos, str, len);
->  }
-> +
-> +static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
-> +{
-> +	int ret = -EINVAL;
-> +#ifdef CONFIG_MEMCG_KMEM
-> +	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
-> +	/*
-> +	 * For simplicity, we won't allow this to be disabled.  It also can't
-> +	 * be changed if the cgroup has children already, or if tasks had
-> +	 * already joined.
-> +	 *
-> +	 * If tasks join before we set the limit, a person looking at
-> +	 * kmem.usage_in_bytes will have no way to determine when it took
-> +	 * place, which makes the value quite meaningless.
-> +	 *
-> +	 * After it first became limited, changes in the value of the limit are
-> +	 * of course permitted.
-> +	 *
-> +	 * Taking the cgroup_lock is really offensive, but it is so far the only
-> +	 * way to guarantee that no children will appear. There are plenty of
-> +	 * other offenders, and they should all go away. Fine grained locking
-> +	 * is probably the way to go here. When we are fully hierarchical, we
-> +	 * can also get rid of the use_hierarchy check.
-> +	 */
-> +	cgroup_lock();
-> +	mutex_lock(&set_limit_mutex);
-> +	if (!memcg->kmem_accounted && val != RESOURCE_MAX) {
+v1->v2
+- add a rollback for reinstalling a notify handler.
 
-Just a nit but wouldn't memcg_kmem_is_accounted(memcg) be better than
-directly checking kmem_accounted?
-Besides that I am not sure I fully understand RESOURCE_MAX test. Say I
-want to have kmem accounting for monitoring so I do 
-echo -1 > memory.kmem.limit_in_bytes
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-so you set the value but do not activate it. Isn't this just a reminder
-from the time when the accounting could be deactivated?
+---
+ drivers/acpi/scan.c    |   21 ++++++++++++++++++---
+ drivers/base/dd.c      |   22 +++++++++++++++++-----
+ include/linux/device.h |    2 +-
+ 3 files changed, 36 insertions(+), 9 deletions(-)
 
-> +		if (cgroup_task_count(cont) || (memcg->use_hierarchy &&
-> +						!list_empty(&cont->children))) {
-> +			ret = -EBUSY;
-> +			goto out;
-> +		}
-> +		ret = res_counter_set_limit(&memcg->kmem, val);
+Index: linux-3.6/drivers/acpi/scan.c
+===================================================================
+--- linux-3.6.orig/drivers/acpi/scan.c	2012-10-11 18:31:40.189019503 +0900
++++ linux-3.6/drivers/acpi/scan.c	2012-10-11 18:42:35.669041641 +0900
+@@ -445,18 +445,29 @@ static int acpi_device_remove(struct dev
+ {
+ 	struct acpi_device *acpi_dev = to_acpi_device(dev);
+ 	struct acpi_driver *acpi_drv = acpi_dev->driver;
++	int ret;
+ 
+ 	if (acpi_drv) {
+ 		if (acpi_drv->ops.notify)
+ 			acpi_device_remove_notify_handler(acpi_dev);
+-		if (acpi_drv->ops.remove)
+-			acpi_drv->ops.remove(acpi_dev, acpi_dev->removal_type);
++		if (acpi_drv->ops.remove) {
++			ret = acpi_drv->ops.remove(acpi_dev,
++						   acpi_dev->removal_type);
++			if (ret)
++				goto rollback;
++		}
+ 	}
+ 	acpi_dev->driver = NULL;
+ 	acpi_dev->driver_data = NULL;
+ 
+ 	put_device(dev);
+ 	return 0;
++
++rollback:
++	if (acpi_drv->ops.notify)
++		acpi_device_install_notify_handler(acpi_dev);
++
++	return ret;
+ }
+ 
+ struct bus_type acpi_bus_type = {
+@@ -1226,11 +1237,15 @@ static int acpi_device_set_context(struc
+ 
+ static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
+ {
++	int ret;
++
+ 	if (!dev)
+ 		return -EINVAL;
+ 
+ 	dev->removal_type = ACPI_BUS_REMOVAL_EJECT;
+-	device_release_driver(&dev->dev);
++	ret = device_release_driver(&dev->dev);
++	if (ret)
++		return ret;
+ 
+ 	if (!rmdevice)
+ 		return 0;
+Index: linux-3.6/drivers/base/dd.c
+===================================================================
+--- linux-3.6.orig/drivers/base/dd.c	2012-10-11 18:31:40.191019505 +0900
++++ linux-3.6/drivers/base/dd.c	2012-10-11 18:31:46.873020548 +0900
+@@ -475,9 +475,10 @@ EXPORT_SYMBOL_GPL(driver_attach);
+  * __device_release_driver() must be called with @dev lock held.
+  * When called for a USB interface, @dev->parent lock must be held as well.
+  */
+-static void __device_release_driver(struct device *dev)
++static int __device_release_driver(struct device *dev)
+ {
+ 	struct device_driver *drv;
++	int ret = 0;
+ 
+ 	drv = dev->driver;
+ 	if (drv) {
+@@ -493,9 +494,11 @@ static void __device_release_driver(stru
+ 		pm_runtime_put_sync(dev);
+ 
+ 		if (dev->bus && dev->bus->remove)
+-			dev->bus->remove(dev);
++			ret = dev->bus->remove(dev);
+ 		else if (drv->remove)
+-			drv->remove(dev);
++			ret = drv->remove(dev);
++		if (ret)
++			goto rollback;
+ 		devres_release_all(dev);
+ 		dev->driver = NULL;
+ 		dev_set_drvdata(dev, NULL);
+@@ -506,6 +509,12 @@ static void __device_release_driver(stru
+ 						     dev);
+ 
+ 	}
++
++	return ret;
++
++rollback:
++	driver_sysfs_add(dev);
++	return ret;
+ }
+ 
+ /**
+@@ -515,16 +524,19 @@ static void __device_release_driver(stru
+  * Manually detach device from driver.
+  * When called for a USB interface, @dev->parent lock must be held.
+  */
+-void device_release_driver(struct device *dev)
++int device_release_driver(struct device *dev)
+ {
++	int ret;
+ 	/*
+ 	 * If anyone calls device_release_driver() recursively from
+ 	 * within their ->remove callback for the same device, they
+ 	 * will deadlock right here.
+ 	 */
+ 	device_lock(dev);
+-	__device_release_driver(dev);
++	ret = __device_release_driver(dev);
+ 	device_unlock(dev);
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(device_release_driver);
+ 
+Index: linux-3.6/include/linux/device.h
+===================================================================
+--- linux-3.6.orig/include/linux/device.h	2012-10-11 18:31:40.194019508 +0900
++++ linux-3.6/include/linux/device.h	2012-10-11 18:31:46.881020556 +0900
+@@ -834,7 +834,7 @@ static inline void *dev_get_platdata(con
+  * for information on use.
+  */
+ extern int __must_check device_bind_driver(struct device *dev);
+-extern void device_release_driver(struct device *dev);
++extern int device_release_driver(struct device *dev);
+ extern int  __must_check device_attach(struct device *dev);
+ extern int __must_check driver_attach(struct device_driver *drv);
+ extern int __must_check device_reprobe(struct device *dev);
 
-VM_BUG_IN(ret) ?
-There shouldn't be any usage when you enable it or something bad is
-going on.
-
-> +		if (ret)
-> +			goto out;
-> +
-> +		memcg_kmem_set_active(memcg);
-> +	} else
-> +		ret = res_counter_set_limit(&memcg->kmem, val);
-> +out:
-> +	mutex_unlock(&set_limit_mutex);
-> +	cgroup_unlock();
-> +#endif
-> +	return ret;
-> +}
-> +
-> +static void memcg_propagate_kmem(struct mem_cgroup *memcg,
-> +				 struct mem_cgroup *parent)
-> +{
-> +	memcg->kmem_accounted = parent->kmem_accounted;
-> +}
-> +
->  /*
->   * The user of this function is...
->   * RES_LIMIT.
-[...]
--- 
-Michal Hocko
-SUSE Labs
