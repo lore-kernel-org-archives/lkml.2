@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933699Ab2JKBRo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:17:44 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39370 "EHLO
+	id S933714Ab2JKBSE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:18:04 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60032 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933654Ab2JKBOb (ORCPT
+	by vger.kernel.org with ESMTP id S933620Ab2JKBON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:14:31 -0400
-X-Sasl-enc: ljQtFEwZdQ3hkb97N5grQvo/9fTmjxkCVwVOs+WFLcyV 1349918070
+	Wed, 10 Oct 2012 21:14:13 -0400
+X-Sasl-enc: tL7JtmP6cgtbsok9IL9Ri+HSA4B7b8GE/w8YLULfHqr4 1349918051
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 110/120] mtd: nandsim: bugfix: fail if overridesize is too big
-Date: Thu, 11 Oct 2012 10:01:02 +0900
-Message-Id: <20121011005847.535731201@linuxfoundation.org>
+        Seiji Aguchi <seiji.aguchi@hds.com>, Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>, Ivan Hu <ivan.hu@canonical.com>
+Subject: [ 106/120] efi: initialize efi.runtime_version to make query_variable_info/update_capsule workable
+Date: Thu, 11 Oct 2012 10:00:58 +0900
+Message-Id: <20121011005846.688947782@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -29,34 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Genoud <richard.genoud@gmail.com>
+From: Seiji Aguchi <seiji.aguchi@hds.com>
 
-commit bb0a13a13411c4ce24c48c8ff3cdf7b48d237240 upstream.
+commit d6cf86d8f23253225fe2a763d627ecf7dfee9dae upstream.
 
-If override size is too big, the module was actually loaded instead of
-failing, because retval was not set.
+A value of efi.runtime_version is checked before calling
+update_capsule()/query_variable_info() as follows.
+But it isn't initialized anywhere.
 
-This lead to memory corruption with the use of the freed structs nandsim
-and nand_chip.
+<snip>
+static efi_status_t virt_efi_query_variable_info(u32 attr,
+                                                 u64 *storage_space,
+                                                 u64 *remaining_space,
+                                                 u64 *max_variable_size)
+{
+        if (efi.runtime_version < EFI_2_00_SYSTEM_TABLE_REVISION)
+                return EFI_UNSUPPORTED;
+<snip>
 
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+This patch initializes a value of efi.runtime_version at boot time.
+
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Acked-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Ivan Hu <ivan.hu@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/nandsim.c |    1 +
+ arch/x86/platform/efi/efi.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/mtd/nand/nandsim.c
-+++ b/drivers/mtd/nand/nandsim.c
-@@ -2355,6 +2355,7 @@ static int __init ns_init_module(void)
- 		uint64_t new_size = (uint64_t)nsmtd->erasesize << overridesize;
- 		if (new_size >> overridesize != nsmtd->erasesize) {
- 			NS_ERR("overridesize is too big\n");
-+			retval = -EINVAL;
- 			goto err_exit;
- 		}
- 		/* N.B. This relies on nand_scan not doing anything with the size before we change it */
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -890,6 +890,7 @@ void __init efi_enter_virtual_mode(void)
+ 	 *
+ 	 * Call EFI services through wrapper functions.
+ 	 */
++	efi.runtime_version = efi_systab.fw_revision;
+ 	efi.get_time = virt_efi_get_time;
+ 	efi.set_time = virt_efi_set_time;
+ 	efi.get_wakeup_time = virt_efi_get_wakeup_time;
 
 
