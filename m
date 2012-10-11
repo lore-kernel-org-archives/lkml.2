@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933838Ab2JKBS6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:18:58 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46378 "EHLO
+	id S933850Ab2JKBTF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:19:05 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:53700 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933818Ab2JKBSx (ORCPT
+	by vger.kernel.org with ESMTP id S933818Ab2JKBS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:18:53 -0400
-X-Sasl-enc: G1uv+5UAV8s3uwrde07MOHN5+PhE+YOOYvitnEKLGYHC 1349918332
+	Wed, 10 Oct 2012 21:18:58 -0400
+X-Sasl-enc: zlimdOkPOc/RqvHMniUJ/BzpPYwDam+cMPTuZo1yE33r 1349918337
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Mathias Krause <minipli@googlemail.com>,
         Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 027/120] xfrm_user: fix info leak in copy_to_user_auth()
-Date: Thu, 11 Oct 2012 09:59:39 +0900
-Message-Id: <20121011005830.461924815@linuxfoundation.org>
+Subject: [ 028/120] xfrm_user: fix info leak in copy_to_user_state()
+Date: Thu, 11 Oct 2012 09:59:40 +0900
+Message-Id: <20121011005830.675704396@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -32,33 +32,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Krause <minipli@googlemail.com>
 
-[ Upstream commit 4c87308bdea31a7b4828a51f6156e6f721a1fcc9 ]
+[ Upstream commit f778a636713a435d3a922c60b1622a91136560c1 ]
 
-copy_to_user_auth() fails to initialize the remainder of alg_name and
-therefore discloses up to 54 bytes of heap memory via netlink to
-userland.
-
-Use strncpy() instead of strcpy() to fill the trailing bytes of alg_name
-with null bytes.
+The memory reserved to dump the xfrm state includes the padding bytes of
+struct xfrm_usersa_info added by the compiler for alignment (7 for
+amd64, 3 for i386). Add an explicit memset(0) before filling the buffer
+to avoid the info leak.
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
 Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/xfrm/xfrm_user.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/xfrm/xfrm_user.c |    1 +
+ 1 file changed, 1 insertion(+)
 
 --- a/net/xfrm/xfrm_user.c
 +++ b/net/xfrm/xfrm_user.c
-@@ -742,7 +742,7 @@ static int copy_to_user_auth(struct xfrm
- 		return -EMSGSIZE;
+@@ -689,6 +689,7 @@ out:
  
- 	algo = nla_data(nla);
--	strcpy(algo->alg_name, auth->alg_name);
-+	strncpy(algo->alg_name, auth->alg_name, sizeof(algo->alg_name));
- 	memcpy(algo->alg_key, auth->alg_key, (auth->alg_key_len + 7) / 8);
- 	algo->alg_key_len = auth->alg_key_len;
- 
+ static void copy_to_user_state(struct xfrm_state *x, struct xfrm_usersa_info *p)
+ {
++	memset(p, 0, sizeof(*p));
+ 	memcpy(&p->id, &x->id, sizeof(p->id));
+ 	memcpy(&p->sel, &x->sel, sizeof(p->sel));
+ 	memcpy(&p->lft, &x->lft, sizeof(p->lft));
 
 
