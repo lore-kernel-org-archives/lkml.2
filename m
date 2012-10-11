@@ -1,77 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758172Ab2JKAoS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:44:18 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41046 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757799Ab2JKANG (ORCPT
+	id S1758129Ab2JKAo3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:44:29 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:51948 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757647Ab2JKAoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:13:06 -0400
-X-Sasl-enc: 8xIwMaN8SV2dbaBRc/yppJiBOtdy3iDvJ4z3ozW+5ltx 1349914384
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 080/133] kpageflags: fix wrong KPF_THP on non-huge compound pages
-Date: Thu, 11 Oct 2012 07:51:46 +0900
-Message-Id: <20121010224908.867230917@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
-References: <20121010224854.313159132@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Wed, 10 Oct 2012 20:44:25 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/FF/mSA2YOWFUjF+X100+r
+Date: Wed, 10 Oct 2012 17:44:14 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: linux@arm.linux.org.uk, b-cousson@ti.com, arnd@arndb.de, olof@lixom.net,
+        rdunlap@xenotime.net, balbi@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] ARM: OMAP4: add _dev_attr_ to ocp2scp for
+ representing usb_phy
+Message-ID: <20121011004413.GW12552@atomide.com>
+References: <1349675983-23803-1-git-send-email-kishon@ti.com>
+ <1349675983-23803-3-git-send-email-kishon@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349675983-23803-3-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+Hi,
 
-------------------
+* Kishon Vijay Abraham I <kishon@ti.com> [121007 23:01]:
+> In order to reflect devices(usb_phy) attached to ocp2scp bus, ocp2scp
+> is assigned a device attribute to represent the attached devices.
+...
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> --- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/io.h>
+>  #include <linux/platform_data/gpio-omap.h>
+>  #include <linux/power/smartreflex.h>
+> +#include <linux/platform_data/omap_ocp2scp.h>
+>  
+>  #include <plat/omap_hwmod.h>
+>  #include <plat/i2c.h>
+> @@ -2681,6 +2682,32 @@ static struct omap_hwmod_class omap44xx_ocp2scp_hwmod_class = {
+>  	.sysc	= &omap44xx_ocp2scp_sysc,
+>  };
+>  
+> +/* ocp2scp dev_attr */
+> +static struct resource omap44xx_usb_phy_and_pll_addrs[] = {
+> +	{
+> +		.name		= "usb_phy",
+> +		.start		= 0x4a0ad080,
+> +		.end		= 0x4a0ae000,
+> +		.flags		= IORESOURCE_MEM,
+> +	},
+> +	{
+> +		/* XXX: Remove this once control module driver is in place */
+> +		.name		= "ctrl_dev",
+> +		.start		= 0x4a002300,
+> +		.end		= 0x4a002303,
+> +		.flags		= IORESOURCE_MEM,
+> +	},
+> +	{ }
+> +};
 
-commit 7a71932d5676b7410ab64d149bad8bde6b0d8632 upstream.
+Why don't you set the CONTROL_DEV_CONF as a fixed regulator?
 
-KPF_THP can be set on non-huge compound pages (like slab pages or pages
-allocated by drivers with __GFP_COMP) because PageTransCompound only
-checks PG_head and PG_tail.  Obviously this is a bug and breaks user space
-applications which look for thp via /proc/kpageflags.
+That way you can define the fixed regulator in mach-omap2/control.c
+and the driver can just pick it up by name.
 
-This patch rules out setting KPF_THP wrongly by additionally checking
-PageLRU on the head pages.
+The 4470 TRM says that this register "power down entire USB
+PHY" and "controls USB2PHYCORE.PD pin".
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+That way you can also get rid of the mysterious mdelay(200)
+in omap_usb_phy_power() in omap-usb2.c driver.
 
----
- fs/proc/page.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+However one thing needs to be checked first.
 
---- a/fs/proc/page.c
-+++ b/fs/proc/page.c
-@@ -115,7 +115,13 @@ u64 stable_page_flags(struct page *page)
- 		u |= 1 << KPF_COMPOUND_TAIL;
- 	if (PageHuge(page))
- 		u |= 1 << KPF_HUGE;
--	else if (PageTransCompound(page))
-+	/*
-+	 * PageTransCompound can be true for non-huge compound pages (slab
-+	 * pages or pages allocated by drivers with __GFP_COMP) because it
-+	 * just checks PG_head/PG_tail, so we need to check PageLRU to make
-+	 * sure a given page is a thp, not a non-huge compound page.
-+	 */
-+	else if (PageTransCompound(page) && PageLRU(compound_trans_head(page)))
- 		u |= 1 << KPF_THP;
- 
- 	/*
+If CONTROL_DEV_CONF is not a regulator but is a signal mux,
+then you can map the register with mux framework using the
+pinctrl-single. See the pinctrl-single,bits binding that
+was recently merged to mainline.
 
+In the mux case you can set up the named states "default" and
+"disabled" that the PHY driver can then manipulate with
+pinctrl_select_state().
 
+Note that for the mux case we don't have a non-device tree
+pinctrl framework solution available, so you're probably
+better off setting it up as a fixed regulator with comments
+in case it really is a mux.
+
+BTW, the reason I'm thinking CONTROL_DEV_CONF may be a mux
+is because omap3 has registers named CONTROL_DEVCONF0 and
+CONTROL_DEVCONF1 that mux signals for various devices.
+But maybe that naming is just a coincidence.
+
+Regards,
+
+Tony
