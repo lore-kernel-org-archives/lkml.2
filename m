@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758596Ab2JKNNM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 09:13:12 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:65272 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756804Ab2JKNNJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 09:13:09 -0400
-Message-ID: <5076C5D3.6020104@gmail.com>
-Date: Thu, 11 Oct 2012 21:12:51 +0800
-From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S932225Ab2JKNPN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 09:15:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56441 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756353Ab2JKNPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 09:15:10 -0400
+Date: Thu, 11 Oct 2012 15:15:09 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Nicolas Palix <nicolas.palix@imag.fr>
+Cc: Julia Lawall <julia.lawall@lip6.fr>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] Coccicheck: Add the rep+ctxt mode
+Message-ID: <20121011131509.GB16465@sepie.suse.cz>
+References: <CAAxaTiOsaHOR4cbwcq=xOn-sWxB6PdB4x_UgYf2rUsPQM=WwWA@mail.gmail.com>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4 5/5] KVM: MMU: introduce FNAME(prefetch_gpte)
-References: <50716EE0.6010504@linux.vnet.ibm.com> <50716FF7.1060704@linux.vnet.ibm.com> <20121010152144.GA29776@amt.cnet>
-In-Reply-To: <20121010152144.GA29776@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAxaTiOsaHOR4cbwcq=xOn-sWxB6PdB4x_UgYf2rUsPQM=WwWA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2012 11:21 PM, Marcelo Tosatti wrote:
-
->>  	pgprintk("%s: gpte %llx spte %p\n", __func__, (u64)gpte, spte);
->> +
->> +	gfn = gpte_to_gfn(gpte);
->>  	pte_access = sp->role.access & gpte_access(vcpu, gpte);
->>  	protect_clean_gpte(&pte_access, gpte);
->> -	pfn = gfn_to_pfn_atomic(vcpu->kvm, gpte_to_gfn(gpte));
->> +	pfn = pte_prefetch_gfn_to_pfn(vcpu, gfn,
->> +			no_dirty_log && (pte_access & ACC_WRITE_MASK));
+On Thu, Sep 20, 2012 at 10:30:46PM +0200, Nicolas Palix wrote:
+> This adds a 'rep+ctxt' mode which prints the warning
+> message followed by the context.
 > 
-> Is this a bugfix?
+> Signed-off-by: Nicolas Palix <nicolas.palix@imag.fr>
+> ---
+>  scripts/coccicheck | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/scripts/coccicheck b/scripts/coccicheck
+> index 823e972..eb43e40 100755
+> --- a/scripts/coccicheck
+> +++ b/scripts/coccicheck
+> @@ -95,6 +95,9 @@ coccinelle () {
+>  	$SPATCH -D report  $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff || \
+>  	$SPATCH -D context $FLAGS -sp_file $COCCI $OPT $OPTIONS               || \
+>  	$SPATCH -D org     $FLAGS -sp_file $COCCI $OPT $OPTIONS
+> -no_show_diff || exit 1
 
-No. It is a cleanup.
+Your mailer broke this line into two, please try to avoid this next
+time. Also, please CC lkml when submitting patches. I applied the patch
+to kbuild.git#misc now.
 
-Actually, pte_prefetch_gfn_to_pfn(vcpu, gfn, false) is the same as
-gfn_to_pfn_atomic
+Michal
 
+> +    elif [ "$MODE" = "rep+ctxt" ] ; then
+> +	$SPATCH -D report  $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff && \
+> +	$SPATCH -D context $FLAGS -sp_file $COCCI $OPT $OPTIONS
+>  || exit 1
+>      else
+>  	$SPATCH -D $MODE   $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
+>      fi
+> -- 
+> 1.7.11.3
