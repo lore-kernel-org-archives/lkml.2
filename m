@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758626Ab2JKLzr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 07:55:47 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47007 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758443Ab2JKLzl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 07:55:41 -0400
+	id S1758639Ab2JKLzu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 07:55:50 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:36396 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758612Ab2JKLzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 07:55:46 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 CC: <linux-kernel@vger.kernel.org>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         <peter.ujfalusi@ti.com>
-Subject: [PATCH 2/6] MFD: twl6040: Remove unused parameter for twl6040_power_up_completion()
-Date: Thu, 11 Oct 2012 13:55:29 +0200
-Message-ID: <1349956533-6374-3-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH 6/6] MFD: twl6040: Rename the core driver
+Date: Thu, 11 Oct 2012 13:55:33 +0200
+Message-ID: <1349956533-6374-7-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1349956533-6374-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1349956533-6374-1-git-send-email-peter.ujfalusi@ti.com>
@@ -24,44 +23,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-naudint parameter has not been used, remove it.
+After the regmap_irq conversion there is no need to call the driver
+as twl6040-core.c since there is only one c file remained.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/mfd/twl6040-core.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/mfd/Makefile                      | 2 +-
+ drivers/mfd/{twl6040-core.c => twl6040.c} | 0
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+ rename drivers/mfd/{twl6040-core.c => twl6040.c} (100%)
 
-diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
-index b220aa2..a46d987 100644
---- a/drivers/mfd/twl6040-core.c
-+++ b/drivers/mfd/twl6040-core.c
-@@ -218,8 +218,7 @@ static irqreturn_t twl6040_naudint_handler(int irq, void *data)
- 	return IRQ_HANDLED;
- }
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 360233f..8c8331b 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -63,7 +63,7 @@ obj-$(CONFIG_TWL4030_CORE)	+= twl-core.o twl4030-irq.o twl6030-irq.o
+ obj-$(CONFIG_TWL4030_MADC)      += twl4030-madc.o
+ obj-$(CONFIG_TWL4030_POWER)    += twl4030-power.o
+ obj-$(CONFIG_MFD_TWL4030_AUDIO)	+= twl4030-audio.o
+-obj-$(CONFIG_TWL6040_CORE)	+= twl6040-core.o
++obj-$(CONFIG_TWL6040_CORE)	+= twl6040.o
  
--static int twl6040_power_up_completion(struct twl6040 *twl6040,
--				       int naudint)
-+static int twl6040_power_up_completion(struct twl6040 *twl6040)
- {
- 	int time_left;
- 	u8 intid;
-@@ -241,7 +240,6 @@ static int twl6040_power_up_completion(struct twl6040 *twl6040,
- int twl6040_power(struct twl6040 *twl6040, int on)
- {
- 	int audpwron = twl6040->audpwron;
--	int naudint = twl6040->irq;
- 	int ret = 0;
- 
- 	mutex_lock(&twl6040->mutex);
-@@ -255,7 +253,7 @@ int twl6040_power(struct twl6040 *twl6040, int on)
- 			/* use AUDPWRON line */
- 			gpio_set_value(audpwron, 1);
- 			/* wait for power-up completion */
--			ret = twl6040_power_up_completion(twl6040, naudint);
-+			ret = twl6040_power_up_completion(twl6040);
- 			if (ret) {
- 				dev_err(twl6040->dev,
- 					"automatic power-up failed\n");
+ obj-$(CONFIG_MFD_MC13XXX)	+= mc13xxx-core.o
+ obj-$(CONFIG_MFD_MC13XXX_SPI)	+= mc13xxx-spi.o
+diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040.c
+similarity index 100%
+rename from drivers/mfd/twl6040-core.c
+rename to drivers/mfd/twl6040.c
 -- 
 1.7.12
 
