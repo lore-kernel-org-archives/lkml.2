@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932979Ab2JKBGD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:06:03 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52137 "EHLO
+	id S932833Ab2JKBGn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:06:43 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38537 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932758Ab2JKBEK (ORCPT
+	by vger.kernel.org with ESMTP id S1758211Ab2JKBD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:04:10 -0400
-X-Sasl-enc: UM/OMFpKVbv0mOtI8T2nomiFKiI9dSBQxvyLifw1dyN6 1349917449
+	Wed, 10 Oct 2012 21:03:57 -0400
+X-Sasl-enc: FVMuM6eof9urnLUdUo9ZnPbpPd4CaN08MFoPyPAJiTi1 1349917435
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Frank=20Sch=C3=A4fer?= <fschaefer.oss@googlemail.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: =?UTF-8?q?=5B=20007/120=5D=20media=3A=20gspca=5Fpac7302=3A=20add=20support=20for=20device=201ae7=3A2001=20Speedlink=20Snappy=20Microphone=20SL-6825-SBK?=
-Date: Thu, 11 Oct 2012 09:59:19 +0900
-Message-Id: <20121011005826.687631667@linuxfoundation.org>
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 009/120] PCI: acpiphp: check whether _ADR evaluation succeeded
+Date: Thu, 11 Oct 2012 09:59:21 +0900
+Message-Id: <20121011005827.021752179@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,28 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frank Schäfer <fschaefer.oss@googlemail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit 97d2fbf501e3cf105ac957086c7e40e62e15cdf8 upstream.
+commit dfb117b3e50c52c7b3416db4a4569224b8db80bb upstream.
 
-Signed-off-by: Frank Schäfer <fschaefer.oss@googlemail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Check whether we evaluated _ADR successfully.  Previously we ignored
+failure, so we would have used garbage data from the stack as the device
+and function number.
+
+We return AE_OK so that we ignore only this slot and continue looking
+for other slots.
+
+Found by Coverity (CID 113981).
+
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/video/gspca/pac7302.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/pci/hotplug/acpiphp_glue.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/drivers/media/video/gspca/pac7302.c
-+++ b/drivers/media/video/gspca/pac7302.c
-@@ -945,6 +945,7 @@ static const struct usb_device_id device
- 	{USB_DEVICE(0x093a, 0x262a)},
- 	{USB_DEVICE(0x093a, 0x262c)},
- 	{USB_DEVICE(0x145f, 0x013c)},
-+	{USB_DEVICE(0x1ae7, 0x2001)}, /* SpeedLink Snappy Mic SL-6825-SBK */
- 	{}
- };
- MODULE_DEVICE_TABLE(usb, device_table);
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -132,6 +132,15 @@ register_slot(acpi_handle handle, u32 lv
+ 	if (!acpi_pci_check_ejectable(pbus, handle) && !is_dock_device(handle))
+ 		return AE_OK;
+ 
++	status = acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
++	if (ACPI_FAILURE(status)) {
++		warn("can't evaluate _ADR (%#x)\n", status);
++		return AE_OK;
++	}
++
++	device = (adr >> 16) & 0xffff;
++	function = adr & 0xffff;
++
+ 	pdev = pbus->self;
+ 	if (pdev && pci_is_pcie(pdev)) {
+ 		tmp = acpi_find_root_bridge_handle(pdev);
+@@ -144,10 +153,6 @@ register_slot(acpi_handle handle, u32 lv
+ 		}
+ 	}
+ 
+-	acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
+-	device = (adr >> 16) & 0xffff;
+-	function = adr & 0xffff;
+-
+ 	newfunc = kzalloc(sizeof(struct acpiphp_func), GFP_KERNEL);
+ 	if (!newfunc)
+ 		return AE_NO_MEMORY;
 
 
