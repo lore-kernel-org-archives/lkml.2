@@ -1,58 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758843Ab2JKQ3B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 12:29:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60369 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755814Ab2JKQ27 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 12:28:59 -0400
-Date: Thu, 11 Oct 2012 09:28:53 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Ashish Jangam <ashish.jangam@kpitcummins.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-input@vger.kernel.org, David Dajun Chen <dchen@diasemi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Patch v3 7/7] Onkey: DA9055 Onkey driver
-Message-ID: <20121011162852.GB15588@core.coreip.homeip.net>
-References: <1349952316.9228.7.camel@dhruva>
+	id S1758867Ab2JKQ3k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 12:29:40 -0400
+Received: from mail.servus.at ([193.170.194.20]:45710 "EHLO mail.servus.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758817Ab2JKQ3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 12:29:38 -0400
+Message-ID: <5076F3AC.8020304@oberhumer.com>
+Date: Thu, 11 Oct 2012 18:28:28 +0200
+From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+Organization: oberhumer.com
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.8) Gecko/20121005 Thunderbird/10.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349952316.9228.7.camel@dhruva>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Johannes Stezenbach <js@sig21.net>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        linux-btrfs@vger.kernel.org, linux-crypto@vger.kernel.org,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Phillip Lougher <phillip@squashfs.org.uk>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH 0/3] Update LZO compression
+References: <cover.1349621096.git.markus@oberhumer.com> <20121009122614.569b9535.akpm@linux-foundation.org> <50748113.80408@oberhumer.com> <201210111141.27270.arnd@arndb.de>
+In-Reply-To: <201210111141.27270.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ashish,
+Thanks Arnd,
 
-On Thu, Oct 11, 2012 at 04:15:16PM +0530, Ashish Jangam wrote:
-> This is the ONKEY driver of the Dialog DA9055 PMIC and depends on the DA9055 MFD
-> core driver.
+On 2012-10-11 13:41, Arnd Bergmann wrote:
+> On Tuesday 09 October 2012, Markus F.X.J. Oberhumer wrote:
+>>>
+>>> : This commit updates the kernel LZO code to the current upsteam version
+>>> : which features a significant speed improvement - benchmarking the Calgary
+>>> : and Silesia test corpora typically shows a doubled performance in
+>>> : both compression and decompression on modern i386/x86_64/powerpc machines.
+>>>
+>>> There are significant clients of the LZO library - crypto, btrfs,
+>>> jffs2, ubifs, squashfs and zcache.  So let's give all those people a cc
+>>> and ask that they test the LZO changes once they land in linux-next. 
+>>> For correctness and performance, please.
+>>
+>> The core compression and decompression code has been thoroughly tested, so I
+>> do not expect major problems.
+>>
+>> Good testing after the merge and feedback about build or performance issues
+>> (and improvements!) is highly appreciated.
 > 
-> This patch is functionally tested on SMDK6410 board.
+> The addition of the lzo tree to linux-next caused this problem for ARM
+> imx_v6_v7_defconfig:
 > 
-> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
-> ---
-> changes since v3:
-> - used of module_platform_driver macro
-> - add regmap virtual irq function
-> changes since v2:
-> - add support for button release
-> - use of devm_request_threaded_irq API
+> In file included from /home/arnd/linux-arm/arch/arm/boot/compressed/decompress.c:40:0:
+> /home/arnd/linux-arm/arch/arm/boot/compressed/../../../../lib/decompress_unlzo.c:34:34: fatal error: lzo/lzo1x_decompress.c: No such file or directory
+> 
+> Since the file was renamed, anything including it needs to be updated to the
+> new file name.
 
-This API does not make any sense for your driver as you are scheduling
-delayed work from the IRQ handler. In such cases you need _first_ free
-IRQ and _then_ cancel the work but with devm_* you do it in opposite
-order.
+I will add that patch to my tree.
 
-Also, I think I mentioned this before - this driver looks like twin
-brother for da9055_onkey.c. How many of such parts do you have (or will
-you have)? Is there way to unify them?
+Cheers,
+Markus
 
-Thanks.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> diff --git a/lib/decompress_unlzo.c b/lib/decompress_unlzo.c
+> index 4531294..960183d 100644
+> --- a/lib/decompress_unlzo.c
+> +++ b/lib/decompress_unlzo.c
+> @@ -31,7 +31,7 @@
+>   */
+>  
+>  #ifdef STATIC
+> -#include "lzo/lzo1x_decompress.c"
+> +#include "lzo/lzo1x_decompress_safe.c"
+>  #else
+>  #include <linux/decompress/unlzo.h>
+>  #endif
 
 -- 
-Dmitry
+Markus Oberhumer, <markus@oberhumer.com>, http://www.oberhumer.com/
