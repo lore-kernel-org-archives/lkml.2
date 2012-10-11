@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934458Ab2JKC2j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:28:39 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:34530 "EHLO
+	id S934408Ab2JKC3I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:29:08 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60180 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933786Ab2JKC0f (ORCPT
+	by vger.kernel.org with ESMTP id S933424Ab2JKC3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:26:35 -0400
-X-Sasl-enc: 4SWsxU8Ja1foOavLBhl43aoXRN3QPT58Wza/ibv6gOEE 1349922394
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        Hayes Wang <hayeswang@realtek.com>,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 71/84] r8169: 8168c and later require bit 0x20 to be set in Config2 for PME signaling.
-Date: Thu, 11 Oct 2012 11:03:55 +0900
-Message-Id: <20121011015429.837494956@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
-References: <20121011015417.017144658@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Wed, 10 Oct 2012 22:29:01 -0400
+X-Sasl-enc: SK9+pKa2rRqfWzKz55IoMl37N4e+6cLt2z8sOtNmhlsy 1349922539
+Date: Thu, 11 Oct 2012 11:28:27 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [GIT PULL] extcon fixes for Linux 3.6
+Message-ID: <20121011022827.GA27117@kroah.com>
+References: <50762167.8060806@samsung.com>
+ <20121011014050.GA16454@kroah.com>
+ <507628C7.9000006@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <507628C7.9000006@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Oct 11, 2012 at 11:02:47AM +0900, Chanwoo Choi wrote:
+> On 10/11/2012 10:40 AM, Greg KH wrote:
+> > On Thu, Oct 11, 2012 at 10:31:19AM +0900, Chanwoo Choi wrote:
+> >> Hi Greg,
+> >>
+> >> Please pull extcon fixes for Linux 3.6 from:
+> >>
+> >>     git://git.infradead.org/users/kmpark/linux-samsung extcon-for-next
+> > 
+> > Linux 3.6 has been released already, I can't take any patches for it. :)
+> > 
+> > Are these for 3.7 instead?
+> 
+> Sorry, The extcon patches are for 3.7.
+> 
+> > And is your gpg key in the public servers so that I "know" this is
+> > really the set of patches you want me to pull, and that you are "you"?
+> > 
+> > If you are at LinuxCon Korea the next two days, I'll be glad to sign
+> > your key to solve this issue...
+> > 
+> 
+> OK, Myungjoo Ham and me will attend at LinuxCon Korea tommorrow.
+> and will talk to you about gpg key issue.
 
-------------------
+Ok, I'll hold off on pulling this until after I talk this over with you
+in person.
 
-From: Francois Romieu <romieu@fr.zoreil.com>
+> ps. I will create gpg key and register in public server today.
 
-commit d387b427c973974dd619a33549c070ac5d0e089f upstream.
+That will be great.  Then you can get a kernel.org git tree as well.
 
-The new 84xx stopped flying below the radars.
+thanks,
 
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Hayes Wang <hayeswang@realtek.com>
-Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
-Acked-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/r8169.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -299,6 +299,8 @@ enum rtl_registers {
- 	Config0		= 0x51,
- 	Config1		= 0x52,
- 	Config2		= 0x53,
-+#define PME_SIGNAL			(1 << 5)	/* 8168c and later */
-+
- 	Config3		= 0x54,
- 	Config4		= 0x55,
- 	Config5		= 0x56,
-@@ -1249,6 +1251,10 @@ static void __rtl8169_set_wol(struct rtl
- 		RTL_W8(Config1, options);
- 		break;
- 	default:
-+		options = RTL_R8(Config2) & ~PME_SIGNAL;
-+		if (wolopts)
-+			options |= PME_SIGNAL;
-+		RTL_W8(Config2, options);
- 		break;
- 	}
- 
-
-
+greg k-h
