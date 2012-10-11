@@ -1,63 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab2JKDPC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 23:15:02 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:63208 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753448Ab2JKDPA (ORCPT
+	id S932859Ab2JKDQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 23:16:56 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:48648 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448Ab2JKDQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 23:15:00 -0400
+	Wed, 10 Oct 2012 23:16:54 -0400
+Message-ID: <50763A23.3010507@kernel.org>
+Date: Wed, 10 Oct 2012 23:16:51 -0400
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <009f01cda6cb$b8cb1020$2a613060$%kim@samsung.com>
-References: <415E76CC-A53D-4643-88AB-3D7D7DC56F98@dubeyko.com>
-	<9DE65D03-D4EA-4B32-9C1D-1516EAE50E23@dubeyko.com>
-	<1349553966.12699.132.camel@kjgkr>
-	<50712AAA.5030807@gmail.com>
-	<002201cda46e$88b84d30$9a28e790$%kim@samsung.com>
-	<F7EA5AF7-8A1C-4C98-90AF-9D47E39731AB@dubeyko.com>
-	<004101cda52e$72210e20$56632a60$%kim@samsung.com>
-	<55A93BD0-CBCB-4707-A970-EB823EC54B2D@dubeyko.com>
-	<006f01cda5ec$e63e9b60$b2bbd220$%kim@samsung.com>
-	<1349855868.1889.87.camel@slavad-ubuntu>
-	<009f01cda6cb$b8cb1020$2a613060$%kim@samsung.com>
-Date: Thu, 11 Oct 2012 12:14:58 +0900
-Message-ID: <CAKYAXd_6MheUVRm7HVofXVp-HWStZNVw2GCqXNfKukxbJ5rG5g@mail.gmail.com>
-Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Jaegeuk Kim <jaegeuk.kim@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        tytso@mit.edu, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, chur.lee@samsung.com,
-        cm224.lee@samsung.com, jooyoung.hwang@samsung.com,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] ACPI & Thermal patches for 3.7-merge
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/10 Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+Hi Linus,
 
->>
->> I mean that every volume is placed inside any partition (MTD or GPT). Every partition begins from any
->> physical sector. So, as I can understand, f2fs volume can begin from physical sector that is laid
->> inside physical erase block. Thereby, in such case of formating the f2fs's operation units will be
->> unaligned in relation of physical erase blocks, from my point of view. Maybe, I misunderstand
->> something but it can lead to additional FTL operations and performance degradation, from my point of
->> view.
->
-> I think mkfs already calculates the offset to align that.
-I think this answer is not what he want.
-If you don't use partition table such as dos partition table or gpt, I
-think that it is possible to align using mkfs.
-But If we should consider partition table space in storage, I don't
-understand how it  could be align using mkfs.
+Please pull these ACPI & Thermal patches.
 
-Thanks.
-> Thanks,
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The generic Linux thermal layer is gaining some
+new capabilities (generic cooling via cpufreq)
+and some new customers (ARM).
+
+Also, an ACPI EC bug fix plus a regression fix.
+
+thanks!
+Len Brown, Intel Open Source Technology Center
+
+The following changes since commit f5a246eab9a268f51ba8189ea5b098a1bfff200e:
+
+  Merge tag 'sound-3.7' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound (2012-10-09 07:07:14 +0900)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux.git release
+
+for you to fetch changes up to d1d4a81b842db21b144ffd2334ca5eee3eb740f3:
+
+  Merge branches 'fixes-for-37', 'ec' and 'thermal' into release (2012-10-09 01:47:35 -0400)
+
+----------------------------------------------------------------
+
+Amit Daniel Kachhap (6):
+      thermal: add generic cpufreq cooling implementation
+      hwmon: exynos4: move thermal sensor driver to driver/thermal directory
+      thermal: exynos5: add exynos5250 thermal sensor driver support
+      thermal: exynos: register the tmu sensor with the kernel thermal layer
+      ARM: exynos: add thermal sensor driver platform data support
+      thermal: exynos: Use devm_* functions
+
+Eduardo Valentin (1):
+      Fix a build error.
+
+Feng Tang (2):
+      ACPI: EC: Make the GPE storm threshold a module parameter
+      ACPI: EC: Add a quirk for CLEVO M720T/M730T laptop
+
+Guenter Roeck (2):
+      thermal: fix potential out-of-bounds memory access
+      thermal: Fix potential NULL pointer accesses
+
+Jonghwa Lee (1):
+      Thermal: Fix bug on cpu_cooling, cooling device's id conflict problem.
+
+Kuninori Morimoto (1):
+      thermal: add Renesas R-Car thermal sensor support
+
+Len Brown (2):
+      Merge branch 'release' of git://git.kernel.org/.../rzhang/linux into thermal
+      Merge branches 'fixes-for-37', 'ec' and 'thermal' into release
+
+Sachin Kamat (1):
+      thermal: Exynos: Fix NULL pointer dereference in exynos_unregister_thermal()
+
+Srivatsa S. Bhat (1):
+      ACPI idle, CPU hotplug: Fix NULL pointer dereference during hotplug
+
+Wei Yongjun (2):
+      cpuidle / ACPI: fix potential NULL pointer dereference
+      tools/power/acpi/acpidump: remove duplicated include from acpidump.c
+
+Zhang Rui (13):
+      Thermal: Introduce multiple cooling states support
+      Thermal: Introduce cooling states range support
+      Thermal: set upper and lower limits
+      Thermal: Introduce .get_trend() callback.
+      Thermal: Remove tc1/tc2 in generic thermal layer.
+      Thermal: Introduce thermal_zone_trip_update()
+      Thermal: rename structure thermal_cooling_device_instance to thermal_instance
+      Thermal: Rename thermal_zone_device.cooling_devices
+      Thermal: Rename thermal_instance.node to thermal_instance.tz_node.
+      Thermal: List thermal_instance in thermal_cooling_device.
+      Thermal: Introduce simple arbitrator for setting device cooling state
+      Thermal: Unify the code for both active and passive cooling
+      Thermal: Introduce locking for cdev.thermal_instances list.
+
+ Documentation/thermal/cpu-cooling-api.txt          |  32 +
+ .../{hwmon/exynos4_tmu => thermal/exynos_thermal}  |  35 +-
+ Documentation/thermal/sysfs-api.txt                |   9 +-
+ drivers/acpi/ec.c                                  |  30 +-
+ drivers/acpi/processor_idle.c                      |   3 +-
+ drivers/acpi/thermal.c                             |  93 +-
+ drivers/cpuidle/cpuidle.c                          |   2 +-
+ drivers/hwmon/Kconfig                              |  10 -
+ drivers/hwmon/Makefile                             |   1 -
+ drivers/hwmon/exynos4_tmu.c                        | 518 -----------
+ drivers/platform/x86/acerhdf.c                     |   5 +-
+ drivers/platform/x86/intel_mid_thermal.c           |   2 +-
+ drivers/power/power_supply_core.c                  |   2 +-
+ drivers/staging/omap-thermal/omap-thermal-common.c |   5 +-
+ drivers/thermal/Kconfig                            |  26 +
+ drivers/thermal/Makefile                           |   5 +-
+ drivers/thermal/cpu_cooling.c                      | 449 ++++++++++
+ drivers/thermal/exynos_thermal.c                   | 997 +++++++++++++++++++++
+ drivers/thermal/rcar_thermal.c                     | 260 ++++++
+ drivers/thermal/spear_thermal.c                    |   2 +-
+ drivers/thermal/thermal_sys.c                      | 321 ++++---
+ include/linux/cpu_cooling.h                        |  58 ++
+ .../{exynos4_tmu.h => exynos_thermal.h}            |  47 +-
+ include/linux/thermal.h                            |  28 +-
+ tools/power/acpi/acpidump.c                        |   1 -
+ 25 files changed, 2205 insertions(+), 736 deletions(-)
+ create mode 100644 Documentation/thermal/cpu-cooling-api.txt
+ rename Documentation/{hwmon/exynos4_tmu => thermal/exynos_thermal} (71%)
+ delete mode 100644 drivers/hwmon/exynos4_tmu.c
+ create mode 100644 drivers/thermal/cpu_cooling.c
+ create mode 100644 drivers/thermal/exynos_thermal.c
+ create mode 100644 drivers/thermal/rcar_thermal.c
+ create mode 100644 include/linux/cpu_cooling.h
+ rename include/linux/platform_data/{exynos4_tmu.h => exynos_thermal.h} (64%)
