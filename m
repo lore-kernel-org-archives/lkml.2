@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964997Ab2JKTHV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 15:07:21 -0400
+	id S933062Ab2JKTEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 15:04:08 -0400
 Received: from mail-ie0-f174.google.com ([209.85.223.174]:36138 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933090Ab2JKTEK (ORCPT
+	with ESMTP id S1759237Ab2JKTD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 15:04:10 -0400
+	Thu, 11 Oct 2012 15:03:56 -0400
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [RFC PATCH v2 09/16] dmaengine: add dma_request_slave_channel_compat()
-Date: Thu, 11 Oct 2012 15:04:34 -0400
-Message-Id: <1349982281-10785-10-git-send-email-mporter@ti.com>
+Subject: [RFC PATCH v2 03/16] ARM: edma: remove unused transfer controller handlers
+Date: Thu, 11 Oct 2012 15:04:28 -0400
+Message-Id: <1349982281-10785-4-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1349982281-10785-1-git-send-email-mporter@ti.com>
 References: <1349982281-10785-1-git-send-email-mporter@ti.com>
@@ -37,43 +37,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a dma_request_slave_channel_compat() wrapper which accepts
-both the arguments from dma_request_channel() and
-dma_request_slave_channel(). Based on whether the driver is
-instantiated via DT, the appropriate channel request call will be
-made.
+Fix build on OMAP, the irqs are undefined on AM33xx.
+These error interrupt handlers were hardcoded as disabled
+so since they are unused code, simply remove them.
 
-This allows for a much cleaner migration of drivers to the
-dmaengine DT API as platforms continue to be mixed between those
-that boot using DT and those that do not.
-
-Suggested-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- include/linux/dmaengine.h |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/arm/common/edma.c |   37 -------------------------------------
+ 1 file changed, 37 deletions(-)
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index c88f302..11d9e25 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -1007,6 +1007,16 @@ void dma_run_dependencies(struct dma_async_tx_descriptor *tx);
- struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type);
- struct dma_chan *net_dma_find_channel(void);
- #define dma_request_channel(mask, x, y) __dma_request_channel(&(mask), x, y)
-+static inline struct dma_chan
-+*dma_request_slave_channel_compat(dma_cap_mask_t mask, dma_filter_fn fn,
-+				  void *fn_param, struct device *dev,
-+				  char *name)
-+{
-+	if (dev->of_node)
-+		return dma_request_slave_channel(dev, name);
-+	else
-+		return dma_request_channel(mask, fn, fn_param);
-+}
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index 4411087..a3d189d 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -494,26 +494,6 @@ static irqreturn_t dma_ccerr_handler(int irq, void *data)
+ 	return IRQ_HANDLED;
+ }
  
- /* --- Helper iov-locking functions --- */
+-/******************************************************************************
+- *
+- * Transfer controller error interrupt handlers
+- *
+- *****************************************************************************/
+-
+-#define tc_errs_handled	false	/* disabled as long as they're NOPs */
+-
+-static irqreturn_t dma_tc0err_handler(int irq, void *data)
+-{
+-	dev_dbg(data, "dma_tc0err_handler\n");
+-	return IRQ_HANDLED;
+-}
+-
+-static irqreturn_t dma_tc1err_handler(int irq, void *data)
+-{
+-	dev_dbg(data, "dma_tc1err_handler\n");
+-	return IRQ_HANDLED;
+-}
+-
+ static int reserve_contiguous_slots(int ctlr, unsigned int id,
+ 				     unsigned int num_slots,
+ 				     unsigned int start_slot)
+@@ -1538,23 +1518,6 @@ static int __init edma_probe(struct platform_device *pdev)
+ 		arch_num_cc++;
+ 	}
  
+-	if (tc_errs_handled) {
+-		status = request_irq(IRQ_TCERRINT0, dma_tc0err_handler, 0,
+-					"edma_tc0", &pdev->dev);
+-		if (status < 0) {
+-			dev_dbg(&pdev->dev, "request_irq %d failed --> %d\n",
+-				IRQ_TCERRINT0, status);
+-			return status;
+-		}
+-		status = request_irq(IRQ_TCERRINT, dma_tc1err_handler, 0,
+-					"edma_tc1", &pdev->dev);
+-		if (status < 0) {
+-			dev_dbg(&pdev->dev, "request_irq %d --> %d\n",
+-				IRQ_TCERRINT, status);
+-			return status;
+-		}
+-	}
+-
+ 	return 0;
+ 
+ fail:
 -- 
 1.7.9.5
 
