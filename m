@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964976Ab2JKCTk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:19:40 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51440 "EHLO
+	id S965002Ab2JKCUA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:20:00 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50797 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964912Ab2JKCPg (ORCPT
+	by vger.kernel.org with ESMTP id S964901Ab2JKCP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:15:36 -0400
-X-Sasl-enc: 6KN/iDYW5LGrc8fP0qGaPWK/+h51ugTpaRydPdW7jGHx 1349921735
+	Wed, 10 Oct 2012 22:15:27 -0400
+X-Sasl-enc: QQaihTZSjmwi0f0wm8N7fpTuWLnp4/Jt2fspBlKcCIwK 1349921726
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 52/84] mm: thp: fix pmd_present for split_huge_page and PROT_NONE with THP
-Date: Thu, 11 Oct 2012 11:03:36 +0900
-Message-Id: <20121011015426.430086423@linuxfoundation.org>
+        Francois Romieu <romieu@fr.zoreil.com>,
+        hayeswang <hayeswang@realtek.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 66/84] r8169: Rx FIFO overflow fixes.
+Date: Thu, 11 Oct 2012 11:03:50 +0900
+Message-Id: <20121011015428.948327309@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -31,72 +30,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Francois Romieu <romieu@fr.zoreil.com>
 
-commit 027ef6c87853b0a9df53175063028edb4950d476 upstream.
+commit 811fd3010cf512f2e23e6c4c912aad54516dc706 upstream.
 
-In many places !pmd_present has been converted to pmd_none.  For pmds
-that's equivalent and pmd_none is quicker so using pmd_none is better.
+Realtek has specified that the post 8168c gigabit chips and the post
+8105e fast ethernet chips recover automatically from a Rx FIFO overflow.
+The driver does not need to clear the RxFIFOOver bit of IntrStatus and
+it should rather avoid messing it.
 
-However (unless we delete pmd_present) we should provide an accurate
-pmd_present too.  This will avoid the risk of code thinking the pmd is non
-present because it's under __split_huge_page_map, see the pmd_mknotpresent
-there and the comment above it.
+The implementation deserves some explanation:
+1. events outside of the intr_event bit mask are now ignored. It enforces
+   a no-processing policy for the events that either should not be there
+   or should be ignored.
 
-If the page has been mprotected as PROT_NONE, it would also lead to a
-pmd_present false negative in the same way as the race with
-split_huge_page.
+2. RxFIFOOver was already ignored in rtl_cfg_infos[RTL_CFG_1] for the
+   whole 8168 line of chips with two exceptions:
+   - RTL_GIGA_MAC_VER_22 since b5ba6d12bdac21bc0620a5089e0f24e362645efd
+     ("use RxFIFO overflow workaround for 8168c chipset.").
+     This one should now be correctly handled.
+   - RTL_GIGA_MAC_VER_11 (8168b) which requires a different Rx FIFO
+     overflow processing.
 
-Because the PSE bit stays on at all times (both during split_huge_page and
-when the _PAGE_PROTNONE bit get set), we could only check for the PSE bit,
-but checking the PROTNONE bit too is still good to remember pmd_present
-must always keep PROT_NONE into account.
+   Though it does not conform to Realtek suggestion above, the updated
+   driver includes no change for RTL_GIGA_MAC_VER_12 and RTL_GIGA_MAC_VER_17.
+   Both are 8168b. RTL_GIGA_MAC_VER_12 is common and a bit old so I'd rather
+   wait for experimental evidence that the change suggested by Realtek really
+   helps or does not hurt in unexpected ways.
 
-This explains a not reproducible BUG_ON that was seldom reported on the
-lists.
+   Removed case statements in rtl8169_interrupt are only 8168 relevant.
 
-The same issue is in pmd_large, it would go wrong with both PROT_NONE and
-if it races with split_huge_page.
+3. RxFIFOOver is masked for post 8105e 810x chips, namely the sole 8105e
+   (RTL_GIGA_MAC_VER_30) itself.
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+Cc: hayeswang <hayeswang@realtek.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/x86/include/asm/pgtable.h |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/net/r8169.c |   54 +++++++++++++++++++++++-----------------------------
+ 1 file changed, 24 insertions(+), 30 deletions(-)
 
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -146,8 +146,7 @@ static inline unsigned long pmd_pfn(pmd_
- 
- static inline int pmd_large(pmd_t pte)
- {
--	return (pmd_flags(pte) & (_PAGE_PSE | _PAGE_PRESENT)) ==
--		(_PAGE_PSE | _PAGE_PRESENT);
-+	return pmd_flags(pte) & _PAGE_PSE;
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -1088,17 +1088,21 @@ static u8 rtl8168d_efuse_read(void __iom
+ 	return value;
  }
  
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-@@ -415,7 +414,13 @@ static inline int pte_hidden(pte_t pte)
- 
- static inline int pmd_present(pmd_t pmd)
+-static void rtl8169_irq_mask_and_ack(void __iomem *ioaddr)
++static void rtl8169_irq_mask_and_ack(struct rtl8169_private *tp)
  {
--	return pmd_flags(pmd) & _PAGE_PRESENT;
-+	/*
-+	 * Checking for _PAGE_PSE is needed too because
-+	 * split_huge_page will temporarily clear the present bit (but
-+	 * the _PAGE_PSE flag will remain set at all times while the
-+	 * _PAGE_PRESENT bit is clear).
-+	 */
-+	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE);
+-	RTL_W16(IntrMask, 0x0000);
++	void __iomem *ioaddr = tp->mmio_addr;
+ 
+-	RTL_W16(IntrStatus, 0xffff);
++	RTL_W16(IntrMask, 0x0000);
++	RTL_W16(IntrStatus, tp->intr_event);
++	RTL_R8(ChipCmd);
  }
  
- static inline int pmd_none(pmd_t pmd)
+-static void rtl8169_asic_down(void __iomem *ioaddr)
++static void rtl8169_asic_down(struct rtl8169_private *tp)
+ {
++	void __iomem *ioaddr = tp->mmio_addr;
++
+ 	RTL_W8(ChipCmd, 0x00);
+-	rtl8169_irq_mask_and_ack(ioaddr);
++	rtl8169_irq_mask_and_ack(tp);
+ 	RTL_R16(CPlusCmd);
+ }
+ 
+@@ -3817,7 +3821,7 @@ static void rtl8169_hw_reset(struct rtl8
+ 	void __iomem *ioaddr = tp->mmio_addr;
+ 
+ 	/* Disable interrupts */
+-	rtl8169_irq_mask_and_ack(ioaddr);
++	rtl8169_irq_mask_and_ack(tp);
+ 
+ 	if (tp->mac_version == RTL_GIGA_MAC_VER_27 ||
+ 	    tp->mac_version == RTL_GIGA_MAC_VER_28 ||
+@@ -4284,8 +4288,7 @@ static void rtl_hw_start_8168(struct net
+ 	RTL_W16(IntrMitigate, 0x5151);
+ 
+ 	/* Work around for RxFIFO overflow. */
+-	if (tp->mac_version == RTL_GIGA_MAC_VER_11 ||
+-	    tp->mac_version == RTL_GIGA_MAC_VER_22) {
++	if (tp->mac_version == RTL_GIGA_MAC_VER_11) {
+ 		tp->intr_event |= RxFIFOOver | PCSTimeout;
+ 		tp->intr_event &= ~RxOverflow;
+ 	}
+@@ -4467,6 +4470,11 @@ static void rtl_hw_start_8101(struct net
+ 	void __iomem *ioaddr = tp->mmio_addr;
+ 	struct pci_dev *pdev = tp->pci_dev;
+ 
++	if (tp->mac_version >= RTL_GIGA_MAC_VER_30) {
++		tp->intr_event &= ~RxFIFOOver;
++		tp->napi_event &= ~RxFIFOOver;
++	}
++
+ 	if (tp->mac_version == RTL_GIGA_MAC_VER_13 ||
+ 	    tp->mac_version == RTL_GIGA_MAC_VER_16) {
+ 		int cap = tp->pcie_cap;
+@@ -4738,7 +4746,7 @@ static void rtl8169_wait_for_quiescence(
+ 	/* Wait for any pending NAPI task to complete */
+ 	napi_disable(&tp->napi);
+ 
+-	rtl8169_irq_mask_and_ack(ioaddr);
++	rtl8169_irq_mask_and_ack(tp);
+ 
+ 	tp->intr_mask = 0xffff;
+ 	RTL_W16(IntrMask, tp->intr_event);
+@@ -5200,13 +5208,17 @@ static irqreturn_t rtl8169_interrupt(int
+ 	 */
+ 	status = RTL_R16(IntrStatus);
+ 	while (status && status != 0xffff) {
++		status &= tp->intr_event;
++		if (!status)
++			break;
++
+ 		handled = 1;
+ 
+ 		/* Handle all of the error cases first. These will reset
+ 		 * the chip, so just exit the loop.
+ 		 */
+ 		if (unlikely(!netif_running(dev))) {
+-			rtl8169_asic_down(ioaddr);
++			rtl8169_asic_down(tp);
+ 			break;
+ 		}
+ 
+@@ -5214,27 +5226,9 @@ static irqreturn_t rtl8169_interrupt(int
+ 			switch (tp->mac_version) {
+ 			/* Work around for rx fifo overflow */
+ 			case RTL_GIGA_MAC_VER_11:
+-			case RTL_GIGA_MAC_VER_22:
+-			case RTL_GIGA_MAC_VER_26:
+ 				netif_stop_queue(dev);
+ 				rtl8169_tx_timeout(dev);
+ 				goto done;
+-			/* Testers needed. */
+-			case RTL_GIGA_MAC_VER_17:
+-			case RTL_GIGA_MAC_VER_19:
+-			case RTL_GIGA_MAC_VER_20:
+-			case RTL_GIGA_MAC_VER_21:
+-			case RTL_GIGA_MAC_VER_23:
+-			case RTL_GIGA_MAC_VER_24:
+-			case RTL_GIGA_MAC_VER_27:
+-			case RTL_GIGA_MAC_VER_28:
+-			case RTL_GIGA_MAC_VER_31:
+-			/* Experimental science. Pktgen proof. */
+-			case RTL_GIGA_MAC_VER_12:
+-			case RTL_GIGA_MAC_VER_25:
+-				if (status == RxFIFOOver)
+-					goto done;
+-				break;
+ 			default:
+ 				break;
+ 			}
+@@ -5329,7 +5323,7 @@ static void rtl8169_down(struct net_devi
+ 
+ 	spin_lock_irq(&tp->lock);
+ 
+-	rtl8169_asic_down(ioaddr);
++	rtl8169_asic_down(tp);
+ 	/*
+ 	 * At this point device interrupts can not be enabled in any function,
+ 	 * as netif_running is not true (rtl8169_interrupt, rtl8169_reset_task,
+@@ -5583,7 +5577,7 @@ static void rtl_shutdown(struct pci_dev
+ 
+ 	spin_lock_irq(&tp->lock);
+ 
+-	rtl8169_asic_down(ioaddr);
++	rtl8169_asic_down(tp);
+ 
+ 	spin_unlock_irq(&tp->lock);
+ 
 
 
