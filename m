@@ -1,135 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab2JKCrL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:47:11 -0400
-Received: from us-mx3.synaptics.com ([12.239.217.85]:44798 "EHLO
-	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415Ab2JKCrF convert rfc822-to-8bit (ORCPT
+	id S1754527Ab2JKCsB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:48:01 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:35638 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967Ab2JKCr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:47:05 -0400
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Wed, 10 Oct 2012 19:14:09 -0700
-From: Christopher Heiny <Cheiny@synaptics.com>
-To: Joe Perches <joe@perches.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Alexandra Chin <alexandra.chin@tw.synaptics.com>
-Subject: RE: [RFC PATCH 02/06] input/rmi4: Core files
-Thread-Topic: [RFC PATCH 02/06] input/rmi4: Core files
-Thread-Index: AQHNo3hsaE1c+pCGsk+IENeTeYD9uJesqCEAgAbGfFQ=
-Date: Thu, 11 Oct 2012 02:49:02 +0000
-Message-ID: <BFABBC009FBA1C43B207B15FD485ABD922C22B7B@USW-MAIL1.synaptics-inc.local>
-References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com>
-	 <1349496603-20775-3-git-send-email-cheiny@synaptics.com>,<1349525982.2008.86.camel@joe-AO722>
-In-Reply-To: <1349525982.2008.86.camel@joe-AO722>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.10.35]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 10 Oct 2012 22:47:59 -0400
+Date: Thu, 11 Oct 2012 13:47:54 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tabi Timur-B04825 <B04825@freescale.com>
+Cc: Alexander Graf <agraf@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yoder Stuart-B08248 <B08248@freescale.com>,
+        David Howells <dhowells@redhat.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: linux-next: manual merge of the kvm-ppc tree with the
+ powerpc-merge tree
+Message-Id: <20121011134754.2e2cbb24842fa991e61cf97c@canb.auug.org.au>
+In-Reply-To: <6AE080B68D46FC4BA2D2769E68D765B7080FA8F8@039-SN2MPN1-023.039d.mgd.msft.net>
+References: <20121011121841.1b946f996cba995d9a5a2be7@canb.auug.org.au>
+	<6AE080B68D46FC4BA2D2769E68D765B7080FA8F8@039-SN2MPN1-023.039d.mgd.msft.net>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__11_Oct_2012_13_47_54_+1100_D4i8oI1jWMbaZHyJ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches wrote:
-> On Fri, 2012-10-05 at 21:09 -0700, Christopher Heiny wrote:
-> []
-> 
-> Just some trivial comments:
+--Signature=_Thu__11_Oct_2012_13_47_54_+1100_D4i8oI1jWMbaZHyJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks - see below for responses.
+On Thu, 11 Oct 2012 01:47:13 +0000 Tabi Timur-B04825 <B04825@freescale.com>=
+ wrote:
+>
+> On Wed, Oct 10, 2012 at 8:18 PM, Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>=20
+> >  arch/powerpc/include/asm/epapr_hcalls.h      |  511 ------------------=
+--------
+> >  arch/powerpc/include/uapi/asm/Kbuild         |    1 +
+> >  arch/powerpc/include/uapi/asm/epapr_hcalls.h |  511 ++++++++++++++++++=
+++++++++
+>=20
+> What is include/uapi?  epapr_hcalls.h is not a user-space header file.
+>  I don't remember seeing the original patch which moved it, so I don't
+> know where this comes from.
 
-> > diff --git a/drivers/input/rmi4/rmi_driver.c
-> > b/drivers/input/rmi4/rmi_driver.c
-> []
-> 
-> > @@ -0,0 +1,1529 @@
-> 
-> []
-> 
-> > +static ssize_t delay_write(struct file *filp, const char __user *buffer,
-> > +                        size_t size, loff_t *offset) {
-> > +     struct driver_debugfs_data *data = filp->private_data;
-> > +     struct rmi_device_platform_data *pdata =
-> > +                     data->rmi_dev->phys->dev->platform_data;
-> > +     int retval;
-> > +     char local_buf[size];
-> > +     unsigned int new_read_delay;
-> > +     unsigned int new_write_delay;
-> > +     unsigned int new_block_delay;
-> > +     unsigned int new_pre_delay;
-> > +     unsigned int new_post_delay;
-> > +
-> > +     retval = copy_from_user(local_buf, buffer, size);
-> > +     if (retval)
-> > +             return -EFAULT;
-> > +
-> > +     retval = sscanf(local_buf, "%u %u %u %u %u", &new_read_delay,
-> > +                     &new_write_delay, &new_block_delay,
-> > +                     &new_pre_delay, &new_post_delay);
-> > +     if (retval != 5) {
-> > +             dev_err(&data->rmi_dev->dev,
-> > +                     "Incorrect number of values provided for delay.");
-> > +             return -EINVAL;
-> > +     }
-> > +     if (new_read_delay < 0) {
-> 
-> These are unnecessary tests as unsigned values are never < 0.
+Commit 549d62d889b4 ("KVM: PPC: use definitions in epapr header
+for hcalls") from the kvm-ppc tree added an include of asm/epapr_hcall.h
+to the user visible part of asm/kvm_para.h so asm/epapr_hcall.h became a
+user visible header file.
 
-Right.  Thought we'd taken care of most of the silliness like that, but obviously missed some.  We'll recheck the codebase.
+The UAPI changes are moving the user visible parts of export header files
+into a separate include directory called uapi.
 
-[snip]
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Thu__11_Oct_2012_13_47_54_+1100_D4i8oI1jWMbaZHyJ
+Content-Type: application/pgp-signature
 
-> > +static ssize_t phys_read(struct file *filp, char __user *buffer, size_t
-> > size, +                 loff_t *offset) {
-> > +     struct driver_debugfs_data *data = filp->private_data;
-> > +     struct rmi_phys_info *info = &data->rmi_dev->phys->info;
-> > +     int retval;
-> > +     char local_buf[size];
-> 
-> size comes from where?  possible stack overflow?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Hmmmm.  Good point.  We'll look at this.
+iQIcBAEBCAAGBQJQdjNaAAoJEECxmPOUX5FEFdgP/i76k2wMBk/pXJdDyK/dgfrb
+GO5fsKE6Gt3/fvLC2pG1qplyexbqj1kGfhSSVFVVV3L062tPRFfYgjNp0+Bxl2Pa
+Ds3R20SBG2KJIXwdki41s5nRonXFfPKGxVUX22/NSygpJU84Fdt2+yBg5hVcB39s
+yEfToFoTR9fFogi0qANCL/nEn4OsvfXYpqyWPlkw7gnCeBNkhS+fBUVAZD1RMLSq
+1YUV3jZnrYR8OxSdT/Q3ha1K2HtsVY4+e01AugpXPfnszGmIlQrhWyHIveVV+f6D
+wA2mCwVMYgZkH6N/yA1yTj7eoZ9CZJ2EiOzahjFaXG2v2KJ2cdV+EfRDAGmM8FuA
+dVV64X30hV0HtXLVmScRnTSb04PudD3dovqiRnzipJ0a4qXq+SaQy/r8JlP+K0vj
+O0ghWHK0O2w7E6Ya0Ec63gJCeVdip1yWvfmfshJ5cV3ggoUaqyl8oTAYVuHkx0Bv
++rf7sW9XSWi+MoTaukNq1YZMKf8YzzGfmdXmQPLwsvuHiugYUqkDSlpDLcxCCKxc
+8+mjIOeklU3MWKHENMVKLcunjG/WrDlZCn1aAyqXkO+skPh+KFm3BBIceqaQWgKU
+hs2do0K/op/Zd3Lh5/6wsZP9KucfivY4Kaja6M8Rf3+BeyNPOYLrDe2KRQ34H2+q
+mmxzfRNQVsqly7MBJfrG
+=dAcz
+-----END PGP SIGNATURE-----
 
-[snip]
-
-> []
-> 
-> > +     list_for_each_entry(entry, &data->rmi_functions.list, list)
-> > +             if (entry->irq_mask)
-> > +                     process_one_interrupt(entry, irq_status,
-> > +                                           data);
-> 
-> style nit, it'd be nicer with braces.
-
-I agree with you, but checkpatch.pl doesn't. :-(
-
-> 
-> > diff --git a/drivers/input/rmi4/rmi_driver.h
-> > b/drivers/input/rmi4/rmi_driver.h
-> []
-> 
-> > @@ -0,0 +1,438 @@
-> > 
-> > +
-> > +#define tricat(x, y, z) tricat_(x, y, z)
-> > +
-> > +#define tricat_(x, y, z) x##y##z
-> 
-> I think these tricat macros are merely obfuscating
-> and don't need to be used.
-
-tricat is used internally by another collection of macros that helps generate sysfs files.  In particular, it's used to generate the RMI4 register name symbols.
+--Signature=_Thu__11_Oct_2012_13_47_54_+1100_D4i8oI1jWMbaZHyJ--
