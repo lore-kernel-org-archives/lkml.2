@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934156Ab2JKBYW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:24:22 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51727 "EHLO
+	id S934173Ab2JKBYg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:24:36 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:53968 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933951Ab2JKBYQ (ORCPT
+	by vger.kernel.org with ESMTP id S933970Ab2JKBYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:24:16 -0400
-X-Sasl-enc: 1OM4uUTkaYLKE6lGhuqnO+HWJ70AulzlLq7A8EjuxGmy 1349918655
+	Wed, 10 Oct 2012 21:24:21 -0400
+X-Sasl-enc: BR9Tgb/yp/P9+p20txCUVidGExshXQ8ybqE6mprnqBSA 1349918658
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Brian C. Huffman" <bhuffman@graze.net>, VL <vl.homutov@gmail.com>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 063/120] PCI: Check P2P bridge for invalid secondary/subordinate range
-Date: Thu, 11 Oct 2012 10:00:15 +0900
-Message-Id: <20121011005837.468768118@linuxfoundation.org>
+        Daniel Drake <dsd@laptop.org>, Yongqiang Yang <xiaoqiangnk@gmail.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 064/120] ext4: ignore last group w/o enough space when resizing instead of BUGing
+Date: Thu, 11 Oct 2012 10:00:16 +0900
+Message-Id: <20121011005837.676176081@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -28,51 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Yongqiang Yang <xiaoqiangnk@gmail.com>
 
-commit 1965f66e7db08d1ebccd24a59043eba826cc1ce8 upstream.
+commit 03c1c29053f678234dbd51bf3d65f3b7529021de upstream.
 
-For bridges with "secondary > subordinate", i.e., invalid bus number
-apertures, we don't enumerate anything behind the bridge unless the
-user specified "pci=assign-busses".
+If the last group does not have enough space for group tables, ignore
+it instead of calling BUG_ON().
 
-This patch makes us automatically try to reassign the downstream bus
-numbers in this case (just for that bridge, not for all bridges as
-"pci=assign-busses" does).
-
-We don't discover all the devices on the Intel DP43BF motherboard
-without this change (or "pci=assign-busses") because its BIOS configures
-a bridge as:
-
-    pci 0000:00:1e.0: PCI bridge to [bus 20-08] (subtractive decode)
-
-[bhelgaas: changelog, change message to dev_info]
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=18412
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=625754
-Reported-by: Brian C. Huffman <bhuffman@graze.net>
-Reported-by: VL <vl.homutov@gmail.com>
-Tested-by: VL <vl.homutov@gmail.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reported-by: Daniel Drake <dsd@laptop.org>
+Signed-off-by: Yongqiang Yang <xiaoqiangnk@gmail.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/probe.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/ext4/resize.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -749,8 +749,10 @@ int __devinit pci_scan_bridge(struct pci
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -200,8 +200,11 @@ static void free_flex_gd(struct ext4_new
+  * be a partial of a flex group.
+  *
+  * @sb: super block of fs to which the groups belongs
++ *
++ * Returns 0 on a successful allocation of the metadata blocks in the
++ * block group.
+  */
+-static void ext4_alloc_group_tables(struct super_block *sb,
++static int ext4_alloc_group_tables(struct super_block *sb,
+ 				struct ext4_new_flex_group_data *flex_gd,
+ 				int flexbg_size)
+ {
+@@ -226,6 +229,8 @@ static void ext4_alloc_group_tables(stru
+ 	       (last_group & ~(flexbg_size - 1))));
+ next_group:
+ 	group = group_data[0].group;
++	if (src_group >= group_data[0].group + flex_gd->count)
++		return -ENOSPC;
+ 	start_blk = ext4_group_first_block_no(sb, src_group);
+ 	last_blk = start_blk + group_data[src_group - group].blocks_count;
  
- 	/* Check if setup is sensible at all */
- 	if (!pass &&
--	    (primary != bus->number || secondary <= bus->number)) {
--		dev_dbg(&dev->dev, "bus configuration invalid, reconfiguring\n");
-+	    (primary != bus->number || secondary <= bus->number ||
-+	     secondary > subordinate)) {
-+		dev_info(&dev->dev, "bridge configuration invalid ([bus %02x-%02x]), reconfiguring\n",
-+			 secondary, subordinate);
- 		broken = 1;
+@@ -235,7 +240,6 @@ next_group:
+ 
+ 	start_blk += overhead;
+ 
+-	BUG_ON(src_group >= group_data[0].group + flex_gd->count);
+ 	/* We collect contiguous blocks as much as possible. */
+ 	src_group++;
+ 	for (; src_group <= last_group; src_group++)
+@@ -300,6 +304,7 @@ next_group:
+ 			       group_data[i].free_blocks_count);
+ 		}
  	}
++	return 0;
+ }
  
+ static struct buffer_head *bclean(handle_t *handle, struct super_block *sb,
+@@ -1676,7 +1681,8 @@ int ext4_resize_fs(struct super_block *s
+ 	 */
+ 	while (ext4_setup_next_flex_gd(sb, flex_gd, n_blocks_count,
+ 					      flexbg_size)) {
+-		ext4_alloc_group_tables(sb, flex_gd, flexbg_size);
++		if (ext4_alloc_group_tables(sb, flex_gd, flexbg_size) != 0)
++			break;
+ 		err = ext4_flex_group_add(sb, resize_inode, flex_gd);
+ 		if (unlikely(err))
+ 			break;
 
 
