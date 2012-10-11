@@ -1,426 +1,550 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759254Ab2JKTgL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 15:36:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36742 "EHLO mx1.redhat.com"
+	id S1759256Ab2JKTh3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 15:37:29 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:55068 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759205Ab2JKTgG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 15:36:06 -0400
-Date: Thu, 11 Oct 2012 16:36:02 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL for v3.7-rc1] media updates - part 2
-Message-ID: <20121011163602.333dc78f@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1759205Ab2JKTh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 15:37:27 -0400
+Date: Thu, 11 Oct 2012 20:37:17 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <pzijlstr@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hillf Danton <dhillf@gmail.com>,
+        Andrew Jones <drjones@redhat.com>, Dan Smith <danms@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 01/33] autonuma: add Documentation/vm/autonuma.txt
+Message-ID: <20121011193717.GK3317@csn.ul.ie>
+References: <1349308275-2174-1-git-send-email-aarcange@redhat.com>
+ <1349308275-2174-2-git-send-email-aarcange@redhat.com>
+ <20121011105036.GN3317@csn.ul.ie>
+ <20121011160702.GJ1818@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121011160702.GJ1818@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Oct 11, 2012 at 06:07:02PM +0200, Andrea Arcangeli wrote:
+> Hi,
+> 
+> On Thu, Oct 11, 2012 at 11:50:36AM +0100, Mel Gorman wrote:
+> > On Thu, Oct 04, 2012 at 01:50:43AM +0200, Andrea Arcangeli wrote:
+> > > +The AutoNUMA logic is a chain reaction resulting from the actions of
+> > > +the AutoNUMA daemon, knum_scand. The knuma_scand daemon periodically
+> > 
+> > s/knum_scand/knuma_scand/
+> 
+> Applied.
+> 
+> > > +scans the mm structures of all active processes. It gathers the
+> > > +AutoNUMA mm statistics for each "anon" page in the process's working
+> > 
+> > Ok, so this will not make a different to file-based workloads but as I
+> > mentioned in the leader this would be a difficult proposition anyway
+> > because if it's read/write based, you'll have no statistics.
+> 
+> Oops sorry for the confusion but the the doc is wrong on this one: it
+> actually tracks anything with a page_mapcount == 1, even if that is
+> pagecache or even .text as long as it's only mapped in a single
+> process. So if you've a threaded database doing a gigantic MAP_SHARED,
+> it'll track and move around the whole MAP_SHARED as well as anonymous
+> memory or anything that can be moved.
+> 
 
-Please pull from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+Ok, I would have expected MAP_PRIVATE in this case but I get your point.
 
-For the second part of media patches for v3.7-rc1.
+> Changed to:
+> 
+> +AutoNUMA mm statistics for each not shared page in the process's
+> 
 
-Despite its size, most of the stuff here is trivial. This series contain:
+Better.
 
-	- s5p-mfc: additions at the driver and at the core to support H.264
-	  hardware codec;
-	- Some improvements at s5p and davinci embedded drivers;
-	- Some V4L2 compliance fixes applied on a few drivers;
-	- Several random trivial patches, including several fixes
-	  and a few new board support additions;
+> > > +set. While scanning, knuma_scand also sets the NUMA bit and clears the
+> > > +present bit in each pte or pmd that was counted. This triggers NUMA
+> > > +hinting page faults described next.
+> > > +
+> > > +The mm statistics are expentially decayed by dividing the total memory
+> > > +in half and adding the new totals to the decayed values for each
+> > > +knuma_scand pass. This causes the mm statistics to resemble a simple
+> > > +forecasting model, taking into account some past working set data.
+> > > +
+> > > +=== NUMA hinting fault ===
+> > > +
+> > > +A NUMA hinting fault occurs when a task running on a CPU thread
+> > > +accesses a vma whose pte or pmd is not present and the NUMA bit is
+> > > +set. The NUMA hinting page fault handler returns the pte or pmd back
+> > > +to its present state and counts the fault's occurance in the
+> > > +task_autonuma structure.
+> > > +
+> > 
+> > So, minimally one source of System CPU overhead will be increased traps.
+> 
+> Correct.
+> 
+> It takes down 128M every 100msec, and then when it finished taking
+> down everything it sleeps 10sec, then increases the pass_counter and
+> restarts. It's not measurable, even if I do a kernel build with -j128
+> in tmpfs the performance is identical with autonuma running or not.
+> 
 
----
+Ok, I see it clearly now, particularly after reading the series. It does
+mean a CPU spike every 10 seconds but it'll be detectable if it's a problem.
 
-Notes:
+> > I haven't seen the code yet obviously but I wonder if this gets accounted
+> > for as a minor fault? If it does, how can we distinguish between minor
+> > faults and numa hinting faults? If not, is it possible to get any idea of
+> > how many numa hinting faults were incurred? Mention it here.
+> 
+> Yes, it's surely accounted as minor fault. To monitor it normally I
+> use:
+> 
+> perf probe numa_hinting_fault
+> perf record -e probe:numa_hinting_fault -aR -g sleep 10
+> perf report -g
+> 
 
-1) Some Exynos media patches were dependent on some -arm fixes that got
-merged on changeset 782cd9e. That's why this pull request is based that
-changeset.
+Ok, straight-forward. Also can be recorded with trace-cmd obviously once
+the probe is in place.
 
-2) As promised, I reviewed the pending VB2 DMABUF series. 
+> # Samples: 345  of event 'probe:numa_hinting_fault'
+> # Event count (approx.): 345
+> #
+> # Overhead  Command      Shared Object                  Symbol
+> # ........  .......  .................  ......................
+> #
+>     64.64%     perf  [kernel.kallsyms]  [k] numa_hinting_fault
+>                |
+>                --- numa_hinting_fault
+>                    handle_mm_fault
+>                    do_page_fault
+>                    page_fault
+>                   |          
+>                   |--57.40%-- sig_handler
+>                   |          |          
+>                   |          |--62.50%-- run_builtin
+>                   |          |          main
+>                   |          |          __libc_start_main
+>                   |          |          
+>                   |           --37.50%-- 0x7f47f7c6cba0
+>                   |                     run_builtin
+>                   |                     main
+>                   |                     __libc_start_main
+>                   |          
+>                   |--16.59%-- __poll
+>                   |          run_builtin
+>                   |          main
+>                   |          __libc_start_main
+>                   |          
+>                   |--9.87%-- 0x7f47f7c6cba0
+>                   |          run_builtin
+>                   |          main
+>                   |          __libc_start_main
+>                   |          
+>                   |--9.42%-- save_i387_xstate
+>                   |          do_signal
+>                   |          do_notify_resume
+>                   |          int_signal
+>                   |          __poll
+>                   |          run_builtin
+>                   |          main
+>                   |          __libc_start_main
+>                   |          
+>                    --6.73%-- sys_poll
+>                              system_call_fastpath
+>                              __poll
+> 
+>     21.45%     ntpd  [kernel.kallsyms]  [k] numa_hinting_fault
+>                |
+>                --- numa_hinting_fault
+>                    handle_mm_fault
+>                    do_page_fault
+>                    page_fault
+>                   |          
+>                   |--66.22%-- 0x42b910
+>                   |          0x0
+>                   |          
+>                   |--24.32%-- __select
+>                   |          0x0
+>                   |          
+>                   |--4.05%-- do_signal
+>                   |          do_notify_resume
+>                   |          int_signal
+>                   |          __select
+>                   |          0x0
+>                   |          
+>                   |--2.70%-- 0x7f88827b3ba0
+>                   |          0x0
+>                   |          
+>                    --2.70%-- clock_gettime
+>                              0x1a1eb808
+> 
+>      7.83%     init  [kernel.kallsyms]  [k] numa_hinting_fault
+>                |
+>                --- numa_hinting_fault
+>                    handle_mm_fault
+>                    do_page_fault
+>                    page_fault
+>                   |          
+>                   |--33.33%-- __select
+>                   |          0x0
+>                   |          
+>                   |--29.63%-- 0x404e0c
+>                   |          0x0
+>                   |          
+>                   |--18.52%-- 0x405820
+>                   |          
+>                   |--11.11%-- sys_select
+>                   |          system_call_fastpath
+>                   |          __select
+>                   |          0x0
+>                   |          
+>                    --7.41%-- 0x402528
+> 
+>      6.09%    sleep  [kernel.kallsyms]  [k] numa_hinting_fault
+>               |
+>               --- numa_hinting_fault
+>                   handle_mm_fault
+>                   do_page_fault
+>                   page_fault
+>                  |          
+>                  |--42.86%-- 0x7f0f67847fe0
+>                  |          0x7fff4cd6d42b
+>                  |          
+>                  |--28.57%-- 0x404007
+>                  |          
+>                  |--19.05%-- nanosleep
+>                  |          
+>                   --9.52%-- 0x4016d0
+>                             0x7fff4cd6d42b
+> 
+> 
+> Chances are we want to add more vmstat for this event.
+> 
+> > > +The NUMA hinting fault gathers the AutoNUMA task statistics as follows:
+> > > +
+> > > +- Increments the total number of pages faulted for this task
+> > > +
+> > > +- Increments the number of pages faulted on the current NUMA node
+> > > +
+> > 
+> > So, am I correct in assuming that the rate of NUMA hinting faults will be
+> > related to the scan rate of knuma_scand?
+> 
+> This is correct. They're identical.
+> 
+> There's a slight chance that two threads hit the fault on the same
+> pte/pmd_numa concurrently, but just one of the two will actually
+> invoke the numa_hinting_fault() function.
+> 
 
-While setting a test environment, it was noticed that the upstream support
-for Samsung Exynos 4 boards (smdk310 and Origen) are broken upstream,
-likely due to regressions: both defconfigs are wrong and regulator 
-settings for both boards are broken. That, allied with some bug at 
-the dummy regulator driver, causes OOPSes during boot time.
+Ok, I see they'll be serialised by the PTL anyway.
 
-Long story short: even fixing the above, the proposed patches OOPSed
-when running the DMABUF test. Not sure yet if the OOPSes are due to
-some other undetected regressions, or due to some bug on the patches.
+> > > +- If the fault was for an hugepage, the number of subpages represented
+> > > +  by an hugepage is added to the task statistics above
+> > > +
+> > > +- Each time the NUMA hinting page fault discoveres that another
+> > 
+> > s/discoveres/discovers/
+> 
+> Fixed.
+> 
+> > 
+> > > +  knuma_scand pass has occurred, it divides the total number of pages
+> > > +  and the pages for each NUMA node in half. This causes the task
+> > > +  statistics to be exponentially decayed, just as the mm statistics
+> > > +  are. Thus, the task statistics also resemble a simple forcasting
+> 
+> Also noticed forecasting ;).
+> 
+> > > +  model, taking into account some past NUMA hinting fault data.
+> > > +
+> > > +If the page being accessed is on the current NUMA node (same as the
+> > > +task), the NUMA hinting fault handler only records the nid of the
+> > > +current NUMA node in the page_autonuma structure field last_nid and
+> > > +then it'd done.
+> > > +
+> > > +Othewise, it checks if the nid of the current NUMA node matches the
+> > > +last_nid in the page_autonuma structure. If it matches it means it's
+> > > +the second NUMA hinting fault for the page occurring (on a subsequent
+> > > +pass of the knuma_scand daemon) from the current NUMA node.
+> > 
+> > You don't spell it out, but this is effectively a migration threshold N
+> > where N is the number of remote NUMA hinting faults that must be
+> > incurred before migration happens. The default value of this threshold
+> > is 2.
+> > 
+> > Is that accurate? If so, why 2?
+> 
+> More like 1. It needs one confirmation the migrate request come from
+> the same node again (note: it is allowed to come from a different
+> threads as long as it's the same node and that is very important).
+> 
+> Why only 1 confirmation? It's the same as page aging. We could record
+> the number of pagecache lookup hits, and not just have a single bit as
+> reference count. But doing so, if the workload radically changes it
+> takes too much time to adapt to the new configuration and so I usually
+> don't like counting.
+> 
+> Plus I avoided as much as possible fixed numbers. I can explain why 0
+> or 1, but I can't as easily explain why 5 or 8, so if I can't explain
+> it, I avoid it.
+> 
 
-Due to the above, DMABUF patches for vb2 got NACKed for 3.7.
+That's fair enough. Expressing in terms of page aging is reasonable. One
+could argue for any number but ultimately it'll be related to the
+workload. It's all part of the "ping-pong" detection problem. Include
+this blurb in the docs.
 
-Thanks!
-Mauro
+> > I don't have a better suggestion, it's just an obvious source of an
+> > adverse workload that could force a lot of migrations by faulting once
+> > per knuma_scand cycle and scheduling itself on a remote CPU every 2 cycles.
+> 
+> Correct, for certain workloads like single instance specjbb that
+> wasn't enough, but it is fixed in autonuma28, now it's faster even on
+> single instance.
+> 
 
--
+Ok.
 
-The following changes since commit 782cd9ee985b1523f1ddad57657a24d7855d9e4d:
+> > I'm assuming it must be async migration then. IO in progress would be
+> > a bit of a surprise though! It would have to be a mapped anonymous page
+> > being written to swap.
+> 
+> It's all migrate on fault now, but I'm using all methods you implemented to
+> avoid compaction to block in migrate_pages.
+> 
 
-  Merge branch 'fixes2' into fixes (2012-10-09 08:48:51 -0700)
+Excellent. There are other places where autonuma may need to backoff if
+contention is detected but it can be incrementally addressed.
 
-are available in the git repository at:
+> > > +=== Task exchange ===
+> > > +
+> > > +The following defines "weight" in the AutoNUMA balance routine's
+> > > +algorithm.
+> > > +
+> > > +If the tasks are threads of the same process:
+> > > +
+> > > +    weight = task weight for the NUMA node (since memory weights are
+> > > +             the same)
+> > > +
+> > > +If the tasks are not threads of the same process:
+> > > +
+> > > +    weight = memory weight for the NUMA node (prefer to move the task
+> > > +             to the memory)
+> > > +
+> > > +The following algorithm determines if the current task will be
+> > > +exchanged with a running task on a remote NUMA node:
+> > > +
+> > > +    this_diff: Weight of the current task on the remote NUMA node
+> > > +               minus its weight on the current NUMA node (only used if
+> > > +               a positive value). How much does the current task
+> > > +               prefer to run on the remote NUMA node.
+> > > +
+> > > +    other_diff: Weight of the current task on the remote NUMA node
+> > > +                minus the weight of the other task on the same remote
+> > > +                NUMA node (only used if a positive value). How much
+> > > +                does the current task prefer to run on the remote NUMA
+> > > +                node compared to the other task.
+> > > +
+> > > +    total_weight_diff = this_diff + other_diff
+> > > +
+> > > +    total_weight_diff: How favorable it is to exchange the two tasks.
+> > > +                       The pair of tasks with the highest
+> > > +                       total_weight_diff (if any) are selected for
+> > > +                       exchange.
+> > > +
+> > > +As mentioned above, if the two tasks are threads of the same process,
+> > > +the AutoNUMA balance routine uses the task_autonuma statistics. By
+> > > +using the task_autonuma statistics, each thread follows its own memory
+> > > +locality and they will not necessarily converge on the same node. This
+> > > +is often very desirable for processes with more threads than CPUs on
+> > > +each NUMA node.
+> > > +
+> > 
+> > What about the case where two threads on different CPUs are accessing
+> 
+> I assume on different nodes (different cpus if in the same node, the
+> above won't kick in).
+> 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+Yes, on different nodes is the case I care about here.
 
-for you to fetch changes up to bf3b202b41999f88f091632f13842b7234bd58b7:
+> > separate structures that are not page-aligned (base or huge page but huge
+> > page would be obviously worse). Does this cause a ping-pong effect or
+> > otherwise mess up the statistics?
+> 
+> Very good point! This is exactly what I call NUMA false sharing and
+> it's the biggest nightmare in this whole effort.
+> 
+> So if there's an huge amount of this over time the statistics will be
+> around 50/50 (the statistics just record the working set of the
+> thread).
+> 
+> So if there's another process (note: thread not) heavily computing the
+> 50/50 won't be used and the mm statistics will be used instead to
+> balance the two threads against the other process. And the two threads
+> will converge in the same node, and then their thread statistics will
+> change from 50/50 to 0/100 matching the mm statistics.
+> 
+> If there are just threads and they're all doing what you describe
+> above with all their memory, well then the problem has no solution,
+> and the new stuff in autonuma28 will deal with that too.
+> 
 
-  Merge branch 'staging/for_v3.7' into v4l_for_linus (2012-10-11 15:07:19 -0300)
+Ok, I'll keep an eye out for it. 
 
-----------------------------------------------------------------
+> Ideally we should do MADV_INTERLEAVE, I didn't get that far yet but I
+> probably could now.
+> 
 
-Alfredo Jesús Delaiti (1):
-      [media] Mygica X8507 audio for YPbPr, AV and S-Video
+I like the idea that if autonuma was able to detect that it was
+ping-ponging it would set MADV_INTERLEAVE and remove the task from the
+list of address spaces to scan entirely. It would require more state in
+the task struct.
 
-Andy Shevchenko (1):
-      [media] dvb-usb: print small buffers via %*ph
+> Even without the new stuff it wasn't too bad but there were a bit too
+> many spurious migrations in that load with autonuma27 and previous. It
+> was less spurious on bigger systems with many nodes because last_nid
+> is implicitly more accurate there (as last_nid will have more possible
+> values than 0|1). With autonuma28 even on 2 nodes it's perfectly fine.
+> 
+> If it's just 1 page false sharing and all the rest is thread-local,
+> the statistics will be 99/1 and the false sharing will be lost in the
+> noise.
+> 
+> The false sharing spillover caused by alignments is minor if the
+> threads are really computing on a lot of local memory so it's not a
+> concern and it will be optimized away by the last_nid plus the new
+> stuff.
+> 
 
-Antti Palosaari (2):
-      [media] cxd2820r: silence compiler warning
-      [media]  dvb: LNA implementation changes
+Ok, so there will be examples of when this works and counter-examples
+and that is unavoidable. At least the cases where it goes wrong are
+known in advance. Ideally there would be a few statistics to help track
+when that is going wrong.
 
-Arun Kumar K (6):
-      [media] v4l: Add fourcc definitions for new formats
-      [media] v4l: Add control definitions for new H264 encoder features
-      [media] s5p-mfc: Prepare driver for callback based re-architecture
-      [media] s5p-mfc: Update MFCv5 driver for callback based architecture
-      [media] s5p-mfc: Add MFC variant data to device context
-      [media] s5p-mfc: Set vfl_dir for encoder
+pages_migrate_success		migrate.c
+pages_migrate_fail		migrate.c
+  (tracepoint to distinguish between compaction and autonuma, delete
+   the equivalent counters in compaction.c. Monitoring the sucess
+   counter over time will allow an estimate of how much inter-node
+   traffic is due to autonuma)
 
-Dan Carpenter (3):
-      [media] rc: divide by zero bugs in s_tx_carrier()
-      [media] rc-core: fix return codes in ir_lirc_ioctl()
-      [media] cx25821: testing the wrong variable
+thread_migrate_numa		autonuma.c
+  (rapidly increasing count implies ping-pong. A count that is static
+  indicates that it has converged. Potentially could be aggegated
+  for a whole address space to see if an overal application has
+  converged or not.)
 
-Ezequiel Garcia (3):
-      [media] em28xx: Replace memcpy with struct assignment
-      [media] uvc: Add return code check at vb2_queue_init()
-      [media] stk1160: Add support for S-Video input
+PMU for remote numa accesses
+  (should decrease with autonuma if working perfectly. Will increase it
+   when ping-pong is occurring)
 
-Frank Schäfer (1):
-      [media] ov2640: select sensor register bank before applying h/v-flip settings
+perf probe do_numahint_page() / do_numahint_pmd()
+  (tracks overhead incurred from the faults, also shows up in profile)
 
-Guilherme Herrmann Destefani (1):
-      [media] bt8xx: Add video4linux control V4L2_CID_COLOR_KILLER
+I'm not suggesting this all has to be implemented but it'd be nice to know
+in advance how we'll identify both when autonuma is getting things right
+and when it's getting it wrong.
 
-Hans Verkuil (24):
-      [media] dm644x: replace the obsolete preset API by the timings API
-      [media] s5p-g2d: fix compiler warning
-      [media] s5p-fimc: fix compiler warning
-      [media] fsl-viu: fix compiler warning
-      [media] vpif_capture: remove unused data structure
-      [media] vpif_display: remove unused data structures
-      [media] vpif_capture: move input_idx to channel_obj
-      [media] vpif_display: move output_id to channel_obj
-      [media] vpif_capture: remove unnecessary can_route flag
-      [media] vpif_capture: move routing info from subdev to input
-      [media] vpif_capture: first init subdevs, then register device nodes
-      [media] vpif_display: first init subdevs, then register device nodes
-      [media] vpif_display: fix cleanup code
-      [media] vpif_capture: fix cleanup code
-      [media] vpif_capture: separate subdev from input
-      [media] vpif_display: use a v4l2_subdev pointer to call a subdev
-      [media] davinci: move struct vpif_interface to chan_cfg
-      [media] tvp514x: s_routing should just change routing, not try to detect a signal
-      [media] videobuf2-core: move plane verification out of __fill_v4l2/vb_buffer
-      [media] videobuf2-core: fill in length field for multiplanar buffers
-      [media] v4l2-ioctl.c: handle PREPARE_BUF like QUERYBUF
-      [media] DocBook: various updates w.r.t. v4l2_buffer and multiplanar
-      [media] v4l2-ioctl: add blocks check for VIDIOC_SUBDEV_G/S_EDID
-      [media] v4l2-ioctl: fix W=1 warnings
+> > Ok, very obviously this will never be an RT feature but that is hardly
+> > a surprise and anyone who tries to enable this for RT needs their head
+> > examined. I'm not suggesting you do it but people running detailed
+> > performance analysis on scheduler-intensive workloads might want to keep
+> > an eye on their latency and jitter figures and how they are affected by
+> > this exchanging. Does ftrace show a noticable increase in wakeup latencies
+> > for example?
+> 
+> If you do:
+> 
+> echo 1 >/sys/kernel/mm/autonuma/debug
+> 
+> you will get 1 printk every single time sched_autonuma_balance
+> triggers a task exchange.
+> 
 
-Hans-Frieder Vogt (1):
-      [media] af9033: prevent unintended underflow
+Yeah, ideally we would get away from that over time though and move to
+tracepoints so it can be gathered by trace-cmd or perf depending on the
+exact scenario.
 
-Ido Yariv (1):
-      [media] omap3isp: Fix compilation error in ispreg.h
+> With autonuma28 I resolved a lot of the jittering and now there are
+> 6/7 printk for the whole 198 seconds of numa01. CFS runs in autopilot
+> all the time.
+> 
 
-Javier Martin (1):
-      [media] media: mx2_camera: Don't modify non volatile parameters in try_fmt
+Good. trace-cmd with the wakeup plugin might also be able to detect
+interference in scheduling latencies.
 
-Jeongtae Park (2):
-      [media] s5p-mfc: MFCv6 register definitions
-      [media] s5p-mfc: Update MFC v4l2 driver to support MFC6.x
+> With specjbb x2 overcommit, the active balancing events are reduced to
+> one every few sec (vs several per sec with autonuma27). In fact the
+> specjbb x2 overcommit load jumped ahead too with autonuma28.
+> 
+> About tracing events, the git branch already has tracing events to
+> monitor all page and task migrations showed in an awesome "perf script
+> numatop" from Andrew.
 
-Lad, Prabhakar (10):
-      [media] media: davinci: vpfe: fix build error
-      [media] media: davinci: vpbe: fix build warning
-      [media] davinci: vpbe: replace V4L2_OUT_CAP_CUSTOM_TIMINGS with V4L2_OUT_CAP_DV_TIMINGS
-      [media] media: v4l2-ctrls: add control for test pattern
-      [media] media: v4l2-ctrl: add a helper function to add standard control with driver specific menu
-      [media] media: mt9p031/mt9t001/mt9v032: use V4L2_CID_TEST_PATTERN for test pattern control
-      [media] media: davinci: vpif: add check for NULL handler
-      [media] media: davinci: vpif: display: separate out subdev from output
-      [media] media: davinci: vpif: Add return code check at vb2_queue_init()
-      [media] media: davinci: vpif: set device capabilities
+Cool!
 
-Laurent Pinchart (1):
-      [media] omap3isp: Replace cpu_is_omap3630() with ISP revision check
+> Likely we need one tracing event to see the task
+> exchange generated specifically by the autonuma balancing event (we're
+> running short in event columns to show it in numatop though ;). Right
+> now that is only available as the printk above.
+> 
 
-Manjunath Hadli (3):
-      [media] ths7303: enable THS7303 for HD modes
-      [media] ARM: davinci: da850: Add SoC related definitions for VPIF
-      [media] ARM: davinci: da850 evm: Add EVM specific code for VPIF to work
+Ok.
 
-Mauro Carvalho Chehab (5):
-      Merge branch 'samsung_platform_data' into staging/for_v3.7
-      [media] mt2063: properly handle return error codes
-      [media] tda18271-common: hold the I2C adapter during write transfers
-      Revert "[media] omap3isp: Replace cpu_is_omap3630() with ISP revision check"
-      Merge branch 'staging/for_v3.7' into v4l_for_linus
+> > > +=== task_autonuma - per task AutoNUMA data ===
+> > > +
+> > > +The task_autonuma structure is used to hold AutoNUMA data required for
+> > > +each mm task (process/thread). Total size: 10 bytes + 8 * # of NUMA
+> > > +nodes.
+> > > +
+> > > +- selected_nid: preferred NUMA node as determined by the AutoNUMA
+> > > +                scheduler balancing code, -1 if none (2 bytes)
+> > > +
+> > > +- Task NUMA statistics for this thread/process:
+> > > +
+> > > +    Total number of NUMA hinting page faults in this pass of
+> > > +    knuma_scand (8 bytes)
+> > > +
+> > > +    Per NUMA node number of NUMA hinting page faults in this pass of
+> > > +    knuma_scand (8 bytes * # of NUMA nodes)
+> > > +
+> > 
+> > It might be possible to put a coarse ping-pong detection counter in here
+> > as well by recording a declaying average of number of pages migrated
+> > over a number of knuma_scand passes instead of just the last one.  If the
+> > value is too high, you're ping-ponging and the process should be ignored,
+> > possibly forever. It's not a requirement and it would be more memory
+> > overhead obviously but I'm throwing it out there as a suggestion if it
+> > ever turns out the ping-pong problem is real.
+> 
+> Yes, this is a problem where we've an enormous degree in trying
+> things, so your suggestions are very appreciated :).
+> 
+> About ping ponging of CPU I never seen it yet (even if it's 550/450,
+> it rarely switches over from 450/550, and even it does, it doesn't
+> really change anything because it's a fairly rare event and one node
+> is not more right than the other anyway).
+> 
 
-Patrick Boettcher (1):
-      [media] technisat-usb2: add a MODULE_DEVICE_TABLE for udev autoload
+I expect in practice that it's very rare that there is a workload that
+does not or cannot align its data structures. It'll happen at least once
+so it'd be nice to be able to identify that quickly when it does.
 
-Peter Senna Tschudin (16):
-      [media] drivers/media/pci/cx88/cx88-blackbird.c: removes unnecessary semicolon
-      [media] drivers/media/dvb-frontends/itd1000.c: removes unnecessary semicolon
-      [media] drivers/media/dvb-frontends/sp8870.c: removes unnecessary semicolon
-      [media] drivers/media/radio/si4713-i2c.c: removes unnecessary semicolon
-      [media] drivers/media/platform/soc_camera/mx2_camera.c: fix error return code
-      [media] drivers/media/platform/soc_camera/soc_camera.c: fix error return code
-      [media] drivers/media/dvb-frontends/dvb_dummy_fe.c: Removes useless kfree()
-      [media] drivers/media/dvb-frontends/lg2160.c: Removes useless kfree()
-      [media] drivers/media/dvb-frontends/s5h1432.c: Removes useless kfree()
-      [media] drivers/media/dvb-frontends/s921.c: Removes useless kfree()
-      [media] drivers/media/dvb-frontends/stb6100.c: Removes useless kfree()
-      [media] drivers/media/dvb-frontends/tda665x.c: Removes useless kfree()
-      [media] drivers/media/platform/davinci/vpbe.c: Removes useless kfree()
-      [media] drivers/media/tuners/mt2063.c: Removes useless kfree()
-      [media] drivers/media/platform/davinci/vpbe.c: Remove unused label and rename remaining labels
-      [media] drivers/media: Remove unnecessary semicolon
-
-Rémi Cardona (1):
-      [media] ds3000: add module parameter to force firmware upload
-
-Sachin Kamat (6):
-      [media] soc_camera: Use module_platform_driver macro
-      [media] soc_camera: Use devm_kzalloc function
-      [media] mem2mem_testdev: Fix incorrect location of v4l2_m2m_release()
-      [media] mem2mem_testdev: Add missing braces around sizeof
-      [media] mem2mem_testdev: Use pr_err instead of printk
-      [media] mem2mem_testdev: Use devm_kzalloc() in probe
-
-Sean Young (2):
-      [media] iguanair: cannot send data from the stack
-      [media] winbond: remove space from driver name
-
-Sylwester Nawrocki (16):
-      [media] V4L: Add s_rx_buffer subdev video operation
-      [media] V4L: Add [get/set]_frame_desc subdev callbacks
-      [media] V4L: Add V4L2_MBUS_FMT_S5C_UYVY_JPEG_1X8 media bus format
-      [media] V4L: Add V4L2_PIX_FMT_S5C_UYVY_JPG fourcc definition
-      [media] s5p-csis: Add support for non-image data packets capture
-      [media] s5p-fimc: Add support for V4L2_PIX_FMT_S5C_UYVY_JPG fourcc
-      [media] m5mols: Implement .get_frame_desc subdev callback
-      [media] ARM: samsung: Remove unused fields from FIMC and CSIS platform data
-      [media] ARM: samsung: Change __s5p_mipi_phy_control() function signature
-      [media] s5p-csis: Change regulator supply names
-      [media] ARM: EXYNOS: Change MIPI-CSIS device regulator supply names
-      [media] s5p-csis: Replace phy_enable platform data callback with direct call
-      [media] s5p-fimc: Remove unused platform data structure fields
-      [media] s5p-csis: Allow to specify pixel clock's source through platform data
-      [media] soc-camera: Use new selection target definitions
-      [media] m5mols: Add missing #include <linux/sizes.h>
-
-Thomas Abraham (1):
-      [media] s5p-jpeg: use clk_prepare_enable and clk_disable_unprepare
-
-Tomasz Stanislawski (1):
-      [media] media: s5p-hdmi: add HPD GPIO to platform data
-
-Wolfgang Bail (1):
-      [media] rc-msi-digivox-ii: Add full scan keycodes
-
- Documentation/DocBook/media/v4l/compat.xml         |    4 +
- Documentation/DocBook/media/v4l/controls.xml       |  278 ++-
- Documentation/DocBook/media/v4l/io.xml             |    6 +-
- Documentation/DocBook/media/v4l/pixfmt-nv12m.xml   |   17 +-
- Documentation/DocBook/media/v4l/pixfmt.xml         |   38 +
- Documentation/DocBook/media/v4l/subdev-formats.xml |   44 +
- Documentation/DocBook/media/v4l/vidioc-qbuf.xml    |    3 +-
- .../DocBook/media/v4l/vidioc-querybuf.xml          |   11 +-
- Documentation/video4linux/v4l2-controls.txt        |   24 +
- arch/arm/mach-davinci/Kconfig                      |    7 +
- arch/arm/mach-davinci/board-da850-evm.c            |  179 ++
- arch/arm/mach-davinci/board-dm644x-evm.c           |   15 +-
- arch/arm/mach-davinci/board-dm646x-evm.c           |   80 +-
- arch/arm/mach-davinci/da850.c                      |  152 ++
- arch/arm/mach-davinci/dm644x.c                     |   17 +-
- arch/arm/mach-davinci/include/mach/da8xx.h         |   11 +
- arch/arm/mach-davinci/include/mach/mux.h           |   42 +
- arch/arm/mach-davinci/include/mach/psc.h           |    1 +
- arch/arm/mach-exynos/mach-nuri.c                   |    7 +-
- arch/arm/mach-exynos/mach-origen.c                 |    4 +-
- arch/arm/mach-exynos/mach-universal_c210.c         |    7 +-
- arch/arm/plat-samsung/setup-mipiphy.c              |   20 +-
- drivers/media/dvb-core/dvb_frontend.c              |   20 +-
- drivers/media/dvb-core/dvb_frontend.h              |    4 +-
- drivers/media/dvb-frontends/a8293.c                |    2 +-
- drivers/media/dvb-frontends/af9013.c               |    6 +-
- drivers/media/dvb-frontends/af9033.c               |   16 +-
- drivers/media/dvb-frontends/bcm3510.c              |    2 +-
- drivers/media/dvb-frontends/cx24110.c              |    6 +-
- drivers/media/dvb-frontends/cxd2820r_core.c        |    3 +-
- drivers/media/dvb-frontends/drxd_hard.c            |    2 +-
- drivers/media/dvb-frontends/ds3000.c               |   12 +-
- drivers/media/dvb-frontends/dvb_dummy_fe.c         |   21 +-
- drivers/media/dvb-frontends/isl6405.c              |    2 +-
- drivers/media/dvb-frontends/isl6421.c              |    2 +-
- drivers/media/dvb-frontends/itd1000.c              |    2 +-
- drivers/media/dvb-frontends/lg2160.c               |    8 +-
- drivers/media/dvb-frontends/lnbp21.c               |    4 +-
- drivers/media/dvb-frontends/lnbp22.c               |    2 +-
- drivers/media/dvb-frontends/s5h1432.c              |    8 +-
- drivers/media/dvb-frontends/s921.c                 |    9 +-
- drivers/media/dvb-frontends/si21xx.c               |    4 +-
- drivers/media/dvb-frontends/sp8870.c               |    6 +-
- drivers/media/dvb-frontends/sp887x.c               |    6 +-
- drivers/media/dvb-frontends/stb6100.c              |    8 +-
- drivers/media/dvb-frontends/stv0299.c              |    6 +-
- drivers/media/dvb-frontends/stv0900_core.c         |    4 +-
- drivers/media/dvb-frontends/tda665x.c              |    8 +-
- drivers/media/dvb-frontends/tda8083.c              |    4 +-
- drivers/media/i2c/cx25840/cx25840-core.c           |    2 +-
- drivers/media/i2c/m5mols/m5mols.h                  |   10 +
- drivers/media/i2c/m5mols/m5mols_capture.c          |    3 +
- drivers/media/i2c/m5mols/m5mols_core.c             |   47 +
- drivers/media/i2c/m5mols/m5mols_reg.h              |    1 +
- drivers/media/i2c/mt9p031.c                        |   19 +-
- drivers/media/i2c/mt9t001.c                        |   22 +-
- drivers/media/i2c/mt9v032.c                        |   54 +-
- drivers/media/i2c/soc_camera/ov2640.c              |    5 +
- drivers/media/i2c/ths7303.c                        |  106 +-
- drivers/media/i2c/tvp514x.c                        |   77 +-
- drivers/media/pci/bt8xx/bttv-driver.c              |   30 +-
- drivers/media/pci/bt8xx/bttvp.h                    |    1 +
- drivers/media/pci/bt8xx/dst_ca.c                   |    2 +-
- drivers/media/pci/cx23885/altera-ci.c              |    4 +-
- drivers/media/pci/cx23885/cimax2.c                 |    2 +-
- drivers/media/pci/cx23885/cx23885-cards.c          |    3 +
- drivers/media/pci/cx23885/cx23885-video.c          |    3 +-
- .../media/pci/cx25821/cx25821-video-upstream-ch2.c |    2 +-
- drivers/media/pci/cx25821/cx25821-video-upstream.c |    2 +-
- drivers/media/pci/cx88/cx88-blackbird.c            |    6 +-
- drivers/media/pci/cx88/cx88-dvb.c                  |    2 +-
- drivers/media/pci/cx88/cx88-mpeg.c                 |    2 +-
- drivers/media/pci/cx88/cx88-tvaudio.c              |    4 +-
- drivers/media/pci/cx88/cx88-video.c                |    2 +-
- drivers/media/pci/saa7134/saa7134-video.c          |    2 +-
- drivers/media/platform/Kconfig                     |    4 +-
- drivers/media/platform/davinci/vpbe.c              |  136 +-
- drivers/media/platform/davinci/vpbe_display.c      |   80 +-
- drivers/media/platform/davinci/vpbe_venc.c         |   25 +-
- drivers/media/platform/davinci/vpfe_capture.c      |   17 +-
- drivers/media/platform/davinci/vpif_capture.c      |  370 ++--
- drivers/media/platform/davinci/vpif_capture.h      |   16 +-
- drivers/media/platform/davinci/vpif_display.c      |  275 ++-
- drivers/media/platform/davinci/vpif_display.h      |   18 +-
- drivers/media/platform/exynos-gsc/gsc-regs.c       |    4 +-
- drivers/media/platform/fsl-viu.c                   |    2 +-
- drivers/media/platform/mem2mem_testdev.c           |   14 +-
- drivers/media/platform/omap3isp/ispreg.h           |    6 +-
- drivers/media/platform/s5p-fimc/fimc-capture.c     |  135 +-
- drivers/media/platform/s5p-fimc/fimc-core.c        |   19 +-
- drivers/media/platform/s5p-fimc/fimc-core.h        |   28 +-
- drivers/media/platform/s5p-fimc/fimc-m2m.c         |   25 +-
- drivers/media/platform/s5p-fimc/fimc-reg.c         |   23 +-
- drivers/media/platform/s5p-fimc/fimc-reg.h         |    3 +-
- drivers/media/platform/s5p-fimc/mipi-csis.c        |   75 +-
- drivers/media/platform/s5p-g2d/g2d.c               |    2 +-
- drivers/media/platform/s5p-jpeg/jpeg-core.c        |    6 +-
- drivers/media/platform/s5p-mfc/Makefile            |    7 +-
- drivers/media/platform/s5p-mfc/regs-mfc-v6.h       |  408 ++++
- drivers/media/platform/s5p-mfc/regs-mfc.h          |   41 +
- drivers/media/platform/s5p-mfc/s5p_mfc.c           |  294 ++-
- drivers/media/platform/s5p-mfc/s5p_mfc_cmd.c       |  111 +-
- drivers/media/platform/s5p-mfc/s5p_mfc_cmd.h       |   17 +-
- drivers/media/platform/s5p-mfc/s5p_mfc_cmd_v5.c    |  166 ++
- drivers/media/platform/s5p-mfc/s5p_mfc_cmd_v5.h    |   20 +
- drivers/media/platform/s5p-mfc/s5p_mfc_cmd_v6.c    |  156 ++
- drivers/media/platform/s5p-mfc/s5p_mfc_cmd_v6.h    |   20 +
- drivers/media/platform/s5p-mfc/s5p_mfc_common.h    |  191 +-
- drivers/media/platform/s5p-mfc/s5p_mfc_ctrl.c      |  202 +-
- drivers/media/platform/s5p-mfc/s5p_mfc_ctrl.h      |    1 +
- drivers/media/platform/s5p-mfc/s5p_mfc_dec.c       |  258 ++-
- drivers/media/platform/s5p-mfc/s5p_mfc_dec.h       |    1 +
- drivers/media/platform/s5p-mfc/s5p_mfc_enc.c       |  236 ++-
- drivers/media/platform/s5p-mfc/s5p_mfc_enc.h       |    1 +
- drivers/media/platform/s5p-mfc/s5p_mfc_intr.c      |   11 +-
- drivers/media/platform/s5p-mfc/s5p_mfc_opr.c       | 1418 +-------------
- drivers/media/platform/s5p-mfc/s5p_mfc_opr.h       |  137 +-
- drivers/media/platform/s5p-mfc/s5p_mfc_opr_v5.c    | 1794 ++++++++++++++++++
- .../s5p-mfc/{s5p_mfc_shm.h => s5p_mfc_opr_v5.h}    |   41 +-
- drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c    | 1956 ++++++++++++++++++++
- drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.h    |   50 +
- drivers/media/platform/s5p-mfc/s5p_mfc_pm.c        |    3 +-
- drivers/media/platform/s5p-mfc/s5p_mfc_shm.c       |   47 -
- drivers/media/platform/soc_camera/mx2_camera.c     |    7 +-
- drivers/media/platform/soc_camera/soc_camera.c     |   40 +-
- drivers/media/radio/si470x/radio-si470x-i2c.c      |    2 +-
- drivers/media/radio/si470x/radio-si470x-usb.c      |    2 +-
- drivers/media/radio/si4713-i2c.c                   |   12 +-
- drivers/media/rc/ene_ir.c                          |    5 +-
- drivers/media/rc/iguanair.c                        |  147 +-
- drivers/media/rc/ir-lirc-codec.c                   |    4 +-
- drivers/media/rc/keymaps/rc-msi-digivox-ii.c       |   36 +-
- drivers/media/rc/nuvoton-cir.c                     |    3 +
- drivers/media/rc/redrat3.c                         |    3 +
- drivers/media/rc/winbond-cir.c                     |    2 +-
- drivers/media/tuners/mt2063.c                      |   44 +-
- drivers/media/tuners/mt2063.h                      |    4 -
- drivers/media/tuners/tda18271-common.c             |  104 +-
- drivers/media/usb/dvb-usb-v2/af9015.c              |    4 +-
- drivers/media/usb/dvb-usb-v2/af9035.c              |    2 +-
- drivers/media/usb/dvb-usb/a800.c                   |    2 +-
- drivers/media/usb/dvb-usb/cinergyT2-core.c         |    3 +-
- drivers/media/usb/dvb-usb/dibusb-common.c          |    2 +-
- drivers/media/usb/dvb-usb/digitv.c                 |    2 +-
- drivers/media/usb/dvb-usb/dtt200u.c                |    2 +-
- drivers/media/usb/dvb-usb/m920x.c                  |    2 +-
- drivers/media/usb/dvb-usb/technisat-usb2.c         |    1 +
- drivers/media/usb/em28xx/em28xx-cards.c            |    2 +-
- drivers/media/usb/em28xx/em28xx-dvb.c              |   13 +-
- drivers/media/usb/stk1160/stk1160-core.c           |   15 +-
- drivers/media/usb/stk1160/stk1160-v4l.c            |    7 +-
- drivers/media/usb/stk1160/stk1160.h                |    3 +-
- drivers/media/usb/uvc/uvc_queue.c                  |   10 +-
- drivers/media/usb/uvc/uvc_video.c                  |    4 +-
- drivers/media/usb/uvc/uvcvideo.h                   |    2 +-
- drivers/media/v4l2-core/v4l2-ctrls.c               |   74 +
- drivers/media/v4l2-core/v4l2-ioctl.c               |    8 +-
- drivers/media/v4l2-core/videobuf2-core.c           |   79 +-
- include/linux/dvb/version.h                        |    2 +-
- include/linux/platform_data/mipi-csis.h            |   30 +-
- include/linux/v4l2-controls.h                      |   42 +
- include/linux/v4l2-mediabus.h                      |    5 +
- include/linux/videodev2.h                          |    5 +
- include/media/davinci/vpbe.h                       |   14 +-
- include/media/davinci/vpbe_types.h                 |    8 +-
- include/media/davinci/vpbe_venc.h                  |    2 +-
- include/media/davinci/vpif_types.h                 |   26 +-
- include/media/s5p_fimc.h                           |    2 -
- include/media/s5p_hdmi.h                           |    2 +
- include/media/v4l2-ctrls.h                         |   23 +
- include/media/v4l2-subdev.h                        |   48 +
- 171 files changed, 8076 insertions(+), 3212 deletions(-)
- create mode 100644 drivers/media/platform/s5p-mfc/regs-mfc-v6.h
- create mode 100644 drivers/media/platform/s5p-mfc/s5p_mfc_cmd_v5.c
- create mode 100644 drivers/media/platform/s5p-mfc/s5p_mfc_cmd_v5.h
- create mode 100644 drivers/media/platform/s5p-mfc/s5p_mfc_cmd_v6.c
- create mode 100644 drivers/media/platform/s5p-mfc/s5p_mfc_cmd_v6.h
- create mode 100644 drivers/media/platform/s5p-mfc/s5p_mfc_opr_v5.c
- rename drivers/media/platform/s5p-mfc/{s5p_mfc_shm.h => s5p_mfc_opr_v5.h} (76%)
- create mode 100644 drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c
- create mode 100644 drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.h
- delete mode 100644 drivers/media/platform/s5p-mfc/s5p_mfc_shm.c
+-- 
+Mel Gorman
+SUSE Labs
