@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932833Ab2JKBGn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:06:43 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38537 "EHLO
+	id S932842Ab2JKBHR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:07:17 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:56657 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758211Ab2JKBD5 (ORCPT
+	by vger.kernel.org with ESMTP id S1758143Ab2JKBDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:03:57 -0400
-X-Sasl-enc: FVMuM6eof9urnLUdUo9ZnPbpPd4CaN08MFoPyPAJiTi1 1349917435
+	Wed, 10 Oct 2012 21:03:34 -0400
+X-Sasl-enc: 7exLJW93YQfz9WiWxq5ruCyUIk6Ql2LJK937pRzTV18O 1349917412
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 009/120] PCI: acpiphp: check whether _ADR evaluation succeeded
-Date: Thu, 11 Oct 2012 09:59:21 +0900
-Message-Id: <20121011005827.021752179@linuxfoundation.org>
+        Christoph Lameter <cl@linux.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [ 004/120] slab: fix the DEADLOCK issue on l3 alien lock
+Date: Thu, 11 Oct 2012 09:59:16 +0900
+Message-Id: <20121011005826.156478516@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -28,55 +30,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
 
-commit dfb117b3e50c52c7b3416db4a4569224b8db80bb upstream.
+commit 947ca1856a7e60aa6d20536785e6a42dff25aa6e upstream.
 
-Check whether we evaluated _ADR successfully.  Previously we ignored
-failure, so we would have used garbage data from the stack as the device
-and function number.
+DEADLOCK will be report while running a kernel with NUMA and LOCKDEP enabled,
+the process of this fake report is:
 
-We return AE_OK so that we ignore only this slot and continue looking
-for other slots.
+	   kmem_cache_free()	//free obj in cachep
+	-> cache_free_alien()	//acquire cachep's l3 alien lock
+	-> __drain_alien_cache()
+	-> free_block()
+	-> slab_destroy()
+	-> kmem_cache_free()	//free slab in cachep->slabp_cache
+	-> cache_free_alien()	//acquire cachep->slabp_cache's l3 alien lock
 
-Found by Coverity (CID 113981).
+Since the cachep and cachep->slabp_cache's l3 alien are in the same lock class,
+fake report generated.
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+This should not happen since we already have init_lock_keys() which will
+reassign the lock class for both l3 list and l3 alien.
+
+However, init_lock_keys() was invoked at a wrong position which is before we
+invoke enable_cpucache() on each cache.
+
+Since until set slab_state to be FULL, we won't invoke enable_cpucache()
+on caches to build their l3 alien while creating them, so although we invoked
+init_lock_keys(), the l3 alien lock class won't change since we don't have
+them until invoked enable_cpucache() later.
+
+This patch will invoke init_lock_keys() after we done enable_cpucache()
+instead of before to avoid the fake DEADLOCK report.
+
+Michael traced the problem back to a commit in release 3.0.0:
+
+commit 30765b92ada267c5395fc788623cb15233276f5c
+Author: Peter Zijlstra <peterz@infradead.org>
+Date:   Thu Jul 28 23:22:56 2011 +0200
+
+    slab, lockdep: Annotate the locks before using them
+
+    Fernando found we hit the regular OFF_SLAB 'recursion' before we
+    annotate the locks, cure this.
+
+    The relevant portion of the stack-trace:
+
+    > [    0.000000]  [<c085e24f>] rt_spin_lock+0x50/0x56
+    > [    0.000000]  [<c04fb406>] __cache_free+0x43/0xc3
+    > [    0.000000]  [<c04fb23f>] kmem_cache_free+0x6c/0xdc
+    > [    0.000000]  [<c04fb2fe>] slab_destroy+0x4f/0x53
+    > [    0.000000]  [<c04fb396>] free_block+0x94/0xc1
+    > [    0.000000]  [<c04fc551>] do_tune_cpucache+0x10b/0x2bb
+    > [    0.000000]  [<c04fc8dc>] enable_cpucache+0x7b/0xa7
+    > [    0.000000]  [<c0bd9d3c>] kmem_cache_init_late+0x1f/0x61
+    > [    0.000000]  [<c0bba687>] start_kernel+0x24c/0x363
+    > [    0.000000]  [<c0bba0ba>] i386_start_kernel+0xa9/0xaf
+
+    Reported-by: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+    Acked-by: Pekka Enberg <penberg@kernel.org>
+    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Link: http://lkml.kernel.org/r/1311888176.2617.379.camel@laptop
+    Signed-off-by: Ingo Molnar <mingo@elte.hu>
+
+The commit moved init_lock_keys() before we build up the alien, so we
+failed to reclass it.
+
+Acked-by: Christoph Lameter <cl@linux.com>
+Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ mm/slab.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -132,6 +132,15 @@ register_slot(acpi_handle handle, u32 lv
- 	if (!acpi_pci_check_ejectable(pbus, handle) && !is_dock_device(handle))
- 		return AE_OK;
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1685,9 +1685,6 @@ void __init kmem_cache_init_late(void)
  
-+	status = acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
-+	if (ACPI_FAILURE(status)) {
-+		warn("can't evaluate _ADR (%#x)\n", status);
-+		return AE_OK;
-+	}
-+
-+	device = (adr >> 16) & 0xffff;
-+	function = adr & 0xffff;
-+
- 	pdev = pbus->self;
- 	if (pdev && pci_is_pcie(pdev)) {
- 		tmp = acpi_find_root_bridge_handle(pdev);
-@@ -144,10 +153,6 @@ register_slot(acpi_handle handle, u32 lv
- 		}
- 	}
+ 	g_cpucache_up = LATE;
  
--	acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
--	device = (adr >> 16) & 0xffff;
--	function = adr & 0xffff;
+-	/* Annotate slab for lockdep -- annotate the malloc caches */
+-	init_lock_keys();
 -
- 	newfunc = kzalloc(sizeof(struct acpiphp_func), GFP_KERNEL);
- 	if (!newfunc)
- 		return AE_NO_MEMORY;
+ 	/* 6) resize the head arrays to their final sizes */
+ 	mutex_lock(&cache_chain_mutex);
+ 	list_for_each_entry(cachep, &cache_chain, next)
+@@ -1695,6 +1692,9 @@ void __init kmem_cache_init_late(void)
+ 			BUG();
+ 	mutex_unlock(&cache_chain_mutex);
+ 
++	/* Annotate slab for lockdep -- annotate the malloc caches */
++	init_lock_keys();
++
+ 	/* Done! */
+ 	g_cpucache_up = FULL;
+ 
 
 
