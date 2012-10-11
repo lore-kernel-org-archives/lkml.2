@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933123Ab2JKDT3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 23:19:29 -0400
-Received: from ozlabs.org ([203.10.76.45]:53837 "EHLO ozlabs.org"
+	id S1757152Ab2JKDT0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 23:19:26 -0400
+Received: from ozlabs.org ([203.10.76.45]:54031 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932181Ab2JKDTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932305Ab2JKDTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Oct 2012 23:19:23 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
 To: mtk.manpages@gmail.com, Kees Cook <keescook@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-man <linux-man@vger.kernel.org>
-Subject: Re: [PATCH] init_module: update to modern interfaces
-In-Reply-To: <CAKgNAkheF8=ssrE=_JP-ApDP5zXeHSYVG+0x6Wfd6U28TcPSHQ@mail.gmail.com>
-References: <20120920232737.GA2953@www.outflux.net> <CAKgNAkheF8=ssrE=_JP-ApDP5zXeHSYVG+0x6Wfd6U28TcPSHQ@mail.gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-man <linux-man@vger.kernel.org>
+Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        "Jon Masters" <jonathan@jonmasters.org>
+Subject: Re: [Request for review] Revised delete_module(2) manual page
+In-Reply-To: <CAKgNAkgp1er3-3nvge9_aVObuuxBatGRur8DtiTzyWK4w+4hrA@mail.gmail.com>
+References: <CAKgNAkgp1er3-3nvge9_aVObuuxBatGRur8DtiTzyWK4w+4hrA@mail.gmail.com>
 User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 11 Oct 2012 13:20:08 +1030
-Message-ID: <87wqyx7me7.fsf@rustcorp.com.au>
+Date: Thu, 11 Oct 2012 13:32:59 +1030
+Message-ID: <87txu17lss.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,122 +24,75 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
-> [CC widened, so that some more review might come in. Rusty?]
 
-Sure.
+> Hello Kees, Rusty,
+>
+> The current delete_module(2) page is severely out of date (basically,
+> its content corresponds to 2.4 days, and was even pretty thin in
+> covering that). So, I took a shot at revising the page to Linux 2.6+
+> reality. Would it be possible that you could review it?
 
-Looks good. but:
+OK.  Main suggestion is that I discussed with Lucas removing the
+!O_NONBLOCK case.  It's not supported by modprobe -r, and almost
+unheard-of for rmmod (it's --wait).
 
-> .B EBUSY
-> The module's initialization routine failed.
+In practice, people want the unload-or-fail semantics, or the
+force-unload semantics.
 
-Possibly.  You should mention that the individual module's
-initialization routine can return other errors as appropriate.
+> Otherwise, by default,
+> .BR delete_module ()
+> marks a module so that no new references are permitted.
+> If the module's reference count
+> (i.e., the number of processes currently using the module) is nonzero,
+> it then places the caller in an uninterruptible sleep
+> state until all reference count is zero,
+> at which point the call unblocks.
+> When the reference count reaches zero, the module is unloaded.
 
-> .BR EINVAL " (Linux 2.4 and earlier)"
-> Some
-> .I image
-> slot is filled in incorrectly,
-> .I image\->name
-> does not correspond to the original module name, some
-> .I image\->deps
-> entry does not correspond to a loaded module,
-> or some other similar inconsistency.
+So this should be inverted:
+
+        Otherwise (assuming O_NONBLOCK, see flags below), if the
+        module's reference count (i.e., the number of processes
+        currently using the module) is nonzero, the call fails.
+
+> The
+> .IR flags
+> argument can be used to modify the behavior of the system call.
+
+It is usually set to O_NONBLOCK, which may be required in future kernel
+versions (see NOTES).
+
+> The following values can be ORed in this argument:
 > .TP
-
-Why document this?
-
-> .B ENOEXEC
-> The ELF image in
-> .I module_image
-> is too small or has corrupted segments.
-
-Or is not an ELF image, or wrong arch...
-
-> .TP
-> .B EPERM
-> The caller was not privileged
-> (did not have the
-> .B CAP_SYS_MODULE
-> capability),
-> or module loading is disabled
-> (see
-> .IR /proc/sys/kernel/modules_disabled
-> in
-> .BR proc (5)).
-> .SH "CONFORMING TO"
-> .BR init_module ()
-> is Linux-specific.
-> .SH NOTES
-> Glibc does not provide a wrapper for this system call; call it using
-> .BR syscall (2).
->
-> Information about currently loaded modules can be found in
-> .IR /proc/modules
-> and in the file trees under the per-module subdirectories under
-> .IR /sys/module .
->
-> See the Linux kernel source file
-> .I include/linux/module.h
-> for some useful background information.
-> .SS Linux 2.4 and earlier
-> .PP
-> In Linux 2.4 and earlier, this system call was rather different:
->
-> .B "    #include <linux/module.h>"
->
-> .BI "    int init_module(const char *" name ", struct module *" image );
->
-> This version of the system call
-> loads the relocated module image pointed to by
-> .I image
-> into kernel space and runs the module's
-> .I init
+> .B O_TRUNC
+> .\"  	KMOD_REMOVE_FORCE in kmod library
+> Force unloading of the module, even if the following conditions are true:
+> .RS
+> .IP * 3
+> The module has no
+> .I exit
 > function.
-> The caller is responsible for providing the relocated image (since
-> Linux 2.6, the
-> .BR init_module ()
-> system call does the relocation).
-> .PP
-> The module image begins with a module structure and is followed by
-> code and data as appropriate.
-> The module structure is defined as follows:
-> .PP
-> .in +4n
-> .nf
-> struct module {
->     unsigned long         size_of_struct;
->     struct module        *next;
->     const char           *name;
->     unsigned long         size;
->     long                  usecount;
->     unsigned long         flags;
->     unsigned int          nsyms;
->     unsigned int          ndeps;
->     struct module_symbol *syms;
->     struct module_ref    *deps;
->     struct module_ref    *refs;
->     int                 (*init)(void);
->     void                (*cleanup)(void);
->     const struct exception_table_entry *ex_table_start;
->     const struct exception_table_entry *ex_table_end;
-> #ifdef __alpha__
->     unsigned long gp;
-> #endif
-> };
-> .fi
-> .in
-> .PP
-> All of the pointer fields, with the exception of
-> .I next
-> and
-> .IR refs ,
-> are expected to point within the module body and be
-> initialized as appropriate for kernel space, that is, relocated with
-> the rest of the module.
+> By default, attempting to unload a module that has no
+> .I exit
+> function fails.
+> .IP *
+> The reference count for (i.e., the number of processes currently using)
+> this module is nonzero.
+...
+> .IP
+> Using this flag taints the kernel (TAINT_FORCED_RMMOD).
+> .IP
+> .IR "Using this flag is dangerous!"
+> If the kernel was not built with
+> .BR CONFIG_MODULE_FORCE_UNLOAD ,
+> this flag is silently ignored.
 
-You might want to note that the 2.4 syscall can be detected by calling
-query_module(): 2.6 and above give ENOSYS.
+NOTES:
+
+If O_NONBLOCK is not set, then the kernel may enter uninterruptible
+sleep until the module reference count reaches zero.  This is not
+generally desirable, so this flag may be compulsory in future kernel
+configurations.
 
 Cheers,
 Rusty.
