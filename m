@@ -1,73 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758968Ab2JKREy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 13:04:54 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:35326 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758941Ab2JKREw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 13:04:52 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>
-CC: "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [PATCH v4] trace,x86: add x86 irq vector tracepoints
-Thread-Topic: [PATCH v4] trace,x86: add x86 irq vector tracepoints
-Thread-Index: Ac2YWrA+n8Wn2uRQSgKoDvfneAuZiQClgnuAAIOLIPAAEMXIAADi3wmQAJXsDgAAFQlugAAFpDiAAExo5wAAWdCkMA==
-Date: Thu, 11 Oct 2012 17:04:03 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D413872974@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D41385F33C@USINDEM103.corp.hds.com>
-   <50612729.2080307@zytor.com>
-   <A5ED84D3BB3A384992CBB9C77DEDA4D41386426D@USINDEM103.corp.hds.com>
-   <50650A7E.90807@zytor.com>
-   <A5ED84D3BB3A384992CBB9C77DEDA4D413869FD7@USINDEM103.corp.hds.com>
-  <1349446428.6755.56.camel@gandalf.local.home> <506F7849.2080805@zytor.com>
- <1349492261.6755.87.camel@gandalf.local.home> <50719EEC.7090302@zytor.com>
-In-Reply-To: <50719EEC.7090302@zytor.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758974Ab2JKRFq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 13:05:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64352 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758942Ab2JKRFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 13:05:44 -0400
+Date: Thu, 11 Oct 2012 18:58:47 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <pzijlstr@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hillf Danton <dhillf@gmail.com>,
+        Andrew Jones <drjones@redhat.com>, Dan Smith <danms@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 05/33] autonuma: pte_numa() and pmd_numa()
+Message-ID: <20121011165847.GO1818@redhat.com>
+References: <1349308275-2174-1-git-send-email-aarcange@redhat.com>
+ <1349308275-2174-6-git-send-email-aarcange@redhat.com>
+ <20121011111545.GR3317@csn.ul.ie>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-10-11_05:2012-10-11,2012-10-11,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1210110163
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121011111545.GR3317@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >
-> > I didn't say anything magic, but a table of pointers that are very
-> > critical for the system running. Should we implement it with a single
-> > switch, like we discussed in San Diego to do with the system call table?
-> >
-> > That is, have a "normal" table, and a "trace" table. The trace table
-> > points to functions that have tracepoints. The first enabler of
-> > tracing switches the table to use the tracepoints, and the last
-> > disabler switches it back?
-> >
+On Thu, Oct 11, 2012 at 12:15:45PM +0100, Mel Gorman wrote:
+> huh?
 > 
-> That is certainly a reasonable implementation option.  It is slightly less usable than it is for system calls, though, because the vectors in
-> the IDTs are somewhat scrambled and so you can't just do an indirect jump to the original vector content.  This does get messy
-> because you also want to preserve registers...
+> #define _PAGE_NUMA     _PAGE_PROTNONE
 > 
+> so this is effective _PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PROTNONE
+> 
+> I suspect you are doing this because there is no requirement for
+> _PAGE_NUMA == _PAGE_PROTNONE for other architectures and it was best to
+> describe your intent. Is that really the case or did I miss something
+> stupid?
 
-Peter, Steven, 
+Exactly.
 
-Thank you for explaining the reason why you think a time penalty should be zero
-and discussing its implementation.
+It reminds that we need to return true in pte_present when the NUMA
+hinting page fault is on.
 
-I will update my patch so that a time penalty makes zero and submit it shortly.
+Hardwiring _PAGE_NUMA to _PAGE_PROTNONE conceptually is not necessary
+and it's actually an artificial restrictions. Other archs without a
+bitflag for _PAGE_PROTNONE, may want to use something else and they'll
+have to deal with pte_present too, somehow. So this is a reminder for
+them as well.
 
-Seiji
+> >  static inline int pte_hidden(pte_t pte)
+> > @@ -420,7 +421,63 @@ static inline int pmd_present(pmd_t pmd)
+> >  	 * the _PAGE_PSE flag will remain set at all times while the
+> >  	 * _PAGE_PRESENT bit is clear).
+> >  	 */
+> > -	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE);
+> > +	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE |
+> > +				 _PAGE_NUMA);
+> > +}
+> > +
+> > +#ifdef CONFIG_AUTONUMA
+> > +/*
+> > + * _PAGE_NUMA works identical to _PAGE_PROTNONE (it's actually the
+> > + * same bit too). It's set only when _PAGE_PRESET is not set and it's
+> 
+> same bit on x86, not necessarily anywhere else.
+
+Yep. In fact before using _PAGE_PRESENT the two bits were different
+even on x86. But I unified them. If I vary them then they will become
+_PAGE_PTE_NUMA/_PAGE_PMD_NUMA and the above will fail to build without
+risk of errors.
+
+> 
+> _PAGE_PRESENT?
+
+good eye ;) corrected.
+
+> > +/*
+> > + * pte/pmd_mknuma sets the _PAGE_ACCESSED bitflag automatically
+> > + * because they're called by the NUMA hinting minor page fault.
+> 
+> automatically or atomically?
+> 
+> I assume you meant atomically but what stops two threads faulting at the
+> same time and doing to the same update? mmap_sem will be insufficient in
+> that case so what is guaranteeing the atomicity. PTL?
+
+I meant automatically. I explained myself wrong and automatically may
+be the wrong word. It also is atomic of course but it wasn't about the
+atomic part.
+
+So the thing is: the numa hinting page fault hooking point is this:
+
+	if (pte_numa(entry))
+		return pte_numa_fixup(mm, vma, address, entry, pte, pmd);
+
+It won't get this far:
+
+	entry = pte_mkyoung(entry);
+	if (ptep_set_access_flags(vma, address, pte, entry, flags & FAULT_FLAG_WRITE)) {
+
+So if I don't set _PAGE_ACCESSED in pte/pmd_mknuma, the TLB miss
+handler will have to set _PAGE_ACCESSED itself with an additional
+write on the pte/pmd later when userland touches the page. And that
+will slow us down for no good.
+
+Because mknuma is only called in the numa hinting page fault context,
+it's optimal to set _PAGE_ACCESSED too, not only _PAGE_PRESENT (and
+clearing _PAGE_NUMA of course).
+
+The basic idea, is that the numa hinting page fault can only trigger
+if userland touches the page, and after such an event, _PAGE_ACCESSED
+would be set by the hardware no matter if there is a NUMA hinting page
+fault or not (so we can optimize away the hardware action when the NUMA
+hinting page fault triggers).
+
+I tried to reword it:
+
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index cf1d3f0..3dc6a9b 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -449,12 +449,12 @@ static inline int pmd_numa(pmd_t pmd)
+ #endif
+ 
+ /*
+- * pte/pmd_mknuma sets the _PAGE_ACCESSED bitflag automatically
+- * because they're called by the NUMA hinting minor page fault. If we
+- * wouldn't set the _PAGE_ACCESSED bitflag here, the TLB miss handler
+- * would be forced to set it later while filling the TLB after we
+- * return to userland. That would trigger a second write to memory
+- * that we optimize away by setting _PAGE_ACCESSED here.
++ * pte/pmd_mknuma sets the _PAGE_ACCESSED bitflag too because they're
++ * only called by the NUMA hinting minor page fault. If we wouldn't
++ * set the _PAGE_ACCESSED bitflag here, the TLB miss handler would be
++ * forced to set it later while filling the TLB after we return to
++ * userland. That would trigger a second write to memory that we
++ * optimize away by setting _PAGE_ACCESSED here.
+  */
+ static inline pte_t pte_mknonnuma(pte_t pte)
+ {
+
