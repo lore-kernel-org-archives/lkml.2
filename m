@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758383Ab2JKKhf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 06:37:35 -0400
-Received: from mga01.intel.com ([192.55.52.88]:46127 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758310Ab2JKKhc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 06:37:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,571,1344236400"; 
-   d="scan'208";a="233440223"
-From: "Tc, Jenny" <jenny.tc@intel.com>
-To: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        ??? <cw00.choi@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "myungjoo.ham@gmail.com" <myungjoo.ham@gmail.com>
-Subject: RE: [PATCH] extcon : register for cable interest by cable name
-Thread-Topic: [PATCH] extcon : register for cable interest by cable name
-Thread-Index: AQHNprPN0OTqRJdBZE+YLN391rLe55ez5XeQ
-Date: Thu, 11 Oct 2012 10:37:25 +0000
-Message-ID: <20ADAB092842284E95860F279283C56439C8F5@BGSMSX101.gar.corp.intel.com>
-References: <7103095.833841349851943826.JavaMail.weblogic@epml02>
-In-Reply-To: <7103095.833841349851943826.JavaMail.weblogic@epml02>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="utf-8"
+	id S1757371Ab2JKKkh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 06:40:37 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:49911 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753676Ab2JKKkd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 06:40:33 -0400
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: habanero@linux.vnet.ibm.com,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>, KVM <kvm@vger.kernel.org>,
+        Jiannan Ouyang <ouyang@cs.pitt.edu>, chegu vinod <chegu_vinod@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE handler
+In-Reply-To: <1349879095.5551.266.camel@oc6622382223.ibm.com>
+References: <20120921120000.27611.71321.sendpatchset@codeblue> <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com> <50607F1F.2040704@redhat.com> <20121003122209.GA9076@linux.vnet.ibm.com> <506C7057.6000102@redhat.com> <506D69AB.7020400@linux.vnet.ibm.com> <506D83EE.2020303@redhat.com> <1349356038.14388.3.camel@twins> <506DA48C.8050200@redhat.com>  <20121009185108.GA2549@linux.vnet.ibm.com> <1349879095.5551.266.camel@oc6622382223.ibm.com>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/24.0.95.1 (x86_64-redhat-linux-gnu)
+Date: Thu, 11 Oct 2012 16:09:35 +0530
+Message-ID: <877gqxfg2g.fsf@abhimanyu.in.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain
+x-cbid: 12101110-3864-0000-0000-000005048F68
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9BAbd54010147
 
-
-
-> Subject: Re: [PATCH] extcon : register for cable interest by cable name
+On Wed, 10 Oct 2012 09:24:55 -0500, Andrew Theurer <habanero@linux.vnet.ibm.com> wrote:
 > 
-> > There are some scnearios where a driver/framework needs to register
-> > interest for a particular cable without specifying the extcon device
-> > name. One such scenario is charger notifications. The platform will
-> > have charger cabel which will be bound to any extcon device. It's not
-> > mandatory for the charger driver to know which extcon device it should
-> > use. This patch enables the support for registering interest for a
-> > cable just by cable name wihtout specifying the extcon device name
-> >
-> > Signed-off-by: Jenny TC <jenny.tc@intel.com>
-> > ---
-> []
-> > +extern struct extcon_dev *register_interest_cable_byname
-> > +		(struct extcon_specific_cable_nb *extcon_dev,
-> > +		const char *cable_name, struct notifier_block *nb);
+> Below is again 8 x 20-way VMs, but this time I tried out Nikunj's gang
+> scheduling patches.  While I am not recommending gang scheduling, I
+> think it's a good data point.  The performance is 3.88x the PLE result.
 > 
-> What about allowing extcon_register_interest() to support the functionality?
-> 
-register_interest_cable_byname  internally uses extcon_register_interest   function.
-If we want to use  extcon_register_interest()  in both scenarios,  then we need to define
-two local functions 
+> https://docs.google.com/open?id=0B6tfUNlZ-14wWXdscWcwNTVEY3M
 
- extcon_register_interest__ and  register_interest_cable_byname. 
+That looks pretty good and serves the purpose. And the result says it all.
 
-Then the code would be
-
-int extcon_register_interest(struct extcon_specific_cable_nb *obj,
-		 const char *extcon_name, const char *cable_name,
-                             	struct notifier_block *nb) {
-
-	if (extcon_name == NULL)
-		return register_interest_cable_byname(obj,cable_name,nb);
-	else
-		return extcon_register_interest__(obj,extcon_name,cable_name,nb);
-}
-
-Is that fine?
-
-> I.e., allowing extcon_register_interest() to accept NULL extcon_name.
+> Note that the task switching intervals of 4ms are quite obvious again,
+> and this time all vCPUs from same VM run at the same time.  It
+> represents the best possible outcome.
 > 
 > 
-> ps. anyway, usually, the "platforms" have the list of node paths, don't they?
->
-My intention is to make it generic and less dependent on platform data. This way the same consumer
-driver can work on any platform without looking for extcon dev name in the platform data. 
-For example a charger driver can work on any platform without knowing the extcon provider name for
-The charger cable.
+> Anyway, I thought the bitmaps might help better visualize what's going
+> on.
+> 
+> -Andrew
+> 
 
- 
+Regards
+Nikunj
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
