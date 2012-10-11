@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758041Ab2JKHoQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 03:44:16 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:33565 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757451Ab2JKHoM (ORCPT
+	id S1758166Ab2JKIBU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 04:01:20 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50133 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757827Ab2JKIBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 03:44:12 -0400
-Date: Thu, 11 Oct 2012 09:44:05 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        xfs@oss.sgi.com, Mel Gorman <mgorman@suse.de>,
-        linux-s390@vger.kernel.org
-Subject: Re: [PATCH] mm: Fix XFS oops due to dirty pages without buffers on
- s390
-Message-ID: <20121011094405.1c5990c9@mschwide>
-In-Reply-To: <20121010215600.GX23644@dastard>
-References: <1349108796-32161-1-git-send-email-jack@suse.cz>
-	<alpine.LSU.2.00.1210082029190.2237@eggly.anvils>
-	<20121009162107.GE15790@quack.suse.cz>
-	<alpine.LSU.2.00.1210091824390.30802@eggly.anvils>
-	<20121010215600.GX23644@dastard>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 12101107-3548-0000-0000-000003595173
+	Thu, 11 Oct 2012 04:01:17 -0400
+Date: Thu, 11 Oct 2012 09:01:08 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: vaibhav shinde <v.bhav.shinde@gmail.com>
+Cc: trisha yad <trisha1march@gmail.com>, linux-kernel@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: DEBUG_STACKOVERFLOW issue on ARM
+Message-ID: <20121011080108.GL4625@n2100.arm.linux.org.uk>
+References: <CAGr+u+yxC3nPrsW+EU9qwh0ggjqrg9K=1ftQXfds8unMiDMZsA@mail.gmail.com> <20121005083113.GG4625@n2100.arm.linux.org.uk> <CAB5gotsV-yOU6F2n_-HhVmheMKFX1miyw6yZMogV7+kKe4Jggw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAB5gotsV-yOU6F2n_-HhVmheMKFX1miyw6yZMogV7+kKe4Jggw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Oct 2012 08:56:00 +1100
-Dave Chinner <david@fromorbit.com> wrote:
-
-> On Tue, Oct 09, 2012 at 07:19:09PM -0700, Hugh Dickins wrote:
-> > On Tue, 9 Oct 2012, Jan Kara wrote:
-> > > On Mon 08-10-12 21:24:40, Hugh Dickins wrote:
-> > > > On Mon, 1 Oct 2012, Jan Kara wrote:
-> > > > 
-> > > > > On s390 any write to a page (even from kernel itself) sets architecture
-> > > > > specific page dirty bit. Thus when a page is written to via standard write, HW
-> > > > > dirty bit gets set and when we later map and unmap the page, page_remove_rmap()
-> > > > > finds the dirty bit and calls set_page_dirty().
-> > > > > 
-> > > > > Dirtying of a page which shouldn't be dirty can cause all sorts of problems to
-> > > > > filesystems. The bug we observed in practice is that buffers from the page get
-> > > > > freed, so when the page gets later marked as dirty and writeback writes it, XFS
-> > > > > crashes due to an assertion BUG_ON(!PagePrivate(page)) in page_buffers() called
-> > > > > from xfs_count_page_state().
-> > > > 
-> > > > What changed recently?  Was XFS hardly used on s390 until now?
-> > >   The problem was originally hit on SLE11-SP2 which is 3.0 based after
-> > > migration of our s390 build machines from SLE11-SP1 (2.6.32 based). I think
-> > > XFS just started to be more peevish about what pages it gets between these
-> > > two releases ;) (e.g. ext3 or ext4 just says "oh, well" and fixes things
-> > > up).
-> > 
-> > Right, in 2.6.32 xfs_vm_writepage() had a !page_has_buffers(page) case,
-> > whereas by 3.0 that had become ASSERT(page_has_buffers(page)), with the
-> > ASSERT usually compiled out, stumbling later in page_buffers() as you say.
+On Thu, Oct 11, 2012 at 01:09:46PM +0530, vaibhav shinde wrote:
+> Hi Russel,
 > 
-> What that says is that no-one is running xfstests-based QA on s390
-> with CONFIG_XFS_DEBUG enabled, otherwise this would have been found.
-> I've never tested XFS on s390 before, and I doubt any of the
-> upstream developers have, either, because not many peopl ehave s390
-> machines in their basement. So this is probably just an oversight
-> in the distro QA environment more than anything....
+> On Fri, Oct 5, 2012 at 2:01 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> >
+> > On Wed, Oct 03, 2012 at 05:18:56PM +0530, trisha yad wrote:
+> > > I wish to know how can I support this function in 3.0 ?
+> >
+> > If your description is correct, then all you need to do is to ensure
+> > that you route interrupts to other CPUs.
+> >
+> > You can do that by running the userspace irqbalance daemon.
+> >
+> 
+> I also tried with the irqbalance daemon, on ARM quad core architecture,
+> and as per my understanding, the daemon sets the
+> /proc/irq/<irq.no.>/smp_affinity
+> file according to the irq frequency on a particular processor.
+> 
+>           However, the daemon doesn't work as expected, I also tried
+> accessing the
+> proc file mentioned above to set the cpu mask for particular irq, but this
+> just block the processing of the irq, as I see the count of that irq
+> doesnt increase
+> in /proc/interrupts.
+> 
+>             My conclusion is that the irqbalancing is not supported on
+> ARM arch or there is
+> something  more required for this to work. Kindly provide some
+> pointers over this.
 
-Our internal builds indeed have CONFIG_XFS_DEBUG=n, I'll change that and
-watch for the fallout.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+Sounds like something has been broken, no idea what.  It needs investigation.
