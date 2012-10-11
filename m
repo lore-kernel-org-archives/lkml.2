@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933504Ab2JKBN6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:13:58 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41666 "EHLO
+	id S933602Ab2JKBOF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:14:05 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58314 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932768Ab2JKBNw (ORCPT
+	by vger.kernel.org with ESMTP id S933476Ab2JKBN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:13:52 -0400
-X-Sasl-enc: CJ09KYnssk3g6OSrzz7nDv1akbYeS6gpsNqqZuR6NYBK 1349918030
+	Wed, 10 Oct 2012 21:13:56 -0400
+X-Sasl-enc: u0rtU8lerH7Da0Xk96gPij6QVgnY44DULfag3iB0rb5o 1349918035
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Mel Gorman <mgorman@suse.de>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Josh Boyer <jwboyer@gmail.com>,
+        Christoph Lameter <cl@linux.com>, Josh Boyer <jwboyer@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 101/120] mempolicy: remove mempolicy sharing
-Date: Thu, 11 Oct 2012 10:00:53 +0900
-Message-Id: <20121011005845.597445577@linuxfoundation.org>
+Subject: [ 102/120] mempolicy: fix a race in shared_policy_replace()
+Date: Thu, 11 Oct 2012 10:00:54 +0900
+Message-Id: <20121011005845.832340607@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -31,187 +31,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 869833f2c5c6e4dd09a5378cfc665ffb4615e5d2 upstream.
+commit b22d127a39ddd10d93deee3d96e643657ad53a49 upstream.
 
-Dave Jones' system call fuzz testing tool "trinity" triggered the
-following bug error with slab debugging enabled
+shared_policy_replace() use of sp_alloc() is unsafe.  1) sp_node cannot
+be dereferenced if sp->lock is not held and 2) another thread can modify
+sp_node between spin_unlock for allocating a new sp node and next
+spin_lock.  The bug was introduced before 2.6.12-rc2.
 
-    =============================================================================
-    BUG numa_policy (Not tainted): Poison overwritten
-    -----------------------------------------------------------------------------
+Kosaki's original patch for this problem was to allocate an sp node and
+policy within shared_policy_replace and initialise it when the lock is
+reacquired.  I was not keen on this approach because it partially
+duplicates sp_alloc().  As the paths were sp->lock is taken are not that
+performance critical this patch converts sp->lock to sp->mutex so it can
+sleep when calling sp_alloc().
 
-    INFO: 0xffff880146498250-0xffff880146498250. First byte 0x6a instead of 0x6b
-    INFO: Allocated in mpol_new+0xa3/0x140 age=46310 cpu=6 pid=32154
-     __slab_alloc+0x3d3/0x445
-     kmem_cache_alloc+0x29d/0x2b0
-     mpol_new+0xa3/0x140
-     sys_mbind+0x142/0x620
-     system_call_fastpath+0x16/0x1b
-
-    INFO: Freed in __mpol_put+0x27/0x30 age=46268 cpu=6 pid=32154
-     __slab_free+0x2e/0x1de
-     kmem_cache_free+0x25a/0x260
-     __mpol_put+0x27/0x30
-     remove_vma+0x68/0x90
-     exit_mmap+0x118/0x140
-     mmput+0x73/0x110
-     exit_mm+0x108/0x130
-     do_exit+0x162/0xb90
-     do_group_exit+0x4f/0xc0
-     sys_exit_group+0x17/0x20
-     system_call_fastpath+0x16/0x1b
-
-    INFO: Slab 0xffffea0005192600 objects=27 used=27 fp=0x          (null) flags=0x20000000004080
-    INFO: Object 0xffff880146498250 @offset=592 fp=0xffff88014649b9d0
-
-The problem is that the structure is being prematurely freed due to a
-reference count imbalance. In the following case mbind(addr, len) should
-replace the memory policies of both vma1 and vma2 and thus they will
-become to share the same mempolicy and the new mempolicy will have the
-MPOL_F_SHARED flag.
-
-  +-------------------+-------------------+
-  |     vma1          |     vma2(shmem)   |
-  +-------------------+-------------------+
-  |                                       |
- addr                                 addr+len
-
-alloc_pages_vma() uses get_vma_policy() and mpol_cond_put() pair for
-maintaining the mempolicy reference count.  The current rule is that
-get_vma_policy() only increments refcount for shmem VMA and
-mpol_conf_put() only decrements refcount if the policy has
-MPOL_F_SHARED.
-
-In above case, vma1 is not shmem vma and vma->policy has MPOL_F_SHARED!
-The reference count will be decreased even though was not increased
-whenever alloc_page_vma() is called.  This has been broken since commit
-[52cd3b07: mempolicy: rework mempolicy Reference Counting] in 2008.
-
-There is another serious bug with the sharing of memory policies.
-Currently, mempolicy rebind logic (it is called from cpuset rebinding)
-ignores a refcount of mempolicy and override it forcibly.  Thus, any
-mempolicy sharing may cause mempolicy corruption.  The bug was
-introduced by commit [68860ec1: cpusets: automatic numa mempolicy
-rebinding].
-
-Ideally, the shared policy handling would be rewritten to either
-properly handle COW of the policy structures or at least reference count
-MPOL_F_SHARED based exclusively on information within the policy.
-However, this patch takes the easier approach of disabling any policy
-sharing between VMAs.  Each new range allocated with sp_alloc will
-allocate a new policy, set the reference count to 1 and drop the
-reference count of the old policy.  This increases the memory footprint
-but is not expected to be a major problem as mbind() is unlikely to be
-used for fine-grained ranges.  It is also inefficient because it means
-we allocate a new policy even in cases where mbind_range() could use the
-new_policy passed to it.  However, it is more straight-forward and the
-change should be invisible to the user.
-
-[mgorman@suse.de: Edited changelog]
-Reported-by: Dave Jones <davej@redhat.com>
-Cc: Christoph Lameter <cl@linux.com>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+[kosaki.motohiro@jp.fujitsu.com: Original patch]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Christoph Lameter <cl@linux.com>
 Cc: Josh Boyer <jwboyer@gmail.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mempolicy.c |   52 ++++++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 38 insertions(+), 14 deletions(-)
+ include/linux/mempolicy.h |    2 +-
+ mm/mempolicy.c            |   37 ++++++++++++++++---------------------
+ 2 files changed, 17 insertions(+), 22 deletions(-)
 
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -188,7 +188,7 @@ struct sp_node {
+ 
+ struct shared_policy {
+ 	struct rb_root root;
+-	spinlock_t lock;
++	struct mutex mutex;
+ };
+ 
+ void mpol_shared_policy_init(struct shared_policy *sp, struct mempolicy *mpol);
 --- a/mm/mempolicy.c
 +++ b/mm/mempolicy.c
-@@ -607,24 +607,39 @@ check_range(struct mm_struct *mm, unsign
- 	return first;
- }
+@@ -2057,7 +2057,7 @@ bool __mpol_equal(struct mempolicy *a, s
+  */
  
--/* Apply policy to a single VMA */
--static int policy_vma(struct vm_area_struct *vma, struct mempolicy *new)
-+/*
-+ * Apply policy to a single VMA
-+ * This must be called with the mmap_sem held for writing.
-+ */
-+static int vma_replace_policy(struct vm_area_struct *vma,
-+						struct mempolicy *pol)
+ /* lookup first element intersecting start-end */
+-/* Caller holds sp->lock */
++/* Caller holds sp->mutex */
+ static struct sp_node *
+ sp_lookup(struct shared_policy *sp, unsigned long start, unsigned long end)
  {
--	int err = 0;
--	struct mempolicy *old = vma->vm_policy;
-+	int err;
-+	struct mempolicy *old;
-+	struct mempolicy *new;
+@@ -2121,13 +2121,13 @@ mpol_shared_policy_lookup(struct shared_
  
- 	pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
- 		 vma->vm_start, vma->vm_end, vma->vm_pgoff,
- 		 vma->vm_ops, vma->vm_file,
- 		 vma->vm_ops ? vma->vm_ops->set_policy : NULL);
- 
--	if (vma->vm_ops && vma->vm_ops->set_policy)
-+	new = mpol_dup(pol);
-+	if (IS_ERR(new))
-+		return PTR_ERR(new);
-+
-+	if (vma->vm_ops && vma->vm_ops->set_policy) {
- 		err = vma->vm_ops->set_policy(vma, new);
--	if (!err) {
--		mpol_get(new);
--		vma->vm_policy = new;
--		mpol_put(old);
-+		if (err)
-+			goto err_out;
- 	}
-+
-+	old = vma->vm_policy;
-+	vma->vm_policy = new; /* protected by mmap_sem */
-+	mpol_put(old);
-+
-+	return 0;
-+ err_out:
-+	mpol_put(new);
- 	return err;
- }
- 
-@@ -676,7 +691,7 @@ static int mbind_range(struct mm_struct
- 			if (err)
- 				goto out;
- 		}
--		err = policy_vma(vma, new_pol);
-+		err = vma_replace_policy(vma, new_pol);
- 		if (err)
- 			goto out;
- 	}
-@@ -2127,15 +2142,24 @@ static void sp_delete(struct shared_poli
- static struct sp_node *sp_alloc(unsigned long start, unsigned long end,
- 				struct mempolicy *pol)
- {
--	struct sp_node *n = kmem_cache_alloc(sn_cache, GFP_KERNEL);
-+	struct sp_node *n;
-+	struct mempolicy *newpol;
- 
-+	n = kmem_cache_alloc(sn_cache, GFP_KERNEL);
- 	if (!n)
+ 	if (!sp->root.rb_node)
  		return NULL;
-+
-+	newpol = mpol_dup(pol);
-+	if (IS_ERR(newpol)) {
-+		kmem_cache_free(sn_cache, n);
-+		return NULL;
-+	}
-+	newpol->flags |= MPOL_F_SHARED;
-+
- 	n->start = start;
- 	n->end = end;
--	mpol_get(pol);
--	pol->flags |= MPOL_F_SHARED;	/* for unref */
--	n->policy = pol;
-+	n->policy = newpol;
-+
- 	return n;
+-	spin_lock(&sp->lock);
++	mutex_lock(&sp->mutex);
+ 	sn = sp_lookup(sp, idx, idx+1);
+ 	if (sn) {
+ 		mpol_get(sn->policy);
+ 		pol = sn->policy;
+ 	}
+-	spin_unlock(&sp->lock);
++	mutex_unlock(&sp->mutex);
+ 	return pol;
  }
  
+@@ -2167,10 +2167,10 @@ static struct sp_node *sp_alloc(unsigned
+ static int shared_policy_replace(struct shared_policy *sp, unsigned long start,
+ 				 unsigned long end, struct sp_node *new)
+ {
+-	struct sp_node *n, *new2 = NULL;
++	struct sp_node *n;
++	int ret = 0;
+ 
+-restart:
+-	spin_lock(&sp->lock);
++	mutex_lock(&sp->mutex);
+ 	n = sp_lookup(sp, start, end);
+ 	/* Take care of old policies in the same range. */
+ 	while (n && n->start < end) {
+@@ -2183,16 +2183,14 @@ restart:
+ 		} else {
+ 			/* Old policy spanning whole new range. */
+ 			if (n->end > end) {
++				struct sp_node *new2;
++				new2 = sp_alloc(end, n->end, n->policy);
+ 				if (!new2) {
+-					spin_unlock(&sp->lock);
+-					new2 = sp_alloc(end, n->end, n->policy);
+-					if (!new2)
+-						return -ENOMEM;
+-					goto restart;
++					ret = -ENOMEM;
++					goto out;
+ 				}
+ 				n->end = start;
+ 				sp_insert(sp, new2);
+-				new2 = NULL;
+ 				break;
+ 			} else
+ 				n->end = start;
+@@ -2203,12 +2201,9 @@ restart:
+ 	}
+ 	if (new)
+ 		sp_insert(sp, new);
+-	spin_unlock(&sp->lock);
+-	if (new2) {
+-		mpol_put(new2->policy);
+-		kmem_cache_free(sn_cache, new2);
+-	}
+-	return 0;
++out:
++	mutex_unlock(&sp->mutex);
++	return ret;
+ }
+ 
+ /**
+@@ -2226,7 +2221,7 @@ void mpol_shared_policy_init(struct shar
+ 	int ret;
+ 
+ 	sp->root = RB_ROOT;		/* empty tree == default mempolicy */
+-	spin_lock_init(&sp->lock);
++	mutex_init(&sp->mutex);
+ 
+ 	if (mpol) {
+ 		struct vm_area_struct pvma;
+@@ -2292,7 +2287,7 @@ void mpol_free_shared_policy(struct shar
+ 
+ 	if (!p->root.rb_node)
+ 		return;
+-	spin_lock(&p->lock);
++	mutex_lock(&p->mutex);
+ 	next = rb_first(&p->root);
+ 	while (next) {
+ 		n = rb_entry(next, struct sp_node, nd);
+@@ -2301,7 +2296,7 @@ void mpol_free_shared_policy(struct shar
+ 		mpol_put(n->policy);
+ 		kmem_cache_free(sn_cache, n);
+ 	}
+-	spin_unlock(&p->lock);
++	mutex_unlock(&p->mutex);
+ }
+ 
+ /* assumes fs == KERNEL_DS */
 
 
