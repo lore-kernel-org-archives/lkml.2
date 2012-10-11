@@ -1,42 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965050Ab2JKCS6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:18:58 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35795 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964950Ab2JKCPv (ORCPT
+	id S964976Ab2JKCTk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:19:40 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51440 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964912Ab2JKCPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:15:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <1349897005.2035.24.camel@joe-AO722>
-References: <1349894559.2035.12.camel@joe-AO722>
-	<1349895710.21172.7235.camel@edumazet-glaptop>
-	<1349897005.2035.24.camel@joe-AO722>
-Date: Thu, 11 Oct 2012 10:15:51 +0800
-Message-ID: <CAM_iQpWn8XHZ8VwRGFPjcAvPRAPy82eFT=5tqVzWHq5iXff_wA@mail.gmail.com>
-Subject: Re: [PATCH net-next? V2] pktgen: Use simpler test for non-zero ipv6 address
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Brian Haley <brian.haley@hp.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 10 Oct 2012 22:15:36 -0400
+X-Sasl-enc: 6KN/iDYW5LGrc8fP0qGaPWK/+h51ugTpaRydPdW7jGHx 1349921735
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 52/84] mm: thp: fix pmd_present for split_huge_page and PROT_NONE with THP
+Date: Thu, 11 Oct 2012 11:03:36 +0900
+Message-Id: <20121011015426.430086423@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
+References: <20121011015417.017144658@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 11, 2012 at 3:23 AM, Joe Perches <joe@perches.com> wrote:
-> Reduces object size and should be slightly faster.
->
-> allyesconfig:
-> $ size net/core/pktgen.o*
->    text    data     bss     dec     hex filename
->   52284    4321   11840   68445   10b5d net/core/pktgen.o.new
->   52310    4293   11848   68451   10b63 net/core/pktgen.o.old
->
-> Signed-off-by: Joe Perches <joe@perches.com>
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Looks good.
+------------------
 
-This should go to -net, net-next is not open currently.
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-Thanks.
+commit 027ef6c87853b0a9df53175063028edb4950d476 upstream.
+
+In many places !pmd_present has been converted to pmd_none.  For pmds
+that's equivalent and pmd_none is quicker so using pmd_none is better.
+
+However (unless we delete pmd_present) we should provide an accurate
+pmd_present too.  This will avoid the risk of code thinking the pmd is non
+present because it's under __split_huge_page_map, see the pmd_mknotpresent
+there and the comment above it.
+
+If the page has been mprotected as PROT_NONE, it would also lead to a
+pmd_present false negative in the same way as the race with
+split_huge_page.
+
+Because the PSE bit stays on at all times (both during split_huge_page and
+when the _PAGE_PROTNONE bit get set), we could only check for the PSE bit,
+but checking the PROTNONE bit too is still good to remember pmd_present
+must always keep PROT_NONE into account.
+
+This explains a not reproducible BUG_ON that was seldom reported on the
+lists.
+
+The same issue is in pmd_large, it would go wrong with both PROT_NONE and
+if it races with split_huge_page.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/x86/include/asm/pgtable.h |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -146,8 +146,7 @@ static inline unsigned long pmd_pfn(pmd_
+ 
+ static inline int pmd_large(pmd_t pte)
+ {
+-	return (pmd_flags(pte) & (_PAGE_PSE | _PAGE_PRESENT)) ==
+-		(_PAGE_PSE | _PAGE_PRESENT);
++	return pmd_flags(pte) & _PAGE_PSE;
+ }
+ 
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+@@ -415,7 +414,13 @@ static inline int pte_hidden(pte_t pte)
+ 
+ static inline int pmd_present(pmd_t pmd)
+ {
+-	return pmd_flags(pmd) & _PAGE_PRESENT;
++	/*
++	 * Checking for _PAGE_PSE is needed too because
++	 * split_huge_page will temporarily clear the present bit (but
++	 * the _PAGE_PSE flag will remain set at all times while the
++	 * _PAGE_PRESENT bit is clear).
++	 */
++	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE);
+ }
+ 
+ static inline int pmd_none(pmd_t pmd)
+
+
