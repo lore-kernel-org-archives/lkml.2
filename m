@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933409Ab2JKCMr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:12:47 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43882 "EHLO
+	id S933439Ab2JKCMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:12:55 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38056 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933349Ab2JKCMm (ORCPT
+	by vger.kernel.org with ESMTP id S932890Ab2JKCMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:12:42 -0400
-X-Sasl-enc: zFUqzlpUp44cPPnhYi1uqJwRLxNWoGy+14amFMVQhcMk 1349921560
+	Wed, 10 Oct 2012 22:12:50 -0400
+X-Sasl-enc: WHe5b8aGbbKI0TEgCKGY/fz5qNmnU2N8TYAQ8TcRwyli 1349921569
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Xiaodong Xu <stid.smth@gmail.com>,
+        Dave Jones <davej@redhat.com>, Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 30/84] pppoe: drop PPPOX_ZOMBIEs in pppoe_release
-Date: Thu, 11 Oct 2012 11:03:14 +0900
-Message-Id: <20121011015422.506461937@linuxfoundation.org>
+Subject: [ 32/84] net: guard tcp_set_keepalive() to tcp sockets
+Date: Thu, 11 Oct 2012 11:03:16 +0900
+Message-Id: <20121011015422.866082904@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -29,33 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Xiaodong Xu <stid.smth@gmail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 2b018d57ff18e5405823e5cb59651a5b4d946d7b ]
+[ Upstream commit 3e10986d1d698140747fcfc2761ec9cb64c1d582 ]
 
-When PPPOE is running over a virtual ethernet interface (e.g., a
-bonding interface) and the user tries to delete the interface in case
-the PPPOE state is ZOMBIE, the kernel will loop forever while
-unregistering net_device for the reference count is not decreased to
-zero which should have been done with dev_put().
+Its possible to use RAW sockets to get a crash in
+tcp_set_keepalive() / sk_reset_timer()
 
-Signed-off-by: Xiaodong Xu <stid.smth@gmail.com>
+Fix is to make sure socket is a SOCK_STREAM one.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/pppoe.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/core/sock.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/pppoe.c
-+++ b/drivers/net/pppoe.c
-@@ -576,7 +576,7 @@ static int pppoe_release(struct socket *
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -594,7 +594,8 @@ set_rcvbuf:
  
- 	po = pppox_sk(sk);
- 
--	if (sk->sk_state & (PPPOX_CONNECTED | PPPOX_BOUND)) {
-+	if (sk->sk_state & (PPPOX_CONNECTED | PPPOX_BOUND | PPPOX_ZOMBIE)) {
- 		dev_put(po->pppoe_dev);
- 		po->pppoe_dev = NULL;
- 	}
+ 	case SO_KEEPALIVE:
+ #ifdef CONFIG_INET
+-		if (sk->sk_protocol == IPPROTO_TCP)
++		if (sk->sk_protocol == IPPROTO_TCP &&
++		    sk->sk_type == SOCK_STREAM)
+ 			tcp_set_keepalive(sk, valbool);
+ #endif
+ 		sock_valbool_flag(sk, SOCK_KEEPOPEN, valbool);
 
 
