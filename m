@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370Ab2JKPzw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 11:55:52 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:2885 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751160Ab2JKPzr (ORCPT
+	id S1752705Ab2JKP4o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 11:56:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63680 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516Ab2JKP4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 11:55:47 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VS2(zz98dIzz1202h1d1ah1d2ah1082kzzz2dh2a8h668h839hd25he5bhf0ah107ah1288h12a5h12a9h12bdh137ah13b6h1441h1155h)
-Message-ID: <5076EBFE.5060208@freescale.com>
-Date: Thu, 11 Oct 2012 10:55:42 -0500
-From: Timur Tabi <B04825@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120312 Firefox/11.0 SeaMonkey/2.8
-MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        David Howells <dhowells@redhat.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: linux-next: manual merge of the kvm-ppc tree with the powerpc-merge
- tree
-References: <20121011121841.1b946f996cba995d9a5a2be7@canb.auug.org.au> <6AE080B68D46FC4BA2D2769E68D765B7080FA8F8@039-SN2MPN1-023.039d.mgd.msft.net> <20121011134754.2e2cbb24842fa991e61cf97c@canb.auug.org.au> <6AE080B68D46FC4BA2D2769E68D765B7080FA9F8@039-SN2MPN1-023.039d.mgd.msft.net> <6201AAAD-F575-4D2C-9A97-3EB41DA3491C@suse.de>
-In-Reply-To: <6201AAAD-F575-4D2C-9A97-3EB41DA3491C@suse.de>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Thu, 11 Oct 2012 11:56:42 -0400
+Message-ID: <1349970986.9548.1.camel@phoenix>
+Subject: [PATCH] hwmon: (ina2xx) Use module_i2c_driver macro
+From: Axel Lin <axel.lin@ingics.com>
+To: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
+Cc: Lothar Felten <l-felten@ti.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 11 Oct 2012 23:56:26 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexander Graf wrote:
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/hwmon/ina2xx.c |   13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
-
-> This is about kvm_host.h, which is the part that is exported to user
-> space. It usually contains constants and structs that are required for
-> the API.
-
-Which API?  I'm not familiar with KVM internals.
-
-My concern is that when I think of a user-space header file, I think of a
-user-space application that calls ioctls.  I know that KVM guest kernels
-run as user-space processes, but that does not seem like a reason to
-combine all of the header files that the KVM guest kernel needs with
-"real" user-space header files.
-
+diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
+index 2b72634..8e7158c 100644
+--- a/drivers/hwmon/ina2xx.c
++++ b/drivers/hwmon/ina2xx.c
+@@ -302,19 +302,8 @@ static struct i2c_driver ina2xx_driver = {
+ 	.id_table	= ina2xx_id,
+ };
+ 
+-static int __init ina2xx_init(void)
+-{
+-	return i2c_add_driver(&ina2xx_driver);
+-}
+-
+-static void __exit ina2xx_exit(void)
+-{
+-	i2c_del_driver(&ina2xx_driver);
+-}
++module_i2c_driver(ina2xx_driver);
+ 
+ MODULE_AUTHOR("Lothar Felten <l-felten@ti.com>");
+ MODULE_DESCRIPTION("ina2xx driver");
+ MODULE_LICENSE("GPL");
+-
+-module_init(ina2xx_init);
+-module_exit(ina2xx_exit);
 -- 
-Timur Tabi
-Linux kernel developer at Freescale
+1.7.9.5
+
+
 
