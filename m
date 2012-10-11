@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab2JKP4o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 11:56:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63680 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab2JKP4m (ORCPT
+	id S1753718Ab2JKP5A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 11:57:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35822 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752946Ab2JKP44 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 11:56:42 -0400
-Message-ID: <1349970986.9548.1.camel@phoenix>
-Subject: [PATCH] hwmon: (ina2xx) Use module_i2c_driver macro
-From: Axel Lin <axel.lin@ingics.com>
-To: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>
-Cc: Lothar Felten <l-felten@ti.com>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 11 Oct 2012 23:56:26 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 11 Oct 2012 11:56:56 -0400
+Subject: Re: linux-next: manual merge of the kvm-ppc tree with the powerpc-merge tree
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <1349970603.6903.2@snotra>
+Date: Thu, 11 Oct 2012 17:56:51 +0200
+Cc: Tabi Timur-B04825 <B04825@freescale.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <CDB8B53D-EEC2-41A4-9BEA-66783409EE66@suse.de>
+References: <1349970603.6903.2@snotra>
+To: Scott Wood <scottwood@freescale.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/hwmon/ina2xx.c |   13 +------------
- 1 file changed, 1 insertion(+), 12 deletions(-)
 
-diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
-index 2b72634..8e7158c 100644
---- a/drivers/hwmon/ina2xx.c
-+++ b/drivers/hwmon/ina2xx.c
-@@ -302,19 +302,8 @@ static struct i2c_driver ina2xx_driver = {
- 	.id_table	= ina2xx_id,
- };
- 
--static int __init ina2xx_init(void)
--{
--	return i2c_add_driver(&ina2xx_driver);
--}
--
--static void __exit ina2xx_exit(void)
--{
--	i2c_del_driver(&ina2xx_driver);
--}
-+module_i2c_driver(ina2xx_driver);
- 
- MODULE_AUTHOR("Lothar Felten <l-felten@ti.com>");
- MODULE_DESCRIPTION("ina2xx driver");
- MODULE_LICENSE("GPL");
--
--module_init(ina2xx_init);
--module_exit(ina2xx_exit);
--- 
-1.7.9.5
+On 11.10.2012, at 17:50, Scott Wood wrote:
 
+> On 10/11/2012 08:04:58 AM, Alexander Graf wrote:
+>> On 11.10.2012, at 05:32, Tabi Timur-B04825 wrote:
+>> > On Wed, Oct 10, 2012 at 9:47 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> >
+>> >> Commit 549d62d889b4 ("KVM: PPC: use definitions in epapr header
+>> >> for hcalls") from the kvm-ppc tree added an include of asm/epapr_hcall.h
+>> >> to the user visible part of asm/kvm_para.h so asm/epapr_hcall.h became a
+>> >> user visible header file.
+>> >
+>> > Any real user-space code that tries to call any of the functions in
+>> > epapr_hcall.h will cause an exception.
+> 
+> Actually it'll cause a linker error, as of the "Don't use hardcoded opcode for ePAPR hcall invocation" patch.
+> 
+>> > Claiming that kernel header files that KVM needs are suddenly
+>> > user-space header files doesn't make much sense to me, but I guess
+>> > it's not my decision.
+>> This is about kvm_host.h, which is the part that is exported to user space. It usually contains constants and structs that are required for the API.
+> 
+> s/kvm_host/kvm_para/
+> 
+> I'm not sure anything in kvm_para.h or epapr_hcalls.h would be of use to userspace, but it would be of use to the guest OS, so it's still not kernel-internal.
+> 
+> The variable externs should be #ifdef __KERNEL__ as David points out.  The asm stuff could still be useful in a guest OS if the guest provides epapr_hypercall_start.
 
+I don't think we should worry about guest kernel code potentially having use for this. Let's make the user space headers be great for user space usage, not for guest code usage :).
 
+Alex
