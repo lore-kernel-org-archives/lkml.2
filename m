@@ -1,88 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934176Ab2JKBao (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:30:44 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59864 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933910Ab2JKBU1 (ORCPT
+	id S934357Ab2JKBbn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:31:43 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:40984 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934342Ab2JKBb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:20:27 -0400
-X-Sasl-enc: b1Lh3tMsXWCRXKW9lhSejfutHfxCcJHFFWt3+SYuvp78 1349918426
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 046/120] net: small bug on rxhash calculation
-Date: Thu, 11 Oct 2012 09:59:58 +0900
-Message-Id: <20121011005833.998786745@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
-References: <20121011005825.364610894@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Wed, 10 Oct 2012 21:31:28 -0400
+X-AuditID: cbfee61a-b7f726d000000ec7-58-50762167cf58
+Message-id: <50762167.8060806@samsung.com>
+Date: Thu, 11 Oct 2012 10:31:19 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [GIT PULL] extcon fixes for Linux 3.6
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t9jAd10xbIAg/VdahaXd81hc2D0+LxJ
+	LoAxissmJTUnsyy1SN8ugStjzt2zjAXnBSsObe1hbWDs4+ti5OSQEDCRmHLsDhuELSZx4d56
+	IJuLQ0hgEaPEl53djBBOF5PEi2mPmUCqeAW0JA6/W88CYrMIqEq8eXuBHcRmA4rvf3EDqJuD
+	Q1QgQuJXPwdEuaDEj8n3wMpFBDQkXh69xQIyk1lgOaPE0avPwXqFBfQkeqd/YQSxmQV0JPa3
+	TmODsOUlNq95yzyBkW8WklmzkJTNQlK2gJF5FaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZw
+	SD2T2sG4ssHiEKMAB6MSD+/ElaUBQqyJZcWVuYcYJTiYlUR4Ex8ChXhTEiurUovy44tKc1KL
+	DzFKc7AoifM2e6QECAmkJ5akZqemFqQWwWSZODilGhgjpconxpotPcgcaf/U0+rE1uU/exT1
+	797RP+LoFf7j7msDdYufKw8oZeqH9DzXCmibfGjt36wN9vefvcpuEHur+bQlfzP3n+hJhzqL
+	KnrlRPU+dheEsoac5lO+dKbALGb7I+mFF7vslbLPu5h/90myrA+/PDds3UfGbaZX9Z6x9y1g
+	vSX36oESS3FGoqEWc1FxIgDGH3yxJQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Hi Greg,
 
-------------------
+Please pull extcon fixes for Linux 3.6 from:
 
+    git://git.infradead.org/users/kmpark/linux-samsung extcon-for-next
 
-From: Chema Gonzalez <chema@google.com>
+I've been creating "extcon-for-next" tree at git.infradead.org
+and rebasing the branch base on your
+driver-core.git(branch:driver-core-next).
 
-[ Upstream commit 6862234238e84648c305526af2edd98badcad1e0 ]
+This tree contains various small bugfixes and enhancements, fix typos.
+And extcon-max77693 initialize MUIC register during probe()
+to unmask internal interrupt of max77693 MUIC device.
 
-In the current rxhash calculation function, while the
-sorting of the ports/addrs is coherent (you get the
-same rxhash for packets sharing the same 4-tuple, in
-both directions), ports and addrs are sorted
-independently. This implies packets from a connection
-between the same addresses but crossed ports hash to
-the same rxhash.
+Thanks,
+Chanwoo Choi
 
-For example, traffic between A=S:l and B=L:s is hashed
-(in both directions) from {L, S, {s, l}}. The same
-rxhash is obtained for packets between C=S:s and D=L:l.
+--------------------
 
-This patch ensures that you either swap both addrs and ports,
-or you swap none. Traffic between A and B, and traffic
-between C and D, get their rxhash from different sources
-({L, S, {l, s}} for A<->B, and {L, S, {s, l}} for C<->D)
+The following changes since commit e0f21e6d52cc245e7d4f7e02ca4b7b6571660ec2:
+  Axel Lin (1):
+        memory: tegra{20,30}-mc: Fix reading incorrect register in
+mc_readl()
 
-The patch is co-written with Eric Dumazet <edumazet@google.com>
+are available in the git repository at:
 
-Signed-off-by: Chema Gonzalez <chema@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/core/dev.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+  git://git.infradead.org/users/kmpark/linux-samsung extcon-for-next
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2617,15 +2617,16 @@ void __skb_get_rxhash(struct sk_buff *sk
- 	if (!skb_flow_dissect(skb, &keys))
- 		return;
- 
--	if (keys.ports) {
--		if ((__force u16)keys.port16[1] < (__force u16)keys.port16[0])
--			swap(keys.port16[0], keys.port16[1]);
-+	if (keys.ports)
- 		skb->l4_rxhash = 1;
--	}
- 
- 	/* get a consistent hash (same value on both flow directions) */
--	if ((__force u32)keys.dst < (__force u32)keys.src)
-+	if (((__force u32)keys.dst < (__force u32)keys.src) ||
-+	    (((__force u32)keys.dst == (__force u32)keys.src) &&
-+	     ((__force u16)keys.port16[1] < (__force u16)keys.port16[0]))) {
- 		swap(keys.dst, keys.src);
-+		swap(keys.port16[0], keys.port16[1]);
-+	}
- 
- 	hash = jhash_3words((__force u32)keys.dst,
- 			    (__force u32)keys.src,
+Axel Lin (4):
+      extcon: adc-jack: Fix checking return value of request_any_context_irq
+      extcon: adc-jack: Add missing MODULE_LICENSE
+      extcon: Fix kerneldoc for extcon_set_cable_state and
+extcon_set_cable_state_
+      extcon: max77693: Use max77693_update_reg for rmw operations
 
+Chanwoo Choi (1):
+      extcon: MAX77693: Add platform data for MUIC device to initialize
+registers
 
+Devendra Naga (1):
+      extcon-max8997: remove usage of ret in
+max8997_muic_handle_charger_type_detach
+
+Peter Huewe (2):
+      extcon: Unregister compat class at module unload to fix oops
+      extcon: unregister compat link on cleanup
+
+Sachin Kamat (2):
+      extcon: Remove duplicate inclusion of extcon.h header file
+      extcon: Fix return value in extcon_register_interest()
+
+anish kumar (3):
+      extcon: standard cable names definition and declaration changed
+      extcon: optimising the check_mutually_exclusive function
+      extcon: checkpatch warning removal
+
+ drivers/extcon/extcon-adc-jack.c |   10 ++++++--
+ drivers/extcon/extcon-class.c    |   34 ++++++++++++++--------------
+ drivers/extcon/extcon-gpio.c     |    1 -
+ drivers/extcon/extcon-max77693.c |   45
++++++++++++++++++++++++++++----------
+ drivers/extcon/extcon-max8997.c  |    6 +---
+ include/linux/extcon.h           |    2 +-
+ include/linux/mfd/max77693.h     |   13 +++++++++++
+ 7 files changed, 73 insertions(+), 38 deletions(-)
