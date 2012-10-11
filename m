@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758155Ab2JKIDt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 04:03:49 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:5098
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752449Ab2JKIDo (ORCPT
+	id S932477Ab2JKIFZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 04:05:25 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:47779 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754870Ab2JKIFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 04:03:44 -0400
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441hbe9i1155h)
-Subject: [alsa-devel] [PATCH] ASoC: codecs: da9055: Add support for DSP
- mode of AIF
-From: Ashish Chavan <ashish.chavan@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>, lrg <lrg@ti.com>,
-        alsa-devel <alsa-devel@alsa-project.org>
-CC: David Dajun Chen <david.chen@diasemi.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Oct 2012 13:44:39 +0530
-Message-ID: <1349943279.24126.4.camel@matrix>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.20.243]
-X-OriginatorOrg: kpitcummins.com
+	Thu, 11 Oct 2012 04:05:15 -0400
+From: Qing Zhu <qzhu@marvell.com>
+To: akpm@linux-foundation.org, mingo@kernel.org, ben@decadent.org.uk,
+        markivx@codeaurora.org, ak@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, cxie4@marvell.com, binw@marvell.com,
+        wwang27@marvell.com, njun@marvell.com, Qing Zhu <qzhu@marvell.com>
+Subject: [PATCH] panic: fix incomplete panic log in panic()
+Date: Thu, 11 Oct 2012 16:03:07 +0800
+Message-Id: <1349942587-16134-1-git-send-email-qzhu@marvell.com>
+X-Mailer: git-send-email 1.7.4.1
+X-OriginalArrivalTime: 11 Oct 2012 08:03:22.0715 (UTC) FILETIME=[E2439AB0:01CDA786]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds AIF DSP mode support for da9055 codec driver.
+Panic log should be printed on the console, but if someone lock the
+console when panic, console won't print out panic log.
 
+The incomplete panic log issue will happen in below scenarios:
+1. One task call console_lock(), then panic happend before it call
+console_unlock(). No panic log can be printed.
+2. Cpu 0 call panic()->Cpu 1 call console_lock()->Cpu 0 call
+smp_send_stop()
+Cpu 1 will be stopped and can't unlock console,only top part of panic log
+will be printed.
 
-Signed-off-by: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
+So unlock console anyway in panic() to keep panic log printed.
+
+Signed-off-by: Qing Zhu <qzhu@marvell.com>
 ---
- sound/soc/codecs/da9055.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ kernel/panic.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/sound/soc/codecs/da9055.c b/sound/soc/codecs/da9055.c
-index 185d8dd..27c4454 100644
---- a/sound/soc/codecs/da9055.c
-+++ b/sound/soc/codecs/da9055.c
-@@ -173,6 +173,7 @@
- #define DA9055_AIF_FORMAT_I2S_MODE	(0 << 0)
- #define DA9055_AIF_FORMAT_LEFT_J	(1 << 0)
- #define DA9055_AIF_FORMAT_RIGHT_J	(2 << 0)
-+#define DA9055_AIF_FORMAT_DSP		(3 << 0)
- #define DA9055_AIF_WORD_S16_LE		(0 << 2)
- #define DA9055_AIF_WORD_S20_3LE		(1 << 2)
- #define DA9055_AIF_WORD_S24_LE		(2 << 2)
-@@ -1155,6 +1156,9 @@ static int da9055_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
- 	case SND_SOC_DAIFMT_RIGHT_J:
- 		aif_ctrl = DA9055_AIF_FORMAT_RIGHT_J;
- 		break;
-+	case SND_SOC_DAIFMT_DSP_A:
-+		aif_ctrl = DA9055_AIF_FORMAT_DSP;
-+		break;
- 	default:
- 		return -EINVAL;
- 	}
+diff --git a/kernel/panic.c b/kernel/panic.c
+index e1b2822..3924d25 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -23,6 +23,7 @@
+ #include <linux/init.h>
+ #include <linux/nmi.h>
+ #include <linux/dmi.h>
++#include <linux/console.h>
+ 
+ #define PANIC_TIMER_STEP 100
+ #define PANIC_BLINK_SPD 18
+@@ -127,6 +128,13 @@ void panic(const char *fmt, ...)
+ 
+ 	atomic_notifier_call_chain(&panic_notifier_list, 0, buf);
+ 
++	/*
++	 * Unlock the console anyway here, in case it's occupied by another
++	 * one which has no chance to unlock the console thus prevents the
++	 * panic log prints on the console.
++	 */
++	console_unlock();
++
+ 	bust_spinlocks(0);
+ 
+ 	if (!panic_blink)
 -- 
-1.7.1
-
+1.7.4.1
 
