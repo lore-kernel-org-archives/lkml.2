@@ -1,141 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759469Ab2JKWQR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 18:16:17 -0400
-Received: from trent.utfs.org ([94.185.90.103]:49712 "EHLO trent.utfs.org"
+	id S1759491Ab2JKWTG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 18:19:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48356 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753486Ab2JKWQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 18:16:15 -0400
-X-Greylist: delayed 577 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Oct 2012 18:16:15 EDT
-Date: Thu, 11 Oct 2012 15:06:29 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Dave Chinner <david@fromorbit.com>
-cc: xfs@oss.sgi.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: possible memory allocation deadlock in xfs_buf_allocate_memory
-In-Reply-To: <20121011213323.GD2739@dastard>
-Message-ID: <alpine.DEB.2.01.1210111456090.10880@trent.utfs.org>
-References: <alpine.DEB.2.01.1210111048170.10880@trent.utfs.org> <20121011213323.GD2739@dastard>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1752632Ab2JKWTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 18:19:00 -0400
+Date: Fri, 12 Oct 2012 00:18:42 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Julia.Lawall@lip6.fr, lars@metafoo.de, mail@danrl.de,
+        nicolas.palix@imag.fr, rdunlap@xenotime.net, tkhai@yandex.ru,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild misc changes for v3.7
+Message-ID: <20121011221841.GA7717@sepie.suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Cc'ed lkml, hence the full-quote]
+Hi Linus,
 
-On Fri, 12 Oct 2012 at 08:33, Dave Chinner wrote:
-> On Thu, Oct 11, 2012 at 11:13:14AM -0700, Christian Kujau wrote:
-> > Hi,
-> > 
-> > since Linux 3.5 I'm seeing these "inconsistent lock state" lockdep 
-> > warnings [0]. They show up in 3.6 as well [1]. I was being told[2] that I 
-> > may have run out of inode attributes. This may well be the case, but I 
-> > cannot reformat the disk right now and will have to live with that warning 
-> > a while longer.
-> > 
-> > I got the warning again today, but 8h later the system hung and eventually 
-> > shutdown. The last message from the box was received via netconsole:
-> > 
-> >  XFS: possible memory allocation deadlock in xfs_buf_allocate_memory (mode:0x250)
-> > 
-> > This has been reported[3] for 3.2.1, but when the message was printed I 
-> > was not around and could not watch /proc/slabinfo.
-> > 
-> > The last -MARK- message (some kind of heartbeat message from syslog, 
-> > printing "MARK" every 5min) has been received 07:55 local time, the
-> > netconsole message above was received 08:09, so two -MARK- messages were 
-> > lost. sar(1) stopped recording at 08:05.
-> > 
-> > These two incidents (the lockdep warning and the final lockup) may be 
-> > unrelated (and timestamp-wise, they seem to be), but I thought I'd 
-> > better report it.
-> > 
-> > Full dmesg and .config: http://nerdbynature.de/bits/3.6.0/xfs/o
-> 
-> The inconsistent lock state is this path:
-> 
-> Oct 11 00:18:27 alice kernel: [261506.767190] [e5e2fc70] [c00b5d44] vm_map_ram+0x228/0x5a0
-> Oct 11 00:18:27 alice kernel: [261506.768354] [e5e2fcf0] [c01a6f9c] _xfs_buf_map_pages+0x44/0x104
-> Oct 11 00:18:27 alice kernel: [261506.769522] [e5e2fd10] [c01a8090] xfs_buf_get_map+0x74/0x11c
-> Oct 11 00:18:27 alice kernel: [261506.770698] [e5e2fd30] [c01ffad8] xfs_trans_get_buf_map+0xc0/0xdc
-> Oct 11 00:18:27 alice kernel: [261506.772106] [e5e2fd50] [c01e9504] xfs_ifree_cluster+0x3f4/0x5b0
-> Oct 11 00:18:27 alice kernel: [261506.773309] [e5e2fde0] [c01eabc0] xfs_ifree+0xec/0xf0
-> Oct 11 00:18:27 alice kernel: [261506.774493] [e5e2fe20] [c01bd5c0] xfs_inactive+0x274/0x448
-> Oct 11 00:18:27 alice kernel: [261506.775672] [e5e2fe60] [c01b8450] xfs_fs_evict_inode+0x60/0x74
-> Oct 11 00:18:27 alice kernel: [261506.776863] [e5e2fe70] [c00dfa88] evict+0xc0/0x1b4
-> Oct 11 00:18:27 alice kernel: [261506.778046] [e5e2fe90] [c00db968] d_delete+0x1b0/0x1ec
-> Oct 11 00:18:27 alice kernel: [261506.779235] [e5e2feb0] [c00d2e24] vfs_rmdir+0x124/0x128
-> Oct 11 00:18:27 alice kernel: [261506.780425] [e5e2fed0] [c00d2f10] do_rmdir+0xe8/0x110
-> Oct 11 00:18:27 alice kernel: [261506.781619] [e5e2ff40] [c0010aac] ret_from_syscall+0x0/0x38
-> 
-> 
-> Which indicates that it is this:
-> 
-> > [1] http://oss.sgi.com/archives/xfs/2012-09/msg00305.html
-> 
-> which is a real bug in the VM code that the VM developers refuse to
-> fix even though it is simple to do and patches have been posted
-> several times to fix it.
-> 
-> /me points to his recent rant rather than repeating it:
-> 
-> https://lkml.org/lkml/2012/6/13/628
+in the non-critical part of kbuild, I have
+* Some make coccicheck improvements and two new tests
+* Support for a cleaner html output in scripts/kernel-doc, named html5
+  (no, it does not play videos, yet)
 
-Read through it, only understood the half of it. But interesting to see 
-that there seems to be a real issue.
+BTW, Randy wants to route further kernel-doc patches through the kbuild
+tree.
 
-> However, that is unrelated to this message:
-> 
-> XFS: possible memory allocation deadlock in xfs_buf_allocate_memory (mode:0x250)
-> 
-> which triggers when memory cannot be allocated. mode 0x250 is
-> 
-> 	___GFP_NOWARN | ___GFP_IO | ___GFP_WAIT
-> 
-> or more commonly known as:
-> 
-> 	GFP_NOFS
-> 
-> with warnings turned off. Basically the warning is saying "we're
-> trying really hard to allocate memory, but we're not making
-> progress". If it was only emitted once, however, it means that
-> progress was made, as the message is emitted every 100 times through
-> the loop and so only one message means it looped less than 200
-> times...
+Thanks,
+Michal
 
-Memory usage at that time was not different than on other days, so I don't 
-know why it had a hard time allocating memory. But I don't have any 
-numbers.
- 
-> What it does imply, however, is that vm_map_ram() is being called
-> from GFP_NOFS context quite regularly and might be blocking there,
-> and so the lockdep warning is more than just a nuisance - your
-> system may indeed have hung there, but I don't have enough
-> information to say for sure.
-> 
-> When it hangs next time, can you get a blocked task dump from sysrq
-> (i.e. sysrq-w, or "echo w > /proc/sysrq-trigger")? That's the only
+The following changes since commit 0d7614f09c1ebdbaa1599a5aba7593f147bf96ee:
 
-OK, will try to get this information the next time this happens.
+  Linux 3.6-rc1 (2012-08-02 16:38:10 -0700)
 
-> way we're going to know where the system hung. You might also want
-> to ensure the hung task functionality is built into you kernel, so
-> it automatically dumps stack traces for tasks hung longer than
-> 120s...
+are available in the git repository at:
 
-Yes, the option was already set:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git misc
 
-CONFIG_DETECT_HUNG_TASK=y
-CONFIG_DEFAULT_HUNG_TASK_TIMEOUT=120
-# CONFIG_BOOTPARAM_HUNG_TASK_PANIC is not set
-CONFIG_BOOTPARAM_HUNG_TASK_PANIC_VALUE=0
+for you to fetch changes up to 26de9c26bf8557584c1977da92f3ed1b752291cf:
 
-Thanks for digging through this and for the explanation!
+  Update SmPL/Coccinelle section of MAINTAINERS (2012-10-11 15:20:03 +0200)
 
-Christian.
--- 
-BOFH excuse #398:
+----------------------------------------------------------------
+Dan Luedtke (1):
+      scripts/kernel-doc: added support for html5
 
-Data for intranet got routed through the extranet and landed on the internet.
+Julia Lawall (1):
+      scripts/coccinelle/tests/odd_ptr_err.cocci: semantic patch for IS_ERR/PTR_ERR inconsistency
+
+Kirill Tkhai (1):
+      scripts/tags.sh: Add magic for pci access functions
+
+Lars-Peter Clausen (1):
+      scripts/coccinelle: ptr_ret: Add ternary operator version
+
+Nicolas Palix (2):
+      coccicheck: Add the rep+ctxt mode
+      Update SmPL/Coccinelle section of MAINTAINERS
+
+Randy Dunlap (1):
+      scripts/kernel-doc: drop maintainer
+
+ MAINTAINERS                                |   11 +-
+ scripts/coccicheck                         |    3 +
+ scripts/coccinelle/api/ptr_ret.cocci       |   26 +++
+ scripts/coccinelle/tests/odd_ptr_err.cocci |   65 +++++++
+ scripts/kernel-doc                         |  273 +++++++++++++++++++++++++++-
+ scripts/tags.sh                            |    8 +-
+ 6 files changed, 369 insertions(+), 17 deletions(-)
+ create mode 100644 scripts/coccinelle/tests/odd_ptr_err.cocci
