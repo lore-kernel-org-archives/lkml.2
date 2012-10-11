@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759487Ab2JKV6Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 17:58:25 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:26885 "EHLO
+	id S1756659Ab2JKV7e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 17:59:34 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27405 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759246Ab2JKV6X (ORCPT
+	with ESMTP id S1756400Ab2JKV7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 17:58:23 -0400
-Date: Thu, 11 Oct 2012 14:58:17 -0700
+	Thu, 11 Oct 2012 17:59:33 -0400
+Date: Thu, 11 Oct 2012 14:59:27 -0700
 From: Mukesh Rathor <mukesh.rathor@oracle.com>
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH V2 3/7]: PVH:  mmu related changes.
-Message-ID: <20121011145817.0d744c99@mantra.us.oracle.com>
+Subject: [PATCH V2 4/7]: PVH: bootup and setup related changes.
+Message-ID: <20121011145927.3e740233@mantra.us.oracle.com>
 Organization: Oracle Corporation
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
@@ -24,346 +24,321 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PVH: This patch implements mmu changes for PVH. First the set/clear
-mmio pte function makes a hypercall to update the p2m in xen with 1:1
-mapping. PVH uses mostly native mmu ops. Two local functions are
-introduced to add to xen physmap for xen remap interface. xen unmap
-interface is introduced so the privcmd pte entries can be cleared in
-xen p2m table.
+PVH: bootup and setup related changes. enlighten.c: for PVH we can trap
+cpuid via vmexit, so don't need to use emulated prefix call. Check for
+vector callback early on, as it is a required feature. PVH runs at
+default kernel iopl. setup.c: in xen_add_extra_mem() we can skip
+updating p2m as it's managed by xen. PVH maps the entire IO space, but
+only RAM pages need to be repopulated. Finally, pure PV settings are
+moved to a separate function that is only called for pure pv, ie, pv
+with pvmmu.
 
 Signed-off-by: Mukesh R <mukesh.rathor@oracle.com>
 ---
- arch/x86/xen/mmu.c    |  172 ++++++++++++++++++++++++++++++++++++++++++++++---
- arch/x86/xen/mmu.h    |    2 +
- drivers/xen/privcmd.c |    5 +-
- include/xen/xen-ops.h |    4 +-
- 4 files changed, 171 insertions(+), 12 deletions(-)
+ arch/x86/xen/enlighten.c |   78 ++++++++++++++++++++++++++++++++++------------
+ arch/x86/xen/setup.c     |   64 ++++++++++++++++++++++++++++++-------
+ 2 files changed, 110 insertions(+), 32 deletions(-)
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 5a16824..12b56a0 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -73,6 +73,7 @@
- #include <xen/interface/version.h>
- #include <xen/interface/memory.h>
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 2d932c3..5199258 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -44,6 +44,7 @@
+ #include <xen/hvm.h>
  #include <xen/hvc-console.h>
-+#include <xen/balloon.h>
+ #include <xen/acpi.h>
++#include <xen/features.h>
  
- #include "multicalls.h"
- #include "mmu.h"
-@@ -331,6 +332,20 @@ static void xen_set_pte(pte_t *ptep, pte_t pteval)
- 	__xen_set_pte(ptep, pteval);
- }
+ #include <asm/paravirt.h>
+ #include <asm/apic.h>
+@@ -106,6 +107,9 @@ RESERVE_BRK(shared_info_page_brk, PAGE_SIZE);
+ __read_mostly int xen_have_vector_callback;
+ EXPORT_SYMBOL_GPL(xen_have_vector_callback);
  
-+void xen_set_clr_mmio_pvh_pte(unsigned long pfn, unsigned long mfn,
-+			      int nr_mfns, int add_mapping)
-+{
-+	struct physdev_map_iomem iomem;
-+
-+	iomem.first_gfn = pfn;
-+	iomem.first_mfn = mfn;
-+	iomem.nr_mfns = nr_mfns;
-+	iomem.add_mapping = add_mapping;
-+
-+	if (HYPERVISOR_physdev_op(PHYSDEVOP_pvh_map_iomem, &iomem))
-+		BUG();
-+}
-+
- static void xen_set_pte_at(struct mm_struct *mm, unsigned long addr,
- 		    pte_t *ptep, pte_t pteval)
- {
-@@ -1220,6 +1235,8 @@ static void __init xen_pagetable_init(void)
- #endif
- 	paging_init();
- 	xen_setup_shared_info();
-+	if (xen_feature(XENFEAT_auto_translated_physmap))
-+		return;
- #ifdef CONFIG_X86_64
- 	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
- 		unsigned long new_mfn_list;
-@@ -1527,6 +1544,10 @@ static void __init xen_set_pte_init(pte_t *ptep, pte_t pte)
- static void pin_pagetable_pfn(unsigned cmd, unsigned long pfn)
- {
- 	struct mmuext_op op;
-+
-+	if (xen_feature(XENFEAT_writable_page_tables))
-+		return;
-+
- 	op.cmd = cmd;
- 	op.arg1.mfn = pfn_to_mfn(pfn);
- 	if (HYPERVISOR_mmuext_op(&op, 1, NULL, DOMID_SELF))
-@@ -1724,6 +1745,10 @@ static void set_page_prot(void *addr, pgprot_t prot)
- 	unsigned long pfn = __pa(addr) >> PAGE_SHIFT;
- 	pte_t pte = pfn_pte(pfn, prot);
- 
-+	/* recall for PVH, page tables are native. */
-+	if (xen_feature(XENFEAT_auto_translated_physmap))
-+		return;
-+
- 	if (HYPERVISOR_update_va_mapping((unsigned long)addr, pte, 0))
- 		BUG();
- }
-@@ -1801,6 +1826,9 @@ static void convert_pfn_mfn(void *v)
- 	pte_t *pte = v;
- 	int i;
- 
-+	if (xen_feature(XENFEAT_auto_translated_physmap))
-+		return;
-+
- 	/* All levels are converted the same way, so just treat them
- 	   as ptes. */
- 	for (i = 0; i < PTRS_PER_PTE; i++)
-@@ -1820,6 +1848,7 @@ static void __init check_pt_base(unsigned long *pt_base, unsigned long *pt_end,
- 		(*pt_end)--;
- 	}
- }
-+
++#define xen_pvh_domain() (xen_pv_domain() && \
++			  xen_feature(XENFEAT_auto_translated_physmap) && \
++			  xen_have_vector_callback)
  /*
-  * Set up the initial kernel pagetable.
-  *
-@@ -1830,6 +1859,7 @@ static void __init check_pt_base(unsigned long *pt_base, unsigned long *pt_end,
-  * but that's enough to get __va working.  We need to fill in the rest
-  * of the physical mapping once some sort of allocator has been set
-  * up.
-+ * NOTE: for PVH, the page tables are native.
-  */
- void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
- {
-@@ -1907,10 +1937,13 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
- 	 * structure to attach it to, so make sure we just set kernel
- 	 * pgd.
- 	 */
--	xen_mc_batch();
--	__xen_write_cr3(true, __pa(init_level4_pgt));
--	xen_mc_issue(PARAVIRT_LAZY_CPU);
--
-+	if (xen_feature(XENFEAT_writable_page_tables)) {
-+		native_write_cr3(__pa(init_level4_pgt));
-+	} else {
-+		xen_mc_batch();
-+		__xen_write_cr3(true, __pa(init_level4_pgt));
-+		xen_mc_issue(PARAVIRT_LAZY_CPU);
-+	}
- 	/* We can't that easily rip out L3 and L2, as the Xen pagetables are
- 	 * set out this way: [L4], [L1], [L2], [L3], [L1], [L1] ...  for
- 	 * the initial domain. For guests using the toolstack, they are in:
-@@ -2177,8 +2210,19 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
+  * Point at some empty memory to start with. We map the real shared_info
+  * page as soon as fixmap is up and running.
+@@ -218,8 +222,9 @@ static void __init xen_banner(void)
+ 	struct xen_extraversion extra;
+ 	HYPERVISOR_xen_version(XENVER_extraversion, &extra);
  
- void __init xen_init_mmu_ops(void)
+-	printk(KERN_INFO "Booting paravirtualized kernel on %s\n",
+-	       pv_info.name);
++	pr_info("Booting paravirtualized kernel %son %s\n",
++		xen_feature(XENFEAT_auto_translated_physmap) ?
++			"with PVH extensions " : "", pv_info.name);
+ 	printk(KERN_INFO "Xen version: %d.%d%s%s\n",
+ 	       version >> 16, version & 0xffff, extra.extraversion,
+ 	       xen_feature(XENFEAT_mmu_pt_update_preserve_ad) ? " (preserve-AD)" : "");
+@@ -272,12 +277,15 @@ static void xen_cpuid(unsigned int *ax, unsigned int *bx,
+ 		break;
+ 	}
+ 
+-	asm(XEN_EMULATE_PREFIX "cpuid"
+-		: "=a" (*ax),
+-		  "=b" (*bx),
+-		  "=c" (*cx),
+-		  "=d" (*dx)
+-		: "0" (*ax), "2" (*cx));
++	if (xen_pvh_domain())
++		native_cpuid(ax, bx, cx, dx);
++	else
++		asm(XEN_EMULATE_PREFIX "cpuid"
++			: "=a" (*ax),
++			"=b" (*bx),
++			"=c" (*cx),
++			"=d" (*dx)
++			: "0" (*ax), "2" (*cx));
+ 
+ 	*bx &= maskebx;
+ 	*cx &= maskecx;
+@@ -1045,6 +1053,10 @@ void xen_setup_shared_info(void)
+ 		HYPERVISOR_shared_info =
+ 			(struct shared_info *)__va(xen_start_info->shared_info);
+ 
++	/* PVH TBD/FIXME: vcpu info placement in phase 2 */
++	if (xen_pvh_domain())
++		return;
++
+ #ifndef CONFIG_SMP
+ 	/* In UP this is as good a place as any to set up shared info */
+ 	xen_setup_vcpu_info_placement();
+@@ -1275,6 +1287,11 @@ static const struct machine_ops xen_machine_ops __initconst = {
+  */
+ static void __init xen_setup_stackprotector(void)
  {
--	x86_init.mapping.pagetable_reserve = xen_mapping_pagetable_reserve;
- 	x86_init.paging.pagetable_init = xen_pagetable_init;
-+
++	/* PVH TBD/FIXME: investigate setup_stack_canary_segment */
 +	if (xen_feature(XENFEAT_auto_translated_physmap)) {
-+		pv_mmu_ops.flush_tlb_others = xen_flush_tlb_others;
-+
-+		/* For PCI devices to map iomem. */
-+		if (xen_initial_domain()) {
-+			pv_mmu_ops.set_pte = native_set_pte;
-+			pv_mmu_ops.set_pte_at = native_set_pte_at;
-+		}
++		switch_to_new_gdt(0);
 +		return;
 +	}
-+	x86_init.mapping.pagetable_reserve = xen_mapping_pagetable_reserve;
- 	pv_mmu_ops = xen_mmu_ops;
+ 	pv_cpu_ops.write_gdt_entry = xen_write_gdt_entry_boot;
+ 	pv_cpu_ops.load_gdt = xen_load_gdt_boot;
  
- 	memset(dummy_mapping, 0xff, PAGE_SIZE);
-@@ -2414,6 +2458,87 @@ void __init xen_hvm_init_mmu_ops(void)
+@@ -1285,6 +1302,19 @@ static void __init xen_setup_stackprotector(void)
+ 	pv_cpu_ops.load_gdt = xen_load_gdt;
  }
- #endif
  
-+/* Map foreign gmfn, fgmfn, to local pfn, lpfn. This for the user space
-+ * creating new guest on PVH dom0 and needs to map domU pages.
-+ */
-+static int pvh_add_to_xen_p2m(unsigned long lpfn, unsigned long fgmfn,
-+			      unsigned int domid)
++static void __init xen_pvh_early_guest_init(void)
 +{
-+	int rc;
-+	struct xen_add_to_physmap xatp = { .u.foreign_domid = domid };
++	if (xen_feature(XENFEAT_hvm_callback_vector))
++		xen_have_vector_callback = 1;
 +
-+	xatp.gpfn = lpfn;
-+	xatp.idx = fgmfn;
-+	xatp.domid = DOMID_SELF;
-+	xatp.space = XENMAPSPACE_gmfn_foreign;
-+	rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp);
-+	if (rc)
-+		pr_warn("d0: Failed to map pfn (0x%lx) to mfn (0x%lx) rc:%d\n",
-+			lpfn, fgmfn, rc);
-+	return rc;
-+}
-+
-+static int pvh_rem_xen_p2m(unsigned long spfn, int count)
-+{
-+	struct xen_remove_from_physmap xrp;
-+	int i, rc;
-+
-+	for (i = 0; i < count; i++) {
-+		xrp.domid = DOMID_SELF;
-+		xrp.gpfn = spfn+i;
-+		rc = HYPERVISOR_memory_op(XENMEM_remove_from_physmap, &xrp);
-+		if (rc) {
-+			pr_warn("Failed to unmap pfn:%lx rc:%d done:%d\n",
-+				spfn+i, rc, i);
-+			return 1;
-+		}
-+	}
-+	return 0;
-+}
-+
-+struct pvh_remap_data {
-+	unsigned long fgmfn;		/* foreign domain's gmfn */
-+	pgprot_t prot;
-+	domid_t  domid;
-+	int	 index;
-+	struct page **pages;
-+};
-+
-+static int pvh_map_pte_fn(pte_t *ptep, pgtable_t token, unsigned long addr,
-+			void *data)
-+{
-+	int rc;
-+	struct pvh_remap_data *remap = data;
-+	unsigned long pfn = page_to_pfn(remap->pages[remap->index++]);
-+	pte_t pteval = pte_mkspecial(pfn_pte(pfn, remap->prot));
-+
-+	rc = pvh_add_to_xen_p2m(pfn, remap->fgmfn, remap->domid);
-+	if (rc)
-+		return rc;
-+	native_set_pte(ptep, pteval);
-+
-+	return 0;
-+}
-+
-+static int pvh_remap_gmfn_range(struct vm_area_struct *vma,
-+				unsigned long addr, unsigned long mfn, int nr,
-+				pgprot_t prot, unsigned domid,
-+				struct page **pages)
-+{
-+	int err;
-+	struct pvh_remap_data pvhdata;
-+
-+	pvhdata.fgmfn = mfn;
-+	pvhdata.prot = prot;
-+	pvhdata.domid = domid;
-+	pvhdata.index = 0;
-+	pvhdata.pages = pages;
-+	err = apply_to_page_range(vma->vm_mm, addr, nr << PAGE_SHIFT,
-+				  pvh_map_pte_fn, &pvhdata);
-+	flush_tlb_all();
-+	return err;
-+}
-+
- #define REMAP_BATCH_SIZE 16
- 
- struct remap_data {
-@@ -2438,7 +2563,9 @@ static int remap_area_mfn_pte_fn(pte_t *ptep, pgtable_t token,
- int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
- 			       unsigned long addr,
- 			       unsigned long mfn, int nr,
--			       pgprot_t prot, unsigned domid)
-+			       pgprot_t prot, unsigned domid,
-+			       struct page **pages)
-+
- {
- 	struct remap_data rmd;
- 	struct mmu_update mmu_update[REMAP_BATCH_SIZE];
-@@ -2446,14 +2573,17 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
- 	unsigned long range;
- 	int err = 0;
- 
--	if (xen_feature(XENFEAT_auto_translated_physmap))
--		return -EINVAL;
--
- 	prot = __pgprot(pgprot_val(prot) | _PAGE_IOMAP);
- 
- 	BUG_ON(!((vma->vm_flags & (VM_PFNMAP | VM_RESERVED | VM_IO)) ==
- 				(VM_PFNMAP | VM_RESERVED | VM_IO)));
- 
++#ifdef CONFIG_X86_32
 +	if (xen_feature(XENFEAT_auto_translated_physmap)) {
-+		/* We need to update the local page tables and the xen HAP */
-+		return pvh_remap_gmfn_range(vma, addr, mfn, nr, prot, domid,
-+					    pages);
++		xen_raw_printk("ERROR: 32bit PVH guests are not supported\n");
++		BUG();
 +	}
-+
- 	rmd.mfn = mfn;
- 	rmd.prot = prot;
- 
-@@ -2483,3 +2613,27 @@ out:
- 	return err;
- }
- EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
-+
-+/* Returns: 0 success */
-+int xen_unmap_domain_mfn_range(struct vm_area_struct *vma)
-+{
-+	int numpgs = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
-+	struct page **pages = vma ? vma->vm_private_data : NULL;
-+
-+	if (!pages || !xen_feature(XENFEAT_auto_translated_physmap))
-+		return 0;
-+
-+	while (numpgs--) {
-+
-+		/* the mmu has already cleaned up the process mmu resources at
-+		 * this point (lookup_address will return NULL). */
-+		unsigned long pfn = page_to_pfn(pages[numpgs]);
-+
-+		pvh_rem_xen_p2m(pfn, 1);
-+	}
-+	/* We don't need to flush tlbs because as part of pvh_rem_xen_p2m(),
-+	 * the hypervisor will do tlb flushes after removing the p2m entries
-+	 * from the EPT/NPT */
-+	return 0;
++#endif
 +}
-+EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
-diff --git a/arch/x86/xen/mmu.h b/arch/x86/xen/mmu.h
-index 73809bb..6d0bb56 100644
---- a/arch/x86/xen/mmu.h
-+++ b/arch/x86/xen/mmu.h
-@@ -23,4 +23,6 @@ unsigned long xen_read_cr2_direct(void);
++
+ /* First C function to be called on Xen boot */
+ asmlinkage void __init xen_start_kernel(void)
+ {
+@@ -1296,13 +1326,18 @@ asmlinkage void __init xen_start_kernel(void)
  
- extern void xen_init_mmu_ops(void);
- extern void xen_hvm_init_mmu_ops(void);
-+extern void xen_set_clr_mmio_pvh_pte(unsigned long pfn, unsigned long mfn,
-+				     int nr_mfns, int add_mapping);
- #endif	/* _XEN_MMU_H */
-diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
-index ef63895..63d9ee8 100644
---- a/drivers/xen/privcmd.c
-+++ b/drivers/xen/privcmd.c
-@@ -178,7 +178,7 @@ static int mmap_mfn_range(void *data, void *state)
- 					msg->va & PAGE_MASK,
- 					msg->mfn, msg->npages,
- 					vma->vm_page_prot,
--					st->domain);
-+					st->domain, NULL);
- 	if (rc < 0)
- 		return rc;
+ 	xen_domain_type = XEN_PV_DOMAIN;
  
-@@ -267,7 +267,8 @@ static int mmap_batch_fn(void *data, void *state)
++	xen_setup_features();
++	xen_pvh_early_guest_init();
+ 	xen_setup_machphys_mapping();
+ 
+ 	/* Install Xen paravirt ops */
+ 	pv_info = xen_info;
+ 	pv_init_ops = xen_init_ops;
+-	pv_cpu_ops = xen_cpu_ops;
+ 	pv_apic_ops = xen_apic_ops;
++	if (xen_pvh_domain())
++		pv_cpu_ops.cpuid = xen_cpuid;
++	else
++		pv_cpu_ops = xen_cpu_ops;
+ 
+ 	x86_init.resources.memory_setup = xen_memory_setup;
+ 	x86_init.oem.arch_setup = xen_arch_setup;
+@@ -1334,8 +1369,6 @@ asmlinkage void __init xen_start_kernel(void)
+ 	/* Work out if we support NX */
+ 	x86_configure_nx();
+ 
+-	xen_setup_features();
+-
+ 	/* Get mfn list */
+ 	if (!xen_feature(XENFEAT_auto_translated_physmap))
+ 		xen_build_dynamic_phys_to_machine();
+@@ -1406,14 +1439,18 @@ asmlinkage void __init xen_start_kernel(void)
+ 	/* set the limit of our address space */
+ 	xen_reserve_top();
+ 
+-	/* We used to do this in xen_arch_setup, but that is too late on AMD
+-	 * were early_cpu_init (run before ->arch_setup()) calls early_amd_init
+-	 * which pokes 0xcf8 port.
+-	 */
+-	set_iopl.iopl = 1;
+-	rc = HYPERVISOR_physdev_op(PHYSDEVOP_set_iopl, &set_iopl);
+-	if (rc != 0)
+-		xen_raw_printk("physdev_op failed %d\n", rc);
++	/* PVH: runs at default kernel iopl of 0 */
++	if (!xen_pvh_domain()) {
++		/*
++		 * We used to do this in xen_arch_setup, but that is too late
++		 * on AMD were early_cpu_init (run before ->arch_setup()) calls
++		 * early_amd_init which pokes 0xcf8 port.
++		 */
++		set_iopl.iopl = 1;
++		rc = HYPERVISOR_physdev_op(PHYSDEVOP_set_iopl, &set_iopl);
++		if (rc != 0)
++			xen_raw_printk("physdev_op failed %d\n", rc);
++	}
+ 
+ #ifdef CONFIG_X86_32
+ 	/* set up basic CPUID stuff */
+@@ -1479,7 +1516,8 @@ asmlinkage void __init xen_start_kernel(void)
+ 	x86_64_start_reservations((char *)__pa_symbol(&boot_params));
+ #endif
+ }
+-
++/* Use a pfn in RAM, may move to MMIO before kexec.
++ * This function also called for PVH dom0 */
+ void __ref xen_hvm_init_shared_info(void)
+ {
+ 	int cpu;
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index 8971a26..8cce47b 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -27,6 +27,7 @@
+ #include <xen/interface/memory.h>
+ #include <xen/interface/physdev.h>
+ #include <xen/features.h>
++#include "mmu.h"
+ #include "xen-ops.h"
+ #include "vdso.h"
+ 
+@@ -78,6 +79,9 @@ static void __init xen_add_extra_mem(u64 start, u64 size)
+ 
+ 	memblock_reserve(start, size);
+ 
++	if (xen_feature(XENFEAT_auto_translated_physmap))
++		return;
++
+ 	xen_max_p2m_pfn = PFN_DOWN(start + size);
+ 	for (pfn = PFN_DOWN(start); pfn < xen_max_p2m_pfn; pfn++) {
+ 		unsigned long mfn = pfn_to_mfn(pfn);
+@@ -100,6 +104,7 @@ static unsigned long __init xen_do_chunk(unsigned long start,
+ 		.domid        = DOMID_SELF
+ 	};
+ 	unsigned long len = 0;
++	int xlated_phys = xen_feature(XENFEAT_auto_translated_physmap);
+ 	unsigned long pfn;
  	int ret;
  
- 	ret = xen_remap_domain_mfn_range(st->vma, st->va & PAGE_MASK, *mfnp, 1,
--					 st->vma->vm_page_prot, st->domain);
-+					 st->vma->vm_page_prot, st->domain,
-+					 NULL);
+@@ -113,7 +118,7 @@ static unsigned long __init xen_do_chunk(unsigned long start,
+ 				continue;
+ 			frame = mfn;
+ 		} else {
+-			if (mfn != INVALID_P2M_ENTRY)
++			if (!xlated_phys && mfn != INVALID_P2M_ENTRY)
+ 				continue;
+ 			frame = pfn;
+ 		}
+@@ -230,6 +235,27 @@ static void __init xen_set_identity_and_release_chunk(
+ 	*identity += set_phys_range_identity(start_pfn, end_pfn);
+ }
  
- 	/* Store error code for second pass. */
- 	*(st->err++) = ret;
-diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
-index 6a198e4..8b24315 100644
---- a/include/xen/xen-ops.h
-+++ b/include/xen/xen-ops.h
-@@ -27,6 +27,8 @@ struct vm_area_struct;
- int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
- 			       unsigned long addr,
- 			       unsigned long mfn, int nr,
--			       pgprot_t prot, unsigned domid);
-+			       pgprot_t prot, unsigned domid,
-+			       struct page **pages);
-+int xen_unmap_domain_mfn_range(struct vm_area_struct *vma);
++/* For PVH, the pfns [0..MAX] are mapped to mfn's in the EPT/NPT. The mfns
++ * are released as part of this 1:1 mapping hypercall back to the dom heap.
++ * Also, we map the entire IO space, ie, beyond max_pfn_mapped.
++ */
++static void __init xen_pvh_identity_map_chunk(unsigned long start_pfn,
++		unsigned long end_pfn, unsigned long *released,
++		unsigned long *identity, unsigned long max_pfn)
++{
++	unsigned long pfn;
++	int numpfns = 1, add_mapping = 1;
++
++	for (pfn = start_pfn; pfn < end_pfn; pfn++)
++		xen_set_clr_mmio_pvh_pte(pfn, pfn, numpfns, add_mapping);
++
++	if (start_pfn <= max_pfn) {
++		unsigned long end = min(max_pfn_mapped, end_pfn);
++		*released += end - start_pfn;
++	}
++	*identity += end_pfn - start_pfn;
++}
++
+ static unsigned long __init xen_set_identity_and_release(
+ 	const struct e820entry *list, size_t map_size, unsigned long nr_pages)
+ {
+@@ -238,6 +264,7 @@ static unsigned long __init xen_set_identity_and_release(
+ 	unsigned long identity = 0;
+ 	const struct e820entry *entry;
+ 	int i;
++	int xlated_phys = xen_feature(XENFEAT_auto_translated_physmap);
  
- #endif /* INCLUDE_XEN_OPS_H */
+ 	/*
+ 	 * Combine non-RAM regions and gaps until a RAM region (or the
+@@ -259,11 +286,17 @@ static unsigned long __init xen_set_identity_and_release(
+ 			if (entry->type == E820_RAM)
+ 				end_pfn = PFN_UP(entry->addr);
+ 
+-			if (start_pfn < end_pfn)
+-				xen_set_identity_and_release_chunk(
+-					start_pfn, end_pfn, nr_pages,
+-					&released, &identity);
+-
++			if (start_pfn < end_pfn) {
++				if (xlated_phys) {
++					xen_pvh_identity_map_chunk(start_pfn,
++						end_pfn, &released, &identity,
++						nr_pages);
++				} else {
++					xen_set_identity_and_release_chunk(
++						start_pfn, end_pfn, nr_pages,
++						&released, &identity);
++				}
++			}
+ 			start = end;
+ 		}
+ 	}
+@@ -526,16 +559,14 @@ void __cpuinit xen_enable_syscall(void)
+ #endif /* CONFIG_X86_64 */
+ }
+ 
+-void __init xen_arch_setup(void)
++/* Non auto translated PV domain, ie, it's not PVH. */
++static __init void xen_pvmmu_arch_setup(void)
+ {
+-	xen_panic_handler_init();
+-
+ 	HYPERVISOR_vm_assist(VMASST_CMD_enable, VMASST_TYPE_4gb_segments);
+ 	HYPERVISOR_vm_assist(VMASST_CMD_enable, VMASST_TYPE_writable_pagetables);
+ 
+-	if (!xen_feature(XENFEAT_auto_translated_physmap))
+-		HYPERVISOR_vm_assist(VMASST_CMD_enable,
+-				     VMASST_TYPE_pae_extended_cr3);
++	HYPERVISOR_vm_assist(VMASST_CMD_enable,
++			     VMASST_TYPE_pae_extended_cr3);
+ 
+ 	if (register_callback(CALLBACKTYPE_event, xen_hypervisor_callback) ||
+ 	    register_callback(CALLBACKTYPE_failsafe, xen_failsafe_callback))
+@@ -543,6 +574,15 @@ void __init xen_arch_setup(void)
+ 
+ 	xen_enable_sysenter();
+ 	xen_enable_syscall();
++}
++
++/* This function not called for HVM domain */
++void __init xen_arch_setup(void)
++{
++	xen_panic_handler_init();
++
++	if (!xen_feature(XENFEAT_auto_translated_physmap))
++		xen_pvmmu_arch_setup();
+ 
+ #ifdef CONFIG_ACPI
+ 	if (!(xen_start_info->flags & SIF_INITDOMAIN)) {
 -- 
 1.7.2.3
 
