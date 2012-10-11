@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab2JKFhW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 01:37:22 -0400
-Received: from mga09.intel.com ([134.134.136.24]:14103 "EHLO mga09.intel.com"
+	id S1755539Ab2JKFhd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 01:37:33 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61046 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750739Ab2JKFhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 01:37:21 -0400
+	id S1753980Ab2JKFh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 01:37:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,570,1344236400"; 
-   d="scan'208";a="204195334"
+   d="scan'208";a="204195384"
 From: ling.ma@intel.com
 To: mingo@elte.hu
 Cc: hpa@zytor.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
         Ma Ling <ling.ma@intel.com>
-Subject: [PATCH RFC 1/2] [x86] Modify comments and clean up code.
-Date: Thu, 11 Oct 2012 20:28:44 +0800
-Message-Id: <1349958524-1837-1-git-send-email-ling.ma@intel.com>
+Subject: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging instruction sequence and saving register
+Date: Thu, 11 Oct 2012 20:29:08 +0800
+Message-Id: <1349958548-1868-1-git-send-email-ling.ma@intel.com>
 X-Mailer: git-send-email 1.6.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,178 +23,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ma Ling <ling.ma@intel.com>
 
-Modern CPU use fast-string instruction to accelerate copy performance,
-by combining data into 128bit, so we modify comments and code style.
+Load and write operation occupy about 35% and 10% respectively
+for most industry benchmarks. Fetched 16-aligned bytes code include 
+about 4 instructions, implying 1.34(0.35 * 4) load, 0.4 write.  
+Modern CPU support 2 load and 1 write per cycle, so throughput from write is
+bottleneck for memcpy or copy_page, and some slight CPU only support one mem
+operation per cycle. So it is enough to issue one read and write instruction
+per cycle, and we can save registers. 
+
+In this patch we also re-arrange instruction sequence to improve performance
+The performance on atom is improved about 11%, 9% on hot/cold-cache case respectively.
 
 Signed-off-by: Ma Ling <ling.ma@intel.com>
 
 ---
- arch/x86/lib/copy_page_64.S |  119 +++++++++++++++++++++----------------------
- 1 files changed, 59 insertions(+), 60 deletions(-)
+ arch/x86/lib/copy_page_64.S |  103 +++++++++++++++++-------------------------
+ 1 files changed, 42 insertions(+), 61 deletions(-)
 
 diff --git a/arch/x86/lib/copy_page_64.S b/arch/x86/lib/copy_page_64.S
-index 6b34d04..3da5527 100644
+index 3da5527..13c97f4 100644
 --- a/arch/x86/lib/copy_page_64.S
 +++ b/arch/x86/lib/copy_page_64.S
-@@ -5,91 +5,90 @@
- #include <asm/alternative-asm.h>
- 
- 	ALIGN
--copy_page_c:
-+copy_page_rep:
- 	CFI_STARTPROC
--	movl $4096/8,%ecx
--	rep movsq
-+	movl	$4096/8, %ecx
-+	rep	movsq
- 	ret
- 	CFI_ENDPROC
--ENDPROC(copy_page_c)
-+ENDPROC(copy_page_rep)
- 
--/* Don't use streaming store because it's better when the target
--   ends up in cache. */
--	    
--/* Could vary the prefetch distance based on SMP/UP */
-+/*
-+   Don't use streaming copy unless cpu indicate X86_FEATURE_REP_GOOD
-+   Could vary the prefetch distance based on SMP/UP
-+*/
+@@ -20,76 +20,57 @@ ENDPROC(copy_page_rep)
  
  ENTRY(copy_page)
  	CFI_STARTPROC
--	subq	$2*8,%rsp
-+	subq	$2*8,	%rsp
- 	CFI_ADJUST_CFA_OFFSET 2*8
--	movq	%rbx,(%rsp)
-+	movq	%rbx,	(%rsp)
- 	CFI_REL_OFFSET rbx, 0
--	movq	%r12,1*8(%rsp)
-+	movq	%r12,	1*8(%rsp)
- 	CFI_REL_OFFSET r12, 1*8
+-	subq	$2*8,	%rsp
+-	CFI_ADJUST_CFA_OFFSET 2*8
+-	movq	%rbx,	(%rsp)
+-	CFI_REL_OFFSET rbx, 0
+-	movq	%r12,	1*8(%rsp)
+-	CFI_REL_OFFSET r12, 1*8
++	mov	$(4096/64)-5, %ecx
  
--	movl	$(4096/64)-5,%ecx
-+	movl	$(4096/64)-5,	%ecx
- 	.p2align 4
+-	movl	$(4096/64)-5,	%ecx
+-	.p2align 4
  .Loop64:
--  	dec     %rcx
-+  	dec	%rcx
- 
--	movq        (%rsi), %rax
--	movq      8 (%rsi), %rbx
--	movq     16 (%rsi), %rdx
--	movq     24 (%rsi), %r8
--	movq     32 (%rsi), %r9
--	movq     40 (%rsi), %r10
--	movq     48 (%rsi), %r11
--	movq     56 (%rsi), %r12
-+	movq	0x8*0(%rsi), %rax
-+	movq	0x8*1(%rsi), %rbx
-+	movq	0x8*2(%rsi), %rdx
-+	movq	0x8*3(%rsi), %r8
-+	movq	0x8*4(%rsi), %r9
-+	movq	0x8*5(%rsi), %r10
-+	movq	0x8*6(%rsi), %r11
-+	movq	0x8*7(%rsi), %r12
- 
+-  	dec	%rcx
+-
+-	movq	0x8*0(%rsi), %rax
+-	movq	0x8*1(%rsi), %rbx
+-	movq	0x8*2(%rsi), %rdx
+-	movq	0x8*3(%rsi), %r8
+-	movq	0x8*4(%rsi), %r9
+-	movq	0x8*5(%rsi), %r10
+-	movq	0x8*6(%rsi), %r11
+-	movq	0x8*7(%rsi), %r12
+-
  	prefetcht0 5*64(%rsi)
- 
--	movq     %rax,    (%rdi)
--	movq     %rbx,  8 (%rdi)
--	movq     %rdx, 16 (%rdi)
--	movq     %r8,  24 (%rdi)
--	movq     %r9,  32 (%rdi)
--	movq     %r10, 40 (%rdi)
--	movq     %r11, 48 (%rdi)
--	movq     %r12, 56 (%rdi)
-+	movq	%rax, 0x8*0(%rdi)
-+	movq	%rbx, 0x8*1(%rdi)
-+	movq	%rdx, 0x8*2(%rdi)
-+	movq	%r8,  0x8*3(%rdi)
-+	movq	%r9,  0x8*4(%rdi)
-+	movq	%r10, 0x8*5(%rdi)
-+	movq	%r11, 0x8*6(%rdi)
-+	movq	%r12, 0x8*7(%rdi)
- 
--	leaq    64 (%rsi), %rsi
--	leaq    64 (%rdi), %rdi
-+	leaq	64 (%rsi), %rsi
-+	leaq	64 (%rdi), %rdi
- 
--	jnz     .Loop64
-+	jnz	.Loop64
- 
--	movl	$5,%ecx
-+	movl	$5, %ecx
- 	.p2align 4
- .Loop2:
--	decl   %ecx
 -
--	movq        (%rsi), %rax
--	movq      8 (%rsi), %rbx
--	movq     16 (%rsi), %rdx
--	movq     24 (%rsi), %r8
--	movq     32 (%rsi), %r9
--	movq     40 (%rsi), %r10
--	movq     48 (%rsi), %r11
--	movq     56 (%rsi), %r12
+-	movq	%rax, 0x8*0(%rdi)
+-	movq	%rbx, 0x8*1(%rdi)
+-	movq	%rdx, 0x8*2(%rdi)
+-	movq	%r8,  0x8*3(%rdi)
+-	movq	%r9,  0x8*4(%rdi)
+-	movq	%r10, 0x8*5(%rdi)
+-	movq	%r11, 0x8*6(%rdi)
+-	movq	%r12, 0x8*7(%rdi)
 -
--	movq     %rax,    (%rdi)
--	movq     %rbx,  8 (%rdi)
--	movq     %rdx, 16 (%rdi)
--	movq     %r8,  24 (%rdi)
--	movq     %r9,  32 (%rdi)
--	movq     %r10, 40 (%rdi)
--	movq     %r11, 48 (%rdi)
--	movq     %r12, 56 (%rdi)
+-	leaq	64 (%rsi), %rsi
+-	leaq	64 (%rdi), %rdi
 -
--	leaq	64(%rdi),%rdi
--	leaq	64(%rsi),%rsi
--
-+	decl	%ecx
++	decb	%cl
 +
-+	movq	0x8*0(%rsi), %rax
-+	movq	0x8*1(%rsi), %rbx
-+	movq	0x8*2(%rsi), %rdx
-+	movq	0x8*3(%rsi), %r8
-+	movq	0x8*4(%rsi), %r9
-+	movq	0x8*5(%rsi), %r10
-+	movq	0x8*6(%rsi), %r11
-+	movq	0x8*7(%rsi), %r12
++	movq	0x8*0(%rsi), %r10
++	movq	0x8*1(%rsi), %rax
++	movq	0x8*2(%rsi), %r8
++	movq	0x8*3(%rsi), %r9
++	movq	%r10, 0x8*0(%rdi)
++	movq	%rax, 0x8*1(%rdi)
++	movq	%r8, 0x8*2(%rdi)
++	movq	%r9, 0x8*3(%rdi)
 +
-+	movq	%rax, 0x8*0(%rdi)
-+	movq	%rbx, 0x8*1(%rdi)
-+	movq	%rdx, 0x8*2(%rdi)
-+	movq	%r8,  0x8*3(%rdi)
-+	movq	%r9,  0x8*4(%rdi)
-+	movq	%r10, 0x8*5(%rdi)
-+	movq	%r11, 0x8*6(%rdi)
-+	movq	%r12, 0x8*7(%rdi)
-+
-+	leaq	64(%rdi), %rdi
++	movq	0x8*4(%rsi), %r10
++	movq	0x8*5(%rsi), %rax
++	movq	0x8*6(%rsi), %r8
++	movq	0x8*7(%rsi), %r9
 +	leaq	64(%rsi), %rsi
++	movq	%r10, 0x8*4(%rdi)
++	movq	%rax, 0x8*5(%rdi)
++	movq	%r8, 0x8*6(%rdi)
++	movq	%r9, 0x8*7(%rdi)
++	leaq	64(%rdi), %rdi
+ 	jnz	.Loop64
+ 
+-	movl	$5, %ecx
+-	.p2align 4
++	mov	$5, %dl
+ .Loop2:
+-	decl	%ecx
+-
+-	movq	0x8*0(%rsi), %rax
+-	movq	0x8*1(%rsi), %rbx
+-	movq	0x8*2(%rsi), %rdx
+-	movq	0x8*3(%rsi), %r8
+-	movq	0x8*4(%rsi), %r9
+-	movq	0x8*5(%rsi), %r10
+-	movq	0x8*6(%rsi), %r11
+-	movq	0x8*7(%rsi), %r12
+-
+-	movq	%rax, 0x8*0(%rdi)
+-	movq	%rbx, 0x8*1(%rdi)
+-	movq	%rdx, 0x8*2(%rdi)
+-	movq	%r8,  0x8*3(%rdi)
+-	movq	%r9,  0x8*4(%rdi)
+-	movq	%r10, 0x8*5(%rdi)
+-	movq	%r11, 0x8*6(%rdi)
+-	movq	%r12, 0x8*7(%rdi)
+-
+-	leaq	64(%rdi), %rdi
++	decb	%dl
++	movq	0x8*0(%rsi), %r10
++	movq	0x8*1(%rsi), %rax
++	movq	0x8*2(%rsi), %r8
++	movq	0x8*3(%rsi), %r9
++	movq	%r10, 0x8*0(%rdi)
++	movq	%rax, 0x8*1(%rdi)
++	movq	%r8, 0x8*2(%rdi)
++	movq	%r9, 0x8*3(%rdi)
++
++	movq	0x8*4(%rsi), %r10
++	movq	0x8*5(%rsi), %rax
++	movq	0x8*6(%rsi), %r8
++	movq	0x8*7(%rsi), %r9
+ 	leaq	64(%rsi), %rsi
++	movq	%r10, 0x8*4(%rdi)
++	movq	%rax, 0x8*5(%rdi)
++	movq	%r8, 0x8*6(%rdi)
++	movq	%r9, 0x8*7(%rdi)
++	leaq	64(%rdi), %rdi
  	jnz	.Loop2
  
--	movq	(%rsp),%rbx
-+	movq	(%rsp), %rbx
- 	CFI_RESTORE rbx
--	movq	1*8(%rsp),%r12
-+	movq	1*8(%rsp), %r12
- 	CFI_RESTORE r12
--	addq	$2*8,%rsp
-+	addq	$2*8, %rsp
- 	CFI_ADJUST_CFA_OFFSET -2*8
+-	movq	(%rsp), %rbx
+-	CFI_RESTORE rbx
+-	movq	1*8(%rsp), %r12
+-	CFI_RESTORE r12
+-	addq	$2*8, %rsp
+-	CFI_ADJUST_CFA_OFFSET -2*8
  	ret
  .Lcopy_page_end:
-@@ -103,7 +102,7 @@ ENDPROC(copy_page)
- 
- 	.section .altinstr_replacement,"ax"
- 1:	.byte 0xeb					/* jmp <disp8> */
--	.byte (copy_page_c - copy_page) - (2f - 1b)	/* offset */
-+	.byte (copy_page_rep - copy_page) - (2f - 1b)	/* offset */
- 2:
- 	.previous
- 	.section .altinstructions,"a"
+ 	CFI_ENDPROC
 -- 
 1.6.5.2
 
