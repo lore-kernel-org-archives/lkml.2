@@ -1,344 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756659Ab2JKV7e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 17:59:34 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:27405 "EHLO
+	id S1753732Ab2JKWA3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 18:00:29 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27818 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756400Ab2JKV7d (ORCPT
+	with ESMTP id S1751288Ab2JKWA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 17:59:33 -0400
-Date: Thu, 11 Oct 2012 14:59:27 -0700
+	Thu, 11 Oct 2012 18:00:26 -0400
+Date: Thu, 11 Oct 2012 15:00:19 -0700
 From: Mukesh Rathor <mukesh.rathor@oracle.com>
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH V2 4/7]: PVH: bootup and setup related changes.
-Message-ID: <20121011145927.3e740233@mantra.us.oracle.com>
+Subject: [PATCH V2 5/7]: PVH: smp changes.
+Message-ID: <20121011150019.07d2686f@mantra.us.oracle.com>
 Organization: Oracle Corporation
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PVH: bootup and setup related changes. enlighten.c: for PVH we can trap
-cpuid via vmexit, so don't need to use emulated prefix call. Check for
-vector callback early on, as it is a required feature. PVH runs at
-default kernel iopl. setup.c: in xen_add_extra_mem() we can skip
-updating p2m as it's managed by xen. PVH maps the entire IO space, but
-only RAM pages need to be repopulated. Finally, pure PV settings are
-moved to a separate function that is only called for pure pv, ie, pv
-with pvmmu.
+PVH: smp changes. This pertains to bringing up smp vcpus. PVH runs in
+ring 0, so syscalls are native. Also, the vcpu context is send down via
+the hcall to be set in the vmcs. gdtaddr and gdtsz are unionionized as
+PVH only needs to send these two to be set in the vmcs
 
 Signed-off-by: Mukesh R <mukesh.rathor@oracle.com>
 ---
- arch/x86/xen/enlighten.c |   78 ++++++++++++++++++++++++++++++++++------------
- arch/x86/xen/setup.c     |   64 ++++++++++++++++++++++++++++++-------
- 2 files changed, 110 insertions(+), 32 deletions(-)
+ arch/x86/xen/smp.c |   75 ++++++++++++++++++++++++++++++++++------------------
+ 1 files changed, 49 insertions(+), 26 deletions(-)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 2d932c3..5199258 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -44,6 +44,7 @@
- #include <xen/hvm.h>
- #include <xen/hvc-console.h>
- #include <xen/acpi.h>
-+#include <xen/features.h>
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index bd92698..63a0bfb 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -68,9 +68,11 @@ static void __cpuinit cpu_bringup(void)
+ 	touch_softlockup_watchdog();
+ 	preempt_disable();
  
- #include <asm/paravirt.h>
- #include <asm/apic.h>
-@@ -106,6 +107,9 @@ RESERVE_BRK(shared_info_page_brk, PAGE_SIZE);
- __read_mostly int xen_have_vector_callback;
- EXPORT_SYMBOL_GPL(xen_have_vector_callback);
- 
-+#define xen_pvh_domain() (xen_pv_domain() && \
-+			  xen_feature(XENFEAT_auto_translated_physmap) && \
-+			  xen_have_vector_callback)
- /*
-  * Point at some empty memory to start with. We map the real shared_info
-  * page as soon as fixmap is up and running.
-@@ -218,8 +222,9 @@ static void __init xen_banner(void)
- 	struct xen_extraversion extra;
- 	HYPERVISOR_xen_version(XENVER_extraversion, &extra);
- 
--	printk(KERN_INFO "Booting paravirtualized kernel on %s\n",
--	       pv_info.name);
-+	pr_info("Booting paravirtualized kernel %son %s\n",
-+		xen_feature(XENFEAT_auto_translated_physmap) ?
-+			"with PVH extensions " : "", pv_info.name);
- 	printk(KERN_INFO "Xen version: %d.%d%s%s\n",
- 	       version >> 16, version & 0xffff, extra.extraversion,
- 	       xen_feature(XENFEAT_mmu_pt_update_preserve_ad) ? " (preserve-AD)" : "");
-@@ -272,12 +277,15 @@ static void xen_cpuid(unsigned int *ax, unsigned int *bx,
- 		break;
- 	}
- 
--	asm(XEN_EMULATE_PREFIX "cpuid"
--		: "=a" (*ax),
--		  "=b" (*bx),
--		  "=c" (*cx),
--		  "=d" (*dx)
--		: "0" (*ax), "2" (*cx));
-+	if (xen_pvh_domain())
-+		native_cpuid(ax, bx, cx, dx);
-+	else
-+		asm(XEN_EMULATE_PREFIX "cpuid"
-+			: "=a" (*ax),
-+			"=b" (*bx),
-+			"=c" (*cx),
-+			"=d" (*dx)
-+			: "0" (*ax), "2" (*cx));
- 
- 	*bx &= maskebx;
- 	*cx &= maskecx;
-@@ -1045,6 +1053,10 @@ void xen_setup_shared_info(void)
- 		HYPERVISOR_shared_info =
- 			(struct shared_info *)__va(xen_start_info->shared_info);
- 
-+	/* PVH TBD/FIXME: vcpu info placement in phase 2 */
-+	if (xen_pvh_domain())
-+		return;
-+
- #ifndef CONFIG_SMP
- 	/* In UP this is as good a place as any to set up shared info */
- 	xen_setup_vcpu_info_placement();
-@@ -1275,6 +1287,11 @@ static const struct machine_ops xen_machine_ops __initconst = {
-  */
- static void __init xen_setup_stackprotector(void)
- {
-+	/* PVH TBD/FIXME: investigate setup_stack_canary_segment */
-+	if (xen_feature(XENFEAT_auto_translated_physmap)) {
-+		switch_to_new_gdt(0);
-+		return;
-+	}
- 	pv_cpu_ops.write_gdt_entry = xen_write_gdt_entry_boot;
- 	pv_cpu_ops.load_gdt = xen_load_gdt_boot;
- 
-@@ -1285,6 +1302,19 @@ static void __init xen_setup_stackprotector(void)
- 	pv_cpu_ops.load_gdt = xen_load_gdt;
- }
- 
-+static void __init xen_pvh_early_guest_init(void)
-+{
-+	if (xen_feature(XENFEAT_hvm_callback_vector))
-+		xen_have_vector_callback = 1;
-+
-+#ifdef CONFIG_X86_32
-+	if (xen_feature(XENFEAT_auto_translated_physmap)) {
-+		xen_raw_printk("ERROR: 32bit PVH guests are not supported\n");
-+		BUG();
-+	}
-+#endif
-+}
-+
- /* First C function to be called on Xen boot */
- asmlinkage void __init xen_start_kernel(void)
- {
-@@ -1296,13 +1326,18 @@ asmlinkage void __init xen_start_kernel(void)
- 
- 	xen_domain_type = XEN_PV_DOMAIN;
- 
-+	xen_setup_features();
-+	xen_pvh_early_guest_init();
- 	xen_setup_machphys_mapping();
- 
- 	/* Install Xen paravirt ops */
- 	pv_info = xen_info;
- 	pv_init_ops = xen_init_ops;
--	pv_cpu_ops = xen_cpu_ops;
- 	pv_apic_ops = xen_apic_ops;
-+	if (xen_pvh_domain())
-+		pv_cpu_ops.cpuid = xen_cpuid;
-+	else
-+		pv_cpu_ops = xen_cpu_ops;
- 
- 	x86_init.resources.memory_setup = xen_memory_setup;
- 	x86_init.oem.arch_setup = xen_arch_setup;
-@@ -1334,8 +1369,6 @@ asmlinkage void __init xen_start_kernel(void)
- 	/* Work out if we support NX */
- 	x86_configure_nx();
- 
--	xen_setup_features();
+-	xen_enable_sysenter();
+-	xen_enable_syscall();
 -
- 	/* Get mfn list */
- 	if (!xen_feature(XENFEAT_auto_translated_physmap))
- 		xen_build_dynamic_phys_to_machine();
-@@ -1406,14 +1439,18 @@ asmlinkage void __init xen_start_kernel(void)
- 	/* set the limit of our address space */
- 	xen_reserve_top();
- 
--	/* We used to do this in xen_arch_setup, but that is too late on AMD
--	 * were early_cpu_init (run before ->arch_setup()) calls early_amd_init
--	 * which pokes 0xcf8 port.
--	 */
--	set_iopl.iopl = 1;
--	rc = HYPERVISOR_physdev_op(PHYSDEVOP_set_iopl, &set_iopl);
--	if (rc != 0)
--		xen_raw_printk("physdev_op failed %d\n", rc);
-+	/* PVH: runs at default kernel iopl of 0 */
-+	if (!xen_pvh_domain()) {
-+		/*
-+		 * We used to do this in xen_arch_setup, but that is too late
-+		 * on AMD were early_cpu_init (run before ->arch_setup()) calls
-+		 * early_amd_init which pokes 0xcf8 port.
-+		 */
-+		set_iopl.iopl = 1;
-+		rc = HYPERVISOR_physdev_op(PHYSDEVOP_set_iopl, &set_iopl);
-+		if (rc != 0)
-+			xen_raw_printk("physdev_op failed %d\n", rc);
++	/* PVH runs in ring 0 and allows us to do native syscalls. Yay! */
++	if (!xen_feature(XENFEAT_supervisor_mode_kernel)) {
++		xen_enable_sysenter();
++		xen_enable_syscall();
 +	}
+ 	cpu = smp_processor_id();
+ 	smp_store_cpu_info(cpu);
+ 	cpu_data(cpu).x86_max_cores = 1;
+@@ -230,10 +232,11 @@ static void __init xen_smp_prepare_boot_cpu(void)
+ 	BUG_ON(smp_processor_id() != 0);
+ 	native_smp_prepare_boot_cpu();
+ 
+-	/* We've switched to the "real" per-cpu gdt, so make sure the
+-	   old memory can be recycled */
+-	make_lowmem_page_readwrite(xen_initial_gdt);
+-
++	if (!xen_feature(XENFEAT_writable_page_tables)) {
++		/* We've switched to the "real" per-cpu gdt, so make sure the
++		 * old memory can be recycled */
++		make_lowmem_page_readwrite(xen_initial_gdt);
++	}
+ 	xen_filter_cpu_maps();
+ 	xen_setup_vcpu_info_placement();
+ }
+@@ -300,8 +303,6 @@ cpu_initialize_context(unsigned int cpu, struct task_struct *idle)
+ 	gdt = get_cpu_gdt_table(cpu);
+ 
+ 	ctxt->flags = VGCF_IN_KERNEL;
+-	ctxt->user_regs.ds = __USER_DS;
+-	ctxt->user_regs.es = __USER_DS;
+ 	ctxt->user_regs.ss = __KERNEL_DS;
+ #ifdef CONFIG_X86_32
+ 	ctxt->user_regs.fs = __KERNEL_PERCPU;
+@@ -310,35 +311,57 @@ cpu_initialize_context(unsigned int cpu, struct task_struct *idle)
+ 	ctxt->gs_base_kernel = per_cpu_offset(cpu);
+ #endif
+ 	ctxt->user_regs.eip = (unsigned long)cpu_bringup_and_idle;
+-	ctxt->user_regs.eflags = 0x1000; /* IOPL_RING1 */
+ 
+ 	memset(&ctxt->fpu_ctxt, 0, sizeof(ctxt->fpu_ctxt));
+ 
+-	xen_copy_trap_info(ctxt->trap_ctxt);
++	/* check for autoxlated to get it right for 32bit kernel */
++	if (xen_feature(XENFEAT_auto_translated_physmap) &&
++	    xen_feature(XENFEAT_supervisor_mode_kernel)) {
+ 
+-	ctxt->ldt_ents = 0;
++		ctxt->user_regs.ds = __KERNEL_DS;
++		ctxt->user_regs.es = 0;
++		ctxt->user_regs.gs = 0;
+ 
+-	BUG_ON((unsigned long)gdt & ~PAGE_MASK);
++		ctxt->u.gdtaddr = (unsigned long)gdt;
++		ctxt->u.gdtsz = (unsigned long)(GDT_SIZE - 1);
+ 
+-	gdt_mfn = arbitrary_virt_to_mfn(gdt);
+-	make_lowmem_page_readonly(gdt);
+-	make_lowmem_page_readonly(mfn_to_virt(gdt_mfn));
++#ifdef CONFIG_X86_64
++		/* Note: PVH is not supported on x86_32. */
++		ctxt->gs_base_user = (unsigned long)
++					per_cpu(irq_stack_union.gs_base, cpu);
++#endif
++	} else {
++		ctxt->user_regs.eflags = 0x1000; /* IOPL_RING1 */
++		ctxt->user_regs.ds = __USER_DS;
++		ctxt->user_regs.es = __USER_DS;
+ 
+-	ctxt->u.s.gdt_frames[0] = gdt_mfn;
+-	ctxt->u.s.gdt_ents      = GDT_ENTRIES;
++		xen_copy_trap_info(ctxt->trap_ctxt);
+ 
+-	ctxt->user_regs.cs = __KERNEL_CS;
+-	ctxt->user_regs.esp = idle->thread.sp0 - sizeof(struct pt_regs);
++		ctxt->ldt_ents = 0;
+ 
+-	ctxt->kernel_ss = __KERNEL_DS;
+-	ctxt->kernel_sp = idle->thread.sp0;
++		BUG_ON((unsigned long)gdt & ~PAGE_MASK);
++
++		gdt_mfn = arbitrary_virt_to_mfn(gdt);
++		make_lowmem_page_readonly(gdt);
++		make_lowmem_page_readonly(mfn_to_virt(gdt_mfn));
++
++		ctxt->u.s.gdt_frames[0] = gdt_mfn;
++		ctxt->u.s.gdt_ents      = GDT_ENTRIES;
++
++		ctxt->kernel_ss = __KERNEL_DS;
++		ctxt->kernel_sp = idle->thread.sp0;
  
  #ifdef CONFIG_X86_32
- 	/* set up basic CPUID stuff */
-@@ -1479,7 +1516,8 @@ asmlinkage void __init xen_start_kernel(void)
- 	x86_64_start_reservations((char *)__pa_symbol(&boot_params));
+-	ctxt->event_callback_cs     = __KERNEL_CS;
+-	ctxt->failsafe_callback_cs  = __KERNEL_CS;
++		ctxt->event_callback_cs     = __KERNEL_CS;
++		ctxt->failsafe_callback_cs  = __KERNEL_CS;
  #endif
- }
--
-+/* Use a pfn in RAM, may move to MMIO before kexec.
-+ * This function also called for PVH dom0 */
- void __ref xen_hvm_init_shared_info(void)
- {
- 	int cpu;
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 8971a26..8cce47b 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -27,6 +27,7 @@
- #include <xen/interface/memory.h>
- #include <xen/interface/physdev.h>
- #include <xen/features.h>
-+#include "mmu.h"
- #include "xen-ops.h"
- #include "vdso.h"
- 
-@@ -78,6 +79,9 @@ static void __init xen_add_extra_mem(u64 start, u64 size)
- 
- 	memblock_reserve(start, size);
- 
-+	if (xen_feature(XENFEAT_auto_translated_physmap))
-+		return;
-+
- 	xen_max_p2m_pfn = PFN_DOWN(start + size);
- 	for (pfn = PFN_DOWN(start); pfn < xen_max_p2m_pfn; pfn++) {
- 		unsigned long mfn = pfn_to_mfn(pfn);
-@@ -100,6 +104,7 @@ static unsigned long __init xen_do_chunk(unsigned long start,
- 		.domid        = DOMID_SELF
- 	};
- 	unsigned long len = 0;
-+	int xlated_phys = xen_feature(XENFEAT_auto_translated_physmap);
- 	unsigned long pfn;
- 	int ret;
- 
-@@ -113,7 +118,7 @@ static unsigned long __init xen_do_chunk(unsigned long start,
- 				continue;
- 			frame = mfn;
- 		} else {
--			if (mfn != INVALID_P2M_ENTRY)
-+			if (!xlated_phys && mfn != INVALID_P2M_ENTRY)
- 				continue;
- 			frame = pfn;
- 		}
-@@ -230,6 +235,27 @@ static void __init xen_set_identity_and_release_chunk(
- 	*identity += set_phys_range_identity(start_pfn, end_pfn);
- }
- 
-+/* For PVH, the pfns [0..MAX] are mapped to mfn's in the EPT/NPT. The mfns
-+ * are released as part of this 1:1 mapping hypercall back to the dom heap.
-+ * Also, we map the entire IO space, ie, beyond max_pfn_mapped.
-+ */
-+static void __init xen_pvh_identity_map_chunk(unsigned long start_pfn,
-+		unsigned long end_pfn, unsigned long *released,
-+		unsigned long *identity, unsigned long max_pfn)
-+{
-+	unsigned long pfn;
-+	int numpfns = 1, add_mapping = 1;
-+
-+	for (pfn = start_pfn; pfn < end_pfn; pfn++)
-+		xen_set_clr_mmio_pvh_pte(pfn, pfn, numpfns, add_mapping);
-+
-+	if (start_pfn <= max_pfn) {
-+		unsigned long end = min(max_pfn_mapped, end_pfn);
-+		*released += end - start_pfn;
+-	ctxt->event_callback_eip    = (unsigned long)xen_hypervisor_callback;
+-	ctxt->failsafe_callback_eip = (unsigned long)xen_failsafe_callback;
++		ctxt->event_callback_eip    =
++					(unsigned long)xen_hypervisor_callback;
++		ctxt->failsafe_callback_eip =
++					(unsigned long)xen_failsafe_callback;
 +	}
-+	*identity += end_pfn - start_pfn;
-+}
-+
- static unsigned long __init xen_set_identity_and_release(
- 	const struct e820entry *list, size_t map_size, unsigned long nr_pages)
- {
-@@ -238,6 +264,7 @@ static unsigned long __init xen_set_identity_and_release(
- 	unsigned long identity = 0;
- 	const struct e820entry *entry;
- 	int i;
-+	int xlated_phys = xen_feature(XENFEAT_auto_translated_physmap);
++	ctxt->user_regs.cs = __KERNEL_CS;
++	ctxt->user_regs.esp = idle->thread.sp0 - sizeof(struct pt_regs);
  
- 	/*
- 	 * Combine non-RAM regions and gaps until a RAM region (or the
-@@ -259,11 +286,17 @@ static unsigned long __init xen_set_identity_and_release(
- 			if (entry->type == E820_RAM)
- 				end_pfn = PFN_UP(entry->addr);
- 
--			if (start_pfn < end_pfn)
--				xen_set_identity_and_release_chunk(
--					start_pfn, end_pfn, nr_pages,
--					&released, &identity);
--
-+			if (start_pfn < end_pfn) {
-+				if (xlated_phys) {
-+					xen_pvh_identity_map_chunk(start_pfn,
-+						end_pfn, &released, &identity,
-+						nr_pages);
-+				} else {
-+					xen_set_identity_and_release_chunk(
-+						start_pfn, end_pfn, nr_pages,
-+						&released, &identity);
-+				}
-+			}
- 			start = end;
- 		}
- 	}
-@@ -526,16 +559,14 @@ void __cpuinit xen_enable_syscall(void)
- #endif /* CONFIG_X86_64 */
- }
- 
--void __init xen_arch_setup(void)
-+/* Non auto translated PV domain, ie, it's not PVH. */
-+static __init void xen_pvmmu_arch_setup(void)
- {
--	xen_panic_handler_init();
--
- 	HYPERVISOR_vm_assist(VMASST_CMD_enable, VMASST_TYPE_4gb_segments);
- 	HYPERVISOR_vm_assist(VMASST_CMD_enable, VMASST_TYPE_writable_pagetables);
- 
--	if (!xen_feature(XENFEAT_auto_translated_physmap))
--		HYPERVISOR_vm_assist(VMASST_CMD_enable,
--				     VMASST_TYPE_pae_extended_cr3);
-+	HYPERVISOR_vm_assist(VMASST_CMD_enable,
-+			     VMASST_TYPE_pae_extended_cr3);
- 
- 	if (register_callback(CALLBACKTYPE_event, xen_hypervisor_callback) ||
- 	    register_callback(CALLBACKTYPE_failsafe, xen_failsafe_callback))
-@@ -543,6 +574,15 @@ void __init xen_arch_setup(void)
- 
- 	xen_enable_sysenter();
- 	xen_enable_syscall();
-+}
-+
-+/* This function not called for HVM domain */
-+void __init xen_arch_setup(void)
-+{
-+	xen_panic_handler_init();
-+
-+	if (!xen_feature(XENFEAT_auto_translated_physmap))
-+		xen_pvmmu_arch_setup();
- 
- #ifdef CONFIG_ACPI
- 	if (!(xen_start_info->flags & SIF_INITDOMAIN)) {
+ 	per_cpu(xen_cr3, cpu) = __pa(swapper_pg_dir);
+ 	ctxt->ctrlreg[3] = xen_pfn_to_cr3(virt_to_mfn(swapper_pg_dir));
 -- 
 1.7.2.3
 
