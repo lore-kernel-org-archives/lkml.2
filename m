@@ -1,199 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932568Ab2JKOVf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 10:21:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59686 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932177Ab2JKOVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 10:21:30 -0400
-Date: Thu, 11 Oct 2012 16:21:27 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>, devel@openvz.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v4 12/14] execute the whole memcg freeing in free_worker
-Message-ID: <20121011142127.GI29295@dhcp22.suse.cz>
-References: <1349690780-15988-1-git-send-email-glommer@parallels.com>
- <1349690780-15988-13-git-send-email-glommer@parallels.com>
+	id S1752535Ab2JKOWO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 10:22:14 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:42622 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958Ab2JKOWJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 10:22:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349690780-15988-13-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1349964927-18619-2-git-send-email-lee.jones@linaro.org>
+References: <1349964927-18619-1-git-send-email-lee.jones@linaro.org>
+	<1349964927-18619-2-git-send-email-lee.jones@linaro.org>
+Date: Thu, 11 Oct 2012 19:52:07 +0530
+Message-ID: <CAM=Q2ctwTBAvKs401GgrGfz9NvaLspquje-6YfnuS5TZYeqY4Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] input: gpio-keys: Add runtime support
+From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org,
+        Philippe Langlais <philippe.langlais@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 08-10-12 14:06:18, Glauber Costa wrote:
-> A lot of the initialization we do in mem_cgroup_create() is done with
-> softirqs enabled. This include grabbing a css id, which holds
-> &ss->id_lock->rlock, and the per-zone trees, which holds
-> rtpz->lock->rlock. All of those signal to the lockdep mechanism that
-> those locks can be used in SOFTIRQ-ON-W context. This means that the
-> freeing of memcg structure must happen in a compatible context,
-> otherwise we'll get a deadlock, like the one bellow, caught by lockdep:
-> 
->   [<ffffffff81103095>] free_accounted_pages+0x47/0x4c
->   [<ffffffff81047f90>] free_task+0x31/0x5c
->   [<ffffffff8104807d>] __put_task_struct+0xc2/0xdb
->   [<ffffffff8104dfc7>] put_task_struct+0x1e/0x22
->   [<ffffffff8104e144>] delayed_put_task_struct+0x7a/0x98
->   [<ffffffff810cf0e5>] __rcu_process_callbacks+0x269/0x3df
->   [<ffffffff810cf28c>] rcu_process_callbacks+0x31/0x5b
->   [<ffffffff8105266d>] __do_softirq+0x122/0x277
-> 
-> This usage pattern could not be triggered before kmem came into play.
-> With the introduction of kmem stack handling, it is possible that we
-> call the last mem_cgroup_put() from the task destructor, which is run in
-> an rcu callback. Such callbacks are run with softirqs disabled, leading
-> to the offensive usage pattern.
-> 
-> In general, we have little, if any, means to guarantee in which context
-> the last memcg_put will happen. The best we can do is test it and try to
-> make sure no invalid context releases are happening. But as we add more
-> code to memcg, the possible interactions grow in number and expose more
-> ways to get context conflicts. One thing to keep in mind, is that part
-> of the freeing process is already deferred to a worker, such as vfree(),
-> that can only be called from process context.
-> 
-> For the moment, the only two functions we really need moved away are:
-> 
->   * free_css_id(), and
->   * mem_cgroup_remove_from_trees().
-> 
-> But because the later accesses per-zone info,
-> free_mem_cgroup_per_zone_info() needs to be moved as well. With that, we
-> are left with the per_cpu stats only. Better move it all.
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> Tested-by: Greg Thelen <gthelen@google.com>
-> CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> CC: Tejun Heo <tj@kernel.org>
+On Thu, Oct 11, 2012 at 7:45 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> From: Jonas Aaberg <jonas.aberg@stericsson.com>
+Some change logs would have helped.
 
-OK, it seems it is much easier this way.
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
+>
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Cc: linux-input@vger.kernel.org
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
+> Signed-off-by: Philippe Langlais <philippe.langlais@linaro.org>
+> Reviewed-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
 > ---
->  mm/memcontrol.c | 66 +++++++++++++++++++++++++++++----------------------------
->  1 file changed, 34 insertions(+), 32 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 2f92f89..c5215f1 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -5205,16 +5205,29 @@ out_free:
->  }
->  
->  /*
-> - * Helpers for freeing a kmalloc()ed/vzalloc()ed mem_cgroup by RCU,
-> - * but in process context.  The work_freeing structure is overlaid
-> - * on the rcu_freeing structure, which itself is overlaid on memsw.
-> + * At destroying mem_cgroup, references from swap_cgroup can remain.
-> + * (scanning all at force_empty is too costly...)
-> + *
-> + * Instead of clearing all references at force_empty, we remember
-> + * the number of reference from swap_cgroup and free mem_cgroup when
-> + * it goes down to 0.
-> + *
-> + * Removal of cgroup itself succeeds regardless of refs from swap.
->   */
-> -static void free_work(struct work_struct *work)
-> +
-> +static void __mem_cgroup_free(struct mem_cgroup *memcg)
+>  drivers/input/keyboard/gpio_keys.c |   16 ++++++++++++----
+>  1 file changed, 12 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
+> index 7947315..78de557 100644
+> --- a/drivers/input/keyboard/gpio_keys.c
+> +++ b/drivers/input/keyboard/gpio_keys.c
+> @@ -29,6 +29,7 @@
+>  #include <linux/of_platform.h>
+>  #include <linux/of_gpio.h>
+>  #include <linux/spinlock.h>
+> +#include <linux/pm_runtime.h>
+>
+>  struct gpio_button_data {
+>         const struct gpio_keys_button *button;
+> @@ -526,6 +527,7 @@ static int gpio_keys_open(struct input_dev *input)
 >  {
-> -	struct mem_cgroup *memcg;
-> +	int node;
->  	int size = sizeof(struct mem_cgroup);
->  
-> -	memcg = container_of(work, struct mem_cgroup, work_freeing);
-> +	mem_cgroup_remove_from_trees(memcg);
-> +	free_css_id(&mem_cgroup_subsys, &memcg->css);
-> +
-> +	for_each_node(node)
-> +		free_mem_cgroup_per_zone_info(memcg, node);
-> +
-> +	free_percpu(memcg->stat);
-> +
->  	/*
->  	 * We need to make sure that (at least for now), the jump label
->  	 * destruction code runs outside of the cgroup lock. This is because
-> @@ -5233,38 +5246,27 @@ static void free_work(struct work_struct *work)
->  		vfree(memcg);
->  }
->  
-> -static void free_rcu(struct rcu_head *rcu_head)
-> -{
-> -	struct mem_cgroup *memcg;
-> -
-> -	memcg = container_of(rcu_head, struct mem_cgroup, rcu_freeing);
-> -	INIT_WORK(&memcg->work_freeing, free_work);
-> -	schedule_work(&memcg->work_freeing);
-> -}
->  
->  /*
-> - * At destroying mem_cgroup, references from swap_cgroup can remain.
-> - * (scanning all at force_empty is too costly...)
-> - *
-> - * Instead of clearing all references at force_empty, we remember
-> - * the number of reference from swap_cgroup and free mem_cgroup when
-> - * it goes down to 0.
-> - *
-> - * Removal of cgroup itself succeeds regardless of refs from swap.
-> + * Helpers for freeing a kmalloc()ed/vzalloc()ed mem_cgroup by RCU,
-> + * but in process context.  The work_freeing structure is overlaid
-> + * on the rcu_freeing structure, which itself is overlaid on memsw.
->   */
-> -
-> -static void __mem_cgroup_free(struct mem_cgroup *memcg)
-> +static void free_work(struct work_struct *work)
->  {
-> -	int node;
-> +	struct mem_cgroup *memcg;
->  
-> -	mem_cgroup_remove_from_trees(memcg);
-> -	free_css_id(&mem_cgroup_subsys, &memcg->css);
-> +	memcg = container_of(work, struct mem_cgroup, work_freeing);
-> +	__mem_cgroup_free(memcg);
-> +}
->  
-> -	for_each_node(node)
-> -		free_mem_cgroup_per_zone_info(memcg, node);
-> +static void free_rcu(struct rcu_head *rcu_head)
-> +{
-> +	struct mem_cgroup *memcg;
->  
-> -	free_percpu(memcg->stat);
-> -	call_rcu(&memcg->rcu_freeing, free_rcu);
-> +	memcg = container_of(rcu_head, struct mem_cgroup, rcu_freeing);
-> +	INIT_WORK(&memcg->work_freeing, free_work);
-> +	schedule_work(&memcg->work_freeing);
->  }
->  
->  static void mem_cgroup_get(struct mem_cgroup *memcg)
-> @@ -5276,7 +5278,7 @@ static void __mem_cgroup_put(struct mem_cgroup *memcg, int count)
->  {
->  	if (atomic_sub_and_test(count, &memcg->refcnt)) {
->  		struct mem_cgroup *parent = parent_mem_cgroup(memcg);
-> -		__mem_cgroup_free(memcg);
-> +		call_rcu(&memcg->rcu_freeing, free_rcu);
->  		if (parent)
->  			mem_cgroup_put(parent);
->  	}
-> -- 
-> 1.7.11.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>         struct gpio_keys_drvdata *ddata = input_get_drvdata(input);
+>
+> +       pm_runtime_get_sync(input->dev.parent);
+I am not an expert of the runtime.
 
--- 
-Michal Hocko
-SUSE Labs
+However would be grateful if you explain me what it actually do.
+
+Also I did not see any runtime suspend/ resume handlers populated.
