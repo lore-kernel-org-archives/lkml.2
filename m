@@ -1,189 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758369Ab2JKKNS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 06:13:18 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37008 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758309Ab2JKKNO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 06:13:14 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50769B8C.2060901@jp.fujitsu.com>
-Date: Thu, 11 Oct 2012 19:12:28 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+	id S1758410Ab2JKKQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 06:16:29 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60002 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758393Ab2JKKQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 06:16:26 -0400
+Message-ID: <50769C53.8030405@ti.com>
+Date: Thu, 11 Oct 2012 15:45:47 +0530
+From: Sekhar Nori <nsekhar@ti.com>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <toshi.kani@hp.com>, <lenb@kernel.org>, <wency@cn.fujitsu.com>,
-        <vasilis.liaskovitis@profitbricks.com>
-Subject: [PATCH v2] acpi : acpi_bus_trim() stops removing devices when failing
- to remove the device
-Content-Type: text/plain; charset="ISO-2022-JP"
+To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hilman, Kevin" <khilman@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-keystone@list.ti.com - Linux developers for Keystone family of
+	devices (May contain non-TIers)" <linux-keystone@list.ti.com>,
+        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
+        "Chemparathy, Cyril" <cyril@ti.com>
+Subject: Re: [PATCH 01/13] calk: davinci - add Main PLL clock driver
+References: <1348682889-9509-1-git-send-email-m-karicheri2@ti.com> <1348682889-9509-2-git-send-email-m-karicheri2@ti.com> <507563C3.2000305@ti.com> <3E54258959B69E4282D79E01AB1F32B7041FB712@DFLE12.ent.ti.com>
+In-Reply-To: <3E54258959B69E4282D79E01AB1F32B7041FB712@DFLE12.ent.ti.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acpi_bus_trim() stops removing devices, when acpi_bus_remove() return error
-number. But acpi_bus_remove() cannot return error number correctly.
-acpi_bus_remove() only return -EINVAL, when dev argument is NULL. Thus even if
-device cannot be removed correctly, acpi_bus_trim() ignores and continues to
-remove devices. acpi_bus_hot_remove_device() uses acpi_bus_trim() for removing
-devices. Therefore acpi_bus_hot_remove_device() can send "_EJ0" to firmware,
-even if the device is running on the system. In this case, the system cannot
-work well.
+On 10/10/2012 8:04 PM, Karicheri, Muralidharan wrote:
 
-Vasilis hit the bug at memory hotplug and reported it as follow:
-https://lkml.org/lkml/2012/9/26/318
+>>>> +struct clk *clk_register_davinci_pll(struct device *dev, const char *name,
+>>>> +			const char *parent_name,
+>>>> +			struct clk_davinci_pll_data *pll_data) {
+>>>> +	struct clk_init_data init;
+>>>> +	struct clk_davinci_pll *pll;
+>>>> +	struct clk *clk;
+>>>> +
+>>>> +	if (!pll_data)
+>>>> +		return ERR_PTR(-ENODEV);
+>>>> +
+>>>> +	pll = kzalloc(sizeof(*pll), GFP_KERNEL);
+>>>> +	if (!pll)
+>>>> +		return ERR_PTR(-ENOMEM);
+>>>> +	init.name = name;
+>>>> +	init.ops = &clk_pll_ops;
+>>>> +	init.flags = pll_data->flags;
+>>>> +	init.parent_names = (parent_name ? &parent_name : NULL);
+>>>> +	init.num_parents = (parent_name ? 1 : 0);
+>>>> +
+>>>> +	pll->pll_data	= pll_data;
+>>>> +	pll->hw.init = &init;
+>>>> +
+>>>> +	clk = clk_register(NULL, &pll->hw);
+>>>> +	if (IS_ERR(clk))
+>>>> +		kfree(pll);
+>>>> +
+>>>> +	return clk;
+>>>> +}
+>>>
+>>> I guess there is an an "unregister" required as well which will free the pll memory
+>>> allocated above and unregister the clock? Not sure if you would ever unregister a PLL,
+>>> but providing this will probably help symmetry.
+> Sekhar,
+> 
+> clk_unregister() itself is a null statement in clk.c. Besides none of the clk drivers presently have implemented the unregister(). So I believe this is unnecessary. 
 
-So acpi_bus_trim() should check whether device was removed or not correctly.
-The patch adds error check into some functions to remove the device.
+I am ok with this.
 
-Applying the patch, acpi_bus_trim() stops removing devices when failing
-to remove the device. But I think there is no impact with the
-exceptionof CPU and Memory hotplug path. Because other device also fails
-but the fail is an irregular case like device is NULL.
+> BTW, please review the v2 patch for the rest of the series. For the one you have already reviewed, it should be fine.
 
-v1->v2
-- add a rollback for reinstalling a notify handler.
+Okay. I see those now. BTW, this series also has a v2 in its 0/13. Are
+there any differences between this and the other v2, or is that merely a
+resend?
 
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-
----
- drivers/acpi/scan.c    |   21 ++++++++++++++++++---
- drivers/base/dd.c      |   22 +++++++++++++++++-----
- include/linux/device.h |    2 +-
- 3 files changed, 36 insertions(+), 9 deletions(-)
-
-Index: linux-3.6/drivers/acpi/scan.c
-===================================================================
---- linux-3.6.orig/drivers/acpi/scan.c	2012-10-11 18:31:40.189019503 +0900
-+++ linux-3.6/drivers/acpi/scan.c	2012-10-11 18:42:35.669041641 +0900
-@@ -445,18 +445,29 @@ static int acpi_device_remove(struct dev
- {
- 	struct acpi_device *acpi_dev = to_acpi_device(dev);
- 	struct acpi_driver *acpi_drv = acpi_dev->driver;
-+	int ret;
- 
- 	if (acpi_drv) {
- 		if (acpi_drv->ops.notify)
- 			acpi_device_remove_notify_handler(acpi_dev);
--		if (acpi_drv->ops.remove)
--			acpi_drv->ops.remove(acpi_dev, acpi_dev->removal_type);
-+		if (acpi_drv->ops.remove) {
-+			ret = acpi_drv->ops.remove(acpi_dev,
-+						   acpi_dev->removal_type);
-+			if (ret)
-+				goto rollback;
-+		}
- 	}
- 	acpi_dev->driver = NULL;
- 	acpi_dev->driver_data = NULL;
- 
- 	put_device(dev);
- 	return 0;
-+
-+rollback:
-+	if (acpi_drv->ops.notify)
-+		acpi_device_install_notify_handler(acpi_dev);
-+
-+	return ret;
- }
- 
- struct bus_type acpi_bus_type = {
-@@ -1226,11 +1237,15 @@ static int acpi_device_set_context(struc
- 
- static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
- {
-+	int ret;
-+
- 	if (!dev)
- 		return -EINVAL;
- 
- 	dev->removal_type = ACPI_BUS_REMOVAL_EJECT;
--	device_release_driver(&dev->dev);
-+	ret = device_release_driver(&dev->dev);
-+	if (ret)
-+		return ret;
- 
- 	if (!rmdevice)
- 		return 0;
-Index: linux-3.6/drivers/base/dd.c
-===================================================================
---- linux-3.6.orig/drivers/base/dd.c	2012-10-11 18:31:40.191019505 +0900
-+++ linux-3.6/drivers/base/dd.c	2012-10-11 18:31:46.873020548 +0900
-@@ -475,9 +475,10 @@ EXPORT_SYMBOL_GPL(driver_attach);
-  * __device_release_driver() must be called with @dev lock held.
-  * When called for a USB interface, @dev->parent lock must be held as well.
-  */
--static void __device_release_driver(struct device *dev)
-+static int __device_release_driver(struct device *dev)
- {
- 	struct device_driver *drv;
-+	int ret = 0;
- 
- 	drv = dev->driver;
- 	if (drv) {
-@@ -493,9 +494,11 @@ static void __device_release_driver(stru
- 		pm_runtime_put_sync(dev);
- 
- 		if (dev->bus && dev->bus->remove)
--			dev->bus->remove(dev);
-+			ret = dev->bus->remove(dev);
- 		else if (drv->remove)
--			drv->remove(dev);
-+			ret = drv->remove(dev);
-+		if (ret)
-+			goto rollback;
- 		devres_release_all(dev);
- 		dev->driver = NULL;
- 		dev_set_drvdata(dev, NULL);
-@@ -506,6 +509,12 @@ static void __device_release_driver(stru
- 						     dev);
- 
- 	}
-+
-+	return ret;
-+
-+rollback:
-+	driver_sysfs_add(dev);
-+	return ret;
- }
- 
- /**
-@@ -515,16 +524,19 @@ static void __device_release_driver(stru
-  * Manually detach device from driver.
-  * When called for a USB interface, @dev->parent lock must be held.
-  */
--void device_release_driver(struct device *dev)
-+int device_release_driver(struct device *dev)
- {
-+	int ret;
- 	/*
- 	 * If anyone calls device_release_driver() recursively from
- 	 * within their ->remove callback for the same device, they
- 	 * will deadlock right here.
- 	 */
- 	device_lock(dev);
--	__device_release_driver(dev);
-+	ret = __device_release_driver(dev);
- 	device_unlock(dev);
-+
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(device_release_driver);
- 
-Index: linux-3.6/include/linux/device.h
-===================================================================
---- linux-3.6.orig/include/linux/device.h	2012-10-11 18:31:40.194019508 +0900
-+++ linux-3.6/include/linux/device.h	2012-10-11 18:31:46.881020556 +0900
-@@ -834,7 +834,7 @@ static inline void *dev_get_platdata(con
-  * for information on use.
-  */
- extern int __must_check device_bind_driver(struct device *dev);
--extern void device_release_driver(struct device *dev);
-+extern int device_release_driver(struct device *dev);
- extern int  __must_check device_attach(struct device *dev);
- extern int __must_check driver_attach(struct device_driver *drv);
- extern int __must_check device_reprobe(struct device *dev);
-
+Thanks,
+Sekhar
