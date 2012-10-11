@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932593Ab2JKBEG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:04:06 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52095 "EHLO
+	id S932817Ab2JKBEV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:04:21 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33713 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758205Ab2JKBDx (ORCPT
+	by vger.kernel.org with ESMTP id S932649Ab2JKBEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:03:53 -0400
-X-Sasl-enc: ltzXg5VtyxqUVoTrzsIoRctByXWKKK1bVjPWcFYyG1lu 1349917431
+	Wed, 10 Oct 2012 21:04:14 -0400
+X-Sasl-enc: qR6GU1VnMzPADzP08YCuCf9a1JNliVnGL/btJXE1mA74 1349917452
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Lin Ming <ming.m.lin@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        Len Brown <len.brown@intel.com>
-Subject: [ 008/120] ACPI: run _OSC after ACPI_FULL_INITIALIZATION
-Date: Thu, 11 Oct 2012 09:59:20 +0900
-Message-Id: <20121011005826.848762529@linuxfoundation.org>
+        Shawn Guo <shawn.guo@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 012/120] kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()
+Date: Thu, 11 Oct 2012 09:59:24 +0900
+Message-Id: <20121011005827.560993049@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -28,48 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lin Ming <ming.m.lin@intel.com>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit fc54ab72959edbf229b65ac74b2f122d799ca002 upstream.
+commit f96972f2dc6365421cf2366ebd61ee4cf060c8d5 upstream.
 
-The _OSC method may exist in module level code,
-so it must be called after ACPI_FULL_INITIALIZATION
+As kernel_power_off() calls disable_nonboot_cpus(), we may also want to
+have kernel_restart() call disable_nonboot_cpus().  Doing so can help
+machines that require boot cpu be the last alive cpu during reboot to
+survive with kernel restart.
 
-On some new platforms with Zero-Power-Optical-Disk-Drive (ZPODD)
-support, this fix is necessary to save power.
+This fixes one reboot issue seen on imx6q (Cortex-A9 Quad).  The machine
+requires that the restart routine be run on the primary cpu rather than
+secondary ones.  Otherwise, the secondary core running the restart
+routine will fail to come to online after reboot.
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Tested-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/bus.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ kernel/sys.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -954,8 +954,6 @@ static int __init acpi_bus_init(void)
- 	status = acpi_ec_ecdt_probe();
- 	/* Ignore result. Not having an ECDT is not fatal. */
- 
--	acpi_bus_osc_support();
--
- 	status = acpi_initialize_objects(ACPI_FULL_INITIALIZATION);
- 	if (ACPI_FAILURE(status)) {
- 		printk(KERN_ERR PREFIX "Unable to initialize ACPI objects\n");
-@@ -963,6 +961,12 @@ static int __init acpi_bus_init(void)
- 	}
- 
- 	/*
-+	 * _OSC method may exist in module level code,
-+	 * so it must be run after ACPI_FULL_INITIALIZATION
-+	 */
-+	acpi_bus_osc_support();
-+
-+	/*
- 	 * _PDC control method may load dynamic SSDT tables,
- 	 * and we need to install the table handler before that.
- 	 */
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -365,6 +365,7 @@ EXPORT_SYMBOL(unregister_reboot_notifier
+ void kernel_restart(char *cmd)
+ {
+ 	kernel_restart_prepare(cmd);
++	disable_nonboot_cpus();
+ 	if (!cmd)
+ 		printk(KERN_EMERG "Restarting system.\n");
+ 	else
 
 
