@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933878Ab2JKCNn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:13:43 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33055 "EHLO
+	id S933892Ab2JKCNv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:13:51 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44978 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933786Ab2JKCNh (ORCPT
+	by vger.kernel.org with ESMTP id S933786Ab2JKCNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:13:37 -0400
-X-Sasl-enc: xSSwUQkOf9R7DZo2tN2IHO0e8qpboQwqwa8Ev/OyUrsp 1349921616
+	Wed, 10 Oct 2012 22:13:45 -0400
+X-Sasl-enc: DnEsWBcP1kWXp+J6t0nJ9tyGph2qRWy5FL1990LzVFxA 1349921624
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Paolo Valente <paolo.valente@unimore.it>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 24/84] pkt_sched: fix virtual-start-time update in QFQ
-Date: Thu, 11 Oct 2012 11:03:08 +0900
-Message-Id: <20121011015421.429811441@linuxfoundation.org>
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 43/84] SCSI: zfcp: remove invalid reference to list iterator variable
+Date: Thu, 11 Oct 2012 11:03:27 +0900
+Message-Id: <20121011015424.804815261@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -28,41 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-From: Paolo Valente <paolo.valente@unimore.it>
+commit ca579c9f136af4274ccfd1bcaee7f38a29a0e2e9 upstream.
 
-[ Upstream commit 71261956973ba9e0637848a5adb4a5819b4bae83 ]
+If list_for_each_entry, etc complete a traversal of the list, the iterator
+variable ends up pointing to an address at an offset from the list head,
+and not a meaningful structure.  Thus this value should not be used after
+the end of the iterator.  Replace port->adapter->scsi_host by
+adapter->scsi_host.
 
-If the old timestamps of a class, say cl, are stale when the class
-becomes active, then QFQ may assign to cl a much higher start time
-than the maximum value allowed. This may happen when QFQ assigns to
-the start time of cl the finish time of a group whose classes are
-characterized by a higher value of the ratio
-max_class_pkt/weight_of_the_class with respect to that of
-cl. Inserting a class with a too high start time into the bucket list
-corrupts the data structure and may eventually lead to crashes.
-This patch limits the maximum start time assigned to a class.
+This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
 
-Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Oversight in upsteam commit of v2.6.37
+a1ca48319a9aa1c5b57ce142f538e76050bb8972
+"[SCSI] zfcp: Move ACL/CFDC code to zfcp_cfdc.c"
+which merged the content of zfcp_erp_port_access_changed().
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Reviewed-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sched/sch_qfq.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/net/sched/sch_qfq.c
-+++ b/net/sched/sch_qfq.c
-@@ -829,7 +829,10 @@ static void qfq_update_start(struct qfq_
- 		if (mask) {
- 			struct qfq_group *next = qfq_ffs(q, mask);
- 			if (qfq_gt(roundedF, next->F)) {
--				cl->S = next->F;
-+				if (qfq_gt(limit, next->F))
-+					cl->S = next->F;
-+				else /* preserve timestamp correctness */
-+					cl->S = limit;
- 				return;
- 			}
- 		}
+---
+ drivers/s390/scsi/zfcp_cfdc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/s390/scsi/zfcp_cfdc.c
++++ b/drivers/s390/scsi/zfcp_cfdc.c
+@@ -293,7 +293,7 @@ void zfcp_cfdc_adapter_access_changed(st
+ 	}
+ 	read_unlock_irqrestore(&adapter->port_list_lock, flags);
+ 
+-	shost_for_each_device(sdev, port->adapter->scsi_host) {
++	shost_for_each_device(sdev, adapter->scsi_host) {
+ 		zfcp_sdev = sdev_to_zfcp(sdev);
+ 		status = atomic_read(&zfcp_sdev->status);
+ 		if ((status & ZFCP_STATUS_COMMON_ACCESS_DENIED) ||
 
 
