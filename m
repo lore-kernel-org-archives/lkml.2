@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934052Ab2JKBaS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:30:18 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50781 "EHLO
+	id S934176Ab2JKBao (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:30:44 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59864 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934065Ab2JKBYD (ORCPT
+	by vger.kernel.org with ESMTP id S933910Ab2JKBU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:24:03 -0400
-X-Sasl-enc: zNcU3E2jR111m3tKkxuKA+iCmr5x8aAorw9p6cSP7MHU 1349918642
+	Wed, 10 Oct 2012 21:20:27 -0400
+X-Sasl-enc: b1Lh3tMsXWCRXKW9lhSejfutHfxCcJHFFWt3+SYuvp78 1349918426
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 060/120] SCSI: zfcp: remove invalid reference to list iterator variable
-Date: Thu, 11 Oct 2012 10:00:12 +0900
-Message-Id: <20121011005836.842966064@linuxfoundation.org>
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 046/120] net: small bug on rxhash calculation
+Date: Thu, 11 Oct 2012 09:59:58 +0900
+Message-Id: <20121011005833.998786745@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -30,43 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-commit ca579c9f136af4274ccfd1bcaee7f38a29a0e2e9 upstream.
+From: Chema Gonzalez <chema@google.com>
 
-If list_for_each_entry, etc complete a traversal of the list, the iterator
-variable ends up pointing to an address at an offset from the list head,
-and not a meaningful structure.  Thus this value should not be used after
-the end of the iterator.  Replace port->adapter->scsi_host by
-adapter->scsi_host.
+[ Upstream commit 6862234238e84648c305526af2edd98badcad1e0 ]
 
-This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
+In the current rxhash calculation function, while the
+sorting of the ports/addrs is coherent (you get the
+same rxhash for packets sharing the same 4-tuple, in
+both directions), ports and addrs are sorted
+independently. This implies packets from a connection
+between the same addresses but crossed ports hash to
+the same rxhash.
 
-Oversight in upsteam commit of v2.6.37
-a1ca48319a9aa1c5b57ce142f538e76050bb8972
-"[SCSI] zfcp: Move ACL/CFDC code to zfcp_cfdc.c"
-which merged the content of zfcp_erp_port_access_changed().
+For example, traffic between A=S:l and B=L:s is hashed
+(in both directions) from {L, S, {s, l}}. The same
+rxhash is obtained for packets between C=S:s and D=L:l.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Reviewed-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+This patch ensures that you either swap both addrs and ports,
+or you swap none. Traffic between A and B, and traffic
+between C and D, get their rxhash from different sources
+({L, S, {l, s}} for A<->B, and {L, S, {s, l}} for C<->D)
+
+The patch is co-written with Eric Dumazet <edumazet@google.com>
+
+Signed-off-by: Chema Gonzalez <chema@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/s390/scsi/zfcp_cfdc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/core/dev.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/s390/scsi/zfcp_cfdc.c
-+++ b/drivers/s390/scsi/zfcp_cfdc.c
-@@ -293,7 +293,7 @@ void zfcp_cfdc_adapter_access_changed(st
- 	}
- 	read_unlock_irqrestore(&adapter->port_list_lock, flags);
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2617,15 +2617,16 @@ void __skb_get_rxhash(struct sk_buff *sk
+ 	if (!skb_flow_dissect(skb, &keys))
+ 		return;
  
--	shost_for_each_device(sdev, port->adapter->scsi_host) {
-+	shost_for_each_device(sdev, adapter->scsi_host) {
- 		zfcp_sdev = sdev_to_zfcp(sdev);
- 		status = atomic_read(&zfcp_sdev->status);
- 		if ((status & ZFCP_STATUS_COMMON_ACCESS_DENIED) ||
+-	if (keys.ports) {
+-		if ((__force u16)keys.port16[1] < (__force u16)keys.port16[0])
+-			swap(keys.port16[0], keys.port16[1]);
++	if (keys.ports)
+ 		skb->l4_rxhash = 1;
+-	}
+ 
+ 	/* get a consistent hash (same value on both flow directions) */
+-	if ((__force u32)keys.dst < (__force u32)keys.src)
++	if (((__force u32)keys.dst < (__force u32)keys.src) ||
++	    (((__force u32)keys.dst == (__force u32)keys.src) &&
++	     ((__force u16)keys.port16[1] < (__force u16)keys.port16[0]))) {
+ 		swap(keys.dst, keys.src);
++		swap(keys.port16[0], keys.port16[1]);
++	}
+ 
+ 	hash = jhash_3words((__force u32)keys.dst,
+ 			    (__force u32)keys.src,
 
 
