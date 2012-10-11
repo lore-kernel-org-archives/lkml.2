@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964957Ab2JKCPw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:15:52 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49659 "EHLO
+	id S964970Ab2JKCP7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:15:59 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33500 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964929Ab2JKCPo (ORCPT
+	by vger.kernel.org with ESMTP id S964898Ab2JKCPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:15:44 -0400
-X-Sasl-enc: QgyRCcoNIqljsByTnJyOEZAxlefcdCeGWbFWtMy2ZUGe 1349921742
+	Wed, 10 Oct 2012 22:15:48 -0400
+X-Sasl-enc: i6obK0UKdFHWN5AezAjdiKsa5jOb86ni2vXcJPtsQCEG 1349921746
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 54/84] ALSA: usb - disable broken hw volume for Tenx TP6911
-Date: Thu, 11 Oct 2012 11:03:38 +0900
-Message-Id: <20121011015426.776116197@linuxfoundation.org>
+        Marko Friedemann <mfr@bmx-chemnitz.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 55/84] ALSA: USB: Support for (original) Xbox Communicator
+Date: Thu, 11 Oct 2012 11:03:39 +0900
+Message-Id: <20121011015426.961738115@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -28,42 +27,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Marko Friedemann <mfr@bmx-chemnitz.de>
 
-commit c10514394ef9e8de93a4ad8c8904d71dcd82c122 upstream.
+commit c05fce586d4da2dfe0309bef3795a8586e967bc3 upstream.
 
-While going through Ubuntu bugs, I discovered this patch being
-posted and a confirmation that the patch works as expected.
+Added support for Xbox Communicator to USB quirks.
 
-Finding out how the hw volume really works would be preferrable
-to just disabling the broken one, but this would be better than
-nothing.
-
-Credit: sndfnsdfin (qawsnews)
-BugLink: https://bugs.launchpad.net/bugs/559939
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Marko Friedemann <mfr@bmx-chemnitz.de>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/mixer.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ sound/usb/quirks-table.h |   53 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
 
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -1246,6 +1246,13 @@ static int parse_audio_feature_unit(stru
- 		/* disable non-functional volume control */
- 		master_bits &= ~UAC_CONTROL_BIT(UAC_FU_VOLUME);
- 		break;
-+	case USB_ID(0x1130, 0xf211):
-+		snd_printk(KERN_INFO
-+			   "usbmixer: volume control quirk for Tenx TP6911 Audio Headset\n");
-+		/* disable non-functional volume control */
-+		channels = 0;
-+		break;
-+
+--- a/sound/usb/quirks-table.h
++++ b/sound/usb/quirks-table.h
+@@ -2581,6 +2581,59 @@ YAMAHA_DEVICE(0x7010, "UB99"),
  	}
- 	if (channels > 0)
- 		first_ch_bits = snd_usb_combine_bytes(bmaControls + csize, csize);
+ },
+ 
++/* Microsoft XboxLive Headset/Xbox Communicator */
++{
++	USB_DEVICE(0x045e, 0x0283),
++	.bInterfaceClass = USB_CLASS_PER_INTERFACE,
++	.driver_info = (unsigned long) &(const struct snd_usb_audio_quirk) {
++		.vendor_name = "Microsoft",
++		.product_name = "XboxLive Headset/Xbox Communicator",
++		.ifnum = QUIRK_ANY_INTERFACE,
++		.type = QUIRK_COMPOSITE,
++		.data = &(const struct snd_usb_audio_quirk[]) {
++			{
++				/* playback */
++				.ifnum = 0,
++				.type = QUIRK_AUDIO_FIXED_ENDPOINT,
++				.data = &(const struct audioformat) {
++					.formats = SNDRV_PCM_FMTBIT_S16_LE,
++					.channels = 1,
++					.iface = 0,
++					.altsetting = 0,
++					.altset_idx = 0,
++					.attributes = 0,
++					.endpoint = 0x04,
++					.ep_attr = 0x05,
++					.rates = SNDRV_PCM_RATE_CONTINUOUS,
++					.rate_min = 22050,
++					.rate_max = 22050
++				}
++			},
++			{
++				/* capture */
++				.ifnum = 1,
++				.type = QUIRK_AUDIO_FIXED_ENDPOINT,
++				.data = &(const struct audioformat) {
++					.formats = SNDRV_PCM_FMTBIT_S16_LE,
++					.channels = 1,
++					.iface = 1,
++					.altsetting = 0,
++					.altset_idx = 0,
++					.attributes = 0,
++					.endpoint = 0x85,
++					.ep_attr = 0x05,
++					.rates = SNDRV_PCM_RATE_CONTINUOUS,
++					.rate_min = 16000,
++					.rate_max = 16000
++				}
++			},
++			{
++				.ifnum = -1
++			}
++		}
++	}
++},
++
+ {
+ 	/*
+ 	 * Some USB MIDI devices don't have an audio control interface,
 
 
