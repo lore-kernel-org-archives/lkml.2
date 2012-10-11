@@ -1,35 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab2JKInG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 04:43:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41237 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751656Ab2JKInD (ORCPT
+	id S1756292Ab2JKIns (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 04:43:48 -0400
+Received: from alvesta.synopsys.com ([198.182.60.77]:52139 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755436Ab2JKInn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 04:43:03 -0400
-Date: Thu, 11 Oct 2012 17:42:49 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH] ASoC: codecs: da9055: Minor improvement in
- ALC calibration process
-Message-ID: <20121011084247.GH11726@opensource.wolfsonmicro.com>
-References: <1349944477.24126.11.camel@matrix>
+	Thu, 11 Oct 2012 04:43:43 -0400
+From: <Vineet.Gupta1@synopsys.com>
+To: <alan@linux.intel.com>, <gregkh@linuxfoundation.org>
+CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Vineet Gupta" <Vineet.Gupta1@synopsys.com>
+Subject: [RESEND PATCH v3] serial/arc-uart: Add new driver
+Date: Thu, 11 Oct 2012 14:13:20 +0530
+Message-ID: <1349945001-31909-1-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349944477.24126.11.camel@matrix>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.12.197.56]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 11, 2012 at 02:04:37PM +0530, Ashish Chavan wrote:
+From: Vineet Gupta <vgupta@synopsys.com>
 
-> This patch slightly improves ALC calibration process of da9055 codec
-> driver by muting Mic PGAs during calibration.
+Hi,
 
-Applied, thanks.
+Please find following ARC UART driver with all the review comments incorporated.
+It's rebased off of current tip (commit 12250d843e)
+
+Please consider merging.
+
+Thx,
+-Vineet
+
+v3:
+* Removed empty arc_serial_set_ldisc()
+* More set_termios fixes - CSIZE forced to CS8 (for 8N1)
+* global @running_on_iss replaced with platform data, saved in device
+  specific port structure.
+
+v2:
+* ttyARC used as device name
+* Dynamic assignment of major/minor numbers.
+* Ref counting tty in rx routine to prevent it from disappearing in
+  case of a hangup
+* set_termios fixes:
+  - hardware flow control/parity are marked as unsupported
+  - baud written back to termios
+* cosmetics such as commenting the need for @running_on_iss, empty lines
+  etc
+
+Vineet Gupta (1):
+  serial/arc-uart: Add new driver
+
+ drivers/tty/serial/Kconfig    |   25 ++
+ drivers/tty/serial/Makefile   |    1 +
+ drivers/tty/serial/arc_uart.c |  747 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/serial_core.h   |    3 +
+ 4 files changed, 776 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/tty/serial/arc_uart.c
+
+-- 
+1.7.4.1
+
