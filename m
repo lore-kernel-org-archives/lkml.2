@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934234Ab2JKB3B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:29:01 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58371 "EHLO
+	id S934229Ab2JKB32 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:29:28 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60353 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933951Ab2JKBYd (ORCPT
+	by vger.kernel.org with ESMTP id S934029Ab2JKBY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:24:33 -0400
-X-Sasl-enc: bZj+jYB+syqNlxA1By+t7yQ1ezpaj+FW3rc4UB0mAx01 1349918671
+	Wed, 10 Oct 2012 21:24:28 -0400
+X-Sasl-enc: kwN0xQr482KS2NUL/AE7dhMwVailMmPLpFWpXcOXmP7O 1349918667
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 062/120] SCSI: zfcp: only access zfcp_scsi_dev for valid scsi_device
-Date: Thu, 11 Oct 2012 10:00:14 +0900
-Message-Id: <20121011005837.270909708@linuxfoundation.org>
+        Yongqiang Yang <xiaoqiangnk@gmail.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 066/120] ext4: avoid duplicate writes of the backup bg descriptor blocks
+Date: Thu, 11 Oct 2012 10:00:18 +0900
+Message-Id: <20121011005838.135913092@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -29,123 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Peschke <mpeschke@linux.vnet.ibm.com>
+From: Yongqiang Yang <xiaoqiangnk@gmail.com>
 
-commit d436de8ce25f53a8a880a931886821f632247943 upstream.
+commit 2ebd1704ded88a8ae29b5f3998b13959c715c4be upstream.
 
-__scsi_remove_device (e.g. due to dev_loss_tmo) calls
-zfcp_scsi_slave_destroy which in turn sends a close LUN FSF request to
-the adapter. After 30 seconds without response,
-zfcp_erp_timeout_handler kicks the ERP thread failing the close LUN
-ERP action. zfcp_erp_wait in zfcp_erp_lun_shutdown_wait and thus
-zfcp_scsi_slave_destroy returns and then scsi_device is no longer
-valid. Sometime later the response to the close LUN FSF request may
-finally come in. However, commit
-b62a8d9b45b971a67a0f8413338c230e3117dff5
-"[SCSI] zfcp: Use SCSI device data zfcp_scsi_dev instead of zfcp_unit"
-introduced a number of attempts to unconditionally access struct
-zfcp_scsi_dev through struct scsi_device causing a use-after-free.
-This leads to an Oops due to kernel page fault in one of:
-zfcp_fsf_abort_fcp_command_handler, zfcp_fsf_open_lun_handler,
-zfcp_fsf_close_lun_handler, zfcp_fsf_req_trace,
-zfcp_fsf_fcp_handler_common.
-Move dereferencing of zfcp private data zfcp_scsi_dev allocated in
-scsi_device via scsi_transport_reserve_device after the check for
-potentially aborted FSF request and thus no longer valid scsi_device.
-Only then assign sdev_to_zfcp(sdev) to the local auto variable struct
-zfcp_scsi_dev *zfcp_sdev.
+The resize code was needlessly writing the backup block group
+descriptor blocks multiple times (once per block group) during an
+online resize.
 
-Signed-off-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Yongqiang Yang <xiaoqiangnk@gmail.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/scsi/zfcp_fsf.c |   19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
+ fs/ext4/resize.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/s390/scsi/zfcp_fsf.c
-+++ b/drivers/s390/scsi/zfcp_fsf.c
-@@ -801,12 +801,14 @@ out:
- static void zfcp_fsf_abort_fcp_command_handler(struct zfcp_fsf_req *req)
- {
- 	struct scsi_device *sdev = req->data;
--	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
-+	struct zfcp_scsi_dev *zfcp_sdev;
- 	union fsf_status_qual *fsq = &req->qtcb->header.fsf_status_qual;
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -1302,13 +1302,15 @@ exit_journal:
+ 		err = err2;
  
- 	if (req->status & ZFCP_STATUS_FSFREQ_ERROR)
- 		return;
- 
-+	zfcp_sdev = sdev_to_zfcp(sdev);
+ 	if (!err) {
+-		int i;
++		int gdb_num = group / EXT4_DESC_PER_BLOCK(sb);
++		int gdb_num_end = ((group + flex_gd->count - 1) /
++				   EXT4_DESC_PER_BLOCK(sb));
 +
- 	switch (req->qtcb->header.fsf_status) {
- 	case FSF_PORT_HANDLE_NOT_VALID:
- 		if (fsq->word[0] == fsq->word[1]) {
-@@ -1769,13 +1771,15 @@ static void zfcp_fsf_open_lun_handler(st
- {
- 	struct zfcp_adapter *adapter = req->adapter;
- 	struct scsi_device *sdev = req->data;
--	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
-+	struct zfcp_scsi_dev *zfcp_sdev;
- 	struct fsf_qtcb_header *header = &req->qtcb->header;
- 	struct fsf_qtcb_bottom_support *bottom = &req->qtcb->bottom.support;
- 
- 	if (req->status & ZFCP_STATUS_FSFREQ_ERROR)
- 		return;
- 
-+	zfcp_sdev = sdev_to_zfcp(sdev);
+ 		update_backups(sb, sbi->s_sbh->b_blocknr, (char *)es,
+ 			       sizeof(struct ext4_super_block));
+-		for (i = 0; i < flex_gd->count; i++, group++) {
++		for (; gdb_num <= gdb_num_end; gdb_num++) {
+ 			struct buffer_head *gdb_bh;
+-			int gdb_num;
+-			gdb_num = group / EXT4_BLOCKS_PER_GROUP(sb);
 +
- 	atomic_clear_mask(ZFCP_STATUS_COMMON_ACCESS_DENIED |
- 			  ZFCP_STATUS_COMMON_ACCESS_BOXED |
- 			  ZFCP_STATUS_LUN_SHARED |
-@@ -1886,11 +1890,13 @@ out:
- static void zfcp_fsf_close_lun_handler(struct zfcp_fsf_req *req)
- {
- 	struct scsi_device *sdev = req->data;
--	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
-+	struct zfcp_scsi_dev *zfcp_sdev;
- 
- 	if (req->status & ZFCP_STATUS_FSFREQ_ERROR)
- 		return;
- 
-+	zfcp_sdev = sdev_to_zfcp(sdev);
-+
- 	switch (req->qtcb->header.fsf_status) {
- 	case FSF_PORT_HANDLE_NOT_VALID:
- 		zfcp_erp_adapter_reopen(zfcp_sdev->port->adapter, 0, "fscuh_1");
-@@ -1980,7 +1986,7 @@ static void zfcp_fsf_req_trace(struct zf
- {
- 	struct fsf_qual_latency_info *lat_in;
- 	struct latency_cont *lat = NULL;
--	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(scsi->device);
-+	struct zfcp_scsi_dev *zfcp_sdev;
- 	struct zfcp_blk_drv_data blktrc;
- 	int ticks = req->adapter->timer_ticks;
- 
-@@ -1995,6 +2001,7 @@ static void zfcp_fsf_req_trace(struct zf
- 
- 	if (req->adapter->adapter_features & FSF_FEATURE_MEASUREMENT_DATA &&
- 	    !(req->status & ZFCP_STATUS_FSFREQ_ERROR)) {
-+		zfcp_sdev = sdev_to_zfcp(scsi->device);
- 		blktrc.flags |= ZFCP_BLK_LAT_VALID;
- 		blktrc.channel_lat = lat_in->channel_lat * ticks;
- 		blktrc.fabric_lat = lat_in->fabric_lat * ticks;
-@@ -2032,12 +2039,14 @@ static void zfcp_fsf_fcp_handler_common(
- {
- 	struct scsi_cmnd *scmnd = req->data;
- 	struct scsi_device *sdev = scmnd->device;
--	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
-+	struct zfcp_scsi_dev *zfcp_sdev;
- 	struct fsf_qtcb_header *header = &req->qtcb->header;
- 
- 	if (unlikely(req->status & ZFCP_STATUS_FSFREQ_ERROR))
- 		return;
- 
-+	zfcp_sdev = sdev_to_zfcp(sdev);
-+
- 	switch (header->fsf_status) {
- 	case FSF_HANDLE_MISMATCH:
- 	case FSF_PORT_HANDLE_NOT_VALID:
+ 			gdb_bh = sbi->s_group_desc[gdb_num];
+ 			update_backups(sb, gdb_bh->b_blocknr, gdb_bh->b_data,
+ 				       gdb_bh->b_size);
 
 
