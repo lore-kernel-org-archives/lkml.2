@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934321Ab2JKCXk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:23:40 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:33993 "EHLO
+	id S933985Ab2JKCYJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:24:09 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54374 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933925Ab2JKCOC (ORCPT
+	by vger.kernel.org with ESMTP id S932750Ab2JKCNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:14:02 -0400
-X-Sasl-enc: gPyNaKvQtog0hHWtq2tsCx5RM+v5+iT3aKon5JS016Xk 1349921640
+	Wed, 10 Oct 2012 22:13:49 -0400
+X-Sasl-enc: vPSdTgygjLZ75ehOYbIMTEJKPPKp6SMgbuypeMKNjOD1 1349921628
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 47/84] ext4: online defrag is not supported for journaled files
-Date: Thu, 11 Oct 2012 11:03:31 +0900
-Message-Id: <20121011015425.511543427@linuxfoundation.org>
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 44/84] SCSI: zfcp: restore refcount check on port_remove
+Date: Thu, 11 Oct 2012 11:03:28 +0900
+Message-Id: <20121011015424.961257368@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -27,37 +29,191 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+From: Steffen Maier <maier@linux.vnet.ibm.com>
 
-commit f066055a3449f0e5b0ae4f3ceab4445bead47638 upstream.
+commit d99b601b63386f3395dc26a699ae703a273d9982 upstream.
 
-Proper block swap for inodes with full journaling enabled is
-truly non obvious task. In order to be on a safe side let's
-explicitly disable it for now.
+Upstream commit f3450c7b917201bb49d67032e9f60d5125675d6a
+"[SCSI] zfcp: Replace local reference counting with common kref"
+accidentally dropped a reference count check before tearing down
+zfcp_ports that are potentially in use by zfcp_units.
+Even remote ports in use can be removed causing
+unreachable garbage objects zfcp_ports with zfcp_units.
+Thus units won't come back even after a manual port_rescan.
+The kref of zfcp_port->dev.kobj is already used by the driver core.
+We cannot re-use it to track the number of zfcp_units.
+Re-introduce our own counter for units per port
+and check on port_remove.
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Reviewed-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/move_extent.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/s390/scsi/zfcp_aux.c   |    1 +
+ drivers/s390/scsi/zfcp_def.h   |    1 +
+ drivers/s390/scsi/zfcp_ext.h   |    1 +
+ drivers/s390/scsi/zfcp_sysfs.c |   18 ++++++++++++++++--
+ drivers/s390/scsi/zfcp_unit.c  |   36 ++++++++++++++++++++++++++----------
+ 5 files changed, 45 insertions(+), 12 deletions(-)
 
---- a/fs/ext4/move_extent.c
-+++ b/fs/ext4/move_extent.c
-@@ -1209,7 +1209,12 @@ ext4_move_extents(struct file *o_filp, s
- 			orig_inode->i_ino, donor_inode->i_ino);
- 		return -EINVAL;
- 	}
--
-+	/* TODO: This is non obvious task to swap blocks for inodes with full
-+	   jornaling enabled */
-+	if (ext4_should_journal_data(orig_inode) ||
-+	    ext4_should_journal_data(donor_inode)) {
-+		return -EINVAL;
+--- a/drivers/s390/scsi/zfcp_aux.c
++++ b/drivers/s390/scsi/zfcp_aux.c
+@@ -518,6 +518,7 @@ struct zfcp_port *zfcp_port_enqueue(stru
+ 
+ 	rwlock_init(&port->unit_list_lock);
+ 	INIT_LIST_HEAD(&port->unit_list);
++	atomic_set(&port->units, 0);
+ 
+ 	INIT_WORK(&port->gid_pn_work, zfcp_fc_port_did_lookup);
+ 	INIT_WORK(&port->test_link_work, zfcp_fc_link_test_work);
+--- a/drivers/s390/scsi/zfcp_def.h
++++ b/drivers/s390/scsi/zfcp_def.h
+@@ -204,6 +204,7 @@ struct zfcp_port {
+ 	struct zfcp_adapter    *adapter;       /* adapter used to access port */
+ 	struct list_head	unit_list;	/* head of logical unit list */
+ 	rwlock_t		unit_list_lock; /* unit list lock */
++	atomic_t		units;	       /* zfcp_unit count */
+ 	atomic_t	       status;	       /* status of this remote port */
+ 	u64		       wwnn;	       /* WWNN if known */
+ 	u64		       wwpn;	       /* WWPN */
+--- a/drivers/s390/scsi/zfcp_ext.h
++++ b/drivers/s390/scsi/zfcp_ext.h
+@@ -158,6 +158,7 @@ extern void zfcp_scsi_dif_sense_error(st
+ extern struct attribute_group zfcp_sysfs_unit_attrs;
+ extern struct attribute_group zfcp_sysfs_adapter_attrs;
+ extern struct attribute_group zfcp_sysfs_port_attrs;
++extern struct mutex zfcp_sysfs_port_units_mutex;
+ extern struct device_attribute *zfcp_sysfs_sdev_attrs[];
+ extern struct device_attribute *zfcp_sysfs_shost_attrs[];
+ 
+--- a/drivers/s390/scsi/zfcp_sysfs.c
++++ b/drivers/s390/scsi/zfcp_sysfs.c
+@@ -227,6 +227,8 @@ static ssize_t zfcp_sysfs_port_rescan_st
+ static ZFCP_DEV_ATTR(adapter, port_rescan, S_IWUSR, NULL,
+ 		     zfcp_sysfs_port_rescan_store);
+ 
++DEFINE_MUTEX(zfcp_sysfs_port_units_mutex);
++
+ static ssize_t zfcp_sysfs_port_remove_store(struct device *dev,
+ 					    struct device_attribute *attr,
+ 					    const char *buf, size_t count)
+@@ -249,6 +251,16 @@ static ssize_t zfcp_sysfs_port_remove_st
+ 	else
+ 		retval = 0;
+ 
++	mutex_lock(&zfcp_sysfs_port_units_mutex);
++	if (atomic_read(&port->units) > 0) {
++		retval = -EBUSY;
++		mutex_unlock(&zfcp_sysfs_port_units_mutex);
++		goto out;
 +	}
- 	/* Protect orig and donor inodes against a truncate */
- 	ret1 = mext_inode_double_lock(orig_inode, donor_inode);
- 	if (ret1 < 0)
++	/* port is about to be removed, so no more unit_add */
++	atomic_set(&port->units, -1);
++	mutex_unlock(&zfcp_sysfs_port_units_mutex);
++
+ 	write_lock_irq(&adapter->port_list_lock);
+ 	list_del(&port->list);
+ 	write_unlock_irq(&adapter->port_list_lock);
+@@ -289,12 +301,14 @@ static ssize_t zfcp_sysfs_unit_add_store
+ {
+ 	struct zfcp_port *port = container_of(dev, struct zfcp_port, dev);
+ 	u64 fcp_lun;
++	int retval;
+ 
+ 	if (strict_strtoull(buf, 0, (unsigned long long *) &fcp_lun))
+ 		return -EINVAL;
+ 
+-	if (zfcp_unit_add(port, fcp_lun))
+-		return -EINVAL;
++	retval = zfcp_unit_add(port, fcp_lun);
++	if (retval)
++		return retval;
+ 
+ 	return count;
+ }
+--- a/drivers/s390/scsi/zfcp_unit.c
++++ b/drivers/s390/scsi/zfcp_unit.c
+@@ -104,7 +104,7 @@ static void zfcp_unit_release(struct dev
+ {
+ 	struct zfcp_unit *unit = container_of(dev, struct zfcp_unit, dev);
+ 
+-	put_device(&unit->port->dev);
++	atomic_dec(&unit->port->units);
+ 	kfree(unit);
+ }
+ 
+@@ -119,16 +119,27 @@ static void zfcp_unit_release(struct dev
+ int zfcp_unit_add(struct zfcp_port *port, u64 fcp_lun)
+ {
+ 	struct zfcp_unit *unit;
++	int retval = 0;
++
++	mutex_lock(&zfcp_sysfs_port_units_mutex);
++	if (atomic_read(&port->units) == -1) {
++		/* port is already gone */
++		retval = -ENODEV;
++		goto out;
++	}
+ 
+ 	unit = zfcp_unit_find(port, fcp_lun);
+ 	if (unit) {
+ 		put_device(&unit->dev);
+-		return -EEXIST;
++		retval = -EEXIST;
++		goto out;
+ 	}
+ 
+ 	unit = kzalloc(sizeof(struct zfcp_unit), GFP_KERNEL);
+-	if (!unit)
+-		return -ENOMEM;
++	if (!unit) {
++		retval = -ENOMEM;
++		goto out;
++	}
+ 
+ 	unit->port = port;
+ 	unit->fcp_lun = fcp_lun;
+@@ -139,28 +150,33 @@ int zfcp_unit_add(struct zfcp_port *port
+ 	if (dev_set_name(&unit->dev, "0x%016llx",
+ 			 (unsigned long long) fcp_lun)) {
+ 		kfree(unit);
+-		return -ENOMEM;
++		retval = -ENOMEM;
++		goto out;
+ 	}
+ 
+-	get_device(&port->dev);
+-
+ 	if (device_register(&unit->dev)) {
+ 		put_device(&unit->dev);
+-		return -ENOMEM;
++		retval = -ENOMEM;
++		goto out;
+ 	}
+ 
+ 	if (sysfs_create_group(&unit->dev.kobj, &zfcp_sysfs_unit_attrs)) {
+ 		device_unregister(&unit->dev);
+-		return -EINVAL;
++		retval = -EINVAL;
++		goto out;
+ 	}
+ 
++	atomic_inc(&port->units); /* under zfcp_sysfs_port_units_mutex ! */
++
+ 	write_lock_irq(&port->unit_list_lock);
+ 	list_add_tail(&unit->list, &port->unit_list);
+ 	write_unlock_irq(&port->unit_list_lock);
+ 
+ 	zfcp_unit_scsi_scan(unit);
+ 
+-	return 0;
++out:
++	mutex_unlock(&zfcp_sysfs_port_units_mutex);
++	return retval;
+ }
+ 
+ /**
 
 
