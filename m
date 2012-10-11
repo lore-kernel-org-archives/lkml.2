@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933938Ab2JKCZm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:25:42 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45933 "EHLO
+	id S933854Ab2JKC0U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:26:20 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45929 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933437Ab2JKCNI (ORCPT
+	by vger.kernel.org with ESMTP id S933397Ab2JKCMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:13:08 -0400
-X-Sasl-enc: 8GNFKBY72c2gJ8wQhDpIAzuMvMaYocA2kvPAFOEila7B 1349921587
+	Wed, 10 Oct 2012 22:12:46 -0400
+X-Sasl-enc: 0imZhhBJHB3bBzZqkuTfgHD32QKZ/BmZdVPrvqQUmpxI 1349921565
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mathias Krause <minipli@googlemail.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 18/84] xfrm_user: dont copy esn replay window twice for new states
-Date: Thu, 11 Oct 2012 11:03:02 +0900
-Message-Id: <20121011015420.354136640@linuxfoundation.org>
+Subject: [ 31/84] net: small bug on rxhash calculation
+Date: Thu, 11 Oct 2012 11:03:15 +0900
+Message-Id: <20121011015422.685723751@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -30,55 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Chema Gonzalez <chema@google.com>
 
-[ Upstream commit e3ac104d41a97b42316915020ba228c505447d21 ]
+[ Upstream commit 6862234238e84648c305526af2edd98badcad1e0 ]
 
-The ESN replay window was already fully initialized in
-xfrm_alloc_replay_state_esn(). No need to copy it again.
+In the current rxhash calculation function, while the
+sorting of the ports/addrs is coherent (you get the
+same rxhash for packets sharing the same 4-tuple, in
+both directions), ports and addrs are sorted
+independently. This implies packets from a connection
+between the same addresses but crossed ports hash to
+the same rxhash.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+For example, traffic between A=S:l and B=L:s is hashed
+(in both directions) from {L, S, {s, l}}. The same
+rxhash is obtained for packets between C=S:s and D=L:l.
+
+This patch ensures that you either swap both addrs and ports,
+or you swap none. Traffic between A and B, and traffic
+between C and D, get their rxhash from different sources
+({L, S, {l, s}} for A<->B, and {L, S, {s, l}} for C<->D)
+
+The patch is co-written with Eric Dumazet <edumazet@google.com>
+
+Signed-off-by: Chema Gonzalez <chema@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/xfrm/xfrm_user.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ net/core/dev.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/net/xfrm/xfrm_user.c
-+++ b/net/xfrm/xfrm_user.c
-@@ -442,10 +442,11 @@ static void copy_from_user_state(struct
-  * somehow made shareable and move it to xfrm_state.c - JHS
-  *
- */
--static void xfrm_update_ae_params(struct xfrm_state *x, struct nlattr **attrs)
-+static void xfrm_update_ae_params(struct xfrm_state *x, struct nlattr **attrs,
-+				  int update_esn)
- {
- 	struct nlattr *rp = attrs[XFRMA_REPLAY_VAL];
--	struct nlattr *re = attrs[XFRMA_REPLAY_ESN_VAL];
-+	struct nlattr *re = update_esn ? attrs[XFRMA_REPLAY_ESN_VAL] : NULL;
- 	struct nlattr *lt = attrs[XFRMA_LTIME_VAL];
- 	struct nlattr *et = attrs[XFRMA_ETIMER_THRESH];
- 	struct nlattr *rt = attrs[XFRMA_REPLAY_THRESH];
-@@ -555,7 +556,7 @@ static struct xfrm_state *xfrm_state_con
- 		goto error;
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2559,16 +2559,17 @@ __u32 __skb_get_rxhash(struct sk_buff *s
+ 	poff = proto_ports_offset(ip_proto);
+ 	if (poff >= 0) {
+ 		nhoff += ihl * 4 + poff;
+-		if (pskb_may_pull(skb, nhoff + 4)) {
++		if (pskb_may_pull(skb, nhoff + 4))
+ 			ports.v32 = * (__force u32 *) (skb->data + nhoff);
+-			if (ports.v16[1] < ports.v16[0])
+-				swap(ports.v16[0], ports.v16[1]);
+-		}
+ 	}
  
- 	/* override default values from above */
--	xfrm_update_ae_params(x, attrs);
-+	xfrm_update_ae_params(x, attrs, 0);
+ 	/* get a consistent hash (same value on both flow directions) */
+-	if (addr2 < addr1)
++	if (addr2 < addr1 ||
++	    (addr2 == addr1 &&
++	     ports.v16[1] < ports.v16[0])) {
+ 		swap(addr1, addr2);
++		swap(ports.v16[0], ports.v16[1]);
++	}
  
- 	return x;
- 
-@@ -1801,7 +1802,7 @@ static int xfrm_new_ae(struct sk_buff *s
- 		goto out;
- 
- 	spin_lock_bh(&x->lock);
--	xfrm_update_ae_params(x, attrs);
-+	xfrm_update_ae_params(x, attrs, 1);
- 	spin_unlock_bh(&x->lock);
- 
- 	c.event = nlh->nlmsg_type;
+ 	hash = jhash_3words(addr1, addr2, ports.v32, hashrnd);
+ 	if (!hash)
 
 
