@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab2JKMeM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 08:34:12 -0400
-Received: from mail.avalus.com ([89.16.176.221]:41980 "EHLO mail.avalus.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750850Ab2JKMeI convert rfc822-to-8bit (ORCPT
+	id S1756016Ab2JKMe1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 08:34:27 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:54978 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754758Ab2JKMeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 08:34:08 -0400
-X-Greylist: delayed 633 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Oct 2012 08:34:08 EDT
-From: Alex Bligh <alex@alex.org.uk>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: Local DoS through write heavy I/O on CFQ & Deadline
-Date: Thu, 11 Oct 2012 13:23:32 +0100
-Message-Id: <0B138F62-16BF-4295-9AD9-64C0BB39FCE2@alex.org.uk>
-Cc: Alex Bligh <alex@alex.org.uk>
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Apple Message framework v1084)
-X-Mailer: Apple Mail (2.1084)
+	Thu, 11 Oct 2012 08:34:21 -0400
+Date: Thu, 11 Oct 2012 13:34:15 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: =?iso-8859-1?Q?Trep=E1k?= Vilmos <trepo@netcomga.sk>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Platform: hp-wmi: add rfkill support for integrated GPS
+Message-ID: <20121011123415.GA6056@srcf.ucam.org>
+References: <1349952660.1577.43.camel@pluto.netcomga.sk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1349952660.1577.43.camel@pluto.netcomga.sk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have noticed significant I/O scheduling issues on both the CFQ and the
-deadline scheduler where a non-root user can starve any other process of
-any I/O for minutes at a time. The problem is more serious using CFQ but is
-still an effective local DoS vector using Deadline.
+On Thu, Oct 11, 2012 at 12:51:00PM +0200, Trepák Vilmos wrote:
+> @@ -663,6 +669,24 @@ static int __devinit hp_wmi_rfkill_setup
+>  			goto register_bluetooth_error;
+>  	}
+>  
+> +	if (wireless & 0x3) {
+> +		gps_rfkill = rfkill_alloc("hp-gps", &device->dev,
+> +						RFKILL_TYPE_GPS,
+> +						&hp_wmi_rfkill_ops,
+> +						(void *) HPWMI_GPS);
 
-A simple way to generate the problem is:
+I don't think this bit is right - in this codepath, wireless is a mask, 
+so 0x3 would mean wifi and bluetooth, not gps. I'd expect gps to be 0x8. 
+The rest looks good, though.
 
-  dd if=/dev/zero of=- bs=1M count=50000 | dd if=- of=myfile bs=1M count=50000
-
-(note use of 2 dd's is to avoid alleged optimisation of the writing dd
-from /dev/zero). zcat-ing a large file with stout redirected to a file
-produces a similar error. Using ionice to set idle priority makes no
-difference.
-
-To instrument the problem we produced a python script which does a MySQL
-select and update every 10 seconds, and time the execution of the update.
-This is normally milliseconds, but under user generated load conditions, we
-can take this to indefinite (on CFQ) and over a minute (on deadline).
-Postgres is affected in a similar manner (i.e. it is not MySQL specific).
-Simultaneously we have captured the output of 'vmstat 1 2' and
-/proc/meminfo, with appropriate timestamps.
-
-We have reproduced this on multiple hardware environments, using 3.2
-(/proc/version_signature gives "Ubuntu 3.2.0-29.46-generic 3.2.24").
-Anecdotally we believe the situation has worsened since 3.0.
-
-We believe the problem is that dirty pages writeout is starving the system
-of any other I/O, and whilst the process concerned should be penalised to
-allow other processes I/O time, this is not happening.
-
-Full info, including logs and scripts can be found at:
-  https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1064521
-
-I believe this represents a local DoS vector as an unprivileged user can
-effectively stall any root owned process that is performing I/O.
 
 -- 
-Alex Bligh
-
-
-
-
+Matthew Garrett | mjg59@srcf.ucam.org
