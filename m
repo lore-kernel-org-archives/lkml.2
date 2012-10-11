@@ -1,175 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758673Ab2JKNkP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 09:40:15 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36092 "EHLO arroyo.ext.ti.com"
+	id S1758683Ab2JKNke (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 09:40:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57647 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756308Ab2JKNkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 09:40:12 -0400
-From: Nishanth Menon <nm@ti.com>
-To: <linux-pm@vger.kernel.org>
-CC: Nishanth Menon <nm@ti.com>, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] PM / OPP: predictable fail results for opp_find* functions
-Date: Thu, 11 Oct 2012 08:40:03 -0500
-Message-ID: <1349962803-19674-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753986Ab2JKNka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 09:40:30 -0400
+Date: Thu, 11 Oct 2012 15:40:28 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Johannes Weiner <hannes@cmpxchg.org>,
+        Greg Thelen <gthelen@google.com>, devel@openvz.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v4 10/14] memcg: use static branches when code not in use
+Message-ID: <20121011134028.GH29295@dhcp22.suse.cz>
+References: <1349690780-15988-1-git-send-email-glommer@parallels.com>
+ <1349690780-15988-11-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349690780-15988-11-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the opp_find* functions return -ENODEV when:
-a) it cant find a device (e.g. request for an OPP search on device
-   which was not registered)
-b) When it cant find a match for the search strategy used
+On Mon 08-10-12 14:06:16, Glauber Costa wrote:
+> We can use static branches to patch the code in or out when not used.
+> 
+> Because the _ACTIVE bit on kmem_accounted is only set after the
+> increment is done, we guarantee that the root memcg will always be
+> selected for kmem charges until all call sites are patched (see
+> memcg_kmem_enabled).  This guarantees that no mischarges are applied.
+> 
+> static branch decrement happens when the last reference count from the
+> kmem accounting in memcg dies. This will only happen when the charges
+> drop down to 0.
+> 
+> When that happen, we need to disable the static branch only on those
+> memcgs that enabled it. To achieve this, we would be forced to
+> complicate the code by keeping track of which memcgs were the ones
+> that actually enabled limits, and which ones got it from its parents.
+> 
+> It is a lot simpler just to do static_key_slow_inc() on every child
+> that is accounted.
+> 
+> [ v4: adapted this patch to the changes in kmem_accounted ]
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Suleiman Souhlal <suleiman@google.com>
 
-This makes life a little in-efficient for users such as devfreq
-to make reasonable judgement before switching search strategies.
+Looks reasonable to me
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-So, standardize the return results as following:
- -EINVAL for bad pointer parameters
- -ENODEV when device cannot be found
- -ERANGE when search fails
+Just a little nit.
 
-This has the following benefit for devfreq implementation:
+[...]
 
-Current code:
-opp = opp_find_freq_floor(dev, freq);
-/* Following search triggers even for un-registered device */
-if (opp == ERR_PTR(-ENODEV))
-	opp = opp_find_freq_ceil(dev, freq);
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 634c7b5..724a08b 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -344,11 +344,15 @@ struct mem_cgroup {
+>  /* internal only representation about the status of kmem accounting. */
+>  enum {
+>  	KMEM_ACCOUNTED_ACTIVE = 0, /* accounted by this cgroup itself */
+> +	KMEM_ACCOUNTED_ACTIVATED, /* static key enabled. */
+>  	KMEM_ACCOUNTED_DEAD, /* dead memcg, pending kmem charges */
+>  };
+>  
+> -/* first bit */
+> -#define KMEM_ACCOUNTED_MASK 0x1
+> +/*
+> + * first two bits. We account when limit is on, but only after
+> + * call sites are patched
+> + */
+> +#define KMEM_ACCOUNTED_MASK 0x3
 
-Vs (after this change):
-opp = opp_find_freq_floor(dev, freq);
-/* Will only be triggered if search logic fails: intended usage */
-if (opp == ERR_PTR(-ERANGE))
-	opp = opp_find_freq_ceil(dev, freq);
+The names are long but why not use KMEM_ACCOUNTED_ACTIVE*
+#define KMEM_ACCOUNTED_MASK 1<<KMEM_ACCOUNTED_ACTIVE | 1<<KMEM_ACCOUNTED_ACTIVATED
 
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Kevin Hilman <khilman@ti.com>
-Cc: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- drivers/base/power/opp.c  |   27 +++++++++++++++++++--------
- drivers/devfreq/devfreq.c |    4 ++--
- 2 files changed, 21 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-index 04d443f..a60a8d1 100644
---- a/drivers/base/power/opp.c
-+++ b/drivers/base/power/opp.c
-@@ -233,7 +233,10 @@ EXPORT_SYMBOL(opp_get_opp_count);
-  *
-  * Searches for exact match in the opp list and returns pointer to the matching
-  * opp if found, else returns ERR_PTR in case of error and should be handled
-- * using IS_ERR.
-+ * using IS_ERR. Error return values can be:
-+ * EINVAL:	for bad pointer
-+ * ERANGE:	no match found for search
-+ * ENODEV:	if device not found in list of registered devices
-  *
-  * Note: available is a modifier for the search. if available=true, then the
-  * match is for exact matching frequency and is available in the stored OPP
-@@ -252,7 +255,7 @@ struct opp *opp_find_freq_exact(struct device *dev, unsigned long freq,
- 				bool available)
- {
- 	struct device_opp *dev_opp;
--	struct opp *temp_opp, *opp = ERR_PTR(-ENODEV);
-+	struct opp *temp_opp, *opp = ERR_PTR(-ERANGE);
- 
- 	dev_opp = find_device_opp(dev);
- 	if (IS_ERR(dev_opp)) {
-@@ -282,7 +285,11 @@ EXPORT_SYMBOL(opp_find_freq_exact);
-  * for a device.
-  *
-  * Returns matching *opp and refreshes *freq accordingly, else returns
-- * ERR_PTR in case of error and should be handled using IS_ERR.
-+ * ERR_PTR in case of error and should be handled using IS_ERR. Error return
-+ * values can be:
-+ * EINVAL:	for bad pointer
-+ * ERANGE:	no match found for search
-+ * ENODEV:	if device not found in list of registered devices
-  *
-  * Locking: This function must be called under rcu_read_lock(). opp is a rcu
-  * protected pointer. The reason for the same is that the opp pointer which is
-@@ -293,7 +300,7 @@ EXPORT_SYMBOL(opp_find_freq_exact);
- struct opp *opp_find_freq_ceil(struct device *dev, unsigned long *freq)
- {
- 	struct device_opp *dev_opp;
--	struct opp *temp_opp, *opp = ERR_PTR(-ENODEV);
-+	struct opp *temp_opp, *opp = ERR_PTR(-ERANGE);
- 
- 	if (!dev || !freq) {
- 		dev_err(dev, "%s: Invalid argument freq=%p\n", __func__, freq);
-@@ -302,7 +309,7 @@ struct opp *opp_find_freq_ceil(struct device *dev, unsigned long *freq)
- 
- 	dev_opp = find_device_opp(dev);
- 	if (IS_ERR(dev_opp))
--		return opp;
-+		return ERR_CAST(dev_opp);
- 
- 	list_for_each_entry_rcu(temp_opp, &dev_opp->opp_list, node) {
- 		if (temp_opp->available && temp_opp->rate >= *freq) {
-@@ -325,7 +332,11 @@ EXPORT_SYMBOL(opp_find_freq_ceil);
-  * for a device.
-  *
-  * Returns matching *opp and refreshes *freq accordingly, else returns
-- * ERR_PTR in case of error and should be handled using IS_ERR.
-+ * ERR_PTR in case of error and should be handled using IS_ERR. Error return
-+ * values can be:
-+ * EINVAL:	for bad pointer
-+ * ERANGE:	no match found for search
-+ * ENODEV:	if device not found in list of registered devices
-  *
-  * Locking: This function must be called under rcu_read_lock(). opp is a rcu
-  * protected pointer. The reason for the same is that the opp pointer which is
-@@ -336,7 +347,7 @@ EXPORT_SYMBOL(opp_find_freq_ceil);
- struct opp *opp_find_freq_floor(struct device *dev, unsigned long *freq)
- {
- 	struct device_opp *dev_opp;
--	struct opp *temp_opp, *opp = ERR_PTR(-ENODEV);
-+	struct opp *temp_opp, *opp = ERR_PTR(-ERANGE);
- 
- 	if (!dev || !freq) {
- 		dev_err(dev, "%s: Invalid argument freq=%p\n", __func__, freq);
-@@ -345,7 +356,7 @@ struct opp *opp_find_freq_floor(struct device *dev, unsigned long *freq)
- 
- 	dev_opp = find_device_opp(dev);
- 	if (IS_ERR(dev_opp))
--		return opp;
-+		return ERR_CAST(dev_opp);
- 
- 	list_for_each_entry_rcu(temp_opp, &dev_opp->opp_list, node) {
- 		if (temp_opp->available) {
-diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-index e4d48d2..3838f99 100644
---- a/drivers/devfreq/devfreq.c
-+++ b/drivers/devfreq/devfreq.c
-@@ -656,14 +656,14 @@ struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq,
- 		opp = opp_find_freq_floor(dev, freq);
- 
- 		/* If not available, use the closest opp */
--		if (opp == ERR_PTR(-ENODEV))
-+		if (opp == ERR_PTR(-ERANGE))
- 			opp = opp_find_freq_ceil(dev, freq);
- 	} else {
- 		/* The freq is an lower bound. opp should be higher */
- 		opp = opp_find_freq_ceil(dev, freq);
- 
- 		/* If not available, use the closest opp */
--		if (opp == ERR_PTR(-ENODEV))
-+		if (opp == ERR_PTR(-ERANGE))
- 			opp = opp_find_freq_floor(dev, freq);
- 	}
- 
+[...]
 -- 
-1.7.9.5
-
+Michal Hocko
+SUSE Labs
