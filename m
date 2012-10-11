@@ -1,63 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab2JKUPM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 16:15:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44437 "EHLO mx2.suse.de"
+	id S1757219Ab2JKURn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 16:17:43 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:55661 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752648Ab2JKUPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 16:15:09 -0400
-Message-ID: <507728C6.9080407@suse.cz>
-Date: Thu, 11 Oct 2012 22:15:02 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
+	id S1755431Ab2JKURl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 16:17:41 -0400
+Date: Thu, 11 Oct 2012 21:17:36 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <pzijlstr@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hillf Danton <dhillf@gmail.com>,
+        Andrew Jones <drjones@redhat.com>, Dan Smith <danms@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Christoph Lameter <cl@linux.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 08/33] autonuma: define the autonuma flags
+Message-ID: <20121011201736.GP3317@csn.ul.ie>
+References: <1349308275-2174-1-git-send-email-aarcange@redhat.com>
+ <1349308275-2174-9-git-send-email-aarcange@redhat.com>
+ <20121011134643.GU3317@csn.ul.ie>
+ <20121011173442.GS1818@redhat.com>
 MIME-Version: 1.0
-To: Nicolas Palix <nicolas.palix@imag.fr>
-Cc: Julia Lawall <julia.lawall@lip6.fr>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] Coccicheck: Add the rep+ctxt mode
-References: <CAAxaTiOsaHOR4cbwcq=xOn-sWxB6PdB4x_UgYf2rUsPQM=WwWA@mail.gmail.com> <20121011131509.GB16465@sepie.suse.cz> <CAAxaTiOYpDZTeWbL2UsL-8FJb4rU4RoZaH-gFScU=khY4+44XQ@mail.gmail.com>
-In-Reply-To: <CAAxaTiOYpDZTeWbL2UsL-8FJb4rU4RoZaH-gFScU=khY4+44XQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121011173442.GS1818@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 11.10.2012 15:46, Nicolas Palix napsal(a):
-> Hi,
+On Thu, Oct 11, 2012 at 07:34:42PM +0200, Andrea Arcangeli wrote:
+> On Thu, Oct 11, 2012 at 02:46:43PM +0100, Mel Gorman wrote:
+> > Should this be a SCHED_FEATURE flag?
 > 
-> On Thu, Oct 11, 2012 at 3:34 PM, Michal Marek <mmarek@suse.cz> wrote:
->> On Thu, Sep 20, 2012 at 10:30:46PM +0200, Nicolas Palix wrote:
->>> This adds a 'rep+ctxt' mode which prints the warning
->>> message followed by the context.
->>>
->>> Signed-off-by: Nicolas Palix <nicolas.palix@imag.fr>
->>> ---
->>>  scripts/coccicheck | 3 +++
->>>  1 file changed, 3 insertions(+)
->>>
->>> diff --git a/scripts/coccicheck b/scripts/coccicheck
->>> index 823e972..eb43e40 100755
->>> --- a/scripts/coccicheck
->>> +++ b/scripts/coccicheck
->>> @@ -95,6 +95,9 @@ coccinelle () {
->>>       $SPATCH -D report  $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff || \
->>>       $SPATCH -D context $FLAGS -sp_file $COCCI $OPT $OPTIONS               || \
->>>       $SPATCH -D org     $FLAGS -sp_file $COCCI $OPT $OPTIONS
->>> -no_show_diff || exit 1
->>
->> Your mailer broke this line into two, please try to avoid this next
->> time. Also, please CC lkml when submitting patches. I applied the patch
->> to kbuild.git#misc now.
+> I guess it could. It is only used by kernel/sched/numa.c which isn't
+> even built unless CONFIG_AUTONUMA is set. So it would require a
+> CONFIG_AUTONUMA in the sched feature flags unless we want to expose
+> no-operational bits. I'm not sure what the preferred way is.
 > 
-> Ooops.. Sorry. I didn't notice.
-> 
-> The patches are publish on github in my coccicheck branch.
-> https://github.com/npalix/linux/commits/coccicheck
-> 
-> Do you prefer a pull request next time to avoid such things ?
 
-Yes, if you base the branch on some tagged release, preferably the
-latest -rc1.
+It's fine this way for now. It just felt that it was bolted onto the
+side a bit and didn't quite belong there but it could be argued either
+way so just leave it alone.
 
-Michal
+> > Have you ever identified a case where it's a good idea to set that flag?
+> 
+> It's currently set by default but no, I didn't do enough experiments
+> if it's worth copying or resetting the data.
+> 
+
+Ok, if it was something that was going to be regularly used there would
+be more justification for SCHED_FEATURE.
+
+> > A child that closely shared data with its parent is not likely to also
+> > want to migrate to separate nodes. It just seems unnecessary to have and
+> 
+> Agreed, this is why the task_selected_nid is always inherited by
+> default (that is the CFS autopilot driver).
+> 
+> The question is if the full statistics also should be inherited across
+> fork/clone or not. I don't know the answer yet and that's why that
+> knob exists.
+> 
+
+I very strongly suspect the answer is "no".
+
+> If we retain them, the autonuma_balance may decide to move the
+> task before a full statistics buildup executed the child.
+> 
+> The current way is to reset the data, and wait the data to buildup in
+> the child, while we keep CFS on autopilot with task_selected_nid
+> (which is always inherited). I thought the current one to be a good
+> tradeoff, but copying all data isn't an horrible idea either.
+> 
+> > impossible to suggest to an administrator how the flag might be used.
+> 
+> Agreed. this in fact is a debug flag only, it won't ever showup to the admin.
+> 
+> #ifdef CONFIG_DEBUG_VM
+> SYSFS_ENTRY(sched_load_balance_strict, AUTONUMA_SCHED_LOAD_BALANCE_STRICT_FLAG);
+> SYSFS_ENTRY(child_inheritance, AUTONUMA_CHILD_INHERITANCE_FLAG);
+> SYSFS_ENTRY(migrate_allow_first_fault,
+> 	    AUTONUMA_MIGRATE_ALLOW_FIRST_FAULT_FLAG);
+> #endif /* CONFIG_DEBUG_VM */
+> 
+
+Good. Nice to have just in case even if I think it'll never be used :)
+
+> > 
+> > > +	/*
+> > > +	 * If set, this tells knuma_scand to trigger NUMA hinting page
+> > > +	 * faults at the pmd level instead of the pte level. This
+> > > +	 * reduces the number of NUMA hinting faults potentially
+> > > +	 * saving CPU time. It reduces the accuracy of the
+> > > +	 * task_autonuma statistics (but does not change the accuracy
+> > > +	 * of the mm_autonuma statistics). This flag can be toggled
+> > > +	 * through sysfs as runtime.
+> > > +	 *
+> > > +	 * This flag does not affect AutoNUMA with transparent
+> > > +	 * hugepages (THP). With THP the NUMA hinting page faults
+> > > +	 * always happen at the pmd level, regardless of the setting
+> > > +	 * of this flag. Note: there is no reduction in accuracy of
+> > > +	 * task_autonuma statistics with THP.
+> > > +	 *
+> > > +	 * Default set.
+> > > +	 */
+> > > +	AUTONUMA_SCAN_PMD_FLAG,
+> > 
+> > This flag and the other flags make sense. Early on we just are not going
+> > to know what the correct choice is. My gut says that ultimately we'll
+> 
+> Agreed. This is why I left these knobs in, even if I've been asked to
+> drop them a few times (they were perceived as adding complexity). But
+> for things we're not sure about, these really helps to benchmark quick
+> one way or another.
+> 
+
+I don't mind them being left in for now. They at least forced me to
+consider the cases where they might be required and consider if that is
+realistic or not. From that perspective alone it was worth it :)
+
+> scan_pmd is actually not under DEBUG_VM as it looked a more fundamental thing.
+> 
+> > default to PMD level *but* fall back to PTE level on a per-task basis if
+> > ping-pong migrations are detected. This will catch ping-pongs on data
+> > that is not PMD aligned although obviously data that is not page aligned
+> > will also suffer. Eventually I think this flag will go away but the
+> > behaviour will be;
+> > 
+> > default, AUTONUMA_SCAN_PMD
+> > if ping-pong, fallback to AUTONUMA_SCAN_PTE
+> > if ping-ping, AUTONUMA_SCAN_NONE
+> 
+> That would be ideal, good idea indeed.
+> 
+> > so there is a graceful degradation if autonuma is doing the wrong thing.
+> 
+> Makes perfect sense to me if we figure out how to reliably detect when
+> to make the switch.
+> 
+
+The "reliable" part is the mess. I think it potentially would be possible
+to detect it based on the number of times numa_hinting_fault() migrated
+pages and decay that at each knuma_scan but that could take too long
+to detect with the 10 second delays so there is no obvious good answer.
+WIth some experience on a few different workloads, it might be a bit
+more obvious. Right now what you have is good enough and we can just
+keep the potential problem in mind so we'll recognise it when we see it.
+
+-- 
+Mel Gorman
+SUSE Labs
