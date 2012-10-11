@@ -1,155 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030200Ab2JKUtr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 16:49:47 -0400
-Received: from mga14.intel.com ([143.182.124.37]:53033 "EHLO mga14.intel.com"
+	id S1759318Ab2JKUyM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 16:54:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45739 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759263Ab2JKUtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 16:49:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,573,1344236400"; 
-   d="scan'208";a="203427575"
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-Subject: [PATCH v2 1/8] x86: Improve __phys_addr performance by making use of
-	carry flags and inlining
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, andi@firstfloor.org
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Alexander Duyck <alexander.h.duyck@intel.com>
-Date: Thu, 11 Oct 2012 13:49:57 -0700
-Message-ID: <20121011204957.12787.80543.stgit@gitlad.jf.intel.com>
-In-Reply-To: <20121011204324.12787.30514.stgit@gitlad.jf.intel.com>
-References: <20121011204324.12787.30514.stgit@gitlad.jf.intel.com>
-User-Agent: StGIT/0.14.2
+	id S932891Ab2JKUyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 16:54:10 -0400
+Date: Thu, 11 Oct 2012 22:54:03 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Daniel Santos <daniel.santos@pobox.com>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 1/10] compiler-gcc4.h: correct verion check for
+ __compiletime_error
+Message-ID: <20121011205403.GF16465@sepie.suse.cz>
+References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
+ <1348874411-28288-2-git-send-email-daniel.santos@pobox.com>
+ <alpine.DEB.2.00.1210022324430.12717@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1210022324430.12717@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is meant to improve overall system performance when making use of
-the __phys_addr call.  To do this I have implemented several changes.
+On Tue, Oct 02, 2012 at 11:25:12PM -0700, David Rientjes wrote:
+> On Fri, 28 Sep 2012, Daniel Santos wrote:
+> 
+> > NOTE: this is has already been comitted to -mm
+> > 
+> > __attribute__((error(msg))) was introduced in gcc 4.3 (not 4.4) and as I
+> > was unable to find any gcc bugs pertaining to it, I'm presuming that it
+> > has functioned as advertised since 4.3.0.
+> > 
+> > Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+> > Cc: Michal Marek <mmarek@suse.cz>
+> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> 
+> Tested-by: David Rientjes <rientjes@google.com>
+> 
+> Works with 4.3.6.
 
-First if CONFIG_DEBUG_VIRTUAL is not defined __phys_addr is made an inline,
-similar to how this is currently handled in 32 bit.  However in order to do
-this it is required to export phys_base so that it is available if __phys_addr
-is used in kernel modules.
+Applied to kbuild.git#kbuild now.
 
-The second change was to streamline the code by making use of the carry flag
-on an add operation instead of performing a compare on a 64 bit value.  The
-advantage to this is that it allows us to significantly reduce the overall
-size of the call.  On my Xeon E5 system the entire __phys_addr inline call
-consumes a little less than 32 bytes and 5 instructions.  I also applied
-similar logic to the debug version of the function.  My testing shows that the
-debug version of the function with this patch applied is slightly faster than
-the non-debug version without the patch.
-
-Finally, when building the kernel with the first two changes applied I saw
-build warnings about __START_KERNEL_map and PAGE_OFFSET constants not fitting
-in their type.  In order to resolve the build warning I changed their type
-from UL to ULL.
-
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
----
-
- arch/x86/include/asm/page_64_types.h |   17 +++++++++++++++--
- arch/x86/kernel/x8664_ksyms_64.c     |    3 +++
- arch/x86/mm/physaddr.c               |   20 ++++++++++++++------
- 3 files changed, 32 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
-index 320f7bb..1ca93d3 100644
---- a/arch/x86/include/asm/page_64_types.h
-+++ b/arch/x86/include/asm/page_64_types.h
-@@ -30,14 +30,14 @@
-  * hypervisor to fit.  Choosing 16 slots here is arbitrary, but it's
-  * what Xen requires.
-  */
--#define __PAGE_OFFSET           _AC(0xffff880000000000, UL)
-+#define __PAGE_OFFSET           _AC(0xffff880000000000, ULL)
- 
- #define __PHYSICAL_START	((CONFIG_PHYSICAL_START +	 	\
- 				  (CONFIG_PHYSICAL_ALIGN - 1)) &	\
- 				 ~(CONFIG_PHYSICAL_ALIGN - 1))
- 
- #define __START_KERNEL		(__START_KERNEL_map + __PHYSICAL_START)
--#define __START_KERNEL_map	_AC(0xffffffff80000000, UL)
-+#define __START_KERNEL_map	_AC(0xffffffff80000000, ULL)
- 
- /* See Documentation/x86/x86_64/mm.txt for a description of the memory map. */
- #define __PHYSICAL_MASK_SHIFT	46
-@@ -58,7 +58,20 @@ void copy_page(void *to, void *from);
- extern unsigned long max_pfn;
- extern unsigned long phys_base;
- 
-+static inline unsigned long __phys_addr_nodebug(unsigned long x)
-+{
-+	unsigned long y = x - __START_KERNEL_map;
-+
-+	/* use the carry flag to determine if x was < __START_KERNEL_map */
-+	x = y + ((x > y) ? phys_base : (__START_KERNEL_map - PAGE_OFFSET));
-+
-+	return x;
-+}
-+#ifdef CONFIG_DEBUG_VIRTUAL
- extern unsigned long __phys_addr(unsigned long);
-+#else
-+#define __phys_addr(x)		__phys_addr_nodebug(x)
-+#endif
- #define __phys_reloc_hide(x)	(x)
- 
- #define vmemmap ((struct page *)VMEMMAP_START)
-diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
-index 1330dd1..b014d94 100644
---- a/arch/x86/kernel/x8664_ksyms_64.c
-+++ b/arch/x86/kernel/x8664_ksyms_64.c
-@@ -59,6 +59,9 @@ EXPORT_SYMBOL(memcpy);
- EXPORT_SYMBOL(__memcpy);
- EXPORT_SYMBOL(memmove);
- 
-+#ifndef CONFIG_DEBUG_VIRTUAL
-+EXPORT_SYMBOL(phys_base);
-+#endif
- EXPORT_SYMBOL(empty_zero_page);
- #ifndef CONFIG_PARAVIRT
- EXPORT_SYMBOL(native_load_gs_index);
-diff --git a/arch/x86/mm/physaddr.c b/arch/x86/mm/physaddr.c
-index d2e2735..f63bec5 100644
---- a/arch/x86/mm/physaddr.c
-+++ b/arch/x86/mm/physaddr.c
-@@ -8,20 +8,28 @@
- 
- #ifdef CONFIG_X86_64
- 
-+#ifdef CONFIG_DEBUG_VIRTUAL
- unsigned long __phys_addr(unsigned long x)
- {
--	if (x >= __START_KERNEL_map) {
--		x -= __START_KERNEL_map;
--		VIRTUAL_BUG_ON(x >= KERNEL_IMAGE_SIZE);
--		x += phys_base;
-+	unsigned long y = x - __START_KERNEL_map;
-+
-+	/* use the carry flag to determine if x was < __START_KERNEL_map */
-+	if (unlikely(x > y)) {
-+		x = y + phys_base;
-+
-+		VIRTUAL_BUG_ON(y >= KERNEL_IMAGE_SIZE);
- 	} else {
--		VIRTUAL_BUG_ON(x < PAGE_OFFSET);
--		x -= PAGE_OFFSET;
-+		x = y + (__START_KERNEL_map - PAGE_OFFSET);
-+
-+		/* carry flag will be set if starting x was >= PAGE_OFFSET */
-+		VIRTUAL_BUG_ON(x > y);
- 		VIRTUAL_BUG_ON(!phys_addr_valid(x));
- 	}
-+
- 	return x;
- }
- EXPORT_SYMBOL(__phys_addr);
-+#endif
- 
- bool __virt_addr_valid(unsigned long x)
- {
-
+Michal
