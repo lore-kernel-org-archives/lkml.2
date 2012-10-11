@@ -1,101 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933165Ab2JKAhp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:37:45 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46439 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933029Ab2JKAWu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:22:50 -0400
-X-Sasl-enc: Nv68i3LtwppXs+M/85dXQP9qS6290LJwLFNDpuYaaCfZ 1349914968
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexander Shiyan <shc_work@mail.ru>, Arnd Bergmann <arnd@arndb.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 111/122] mtd: autcpu12-nvram: Fix compile breakage
-Date: Thu, 11 Oct 2012 07:54:37 +0900
-Message-Id: <20121010225357.981562953@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
-References: <20121010225337.989799482@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S933168Ab2JKAiE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:38:04 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:36495 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932921Ab2JKAiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 20:38:01 -0400
+Date: Wed, 10 Oct 2012 17:37:52 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@linux.intel.com>,
+        PaX Team <pageexec@freemail.hu>,
+        Brad Spengler <spender@grsecurity.net>
+Subject: [PATCH v3] fix stack memory content leak via UNAME26
+Message-ID: <20121011003752.GA21731@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+Calling uname() with the UNAME26 personality set allows a leak of kernel
+stack contents. This fixes it by defensively calculating the length of
+copy_to_user() call, making the len argument unsigned, and initializing
+the stack buffer to zero (now technically unneeded, but hey, overkill).
 
-------------------
+CVE-2012-0957
 
-From: Alexander Shiyan <shc_work@mail.ru>
-
-commit d1f55c680e5d021e7066f4461dd678d42af18898 upstream.
-
-Update driver autcpu12-nvram.c so it compiles; map_read32/map_write32
-no longer exist in the kernel so the driver is totally broken.
-Additionally, map_info name passed to simple_map_init is incorrect.
-
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: PaX Team <pageexec@freemail.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: PaX Team <pageexec@freemail.hu>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: stable@vger.kernel.org
+Signed-off-by: Kees Cook <keescook@chromium.org>
 
 ---
- drivers/mtd/maps/autcpu12-nvram.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+v3:
+ - use scnprintf, suggested by Andrew Morton.
+ - proactively handle impossible len == 0 case.
+v2:
+ - corrected credit to PaX Team.
+ - moved stack clearing into if case to avoid penalty to common case.
+---
+ kernel/sys.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/mtd/maps/autcpu12-nvram.c
-+++ b/drivers/mtd/maps/autcpu12-nvram.c
-@@ -43,7 +43,8 @@ struct map_info autcpu12_sram_map = {
- 
- static int __init init_autcpu12_sram (void)
+diff --git a/kernel/sys.c b/kernel/sys.c
+index c5cb5b9..01865c6 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1265,15 +1265,16 @@ DECLARE_RWSEM(uts_sem);
+  * Work around broken programs that cannot handle "Linux 3.0".
+  * Instead we map 3.x to 2.6.40+x, so e.g. 3.0 would be 2.6.40
+  */
+-static int override_release(char __user *release, int len)
++static int override_release(char __user *release, size_t len)
  {
--	int err, save0, save1;
-+	map_word tmp, save0, save1;
-+	int err;
+ 	int ret = 0;
+-	char buf[65];
  
- 	autcpu12_sram_map.virt = ioremap(0x12000000, SZ_128K);
- 	if (!autcpu12_sram_map.virt) {
-@@ -51,7 +52,7 @@ static int __init init_autcpu12_sram (vo
- 		err = -EIO;
- 		goto out;
+ 	if (current->personality & UNAME26) {
+-		char *rest = UTS_RELEASE;
++		const char *rest = UTS_RELEASE;
++		char buf[65] = { 0 };
+ 		int ndots = 0;
+ 		unsigned v;
++		size_t copy;
+ 
+ 		while (*rest) {
+ 			if (*rest == '.' && ++ndots >= 3)
+@@ -1283,8 +1284,9 @@ static int override_release(char __user *release, int len)
+ 			rest++;
+ 		}
+ 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
+-		snprintf(buf, len, "2.6.%u%s", v, rest);
+-		ret = copy_to_user(release, buf, len);
++		copy = min(sizeof(buf), max_t(size_t, 1, len));
++		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
++		ret = copy_to_user(release, buf, copy + 1);
  	}
--	simple_map_init(&autcpu_sram_map);
-+	simple_map_init(&autcpu12_sram_map);
- 
- 	/*
- 	 * Check for 32K/128K
-@@ -61,20 +62,22 @@ static int __init init_autcpu12_sram (vo
- 	 * Read	and check result on ofs 0x0
- 	 * Restore contents
- 	 */
--	save0 = map_read32(&autcpu12_sram_map,0);
--	save1 = map_read32(&autcpu12_sram_map,0x10000);
--	map_write32(&autcpu12_sram_map,~save0,0x10000);
-+	save0 = map_read(&autcpu12_sram_map, 0);
-+	save1 = map_read(&autcpu12_sram_map, 0x10000);
-+	tmp.x[0] = ~save0.x[0];
-+	map_write(&autcpu12_sram_map, tmp, 0x10000);
- 	/* if we find this pattern on 0x0, we have 32K size
- 	 * restore contents and exit
- 	 */
--	if ( map_read32(&autcpu12_sram_map,0) != save0) {
--		map_write32(&autcpu12_sram_map,save0,0x0);
-+	tmp = map_read(&autcpu12_sram_map, 0);
-+	if (!map_word_equal(&autcpu12_sram_map, tmp, save0)) {
-+		map_write(&autcpu12_sram_map, save0, 0x0);
- 		goto map;
- 	}
- 	/* We have a 128K found, restore 0x10000 and set size
- 	 * to 128K
- 	 */
--	map_write32(&autcpu12_sram_map,save1,0x10000);
-+	map_write(&autcpu12_sram_map, save1, 0x10000);
- 	autcpu12_sram_map.size = SZ_128K;
- 
- map:
+ 	return ret;
+ }
+-- 
+1.7.9.5
 
 
+-- 
+Kees Cook
+Chrome OS Security
