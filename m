@@ -1,69 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501Ab2JKFlf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 01:41:35 -0400
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:43248 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754630Ab2JKFld (ORCPT
+	id S1756686Ab2JKFms (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 01:42:48 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43150 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752104Ab2JKFmm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 01:41:33 -0400
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AoaJAFtbdlBV5h1yPGdsb2JhbABEikyzbgR7GQEBAQEfGQ0ngiABAQQBOhwjBQsIAxQELhQlChoKCYd+Crh6FIszLwOFDmADkjuDMIVyjS4
-X-IronPort-AV: E=Sophos;i="4.80,570,1344204000"; 
-   d="scan'208";a="427194664"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 11 Oct 2012 07:44:03 +0200
-To: Peter Stuge <peter@stuge.se>
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: REGRESSION: usbdevfs:
- Use-scatter-gather-lists-for-large-bulk-transfers
-Message-ID: <20121011054403.GA1680@polaris.bitmath.org>
-References: <20121010203118.GA792@polaris.bitmath.org>
- <20121010203459.20663.qmail@stuge.se>
+	Thu, 11 Oct 2012 01:42:42 -0400
+From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+To: Constantine Shulyupin <const@MakeLinux.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH] usb: remove CONFIG_USB_MUSB_HOST etc
+Thread-Topic: [PATCH] usb: remove CONFIG_USB_MUSB_HOST etc
+Thread-Index: AQHNpVd+gQmEDX6glk2Cf0f3EaSh+5ezmWdg
+Date: Thu, 11 Oct 2012 05:42:25 +0000
+Message-ID: <A73F36158E33644199EB82C5EC81C7BC3E9CA495@DBDE01.ent.ti.com>
+References: <1349702227-24875-1-git-send-email-const@MakeLinux.com>
+In-Reply-To: <1349702227-24875-1-git-send-email-const@MakeLinux.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121010203459.20663.qmail@stuge.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 10:34:59PM +0200, Peter Stuge wrote:
-> Hej Henrik,
+Hi,
+On Mon, Oct 08, 2012 at 18:47:07, Constantine Shulyupin wrote:
+> From: Constantine Shulyupin <const@MakeLinux.com>
 > 
-> Henrik Rydberg wrote:
-> > commit 3d97ff63f8997761f12c8fbe8082996c6eeaba1a
-> > Author: Hans de Goede <hdegoede@redhat.com>
-> > Date:   Wed Jul 4 09:18:03 2012 +0200
-> > 
-> >     usbdevfs: Use scatter-gather lists for large bulk transfers
-> >     
-> > breaks an usb programming cable over here. The problem is reported as
-> > "bulk tranfer failed" [sic] by the tool, and bisection leads to this
-> > commit. Reverting on top of 3.6 solves it for me.
-> > 
-> > I am happy to test alternatives.
+> Remove USB configuration in arch/arm/mach-davinci/usb.c accordingly 
+> CONFIG_USB_MUSB_OTG CONFIG_USB_MUSB_PERIPHERAL CONFIG_USB_MUSB_HOST 
+> and set MUSB_OTG configuration by default
+> because this configuration options are removed from Kconfig.
 > 
-> In order to make full use of the new kernel commit you also need
-> changes in libusb, if the tool uses libusb, but I agree that the
-> kernel change must under no circumstance cause existing userland
-> software to regress.
+> Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
+>  
+> ---
+>  arch/arm/mach-davinci/usb.c |    6 ------
+>  1 file changed, 6 deletions(-)
+> 
+> diff --git a/arch/arm/mach-davinci/usb.c b/arch/arm/mach-davinci/usb.c
+> index f77b953..34509ff 100644
+> --- a/arch/arm/mach-davinci/usb.c
+> +++ b/arch/arm/mach-davinci/usb.c
+> @@ -42,14 +42,8 @@ static struct musb_hdrc_config musb_config = {
+>  };
+>  
+>  static struct musb_hdrc_platform_data usb_data = {
+> -#if defined(CONFIG_USB_MUSB_OTG)
+>  	/* OTG requires a Mini-AB connector */
+>  	.mode           = MUSB_OTG,
+> -#elif defined(CONFIG_USB_MUSB_PERIPHERAL)
+> -	.mode           = MUSB_PERIPHERAL,
+> -#elif defined(CONFIG_USB_MUSB_HOST)
+> -	.mode           = MUSB_HOST,
+> -#endif
+>  	.clock		= "usb",
+>  	.config		= &musb_config,
+>  };
 
-Indeed.
+Tested it on DM6446-EVM for host mode with MSC thumb drive and gadget 
+mode with g-ether. It works.
 
-> What is the programming cable and software that uses it?
+Acked-by: Manjunathappa, Prakash <prakash.pm@ti.com>
 
-The programmer is impact, using libusbx-1.0.14-1. The device runs the
-xusbdfwu firmware. The (usb 2.0) bulk endpoint says wMaxPacketSize
-1x512 bytes, and bInterval 0.
+Thanks,
+Prakash
 
-The patch is pretty generic, so I am suprised the problem has not
-shown up earlier.
+> -- 
+> 1.7.9.5
+> 
+> _______________________________________________
+> Davinci-linux-open-source mailing list
+> Davinci-linux-open-source@linux.davincidsp.com
+> http://linux.davincidsp.com/mailman/listinfo/davinci-linux-open-source
+> 
 
-Henrik
