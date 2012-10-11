@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933842Ab2JKBgy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:36:54 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38144 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933645Ab2JKBSb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:18:31 -0400
-X-Sasl-enc: KH2CKckVS+CviRILQ2k8PPibXOl7GepSLT5Ia5KMc3Tm 1349918309
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Michal Schmidt <mschmidt@redhat.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Eilon Greenstein <eilong@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 022/120] bnx2x: fix rx checksum validation for IPv6
-Date: Thu, 11 Oct 2012 09:59:34 +0900
-Message-Id: <20121011005829.442724690@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
-References: <20121011005825.364610894@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S933867Ab2JKBhE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:37:04 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:43848 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933397Ab2JKBg4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Oct 2012 21:36:56 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Wei Yongjun <weiyj.lk@gmail.com>, <swarren@wwwdotorg.org>
+From: Mike Turquette <mturquette@ti.com>
+In-Reply-To: <CAPgLHd-msJkHz5KxsxVhr0u8ainXU0t53XHeiwSeW2ShJkRbwg@mail.gmail.com>
+Cc: <yongjun_wei@trendmicro.com.cn>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-rpi-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+References: <CAPgLHd95ofKiKWC9B67q9mgkjsc6_YJ5x92aY0xKPiohuUMk4Q@mail.gmail.com>
+ <50738C7A.9060905@wwwdotorg.org>
+ <CAPgLHd-msJkHz5KxsxVhr0u8ainXU0t53XHeiwSeW2ShJkRbwg@mail.gmail.com>
+Message-ID: <20121011013631.11595.26416@nucleus>
+User-Agent: alot/0.3.2+
+Subject: Re: [PATCH] clk: fix return value check in bcm2835_init_clocks()
+Date: Wed, 10 Oct 2012 18:36:31 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Quoting Wei Yongjun (2012-10-08 19:44:47)
+> On 10/09/2012 10:31 AM, Stephen Warren wrote:
+> > On 10/07/2012 08:02 AM, Wei Yongjun wrote:
+> >> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> >>
+> >> In case of error, the function clk_register_fixed_rate() returns
+> >> ERR_PTR() and never returns NULL. The NULL test in the return value
+> >> check should be replaced with IS_ERR().
+> >>
+> >> dpatch engine is used to auto generate this patch.
+> >> (https://github.com/weiyj/dpatch)
+> > Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+> >
+> > Mike, this driver was added through arm-soc; I assume it's simplest to
+> > take this fixup through there too for 3.7-rc*? If so, Wei, could you
+> > resend this patch with my ack to arm@kernel.org? Thanks.
+> 
+> Will do, thanks.
 
-------------------
+Works for me.
 
-
-From: Michal Schmidt <mschmidt@redhat.com>
-
-[ Upstream commit e488921f44765e8ab6c48ca35e3f6b78df9819df ]
-
-Commit d6cb3e41 "bnx2x: fix checksum validation" caused a performance
-regression for IPv6. Rx checksum offload does not work. IPv6 packets
-are passed to the stack with CHECKSUM_NONE.
-
-The hardware obviously cannot perform IP checksum validation for IPv6,
-because there is no checksum in the IPv6 header. This should not prevent
-us from setting CHECKSUM_UNNECESSARY.
-
-Tested on BCM57711.
-
-Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Eilon Greenstein <eilong@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
-
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -571,14 +571,16 @@ drop:
- static void bnx2x_csum_validate(struct sk_buff *skb, union eth_rx_cqe *cqe,
- 				struct bnx2x_fastpath *fp)
- {
--	/* Do nothing if no IP/L4 csum validation was done */
--
-+	/* Do nothing if no L4 csum validation was done.
-+	 * We do not check whether IP csum was validated. For IPv4 we assume
-+	 * that if the card got as far as validating the L4 csum, it also
-+	 * validated the IP csum. IPv6 has no IP csum.
-+	 */
- 	if (cqe->fast_path_cqe.status_flags &
--	    (ETH_FAST_PATH_RX_CQE_IP_XSUM_NO_VALIDATION_FLG |
--	     ETH_FAST_PATH_RX_CQE_L4_XSUM_NO_VALIDATION_FLG))
-+	    ETH_FAST_PATH_RX_CQE_L4_XSUM_NO_VALIDATION_FLG)
- 		return;
- 
--	/* If both IP/L4 validation were done, check if an error was found. */
-+	/* If L4 validation was done, check if an error was found. */
- 
- 	if (cqe->fast_path_cqe.type_error_flags &
- 	    (ETH_FAST_PATH_RX_CQE_IP_BAD_XSUM_FLG |
-
-
+Mike
