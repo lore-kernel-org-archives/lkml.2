@@ -1,138 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933239Ab2JKAfT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:35:19 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57713 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933208Ab2JKAX7 (ORCPT
+	id S933251Ab2JKAgG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:36:06 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37789 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933170Ab2JKAgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:23:59 -0400
-X-Sasl-enc: kpmQMeNSKK9JyfT37SihSGEkTHPQZjKwZSmobUjCOm29 1349915038
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 075/122] ALSA: hda - use LPIB for delay estimation
-Date: Thu, 11 Oct 2012 07:54:01 +0900
-Message-Id: <20121010225351.615170615@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121010225337.989799482@linuxfoundation.org>
-References: <20121010225337.989799482@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Wed, 10 Oct 2012 20:36:00 -0400
+Message-ID: <50761466.9010902@gmail.com>
+Date: Thu, 11 Oct 2012 08:35:50 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: Andi Kleen <andi@firstfloor.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
+        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [PATCH 8/10] memory-hotplug : remove page table of x86_64 architecture
+References: <506E43E0.70507@jp.fujitsu.com> <506E4799.30407@jp.fujitsu.com> <m2d30tvatv.fsf@firstfloor.org> <50726354.60803@cn.fujitsu.com>
+In-Reply-To: <50726354.60803@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+On 10/08/2012 01:23 PM, Wen Congyang wrote:
+> At 10/08/2012 12:37 PM, Andi Kleen Wrote:
+>> Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com> writes:
+>>> +			}
+>>> +
+>>> +			/*
+>>> +			 * We use 2M page, but we need to remove part of them,
+>>> +			 * so split 2M page to 4K page.
+>>> +			 */
+>>> +			pte = alloc_low_page(&pte_phys);
+>> What happens when the allocation fails?
+>>
+>> alloc_low_page seems to be buggy there too, it would __pa a NULL
+>> pointer.
+> Yes, it will cause kernek panicked in __pa() if CONFI_DEBUG_VIRTUAL is set.
+> Otherwise, it will return a NULL pointer. I will update this patch to deal
+> with NULL pointer.
+>
+>>> +		if (pud_large(*pud)) {
+>>> +			if ((addr & ~PUD_MASK) == 0 && next <= end) {
+>>> +				set_pud(pud, __pud(0));
+>>> +				pages++;
+>>> +				continue;
+>>> +			}
+>>> +
+>>> +			/*
+>>> +			 * We use 1G page, but we need to remove part of them,
+>>> +			 * so split 1G page to 2M page.
+>>> +			 */
+>>> +			pmd = alloc_low_page(&pmd_phys);
+>> Same here
+>>
+>>> +			__split_large_page((pte_t *)pud, addr, (pte_t *)pmd);
+>>> +
+>>> +			spin_lock(&init_mm.page_table_lock);
+>>> +			pud_populate(&init_mm, pud, __va(pmd_phys));
+>>> +			spin_unlock(&init_mm.page_table_lock);
+>>> +		}
+>>> +
+>>> +		pmd = map_low_page(pmd_offset(pud, 0));
+>>> +		phys_pmd_remove(pmd, addr, end);
+>>> +		unmap_low_page(pmd);
+>>> +		__flush_tlb_all();
+>>> +	}
+>>> +	__flush_tlb_all();
 
-------------------
+Hi Congyang,
 
-From: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
+I see you call __flush_tlb_all() every pud entry(all pmd, pte related to 
+it changed) modified, then how to determine the flush frequency? why not 
+every pmd entry?
 
-commit 90accc58a6946e7245993da6079f88d8c29cb731 upstream.
+Regards,
+Chen
 
-DMA Position in Buffer (DPIB) should be used for
-ring buffer management, while LPIB register provides
-information on the number of samples transfered on
-the link. The difference between the two pieces of
-information corresponds to hardware/DMA buffering.
-
-This patch reports this difference in runtime->delay, and
-removes the use of the COMBO mode on recent Intel hardware.
-
-Credits to Takashi Iwai for an initial patch.
-
-[rebased to for-next branch and replaced snd_printk() with
- snd_printdd() by tiwai]
-
-Signed-off-by: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/pci/hda/hda_intel.c |   36 +++++++++++++++++++++++++++++-------
- 1 file changed, 29 insertions(+), 7 deletions(-)
-
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -538,6 +538,7 @@ enum {
- #define AZX_DCAPS_ALIGN_BUFSIZE	(1 << 22)	/* buffer size alignment */
- #define AZX_DCAPS_4K_BDLE_BOUNDARY (1 << 23)	/* BDLE in 4k boundary */
- #define AZX_DCAPS_POSFIX_COMBO  (1 << 24)	/* Use COMBO as default */
-+#define AZX_DCAPS_COUNT_LPIB_DELAY  (1 << 25)	/* Take LPIB as delay */
- 
- /* quirks for ATI SB / AMD Hudson */
- #define AZX_DCAPS_PRESET_ATI_SB \
-@@ -2120,6 +2121,27 @@ static unsigned int azx_get_position(str
- 
- 	if (pos >= azx_dev->bufsize)
- 		pos = 0;
-+
-+	/* calculate runtime delay from LPIB */
-+	if (azx_dev->substream->runtime &&
-+	    chip->position_fix[stream] == POS_FIX_POSBUF &&
-+	    (chip->driver_caps & AZX_DCAPS_COUNT_LPIB_DELAY)) {
-+		unsigned int lpib_pos = azx_sd_readl(azx_dev, SD_LPIB);
-+		int delay;
-+		if (stream == SNDRV_PCM_STREAM_PLAYBACK)
-+			delay = pos - lpib_pos;
-+		else
-+			delay = lpib_pos - pos;
-+		if (delay < 0)
-+			delay += azx_dev->bufsize;
-+		if (delay >= azx_dev->period_bytes) {
-+			snd_printdd("delay %d > period_bytes %d\n",
-+				delay, azx_dev->period_bytes);
-+			delay = 0; /* something is wrong */
-+		}
-+		azx_dev->substream->runtime->delay =
-+			bytes_to_frames(azx_dev->substream->runtime, delay);
-+	}
- 	return pos;
- }
- 
-@@ -3260,7 +3282,7 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids)
- 	/* CPT */
- 	{ PCI_DEVICE(0x8086, 0x1c20),
- 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
--	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
-+	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_COUNT_LPIB_DELAY },
- 	/* PBG */
- 	{ PCI_DEVICE(0x8086, 0x1d20),
- 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
-@@ -3268,26 +3290,26 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids)
- 	/* Panther Point */
- 	{ PCI_DEVICE(0x8086, 0x1e20),
- 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
--	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
-+	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_COUNT_LPIB_DELAY },
- 	/* Lynx Point */
- 	{ PCI_DEVICE(0x8086, 0x8c20),
- 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
--	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
-+	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_COUNT_LPIB_DELAY },
- 	/* Lynx Point-LP */
- 	{ PCI_DEVICE(0x8086, 0x9c20),
- 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
--	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
-+	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_COUNT_LPIB_DELAY },
- 	/* Lynx Point-LP */
- 	{ PCI_DEVICE(0x8086, 0x9c21),
- 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
--	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
-+	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_COUNT_LPIB_DELAY },
- 	/* Haswell */
- 	{ PCI_DEVICE(0x8086, 0x0c0c),
- 	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_SCH_SNOOP |
--	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
-+	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_COUNT_LPIB_DELAY },
- 	{ PCI_DEVICE(0x8086, 0x0d0c),
- 	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_SCH_SNOOP |
--	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
-+	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_COUNT_LPIB_DELAY },
- 	/* SCH */
- 	{ PCI_DEVICE(0x8086, 0x811b),
- 	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_SCH_SNOOP |
-
+>> This doesn't flush the other CPUs doesn't it?
+> How to flush the other CPU's tlb? use on_each_cpu() to run __flush_tlb_all()
+> on each online cpu?
+>
+> Thanks
+> Wen Congyang
+>
+>> -Andi
+>>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
