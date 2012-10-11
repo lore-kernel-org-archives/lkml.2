@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933669Ab2JKBi3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:38:29 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35911 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933565Ab2JKBOE (ORCPT
+	id S933683Ab2JKBio (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:38:44 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:42526 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933418Ab2JKBik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:14:04 -0400
-X-Sasl-enc: AJa8AniKZDnSp22kO4qD3UZh7KayV3K62kKWaLlPniyF 1349918043
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Christoph Lameter <cl@linux.com>,
-        Josh Boyer <jwboyer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 104/120] mempolicy: fix a memory corruption by refcount imbalance in alloc_pages_vma()
-Date: Thu, 11 Oct 2012 10:00:56 +0900
-Message-Id: <20121011005846.240724630@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
-References: <20121011005825.364610894@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Wed, 10 Oct 2012 21:38:40 -0400
+X-AuditID: cbfee61a-b7f726d000000ec7-60-5076231e4eef
+Message-id: <5076231E.5080808@samsung.com>
+Date: Thu, 11 Oct 2012 10:38:38 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: myungjoo.ham@samsung.com, yongjun_wei@trendmicro.com.cn,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] extcon: remove duplicated include from extcon-gpio.c
+References: <CAPgLHd-rLYsjcSTJC-72aRnDQ=0oBMh-ESyCq+g=51VPd4bF1A@mail.gmail.com>
+In-reply-to: <CAPgLHd-rLYsjcSTJC-72aRnDQ=0oBMh-ESyCq+g=51VPd4bF1A@mail.gmail.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBLMWRmVeSWpSXmKPExsVy+t9jAV055bIAg9n9hhaXd81hc2D0+LxJ
+	LoAxissmJTUnsyy1SN8ugSvjY/N1loIVLBW967qYGhgvMXcxcnJICJhIbDx0lgnCFpO4cG89
+	WxcjF4eQwCJGiZbG26wQTheTRMe0H6wgVbwCWhJtb1rBulkEVCW273jECGKzAcX3v7gB1M3B
+	ISoQIfGrnwOiXFDix+R7LCBhEQEViXfX60HCzALREtsP9oFNFBbwlNg/YyfYFCGBAIm9M/rZ
+	QWxOgWCJ3dOOM0PU60jsb53GBmHLS2xe85Z5AqPALCQbZiEpm4WkbAEj8ypG0dSC5ILipPRc
+	Q73ixNzi0rx0veT83E2M4PB7JrWDcWWDxSFGAQ5GJR7eiStLA4RYE8uKK3MPMUpwMCuJ8CY+
+	BArxpiRWVqUW5ccXleakFh9ilOZgURLnbfZICRASSE8sSc1OTS1ILYLJMnFwSjUwdu9J64iq
+	0J9r/tG0d+rvW+zLzQ3YZIQXXGPTrflydOnfF6KR58SFMpZqXGHddzrx/PvrvMWelZNFJOxm
+	HFB79dSsx914JpekfanyXafIbLbPcvt78vv6NFYwfI2YHM7s1bfi6stDrmKc4eJ9ed6Xk88z
+	5S99IsChJ7f2vqnXF8evrfbpf/mUWIozEg21mIuKEwGnGAfKOwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 10/07/2012 10:26 PM, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> Remove duplicated include.
+> 
+> dpatch engine is used to auto generate this patch.
+> (https://github.com/weiyj/dpatch)
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
 
-------------------
+This patch was already applied from 	Sachin Kamat and
+you can check previous patch on below extcon-for-next git tree:
+- http://git.infradead.org/users/kmpark/linux-samsung/commit/e16bce4f25980a4f0b02b5297e87673800be5474
 
-From: Mel Gorman <mgorman@suse.de>
-
-commit 00442ad04a5eac08a98255697c510e708f6082e2 upstream.
-
-Commit cc9a6c877661 ("cpuset: mm: reduce large amounts of memory barrier
-related damage v3") introduced a potential memory corruption.
-shmem_alloc_page() uses a pseudo vma and it has one significant unique
-combination, vma->vm_ops=NULL and vma->policy->flags & MPOL_F_SHARED.
-
-get_vma_policy() does NOT increase a policy ref when vma->vm_ops=NULL
-and mpol_cond_put() DOES decrease a policy ref when a policy has
-MPOL_F_SHARED.  Therefore, when a cpuset update race occurs,
-alloc_pages_vma() falls in 'goto retry_cpuset' path, decrements the
-reference count and frees the policy prematurely.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Cc: Josh Boyer <jwboyer@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- mm/mempolicy.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
-
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1532,8 +1532,18 @@ struct mempolicy *get_vma_policy(struct
- 									addr);
- 			if (vpol)
- 				pol = vpol;
--		} else if (vma->vm_policy)
-+		} else if (vma->vm_policy) {
- 			pol = vma->vm_policy;
-+
-+			/*
-+			 * shmem_alloc_page() passes MPOL_F_SHARED policy with
-+			 * a pseudo vma whose vma->vm_ops=NULL. Take a reference
-+			 * count on these policies which will be dropped by
-+			 * mpol_cond_put() later
-+			 */
-+			if (mpol_needs_cond_ref(pol))
-+				mpol_get(pol);
-+		}
- 	}
- 	if (!pol)
- 		pol = &default_policy;
-
-
+Thank you,
+Chanwoo Choi
