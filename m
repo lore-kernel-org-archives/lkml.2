@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757986Ab2JKApP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 20:45:15 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57044 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757938Ab2JKAMk (ORCPT
+	id S1757943Ab2JKAuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 20:50:11 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:45377 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754435Ab2JKAuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 20:12:40 -0400
-X-Sasl-enc: 8mhpJRNiYElwkNRfAGJ5k3XyvO6Krf3HYynR6XF3qqxO 1349914359
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 075/133] ext4: always set i_op in ext4_mknod()
-Date: Thu, 11 Oct 2012 07:51:41 +0900
-Message-Id: <20121010224907.969691215@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121010224854.313159132@linuxfoundation.org>
-References: <20121010224854.313159132@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Wed, 10 Oct 2012 20:50:09 -0400
+Date: Wed, 10 Oct 2012 17:50:04 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rcu: Advise most users not to enable RCU user mode
+Message-ID: <20121011005004.GL2495@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1349912908-11814-1-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349912908-11814-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101100-7282-0000-0000-00000DCD67C1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Oct 11, 2012 at 01:48:28AM +0200, Frederic Weisbecker wrote:
+> Discourage distros from enabling CONFIG_RCU_USER_QS
+> because it brings overhead for no benefits yet.
+> 
+> It's not a useful feature on its own until we can
+> fully run an adaptive tickless kernel.
 
-------------------
+Queued, hopefully for 3.7, thank you!
 
-From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+							Thanx, Paul
 
-commit 6a08f447facb4f9e29fcc30fb68060bb5a0d21c2 upstream.
-
-ext4_special_inode_operations have their own ifdef CONFIG_EXT4_FS_XATTR
-to mask those methods. And ext4_iget also always sets it, so there is
-an inconsistency.
-
-Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/ext4/namei.c |    2 --
- 1 file changed, 2 deletions(-)
-
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -2149,9 +2149,7 @@ retry:
- 	err = PTR_ERR(inode);
- 	if (!IS_ERR(inode)) {
- 		init_special_inode(inode, inode->i_mode, rdev);
--#ifdef CONFIG_EXT4_FS_XATTR
- 		inode->i_op = &ext4_special_inode_operations;
--#endif
- 		err = ext4_add_nondir(handle, dentry, inode);
- 	}
- 	ext4_journal_stop(handle);
-
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
+>  init/Kconfig |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
+> 
+> diff --git a/init/Kconfig b/init/Kconfig
+> index c26b8a1..89093e1 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -451,6 +451,12 @@ config RCU_USER_QS
+>  	  excluded from the global RCU state machine and thus doesn't
+>  	  to keep the timer tick on for RCU.
+> 
+> +	  Unless you want to hack and help the development of the full
+> +	  tickless feature, you shouldn't enable this option. It adds
+> +	  unnecessary overhead.
+> +
+> +	  If unsure say N
+> +
+>  config RCU_USER_QS_FORCE
+>  	bool "Force userspace extended QS by default"
+>  	depends on RCU_USER_QS
+> @@ -459,6 +465,12 @@ config RCU_USER_QS_FORCE
+>  	  test this feature that treats userspace as an extended quiescent
+>  	  state until we have a real user like a full adaptive nohz option.
+> 
+> +	  Unless you want to hack and help the development of the full
+> +	  tickless feature, you shouldn't enable this option. It adds
+> +	  unnecessary overhead.
+> +
+> +	  If unsure say N
+> +
+>  config RCU_FANOUT
+>  	int "Tree-based hierarchical RCU fanout value"
+>  	range 2 64 if 64BIT
+> -- 
+> 1.7.5.4
+> 
 
