@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab2JKX2J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 19:28:09 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:47369 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab2JKX2C (ORCPT
+	id S1752610Ab2JKX2H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 19:28:07 -0400
+Received: from mail-yh0-f74.google.com ([209.85.213.74]:63263 "EHLO
+	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab2JKX2B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 19:28:02 -0400
+	Thu, 11 Oct 2012 19:28:01 -0400
 From: David Sharp <dhsharp@google.com>
 To: linux-kernel@vger.kernel.org
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, David Sharp <dhsharp@google.com>
-Subject: [PATCH v6 5/6] ftrace: Show raw time stamp on stats per cpu using counter or tsc mode for trace_clock
-Date: Thu, 11 Oct 2012 16:27:55 -0700
-Message-Id: <1349998076-15495-6-git-send-email-dhsharp@google.com>
+Cc: David Sharp <dhsharp@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH v6 2/6] tracing: Reset ring buffer when changing trace_clocks
+Date: Thu, 11 Oct 2012 16:27:52 -0700
+Message-Id: <1349998076-15495-3-git-send-email-dhsharp@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1349998076-15495-1-git-send-email-dhsharp@google.com>
 References: <1349998076-15495-1-git-send-email-dhsharp@google.com>
@@ -23,56 +21,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Because the "tsc" clock isn't in nanoseconds, the ring buffer must be
+reset when changing clocks so that incomparable timestamps don't end up
+in the same trace.
 
-Show raw time stamp values for stats per cpu if you choose counter or tsc mode
-for trace_clock. Although a unit of tracing time stamp is nsec in local or global mode,
-the units in counter and TSC mode are tracing counter and cycles respectively.
+Tested: Confirmed switching clocks resets the trace buffer.
 
-Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+Google-Bug-Id: 6980623
 Signed-off-by: David Sharp <dhsharp@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- kernel/trace/trace.c |   23 +++++++++++++++++------
- 1 files changed, 17 insertions(+), 6 deletions(-)
+ kernel/trace/trace.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index cff3427..8bfa3b7 100644
+index 92fb08e..4e26df3 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -4396,13 +4396,24 @@ tracing_stats_read(struct file *filp, char __user *ubuf,
- 	cnt = ring_buffer_bytes_cpu(tr->buffer, cpu);
- 	trace_seq_printf(s, "bytes: %ld\n", cnt);
+@@ -4012,6 +4012,14 @@ static ssize_t tracing_clock_write(struct file *filp, const char __user *ubuf,
+ 	if (max_tr.buffer)
+ 		ring_buffer_set_clock(max_tr.buffer, trace_clocks[i].func);
  
--	t = ns2usecs(ring_buffer_oldest_event_ts(tr->buffer, cpu));
--	usec_rem = do_div(t, USEC_PER_SEC);
--	trace_seq_printf(s, "oldest event ts: %5llu.%06lu\n", t, usec_rem);
-+	if (trace_clocks[trace_clock_id].in_ns) {
-+		/* local or global for trace_clock */
-+		t = ns2usecs(ring_buffer_oldest_event_ts(tr->buffer, cpu));
-+		usec_rem = do_div(t, USEC_PER_SEC);
-+		trace_seq_printf(s, "oldest event ts: %5llu.%06lu\n",
-+								t, usec_rem);
++	/*
++	 * New clock may not be consistent with the previous clock.
++	 * Reset the buffer so that it doesn't have incomparable timestamps.
++	 */
++	tracing_reset_online_cpus(&global_trace);
++	if (max_tr.buffer)
++		tracing_reset_online_cpus(&max_tr);
 +
-+		t = ns2usecs(ring_buffer_time_stamp(tr->buffer, cpu));
-+		usec_rem = do_div(t, USEC_PER_SEC);
-+		trace_seq_printf(s, "now ts: %5llu.%06lu\n", t, usec_rem);
-+	} else {
-+		/* counter or tsc mode for trace_clock */
-+		trace_seq_printf(s, "oldest event ts: %llu\n",
-+				ring_buffer_oldest_event_ts(tr->buffer, cpu));
+ 	mutex_unlock(&trace_types_lock);
  
--	t = ns2usecs(ring_buffer_time_stamp(tr->buffer, cpu));
--	usec_rem = do_div(t, USEC_PER_SEC);
--	trace_seq_printf(s, "now ts: %5llu.%06lu\n", t, usec_rem);
-+		trace_seq_printf(s, "now ts: %llu\n",
-+				ring_buffer_time_stamp(tr->buffer, cpu));
-+	}
- 
- 	count = simple_read_from_buffer(ubuf, count, ppos, s->buffer, s->len);
- 
+ 	*fpos += cnt;
 -- 
 1.7.7.3
 
