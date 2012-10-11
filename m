@@ -1,101 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758901Ab2JKQel (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 12:34:41 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:40543 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758853Ab2JKQek (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 12:34:40 -0400
-From: Constantine Shulyupin <const@MakeLinux.com>
-To: nsekhar@ti.com, gregkh@linuxfoundation.org, sshtylyov@mvista.com
-Cc: Constantine Shulyupin <const@MakeLinux.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v7] Enable USB peripheral mode on dm365 EVM
-Date: Thu, 11 Oct 2012 18:34:34 +0200
-Message-Id: <1349973274-24936-1-git-send-email-const@MakeLinux.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Identified-User: {1470:box668.bluehost.com:makelinu:makelinux.net} {sentby:smtp auth 84.229.113.105 authed with poster@makelinux.net}
+	id S1758880Ab2JKQhY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 12:37:24 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:58864
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755298Ab2JKQhW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 12:37:22 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1202h1d1ah1d2ahzzz2dh2a8h668h839h944hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1155h)
+Date: Thu, 11 Oct 2012 11:37:18 -0500
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: linux-next: manual merge of the kvm-ppc tree with the
+ powerpc-merge tree
+To: Timur Tabi <B04825@freescale.com>
+CC: Alexander Graf <agraf@suse.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+References: <20121011121841.1b946f996cba995d9a5a2be7@canb.auug.org.au>
+	<6AE080B68D46FC4BA2D2769E68D765B7080FA8F8@039-SN2MPN1-023.039d.mgd.msft.net>
+	<20121011134754.2e2cbb24842fa991e61cf97c@canb.auug.org.au>
+	<6AE080B68D46FC4BA2D2769E68D765B7080FA9F8@039-SN2MPN1-023.039d.mgd.msft.net>
+	<6201AAAD-F575-4D2C-9A97-3EB41DA3491C@suse.de>
+	<5076EBFE.5060208@freescale.com>
+In-Reply-To: <5076EBFE.5060208@freescale.com> (from B04825@freescale.com on
+	Thu Oct 11 10:55:42 2012)
+X-Mailer: Balsa 2.4.11
+Message-ID: <1349973438.6903.4@snotra>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Constantine Shulyupin <const@MakeLinux.com>
+On 10/11/2012 10:55:42 AM, Timur Tabi wrote:
+> Alexander Graf wrote:
+> 
+> 
+> > This is about kvm_host.h, which is the part that is exported to user
+> > space. It usually contains constants and structs that are required  
+> for
+> > the API.
+> 
+> Which API?  I'm not familiar with KVM internals.
+> 
+> My concern is that when I think of a user-space header file, I think  
+> of a
+> user-space application that calls ioctls.  I know that KVM guest  
+> kernels
+> run as user-space processes, but that does not seem like a reason to
+> combine all of the header files that the KVM guest kernel needs with
+> "real" user-space header files.
 
-Sets USB PHY clock source to 24 MHz clock.
+So where should guest headers go?
 
-Tested with OTG configuration, usb gadget g_zero on DM365 EVM connected to PC.
-
-To active the patch need to call davinci_setup_usb from dm365_evm_init
-
-References:
-
-Definition of USB_PHY_CTRL and PHYCLKFREQ:
-- http://www.makelinux.com/lib/ti/DM36x_ARM/doc-141
-
-Original patch by miguel.aguilar@ridgerun.com three years ago:
-- http://www.mail-archive.com/davinci-linux-open-source@linux.davincidsp.com/msg14741.html
-
-Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
----
-
-Note:
-
-Changelog
-
-Changes since v6
-- moved call to davinci_setup_usb from dm365_evm_init to another patch accordinly request of Sergei
- 
-Changes since v5 http://www.spinics.net/lists/kernel/msg1413120.html
-accordingy feedback of nsekhar@ti.com http://www.spinics.net/lists/kernel/msg1414914.html
-- phy configuration moved to drivers/usb/musb/davinci.c
-- USB_OTG configuration is submitted in separated patch: http://www.spinics.net/lists/kernel/msg1414964.html
-- Setting current limit to 1000 mA. Any way the current is limited to 510 mA in davinci_setup_usb.
-
-Changes since v4 http://www.spinics.net/lists/kernel/msg1412995.html
-- removed fix of dev_info in musb_init_controller
-
-Changes since v3 http://www.spinics.net/lists/kernel/msg1412544.html:
-- removed optional altering of pr_info
-
-Changes since v1  http://marc.info/?l=linux-kernel&m=130894150803661&w=2:
-- removed optional code and reordered
-- removed alternation of GPIO33, which is multiplexed with DRVVBUS, because is not need for peripheral USB
-
-This patch is based on code from projects Arago, Angstom and RidgeRun.
-
----
- drivers/usb/musb/davinci.c              |    3 +++
- drivers/usb/musb/davinci.h              |    1 +
-
-diff --git a/drivers/usb/musb/davinci.c b/drivers/usb/musb/davinci.c
-index 472c8b4..af09ebf 100644
---- a/drivers/usb/musb/davinci.c
-+++ b/drivers/usb/musb/davinci.c
-@@ -428,6 +428,9 @@ static int davinci_musb_init(struct musb *musb)
- 		__raw_writel(deepsleep, DM355_DEEPSLEEP);
- 	}
- 
-+	if (machine_is_davinci_dm365_evm())
-+		writel(readl(USB_PHY_CTRL) | USBPHY_CLKFREQ_24MHZ, USB_PHY_CTRL);
-+
- 	/* reset the controller */
- 	musb_writel(tibase, DAVINCI_USB_CTRL_REG, 0x1);
- 
-diff --git a/drivers/usb/musb/davinci.h b/drivers/usb/musb/davinci.h
-index 371baa0..e737d97 100644
---- a/drivers/usb/musb/davinci.h
-+++ b/drivers/usb/musb/davinci.h
-@@ -16,6 +16,7 @@
- 
- /* Integrated highspeed/otg PHY */
- #define USBPHY_CTL_PADDR	0x01c40034
-+#define USBPHY_CLKFREQ_24MHZ	BIT(13)
- #define USBPHY_DATAPOL		BIT(11)	/* (dm355) switch D+/D- */
- #define USBPHY_PHYCLKGD		BIT(8)
- #define USBPHY_SESNDEN		BIT(7)	/* v(sess_end) comparator */
--- 
-1.7.9.5
-
+-Scott
