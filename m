@@ -1,107 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757690Ab2JKHi3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 03:38:29 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:63008 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757624Ab2JKHiZ (ORCPT
+	id S1757656Ab2JKHju (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 03:39:50 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:55581 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754963Ab2JKHjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 03:38:25 -0400
-Date: Thu, 11 Oct 2012 08:38:20 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de
-Subject: Re: [PATCH 3/6] ARM: ux500: Add support for ST-Ericsson's u9540 SoC
-Message-ID: <20121011073820.GS9707@gmail.com>
-References: <1349882335-6786-1-git-send-email-lee.jones@linaro.org>
- <1349882335-6786-4-git-send-email-lee.jones@linaro.org>
- <20121010190144.GS12801@game.jcrosoft.org>
+	Thu, 11 Oct 2012 03:39:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121010190144.GS12801@game.jcrosoft.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121005083113.GG4625@n2100.arm.linux.org.uk>
+References: <CAGr+u+yxC3nPrsW+EU9qwh0ggjqrg9K=1ftQXfds8unMiDMZsA@mail.gmail.com>
+	<20121005083113.GG4625@n2100.arm.linux.org.uk>
+Date: Thu, 11 Oct 2012 13:09:46 +0530
+Message-ID: <CAB5gotsV-yOU6F2n_-HhVmheMKFX1miyw6yZMogV7+kKe4Jggw@mail.gmail.com>
+Subject: Re: DEBUG_STACKOVERFLOW issue on ARM
+From: vaibhav shinde <v.bhav.shinde@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: trisha yad <trisha1march@gmail.com>, linux-kernel@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Oct 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
+Hi Russel,
 
-> On 16:18 Wed 10 Oct     , Lee Jones wrote:
-> > First level board support for the u9540.
-> > 
-> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  arch/arm/mach-ux500/cpu-db8500.c |   14 ++++++++++++++
-> >  1 file changed, 14 insertions(+)
-> > 
-> > diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-> > index 3d8e321..6b7f970 100644
-> > --- a/arch/arm/mach-ux500/cpu-db8500.c
-> > +++ b/arch/arm/mach-ux500/cpu-db8500.c
-> > @@ -17,6 +17,7 @@
-> >  #include <linux/platform_device.h>
-> >  #include <linux/io.h>
-> >  #include <linux/mfd/abx500/ab8500.h>
-> > +#include <linux/mfd/dbx500-prcmu.h>
-> >  #include <linux/of.h>
-> >  #include <linux/of_platform.h>
-> >  #include <linux/regulator/machine.h>
-> > @@ -319,6 +320,8 @@ static void __init u8500_init_machine(void)
-> >  		snowball_pinmaps_init();
-> >  	else if (of_machine_is_compatible("st-ericsson,hrefv60+"))
-> >  		hrefv60_pinmaps_init();
-> > +	else if (of_machine_is_compatible("st-ericsson,u9540")) {}
-> > +		/* TODO: Add u9540 pinmaps. */
-> do you via DT no here
+On Fri, Oct 5, 2012 at 2:01 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+>
+> On Wed, Oct 03, 2012 at 05:18:56PM +0530, trisha yad wrote:
+> > I wish to know how can I support this function in 3.0 ?
+>
+> If your description is correct, then all you need to do is to ensure
+> that you route interrupts to other CPUs.
+>
+> You can do that by running the userspace irqbalance daemon.
+>
 
-We don't support pinctrl yet. It will come, it's just not available yet.
+I also tried with the irqbalance daemon, on ARM quad core architecture,
+and as per my understanding, the daemon sets the
+/proc/irq/<irq.no.>/smp_affinity
+file according to the irq frequency on a particular processor.
 
-> >  	/* TODO: Export SoC, USB, cpu-freq and DMA40 */
-> >  	parent = u8500_of_init_devices();
-> > @@ -331,6 +334,7 @@ static const char * u8500_dt_board_compat[] = {
-> >  	"calaosystems,snowball-a9500",
-> >  	"st-ericsson,hrefv60+",
-> >  	"st-ericsson,mop500",
-> > +	"st-ericsson,u9540",
-> stop to add more compatible sue a more generic one
+          However, the daemon doesn't work as expected, I also tried
+accessing the
+proc file mentioned above to set the cpu mask for particular irq, but this
+just block the processing of the irq, as I see the count of that irq
+doesnt increase
+in /proc/interrupts.
 
-Not entirely sure what you mean here.
+            My conclusion is that the irqbalancing is not supported on
+ARM arch or there is
+something  more required for this to work. Kindly provide some
+pointers over this.
 
-These are the only four boards we officially support.
-
-There are other uXXXX boards that we do not.
-
-> >  	NULL,
-> >  };
-> >  
-> > @@ -345,4 +349,14 @@ DT_MACHINE_START(U8500_DT, "ST-Ericsson U8500 platform (Device Tree Support)")
-> >  	.dt_compat      = u8500_dt_board_compat,
-> >  MACHINE_END
-> >  
-> > +DT_MACHINE_START(U9540_DT, "ST-Ericsson 9540 platform (Device Tree Support)")
-> > +	.map_io		= u8500_map_io,
-> > +	.init_irq	= ux500_init_irq,
-> > +	.timer		= &ux500_timer,
-> > +	.handle_irq	= gic_handle_irq,
-> > +	.init_machine	= u8500_init_machine,
-> > +	.init_late	= NULL,
-> > +	.dt_compat      = u8500_dt_board_compat,
-> > +MACHINE_END
-> really?
-> no need drop it for a more generic on
-
-This may look the same as the previous MACHINE_START now, but
-it will have differences in the future as more u9540 support is
-upstreamed. I think it should stick around as a separate entity
-for the time being. If we can consolidate the init functions at
-a later date, believe me I will make sure it happens.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Regards,
+Vaibhav
