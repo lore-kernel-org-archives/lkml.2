@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934092Ab2JKBVT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 21:21:19 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41434 "EHLO
+	id S934102Ab2JKBV7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 21:21:59 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47955 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934077Ab2JKBU7 (ORCPT
+	by vger.kernel.org with ESMTP id S934010Ab2JKBVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 21:20:59 -0400
-X-Sasl-enc: kRYCSQk+JjmcWyB81VSiMyIQk/lRK+jHsdAR8lvoUEWE 1349918456
+	Wed, 10 Oct 2012 21:21:16 -0400
+X-Sasl-enc: TqId4zDFSkrwWyLIQQKk0cGhww0/R57R2i1O+hmIYnll 1349918475
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 048/120] ipv4: raw: fix icmp_filter()
-Date: Thu, 11 Oct 2012 10:00:00 +0900
-Message-Id: <20121011005834.358158868@linuxfoundation.org>
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 057/120] SCSI: zfcp: Make trace record tags unique
+Date: Thu, 11 Oct 2012 10:00:09 +0900
+Message-Id: <20121011005836.183925655@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011005825.364610894@linuxfoundation.org>
 References: <20121011005825.364610894@linuxfoundation.org>
@@ -28,52 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Steffen Maier <maier@linux.vnet.ibm.com>
 
-From: Eric Dumazet <edumazet@google.com>
+commit 0100998dbfe6dfcd90a6e912ca7ed6f255d48f25 upstream.
 
-[ Upstream commit ab43ed8b7490cb387782423ecf74aeee7237e591 ]
+Duplicate fssrh_2 from a54ca0f62f953898b05549391ac2a8a4dad6482b
+"[SCSI] zfcp: Redesign of the debug tracing for HBA records."
+complicates distinction of generic status read response from
+local link up.
+Duplicate fsscth1 from 2c55b750a884b86dea8b4cc5f15e1484cc47a25c
+"[SCSI] zfcp: Redesign of the debug tracing for SAN records."
+complicates distinction of good common transport response from
+invalid port handle.
 
-icmp_filter() should not modify its input, or else its caller
-would need to recompute ip_hdr() if skb->head is reallocated.
-
-Use skb_header_pointer() instead of pskb_may_pull() and
-change the prototype to make clear both sk and skb are const.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Reviewed-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/raw.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/net/ipv4/raw.c
-+++ b/net/ipv4/raw.c
-@@ -131,18 +131,20 @@ found:
-  *	0 - deliver
-  *	1 - block
-  */
--static __inline__ int icmp_filter(struct sock *sk, struct sk_buff *skb)
-+static int icmp_filter(const struct sock *sk, const struct sk_buff *skb)
- {
--	int type;
-+	struct icmphdr _hdr;
-+	const struct icmphdr *hdr;
- 
--	if (!pskb_may_pull(skb, sizeof(struct icmphdr)))
-+	hdr = skb_header_pointer(skb, skb_transport_offset(skb),
-+				 sizeof(_hdr), &_hdr);
-+	if (!hdr)
- 		return 1;
- 
--	type = icmp_hdr(skb)->type;
--	if (type < 32) {
-+	if (hdr->type < 32) {
- 		__u32 data = raw_sk(sk)->filter.data;
- 
--		return ((1 << type) & data) != 0;
-+		return ((1U << hdr->type) & data) != 0;
+---
+ drivers/s390/scsi/zfcp_fsf.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/s390/scsi/zfcp_fsf.c
++++ b/drivers/s390/scsi/zfcp_fsf.c
+@@ -219,7 +219,7 @@ static void zfcp_fsf_status_read_handler
+ 		return;
  	}
  
- 	/* Do not block unknown ICMP types */
+-	zfcp_dbf_hba_fsf_uss("fssrh_2", req);
++	zfcp_dbf_hba_fsf_uss("fssrh_4", req);
+ 
+ 	switch (sr_buf->status_type) {
+ 	case FSF_STATUS_READ_PORT_CLOSED:
+@@ -915,7 +915,7 @@ static void zfcp_fsf_send_ct_handler(str
+ 
+ 	switch (header->fsf_status) {
+         case FSF_GOOD:
+-		zfcp_dbf_san_res("fsscth1", req);
++		zfcp_dbf_san_res("fsscth2", req);
+ 		ct->status = 0;
+ 		break;
+         case FSF_SERVICE_CLASS_NOT_SUPPORTED:
 
 
