@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964857Ab2JKRmI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 13:42:08 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:50476
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964797Ab2JKRmE (ORCPT
+	id S964868Ab2JKRo5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 13:44:57 -0400
+Received: from nm9-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.196]:48094 "EHLO
+	nm9-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964838Ab2JKRoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 13:42:04 -0400
-Date: Thu, 11 Oct 2012 13:41:57 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: ????????? Yang Su Li <suli@cs.wisc.edu>
-Cc: General Discussion of SQLite Database <sqlite-users@sqlite.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        drh@hwaci.com
-Subject: Re: [sqlite] light weight write barriers
-Message-ID: <20121011174157.GA32038@infradead.org>
-References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>
- <m2fw5mtffg.fsf_-_@firstfloor.org>
- <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
-MIME-Version: 1.0
+	Thu, 11 Oct 2012 13:44:55 -0400
+X-Yahoo-Newman-Id: 418997.18235.bm@smtp141.mail.mud.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 1fIaeYwVM1lGWeLUOStRF7KY1arOfvOZT6vVycoYwgnKSu_
+ RTgM8.e_NOwjTfB6YDP4JlGnVGLYvJmshUP1pH_SZMNlF2L__24zbBSc._aq
+ OmpoYeHT7oklqnNvBxqrMOoiFMIL2NrAp.KiOnxGJhEksL3OJhSmEaxaiDGY
+ TomXRgL6OOEq9ov0OosuFQrdRyJsaEmcH6voGPhXv4Q10eZdNpTTykfgGUI8
+ sirYItXQGeDiEhcYMNHI9LTG4Y9yzyWOrwkjhWhJoZzSBdqT_58yZFljLSqd
+ jo14KHsPkPV7lG8TtINBfe6ja8BedxH4y_XsOio1G3zm4n8tsJ90CTX38LKt
+ 4Y2afxwM8GDUr1eAfnTQzA0F.FeV_DeKG3oVxXKaJJsFYSmosBKT8qeYeOPM
+ ATP18DeGvgZWUidmfk1jpexK8ljXsy3.1RL3ID4LeUu7C5AdW5QF7E3SjYmw
+ 0duwL3lU5NkwAl15LJcXF9rnFy.Z6_oP5LPggBZ2jP2_8aNMEr8tKULe_PWo
+ MZ8PUC5I7_JVj_G5apDpQ6nCrj4cikxKqLjZ4VZ.CWea6BgPTHPU-
+X-Yahoo-SMTP: Ll_2CwGswBCmYyy8D5vkxPEWV_RIV9L47w--
+Date: Thu, 11 Oct 2012 13:44:51 -0400
+From: William Park <opengeometry@yahoo.ca>
+To: linux-kernel@vger.kernel.org
+Subject: rt2800pci + 3.6.x = not working (Linksys WMP600N)
+Message-ID: <20121011174451.GA7914@node1.opengeometry.net>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 11, 2012 at 11:32:27AM -0500, ????????? Yang Su Li wrote:
-> I am not quite whether I should ask this question here, but in terms
-> of light weight barrier/fsync, could anyone tell me why the device
-> driver / OS provide the barrier interface other than some other
-> abstractions anyway? I am sorry if this sounds like a stupid questions
-> or it has been discussed before....
+Hi, just a report...
 
-It does not.  Except for the legacy mount option naming there is no such
-thing as a barrier in Linux these days.
+I have Linksys WMP600N (dual-band) wireless card,
 
+    06:05.0 Network controller [0280]: RaLink RT2800 802.11n PCI [1814:0601]
+	    Subsystem: Linksys Device [1737:0067]
+	    Kernel driver in use: rt2800pci
+	    Kernel modules: rt2800pci
+
+It is working in 3.5.x but not in 3.6.x.  It doesn't connect and get IP (dhcp)
+from the router.  Also, this wireless card works reliably only in 3.5.x.
+Previous versions tend to drop connections.
+-- 
+William
