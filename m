@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933275Ab2JKCMR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Oct 2012 22:12:17 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39627 "EHLO
+	id S933303Ab2JKCMY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Oct 2012 22:12:24 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55625 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933216Ab2JKCMK (ORCPT
+	by vger.kernel.org with ESMTP id S933216Ab2JKCMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Oct 2012 22:12:10 -0400
-X-Sasl-enc: p7KV4JA1YlvAaV36DhF9vvbfY91Fn9pH7C94yckx3AVD 1349921528
+	Wed, 10 Oct 2012 22:12:18 -0400
+X-Sasl-enc: 2qDoFOGVmacNtqOMSWN2eWuWwHILGC1QE2XVQIZrkE4Y 1349921537
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sascha Hauer <s.hauer@pengutronix.de>, Jan Luebbe <jlu@pengutronix.de>,
-        Sam Ravnborg <sam@ravnborg.org>, Bernhard Walle <bernhard@bwalle.de>,
-        Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 02/84] kbuild: make: fix if_changed when command contains backslashes
-Date: Thu, 11 Oct 2012 11:02:46 +0900
-Message-Id: <20121011015417.483204962@linuxfoundation.org>
+        Len Sorensen <lsorense@csclub.uwaterloo.ca>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 25/84] sierra_net: Endianess bug fix.
+Date: Thu, 11 Oct 2012 11:03:09 +0900
+Message-Id: <20121011015421.606262968@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121011015417.017144658@linuxfoundation.org>
 References: <20121011015417.017144658@linuxfoundation.org>
@@ -31,43 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sascha Hauer <s.hauer@pengutronix.de>
 
-commit c353acba28fb3fa1fd05fd6b85a9fc7938330f9c upstream.
+From: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
 
-The call if_changed mechanism does not work when the command contains
-backslashes.  This basically is an issue with lzo and bzip2 compressed
-kernels.  The compressed binaries do not contain the uncompressed image
-size, so these use size_append to append the size.  This results in
-backslashes in the executed command.  With this if_changed always
-detects a change in the command and rebuilds the compressed image even
-if nothing has changed.
+[ Upstream commit 2120c52da6fe741454a60644018ad2a6abd957ac ]
 
-Fix this by escaping backslashes in make-cmd
+I discovered I couldn't get sierra_net to work on a powerpc.  Turns out
+the firmware attribute check assumes the system is little endian and
+hence fails because the attributes is a 16 bit value.
 
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Cc: Bernhard Walle <bernhard@bwalle.de>
-Cc: Michal Marek <mmarek@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- scripts/Kbuild.include |    2 +-
+ drivers/net/usb/sierra_net.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/scripts/Kbuild.include
-+++ b/scripts/Kbuild.include
-@@ -205,7 +205,7 @@ endif
- # >$< substitution to preserve $ when reloading .cmd file
- # note: when using inline perl scripts [perl -e '...$$t=1;...']
- # in $(cmd_xxx) double $$ your perl vars
--make-cmd = $(subst \#,\\\#,$(subst $$,$$$$,$(call escsq,$(cmd_$(1)))))
-+make-cmd = $(subst \\,\\\\,$(subst \#,\\\#,$(subst $$,$$$$,$(call escsq,$(cmd_$(1))))))
+--- a/drivers/net/usb/sierra_net.c
++++ b/drivers/net/usb/sierra_net.c
+@@ -678,7 +678,7 @@ static int sierra_net_get_fw_attr(struct
+ 		return -EIO;
+ 	}
  
- # Find any prerequisites that is newer than target or that does not exist.
- # PHONY targets skipped in both cases.
+-	*datap = *attrdata;
++	*datap = le16_to_cpu(*attrdata);
+ 
+ 	kfree(attrdata);
+ 	return result;
 
 
