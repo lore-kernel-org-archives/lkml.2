@@ -1,36 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab2JLCb2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 22:31:28 -0400
-Received: from ozlabs.org ([203.10.76.45]:57758 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759583Ab2JLCaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 22:30:23 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: mtk.manpages@gmail.com, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org, linux-man <linux-man@vger.kernel.org>,
-        Jon Masters <jonathan@jonmasters.org>
-Subject: Re: [Request for review] Revised delete_module(2) manual page
-In-Reply-To: <CAMOw1v6Cn4VODJ1yEaRwMusf-zUeNjKOYegRkdsKyaqFkjtHRw@mail.gmail.com>
-References: <CAKgNAkgp1er3-3nvge9_aVObuuxBatGRur8DtiTzyWK4w+4hrA@mail.gmail.com> <87txu17lss.fsf@rustcorp.com.au> <CAMOw1v6Cn4VODJ1yEaRwMusf-zUeNjKOYegRkdsKyaqFkjtHRw@mail.gmail.com>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Fri, 12 Oct 2012 09:16:01 +1030
-Message-ID: <87r4p46312.fsf@rustcorp.com.au>
+	id S1754781Ab2JLCcT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 22:32:19 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:56358 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab2JLCcR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 22:32:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1350007016.24256.82.camel@gandalf.local.home>
+References: <1339112785-21806-1-git-send-email-vnagarnaik@google.com> <1350007016.24256.82.camel@gandalf.local.home>
+From: David Sharp <dhsharp@google.com>
+Date: Thu, 11 Oct 2012 19:31:55 -0700
+Message-ID: <CAJL_ektrdqwBoUYj9yoXn8FUaY7n+FmsVKHaosZtcX9yhobeHg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] tracing: trivial cleanup
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lucas De Marchi <lucas.demarchi@profusion.mobi> writes:
-> What do you think? Mark as deprecated now and remove when kernel
-> removes it? Or remove now?
+On Thu, Oct 11, 2012 at 6:56 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> Sorry, I know this is late, but it was pushed down in my todo list
+> (never off, but something I probably wouldn't have seen for a few more
+> months).
+>
+> On Thu, 2012-06-07 at 16:46 -0700, Vaibhav Nagarnaik wrote:
+>> From: David Sharp <dhsharp@google.com>
+>
+> If this is from David it needs his SOB.
 
-Complain now, and I'll queue the removal in two merge windows.
+Is that true even though we are working for the same company?
 
-Thats gives us a chance just in case someone actually uses this; if so I
-want to talk to them about what it is they want!
+> -- Steve
+>
+>>
+>> Remove ftrace_format_syscall() declaration; it is neither defined nor
+>> used. Also update a comment and formatting.
+>>
+>> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
 
-Thanks,
-Rusty.
+Signed-off-by: David Sharp <dhsharp@google.com>
+
+>> ---
+>>  include/trace/syscall.h    |    2 --
+>>  kernel/trace/ring_buffer.c |    6 +++---
+>>  2 files changed, 3 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/include/trace/syscall.h b/include/trace/syscall.h
+>> index 31966a4..0c95796 100644
+>> --- a/include/trace/syscall.h
+>> +++ b/include/trace/syscall.h
+>> @@ -39,8 +39,6 @@ extern int reg_event_syscall_enter(struct ftrace_event_call *call);
+>>  extern void unreg_event_syscall_enter(struct ftrace_event_call *call);
+>>  extern int reg_event_syscall_exit(struct ftrace_event_call *call);
+>>  extern void unreg_event_syscall_exit(struct ftrace_event_call *call);
+>> -extern int
+>> -ftrace_format_syscall(struct ftrace_event_call *call, struct trace_seq *s);
+>>  enum print_line_t print_syscall_enter(struct trace_iterator *iter, int flags,
+>>                                     struct trace_event *event);
+>>  enum print_line_t print_syscall_exit(struct trace_iterator *iter, int flags,
+>> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+>> index 1d0f6a8..96c2dd1 100644
+>> --- a/kernel/trace/ring_buffer.c
+>> +++ b/kernel/trace/ring_buffer.c
+>> @@ -1816,7 +1816,7 @@ rb_add_time_stamp(struct ring_buffer_event *event, u64 delta)
+>>  }
+>>
+>>  /**
+>> - * ring_buffer_update_event - update event type and data
+>> + * rb_update_event - update event type and data
+>>   * @event: the even to update
+>>   * @type: the type of event
+>>   * @length: the size of the event field in the ring buffer
+>> @@ -2716,8 +2716,8 @@ EXPORT_SYMBOL_GPL(ring_buffer_discard_commit);
+>>   * and not the length of the event which would hold the header.
+>>   */
+>>  int ring_buffer_write(struct ring_buffer *buffer,
+>> -                     unsigned long length,
+>> -                     void *data)
+>> +                   unsigned long length,
+>> +                   void *data)
+>>  {
+>>       struct ring_buffer_per_cpu *cpu_buffer;
+>>       struct ring_buffer_event *event;
+>
+>
