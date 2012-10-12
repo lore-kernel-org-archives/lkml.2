@@ -1,408 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933732Ab2JLIr3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 04:47:29 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:44308 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933255Ab2JLIr0 (ORCPT
+	id S1422657Ab2JLIsw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 04:48:52 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:29782 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933255Ab2JLIsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 04:47:26 -0400
+	Fri, 12 Oct 2012 04:48:50 -0400
+X-IronPort-AV: E=Sophos;i="4.80,576,1344211200"; 
+   d="scan'208";a="15120690"
+Message-ID: <1350031728.14806.45.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH V2 1/7]: PVH: basic and header changes,
+	elfnote changes, ...
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 12 Oct 2012 09:48:48 +0100
+In-Reply-To: <20121011145317.51655302@mantra.us.oracle.com>
+References: <20121011145317.51655302@mantra.us.oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <87txu17lss.fsf@rustcorp.com.au>
-References: <CAKgNAkgp1er3-3nvge9_aVObuuxBatGRur8DtiTzyWK4w+4hrA@mail.gmail.com>
- <87txu17lss.fsf@rustcorp.com.au>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Fri, 12 Oct 2012 10:47:04 +0200
-Message-ID: <CAKgNAkib2RZaHWP9bM0hC62=Nm5sBisQf_D9BAKNomjEPvCWbA@mail.gmail.com>
-Subject: Re: [Request for review] Revised delete_module(2) manual page
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-man <linux-man@vger.kernel.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Jon Masters <jonathan@jonmasters.org>
-Content-Type: multipart/mixed; boundary=e89a8f502ff8a7bde004cbd8bc3b
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e89a8f502ff8a7bde004cbd8bc3b
-Content-Type: text/plain; charset=ISO-8859-1
+On Thu, 2012-10-11 at 22:53 +0100, Mukesh Rathor wrote:
+> PVH: is a PV linux guest that has extended capabilities. This patch allows it to be configured and enabled. Also, basic header file changes to add new subcalls to physmap hypercall. Lastly, mfn_to_local_pfn must return mfn for paging mode translate
+> 
+> Signed-off-by: Mukesh R <mukesh.rathor@oracle.com>
 
-Hi Rusty,
+Since a S-o-b is a quasi-legal statement you probably ought to put your
+full name here (I know it's obvious from the email address, but...)
 
-Thanks for taking a look at this page. In the light of your comments,
-I've substantially reworked the page, and further review would not go
-amiss, in case I made a misstep along the way.
+> diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
+> index fdce49c..9323b8c 100644
+> --- a/arch/x86/xen/Kconfig
+> +++ b/arch/x86/xen/Kconfig
+> @@ -50,3 +50,13 @@ config XEN_DEBUG_FS
+>  	  Enable statistics output and various tuning options in debugfs.
+>  	  Enabling this option may incur a significant performance overhead.
+>  
+> +config XEN_X86_PVH
+> +	bool "Support for running as a PVH guest (EXPERIMENTAL)"
+> +	depends on X86_64 && XEN && INTEL_IOMMU && EXPERIMENTAL
 
-On Thu, Oct 11, 2012 at 5:02 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
->
->> Hello Kees, Rusty,
->>
->> The current delete_module(2) page is severely out of date (basically,
->> its content corresponds to 2.4 days, and was even pretty thin in
->> covering that). So, I took a shot at revising the page to Linux 2.6+
->> reality. Would it be possible that you could review it?
->
-> OK.  Main suggestion is that I discussed with Lucas removing the
-> !O_NONBLOCK case.  It's not supported by modprobe -r, and almost
-> unheard-of for rmmod (it's --wait).
->
-> In practice, people want the unload-or-fail semantics, or the
-> force-unload semantics.
+OOI why does the kernel side require an INTEL_IOMMU? I can see why the
+hypervisor would need it but the guests (including dom0) can't actually
+see the underlying IOMMU, can they?
 
-Okay -- I've substantially reworked the page to reflect these idea.
+> +	default n
+> +	help
+> +	   This option enables support for running as a PVH guest (PV guest
+> +	   using hardware extensions) under a suitably capable hypervisor.
+> +	   This option is EXPERIMETNAL because the hypervisor interfaces
 
->> Otherwise, by default,
->> .BR delete_module ()
->> marks a module so that no new references are permitted.
->> If the module's reference count
->> (i.e., the number of processes currently using the module) is nonzero,
->> it then places the caller in an uninterruptible sleep
->> state until all reference count is zero,
->> at which point the call unblocks.
->> When the reference count reaches zero, the module is unloaded.
->
-> So this should be inverted:
->
->         Otherwise (assuming O_NONBLOCK, see flags below), if the
->         module's reference count (i.e., the number of processes
->         currently using the module) is nonzero, the call fails.
+You've carried over my original "EXPERIMETNAL" typo.
 
-Got it. See my reworked text.
+> +	   which it uses are not yet considered stable therefore backwards and
+> +	   forwards compatibility is not yet guaranteed.  If unsure, say N.
+> diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
+> index 7faed58..3e65ece 100644
+> --- a/arch/x86/xen/xen-head.S
+> +++ b/arch/x86/xen/xen-head.S
+> @@ -13,6 +13,15 @@
+>  #include <xen/interface/elfnote.h>
+>  #include <asm/xen/interface.h>
+>  
+> +#ifdef CONFIG_XEN_X86_PVH
+> +#define FEATURES_PVH "| writable_descriptor_tables" \
+> +		     "| auto_translated_physmap" \
+> +		     "| supervisor_mode_kernel" \
+> +		     "| hvm_callback_vector"
 
-[...]
+It's pretty lame but it looks like elf_xen_parse_features doesn't
+support stripping whitespace.
 
-> NOTES:
->
-> If O_NONBLOCK is not set, then the kernel may enter uninterruptible
-> sleep until the module reference count reaches zero.  This is not
-> generally desirable, so this flag may be compulsory in future kernel
-> configurations.
+Since we need these features to be parsable by older hypervisors and
+tools I think we're stuck with that snafu.
 
-I've added some text under NOTES.
+> diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
+> index 9ce788d..3b9d5b6 100644
+> --- a/include/xen/interface/physdev.h
+> +++ b/include/xen/interface/physdev.h
+> @@ -258,6 +258,16 @@ struct physdev_pci_device {
+>      uint8_t devfn;
+>  };
+>  
+> +#define PHYSDEVOP_pvh_map_iomem        30
+> +struct physdev_map_iomem {
+> +    /* IN */
+> +    uint64_t first_gfn;
+> +    uint64_t first_mfn;
+> +    uint32_t nr_mfns;
+> +    uint32_t add_mapping;        /* 1 == add mapping;  0 == unmap */
+> +
+> +};
+> +
+>  /*
+>   * Notify that some PIRQ-bound event channels have been unmasked.
+>   * ** This command is obsolete since interface version 0x00030202 and is **
 
-Okay, below (and attached) is the new version of the page. Let me know
-of any concerns.
 
-Cheers,
-
-Michael
-
-
-.\" Copyright (C) 2012 Michael Kerrisk <mtk.manpages@gmail.com>
-.\"
-.\" Permission is granted to make and distribute verbatim copies of this
-.\" manual provided the copyright notice and this permission notice are
-.\" preserved on all copies.
-.\"
-.\" Permission is granted to copy and distribute modified versions of this
-.\" manual under the conditions for verbatim copying, provided that the
-.\" entire resulting derived work is distributed under the terms of a
-.\" permission notice identical to this one.
-.\"
-.\" Since the Linux kernel and libraries are constantly changing, this
-.\" manual page may be incorrect or out-of-date.  The author(s) assume no
-.\" responsibility for errors or omissions, or for damages resulting from
-.\" the use of the information contained herein.  The author(s) may not
-.\" have taken the same level of care in the production of this manual,
-.\" which is licensed free of charge, as they might when working
-.\" professionally.
-.\"
-.\" Formatted or processed versions of this manual, if unaccompanied by
-.\" the source, must acknowledge the copyright and authors of this work.
-.\"
-.TH DELETE_MODULE 2 2012-10-12 "Linux" "Linux Programmer's Manual"
-.SH NAME
-delete_module \- unload a kernel module
-.SH SYNOPSIS
-.nf
-.BI "int delete_module(const char *" name ", int " flags );
-.fi
-
-.IR Note :
-There is no glibc wrapper for this system call; see NOTES.
-.SH DESCRIPTION
-The
-.BR delete_module ()
-system call attempts to remove the unused loadable module entry
-identified by
-.IR name .
-If the module has an
-.I exit
-function, then that function is executed before unloading the module.
-The
-.IR flags
-argument is used to modify the behavior of the system call,
-as described below.
-This system call requires privilege.
-
-Module removal is attempted according to the following rules:
-.IP 1. 4
-If there are other loaded modules that depend on
-(i.e., refer to symbols defined in) this module,
-then the call fails.
-.IP 2.
-Otherwise, if the reference count for the module
-(i.e., the  number  of processes currently using the module)
-is zero, then the module is immediately unloaded.
-.IP 3.
-If a module has a nonzero reference count,
-then the behavior depends on the bits set in
-.IR flags .
-In normal usage (see NOTES), the
-.BR O_NONBLOCK
-flag is always specified, and the
-.BR O_TRUNC
-flag may additionally be specified.
-.\"  	O_TRUNC == KMOD_REMOVE_FORCE in kmod library
-.\"  	O_NONBLOCK == KMOD_REMOVE_NOWAIT in kmod library
-The various combinations for
-.I flags
-have the following effect:
-.RS 4
-.TP
-.B flags == O_NONBLOCK
-The call returns immediately, with an error.
-.TP
-.B flags == (O_NONBLOCK | O_TRUNC)
-The module is unloaded immediately,
-regardless of whether it has a nonzero reference count.
-.TP
-.B flags == 0
-If
-.I flags
-does not specify
-.BR O_NONBLOCK ,
-the following steps occur:
-.RS
-.IP * 3
-The module is marked so that no new references are permitted.
-.IP *
-If the module's reference count is nonzero,
-the caller is placed in an uninterruptible sleep state
-.RB ( TASK_UNINTERRUPTIBLE )
-until the reference count is zero, at which point the call unblocks.
-.IP *
-The module is unloaded in the usual way.
-.RE
-.RE
-.PP
-The
-.B O_TRUNC
-flag has one further effect on the rules described above.
-By default,
-attempting to remove a module that has an
-.I init
-function but no
-.I exit
-function fails.
-However, if
-.BR O_TRUNC
-was specified, this requirement is bypassed.
-.PP
-Using the
-.B O_TRUNC
-flag is dangerous!
-If the kernel was not built with
-.BR CONFIG_MODULE_FORCE_UNLOAD ,
-this flag is silently ignored.
-(Normally ,
-.BR CONFIG_MODULE_FORCE_UNLOAD
-is enabled.)
-Using this flag taints the kernel (TAINT_FORCED_RMMOD).
-.SH "RETURN VALUE"
-On success, zero is returned.
-On error, \-1 is returned and
-.I errno
-is set appropriately.
-.SH ERRORS
-.TP
-.B EBUSY
-The module is not "live"
-(i.e., it is still being initialized or is already marked for removal);
-or, the module has
-an
-.I init
-function but has no
-.I exit
-function, and
-.B O_TRUNC
-was not specified in
-.IR flags .
-
-.TP
-.B EFAULT
-.I name
-refers to a location outside the process's accessible address space.
-.TP
-.B ENOENT
-No module by that name exists.
-.TP
-.B EPERM
-The caller was not privileged
-(did not have the
-.B CAP_SYS_MODULE
-capability),
-or module unloading is disabled
-(see
-.IR /proc/sys/kernel/modules_disabled
-in
-.BR proc (5)).
-.TP
-.B EWOULDBLOCK
-Other modules depend on this module;
-or,
-.BR O_NONBLOCK
-was specified in
-.IR flags ,
-but the reference count of this module is nonzero and
-.B O_TRUNC
-was not specified in
-.IR flags .
-.SH "CONFORMING TO"
-.BR delete_module ()
-is Linux-specific.
-.SH NOTES
-Glibc does not provide a wrapper for this system call; call it using
-.BR syscall (2).
-
-The unininterruptible sleep that may occur if
-.BR O_NONBLOCK
-is omitted from
-.IR flags
-is considered undesirable, because the sleeping process is left
-in an unkillable state.
-As at Linux 3.7, specifying
-.BR O_NONBLOCK
-is optional, but in future kernels it is likely to become mandatory.
-.SS Linux 2.4 and earlier
-In Linux 2.4 and earlier, the system call took only one argument:
-
-.BI "   int delete_module(const char *" name );
-
-If
-.I name
-is NULL, all unused modules marked auto-clean are removed.
-
-Some further details of differences in the behavior of
-.BR delete_module ()
-in Linux 2.4 and earlier are
-.I not
-currently explained in this manual page.
-.SH "SEE ALSO"
-.BR create_module (2),
-.BR init_module (2),
-.BR query_module (2),
-.BR lsmod (8),
-.BR rmmod (8)
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
-
---e89a8f502ff8a7bde004cbd8bc3b
-Content-Type: application/octet-stream; name="delete_module.2"
-Content-Disposition: attachment; filename="delete_module.2"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h871ykcf0
-
-LlwiIENvcHlyaWdodCAoQykgMjAxMiBNaWNoYWVsIEtlcnJpc2sgPG10ay5tYW5wYWdlc0BnbWFp
-bC5jb20+Ci5cIgouXCIgUGVybWlzc2lvbiBpcyBncmFudGVkIHRvIG1ha2UgYW5kIGRpc3RyaWJ1
-dGUgdmVyYmF0aW0gY29waWVzIG9mIHRoaXMKLlwiIG1hbnVhbCBwcm92aWRlZCB0aGUgY29weXJp
-Z2h0IG5vdGljZSBhbmQgdGhpcyBwZXJtaXNzaW9uIG5vdGljZSBhcmUKLlwiIHByZXNlcnZlZCBv
-biBhbGwgY29waWVzLgouXCIKLlwiIFBlcm1pc3Npb24gaXMgZ3JhbnRlZCB0byBjb3B5IGFuZCBk
-aXN0cmlidXRlIG1vZGlmaWVkIHZlcnNpb25zIG9mIHRoaXMKLlwiIG1hbnVhbCB1bmRlciB0aGUg
-Y29uZGl0aW9ucyBmb3IgdmVyYmF0aW0gY29weWluZywgcHJvdmlkZWQgdGhhdCB0aGUKLlwiIGVu
-dGlyZSByZXN1bHRpbmcgZGVyaXZlZCB3b3JrIGlzIGRpc3RyaWJ1dGVkIHVuZGVyIHRoZSB0ZXJt
-cyBvZiBhCi5cIiBwZXJtaXNzaW9uIG5vdGljZSBpZGVudGljYWwgdG8gdGhpcyBvbmUuCi5cIgou
-XCIgU2luY2UgdGhlIExpbnV4IGtlcm5lbCBhbmQgbGlicmFyaWVzIGFyZSBjb25zdGFudGx5IGNo
-YW5naW5nLCB0aGlzCi5cIiBtYW51YWwgcGFnZSBtYXkgYmUgaW5jb3JyZWN0IG9yIG91dC1vZi1k
-YXRlLiAgVGhlIGF1dGhvcihzKSBhc3N1bWUgbm8KLlwiIHJlc3BvbnNpYmlsaXR5IGZvciBlcnJv
-cnMgb3Igb21pc3Npb25zLCBvciBmb3IgZGFtYWdlcyByZXN1bHRpbmcgZnJvbQouXCIgdGhlIHVz
-ZSBvZiB0aGUgaW5mb3JtYXRpb24gY29udGFpbmVkIGhlcmVpbi4gIFRoZSBhdXRob3IocykgbWF5
-IG5vdAouXCIgaGF2ZSB0YWtlbiB0aGUgc2FtZSBsZXZlbCBvZiBjYXJlIGluIHRoZSBwcm9kdWN0
-aW9uIG9mIHRoaXMgbWFudWFsLAouXCIgd2hpY2ggaXMgbGljZW5zZWQgZnJlZSBvZiBjaGFyZ2Us
-IGFzIHRoZXkgbWlnaHQgd2hlbiB3b3JraW5nCi5cIiBwcm9mZXNzaW9uYWxseS4KLlwiCi5cIiBG
-b3JtYXR0ZWQgb3IgcHJvY2Vzc2VkIHZlcnNpb25zIG9mIHRoaXMgbWFudWFsLCBpZiB1bmFjY29t
-cGFuaWVkIGJ5Ci5cIiB0aGUgc291cmNlLCBtdXN0IGFja25vd2xlZGdlIHRoZSBjb3B5cmlnaHQg
-YW5kIGF1dGhvcnMgb2YgdGhpcyB3b3JrLgouXCIKLlRIIERFTEVURV9NT0RVTEUgMiAyMDEyLTEw
-LTEyICJMaW51eCIgIkxpbnV4IFByb2dyYW1tZXIncyBNYW51YWwiCi5TSCBOQU1FCmRlbGV0ZV9t
-b2R1bGUgXC0gdW5sb2FkIGEga2VybmVsIG1vZHVsZQouU0ggU1lOT1BTSVMKLm5mCi5CSSAiaW50
-IGRlbGV0ZV9tb2R1bGUoY29uc3QgY2hhciAqIiBuYW1lICIsIGludCAiIGZsYWdzICk7Ci5maQoK
-LklSIE5vdGUgOgpUaGVyZSBpcyBubyBnbGliYyB3cmFwcGVyIGZvciB0aGlzIHN5c3RlbSBjYWxs
-OyBzZWUgTk9URVMuCi5TSCBERVNDUklQVElPTgpUaGUKLkJSIGRlbGV0ZV9tb2R1bGUgKCkKc3lz
-dGVtIGNhbGwgYXR0ZW1wdHMgdG8gcmVtb3ZlIHRoZSB1bnVzZWQgbG9hZGFibGUgbW9kdWxlIGVu
-dHJ5CmlkZW50aWZpZWQgYnkKLklSIG5hbWUgLgpJZiB0aGUgbW9kdWxlIGhhcyBhbgouSSBleGl0
-CmZ1bmN0aW9uLCB0aGVuIHRoYXQgZnVuY3Rpb24gaXMgZXhlY3V0ZWQgYmVmb3JlIHVubG9hZGlu
-ZyB0aGUgbW9kdWxlLgpUaGUKLklSIGZsYWdzCmFyZ3VtZW50IGlzIHVzZWQgdG8gbW9kaWZ5IHRo
-ZSBiZWhhdmlvciBvZiB0aGUgc3lzdGVtIGNhbGwsCmFzIGRlc2NyaWJlZCBiZWxvdy4KVGhpcyBz
-eXN0ZW0gY2FsbCByZXF1aXJlcyBwcml2aWxlZ2UuCgpNb2R1bGUgcmVtb3ZhbCBpcyBhdHRlbXB0
-ZWQgYWNjb3JkaW5nIHRvIHRoZSBmb2xsb3dpbmcgcnVsZXM6Ci5JUCAxLiA0CklmIHRoZXJlIGFy
-ZSBvdGhlciBsb2FkZWQgbW9kdWxlcyB0aGF0IGRlcGVuZCBvbgooaS5lLiwgcmVmZXIgdG8gc3lt
-Ym9scyBkZWZpbmVkIGluKSB0aGlzIG1vZHVsZSwKdGhlbiB0aGUgY2FsbCBmYWlscy4KLklQIDIu
-Ck90aGVyd2lzZSwgaWYgdGhlIHJlZmVyZW5jZSBjb3VudCBmb3IgdGhlIG1vZHVsZQooaS5lLiwg
-dGhlICBudW1iZXIgIG9mIHByb2Nlc3NlcyBjdXJyZW50bHkgdXNpbmcgdGhlIG1vZHVsZSkKaXMg
-emVybywgdGhlbiB0aGUgbW9kdWxlIGlzIGltbWVkaWF0ZWx5IHVubG9hZGVkLgouSVAgMy4KSWYg
-YSBtb2R1bGUgaGFzIGEgbm9uemVybyByZWZlcmVuY2UgY291bnQsCnRoZW4gdGhlIGJlaGF2aW9y
-IGRlcGVuZHMgb24gdGhlIGJpdHMgc2V0IGluCi5JUiBmbGFncyAuCkluIG5vcm1hbCB1c2FnZSAo
-c2VlIE5PVEVTKSwgdGhlCi5CUiBPX05PTkJMT0NLCmZsYWcgaXMgYWx3YXlzIHNwZWNpZmllZCwg
-YW5kIHRoZQouQlIgT19UUlVOQwpmbGFnIG1heSBhZGRpdGlvbmFsbHkgYmUgc3BlY2lmaWVkLgou
-XCIgIAlPX1RSVU5DID09IEtNT0RfUkVNT1ZFX0ZPUkNFIGluIGttb2QgbGlicmFyeQouXCIgIAlP
-X05PTkJMT0NLID09IEtNT0RfUkVNT1ZFX05PV0FJVCBpbiBrbW9kIGxpYnJhcnkKVGhlIHZhcmlv
-dXMgY29tYmluYXRpb25zIGZvcgouSSBmbGFncwpoYXZlIHRoZSBmb2xsb3dpbmcgZWZmZWN0Ogou
-UlMgNAouVFAKLkIgZmxhZ3MgPT0gT19OT05CTE9DSwpUaGUgY2FsbCByZXR1cm5zIGltbWVkaWF0
-ZWx5LCB3aXRoIGFuIGVycm9yLgouVFAKLkIgZmxhZ3MgPT0gKE9fTk9OQkxPQ0sgfCBPX1RSVU5D
-KQpUaGUgbW9kdWxlIGlzIHVubG9hZGVkIGltbWVkaWF0ZWx5LApyZWdhcmRsZXNzIG9mIHdoZXRo
-ZXIgaXQgaGFzIGEgbm9uemVybyByZWZlcmVuY2UgY291bnQuCi5UUAouQiBmbGFncyA9PSAwCklm
-Ci5JIGZsYWdzCmRvZXMgbm90IHNwZWNpZnkKLkJSIE9fTk9OQkxPQ0sgLAp0aGUgZm9sbG93aW5n
-IHN0ZXBzIG9jY3VyOgouUlMKLklQICogMwpUaGUgbW9kdWxlIGlzIG1hcmtlZCBzbyB0aGF0IG5v
-IG5ldyByZWZlcmVuY2VzIGFyZSBwZXJtaXR0ZWQuCi5JUCAqCklmIHRoZSBtb2R1bGUncyByZWZl
-cmVuY2UgY291bnQgaXMgbm9uemVybywKdGhlIGNhbGxlciBpcyBwbGFjZWQgaW4gYW4gdW5pbnRl
-cnJ1cHRpYmxlIHNsZWVwIHN0YXRlCi5SQiAoIFRBU0tfVU5JTlRFUlJVUFRJQkxFICkKdW50aWwg
-dGhlIHJlZmVyZW5jZSBjb3VudCBpcyB6ZXJvLCBhdCB3aGljaCBwb2ludCB0aGUgY2FsbCB1bmJs
-b2Nrcy4KLklQICoKVGhlIG1vZHVsZSBpcyB1bmxvYWRlZCBpbiB0aGUgdXN1YWwgd2F5LgouUkUK
-LlJFCi5QUApUaGUKLkIgT19UUlVOQwpmbGFnIGhhcyBvbmUgZnVydGhlciBlZmZlY3Qgb24gdGhl
-IHJ1bGVzIGRlc2NyaWJlZCBhYm92ZS4KQnkgZGVmYXVsdCwKYXR0ZW1wdGluZyB0byByZW1vdmUg
-YSBtb2R1bGUgdGhhdCBoYXMgYW4KLkkgaW5pdApmdW5jdGlvbiBidXQgbm8KLkkgZXhpdCAKZnVu
-Y3Rpb24gZmFpbHMuCkhvd2V2ZXIsIGlmCi5CUiBPX1RSVU5DCndhcyBzcGVjaWZpZWQsIHRoaXMg
-cmVxdWlyZW1lbnQgaXMgYnlwYXNzZWQuCi5QUApVc2luZyB0aGUgCi5CIE9fVFJVTkMKZmxhZyBp
-cyBkYW5nZXJvdXMhCklmIHRoZSBrZXJuZWwgd2FzIG5vdCBidWlsdCB3aXRoCi5CUiBDT05GSUdf
-TU9EVUxFX0ZPUkNFX1VOTE9BRCAsCnRoaXMgZmxhZyBpcyBzaWxlbnRseSBpZ25vcmVkLgooTm9y
-bWFsbHkgLAouQlIgQ09ORklHX01PRFVMRV9GT1JDRV9VTkxPQUQKaXMgZW5hYmxlZC4pClVzaW5n
-IHRoaXMgZmxhZyB0YWludHMgdGhlIGtlcm5lbCAoVEFJTlRfRk9SQ0VEX1JNTU9EKS4KLlNIICJS
-RVRVUk4gVkFMVUUiCk9uIHN1Y2Nlc3MsIHplcm8gaXMgcmV0dXJuZWQuCk9uIGVycm9yLCBcLTEg
-aXMgcmV0dXJuZWQgYW5kCi5JIGVycm5vCmlzIHNldCBhcHByb3ByaWF0ZWx5LgouU0ggRVJST1JT
-Ci5UUAouQiBFQlVTWQpUaGUgbW9kdWxlIGlzIG5vdCAibGl2ZSIKKGkuZS4sIGl0IGlzIHN0aWxs
-IGJlaW5nIGluaXRpYWxpemVkIG9yIGlzIGFscmVhZHkgbWFya2VkIGZvciByZW1vdmFsKTsKb3Is
-IHRoZSBtb2R1bGUgaGFzCmFuCi5JIGluaXQKZnVuY3Rpb24gYnV0IGhhcyBubwouSSBleGl0CmZ1
-bmN0aW9uLCBhbmQKLkIgT19UUlVOQwp3YXMgbm90IHNwZWNpZmllZCBpbgouSVIgZmxhZ3MgLgoK
-LlRQCi5CIEVGQVVMVAouSSBuYW1lCnJlZmVycyB0byBhIGxvY2F0aW9uIG91dHNpZGUgdGhlIHBy
-b2Nlc3MncyBhY2Nlc3NpYmxlIGFkZHJlc3Mgc3BhY2UuCi5UUAouQiBFTk9FTlQKTm8gbW9kdWxl
-IGJ5IHRoYXQgbmFtZSBleGlzdHMuCi5UUAouQiBFUEVSTQpUaGUgY2FsbGVyIHdhcyBub3QgcHJp
-dmlsZWdlZAooZGlkIG5vdCBoYXZlIHRoZQouQiBDQVBfU1lTX01PRFVMRQpjYXBhYmlsaXR5KSwK
-b3IgbW9kdWxlIHVubG9hZGluZyBpcyBkaXNhYmxlZAooc2VlCi5JUiAvcHJvYy9zeXMva2VybmVs
-L21vZHVsZXNfZGlzYWJsZWQKaW4KLkJSIHByb2MgKDUpKS4KLlRQCi5CIEVXT1VMREJMT0NLCk90
-aGVyIG1vZHVsZXMgZGVwZW5kIG9uIHRoaXMgbW9kdWxlOwpvciwKLkJSIE9fTk9OQkxPQ0sKd2Fz
-IHNwZWNpZmllZCBpbgouSVIgZmxhZ3MgLApidXQgdGhlIHJlZmVyZW5jZSBjb3VudCBvZiB0aGlz
-IG1vZHVsZSBpcyBub256ZXJvIGFuZCAKLkIgT19UUlVOQwp3YXMgbm90IHNwZWNpZmllZCBpbgou
-SVIgZmxhZ3MgLgouU0ggIkNPTkZPUk1JTkcgVE8iCi5CUiBkZWxldGVfbW9kdWxlICgpCmlzIExp
-bnV4LXNwZWNpZmljLgouU0ggTk9URVMKR2xpYmMgZG9lcyBub3QgcHJvdmlkZSBhIHdyYXBwZXIg
-Zm9yIHRoaXMgc3lzdGVtIGNhbGw7IGNhbGwgaXQgdXNpbmcKLkJSIHN5c2NhbGwgKDIpLgoKVGhl
-IHVuaW5pbnRlcnJ1cHRpYmxlIHNsZWVwIHRoYXQgbWF5IG9jY3VyIGlmCi5CUiBPX05PTkJMT0NL
-CmlzIG9taXR0ZWQgZnJvbQouSVIgZmxhZ3MKaXMgY29uc2lkZXJlZCB1bmRlc2lyYWJsZSwgYmVj
-YXVzZSB0aGUgc2xlZXBpbmcgcHJvY2VzcyBpcyBsZWZ0CmluIGFuIHVua2lsbGFibGUgc3RhdGUu
-CkFzIGF0IExpbnV4IDMuNywgc3BlY2lmeWluZwouQlIgT19OT05CTE9DSwppcyBvcHRpb25hbCwg
-YnV0IGluIGZ1dHVyZSBrZXJuZWxzIGl0IGlzIGxpa2VseSB0byBiZWNvbWUgbWFuZGF0b3J5Lgou
-U1MgTGludXggMi40IGFuZCBlYXJsaWVyCkluIExpbnV4IDIuNCBhbmQgZWFybGllciwgdGhlIHN5
-c3RlbSBjYWxsIHRvb2sgb25seSBvbmUgYXJndW1lbnQ6CgouQkkgIiAgIGludCBkZWxldGVfbW9k
-dWxlKGNvbnN0IGNoYXIgKiIgbmFtZSApOwoKSWYKLkkgbmFtZQppcyBOVUxMLCBhbGwgdW51c2Vk
-IG1vZHVsZXMgbWFya2VkIGF1dG8tY2xlYW4gYXJlIHJlbW92ZWQuCgpTb21lIGZ1cnRoZXIgZGV0
-YWlscyBvZiBkaWZmZXJlbmNlcyBpbiB0aGUgYmVoYXZpb3Igb2YKLkJSIGRlbGV0ZV9tb2R1bGUg
-KCkKaW4gTGludXggMi40IGFuZCBlYXJsaWVyIGFyZQouSSBub3QKY3VycmVudGx5IGV4cGxhaW5l
-ZCBpbiB0aGlzIG1hbnVhbCBwYWdlLgouU0ggIlNFRSBBTFNPIgouQlIgY3JlYXRlX21vZHVsZSAo
-MiksCi5CUiBpbml0X21vZHVsZSAoMiksCi5CUiBxdWVyeV9tb2R1bGUgKDIpLAouQlIgbHNtb2Qg
-KDgpLAouQlIgcm1tb2QgKDgpCg==
---e89a8f502ff8a7bde004cbd8bc3b--
