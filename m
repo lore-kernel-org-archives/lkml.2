@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760088Ab2JLSeN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 14:34:13 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48479 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756328Ab2JLSeL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 14:34:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <5077F6E1.7090600@huawei.com>
-References: <1350037890-5899-1-git-send-email-tangchen@cn.fujitsu.com>
-	<1350037890-5899-3-git-send-email-tangchen@cn.fujitsu.com>
-	<5077F2C2.1010300@huawei.com>
-	<5077F407.3040205@cn.fujitsu.com>
-	<5077F6E1.7090600@huawei.com>
-Date: Fri, 12 Oct 2012 11:34:09 -0700
-X-Google-Sender-Auth: mX1iKzpNPlFke9R7JMO_6BF_izo
-Message-ID: <CAE9FiQUDy0Hb60z2E=UnYcF-06-Buoy+JFcNOvT8+3ic13Eokw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] Do not use acpi_device to find pci root bridge in
- _init code.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jiang Liu <jiang.liu@huawei.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, lenb@kernel.org, bhelgaas@google.com,
-        izumi.taku@jp.fujitsu.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932769Ab2JLSii (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 14:38:38 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:42731 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753808Ab2JLSih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 14:38:37 -0400
+Message-ID: <1350067114.2243.35.camel@joe-AO722>
+Subject: Re: Spurious warning in checkpatch.pl?
+From: Joe Perches <joe@perches.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 12 Oct 2012 11:38:34 -0700
+In-Reply-To: <5078603C.9010709@lwfinger.net>
+References: <5078603C.9010709@lwfinger.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 3:54 AM, Jiang Liu <jiang.liu@huawei.com> wrote:
-> On 2012-10-12 18:42, Tang Chen wrote:
->> On 10/12/2012 06:36 PM, Jiang Liu wrote:
->>> I have sent a similar patch to Yinghai before. For simplicity, we could
->>> use acpi_match_object_info_ids() instead of acpi_match_device_ids()
->>> directly.
->>
->> Hum, I must have missed it. :)
->> Using acpi_match_object_info_ids() directly seems good. I'm just worry
->> about if it could cause any other problem. :)
->>
->> So now, is this bug fixed ? And we don't need these patches, right ?
->>
->> Thanks. :)
-> I think Yinghai has missed my patch too, so just suggest to use
-> acpi_match_object_info_ids() directly.
+On Fri, 2012-10-12 at 13:23 -0500, Larry Finger wrote:
+> Andy,
+> 
+> The checkpatch.pl version in mainline is issuing what I think are false warnings 
+> of the type
+> 
+> WARNING: networking block comments put the trailing */ on a separate line
+> #93: FILE: drivers/net/wireless/rtlwifi/wifi.h:208:
+> +       u32 rf_rb;              /* rflssi_readback */
+> 
+> Is a trailing comment for the member of a struct not allowed?
 
-i put that patch from Jiang in my branch for while, and later found it
-cause pci_root_bus notifying
-do not work anymore, so i dropped that.
+It's allowed.  Maybe even better, encouraged.
 
-Yinghai
+It's a change I made in commit 058806007450
+("checkpatch: check networking specific block comment style")
+without sufficient testing.
+
+I'll see about fixing it.
+
+
