@@ -1,207 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756636Ab2JLTGy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 15:06:54 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:41896 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754034Ab2JLTGw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 15:06:52 -0400
-X-Originating-IP: 217.70.178.146
-X-Originating-IP: 173.246.103.110
+	id S1758668Ab2JLTHA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 15:07:00 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:57933 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756881Ab2JLTG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 15:06:56 -0400
 Date: Fri, 12 Oct 2012 12:06:45 -0700
-From: Josh Triplett <josh@freedesktop.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 4/4] rcutorture: use DEFINE_STATIC_SRCU()
-Message-ID: <20121012190645.GA4134@jtriplet-mobl1>
-References: <1350062057-2439-1-git-send-email-laijs@cn.fujitsu.com>
- <1350062057-2439-5-git-send-email-laijs@cn.fujitsu.com>
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        PaX Team <pageexec@freemail.hu>,
+        Brad Spengler <spender@grsecurity.net>
+Subject: [PATCH v4] fix stack memory content leak via UNAME26
+Message-ID: <20121012190645.GA6111@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1350062057-2439-5-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 13, 2012 at 01:14:17AM +0800, Lai Jiangshan wrote:
-> use DEFINE_STATIC_SRCU() to simplify the rcutorture.c
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Calling uname() with the UNAME26 personality set allows a leak of kernel
+stack contents. This fixes it by defensively calculating the length of
+copy_to_user() call, making the len argument unsigned, and initializing
+the stack buffer to zero (now technically unneeded, but hey, overkill).
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+CVE-2012-0957
 
-> ---
->  kernel/rcutorture.c |   41 ++++++-----------------------------------
->  1 files changed, 6 insertions(+), 35 deletions(-)
-> 
-> diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-> index 25b1503..7939edf 100644
-> --- a/kernel/rcutorture.c
-> +++ b/kernel/rcutorture.c
-> @@ -332,7 +332,6 @@ rcu_stutter_wait(char *title)
->  
->  struct rcu_torture_ops {
->  	void (*init)(void);
-> -	void (*cleanup)(void);
->  	int (*readlock)(void);
->  	void (*read_delay)(struct rcu_random_state *rrsp);
->  	void (*readunlock)(int idx);
-> @@ -424,7 +423,6 @@ static void rcu_torture_deferred_free(struct rcu_torture *p)
->  
->  static struct rcu_torture_ops rcu_ops = {
->  	.init		= NULL,
-> -	.cleanup	= NULL,
->  	.readlock	= rcu_torture_read_lock,
->  	.read_delay	= rcu_read_delay,
->  	.readunlock	= rcu_torture_read_unlock,
-> @@ -468,7 +466,6 @@ static void rcu_sync_torture_init(void)
->  
->  static struct rcu_torture_ops rcu_sync_ops = {
->  	.init		= rcu_sync_torture_init,
-> -	.cleanup	= NULL,
->  	.readlock	= rcu_torture_read_lock,
->  	.read_delay	= rcu_read_delay,
->  	.readunlock	= rcu_torture_read_unlock,
-> @@ -486,7 +483,6 @@ static struct rcu_torture_ops rcu_sync_ops = {
->  
->  static struct rcu_torture_ops rcu_expedited_ops = {
->  	.init		= rcu_sync_torture_init,
-> -	.cleanup	= NULL,
->  	.readlock	= rcu_torture_read_lock,
->  	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
->  	.readunlock	= rcu_torture_read_unlock,
-> @@ -529,7 +525,6 @@ static void rcu_bh_torture_deferred_free(struct rcu_torture *p)
->  
->  static struct rcu_torture_ops rcu_bh_ops = {
->  	.init		= NULL,
-> -	.cleanup	= NULL,
->  	.readlock	= rcu_bh_torture_read_lock,
->  	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
->  	.readunlock	= rcu_bh_torture_read_unlock,
-> @@ -546,7 +541,6 @@ static struct rcu_torture_ops rcu_bh_ops = {
->  
->  static struct rcu_torture_ops rcu_bh_sync_ops = {
->  	.init		= rcu_sync_torture_init,
-> -	.cleanup	= NULL,
->  	.readlock	= rcu_bh_torture_read_lock,
->  	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
->  	.readunlock	= rcu_bh_torture_read_unlock,
-> @@ -563,7 +557,6 @@ static struct rcu_torture_ops rcu_bh_sync_ops = {
->  
->  static struct rcu_torture_ops rcu_bh_expedited_ops = {
->  	.init		= rcu_sync_torture_init,
-> -	.cleanup	= NULL,
->  	.readlock	= rcu_bh_torture_read_lock,
->  	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
->  	.readunlock	= rcu_bh_torture_read_unlock,
-> @@ -582,19 +575,7 @@ static struct rcu_torture_ops rcu_bh_expedited_ops = {
->   * Definitions for srcu torture testing.
->   */
->  
-> -static struct srcu_struct srcu_ctl;
-> -
-> -static void srcu_torture_init(void)
-> -{
-> -	init_srcu_struct(&srcu_ctl);
-> -	rcu_sync_torture_init();
-> -}
-> -
-> -static void srcu_torture_cleanup(void)
-> -{
-> -	synchronize_srcu(&srcu_ctl);
-> -	cleanup_srcu_struct(&srcu_ctl);
-> -}
-> +DEFINE_STATIC_SRCU(srcu_ctl);
->  
->  static int srcu_torture_read_lock(void) __acquires(&srcu_ctl)
->  {
-> @@ -665,8 +646,7 @@ static int srcu_torture_stats(char *page)
->  }
->  
->  static struct rcu_torture_ops srcu_ops = {
-> -	.init		= srcu_torture_init,
-> -	.cleanup	= srcu_torture_cleanup,
-> +	.init		= rcu_sync_torture_init,
->  	.readlock	= srcu_torture_read_lock,
->  	.read_delay	= srcu_read_delay,
->  	.readunlock	= srcu_torture_read_unlock,
-> @@ -680,8 +660,7 @@ static struct rcu_torture_ops srcu_ops = {
->  };
->  
->  static struct rcu_torture_ops srcu_sync_ops = {
-> -	.init		= srcu_torture_init,
-> -	.cleanup	= srcu_torture_cleanup,
-> +	.init		= rcu_sync_torture_init,
->  	.readlock	= srcu_torture_read_lock,
->  	.read_delay	= srcu_read_delay,
->  	.readunlock	= srcu_torture_read_unlock,
-> @@ -705,8 +684,7 @@ static void srcu_torture_read_unlock_raw(int idx) __releases(&srcu_ctl)
->  }
->  
->  static struct rcu_torture_ops srcu_raw_ops = {
-> -	.init		= srcu_torture_init,
-> -	.cleanup	= srcu_torture_cleanup,
-> +	.init		= rcu_sync_torture_init,
->  	.readlock	= srcu_torture_read_lock_raw,
->  	.read_delay	= srcu_read_delay,
->  	.readunlock	= srcu_torture_read_unlock_raw,
-> @@ -720,8 +698,7 @@ static struct rcu_torture_ops srcu_raw_ops = {
->  };
->  
->  static struct rcu_torture_ops srcu_raw_sync_ops = {
-> -	.init		= srcu_torture_init,
-> -	.cleanup	= srcu_torture_cleanup,
-> +	.init		= rcu_sync_torture_init,
->  	.readlock	= srcu_torture_read_lock_raw,
->  	.read_delay	= srcu_read_delay,
->  	.readunlock	= srcu_torture_read_unlock_raw,
-> @@ -740,8 +717,7 @@ static void srcu_torture_synchronize_expedited(void)
->  }
->  
->  static struct rcu_torture_ops srcu_expedited_ops = {
-> -	.init		= srcu_torture_init,
-> -	.cleanup	= srcu_torture_cleanup,
-> +	.init		= rcu_sync_torture_init,
->  	.readlock	= srcu_torture_read_lock,
->  	.read_delay	= srcu_read_delay,
->  	.readunlock	= srcu_torture_read_unlock,
-> @@ -776,7 +752,6 @@ static void rcu_sched_torture_deferred_free(struct rcu_torture *p)
->  
->  static struct rcu_torture_ops sched_ops = {
->  	.init		= rcu_sync_torture_init,
-> -	.cleanup	= NULL,
->  	.readlock	= sched_torture_read_lock,
->  	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
->  	.readunlock	= sched_torture_read_unlock,
-> @@ -792,7 +767,6 @@ static struct rcu_torture_ops sched_ops = {
->  
->  static struct rcu_torture_ops sched_sync_ops = {
->  	.init		= rcu_sync_torture_init,
-> -	.cleanup	= NULL,
->  	.readlock	= sched_torture_read_lock,
->  	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
->  	.readunlock	= sched_torture_read_unlock,
-> @@ -807,7 +781,6 @@ static struct rcu_torture_ops sched_sync_ops = {
->  
->  static struct rcu_torture_ops sched_expedited_ops = {
->  	.init		= rcu_sync_torture_init,
-> -	.cleanup	= NULL,
->  	.readlock	= sched_torture_read_lock,
->  	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
->  	.readunlock	= sched_torture_read_unlock,
-> @@ -1903,8 +1876,6 @@ rcu_torture_cleanup(void)
->  
->  	rcu_torture_stats_print();  /* -After- the stats thread is stopped! */
->  
-> -	if (cur_ops->cleanup)
-> -		cur_ops->cleanup();
->  	if (atomic_read(&n_rcu_torture_error) || n_rcu_torture_barrier_error)
->  		rcu_torture_print_module_parms(cur_ops, "End of test: FAILURE");
->  	else if (n_online_successes != n_online_attempts ||
-> -- 
-> 1.7.7.6
-> 
+Reported-by: PaX Team <pageexec@freemail.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: PaX Team <pageexec@freemail.hu>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: stable@vger.kernel.org
+Signed-off-by: Kees Cook <keescook@chromium.org>
+
+---
+v4:
+ - switch to clamp_t, thanks to Fengguang Wu.
+v3:
+ - use scnprintf, suggested by Andrew Morton.
+v2:
+ - corrected credit to PaX Team.
+ - moved stack clearing into if case to avoid penalty to common case.
+---
+ kernel/sys.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/sys.c b/kernel/sys.c
+index c5cb5b9..e6e0ece 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1265,15 +1265,16 @@ DECLARE_RWSEM(uts_sem);
+  * Work around broken programs that cannot handle "Linux 3.0".
+  * Instead we map 3.x to 2.6.40+x, so e.g. 3.0 would be 2.6.40
+  */
+-static int override_release(char __user *release, int len)
++static int override_release(char __user *release, size_t len)
+ {
+ 	int ret = 0;
+-	char buf[65];
+ 
+ 	if (current->personality & UNAME26) {
+-		char *rest = UTS_RELEASE;
++		const char *rest = UTS_RELEASE;
++		char buf[65] = { 0 };
+ 		int ndots = 0;
+ 		unsigned v;
++		size_t copy;
+ 
+ 		while (*rest) {
+ 			if (*rest == '.' && ++ndots >= 3)
+@@ -1283,8 +1284,9 @@ static int override_release(char __user *release, int len)
+ 			rest++;
+ 		}
+ 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
+-		snprintf(buf, len, "2.6.%u%s", v, rest);
+-		ret = copy_to_user(release, buf, len);
++		copy = clamp_t(size_t, len, 1, sizeof(buf));
++		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
++		ret = copy_to_user(release, buf, copy + 1);
+ 	}
+ 	return ret;
+ }
+-- 
+1.7.9.5
+
+
+-- 
+Kees Cook
+Chrome OS Security
