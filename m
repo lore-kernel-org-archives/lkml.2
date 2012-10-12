@@ -1,167 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933343Ab2JLHxe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 03:53:34 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:34901 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932482Ab2JLHxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 03:53:33 -0400
-Message-ID: <5077CC73.80504@parallels.com>
-Date: Fri, 12 Oct 2012 11:53:23 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S933425Ab2JLHyH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 03:54:07 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:48303 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932482Ab2JLHyF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 03:54:05 -0400
+Date: Fri, 12 Oct 2012 09:53:59 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        kirill@shutemov.name
+Subject: Re: [GIT PULL rcu/urgent] Fixes for RCU regressions
+Message-ID: <20121012075359.GA19783@gmail.com>
+References: <20121011172237.GA32051@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
-        Tejun Heo <tj@kernel.org>, <cgroups@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>, <devel@openvz.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v4 14/14] Add documentation about the kmem controller
-References: <1349690780-15988-1-git-send-email-glommer@parallels.com> <1349690780-15988-15-git-send-email-glommer@parallels.com> <20121011143559.GJ29295@dhcp22.suse.cz>
-In-Reply-To: <20121011143559.GJ29295@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121011172237.GA32051@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2012 06:35 PM, Michal Hocko wrote:
-> On Mon 08-10-12 14:06:20, Glauber Costa wrote:
->> Signed-off-by: Glauber Costa <glommer@parallels.com>
->> ---
->>  Documentation/cgroups/memory.txt | 55 +++++++++++++++++++++++++++++++++++++++-
->>  1 file changed, 54 insertions(+), 1 deletion(-)
->>
->> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
->> index c07f7b4..9b08548 100644
->> --- a/Documentation/cgroups/memory.txt
->> +++ b/Documentation/cgroups/memory.txt
->> @@ -71,6 +71,11 @@ Brief summary of control files.
->>   memory.oom_control		 # set/show oom controls.
->>   memory.numa_stat		 # show the number of memory usage per numa node
->>  
->> + memory.kmem.limit_in_bytes      # set/show hard limit for kernel memory
->> + memory.kmem.usage_in_bytes      # show current kernel memory allocation
->> + memory.kmem.failcnt             # show the number of kernel memory usage hits limits
->> + memory.kmem.max_usage_in_bytes  # show max kernel memory usage recorded
->> +
->>   memory.kmem.tcp.limit_in_bytes  # set/show hard limit for tcp buf memory
->>   memory.kmem.tcp.usage_in_bytes  # show current tcp buf memory allocation
->>   memory.kmem.tcp.failcnt            # show the number of tcp buf memory usage hits limits
->> @@ -268,20 +273,62 @@ the amount of kernel memory used by the system. Kernel memory is fundamentally
->>  different than user memory, since it can't be swapped out, which makes it
->>  possible to DoS the system by consuming too much of this precious resource.
->>  
->> +Kernel memory won't be accounted at all until it is limited. This allows for
-> 
-> until limit on a group is set.
-> 
-ok.
 
->> +existing setups to continue working without disruption. Note that it is
->> +possible to account it without an effective limit by setting the limits
->> +to a very high number (like RESOURCE_MAX -1page). 
-> 
-> I have brought that up in an earlier patch already. Why not just do echo
-> -1 (which translates to RESOURCE_MAX internally) and be done with that.
-> RESOURCE_MAX-1 sounds quite inconvenient.
-> 
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-For the case that you are limited already, and then want to unlimit,
-keeping the accounting, yes, it makes sense.
+> Hello, Ingo,
+> 
+> This series fixes some RCU regressions in 3.7.
+> 
+> Kirill A. Shutemov found a case where synchronize_rcu() is invoked
+> from a CPU-hotplug notifier, which, with RCU's shiny new kthread-based
+> grace-period implementation, results in deadlock.  The first commit
+> in this series fixes this deadlock by introducing RCU-specific
+> synchronization, so that RCU grace periods exclude only RCU's CPU-hotplug
+> notifiers, not the entire CPU-hotplug operation.  Kirill successfully
+> tested this commit (as have I), and it has furthermore been exposed to
+> -next testing.
+> 
+> The other commit in this series adds a warning to the new RCU_USER_QS
+> and RCU_USER_QS_FORCE Kconfig options, noting that these features,
+> though reasonably stable, are probably not ready for millions of users.
+> This commit affects only the Kconfig help text.
+> 
+> These changes are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/urgent
+> 
+> 							Thanx, Paul
+> 
+> ------------------>
+> Frederic Weisbecker (1):
+>       rcu: Advise most users not to enable RCU user mode
+> 
+> Paul E. McKenney (1):
+>       rcu: Grace-period initialization excludes only RCU notifier
+> 
+>  init/Kconfig     |   12 ++++++++++++
+>  kernel/rcutree.c |   21 ++++++++++-----------
+>  kernel/rcutree.h |    6 ++++++
+>  3 files changed, 28 insertions(+), 11 deletions(-)
 
->> The limit cannot be set
->> +if the cgroup have children, or if there are already tasks in the cgroup.
-> 
-> I would start by stating that if children are accounted automatically if
-> their parent is accounted already and there is no need to set a limit to
-> enforce that. In fact the limit cannot be set if ....
->
+Pulled, thanks a lot Paul!
 
-ok.
-
-
->> +
->> +After a controller is first limited, it will be kept being accounted until it
-> 
-> group is limited not the controller.
-> 
-
-true, thanks.
-
->> +
->>  Kernel memory limits are not imposed for the root cgroup. Usage for the root
->> -cgroup may or may not be accounted.
->> +cgroup may or may not be accounted. The memory used is accumulated into
->> +memory.kmem.usage_in_bytes, or in a separate counter when it makes sense.
-> 
-> Which separate counter? Is this about tcp kmem?
-> 
-
-So far, yes, this is the only case that makes sense, and the fewer the
-better. In any case it exists, and I wanted to be generic.
-
->> +The main "kmem" counter is fed into the main counter, so kmem charges will
->> +also be visible from the user counter.
->>  
->>  Currently no soft limit is implemented for kernel memory. It is future work
->>  to trigger slab reclaim when those limits are reached.
->>  
->>  2.7.1 Current Kernel Memory resources accounted
->>  
->> +* stack pages: every process consumes some stack pages. By accounting into
->> +kernel memory, we prevent new processes from being created when the kernel
->> +memory usage is too high.
->> +
->>  * sockets memory pressure: some sockets protocols have memory pressure
->>  thresholds. The Memory Controller allows them to be controlled individually
->>  per cgroup, instead of globally.
->>  
->>  * tcp memory pressure: sockets memory pressure for the tcp protocol.
->>  
->> +2.7.3 Common use cases
->> +
->> +Because the "kmem" counter is fed to the main user counter, kernel memory can
->> +never be limited completely independently of user memory. Say "U" is the user
->> +limit, and "K" the kernel limit. There are three possible ways limits can be
->> +set:
->> +
->> +    U != 0, K = 0:
-> 
-> K is not 0 it is unaccounted (disabled)
-> 
->> +    This is the standard memcg limitation mechanism already present before kmem
->> +    accounting. Kernel memory is completely ignored.
->> +
->> +    U,K != 0, K < U:
-> 
-> I would keep K < U
->> +    Kernel memory is effectively set as a percentage of the user memory. This
-> 
-> not a percentage it is subset of the user memory
-> 
-Well, this is semantics. I can change, but for me it makes a lot of
-sense to think of it in terms of a percentage, because it is easy to
-administer. You don't actually write a percentage, which I tried to
-clarify by using the term "effective set as a percentage".
-
-
->> +    setup is useful in deployments where the total amount of memory per-cgroup
->> +    is overcommited. Overcommiting kernel memory limits is definitely not
->> +    recommended, since the box can still run out of non-reclaimable memory.
->> +    In this case, the admin could set up K so that the sum of all groups is
->> +    never greater than the total memory, and freely set U at the cost of his
->> +    QoS.
->> +
->> +    U,K != 0, K >= U:
->> +    Since kmem charges will also be fed to the user counter, this setup gives
->> +    the admin a unified view of memory. Reclaim will be triggered for the cgroup
->> +    for both kinds of memory.
-> 
-> This is also useful for tracking kernel memory allocation.
-> 
-ok.
-
+	Ingo
