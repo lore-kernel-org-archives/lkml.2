@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934148Ab2JLQxY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 12:53:24 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:52492 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932562Ab2JLQxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 12:53:21 -0400
-Message-ID: <1350060799.2243.31.camel@joe-AO722>
-Subject: Re: [PATCH 2/9] Staging: winbond: phy_calibration: Fixed coding
- style issue
-From: Joe Perches <joe@perches.com>
-To: Adil Mujeeb <mujeeb.adil@gmail.com>
-Cc: pavel@ucw.cz, gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 12 Oct 2012 09:53:19 -0700
-In-Reply-To: <1350059835-5408-3-git-send-email-mujeeb.adil@gmail.com>
-References: <1350059835-5408-1-git-send-email-mujeeb.adil@gmail.com>
-	 <1350059835-5408-3-git-send-email-mujeeb.adil@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
+	id S1759849Ab2JLRBJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 13:01:09 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:55040 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754087Ab2JLRBG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 13:01:06 -0400
+Message-ID: <50784CCC.3050300@gmail.com>
+Date: Fri, 12 Oct 2012 12:01:00 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        jonathan@jonmasters.org, eric.dumazet@gmail.com,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>
+Subject: Re: [PATCH 5/6] net: calxedaxgmac: rework transmit ring handling
+References: <1350054908-30646-1-git-send-email-robherring2@gmail.com>  <1350054908-30646-6-git-send-email-robherring2@gmail.com> <1350059332.2819.18.camel@bwh-desktop.uk.solarflarecom.com>
+In-Reply-To: <1350059332.2819.18.camel@bwh-desktop.uk.solarflarecom.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-12 at 22:07 +0530, Adil Mujeeb wrote:
-> Removed checkpatch.pl script reported ERRORs
-[]
-> diff --git a/linux-3.6-rc7/drivers/staging/winbond/phy_calibration.c b/linux-3.6-rc7/drivers/staging/winbond/phy_calibration.c
-[]
-> -#define AG_CONST        0.6072529350
-> +#define AG_CONST        (0.6072529350)
+On 10/12/2012 11:28 AM, Ben Hutchings wrote:
+> On Fri, 2012-10-12 at 10:15 -0500, Rob Herring wrote:
+>> From: Rob Herring <rob.herring@calxeda.com>
+>>
+>> Only generate tx interrupts on every ring size / 4 descriptors. Move the
+>> netif_stop_queue call to the end of the xmit function rather than
+>> checking at the beginning.
+> [...]
+> 
+> The hardware should also interrupt if the TX ring becomes empty; does it
+> do that?
 
-That one is unnecessary.
-checkpatch is defective here.
+Yes, with the "tx buffer unavailable" bit DMA_INTR_ENA_TUE. It is not a
+per descriptor interrupt.
 
-I wonder why there is any floating point
-in the code at all though.
+However, I just noticed I missed part of this patch to actually enable
+tx descriptor interrupt. New version coming.
 
-
+Rob
