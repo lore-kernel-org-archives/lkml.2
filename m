@@ -1,54 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab2JLCm3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 22:42:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31561 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751899Ab2JLCm2 (ORCPT
+	id S1754310Ab2JLC4t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 22:56:49 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52836 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394Ab2JLC4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 22:42:28 -0400
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=J7ERXNQwqmwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=P3xNwfJ5JkoA:10 a=1XWaLZrsAAAA:8 a=anCn2-uM0frOQm8v_IgA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=UTB_XpHje0EA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1350009746.24256.84.camel@gandalf.local.home>
-Subject: Re: [PATCH 1/2] tracing: trivial cleanup
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Sharp <dhsharp@google.com>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>, linux-kernel@vger.kernel.org
-Date: Thu, 11 Oct 2012 22:42:26 -0400
-In-Reply-To: <CAJL_ektrdqwBoUYj9yoXn8FUaY7n+FmsVKHaosZtcX9yhobeHg@mail.gmail.com>
-References: <1339112785-21806-1-git-send-email-vnagarnaik@google.com>
-	 <1350007016.24256.82.camel@gandalf.local.home>
-	 <CAJL_ektrdqwBoUYj9yoXn8FUaY7n+FmsVKHaosZtcX9yhobeHg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
+	Thu, 11 Oct 2012 22:56:48 -0400
+Date: Fri, 12 Oct 2012 13:56:38 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: linux-next: manual merge of the pinctrl tree with Linus' tree
+Message-Id: <20121012135638.e42f668a360bddee7a54dea8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__12_Oct_2012_13_56_38_+1100_RZ=qqPf+C3GkC6W."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-11 at 19:31 -0700, David Sharp wrote:
-> On Thu, Oct 11, 2012 at 6:56 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > Sorry, I know this is late, but it was pushed down in my todo list
-> > (never off, but something I probably wouldn't have seen for a few more
-> > months).
-> >
-> > On Thu, 2012-06-07 at 16:46 -0700, Vaibhav Nagarnaik wrote:
-> >> From: David Sharp <dhsharp@google.com>
-> >
-> > If this is from David it needs his SOB.
-> 
-> Is that true even though we are working for the same company?
-> 
+--Signature=_Fri__12_Oct_2012_13_56_38_+1100_RZ=qqPf+C3GkC6W.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes.
+Hi Linus,
 
-I would never push a patch from Ingo without his Signed-off-by even
-though he and I work for the same company ;-)
+Today's linux-next merge of the pinctrl tree got a conflict in
+arch/arm/boot/dts/at91sam9g25ek.dts between commit fbc1871511ed ("ARM:
+dts: add twi nodes for atmel boards") from Linus' tree and commit
+77ccddbdc0c9 ("arm: at91: dt: at91sam9 add serial pinctrl support") from
+the pinctrl tree.
 
-Although, the GPL would let you. But it's best not to do it.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
--- Steve
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc arch/arm/boot/dts/at91sam9g25ek.dts
+index 877c08f,c5ab16f..0000000
+--- a/arch/arm/boot/dts/at91sam9g25ek.dts
++++ b/arch/arm/boot/dts/at91sam9g25ek.dts
+@@@ -13,49 -13,4 +13,20 @@@
+  / {
+  	model =3D "Atmel AT91SAM9G25-EK";
+  	compatible =3D "atmel,at91sam9g25ek", "atmel,at91sam9x5ek", "atmel,at91s=
+am9x5", "atmel,at91sam9";
+ +
+- 	chosen {
+- 		bootargs =3D "console=3DttyS0,115200 root=3D/dev/mtdblock1 rw rootfstyp=
+e=3Dubifs ubi.mtd=3D1 root=3Dubi0:rootfs";
+- 	};
+-=20
+ +	ahb {
+ +		apb {
+- 			dbgu: serial@fffff200 {
+- 				status =3D "okay";
+- 			};
+-=20
+- 			usart0: serial@f801c000 {
+- 				status =3D "okay";
+- 			};
+-=20
+- 			macb0: ethernet@f802c000 {
+- 				phy-mode =3D "rmii";
+- 				status =3D "okay";
+- 			};
+-=20
+ +			i2c0: i2c@f8010000 {
+ +				status =3D "okay";
+ +			};
+ +
+ +			i2c1: i2c@f8014000 {
+ +				status =3D "okay";
+ +			};
+ +
+ +			i2c2: i2c@f8018000 {
+ +				status =3D "okay";
+ +			};
+ +		};
+-=20
+- 		usb0: ohci@00600000 {
+- 			status =3D "okay";
+- 			num-ports =3D <2>;
+- 			atmel,vbus-gpio =3D <&pioD 19 1
+- 					   &pioD 20 1
+- 					  >;
+- 		};
+-=20
+- 		usb1: ehci@00700000 {
+- 			status =3D "okay";
+- 		};
+ +	};
+  };
 
+--Signature=_Fri__12_Oct_2012_13_56_38_+1100_RZ=qqPf+C3GkC6W.
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQd4bmAAoJEECxmPOUX5FERl8P/31OW/AtKCL008JqhncAJlyk
+R+H3IJeXKpfxqBxetR2ZSFSqt0w6We4Sqv9YaHwTGZa4YO6iplMoFoqH3eyToQx0
+GcZ3SDPHztuOrxaVlPDj90W+VtSW8A3T/vjlwO9+z7VUDLJuUxosP0E8p+R1kf+Y
+A7gzs6uBBzPBirrrU1U8e14HyukpyHVtKc0L62sV6RpBmDSiL9E3URR37mWkK+6+
+u4MVfaMHAk/2tDMxUU/DmHXmpBHQxayPrinDiZ4wwqmJXUEfC2c401XRw/Ntbh6G
+WKT/KTJYUUFrh64oIrxjEAm0YDVHgTXxCRGLZE3uMtIov5R5kKuexkATQ9Lfk40q
+o+J2bHXavZSktTeuu4PmZjnM8LMVxPuu/fScByRK1mLcE0dzYTeYDt/K06XLQQ/A
+i2D9VH/g/9otOK5fc0KC9yjIVo7P7fEbPulpS/7bkxCpYm+y9/OCJIbDrBmFtGtT
+v/BlfhpryP/H46J50Ff1GMv2Mgl+9X5gLrgFiIHEB7V9PIOFkMcX2raWkiOFUd3Y
+46UkYJcaQyNNaBexbVZaIiu6zbl8j7pszd3WFY/gzWwKjBdl/Gd4uuc9G8EVSjzh
+k8VrleeV+5o3wEvsgvxqD0C9T1Zv7zDBpKGeMIdYTDCkcjTyU8aGpG+/bEIxX3au
+7ux+r70O1KxxCyL3cMDD
+=/V5S
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__12_Oct_2012_13_56_38_+1100_RZ=qqPf+C3GkC6W.--
