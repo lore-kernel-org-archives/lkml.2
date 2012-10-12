@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab2JLEtO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 00:49:14 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52966 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750896Ab2JLEtM (ORCPT
+	id S1753805Ab2JLEtP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 00:49:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59049 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752541Ab2JLEtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 00:49:12 -0400
-Message-ID: <5077A13F.3090100@gmail.com>
-Date: Fri, 12 Oct 2012 13:49:03 +0900
-From: gshark <gshark.jeong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Fri, 12 Oct 2012 00:49:14 -0400
+Date: Fri, 12 Oct 2012 13:49:01 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH] efivarfs: Implement exclusive access for
+ {get,set}_variable
+Message-ID: <20121012044901.GA17913@kroah.com>
+References: <1349961551.174484.910885224391.1.gpush@pecola>
+ <1349962956.15966.521.camel@mfleming-mobl1.ger.corp.intel.com>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Richard Purdie <rpurdie@rpsys.net>, Daniel Jeong <daniel.jeong@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] backlight: lm3639: Return proper error in lm3639_bled_mode_store
- error paths
-References: <1349932292.8495.2.camel@phoenix>
-In-Reply-To: <1349932292.8495.2.camel@phoenix>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349962956.15966.521.camel@mfleming-mobl1.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012년 10월 11일 14:11, Axel Lin 쓴 글:
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->   drivers/video/backlight/lm3639_bl.c |    4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/video/backlight/lm3639_bl.c b/drivers/video/backlight/lm3639_bl.c
-> index c6915c6..585949b 100644
-> --- a/drivers/video/backlight/lm3639_bl.c
-> +++ b/drivers/video/backlight/lm3639_bl.c
-> @@ -206,11 +206,11 @@ static ssize_t lm3639_bled_mode_store(struct device *dev,
->   
->   out:
->   	dev_err(pchip->dev, "%s:i2c access fail to register\n", __func__);
-> -	return size;
-> +	return ret;
->   
->   out_input:
->   	dev_err(pchip->dev, "%s:input conversion fail\n", __func__);
-> -	return size;
-> +	return ret;
->   
->   }
->   
+On Thu, Oct 11, 2012 at 02:42:36PM +0100, Matt Fleming wrote:
+> On Thu, 2012-10-11 at 21:19 +0800, Jeremy Kerr wrote:
+> > Currently, efivarfs does not enforce exclusion over the get_variable and
+> > set_variable operations. Section 7.1 of UEFI requires us to only allow a
+> > single processor to enter {get,set}_variable services at once.
+> > 
+> > This change acquires the efivars->lock over calls to these operations
+> > from the efivarfs paths.
+> > 
+> > Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+> > 
+> > ---
+> >  drivers/firmware/efivars.c |   68 +++++++++++++++++++++++--------------
+> >  1 file changed, 43 insertions(+), 25 deletions(-)
+> 
+> Thanks, applied to 'next'.
 
-Thank you Alex for fixing code.
-Acked-by: G.Shark Jeong<gshark.jeong@gmail.com>
+Should this be backported to the stable kernels?
+
+thanks,
+
+greg k-h
