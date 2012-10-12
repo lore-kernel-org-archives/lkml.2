@@ -1,35 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933367Ab2JLPPU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 11:15:20 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:51419 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932303Ab2JLPPS (ORCPT
+	id S1422742Ab2JLPP3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 11:15:29 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:49130 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933719Ab2JLPP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 11:15:18 -0400
-Date: Fri, 12 Oct 2012 17:15:17 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-Cc: Alexander Duyck <alexander.h.duyck@intel.com>, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH v2 0/8] Improve performance of VM translation on x86_64
-Message-ID: <20121012151517.GC16230@one.firstfloor.org>
-References: <20121011204324.12787.30514.stgit@gitlad.jf.intel.com> <CACJDEmomjBk5CkLBWGdyAtKNgV_f39d6kWM5=Ko2Nx5GDmw5Jg@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACJDEmomjBk5CkLBWGdyAtKNgV_f39d6kWM5=Ko2Nx5GDmw5Jg@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	Fri, 12 Oct 2012 11:15:26 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: jonathan@jonmasters.org, eric.dumazet@gmail.com,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH 1/6] net: calxedaxgmac: enable operate on 2nd frame mode
+Date: Fri, 12 Oct 2012 10:15:03 -0500
+Message-Id: <1350054908-30646-2-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1350054908-30646-1-git-send-email-robherring2@gmail.com>
+References: <1350054908-30646-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Could you also add  a blurb in the Documentation/< appropriate file
-> for device driver writes> mentioning the usage of __pa_symbol is
-> preferred?
+From: Rob Herring <rob.herring@calxeda.com>
 
-Device driver writer's shouldn't use any of this anyways, they should always
-use the PCI DMA APIs and never DMA to the stack or to static variables.
+Enable the tx dma to start reading the next frame while sending the current
+frame.
 
--Andi
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+---
+ drivers/net/ethernet/calxeda/xgmac.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/calxeda/xgmac.c b/drivers/net/ethernet/calxeda/xgmac.c
+index 16814b3..7f5fd17 100644
+--- a/drivers/net/ethernet/calxeda/xgmac.c
++++ b/drivers/net/ethernet/calxeda/xgmac.c
+@@ -191,6 +191,7 @@
+ #define DMA_CONTROL_ST		0x00002000	/* Start/Stop Transmission */
+ #define DMA_CONTROL_SR		0x00000002	/* Start/Stop Receive */
+ #define DMA_CONTROL_DFF		0x01000000	/* Disable flush of rx frames */
++#define DMA_CONTROL_OSF		0x00000004	/* Operate on 2nd tx frame */
+ 
+ /* DMA Normal interrupt */
+ #define DMA_INTR_ENA_NIE	0x00010000	/* Normal Summary */
+@@ -965,8 +966,7 @@ static int xgmac_hw_init(struct net_device *dev)
+ 		ctrl |= XGMAC_CONTROL_IPC;
+ 	writel(ctrl, ioaddr + XGMAC_CONTROL);
+ 
+-	value = DMA_CONTROL_DFF;
+-	writel(value, ioaddr + XGMAC_DMA_CONTROL);
++	writel(DMA_CONTROL_DFF | DMA_CONTROL_OSF, ioaddr + XGMAC_DMA_CONTROL);
+ 
+ 	/* Set the HW DMA mode and the COE */
+ 	writel(XGMAC_OMR_TSF | XGMAC_OMR_RFD | XGMAC_OMR_RFA |
+-- 
+1.7.9.5
+
