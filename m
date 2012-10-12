@@ -1,105 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758246Ab2JLLC2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 07:02:28 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:42104 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753175Ab2JLLCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 07:02:25 -0400
-X-IronPort-AV: E=Sophos;i="4.80,576,1344182400"; 
-   d="scan'208";a="5990096"
-Message-ID: <5077F542.3010003@cn.fujitsu.com>
-Date: Fri, 12 Oct 2012 18:47:30 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1758287Ab2JLLCy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 07:02:54 -0400
+Received: from cpanel23.proisp.no ([88.87.44.74]:51225 "EHLO
+	cpanel23.proisp.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754156Ab2JLLCx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 07:02:53 -0400
+X-Greylist: delayed 3948 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Oct 2012 07:02:52 EDT
+Message-ID: <5077E96C.4030609@numascale.com>
+Date: Fri, 12 Oct 2012 11:57:00 +0200
+From: Steffen Persvold <sp@numascale.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: bhelgaas@google.com, lenb@kernel.org, yinghai@kernel.org,
-        izumi.taku@jp.fujitsu.com, jiang.liu@huawei.com,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix a hard coding style when determining if a device
- is a container.
-References: <1350024916-3628-1-git-send-email-tangchen@cn.fujitsu.com> <5077ECA6.4010302@jp.fujitsu.com>
-In-Reply-To: <5077ECA6.4010302@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/12 18:48:25,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/12 18:48:29,
-	Serialize complete at 2012/10/12 18:48:29
+To: Borislav Petkov <bp@amd64.org>
+CC: Daniel J Blueman <daniel@numascale-asia.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH v2] Fix AMD Northbridge-ID contiguity assumptions
+References: <1349270474-28808-1-git-send-email-daniel@numascale-asia.com> <20121004131801.GD21028@aftab.osrc.amd.com> <20121012093310.GC19420@aftab.osrc.amd.com>
+In-Reply-To: <20121012093310.GC19420@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-2022-JP
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel23.proisp.no
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - numascale.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2012 06:10 PM, Yasuaki Ishimatsu wrote:
-> Hi Tang,
-> 
-> 2012/10/12 15:55, Tang Chen wrote:
->> "ACPI0004","PNP0A05" and "PNP0A06" are all defined in array
->> container_device_ids[], so use it, but not the hard coding style.
-> 
-> The idea is good.
-> 
->>
->> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
->> ---
->>    drivers/acpi/container.c |   10 +++++++---
->>    1 files changed, 7 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
->> index 1f9f7d7..448c0e2 100644
->> --- a/drivers/acpi/container.c
->> +++ b/drivers/acpi/container.c
->> @@ -217,6 +217,7 @@ container_walk_namespace_cb(acpi_handle handle,
->>    {
->>    	char *hid = NULL;
->>    	struct acpi_device_info *info;
->> +	struct acpi_device_id *container_id;
->>    	acpi_status status;
->>    	int *action = context;
->>
->> @@ -232,10 +233,13 @@ container_walk_namespace_cb(acpi_handle handle,
->>    		goto end;
->>    	}
->>
->> -	if (strcmp(hid, "ACPI0004")&&  strcmp(hid, "PNP0A05")&&
->> -	    strcmp(hid, "PNP0A06")) {
->> -		goto end;
->> +	for (container_id = container_device_ids;
->> +	     container_id->id[0]; container_id++) {
->> +		if (!strcmp((char *)container_id->id, hid))
->> +			break;
->>    	}
->> +	if (!container_id->id[0])
->> +		goto end;
-> 
-> How about prepare is_container_device() function and check whether
-> the device is the container device or not as below?
+On 10/12/2012 11:33, Borislav Petkov wrote:
+> On Thu, Oct 04, 2012 at 03:18:02PM +0200, Borislav Petkov wrote:
+>> On Wed, Oct 03, 2012 at 09:21:14PM +0800, Daniel J Blueman wrote:
+>>> The AMD Northbridge initialisation code and EDAC assume the Northbridge IDs
+>>> are contiguous, which no longer holds on federated systems with multiple
+>>> HyperTransport fabrics and multiple PCI domains.
+>>>
+>>> Address this assumption by searching the Northbridge ID array, rather than
+>>> directly indexing it, using the upper bits for the PCI domain.
+>>>
+>>> v2: Fix Northbridge entry initialisation
+>>>
+>>> Tested on a single-socket system and 3-server federated system.
+>>>
+>>> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+>>> ---
+>>>   arch/x86/include/asm/amd_nb.h |   23 +++++++++++++++++++++--
+>>>   arch/x86/kernel/amd_nb.c      |   16 +++++++++-------
+>>>   drivers/edac/amd64_edac.c     |   18 +++++++++---------
+>>>   drivers/edac/amd64_edac.h     |    6 ------
+>
+> Ok,
+>
+> I've been meaning to clean up that amd_nb.c code which iterates over all
+> PCI devices on the system just so it can count the NBs and then do it
+> again in order to do the ->misc and ->link assignment.
+>
+> So below is what I've come up with and it builds but it is completely
+> untested and I might be completely off, for all I know.
+>
+> The basic idea, though, is to have the first 8 NB descriptors in an
+> array of 8 and use that for a fast lookup on all those single-board
+> machines where the number of the northbridges is the number of physical
+> processors on the board (or x2, if a MCM).
+>
+> Then, there's a linked list of all further NB descriptors which should
+> work in your case of confederated systems.
+>
+> Btw, I've also reused your get_node_id function and the edac changes are
+> still pending but they should be trivial once this new approach pans
+> out.
+>
 
-Sure. :)
-A new patch will be sent soon.
 
-Thanks for the wonderful idea. :)
+Hi Boris,
 
-> 
-> 	if (is_container_device())
-> 		goto end;
-> 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
->>
->>    	switch (*action) {
->>    	case INSTALL_NOTIFY_HANDLER:
->>
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+This patch looks very clean and should serve our purpose as well (I'll 
+double check with Daniel).
 
+Regarding the size of the "node" variable, you asked before. The 
+theoretical maximum number of AMD NBs we can have in a confederated 
+NumaConnect system _today_ is 8*4096 (8 NBs per system, 4096 systems) so 
+technically this could fit into a u16 instead of a u32 (you'll have to 
+shift left by 3 instead of 8).
+
+However, to allow some flexibility I think a u32 is better and I think 
+we can live with those two extra bytes per struct member, or ?
+
+Cheers,
+-- 
+Steffen Persvold, Chief Architect NumaChip
+Numascale AS - www.numascale.com
+Tel: +47 92 49 25 54 Skype: spersvold
