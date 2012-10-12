@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422711Ab2JLKgk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 06:36:40 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:34497 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751132Ab2JLKgj (ORCPT
+	id S1422729Ab2JLKg7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 06:36:59 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:61999 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422717Ab2JLKg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 06:36:39 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: x86@kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH] x86, boot: Explicitly include autoconf.h for hostprogs
-Date: Fri, 12 Oct 2012 11:19:59 +0100
-Message-Id: <1350037199-2995-1-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.11.4
+	Fri, 12 Oct 2012 06:36:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <1350030203.10584.139.camel@smile>
+References: <142ef9170a2c69657d8a05ac127a9970d7b04965.1350020375.git.viresh.kumar@linaro.org>
+	<91e41b4cc972d298f714cbd6f400569a9710304c.1350020375.git.viresh.kumar@linaro.org>
+	<1350030203.10584.139.camel@smile>
+Date: Fri, 12 Oct 2012 16:06:56 +0530
+X-Google-Sender-Auth: -mTNF55uILBS39lTb1sDM7zGYOU
+Message-ID: <CAOh2x=m8OVNfMm5Fn+cr9Gxuh6oyt+8d4n-bkG8Xiw5zGncLiA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] dmaengine: dw_dmac: Enhance device tree support
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+On Fri, Oct 12, 2012 at 1:53 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> On Fri, 2012-10-12 at 11:14 +0530, Viresh Kumar wrote:
 
-The hostprogs need access to the CONFIG_* symbols found in
-include/generated/autoconf.h. commit abbf1590 ("UAPI: Partition the
-header include path sets and add uapi/ header directories") replaced
-$(LINUXINCLUDE) with $(USERINCLUDE) which doesn't contain the
-necessary include paths.
+>> +     while (++i < dw->sd_count) {
+>> +             if (!strcmp(dw->sd[i].bus_id, param)) {
+>> +                     found = 1;
+>> +                     break;
+>> +             }
+>> +     }
+>> +
+>> +     if (!found) {
+>> +             last_dw = dw;
+>> +             last_bus_id = param;
+>> +             return false;
+> Because of return here you could eliminate 'found' flag at all.
 
-This has the undesirable effect of breaking the EFI boot stub because
-the #ifdef CONFIG_EFI_STUB code in arch/x86/boot/tools/build.c is
-never compiled.
+how?
 
-It should also be noted that because $(USERINCLUDE) isn't exported by
-the top-level Makefile it's actually empty in arch/x86/boot/Makefile.
+Fixed the other issue as:
 
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Acked-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Author: Viresh Kumar <viresh.kumar@linaro.org>
+Date:   Fri Oct 12 16:06:32 2012 +0530
+
+    fixup! dmaengine: dw_dmac: Enhance device tree support
 ---
+ drivers/dma/dw_dmac.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Linus, I expected this fix to go through -tip but Ingo explained that
-the offending commit (abbf1590) doesn't exist in -tip yet, which is
-why I'm sending this directly to you.
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 9a7d084..a4ff04c 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -1598,9 +1598,10 @@ __devinit dw_dma_parse_dt(struct platform_device *pdev)
+        return pdata;
+ }
+ #else
+-static inline int dw_dma_parse_dt(struct platform_device *pdev)
++static inline struct dw_dma_platform_data *
++dw_dma_parse_dt(struct platform_device *pdev)
+ {
+-       return -ENOSYS;
++       return NULL;
+ }
+ #endif
 
- arch/x86/boot/Makefile | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/boot/Makefile b/arch/x86/boot/Makefile
-index ce03476..ccce0ed 100644
---- a/arch/x86/boot/Makefile
-+++ b/arch/x86/boot/Makefile
-@@ -37,7 +37,8 @@ setup-y		+= video-bios.o
- targets		+= $(setup-y)
- hostprogs-y	:= mkcpustr tools/build
- 
--HOST_EXTRACFLAGS += -I$(srctree)/tools/include $(USERINCLUDE) \
-+HOST_EXTRACFLAGS += -I$(srctree)/tools/include \
-+		    -include include/generated/autoconf.h \
- 	            -D__EXPORTED_HEADERS__
- 
- $(obj)/cpu.o: $(obj)/cpustr.h
--- 
-1.7.11.4
-
+--
+viresh
