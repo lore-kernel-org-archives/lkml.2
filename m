@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933643Ab2JLMar (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 08:30:47 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:4831 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933487Ab2JLMaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 08:30:46 -0400
-From: Andrew Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Vagin <avagin@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: [PATCH] pidns: limit the nesting depth of pid namespaces
-Date: Fri, 12 Oct 2012 16:30:42 +0400
-Message-Id: <1350045042-1369134-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
+	id S1757514Ab2JLMbv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 08:31:51 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54888 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755720Ab2JLMbu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 08:31:50 -0400
+Date: Fri, 12 Oct 2012 14:31:47 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chuansheng Liu <chuansheng.liu@intel.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] genirq: for edge interrupt IRQS_ONESHOT support with
+ irq thread
+In-Reply-To: <1350045084.13178.19.camel@cliu38-desktop-build>
+Message-ID: <alpine.LFD.2.02.1210121427490.2779@ionos>
+References: <1350045084.13178.19.camel@cliu38-desktop-build>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'struct pid' is a "variable sized struct" - a header with an array
-of upids at the end.
+On Fri, 12 Oct 2012, Chuansheng Liu wrote:
+> 
+> In our system, there is one edge interrupt, and we want it to be
+> irq thread with IRQS_ONESHOT, and found in handle_edge_irq(),
+> even with IRQS_ONESHOT, the irq is still unmasked without care of
+> flag IRQS_ONESHOT.
+> 
+> It causes IRQS_ONESHOT can not work well for edge interrupt, but also
+> after the irq thread finished with flag IRQS_ONESHOT, the irq will be
+> possible to be unmasked again, it should be messing mask/unmask logic.
 
-A size of the array depends on a level (depth) of pid namespaces. Now
-a level of pidns is not limited, so 'struct pid' can be more than one
-page.
+This is just wrong. By masking edge interrupts you will run into
+situations where you will lose interrupts.
 
-Looks reasonable, that it should be less than a page. MAX_PIS_NS_LEVEL
-is not calculated from PAGE_SIZE, because in this case it depends on
-architectures, config options and it will be reduced, if someone adds a
-new fields in struct pid or struct upid.
+Can you please explain, why you want to mask your edge interrupt?
 
-I suggest to set MAX_PIS_NS_LEVEL = 32, because it saves ability to
-expand "struct pid" and it's more than enough for all known for me
-use-cases.  When someone finds a reasonable use case, we can add a
-config option or a sysctl parameter.
+Thanks,
 
-In addition it will reduce effect of another problem, when we have many
-nested namespaces and the oldest one starts dying.  zap_pid_ns_processe
-will be called for each namespace and find_vpid will be called for each
-process in a namespace. find_vpid will be called minimum max_level^2 / 2
-times. The reason of that is that when we found a bit in pidmap, we
-can't determine this pidns is top for this process or it isn't.
+	tglx
 
-vpid is a heavy operation, so a fork bomb, which create many nested
-namespace, can do a system inaccessible for a long time.
-
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
----
- kernel/pid_namespace.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-index b051fa6..598bfb3 100644
---- a/kernel/pid_namespace.c
-+++ b/kernel/pid_namespace.c
-@@ -70,12 +70,18 @@ err_alloc:
- 	return NULL;
- }
  
-+/* MAX_PID_NS_LEVEL is needed for limiting size of 'struct pid' */
-+#define MAX_PID_NS_LEVEL 32
-+
- static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_pid_ns)
- {
- 	struct pid_namespace *ns;
- 	unsigned int level = parent_pid_ns->level + 1;
- 	int i, err = -ENOMEM;
- 
-+	if (level > MAX_PID_NS_LEVEL)
-+		goto out;
-+
- 	ns = kmem_cache_zalloc(pid_ns_cachep, GFP_KERNEL);
- 	if (ns == NULL)
- 		goto out;
--- 
-1.7.1
-
+> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+> ---
+>  kernel/irq/chip.c |    8 +++++++-
+>  1 files changed, 7 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+> index 57d86d0..f23f524 100644
+> --- a/kernel/irq/chip.c
+> +++ b/kernel/irq/chip.c
+> @@ -497,7 +497,13 @@ handle_edge_irq(unsigned int irq, struct irq_desc *desc)
+>  	kstat_incr_irqs_this_cpu(irq, desc);
+>  
+>  	/* Start handling the irq */
+> -	desc->irq_data.chip->irq_ack(&desc->irq_data);
+> +	if (desc->istate & IRQS_ONESHOT) {
+> +		mask_ack_irq(desc);
+> +		handle_irq_event(desc);
+> +		cond_unmask_irq(desc);
+> +		goto out_unlock;
+> +	} else
+> +		desc->irq_data.chip->irq_ack(&desc->irq_data);
+>  
+>  	do {
+>  		if (unlikely(!desc->action)) {
+> -- 
+> 1.7.0.4
+> 
+> 
+> 
+> 
