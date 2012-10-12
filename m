@@ -1,42 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945957Ab2JLPzU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 11:55:20 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:53040 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945918Ab2JLPzS (ORCPT
+	id S1945979Ab2JLPz3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 11:55:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37178 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945918Ab2JLPz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 11:55:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAHp75VdNVyWxvnHDFjg_5vC95M_LwJYUDLQb+NmBA6GRVsea9g@mail.gmail.com>
-References: <142ef9170a2c69657d8a05ac127a9970d7b04965.1350051925.git.viresh.kumar@linaro.org>
-	<9688d98010716880c1bbd966ead312c446282204.1350051925.git.viresh.kumar@linaro.org>
-	<1350053897.10584.172.camel@smile>
-	<CAKohponS+mkj6rN6hzJC1FrbpSS+jWZBii4xQgN+4z2h=zFTWA@mail.gmail.com>
-	<CAHp75VdNVyWxvnHDFjg_5vC95M_LwJYUDLQb+NmBA6GRVsea9g@mail.gmail.com>
-Date: Fri, 12 Oct 2012 21:25:18 +0530
-Message-ID: <CAKohponCD3tFNom_JjBmP3vxQ5us39uPi2bp1JyjCALcmhmSYw@mail.gmail.com>
-Subject: Re: [PATCH V2 2/3] dmaengine: dw_dmac: Enhance device tree support
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>, vinod.koul@intel.com,
-        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 12 Oct 2012 11:55:26 -0400
+Message-ID: <1350057318.2299.88.camel@kjgkr>
+Subject: Re: [PATCH 06/16] f2fs: add node operations
+From: Jaegeuk Kim <jaegeuk.kim@gmail.com>
+To: NeilBrown <neilb@suse.de>
+Cc: =?euc-kr?Q?=B1=E8=C0=E7=B1=D8?= <jaegeuk.kim@samsung.com>,
+        viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+Date: Sat, 13 Oct 2012 00:55:18 +0900
+In-Reply-To: <20121011091712.410a3a71@notabene.brown>
+References: <000d01cda2f1$037771b0$0a665510$%kim@samsung.com>
+	 <20121011091712.410a3a71@notabene.brown>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 October 2012 21:23, Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
-> 1. This is an equivalent of
-> if (last_dw && (last_bus_id == ... ) && (last_dw == dw))
->  return false;
-> 2. In case dw is always non-NULL the last_dw == dw is false if last_dw is NULL.
->
-> Where am I wrong?
+2012-10-11 (목), 09:17 +1100, NeilBrown:
+> On Fri, 05 Oct 2012 21:00:29 +0900 김재극 <jaegeuk.kim@samsung.com> wrote:
+> 
+> 
+> > +static struct nat_entry *grab_nat_entry(struct f2fs_nm_info *nm_i, nid_t nid)
+> > +{
+> > +	struct nat_entry *new;
+> > +
+> > +	new = kmem_cache_alloc(nat_entry_slab, __GFP_HIGH | __GFP_NOFAIL);
+> > +	memset(new, 0, sizeof(struct nat_entry));
+> > +	nat_set_nid(new, nid);
+> > +	__add_to_nat_cache(nm_i, new);
+> > +	return new;
+> > +}
+> > +
+> > +static void cache_nat_entry(struct f2fs_nm_info *nm_i, nid_t nid,
+> > +						struct f2fs_nat_entry *ne)
+> > +{
+> > +	struct nat_entry *e;
+> > +
+> > +	write_lock(&nm_i->nat_tree_lock);
+> > +	e = __lookup_nat_cache(nm_i, nid);
+> > +	if (!e) {
+> > +		e = grab_nat_entry(nm_i, nid);
+> > +		nat_set_blkaddr(e, le32_to_cpu(ne->block_addr));
+> > +		nat_set_ino(e, le32_to_cpu(ne->ino));
+> > +		nat_set_version(e, ne->version);
+> > +		e->checkpointed = true;
+> > +	}
+> > +	write_unlock(&nm_i->nat_tree_lock);
+> > +}
+> 
+> Hi,
+> 
+> cache_nat_entry takes an rwlock (like a spinlock), then calls grab_nat_cache,
+> which calls kmem_cache_alloc().  Doing mem alloc under a spinlock is not
+> really a good idea, though it is sometimes OK for GFP_ATOMIC.
+> 
+> You use __GFP_HIGH which is equivalent to GFP_ATOMIC, but add __GFP_NOFAIL.
+> I'm not really sure exactly what this will do when memory is tight, but I
+> suspect it will spin trying to find memory and there by slow down any other
+> code that is trying to free memory.
+> 
+> Also, there is a comment in page_alloc.c:
+> 			 * __GFP_NOFAIL is not to be used in new code.
+> 			 *
+> 			 * All __GFP_NOFAIL callers should be fixed so that they
+> 			 * properly detect and handle allocation failures.
+> 			 *
+> 
+> I suggest you fix this code to follow the standard pattern where if the
+> lookup_nat_cache fails you check if you have already allocated something and
+> if so use it.  If not, drop the lock, do the allocation with GFP_KERNEL, then
+> loop back to the top.
+> At the end, if you allocated something without using it, kfree it.
+> 
 
-Nowhere, I am drunk ;)
+Yes, right.
+Initially I wrote like that, but to remove redundant loops with "goto",
+I added __GFP_NOFAIL.
+I'll apply this comment in v2.
 
---
-viresh
+> > +static int try_to_free_nats(struct f2fs_sb_info *sbi, int nr_shrink)
+> > +{
+> > +	struct f2fs_nm_info *nm_i = NM_I(sbi);
+> > +
+> > +	if (nm_i->nat_cnt < 2 * NM_WOUT_THRESHOLD)
+> > +		return 0;
+> > +
+> > +	write_lock(&nm_i->nat_tree_lock);
+> > +	while (nr_shrink-- && !list_empty(&nm_i->nat_entries)) {
+> > +		struct nat_entry *ne;
+> > +		ne = list_first_entry(&nm_i->nat_entries,
+> > +					struct nat_entry, list);
+> > +		__del_from_nat_cache(nm_i, ne);
+> > +	}
+> > +	write_unlock(&nm_i->nat_tree_lock);
+> > +	return nr_shrink;
+> > +}
+> 
+> 
+> This code looks wrong to me, in a small way.
+> The return value is only ever tested for whether it is zero or not.
+> For that last 'return', nr_shrink will only be zero if the original nr_shrink
+> is exactly one more than the number of items in nat_entries.  If nr_shrink is
+> more than that, the function will return "-1".
+> I suspect that is not what is desired.
+> 
+> I would suggest changing the test in the while loop to
+>       while (nr_shrink && !list_empty(...)) {
+> and add
+>       nr_shrink--;
+> somewhere inside the loop.
+> 
+
+Agree.
+Thank you. :)
+
+> Regards,
+> NeilBrown
+
+-- 
+Jaegeuk Kim
+Samsung
+
