@@ -1,71 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab2JLV7F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 17:59:05 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:59581 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752100Ab2JLV7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 17:59:03 -0400
-Date: Fri, 12 Oct 2012 23:58:59 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [RFC PATCH 3/3] Convert mce_disabled
-Message-ID: <20121012215859.GA18739@aftab.osrc.amd.com>
-References: <1349878801-15956-1-git-send-email-bp@amd64.org>
- <1349878801-15956-4-git-send-email-bp@amd64.org>
- <5077F600.9090605@linux.vnet.ibm.com>
- <20121012115628.GA14991@aftab.osrc.amd.com>
- <3908561D78D1C84285E8C5FCA982C28F19D4ABDA@ORSMSX108.amr.corp.intel.com>
+	id S1752628Ab2JLWA4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 18:00:56 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50442 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514Ab2JLWAy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 18:00:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19D4ABDA@ORSMSX108.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAE9FiQUDy0Hb60z2E=UnYcF-06-Buoy+JFcNOvT8+3ic13Eokw@mail.gmail.com>
+References: <1350037890-5899-1-git-send-email-tangchen@cn.fujitsu.com>
+	<1350037890-5899-3-git-send-email-tangchen@cn.fujitsu.com>
+	<5077F2C2.1010300@huawei.com>
+	<5077F407.3040205@cn.fujitsu.com>
+	<5077F6E1.7090600@huawei.com>
+	<CAE9FiQUDy0Hb60z2E=UnYcF-06-Buoy+JFcNOvT8+3ic13Eokw@mail.gmail.com>
+Date: Fri, 12 Oct 2012 15:00:52 -0700
+X-Google-Sender-Auth: wVdTyKWaVc3fbMtQfN-0GlhJREQ
+Message-ID: <CAE9FiQV_XQWvtJcmEcqNd3ork2hYOxNhNrT9bpkvS2bWRhqpGw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] Do not use acpi_device to find pci root bridge in
+ _init code.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jiang Liu <jiang.liu@huawei.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, lenb@kernel.org, bhelgaas@google.com,
+        izumi.taku@jp.fujitsu.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=0015175d03584a1b8504cbe3d24e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 05:46:16PM +0000, Luck, Tony wrote:
-> > Or, you can modify the mca_config I have there and use bools and pass a
-> > pointer to each actual bool member in each DEVICE_BIT_ATTR invocation
-> > (and rename it to DEVICE_BOOL_ATTR). Yeah, that could work, unless I'm
-> > missing something else, of course.
-> 
-> This looks like the best solution to me. Sure we use a little more memory for
-> a "bool" for each option instead of just a single bit. But there are only a
-> handful of them, not thousands. So I think we can cope with a few extra
-> bytes of memory consumption.  I was still not completely convinced by the
-> 
->        if (val)
->                *bvec |= le64_to_cpu(BIT_64(bit));
-> 
-> solution - it assumes that big endian machines also assign their bit numbers
-> in a big->little way - but that isn't required by the C standard. bitfields are
-> assigned at the whim of the compiler writer (the only restrictions seem to
-> be on alignments of fields w.r.t. to the underlying data types).
+--0015175d03584a1b8504cbe3d24e
+Content-Type: text/plain; charset=ISO-8859-1
 
-Ok, it seems that would've been a can of worms if we'd opened it.
+On Fri, Oct 12, 2012 at 11:34 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, Oct 12, 2012 at 3:54 AM, Jiang Liu <jiang.liu@huawei.com> wrote:
+>> On 2012-10-12 18:42, Tang Chen wrote:
+>>> On 10/12/2012 06:36 PM, Jiang Liu wrote:
+>>>> I have sent a similar patch to Yinghai before. For simplicity, we could
+>>>> use acpi_match_object_info_ids() instead of acpi_match_device_ids()
+>>>> directly.
+>>>
+>>> Hum, I must have missed it. :)
+>>> Using acpi_match_object_info_ids() directly seems good. I'm just worry
+>>> about if it could cause any other problem. :)
+>>>
+>>> So now, is this bug fixed ? And we don't need these patches, right ?
+>>>
+>>> Thanks. :)
+>> I think Yinghai has missed my patch too, so just suggest to use
+>> acpi_match_object_info_ids() directly.
+>
+> i put that patch from Jiang in my branch for while, and later found it
+> cause pci_root_bus notifying
+> do not work anymore, so i dropped that.
 
-Fortunately, if we do bools and we pass a pointer to the respective bool
-member of mca_config, we won't need to do that anymore. Instead simply:
+I updated three patches and put them into my for-pci-split-pci-root-hp-2 branch.
 
-	*bool_ptr = !!val;
+http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=shortlog;h=refs/heads/for-pci-split-pci-root-hp-2
 
-It can't get any simpler than that. I'll give it a try soon to see
-whether it pans out as I'm imagining it.
+	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+for-pci-split-pci-root-hp-2
 
-Thanks.
+Thanks
 
+Yinghai
 
--- 
-Regards/Gruss,
-Boris.
+--0015175d03584a1b8504cbe3d24e
+Content-Type: application/octet-stream; 
+	name="0001-ACPI-Introduce-a-new-acpi-handle-to-determine-HID-ma.patch"
+Content-Disposition: attachment; 
+	filename="0001-ACPI-Introduce-a-new-acpi-handle-to-determine-HID-ma.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h87u7mp90
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+RnJvbSAwNzMwNThkMjU4ODNjZDA2OWFiZGJkNzYzMWRhZmRkYjI5NjI3NDJmIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBUYW5nIENoZW4gPHRhbmdjaGVuQGNuLmZ1aml0c3UuY29tPgpE
+YXRlOiBGcmksIDEyIE9jdCAyMDEyIDIwOjM0OjE5ICswODAwClN1YmplY3Q6IFtQQVRDSCAxLzNd
+IEFDUEk6IEludHJvZHVjZSBhIG5ldyBhY3BpIGhhbmRsZSB0byBkZXRlcm1pbmUgSElECiBtYXRj
+aC4KCldlIG5lZWQgdG8gZmluZCBvdXQgaWYgb25lIGhhbmRsZSBpcyBmb3Igcm9vdCBicmlkZ2Us
+IGFuZCBpbnN0YWxsIG5vdGlmeQpoYW5kbGVyIGZvciBpdCB0byBoYW5kbGUgcGNpIHJvb3QgYnVz
+IGhvdCBhZGQuCkF0IHRoYXQgdGltZSwgcm9vdCBicmlkZ2UgYWNwaSBkZXZpY2UgaXMgbm90IGNy
+ZWF0ZWQgeWV0LgoKU28gYWNwaV9tYXRjaF9kZXZpY2VfaWRzKCkgd2lsbCBub3Qgd29yay4KClRo
+aXMgcGF0Y2ggYWRkIGEgZnVuY3Rpb24gdG8gY2hlY2sgaWYgbmV3IGFjcGkgaGFuZGxlJ3MgSElE
+IG1hdGNoZXMgYSBsaXN0Cm9mIElEcy4gIFRoZSBuZXcgYXBpIHVzZSBhY3BpX2RldmljZV9pbmZv
+IGluc3RlYWQgYWNwaV9kZXZpY2UuCgotdjI6IHVwZGF0ZWQgY2hhbmdlbG9nLCBhbHNvIGNoZWNr
+IGxlbmd0aCBmb3Igc3RyaW5nIGluZm8uLi4KICAgICBjaGFuZ2UgY2hlY2tpbmcgc2VxdWVuY2Ug
+YnkgbW92aW5nIHN0cmluZyBjb21hcmluZyBjbG9zZSB0byBmb3IgbG9vcC4KCQkJCQktIFlpbmdo
+YWkKClNpZ25lZC1vZmYtYnk6IFRhbmcgQ2hlbiA8dGFuZ2NoZW5AY24uZnVqaXRzdS5jb20+ClNp
+Z25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KQ2M6IExlbiBCcm93
+biA8bGVuYkBrZXJuZWwub3JnPgpDYzogbGludXgtYWNwaUB2Z2VyLmtlcm5lbC5vcmcKLS0tCiBk
+cml2ZXJzL2FjcGkvc2Nhbi5jICAgICB8ICAgMzMgKysrKysrKysrKysrKysrKysrKysrKysrKysr
+KysrKysrCiBpbmNsdWRlL2FjcGkvYWNwaV9idXMuaCB8ICAgIDIgKysKIDIgZmlsZXMgY2hhbmdl
+ZCwgMzUgaW5zZXJ0aW9ucygrKSwgMCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJz
+L2FjcGkvc2Nhbi5jIGIvZHJpdmVycy9hY3BpL3NjYW4uYwppbmRleCA1ZGZlYzA5Li4zM2NhOTkz
+IDEwMDY0NAotLS0gYS9kcml2ZXJzL2FjcGkvc2Nhbi5jCisrKyBiL2RyaXZlcnMvYWNwaS9zY2Fu
+LmMKQEAgLTMxMiw2ICszMTIsMzkgQEAgaW50IGFjcGlfbWF0Y2hfZGV2aWNlX2lkcyhzdHJ1Y3Qg
+YWNwaV9kZXZpY2UgKmRldmljZSwKIH0KIEVYUE9SVF9TWU1CT0woYWNwaV9tYXRjaF9kZXZpY2Vf
+aWRzKTsKIAoraW50IGFjcGlfbWF0Y2hfb2JqZWN0X2luZm9faWRzKHN0cnVjdCBhY3BpX2Rldmlj
+ZV9pbmZvICppbmZvLAorCQkJICAgICAgIGNvbnN0IHN0cnVjdCBhY3BpX2RldmljZV9pZCAqaWRz
+KQoreworCWNvbnN0IHN0cnVjdCBhY3BpX2RldmljZV9pZCAqaWQ7CisJY2hhciAqc3RyOworCXUz
+MiBsZW47CisJaW50IGk7CisKKwlsZW4gPSBpbmZvLT5oYXJkd2FyZV9pZC5sZW5ndGg7CisJaWYg
+KGxlbikgeworCQlzdHIgPSBpbmZvLT5oYXJkd2FyZV9pZC5zdHJpbmc7CisJCWlmIChzdHIpCisJ
+CQlmb3IgKGlkID0gaWRzOyBpZC0+aWRbMF07IGlkKyspCisJCQkJaWYgKCFzdHJjbXAoKGNoYXIg
+KilpZC0+aWQsIHN0cikpCisJCQkJCXJldHVybiAwOworCX0KKworCWZvciAoaSA9IDA7IGkgPCBp
+bmZvLT5jb21wYXRpYmxlX2lkX2xpc3QuY291bnQ7IGkrKykgeworCQlsZW4gPSBpbmZvLT5jb21w
+YXRpYmxlX2lkX2xpc3QuaWRzW2ldLmxlbmd0aDsKKwkJaWYgKCFsZW4pCisJCQljb250aW51ZTsK
+KwkJc3RyID0gaW5mby0+Y29tcGF0aWJsZV9pZF9saXN0Lmlkc1tpXS5zdHJpbmc7CisJCWlmICgh
+c3RyKQorCQkJY29udGludWU7CisJCWZvciAoaWQgPSBpZHM7IGlkLT5pZFswXTsgaWQrKykKKwkJ
+CWlmICghc3RyY21wKChjaGFyICopaWQtPmlkLCBzdHIpKQorCQkJCXJldHVybiAwOworCX0KKwor
+CXJldHVybiAtRU5PRU5UOworfQorRVhQT1JUX1NZTUJPTChhY3BpX21hdGNoX29iamVjdF9pbmZv
+X2lkcyk7CisKIHN0YXRpYyB2b2lkIGFjcGlfZnJlZV9pZHMoc3RydWN0IGFjcGlfZGV2aWNlICpk
+ZXZpY2UpCiB7CiAJc3RydWN0IGFjcGlfaGFyZHdhcmVfaWQgKmlkLCAqdG1wOwpkaWZmIC0tZ2l0
+IGEvaW5jbHVkZS9hY3BpL2FjcGlfYnVzLmggYi9pbmNsdWRlL2FjcGkvYWNwaV9idXMuaAppbmRl
+eCA2MDhmOTJmLi42YWM0MTVjIDEwMDY0NAotLS0gYS9pbmNsdWRlL2FjcGkvYWNwaV9idXMuaAor
+KysgYi9pbmNsdWRlL2FjcGkvYWNwaV9idXMuaApAQCAtMzc0LDYgKzM3NCw4IEBAIGludCBhY3Bp
+X2J1c19zdGFydChzdHJ1Y3QgYWNwaV9kZXZpY2UgKmRldmljZSk7CiBhY3BpX3N0YXR1cyBhY3Bp
+X2J1c19nZXRfZWpkKGFjcGlfaGFuZGxlIGhhbmRsZSwgYWNwaV9oYW5kbGUgKiBlamQpOwogaW50
+IGFjcGlfbWF0Y2hfZGV2aWNlX2lkcyhzdHJ1Y3QgYWNwaV9kZXZpY2UgKmRldmljZSwKIAkJCSAg
+Y29uc3Qgc3RydWN0IGFjcGlfZGV2aWNlX2lkICppZHMpOworaW50IGFjcGlfbWF0Y2hfb2JqZWN0
+X2luZm9faWRzKHN0cnVjdCBhY3BpX2RldmljZV9pbmZvICppbmZvLAorCQkJICAgICAgIGNvbnN0
+IHN0cnVjdCBhY3BpX2RldmljZV9pZCAqaWRzKTsKIGludCBhY3BpX2NyZWF0ZV9kaXIoc3RydWN0
+IGFjcGlfZGV2aWNlICopOwogdm9pZCBhY3BpX3JlbW92ZV9kaXIoc3RydWN0IGFjcGlfZGV2aWNl
+ICopOwogCi0tIAoxLjcuNwoK
+--0015175d03584a1b8504cbe3d24e
+Content-Type: application/octet-stream; 
+	name="0002-PCI-correctly-detect-ACPI-PCI-host-bridge-objects.patch"
+Content-Disposition: attachment; 
+	filename="0002-PCI-correctly-detect-ACPI-PCI-host-bridge-objects.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h87u7mpc1
+
+RnJvbSAyNjVlNmNhYjU5ZGI2MjYxZTFjMmU0ZTE0NDY4MDI1MmU1YWNlY2E4IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBKaWFuZyBMaXUgPGppYW5nLmxpdUBodWF3ZWkuY29tPgpEYXRl
+OiBUaHUsIDEyIEFwciAyMDEyIDAwOjI3OjAzICswODAwClN1YmplY3Q6IFtQQVRDSCAyLzNdIFBD
+STogY29ycmVjdGx5IGRldGVjdCBBQ1BJIFBDSSBob3N0IGJyaWRnZSBvYmplY3RzCgpUaGUgY29k
+ZSBpbiBwY2lfcm9vdF9ocC5jIGRlcGVuZHMgb24gZnVuY3Rpb24gYWNwaV9pc19yb290X2JyaWRn
+ZSgpCnRvIGNoZWNrIHdoZXRoZXIgYW4gQUNQSSBvYmplY3QgaXMgYSBQQ0kgaG9zdCBicmlkZ2Ug
+b3Igbm90LgpJZiBhbiBBQ1BJIGRldmljZSBoYXNuJ3QgYmVlbiBjcmVhdGVkIGZvciB0aGUgQUNQ
+SSBvYmplY3QgeWV0LApmdW5jdGlvbiBhY3BpX2lzX3Jvb3RfYnJpZGdlKCkgd2lsbCByZXR1cm4g
+ZmFsc2UgZXZlbiBpZiB0aGUgb2JqZWN0CmlzIGEgUENJIGhvc3QgYnJpZGdlIG9iamVjdC4gVGhh
+dCBiZWhhdmlvciB3aWxsIGNhdXNlIHR3byBpc3N1ZXM6CjEpIE5vIEFDUEkgbm90aWZpY2F0aW9u
+IGhhbmRsZXIgaW5zdGFsbGVkIGZvciBQQ0kgaG9zdCBicmlkZ2VzIGFic2VudAogICBhdCBzdGFy
+dHVwLCBzbyBob3RwbHVnIGV2ZW50cyBmb3IgdGhvc2UgYnJpZGdlcyB3b24ndCBiZSBoYW5kbGVk
+LgoyKSByZXNjYW5fcm9vdF9icmlkZ2UoKSBjYW4ndCByZWVudW1lcmF0ZSBvZmZsaW5lZCBQQ0kg
+aG9zdCBicmlkZ2VzCiAgIGJlY2F1c2UgdGhlIEFDUEkgZGV2aWNlcyBoYXZlIGJlZW4gYWxyZWFk
+eSBkZXN0cm95ZWQuCgpTbyB1c2UgYWNwaV9tYXRjaF9vYmplY3RfaW5mb19pZHMoKSB0byBjb3Jy
+ZWN0bHkgZGV0ZWN0IFBDSSBob3N0IGJyaWRnZXMuCgotdjI6IHVwZGF0ZSB0byB1c2UgYWNwaV9t
+YXRjaF9vYmplY3RfaW5mb19pZHMoKSBmcm9tIFRhbmcgQ2hlbiAgLSBZaW5naGFpCgpTaWduZWQt
+b2ZmLWJ5OiBKaWFuZyBMaXUgPGppYW5nLmxpdUBodWF3ZWkuY29tPgpTaWduZWQtb2ZmLWJ5OiBZ
+aW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CkNjOiBMZW4gQnJvd24gPGxlbmJAa2VybmVs
+Lm9yZz4KQ2M6IGxpbnV4LWFjcGlAdmdlci5rZXJuZWwub3JnCi0tLQogZHJpdmVycy9hY3BpL3Bj
+aV9yb290X2hwLmMgfCAgIDI1ICsrKysrKysrKysrKysrKysrKysrKysrKy0KIDEgZmlsZXMgY2hh
+bmdlZCwgMjQgaW5zZXJ0aW9ucygrKSwgMSBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2
+ZXJzL2FjcGkvcGNpX3Jvb3RfaHAuYyBiL2RyaXZlcnMvYWNwaS9wY2lfcm9vdF9ocC5jCmluZGV4
+IDJhZWJmNzguLjNlZGVjN2YgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvYWNwaS9wY2lfcm9vdF9ocC5j
+CisrKyBiL2RyaXZlcnMvYWNwaS9wY2lfcm9vdF9ocC5jCkBAIC0xOSw2ICsxOSwxMiBAQCBzdHJ1
+Y3QgYWNwaV9yb290X2JyaWRnZSB7CiAJdTMyIGZsYWdzOwogfTsKIAorc3RhdGljIGNvbnN0IHN0
+cnVjdCBhY3BpX2RldmljZV9pZCByb290X2RldmljZV9pZHNbXSA9IHsKKwl7IlBOUDBBMDMiLCAw
+fSwKKwl7IlBOUDBBMDgiLCAwfSwKKwl7IiIsIDB9LAorfTsKKwogLyogYnJpZGdlIGZsYWdzICov
+CiAjZGVmaW5lIFJPT1RfQlJJREdFX0hBU19FSjAJKDB4MDAwMDAwMDIpCiAjZGVmaW5lIFJPT1Rf
+QlJJREdFX0hBU19QUzMJKDB4MDAwMDAwODApCkBAIC0yNTYsNiArMjYyLDIzIEBAIHN0YXRpYyB2
+b2lkIGhhbmRsZV9ob3RwbHVnX2V2ZW50X3Jvb3QoYWNwaV9oYW5kbGUgaGFuZGxlLCB1MzIgdHlw
+ZSwKIAkJCQlfaGFuZGxlX2hvdHBsdWdfZXZlbnRfcm9vdCk7CiB9CiAKK3N0YXRpYyBib29sIGFj
+cGlfaXNfcm9vdF9icmlkZ2Vfb2JqZWN0KGFjcGlfaGFuZGxlIGhhbmRsZSkKK3sKKwlzdHJ1Y3Qg
+YWNwaV9kZXZpY2VfaW5mbyAqaW5mbyA9IE5VTEw7CisJYWNwaV9zdGF0dXMgc3RhdHVzOworCWJv
+b2wgcmV0OworCisJc3RhdHVzID0gYWNwaV9nZXRfb2JqZWN0X2luZm8oaGFuZGxlLCAmaW5mbyk7
+CisJaWYgKEFDUElfRkFJTFVSRShzdGF0dXMpKQorCQlyZXR1cm4gZmFsc2U7CisKKwlyZXQgPSAh
+YWNwaV9tYXRjaF9vYmplY3RfaW5mb19pZHMoaW5mbywgcm9vdF9kZXZpY2VfaWRzKTsKKworCWtm
+cmVlKGluZm8pOworCisJcmV0dXJuIHJldDsKK30KKwogc3RhdGljIGFjcGlfc3RhdHVzIF9faW5p
+dAogZmluZF9yb290X2JyaWRnZXMoYWNwaV9oYW5kbGUgaGFuZGxlLCB1MzIgbHZsLCB2b2lkICpj
+b250ZXh0LCB2b2lkICoqcnYpCiB7CkBAIC0yNjQsNyArMjg3LDcgQEAgZmluZF9yb290X2JyaWRn
+ZXMoYWNwaV9oYW5kbGUgaGFuZGxlLCB1MzIgbHZsLCB2b2lkICpjb250ZXh0LCB2b2lkICoqcnYp
+CiAJCQkJICAgICAgLnBvaW50ZXIgPSBvYmpuYW1lIH07CiAJaW50ICpjb3VudCA9IChpbnQgKilj
+b250ZXh0OwogCi0JaWYgKCFhY3BpX2lzX3Jvb3RfYnJpZGdlKGhhbmRsZSkpCisJaWYgKCFhY3Bp
+X2lzX3Jvb3RfYnJpZGdlX29iamVjdChoYW5kbGUpKQogCQlyZXR1cm4gQUVfT0s7CiAKIAkoKmNv
+dW50KSsrOwotLSAKMS43LjcKCg==
+--0015175d03584a1b8504cbe3d24e
+Content-Type: application/octet-stream; 
+	name="0003-PCI-ACPI-debug-print-for-installation-of-acpi-root-b.patch"
+Content-Disposition: attachment; 
+	filename="0003-PCI-ACPI-debug-print-for-installation-of-acpi-root-b.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h87u7mpe2
+
+RnJvbSBkMDc5MzA5N2VjMGVjZWJlZjQ1ZWI5OGU5NjMyYjk3OGQwZjc3MzcwIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBUYW5nIENoZW4gPHRhbmdjaGVuQGNuLmZ1aml0c3UuY29tPgpE
+YXRlOiBGcmksIDEyIE9jdCAyMDEyIDIwOjM0OjIxICswODAwClN1YmplY3Q6IFtQQVRDSCAzLzNd
+IFBDSSwgQUNQSTogZGVidWcgcHJpbnQgZm9yIGluc3RhbGxhdGlvbiBvZiBhY3BpIHJvb3QKIGJy
+aWRnZSdzIG5vdGlmaWVyCgphY3BpX2luc3RhbGxfbm90aWZ5X2hhbmRsZXIoKSBjb3VsZCBmYWls
+LiBTbyBjaGVjayB0aGUgZXhpdCBzdGF0dXMKYW5kIGdpdmUgYSBiZXR0ZXIgZGVidWcgaW5mby4K
+ClNpZ25lZC1vZmYtYnk6IFRhbmcgQ2hlbiA8dGFuZ2NoZW5AY24uZnVqaXRzdS5jb20+ClNpbmdl
+ZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KLS0tCiBkcml2ZXJzL2Fj
+cGkvcGNpX3Jvb3RfaHAuYyB8ICAgMTIgKysrKysrKysrLS0tCiAxIGZpbGVzIGNoYW5nZWQsIDkg
+aW5zZXJ0aW9ucygrKSwgMyBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL2FjcGkv
+cGNpX3Jvb3RfaHAuYyBiL2RyaXZlcnMvYWNwaS9wY2lfcm9vdF9ocC5jCmluZGV4IDNlZGVjN2Yu
+LjAxZTcxZjYgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvYWNwaS9wY2lfcm9vdF9ocC5jCisrKyBiL2Ry
+aXZlcnMvYWNwaS9wY2lfcm9vdF9ocC5jCkBAIC0yODIsNiArMjgyLDcgQEAgc3RhdGljIGJvb2wg
+YWNwaV9pc19yb290X2JyaWRnZV9vYmplY3QoYWNwaV9oYW5kbGUgaGFuZGxlKQogc3RhdGljIGFj
+cGlfc3RhdHVzIF9faW5pdAogZmluZF9yb290X2JyaWRnZXMoYWNwaV9oYW5kbGUgaGFuZGxlLCB1
+MzIgbHZsLCB2b2lkICpjb250ZXh0LCB2b2lkICoqcnYpCiB7CisJYWNwaV9zdGF0dXMgc3RhdHVz
+OwogCWNoYXIgb2JqbmFtZVs2NF07CiAJc3RydWN0IGFjcGlfYnVmZmVyIGJ1ZmZlciA9IHsgLmxl
+bmd0aCA9IHNpemVvZihvYmpuYW1lKSwKIAkJCQkgICAgICAucG9pbnRlciA9IG9iam5hbWUgfTsK
+QEAgLTI5NCw5ICsyOTUsMTQgQEAgZmluZF9yb290X2JyaWRnZXMoYWNwaV9oYW5kbGUgaGFuZGxl
+LCB1MzIgbHZsLCB2b2lkICpjb250ZXh0LCB2b2lkICoqcnYpCiAKIAlhY3BpX2dldF9uYW1lKGhh
+bmRsZSwgQUNQSV9GVUxMX1BBVEhOQU1FLCAmYnVmZmVyKTsKIAotCWFjcGlfaW5zdGFsbF9ub3Rp
+ZnlfaGFuZGxlcihoYW5kbGUsIEFDUElfU1lTVEVNX05PVElGWSwKLQkJCQloYW5kbGVfaG90cGx1
+Z19ldmVudF9yb290LCBOVUxMKTsKLQlwcmludGsoS0VSTl9ERUJVRyAiYWNwaSByb290OiAlcyBu
+b3RpZnkgaGFuZGxlciBpbnN0YWxsZWRcbiIsIG9iam5hbWUpOworCXN0YXR1cyA9IGFjcGlfaW5z
+dGFsbF9ub3RpZnlfaGFuZGxlcihoYW5kbGUsIEFDUElfU1lTVEVNX05PVElGWSwKKwkJCQkJaGFu
+ZGxlX2hvdHBsdWdfZXZlbnRfcm9vdCwgTlVMTCk7CisJaWYgKEFDUElfRkFJTFVSRShzdGF0dXMp
+KQorCQlwcmludGsoS0VSTl9ERUJVRyAiYWNwaSByb290OiAlcyBub3RpZnkgaGFuZGxlciBpcyBu
+b3QgaW5zdGFsbGVkLCBleGl0IHN0YXR1czogJXVcbiIsCisJCQkJICBvYmpuYW1lLCAodW5zaWdu
+ZWQgaW50KXN0YXR1cyk7CisJZWxzZQorCQlwcmludGsoS0VSTl9ERUJVRyAiYWNwaSByb290OiAl
+cyBub3RpZnkgaGFuZGxlciBpcyBpbnN0YWxsZWRcbiIsCisJCQkJIG9iam5hbWUpOwogCiAJYWRk
+X2FjcGlfcm9vdF9icmlkZ2UoaGFuZGxlKTsKIAotLSAKMS43LjcKCg==
+--0015175d03584a1b8504cbe3d24e--
