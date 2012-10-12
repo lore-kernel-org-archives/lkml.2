@@ -1,266 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422661Ab2JLJVU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 05:21:20 -0400
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:2612 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932181Ab2JLJVS (ORCPT
+	id S933795Ab2JLJXS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 05:23:18 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:45681 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932181Ab2JLJXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 05:21:18 -0400
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: 4
-X-BigFish: VPS4(zzc8kzz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441hbe9i1155h)
-Subject: [Patch v4 7/7] Onkey: DA9055 Onkey driver
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Liam Girdwood <lrg@slimlogic.co.uk>, Samuel Ortiz <sameo@linux.intel.com>,
-        <linux-input@vger.kernel.org>, David Dajun Chen <dchen@diasemi.com>,
-        <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 12 Oct 2012 15:02:30 +0530
-Message-ID: <1350034350.11527.22.camel@dhruva>
+	Fri, 12 Oct 2012 05:23:15 -0400
+Date: Fri, 12 Oct 2012 11:23:09 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>
+Subject: [PATCH] perf: Handle new rbtree implementation
+Message-ID: <20121012092309.GA10341@gmail.com>
+References: <20121012081947.GA20570@gmail.com>
+ <20121012083926.GA30327@gmail.com>
+ <20121012090810.GA11763@x1.osrc.amd.com>
+ <20121012091105.GA31307@gmail.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121012091105.GA31307@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the ONKEY driver of the Dialog DA9055 PMIC and depends on the DA9055 MFD
-core driver.
+>From 6c4d077c467d689b5dd2f89cc69713f1bf4e31d7 Mon Sep 17 00:00:00 2001
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+Date: Tue, 9 Oct 2012 20:01:56 +0200
+Subject: [PATCH] perf: Handle new rbtree implementation
 
-This patch is functionally tested on SMDK6410 board.
+Perf build fails with the new rbtree implementation:
 
-Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+  ../../lib/rbtree.c:24:36: fatal error: linux/rbtree_augmented.h: No such file or directory compilation terminated.
+
+Fix by updating the Makefile and adding a btree_augmented.h
+wrapper.
+
+Reported-and-tested-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Borislav Petkov <bp@amd64.org>
+Link: http://lkml.kernel.org/r/20121009180156.GA245@x4
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
-changes since v4:
-- remove of devm_*irq API
-changes since v3:
-- used of module_platform_driver macro
-- add regmap virtual irq function
-changes since v2:
-- add support for handling the button release case
----
- drivers/input/misc/Kconfig        |   10 ++
- drivers/input/misc/Makefile       |    1 +
- drivers/input/misc/da9055_onkey.c |  171 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 182 insertions(+), 0 deletions(-)
- create mode 100644 drivers/input/misc/da9055_onkey.c
+ tools/perf/Makefile                              | 3 ++-
+ tools/perf/util/include/linux/rbtree_augmented.h | 2 ++
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index 7c0f1ec..6a45cb8 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -486,6 +486,16 @@ config INPUT_DA9052_ONKEY
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called da9052_onkey.
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index d7b8b54..2472645 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -270,6 +270,7 @@ LIB_H += util/include/linux/magic.h
+ LIB_H += util/include/linux/poison.h
+ LIB_H += util/include/linux/prefetch.h
+ LIB_H += util/include/linux/rbtree.h
++LIB_H += util/include/linux/rbtree_augmented.h
+ LIB_H += util/include/linux/string.h
+ LIB_H += util/include/linux/types.h
+ LIB_H += util/include/linux/linkage.h
+@@ -881,7 +882,7 @@ $(OUTPUT)ui/browsers/map.o: ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
  
-+config INPUT_DA9055_ONKEY
-+	tristate "Dialog Semiconductor DA9055 ONKEY"
-+	depends on MFD_DA9055
-+	help
-+	  Support the ONKEY of DA9055 PMICs as an input device
-+	  reporting power button status.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called da9055_onkey.
-+
- config INPUT_DM355EVM
- 	tristate "TI DaVinci DM355 EVM Keypad and IR Remote"
- 	depends on MFD_DM355EVM_MSP
-diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
-index 83fe6f5..23347e3 100644
---- a/drivers/input/misc/Makefile
-+++ b/drivers/input/misc/Makefile
-@@ -23,6 +23,7 @@ obj-$(CONFIG_INPUT_CMA3000)		+= cma3000_d0x.o
- obj-$(CONFIG_INPUT_CMA3000_I2C)		+= cma3000_d0x_i2c.o
- obj-$(CONFIG_INPUT_COBALT_BTNS)		+= cobalt_btns.o
- obj-$(CONFIG_INPUT_DA9052_ONKEY)	+= da9052_onkey.o
-+obj-$(CONFIG_INPUT_DA9055_ONKEY)	+= da9055_onkey.o
- obj-$(CONFIG_INPUT_DM355EVM)		+= dm355evm_keys.o
- obj-$(CONFIG_INPUT_GP2A)		+= gp2ap002a00f.o
- obj-$(CONFIG_INPUT_GPIO_TILT_POLLED)	+= gpio_tilt_polled.o
-diff --git a/drivers/input/misc/da9055_onkey.c b/drivers/input/misc/da9055_onkey.c
+ $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Wno-unused-parameter -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+ 
+ $(OUTPUT)util/parse-events.o: util/parse-events.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Wno-redundant-decls $<
+diff --git a/tools/perf/util/include/linux/rbtree_augmented.h b/tools/perf/util/include/linux/rbtree_augmented.h
 new file mode 100644
-index 0000000..217b5ee
+index 0000000..9d6fcdf
 --- /dev/null
-+++ b/drivers/input/misc/da9055_onkey.c
-@@ -0,0 +1,171 @@
-+/*
-+ * ON pin driver for Dialog DA9055 PMICs
-+ *
-+ * Copyright(c) 2012 Dialog Semiconductor Ltd.
-+ *
-+ * Author: David Dajun Chen <dchen@diasemi.com>
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/input.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+
-+#include <linux/mfd/da9055/core.h>
-+#include <linux/mfd/da9055/reg.h>
-+
-+struct da9055_onkey {
-+	struct da9055 *da9055;
-+	struct input_dev *input;
-+	struct delayed_work work;
-+};
-+
-+static void da9055_onkey_query(struct da9055_onkey *onkey)
-+{
-+	int key_stat;
-+
-+	key_stat = da9055_reg_read(onkey->da9055, DA9055_REG_STATUS_A);
-+	if (key_stat < 0) {
-+		dev_err(onkey->da9055->dev,
-+			"Failed to read onkey event %d\n", key_stat);
-+	} else {
-+		key_stat &= DA9055_NOKEY_STS;
-+		/*
-+		 * Onkey status bit is cleared when onkey button is relased.
-+		 */
-+		if (!key_stat) {
-+			input_report_key(onkey->input, KEY_POWER, 0);
-+			input_sync(onkey->input);
-+		}
-+	}
-+
-+	/*
-+	 * Interrupt is generated only when the ONKEY pin is asserted.
-+	 * Hence the deassertion of the pin is simulated through work queue.
-+	 */
-+	if (key_stat)
-+		schedule_delayed_work(&onkey->work, msecs_to_jiffies(10));
-+
-+}
-+
-+static void da9055_onkey_work(struct work_struct *work)
-+{
-+	struct da9055_onkey *onkey = container_of(work, struct da9055_onkey,
-+						  work.work);
-+
-+	da9055_onkey_query(onkey);
-+}
-+
-+static irqreturn_t da9055_onkey_irq(int irq, void *data)
-+{
-+	struct da9055_onkey *onkey = data;
-+
-+	input_report_key(onkey->input, KEY_POWER, 1);
-+	input_sync(onkey->input);
-+
-+	da9055_onkey_query(onkey);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int __devinit da9055_onkey_probe(struct platform_device *pdev)
-+{
-+	struct input_dev *input_dev;
-+	struct da9055 *da9055 = dev_get_drvdata(pdev->dev.parent);
-+	struct da9055_onkey *onkey;
-+	int irq, err;
-+
-+	irq = platform_get_irq_byname(pdev, "ONKEY");
-+	if (irq < 0) {
-+		dev_err(&pdev->dev,
-+			"Failed to get an IRQ for input device, %d\n", irq);
-+		return -EINVAL;
-+	}
-+
-+	onkey = devm_kzalloc(&pdev->dev, sizeof(*onkey), GFP_KERNEL);
-+	if (!onkey) {
-+		dev_err(&pdev->dev, "Failed to allocate memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	input_dev = input_allocate_device();
-+	if (!input_dev) {
-+		dev_err(&pdev->dev, "Failed to allocate memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	onkey->input = input_dev;
-+	onkey->da9055 = da9055;
-+	input_dev->name = "da9055-onkey";
-+	input_dev->phys = "da9055-onkey/input0";
-+	input_dev->dev.parent = &pdev->dev;
-+
-+	input_dev->evbit[0] = BIT_MASK(EV_KEY);
-+	__set_bit(KEY_POWER, input_dev->keybit);
-+
-+	INIT_DELAYED_WORK(&onkey->work, da9055_onkey_work);
-+
-+	irq = regmap_irq_get_virq(da9055->irq_data, irq);
-+	err = request_threaded_irq(irq, NULL, da9055_onkey_irq,
-+				   IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
-+				   "ONKEY", onkey);
-+	if (err < 0) {
-+		dev_err(&pdev->dev,
-+			"Failed to register ONKEY IRQ %d, error = %d\n",
-+			irq, err);
-+		goto free_onkey;
-+	}
-+
-+	err = input_register_device(input_dev);
-+	if (err) {
-+		dev_err(&pdev->dev, "Unable to register input device, %d\n",
-+			err);
-+		goto free_irq;
-+	}
-+
-+	platform_set_drvdata(pdev, onkey);
-+
-+	return 0;
-+
-+free_irq:
-+	free_irq(irq, onkey);
-+free_onkey:
-+	cancel_delayed_work_sync(&onkey->work);
-+	input_free_device(input_dev);
-+
-+	return err;
-+}
-+
-+static int __devexit da9055_onkey_remove(struct platform_device *pdev)
-+{
-+	struct da9055_onkey *onkey = platform_get_drvdata(pdev);
-+	int irq = platform_get_irq_byname(pdev, "ONKEY");
-+
-+	irq = regmap_irq_get_virq(onkey->da9055->irq_data, irq);
-+	free_irq(irq, onkey);
-+	cancel_delayed_work_sync(&onkey->work);
-+	input_unregister_device(onkey->input);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver da9055_onkey_driver = {
-+	.probe	= da9055_onkey_probe,
-+	.remove	= __devexit_p(da9055_onkey_remove),
-+	.driver = {
-+		.name	= "da9055-onkey",
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
-+module_platform_driver(da9055_onkey_driver);
-+
-+MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-+MODULE_DESCRIPTION("Onkey driver for DA9055");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:da9055-onkey");
--- 
-1.7.0.4
-
-
++++ b/tools/perf/util/include/linux/rbtree_augmented.h
+@@ -0,0 +1,2 @@
++#include <stdbool.h>
++#include "../../../../include/linux/rbtree_augmented.h"
