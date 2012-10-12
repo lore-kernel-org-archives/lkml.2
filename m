@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759573Ab2JLB47 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 21:56:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21510 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759550Ab2JLB45 (ORCPT
+	id S1759571Ab2JLCNB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 22:13:01 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49933 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507Ab2JLCNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 21:56:57 -0400
-X-Authority-Analysis: v=2.0 cv=a96yBDuF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=J7ERXNQwqmwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=P3xNwfJ5JkoA:10 a=1XWaLZrsAAAA:8 a=6V5PVwrkk0rYTD7v0FkA:9 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=1f7l125domMVR3D3:21 a=t_0lioJAi1htS1vH:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1350007016.24256.82.camel@gandalf.local.home>
-Subject: Re: [PATCH 1/2] tracing: trivial cleanup
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: Justin Teravest <teravest@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 11 Oct 2012 21:56:56 -0400
-In-Reply-To: <1339112785-21806-1-git-send-email-vnagarnaik@google.com>
-References: <1339112785-21806-1-git-send-email-vnagarnaik@google.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
+	Thu, 11 Oct 2012 22:13:00 -0400
+Date: Fri, 12 Oct 2012 13:12:49 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alexander Graf <agraf@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Subject: linux-next: manual merge of the kvm-ppc tree with the kvm tree
+Message-Id: <20121012131249.f86c7519ea8b07c67ae9f6e4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__12_Oct_2012_13_12_49_+1100_Nugc_XI=NktqRx30"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I know this is late, but it was pushed down in my todo list
-(never off, but something I probably wouldn't have seen for a few more
-months).
+--Signature=_Fri__12_Oct_2012_13_12_49_+1100_Nugc_XI=NktqRx30
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, 2012-06-07 at 16:46 -0700, Vaibhav Nagarnaik wrote:
-> From: David Sharp <dhsharp@google.com>
+Hi Alexander,
 
-If this is from David it needs his SOB.
+Today's linux-next merge of the kvm-ppc tree got a conflict in
+arch/powerpc/kvm/44x_emulate.c between commits from the kvm tree and
+the same patches plus another commit from the kvm-ppc tree.
 
--- Steve
+I just used the kvm-ppc tree version.
 
-> 
-> Remove ftrace_format_syscall() declaration; it is neither defined nor
-> used. Also update a comment and formatting.
-> 
-> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
-> ---
->  include/trace/syscall.h    |    2 --
->  kernel/trace/ring_buffer.c |    6 +++---
->  2 files changed, 3 insertions(+), 5 deletions(-)
-> 
-> diff --git a/include/trace/syscall.h b/include/trace/syscall.h
-> index 31966a4..0c95796 100644
-> --- a/include/trace/syscall.h
-> +++ b/include/trace/syscall.h
-> @@ -39,8 +39,6 @@ extern int reg_event_syscall_enter(struct ftrace_event_call *call);
->  extern void unreg_event_syscall_enter(struct ftrace_event_call *call);
->  extern int reg_event_syscall_exit(struct ftrace_event_call *call);
->  extern void unreg_event_syscall_exit(struct ftrace_event_call *call);
-> -extern int
-> -ftrace_format_syscall(struct ftrace_event_call *call, struct trace_seq *s);
->  enum print_line_t print_syscall_enter(struct trace_iterator *iter, int flags,
->  				      struct trace_event *event);
->  enum print_line_t print_syscall_exit(struct trace_iterator *iter, int flags,
-> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-> index 1d0f6a8..96c2dd1 100644
-> --- a/kernel/trace/ring_buffer.c
-> +++ b/kernel/trace/ring_buffer.c
-> @@ -1816,7 +1816,7 @@ rb_add_time_stamp(struct ring_buffer_event *event, u64 delta)
->  }
->  
->  /**
-> - * ring_buffer_update_event - update event type and data
-> + * rb_update_event - update event type and data
->   * @event: the even to update
->   * @type: the type of event
->   * @length: the size of the event field in the ring buffer
-> @@ -2716,8 +2716,8 @@ EXPORT_SYMBOL_GPL(ring_buffer_discard_commit);
->   * and not the length of the event which would hold the header.
->   */
->  int ring_buffer_write(struct ring_buffer *buffer,
-> -			unsigned long length,
-> -			void *data)
-> +		      unsigned long length,
-> +		      void *data)
->  {
->  	struct ring_buffer_per_cpu *cpu_buffer;
->  	struct ring_buffer_event *event;
+This happened because
+	1) you rebased/rewrote your tree before it was merged into the kvm tree
+	2) left the old version in your kvm-ppc-next branch
+	3) added some more commits to your kvm-ppc-next branch
 
+Don't do that!
 
+Unfortunately, the best thing you can do now is to rebase your
+kvm-ppc-next branch on top of the kvm tree.  :-(
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__12_Oct_2012_13_12_49_+1100_Nugc_XI=NktqRx30
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQd3yhAAoJEECxmPOUX5FEBRwP/2Fu/fP9wNOjJvjDiQ6s/hTf
+H9zjZA8/tbdjPuTOiuSg4HZfxzBWqGn9YZwkMweRY4YmQH9D3JtWOVinABk8vrke
+JYm8TU/Z+DUGrLvqWd5BLezbbLiP798b+EJOZz36JinP+fStn3FK8WFSWGX2i6wq
+ejC0tYJ9R/naoWh+p/oSUtyRKkHP38okE4MbrviyjzcKxJTpLD1gAr7iOUlWYf9Y
+OY6Sy+XuC5FfTqyJ4VeEG/jzSTBa3cjctm6wJamKTFLqNyFQk6G2qVoyG8+wNFeT
+qgeMxJIoUGeM6k4SK/E8h/jfRcI/vDrGfLOSn7W63F2fFkkayJeEQraW56P+chq1
+DkMj5KJyENsS083EvOA5+qxK8osrtlZAF9F0vW4PY1lnN44+MlFG1N1hKKacFBom
+oRYpOBqIR0iDrjlO0wNXp1WS5aHPp7Fba5sUZCXcFcdOZWts/xVbew01na0cCk0r
+q/BpD3gn85u10T4R4AZSUnLngiz8hIWPt6vQPfoIeVqUCjuQj65XeXYcWHHkBmrS
+/9CDiMBpk6oSqYRIWjKzTfBGc5iYnAB1TESWYNuo1ZS5pknaQYLIZIVa2tDijTrR
+8XgFn7EXTuH71HhNKrhxZNpAuXot7/bl4E/x/fVzCT5JfGEKAiQ6TiHXMUWoa+Pg
+Fx++dpJG7+v8AZcXqrNd
+=L0nr
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__12_Oct_2012_13_12_49_+1100_Nugc_XI=NktqRx30--
