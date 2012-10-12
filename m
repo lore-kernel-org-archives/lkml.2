@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698Ab2JLFHP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 01:07:15 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46146 "EHLO
+	id S1755761Ab2JLFLP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 01:11:15 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49345 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab2JLFHN (ORCPT
+	with ESMTP id S1752179Ab2JLFLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 01:07:13 -0400
-Date: Fri, 12 Oct 2012 16:06:58 +1100
+	Fri, 12 Oct 2012 01:11:14 -0400
+Date: Fri, 12 Oct 2012 16:11:08 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warning after merge of the vfs tree
-Message-Id: <20121012160658.f7fa4fdaf9759dd1b0a055d1@canb.auug.org.au>
+Subject: linux-next: build warnings after merge of the tip tree
+Message-Id: <20121012161108.7e97dea0942f681a0ee9f564@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Fri__12_Oct_2012_16_06_58_+1100_VMP1ngXvPflB7XSc"
+ boundary="Signature=_Fri__12_Oct_2012_16_11_08_+1100_17N=dBvZAv7YWF92"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__12_Oct_2012_16_06_58_+1100_VMP1ngXvPflB7XSc
+--Signature=_Fri__12_Oct_2012_16_11_08_+1100_17N=dBvZAv7YWF92
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Al,
+Hi all,
 
-After merging the vfs tree, today's linux-next build (powerpc allnoconfig)
-produced this warning:
+After merging the tip tree, today's linux-next build (powerpc allnoconfig)
+produced these warnings:
 
-fs/namespace.c: In function 'do_mount':
-fs/namespace.c:2219:8: warning: passing argument 3 of 'security_sb_mount' d=
-iscards 'const' qualifier from pointer target type [enabled by default]
-include/linux/security.h:1967:19: note: expected 'char *' but argument is o=
-f type 'const char *'
+kernel/sched/fair.c:801:22: warning: 'task_h_load' declared 'static' but ne=
+ver defined [-Wunused-function]
+kernel/sched/fair.c:1013:13: warning: 'account_offnode_enqueue' defined but=
+ not used [-Wunused-function]
 
-Introduced by commit 5804bc88667e ("consitify do_mount() arguments").
-The prototype of the !CONFIG_SECURITY version was not completely updated.
+Introduced by commit 4ae834f767c5 ("sched/numa: Implement NUMA home-node
+selection code").
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Fri__12_Oct_2012_16_06_58_+1100_VMP1ngXvPflB7XSc
+--Signature=_Fri__12_Oct_2012_16_11_08_+1100_17N=dBvZAv7YWF92
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQd6VyAAoJEECxmPOUX5FEJaYP/AmcpaTH5RUWOA4b+lhqwvb2
-T5FY7AWMiNKe+DeyMFewtaJWbUHvwoVvCt05uOz4PILf1tSjd9VZM2vl9NWCuvO5
-viv7F1F/h5Znjf2dd0kVcNc4AGZGSQ6FGwp/GQz15MWGWeHMOipRSMi/gG0vg5gc
-pzgLW8nHtj/AEA2KO8px/Pu9ZMPRA4sPMH2yPuJubwtctU5ygzzNuY4XJPuYdQVt
-Uu+uJShpDe9dEQvP3SWXBAiIeW8JOhQv1cJ2I4Ul3HydqpEX6nYQwYkhkgld3VbZ
-8Q2LqUIFco86iyP3Um5jc0gzhyjsbh7uTVoW+j+kw9uhwV7eoS88QKO3eXPPgrCV
-UbhMLX/shQX2A/hXMNEdG2cNsRGOcAFcI97QKndvcsTTl2gSf3x/4ZxP99DIkr8h
-60Yltz24BNPnJU5glOMO+jg82Vi4IZ4NqB6ecmjp9nGWaX5eh5/Ia6EAcH3mmYAe
-7XPrh+8SNe7wcXujv8/wTJSY0sOpaaUoDwxo5tKkhw0kXtlGUyHTYgX3Ze0xcQH8
-tCkVfy2ch8jTQL8Wjer+N/HEEfhporL0Ipqt60OaQnJm0t8q+6NNog0gurpvLw0V
-4qKtQVtPYXcOPdUxgD0VfV2WdqJTgBUJ4kwIIO+zsTbFkvh4O4jcsjfde2knIYoj
-y1uITUmmcSnqgpne2PLa
-=cABr
+iQIcBAEBCAAGBQJQd6ZsAAoJEECxmPOUX5FEs8MP/R94XRsbWrERXFzEV8Ouvi9T
+06qBbOYNSReTUNc+wWKdqJp6MJRcW5vNfUSlG7Dxmp7148VDzWYpR1vrA9crnQSu
+DpDEXoYTzmmwfdInLzfUpAkvF7D/OZf+HKLWuJra4bGUl1hgQT5Wk5UANs4QxyeS
+4FiSkOO/mPPRSMIER6UF8zqGMr+ksDMv4c7QLFFnz9Z80OAlLwe+oMHFrWaEMsKI
+w2uRpgnCvf+/441bvDgfmbi2yS58VjDj5KC7FBg/SehrSIUOcMkLzZZQT59TtFZZ
+cs+5V590SeLpgimLF8egztY+fNXjKqYVBVnqYZM8Lh17c2ajLLYWdO+EikMLf4su
+X1Q4FXQsRNDETsKCcAgAArXFG/FRWbXjSKSZ5yEzUYMcKRB0mAHHxUNrRreY/x7T
+N0E8QJXPbNYQUJJdoEMZnDOGKHwRJsbtSzNHArk9Z4iTSkOqO6ObBLqnTPqa+Zd1
+FoebMq6l1rH5Fl+KNtgND9NOURhi7dJ/LgXauPTrn5mHH6YrE6haENvXBWn8zXeN
+d6kn1VEgNwkGG+P42ILn4gwXxCeMzolN89InYmYtA9HmDUQDlzZuWNXoYfNwbOzn
+BMbhPgZbSCRrm7/yPup13z07tdSibwCNFEDMI9UQQJiH6oR1nLmlZqjxmpn7mk1b
+wLmwu/6Y1ae33Sanvc6D
+=ZlJS
 -----END PGP SIGNATURE-----
 
---Signature=_Fri__12_Oct_2012_16_06_58_+1100_VMP1ngXvPflB7XSc--
+--Signature=_Fri__12_Oct_2012_16_11_08_+1100_17N=dBvZAv7YWF92--
