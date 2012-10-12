@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310Ab2JLC4t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 22:56:49 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:52836 "EHLO
+	id S1755255Ab2JLDBT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 23:01:19 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:35050 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394Ab2JLC4s (ORCPT
+	with ESMTP id S1751394Ab2JLDBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 22:56:48 -0400
-Date: Fri, 12 Oct 2012 13:56:38 +1100
+	Thu, 11 Oct 2012 23:01:17 -0400
+Date: Fri, 12 Oct 2012 14:01:13 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Linus Walleij <linus.walleij@linaro.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -16,17 +16,17 @@ Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>
 Subject: linux-next: manual merge of the pinctrl tree with Linus' tree
-Message-Id: <20121012135638.e42f668a360bddee7a54dea8@canb.auug.org.au>
+Message-Id: <20121012140113.f210f9c091ff0c31f6b5849e@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Fri__12_Oct_2012_13_56_38_+1100_RZ=qqPf+C3GkC6W."
+ boundary="Signature=_Fri__12_Oct_2012_14_01_13_+1100_J6=r+SQFVEYtKJ2T"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__12_Oct_2012_13_56_38_+1100_RZ=qqPf+C3GkC6W.
+--Signature=_Fri__12_Oct_2012_14_01_13_+1100_J6=r+SQFVEYtKJ2T
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
@@ -34,10 +34,9 @@ Content-Transfer-Encoding: quoted-printable
 Hi Linus,
 
 Today's linux-next merge of the pinctrl tree got a conflict in
-arch/arm/boot/dts/at91sam9g25ek.dts between commit fbc1871511ed ("ARM:
-dts: add twi nodes for atmel boards") from Linus' tree and commit
-77ccddbdc0c9 ("arm: at91: dt: at91sam9 add serial pinctrl support") from
-the pinctrl tree.
+arch/arm/mach-at91/at91sam9263.c between commit f7d19b906556 ("ARM: at91:
+add clocks for I2C DT entries") from Linus' tree and commit 5c70cd3c7c69
+("arm: at91: dt: at91sam9 add pinctrl support") from the pinctrl tree.
 
 I fixed it up (see below) and can carry the fix as necessary (no action
 is required).
@@ -46,82 +45,43 @@ is required).
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/arm/boot/dts/at91sam9g25ek.dts
-index 877c08f,c5ab16f..0000000
---- a/arch/arm/boot/dts/at91sam9g25ek.dts
-+++ b/arch/arm/boot/dts/at91sam9g25ek.dts
-@@@ -13,49 -13,4 +13,20 @@@
-  / {
-  	model =3D "Atmel AT91SAM9G25-EK";
-  	compatible =3D "atmel,at91sam9g25ek", "atmel,at91sam9x5ek", "atmel,at91s=
-am9x5", "atmel,at91sam9";
- +
-- 	chosen {
-- 		bootargs =3D "console=3DttyS0,115200 root=3D/dev/mtdblock1 rw rootfstyp=
-e=3Dubifs ubi.mtd=3D1 root=3Dubi0:rootfs";
-- 	};
--=20
- +	ahb {
- +		apb {
-- 			dbgu: serial@fffff200 {
-- 				status =3D "okay";
-- 			};
--=20
-- 			usart0: serial@f801c000 {
-- 				status =3D "okay";
-- 			};
--=20
-- 			macb0: ethernet@f802c000 {
-- 				phy-mode =3D "rmii";
-- 				status =3D "okay";
-- 			};
--=20
- +			i2c0: i2c@f8010000 {
- +				status =3D "okay";
- +			};
- +
- +			i2c1: i2c@f8014000 {
- +				status =3D "okay";
- +			};
- +
- +			i2c2: i2c@f8018000 {
- +				status =3D "okay";
- +			};
- +		};
--=20
-- 		usb0: ohci@00600000 {
-- 			status =3D "okay";
-- 			num-ports =3D <2>;
-- 			atmel,vbus-gpio =3D <&pioD 19 1
-- 					   &pioD 20 1
-- 					  >;
-- 		};
--=20
-- 		usb1: ehci@00700000 {
-- 			status =3D "okay";
-- 		};
- +	};
+diff --cc arch/arm/mach-at91/at91sam9263.c
+index 6a01d03,2edf813..0000000
+--- a/arch/arm/mach-at91/at91sam9263.c
++++ b/arch/arm/mach-at91/at91sam9263.c
+@@@ -211,7 -210,11 +211,12 @@@ static struct clk_lookup periph_clocks_
+  	CLKDEV_CON_DEV_ID("hclk", "a00000.ohci", &ohci_clk),
+  	CLKDEV_CON_DEV_ID("spi_clk", "fffa4000.spi", &spi0_clk),
+  	CLKDEV_CON_DEV_ID("spi_clk", "fffa8000.spi", &spi1_clk),
+ +	CLKDEV_CON_DEV_ID(NULL, "fff88000.i2c", &twi_clk),
++ 	CLKDEV_CON_DEV_ID(NULL, "fffff200.gpio", &pioA_clk),
++ 	CLKDEV_CON_DEV_ID(NULL, "fffff400.gpio", &pioB_clk),
++ 	CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioCDE_clk),
++ 	CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioCDE_clk),
++ 	CLKDEV_CON_DEV_ID(NULL, "fffffa00.gpio", &pioCDE_clk),
   };
+ =20
+  static struct clk_lookup usart_clocks_lookups[] =3D {
 
---Signature=_Fri__12_Oct_2012_13_56_38_+1100_RZ=qqPf+C3GkC6W.
+--Signature=_Fri__12_Oct_2012_14_01_13_+1100_J6=r+SQFVEYtKJ2T
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQd4bmAAoJEECxmPOUX5FERl8P/31OW/AtKCL008JqhncAJlyk
-R+H3IJeXKpfxqBxetR2ZSFSqt0w6We4Sqv9YaHwTGZa4YO6iplMoFoqH3eyToQx0
-GcZ3SDPHztuOrxaVlPDj90W+VtSW8A3T/vjlwO9+z7VUDLJuUxosP0E8p+R1kf+Y
-A7gzs6uBBzPBirrrU1U8e14HyukpyHVtKc0L62sV6RpBmDSiL9E3URR37mWkK+6+
-u4MVfaMHAk/2tDMxUU/DmHXmpBHQxayPrinDiZ4wwqmJXUEfC2c401XRw/Ntbh6G
-WKT/KTJYUUFrh64oIrxjEAm0YDVHgTXxCRGLZE3uMtIov5R5kKuexkATQ9Lfk40q
-o+J2bHXavZSktTeuu4PmZjnM8LMVxPuu/fScByRK1mLcE0dzYTeYDt/K06XLQQ/A
-i2D9VH/g/9otOK5fc0KC9yjIVo7P7fEbPulpS/7bkxCpYm+y9/OCJIbDrBmFtGtT
-v/BlfhpryP/H46J50Ff1GMv2Mgl+9X5gLrgFiIHEB7V9PIOFkMcX2raWkiOFUd3Y
-46UkYJcaQyNNaBexbVZaIiu6zbl8j7pszd3WFY/gzWwKjBdl/Gd4uuc9G8EVSjzh
-k8VrleeV+5o3wEvsgvxqD0C9T1Zv7zDBpKGeMIdYTDCkcjTyU8aGpG+/bEIxX3au
-7ux+r70O1KxxCyL3cMDD
-=/V5S
+iQIcBAEBCAAGBQJQd4f5AAoJEECxmPOUX5FEFhAQAIzgD1PRzd16nBg6SFyf9oN0
+RoN0OIkl0swh/SxaPYp0Q5tatGExbG7UxKPcF9FPJOwB0rkd0/NKqdTO84pNXtkO
+8oVRkz3jzffEz3bZRz4/Nz8MzHzxf2RR4fzWkhgttxnq1Uy1ZseMoRFjzQAxStDF
+B3JH6ZIODY0n1Jga0cFaUaS/MO0X8oFjTEeyYbgWc6hkqZFOP9gqG1rDL3Xbjcif
+GI2BpvJ3LT3d6pCN2zG1Hvx0ZEOHkTZZBEzJJWs0bHnJjWJzeRfVKPfhCcgXK6z8
+gKCGdGklEZd5nhrhAA2aG8CYoXQfihDBWwicpNDOYq/D3m6IkbXr9yXUKJ8TWAYn
+AVctncjYmFNBZ7pGuOasX590Rw8bb2/uSmcu4EG51gwH/KAVPhpksno4hKcs+4tH
++XPsGnk2PBdo32A2PODcSBsEy+4viX9ZgVG4jmlvO0cBx/KLZnlyGSUH4mbmouzN
+e6B241xhI4qpg+TqGQO/Hdn0uVcAA39IvT/Em3knE/ybJQLOyh33PeQk6e08EHt/
+Vn4E3VCMWgh0rq2pGHfoeVPJ9d2755B7e4Ad6qyHPGzZuo02Rv+X9DygtqbECeMX
+CFaq4ObRWpH9D3kNnG3DECXFa4b8pUBEP89tuINp9ImRKj5qccSkGl0vKc9bh+wZ
+HLrLwsbZOoMy+/6AddKF
+=fkhU
 -----END PGP SIGNATURE-----
 
---Signature=_Fri__12_Oct_2012_13_56_38_+1100_RZ=qqPf+C3GkC6W.--
+--Signature=_Fri__12_Oct_2012_14_01_13_+1100_J6=r+SQFVEYtKJ2T--
