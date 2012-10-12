@@ -1,60 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660Ab2JLUWR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 16:22:17 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53309 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100Ab2JLUWP (ORCPT
+	id S1751789Ab2JLU2v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 16:28:51 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:17318 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab2JLU2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 16:22:15 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1350066620.21172.12996.camel@edumazet-glaptop>
-References: <1350054908-30646-6-git-send-email-robherring2@gmail.com> <1350065099-32649-1-git-send-email-robherring2@gmail.com> <1350066620.21172.12996.camel@edumazet-glaptop>
+	Fri, 12 Oct 2012 16:28:50 -0400
+Message-ID: <50787D80.9040202@tilera.com>
+Date: Fri, 12 Oct 2012 16:28:48 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v2] net: calxedaxgmac: rework transmit ring handling
-From: Rob Herring <robherring2@gmail.com>
-Date: Fri, 12 Oct 2012 15:21:59 -0500
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        jonathan@jonmasters.org, Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Ben Hutchings <bhutchings@solarflare.com>
-Message-ID: <ec408461-2f13-49eb-b9da-d3e092ff13f9@email.android.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: David Howells <dhowells@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] tile updates for 3.7
+References: <21212.1349774162@warthog.procyon.org.uk>
+In-Reply-To: <21212.1349774162@warthog.procyon.org.uk>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet <eric.dumazet@gmail.com> wrote:
+Linus,
 
->On Fri, 2012-10-12 at 13:04 -0500, Rob Herring wrote:
->> From: Rob Herring <rob.herring@calxeda.com>
->> 
->> Only generate tx interrupts on every ring size / 4 descriptors. Move
->the
->> netif_stop_queue call to the end of the xmit function rather than
->> checking at the beginning.
->> 
->> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
->> ---
->> v2:
->> - Add missed enabling of the descriptor tx interrupt
->
->Seems to be net-next material to me.
->
+Please pull from:
 
-Perhaps, but the series as a whole is what I've been testing. This one has the least performance impact.
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git master
 
->Furthermore, your changelog is a bit terse for such a patch, that could
->easily break upper layers.
->
->You need to tell us how long TX completion for a packet might be
->deferred.
+Note that this is not based off the 3.6.0 release but off an intermediate
+point that includes David Howell's uapi disintegration work; the bulk
+of this change is the tile uapi disintegration.  There is also a one-line
+change in here to enable interrupts in do_work_pending() to avoid a
+WARN_ON in _local_bh_enable_ip().
 
-The prior behavior was only interrupting when done with all buffers.  It now will interrupt before completely emptying the ring.
+----------------------------------------------------------------
+Chris Metcalf (2):
+      Merge tag 'tags/disintegrate-tile-20121009' into for-linus
+      arch/tile: enable interrupts in do_work_pending()
 
-Rob
+David Howells (2):
+      UAPI: (Scripted) Disintegrate arch/tile/include/arch
+      UAPI: (Scripted) Disintegrate arch/tile/include/asm
 
+ arch/tile/include/arch/Kbuild                      |   17 ----
+ arch/tile/include/arch/spr_def.h                   |   12 +--
+ arch/tile/include/asm/Kbuild                       |    3 -
+ arch/tile/include/asm/hardwall.h                   |   33 +-------
+ arch/tile/include/asm/ptrace.h                     |   72 +---------------
+ arch/tile/include/asm/setup.h                      |    7 +-
+ arch/tile/include/asm/signal.h                     |   12 +--
+ arch/tile/include/asm/unistd.h                     |   25 +-----
+ arch/tile/include/uapi/arch/Kbuild                 |   17 ++++
+ arch/tile/include/{ => uapi}/arch/abi.h            |    0
+ arch/tile/include/{ => uapi}/arch/chip.h           |    0
+ arch/tile/include/{ => uapi}/arch/chip_tile64.h    |    0
+ arch/tile/include/{ => uapi}/arch/chip_tilegx.h    |    0
+ arch/tile/include/{ => uapi}/arch/chip_tilepro.h   |    0
+ arch/tile/include/{ => uapi}/arch/icache.h         |    0
+ arch/tile/include/{ => uapi}/arch/interrupts.h     |    0
+ arch/tile/include/{ => uapi}/arch/interrupts_32.h  |    0
+ arch/tile/include/{ => uapi}/arch/interrupts_64.h  |    0
+ arch/tile/include/{ => uapi}/arch/opcode.h         |    0
+ arch/tile/include/{ => uapi}/arch/opcode_tilegx.h  |    0
+ arch/tile/include/{ => uapi}/arch/opcode_tilepro.h |    0
+ arch/tile/include/{ => uapi}/arch/sim.h            |    0
+ arch/tile/include/{ => uapi}/arch/sim_def.h        |    0
+ arch/tile/include/uapi/arch/spr_def.h              |   26 ++++++
+ arch/tile/include/{ => uapi}/arch/spr_def_32.h     |    6 +-
+ arch/tile/include/{ => uapi}/arch/spr_def_64.h     |    6 +-
+ arch/tile/include/uapi/asm/Kbuild                  |   15 ++++
+ arch/tile/include/{ => uapi}/asm/auxvec.h          |    0
+ arch/tile/include/{ => uapi}/asm/bitsperlong.h     |    0
+ arch/tile/include/{ => uapi}/asm/byteorder.h       |    0
+ arch/tile/include/{ => uapi}/asm/cachectl.h        |    0
+ arch/tile/include/uapi/asm/hardwall.h              |   51 ++++++++++++
+ arch/tile/include/{ => uapi}/asm/kvm_para.h        |    0
+ arch/tile/include/{ => uapi}/asm/mman.h            |    0
+ arch/tile/include/uapi/asm/ptrace.h                |   88 ++++++++++++++++++++
+ arch/tile/include/uapi/asm/setup.h                 |   21 +++++
+ arch/tile/include/{ => uapi}/asm/sigcontext.h      |    0
+ arch/tile/include/{ => uapi}/asm/siginfo.h         |    0
+ arch/tile/include/uapi/asm/signal.h                |   27 ++++++
+ arch/tile/include/{ => uapi}/asm/stat.h            |    0
+ arch/tile/include/{ => uapi}/asm/swab.h            |    0
+ arch/tile/include/uapi/asm/unistd.h                |   34 ++++++++
+ arch/tile/kernel/process.c                         |    3 +
+ 43 files changed, 298 insertions(+), 177 deletions(-)
+ rename arch/tile/include/{ => uapi}/arch/abi.h (100%)
+ rename arch/tile/include/{ => uapi}/arch/chip.h (100%)
+ rename arch/tile/include/{ => uapi}/arch/chip_tile64.h (100%)
+ rename arch/tile/include/{ => uapi}/arch/chip_tilegx.h (100%)
+ rename arch/tile/include/{ => uapi}/arch/chip_tilepro.h (100%)
+ rename arch/tile/include/{ => uapi}/arch/icache.h (100%)
+ rename arch/tile/include/{ => uapi}/arch/interrupts.h (100%)
+ rename arch/tile/include/{ => uapi}/arch/interrupts_32.h (100%)
+ rename arch/tile/include/{ => uapi}/arch/interrupts_64.h (100%)
+ rename arch/tile/include/{ => uapi}/arch/opcode.h (100%)
+ rename arch/tile/include/{ => uapi}/arch/opcode_tilegx.h (100%)
+ rename arch/tile/include/{ => uapi}/arch/opcode_tilepro.h (100%)
+ rename arch/tile/include/{ => uapi}/arch/sim.h (100%)
+ rename arch/tile/include/{ => uapi}/arch/sim_def.h (100%)
+ create mode 100644 arch/tile/include/uapi/arch/spr_def.h
+ rename arch/tile/include/{ => uapi}/arch/spr_def_32.h (98%)
+ rename arch/tile/include/{ => uapi}/arch/spr_def_64.h (98%)
+ rename arch/tile/include/{ => uapi}/asm/auxvec.h (100%)
+ rename arch/tile/include/{ => uapi}/asm/bitsperlong.h (100%)
+ rename arch/tile/include/{ => uapi}/asm/byteorder.h (100%)
+ rename arch/tile/include/{ => uapi}/asm/cachectl.h (100%)
+ create mode 100644 arch/tile/include/uapi/asm/hardwall.h
+ rename arch/tile/include/{ => uapi}/asm/kvm_para.h (100%)
+ rename arch/tile/include/{ => uapi}/asm/mman.h (100%)
+ create mode 100644 arch/tile/include/uapi/asm/ptrace.h
+ create mode 100644 arch/tile/include/uapi/asm/setup.h
+ rename arch/tile/include/{ => uapi}/asm/sigcontext.h (100%)
+ rename arch/tile/include/{ => uapi}/asm/siginfo.h (100%)
+ create mode 100644 arch/tile/include/uapi/asm/signal.h
+ rename arch/tile/include/{ => uapi}/asm/stat.h (100%)
+ rename arch/tile/include/{ => uapi}/asm/swab.h (100%)
+ create mode 100644 arch/tile/include/uapi/asm/unistd.h
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
