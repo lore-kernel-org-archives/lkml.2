@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933555Ab2JLIYW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 04:24:22 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:59138 "EHLO mail.gnudd.com"
+	id S933603Ab2JLI1f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 04:27:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34325 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754925Ab2JLIYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 04:24:19 -0400
-Date: Fri, 12 Oct 2012 10:24:12 +0200
-From: Davide Ciminaghi <ciminaghi@gnudd.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regmap : make lock/unlock functions customizable.
-Message-ID: <20121012082412.GA9779@mail.gnudd.com>
-References: <1349127064-432-1-git-send-email-ciminaghi@gnudd.com> <20121012062607.GN11726@opensource.wolfsonmicro.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	id S933255Ab2JLI1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 04:27:32 -0400
+Date: Fri, 12 Oct 2012 10:27:28 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Johannes Weiner <hannes@cmpxchg.org>,
+        Greg Thelen <gthelen@google.com>, devel@openvz.org,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v4 04/14] kmem accounting basic infrastructure
+Message-ID: <20121012082728.GC10110@dhcp22.suse.cz>
+References: <1349690780-15988-1-git-send-email-glommer@parallels.com>
+ <1349690780-15988-5-git-send-email-glommer@parallels.com>
+ <20121011101119.GB29295@dhcp22.suse.cz>
+ <5077C886.2030609@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121012062607.GN11726@opensource.wolfsonmicro.com>
-X-Face: #Q;A)@_4.#>0+_%y]7aBr:c"ndLp&#+2?]J;lkse\^)FP^Lr5@O0{)J;'nny4%74.fM'n)M
-	>ISCj.KmsL/HTxz!:Ju'pnj'Gz&.
+In-Reply-To: <5077C886.2030609@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 03:26:09PM +0900, Mark Brown wrote:
-> On Mon, Oct 01, 2012 at 11:31:04PM +0200, ciminaghi@gnudd.com wrote:
-> > From: Davide Ciminaghi <ciminaghi@gnudd.com>
+On Fri 12-10-12 11:36:38, Glauber Costa wrote:
+> On 10/11/2012 02:11 PM, Michal Hocko wrote:
+> > On Mon 08-10-12 14:06:10, Glauber Costa wrote:
+[...]
+> >> +	if (!memcg->kmem_accounted && val != RESOURCE_MAX) {
 > > 
-> > It is sometimes convenient for a regmap user to override the standard
-> > regmap lock/unlock functions with custom functions.
+> > Just a nit but wouldn't memcg_kmem_is_accounted(memcg) be better than
+> > directly checking kmem_accounted?
+> > Besides that I am not sure I fully understand RESOURCE_MAX test. Say I
+> > want to have kmem accounting for monitoring so I do 
+> > echo -1 > memory.kmem.limit_in_bytes
+> > 
+> > so you set the value but do not activate it. Isn't this just a reminder
+> > from the time when the accounting could be deactivated?
+> > 
 > 
-> This looks good overall but...
+> No, not at all.
 > 
-> > -static void regmap_lock_mutex(struct regmap *map)
-> > +static void regmap_lock_mutex(void *__map)
-> >  {
-> > +	struct regmap *map = (struct regmap *)__map;
-> >  	mutex_lock(&map->mutex);
+> I see you have talked about that in other e-mails, (I was on sick leave
+> yesterday), so let me consolidate it all here:
 > 
-> ...you should never need to cast away from or to void, if you do there's
-> a bug somewhere.
+> What we discussed before, regarding to echo -1 > ... was around the
+> disable code, something that we no longer allow. So now, if you will
+> echo -1 to that file *after* it is limited, you get in track only mode.
+> 
+> But for you to start that, you absolutely have to write something
+> different than -1.
+> 
+> Just one example: libcgroup, regardless of how lame we think it is in
+> this regard, will write to all cgroup files by default when a file is
+> updated. If you haven't written anything, it will still write the same
+> value that the file had before.
 
-regmap lock/unlock original functions just received a struct regmap * .
-I needed a void * for the customized version of such functions, so just
-replaced struct regmap * with void *
+Ohh, I wasn't aware of that and it sounds pretty lame.
+ 
+> This means that an already deployed libcg-managed installation will
+> suddenly enable kmem for every cgroup. Sure this can be fixed in
+> userspace, but:
+> 
+> 1) There is no reason to break it, if we can
 
-typedef void (*regmap_lock)(void *);
-typedef void (*regmap_unlock)(void *);
+You are right
 
-The cast isn't actually needed (code compiles with no warnings without it).
-I could also do something like this, if you think it's better:
+> 2) It is perfectly reasonable to expect that if you write to a file the
+> same value that was already there, nothing happens.
 
-typedef void (*regmap_lock)(struct regmap *, void *);
-typedef void (*regmap_unlock)(struct regmap *, void *);
+Fair enough
 
-and then ignore the second argument in the default version of the functions.
-
-Thanks and regards
-Davide
-
+-- 
+Michal Hocko
+SUSE Labs
