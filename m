@@ -1,89 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758015Ab2JLLBz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 07:01:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:32853 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753010Ab2JLLBx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 07:01:53 -0400
-Date: Fri, 12 Oct 2012 19:01:42 +0800
-From: Gustavo Padovan <gustavo@padovan.org>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth 2012-10-12
-Message-ID: <20121012110142.GF10739@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1758246Ab2JLLC2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 07:02:28 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:42104 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753175Ab2JLLCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 07:02:25 -0400
+X-IronPort-AV: E=Sophos;i="4.80,576,1344182400"; 
+   d="scan'208";a="5990096"
+Message-ID: <5077F542.3010003@cn.fujitsu.com>
+Date: Fri, 12 Oct 2012 18:47:30 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: bhelgaas@google.com, lenb@kernel.org, yinghai@kernel.org,
+        izumi.taku@jp.fujitsu.com, jiang.liu@huawei.com,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix a hard coding style when determining if a device
+ is a container.
+References: <1350024916-3628-1-git-send-email-tangchen@cn.fujitsu.com> <5077ECA6.4010302@jp.fujitsu.com>
+In-Reply-To: <5077ECA6.4010302@jp.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/12 18:48:25,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/12 18:48:29,
+	Serialize complete at 2012/10/12 18:48:29
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-2022-JP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/12/2012 06:10 PM, Yasuaki Ishimatsu wrote:
+> Hi Tang,
+> 
+> 2012/10/12 15:55, Tang Chen wrote:
+>> "ACPI0004","PNP0A05" and "PNP0A06" are all defined in array
+>> container_device_ids[], so use it, but not the hard coding style.
+> 
+> The idea is good.
+> 
+>>
+>> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+>> ---
+>>    drivers/acpi/container.c |   10 +++++++---
+>>    1 files changed, 7 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
+>> index 1f9f7d7..448c0e2 100644
+>> --- a/drivers/acpi/container.c
+>> +++ b/drivers/acpi/container.c
+>> @@ -217,6 +217,7 @@ container_walk_namespace_cb(acpi_handle handle,
+>>    {
+>>    	char *hid = NULL;
+>>    	struct acpi_device_info *info;
+>> +	struct acpi_device_id *container_id;
+>>    	acpi_status status;
+>>    	int *action = context;
+>>
+>> @@ -232,10 +233,13 @@ container_walk_namespace_cb(acpi_handle handle,
+>>    		goto end;
+>>    	}
+>>
+>> -	if (strcmp(hid, "ACPI0004")&&  strcmp(hid, "PNP0A05")&&
+>> -	    strcmp(hid, "PNP0A06")) {
+>> -		goto end;
+>> +	for (container_id = container_device_ids;
+>> +	     container_id->id[0]; container_id++) {
+>> +		if (!strcmp((char *)container_id->id, hid))
+>> +			break;
+>>    	}
+>> +	if (!container_id->id[0])
+>> +		goto end;
+> 
+> How about prepare is_container_device() function and check whether
+> the device is the container device or not as below?
 
---y0ulUmNC+osPPQO6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sure. :)
+A new patch will be sent soon.
 
-Hi John,
+Thanks for the wonderful idea. :)
 
-Johan found a critical issue while at Bluetooth UnPlug Fest this week.=20
-The patch fixes a failure to pair with devices that support the LE Secure
-Connections feature. This is also marked for stable.
+> 
+> 	if (is_container_device())
+> 		goto end;
+> 
+> Thanks,
+> Yasuaki Ishimatsu
+> 
+>>
+>>    	switch (*action) {
+>>    	case INSTALL_NOTIFY_HANDLER:
+>>
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Please pull! Thanks!
-
-	Gustavo
----
-
-The following changes since commit a7be50b7e30f9d77cb059a7ffdb781bb0fb92eba:
-
-  iwlwifi: don't double free the interrupt in failure path (2012-09-18 20:4=
-3:23 -0400)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
-
-for you to fetch changes up to 065a13e2cc665f6547dc7e8a9d6b6565badf940a:
-
-  Bluetooth: SMP: Fix setting unknown auth_req bits (2012-10-12 17:55:20 +0=
-800)
-
-----------------------------------------------------------------
-Johan Hedberg (1):
-      Bluetooth: SMP: Fix setting unknown auth_req bits
-
- net/bluetooth/smp.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-
---y0ulUmNC+osPPQO6
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQd/iWAAoJEPs3PUX4s20owMYP/3cZK2BGs6XvcBLHWnjpUv9L
-Cml/CPjDXv+EtZic4H1Hv0TPk8naV9Dbr6IweJyKWmUpEZRGUSTthFsDkNpm8qMG
-HO8QTAQ0aZcZU/tQ282mxIXsirKSwCN5MkaMW0O9rD+E+lBxqrjiYGAO/qZ8zfdf
-OkWtpIeMzob7blJFyzi3DdODbThyQO75AKWbxaj8rGIl8qytiwh+s+PBb1zrk2K8
-FyvXqah9mYQg9ePJC8ygA1ICx/btFmdpntAOzcdIitD7jBk97jlzCe3YVduV3hVT
-AgdQ0hjNRa5uc1rSg3nu7XxqFtTk2dU4Oo/NewMlp7jm5qsMvMciPx2yY6h9metu
-BWSrSTCt9TEGYIHg1uO2+6qpTBJBpxAgZa2JbUhoMDw50X/CwO1ABV97z8wmGuVf
-e026j8osFKAuVyMkkxM30RqwG/Q5wRKvy0T7PfBK71opVao0O16qn4b7OWnKq0YT
-d1mic96DhhShN9dH59zPkxSK/NMWN/NiKcPnTCPbMLT33ssun04II3GIe/DiTC8q
-TpQSyXjLBDkYpCB46jn0XZKt+UKPFNaif8JyY/eDqlIOFw0f55G73kphmwc2xJc/
-qxThYnSGN+xTfdLCNkSG3IbnrsDPoq1CqmIFNp+sTH5hyskhNZvV+GxIlKiwBf2U
-FzsO1rPebsTAD7neFuRB
-=wOZZ
------END PGP SIGNATURE-----
-
---y0ulUmNC+osPPQO6--
