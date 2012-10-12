@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286Ab2JLWRL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 18:17:11 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:38533 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947Ab2JLWRJ (ORCPT
+	id S1752702Ab2JLWSx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 18:18:53 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36816 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752605Ab2JLWSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 18:17:09 -0400
+	Fri, 12 Oct 2012 18:18:51 -0400
+Date: Fri, 12 Oct 2012 23:18:43 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: dl8bcu@dl8bcu.de, peterz@infradead.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 0/1] (Was: [regression] boot failure on alpha, bisected)
+Message-ID: <20121012221843.GJ2616@ZenIV.linux.org.uk>
+References: <20121006204736.GA1830@ds20.borg.net>
+ <20121012160337.GA30881@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1350079465.9386.6.camel@trivette.mtl.sfl>
-References: <1348620130-25987-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-	<CACRpkdaaD6HY2o-NNBRZYCXm97Dts7Njzz13Zj7m2ZycV-Ar5g@mail.gmail.com>
-	<1349720405.23690.45.camel@trivette>
-	<CACRpkdbbungMiZ74o=-CfRoLQj127CaWaYr7adKKSquFd=x5qg@mail.gmail.com>
-	<1350079465.9386.6.camel@trivette.mtl.sfl>
-Date: Sat, 13 Oct 2012 00:17:09 +0200
-Message-ID: <CACRpkdYRPVw1YTZQ7QfX=8Zm-0MN_QQ5UAPabAr=E5Lc0sG9GQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio: add TS-5500 DIO headers support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Jerome Oufella <jerome.oufella@savoirfairelinux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121012160337.GA30881@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 13, 2012 at 12:04 AM, Vivien Didelot
-<vivien.didelot@savoirfairelinux.com> wrote:
+On Fri, Oct 12, 2012 at 06:03:37PM +0200, Oleg Nesterov wrote:
+> On 10/06, Thorsten Kranzkowski wrote:
+> >
+> > After upgrading from v3.5-rc7 to current git my system oopses and locks up
+> > early in the boot sequence.
+> 
+> OK, I am sending the patch which I already showed.
+> 
+> Perhaps we should only add the warning and local_irq_enable()
+> should go into arch/alpha/kernel/signal.c:do_notify_resume().
+> 
+> In any case arch/alpha/ should be fixed imho.
 
-> About the generic driver (to allow registering one platform device per
-> DIO block), I think it won't be possible, because there are shared
-> regions, such as 0x7d, used by DIO2 and LCD DIO for direction...
-
-Probably true.
-
-> Is there a way to share this, or does this mean that this driver should
-> handle the 3 blocks as it already does?
-
-I think you should try to handle all 3 for the moment atleast.
-
-Yours,
-Linus Walleij
+Oleg, could you check current signal.git#for-next?  alpha patches in
+there ought to deal with the do_notify_resume() mess on alpha
+for good, AFAICS.
