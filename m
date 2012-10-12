@@ -1,105 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759943Ab2JLQi6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 12:38:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50829 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759867Ab2JLQiz (ORCPT
+	id S1759843Ab2JLQm0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 12:42:26 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51494 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759745Ab2JLQmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 12:38:55 -0400
-From: Adil Mujeeb <mujeeb.adil@gmail.com>
-To: pavel@ucw.cz
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Adil Mujeeb <mujeeb.adil@gmail.com>
-Subject: [PATCH 9/9] Staging: winbond: wb35tx_s: Fixed coding style issues
-Date: Fri, 12 Oct 2012 22:07:15 +0530
-Message-Id: <1350059835-5408-10-git-send-email-mujeeb.adil@gmail.com>
-X-Mailer: git-send-email 1.7.6.msysgit.0
-In-Reply-To: <1350059835-5408-1-git-send-email-mujeeb.adil@gmail.com>
-References: <1350059835-5408-1-git-send-email-mujeeb.adil@gmail.com>
+	Fri, 12 Oct 2012 12:42:25 -0400
+Date: Fri, 12 Oct 2012 17:42:02 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Sourav <sourav.poddar@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Felipe Balbi <balbi@ti.com>, gregkh@linuxfoundation.org,
+        tony@atomide.com, linux-kernel@vger.kernel.org,
+        santosh.shilimkar@ti.com, linux-serial@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        alan@linux.intel.com
+Subject: Re: [RFT/PATCH] serial: omap: prevent resume if device is not
+	suspended.
+Message-ID: <20121012164202.GQ28061@n2100.arm.linux.org.uk>
+References: <20120925083029.GG31374@n2100.arm.linux.org.uk> <20120925083118.GI9137@arwen.pp.htv.fi> <20120925091228.GI31374@n2100.arm.linux.org.uk> <20120925091112.GK9137@arwen.pp.htv.fi> <20120925092118.GJ31374@n2100.arm.linux.org.uk> <CAKdam57bpTJ94Gn=mKVw1Fm-76fVPp3DGjFuNu_HfesybM1hPg@mail.gmail.com> <87ipas2y4h.fsf@deeprootsystems.com> <alpine.DEB.2.00.1210111748010.5736@utopia.booyaka.com> <50784458.9080806@ti.com> <877gqv7imt.fsf@deeprootsystems.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <877gqv7imt.fsf@deeprootsystems.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed most of the checkpatch.pl reported ERRORs and WARNINGs.
-Some "line over 80 characters" warning left.
+On Fri, Oct 12, 2012 at 09:35:54AM -0700, Kevin Hilman wrote:
+> Sourav <sourav.poddar@ti.com> writes:
+> > diff --git a/drivers/tty/serial/omap-serial.c
+> > b/drivers/tty/serial/omap-serial.c
+> > index 6ede6fd..3fbc7f7 100644
+> > --- a/drivers/tty/serial/omap-serial.c
+> > +++ b/drivers/tty/serial/omap-serial.c
+> > @@ -1414,6 +1414,7 @@ static int __devinit serial_omap_probe(struct
+> > platform_device *pdev)
+> >         INIT_WORK(&up->qos_work, serial_omap_uart_qos_work);
+> >
+> >         platform_set_drvdata(pdev, up);
+> > +       pm_runtime_set_active(&pdev->dev);
+> 
+> NAK.
+> 
+> This will obviously break platforms where the UARTs are not active
+> before driver loads.
 
-Signed-off-by: Adil Mujeeb <mujeeb.adil@gmail.com>
----
- linux-3.6-rc7/drivers/staging/winbond/wb35tx_s.h |   49 +++++++++------------
- 1 files changed, 21 insertions(+), 28 deletions(-)
+I thought I had proposed a solution for this issue, which was this
+sequence:
 
-diff --git a/linux-3.6-rc7/drivers/staging/winbond/wb35tx_s.h b/linux-3.6-rc7/drivers/staging/winbond/wb35tx_s.h
-index f70f433..02a1f27 100644
---- a/linux-3.6-rc7/drivers/staging/winbond/wb35tx_s.h
-+++ b/linux-3.6-rc7/drivers/staging/winbond/wb35tx_s.h
-@@ -3,45 +3,38 @@
- 
- #include "mds_s.h"
- 
--//====================================
--// IS89C35 Tx related definition
--//====================================
--#define TX_INTERFACE			0	// Interface 1
--#define TX_PIPE					3	// endpoint 4
--#define TX_INTERRUPT			1	// endpoint 2
--#define MAX_INTERRUPT_LENGTH	64	// It must be 64 for EP2 hardware
--
--
--
--//====================================
--// Internal variable for module
--//====================================
-+/* IS89C35 Tx related definition */
-+#define TX_INTERFACE		0	/* Interface 1 */
-+#define TX_PIPE			3	/* endpoint 4 */
-+#define TX_INTERRUPT		1	/* endpoint 2 */
-+#define MAX_INTERRUPT_LENGTH	64	/* It must be 64 for EP2 hardware */
- 
-+/* Internal variable for module */
- 
- struct wb35_tx {
--	// For Tx buffer
--	u8	TxBuffer[ MAX_USB_TX_BUFFER_NUMBER ][ MAX_USB_TX_BUFFER ];
-+	/* For Tx buffer */
-+	u8		TxBuffer[MAX_USB_TX_BUFFER_NUMBER][MAX_USB_TX_BUFFER];
- 
--	// For Interrupt pipe
--	u8	EP2_buf[MAX_INTERRUPT_LENGTH];
-+	/* For Interrupt pipe */
-+	u8		EP2_buf[MAX_INTERRUPT_LENGTH];
- 
--	atomic_t	TxResultCount;// For thread control of EP2 931130.4.m
--	atomic_t	TxFireCounter;// For thread control of EP4 931130.4.n
--	u32			ByteTransfer;
-+	atomic_t	TxResultCount; /* For thread control of EP2 931130.4.m */
-+	atomic_t	TxFireCounter; /* For thread control of EP4 931130.4.n */
-+	u32		ByteTransfer;
- 
--	u32	    TxSendIndex;// The next index of Mds array to be sent
--	u32	    EP2vm_state; // for EP2vm state
--	u32	    EP4vm_state; // for EP4vm state
--	u32	    tx_halt; // Stopping VM
-+	u32		TxSendIndex; /* next index of Mds array to be sent */
-+	u32		EP2vm_state; /* for EP2vm state */
-+	u32		EP4vm_state; /* for EP4vm state */
-+	u32		tx_halt; /* Stopping VM */
- 
--	struct urb *				Tx4Urb;
--	struct urb *				Tx2Urb;
-+	struct urb	*Tx4Urb;
-+	struct urb	*Tx2Urb;
- 
- 	int		EP2VM_status;
- 	int		EP4VM_status;
- 
--	u32	TxFillCount; // 20060928
--	u32	TxTimer; // 20060928 Add if sending packet not great than 13
-+	u32		TxFillCount; /* 20060928 */
-+	u32		TxTimer; /* 20060928 Add if sending packet not great than 13 */
- };
- 
- #endif
--- 
-1.7.7.3
+        omap_device_enable(dev);                                                
+        pm_runtime_set_active(dev);                                             
+        pm_runtime_enable(dev);                                                 
 
+Yes, I can understand people not liking the omap_device_enable()
+there, but I also notice that the email suggesting that never got a
+reply either - not even a "I tried this and it doesn't work" or "it
+does work".
+
+As such, it seems this issue isn't making any progress as we had
+already established that merely doing a "pm_runtime_set_active()"
+before "pm_runtime_enable()" was going to break other platforms.
