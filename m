@@ -1,106 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132Ab2JLPDx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 11:03:53 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:21345 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751666Ab2JLPDu (ORCPT
+	id S1758534Ab2JLPFY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 11:05:24 -0400
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:38893 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753420Ab2JLPFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 11:03:50 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+FPM6+nDxue8MbZDEYEHbM
-Date: Fri, 12 Oct 2012 08:03:43 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: kishon <kishon@ti.com>
-Cc: Rajendra Nayak <rnayak@ti.com>, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, rob@landley.net, linux@arm.linux.org.uk,
-        balbi@ti.com, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Moiz Sonasath <m-sonasath@ti.com>
-Subject: Re: [PATCH 1/4] usb: phy: add a new driver for usb3 phy
-Message-ID: <20121012150342.GA30339@atomide.com>
-References: <1348054229-27362-1-git-send-email-kishon@ti.com>
- <1348054229-27362-2-git-send-email-kishon@ti.com>
- <20121011005944.GX12552@atomide.com>
- <5077DE0A.4000301@ti.com>
+	Fri, 12 Oct 2012 11:05:22 -0400
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjWKAKwweFBV5h1yPGdsb2JhbABEDoUbhSO0CwSBAxkBAQEBHxkNJ4IgAQEEAScTHBMBDwULCAMRAwECLxQlCgwOCgmHfgq6VRSLPgkqA4UnYAOVbIVyjHE9gVg
+X-IronPort-AV: E=Sophos;i="4.80,577,1344204000"; 
+   d="scan'208";a="209195496"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 12 Oct 2012 17:08:00 +0200
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Stuge <peter@stuge.se>
+Subject: Re: REGRESSION: usbdevfs:
+ Use-scatter-gather-lists-for-large-bulk-transfers
+Message-ID: <20121012150800.GA3097@polaris.bitmath.org>
+References: <20121011213707.GA2187@polaris.bitmath.org>
+ <Pine.LNX.4.44L0.1210121018390.1605-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5077DE0A.4000301@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <Pine.LNX.4.44L0.1210121018390.1605-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* kishon <kishon@ti.com> [121012 02:10]:
-> Hi Tony,
-> 
-> On Thursday 11 October 2012 06:29 AM, Tony Lindgren wrote:
-> >Hi,
-> >
-> >* Kishon Vijay Abraham I <kishon@ti.com> [120919 04:32]:
-> >>Added a driver for usb3 phy that handles the interaction between usb phy
-> >>device and dwc3 controller.
-> >>
-> >>This also includes device tree support for usb3 phy driver and
-> >>the documentation with device tree binding information is updated.
-> >>
-> >>Currently writing to control module register is taken care in this
-> >>driver which will be removed once the control module driver is in place.
-> >
-> >You may be able to set up the control module register with one
-> >of the following Linux standard frameworks:
-> >
-> >1. Fixed regulator defined in mach-omap2/control.c
-> 
-> Is it control.c?
+Hi Alan,
 
-Hmm after looking into it more we're missing one piece of the puzzle
-to handle SCM regulators, which is omap-scm-regulator.c :)
-I'll do a minimal DT only version of that.
+> Instead of introducing a new local variable, why not simply update 
+> uurb->buffer?  That's what we do elsewhere in the code.
 
-> >    In this case the PHY driver can pick up the regulator by name.
-> 
-> Do you mean we have to define something like fixed_voltage_config
-> defined in board-4430sdp.c?
-> From whatever I could make out from regulator/fixed.c,
-> enabling/disabling of regulator is done using only gpio. I'm not
-> sure how we can use that to write to control module register.
+It seemed fragile, due to these scary lines:
 
-Yes you're right, we're missing omap-scm-regulator.c, then it will
-be trivial to select the regulator from DT like we have for the
-twl-regulator.c.
+	if (is_in && uurb->buffer_length > 0)
+		as->userbuffer = uurb->buffer;
+	else
+		as->userbuffer = NULL;
 
-> >>+usb3phy@4a084400 {
-> >>+	compatible = "ti,omap-usb3";
-> >>+	reg = <0x0x4a084400 0x80>,
-> >>+	      <0x4a084800 0x64>,
-> >>+	      <0x4a084c00 0x40>,
-> >>+	      <0x4a002370 0x4>;
-> >>+};
-> >
-> >And register 0x4a002370 here. Care to post some info what the
-> >0x4a002370 register bits do? Is that same as CONTROL_DEV_CONF
-> >on omap4, or does it have other bits there too?
-> 
-> It's CONTROL_PHY_POWER_USB register and it's structure looks like this.
-> 31:22 USB_PWRCTL_CLK_FREQ
-> 21:14 USB_PWRCTL_CLK_CMD
-> 13:0 RESERVED
-> 
-> CLK_CMD takes values to power up/down the TX and RX in various combinations.
-> 
-> And CLK_FREQ takes values for clock configuration.
+I suppose it works in this particular case.  How is the
+USBDEVFS_URB_TYPE_CONTROL case supposed to work here?
 
-Oh, it's a clock. Then it would be best to set it up using the
-common clock framework and have the clock registered by the
-SCM core driver when those are available.
+I can certainly change the patch if preferred. Tested and attached
+below.
 
-Maybe please just add a comment for that for later on?
+Thanks,
+Henrik
 
-Regards,
+>From 40b70394747eea51fdd07cc8213dd6afd24b1b30 Mon Sep 17 00:00:00 2001
+From: Henrik Rydberg <rydberg@euromail.se>
+Date: Thu, 11 Oct 2012 23:27:04 +0200
+Subject: [PATCH v2] usbdevfs: Fix broken scatter-gather transfer
 
-Tony
+The handling of large output bulk transfers is broken; the same user
+page is read over and over again. Fixed with this patch.
+
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+ drivers/usb/core/devio.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+index ebb8a9d..6e58b59 100644
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -1349,6 +1351,7 @@
+ 					goto error;
+ 				}
+ 			}
++			uurb->buffer += u;
+ 			totlen -= u;
+ 		}
+ 	} else if (uurb->buffer_length > 0) {
+
