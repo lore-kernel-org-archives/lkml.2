@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933795Ab2JLJXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 05:23:18 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:45681 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932181Ab2JLJXP (ORCPT
+	id S1757550Ab2JLJZd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 05:25:33 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43665 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754438Ab2JLJZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 05:23:15 -0400
-Date: Fri, 12 Oct 2012 11:23:09 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>
-Subject: [PATCH] perf: Handle new rbtree implementation
-Message-ID: <20121012092309.GA10341@gmail.com>
-References: <20121012081947.GA20570@gmail.com>
- <20121012083926.GA30327@gmail.com>
- <20121012090810.GA11763@x1.osrc.amd.com>
- <20121012091105.GA31307@gmail.com>
+	Fri, 12 Oct 2012 05:25:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121012091105.GA31307@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKohpon4FZdPXFOXvVqExY=xrwozELYvNbE3_zHoRw2O0nszhw@mail.gmail.com>
+References: <142ef9170a2c69657d8a05ac127a9970d7b04965.1350020375.git.viresh.kumar@linaro.org>
+	<91e41b4cc972d298f714cbd6f400569a9710304c.1350020375.git.viresh.kumar@linaro.org>
+	<1350030203.10584.139.camel@smile>
+	<CAKohpon4FZdPXFOXvVqExY=xrwozELYvNbE3_zHoRw2O0nszhw@mail.gmail.com>
+Date: Fri, 12 Oct 2012 12:25:30 +0300
+Message-ID: <CAHp75Ve9uETO0Wx=bNbPxjOxO_MoE_bkFCHtwBZAA6+7m8fdMw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] dmaengine: dw_dmac: Enhance device tree support
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>, vinod.koul@intel.com,
+        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 6c4d077c467d689b5dd2f89cc69713f1bf4e31d7 Mon Sep 17 00:00:00 2001
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-Date: Tue, 9 Oct 2012 20:01:56 +0200
-Subject: [PATCH] perf: Handle new rbtree implementation
+On Fri, Oct 12, 2012 at 11:34 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 12 October 2012 13:53, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+>> On Fri, 2012-10-12 at 11:14 +0530, Viresh Kumar wrote:
 
-Perf build fails with the new rbtree implementation:
+>>> diff --git a/Documentation/devicetree/bindings/dma/snps-dma.txt b/Documentation/devicetree/bindings/dma/snps-dma.txt
+>>> @@ -14,4 +34,28 @@ Example:
+>>>               reg = <0xfc000000 0x1000>;
+>>>               interrupt-parent = <&vic1>;
+>>>               interrupts = <12>;
+>>> +
+>>> +             nr_channels = <8>;
+>>> +             chan_allocation_order = <1>;
+>>> +             chan_priority = <1>;
+>>> +             block_size = <0xfff>;
+>>> +             nr_masters = <2>;
+>>> +             data_width = <3 3 0 0>;
+>>> +
+>>> +             slave_info {
+>>> +                     uart0-tx {
+>>> +                             bus_id = "uart0-tx";
+>>> +                             cfg_hi = <0x4000>;      /* 0x8 << 11 */
+>>> +                             cfg_lo = <0>;
+>>> +                             src_master = <0>;
+>>> +                             dst_master = <1>;
+>>> +                     };
+>>> +                     spi0-tx {
+>>> +                             bus_id = "spi0-tx";
+>>> +                             cfg_hi = <0x2000>;      /* 0x4 << 11 */
+>>> +                             cfg_lo = <0>;
+>>> +                             src_master = <0>;
+>>> +                             dst_master = <0>;
+>>> +                     };
+>>> +             };
+>> Why do you locate slave information under DMA controller node? From my
+>> point of view the slave info belongs to corresponding device. For
+>> example, above sections belong to UART0 and SPI0.
+>
+> Consider one spi driver is used on 5 different platforms with
+> different DMA controllers.
+> So, 5 DMA drivers and so 5 DMA platform_data. Wherever we add this node, this
+> data can't be processed by spi-driver, as we can't add DT processing routines
+> for all DMA drivers in spi.
+>
+> The best place to process DT nodes is DW_DMAC driver, because it is
+> dw_dmac's data.
+> That's why i added them under DMA.
+Fair enough.
 
-  ../../lib/rbtree.c:24:36: fatal error: linux/rbtree_augmented.h: No such file or directory compilation terminated.
+>>> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
 
-Fix by updating the Makefile and adding a btree_augmented.h
-wrapper.
+>>> +static struct dw_dma_platform_data *
+>>> +__devinit dw_dma_parse_dt(struct platform_device *pdev)
+>>> +{
+>
+>>> +     for_each_child_of_node(sn, cn)
+>>> +             count++;
+>> Is there any other way to get amount of children?
+>
+> I tried my best to find one, referred to lots of drivers. And found
+> this way in most of the places. ex: drivers/pinctrl/***
+I understand your way of allocating memory, but what about using
+linked list instead of array?
 
-Reported-and-tested-by: Borislav Petkov <borislav.petkov@amd.com>
-Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Borislav Petkov <bp@amd64.org>
-Link: http://lkml.kernel.org/r/20121009180156.GA245@x4
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- tools/perf/Makefile                              | 3 ++-
- tools/perf/util/include/linux/rbtree_augmented.h | 2 ++
- 2 files changed, 4 insertions(+), 1 deletion(-)
+And one more thing. May be we could introduce backlink to the platform
+data in the dw_dma structure instead of copying certain parameters?
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index d7b8b54..2472645 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -270,6 +270,7 @@ LIB_H += util/include/linux/magic.h
- LIB_H += util/include/linux/poison.h
- LIB_H += util/include/linux/prefetch.h
- LIB_H += util/include/linux/rbtree.h
-+LIB_H += util/include/linux/rbtree_augmented.h
- LIB_H += util/include/linux/string.h
- LIB_H += util/include/linux/types.h
- LIB_H += util/include/linux/linkage.h
-@@ -881,7 +882,7 @@ $(OUTPUT)ui/browsers/map.o: ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
- 
- $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Wno-unused-parameter -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
- 
- $(OUTPUT)util/parse-events.o: util/parse-events.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -Wno-redundant-decls $<
-diff --git a/tools/perf/util/include/linux/rbtree_augmented.h b/tools/perf/util/include/linux/rbtree_augmented.h
-new file mode 100644
-index 0000000..9d6fcdf
---- /dev/null
-+++ b/tools/perf/util/include/linux/rbtree_augmented.h
-@@ -0,0 +1,2 @@
-+#include <stdbool.h>
-+#include "../../../../include/linux/rbtree_augmented.h"
+-- 
+With Best Regards,
+Andy Shevchenko
