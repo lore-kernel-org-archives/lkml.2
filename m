@@ -1,54 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757151Ab2JLJSg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 05:18:36 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:62780 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313Ab2JLJSd (ORCPT
+	id S933742Ab2JLJTD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 05:19:03 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:48067 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932620Ab2JLJS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 05:18:33 -0400
-X-IronPort-AV: E=Sophos;i="4.80,576,1344211200"; 
-   d="scan'208";a="15121513"
-Message-ID: <1350033511.14806.64.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH V2 0/7]: PVH: PV guest with extensions
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 12 Oct 2012 10:18:31 +0100
-In-Reply-To: <20121011144929.06e71a9e@mantra.us.oracle.com>
-References: <20121011144929.06e71a9e@mantra.us.oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+	Fri, 12 Oct 2012 05:18:59 -0400
+Date: Fri, 12 Oct 2012 11:18:55 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf updates/fixes
+Message-ID: <20121012091855.GA246@x4>
+References: <20121012081947.GA20570@gmail.com>
+ <20121012083926.GA30327@gmail.com>
+ <20121012090810.GA11763@x1.osrc.amd.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121012090810.GA11763@x1.osrc.amd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-11 at 22:49 +0100, Mukesh Rathor wrote:
-> Hi guys,
+On 2012.10.12 at 11:08 +0200, Borislav Petkov wrote:
+> On Fri, Oct 12, 2012 at 10:39:26AM +0200, Ingo Molnar wrote:
+> > 
+> > * Ingo Molnar <mingo@kernel.org> wrote:
+> > 
+> > > Linus,
+> > > 
+> > > Please pull the latest perf-urgent-for-linus git tree from:
+> > > 
+> > >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+> > > 
+> > >    HEAD: 95cf59ea72331d0093010543b8951bb43f262cac perf: Fix perf_cgroup_switch for sw-events
+> > 
+> > Note that if you merge it then there's a new semantic conflict 
+> > with recent rbtree.c changes in your tree, causing a tools/perf/ 
+> > build failure:
+> > 
+> > ../../lib/rbtree.c:24:36: fatal error: linux/rbtree_augmented.h: No such file or directory compilation terminated.
+> > 
+> > See the fix below.
+> > 
+> > ( If the __maybe_unused annotations are too ugly for 
+> >   lib/rbtree.c then we'll fix that in tools/perf in a cleaner
+> >   way, weakening the compiler checks for the rbtree build. We 
+> >   are using stronger compiler checks in tools/perf/, which has 
+> >   served us very well so far and is a big net win - the price is 
+> >   the occasional extra annotation of dummy inline function 
+> >   parameters. )
 > 
-> Ok, I've made all the changes from prev RFC patch submissions. Tested
-> all the combinations. The patches are organized slightly differently
-> from prev version because of the nature of changes after last review. I
-> am building xen patch just for the corresponding header file changes.
-> Following that I'll refresh xen tree, debug, test, and send patches.
+> Btw,
 > 
-> For linux kernel mailing list introduction, PVH is a PV guest that can
-> run in an HVM container, uses native pagetables, uses callback vector,
-> native IDT, and native syscalls.
+> Markus fixed it that way recently:
 > 
-> They were built on top of 89d0307af2b9957d59bfb2a86aaa57464ff921de
-> commit.
+> http://marc.info/?l=linux-kernel&m=134980573527738
+> 
+> by adding the -Wno-unused-parameter switch only to lib/rbtree.o when
+> built from within perf.
+> 
+> I see now though that his patch has some unrelated changes to
+> trace-event-perl.c's permissions which shouldn't be there.
 
-I took a (fairly quick) look. I had a few comments but overall looks
-pretty good, thanks!
+Yes that was part of a different issue:
 
-I'm constantly amazed by how small this patchset is. I suspect you are
-going to make up for it in the hypervisor side ;-)
+    CC util/scripting-engines/trace-event-perl.o
+util/scripting-engines/trace-event-perl.c: In function ‘perl_process_tracepoint’:
+util/scripting-engines/trace-event-perl.c:285:3: error: format ‘%lu’ expects argument of type ‘long unsigned int’, but argument 2 has type ‘__u64’ [-Werror=format]
+   die("ug! no event found for type %" PRIu64, evsel->attr.config);
+   ^
+cc1: all warnings being treated as errors
 
-Ian.
+Which I fixed locally like this:
 
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index f80605e..f53889d 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -282,7 +282,7 @@ static void perl_process_tracepoint(union perf_event *perf_event __maybe_unused,
+ 
+ 	event = find_cache_event(evsel);
+ 	if (!event)
+-		die("ug! no event found for type %" PRIu64, evsel->attr.config);
++		die("ug! no event found for type %" PRIu64, (unsigned long)evsel->attr.config);
+ 
+ 	pid = raw_field_value(event, "common_pid", data);
+ 
+-- 
+Markus
