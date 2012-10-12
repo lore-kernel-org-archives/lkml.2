@@ -1,53 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab2JLVWN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 17:22:13 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32571 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203Ab2JLVWL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 17:22:11 -0400
-Date: Fri, 12 Oct 2012 14:22:04 -0700
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH V2 1/7]: PVH: basic and header changes,
- elfnote changes, ...
-Message-ID: <20121012142204.47b9d780@mantra.us.oracle.com>
-In-Reply-To: <1350031728.14806.45.camel@zakaz.uk.xensource.com>
-References: <20121011145317.51655302@mantra.us.oracle.com>
-	<1350031728.14806.45.camel@zakaz.uk.xensource.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1752387Ab2JLVYP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 17:24:15 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:48687 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752209Ab2JLVYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 17:24:13 -0400
+Date: Fri, 12 Oct 2012 15:24:06 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Dave Martin <dave.martin@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [ARM] Use AT() in the linker script to create correct
+ program headers
+Message-ID: <20121012212406.GN4124@obsidianresearch.com>
+References: <20121001183543.GC22342@obsidianresearch.com>
+ <20121002102346.GB2108@linaro.org>
+ <20121002174759.GC23733@obsidianresearch.com>
+ <20121003104335.GA2254@linaro.org>
+ <20121003184437.GB12231@obsidianresearch.com>
+ <20121004113637.GA2117@linaro.org>
+ <20121004175907.GB2994@obsidianresearch.com>
+ <20121008104649.GD2302@linaro.org>
+ <20121009182514.GF4124@obsidianresearch.com>
+ <20121010095544.GB2131@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121010095544.GB2131@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Oct 2012 09:48:48 +0100
-Ian Campbell <Ian.Campbell@citrix.com> wrote:
+On Wed, Oct 10, 2012 at 10:55:44AM +0100, Dave Martin wrote:
 
-> > index fdce49c..9323b8c 100644
-> > --- a/arch/x86/xen/Kconfig
-> > +++ b/arch/x86/xen/Kconfig
-> > @@ -50,3 +50,13 @@ config XEN_DEBUG_FS
-> >  	  Enable statistics output and various tuning options in
-> > debugfs. Enabling this option may incur a significant performance
-> > overhead. 
-> > +config XEN_X86_PVH
-> > +	bool "Support for running as a PVH guest (EXPERIMENTAL)"
-> > +	depends on X86_64 && XEN && INTEL_IOMMU && EXPERIMENTAL
+> As a side comment, some things such as MAC addresses can be probed and
+> set from userspace after kernel boot, assuming that you have a way
+> to fetch the device description blob from userspace.  If it's accessible
+> via MTD I'm guessing you may have some chance of doing that.
+
+Yes, there is a whole wack of other data in this structure (serial
+numbers, etc) that are captured and used by userspace, so access is
+always made possible.
+
+Setting the MAC via userspace is interesting, I will bear that in
+mind. However, we have several development-support boot scenarios that
+enable the ethernet before the userspace code to fetch the data
+structure is loaded - one of interest has the kernel's initramfs
+perform a NBD mount of the actual application filesystem. So having
+the kernel tend to this is very convenient.
+ 
+> However, I worry that if you have to run hardware-dependent code in
+> order to fetch or generate parts of the DT, then we have a chicken-
+> and-egg problem with no guaranteed solution with the frameworks that
+> exist today -- although I am not familiar with how DT gets used on
+> all other arches, so you might have counterexamples I'm not aware of.
+
+Certainly, in some cases, (like what I have done) such kernels are
+non-generic and could only work with the hardware they are intended
+for.
+
+However, if you assume the bootloader provides a dtb (even an
+incomplete one would do) then fixups/replacements/whatever could be
+run based on tags in the dtb without creating a chicken-and-egg
+problem.
+
+> At least in ARM-land, the DT is inherently monolithic and static: the
+> DT is not expected to change once you enter the kernel.
+
+Sort of, it is the same on all arches, the DT block is expected to
+remain valid, but all the of_node pointers go directly into the block
+so you can alter values but not the structure without breaking any
+invariants. As an example our DTBs all have mac address blocks, with a
+0 value. The fixup simply overwrites with the correct value before the
+ethernet driver reads from it.
+
+> > I'm not sure there is a great interest in this? What are other folks
+> > working on production embedded stuff doing? I suppose that will be
+> > more clear as device tree is rolled out.
 > 
-> OOI why does the kernel side require an INTEL_IOMMU? I can see why the
-> hypervisor would need it but the guests (including dom0) can't
-> actually see the underlying IOMMU, can they?
+> For now, the architecturally simplest solution still seems to me to be
+> to write your own boot shim which customises the DT before booting the 
+> kernel. As discussed, this can continue to look like a simple ELF image
+> from the bootloader's point of view -- but I appreciate that it will
+> involve effort and some duplication of some low-level driver components.
 
-Well, the kernel requires the hypervisor to have it, but I guess
-thats not what this is referring to. The tools can decide that.
-I'll take it out.
+I admit, I am a bit conflicted. Viewing from the kernel perspective, I
+definitely think this kind of very low level extremely board specific
+stuff should not be in the kernel. That could be a maintenance
+nightmare. However, as an OEM, I need the smallest, simplest boot
+loader possible so I want to push this into the kernel to lighten my
+development load.
 
+> Your problem is unlikely to affect people outside the embedded space
+> too much, but it doesn't sound likely to be unique.
+
+Agreed..
+
+This thread has left the original topic, what do you think I should do
+with the linker patch?
+
+Jason
