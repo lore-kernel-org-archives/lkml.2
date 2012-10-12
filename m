@@ -1,69 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933752Ab2JLIta (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 04:49:30 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:56136 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933255Ab2JLIt1 (ORCPT
+	id S1757626Ab2JLIwf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 04:52:35 -0400
+Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:53023 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751238Ab2JLIwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 04:49:27 -0400
-From: Nicolas Palix <nicolas.palix@imag.fr>
-To: Julia Lawall <Julia.Lawall@lip6.fr>, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org, cocci@systeme.lip6.fr
-Cc: Nicolas Palix <nicolas.palix@imag.fr>
-Subject: [PATCH] Coccicheck: Improvement for online checking with 'make C=[12]'
-Date: Fri, 12 Oct 2012 10:48:50 +0200
-Message-Id: <1350031730-20822-1-git-send-email-nicolas.palix@imag.fr>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 12 Oct 2012 04:52:33 -0400
+To: "Andreas Mohr" <andi@lisas.de>
+Subject: [PATCH v2] mcs7830: Fix link state detection
+Cc: "Greg KH" <gregkh@linuxfoundation.org>, davem@davemloft.net,
+        Michael Leun <lkml20120218@newton.leun.net>, netdev@vger.kernel.org,
+        Michael Leun <lkml20120218@newton.leun.net>,
+        linux-kernel@vger.kernel.org
+Content-Disposition: inline
+From: Ondrej Zary <linux@rainbow-software.org>
+Date: Fri, 12 Oct 2012 10:51:41 +0200
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210121051.42359.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces an old workaround by a new spatch option,
-and adds support for online checking of external modules.
+The device had an undocumented "feature": it can provide a sequence of
+spurious link-down status data even if the link is up all the time.
+A sequence of 10 was seen so update the link state only after the device
+reports the same link state 20 times.
 
-The ignore_unknown_options is present in coccinelle
-since the version 0.2.3 of spatch. Most of the distribution
-(if not all) already provide a RC of the 1.0.0 version.
-
-This new option allows to preserve all gcc options, e.g. -I,
-while checking code. Other gcc-specific options are
-discarded by spatch.
-
-The support for external modules is also added.
-
-Signed-off-by: Nicolas Palix <nicolas.palix@imag.fr>
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Reported-by: Michael Leun <lkml20120218@newton.leun.net>
+Tested-by: Michael Leun <lkml20120218@newton.leun.net>
 ---
- scripts/coccicheck |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/net/usb/mcs7830.c |   30 +++++++++++++++++++++---------
+ 1 files changed, 21 insertions(+), 9 deletions(-)
 
-diff --git a/scripts/coccicheck b/scripts/coccicheck
-index 823e972..b06b3cd 100755
---- a/scripts/coccicheck
-+++ b/scripts/coccicheck
-@@ -5,14 +5,14 @@ SPATCH="`which ${SPATCH:=spatch}`"
- if [ "$C" = "1" -o "$C" = "2" ]; then
-     ONLINE=1
+diff --git a/drivers/net/usb/mcs7830.c b/drivers/net/usb/mcs7830.c
+index 03c2d8d..cc7e720 100644
+--- a/drivers/net/usb/mcs7830.c
++++ b/drivers/net/usb/mcs7830.c
+@@ -117,6 +117,7 @@ enum {
+ struct mcs7830_data {
+ 	u8 multi_filter[8];
+ 	u8 config;
++	u8 link_counter;
+ };
  
--# This requires Coccinelle >= 0.2.3
--#    FLAGS="-ignore_unknown_options -very_quiet"
--#    OPTIONS=$*
--
--# Workaround for Coccinelle < 0.2.3
--	FLAGS="-I $srctree/include -very_quiet"
--	shift $(( $# - 1 ))
--	OPTIONS=$1
-+    # The ignore_unknown_options flag requires Coccinelle >= 0.2.3
-+    FLAGS="-ignore_unknown_options -very_quiet"
-+    if [ "$KBUILD_EXTMOD" = "" ] ; then
-+        OPTIONS="-dir $srctree $*"
-+    else
-+        OPTIONS="-dir $KBUILD_EXTMOD -patch $srctree -I $srctree/include -I $KBUILD_EXTMOD/include $*"
-+    fi
-+
- else
-     ONLINE=0
-     FLAGS="-very_quiet"
--- 
-1.7.9.5
+ static const char driver_name[] = "MOSCHIP usb-ethernet driver";
+@@ -632,20 +633,31 @@ static int mcs7830_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ static void mcs7830_status(struct usbnet *dev, struct urb *urb)
+ {
+ 	u8 *buf = urb->transfer_buffer;
+-	bool link;
++	bool link, link_changed;
++	struct mcs7830_data *data = mcs7830_get_data(dev);
+ 
+ 	if (urb->actual_length < 16)
+ 		return;
+ 
+ 	link = !(buf[1] & 0x20);
+-	if (netif_carrier_ok(dev->net) != link) {
+-		if (link) {
+-			netif_carrier_on(dev->net);
+-			usbnet_defer_kevent(dev, EVENT_LINK_RESET);
+-		} else
+-			netif_carrier_off(dev->net);
+-		netdev_dbg(dev->net, "Link Status is: %d\n", link);
+-	}
++	link_changed = netif_carrier_ok(dev->net) != link;
++	if (link_changed) {
++		data->link_counter++;
++		/*
++		   track link state 20 times to guard against erroneous
++		   link state changes reported sometimes by the chip
++		 */
++		if (data->link_counter > 20) {
++			data->link_counter = 0;
++			if (link) {
++				netif_carrier_on(dev->net);
++				usbnet_defer_kevent(dev, EVENT_LINK_RESET);
++			} else
++				netif_carrier_off(dev->net);
++			netdev_dbg(dev->net, "Link Status is: %d\n", link);
++		}
++	} else
++		data->link_counter = 0;
+ }
+ 
+ static const struct driver_info moschip_info = {
 
+-- 
+Ondrej Zary
