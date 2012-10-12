@@ -1,151 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab2JLBVl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 21:21:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32498 "EHLO
+	id S1755218Ab2JLBVk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 21:21:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32425 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754494Ab2JLBV3 (ORCPT
+	with ESMTP id S1754517Ab2JLBV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Oct 2012 21:21:29 -0400
-X-Authority-Analysis: v=2.0 cv=a96yBDuF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=y04pA6cgBwwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=0XAreQrArBoA:10 a=VwQbUJbxAAAA:8 a=ZZu7y38RQH-epXu9WawA:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Z9t4_RJo5EEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=m2RLpkhMDcQA:10 a=VwQbUJbxAAAA:8 a=6iCpALQLQkUOqRxWQvIA:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121012012126.076221967@goodmis.org>
+Message-Id: <20121012012126.643701806@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Oct 2012 21:20:27 -0400
+Date: Thu, 11 Oct 2012 21:20:31 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 3/8] mm: slab: Fix potential deadlock
+Subject: [PATCH RT 7/8] stomp_machine: Use mutex_trylock when called from inactive cpu
 References: <20121012012024.056658930@goodmis.org>
-Content-Disposition: inline; filename=0003-mm-slab-Fix-potential-deadlock.patch
+Content-Disposition: inline; filename=0007-stomp_machine-Use-mutex_trylock-when-called-from-ina.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thomas Gleixner <tglx@linutronix.de>
 
- =============================================
-[ INFO: possible recursive locking detected ]
- 3.6.0-rt1+ #49 Not tainted
- ---------------------------------------------
- swapper/0/1 is trying to acquire lock:
- lock_slab_on+0x72/0x77
-
- but task is already holding lock:
- __local_lock_irq+0x24/0x77
-
- other info that might help us debug this:
-  Possible unsafe locking scenario:
-
-        CPU0
-        ----
-   lock(&per_cpu(slab_lock, __cpu).lock);
-   lock(&per_cpu(slab_lock, __cpu).lock);
-
-  *** DEADLOCK ***
-
-  May be due to missing lock nesting notation
-
- 2 locks held by swapper/0/1:
- kmem_cache_create+0x33/0x89
- __local_lock_irq+0x24/0x77
-
- stack backtrace:
- Pid: 1, comm: swapper/0 Not tainted 3.6.0-rt1+ #49
- Call Trace:
- __lock_acquire+0x9a4/0xdc4
- ? __local_lock_irq+0x24/0x77
- ? lock_slab_on+0x72/0x77
- lock_acquire+0xc4/0x108
- ? lock_slab_on+0x72/0x77
- ? unlock_slab_on+0x5b/0x5b
- rt_spin_lock+0x36/0x3d
- ? lock_slab_on+0x72/0x77
- ? migrate_disable+0x85/0x93
- lock_slab_on+0x72/0x77
- do_ccupdate_local+0x19/0x44
- slab_on_each_cpu+0x36/0x5a
- do_tune_cpucache+0xc1/0x305
- enable_cpucache+0x8c/0xb5
- setup_cpu_cache+0x28/0x182
- __kmem_cache_create+0x34b/0x380
- ? shmem_mount+0x1a/0x1a
- kmem_cache_create+0x4a/0x89
- ? shmem_mount+0x1a/0x1a
- shmem_init+0x3e/0xd4
- kernel_init+0x11c/0x214
- kernel_thread_helper+0x4/0x10
- ? retint_restore_args+0x13/0x13
- ? start_kernel+0x3bc/0x3bc
- ? gs_change+0x13/0x13
-
-It's not a missing annotation. It's simply wrong code and needs to be
-fixed. Instead of nesting the local and the remote cpu lock simply
-acquire only the remote cpu lock, which is sufficient protection for
-this procedure.
+If the stop machinery is called from inactive CPU we cannot use
+mutex_lock, because some other stomp machine invokation might be in
+progress and the mutex can be contended. We cannot schedule from this
+context, so trylock and loop.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: stable-rt@vger.kernel.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/locallock.h |    8 ++++++++
- mm/slab.c                 |   10 ++--------
- 2 files changed, 10 insertions(+), 8 deletions(-)
+ kernel/stop_machine.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/locallock.h b/include/linux/locallock.h
-index 8fbc393..0161fbb 100644
---- a/include/linux/locallock.h
-+++ b/include/linux/locallock.h
-@@ -96,6 +96,9 @@ static inline void __local_lock_irq(struct local_irq_lock *lv)
- #define local_lock_irq(lvar)						\
- 	do { __local_lock_irq(&get_local_var(lvar)); } while (0)
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index 561ba3a..e98c70b 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -158,7 +158,7 @@ static DEFINE_PER_CPU(struct cpu_stop_work, stop_cpus_work);
  
-+#define local_lock_irq_on(lvar, cpu)					\
-+	do { __local_lock_irq(&per_cpu(lvar, cpu)); } while (0)
-+
- static inline void __local_unlock_irq(struct local_irq_lock *lv)
+ static void queue_stop_cpus_work(const struct cpumask *cpumask,
+ 				 cpu_stop_fn_t fn, void *arg,
+-				 struct cpu_stop_done *done)
++				 struct cpu_stop_done *done, bool inactive)
  {
- 	LL_WARN(!lv->nestcnt);
-@@ -111,6 +114,11 @@ static inline void __local_unlock_irq(struct local_irq_lock *lv)
- 		put_local_var(lvar);					\
- 	} while (0)
+ 	struct cpu_stop_work *work;
+ 	unsigned int cpu;
+@@ -175,7 +175,12 @@ static void queue_stop_cpus_work(const struct cpumask *cpumask,
+ 	 * Make sure that all work is queued on all cpus before we
+ 	 * any of the cpus can execute it.
+ 	 */
+-	mutex_lock(&stopper_lock);
++	if (!inactive) {
++		mutex_lock(&stopper_lock);
++	} else {
++		while (!mutex_trylock(&stopper_lock))
++			cpu_relax();
++	}
+ 	for_each_cpu(cpu, cpumask)
+ 		cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu),
+ 				    &per_cpu(stop_cpus_work, cpu));
+@@ -188,7 +193,7 @@ static int __stop_cpus(const struct cpumask *cpumask,
+ 	struct cpu_stop_done done;
  
-+#define local_unlock_irq_on(lvar, cpu)					\
-+	do {								\
-+		__local_unlock_irq(&per_cpu(lvar, cpu));		\
-+	} while (0)
-+
- static inline int __local_lock_irqsave(struct local_irq_lock *lv)
- {
- 	if (lv->owner != current) {
-diff --git a/mm/slab.c b/mm/slab.c
-index 411c545..6a8fd1b 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -747,18 +747,12 @@ slab_on_each_cpu(void (*func)(void *arg, int this_cpu), void *arg)
- 
- static void lock_slab_on(unsigned int cpu)
- {
--	if (cpu == smp_processor_id())
--		local_lock_irq(slab_lock);
--	else
--		local_spin_lock_irq(slab_lock, &per_cpu(slab_lock, cpu).lock);
-+	local_lock_irq_on(slab_lock, cpu);
+ 	cpu_stop_init_done(&done, cpumask_weight(cpumask));
+-	queue_stop_cpus_work(cpumask, fn, arg, &done);
++	queue_stop_cpus_work(cpumask, fn, arg, &done, false);
+ 	wait_for_stop_done(&done);
+ 	return done.executed ? done.ret : -ENOENT;
  }
+@@ -601,7 +606,7 @@ int stop_machine_from_inactive_cpu(int (*fn)(void *), void *data,
+ 	set_state(&smdata, STOPMACHINE_PREPARE);
+ 	cpu_stop_init_done(&done, num_active_cpus());
+ 	queue_stop_cpus_work(cpu_active_mask, stop_machine_cpu_stop, &smdata,
+-			     &done);
++			     &done, true);
+ 	ret = stop_machine_cpu_stop(&smdata);
  
- static void unlock_slab_on(unsigned int cpu)
- {
--	if (cpu == smp_processor_id())
--		local_unlock_irq(slab_lock);
--	else
--		local_spin_unlock_irq(slab_lock, &per_cpu(slab_lock, cpu).lock);
-+	local_unlock_irq_on(slab_lock, cpu);
- }
- #endif
- 
+ 	/* Busy wait for completion. */
 -- 
 1.7.10.4
 
