@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758681Ab2JLTL4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 15:11:56 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:54144 "EHLO
+	id S1758781Ab2JLTN0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 15:13:26 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:45956 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756018Ab2JLTLu (ORCPT
+	with ESMTP id S1757103Ab2JLTLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 15:11:50 -0400
+	Fri, 12 Oct 2012 15:11:54 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: grant.likely@secretlab.ca, linus.walleij@linaro.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         w.sang@pengutronix.de, jbe@pengutronix.de, plagnioj@jcrosoft.com,
         highguy@gmail.com, broonie@opensource.wolfsonmicro.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RFC 3/6 v3] gpio: Add device tree support to block GPIO API
-Date: Fri, 12 Oct 2012 21:11:22 +0200
-Message-Id: <1350069085-13283-4-git-send-email-stigge@antcom.de>
+Subject: [PATCH RFC 6/6 v3] gpio-generic: Add block GPIO API
+Date: Fri, 12 Oct 2012 21:11:25 +0200
+Message-Id: <1350069085-13283-7-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1350069085-13283-1-git-send-email-stigge@antcom.de>
 References: <1350069085-13283-1-git-send-email-stigge@antcom.de>
@@ -24,149 +24,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree support to the block GPIO API.
+This patch adds block GPIO API support to the gpio-generic driver.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 
 ---
- Documentation/devicetree/bindings/gpio/gpio-block.txt |   36 +++++++
- drivers/gpio/Makefile                                 |    1 
- drivers/gpio/gpioblock-of.c                           |   84 ++++++++++++++++++
- 3 files changed, 121 insertions(+)
+ drivers/gpio/gpio-generic.c |   56 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 56 insertions(+)
 
---- /dev/null
-+++ linux-2.6/Documentation/devicetree/bindings/gpio/gpio-block.txt
-@@ -0,0 +1,36 @@
-+Block GPIO definition
-+=====================
-+
-+This binding specifies arbitrary blocks of gpios, combining gpios from one or
-+more GPIO controllers together, to form a word for r/w access.
-+
-+Required property:
-+- compatible: must be "linux,gpio-block"
-+
-+Required subnodes:
-+- the name will be the registered name of the block
-+- property "gpios" is a list of gpios for the respective block
-+
-+Example:
-+
-+        blockgpio {
-+                compatible = "linux,gpio-block";
-+
-+                block0 {
-+                        gpios = <&gpio 3 0 0>,
-+                                <&gpio 3 1 0>;
-+                };
-+                block1 {
-+                        gpios = <&gpio 4 1 0>,
-+                                <&gpio 4 3 0>,
-+                                <&gpio 4 2 0>,
-+                                <&gpio 4 4 0>,
-+                                <&gpio 4 5 0>,
-+                                <&gpio 4 6 0>,
-+                                <&gpio 4 7 0>,
-+                                <&gpio 4 8 0>,
-+                                <&gpio 4 9 0>,
-+                                <&gpio 4 10 0>,
-+                                <&gpio 4 19 0>;
-+                };
-+        };
---- linux-2.6.orig/drivers/gpio/Makefile
-+++ linux-2.6/drivers/gpio/Makefile
-@@ -4,6 +4,7 @@ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
+--- linux-2.6.orig/drivers/gpio/gpio-generic.c
++++ linux-2.6/drivers/gpio/gpio-generic.c
+@@ -122,6 +122,13 @@ static int bgpio_get(struct gpio_chip *g
+ 	return bgc->read_reg(bgc->reg_dat) & bgc->pin2mask(bgc, gpio);
+ }
  
- obj-$(CONFIG_GPIOLIB)		+= gpiolib.o devres.o
- obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
-+obj-$(CONFIG_OF_GPIO)		+= gpioblock-of.o
- 
- # Device drivers. Generally keep list sorted alphabetically
- obj-$(CONFIG_GPIO_GENERIC)	+= gpio-generic.o
---- /dev/null
-+++ linux-2.6/drivers/gpio/gpioblock-of.c
-@@ -0,0 +1,84 @@
-+/*
-+ * OF implementation for Block GPIO
-+ *
-+ * Copyright (C) 2012 Roland Stigge <stigge@antcom.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/gpio.h>
-+#include <linux/of.h>
-+#include <linux/of_gpio.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+
-+static int __devinit gpioblock_of_probe(struct platform_device *pdev)
++static unsigned bgpio_get_block(struct gpio_chip *gc, unsigned mask)
 +{
-+	struct device_node *block;
-+	unsigned *gpios;
-+	int ngpio;
-+	int ret;
-+	struct gpio_block *gb;
++	struct bgpio_chip *bgc = to_bgpio_chip(gc);
 +
-+	for_each_available_child_of_node(pdev->dev.of_node, block) {
-+		int i;
-+
-+		ngpio = of_gpio_count(block);
-+		gpios = kzalloc(ngpio * sizeof(*gpios), GFP_KERNEL);
-+		if (!gpios)
-+			return -ENOMEM;
-+		for (i = 0; i < ngpio; i++) {
-+			ret = of_get_gpio(block, i);
-+			if (ret < 0)
-+				return ret; /* expect -EPROBE_DEFER */
-+			gpios[i] = ret;
-+		}
-+		gb = gpio_block_create(gpios, ngpio, block->name);
-+		if (IS_ERR(gb)) {
-+			dev_err(&pdev->dev,
-+				"Error creating GPIO block from device tree\n");
-+			return PTR_ERR(gb);
-+		}
-+		ret = gpio_block_register(gb);
-+		if (ret < 0) {
-+			gpio_block_free(gb);
-+			return ret;
-+		}
-+		kfree(gpios);
-+		dev_info(&pdev->dev, "Registered gpio block %s: %d gpios\n",
-+			 block->name, ngpio);
-+	}
-+	return 0;
++	return bgc->read_reg(bgc->reg_dat) & mask;
 +}
 +
-+#ifdef CONFIG_OF
-+static struct of_device_id gpioblock_of_match[] __devinitdata = {
-+	{ .compatible = "linux,gpio-block", },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, gpioblock_of_match);
-+#endif
+ static void bgpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
+ {
+ 	struct bgpio_chip *bgc = to_bgpio_chip(gc);
+@@ -170,6 +177,51 @@ static void bgpio_set_set(struct gpio_ch
+ 	spin_unlock_irqrestore(&bgc->lock, flags);
+ }
+ 
++static void bgpio_set_block(struct gpio_chip *gc, unsigned mask,
++			    unsigned values)
++{
++	struct bgpio_chip *bgc = to_bgpio_chip(gc);
++	unsigned long flags;
 +
-+static struct platform_driver gpioblock_of_driver = {
-+	.driver	= {
-+		.name = "gpio-block",
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(gpioblock_of_match),
++	spin_lock_irqsave(&bgc->lock, flags);
 +
-+	},
-+	.probe	= gpioblock_of_probe,
-+};
++	bgc->data &= ~mask;
++	bgc->data |= values & mask;
 +
-+module_platform_driver(gpioblock_of_driver);
++	bgc->write_reg(bgc->reg_dat, bgc->data);
 +
-+MODULE_DESCRIPTION("GPIO Block driver");
-+MODULE_AUTHOR("Roland Stigge <stigge@antcom.de>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:gpioblock-of");
++	spin_unlock_irqrestore(&bgc->lock, flags);
++}
++
++static void bgpio_set_with_clear_block(struct gpio_chip *gc, unsigned mask,
++				       unsigned values)
++{
++	struct bgpio_chip *bgc = to_bgpio_chip(gc);
++	unsigned set_bits = values & mask;
++	unsigned clr_bits = ~values & mask;
++
++	if (set_bits)
++		bgc->write_reg(bgc->reg_set, set_bits);
++	if (clr_bits)
++		bgc->write_reg(bgc->reg_set, clr_bits);
++}
++
++static void bgpio_set_set_block(struct gpio_chip *gc, unsigned mask,
++				unsigned values)
++{
++	struct bgpio_chip *bgc = to_bgpio_chip(gc);
++	unsigned long flags;
++
++	spin_lock_irqsave(&bgc->lock, flags);
++
++	bgc->data &= ~mask;
++	bgc->data |= values & mask;
++
++	bgc->write_reg(bgc->reg_set, bgc->data);
++
++	spin_unlock_irqrestore(&bgc->lock, flags);
++}
++
+ static int bgpio_simple_dir_in(struct gpio_chip *gc, unsigned int gpio)
+ {
+ 	return 0;
+@@ -317,14 +369,18 @@ static int bgpio_setup_io(struct bgpio_c
+ 		bgc->reg_set = set;
+ 		bgc->reg_clr = clr;
+ 		bgc->gc.set = bgpio_set_with_clear;
++		bgc->gc.set_block = bgpio_set_with_clear_block;
+ 	} else if (set && !clr) {
+ 		bgc->reg_set = set;
+ 		bgc->gc.set = bgpio_set_set;
++		bgc->gc.set_block = bgpio_set_set_block;
+ 	} else {
+ 		bgc->gc.set = bgpio_set;
++		bgc->gc.set_block = bgpio_set_block;
+ 	}
+ 
+ 	bgc->gc.get = bgpio_get;
++	bgc->gc.get_block = bgpio_get_block;
+ 
+ 	return 0;
+ }
