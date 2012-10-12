@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759568Ab2JLBzV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 21:55:21 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:32783 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759550Ab2JLBzU (ORCPT
+	id S1759573Ab2JLB47 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 21:56:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21510 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759550Ab2JLB45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 21:55:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <507710EA.1070900@shealevy.com>
-References: <1340285798-8322-1-git-send-email-mchehab@redhat.com>
-	<4FE37194.30407@redhat.com>
-	<4FE8B8BC.3020702@iki.fi>
-	<4FE8C4C4.1050901@redhat.com>
-	<4FE8CED5.104@redhat.com>
-	<20120625223306.GA2764@kroah.com>
-	<4FE9169D.5020300@redhat.com>
-	<CA+55aFwi2F1PYv39FxTKz1zu2tFqVDSAAxeSRW1BVK+==5H-6g@mail.gmail.com>
-	<507710EA.1070900@shealevy.com>
-Date: Fri, 12 Oct 2012 09:55:18 +0800
-Message-ID: <CACVXFVN9U1v160guSrn=Gr+SyKzANCpzBFfxu20QiNHuZ5jTng@mail.gmail.com>
-Subject: Re: udev breakages - was: Re: Need of an ".async_probe()" type of
- callback at driver's core - Was: Re: [PATCH] [media] drxk: change it to use request_firmware_nowait()
-From: Ming Lei <tom.leiming@gmail.com>
-To: Shea Levy <shea@shealevy.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ivan Kalvachev <ikalvachev@gmail.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 11 Oct 2012 21:56:57 -0400
+X-Authority-Analysis: v=2.0 cv=a96yBDuF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=J7ERXNQwqmwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=P3xNwfJ5JkoA:10 a=1XWaLZrsAAAA:8 a=6V5PVwrkk0rYTD7v0FkA:9 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=1f7l125domMVR3D3:21 a=t_0lioJAi1htS1vH:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1350007016.24256.82.camel@gandalf.local.home>
+Subject: Re: [PATCH 1/2] tracing: trivial cleanup
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Justin Teravest <teravest@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 11 Oct 2012 21:56:56 -0400
+In-Reply-To: <1339112785-21806-1-git-send-email-vnagarnaik@google.com>
+References: <1339112785-21806-1-git-send-email-vnagarnaik@google.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 2:33 AM, Shea Levy <shea@shealevy.com> wrote:
+Sorry, I know this is late, but it was pushed down in my todo list
+(never off, but something I probably wouldn't have seen for a few more
+months).
 
->
-> FWIW (and probably that's not much), the NixOS[0] distro doesn't currently
-> use /lib/firmware. There is no /lib directory by default on NixOS, instead
-> we create a new symlink tree representing the current system on each system
-> change and symlink /run/current-system to that tree. We currently build
-> udev/systemd with the --with-firmware-path=/run/current-system/firmware
-> configuration-time option, but we also patch module-init-tools and kmod to
-> respect the $MODULE_DIR env var and may do the same for firmware in the
-> future. The way we do things has significant advantages (or at least we like
-> to think so), but we already have exceptions for /bin/sh and /usr/bin/env,
-> so I suspect we'll probably add in /lib/firmware if this functionality moves
-> into the kernel.
+On Thu, 2012-06-07 at 16:46 -0700, Vaibhav Nagarnaik wrote:
+> From: David Sharp <dhsharp@google.com>
 
-The kernel parameter for customizing firmware search path will be added, so
-you use can pass your search path from kernel command too.
+If this is from David it needs his SOB.
 
-Thanks,
--- 
-Ming Lei
+-- Steve
+
+> 
+> Remove ftrace_format_syscall() declaration; it is neither defined nor
+> used. Also update a comment and formatting.
+> 
+> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+> ---
+>  include/trace/syscall.h    |    2 --
+>  kernel/trace/ring_buffer.c |    6 +++---
+>  2 files changed, 3 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/trace/syscall.h b/include/trace/syscall.h
+> index 31966a4..0c95796 100644
+> --- a/include/trace/syscall.h
+> +++ b/include/trace/syscall.h
+> @@ -39,8 +39,6 @@ extern int reg_event_syscall_enter(struct ftrace_event_call *call);
+>  extern void unreg_event_syscall_enter(struct ftrace_event_call *call);
+>  extern int reg_event_syscall_exit(struct ftrace_event_call *call);
+>  extern void unreg_event_syscall_exit(struct ftrace_event_call *call);
+> -extern int
+> -ftrace_format_syscall(struct ftrace_event_call *call, struct trace_seq *s);
+>  enum print_line_t print_syscall_enter(struct trace_iterator *iter, int flags,
+>  				      struct trace_event *event);
+>  enum print_line_t print_syscall_exit(struct trace_iterator *iter, int flags,
+> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+> index 1d0f6a8..96c2dd1 100644
+> --- a/kernel/trace/ring_buffer.c
+> +++ b/kernel/trace/ring_buffer.c
+> @@ -1816,7 +1816,7 @@ rb_add_time_stamp(struct ring_buffer_event *event, u64 delta)
+>  }
+>  
+>  /**
+> - * ring_buffer_update_event - update event type and data
+> + * rb_update_event - update event type and data
+>   * @event: the even to update
+>   * @type: the type of event
+>   * @length: the size of the event field in the ring buffer
+> @@ -2716,8 +2716,8 @@ EXPORT_SYMBOL_GPL(ring_buffer_discard_commit);
+>   * and not the length of the event which would hold the header.
+>   */
+>  int ring_buffer_write(struct ring_buffer *buffer,
+> -			unsigned long length,
+> -			void *data)
+> +		      unsigned long length,
+> +		      void *data)
+>  {
+>  	struct ring_buffer_per_cpu *cpu_buffer;
+>  	struct ring_buffer_event *event;
+
+
