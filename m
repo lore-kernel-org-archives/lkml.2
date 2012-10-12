@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422753Ab2JLMfx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 08:35:53 -0400
+	id S933927Ab2JLMgT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 08:36:19 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:2484 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933542Ab2JLMfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 08:35:32 -0400
+	id S1756031Ab2JLMfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 08:35:31 -0400
 X-IronPort-AV: E=Sophos;i="4.80,577,1344182400"; 
-   d="scan'208";a="5990353"
+   d="scan'208";a="5990351"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: bhelgaas@google.com, lenb@kernel.org, yinghai@kernel.org,
         jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
         isimatu.yasuaki@jp.fujitsu.com, linux-acpi@vger.kernel.org,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Subject: [PATCH 3/3 v2] Check exit status of acpi_install_notify_handler() in find_root_bridges().
-Date: Fri, 12 Oct 2012 20:34:21 +0800
-Message-Id: <1350045261-7344-4-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH 0/3 v2] Find pci root bridges by comparing HID from acpi_device_info, not acpi_device.
+Date: Fri, 12 Oct 2012 20:34:18 +0800
+Message-Id: <1350045261-7344-1-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1350045261-7344-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1350045261-7344-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2012/10/12 20:35:16,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/12 20:35:17,
-	Serialize complete at 2012/10/12 20:35:17
+ 2012/10/12 20:35:16,
+	Serialize complete at 2012/10/12 20:35:16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acpi_install_notify_handler() could fail. So check the exit status
-and give a better debug info.
+Hi Yinghai,
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
+I found a little problem in your following patches. 
+[PATCH 00/40] PCI, ACPI, x86: pci root bus hotplug support.
+
+In acpi_is_root_bridge(), it gets device's HID from acpi_device struct.
+If the device is not added when the system boots, there will be no
+acpi_device for it. And as a result, acpi_is_root_bridge() will fail.
+But it doesn't mean that the device is not a root bridge.
+
+In this case, the not-added root bridges have no handle_hotplug_event_root()
+callback registerred. And when we hot add it later, it will do nothing.
+
+This patch set changes the acpi_is_root_bridge()'s behavior. When we fail
+to get HID from acpi_device, we will get HID from acpi_device_info by
+acpi_get_object_info(), which gets the HID from ACPI namespace directly.
+
+So no matter the device is present or not, we will always find out if it
+is a pci root bridge, and register a handle_hotplug_event_root() callback
+for it.
+
+These patches are based on Lu Yinghai's for-pci-root-bus-hotplug branch.
+
+Tang Chen (3):
+  Introduce a new acpi to determine HID match.
+  Do not use acpi_device to find pci root bridge in _init code.
+  Check exit status of acpi_install_notify_handler() in
+    find_root_bridges().
+
+ drivers/acpi/pci_root.c    |   19 +++++++++++--------
  drivers/acpi/pci_root_hp.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/acpi/pci_root_hp.c b/drivers/acpi/pci_root_hp.c
-index 1f60533..4c18573 100644
---- a/drivers/acpi/pci_root_hp.c
-+++ b/drivers/acpi/pci_root_hp.c
-@@ -242,6 +242,7 @@ static void handle_hotplug_event_root(acpi_handle handle, u32 type,
- static acpi_status __init
- find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
- {
-+	acpi_status status;
- 	char objname[64];
- 	struct acpi_buffer buffer = { .length = sizeof(objname),
- 				      .pointer = objname };
-@@ -254,9 +255,14 @@ find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
- 
- 	acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
- 
--	acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
--				handle_hotplug_event_root, NULL);
--	printk(KERN_DEBUG "acpi root: %s notify handler installed\n", objname);
-+	status = acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
-+					handle_hotplug_event_root, NULL);
-+	if (ACPI_FAILURE(status))
-+		printk(KERN_DEBUG "acpi root: %s notify handler not installed\n"
-+				  "acpi root: exit status: %u\n",
-+				  objname, (unsigned int)status);
-+	else
-+		printk(KERN_DEBUG "acpi root: %s notify handler installed\n", objname);
- 
- 	add_acpi_root_bridge(handle);
- 
--- 
-1.7.1
+ drivers/acpi/scan.c        |   24 ++++++++++++++++++++++++
+ include/acpi/acpi_bus.h    |    2 ++
+ 4 files changed, 46 insertions(+), 11 deletions(-)
 
