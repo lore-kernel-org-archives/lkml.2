@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933905Ab2JLKPL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 06:15:11 -0400
+	id S1422679Ab2JLKPk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 06:15:40 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:39483 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933824Ab2JLKPH (ORCPT
+	with ESMTP id S933855Ab2JLKPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 06:15:07 -0400
+	Fri, 12 Oct 2012 06:15:04 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Pekka Enberg <penberg@kernel.org>
 Cc: Mel Gorman <mgorman@suse.de>,
@@ -17,97 +17,138 @@ Cc: Mel Gorman <mgorman@suse.de>,
         John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: =?UTF-8?q?=5BPATCH=203/3=5D=20mm=3A=20vmevent=3A=20Sum=20per=20cpu=20pagesets=20stats=20asynchronously?=
-Date: Fri, 12 Oct 2012 03:11:59 -0700
-Message-Id: <1350036719-29031-3-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 2/3] mm: vmevent: Use value2 for setting vmstat thresholds
+Date: Fri, 12 Oct 2012 03:11:58 -0700
+Message-Id: <1350036719-29031-2-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <20121012101115.GA11825@lizard>
 References: <20121012101115.GA11825@lizard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently vmevent relies on the global page state stats, which is updated
-once per stat_interval (1 second) or when the per CPU pageset stats hit
-their threshold.
-
-We can sum the vm_stat_diff values asynchronously: they will be possibly a
-bit inconsistent, but overall this should improve accuracy, since with
-previous scheme we would always use worst-case scenario (i.e. we'd wait
-for threshold to hit or 1 second delay), but now we use somewhat average
-accuracy.
-
-The idea is very similar to zone_page_state_snapshot().
-
-Note that this might cause more pressure on CPU caches, so we only use
-this when userland explicitly asks for accuracy, plus since we gather
-stats outside of any fastpath, this should be OK in general.
+Attributes that use vmstat can now use attr->value2 to specify an optional
+accuracy. Based on the provided value, we will setup appropriate vmstat
+thresholds.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- mm/vmevent.c | 43 ++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 42 insertions(+), 1 deletion(-)
+ include/linux/vmevent.h |  5 +++++
+ mm/vmevent.c            | 56 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 61 insertions(+)
 
+diff --git a/include/linux/vmevent.h b/include/linux/vmevent.h
+index b1c4016..b8c1394 100644
+--- a/include/linux/vmevent.h
++++ b/include/linux/vmevent.h
+@@ -46,6 +46,11 @@ struct vmevent_attr {
+ 	__u64			value;
+ 
+ 	/*
++	 * Some attributes accept two configuration values.
++	 */
++	__u64			value2;
++
++	/*
+ 	 * Type of profiled attribute from VMEVENT_ATTR_XXX
+ 	 */
+ 	__u32			type;
 diff --git a/mm/vmevent.c b/mm/vmevent.c
-index 8113bda..a059bed 100644
+index 8c0fbe6..8113bda 100644
 --- a/mm/vmevent.c
 +++ b/mm/vmevent.c
-@@ -52,10 +52,51 @@ static u64 vmevent_attr_swap_pages(struct vmevent_watch *watch,
- #endif
+@@ -28,8 +28,13 @@ struct vmevent_watch {
+ 
+ 	/* poll */
+ 	wait_queue_head_t		waitq;
++
++	struct list_head node;
+ };
+ 
++static LIST_HEAD(vmevent_watchers);
++static DEFINE_SPINLOCK(vmevent_watchers_lock);
++
+ typedef u64 (*vmevent_attr_sample_fn)(struct vmevent_watch *watch,
+ 				      struct vmevent_attr *attr);
+ 
+@@ -259,12 +264,57 @@ out:
+ 	return ret;
  }
  
-+/*
-+ * In the worst case, this is inaccurate by
-+ *
-+ *	±(pcp->stat_threshold * zones * online_cpus)
-+ *
-+ * For say 4-core 2GB setup that would be ~350 KB worst case inaccuracy,
-+ * but to reach this inaccuracy, CPUs would all need have to keep
-+ * allocating (or freeing) pages from all the zones at the same time, and
-+ * all their current vm_stat_diff values would need to be pretty close to
-+ * pcp->stat_threshold.
-+ *
-+ * The larger the system, the more inaccurare vm_stat is (but at the same
-+ * time, on large systems we care much less about small chunks of memory).
-+ * When a more predicted behaviour is needed, userland can set a desired
-+ * accuracy via attr->value2.
-+ */
-+static ulong vmevent_global_page_state(struct vmevent_attr *attr,
-+				       enum zone_stat_item si)
-+{
-+	ulong global = global_page_state(si);
 +#ifdef CONFIG_SMP
++
++static void vmevent_set_thresholds(void)
++{
++	struct vmevent_watch *w;
 +	struct zone *zone;
++	u64 thres = ULLONG_MAX;
 +
-+	if (!attr->value2)
-+		return global;
++	spin_lock(&vmevent_watchers_lock);
 +
-+	for_each_populated_zone(zone) {
-+		uint cpu;
++	list_for_each_entry(w, &vmevent_watchers, node) {
++		int i;
 +
-+		for_each_online_cpu(cpu) {
-+			struct per_cpu_pageset *pcp;
++		for (i = 0; i < w->config.counter; i++) {
++			struct vmevent_attr *attr = &w->config.attrs[i];
 +
-+			pcp = per_cpu_ptr(zone->pageset, cpu);
-+
-+			global += pcp->vm_stat_diff[si];
++			if (attr->type != VMEVENT_ATTR_NR_FREE_PAGES)
++				continue;
++			if (!attr->value2)
++				continue;
++			thres = min(thres, attr->value2);
 +		}
 +	}
-+#endif
-+	return global;
++
++	if (thres == ULLONG_MAX)
++		thres = 0;
++
++	thres = (thres + PAGE_SIZE - 1) / PAGE_SIZE;
++
++	for_each_populated_zone(zone)
++		set_zone_stat_thresholds(zone, NULL, thres);
++
++	spin_unlock(&vmevent_watchers_lock);
 +}
 +
- static u64 vmevent_attr_free_pages(struct vmevent_watch *watch,
- 				   struct vmevent_attr *attr)
++#else
++static inline void vmevent_set_thresholds(void) {}
++#endif /* CONFIG_SMP */
++
+ static int vmevent_release(struct inode *inode, struct file *file)
  {
--	return global_page_state(NR_FREE_PAGES);
-+	return vmevent_global_page_state(attr, NR_FREE_PAGES);
+ 	struct vmevent_watch *watch = file->private_data;
+ 
+ 	cancel_delayed_work_sync(&watch->work);
+ 
++	spin_lock(&vmevent_watchers_lock);
++	list_del(&watch->node);
++	spin_unlock(&vmevent_watchers_lock);
++
++	vmevent_set_thresholds();
++
+ 	kfree(watch);
+ 
+ 	return 0;
+@@ -328,6 +378,10 @@ static int vmevent_setup_watch(struct vmevent_watch *watch)
+ 	watch->sample_attrs	= attrs;
+ 	watch->nr_attrs		= nr;
+ 
++	spin_lock(&vmevent_watchers_lock);
++	list_add(&watch->node, &vmevent_watchers);
++	spin_unlock(&vmevent_watchers_lock);
++
+ 	return 0;
  }
  
- static u64 vmevent_attr_avail_pages(struct vmevent_watch *watch,
+@@ -363,6 +417,8 @@ SYSCALL_DEFINE1(vmevent_fd,
+ 	if (err)
+ 		goto err_free;
+ 
++	vmevent_set_thresholds();
++
+ 	fd = get_unused_fd_flags(O_RDONLY);
+ 	if (fd < 0) {
+ 		err = fd;
 -- 
 1.7.12.1
 
