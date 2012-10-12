@@ -1,67 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760030Ab2JLSER (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 14:04:17 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42283 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759921Ab2JLSEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 14:04:15 -0400
-Date: Fri, 12 Oct 2012 20:04:11 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Ma, Ling" <ling.ma@intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iant@google.com" <iant@google.com>
-Subject: Re: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging
- instruction sequence and saving register
-Message-ID: <20121012180411.GA26245@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Ma, Ling" <ling.ma@intel.com>,
-	Konrad Rzeszutek Wilk <konrad@kernel.org>,
-	"mingo@elte.hu" <mingo@elte.hu>, "hpa@zytor.com" <hpa@zytor.com>,
-	"tglx@linutronix.de" <tglx@linutronix.de>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"iant@google.com" <iant@google.com>
-References: <1349958548-1868-1-git-send-email-ling.ma@intel.com>
- <20121011143527.GA2408@localhost.localdomain>
- <B2310DA9850C8743AA7AA0055500E90F0FD709F9@SHSMSX102.ccr.corp.intel.com>
- <20121012061813.GC9881@liondog.tnic>
- <B2310DA9850C8743AA7AA0055500E90F0FD70AC5@SHSMSX102.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <B2310DA9850C8743AA7AA0055500E90F0FD70AC5@SHSMSX102.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1946036Ab2JLSFT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 14:05:19 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:50108 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753896Ab2JLSFR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 14:05:17 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: jonathan@jonmasters.org, eric.dumazet@gmail.com,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: [PATCH v2] net: calxedaxgmac: rework transmit ring handling
+Date: Fri, 12 Oct 2012 13:04:59 -0500
+Message-Id: <1350065099-32649-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1350054908-30646-6-git-send-email-robherring2@gmail.com>
+References: <1350054908-30646-6-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 09:07:43AM +0000, Ma, Ling wrote:
-> > > > So is that also true for AMD CPUs?
-> > > Although Bulldozer put 32byte instruction into decoupled 16byte entry
-> > > buffers, it still decode 4 instructions per cycle, so 4 instructions
-> > > will be fed into execution unit and
-> > > 2 loads ,1 write will be issued per cycle.
-> > 
-> > I'd be very interested with what benchmarks are you seeing that perf
-> > improvement on Atom and who knows, maybe I could find time to run them
-> > on Bulldozer and see how your patch behaves there :-).M
-> I use another benchmark from gcc, there are many code, and extract
-> one simple benchmark, you may use it to test (cc -o copy_page
-> copy_page.c), my initial result shows new copy page version is still
-> better on bulldozer machine, because the machine is first release,
-> please verify result. And CC to Ian.
+From: Rob Herring <rob.herring@calxeda.com>
 
-Right, so benchmark shows around 20% speedup on Bulldozer but this is a
-microbenchmark and before pursue this further, we need to verify whether
-this brings any palpable speedup with a real benchmark, I don't know,
-kernbench, netbench, whatever. Even something as boring as kernel build.
-And probably check for perf regressions on the rest of the uarches.
+Only generate tx interrupts on every ring size / 4 descriptors. Move the
+netif_stop_queue call to the end of the xmit function rather than
+checking at the beginning.
 
-Thanks.
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+---
+v2:
+- Add missed enabling of the descriptor tx interrupt
 
+ drivers/net/ethernet/calxeda/xgmac.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/net/ethernet/calxeda/xgmac.c b/drivers/net/ethernet/calxeda/xgmac.c
+index 4a1a06a..38eb1b2 100644
+--- a/drivers/net/ethernet/calxeda/xgmac.c
++++ b/drivers/net/ethernet/calxeda/xgmac.c
+@@ -211,7 +211,7 @@
+ #define DMA_INTR_ENA_TIE	0x00000001	/* Transmit Interrupt */
+ 
+ #define DMA_INTR_NORMAL		(DMA_INTR_ENA_NIE | DMA_INTR_ENA_RIE | \
+-				 DMA_INTR_ENA_TUE)
++				 DMA_INTR_ENA_TUE | DMA_INTR_ENA_TIE)
+ 
+ #define DMA_INTR_ABNORMAL	(DMA_INTR_ENA_AIE | DMA_INTR_ENA_FBE | \
+ 				 DMA_INTR_ENA_RWE | DMA_INTR_ENA_RSE | \
+@@ -374,6 +374,7 @@ struct xgmac_priv {
+ 	struct sk_buff **tx_skbuff;
+ 	unsigned int tx_head;
+ 	unsigned int tx_tail;
++	int tx_irq_cnt;
+ 
+ 	void __iomem *base;
+ 	unsigned int dma_buf_sz;
+@@ -886,7 +887,7 @@ static void xgmac_tx_complete(struct xgmac_priv *priv)
+ 	}
+ 
+ 	if (dma_ring_space(priv->tx_head, priv->tx_tail, DMA_TX_RING_SZ) >
+-	    TX_THRESH)
++	    MAX_SKB_FRAGS)
+ 		netif_wake_queue(priv->dev);
+ }
+ 
+@@ -1057,19 +1058,15 @@ static netdev_tx_t xgmac_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	struct xgmac_priv *priv = netdev_priv(dev);
+ 	unsigned int entry;
+ 	int i;
++	u32 irq_flag;
+ 	int nfrags = skb_shinfo(skb)->nr_frags;
+ 	struct xgmac_dma_desc *desc, *first;
+ 	unsigned int desc_flags;
+ 	unsigned int len;
+ 	dma_addr_t paddr;
+ 
+-	if (dma_ring_space(priv->tx_head, priv->tx_tail, DMA_TX_RING_SZ) <
+-	    (nfrags + 1)) {
+-		writel(DMA_INTR_DEFAULT_MASK | DMA_INTR_ENA_TIE,
+-			priv->base + XGMAC_DMA_INTR_ENA);
+-		netif_stop_queue(dev);
+-		return NETDEV_TX_BUSY;
+-	}
++	priv->tx_irq_cnt = (priv->tx_irq_cnt + 1) & (DMA_TX_RING_SZ/4 - 1);
++	irq_flag = priv->tx_irq_cnt ? 0 : TXDESC_INTERRUPT;
+ 
+ 	desc_flags = (skb->ip_summed == CHECKSUM_PARTIAL) ?
+ 		TXDESC_CSUM_ALL : 0;
+@@ -1110,9 +1107,9 @@ static netdev_tx_t xgmac_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	/* Interrupt on completition only for the latest segment */
+ 	if (desc != first)
+ 		desc_set_tx_owner(desc, desc_flags |
+-			TXDESC_LAST_SEG | TXDESC_INTERRUPT);
++			TXDESC_LAST_SEG | irq_flag);
+ 	else
+-		desc_flags |= TXDESC_LAST_SEG | TXDESC_INTERRUPT;
++		desc_flags |= TXDESC_LAST_SEG | irq_flag;
+ 
+ 	/* Set owner on first desc last to avoid race condition */
+ 	wmb();
+@@ -1121,6 +1118,9 @@ static netdev_tx_t xgmac_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	priv->tx_head = dma_ring_incr(entry, DMA_TX_RING_SZ);
+ 
+ 	writel(1, priv->base + XGMAC_DMA_TX_POLL);
++	if (dma_ring_space(priv->tx_head, priv->tx_tail, DMA_TX_RING_SZ) <
++	    MAX_SKB_FRAGS)
++		netif_stop_queue(dev);
+ 
+ 	return NETDEV_TX_OK;
+ }
+@@ -1397,7 +1397,7 @@ static irqreturn_t xgmac_interrupt(int irq, void *dev_id)
+ 	}
+ 
+ 	/* TX/RX NORMAL interrupts */
+-	if (intr_status & (DMA_STATUS_RI | DMA_STATUS_TU)) {
++	if (intr_status & (DMA_STATUS_RI | DMA_STATUS_TU | DMA_STATUS_TI)) {
+ 		writel_relaxed(DMA_INTR_ABNORMAL, priv->base + XGMAC_DMA_INTR_ENA);
+ 		napi_schedule(&priv->napi);
+ 	}
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
+
