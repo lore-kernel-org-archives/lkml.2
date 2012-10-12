@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759546Ab2JLL4c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 07:56:32 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:56778 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758980Ab2JLL4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 07:56:31 -0400
-Date: Fri, 12 Oct 2012 13:56:28 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [RFC PATCH 3/3] Convert mce_disabled
-Message-ID: <20121012115628.GA14991@aftab.osrc.amd.com>
-References: <1349878801-15956-1-git-send-email-bp@amd64.org>
- <1349878801-15956-4-git-send-email-bp@amd64.org>
- <5077F600.9090605@linux.vnet.ibm.com>
+	id S1759564Ab2JLMHG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 08:07:06 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61192 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759066Ab2JLMHF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 08:07:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5077F600.9090605@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <m2391ktxjj.fsf@firstfloor.org>
+References: <CALF0-+XGn5=QSE0bpa4RTag9CAJ63MKz1kvaYbpw34qUhViaZA@mail.gmail.com>
+	<m27gqwtyu9.fsf@firstfloor.org>
+	<alpine.DEB.2.00.1210111558290.6409@chino.kir.corp.google.com>
+	<m2391ktxjj.fsf@firstfloor.org>
+Date: Fri, 12 Oct 2012 09:07:04 -0300
+Message-ID: <CALF0-+WLZWtwYY4taYW9D7j-abCJeY90JzcTQ2hGK64ftWsdxw@mail.gmail.com>
+Subject: Re: [Q] Default SLAB allocator
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Tim Bird <tim.bird@am.sony.com>,
+        celinux-dev@lists.celinuxforum.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 04:20:40PM +0530, Naveen N. Rao wrote:
-> Hi Boris, Thanks for getting to this before I could!
+Hi,
 
-Ah ok, I thought you wasn't interested in doing this anymore :).
+On Thu, Oct 11, 2012 at 8:10 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> David Rientjes <rientjes@google.com> writes:
+>
+>> On Thu, 11 Oct 2012, Andi Kleen wrote:
+>>
+>>> > While I've always thought SLUB was the default and recommended allocator,
+>>> > I'm surprise to find that it's not always the case:
+>>>
+>>> iirc the main performance reasons for slab over slub have mostly
+>>> disappeared, so in theory slab could be finally deprecated now.
+>>>
+>>
+>> SLUB is a non-starter for us and incurs a >10% performance degradation in
+>> netperf TCP_RR.
+>
 
-> I had a look but I still feel boolean is a better way to go. With
-> bool, we can get rid of the #defines above and more importantly, the
-> aux field in dev_ext_attribute since that is used in other places
-> too. Further, I suspect we'll still end up using the same or less
-> memory since we don't have that many boolean members within the MCA
-> code.
+Where are you seeing that?
 
-My main intention was to have all those in a single struct and use a
-single store_bit/show_bit function.
+Notice that many defconfigs are for embedded devices,
+and many of them say "use SLAB"; I wonder if that's right.
 
-Sure, you can do bools but this'll still be single variables spread
-around in mce.c instead of one single struct mca_config which nicely
-encapsulates all the configuration we do in the MCA code.
+Is there any intention to replace SLAB by SLUB?
+In that case it could make sense to change defconfigs, although
+it wouldn't be based on any actual tests.
 
-Or, you can modify the mca_config I have there and use bools and pass a
-pointer to each actual bool member in each DEVICE_BIT_ATTR invocation
-(and rename it to DEVICE_BOOL_ATTR). Yeah, that could work, unless I'm
-missing something else, of course.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+    Ezequiel
