@@ -1,170 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756297Ab2JLHAU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 03:00:20 -0400
-Received: from anubis.se.axis.com ([195.60.68.12]:60731 "EHLO
-	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837Ab2JLHAQ (ORCPT
+	id S1756486Ab2JLHS6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 03:18:58 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59339 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755917Ab2JLHS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 03:00:16 -0400
-Date: Fri, 12 Oct 2012 09:00:13 +0200
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: David Howells <dhowells@redhat.com>
-Cc: starvik@axis.com, linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Disintegrate UAPI for cris [ver #2]
-Message-ID: <20121012070012.GF24942@axis.com>
-References: <21122.1349774122@warthog.procyon.org.uk>
+	Fri, 12 Oct 2012 03:18:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <21122.1349774122@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CADCVGbRTYecZrv+pH3QUHEQsAkar8XNaKhDLWm-K72f9hUCVOg@mail.gmail.com>
+References: <CADCVGbRTYecZrv+pH3QUHEQsAkar8XNaKhDLWm-K72f9hUCVOg@mail.gmail.com>
+Date: Fri, 12 Oct 2012 03:18:56 -0400
+Message-ID: <CAHdPZaNj+Ji+cgt+3myE8vE_dX9rAR_jpGH=jjmbw0sLdcr2aw@mail.gmail.com>
+Subject: Re: Using ps to display process information never exit, and can't be killed
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Cyberman Wu <cypher.w@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 09, 2012 at 10:15:22AM +0100, David Howells wrote:
-> Can you merge the following branch into the cris tree please.
-> 
-> This is to complete part of the UAPI disintegration for which the preparatory
-> patches were pulled recently.
-> 
-> Now that the fixups and the asm-generic chunk have been merged, I've
-> regenerated the patches to get rid of those dependencies and to take account of
-> any changes made so far in the merge window.
+On Fri, Oct 12, 2012 at 1:56 AM, Cyberman Wu <cypher.w@gmail.com> wrote:
+> Sorry to use that big mail list account since I don't know any
+> specific mail list account should be used for that problem.
+>
+> We're running Linux box on Gx platform from Tilera. The kernel use
+> some vendor specific patches, but most of them
+> are the same as standard kernel.
+>
+> We encounter a problem occasionally, that I'm trying to resolve it.
+> But while I used 'ps' to get process information,
+> the new launched ps print out nothing and can't exit, ^C doesn't work.
+> I find out its pid under /proc, and it's in RUNNING
+> state:
+> # cat status
+> Name:   ps
+> State:  R (running)
+> Tgid:   1298
+> Pid:    1298
+> PPid:   1
+> TracerPid:      0
+> Uid:    0       0       0       0
+> Gid:    0       0       0       0
+> FDSize: 64
+> Groups: 0 1 2 3 4 6 10 489
+> VmPeak:     3776 kB
+> VmSize:     3712 kB
+> VmLck:         0 kB
+> VmHWM:      2624 kB
+> VmRSS:      2624 kB
+> VmData:      832 kB
+> VmStk:       256 kB
+> VmExe:       192 kB
+> VmLib:      2176 kB
+> VmPTE:         6 kB
+> VmSwap:        0 kB
+> Threads:        1
+> SigQ:   7/8113
+> SigPnd: 0000000000000100
+> ShdPnd: 00000000000a0103
+> SigBlk: 0000000000000000
+> SigIgn: 0000000000000004
+> SigCgt: 0000000073d3fef9
+> CapInh: 0000000000000000
+> CapPrm: ffffffffffffffff
+> CapEff: ffffffffffffffff
+> CapBnd: ffffffffffffffff
+> Cpus_allowed:   f,ffffffff
+> Cpus_allowed_list:      0-35
+> Mems_allowed:   3
+> Mems_allowed_list:      0-1
+> voluntary_ctxt_switches:        1
+> nonvoluntary_ctxt_switches:     0
+>
+> And it can't be killed even using SIGKILL.
+>
+> Since it's under *RUNNING* status, its stack can't be dumped. Is there
+> any exist mechanism can be used to
+> get it stack, or other information, to help me figure out what's the
+> cause of ps pend on *RUNNING*?
+>
+My answer may be silly, but did you tried running with strace?
 
-Looks good here, applied.
-
-Thanks!
-
-/Jesper
-
->   If you have already pulled the
-> older version of the branch aimed at you, then please feel free to ignore this
-> request.
-> 
-> The following changes since commit 9e2d8656f5e8aa214e66b462680cf86b210b74a8:
-> 
->   Merge branch 'akpm' (Andrew's patch-bomb) (2012-10-09 16:23:15 +0900)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-cris-20121009
-> 
-> for you to fetch changes up to e717abac8a9f65eee6de3bb37e10c6916bced483:
-> 
->   UAPI: (Scripted) Disintegrate arch/cris/include/asm (2012-10-09 09:46:45 +0100)
-> 
-> ----------------------------------------------------------------
-> UAPI Disintegration 2012-10-09
-> 
-> ----------------------------------------------------------------
-> David Howells (3):
->       UAPI: (Scripted) Disintegrate arch/cris/include/arch-v10/arch
->       UAPI: (Scripted) Disintegrate arch/cris/include/arch-v32/arch
->       UAPI: (Scripted) Disintegrate arch/cris/include/asm
-> 
->  arch/cris/include/arch-v10/arch/Kbuild             |   4 -
->  arch/cris/include/arch-v32/arch/Kbuild             |   2 -
->  arch/cris/include/arch-v32/arch/cryptocop.h        | 116 +------
->  arch/cris/include/asm/Kbuild                       |   5 -
->  arch/cris/include/asm/ptrace.h                     |   5 +-
->  arch/cris/include/asm/signal.h                     | 122 +-------
->  arch/cris/include/asm/swab.h                       |   3 +-
->  arch/cris/include/asm/termios.h                    |  43 +--
->  arch/cris/include/asm/types.h                      |   5 +-
->  arch/cris/include/asm/unistd.h                     | 342 +-------------------
->  arch/cris/include/uapi/arch-v10/arch/Kbuild        |   4 +
->  .../include/{ => uapi}/arch-v10/arch/sv_addr.agh   |   0
->  .../include/{ => uapi}/arch-v10/arch/sv_addr_ag.h  |   0
->  .../cris/include/{ => uapi}/arch-v10/arch/svinto.h |   0
->  arch/cris/include/{ => uapi}/arch-v10/arch/user.h  |   0
->  arch/cris/include/uapi/arch-v32/arch/Kbuild        |   2 +
->  arch/cris/include/uapi/arch-v32/arch/cryptocop.h   | 122 ++++++++
->  arch/cris/include/{ => uapi}/arch-v32/arch/user.h  |   0
->  arch/cris/include/uapi/asm/Kbuild                  |  34 ++
->  arch/cris/include/{ => uapi}/asm/auxvec.h          |   0
->  arch/cris/include/{ => uapi}/asm/bitsperlong.h     |   0
->  arch/cris/include/{ => uapi}/asm/byteorder.h       |   0
->  arch/cris/include/{ => uapi}/asm/errno.h           |   0
->  arch/cris/include/{ => uapi}/asm/ethernet.h        |   0
->  arch/cris/include/{ => uapi}/asm/etraxgpio.h       |   0
->  arch/cris/include/{ => uapi}/asm/fcntl.h           |   0
->  arch/cris/include/{ => uapi}/asm/ioctl.h           |   0
->  arch/cris/include/{ => uapi}/asm/ioctls.h          |   0
->  arch/cris/include/{ => uapi}/asm/ipcbuf.h          |   0
->  arch/cris/include/{ => uapi}/asm/mman.h            |   0
->  arch/cris/include/{ => uapi}/asm/msgbuf.h          |   0
->  arch/cris/include/{ => uapi}/asm/param.h           |   0
->  arch/cris/include/{ => uapi}/asm/poll.h            |   0
->  arch/cris/include/{ => uapi}/asm/posix_types.h     |   0
->  arch/cris/include/uapi/asm/ptrace.h                |   1 +
->  arch/cris/include/{ => uapi}/asm/resource.h        |   0
->  arch/cris/include/{ => uapi}/asm/rs485.h           |   0
->  arch/cris/include/{ => uapi}/asm/sembuf.h          |   0
->  arch/cris/include/{ => uapi}/asm/setup.h           |   0
->  arch/cris/include/{ => uapi}/asm/shmbuf.h          |   0
->  arch/cris/include/{ => uapi}/asm/sigcontext.h      |   0
->  arch/cris/include/{ => uapi}/asm/siginfo.h         |   0
->  arch/cris/include/uapi/asm/signal.h                | 122 ++++++++
->  arch/cris/include/{ => uapi}/asm/socket.h          |   0
->  arch/cris/include/{ => uapi}/asm/sockios.h         |   0
->  arch/cris/include/{ => uapi}/asm/stat.h            |   0
->  arch/cris/include/{ => uapi}/asm/statfs.h          |   0
->  arch/cris/include/{ => uapi}/asm/sync_serial.h     |   0
->  arch/cris/include/{ => uapi}/asm/termbits.h        |   0
->  arch/cris/include/uapi/asm/termios.h               |  45 +++
->  arch/cris/include/uapi/asm/types.h                 |   1 +
->  arch/cris/include/uapi/asm/unistd.h                | 344 +++++++++++++++++++++
->  52 files changed, 682 insertions(+), 640 deletions(-)
->  rename arch/cris/include/{ => uapi}/arch-v10/arch/sv_addr.agh (100%)
->  rename arch/cris/include/{ => uapi}/arch-v10/arch/sv_addr_ag.h (100%)
->  rename arch/cris/include/{ => uapi}/arch-v10/arch/svinto.h (100%)
->  rename arch/cris/include/{ => uapi}/arch-v10/arch/user.h (100%)
->  create mode 100644 arch/cris/include/uapi/arch-v32/arch/cryptocop.h
->  rename arch/cris/include/{ => uapi}/arch-v32/arch/user.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/auxvec.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/bitsperlong.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/byteorder.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/errno.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/ethernet.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/etraxgpio.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/fcntl.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/ioctl.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/ioctls.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/ipcbuf.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/mman.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/msgbuf.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/param.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/poll.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/posix_types.h (100%)
->  create mode 100644 arch/cris/include/uapi/asm/ptrace.h
->  rename arch/cris/include/{ => uapi}/asm/resource.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/rs485.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/sembuf.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/setup.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/shmbuf.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/sigcontext.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/siginfo.h (100%)
->  create mode 100644 arch/cris/include/uapi/asm/signal.h
->  rename arch/cris/include/{ => uapi}/asm/socket.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/sockios.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/stat.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/statfs.h (100%)
->  create mode 100644 arch/cris/include/uapi/asm/swab.h
->  rename arch/cris/include/{ => uapi}/asm/sync_serial.h (100%)
->  rename arch/cris/include/{ => uapi}/asm/termbits.h (100%)
->  create mode 100644 arch/cris/include/uapi/asm/termios.h
->  create mode 100644 arch/cris/include/uapi/asm/types.h
->  create mode 100644 arch/cris/include/uapi/asm/unistd.h
-> .
+>
+> System information:
+> # uname -a
+> Linux localhost 2.6.38.8-MDE-4.0.0.141101 #7 SMP Fri Sep 28 21:46:08
+> CST 2012 tilegx GNU/Linux
+>
+>
+>
+> Best regards.
+>
+> --
+> Cyberman Wu
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > Please read the FAQ at  http://www.tux.org/lkml/
-
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
