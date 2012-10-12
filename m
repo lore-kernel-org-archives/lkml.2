@@ -1,310 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759544Ab2JLAwj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 20:52:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38631 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757379Ab2JLAwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 20:52:37 -0400
-Date: Fri, 12 Oct 2012 02:52:00 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <pzijlstr@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hillf Danton <dhillf@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Dan Smith <danms@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 07/33] autonuma: mm_autonuma and task_autonuma data
- structures
-Message-ID: <20121012005200.GA1818@redhat.com>
-References: <1349308275-2174-1-git-send-email-aarcange@redhat.com>
- <1349308275-2174-8-git-send-email-aarcange@redhat.com>
- <20121011122827.GT3317@csn.ul.ie>
- <5076E4B2.2040301@redhat.com>
- <0000013a525a8739-2b4049fa-1cb3-4b8f-b3a7-1fa77b181590-000000@email.amazonses.com>
+	id S1754022Ab2JLBKH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 21:10:07 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60317 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049Ab2JLBKD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 21:10:03 -0400
+Date: Fri, 12 Oct 2012 02:09:58 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        linux-arch@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [git pull] signal.git, pile 2 (was Re: [RFC][CFT][CFReview] execve
+ and kernel_thread unification work)
+Message-ID: <20121012010958.GG2616@ZenIV.linux.org.uk>
+References: <20121001213809.GA31155@ZenIV.linux.org.uk>
+ <20121011090023.GA28427@bloggs.ozlabs.ibm.com>
+ <20121011125306.GF2616@ZenIV.linux.org.uk>
+ <20121012001633.GA29883@bloggs.ozlabs.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <0000013a525a8739-2b4049fa-1cb3-4b8f-b3a7-1fa77b181590-000000@email.amazonses.com>
+In-Reply-To: <20121012001633.GA29883@bloggs.ozlabs.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
-
-On Fri, Oct 12, 2012 at 12:23:17AM +0000, Christoph Lameter wrote:
-> On Thu, 11 Oct 2012, Rik van Riel wrote:
+On Fri, Oct 12, 2012 at 11:16:33AM +1100, Paul Mackerras wrote:
+> On Thu, Oct 11, 2012 at 01:53:06PM +0100, Al Viro wrote:
 > 
-> > These statistics are updated at page fault time, I
-> > believe while holding the page table lock.
-> >
-> > In other words, they are in code paths where updating
-> > the stats should not cause issues.
+> > 	Umm...  Maybe, but let's do that as subsequent cleanup.  Again,
+> > we almost certainly don't need to mess with TOC at all - the callbacks
+> > are in the main kernel, there are very few of them and they really are
+> > low-level details of exported mechanisms (i.e. kthread_create/run/etc.
+> > in kthread.h and call_usermode... in kmod.h).  Again, we are talking
+> > about out-of-tree modules, they had better mechanism for at least
+> > 6 years and conversion to it is bloody trivial.  Hell, it was even
+> > in late unlamented feature-removal-schedule.txt - since 2006.  If that's
+> > not enough to retire an export, what is?
 > 
-> The per cpu counters in the VM were introduced because of
-> counter contention caused at page fault time. This is the same code path
-> where you think that there cannot be contention.
+> OK... yes we can fix things up in a subsequent cleanup.
+> 
+> We will need to fix the TOC handling when we go to using multiple TOCs
+> in the main kernel, with the linker managing the transitions between
+> TOCs.  Our toolchain guys have been pushing us to do that for years,
+> because it should make things run faster, but first we'll have to stop
+> using ld -r to combine objects in subdirectories.
 
-There's no contention at all in autonuma27.
+How granular are you planning to make that?  I mean, we are talking about
+3 objects here - init/main.o, kernel/kthread.o and kernel/kmod.o.  Do they
+get TOC separate from that of arch/powerpc/kernel/entry_64.o?
 
-I changed it in autonuma28, to get real time updates in mm_autonuma
-from migration events.
+Anyway, if ppc folks can live with that stuff in its current form for now,
+here's the second signal.git pull request.  Stuff in there: kernel_thread/
+kernel_execve/sys_execve conversions for several more architectures plus
+assorted signal fixes and cleanups.  There'll be more (in particular, real
+fixes for alpha do_notify_resume() irq mess)...  Linus, could you pull that
+queue?  It's in the usual place -
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal for-linus
 
-There is no lock taken though (the spinlock below is taken once every
-pass, very rarely). It's a few liner change shown in detail below. The
-only contention point is this:
+Shortlog:
+Al Viro (38):
+      powerpc: split ret_from_fork
+      powerpc: switch to generic sys_execve()/kernel_execve()
+      m68k: split ret_from_fork(), simplify kernel_thread()
+      m68k: switch to generic sys_execve()/kernel_execve()
+      frv: split ret_from_fork, simplify kernel_thread() a lot
+      frv: switch to generic sys_execve()
+      frv: switch to generic kernel_execve
+      frv: switch to generic kernel_thread()
+      mn10300: split ret_from_fork, simplify kernel_thread()
+      mn10300: switch to generic sys_execve()
+      mn10300: switch to generic kernel_execve()
+      mn10300: convert to generic kernel_thread()
+      c6x: switch to generic kernel_thread()
+      xtensa: can't get to do_notify_resume() when user_mode(regs) is not true
+      mn10300: get rid of calling do_notify_resume() when returning to kernel mode
+      score: fix bogus restarts on sigreturn()
+      ia64: can't reach do_signal() when returning to kernel mode
+      mips: prevent hitting do_notify_resume() with !user_mode(regs)
+      mips: unobfuscate _TIF..._MASK
+      mips: merge the identical "return from syscall" per-ABI code
+      mips: NOTIFY_RESUME is not needed in TIF masks
+      unicore32: unobfuscate _TIF_WORK_MASK
+      bury _TIF_RESTORE_SIGMASK
+      sanitize tsk_is_polling()
+      bury the rest of TIF_IRET
+      parisc: fix double restarts
+      parisc: don't bother looping in do_signal()
+      parisc: decide whether to go to slow path (tracesys) based on thread flags
+      h8300: trim _TIF_WORK_MASK
+      unicore32: remove pointless test
+      x86: get rid of duplicate code in case of CONFIG_VM86
+      frv: no need to raise SIGTRAP in setup_frame()
+      mn10300: don't bother with SIGTRAP in setup_frame()
+      microblaze: don't bother with SIGTRAP in setup_rt_frame()
+      tile: don't bother with SIGTRAP in setup_frame
+      avr32: trim masks
+      m32r: trim masks
+      alpha: don't open-code trace_report_syscall_{enter,exit}
 
-+	ACCESS_ONCE(mm_numa_fault[access_nid]) += numpages;
-+	ACCESS_ONCE(mm_autonuma->mm_numa_fault_tot) += numpages;
+Greg Ungerer (1):
+      m68k: always set stack frame format for ColdFire on thread start
 
-autonuma28 is much more experimental than autonuma27 :)
+Mark Salter (3):
+      c6x: add ret_from_kernel_thread(), simplify kernel_thread()
+      c6x: switch to generic kernel_execve
+      c6x: switch to generic sys_execve
 
-I wouldn't focus on >1024 CPU systems for this though. The bigger the
-system the more costly any automatic placement logic will become, no
-matter which algorithm and which computation complexity the algorithm
-has, and chances are those will use NUMA hard bindings anyway
-considering how much they're expensive to setup and maintain.
+Richard Weinberger (1):
+      Uninclude linux/freezer.h
 
-The diff looks like this, I can consider undoing it. Comments
-welcome. (but real time stats updates, converge faster in autonuma28)
-
---- a/mm/autonuma.c
-+++ b/mm/autonuma.c
- 
- static struct knuma_scand_data {
- 	struct list_head mm_head; /* entry: mm->mm_autonuma->mm_node */
- 	struct mm_struct *mm;
- 	unsigned long address;
--	unsigned long *mm_numa_fault_tmp;
- } knuma_scand_data = {
- 	.mm_head = LIST_HEAD_INIT(knuma_scand_data.mm_head),
- };
-
-
-
-
-
-
-+	unsigned long tot;
-+
-+	/*
-+	 * Set the task's fault_pass equal to the new
-+	 * mm's fault_pass, so new_pass will be false
-+	 * on the next fault by this thread in this
-+	 * same pass.
-+	 */
-+	p->task_autonuma->task_numa_fault_pass = mm_numa_fault_pass;
-+
- 	/* If a new pass started, degrade the stats by a factor of 2 */
- 	for_each_node(nid)
- 		task_numa_fault[nid] >>= 1;
- 	task_autonuma->task_numa_fault_tot >>= 1;
-+
-+	if (mm_numa_fault_pass ==
-+	    ACCESS_ONCE(mm_autonuma->mm_numa_fault_last_pass))
-+		return;
-+
-+	spin_lock(&mm_autonuma->mm_numa_fault_lock);
-+	if (unlikely(mm_numa_fault_pass ==
-+		     mm_autonuma->mm_numa_fault_last_pass)) {
-+		spin_unlock(&mm_autonuma->mm_numa_fault_lock);
-+		return;
-+	}
-+	mm_autonuma->mm_numa_fault_last_pass = mm_numa_fault_pass;
-+
-+	tot = 0;
-+	for_each_node(nid) {
-+		unsigned long fault = ACCESS_ONCE(mm_numa_fault[nid]);
-+		fault >>= 1;
-+		ACCESS_ONCE(mm_numa_fault[nid]) = fault;
-+		tot += fault;
-+	}
-+	mm_autonuma->mm_numa_fault_tot = tot;
-+	spin_unlock(&mm_autonuma->mm_numa_fault_lock);
- }
-
-
-
-
-
-
- 	task_numa_fault[access_nid] += numpages;
- 	task_autonuma->task_numa_fault_tot += numpages;
- 
-+	ACCESS_ONCE(mm_numa_fault[access_nid]) += numpages;
-+	ACCESS_ONCE(mm_autonuma->mm_numa_fault_tot) += numpages;
-+
- 	local_bh_enable();
- }
- 
-@@ -310,28 +355,35 @@ static void numa_hinting_fault_cpu_follow_memory(struct task_struct *p,
-@@ -593,35 +628,26 @@ static int knuma_scand_pmd(struct mm_struct *mm,
- 		goto out;
- 
- 	if (pmd_trans_huge_lock(pmd, vma) == 1) {
--		int page_nid;
--		unsigned long *fault_tmp;
- 		ret = HPAGE_PMD_NR;
- 
- 		VM_BUG_ON(address & ~HPAGE_PMD_MASK);
- 
--		if (autonuma_mm_working_set() && pmd_numa(*pmd)) {
-+		if (pmd_numa(*pmd)) {
- 			spin_unlock(&mm->page_table_lock);
- 			goto out;
- 		}
--
- 		page = pmd_page(*pmd);
--
- 		/* only check non-shared pages */
- 		if (page_mapcount(page) != 1) {
- 			spin_unlock(&mm->page_table_lock);
- 			goto out;
- 		}
--
--		page_nid = page_to_nid(page);
--		fault_tmp = knuma_scand_data.mm_numa_fault_tmp;
--		fault_tmp[page_nid] += ret;
--
- 		if (pmd_numa(*pmd)) {
- 			spin_unlock(&mm->page_table_lock);
- 			goto out;
- 		}
--
- 		set_pmd_at(mm, address, pmd, pmd_mknuma(*pmd));
-+
- 		/* defer TLB flush to lower the overhead */
- 		spin_unlock(&mm->page_table_lock);
- 		goto out;
-@@ -636,10 +662,9 @@ static int knuma_scand_pmd(struct mm_struct *mm,
- 	for (_address = address, _pte = pte; _address < end;
- 	     _pte++, _address += PAGE_SIZE) {
- 		pte_t pteval = *_pte;
--		unsigned long *fault_tmp;
- 		if (!pte_present(pteval))
- 			continue;
--		if (autonuma_mm_working_set() && pte_numa(pteval))
-+		if (pte_numa(pteval))
- 			continue;
- 		page = vm_normal_page(vma, _address, pteval);
- 		if (unlikely(!page))
-@@ -647,13 +672,8 @@ static int knuma_scand_pmd(struct mm_struct *mm,
- 		/* only check non-shared pages */
- 		if (page_mapcount(page) != 1)
- 			continue;
--
--		fault_tmp = knuma_scand_data.mm_numa_fault_tmp;
--		fault_tmp[page_to_nid(page)]++;
--
- 		if (pte_numa(pteval))
- 			continue;
--
- 		if (!autonuma_scan_pmd())
- 			set_pte_at(mm, _address, _pte, pte_mknuma(pteval));
- 
-@@ -677,56 +697,6 @@ out:
- 	return ret;
- }
- 
--static void mm_numa_fault_tmp_flush(struct mm_struct *mm)
--{
--	int nid;
--	struct mm_autonuma *mma = mm->mm_autonuma;
--	unsigned long tot;
--	unsigned long *fault_tmp = knuma_scand_data.mm_numa_fault_tmp;
--
--	if (autonuma_mm_working_set()) {
--		for_each_node(nid) {
--			tot = fault_tmp[nid];
--			if (tot)
--				break;
--		}
--		if (!tot)
--			/* process was idle, keep the old data */
--			return;
--	}
--
--	/* FIXME: would be better protected with write_seqlock_bh() */
--	local_bh_disable();
--
--	tot = 0;
--	for_each_node(nid) {
--		unsigned long faults = fault_tmp[nid];
--		fault_tmp[nid] = 0;
--		mma->mm_numa_fault[nid] = faults;
--		tot += faults;
--	}
--	mma->mm_numa_fault_tot = tot;
--
--	local_bh_enable();
--}
--
--static void mm_numa_fault_tmp_reset(void)
--{
--	memset(knuma_scand_data.mm_numa_fault_tmp, 0,
--	       mm_autonuma_fault_size());
--}
--
--static inline void validate_mm_numa_fault_tmp(unsigned long address)
--{
--#ifdef CONFIG_DEBUG_VM
--	int nid;
--	if (address)
--		return;
--	for_each_node(nid)
--		BUG_ON(knuma_scand_data.mm_numa_fault_tmp[nid]);
--#endif
--}
--
- /*
-  * Scan the next part of the mm. Keep track of the progress made and
-  * return it.
-@@ -758,8 +728,6 @@ static int knumad_do_scan(void)
- 	}
- 	address = knuma_scand_data.address;
- 
--	validate_mm_numa_fault_tmp(address);
--
- 	mutex_unlock(&knumad_mm_mutex);
- 
- 	down_read(&mm->mmap_sem);
-@@ -855,9 +824,7 @@ static int knumad_do_scan(void)
- 			/* tell autonuma_exit not to list_del */
- 			VM_BUG_ON(mm->mm_autonuma->mm != mm);
- 			mm->mm_autonuma->mm = NULL;
--			mm_numa_fault_tmp_reset();
--		} else
--			mm_numa_fault_tmp_flush(mm);
-+		}
- 
- 		mmdrop(mm);
- 	}
-@@ -942,7 +916,6 @@ static int knuma_scand(void *none)
- 
- 	if (mm)
- 		mmdrop(mm);
--	mm_numa_fault_tmp_reset();
- 
- 	return 0;
- }
-@@ -987,11 +960,6 @@ static int start_knuma_scand(void)
- 	int err = 0;
- 	struct task_struct *knumad_thread;
- 
--	knuma_scand_data.mm_numa_fault_tmp = kzalloc(mm_autonuma_fault_size(),
--						     GFP_KERNEL);
--	if (!knuma_scand_data.mm_numa_fault_tmp)
--		return -ENOMEM;
--
- 	knumad_thread = kthread_run(knuma_scand, NULL, "knuma_scand");
- 	if (unlikely(IS_ERR(knumad_thread))) {
- 		autonuma_printk(KERN_ERR
-
-Thanks!
+Diffstat:
+ arch/alpha/include/asm/thread_info.h      |    3 +-
+ arch/alpha/kernel/entry.S                 |   13 ++--
+ arch/alpha/kernel/ptrace.c                |   32 ++++-----
+ arch/arm/include/asm/thread_info.h        |    2 -
+ arch/arm/kernel/signal.c                  |    1 -
+ arch/avr32/include/asm/thread_info.h      |   18 ++---
+ arch/avr32/kernel/signal.c                |    1 -
+ arch/blackfin/include/asm/thread_info.h   |    4 -
+ arch/blackfin/kernel/signal.c             |    1 -
+ arch/c6x/Kconfig                          |    1 +
+ arch/c6x/include/asm/processor.h          |    2 -
+ arch/c6x/include/asm/syscalls.h           |    5 --
+ arch/c6x/include/asm/thread_info.h        |    1 -
+ arch/c6x/include/asm/unistd.h             |    3 +
+ arch/c6x/kernel/asm-offsets.c             |    1 -
+ arch/c6x/kernel/entry.S                   |   56 +++++++--------
+ arch/c6x/kernel/process.c                 |   72 +++-----------------
+ arch/cris/include/asm/thread_info.h       |    3 -
+ arch/frv/Kconfig                          |    1 +
+ arch/frv/include/asm/processor.h          |    9 +--
+ arch/frv/include/asm/ptrace.h             |    1 +
+ arch/frv/include/asm/thread_info.h        |    3 -
+ arch/frv/include/asm/unistd.h             |    2 +
+ arch/frv/kernel/Makefile                  |    4 +-
+ arch/frv/kernel/entry.S                   |   13 ++++
+ arch/frv/kernel/frv_ksyms.c               |    1 -
+ arch/frv/kernel/kernel_execve.S           |   33 ---------
+ arch/frv/kernel/kernel_thread.S           |   77 ---------------------
+ arch/frv/kernel/process.c                 |   66 ++++++------------
+ arch/frv/kernel/signal.c                  |    9 ---
+ arch/h8300/include/asm/thread_info.h      |    7 +--
+ arch/h8300/kernel/signal.c                |    1 -
+ arch/hexagon/include/asm/thread_info.h    |    5 --
+ arch/hexagon/kernel/signal.c              |    1 -
+ arch/ia64/include/asm/thread_info.h       |    2 -
+ arch/ia64/kernel/signal.c                 |    8 --
+ arch/m32r/include/asm/thread_info.h       |    9 +--
+ arch/m32r/kernel/signal.c                 |    3 -
+ arch/m68k/Kconfig                         |    1 +
+ arch/m68k/include/asm/processor.h         |   25 +++----
+ arch/m68k/include/asm/ptrace.h            |    2 +
+ arch/m68k/include/asm/unistd.h            |    2 +
+ arch/m68k/kernel/entry.S                  |   16 +++++
+ arch/m68k/kernel/process.c                |  104 +++++++----------------------
+ arch/m68k/kernel/sys_m68k.c               |   17 -----
+ arch/microblaze/include/asm/thread_info.h |    3 +-
+ arch/microblaze/kernel/signal.c           |    7 +--
+ arch/mips/include/asm/thread_info.h       |    9 +--
+ arch/mips/kernel/entry.S                  |   15 +++-
+ arch/mips/kernel/scall32-o32.S            |   13 +---
+ arch/mips/kernel/scall64-64.S             |   13 +---
+ arch/mips/kernel/scall64-n32.S            |   13 +---
+ arch/mips/kernel/scall64-o32.S            |   13 +---
+ arch/mips/kernel/signal.c                 |    8 --
+ arch/mn10300/Kconfig                      |    1 +
+ arch/mn10300/include/asm/frame.inc        |    2 +-
+ arch/mn10300/include/asm/processor.h      |   18 +----
+ arch/mn10300/include/asm/ptrace.h         |    1 +
+ arch/mn10300/include/asm/thread_info.h    |    3 +-
+ arch/mn10300/include/asm/unistd.h         |    2 +
+ arch/mn10300/kernel/Makefile              |    4 +-
+ arch/mn10300/kernel/entry.S               |   18 +++++
+ arch/mn10300/kernel/internal.h            |    6 +--
+ arch/mn10300/kernel/kernel_execve.S       |   37 ----------
+ arch/mn10300/kernel/kthread.S             |   31 ---------
+ arch/mn10300/kernel/process.c             |   91 ++++++-------------------
+ arch/mn10300/kernel/signal.c              |   13 ----
+ arch/openrisc/include/asm/thread_info.h   |    3 +-
+ arch/parisc/hpux/gate.S                   |    2 +-
+ arch/parisc/include/asm/thread_info.h     |    5 +-
+ arch/parisc/kernel/signal.c               |   45 ++++--------
+ arch/parisc/kernel/syscall.S              |    9 ++-
+ arch/powerpc/Kconfig                      |    1 +
+ arch/powerpc/include/asm/processor.h      |    3 -
+ arch/powerpc/include/asm/ptrace.h         |    2 +
+ arch/powerpc/include/asm/syscalls.h       |    3 -
+ arch/powerpc/include/asm/thread_info.h    |    2 +
+ arch/powerpc/include/asm/unistd.h         |    2 +
+ arch/powerpc/kernel/entry_32.S            |   16 +++++
+ arch/powerpc/kernel/entry_64.S            |   16 +++++
+ arch/powerpc/kernel/misc.S                |    7 --
+ arch/powerpc/kernel/misc_32.S             |   33 ---------
+ arch/powerpc/kernel/misc_64.S             |   34 ---------
+ arch/powerpc/kernel/ppc_ksyms.c           |    1 -
+ arch/powerpc/kernel/process.c             |   59 ++++++++---------
+ arch/powerpc/kernel/signal_32.c           |    1 -
+ arch/powerpc/kernel/sys_ppc32.c           |   22 ------
+ arch/s390/include/asm/thread_info.h       |    4 -
+ arch/score/include/asm/thread_info.h      |    4 -
+ arch/score/kernel/signal.c                |    1 +
+ arch/sh/include/asm/thread_info.h         |    3 +
+ arch/sh/kernel/signal_32.c                |    1 -
+ arch/sh/kernel/signal_64.c                |    1 -
+ arch/sparc/include/asm/thread_info_32.h   |    3 +-
+ arch/sparc/include/asm/thread_info_64.h   |    3 +
+ arch/tile/kernel/compat_signal.c          |    9 ---
+ arch/tile/kernel/signal.c                 |   12 +---
+ arch/um/include/asm/thread_info.h         |    3 -
+ arch/unicore32/include/asm/thread_info.h  |    4 +-
+ arch/unicore32/kernel/entry.S             |    2 -
+ arch/unicore32/kernel/signal.c            |    1 -
+ arch/x86/kernel/entry_32.S                |   17 ++---
+ arch/xtensa/include/asm/thread_info.h     |    5 --
+ arch/xtensa/kernel/signal.c               |    4 -
+ kernel/sched/core.c                       |    2 +-
+ 105 files changed, 363 insertions(+), 944 deletions(-)
+ delete mode 100644 arch/frv/kernel/kernel_execve.S
+ delete mode 100644 arch/frv/kernel/kernel_thread.S
+ delete mode 100644 arch/mn10300/kernel/kernel_execve.S
+ delete mode 100644 arch/mn10300/kernel/kthread.S
