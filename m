@@ -1,186 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933993Ab2JLPlS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 11:41:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61976 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932973Ab2JLPlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 11:41:16 -0400
-Message-ID: <507839FC.3060204@redhat.com>
-Date: Fri, 12 Oct 2012 11:40:44 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: John Stultz <johnstul@us.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: RCU NOHZ, tsc, and clock_gettime
-References: <5077157A.7060401@redhat.com> <50772350.1070903@us.ibm.com> <20121011202103.GB2476@linux.vnet.ibm.com>
-In-Reply-To: <20121011202103.GB2476@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S964961Ab2JLPtQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 11:49:16 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:42275 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933028Ab2JLPtP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 11:49:15 -0400
+Message-ID: <1350056946.2299.82.camel@kjgkr>
+Subject: Re: [PATCH 05/16] f2fs: add checkpoint operations
+From: Jaegeuk Kim <jaegeuk.kim@gmail.com>
+To: NeilBrown <neilb@suse.de>
+Cc: =?euc-kr?Q?=B1=E8=C0=E7=B1=D8?= <jaegeuk.kim@samsung.com>,
+        viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+Date: Sat, 13 Oct 2012 00:49:06 +0900
+In-Reply-To: <20121011092412.2576f1f0@notabene.brown>
+References: <000c01cda2f0$dfb82350$9f2869f0$%kim@samsung.com>
+	 <20121011092412.2576f1f0@notabene.brown>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2012-10-11 (목), 09:24 +1100, NeilBrown:
+> On Fri, 05 Oct 2012 20:59:29 +0900 김재극 <jaegeuk.kim@samsung.com> wrote:
+> 
+> > +static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
+> > +{
+> > +	struct f2fs_checkpoint *ckpt = F2FS_CKPT(sbi);
+> > +	nid_t last_nid = 0;
+> > +	int nat_upd_blkoff[3];
+> > +	block_t start_blk;
+> > +	struct page *cp_page;
+> > +	unsigned int data_sum_blocks, orphan_blocks;
+> > +	void *kaddr;
+> > +	__u32 crc32 = 0;
+> > +	int i;
+> > +
+> > +	/* Flush all the NAT/SIT pages */
+> > +	while (get_pages(sbi, F2FS_DIRTY_META))
+> > +		sync_meta_pages(sbi, META, LONG_MAX);
+> > +
+> > +	next_free_nid(sbi, &last_nid);
+> > +
+> > +	/*
+> > +	 * modify checkpoint
+> > +	 * version number is already updated
+> > +	 */
+> > +	ckpt->elapsed_time = cpu_to_le64(get_mtime(sbi));
+> > +	ckpt->valid_block_count = cpu_to_le64(valid_user_blocks(sbi));
+> > +	ckpt->free_segment_count = cpu_to_le32(free_segments(sbi));
+> > +	for (i = 0; i < 3; i++) {
+> > +		ckpt->cur_node_segno[i] =
+> > +			cpu_to_le32(curseg_segno(sbi, i + CURSEG_HOT_NODE));
+> > +		ckpt->cur_node_blkoff[i] =
+> > +			cpu_to_le16(curseg_blkoff(sbi, i + CURSEG_HOT_NODE));
+> > +		nat_upd_blkoff[i] = NM_I(sbi)->nat_upd_blkoff[i];
+> > +		ckpt->nat_upd_blkoff[i] = cpu_to_le16(nat_upd_blkoff[i]);
+> > +		ckpt->alloc_type[i + CURSEG_HOT_NODE] =
+> > +				curseg_alloc_type(sbi, i + CURSEG_HOT_NODE);
+> > +	}
+> > +	for (i = 0; i < 3; i++) {
+> > +		ckpt->cur_data_segno[i] =
+> > +			cpu_to_le32(curseg_segno(sbi, i + CURSEG_HOT_DATA));
+> > +		ckpt->cur_data_blkoff[i] =
+> > +			cpu_to_le16(curseg_blkoff(sbi, i + CURSEG_HOT_DATA));
+> > +		ckpt->alloc_type[i + CURSEG_HOT_DATA] =
+> > +				curseg_alloc_type(sbi, i + CURSEG_HOT_DATA);
+> > +	}
+> > +
+> > +	ckpt->valid_node_count = cpu_to_le32(valid_node_count(sbi));
+> > +	ckpt->valid_inode_count = cpu_to_le32(valid_inode_count(sbi));
+> > +	ckpt->next_free_nid = cpu_to_le32(last_nid);
+> > +
+> > +	/* 2 cp  + n data seg summary + orphan inode blocks */
+> > +	data_sum_blocks = npages_for_summary_flush(sbi);
+> > +	if (data_sum_blocks < 3)
+> > +		ckpt->ckpt_flags |= CP_COMPACT_SUM_FLAG;
+> > +	else
+> > +		ckpt->ckpt_flags &= (~CP_COMPACT_SUM_FLAG);
+> > +
+> > +	orphan_blocks = (sbi->n_orphans + F2FS_ORPHANS_PER_BLOCK - 1)
+> > +					/ F2FS_ORPHANS_PER_BLOCK;
+> > +	ckpt->cp_pack_start_sum = 1 + orphan_blocks;
+> > +	ckpt->cp_pack_total_block_count = 2 + data_sum_blocks + orphan_blocks;
+> 
+> This looks a bit weird to me, though I might be misunderstanding something.
+> 
+> data_sum_blocks is either 1, 2, or 3.
+> "3" actually means "at least 3".
+> 
+> If it is 3, you choose not to set CP_COMPACT_SUM_FLAG.  In that case the NAT
+> and SIT journal entries go into SSA blocks, not into the checkpoint at all.
+> So in that case, zero blocks of the checkpoint are used for journalling.  Yet
+> you still add data_sum_blocks (==3) to the cp_pack_total_block_count (and
+> later to the start block).
+> Is that really what you want to do?  Leave 3 empty blocks?
+> 
+> I would suggest changing npages_for_summary_flush to return 0 if the number
+> of blocks needed would be more than three, and set CP_COMPACT_SUM_FLAG only
+> when data_sum_blocks > 0.
+> 
+> I don't know if you would need to make a corresponding change to the recovery
+> code, I haven't fully examined that yet.
 
+Ok, let me explain about CP_COMPACT_SUM_FLAG.
+Let's assume that there are some journal entries and data summaries.
+Note that this scenario is not from the umount procedure.
 
-On 10/11/2012 04:21 PM, Paul E. McKenney wrote:
-> On Thu, Oct 11, 2012 at 12:51:44PM -0700, John Stultz wrote:
->> On 10/11/2012 11:52 AM, Prarit Bhargava wrote:
->>> I've been tracking an odd bug that may involve the RCU NOHZ code and
->>> just want to know if you have any ideas on debugging and/or what might be
->>> wrong.  Note the bug happens on *BOTH* upstream and the current RHEL6 tree.
->>> The data in this email is from running on RHEL6 because that's what I happen
->>> to be running ATM.  The result, however, is _identical_ to that of linux.git
->>> latest.
->>>
->>> The attached program compares userspace TSC reads to the time returned from
->>> the REALTIME_CLOCK[1].  The test does the following
->>>
->>> read tsc1
->>> get REALTIME_CLOCK value
->>> read tsc2
->>>
->>> and then does a comparison between the tsc read and the REALTIME_CLOCK value
->>> to see if they are in sync with each other.
->>>
->>> [I'm leaving out the guts of the analysis here.  It is sufficient to show
->>> examples of "good" data and "bad" data IMO.]
->>>
->>> On a good run, we see little variance in between the values:
->>>
->>>     0   144       0.1
->>>     1   138       1.8
->>>     2   147      -2.9
->> [snip]
->>>    29   144      -0.6
->>> n: 30, slope: 0.50 (1.99 GHz), dev: 1.1 ns, max: 2.9 ns
->>>
->>>
->>> On a bad run, there is a lot of variance between the values:
->>>
->>>     0   144    -346.0
->>>     1   138    1410.8
->>>     2   138    -806.9
->>>     3   141    4006.6
->>>     4   147   -3996.1
->> [snip]
->>>    29   141     -50.3
->>> n: 30, slope: 0.50 (1.99 GHz), dev: 1231.4 ns, max: 4006.6 ns
->>
->>
->> Do you see the same noisy variance when instead of doing:
->>     rdtsc()
->>     clock_gettime()
->>     rdtsc()
->>
->> you do:
->>     clock_gettime()
->>     clock_gettime()
->>
->> And calculate the delta of the timestamp results?
+Basically f2fs writes three data summary blocks for current active logs
+inside the checkpoint pack.
+And NAT and SIT journal entries are stored in hot and cold data summary
+blocks.
+So, if the CP_COMPACT_SUM_FLAG is not set, f2fs writes the checkpoint
+pack like this.
 
-I do not see the noisy variance when comparing clock_gettime() to clock_gettime().
+[CP 0]
+[Orphan blocks]
+[Hot sum block w/ NAT journal]
+[Warm sum block]
+[Cold sum block w/ SIT journal]
+[CP 0']
 
->>
->> Also does this behavior change if you select different clocksources
->> on the system?
+But, if the CP_COMPACT_SUM_FLAG is set, the checkpoint pack consists of
+1 or 2 summary blocks as follows.
 
-No, if the clocksource is the hpet, I still see the large variance. ie) the
-behaviour does not change.
+[CP 0]
+[Orphan blocks]
+[summary entries w/ NAT and SIT journal]
+[CP 0']
 
->>
->>> It was noted by the bug reporter that specifying "nohz=off" resolved the
->>> problem.  I tested with "nohz=off" and AFAICT it fixes the issue.  I started
->>> out debugging by assuming that delays in the c-state transitions were not being
->>> properly accounted for in the timing calculations.
->>>
->>> I ran a baseline test on an unmodified kernel (with no extra boot options) and
->>> confirmed that powertop shows the CPUs entering deep c-states while the test was
->>> running for 300 runs.
->>>
->>> I then instrumented the PM QoS and the power management code (specifically
->>> cpuidle).  I put in a large # of printk's to monitor the CPU transitions, and
->>> monitored the power states via powertop in order to verify that the system was
->>> behaving correctly wrt PM QoS.
->>>
->>> If you modify the tstsc script to run 300 times with this modified kernel, and
->>> run powertop in the middle of the script, you will see that the processors do
->>> NOT enter deep c-states.  **This means that PM QoS is doing its job correctly**.
->>
->> So its not clear here,  do you see the same noisier latencies when
->> using PM QoS to limit deep c-states?
+or,
 
-I see the same noisier latencies when using PM QoS to limit the deep c-state
-transitions.
+[CP 0]
+[Orphan blocks]
+[summary entries]
+[summary entries w/ NAT and SIT journal]
+[CP 0']
 
->>
->> Finally, how many cpus are on the machine you see this with?  Does
->> the effect go away with maxcpus=1?
-
-
-24 physical/48 logical, 2G/core RAM
-
-The large variance is still there if maxcpus=1.
+So, I think it needs no change.
+Any idea?
+Thanks,
 
 > 
-> Also, what is the value of NR_CPUS?  And exactly which kernel.org kernel
-> are you using?
+> Regards,
+> NeilBrown
 
-NR_CPUS=4096
+-- 
+Jaegeuk Kim
+Samsung
 
-I'm using the "main" kernel.org tree,
-
-git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-
-as of commit 4f1cd91497774488ed16119ec3f54b3daf1561de
-
-(I recompiled this morning and re-ran the tests and they still show a large
-variance)
-
-> 
-> The effect of removing the two functions you noted (on 3.6 and earlier)
-> is to prevent RCU from checking for dyntick-idle CPUs, likely incurring
-> a cache miss for each CPU with interrupts disabled.  If you have a lot
-> of CPUs (or even if NR_CPUS is large and you have a smaller number of
-> CPUs), this can result in user-space-visible delays.
-> 
-
-Interesting.  I'll lower NR_CPUS and see if that shows an improvement.
-
-> 							Thanx, Paul
-> 
->> It looks like the TSC clocksource is being used, just because the
->> latencies are so low, but Is the same clocksource being used in all
->> of these cases?
-
-
-Yes, the TSC is always being used.
-
->>
->> One possibility is that if the cpu we're doing our timekeeping
->> accumulation on is different then the one running the test, we might
->> go into deeper idle for longer periods of time. Then when we
->> accumulate time, we have more then a single tick to accumulate and
->> that might require holding the timekeeper/xtime lock for longer
->> times.
->>
->> And the max 2.9ns variance seems particularly low, given that we do
->> call update_vsyscall every so often, and that should block
->> clock_gettime() callers while we update the vsyscall data.  Could it
->> be that the test is too short to see the locking effect, so you're
->> just getting lucky, and that adding nohz is jostling the regularity
->> of the execution so you then see the lock wait times?  If you
->> increase the samples and sample loops by 1000 does that change the
->> behavior?
-
-That's a possiblity, although I suspect that this has more to do with not
-executing the RCU NOHZ code given that we don't see a problem with the
-clock_gettime() vs clock_gettime() test.  I wonder if not executing the RCU NOHZ
-code somehow introduces a "regularity" with execution that results in the CPU
-always being in C0/polling when the test is run?
-
-P.
