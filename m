@@ -1,112 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759596Ab2JLOyl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 10:54:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48800 "EHLO mx2.suse.de"
+	id S1759625Ab2JLOzM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 10:55:12 -0400
+Received: from mga09.intel.com ([134.134.136.24]:21473 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758849Ab2JLOyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 10:54:40 -0400
-Date: Fri, 12 Oct 2012 15:54:32 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <pzijlstr@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hillf Danton <dhillf@gmail.com>,
-        Andrew Jones <drjones@redhat.com>, Dan Smith <danms@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Christoph Lameter <cl@linux.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 00/33] AutoNUMA27
-Message-ID: <20121012145432.GA29125@suse.de>
-References: <1349308275-2174-1-git-send-email-aarcange@redhat.com>
- <20121011101930.GM3317@csn.ul.ie>
- <20121011145611.GI1818@redhat.com>
- <20121011153503.GX3317@csn.ul.ie>
+	id S1758849Ab2JLOzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 10:55:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,576,1344236400"; 
+   d="scan'208";a="204846858"
+From: "Ma, Ling" <ling.ma@intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+CC: "mingo@elte.hu" <mingo@elte.hu>, "hpa@zytor.com" <hpa@zytor.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iant@google.com" <iant@google.com>
+Subject: RE: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging
+ instruction sequence and saving register
+Thread-Topic: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging
+ instruction sequence and saving register
+Thread-Index: AQHNp3KHe7EK2OTz7EWBVGWon0YSZpe0HToigADK2YCAAD/sAIAAl/5g
+Date: Fri, 12 Oct 2012 14:54:54 +0000
+Message-ID: <B2310DA9850C8743AA7AA0055500E90F0FD70B53@SHSMSX102.ccr.corp.intel.com>
+References: <1349958548-1868-1-git-send-email-ling.ma@intel.com>
+ <m2bog9t9cr.fsf@firstfloor.org>
+ <B2310DA9850C8743AA7AA0055500E90F0FD709C4@SHSMSX102.ccr.corp.intel.com>
+ <20121012133554.GA16230@one.firstfloor.org>
+In-Reply-To: <20121012133554.GA16230@one.firstfloor.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: multipart/mixed;
+	boundary="_002_B2310DA9850C8743AA7AA0055500E90F0FD70B53SHSMSX102ccrcor_"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121011153503.GX3317@csn.ul.ie>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 11, 2012 at 04:35:03PM +0100, Mel Gorman wrote:
-> On Thu, Oct 11, 2012 at 04:56:11PM +0200, Andrea Arcangeli wrote:
-> > Hi Mel,
-> > 
-> > On Thu, Oct 11, 2012 at 11:19:30AM +0100, Mel Gorman wrote:
-> > > As a basic sniff test I added a test to MMtests for the AutoNUMA
-> > > Benchmark on a 4-node machine and the following fell out.
-> > > 
-> > >                                      3.6.0                 3.6.0
-> > >                                    vanilla        autonuma-v33r6
-> > > User    SMT             82851.82 (  0.00%)    33084.03 ( 60.07%)
-> > > User    THREAD_ALLOC   142723.90 (  0.00%)    47707.38 ( 66.57%)
-> > > System  SMT               396.68 (  0.00%)      621.46 (-56.67%)
-> > > System  THREAD_ALLOC      675.22 (  0.00%)      836.96 (-23.95%)
-> > > Elapsed SMT              1987.08 (  0.00%)      828.57 ( 58.30%)
-> > > Elapsed THREAD_ALLOC     3222.99 (  0.00%)     1101.31 ( 65.83%)
-> > > CPU     SMT              4189.00 (  0.00%)     4067.00 (  2.91%)
-> > > CPU     THREAD_ALLOC     4449.00 (  0.00%)     4407.00 (  0.94%)
-> > 
-> > Thanks a lot for the help and for looking into it!
-> > 
-> > Just curious, why are you running only numa02_SMT and
-> > numa01_THREAD_ALLOC? And not numa01 and numa02? (the standard version
-> > without _suffix)
-> > 
-> 
-> Bug in the testing script on my end. Each of them are run separtly and it
+--_002_B2310DA9850C8743AA7AA0055500E90F0FD70B53SHSMSX102ccrcor_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-Ok, MMTests 0.06 (released a few minutes ago) patches autonumabench so
-it can run the tests individually. I know start_bench.sh can run all the
-tests itself but in time I'll want mmtests to collect additional stats
-that can also be applied to other benchmarks consistently. The revised
-results look like this
+> If you can't test the CPUs who run this code I think it's safer if you
+> add a new variant for Atom, not change the existing well tested code.
+> Otherwise you risk performance regressions on these older CPUs.
 
-AUTONUMA BENCH
-                                          3.6.0                 3.6.0
-                                        vanilla        autonuma-v33r6
-User    NUMA01               66395.58 (  0.00%)    32000.83 ( 51.80%)
-User    NUMA01_THEADLOCAL    55952.48 (  0.00%)    16950.48 ( 69.71%)
-User    NUMA02                6988.51 (  0.00%)     2150.56 ( 69.23%)
-User    NUMA02_SMT            2914.25 (  0.00%)     1013.11 ( 65.24%)
-System  NUMA01                 319.12 (  0.00%)      483.60 (-51.54%)
-System  NUMA01_THEADLOCAL       40.60 (  0.00%)      184.39 (-354.16%)
-System  NUMA02                   1.62 (  0.00%)       23.92 (-1376.54%)
-System  NUMA02_SMT               0.90 (  0.00%)       16.20 (-1700.00%)
-Elapsed NUMA01                1519.53 (  0.00%)      757.40 ( 50.16%)
-Elapsed NUMA01_THEADLOCAL     1269.49 (  0.00%)      398.63 ( 68.60%)
-Elapsed NUMA02                 181.12 (  0.00%)       57.09 ( 68.48%)
-Elapsed NUMA02_SMT             164.18 (  0.00%)       53.16 ( 67.62%)
-CPU     NUMA01                4390.00 (  0.00%)     4288.00 (  2.32%)
-CPU     NUMA01_THEADLOCAL     4410.00 (  0.00%)     4298.00 (  2.54%)
-CPU     NUMA02                3859.00 (  0.00%)     3808.00 (  1.32%)
-CPU     NUMA02_SMT            1775.00 (  0.00%)     1935.00 ( -9.01%)
+I found one older machine, and tested the code on it, the results between t=
+hem are almost the same as below(attached cpu info).
+      1                         copy_page_org   copy_page_new
+      2 TPT: Len 4096, alignment  0/ 0: 2252    2218
+      3 TPT: Len 4096, alignment  0/ 0: 2244    2193
+      4 TPT: Len 4096, alignment  0/ 0: 2261    2227
+      5 TPT: Len 4096, alignment  0/ 0: 2235    2244
+      6 TPT: Len 4096, alignment  0/ 0: 2261    2184
 
-MMTests Statistics: duration
-               3.6.0       3.6.0
-             vanilla autonuma-v33r6
-User       132257.44    52121.30
-System        362.79      708.62
-Elapsed      3142.66     1275.72
+Thanks
+Ling
 
-MMTests Statistics: vmstat
-                              3.6.0       3.6.0
-                            vanilla autonuma-v33r6
-THP fault alloc               17660       19927
-THP collapse alloc               10       12399
-THP splits                        4       12637
+--_002_B2310DA9850C8743AA7AA0055500E90F0FD70B53SHSMSX102ccrcor_
+Content-Type: application/octet-stream; name="xeon-cpu-info"
+Content-Description: xeon-cpu-info
+Content-Disposition: attachment; filename="xeon-cpu-info"; size=2376;
+	creation-date="Fri, 12 Oct 2012 14:43:17 GMT";
+	modification-date="Fri, 12 Oct 2012 14:43:17 GMT"
+Content-Transfer-Encoding: base64
 
-The System CPU usage is high but is compenstated for with reduced User
-and Elapsed times in this particular case.
+cHJvY2Vzc29yCTogMAp2ZW5kb3JfaWQJOiBHZW51aW5lSW50ZWwKY3B1IGZhbWlseQk6IDE1Cm1v
+ZGVsCQk6IDMKbW9kZWwgbmFtZQk6ICAgICAgICAgICAgICAgICAgIEludGVsKFIpIFhlb24oVE0p
+IENQVSAzLjQwR0h6CnN0ZXBwaW5nCTogNApjcHUgTUh6CQk6IDM0MDAuMjg1CmNhY2hlIHNpemUJ
+OiAxMDI0IEtCCnBoeXNpY2FsIGlkCTogMApzaWJsaW5ncwk6IDIKY29yZSBpZAkJOiAwCmNwdSBj
+b3Jlcwk6IDEKZnB1CQk6IHllcwpmcHVfZXhjZXB0aW9uCTogeWVzCmNwdWlkIGxldmVsCTogNQp3
+cAkJOiB5ZXMKZmxhZ3MJCTogZnB1IHZtZSBkZSBwc2UgdHNjIG1zciBwYWUgbWNlIGN4OCBhcGlj
+IHNlcCBtdHJyIHBnZSBtY2EgY21vdiBwYXQgcHNlMzYgY2xmbHVzaCBkdHMgYWNwaSBtbXggZnhz
+ciBzc2Ugc3NlMiBzcyBodCB0bSBzeXNjYWxsIGxtIHBuaSBtb25pdG9yIGRzX2NwbCBlc3QgdG0y
+IGNpZCB4dHByCmJvZ29taXBzCTogNjcxNy40NApjbGZsdXNoIHNpemUJOiA2NApjYWNoZV9hbGln
+bm1lbnQJOiAxMjgKYWRkcmVzcyBzaXplcwk6IDM2IGJpdHMgcGh5c2ljYWwsIDQ4IGJpdHMgdmly
+dHVhbApwb3dlciBtYW5hZ2VtZW50OgoKcHJvY2Vzc29yCTogMQp2ZW5kb3JfaWQJOiBHZW51aW5l
+SW50ZWwKY3B1IGZhbWlseQk6IDE1Cm1vZGVsCQk6IDMKbW9kZWwgbmFtZQk6ICAgICAgICAgICAg
+ICAgICAgIEludGVsKFIpIFhlb24oVE0pIENQVSAzLjQwR0h6CnN0ZXBwaW5nCTogNApjcHUgTUh6
+CQk6IDM0MDAuMjg1CmNhY2hlIHNpemUJOiAxMDI0IEtCCnBoeXNpY2FsIGlkCTogMwpzaWJsaW5n
+cwk6IDIKY29yZSBpZAkJOiAzCmNwdSBjb3Jlcwk6IDEKZnB1CQk6IHllcwpmcHVfZXhjZXB0aW9u
+CTogeWVzCmNwdWlkIGxldmVsCTogNQp3cAkJOiB5ZXMKZmxhZ3MJCTogZnB1IHZtZSBkZSBwc2Ug
+dHNjIG1zciBwYWUgbWNlIGN4OCBhcGljIHNlcCBtdHJyIHBnZSBtY2EgY21vdiBwYXQgcHNlMzYg
+Y2xmbHVzaCBkdHMgYWNwaSBtbXggZnhzciBzc2Ugc3NlMiBzcyBodCB0bSBzeXNjYWxsIGxtIHBu
+aSBtb25pdG9yIGRzX2NwbCBlc3QgdG0yIGNpZCB4dHByCmJvZ29taXBzCTogNjc4Mi45NwpjbGZs
+dXNoIHNpemUJOiA2NApjYWNoZV9hbGlnbm1lbnQJOiAxMjgKYWRkcmVzcyBzaXplcwk6IDM2IGJp
+dHMgcGh5c2ljYWwsIDQ4IGJpdHMgdmlydHVhbApwb3dlciBtYW5hZ2VtZW50OgoKcHJvY2Vzc29y
+CTogMgp2ZW5kb3JfaWQJOiBHZW51aW5lSW50ZWwKY3B1IGZhbWlseQk6IDE1Cm1vZGVsCQk6IDMK
+bW9kZWwgbmFtZQk6ICAgICAgICAgICAgICAgICAgIEludGVsKFIpIFhlb24oVE0pIENQVSAzLjQw
+R0h6CnN0ZXBwaW5nCTogNApjcHUgTUh6CQk6IDM0MDAuMjg1CmNhY2hlIHNpemUJOiAxMDI0IEtC
+CnBoeXNpY2FsIGlkCTogMApzaWJsaW5ncwk6IDIKY29yZSBpZAkJOiAwCmNwdSBjb3Jlcwk6IDEK
+ZnB1CQk6IHllcwpmcHVfZXhjZXB0aW9uCTogeWVzCmNwdWlkIGxldmVsCTogNQp3cAkJOiB5ZXMK
+ZmxhZ3MJCTogZnB1IHZtZSBkZSBwc2UgdHNjIG1zciBwYWUgbWNlIGN4OCBhcGljIHNlcCBtdHJy
+IHBnZSBtY2EgY21vdiBwYXQgcHNlMzYgY2xmbHVzaCBkdHMgYWNwaSBtbXggZnhzciBzc2Ugc3Nl
+MiBzcyBodCB0bSBzeXNjYWxsIGxtIHBuaSBtb25pdG9yIGRzX2NwbCBlc3QgdG0yIGNpZCB4dHBy
+CmJvZ29taXBzCTogNjc4Mi45NwpjbGZsdXNoIHNpemUJOiA2NApjYWNoZV9hbGlnbm1lbnQJOiAx
+MjgKYWRkcmVzcyBzaXplcwk6IDM2IGJpdHMgcGh5c2ljYWwsIDQ4IGJpdHMgdmlydHVhbApwb3dl
+ciBtYW5hZ2VtZW50OgoKcHJvY2Vzc29yCTogMwp2ZW5kb3JfaWQJOiBHZW51aW5lSW50ZWwKY3B1
+IGZhbWlseQk6IDE1Cm1vZGVsCQk6IDMKbW9kZWwgbmFtZQk6ICAgICAgICAgICAgICAgICAgIElu
+dGVsKFIpIFhlb24oVE0pIENQVSAzLjQwR0h6CnN0ZXBwaW5nCTogNApjcHUgTUh6CQk6IDM0MDAu
+Mjg1CmNhY2hlIHNpemUJOiAxMDI0IEtCCnBoeXNpY2FsIGlkCTogMwpzaWJsaW5ncwk6IDIKY29y
+ZSBpZAkJOiAzCmNwdSBjb3Jlcwk6IDEKZnB1CQk6IHllcwpmcHVfZXhjZXB0aW9uCTogeWVzCmNw
+dWlkIGxldmVsCTogNQp3cAkJOiB5ZXMKZmxhZ3MJCTogZnB1IHZtZSBkZSBwc2UgdHNjIG1zciBw
+YWUgbWNlIGN4OCBhcGljIHNlcCBtdHJyIHBnZSBtY2EgY21vdiBwYXQgcHNlMzYgY2xmbHVzaCBk
+dHMgYWNwaSBtbXggZnhzciBzc2Ugc3NlMiBzcyBodCB0bSBzeXNjYWxsIGxtIHBuaSBtb25pdG9y
+IGRzX2NwbCBlc3QgdG0yIGNpZCB4dHByCmJvZ29taXBzCTogNjc4Mi45NwpjbGZsdXNoIHNpemUJ
+OiA2NApjYWNoZV9hbGlnbm1lbnQJOiAxMjgKYWRkcmVzcyBzaXplcwk6IDM2IGJpdHMgcGh5c2lj
+YWwsIDQ4IGJpdHMgdmlydHVhbApwb3dlciBtYW5hZ2VtZW50OgoK
 
--- 
-Mel Gorman
-SUSE Labs
+--_002_B2310DA9850C8743AA7AA0055500E90F0FD70B53SHSMSX102ccrcor_--
