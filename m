@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172Ab2JLTMN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 15:12:13 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:41880 "EHLO
+	id S1758681Ab2JLTL4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 15:11:56 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:54144 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758791Ab2JLTMK (ORCPT
+	with ESMTP id S1756018Ab2JLTLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 15:12:10 -0400
+	Fri, 12 Oct 2012 15:11:50 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: grant.likely@secretlab.ca, linus.walleij@linaro.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         w.sang@pengutronix.de, jbe@pengutronix.de, plagnioj@jcrosoft.com,
         highguy@gmail.com, broonie@opensource.wolfsonmicro.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RFC 4/6 v3] gpio-max730x: Add block GPIO API
-Date: Fri, 12 Oct 2012 21:11:23 +0200
-Message-Id: <1350069085-13283-5-git-send-email-stigge@antcom.de>
+Subject: [PATCH RFC 3/6 v3] gpio: Add device tree support to block GPIO API
+Date: Fri, 12 Oct 2012 21:11:22 +0200
+Message-Id: <1350069085-13283-4-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1350069085-13283-1-git-send-email-stigge@antcom.de>
 References: <1350069085-13283-1-git-send-email-stigge@antcom.de>
@@ -24,100 +24,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds block GPIO API support to the MAX730x driver.
-
-Due to hardware constraints in this chip, simultaneous access to GPIO lines can
-only be done in groups of 8: GPIOs 0-7, 8-15, 16-23, 24-27. However, setting
-and clearing will be done at once.
+This patch adds device tree support to the block GPIO API.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 
 ---
- drivers/gpio/gpio-max730x.c |   60 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 60 insertions(+)
+ Documentation/devicetree/bindings/gpio/gpio-block.txt |   36 +++++++
+ drivers/gpio/Makefile                                 |    1 
+ drivers/gpio/gpioblock-of.c                           |   84 ++++++++++++++++++
+ 3 files changed, 121 insertions(+)
 
---- linux-2.6.orig/drivers/gpio/gpio-max730x.c
-+++ linux-2.6/drivers/gpio/gpio-max730x.c
-@@ -146,6 +146,43 @@ static int max7301_get(struct gpio_chip
- 	return level;
- }
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/gpio/gpio-block.txt
+@@ -0,0 +1,36 @@
++Block GPIO definition
++=====================
++
++This binding specifies arbitrary blocks of gpios, combining gpios from one or
++more GPIO controllers together, to form a word for r/w access.
++
++Required property:
++- compatible: must be "linux,gpio-block"
++
++Required subnodes:
++- the name will be the registered name of the block
++- property "gpios" is a list of gpios for the respective block
++
++Example:
++
++        blockgpio {
++                compatible = "linux,gpio-block";
++
++                block0 {
++                        gpios = <&gpio 3 0 0>,
++                                <&gpio 3 1 0>;
++                };
++                block1 {
++                        gpios = <&gpio 4 1 0>,
++                                <&gpio 4 3 0>,
++                                <&gpio 4 2 0>,
++                                <&gpio 4 4 0>,
++                                <&gpio 4 5 0>,
++                                <&gpio 4 6 0>,
++                                <&gpio 4 7 0>,
++                                <&gpio 4 8 0>,
++                                <&gpio 4 9 0>,
++                                <&gpio 4 10 0>,
++                                <&gpio 4 19 0>;
++                };
++        };
+--- linux-2.6.orig/drivers/gpio/Makefile
++++ linux-2.6/drivers/gpio/Makefile
+@@ -4,6 +4,7 @@ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
  
-+static unsigned max7301_get_block(struct gpio_chip *chip, unsigned mask)
+ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o devres.o
+ obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
++obj-$(CONFIG_OF_GPIO)		+= gpioblock-of.o
+ 
+ # Device drivers. Generally keep list sorted alphabetically
+ obj-$(CONFIG_GPIO_GENERIC)	+= gpio-generic.o
+--- /dev/null
++++ linux-2.6/drivers/gpio/gpioblock-of.c
+@@ -0,0 +1,84 @@
++/*
++ * OF implementation for Block GPIO
++ *
++ * Copyright (C) 2012 Roland Stigge <stigge@antcom.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/gpio.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++
++static int __devinit gpioblock_of_probe(struct platform_device *pdev)
 +{
-+	struct max7301 *ts = container_of(chip, struct max7301, chip);
-+	int i, j;
-+	unsigned result = 0;
++	struct device_node *block;
++	unsigned *gpios;
++	int ngpio;
++	int ret;
++	struct gpio_block *gb;
 +
-+	for (i = 0; i < 4; i++) {
-+		if ((mask >> (i * 8)) & 0xFF) { /* i/o only if necessary */
-+			u8 in_level = ts->read(ts->dev, 0x44 + i * 8);
-+			u8 in_mask = 0;
-+			u8 out_level = (ts->out_level >> (i * 8 + 4)) & 0xFF;
-+			u8 out_mask = 0;
++	for_each_available_child_of_node(pdev->dev.of_node, block) {
++		int i;
 +
-+			for (j = 0; j < 8; j++) {
-+				int offset = 4 + i * 8 + j;
-+				int config = (ts->port_config[offset >> 2] >>
-+					      ((offset & 3) << 1)) &
-+					PIN_CONFIG_MASK;
-+
-+				switch (config) {
-+				case PIN_CONFIG_OUT:
-+					out_mask |= BIT(j);
-+					break;
-+				case PIN_CONFIG_IN_WO_PULLUP:
-+				case PIN_CONFIG_IN_PULLUP:
-+					in_mask |= BIT(j);
-+				}
-+			}
-+
-+			result |= ((unsigned)(in_level & in_mask) |
-+				   (out_level & out_mask)) << (i * 8);
++		ngpio = of_gpio_count(block);
++		gpios = kzalloc(ngpio * sizeof(*gpios), GFP_KERNEL);
++		if (!gpios)
++			return -ENOMEM;
++		for (i = 0; i < ngpio; i++) {
++			ret = of_get_gpio(block, i);
++			if (ret < 0)
++				return ret; /* expect -EPROBE_DEFER */
++			gpios[i] = ret;
 +		}
++		gb = gpio_block_create(gpios, ngpio, block->name);
++		if (IS_ERR(gb)) {
++			dev_err(&pdev->dev,
++				"Error creating GPIO block from device tree\n");
++			return PTR_ERR(gb);
++		}
++		ret = gpio_block_register(gb);
++		if (ret < 0) {
++			gpio_block_free(gb);
++			return ret;
++		}
++		kfree(gpios);
++		dev_info(&pdev->dev, "Registered gpio block %s: %d gpios\n",
++			 block->name, ngpio);
 +	}
-+
-+	return result & mask;
++	return 0;
 +}
 +
- static void max7301_set(struct gpio_chip *chip, unsigned offset, int value)
- {
- 	struct max7301 *ts = container_of(chip, struct max7301, chip);
-@@ -160,6 +197,27 @@ static void max7301_set(struct gpio_chip
- 	mutex_unlock(&ts->lock);
- }
- 
-+static
-+void max7301_set_block(struct gpio_chip *chip, unsigned mask, unsigned values)
-+{
-+	struct max7301 *ts = container_of(chip, struct max7301, chip);
-+	unsigned changes;
-+	int i;
++#ifdef CONFIG_OF
++static struct of_device_id gpioblock_of_match[] __devinitdata = {
++	{ .compatible = "linux,gpio-block", },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, gpioblock_of_match);
++#endif
 +
-+	mutex_lock(&ts->lock);
++static struct platform_driver gpioblock_of_driver = {
++	.driver	= {
++		.name = "gpio-block",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(gpioblock_of_match),
 +
-+	changes = (ts->out_level ^ (values << 4)) & (mask << 4);
-+	ts->out_level ^= changes;
++	},
++	.probe	= gpioblock_of_probe,
++};
 +
-+	for (i = 0; i < 4; i++) {
-+		if ((changes >> (i * 8 + 4)) & 0xFF) /* i/o only on change */
-+			ts->write(ts->dev, 0x44 + i * 8,
-+				  (ts->out_level >> (i * 8 + 4)) & 0xFF);
-+	}
++module_platform_driver(gpioblock_of_driver);
 +
-+	mutex_unlock(&ts->lock);
-+}
-+
- int __devinit __max730x_probe(struct max7301 *ts)
- {
- 	struct device *dev = ts->dev;
-@@ -183,8 +241,10 @@ int __devinit __max730x_probe(struct max
- 
- 	ts->chip.direction_input = max7301_direction_input;
- 	ts->chip.get = max7301_get;
-+	ts->chip.get_block = max7301_get_block;
- 	ts->chip.direction_output = max7301_direction_output;
- 	ts->chip.set = max7301_set;
-+	ts->chip.set_block = max7301_set_block;
- 
- 	ts->chip.base = pdata->base;
- 	ts->chip.ngpio = PIN_NUMBER;
++MODULE_DESCRIPTION("GPIO Block driver");
++MODULE_AUTHOR("Roland Stigge <stigge@antcom.de>");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:gpioblock-of");
