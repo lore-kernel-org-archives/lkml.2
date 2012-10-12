@@ -1,100 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843Ab2JLUck (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 16:32:40 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:35508 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577Ab2JLUch (ORCPT
+	id S1751817Ab2JLUe0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 16:34:26 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:36432 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab2JLUeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 16:32:37 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Sourav <sourav.poddar@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Felipe Balbi <balbi@ti.com>, gregkh@linuxfoundation.org,
-        tony@atomide.com, linux-kernel@vger.kernel.org,
-        santosh.shilimkar@ti.com, linux-serial@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        alan@linux.intel.com
-Subject: Re: [RFT/PATCH] serial: omap: prevent resume if device is not suspended.
-Organization: Deep Root Systems, LLC
-References: <20120925091228.GI31374@n2100.arm.linux.org.uk>
-	<20120925091112.GK9137@arwen.pp.htv.fi>
-	<20120925092118.GJ31374@n2100.arm.linux.org.uk>
-	<CAKdam57bpTJ94Gn=mKVw1Fm-76fVPp3DGjFuNu_HfesybM1hPg@mail.gmail.com>
-	<87ipas2y4h.fsf@deeprootsystems.com>
-	<alpine.DEB.2.00.1210111748010.5736@utopia.booyaka.com>
-	<50784458.9080806@ti.com> <877gqv7imt.fsf@deeprootsystems.com>
-	<20121012164202.GQ28061@n2100.arm.linux.org.uk>
-	<877gqv4lmt.fsf@deeprootsystems.com>
-	<20121012185426.GS28061@n2100.arm.linux.org.uk>
-Date: Fri, 12 Oct 2012 13:32:34 -0700
-In-Reply-To: <20121012185426.GS28061@n2100.arm.linux.org.uk> (Russell King's
-	message of "Fri, 12 Oct 2012 19:54:26 +0100")
-Message-ID: <87lifbwhwd.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Fri, 12 Oct 2012 16:34:25 -0400
+Message-ID: <50787ECB.1050803@gmail.com>
+Date: Fri, 12 Oct 2012 22:34:19 +0200
+From: Milan Broz <gmazyland@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Michael Zugelder <michael@zugelder.org>
+CC: linux-kernel@vger.kernel.org, dm-devel@redhat.com,
+        dm-crypt <dm-crypt@saout.de>
+Subject: Re: PROBLEM: [dm-crypt] read starvation during writeback
+References: <1350070656.2554.6.camel@vpcz1>
+In-Reply-To: <1350070656.2554.6.camel@vpcz1>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
+On 10/12/2012 09:37 PM, Michael Zugelder wrote:
+> I'm having an issue reading data via dm-crypt when there is heavy
+> writeback going on (i.e. copying large files or using dd). A single
+> read takes anywhere from a few seconds to multiple minutes.
+> 
+> Testing setup:
+>  * Fedora 17, stock 3.5.4-2.fc17 kernel and a self-compiled 3.6.1 kernel
+>  * 320 GiB USB hard drive (sdb)
 
-> On Fri, Oct 12, 2012 at 10:59:22AM -0700, Kevin Hilman wrote:
->> Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
->> 
->> > On Fri, Oct 12, 2012 at 09:35:54AM -0700, Kevin Hilman wrote:
->> >> Sourav <sourav.poddar@ti.com> writes:
->> >> > diff --git a/drivers/tty/serial/omap-serial.c
->> >> > b/drivers/tty/serial/omap-serial.c
->> >> > index 6ede6fd..3fbc7f7 100644
->> >> > --- a/drivers/tty/serial/omap-serial.c
->> >> > +++ b/drivers/tty/serial/omap-serial.c
->> >> > @@ -1414,6 +1414,7 @@ static int __devinit serial_omap_probe(struct
->> >> > platform_device *pdev)
->> >> >         INIT_WORK(&up->qos_work, serial_omap_uart_qos_work);
->> >> >
->> >> >         platform_set_drvdata(pdev, up);
->> >> > +       pm_runtime_set_active(&pdev->dev);
->> >> 
->> >> NAK.
->> >> 
->> >> This will obviously break platforms where the UARTs are not active
->> >> before driver loads.
->> >
->> > I thought I had proposed a solution for this issue, which was this
->> > sequence:
->> >
->> >         omap_device_enable(dev);                                                
->> >         pm_runtime_set_active(dev);                                             
->> >         pm_runtime_enable(dev);                                                 
->> >
->> > Yes, I can understand people not liking the omap_device_enable()
->> > there, but I also notice that the email suggesting that never got a
->> > reply either - not even a "I tried this and it doesn't work" or "it
->> > does work".
->> 
->> Yes, that solution would work (though I didn't actually try it.)
->> 
->> However, we can't use omap_device_enable() in the driver.  We're trying
->> to clean all the drivers of OMAP-specific APIs.  That being said,
->> something similar could be done in the device/board init code to ensure
->> the UART HW is in the state that the driver is expecting it, but again,
->> that would just mask the real problem which is that a (re)init of the
->> console UART on 2420/n800 is causing output to disappear.
->
-> See my more expansive suggestion just posted.
->
-> Whatever way, this discrepancy between runtime PM state and actual device
-> state is what is biting you, and it is that which needs fixing.  
+I guess that USB is the key factor here... I remember to have similar
+problem some time ago even without dmcrypt.
 
-I'm not conviced (yet) that a mismatch is the root cause.  Yes, that's
-what the author of $SUBJECT patch assumed and stated, but I'm not
-pursuaded.  
+Is it reproducible with the same kernel cfg but with internal disk?
 
-If it's an improperly configured mux issue, then the UART will break
-whenever the device is actually omap_device_enable'd, whether in the
-driver or in the bus layer.
+You can also test completely fake underlying device,
+use device-mapper- zero target:
+dmsetup create dev_zero --table "0 <sectors size> zero"
+(All writes are dropped and all reads returns zero in this case.)
 
-Kevin
+Is there any starvation with this setup? (It shouldn't.)
 
+>  * dmsetup library version 1.02.74 (2012-03-06), driver version 4.23.0
+>  * dm-crypt set up using cipher_null:
+>    echo "0 $(blockdev --getsize /dev/sdb) crypt cipher_null - 0 /dev/sdb 0"|dmsetup create test
+
+Btw you can use cryptsetup with cipher "null" to simplify
+(I added to cryptsetup to test exactly such scenarios).
+
+So, it means that encryption is not the problem.
+The crypto_null will cause that there is no crypto operation
+(it is just plain data copy) but the remaining dmcrypt overhead remains
+exactly the same.
+
+> * writeback induced by running 'dd if=/dev/zero of=$target bs=1M'
+
+Any change if you use oflag=direct ? (iow using direct io)
+
+> I experimented a bit with the other device mapper targets, namely linear
+> and stripe, but both worked completely fine. I also tried putting a
+> linear mapping above dm-crypt, with no impact on performance. Comparing
+> the content of the /sys/block/$DEV files of the linear mapping and
+> dm-crypt, there are no differences beside the name, dev no, stats,
+> uevent and inflight files.
+
+There is crucial difference between linear/stripe and dmcrypt:
+linear just remaps IO target device, dmcrypt queues operations
+(using kernel workqueue) and creates full bio clones.
+So comparison here is IMHO not much helpful.
+
+There are two internal dmcrypt queues, but I think that the problem
+is triggered by some combination with USB storage backend.
+
+> Any pointers would be appreciated, I haven't found much on the web about
+> this issue.
+
+Btw there was a proposed rewrite of internal dmcrypt queues, if you have time,
+you can try if it changes anything for your use case.
+Patches in dm-devel archive
+http://www.redhat.com/archives/dm-devel/2012-August/msg00210.html
+
+Milan
