@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933908Ab2JLLxo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 07:53:44 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:46821 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932316Ab2JLLxl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 07:53:41 -0400
-Date: Fri, 12 Oct 2012 07:54:37 -0400
-From: Matt Porter <mporter@ti.com>
-To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH v2 08/16] ARM: omap: add hsmmc am33xx specific init
-Message-ID: <20121012115437.GG13724@beef>
-References: <1349982281-10785-1-git-send-email-mporter@ti.com>
- <1349982281-10785-9-git-send-email-mporter@ti.com>
- <1BAFE6F6C881BF42822005164F1491C33EAA6374@DBDE01.ent.ti.com>
+	id S1759546Ab2JLL4c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 07:56:32 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:56778 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758980Ab2JLL4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 07:56:31 -0400
+Date: Fri, 12 Oct 2012 13:56:28 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [RFC PATCH 3/3] Convert mce_disabled
+Message-ID: <20121012115628.GA14991@aftab.osrc.amd.com>
+References: <1349878801-15956-1-git-send-email-bp@amd64.org>
+ <1349878801-15956-4-git-send-email-bp@amd64.org>
+ <5077F600.9090605@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1BAFE6F6C881BF42822005164F1491C33EAA6374@DBDE01.ent.ti.com>
+In-Reply-To: <5077F600.9090605@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 09:17:53AM +0000, Hebbar, Gururaja wrote:
-> Matt
-> 
-> On Fri, Oct 12, 2012 at 00:34:33, Porter, Matt wrote:
-> > AM33xx requires special handling in hsmmc initialization
-> > platform glue.
-> 
-> Since AM335x boots mainly through DT, do we still need this patch.
-> This function will be called in case of initializing hsmmc with
-> Platform data. 
+On Fri, Oct 12, 2012 at 04:20:40PM +0530, Naveen N. Rao wrote:
+> Hi Boris, Thanks for getting to this before I could!
 
-Yes, thanks, will drop in v3.
+Ah ok, I thought you wasn't interested in doing this anymore :).
 
--Matt
+> I had a look but I still feel boolean is a better way to go. With
+> bool, we can get rid of the #defines above and more importantly, the
+> aux field in dev_ext_attribute since that is used in other places
+> too. Further, I suspect we'll still end up using the same or less
+> memory since we don't have that many boolean members within the MCA
+> code.
+
+My main intention was to have all those in a single struct and use a
+single store_bit/show_bit function.
+
+Sure, you can do bools but this'll still be single variables spread
+around in mce.c instead of one single struct mca_config which nicely
+encapsulates all the configuration we do in the MCA code.
+
+Or, you can modify the mca_config I have there and use bools and pass a
+pointer to each actual bool member in each DEVICE_BIT_ATTR invocation
+(and rename it to DEVICE_BOOL_ATTR). Yeah, that could work, unless I'm
+missing something else, of course.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
