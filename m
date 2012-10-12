@@ -1,45 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751119Ab2JLTfy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 15:35:54 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:59715 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab2JLTfx (ORCPT
+	id S1751099Ab2JLThp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 15:37:45 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:44156 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab2JLTho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 15:35:53 -0400
-Date: Fri, 12 Oct 2012 12:35:43 -0700
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Shuah Khan <shuah.khan@hp.com>
-Cc: joerg.roedel@amd.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        Greg KH <gregkh@linuxfoundation.org>, iommu@lists.linux-foundation.org,
-        stable@vger.kernel.org, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
-Subject: Re: [PATCH -stable] amd_iommu: attach device fails on the last pci
- device
-Message-ID: <20121012193543.GA16600@elie.Belkin>
-References: <1350059367.2643.17.camel@lorien2>
- <20121012183828.GA16453@elie.Belkin>
- <1350067490.4627.8.camel@lorien2>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350067490.4627.8.camel@lorien2>
-User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
+	Fri, 12 Oct 2012 15:37:44 -0400
+Message-ID: <1350070656.2554.6.camel@vpcz1>
+Subject: PROBLEM: [dm-crypt] read starvation during writeback
+From: Michael Zugelder <michael@zugelder.org>
+To: linux-kernel@vger.kernel.org
+Cc: dm-devel@redhat.com
+Date: Fri, 12 Oct 2012 21:37:36 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shuah Khan wrote:
-> On Fri, 2012-10-12 at 11:38 -0700, Jonathan Nieder wrote:
+Hi
 
->> To save Willy time: am I correct in guessing the upstream commit you
->> are referring to is 98fc5a693bbdda498a556654c70d1e31a186c988
->> (x86/amd-iommu: Use get_device_id and check_device where appropriate,
->> 2009-11-24)?
->
-> Yes that is one.
+this mail was originally only sent to the dm-crypt mailing list
+(dm-crypt@saout.de), but since it didn't exactly attract a lot of
+feedback, I'm resending it to reach a larger target audience.
 
-Great, thanks for the quick confirmation.
+Please keep me in CC, since I'm not subscribed to the LKML.
 
-Ciao,
-Jonathan
+I'm having an issue reading data via dm-crypt when there is heavy
+writeback going on (i.e. copying large files or using dd). A single
+read takes anywhere from a few seconds to multiple minutes.
+
+Testing setup:
+ * Fedora 17, stock 3.5.4-2.fc17 kernel and a self-compiled 3.6.1 kernel
+ * 320 GiB USB hard drive (sdb)
+ * dmsetup library version 1.02.74 (2012-03-06), driver version 4.23.0
+ * dm-crypt set up using cipher_null:
+   echo "0 $(blockdev --getsize /dev/sdb) crypt cipher_null - 0 /dev/sdb 0"|dmsetup create test
+ * seeker [1] to benchmark random read performance
+ * writeback induced by running 'dd if=/dev/zero of=$target bs=1M'
+
+Raw device performance (idle):
+  55 seeks/second, 18.15 ms random access time
+
+dm-crypt performance (idle):
+  54 seeks/second, 18.33 ms random access time
+
+Raw device performance (during writeback):
+  49 seeks/second, 20.35 ms random access time
+
+dm-crypt performance (during writeback):
+  0 seeks/second, 3750.00 ms random access time
+  0 seeks/second, 30000.00 ms random access time
+  0 seeks/second, 30000.00 ms random access time
+  3 seeks/second, 297.03 ms random access time
+  47 seeks/second, 21.14 ms random access time
+  15 seeks/second, 64.24 ms random access time
+  0 seeks/second, 10000.00 ms random access time
+
+Sometimes it almost works, but most of the time, the device is
+completely unusable.
+
+I experimented a bit with the other device mapper targets, namely linear
+and stripe, but both worked completely fine. I also tried putting a
+linear mapping above dm-crypt, with no impact on performance. Comparing
+the content of the /sys/block/$DEV files of the linear mapping and
+dm-crypt, there are no differences beside the name, dev no, stats,
+uevent and inflight files.
+
+But the inflight counters seem to provide some interesting data. When
+writing to the raw device, there are 127--131 writes in flight and a
+single read (seeker seems to use a queue depth of 1). But in the
+dm-crypt case, there are about 160000--250000 writes in flight for the
+mapping device, with 127--300 on the raw device. There is also a single
+read but only at the dm-crypt device, the raw device stays at
+0 reads the whole time. The linear mapping, in contrast, has "only" 
+~3500--9000 writes in flight, and the reads actually reach the raw
+device.
+
+Any pointers would be appreciated, I haven't found much on the web about
+this issue.
+
+Keep up the good work.
+
+
+Michael
+
+[1] http://www.linuxinsight.com/files/seeker.c
+
