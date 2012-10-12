@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab2JLFc5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 01:32:57 -0400
-Received: from ozlabs.org ([203.10.76.45]:51339 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754335Ab2JLFcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 01:32:55 -0400
-Date: Fri, 12 Oct 2012 16:32:48 +1100
-From: Paul Mackerras <paulus@samba.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [git pull] signal.git, pile 2 (was Re: [RFC][CFT][CFReview]
- execve and kernel_thread unification work)
-Message-ID: <20121012053248.GA24293@drongo>
-References: <20121001213809.GA31155@ZenIV.linux.org.uk>
- <20121011090023.GA28427@bloggs.ozlabs.ibm.com>
- <20121011125306.GF2616@ZenIV.linux.org.uk>
- <20121012001633.GA29883@bloggs.ozlabs.ibm.com>
- <20121012010958.GG2616@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121012010958.GG2616@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753329Ab2JLFnu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 01:43:50 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:42703 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab2JLFnt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 01:43:49 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: vinod.koul@intel.com
+Cc: linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        andriy.shevchenko@linux.intel.com,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 1/3] dmaengine: dw_dmac: Update documentation style comments for dw_dma_platform_data
+Date: Fri, 12 Oct 2012 11:13:40 +0530
+Message-Id: <142ef9170a2c69657d8a05ac127a9970d7b04965.1350020375.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+X-OriginalArrivalTime: 12 Oct 2012 05:43:44.0920 (UTC) FILETIME=[8B1F4980:01CDA83C]
+X-MC-Unique: 112101206434700901
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q9C5htHM014279
 
-On Fri, Oct 12, 2012 at 02:09:58AM +0100, Al Viro wrote:
-> 
-> How granular are you planning to make that?  I mean, we are talking about
-> 3 objects here - init/main.o, kernel/kthread.o and kernel/kmod.o.  Do they
-> get TOC separate from that of arch/powerpc/kernel/entry_64.o?
+Documentation style comments were missing for few fields in struct
+dw_dma_platform_data. Add these.
 
-Potentially, yes, it would be up to the linker.
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ include/linux/dw_dmac.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-> Anyway, if ppc folks can live with that stuff in its current form for now,
+diff --git a/include/linux/dw_dmac.h b/include/linux/dw_dmac.h
+index e1c8c9e..62a6190 100644
+--- a/include/linux/dw_dmac.h
++++ b/include/linux/dw_dmac.h
+@@ -19,6 +19,8 @@
+  * @nr_channels: Number of channels supported by hardware (max 8)
+  * @is_private: The device channels should be marked as private and not for
+  *	by the general purpose DMA channel allocator.
++ * @chan_allocation_order: Allocate channels starting from 0 or 7
++ * @chan_priority: Set channel priority increasing from 0 to 7 or 7 to 0.
+  * @block_size: Maximum block size supported by the controller
+  * @nr_masters: Number of AHB masters supported by the controller
+  * @data_width: Maximum data width supported by hardware per AHB master
+-- 
+1.7.12.rc2.18.g61b472e
 
-Yes, we can.
 
-Paul.
