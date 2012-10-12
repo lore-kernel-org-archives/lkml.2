@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933792Ab2JLJTf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 05:19:35 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:52442
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932181Ab2JLJTd (ORCPT
+	id S1422661Ab2JLJVU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 05:21:20 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:2612 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932181Ab2JLJVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 05:19:33 -0400
+	Fri, 12 Oct 2012 05:21:18 -0400
 X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: 9
-X-BigFish: VPS9(zzc84fmc8kzz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441hbe9i1155h)
-Subject: [Patch v2 6/7] Watchdog: DA9055 Watchdog driver
+X-SpamScore: 4
+X-BigFish: VPS4(zzc8kzz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441hbe9i1155h)
+Subject: [Patch v4 7/7] Onkey: DA9055 Onkey driver
 From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-CC: Samuel Ortiz <sameo@linux.intel.com>, <linux-watchdog@vger.kernel.org>,
-        David Dajun Chen <dchen@diasemi.com>, <linux-kernel@vger.kernel.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Liam Girdwood <lrg@slimlogic.co.uk>, Samuel Ortiz <sameo@linux.intel.com>,
+        <linux-input@vger.kernel.org>, David Dajun Chen <dchen@diasemi.com>,
+        <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 12 Oct 2012 15:00:03 +0530
-Message-ID: <1350034203.11527.19.camel@dhruva>
+Date: Fri, 12 Oct 2012 15:02:30 +0530
+Message-ID: <1350034350.11527.22.camel@dhruva>
 MIME-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -27,279 +28,238 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the Watchdog patch for the DA9055 PMIC. This patch has got dependency on
-the DA9055 MFD core.
+This is the ONKEY driver of the Dialog DA9055 PMIC and depends on the DA9055 MFD
+core driver.
 
-This patch is functionally tested on SMDK6410
+This patch is functionally tested on SMDK6410 board.
 
 Signed-off-by: David Dajun Chen <dchen@diasemi.com>
 Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
 ---
-changes since version v2:
-- remove duplicate includes
-- use of module_platform_driver macro
+changes since v4:
+- remove of devm_*irq API
+changes since v3:
+- used of module_platform_driver macro
+- add regmap virtual irq function
+changes since v2:
+- add support for handling the button release case
 ---
- drivers/watchdog/Kconfig      |   10 ++
- drivers/watchdog/Makefile     |    1 +
- drivers/watchdog/da9055_wdt.c |  216 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 227 insertions(+), 0 deletions(-)
- create mode 100644 drivers/watchdog/da9055_wdt.c
+ drivers/input/misc/Kconfig        |   10 ++
+ drivers/input/misc/Makefile       |    1 +
+ drivers/input/misc/da9055_onkey.c |  171 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 182 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/misc/da9055_onkey.c
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 53d7571..eb51bf2 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -76,6 +76,16 @@ config DA9052_WATCHDOG
-           Alternatively say M to compile the driver as a module,
-           which will be called da9052_wdt.
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 7c0f1ec..6a45cb8 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -486,6 +486,16 @@ config INPUT_DA9052_ONKEY
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called da9052_onkey.
  
-+config DA9055_WATCHDOG
-+	tristate "Dialog Semiconductor DA9055 Watchdog"
++config INPUT_DA9055_ONKEY
++	tristate "Dialog Semiconductor DA9055 ONKEY"
 +	depends on MFD_DA9055
 +	help
-+	  If you say yes here you get support for watchdog on the Dialog
-+	  Semiconductor DA9055 PMIC.
++	  Support the ONKEY of DA9055 PMICs as an input device
++	  reporting power button status.
 +
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called da9055_wdt.
++	  To compile this driver as a module, choose M here: the module
++	  will be called da9055_onkey.
 +
- config WM831X_WATCHDOG
- 	tristate "WM831x watchdog"
- 	depends on MFD_WM831X
-diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-index 572b39b..97bbdb3 100644
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@ -164,6 +164,7 @@ obj-$(CONFIG_XEN_WDT) += xen_wdt.o
- 
- # Architecture Independent
- obj-$(CONFIG_DA9052_WATCHDOG) += da9052_wdt.o
-+obj-$(CONFIG_DA9055_WATCHDOG) += da9055_wdt.o
- obj-$(CONFIG_WM831X_WATCHDOG) += wm831x_wdt.o
- obj-$(CONFIG_WM8350_WATCHDOG) += wm8350_wdt.o
- obj-$(CONFIG_MAX63XX_WATCHDOG) += max63xx_wdt.o
-diff --git a/drivers/watchdog/da9055_wdt.c b/drivers/watchdog/da9055_wdt.c
+ config INPUT_DM355EVM
+ 	tristate "TI DaVinci DM355 EVM Keypad and IR Remote"
+ 	depends on MFD_DM355EVM_MSP
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index 83fe6f5..23347e3 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -23,6 +23,7 @@ obj-$(CONFIG_INPUT_CMA3000)		+= cma3000_d0x.o
+ obj-$(CONFIG_INPUT_CMA3000_I2C)		+= cma3000_d0x_i2c.o
+ obj-$(CONFIG_INPUT_COBALT_BTNS)		+= cobalt_btns.o
+ obj-$(CONFIG_INPUT_DA9052_ONKEY)	+= da9052_onkey.o
++obj-$(CONFIG_INPUT_DA9055_ONKEY)	+= da9055_onkey.o
+ obj-$(CONFIG_INPUT_DM355EVM)		+= dm355evm_keys.o
+ obj-$(CONFIG_INPUT_GP2A)		+= gp2ap002a00f.o
+ obj-$(CONFIG_INPUT_GPIO_TILT_POLLED)	+= gpio_tilt_polled.o
+diff --git a/drivers/input/misc/da9055_onkey.c b/drivers/input/misc/da9055_onkey.c
 new file mode 100644
-index 0000000..493f7b5
+index 0000000..217b5ee
 --- /dev/null
-+++ b/drivers/watchdog/da9055_wdt.c
-@@ -0,0 +1,216 @@
++++ b/drivers/input/misc/da9055_onkey.c
+@@ -0,0 +1,171 @@
 +/*
-+ * System monitoring driver for DA9055 PMICs.
++ * ON pin driver for Dialog DA9055 PMICs
 + *
 + * Copyright(c) 2012 Dialog Semiconductor Ltd.
 + *
 + * Author: David Dajun Chen <dchen@diasemi.com>
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
 + */
 +
++#include <linux/init.h>
++#include <linux/input.h>
 +#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
 +#include <linux/platform_device.h>
-+#include <linux/watchdog.h>
-+#include <linux/delay.h>
 +
 +#include <linux/mfd/da9055/core.h>
 +#include <linux/mfd/da9055/reg.h>
 +
-+static bool nowayout = WATCHDOG_NOWAYOUT;
-+module_param(nowayout, bool, 0);
-+MODULE_PARM_DESC(nowayout,
-+		 "Watchdog cannot be stopped once started (default="
-+		 __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-+
-+#define DA9055_DEF_TIMEOUT	4
-+#define DA9055_TWDMIN		256
-+
-+struct da9055_wdt_data {
-+	struct watchdog_device wdt;
++struct da9055_onkey {
 +	struct da9055 *da9055;
-+	struct kref kref;
++	struct input_dev *input;
++	struct delayed_work work;
 +};
 +
-+static const struct {
-+	u8 reg_val;
-+	int user_time;  /* In seconds */
-+} da9055_wdt_maps[] = {
-+	{ 0, 0 },
-+	{ 1, 2 },
-+	{ 2, 4 },
-+	{ 3, 8 },
-+	{ 4, 16 },
-+	{ 5, 32 },
-+	{ 5, 33 },  /* Actual time  32.768s so included both 32s and 33s */
-+	{ 6, 65 },
-+	{ 6, 66 },  /* Actual time 65.536s so include both, 65s and 66s */
-+	{ 7, 131 },
-+};
-+
-+static int da9055_wdt_set_timeout(struct watchdog_device *wdt_dev,
-+				  unsigned int timeout)
++static void da9055_onkey_query(struct da9055_onkey *onkey)
 +{
-+	struct da9055_wdt_data *driver_data = watchdog_get_drvdata(wdt_dev);
-+	struct da9055 *da9055 = driver_data->da9055;
-+	int ret, i;
++	int key_stat;
 +
-+	for (i = 0; i < ARRAY_SIZE(da9055_wdt_maps); i++)
-+		if (da9055_wdt_maps[i].user_time == timeout)
-+			break;
-+
-+	if (i == ARRAY_SIZE(da9055_wdt_maps))
-+		ret = -EINVAL;
-+	else
-+		ret = da9055_reg_update(da9055, DA9055_REG_CONTROL_B,
-+					DA9055_TWDSCALE_MASK,
-+					da9055_wdt_maps[i].reg_val <<
-+					DA9055_TWDSCALE_SHIFT);
-+	if (ret < 0)
-+		dev_err(da9055->dev,
-+			"Failed to update timescale bit, %d\n", ret);
-+
-+	wdt_dev->timeout = timeout;
-+
-+	return ret;
-+}
-+
-+static int da9055_wdt_ping(struct watchdog_device *wdt_dev)
-+{
-+	struct da9055_wdt_data *driver_data = watchdog_get_drvdata(wdt_dev);
-+	struct da9055 *da9055 = driver_data->da9055;
-+	int ret;
++	key_stat = da9055_reg_read(onkey->da9055, DA9055_REG_STATUS_A);
++	if (key_stat < 0) {
++		dev_err(onkey->da9055->dev,
++			"Failed to read onkey event %d\n", key_stat);
++	} else {
++		key_stat &= DA9055_NOKEY_STS;
++		/*
++		 * Onkey status bit is cleared when onkey button is relased.
++		 */
++		if (!key_stat) {
++			input_report_key(onkey->input, KEY_POWER, 0);
++			input_sync(onkey->input);
++		}
++	}
 +
 +	/*
-+	 * We have a minimum time for watchdog window called TWDMIN. A write
-+	 * to the watchdog before this elapsed time will cause an error.
++	 * Interrupt is generated only when the ONKEY pin is asserted.
++	 * Hence the deassertion of the pin is simulated through work queue.
 +	 */
-+	mdelay(DA9055_TWDMIN);
++	if (key_stat)
++		schedule_delayed_work(&onkey->work, msecs_to_jiffies(10));
 +
-+	/* Reset the watchdog timer */
-+	ret = da9055_reg_update(da9055, DA9055_REG_CONTROL_E,
-+				DA9055_WATCHDOG_MASK, 1);
-+
-+	return ret;
 +}
 +
-+static void da9055_wdt_release_resources(struct kref *r)
++static void da9055_onkey_work(struct work_struct *work)
 +{
-+	struct da9055_wdt_data *driver_data =
-+		container_of(r, struct da9055_wdt_data, kref);
++	struct da9055_onkey *onkey = container_of(work, struct da9055_onkey,
++						  work.work);
 +
-+	kfree(driver_data);
++	da9055_onkey_query(onkey);
 +}
 +
-+static void da9055_wdt_ref(struct watchdog_device *wdt_dev)
++static irqreturn_t da9055_onkey_irq(int irq, void *data)
 +{
-+	struct da9055_wdt_data *driver_data = watchdog_get_drvdata(wdt_dev);
++	struct da9055_onkey *onkey = data;
 +
-+	kref_get(&driver_data->kref);
++	input_report_key(onkey->input, KEY_POWER, 1);
++	input_sync(onkey->input);
++
++	da9055_onkey_query(onkey);
++
++	return IRQ_HANDLED;
 +}
 +
-+static void da9055_wdt_unref(struct watchdog_device *wdt_dev)
++static int __devinit da9055_onkey_probe(struct platform_device *pdev)
 +{
-+	struct da9055_wdt_data *driver_data = watchdog_get_drvdata(wdt_dev);
-+
-+	kref_put(&driver_data->kref, da9055_wdt_release_resources);
-+}
-+
-+static int da9055_wdt_start(struct watchdog_device *wdt_dev)
-+{
-+	return da9055_wdt_set_timeout(wdt_dev, wdt_dev->timeout);
-+}
-+
-+static int da9055_wdt_stop(struct watchdog_device *wdt_dev)
-+{
-+	return da9055_wdt_set_timeout(wdt_dev, 0);
-+}
-+
-+static struct watchdog_info da9055_wdt_info = {
-+	.options	= WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING,
-+	.identity	= "DA9055 Watchdog",
-+};
-+
-+static const struct watchdog_ops da9055_wdt_ops = {
-+	.owner = THIS_MODULE,
-+	.start = da9055_wdt_start,
-+	.stop = da9055_wdt_stop,
-+	.ping = da9055_wdt_ping,
-+	.set_timeout = da9055_wdt_set_timeout,
-+	.ref = da9055_wdt_ref,
-+	.unref = da9055_wdt_unref,
-+};
-+
-+static int __devinit da9055_wdt_probe(struct platform_device *pdev)
-+{
++	struct input_dev *input_dev;
 +	struct da9055 *da9055 = dev_get_drvdata(pdev->dev.parent);
-+	struct da9055_wdt_data *driver_data;
-+	struct watchdog_device *da9055_wdt;
-+	int ret;
++	struct da9055_onkey *onkey;
++	int irq, err;
 +
-+	driver_data = devm_kzalloc(&pdev->dev, sizeof(*driver_data),
-+				   GFP_KERNEL);
-+	if (!driver_data) {
-+		dev_err(da9055->dev, "Failed to allocate watchdog device\n");
++	irq = platform_get_irq_byname(pdev, "ONKEY");
++	if (irq < 0) {
++		dev_err(&pdev->dev,
++			"Failed to get an IRQ for input device, %d\n", irq);
++		return -EINVAL;
++	}
++
++	onkey = devm_kzalloc(&pdev->dev, sizeof(*onkey), GFP_KERNEL);
++	if (!onkey) {
++		dev_err(&pdev->dev, "Failed to allocate memory\n");
 +		return -ENOMEM;
 +	}
 +
-+	driver_data->da9055 = da9055;
-+
-+	da9055_wdt = &driver_data->wdt;
-+
-+	da9055_wdt->timeout = DA9055_DEF_TIMEOUT;
-+	da9055_wdt->info = &da9055_wdt_info;
-+	da9055_wdt->ops = &da9055_wdt_ops;
-+	watchdog_set_nowayout(da9055_wdt, nowayout);
-+	watchdog_set_drvdata(da9055_wdt, driver_data);
-+
-+	kref_init(&driver_data->kref);
-+
-+	ret = da9055_wdt_stop(da9055_wdt);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Failed to stop watchdog, %d\n", ret);
-+		goto err;
++	input_dev = input_allocate_device();
++	if (!input_dev) {
++		dev_err(&pdev->dev, "Failed to allocate memory\n");
++		return -ENOMEM;
 +	}
 +
-+	dev_set_drvdata(&pdev->dev, driver_data);
++	onkey->input = input_dev;
++	onkey->da9055 = da9055;
++	input_dev->name = "da9055-onkey";
++	input_dev->phys = "da9055-onkey/input0";
++	input_dev->dev.parent = &pdev->dev;
 +
-+	ret = watchdog_register_device(&driver_data->wdt);
-+	if (ret != 0)
-+		dev_err(da9055->dev, "watchdog_register_device() failed: %d\n",
-+			ret);
++	input_dev->evbit[0] = BIT_MASK(EV_KEY);
++	__set_bit(KEY_POWER, input_dev->keybit);
 +
-+err:
-+	return ret;
++	INIT_DELAYED_WORK(&onkey->work, da9055_onkey_work);
++
++	irq = regmap_irq_get_virq(da9055->irq_data, irq);
++	err = request_threaded_irq(irq, NULL, da9055_onkey_irq,
++				   IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
++				   "ONKEY", onkey);
++	if (err < 0) {
++		dev_err(&pdev->dev,
++			"Failed to register ONKEY IRQ %d, error = %d\n",
++			irq, err);
++		goto free_onkey;
++	}
++
++	err = input_register_device(input_dev);
++	if (err) {
++		dev_err(&pdev->dev, "Unable to register input device, %d\n",
++			err);
++		goto free_irq;
++	}
++
++	platform_set_drvdata(pdev, onkey);
++
++	return 0;
++
++free_irq:
++	free_irq(irq, onkey);
++free_onkey:
++	cancel_delayed_work_sync(&onkey->work);
++	input_free_device(input_dev);
++
++	return err;
 +}
 +
-+static int __devexit da9055_wdt_remove(struct platform_device *pdev)
++static int __devexit da9055_onkey_remove(struct platform_device *pdev)
 +{
-+	struct da9055_wdt_data *driver_data = dev_get_drvdata(&pdev->dev);
++	struct da9055_onkey *onkey = platform_get_drvdata(pdev);
++	int irq = platform_get_irq_byname(pdev, "ONKEY");
 +
-+	watchdog_unregister_device(&driver_data->wdt);
-+	kref_put(&driver_data->kref, da9055_wdt_release_resources);
++	irq = regmap_irq_get_virq(onkey->da9055->irq_data, irq);
++	free_irq(irq, onkey);
++	cancel_delayed_work_sync(&onkey->work);
++	input_unregister_device(onkey->input);
 +
 +	return 0;
 +}
 +
-+static struct platform_driver da9055_wdt_driver = {
-+	.probe = da9055_wdt_probe,
-+	.remove = __devexit_p(da9055_wdt_remove),
++static struct platform_driver da9055_onkey_driver = {
++	.probe	= da9055_onkey_probe,
++	.remove	= __devexit_p(da9055_onkey_remove),
 +	.driver = {
-+		.name	= "da9055-watchdog",
++		.name	= "da9055-onkey",
++		.owner	= THIS_MODULE,
 +	},
 +};
 +
-+module_platform_driver(da9055_wdt_driver);
++module_platform_driver(da9055_onkey_driver);
 +
 +MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-+MODULE_DESCRIPTION("DA9055 watchdog");
++MODULE_DESCRIPTION("Onkey driver for DA9055");
 +MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:da9055-watchdog");
++MODULE_ALIAS("platform:da9055-onkey");
 -- 
 1.7.0.4
 
