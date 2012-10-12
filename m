@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab2JLGUb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 02:20:31 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:43062 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752161Ab2JLGUa (ORCPT
+	id S932771Ab2JLG00 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 02:26:26 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48794 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753024Ab2JLG0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 02:20:30 -0400
+	Fri, 12 Oct 2012 02:26:25 -0400
+Date: Fri, 12 Oct 2012 15:26:09 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: ciminaghi@gnudd.com
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regmap : make lock/unlock functions customizable.
+Message-ID: <20121012062607.GN11726@opensource.wolfsonmicro.com>
+References: <1349127064-432-1-git-send-email-ciminaghi@gnudd.com>
 MIME-Version: 1.0
-In-Reply-To: <20121001152501.GA7978@kroah.com>
-References: <1349095840-26450-1-git-send-email-christian.gmeiner@gmail.com> <20121001152501.GA7978@kroah.com>
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Fri, 12 Oct 2012 08:20:07 +0200
-Message-ID: <CAH9NwWdtai6uPCAZZuQt_n4sb7rounSa_UHCHoncBAAS2TmwBA@mail.gmail.com>
-Subject: Re: [PATCH] leds-ot200: Fix error caused by shifted mask
-To: Greg KH <greg@kroah.com>
-Cc: akpm@linux-foundation.org, stable@vger.kernel.org, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349127064-432-1-git-send-email-ciminaghi@gnudd.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/1 Greg KH <greg@kroah.com>:
-> On Mon, Oct 01, 2012 at 02:50:40PM +0200, Christian Gmeiner wrote:
->> During the development of this driver an in-house register
->> documentation was used. The last weeks some integration tests
->> were done and this problem was found. It turned out that
->> the released register documentation is wrong.
->>
->> The fix is very simple: shift all mask by one.
->>
->> Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
->> ---
->>  drivers/leds/leds-ot200.c | 14 +++++++-------
->>  1 file changed, 7 insertions(+), 7 deletions(-)
->
-> <formletter>
->
-> This is not the correct way to submit patches for inclusion in the
-> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-> for how to do this properly.
->
-> </formletter>
+On Mon, Oct 01, 2012 at 11:31:04PM +0200, ciminaghi@gnudd.com wrote:
+> From: Davide Ciminaghi <ciminaghi@gnudd.com>
+> 
+> It is sometimes convenient for a regmap user to override the standard
+> regmap lock/unlock functions with custom functions.
 
-Thanks... I will inform stable team again if this patch gets into
-mainline - hopefully soon.
---
-Christian Gmeiner, MSc
+This looks good overall but...
+
+> -static void regmap_lock_mutex(struct regmap *map)
+> +static void regmap_lock_mutex(void *__map)
+>  {
+> +	struct regmap *map = (struct regmap *)__map;
+>  	mutex_lock(&map->mutex);
+
+...you should never need to cast away from or to void, if you do there's
+a bug somewhere.
