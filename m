@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933833Ab2JLDcc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 23:32:32 -0400
-Received: from mga01.intel.com ([192.55.52.88]:53656 "EHLO mga01.intel.com"
+	id S1758086Ab2JLDh5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 23:37:57 -0400
+Received: from mga11.intel.com ([192.55.52.93]:28715 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933800Ab2JLDc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 23:32:29 -0400
+	id S1751718Ab2JLDhz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 23:37:55 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,576,1344236400"; 
-   d="scan'208";a="233864232"
-Subject: [PATCH] genirq: for edge interrupt  IRQS_ONESHOT support with irq
- thread
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 12 Oct 2012 20:31:24 +0800
-Message-ID: <1350045084.13178.19.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="233017785"
+From: "Ma, Ling" <ling.ma@intel.com>
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: "mingo@elte.hu" <mingo@elte.hu>, "hpa@zytor.com" <hpa@zytor.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging
+ instruction sequence and saving register
+Thread-Topic: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging
+ instruction sequence and saving register
+Thread-Index: AQHNp3KHe7EK2OTz7EWBVGWon0YSZpezpk8AgAFdKsA=
+Date: Fri, 12 Oct 2012 03:37:50 +0000
+Message-ID: <B2310DA9850C8743AA7AA0055500E90F0FD709F9@SHSMSX102.ccr.corp.intel.com>
+References: <1349958548-1868-1-git-send-email-ling.ma@intel.com>
+ <20121011143527.GA2408@localhost.localdomain>
+In-Reply-To: <20121011143527.GA2408@localhost.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > Load and write operation occupy about 35% and 10% respectively for
+> > most industry benchmarks. Fetched 16-aligned bytes code include about
+> > 4 instructions, implying 1.34(0.35 * 4) load, 0.4 write.
+> > Modern CPU support 2 load and 1 write per cycle, so throughput from
+> > write is bottleneck for memcpy or copy_page, and some slight CPU only
+> > support one mem operation per cycle. So it is enough to issue one
+> read
+> > and write instruction per cycle, and we can save registers.
+> 
+> So is that also true for AMD CPUs?
+Although Bulldozer put 32byte instruction into decoupled 16byte entry buffers,
+it still decode 4 instructions per cycle, so 4 instructions will be fed into execution unit and
+2 loads ,1 write will be issued per cycle.
 
-In our system, there is one edge interrupt, and we want it to be
-irq thread with IRQS_ONESHOT, and found in handle_edge_irq(),
-even with IRQS_ONESHOT, the irq is still unmasked without care of
-flag IRQS_ONESHOT.
-
-It causes IRQS_ONESHOT can not work well for edge interrupt, but also
-after the irq thread finished with flag IRQS_ONESHOT, the irq will be
-possible to be unmasked again, it should be messing mask/unmask logic.
-
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
----
- kernel/irq/chip.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index 57d86d0..f23f524 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -497,7 +497,13 @@ handle_edge_irq(unsigned int irq, struct irq_desc *desc)
- 	kstat_incr_irqs_this_cpu(irq, desc);
- 
- 	/* Start handling the irq */
--	desc->irq_data.chip->irq_ack(&desc->irq_data);
-+	if (desc->istate & IRQS_ONESHOT) {
-+		mask_ack_irq(desc);
-+		handle_irq_event(desc);
-+		cond_unmask_irq(desc);
-+		goto out_unlock;
-+	} else
-+		desc->irq_data.chip->irq_ack(&desc->irq_data);
- 
- 	do {
- 		if (unlikely(!desc->action)) {
--- 
-1.7.0.4
-
-
-
+Thanks
+Ling
