@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759849Ab2JLRBJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 13:01:09 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:55040 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754087Ab2JLRBG (ORCPT
+	id S1759939Ab2JLRBs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 13:01:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35127 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756767Ab2JLRBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 13:01:06 -0400
-Message-ID: <50784CCC.3050300@gmail.com>
-Date: Fri, 12 Oct 2012 12:01:00 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Fri, 12 Oct 2012 13:01:47 -0400
+Message-ID: <50784CD3.2040008@kernel.dk>
+Date: Fri, 12 Oct 2012 11:01:07 -0600
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        jonathan@jonmasters.org, eric.dumazet@gmail.com,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>
-Subject: Re: [PATCH 5/6] net: calxedaxgmac: rework transmit ring handling
-References: <1350054908-30646-1-git-send-email-robherring2@gmail.com>  <1350054908-30646-6-git-send-email-robherring2@gmail.com> <1350059332.2819.18.camel@bwh-desktop.uk.solarflarecom.com>
-In-Reply-To: <1350059332.2819.18.camel@bwh-desktop.uk.solarflarecom.com>
-Content-Type: text/plain; charset=UTF-8
+To: Derek Basehore <dbasehore@chromium.org>
+CC: msb@chromium.org, spang@chromium.org, bfreed@chromium.org,
+        arscott@chromium.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: Remove deadlock in disk_clear_events
+References: <1349992327-9747-1-git-send-email-dbasehore@chromium.org>
+In-Reply-To: <1349992327-9747-1-git-send-email-dbasehore@chromium.org>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2012 11:28 AM, Ben Hutchings wrote:
-> On Fri, 2012-10-12 at 10:15 -0500, Rob Herring wrote:
->> From: Rob Herring <rob.herring@calxeda.com>
->>
->> Only generate tx interrupts on every ring size / 4 descriptors. Move the
->> netif_stop_queue call to the end of the xmit function rather than
->> checking at the beginning.
-> [...]
+On 2012-10-11 15:52, Derek Basehore wrote:
+> In disk_clear_events, do not put work on system_nrt_freezable_wq. Instead, put
+> it on system_nrt_wq.
 > 
-> The hardware should also interrupt if the TX ring becomes empty; does it
-> do that?
+> There is a race between probing a usb and suspending the device. Since probing a
+> usb calls disk_clear_events, which puts work on a frozen workqueue, probing
+> cannot finish after the workqueue is frozen. However, suspending cannot finish
+> until the usb probe is finished, so we get a deadlock.
 
-Yes, with the "tx buffer unavailable" bit DMA_INTR_ENA_TUE. It is not a
-per descriptor interrupt.
+Thanks, applied to later inclusion into 3.7. You did not mark this as
+stable, though it seems it should be?
 
-However, I just noticed I missed part of this patch to actually enable
-tx descriptor interrupt. New version coming.
+-- 
+Jens Axboe
 
-Rob
