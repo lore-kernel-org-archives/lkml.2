@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760124Ab2JLTAU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 15:00:20 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45285 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754095Ab2JLTAR (ORCPT
+	id S1754257Ab2JLTG1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 15:06:27 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27985 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752493Ab2JLTGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 15:00:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <507276FD.4020808@cn.fujitsu.com>
-References: <506C0AE8.40702@jp.fujitsu.com> <506C0F53.5030500@jp.fujitsu.com>
- <CAHGf_=o6K71u4+OVsLvfCSRmOTk12TpsgKwsJO6bGdd_6dYnyA@mail.gmail.com> <507276FD.4020808@cn.fujitsu.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Fri, 12 Oct 2012 14:59:56 -0400
-X-Google-Sender-Auth: yj1uK9Vh9EIWaqvnuqwOq_2rDl8
-Message-ID: <CAHGf_=rf+ginaNjYifJJVa6sy2Hd41tdJQtC_JtmGaneyKqbkA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] acpi,memory-hotplug : store the node id in acpi_memory_device
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 12 Oct 2012 15:06:25 -0400
+Date: Fri, 12 Oct 2012 12:06:19 -0700
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH V2 2/7]: PVH: use native irq, enable
+ callback, use HVM ring ops, ...
+Message-ID: <20121012120619.6d8f3317@mantra.us.oracle.com>
+In-Reply-To: <1350031937.14806.49.camel@zakaz.uk.xensource.com>
+References: <20121011145711.0d9c27df@mantra.us.oracle.com>
+	<1350031937.14806.49.camel@zakaz.uk.xensource.com>
+Organization: Oracle Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 8, 2012 at 2:47 AM, Wen Congyang <wency@cn.fujitsu.com> wrote:
-> At 10/06/2012 02:56 AM, KOSAKI Motohiro Wrote:
->> On Wed, Oct 3, 2012 at 6:11 AM, Yasuaki Ishimatsu
->> <isimatu.yasuaki@jp.fujitsu.com> wrote:
->>> From: Wen Congyang <wency@cn.fujitsu.com>
->>>
->>> The memory device has only one node id. Store the node id when
->>> enable the memory device, and we can reuse it when removing the
->>> memory device.
->>
->> You don't explain why we need this. Then nobody can review nor ack.
->>
->
-> This patch doesn't fix any problem. Its purpose is: avoid to calculate
-> the node id twice.
+On Fri, 12 Oct 2012 09:52:17 +0100
+Ian Campbell <Ian.Campbell@citrix.com> wrote:
 
-ditto.
+> >  drivers/xen/cpu_hotplug.c            |    4 +++-
+> >  drivers/xen/events.c                 |    9 ++++++++-
+> >  drivers/xen/xenbus/xenbus_client.c   |    3 ++-
+> >  7 files changed, 27 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/arch/x86/include/asm/xen/interface.h
+> > b/arch/x86/include/asm/xen/interface.h index 555f94d..f11edb0 100644
+> > --- a/arch/x86/include/asm/xen/interface.h
+> > +++ b/arch/x86/include/asm/xen/interface.h
+> > @@ -143,7 +143,13 @@ struct vcpu_guest_context {
+> >      struct cpu_user_regs user_regs;         /* User-level CPU
+> > registers     */ struct trap_info trap_ctxt[256];        /* Virtual
+> > IDT                  */ unsigned long ldt_base, ldt_ents;       /*
+> > LDT (linear address, # ents) */
+> > -    unsigned long gdt_frames[16], gdt_ents; /* GDT (machine
+> > frames, # ents) */
+> > +    union {
+> > +	struct {
+> > +		/* PV: GDT (machine frames, # ents).*/
+> > +		unsigned long gdt_frames[16], gdt_ents;
+> > +	} s;
+> > +	unsigned long gdtaddr, gdtsz;	    /* PVH: GDTR addr
+> > and size */
+> 
+> I've pointed out a few times that I think this is wrong -- gdtaddr and
+> gdtsz will overlap each other in the union. I'm not sure how it even
+> works, unless the hypervisor is ignoring one or the other. You need:
+> 
+> union {
+> 	struct {
+> 		unsigned long gdt_frames[16], gdt_ents;
+> 	} pv;
+> 	struct {
+> 		unsigned long gdtaddr, gdtsz;
+> 	} pvh;
+> } gdt;
+> 
+> (I've gone with naming the union gdt instead of u. You might want
+> therefore to also drop the gdt prefix from the members?)
 
-Please separate patches as logical change. You should make problem fix
-patch set.
+Is it worth it, I mean, making it a union. Would you be OK if I just
+used gdt_frames[0] and gdt_ends for gdtaddr and size?
+
+thanks
+Mukesh
+
+
