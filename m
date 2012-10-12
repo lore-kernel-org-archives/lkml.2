@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750988Ab2JLT2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 15:28:48 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:56666 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab2JLT2o (ORCPT
+	id S1751227Ab2JLT3J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 15:29:09 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:40395 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750969Ab2JLT3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 15:28:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <506E46B6.3060502@jp.fujitsu.com>
-References: <506E43E0.70507@jp.fujitsu.com> <506E46B6.3060502@jp.fujitsu.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Fri, 12 Oct 2012 15:28:23 -0400
-X-Google-Sender-Auth: rviRGVSqxUNkY2WSN2DXC5P6jGs
-Message-ID: <CAHGf_=raSH5C8ye90F1PLZ8mGQUGggB=J0HYU8UhkKVDTV5JXQ@mail.gmail.com>
-Subject: Re: [PATCH 5/10] memory-hotplug : memory-hotplug: check page type in get_page_bootmem
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org, wency@cn.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 12 Oct 2012 15:29:07 -0400
+Message-ID: <1350069843.7065.65.camel@rhapsody>
+Subject: Re: [PATCH v6 1/2] ACPI: Add early console framework for DBGP/DBG2.
+From: Khalid Aziz <khalid@gonehiking.org>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, Len Brown <len.brown@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Feng Tang <feng.tang@intel.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, x86@kernel.org,
+        platform-driver-x86@vger.kernel.org
+Date: Fri, 12 Oct 2012 13:24:03 -0600
+In-Reply-To: <20121010174406.GA13861@srcf.ucam.org>
+References: <cover.1348652044.git.lv.zheng@intel.com>
+	 <09ee0e9c79c57da2fc9d0af1c2daeaacdc0bb234.1349838218.git.lv.zheng@intel.com>
+	 <20121010174406.GA13861@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 4, 2012 at 10:32 PM, Yasuaki Ishimatsu
-<isimatu.yasuaki@jp.fujitsu.com> wrote:
-> The function get_page_bootmem() may be called more than one time to the same
-> page. There is no need to set page's type, private if the function is not
-> the first time called to the page.
->
-> Note: the patch is just optimization and does not fix any problem.
->
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> ---
->  mm/memory_hotplug.c |   15 +++++++++++----
->  1 file changed, 11 insertions(+), 4 deletions(-)
->
-> Index: linux-3.6/mm/memory_hotplug.c
-> ===================================================================
-> --- linux-3.6.orig/mm/memory_hotplug.c  2012-10-04 18:29:58.284676075 +0900
-> +++ linux-3.6/mm/memory_hotplug.c       2012-10-04 18:30:03.454680542 +0900
-> @@ -95,10 +95,17 @@ static void release_memory_resource(stru
->  static void get_page_bootmem(unsigned long info,  struct page *page,
->                              unsigned long type)
->  {
-> -       page->lru.next = (struct list_head *) type;
-> -       SetPagePrivate(page);
-> -       set_page_private(page, info);
-> -       atomic_inc(&page->_count);
-> +       unsigned long page_type;
-> +
-> +       page_type = (unsigned long)page->lru.next;
+On Wed, 2012-10-10 at 18:44 +0100, Matthew Garrett wrote:
+> On Wed, Oct 10, 2012 at 11:23:01AM +0800, Lv Zheng wrote:
+> > Microsoft Debug Port Table (DBGP or DBG2) is used by the Windows SoC
+> > platforms to describe their debugging facilities.
+> > DBGP: http://msdn.microsoft.com/en-us/windows/hardware/hh134821
+> > DBG2: http://msdn.microsoft.com/en-us/library/windows/hardware/hh673515
+> 
+> The license for these specifications only covers BIOS implementations, 
+> not OS implementations. Has this had appropriate legal review?
+> 
 
-If I understand correctly, page->lru.next might be uninitialized yet.
+I agree with Matthew. There are potential legal issues with using
+DBGP/DBGP2 tables in Linux. I had added support for SPCR and DBGP tables
+many years ago (in early 2.6 kernel timeframe) before Microsoft added
+this new license. I pulled the code out (in 2.6.14, I think) after
+Microsoft added the new license to these tables. I agree with Matthew's
+interpretation that the license is clear only about BIOS vendors being
+allowed to use these tables. PCDP table in DIG64 spec was introduced to
+get around the legal issues with using SPCR and DBGP in Linux.
 
-Moreover, I have no seen any good effect in this patch. I don't understand
-why we need to increase code complexity.
+License for DBGP/DBGP2 needs some legal review before this patch can go
+into Linux.
 
+--
+Khalid
 
-
-> +       if (page_type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
-> +           page_type > MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE){
-> +               page->lru.next = (struct list_head *)type;
-> +               SetPagePrivate(page);
-> +               set_page_private(page, info);
-> +               atomic_inc(&page->_count);
-> +       } else
-> +               atomic_inc(&page->_count);
->  }
->
->  /* reference to __meminit __free_pages_bootmem is valid
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
