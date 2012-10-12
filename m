@@ -1,83 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933763Ab2JLJHb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 05:07:31 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39068 "EHLO mail.skyhub.de"
+	id S1422659Ab2JLJHv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 05:07:51 -0400
+Received: from mga01.intel.com ([192.55.52.88]:62615 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932421Ab2JLJHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 05:07:25 -0400
-Date: Fri, 12 Oct 2012 11:08:11 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-Subject: Re: [GIT PULL] perf updates/fixes
-Message-ID: <20121012090810.GA11763@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Ingo Molnar <mingo@kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-kernel@vger.kernel.org,
-	Arnaldo Carvalho de Melo <acme@infradead.org>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Markus Trippelsdorf <markus@trippelsdorf.de>
-References: <20121012081947.GA20570@gmail.com>
- <20121012083926.GA30327@gmail.com>
+	id S932421Ab2JLJHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 05:07:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,576,1344236400"; 
+   d="c'?scan'208";a="233102236"
+From: "Ma, Ling" <ling.ma@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: Konrad Rzeszutek Wilk <konrad@kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iant@google.com" <iant@google.com>
+Subject: RE: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging
+ instruction sequence and saving register
+Thread-Topic: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging
+ instruction sequence and saving register
+Thread-Index: AQHNp3KHe7EK2OTz7EWBVGWon0YSZpezpk8AgAFdKsD//6o9gIAAnmeA
+Date: Fri, 12 Oct 2012 09:07:43 +0000
+Message-ID: <B2310DA9850C8743AA7AA0055500E90F0FD70AC5@SHSMSX102.ccr.corp.intel.com>
+References: <1349958548-1868-1-git-send-email-ling.ma@intel.com>
+ <20121011143527.GA2408@localhost.localdomain>
+ <B2310DA9850C8743AA7AA0055500E90F0FD709F9@SHSMSX102.ccr.corp.intel.com>
+ <20121012061813.GC9881@liondog.tnic>
+In-Reply-To: <20121012061813.GC9881@liondog.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: multipart/mixed;
+	boundary="_002_B2310DA9850C8743AA7AA0055500E90F0FD70AC5SHSMSX102ccrcor_"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20121012083926.GA30327@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 10:39:26AM +0200, Ingo Molnar wrote:
-> 
-> * Ingo Molnar <mingo@kernel.org> wrote:
-> 
-> > Linus,
-> > 
-> > Please pull the latest perf-urgent-for-linus git tree from:
-> > 
-> >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
-> > 
-> >    HEAD: 95cf59ea72331d0093010543b8951bb43f262cac perf: Fix perf_cgroup_switch for sw-events
-> 
-> Note that if you merge it then there's a new semantic conflict 
-> with recent rbtree.c changes in your tree, causing a tools/perf/ 
-> build failure:
-> 
-> ../../lib/rbtree.c:24:36: fatal error: linux/rbtree_augmented.h: No such file or directory compilation terminated.
-> 
-> See the fix below.
-> 
-> ( If the __maybe_unused annotations are too ugly for 
->   lib/rbtree.c then we'll fix that in tools/perf in a cleaner
->   way, weakening the compiler checks for the rbtree build. We 
->   are using stronger compiler checks in tools/perf/, which has 
->   served us very well so far and is a big net win - the price is 
->   the occasional extra annotation of dummy inline function 
->   parameters. )
+--_002_B2310DA9850C8743AA7AA0055500E90F0FD70AC5SHSMSX102ccrcor_
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
 
-Btw,
+PiA+ID4gU28gaXMgdGhhdCBhbHNvIHRydWUgZm9yIEFNRCBDUFVzPw0KPiA+IEFsdGhvdWdoIEJ1
+bGxkb3plciBwdXQgMzJieXRlIGluc3RydWN0aW9uIGludG8gZGVjb3VwbGVkIDE2Ynl0ZSBlbnRy
+eQ0KPiA+IGJ1ZmZlcnMsIGl0IHN0aWxsIGRlY29kZSA0IGluc3RydWN0aW9ucyBwZXIgY3ljbGUs
+IHNvIDQgaW5zdHJ1Y3Rpb25zDQo+ID4gd2lsbCBiZSBmZWQgaW50byBleGVjdXRpb24gdW5pdCBh
+bmQNCj4gPiAyIGxvYWRzICwxIHdyaXRlIHdpbGwgYmUgaXNzdWVkIHBlciBjeWNsZS4NCj4gDQo+
+IEknZCBiZSB2ZXJ5IGludGVyZXN0ZWQgd2l0aCB3aGF0IGJlbmNobWFya3MgYXJlIHlvdSBzZWVp
+bmcgdGhhdCBwZXJmDQo+IGltcHJvdmVtZW50IG9uIEF0b20gYW5kIHdobyBrbm93cywgbWF5YmUg
+SSBjb3VsZCBmaW5kIHRpbWUgdG8gcnVuIHRoZW0NCj4gb24gQnVsbGRvemVyIGFuZCBzZWUgaG93
+IHlvdXIgcGF0Y2ggYmVoYXZlcyB0aGVyZSA6LSkuTQ0KSSB1c2UgYW5vdGhlciBiZW5jaG1hcmsg
+ZnJvbSBnY2MsIHRoZXJlIGFyZSBtYW55IGNvZGUsIGFuZCBleHRyYWN0IG9uZSBzaW1wbGUgYmVu
+Y2htYXJrLCB5b3UgbWF5IHVzZSBpdCB0byB0ZXN0IChjYyAtbyBjb3B5X3BhZ2UgY29weV9wYWdl
+LmMpLA0KbXkgaW5pdGlhbCByZXN1bHQgc2hvd3MgbmV3IGNvcHkgcGFnZSB2ZXJzaW9uIGlzIHN0
+aWxsIGJldHRlciBvbiBidWxsZG96ZXIgbWFjaGluZSwgYmVjYXVzZSB0aGUgbWFjaGluZSBpcyBm
+aXJzdCByZWxlYXNlLCBwbGVhc2UgdmVyaWZ5IHJlc3VsdC4NCkFuZCBDQyB0byBJYW4uDQoNClRo
+YW5rcw0KTGluZw0KDQo=
 
-Markus fixed it that way recently:
+--_002_B2310DA9850C8743AA7AA0055500E90F0FD70AC5SHSMSX102ccrcor_
+Content-Type: text/plain; name="copy_page.c"
+Content-Description: copy_page.c
+Content-Disposition: attachment; filename="copy_page.c"; size=5975;
+	creation-date="Fri, 12 Oct 2012 07:52:33 GMT";
+	modification-date="Fri, 12 Oct 2012 09:00:39 GMT"
+Content-Transfer-Encoding: base64
 
-http://marc.info/?l=linux-kernel&m=134980573527738
+I2luY2x1ZGU8c3RkaW8uaD4KI2luY2x1ZGUgPHN0ZGxpYi5oPgoKCnR5cGVkZWYgdW5zaWduZWQg
+bG9uZyBsb25nIGludCBocF90aW1pbmdfdDsKI2RlZmluZSAgTUFYU0FNUExFU1RQVCAgICAgICAg
+MTAwMAojZGVmaW5lICBNQVhDT1BZU0laRSAgICAgICAgICAoMTAyNCAqIDEwMjQpCiNkZWZpbmUg
+IE9SSUcgIDAKI2RlZmluZSAgTkVXICAgMQpzdGF0aWMgY2hhciogYnVmMSA9IE5VTEw7CnN0YXRp
+YyBjaGFyKiBidWYyID0gTlVMTDsKc3RhdGljIGludCByZXBlYXRfb25lX3Rlc3QgPSAzMjsKCmhw
+X3RpbWluZ190IF9kbF9ocF90aW1pbmdfb3ZlcmhlYWQ7CiMgZGVmaW5lIEhQX1RJTUlOR19OT1co
+VmFyKSBcCiAgKHsgdW5zaWduZWQgbG9uZyBsb25nIF9oaSwgX2xvOyBcCiAgICAgYXNtIHZvbGF0
+aWxlICgicmR0c2MiIDogIj1hIiAoX2xvKSwgIj1kIiAoX2hpKSk7IFwKICAgICAoVmFyKSA9IF9o
+aSA8PCAzMiB8IF9sbzsgfSkKCiNkZWZpbmUgSFBfVElNSU5HX0RJRkYoRGlmZiwgU3RhcnQsIEVu
+ZCkJKERpZmYpID0gKChFbmQpIC0gKFN0YXJ0KSkKI2RlZmluZSBIUF9USU1JTkdfVE9UQUwodG90
+YWxfdGltZSwgc3RhcnQsIGVuZCkJXAogIGRvCQkJCQkJCQkJXAogICAgewkJCQkJCQkJCVwKICAg
+ICAgaHBfdGltaW5nX3QgdG1wdGltZTsJCQkJCQlcCiAgICAgIEhQX1RJTUlOR19ESUZGICh0bXB0
+aW1lLCBzdGFydCArIF9kbF9ocF90aW1pbmdfb3ZlcmhlYWQsIGVuZCk7CVwKCXRvdGFsX3RpbWUg
+Kz0gdG1wdGltZTsJCQkJCQlcCiAgICB9CQkJCQkJCQkJXAogIHdoaWxlICgwKQoKI2RlZmluZSBI
+UF9USU1JTkdfQkVTVChiZXN0X3RpbWUsIHN0YXJ0LCBlbmQpCVwKICBkbwkJCQkJCQkJCVwKICAg
+IHsJCQkJCQkJCQlcCiAgICAgIGhwX3RpbWluZ190IHRtcHRpbWU7CQkJCQkJXAogICAgICBIUF9U
+SU1JTkdfRElGRiAodG1wdGltZSwgc3RhcnQgKyBfZGxfaHBfdGltaW5nX292ZXJoZWFkLCBlbmQp
+OwlcCiAgICAgIGlmIChiZXN0X3RpbWUgPiB0bXB0aW1lKQkJCQkJCVwKCWJlc3RfdGltZSA9IHRt
+cHRpbWU7CQkJCQkJXAogICAgfQkJCQkJCQkJCVwKICB3aGlsZSAoMCkKCgp2b2lkIGNvcHlfcGFn
+ZV9vcmcoY2hhciAqZHN0LCBjaGFyICpzcmMsIGludCBsZW4pOwp2b2lkIGNvcHlfcGFnZV9uZXco
+Y2hhciAqZHN0LCBjaGFyICpzcmMsIGludCBsZW4pOwp2b2lkIG1lbWNweV9jKGNoYXIgKmRzdCwg
+Y2hhciAqc3JjLCBpbnQgbGVuKTsKdm9pZCAoKmRvX21lbWNweSkoY2hhciAqZHN0LCBjaGFyICpz
+cmMsIGludCBsZW4pOwoKc3RhdGljIHZvaWQKZG9fb25lX3Rlc3QgKCBjaGFyICpkc3QsIGNoYXIg
+KnNyYywKCSAgICAgc2l6ZV90IGxlbikKewogICAgICBocF90aW1pbmdfdCBzdGFydCBfX2F0dHJp
+YnV0ZSAoKHVudXNlZCkpOwogICAgICBocF90aW1pbmdfdCBzdG9wIF9fYXR0cmlidXRlICgodW51
+c2VkKSk7CiAgICAgIGhwX3RpbWluZ190IGJlc3RfdGltZSA9IH4gKGhwX3RpbWluZ190KSAwOwog
+ICAgICBzaXplX3QgaSxqOwoKICAgICAgZm9yIChpID0gMDsgaSA8IHJlcGVhdF9vbmVfdGVzdDsg
+KytpKQoJewoJICBIUF9USU1JTkdfTk9XIChzdGFydCk7CgkgIGRvX21lbWNweSAoIGRzdCwgc3Jj
+LCBsZW4pOwoJICBIUF9USU1JTkdfTk9XIChzdG9wKTsKCSAgSFBfVElNSU5HX0JFU1QgKGJlc3Rf
+dGltZSwgc3RhcnQsIHN0b3ApOwoJfQoKICAgICAgcHJpbnRmICgiXHQlemQiLCAoc2l6ZV90KSBi
+ZXN0X3RpbWUpOwp9CgpzdGF0aWMgdm9pZApkb190ZXN0IChzaXplX3QgYWxpZ24xLCBzaXplX3Qg
+YWxpZ24yLCBzaXplX3QgbGVuKQp7CiAgc2l6ZV90IGksIGo7CiAgY2hhciAqczEsICpzMjsKCiAg
+czEgPSAoY2hhciAqKSAoYnVmMSArIGFsaWduMSk7CiAgczIgPSAoY2hhciAqKSAoYnVmMiArIGFs
+aWduMik7CgoKICAgcHJpbnRmICgiVFBUOiBMZW4gJTR6ZCwgYWxpZ25tZW50ICUyemQvJTJ6ZDoi
+LCBsZW4sIGFsaWduMSwgYWxpZ24yKTsKICAgZG9fbWVtY3B5ID0gY29weV9wYWdlX29yZzsKICAg
+ZG9fb25lX3Rlc3QgKHMyLCBzMSwgbGVuKTsKICAgZG9fbWVtY3B5ID0gY29weV9wYWdlX25ldzsK
+ICAgZG9fb25lX3Rlc3QgKHMyKyAoMSA8PCAxNiksIHMxICsgKDEgPDwgMTYpLCBsZW4pOwogICAg
+cHV0Y2hhciAoJ1xuJyk7Cn0KCnN0YXRpYyB0ZXN0X2luaXQodm9pZCkKewogIGludCBpOwogIGJ1
+ZjEgPSB2YWxsb2MoTUFYQ09QWVNJWkUpOwogIGJ1ZjIgPSB2YWxsb2MoTUFYQ09QWVNJWkUpOwoK
+ICBmb3IgKGkgPSAwOyBpIDwgTUFYQ09QWVNJWkUgOyBpID0gaSArIDY0KSB7CiAgICAgICAgYnVm
+MVtpXSA9IGJ1ZjJbaV0gPSBpICYgMHhmZjsKICB9Cgp9Cgp2b2lkIGNvcHlfcGFnZV9uZXcoY2hh
+ciAqZHN0LCBjaGFyICpzcmMsIGludCBsZW4pCnsKCV9fYXNtX18oIm1vdgkkKDQwOTYvNjQpLTUs
+ICVlY3giKTsKX19hc21fXygiMToiKTsKCV9fYXNtX18oInByZWZldGNodDAgNSo2NCglcnNpKSIp
+OwoJX19hc21fXygiZGVjYgklY2wiKTsKCglfX2FzbV9fKCJtb3ZxCTB4OCowKCVyc2kpLCAlcjEw
+Iik7CglfX2FzbV9fKCJtb3ZxCTB4OCoxKCVyc2kpLCAlcmF4Iik7CglfX2FzbV9fKCJtb3ZxCTB4
+OCoyKCVyc2kpLCAlcjgiKTsKCV9fYXNtX18oIm1vdnEJMHg4KjMoJXJzaSksICVyOSIpOwoJX19h
+c21fXygibW92cQklcjEwLCAweDgqMCglcmRpKSIpOwoJX19hc21fXygibW92cQklcmF4LCAweDgq
+MSglcmRpKSIpOwoJX19hc21fXygibW92cQklcjgsIDB4OCoyKCVyZGkpIik7CglfX2FzbV9fKCJt
+b3ZxCSVyOSwgMHg4KjMoJXJkaSkiKTsKCglfX2FzbV9fKCJtb3ZxCTB4OCo0KCVyc2kpLCAlcjEw
+Iik7CglfX2FzbV9fKCJtb3ZxCTB4OCo1KCVyc2kpLCAlcmF4Iik7CglfX2FzbV9fKCJtb3ZxCTB4
+OCo2KCVyc2kpLCAlcjgiKTsKCV9fYXNtX18oIm1vdnEJMHg4KjcoJXJzaSksICVyOSIpOwoJX19h
+c21fXygibGVhcQk2NCglcnNpKSwgJXJzaSIpOwoJX19hc21fXygibW92cQklcjEwLCAweDgqNCgl
+cmRpKSIpOwoJX19hc21fXygibW92cQklcmF4LCAweDgqNSglcmRpKSIpOwoJX19hc21fXygibW92
+cQklcjgsIDB4OCo2KCVyZGkpIik7CglfX2FzbV9fKCJtb3ZxCSVyOSwgMHg4KjcoJXJkaSkiKTsK
+CV9fYXNtX18oImxlYXEJNjQoJXJkaSksICVyZGkiKTsKCV9fYXNtX18oImpueiAgICAgMWIiKTsK
+CV9fYXNtX18oIm1vdgkkNSwgJWRsIik7Cl9fYXNtX18oIjI6Iik7CglfX2FzbV9fKCJkZWNiCSVk
+bCIpOwoJX19hc21fXygibW92cQkweDgqMCglcnNpKSwgJXIxMCIpOwoJX19hc21fXygibW92cQkw
+eDgqMSglcnNpKSwgJXJheCIpOwoJX19hc21fXygibW92cQkweDgqMiglcnNpKSwgJXI4Iik7Cglf
+X2FzbV9fKCJtb3ZxCTB4OCozKCVyc2kpLCAlcjkiKTsKCV9fYXNtX18oIm1vdnEJJXIxMCwgMHg4
+KjAoJXJkaSkiKTsKCV9fYXNtX18oIm1vdnEJJXJheCwgMHg4KjEoJXJkaSkiKTsKCV9fYXNtX18o
+Im1vdnEJJXI4LCAweDgqMiglcmRpKSIpOwoJX19hc21fXygibW92cQklcjksIDB4OCozKCVyZGkp
+Iik7CgoJX19hc21fXygibW92cQkweDgqNCglcnNpKSwgJXIxMCIpOwoJX19hc21fXygibW92cQkw
+eDgqNSglcnNpKSwgJXJheCIpOwoJX19hc21fXygibW92cQkweDgqNiglcnNpKSwgJXI4Iik7Cglf
+X2FzbV9fKCJtb3ZxCTB4OCo3KCVyc2kpLCAlcjkiKTsKCV9fYXNtX18oImxlYXEJNjQoJXJzaSks
+ICVyc2kiKTsKCV9fYXNtX18oIm1vdnEJJXIxMCwgMHg4KjQoJXJkaSkiKTsKCV9fYXNtX18oIm1v
+dnEJJXJheCwgMHg4KjUoJXJkaSkiKTsKCV9fYXNtX18oIm1vdnEJJXI4LCAweDgqNiglcmRpKSIp
+OwoJX19hc21fXygibW92cQklcjksIDB4OCo3KCVyZGkpIik7CglfX2FzbV9fKCJsZWFxCTY0KCVy
+ZGkpLCAlcmRpIik7CgoJX19hc21fXygiam56CTJiIik7Cgp9CgoKdm9pZCBjb3B5X3BhZ2Vfb3Jn
+KGNoYXIgKmRzdCwgY2hhciAqc3JjLCBpbnQgbGVuKQp7CgoJX19hc21fXygic3VicQkkMio4LCVy
+c3AiKTsKCV9fYXNtX18oIm1vdnEJJXJieCwoJXJzcCkiKTsKCV9fYXNtX18oIm1vdnEJJXIxMiwx
+KjgoJXJzcCkiKTsKCV9fYXNtX18oIm1vdmwJJCg0MDk2LzY0KS01LCVlY3giKTsKCV9fYXNtX18o
+Ii5wMmFsaWduIDQiKTsKX19hc21fXygiMToiKTsKCV9fYXNtX18oImRlYyAgICAgJXJjeCIpOwoK
+CV9fYXNtX18oIm1vdnEgICAgICAgICglcnNpKSwgJXJheCIpOwoJX19hc21fXygibW92cSAgICAg
+IDggKCVyc2kpLCAlcmJ4Iik7CglfX2FzbV9fKCJtb3ZxICAgICAxNiAoJXJzaSksICVyZHgiKTsK
+CV9fYXNtX18oIm1vdnEgICAgIDI0ICglcnNpKSwgJXI4Iik7CglfX2FzbV9fKCJtb3ZxICAgICAz
+MiAoJXJzaSksICVyOSIpOwoJX19hc21fXygibW92cSAgICAgNDAgKCVyc2kpLCAlcjEwIik7Cglf
+X2FzbV9fKCJtb3ZxICAgICA0OCAoJXJzaSksICVyMTEiKTsKCV9fYXNtX18oIm1vdnEgICAgIDU2
+ICglcnNpKSwgJXIxMiIpOwoKCV9fYXNtX18oInByZWZldGNodDAgNSo2NCglcnNpKSIpOwoKCV9f
+YXNtX18oIm1vdnEgICAgICVyYXgsICAgICglcmRpKSIpOwoJX19hc21fXygibW92cSAgICAgJXJi
+eCwgIDggKCVyZGkpIik7CglfX2FzbV9fKCJtb3ZxICAgICAlcmR4LCAxNiAoJXJkaSkiKTsKCV9f
+YXNtX18oIm1vdnEgICAgICVyOCwgIDI0ICglcmRpKSIpOwoJX19hc21fXygibW92cSAgICAgJXI5
+LCAgMzIgKCVyZGkpIik7CglfX2FzbV9fKCJtb3ZxICAgICAlcjEwLCA0MCAoJXJkaSkiKTsKCV9f
+YXNtX18oIm1vdnEgICAgICVyMTEsIDQ4ICglcmRpKSIpOwoJX19hc21fXygibW92cSAgICAgJXIx
+MiwgNTYgKCVyZGkpIik7CgoJX19hc21fXygibGVhcSAgICA2NCAoJXJzaSksICVyc2kiKTsKCV9f
+YXNtX18oImxlYXEgICAgNjQgKCVyZGkpLCAlcmRpIik7CglfX2FzbV9fKCJqbnogICAgIDFiIik7
+CgoJX19hc21fXygibW92bAkkNSwlZWN4Iik7CglfX2FzbV9fKCIucDJhbGlnbiA0Iik7Cl9fYXNt
+X18oIjI6Iik7CglfX2FzbV9fKCJkZWNsICAgJWVjeCIpOwoKCV9fYXNtX18oIm1vdnEgICAgICAg
+ICglcnNpKSwgJXJheCIpOwoJX19hc21fXygibW92cSAgICAgIDggKCVyc2kpLCAlcmJ4Iik7Cglf
+X2FzbV9fKCJtb3ZxICAgICAxNiAoJXJzaSksICVyZHgiKTsKCV9fYXNtX18oIm1vdnEgICAgIDI0
+ICglcnNpKSwgJXI4Iik7CglfX2FzbV9fKCJtb3ZxICAgICAzMiAoJXJzaSksICVyOSIpOwoJX19h
+c21fXygibW92cSAgICAgNDAgKCVyc2kpLCAlcjEwIik7CglfX2FzbV9fKCJtb3ZxICAgICA0OCAo
+JXJzaSksICVyMTEiKTsKCV9fYXNtX18oIm1vdnEgICAgIDU2ICglcnNpKSwgJXIxMiIpOwoKCV9f
+YXNtX18oIm1vdnEgICAgICVyYXgsICAgICglcmRpKSIpOwoJX19hc21fXygibW92cSAgICAgJXJi
+eCwgIDggKCVyZGkpIik7CglfX2FzbV9fKCJtb3ZxICAgICAlcmR4LCAxNiAoJXJkaSkiKTsKCV9f
+YXNtX18oIm1vdnEgICAgICVyOCwgIDI0ICglcmRpKSIpOwoJX19hc21fXygibW92cSAgICAgJXI5
+LCAgMzIgKCVyZGkpIik7CglfX2FzbV9fKCJtb3ZxICAgICAlcjEwLCA0MCAoJXJkaSkiKTsKCV9f
+YXNtX18oIm1vdnEgICAgICVyMTEsIDQ4ICglcmRpKSIpOwoJX19hc21fXygibW92cSAgICAgJXIx
+MiwgNTYgKCVyZGkpIik7CgoJX19hc21fXygibGVhcQk2NCglcmRpKSwlcmRpIik7CglfX2FzbV9f
+KCJsZWFxCTY0KCVyc2kpLCVyc2kiKTsKCglfX2FzbV9fKCJqbnoJMmIiKTsKCglfX2FzbV9fKCJt
+b3ZxCSglcnNwKSwlcmJ4Iik7CglfX2FzbV9fKCJtb3ZxCTEqOCglcnNwKSwlcjEyIik7CglfX2Fz
+bV9fKCJhZGRxCSQyKjgsJXJzcCIpOwp9CgoKdm9pZCBtYWluKHZvaWQpCnsKICBpbnQgaTsKCXRl
+c3RfaW5pdCgpOwoJcHJpbnRmICgiJTIzcyIsICIiKTsKCXByaW50ZiAoIlx0JXNcdCVzXHQlc1xu
+IiwgImNvcHlfcGFnZV9vcmciLCAiY29weV9wYWdlX25ldyIpOwoKCWRvX3Rlc3QoMCwgMCwgNDA5
+Nik7Cglkb190ZXN0KDAsIDAsIDQwOTYpOwoJZG9fdGVzdCgwLCAwLCA0MDk2KTsKCWRvX3Rlc3Qo
+MCwgMCwgNDA5Nik7Cglkb190ZXN0KDAsIDAsIDQwOTYpOwoJcmV0dXJuIDsKfQo=
 
-by adding the -Wno-unused-parameter switch only to lib/rbtree.o when
-built from within perf.
-
-I see now though that his patch has some unrelated changes to
-trace-event-perl.c's permissions which shouldn't be there.
-
--- 
-Regards/Gruss,
-Boris.
+--_002_B2310DA9850C8743AA7AA0055500E90F0FD70AC5SHSMSX102ccrcor_--
