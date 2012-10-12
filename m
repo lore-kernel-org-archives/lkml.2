@@ -1,89 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218Ab2JLBVk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 21:21:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32425 "EHLO
+	id S933500Ab2JLBWQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 21:22:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21152 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754517Ab2JLBV3 (ORCPT
+	with ESMTP id S1753258Ab2JLBV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 21:21:29 -0400
-X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Z9t4_RJo5EEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=m2RLpkhMDcQA:10 a=VwQbUJbxAAAA:8 a=6iCpALQLQkUOqRxWQvIA:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Thu, 11 Oct 2012 21:21:28 -0400
+X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=QR-o9JM4IVQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=oHo0cinKwKoA:10 a=VwQbUJbxAAAA:8 a=00CX1lbMB8ObnoKVni4A:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121012012126.643701806@goodmis.org>
+Message-Id: <20121012012126.374055723@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Oct 2012 21:20:31 -0400
+Date: Thu, 11 Oct 2012 21:20:29 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 7/8] stomp_machine: Use mutex_trylock when called from inactive cpu
+Subject: [PATCH RT 5/8] rt: rwsem/rwlock: lockdep annotations
 References: <20121012012024.056658930@goodmis.org>
-Content-Disposition: inline; filename=0007-stomp_machine-Use-mutex_trylock-when-called-from-ina.patch
+Content-Disposition: inline; filename=0005-rt-rwsem-rwlock-lockdep-annotations.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thomas Gleixner <tglx@linutronix.de>
 
-If the stop machinery is called from inactive CPU we cannot use
-mutex_lock, because some other stomp machine invokation might be in
-progress and the mutex can be contended. We cannot schedule from this
-context, so trylock and loop.
+rwlocks and rwsems on RT do not allow multiple readers. Annotate the
+lockdep acquire functions accordingly.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: stable-rt@vger.kernel.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/stop_machine.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ kernel/rt.c |   46 +++++++++++++++++++++++++---------------------
+ 1 file changed, 25 insertions(+), 21 deletions(-)
 
-diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-index 561ba3a..e98c70b 100644
---- a/kernel/stop_machine.c
-+++ b/kernel/stop_machine.c
-@@ -158,7 +158,7 @@ static DEFINE_PER_CPU(struct cpu_stop_work, stop_cpus_work);
- 
- static void queue_stop_cpus_work(const struct cpumask *cpumask,
- 				 cpu_stop_fn_t fn, void *arg,
--				 struct cpu_stop_done *done)
-+				 struct cpu_stop_done *done, bool inactive)
- {
- 	struct cpu_stop_work *work;
- 	unsigned int cpu;
-@@ -175,7 +175,12 @@ static void queue_stop_cpus_work(const struct cpumask *cpumask,
- 	 * Make sure that all work is queued on all cpus before we
- 	 * any of the cpus can execute it.
+diff --git a/kernel/rt.c b/kernel/rt.c
+index 092d6b3..aa10504 100644
+--- a/kernel/rt.c
++++ b/kernel/rt.c
+@@ -216,15 +216,17 @@ int __lockfunc rt_read_trylock(rwlock_t *rwlock)
+ 	 * write locked.
  	 */
--	mutex_lock(&stopper_lock);
-+	if (!inactive) {
-+		mutex_lock(&stopper_lock);
-+	} else {
-+		while (!mutex_trylock(&stopper_lock))
-+			cpu_relax();
+ 	migrate_disable();
+-	if (rt_mutex_owner(lock) != current)
++	if (rt_mutex_owner(lock) != current) {
+ 		ret = rt_mutex_trylock(lock);
+-	else if (!rwlock->read_depth)
++		if (ret)
++			rwlock_acquire(&rwlock->dep_map, 0, 1, _RET_IP_);
++	} else if (!rwlock->read_depth) {
+ 		ret = 0;
 +	}
- 	for_each_cpu(cpu, cpumask)
- 		cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu),
- 				    &per_cpu(stop_cpus_work, cpu));
-@@ -188,7 +193,7 @@ static int __stop_cpus(const struct cpumask *cpumask,
- 	struct cpu_stop_done done;
  
- 	cpu_stop_init_done(&done, cpumask_weight(cpumask));
--	queue_stop_cpus_work(cpumask, fn, arg, &done);
-+	queue_stop_cpus_work(cpumask, fn, arg, &done, false);
- 	wait_for_stop_done(&done);
- 	return done.executed ? done.ret : -ENOENT;
+-	if (ret) {
++	if (ret)
+ 		rwlock->read_depth++;
+-		rwlock_acquire_read(&rwlock->dep_map, 0, 1, _RET_IP_);
+-	} else
++	else
+ 		migrate_enable();
+ 
+ 	return ret;
+@@ -242,13 +244,13 @@ void __lockfunc rt_read_lock(rwlock_t *rwlock)
+ {
+ 	struct rt_mutex *lock = &rwlock->lock;
+ 
+-	rwlock_acquire_read(&rwlock->dep_map, 0, 0, _RET_IP_);
+-
+ 	/*
+ 	 * recursive read locks succeed when current owns the lock
+ 	 */
+-	if (rt_mutex_owner(lock) != current)
++	if (rt_mutex_owner(lock) != current) {
++		rwlock_acquire(&rwlock->dep_map, 0, 0, _RET_IP_);
+ 		__rt_spin_lock(lock);
++	}
+ 	rwlock->read_depth++;
  }
-@@ -601,7 +606,7 @@ int stop_machine_from_inactive_cpu(int (*fn)(void *), void *data,
- 	set_state(&smdata, STOPMACHINE_PREPARE);
- 	cpu_stop_init_done(&done, num_active_cpus());
- 	queue_stop_cpus_work(cpu_active_mask, stop_machine_cpu_stop, &smdata,
--			     &done);
-+			     &done, true);
- 	ret = stop_machine_cpu_stop(&smdata);
  
- 	/* Busy wait for completion. */
+@@ -264,11 +266,11 @@ EXPORT_SYMBOL(rt_write_unlock);
+ 
+ void __lockfunc rt_read_unlock(rwlock_t *rwlock)
+ {
+-	rwlock_release(&rwlock->dep_map, 1, _RET_IP_);
+-
+ 	/* Release the lock only when read_depth is down to 0 */
+-	if (--rwlock->read_depth == 0)
++	if (--rwlock->read_depth == 0) {
++		rwlock_release(&rwlock->dep_map, 1, _RET_IP_);
+ 		__rt_spin_unlock(&rwlock->lock);
++	}
+ }
+ EXPORT_SYMBOL(rt_read_unlock);
+ 
+@@ -315,9 +317,10 @@ EXPORT_SYMBOL(rt_up_write);
+ 
+ void  rt_up_read(struct rw_semaphore *rwsem)
+ {
+-	rwsem_release(&rwsem->dep_map, 1, _RET_IP_);
+-	if (--rwsem->read_depth == 0)
++	if (--rwsem->read_depth == 0) {
++		rwsem_release(&rwsem->dep_map, 1, _RET_IP_);
+ 		rt_mutex_unlock(&rwsem->lock);
++	}
+ }
+ EXPORT_SYMBOL(rt_up_read);
+ 
+@@ -366,15 +369,16 @@ int  rt_down_read_trylock(struct rw_semaphore *rwsem)
+ 	 * but not when read_depth == 0 which means that the rwsem is
+ 	 * write locked.
+ 	 */
+-	if (rt_mutex_owner(lock) != current)
++	if (rt_mutex_owner(lock) != current) {
+ 		ret = rt_mutex_trylock(&rwsem->lock);
+-	else if (!rwsem->read_depth)
++		if (ret)
++			rwsem_acquire(&rwsem->dep_map, 0, 1, _RET_IP_);
++	} else if (!rwsem->read_depth) {
+ 		ret = 0;
++	}
+ 
+-	if (ret) {
++	if (ret)
+ 		rwsem->read_depth++;
+-		rwsem_acquire(&rwsem->dep_map, 0, 1, _RET_IP_);
+-	}
+ 	return ret;
+ }
+ EXPORT_SYMBOL(rt_down_read_trylock);
+@@ -383,10 +387,10 @@ static void __rt_down_read(struct rw_semaphore *rwsem, int subclass)
+ {
+ 	struct rt_mutex *lock = &rwsem->lock;
+ 
+-	rwsem_acquire_read(&rwsem->dep_map, subclass, 0, _RET_IP_);
+-
+-	if (rt_mutex_owner(lock) != current)
++	if (rt_mutex_owner(lock) != current) {
++		rwsem_acquire(&rwsem->dep_map, subclass, 0, _RET_IP_);
+ 		rt_mutex_lock(&rwsem->lock);
++	}
+ 	rwsem->read_depth++;
+ }
+ 
 -- 
 1.7.10.4
 
