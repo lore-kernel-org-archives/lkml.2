@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab2JLGv4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 02:51:56 -0400
-Received: from smtp-68.nebula.fi ([83.145.220.68]:56185 "EHLO
-	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab2JLGvz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 02:51:55 -0400
-X-Greylist: delayed 532 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Oct 2012 02:51:54 EDT
-From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-To: jonas@southpole.se
-Cc: linux@openrisc.net, linux-kernel@vger.kernel.org,
-        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-Subject: [PATCH] openrisc: avoid using function parameter regs in reset vector
-Date: Fri, 12 Oct 2012 09:38:18 +0300
-Message-Id: <1350023898-15130-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756133Ab2JLG42 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 02:56:28 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59026 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755877Ab2JLG40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 02:56:26 -0400
+X-IronPort-AV: E=Sophos;i="4.80,576,1344182400"; 
+   d="scan'208";a="5988332"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: bhelgaas@google.com, lenb@kernel.org, yinghai@kernel.org,
+        izumi.taku@jp.fujitsu.com, jiang.liu@huawei.com,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Tang Chen <tangchen@cn.fujitsu.com>
+Subject: [PATCH] Fix a hard coding style when determining if a device is a container.
+Date: Fri, 12 Oct 2012 14:55:16 +0800
+Message-Id: <1350024916-3628-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/12 14:56:11,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/12 14:56:12,
+	Serialize complete at 2012/10/12 14:56:12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel might be invoked through the reset vector, so to
-preserve parameters passed to it, temp regs that are not
-in the function parameter range needs to be used.
+"ACPI0004","PNP0A05" and "PNP0A06" are all defined in array
+container_device_ids[], so use it, but not the hard coding style.
 
-Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/openrisc/kernel/head.S |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/acpi/container.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/arch/openrisc/kernel/head.S b/arch/openrisc/kernel/head.S
-index 1088b5f..46aa940 100644
---- a/arch/openrisc/kernel/head.S
-+++ b/arch/openrisc/kernel/head.S
-@@ -291,9 +291,9 @@
- 	/* Jump to .init code at _start which lives in the .head section
- 	 * and will be discarded after boot.
- 	 */
--	LOAD_SYMBOL_2_GPR(r4, _start)
--	tophys	(r3,r4)			/* MMU disabled */
--	l.jr	r3
-+	LOAD_SYMBOL_2_GPR(r15, _start)
-+	tophys	(r13,r15)			/* MMU disabled */
-+	l.jr	r13
- 	 l.nop
+diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
+index 1f9f7d7..448c0e2 100644
+--- a/drivers/acpi/container.c
++++ b/drivers/acpi/container.c
+@@ -217,6 +217,7 @@ container_walk_namespace_cb(acpi_handle handle,
+ {
+ 	char *hid = NULL;
+ 	struct acpi_device_info *info;
++	struct acpi_device_id *container_id;
+ 	acpi_status status;
+ 	int *action = context;
  
- /* ---[ 0x200: BUS exception ]------------------------------------------- */
+@@ -232,10 +233,13 @@ container_walk_namespace_cb(acpi_handle handle,
+ 		goto end;
+ 	}
+ 
+-	if (strcmp(hid, "ACPI0004") && strcmp(hid, "PNP0A05") &&
+-	    strcmp(hid, "PNP0A06")) {
+-		goto end;
++	for (container_id = container_device_ids;
++	     container_id->id[0]; container_id++) {
++		if (!strcmp((char *)container_id->id, hid))
++			break;
+ 	}
++	if (!container_id->id[0])
++		goto end;
+ 
+ 	switch (*action) {
+ 	case INSTALL_NOTIFY_HANDLER:
 -- 
-1.7.9.5
+1.7.1
 
