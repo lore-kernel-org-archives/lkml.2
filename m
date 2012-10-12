@@ -1,46 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759678Ab2JLPOR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 11:14:17 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:51416 "EHLO
+	id S933367Ab2JLPPU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 11:15:20 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:51419 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758028Ab2JLPOQ (ORCPT
+	with ESMTP id S932303Ab2JLPPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 11:14:16 -0400
-Date: Fri, 12 Oct 2012 17:14:10 +0200
+	Fri, 12 Oct 2012 11:15:18 -0400
+Date: Fri, 12 Oct 2012 17:15:17 +0200
 From: Andi Kleen <andi@firstfloor.org>
-To: "Ma, Ling" <ling.ma@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iant@google.com" <iant@google.com>
-Subject: Re: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging instruction sequence and saving register
-Message-ID: <20121012151410.GB16230@one.firstfloor.org>
-References: <1349958548-1868-1-git-send-email-ling.ma@intel.com> <m2bog9t9cr.fsf@firstfloor.org> <B2310DA9850C8743AA7AA0055500E90F0FD709C4@SHSMSX102.ccr.corp.intel.com> <20121012133554.GA16230@one.firstfloor.org> <B2310DA9850C8743AA7AA0055500E90F0FD70B53@SHSMSX102.ccr.corp.intel.com>
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+Cc: Alexander Duyck <alexander.h.duyck@intel.com>, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, andi@firstfloor.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH v2 0/8] Improve performance of VM translation on x86_64
+Message-ID: <20121012151517.GC16230@one.firstfloor.org>
+References: <20121011204324.12787.30514.stgit@gitlad.jf.intel.com> <CACJDEmomjBk5CkLBWGdyAtKNgV_f39d6kWM5=Ko2Nx5GDmw5Jg@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <B2310DA9850C8743AA7AA0055500E90F0FD70B53@SHSMSX102.ccr.corp.intel.com>
+In-Reply-To: <CACJDEmomjBk5CkLBWGdyAtKNgV_f39d6kWM5=Ko2Nx5GDmw5Jg@mail.gmail.com>
 User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 02:54:54PM +0000, Ma, Ling wrote:
-> > If you can't test the CPUs who run this code I think it's safer if you
-> > add a new variant for Atom, not change the existing well tested code.
-> > Otherwise you risk performance regressions on these older CPUs.
-> 
-> I found one older machine, and tested the code on it, the results between them are almost the same as below(attached cpu info).
+> Could you also add  a blurb in the Documentation/< appropriate file
+> for device driver writes> mentioning the usage of __pa_symbol is
+> preferred?
 
-Was that a P4 (family 15)? 
-
-Those were the main users. There were a few others, but they are obscure
-(early steppings of K8) 
+Device driver writer's shouldn't use any of this anyways, they should always
+use the PCI DMA APIs and never DMA to the stack or to static variables.
 
 -Andi
-
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
