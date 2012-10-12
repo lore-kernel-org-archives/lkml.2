@@ -1,81 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933551Ab2JLN53 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 09:57:29 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:53223 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932996Ab2JLN52 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 09:57:28 -0400
-From: Jason Wessel <jason.wessel@windriver.com>
-To: <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <kgdb-bugreport@lists.sourceforge.net>
-Subject: [GIT PULL] KGDB/KDB fixes for 3.7
-Date: Fri, 12 Oct 2012 08:57:11 -0500
-Message-ID: <1350050231-19461-1-git-send-email-jason.wessel@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S934074Ab2JLN5d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 09:57:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46647 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933559Ab2JLN5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 09:57:31 -0400
+Date: Fri, 12 Oct 2012 14:57:26 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Valdis.Kletnieks@vt.edu, Jiri Slaby <jirislaby@gmail.com>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: kswapd0: excessive CPU usage
+Message-ID: <20121012135726.GY29125@suse.de>
+References: <507688CC.9000104@suse.cz>
+ <106695.1349963080@turing-police.cc.vt.edu>
+ <5076E700.2030909@suse.cz>
+ <118079.1349978211@turing-police.cc.vt.edu>
+ <50770905.5070904@suse.cz>
+ <119175.1349979570@turing-police.cc.vt.edu>
+ <5077434D.7080008@suse.cz>
+ <50780F26.7070007@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <50780F26.7070007@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Fri, Oct 12, 2012 at 02:37:58PM +0200, Jiri Slaby wrote:
+> On 10/12/2012 12:08 AM, Jiri Slaby wrote:
+> > (It's an effective revert of "mm: vmscan: scale number of pages
+> > reclaimed by reclaim/compaction based on failures".)
+> 
+> Given kswapd had hours of runtime in ps/top output yesterday in the
+> morning and after the revert it's now 2 minutes in sum for the last 24h,
+> I would say, it's gone.
+> 
+> Mel, you wrote me it's unlikely the patch, but not impossible in the
+> end. Can you take a look, please? If you need some trace-cmd output or
+> anything, just let us know.
+> 
+> This is x86_64, 6G of RAM, no swap. FWIW EXT4, SLUB, COMPACTION all
+> enabled/used.
+> 
 
-Please pull the kgdb tree's usual minor fixes/improvements. 
+Can you monitor the behaviour of this patch please? Please keep a particular
+eye on kswapd activity and the amount of free memory. If free memory is
+spiking it might indicate that kswapd is still too aggressive with the loss
+of the __GFP_NO_KSWAPD flag. One way to tell is to record /proc/vmstat over
+time and see what the pgsteal_* figures look like. If they are climbing
+aggressively during what should be normal usage then it might show that
+kswapd is still too aggressive when asked to reclaim for THP.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/kgdb.git tags/for_linus-3.7
+Thanks very much.
 
-Thanks,
-Jason.
+---8<---
+mm: vmscan: scale number of pages reclaimed by reclaim/compaction only in direct reclaim
 
------------------------------------------------------------------
-The following changes since commit a0d271cbfed1dd50278c6b06bead3d00ba0a88f9:
+Jiri Slaby reported the following:
 
-  Linux 3.6 (2012-09-30 16:47:46 -0700)
+	(It's an effective revert of "mm: vmscan: scale number of pages
+	reclaimed by reclaim/compaction based on failures".)
+	Given kswapd had hours of runtime in ps/top output yesterday in the
+	morning and after the revert it's now 2 minutes in sum for the last 24h,
+	I would say, it's gone.
 
-are available in the git repository at:
+The intention of the patch in question was to compensate for the loss of
+lumpy reclaim. Part of the reason lumpy reclaim worked is because it
+aggressively reclaimed pages and this patch was meant to be a
+sane compromise.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/kgdb.git tags/for_linus-3.7
+When compaction fails, it gets deferred and both compaction and
+reclaim/compaction is deferred avoid excessive reclaim. However, since
+commit c6543459 (mm: remove __GFP_NO_KSWAPD), kswapd is woken up each time
+and continues reclaiming which was not taken into account when the patch
+was developed.
 
-for you to fetch changes up to f2f0945e356daef87cdb01c0302801fb11cf382a:
+As it is not taking deferred compaction into account in this path it scans
+aggressively before falling out and making the compaction_deferred check in
+compaction_ready. This patch avoids kswapd scaling pages for reclaim and
+leaves the aggressive reclaim to the process attempting the THP
+allocation.
 
-  tty/console: fix warnings in drivers/tty/serial/kgdboc.c (2012-10-12 06:37:36 -0500)
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/vmscan.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-----------------------------------------------------------------
-KGDB/KDB fixes and cleanups
- Cleanups
-   Clean up compile warnings in kgdboc.c and x86/kernel/kgdb.c
-   Add module event hooks for simplified debugging with gdb
- Fixes
-   Fix kdb to stop paging with 'q' on bta and dmesg
-   Fix for data that scrolls off the vga console due to line wrapping
-     when using the kdb pager
- New
-   The debug core registers for kernel module events which allows a
-     kernel aware gdb to automatically load symbols and break on entry
-     to a kernel module
-   Allow kgdboc=kdb to setup kdb on the vga console
-
-----------------------------------------------------------------
-Arnd Bergmann (1):
-      tty/console: fix warnings in drivers/tty/serial/kgdboc.c
-
-Jason Wessel (6):
-      kgdb: Add module event hooks
-      mips,kgdb: fix recursive page fault with CONFIG_KPROBES
-      kgdb,x86: fix warning about unused variable
-      kgdboc: Accept either kbd or kdb to activate the vga + keyboard kdb shell
-      kdb: Fix dmesg/bta scroll to quit with 'q'
-      kdb,vt_console: Fix missed data due to pager overruns
-
- arch/mips/kernel/kgdb.c     |    9 +++++++++
- arch/x86/kernel/kgdb.c      |    2 ++
- drivers/tty/serial/kgdboc.c |    3 ++-
- drivers/tty/vt/vt.c         |   13 +++++++++++++
- include/linux/console.h     |   10 ++++++++--
- kernel/debug/debug_core.c   |   18 ++++++++++++++++++
- kernel/debug/kdb/kdb_bt.c   |    2 ++
- kernel/debug/kdb/kdb_io.c   |   33 ++++++++++++++++++++++++++++-----
- kernel/debug/kdb/kdb_main.c |    2 ++
- 9 files changed, 84 insertions(+), 8 deletions(-)
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 2624edc..2b7edfa 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1763,14 +1763,20 @@ static bool in_reclaim_compaction(struct scan_control *sc)
+ #ifdef CONFIG_COMPACTION
+ /*
+  * If compaction is deferred for sc->order then scale the number of pages
+- * reclaimed based on the number of consecutive allocation failures
++ * reclaimed based on the number of consecutive allocation failures. This
++ * scaling only happens for direct reclaim as it is about to attempt
++ * compaction. If compaction fails, future allocations will be deferred
++ * and reclaim avoided. On the other hand, kswapd does not take compaction
++ * deferral into account so if it scaled, it could scan excessively even
++ * though allocations are temporarily not being attempted.
+  */
+ static unsigned long scale_for_compaction(unsigned long pages_for_compaction,
+ 			struct lruvec *lruvec, struct scan_control *sc)
+ {
+ 	struct zone *zone = lruvec_zone(lruvec);
+ 
+-	if (zone->compact_order_failed <= sc->order)
++	if (zone->compact_order_failed <= sc->order &&
++	    !current_is_kswapd())
+ 		pages_for_compaction <<= zone->compact_defer_shift;
+ 	return pages_for_compaction;
+ }
