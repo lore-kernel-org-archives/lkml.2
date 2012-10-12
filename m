@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759664Ab2JLQ25 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 12:28:57 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:33389 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755465Ab2JLQ24 (ORCPT
+	id S1759785Ab2JLQ3e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 12:29:34 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:37833 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757988Ab2JLQ3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 12:28:56 -0400
-Message-ID: <1350059332.2819.18.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH 5/6] net: calxedaxgmac: rework transmit ring handling
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Rob Herring <robherring2@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <jonathan@jonmasters.org>, <eric.dumazet@gmail.com>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Date: Fri, 12 Oct 2012 17:28:52 +0100
-In-Reply-To: <1350054908-30646-6-git-send-email-robherring2@gmail.com>
-References: <1350054908-30646-1-git-send-email-robherring2@gmail.com>
-	 <1350054908-30646-6-git-send-email-robherring2@gmail.com>
-Organization: Solarflare Communications
+	Fri, 12 Oct 2012 12:29:32 -0400
+Message-ID: <1350059367.2643.17.camel@lorien2>
+Subject: [PATCH -stable] amd_iommu: attach device fails on the last pci
+ device
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: joerg.roedel@amd.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        Greg KH <gregkh@linuxfoundation.org>
+Cc: iommu@lists.linux-foundation.org, stable@vger.kernel.org, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
+Date: Fri, 12 Oct 2012 10:29:27 -0600
+Organization: ISS-Linux
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-12 at 10:15 -0500, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> Only generate tx interrupts on every ring size / 4 descriptors. Move the
-> netif_stop_queue call to the end of the xmit function rather than
-> checking at the beginning.
-[...]
+amd_iommu_attach_device() checks if device id is within the limits
+of amd_iommu_last_bdf and instead checking if devid > amd_iommu_last_bdf,
+it checks devid >= amd_iommu_last_bdf. As a result the last device attach
+fails because amd_iommu_attach_device() returns an -EINVAL.
 
-The hardware should also interrupt if the TX ring becomes empty; does it
-do that?
+This bug is in linux-2.6.32 and an equivalent fix in linux-2.6.33 and has been
+carried forward to later kernels and is in the upstream kernel. This equivalent
+fix includes restructuring and consolidating device checks into a routine
+check_device(). Instead of back-porting all of that work, spot-fixed the bug in
+amd_iommu_attach_device() for linux-2.6.32.
 
-Ben.
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+CC: <stable@vger.kernel.org> v2.6.32
+---
+ arch/x86/kernel/amd_iommu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
+index 3a44b75..67de7d7 100644
+--- a/arch/x86/kernel/amd_iommu.c
++++ b/arch/x86/kernel/amd_iommu.c
+@@ -2288,7 +2288,7 @@ static int amd_iommu_attach_device(struct iommu_domain *dom,
+ 
+ 	devid = calc_devid(pdev->bus->number, pdev->devfn);
+ 
+-	if (devid >= amd_iommu_last_bdf ||
++	if (devid > amd_iommu_last_bdf ||
+ 			devid != amd_iommu_alias_table[devid])
+ 		return -EINVAL;
+ 
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+1.7.9.5
+
+
 
