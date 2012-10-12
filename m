@@ -1,126 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946036Ab2JLSFT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 14:05:19 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:50108 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753896Ab2JLSFR (ORCPT
+	id S1760012Ab2JLSJo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 14:09:44 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:37825 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753896Ab2JLSJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 14:05:17 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: jonathan@jonmasters.org, eric.dumazet@gmail.com,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: [PATCH v2] net: calxedaxgmac: rework transmit ring handling
-Date: Fri, 12 Oct 2012 13:04:59 -0500
-Message-Id: <1350065099-32649-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350054908-30646-6-git-send-email-robherring2@gmail.com>
-References: <1350054908-30646-6-git-send-email-robherring2@gmail.com>
+	Fri, 12 Oct 2012 14:09:43 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [RFC PATCH 0/5] printk: Make it usable on nohz CPUs
+Date: Fri, 12 Oct 2012 20:09:31 +0200
+Message-Id: <1350065376-23353-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+Hi,
 
-Only generate tx interrupts on every ring size / 4 descriptors. Move the
-netif_stop_queue call to the end of the xmit function rather than
-checking at the beginning.
+So here is a proposition on what we can do to make printk
+correctly working on a tickless CPU.
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
----
-v2:
-- Add missed enabling of the descriptor tx interrupt
+Although it's targeted to be part of the adaptive tickmess
+implemetation, it's pretty standalone and generic and also
+works for printk() calls in idle.
 
- drivers/net/ethernet/calxeda/xgmac.c |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+It is based on latest linus tree.
 
-diff --git a/drivers/net/ethernet/calxeda/xgmac.c b/drivers/net/ethernet/calxeda/xgmac.c
-index 4a1a06a..38eb1b2 100644
---- a/drivers/net/ethernet/calxeda/xgmac.c
-+++ b/drivers/net/ethernet/calxeda/xgmac.c
-@@ -211,7 +211,7 @@
- #define DMA_INTR_ENA_TIE	0x00000001	/* Transmit Interrupt */
- 
- #define DMA_INTR_NORMAL		(DMA_INTR_ENA_NIE | DMA_INTR_ENA_RIE | \
--				 DMA_INTR_ENA_TUE)
-+				 DMA_INTR_ENA_TUE | DMA_INTR_ENA_TIE)
- 
- #define DMA_INTR_ABNORMAL	(DMA_INTR_ENA_AIE | DMA_INTR_ENA_FBE | \
- 				 DMA_INTR_ENA_RWE | DMA_INTR_ENA_RSE | \
-@@ -374,6 +374,7 @@ struct xgmac_priv {
- 	struct sk_buff **tx_skbuff;
- 	unsigned int tx_head;
- 	unsigned int tx_tail;
-+	int tx_irq_cnt;
- 
- 	void __iomem *base;
- 	unsigned int dma_buf_sz;
-@@ -886,7 +887,7 @@ static void xgmac_tx_complete(struct xgmac_priv *priv)
- 	}
- 
- 	if (dma_ring_space(priv->tx_head, priv->tx_tail, DMA_TX_RING_SZ) >
--	    TX_THRESH)
-+	    MAX_SKB_FRAGS)
- 		netif_wake_queue(priv->dev);
- }
- 
-@@ -1057,19 +1058,15 @@ static netdev_tx_t xgmac_xmit(struct sk_buff *skb, struct net_device *dev)
- 	struct xgmac_priv *priv = netdev_priv(dev);
- 	unsigned int entry;
- 	int i;
-+	u32 irq_flag;
- 	int nfrags = skb_shinfo(skb)->nr_frags;
- 	struct xgmac_dma_desc *desc, *first;
- 	unsigned int desc_flags;
- 	unsigned int len;
- 	dma_addr_t paddr;
- 
--	if (dma_ring_space(priv->tx_head, priv->tx_tail, DMA_TX_RING_SZ) <
--	    (nfrags + 1)) {
--		writel(DMA_INTR_DEFAULT_MASK | DMA_INTR_ENA_TIE,
--			priv->base + XGMAC_DMA_INTR_ENA);
--		netif_stop_queue(dev);
--		return NETDEV_TX_BUSY;
--	}
-+	priv->tx_irq_cnt = (priv->tx_irq_cnt + 1) & (DMA_TX_RING_SZ/4 - 1);
-+	irq_flag = priv->tx_irq_cnt ? 0 : TXDESC_INTERRUPT;
- 
- 	desc_flags = (skb->ip_summed == CHECKSUM_PARTIAL) ?
- 		TXDESC_CSUM_ALL : 0;
-@@ -1110,9 +1107,9 @@ static netdev_tx_t xgmac_xmit(struct sk_buff *skb, struct net_device *dev)
- 	/* Interrupt on completition only for the latest segment */
- 	if (desc != first)
- 		desc_set_tx_owner(desc, desc_flags |
--			TXDESC_LAST_SEG | TXDESC_INTERRUPT);
-+			TXDESC_LAST_SEG | irq_flag);
- 	else
--		desc_flags |= TXDESC_LAST_SEG | TXDESC_INTERRUPT;
-+		desc_flags |= TXDESC_LAST_SEG | irq_flag;
- 
- 	/* Set owner on first desc last to avoid race condition */
- 	wmb();
-@@ -1121,6 +1118,9 @@ static netdev_tx_t xgmac_xmit(struct sk_buff *skb, struct net_device *dev)
- 	priv->tx_head = dma_ring_incr(entry, DMA_TX_RING_SZ);
- 
- 	writel(1, priv->base + XGMAC_DMA_TX_POLL);
-+	if (dma_ring_space(priv->tx_head, priv->tx_tail, DMA_TX_RING_SZ) <
-+	    MAX_SKB_FRAGS)
-+		netif_stop_queue(dev);
- 
- 	return NETDEV_TX_OK;
- }
-@@ -1397,7 +1397,7 @@ static irqreturn_t xgmac_interrupt(int irq, void *dev_id)
- 	}
- 
- 	/* TX/RX NORMAL interrupts */
--	if (intr_status & (DMA_STATUS_RI | DMA_STATUS_TU)) {
-+	if (intr_status & (DMA_STATUS_RI | DMA_STATUS_TU | DMA_STATUS_TI)) {
- 		writel_relaxed(DMA_INTR_ABNORMAL, priv->base + XGMAC_DMA_INTR_ENA);
- 		napi_schedule(&priv->napi);
- 	}
+Waiting for your comments.
+
+Thanks.
+
+PS: only built-tested for now.
+
+Frederic Weisbecker (5):
+  irq_work: Move irq_work_raise() declaration/default definition to
+    arch headers
+  irq_work: Only run irq_work from tick if arch needs it
+  x86: Implement arch_irq_work_use_tick
+  nohz: Add API to check tick state
+  printk: Wake up klogd with irq_work on nohz CPU
+
+ arch/alpha/include/asm/irq_work.h    |    9 +++++++
+ arch/alpha/kernel/time.c             |    2 +-
+ arch/arm/include/asm/irq_work.h      |    1 +
+ arch/arm64/include/asm/irq_work.h    |    1 +
+ arch/blackfin/include/asm/irq_work.h |    1 +
+ arch/frv/include/asm/irq_work.h      |    1 +
+ arch/hexagon/include/asm/irq_work.h  |    1 +
+ arch/mips/include/asm/irq_work.h     |    1 +
+ arch/parisc/include/asm/irq_work.h   |    1 +
+ arch/powerpc/include/asm/irq_work.h  |    8 ++++++
+ arch/powerpc/kernel/time.c           |    2 +-
+ arch/s390/include/asm/irq_work.h     |    1 +
+ arch/sh/include/asm/irq_work.h       |    1 +
+ arch/sparc/include/asm/irq_work.h    |    8 ++++++
+ arch/sparc/kernel/pcr.c              |    2 +-
+ arch/x86/include/asm/irq_work.h      |   15 ++++++++++++
+ arch/x86/kernel/irq_work.c           |    6 ++--
+ include/asm-generic/irq_work.h       |   22 +++++++++++++++++
+ include/linux/irq_work.h             |    1 +
+ include/linux/tick.h                 |   16 ++++++++++++-
+ kernel/irq_work.c                    |    7 -----
+ kernel/printk.c                      |   42 ++++++++++++++++++++++++++++++++++
+ kernel/time/tick-sched.c             |    2 +-
+ kernel/timer.c                       |    2 +-
+ 24 files changed, 137 insertions(+), 16 deletions(-)
+ create mode 100644 arch/alpha/include/asm/irq_work.h
+ create mode 100644 arch/arm/include/asm/irq_work.h
+ create mode 100644 arch/arm64/include/asm/irq_work.h
+ create mode 100644 arch/blackfin/include/asm/irq_work.h
+ create mode 100644 arch/frv/include/asm/irq_work.h
+ create mode 100644 arch/hexagon/include/asm/irq_work.h
+ create mode 100644 arch/mips/include/asm/irq_work.h
+ create mode 100644 arch/parisc/include/asm/irq_work.h
+ create mode 100644 arch/powerpc/include/asm/irq_work.h
+ create mode 100644 arch/s390/include/asm/irq_work.h
+ create mode 100644 arch/sh/include/asm/irq_work.h
+ create mode 100644 arch/sparc/include/asm/irq_work.h
+ create mode 100644 arch/x86/include/asm/irq_work.h
+ create mode 100644 include/asm-generic/irq_work.h
+
 -- 
-1.7.9.5
+1.7.5.4
 
