@@ -1,106 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444Ab2JLDXo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 23:23:44 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:56857 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab2JLDXn (ORCPT
+	id S1759789Ab2JLDbL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 23:31:11 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:32833 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758145Ab2JLDbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 23:23:43 -0400
-Message-ID: <50778D39.1000102@gmail.com>
-Date: Fri, 12 Oct 2012 11:23:37 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH v3 07/10] thp: implement splitting pmd for huge zero page
-References: <1349191172-28855-1-git-send-email-kirill.shutemov@linux.intel.com> <1349191172-28855-8-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1349191172-28855-8-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Oct 2012 23:31:08 -0400
+Date: Fri, 12 Oct 2012 14:30:59 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: linux-next: manual merge of the pinctrl tree with Linus' tree
+Message-Id: <20121012143059.ed0399ec2598c495e175f876@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__12_Oct_2012_14_30_59_+1100_5E/bAY9xEmFiKArQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2012 11:19 PM, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->
-> We can't split huge zero page itself, but we can split the pmd which
-> points to it.
->
-> On splitting the pmd we create a table with all ptes set to normal zero
-> page.
->
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
-> ---
->   mm/huge_memory.c |   32 ++++++++++++++++++++++++++++++++
->   1 files changed, 32 insertions(+), 0 deletions(-)
->
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 95032d3..3f1c59c 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -1600,6 +1600,7 @@ int split_huge_page(struct page *page)
->   	struct anon_vma *anon_vma;
->   	int ret = 1;
->   
-> +	BUG_ON(is_huge_zero_pfn(page_to_pfn(page)));
->   	BUG_ON(!PageAnon(page));
->   	anon_vma = page_lock_anon_vma(page);
->   	if (!anon_vma)
-> @@ -2503,6 +2504,32 @@ static int khugepaged(void *none)
->   	return 0;
->   }
->   
-> +static void __split_huge_zero_page_pmd(struct vm_area_struct *vma,
-> +		unsigned long haddr, pmd_t *pmd)
-> +{
-> +	pgtable_t pgtable;
-> +	pmd_t _pmd;
-> +	int i;
-> +
-> +	pmdp_clear_flush_notify(vma, haddr, pmd);
+--Signature=_Fri__12_Oct_2012_14_30_59_+1100_5E/bAY9xEmFiKArQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-why I can't find function pmdp_clear_flush_notify in kernel source code? 
-Do you mean pmdp_clear_flush_young_notify or something like that?
+Hi Linus,
 
-> +	/* leave pmd empty until pte is filled */
-> +
-> +	pgtable = get_pmd_huge_pte(vma->vm_mm);
-> +	pmd_populate(vma->vm_mm, &_pmd, pgtable);
-> +
-> +	for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
-> +		pte_t *pte, entry;
-> +		entry = pfn_pte(my_zero_pfn(haddr), vma->vm_page_prot);
-> +		entry = pte_mkspecial(entry);
-> +		pte = pte_offset_map(&_pmd, haddr);
-> +		VM_BUG_ON(!pte_none(*pte));
-> +		set_pte_at(vma->vm_mm, haddr, pte, entry);
-> +		pte_unmap(pte);
-> +	}
-> +	smp_wmb(); /* make pte visible before pmd */
-> +	pmd_populate(vma->vm_mm, pmd, pgtable);
-> +}
-> +
->   void __split_huge_page_pmd(struct vm_area_struct *vma, unsigned long address,
->   		pmd_t *pmd)
->   {
-> @@ -2516,6 +2543,11 @@ void __split_huge_page_pmd(struct vm_area_struct *vma, unsigned long address,
->   		spin_unlock(&vma->vm_mm->page_table_lock);
->   		return;
->   	}
-> +	if (is_huge_zero_pmd(*pmd)) {
-> +		__split_huge_zero_page_pmd(vma, haddr, pmd);
-> +		spin_unlock(&vma->vm_mm->page_table_lock);
-> +		return;
-> +	}
->   	page = pmd_page(*pmd);
->   	VM_BUG_ON(!page_count(page));
->   	get_page(page);
+Today's linux-next merge of the pinctrl tree got a conflict in
+drivers/mtd/nand/atmel_nand.c between commit 28446acb1f82 ("mtd: atmel
+nand: fix gpio missing request") from Linus' tree and commit 08695153170c
+("MTD: atmel nand: fix gpio missing request") from the pinctrl tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/mtd/nand/atmel_nand.c
+index 9144557,f48587b..0000000
+--- a/drivers/mtd/nand/atmel_nand.c
++++ b/drivers/mtd/nand/atmel_nand.c
+@@@ -1414,12 -585,19 +1416,20 @@@ static int __init atmel_nand_probe(stru
+  	nand_chip->IO_ADDR_W =3D host->io_base;
+  	nand_chip->cmd_ctrl =3D atmel_nand_cmd_ctrl;
+ =20
++ 	pinctrl =3D devm_pinctrl_get_select_default(&pdev->dev);
++ 	if (IS_ERR(pinctrl)) {
++ 		dev_err(host->dev, "Failed to request pinctrl\n");
++ 		res =3D PTR_ERR(pinctrl);
++ 		goto err_ecc_ioremap;
++ 	}
++=20
+  	if (gpio_is_valid(host->board.rdy_pin)) {
+- 		res =3D gpio_request(host->board.rdy_pin, "nand_rdy");
++ 		res =3D devm_gpio_request(&pdev->dev,
++ 				host->board.rdy_pin, "nand_rdy");
+  		if (res < 0) {
+  			dev_err(&pdev->dev,
+ -				"can't request rdy gpio %d\n", host->board.rdy_pin);
+ +				"can't request rdy gpio %d\n",
+ +				host->board.rdy_pin);
+  			goto err_ecc_ioremap;
+  		}
+ =20
+@@@ -1435,11 -612,11 +1444,12 @@@
+  	}
+ =20
+  	if (gpio_is_valid(host->board.enable_pin)) {
+- 		res =3D gpio_request(host->board.enable_pin, "nand_enable");
++ 		res =3D devm_gpio_request(&pdev->dev,
++ 				host->board.enable_pin, "nand_enable");
+  		if (res < 0) {
+  			dev_err(&pdev->dev,
+ -				"can't request enable gpio %d\n", host->board.enable_pin);
+ +				"can't request enable gpio %d\n",
+ +				host->board.enable_pin);
+  			goto err_ecc_ioremap;
+  		}
+ =20
+@@@ -1465,11 -664,11 +1475,12 @@@
+  	atmel_nand_enable(host);
+ =20
+  	if (gpio_is_valid(host->board.det_pin)) {
+- 		res =3D gpio_request(host->board.det_pin, "nand_det");
++ 		res =3D devm_gpio_request(&pdev->dev,
++ 				host->board.det_pin, "nand_det");
+  		if (res < 0) {
+  			dev_err(&pdev->dev,
+ -				"can't request det gpio %d\n", host->board.det_pin);
+ +				"can't request det gpio %d\n",
+ +				host->board.det_pin);
+  			goto err_no_card;
+  		}
+ =20
+
+--Signature=_Fri__12_Oct_2012_14_30_59_+1100_5E/bAY9xEmFiKArQ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQd47zAAoJEECxmPOUX5FEfJAP/i6gB1/y8Jj1kcZcp7RGEiE1
+4vnR0PjYNY11kbDJXF0zLha7A7V12EPbzZ0qMfHAmSaWc9J/mkskAkmsgv4WigXJ
+CB5CcFPhzXiXN9Fz617NTbbp/YMSy5e9MickR0L4zDtA9PL1nTnqnqgevawnpQel
+3xC3yyo3FcFV3IopnOfnkjKLIkT29bIXfgWTllEyyEncP4uXGAc8Qg/ByWO9FGHp
+uEzDzma/ONgbXlb88ZPb6OxuZdDIAuU35fdM6j7nDdiapyOfox56oGMZPsAAxYQS
+Qs9xe+dL76TwBYD0S/uK6We16+8ryPtatLICByDeysRUnuvmT0b1p9dypc7Zflpb
+/wZ7MMtrW/CHIflhLmYhKUuhqjNkvmrmrD2t5UzeFes/NxS3SQEPvwzZMGIsAyN1
+vMaFdolCmm85bsq9gsuHzEz3pcg04ulFD5irRfVr/KmO0gbC46ei5/VNFoDQ6StJ
+4ceMker+LQ1IwSUBrGd9W7ISLZwUZxIAwYu76sJH3i4liQzKTOZM+1pgiVUwxPg2
+DGHW9VpRQR9nu24GHAnighK8K39TRkGWGhLIBlb4KC6LtxJ4C22WZsdhMOBFHold
+nUzgmx0ZchfFolmhF95biA99inbwqxXTWK+ft5vOS2WcSoKZEctfzk204kc8ZW3l
+41sncSh++qJRHstl6rHE
+=S1SM
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__12_Oct_2012_14_30_59_+1100_5E/bAY9xEmFiKArQ--
