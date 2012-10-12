@@ -1,30 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134Ab2JLN1m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 09:27:42 -0400
-Received: from mga14.intel.com ([143.182.124.37]:48912 "EHLO mga14.intel.com"
+	id S1759529Ab2JLN25 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 09:28:57 -0400
+Received: from mga14.intel.com ([143.182.124.37]:18189 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756031Ab2JLN1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 09:27:41 -0400
+	id S1757330Ab2JLN2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 09:28:55 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,576,1344236400"; 
-   d="scan'208";a="155507997"
-Message-ID: <1350047732.10584.155.camel@smile>
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+   d="scan'208";a="203725931"
+From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
 To: Viresh Kumar <viresh.kumar@linaro.org>
-In-Reply-To: <91e41b4cc972d298f714cbd6f400569a9710304c.1350020375.git.viresh.kumar@linaro.org>
+CC: "Koul, Vinod" <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "spear-devel@list.st.com" <spear-devel@list.st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 2/3] dmaengine: dw_dmac: Enhance device tree support
+Thread-Topic: [PATCH 2/3] dmaengine: dw_dmac: Enhance device tree support
+Thread-Index: AQHNqH1/4m+3vxUD3EiqzcH7Q9+iIA==
+Date: Fri, 12 Oct 2012 13:28:43 +0000
+Message-ID: <1350048519.10584.158.camel@smile>
 References: <142ef9170a2c69657d8a05ac127a9970d7b04965.1350020375.git.viresh.kumar@linaro.org>
 	 <91e41b4cc972d298f714cbd6f400569a9710304c.1350020375.git.viresh.kumar@linaro.org>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Subject: Re: [PATCH 2/3] dmaengine: dw_dmac: Enhance device tree support
-Date: Fri, 12 Oct 2012 16:27:19 +0300
-Content-Transfer-Encoding: 
-X-Mailer: Evolution 3.4.3-1 
+In-Reply-To: <91e41b4cc972d298f714cbd6f400569a9710304c.1350020375.git.viresh.kumar@linaro.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.237.72.62]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <2EB5CA6FD0272640BF09A738D5796869@intel.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9CDT2kK015790
 
 On Fri, 2012-10-12 at 11:14 +0530, Viresh Kumar wrote: 
 > dw_dmac driver already supports device tree but it used to have its platform
@@ -153,3 +166,18 @@ calculate count of slave_info children before pdata memory allocation.
 -- 
 Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 Intel Finland Oy
+
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+---------------------------------------------------------------------
+Intel Finland Oy
+Registered Address: PL 281, 00181 Helsinki 
+Business Identity Code: 0357606 - 4 
+Domiciled in Helsinki 
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
