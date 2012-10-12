@@ -1,51 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842Ab2JLGmL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 02:42:11 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:4342 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751477Ab2JLGmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 02:42:08 -0400
-X-IronPort-AV: E=Sophos;i="4.80,576,1344182400"; 
-   d="scan'208";a="5988189"
-Message-ID: <5077BB7B.4030203@cn.fujitsu.com>
-Date: Fri, 12 Oct 2012 14:40:59 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1755881Ab2JLGm0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 02:42:26 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:52573 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755854Ab2JLGmX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 02:42:23 -0400
+X-Sasl-enc: JZPG+GNzoF8ktMixLAoHBbcG0u6rok+A/6PdI7nBXdJU 1350024142
+Date: Fri, 12 Oct 2012 15:42:20 +0900
+From: Greg KH <greg@kroah.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Romain Francoise <romain@orebokech.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: Linux 2.6.32.60
+Message-ID: <20121012064220.GA24957@kroah.com>
+References: <20121009094453.GA4289@1wt.eu>
+ <87y5jeqv6b.fsf@silenus.orebokech.com>
+ <20121011062916.GG8938@1wt.eu>
+ <20121011105804.GB28546@kroah.com>
+ <20121011113106.GR8938@1wt.eu>
+ <50775210.4060007@zytor.com>
+ <20121012063848.GD12041@1wt.eu>
 MIME-Version: 1.0
-To: x86@kernel.org, kexec@lists.infradead.org, linux-doc@vger.kernel.org,
-        Avi Kivity <avi@redhat.com>, mtosatti@redhat.com
-CC: linux-kernel@vger.kernel.org, "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: [PATCH 0/3] x86: clear vmcss on all cpus when doing kdump if necessary
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/12 14:41:53,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/12 14:41:54,
-	Serialize complete at 2012/10/12 14:41:54
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121012063848.GD12041@1wt.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, kdump just makes all the logical processors leave VMX operation by
-executing VMXOFF instruction, so any VMCSs active on the logical processors may
-be corrupted. But, sometimes, we need the VMCSs to debug guest images contained
-in the host vmcore. To prevent the corruption, we should VMCLEAR the VMCSs before
-executing the VMXOFF instruction.
+On Fri, Oct 12, 2012 at 08:38:48AM +0200, Willy Tarreau wrote:
+> On Fri, Oct 12, 2012 at 07:11:12AM +0800, H. Peter Anvin wrote:
+> > On 10/11/2012 07:31 PM, Willy Tarreau wrote:
+> > > On Thu, Oct 11, 2012 at 07:58:04PM +0900, Greg KH wrote:
+> > >> On Thu, Oct 11, 2012 at 08:29:16AM +0200, Willy Tarreau wrote:
+> > >>> If you think these patches constitute a regression, I can revert them.
+> > >>> However I'd like convincing arguments since they're here to help address
+> > >>> a real issue.
+> > >>
+> > >> If I missed these when doing the random number generation backport for
+> > >> 3.0, and I should add them there as well, please let me know.
+> > > 
+> > > At least I think they should not be in 2.6.32 without being in 3.0.
+> > > Probably that Peter's opinion will help us decide whether they should
+> > > go into 3.0 or 2.6.32 should revert them.
+> > > 
+> > 
+> > I would strongly argue for at least one of the RDRAND-enabling versions
+> > being in all supported kernels; the second (with Ted Ts'o's changes) is
+> > better, but touches a *lot* of subsystems; the plain one is
+> > self-contained but only helps RDRAND-enabled hardware.
+> > 
+> > Without these patches the random subsystem has a critical security flaw,
+> > which puts it into the scope for stable.
+> 
+> That's clearly what I understood, thanks Peter for confirming ! So I won't
+> revert the patches unless a regression is reported in which case we'll
+> prefer to fix it.
+> 
+> Greg, I think it would be better to get them into 3.0 too. The ones I used
+> were (prefixed with 'X' if they are already in 3.0) :
+>    24da9c26 x86, cpu: Add CPU flags for F16C and RDRND
+>    7ccafc5f x86, cpufeature: Update CPU feature RDRND to RDRAND
+>  X 63d77173 random: Add support for architectural random hooks
+>  X bd29e568 fix typo/thinko in get_random_bytes()
+>    628c6246 x86, random: Architectural inlines to get random integers with RDRAND
+>    49d859d7 x86, random: Verify RDRAND functionality and allow it to be disabled
+>  X cf833d0b random: Use arch_get_random_int instead of cycle counter if avail
+>  X 3e88bdff random: Use arch-specific RNG to initialize the entropy store
+>  X 2dac8e54 random: Adjust the number of loops when initializing
+> 
+> So in the end it seems you only need to add 24da9c26, 7ccafc5f, 628c6246, and
+> 49d859d7 to get them all.
+> 
+> There should be no problem to backport them since initially I could pick most
+> of them directly from 3.2, though it was easier to pick all of them from .34
+> in the end.
 
-The patch set provides an alternative way to clear VMCSs related to guests
-on all cpus when host is doing kdump.
+Thanks, I'll dig them out for the next 3.0 release after this one.
 
-zhangyanfei (3):
-  x86/kexec: clear vmcss on all cpus if necessary
-  KVM: make crash_clear_loaded_vmcss valid when kvm_intel is loaded
-  sysctl: introduce a new interface to control kdump-vmcs-clear
-    behaviour
-
- Documentation/sysctl/kernel.txt |    8 ++++++++
- arch/x86/include/asm/kexec.h    |    3 +++
- arch/x86/kernel/crash.c         |   23 +++++++++++++++++++++++
- arch/x86/kvm/vmx.c              |    9 +++++++++
- kernel/sysctl.c                 |   10 ++++++++++
- 5 files changed, 53 insertions(+), 0 deletions(-)
+greg k-h
