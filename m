@@ -1,95 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758668Ab2JLTHA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 15:07:00 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:57933 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756881Ab2JLTG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 15:06:56 -0400
-Date: Fri, 12 Oct 2012 12:06:45 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        PaX Team <pageexec@freemail.hu>,
-        Brad Spengler <spender@grsecurity.net>
-Subject: [PATCH v4] fix stack memory content leak via UNAME26
-Message-ID: <20121012190645.GA6111@www.outflux.net>
+	id S1754390Ab2JLTKu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 15:10:50 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:47896 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980Ab2JLTKs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 15:10:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+In-Reply-To: <50727984.20401@cn.fujitsu.com>
+References: <506C0AE8.40702@jp.fujitsu.com> <506C0C53.60205@jp.fujitsu.com>
+ <CAHGf_=p7PaQs-kpnyB8uC1MntHQfL-CXhhq4QQP54mYiqOswqQ@mail.gmail.com> <50727984.20401@cn.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Fri, 12 Oct 2012 15:10:27 -0400
+X-Google-Sender-Auth: ttUn0qYGllWiUjkyMv4h0nE0zdk
+Message-ID: <CAHGf_=pCrx8AkL9eiSYVgwvT1v0SW2__P_DW-1Wwj_zskqcLXw@mail.gmail.com>
+Subject: Re: [PATCH 1/4] acpi,memory-hotplug : add memory offline code to acpi_memory_device_remove()
+To: Wen Congyang <wency@cn.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling uname() with the UNAME26 personality set allows a leak of kernel
-stack contents. This fixes it by defensively calculating the length of
-copy_to_user() call, making the len argument unsigned, and initializing
-the stack buffer to zero (now technically unneeded, but hey, overkill).
+>>> -static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+>>> +static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
+>>>  {
+>>>         int result;
+>>>         struct acpi_memory_info *info, *n;
+>>>
+>>> +       list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+>>
+>> Which lock protect this loop?
+>
+> There is no any lock to protect it now...
 
-CVE-2012-0957
-
-Reported-by: PaX Team <pageexec@freemail.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: PaX Team <pageexec@freemail.hu>
-Cc: Brad Spengler <spender@grsecurity.net>
-Cc: stable@vger.kernel.org
-Signed-off-by: Kees Cook <keescook@chromium.org>
-
----
-v4:
- - switch to clamp_t, thanks to Fengguang Wu.
-v3:
- - use scnprintf, suggested by Andrew Morton.
-v2:
- - corrected credit to PaX Team.
- - moved stack clearing into if case to avoid penalty to common case.
----
- kernel/sys.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/sys.c b/kernel/sys.c
-index c5cb5b9..e6e0ece 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1265,15 +1265,16 @@ DECLARE_RWSEM(uts_sem);
-  * Work around broken programs that cannot handle "Linux 3.0".
-  * Instead we map 3.x to 2.6.40+x, so e.g. 3.0 would be 2.6.40
-  */
--static int override_release(char __user *release, int len)
-+static int override_release(char __user *release, size_t len)
- {
- 	int ret = 0;
--	char buf[65];
- 
- 	if (current->personality & UNAME26) {
--		char *rest = UTS_RELEASE;
-+		const char *rest = UTS_RELEASE;
-+		char buf[65] = { 0 };
- 		int ndots = 0;
- 		unsigned v;
-+		size_t copy;
- 
- 		while (*rest) {
- 			if (*rest == '.' && ++ndots >= 3)
-@@ -1283,8 +1284,9 @@ static int override_release(char __user *release, int len)
- 			rest++;
- 		}
- 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
--		snprintf(buf, len, "2.6.%u%s", v, rest);
--		ret = copy_to_user(release, buf, len);
-+		copy = clamp_t(size_t, len, 1, sizeof(buf));
-+		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
-+		ret = copy_to_user(release, buf, copy + 1);
- 	}
- 	return ret;
- }
--- 
-1.7.9.5
+When iterate an item removal list, you should use lock for protecting from
+memory corruption.
 
 
--- 
-Kees Cook
-Chrome OS Security
+
+
+>>> +static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+>>> +{
+>>> +       int result;
+>>>
+>>>         /*
+>>>          * Ask the VM to offline this memory range.
+>>>          * Note: Assume that this function returns zero on success
+>>>          */
+>>
+>> Write function comment instead of this silly comment.
+>>
+>>> -       list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+>>> -               if (info->enabled) {
+>>> -                       result = remove_memory(info->start_addr, info->length);
+>>> -                       if (result)
+>>> -                               return result;
+>>> -               }
+>>> -               kfree(info);
+>>> -       }
+>>> +       result = acpi_memory_remove_memory(mem_device);
+>>> +       if (result)
+>>> +               return result;
+>>>
+>>>         /* Power-off and eject the device */
+>>>         result = acpi_memory_powerdown_device(mem_device);
+>>
+>> This patch move acpi_memory_powerdown_device() from ACPI_NOTIFY_EJECT_REQUEST
+>> to release callback, but don't explain why.
+>
+> Hmm, it doesn't move the code. It just reuse the code in acpi_memory_powerdown_device().
+
+Even if reuse or not reuse, you changed the behavior. If any changes
+has no good rational, you cannot get an ack.
+
+
+
+
+>>> @@ -473,12 +486,23 @@ static int acpi_memory_device_add(struct
+>>>  static int acpi_memory_device_remove(struct acpi_device *device, int type)
+>>>  {
+>>>         struct acpi_memory_device *mem_device = NULL;
+>>> -
+>>> +       int result;
+>>>
+>>>         if (!device || !acpi_driver_data(device))
+>>>                 return -EINVAL;
+>>>
+>>>         mem_device = acpi_driver_data(device);
+>>> +
+>>> +       if (type == ACPI_BUS_REMOVAL_EJECT) {
+>>> +               /*
+>>> +                * offline and remove memory only when the memory device is
+>>> +                * ejected.
+>>> +                */
+>>
+>> This comment explain nothing. A comment should describe _why_ should we do.
+>> e.g. Why REMOVAL_NORMAL and REMOVEL_EJECT should be ignored. Why
+>> we need remove memory here instead of ACPI_NOTIFY_EJECT_REQUEST.
+>
+> Hmm, we have 2 ways to remove a memory:
+> 1. SCI
+> 2. echo 1 >/sys/bus/acpi/devices/PNP0C80:XX/eject
+>
+> In the 2nd case, there is no ACPI_NOTIFY_EJECT_REQUEST. We should offline
+> the memory and remove it from kernel in the release callback. We will poweroff
+> the memory device in acpi_bus_hot_remove_device(), so we must offline
+> and remove it if the type is ACPI_BUS_REMOVAL_EJECT.
+>
+> I guess we should not poweroff the memory device when we fail to offline it.
+> But device_release_driver() doesn't returns any error...
+
+1) I think /sys/bus/acpi/devices/PNP0C80:XX/eject should emulate acpi
+eject. Can't
+you make a pseudo acpi eject event and detach device by acpi regular path?
+
+2) Your explanation didn't explain why we should ignore REMOVAL_NORMAL
+and REMOVEL_EJECT. As far as reviewers can't track your intention, we
+can't maintain
+the code and can't ack them.
