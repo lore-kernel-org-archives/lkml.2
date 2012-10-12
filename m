@@ -1,110 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757818Ab2JLJI6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 05:08:58 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56828 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755977Ab2JLJIz (ORCPT
+	id S1755416Ab2JLJLM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 05:11:12 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40143 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238Ab2JLJLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 05:08:55 -0400
-Message-ID: <5077DE0A.4000301@ti.com>
-Date: Fri, 12 Oct 2012 14:38:26 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Fri, 12 Oct 2012 05:11:10 -0400
+Date: Fri, 12 Oct 2012 11:11:05 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+Subject: Re: [GIT PULL] perf updates/fixes
+Message-ID: <20121012091105.GA31307@gmail.com>
+References: <20121012081947.GA20570@gmail.com>
+ <20121012083926.GA30327@gmail.com>
+ <20121012090810.GA11763@x1.osrc.amd.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>, Rajendra Nayak <rnayak@ti.com>
-CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <linux@arm.linux.org.uk>, <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Moiz Sonasath <m-sonasath@ti.com>
-Subject: Re: [PATCH 1/4] usb: phy: add a new driver for usb3 phy
-References: <1348054229-27362-1-git-send-email-kishon@ti.com> <1348054229-27362-2-git-send-email-kishon@ti.com> <20121011005944.GX12552@atomide.com>
-In-Reply-To: <20121011005944.GX12552@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121012090810.GA11763@x1.osrc.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
 
-On Thursday 11 October 2012 06:29 AM, Tony Lindgren wrote:
-> Hi,
->
-> * Kishon Vijay Abraham I <kishon@ti.com> [120919 04:32]:
->> Added a driver for usb3 phy that handles the interaction between usb phy
->> device and dwc3 controller.
->>
->> This also includes device tree support for usb3 phy driver and
->> the documentation with device tree binding information is updated.
->>
->> Currently writing to control module register is taken care in this
->> driver which will be removed once the control module driver is in place.
->
-> You may be able to set up the control module register with one
-> of the following Linux standard frameworks:
->
-> 1. Fixed regulator defined in mach-omap2/control.c
+* Borislav Petkov <bp@alien8.de> wrote:
 
-Is it control.c?
->
->     In this case the PHY driver can pick up the regulator by name.
+> On Fri, Oct 12, 2012 at 10:39:26AM +0200, Ingo Molnar wrote:
+> > 
+> > * Ingo Molnar <mingo@kernel.org> wrote:
+> > 
+> > > Linus,
+> > > 
+> > > Please pull the latest perf-urgent-for-linus git tree from:
+> > > 
+> > >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+> > > 
+> > >    HEAD: 95cf59ea72331d0093010543b8951bb43f262cac perf: Fix perf_cgroup_switch for sw-events
+> > 
+> > Note that if you merge it then there's a new semantic conflict 
+> > with recent rbtree.c changes in your tree, causing a tools/perf/ 
+> > build failure:
+> > 
+> > ../../lib/rbtree.c:24:36: fatal error: linux/rbtree_augmented.h: No such file or directory compilation terminated.
+> > 
+> > See the fix below.
+> > 
+> > ( If the __maybe_unused annotations are too ugly for 
+> >   lib/rbtree.c then we'll fix that in tools/perf in a cleaner
+> >   way, weakening the compiler checks for the rbtree build. We 
+> >   are using stronger compiler checks in tools/perf/, which has 
+> >   served us very well so far and is a big net win - the price is 
+> >   the occasional extra annotation of dummy inline function 
+> >   parameters. )
+> 
+> Btw,
+> 
+> Markus fixed it that way recently:
+> 
+> http://marc.info/?l=linux-kernel&m=134980573527738
+> 
+> by adding the -Wno-unused-parameter switch only to lib/rbtree.o when
+> built from within perf.
+> 
+> I see now though that his patch has some unrelated changes to
+> trace-event-perl.c's permissions which shouldn't be there.
 
-Do you mean we have to define something like fixed_voltage_config 
-defined in board-4430sdp.c?
- From whatever I could make out from regulator/fixed.c, 
-enabling/disabling of regulator is done using only gpio. I'm not sure 
-how we can use that to write to control module register.
->
-> 2. A mux mapped with pinctrl framework using pinctrl-single,bits
->     binding
->
->     And in this case the PHY driver can request the named pinctrl
->     states like "enabled" and "disabled".
->
->> --- a/Documentation/devicetree/bindings/usb/usb-phy.txt
->> +++ b/Documentation/devicetree/bindings/usb/usb-phy.txt
->> @@ -15,3 +15,21 @@ usb2phy@4a0ad080 {
->>   	reg = <0x4a0ad080 0x58>,
->>   	      <0x4a002300 0x4>;
->>   };
->
-> The comments also apply to the omap_usb2.c driver for
-> 0x4a002300 above.
->
->> +
->> +OMAP USB3 PHY
->> +
->> +Required properties:
->> + - compatible: Should be "ti,omap-usb3"
->> + - reg : Address and length of the register set for the device. Also
->> +add the address of control module phy power register until a driver for
->> +control module is added
->> +
->> +This is usually a subnode of ocp2scp to which it is connected.
->> +
->> +usb3phy@4a084400 {
->> +	compatible = "ti,omap-usb3";
->> +	reg = <0x0x4a084400 0x80>,
->> +	      <0x4a084800 0x64>,
->> +	      <0x4a084c00 0x40>,
->> +	      <0x4a002370 0x4>;
->> +};
->
-> And register 0x4a002370 here. Care to post some info what the
-> 0x4a002370 register bits do? Is that same as CONTROL_DEV_CONF
-> on omap4, or does it have other bits there too?
+Yes, that final hunk should be removed. Other than that, 
+Markus's solution is fine to me too:
 
-It's CONTROL_PHY_POWER_USB register and it's structure looks like this.
-31:22 USB_PWRCTL_CLK_FREQ
-21:14 USB_PWRCTL_CLK_CMD
-13:0 RESERVED
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
-CLK_CMD takes values to power up/down the TX and RX in various combinations.
+Thanks,
 
-And CLK_FREQ takes values for clock configuration.
-
-Thanks
-Kishon
+	Ingo
