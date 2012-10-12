@@ -1,97 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759067Ab2JLOvR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 10:51:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48671 "EHLO mx2.suse.de"
+	id S933052Ab2JLOvS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 10:51:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48679 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757961Ab2JLOvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 10:51:15 -0400
-Date: Fri, 12 Oct 2012 16:51:04 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Ben Hutchings <ben@decadent.org.uk>, Sasha Levin <levinsasha928@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: blk: NULL ptr deref in blk_dequeue_request()
-In-Reply-To: <1349884374.6336.67.camel@deadeye.wl.decadent.org.uk>
-Message-ID: <alpine.LNX.2.00.1210121650270.24717@pobox.suse.cz>
-References: <505E2108.2060108@gmail.com>  <CA+1xoqc1Bc1rPgH+9Xs9-BV7qp3N7mDpNLj1mPwZHdF=H4mHTg@mail.gmail.com>  <20121008172207.GB14767@quack.suse.cz>  <alpine.LNX.2.00.1210082340501.19980@pobox.suse.cz>  <507424F7.60801@gmail.com> <50742600.10606@gmail.com>
- <1349884374.6336.67.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1759051Ab2JLOvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 10:51:17 -0400
+Date: Fri, 12 Oct 2012 15:51:14 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Linux-MM <linux-mm@kvack.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: MMTests 0.06
+Message-ID: <20121012145114.GZ29125@suse.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Oct 2012, Ben Hutchings wrote:
+MMTests 0.06 is a configurable test suite that runs a number of common
+workloads of interest to MM developers. There are multiple additions
+all but in many respects the most useful will be automatic package
+installation. The package names are based on openSUSE but it's easy to
+create mappings in bin/install-depends where the package names differ. The
+very basics of monitoring NUMA efficiency is there as well and the autonuma
+benchmark has a test. The stats it reports for NUMA need significant
+improvement but for the most part that should be straight forward.
 
-> > >>>>>> I'm still seeing this on linux-next.
-> > >>>>   I think this is floppy related (see redo_fd_request() in the stack
-> > >>>> trace). And there were quite some changes to the area recently. Adding
-> > >>>> maintainer to CC.
-> > >> Hmm ... I don't immediately see how this is happening.
-> > >>
-> > >> Sasha, could you please do git bisect on drivers/block/floppy.c between 
-> > >> f6365201d and your git HEAD for starters (assuming that f6365201d works 
-> > >> well for you?).
-> > >>
-> > > 
-> > > A bisect on floppy.c yielded the following:
-> > > 
-> > > b33d002f4b6bae912463e5a66387c498aa69b6fe is the first bad commit
-> > > commit b33d002f4b6bae912463e5a66387c498aa69b6fe
-> > > Author: Ben Hutchings <ben@decadent.org.uk>
-> > > Date:   Mon Aug 27 20:56:53 2012 -0300
-> > > 
-> > >     genhd: Make put_disk() safe for disks that have not been registered
-> > 
-> > 2 more things:
-> > 
-> >  1. The guest vm which I'm testing on doesn't emulate anything which even looks like a floppy.
-> >  2. I'm seeing the following lines before the BUG:
-> > 
-> > [    9.836604] floppy0: no floppy controllers found
-> > [    9.837246] work still pending
-> > [    9.837743] floppy0: floppy_shutdown: timeout handler died.
-> 
-> I see two problems:
-> 
-> 1. redo_fd_request() races with tear-down of the disks, but because
-> set_next_request() checks disk->queue before doing anything this was
-> usually harmless.  Now that do_floppy_init() doesn't clear disk->queue,
-> the race condition is much easier to hit.  This may fix that problem in
-> do_floppy_init(), though there appear to be worse bugs in tear-down
-> order in floppy_module_exit():
-> 
-> --- a/drivers/block/floppy.c
-> +++ b/drivers/block/floppy.c
-> @@ -4320,13 +4320,13 @@ out_unreg_region:
->  out_unreg_blkdev:
->  	unregister_blkdev(FLOPPY_MAJOR, "fd");
->  out_put_disk:
-> +	destroy_workqueue(floppy_wq);
->  	while (dr--) {
->  		del_timer_sync(&motor_off_timer[dr]);
->  		if (disks[dr]->queue)
->  			blk_cleanup_queue(disks[dr]->queue);
->  		put_disk(disks[dr]);
->  	}
-> -	destroy_workqueue(floppy_wq);
->  	return err;
->  }
->  
-> --- END ---
-> 
-> 2. I made a big mistake in using the existing GENHD_FL_UP flag, as it is
-> cleared by del_gendisk().  Incremental patch below, but it should be
-> squashed into the previous patch if that branch is still rebase-able.
+Changelog since v0.05
+o Automatically install packages (need name mappings for other distros)
+o Add benchmark for autonumabench
+o Add support for benchmarking NAS with MPI
+o Add pgbench for autonumabench (may need a bit more work)
+o Upgrade postgres version to 9.2.1
+o Upgrade kernel verion used for kernbench to 3.0 for newer toolchains
+o Alter mailserver config to finish in a reasonable time
+o Add monitor for perf sched
+o Add moinitor that gathers ftrace information with trace-cmd
+o Add preliminary monitors for NUMA stats (very basic)
+o Specify ftrace events to monitor from config file
+o Remove the bulk of whats left of VMRegress
+o Convert shellpacks to a template format to auto-generate boilerplate code
+o Collect lock_stat information if enabled
+o Run multiple iterations of aim9
+o Add basic regression tests for Cross Memory Attach
+o Copy with preempt being enabled in highalloc stres tests
+o Have largedd cope with a missing large file to work with
+o Add a monitor-only mode to just capture logs
+o Report receive-side throughput in netperf for results
 
-Sasha,
+At LSF/MM at some point a request was made that a series of tests
+be identified that were of interest to MM developers and that could be
+used for testing the Linux memory management subsystem. There is renewed
+interest in some sort of general testing framework during discussions for
+Kernel Summit 2012 so here is what I use.
 
-did you manage to test this to see if it fixes the symptom you are seeing, 
-please?
+http://www.csn.ul.ie/~mel/projects/mmtests/
+http://www.csn.ul.ie/~mel/projects/mmtests/mmtests-0.06-mmtests-0.01.tar.gz
+
+There are a number of stock configurations stored in configs/.  For example
+config-global-dhp__pagealloc-performance runs a number of tests that
+may be able to identify performance regressions or gains in the page
+allocator. Similarly there network and scheduler configs. There are also
+more complex options. config-global-dhp__parallelio-memcachetest will run
+memcachetest in the foreground while doing IO of different sizes in the
+background to measure how much unrelated IO affects the throughput of an
+in-memory database.
+
+This release is also a little rough and the extraction scripts could
+have been tidier but they were mostly written in an airport and for the
+most part they work as advertised. I'll fix bugs as according as they are
+brought to my attention.
+
+The stats reporting still needs work because while some tests know how
+to make a better estimate of mean by filtering outliers it is not being
+handled consistently and the methodology needs work. I know filtering
+statistics like this is a major flaw in the methodology but the decision
+was made in this case in the interest of the benchmarks with unstable
+results completing in a reasonable time.
 
 -- 
-Jiri Kosina
+Mel Gorman
 SUSE Labs
