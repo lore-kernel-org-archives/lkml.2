@@ -1,164 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932241Ab2JLBWO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 21:22:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3253 "EHLO
+	id S1754909Ab2JLBWs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 21:22:48 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32425 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754275Ab2JLBV2 (ORCPT
+	with ESMTP id S1753200Ab2JLBV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Oct 2012 21:21:28 -0400
-X-Authority-Analysis: v=2.0 cv=a96yBDuF c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=X81HC-OWoqQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=jx0P7QH68GoA:10 a=20KFwNOVAAAA:8 a=D_SbEOMbAAAA:8 a=KX_EoNuOAAAA:8 a=VwQbUJbxAAAA:8 a=BrdBRmpAAAAA:8 a=Wo35i7Zp99RQVvP9T0EA:9 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=7KbvKZvEaC0A:10 a=EQhcPuMQ6skA:10 a=Zh68SRI7RUMA:10 a=V3A8Zi_4ZC0OmfG6:21 a=eKDiSTVjbwVtpCMo:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=v2vMHd0OFtsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=HZW87zcCyfsA:10 a=VwQbUJbxAAAA:8 a=bndTQQZpn-juXqhEl_8A:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121012012125.940502672@goodmis.org>
+Message-Id: <20121012012126.241147167@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Oct 2012 21:20:26 -0400
+Date: Thu, 11 Oct 2012 21:20:28 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, Clark Williams <clark@redhat.com>,
-        Carsten Emde <cbe@osadl.org>
-Subject: [PATCH RT 2/8] softirq: Init softirq local lock after per cpu section is set up
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH RT 4/8] mm: page_alloc: Use local_lock_on() instead of plain spinlock
 References: <20121012012024.056658930@goodmis.org>
-Content-Disposition: inline; filename=0002-softirq-Init-softirq-local-lock-after-per-cpu-sectio.patch
+Content-Disposition: inline; filename=0004-mm-page_alloc-Use-local_lock_on-instead-of-plain-spi.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-I discovered this bug when booting 3.4-rt on my powerpc box. It crashed
-with the following report:
+The plain spinlock while sufficient does not update the local_lock
+internals. Use a proper local_lock function instead to ease debugging.
 
-------------[ cut here ]------------
-kernel BUG at /work/rt/stable-rt.git/kernel/rtmutex_common.h:75!
-Oops: Exception in kernel mode, sig: 5 [#1]
-PREEMPT SMP NR_CPUS=64 NUMA PA Semi PWRficient
-Modules linked in:
-NIP: c0000000004aa03c LR: c0000000004aa01c CTR: c00000000009b2ac
-REGS: c00000003e8d7950 TRAP: 0700   Not tainted  (3.4.11-test-rt19)
-MSR: 9000000000029032 <SF,HV,EE,ME,IR,DR,RI>  CR: 24000082  XER: 20000000
-SOFTE: 0
-TASK = c00000003e8fdcd0[11] 'ksoftirqd/1' THREAD: c00000003e8d4000 CPU: 1
-GPR00: 0000000000000001 c00000003e8d7bd0 c000000000d6cbb0 0000000000000000
-GPR04: c00000003e8fdcd0 0000000000000000 0000000024004082 c000000000011454
-GPR08: 0000000000000000 0000000080000001 c00000003e8fdcd1 0000000000000000
-GPR12: 0000000024000084 c00000000fff0280 ffffffffffffffff 000000003ffffad8
-GPR16: ffffffffffffffff 000000000072c798 0000000000000060 0000000000000000
-GPR20: 0000000000642741 000000000072c858 000000003ffffaf0 0000000000000417
-GPR24: 000000000072dcd0 c00000003e7ff990 0000000000000000 0000000000000001
-GPR28: 0000000000000000 c000000000792340 c000000000ccec78 c000000001182338
-NIP [c0000000004aa03c] .wakeup_next_waiter+0x44/0xb8
-LR [c0000000004aa01c] .wakeup_next_waiter+0x24/0xb8
-Call Trace:
-[c00000003e8d7bd0] [c0000000004aa01c] .wakeup_next_waiter+0x24/0xb8 (unreliable)
-[c00000003e8d7c60] [c0000000004a0320] .rt_spin_lock_slowunlock+0x8c/0xe4
-[c00000003e8d7ce0] [c0000000004a07cc] .rt_spin_unlock+0x54/0x64
-[c00000003e8d7d60] [c0000000000636bc] .__thread_do_softirq+0x130/0x174
-[c00000003e8d7df0] [c00000000006379c] .run_ksoftirqd+0x9c/0x1a4
-[c00000003e8d7ea0] [c000000000080b68] .kthread+0xa8/0xb4
-[c00000003e8d7f90] [c00000000001c2f8] .kernel_thread+0x54/0x70
-Instruction dump:
-60000000 e86d01c8 38630730 4bff7061 60000000 ebbf0008 7c7c1b78 e81d0040
-7fe00278 7c000074 7800d182 68000001 <0b000000> e88d01c8 387d0010 38840738
-
-The rtmutex_common.h:75 is:
-
-rt_mutex_top_waiter(struct rt_mutex *lock)
-{
-	struct rt_mutex_waiter *w;
-
-	w = plist_first_entry(&lock->wait_list, struct rt_mutex_waiter,
-			       list_entry);
-	BUG_ON(w->lock != lock);
-
-	return w;
-}
-
-Where the waiter->lock is corrupted. I saw various other random bugs
-that all had to with the softirq lock and plist. As plist needs to be
-initialized before it is used I investigated how this lock is
-initialized. It's initialized with:
-
-void __init softirq_early_init(void)
-{
-	local_irq_lock_init(local_softirq_lock);
-}
-
-Where:
-
-#define local_irq_lock_init(lvar)					\
-	do {								\
-		int __cpu;						\
-		for_each_possible_cpu(__cpu)				\
-			spin_lock_init(&per_cpu(lvar, __cpu).lock);	\
-	} while (0)
-
-As the softirq lock is a local_irq_lock, which is a per_cpu lock, the
-initialization is done to all per_cpu versions of the lock. But lets
-look at where the softirq_early_init() is called from.
-
-In init/main.c: start_kernel()
-
-/*
- * Interrupts are still disabled. Do necessary setups, then
- * enable them
- */
-	softirq_early_init();
-	tick_init();
-	boot_cpu_init();
-	page_address_init();
-	printk(KERN_NOTICE "%s", linux_banner);
-	setup_arch(&command_line);
-	mm_init_owner(&init_mm, &init_task);
-	mm_init_cpumask(&init_mm);
-	setup_command_line(command_line);
-	setup_nr_cpu_ids();
-	setup_per_cpu_areas();
-	smp_prepare_boot_cpu();	/* arch-specific boot-cpu hooks */
-
-One of the first things that is called is the initialization of the
-softirq lock. But if you look further down, we see the per_cpu areas
-have not been set up yet. Thus initializing a local_irq_lock() before
-the per_cpu section is set up, may not work as it is initializing the
-per cpu locks before the per cpu exists.
-
-By moving the softirq_early_init() right after setup_per_cpu_areas(),
-the kernel boots fine.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Clark Williams <clark@redhat.com>
-Cc: John Kacur <jkacur@redhat.com>
-Cc: Carsten Emde <cbe@osadl.org>
-Cc: vomlehn@texas.net
-Cc: stable-rt@vger.kernel.org
-Link: http://lkml.kernel.org/r/1349362924.6755.18.camel@gandalf.local.home
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- init/main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/locallock.h |   11 +++++++++++
+ mm/page_alloc.c           |    4 ++--
+ 2 files changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/init/main.c b/init/main.c
-index d432bea..6f96224 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -490,7 +490,6 @@ asmlinkage void __init start_kernel(void)
-  * Interrupts are still disabled. Do necessary setups, then
-  * enable them
-  */
--	softirq_early_init();
- 	tick_init();
- 	boot_cpu_init();
- 	page_address_init();
-@@ -501,6 +500,7 @@ asmlinkage void __init start_kernel(void)
- 	setup_command_line(command_line);
- 	setup_nr_cpu_ids();
- 	setup_per_cpu_areas();
-+	softirq_early_init();
- 	smp_prepare_boot_cpu();	/* arch-specific boot-cpu hooks */
+diff --git a/include/linux/locallock.h b/include/linux/locallock.h
+index 0161fbb..f1804a3 100644
+--- a/include/linux/locallock.h
++++ b/include/linux/locallock.h
+@@ -137,6 +137,12 @@ static inline int __local_lock_irqsave(struct local_irq_lock *lv)
+ 		_flags = __get_cpu_var(lvar).flags;			\
+ 	} while (0)
  
- 	build_all_zonelists(NULL);
++#define local_lock_irqsave_on(lvar, _flags, cpu)			\
++	do {								\
++		__local_lock_irqsave(&per_cpu(lvar, cpu));		\
++		_flags = per_cpu(lvar, cpu).flags;			\
++	} while (0)
++
+ static inline int __local_unlock_irqrestore(struct local_irq_lock *lv,
+ 					    unsigned long flags)
+ {
+@@ -156,6 +162,11 @@ static inline int __local_unlock_irqrestore(struct local_irq_lock *lv,
+ 			put_local_var(lvar);				\
+ 	} while (0)
+ 
++#define local_unlock_irqrestore_on(lvar, flags, cpu)			\
++	do {								\
++		__local_unlock_irqrestore(&per_cpu(lvar, cpu), flags);	\
++	} while (0)
++
+ #define local_spin_trylock_irq(lvar, lock)				\
+ 	({								\
+ 		int __locked;						\
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 67202bc..8678a7f 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -227,9 +227,9 @@ static DEFINE_LOCAL_IRQ_LOCK(pa_lock);
+ 
+ #ifdef CONFIG_PREEMPT_RT_BASE
+ # define cpu_lock_irqsave(cpu, flags)		\
+-	spin_lock_irqsave(&per_cpu(pa_lock, cpu).lock, flags)
++	local_lock_irqsave_on(pa_lock, flags, cpu)
+ # define cpu_unlock_irqrestore(cpu, flags)		\
+-	spin_unlock_irqrestore(&per_cpu(pa_lock, cpu).lock, flags)
++	local_unlock_irqrestore_on(pa_lock, flags, cpu)
+ #else
+ # define cpu_lock_irqsave(cpu, flags)		local_irq_save(flags)
+ # define cpu_unlock_irqrestore(cpu, flags)	local_irq_restore(flags)
 -- 
 1.7.10.4
 
