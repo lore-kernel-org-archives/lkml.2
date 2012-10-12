@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097Ab2JLVJd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 17:09:33 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:65048 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab2JLVJb (ORCPT
+	id S1752154Ab2JLVJz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 17:09:55 -0400
+Received: from e24smtp02.br.ibm.com ([32.104.18.86]:37311 "EHLO
+	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866Ab2JLVJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 17:09:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAM=Q2ctwTBAvKs401GgrGfz9NvaLspquje-6YfnuS5TZYeqY4Q@mail.gmail.com>
-References: <1349964927-18619-1-git-send-email-lee.jones@linaro.org>
-	<1349964927-18619-2-git-send-email-lee.jones@linaro.org>
-	<CAM=Q2ctwTBAvKs401GgrGfz9NvaLspquje-6YfnuS5TZYeqY4Q@mail.gmail.com>
-Date: Fri, 12 Oct 2012 23:09:30 +0200
-Message-ID: <CACRpkdb+kWW903VD45i5s_LrZ2BKX=k6enGP2R9v2ptSRkvJ9w@mail.gmail.com>
-Subject: Re: [PATCH 2/2] input: gpio-keys: Add runtime support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de,
-        linus.walleij@stericsson.com,
-        Jonas Aaberg <jonas.aberg@stericsson.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org,
-        Philippe Langlais <philippe.langlais@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 12 Oct 2012 17:09:53 -0400
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Gaignard <benjamin.gaignard@stericsson.com>
+Subject: [PATCH] genalloc: the chunk bitmap should be sized as a multiple of long
+Date: Fri, 12 Oct 2012 18:08:50 -0300
+Message-Id: <1350076133-24171-1-git-send-email-cascardo@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101221-2194-0000-0000-0000035A8959
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 11, 2012 at 4:22 PM, Shubhrajyoti Datta
-<omaplinuxkernel@gmail.com> wrote:
+A gen_pool_chunk uses a bitmap to find what addresses ranges it has
+allocated and bugs when we destroy the pool and a chunk has some bits
+set.
 
->> @@ -526,6 +527,7 @@ static int gpio_keys_open(struct input_dev *input)
->>  {
->>         struct gpio_keys_drvdata *ddata = input_get_drvdata(input);
->>
->> +       pm_runtime_get_sync(input->dev.parent);
->
-> I am not an expert of the runtime.
->
-> However would be grateful if you explain me what it actually do.
+There is a problem when it allocates the bitmap. It allocates only the
+number of bytes needed for the bits that represent the size it's
+allocating. That is, if it needs 16 bits, it will allocate only 2 bytes,
+if it needs 31 bits, it will allocate 4 bytes.
 
-This increase the reference count of the runtime status container
-for the device. _sync makes sure it happens now.
+However, the bitops functions uses long types. And when the gen_pool_add
+allocates a bitmap, it only clears the bytes it has allocated. So, it's
+possible that we have a long word with the contents 0xffffffffffffffff,
+and only the first (most significant) bytes are cleared by memset.
+However, the destroy function is going to test for the least significant
+bits, which will not be clear as expected.
 
-Consult:
-Documentation/power/runtime_pm.txt
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+---
+ lib/genalloc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Also I did not see any runtime suspend/ resume handlers populated.
+diff --git a/lib/genalloc.c b/lib/genalloc.c
+index ca208a9..5492043 100644
+--- a/lib/genalloc.c
++++ b/lib/genalloc.c
+@@ -178,7 +178,7 @@ int gen_pool_add_virt(struct gen_pool *pool, unsigned long virt, phys_addr_t phy
+ 	struct gen_pool_chunk *chunk;
+ 	int nbits = size >> pool->min_alloc_order;
+ 	int nbytes = sizeof(struct gen_pool_chunk) +
+-				(nbits + BITS_PER_BYTE - 1) / BITS_PER_BYTE;
++				BITS_TO_LONGS(nbits) * sizeof(long);
+ 
+ 	chunk = kmalloc_node(nbytes, GFP_KERNEL | __GFP_ZERO, nid);
+ 	if (unlikely(chunk == NULL))
+-- 
+1.7.1
 
-It is not necessary to handle the power state at the driver level,
-it can just as well be handled by the voltage/power domain,
-or at the class, type or bus level.
-
-But the individual driver has to notify the system upward if it
-needs to be powered on or when it may or must be relaxed.
-
-Yours,
-Linus Walleij
