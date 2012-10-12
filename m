@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759655Ab2JLO60 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 10:58:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64937 "EHLO mga02.intel.com"
+	id S1759673Ab2JLO6m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 10:58:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48966 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759613Ab2JLO6Z convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 10:58:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,576,1344236400"; 
-   d="scan'208";a="204848188"
-Message-ID: <1350053897.10584.172.camel@smile>
-Subject: Re: [PATCH V2 2/3] dmaengine: dw_dmac: Enhance device tree support
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org
-Date: Fri, 12 Oct 2012 17:58:17 +0300
-In-Reply-To: <9688d98010716880c1bbd966ead312c446282204.1350051925.git.viresh.kumar@linaro.org>
-References: <142ef9170a2c69657d8a05ac127a9970d7b04965.1350051925.git.viresh.kumar@linaro.org>
-	 <9688d98010716880c1bbd966ead312c446282204.1350051925.git.viresh.kumar@linaro.org>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	id S1757497Ab2JLO6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 10:58:40 -0400
+Date: Fri, 12 Oct 2012 16:58:39 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Alex Bligh <alex@alex.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Local DoS through write heavy I/O on CFQ & Deadline
+Message-ID: <20121012145838.GD22083@dhcp22.suse.cz>
+References: <0B138F62-16BF-4295-9AD9-64C0BB39FCE2@alex.org.uk>
+ <20121012133044.GA10115@dhcp22.suse.cz>
+ <E6EF14955C67D6CA58918872@nimrod.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E6EF14955C67D6CA58918872@nimrod.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-12 at 20:01 +0530, Viresh Kumar wrote:
+On Fri 12-10-12 15:48:34, Alex Bligh wrote:
+> 
+> 
+> --On 12 October 2012 15:30:45 +0200 Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> >>Full info, including logs and scripts can be found at:
+> >>  https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1064521
+> >
+> >You seem to have 8G of RAM and dirty_ratio=20 resp.
+> >dirty_background_ratio=10 which means that 1.5G worth of dirty data
+> >until writer gets throttled which is a lot. Background writeback starts
+> >at 800M which is probably not sufficient as well. Have you tried to set
+> >dirty_bytes at a reasonable value (wrt. to your storage)?
+> 
+> This is for an appliance install where we have no idea how much
+> memory the box has in advance other than 'at least 4G' so it
+> is difficult to tune by default.
+> 
+> However, I don't think that would solve the problem as the zcat/dd
+> can always generate data faster than it can be written to disk unless
+> or until it is throttled, which it never is. 
 
-> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+Once dirty_ratio (resp. dirty_bytes) limit is hit then the process which
+writes gets throttled. If this is not the case then there is a bug in
+the throttling code.
 
-> @@ -1179,6 +1179,53 @@ static void dwc_free_chan_resources(struct dma_chan *chan)
->  	dev_vdbg(chan2dev(chan), "%s: done\n", __func__);
->  }
->  
-> +bool dw_dma_generic_filter(struct dma_chan *chan, void *param)
-> +{
-> +	struct dw_dma *dw = to_dw_dma(chan->device);
-> +	static struct dw_dma *last_dw;
-> +	static char *last_bus_id;
-> +	int i = -1;
-> +
-> +	/*
-> +	 * dmaengine framework calls this routine for all channels of all dma
-> +	 * controller, until true is returned. If 'param' bus_id is not
-> +	 * registered with a dma controller (dw), then there is no need of
-> +	 * running below function for all channels of dw.
-> +	 *
-> +	 * This block of code does this by saving the parameters of last
-> +	 * failure. If dw and param are same, i.e. trying on same dw with
-> +	 * different channel, return false.
-> +	 */
-> +	if (last_dw) {
-> +		if ((last_bus_id == param) && (last_dw == dw))
-> +			return false;
-> +	}
-Just came to my mind.
-dw can't be NULL, can't it?
-Then
-if (last_dw) {
-...
-}
-is unneeded.
+> Isn't the only thing that is going to change that it ends up
+> triggering the writeback earlier?
 
-Please, check twice my thought because it's a Friday evening.
+Set the limit lowe?
+ 
+> Happy to test etc - what would you suggest, dirty_ratio=5,
+> dirty_background_ratio=2 ?
 
-> @@ -1462,6 +1509,91 @@ static void dw_dma_off(struct dw_dma *dw)
->  		dw->chan[i].initialized = false;
->  }
->  
-> +#ifdef CONFIG_OF
-> +static struct dw_dma_platform_data *
-> +__devinit dw_dma_parse_dt(struct platform_device *pdev)
-> +{
-> +	struct device_node *sn, *cn, *np = pdev->dev.of_node;
-> +	struct dw_dma_platform_data *pdata;
-> +	struct dw_dma_slave *sd;
-> +	u32 val, arr[4];
-Let me weekend to think about naming. I really can't offer anything else
-right now.
-
+These are measured in percentage. On the other hand if you use
+dirty_bytes resp. dirty_background_bytes then you get absolute numbers
+independent on the amount of memory.
 
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Michal Hocko
+SUSE Labs
