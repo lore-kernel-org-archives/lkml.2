@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758889Ab2JLOrv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 10:47:51 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:42695 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754433Ab2JLOrt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 10:47:49 -0400
+	id S1759004Ab2JLOsj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 10:48:39 -0400
+Received: from mail.avalus.com ([89.16.176.221]:59269 "EHLO mail.avalus.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758745Ab2JLOsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 10:48:38 -0400
+Date: Fri, 12 Oct 2012 15:48:34 +0100
+From: Alex Bligh <alex@alex.org.uk>
+Reply-To: Alex Bligh <alex@alex.org.uk>
+To: Michal Hocko <mhocko@suse.cz>
+cc: linux-kernel@vger.kernel.org, Alex Bligh <alex@alex.org.uk>
+Subject: Re: Local DoS through write heavy I/O on CFQ & Deadline
+Message-ID: <E6EF14955C67D6CA58918872@nimrod.local>
+In-Reply-To: <20121012133044.GA10115@dhcp22.suse.cz>
+References: <0B138F62-16BF-4295-9AD9-64C0BB39FCE2@alex.org.uk>
+ <20121012133044.GA10115@dhcp22.suse.cz>
+X-Mailer: Mulberry/4.0.8 (Mac OS X)
 MIME-Version: 1.0
-In-Reply-To: <1350052912.10584.167.camel@smile>
-References: <142ef9170a2c69657d8a05ac127a9970d7b04965.1350020375.git.viresh.kumar@linaro.org>
-	<91e41b4cc972d298f714cbd6f400569a9710304c.1350020375.git.viresh.kumar@linaro.org>
-	<1350048519.10584.158.camel@smile>
-	<CAKohpok=nv2XnFdPkD_yJgUsDqx2gEh=mG_Xhbe-BvT7swVsyg@mail.gmail.com>
-	<1350052912.10584.167.camel@smile>
-Date: Fri, 12 Oct 2012 20:17:49 +0530
-Message-ID: <CAKohpokNE4Pao+tbAFvMC_Yyo-oNvwjbGjV2XKdard4=616e6Q@mail.gmail.com>
-Subject: Re: [PATCH 2/3] dmaengine: dw_dmac: Enhance device tree support
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-Cc: "Koul, Vinod" <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "spear-devel@list.st.com" <spear-devel@list.st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 October 2012 20:11, Shevchenko, Andriy
-<andriy.shevchenko@intel.com> wrote:
-> On Fri, 2012-10-12 at 19:36 +0530, Viresh Kumar wrote:
-> I meant is to use that constant instead of hard coding 4 everywhere.
-> It's a maximum value, not the SoC specific.
 
-Can be done.
 
->> +     u32 val, arr[4];
-> what about to use tmp name instead of val? It's really minor, but I
-> think val name is little bit unrelated to a loop counter.
+--On 12 October 2012 15:30:45 +0200 Michal Hocko <mhocko@suse.cz> wrote:
 
-Its not minor at all, its major. Even when i was coding it, i thought
-about renaming
-it several times during this last patch. But couldn't find a better name.
+>> Full info, including logs and scripts can be found at:
+>>   https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1064521
+>
+> You seem to have 8G of RAM and dirty_ratio=20 resp.
+> dirty_background_ratio=10 which means that 1.5G worth of dirty data
+> until writer gets throttled which is a lot. Background writeback starts
+> at 800M which is probably not sufficient as well. Have you tried to set
+> dirty_bytes at a reasonable value (wrt. to your storage)?
 
-I don't like tmp. Give me something better.
+This is for an appliance install where we have no idea how much
+memory the box has in advance other than 'at least 4G' so it
+is difficult to tune by default.
 
-viresh
+However, I don't think that would solve the problem as the zcat/dd
+can always generate data faster than it can be written to disk unless
+or until it is throttled, which it never is. Isn't the only thing that
+is going to change that it ends up triggering the writeback earlier?
+
+Happy to test etc - what would you suggest, dirty_ratio=5,
+dirty_background_ratio=2 ?
+
+-- 
+Alex Bligh
