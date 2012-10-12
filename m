@@ -1,101 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933647Ab2JLIje (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 04:39:34 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:59632 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933255Ab2JLIjb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 04:39:31 -0400
-Date: Fri, 12 Oct 2012 10:39:26 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf updates/fixes
-Message-ID: <20121012083926.GA30327@gmail.com>
-References: <20121012081947.GA20570@gmail.com>
+	id S933698Ab2JLIjy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 04:39:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34780 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933255Ab2JLIjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 04:39:48 -0400
+Date: Fri, 12 Oct 2012 10:39:45 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Johannes Weiner <hannes@cmpxchg.org>,
+        Greg Thelen <gthelen@google.com>, devel@openvz.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v4 06/14] memcg: kmem controller infrastructure
+Message-ID: <20121012083944.GD10110@dhcp22.suse.cz>
+References: <1349690780-15988-1-git-send-email-glommer@parallels.com>
+ <1349690780-15988-7-git-send-email-glommer@parallels.com>
+ <20121011124212.GC29295@dhcp22.suse.cz>
+ <5077CAAA.3090709@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121012081947.GA20570@gmail.com>
+In-Reply-To: <5077CAAA.3090709@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ingo Molnar <mingo@kernel.org> wrote:
-
-> Linus,
+On Fri 12-10-12 11:45:46, Glauber Costa wrote:
+> On 10/11/2012 04:42 PM, Michal Hocko wrote:
+> > On Mon 08-10-12 14:06:12, Glauber Costa wrote:
+[...]
+> >> +	/*
+> >> +	 * Conditions under which we can wait for the oom_killer.
+> >> +	 * __GFP_NORETRY should be masked by __mem_cgroup_try_charge,
+> >> +	 * but there is no harm in being explicit here
+> >> +	 */
+> >> +	may_oom = (gfp & __GFP_WAIT) && !(gfp & __GFP_NORETRY);
+> > 
+> > Well we _have to_ check __GFP_NORETRY here because if we don't then we
+> > can end up in OOM. mem_cgroup_do_charge returns CHARGE_NOMEM for
+> > __GFP_NORETRY (without doing any reclaim) and of oom==true we decrement
+> > oom retries counter and eventually hit OOM killer. So the comment is
+> > misleading.
 > 
-> Please pull the latest perf-urgent-for-linus git tree from:
+> I will update. What i understood from your last message is that we don't
+> really need to, because try_charge will do it.
+
+IIRC I just said it couldn't happen before because migration doesn't go
+through charge and thp disable oom by default.
+
+> >> +
+> >> +	_memcg = memcg;
+> >> +	ret = __mem_cgroup_try_charge(NULL, gfp, size >> PAGE_SHIFT,
+> >> +				      &_memcg, may_oom);
+> >> +
+> >> +	if (!ret) {
+> >> +		ret = res_counter_charge(&memcg->kmem, size, &fail_res);
+> > 
+> > Now that I'm thinking about the charging ordering we should charge the
+> > kmem first because we would like to hit kmem limit before we hit u+k
+> > limit, don't we. 
+> > Say that you have kmem limit 10M and the total limit 50M. Current `u'
+> > would be 40M and this charge would cause kmem to hit the `k' limit. I
+> > think we should fail to charge kmem before we go to u+k and potentially
+> > reclaim/oom.
+> > Or has this been alredy discussed and I just do not remember?
+> > 
+> This has never been discussed as far as I remember. We charged u first
+> since day0, and you are so far the first one to raise it...
 > 
->    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+> One of the things in favor of charging 'u' first is that
+> mem_cgroup_try_charge is already equipped to make a lot of decisions,
+> like when to allow reclaim, when to bypass charges, and it would be good
+> if we can reuse all that.
+
+Hmm, I think that we should prevent from those decisions if kmem charge
+would fail anyway (especially now when we do not have targeted slab
+reclaim).
+
+> You oom-based argument makes some sense, if all other scenarios are
+> unchanged by this, I can change it. I will give this some more
+> consideration.
 > 
->    HEAD: 95cf59ea72331d0093010543b8951bb43f262cac perf: Fix perf_cgroup_switch for sw-events
+[...]
+> > 	/*
+> > 	 * Keep reference on memcg while the page is charged to prevent
+> > 	 * group from vanishing because allocation can outlive their
+> > 	 * tasks. The reference is dropped in __memcg_kmem_uncharge_page
+> > 	 */
+> > 
+> > please
+> 
+> I can do that, but keep in mind this piece of code is going away soon =)
 
-Note that if you merge it then there's a new semantic conflict 
-with recent rbtree.c changes in your tree, causing a tools/perf/ 
-build failure:
+Yes I have noticed that and replied to myself that it is not necessary.
 
-../../lib/rbtree.c:24:36: fatal error: linux/rbtree_augmented.h: No such file or directory compilation terminated.
-
-See the fix below.
-
-( If the __maybe_unused annotations are too ugly for 
-  lib/rbtree.c then we'll fix that in tools/perf in a cleaner
-  way, weakening the compiler checks for the rbtree build. We 
-  are using stronger compiler checks in tools/perf/, which has 
-  served us very well so far and is a big net win - the price is 
-  the occasional extra annotation of dummy inline function 
-  parameters. )
-
-Thanks,
-
-	Ingo
-
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-
----
- lib/rbtree.c                                     | 7 ++++---
- tools/perf/util/include/linux/rbtree_augmented.h | 2 ++
- 2 files changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/lib/rbtree.c b/lib/rbtree.c
-index 4f56a11..993ffcb 100644
---- a/lib/rbtree.c
-+++ b/lib/rbtree.c
-@@ -22,6 +22,7 @@
- */
- 
- #include <linux/rbtree_augmented.h>
-+#include <linux/compiler.h>
- #include <linux/export.h>
- 
- /*
-@@ -364,9 +365,9 @@ EXPORT_SYMBOL(__rb_erase_color);
-  * out of the rb_insert_color() and rb_erase() function definitions.
-  */
- 
--static inline void dummy_propagate(struct rb_node *node, struct rb_node *stop) {}
--static inline void dummy_copy(struct rb_node *old, struct rb_node *new) {}
--static inline void dummy_rotate(struct rb_node *old, struct rb_node *new) {}
-+static inline void dummy_propagate(struct rb_node *node __maybe_unused, struct rb_node *stop __maybe_unused) {}
-+static inline void dummy_copy(struct rb_node *old __maybe_unused, struct rb_node *new __maybe_unused) {}
-+static inline void dummy_rotate(struct rb_node *old __maybe_unused, struct rb_node *new __maybe_unused) {}
- 
- static const struct rb_augment_callbacks dummy_callbacks = {
- 	dummy_propagate, dummy_copy, dummy_rotate
-diff --git a/tools/perf/util/include/linux/rbtree_augmented.h b/tools/perf/util/include/linux/rbtree_augmented.h
-new file mode 100644
-index 0000000..9d6fcdf
---- /dev/null
-+++ b/tools/perf/util/include/linux/rbtree_augmented.h
-@@ -0,0 +1,2 @@
-+#include <stdbool.h>
-+#include "../../../../include/linux/rbtree_augmented.h"
-
+-- 
+Michal Hocko
+SUSE Labs
