@@ -1,107 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757929Ab2JLJrc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 05:47:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37482 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757855Ab2JLJra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 05:47:30 -0400
-Date: Fri, 12 Oct 2012 11:47:26 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>, devel@openvz.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v4 06/14] memcg: kmem controller infrastructure
-Message-ID: <20121012094726.GH10110@dhcp22.suse.cz>
-References: <1349690780-15988-1-git-send-email-glommer@parallels.com>
- <1349690780-15988-7-git-send-email-glommer@parallels.com>
- <20121011124212.GC29295@dhcp22.suse.cz>
- <5077CAAA.3090709@parallels.com>
- <20121012083944.GD10110@dhcp22.suse.cz>
- <5077D889.2040100@parallels.com>
- <20121012085740.GG10110@dhcp22.suse.cz>
- <5077DF20.7020200@parallels.com>
+	id S933812Ab2JLJtm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 05:49:42 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:39306 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757855Ab2JLJti (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 05:49:38 -0400
+Message-ID: <5077E7AA.9070705@gmail.com>
+Date: Fri, 12 Oct 2012 17:49:30 +0800
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5077DF20.7020200@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 1/5] KVM: MMU: fix release noslot pfn
+References: <50716EE0.6010504@linux.vnet.ibm.com> <50716F1E.90308@linux.vnet.ibm.com> <20121010151125.GA28406@amt.cnet> <5076C444.8080309@gmail.com> <20121011143152.GA8665@amt.cnet>
+In-Reply-To: <20121011143152.GA8665@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 12-10-12 13:13:04, Glauber Costa wrote:
-[...]
-> Just so we don't ping-pong in another submission:
+On 10/11/2012 10:31 PM, Marcelo Tosatti wrote:
+> On Thu, Oct 11, 2012 at 09:06:12PM +0800, Xiao Guangrong wrote:
+>> On 10/10/2012 11:11 PM, Marcelo Tosatti wrote:
+>>
+>>>
+>>> Why does is_error_pfn() return true for mmio spte? Its not an "error",
+>>> after all. 
+>>>
+>>> Please kill is_invalid_pfn and use
+>>>
+>>> -> is_error_pfn for checking for errors (mmio spte is not an error pfn,
+>>> its a special pfn)
+>>>
+>>> -> add explicit is_noslot_pfn checks where necessary in the code
+>>> (say to avoid interpreting a noslot_pfn's pfn "address" bits).
+>>>
+>>> (should have noticed this earlier, sorry).
+>>
+>> Never mind, your comments are always appreciated! ;)
+>>
+>> Marcelo, is it good to you?
+>> (will post it after your check and full test)
 > 
-> I changed memcontrol.h's memcg_kmem_newpage_charge to include:
+> Yes, this works (please check the validity of each case in addition to
+> testing, haven't done it).
 > 
->         /* If the test is dying, just let it go. */
->         if (unlikely(test_thread_flag(TIF_MEMDIE)
->                      || fatal_signal_pending(current)))
->                 return true;
+> Also add a oneline comment on top of each
+> is_error_pfn,is_noslot_pfn,is_error_noslot_pfn
+> 
+> /* is_noslot_pfn: userspace translation valid but no memory slot */
+> /* is_error_pfn: ... */
+> 
+> etc.
+> 
 
-OK
-
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index c32aaaf..72cf189 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> +static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
-> +{
-> +	struct res_counter *fail_res;
-> +	struct mem_cgroup *_memcg;
-> +	int ret = 0;
-> +	bool may_oom;
-> +
-> +	ret = res_counter_charge(&memcg->kmem, size, &fail_res);
-> +	if (ret)
-> +		return ret;
-> +
-> +	/*
-> +	 * Conditions under which we can wait for the oom_killer.
-> +	 * We have to be able to wait, but also, if we can't retry,
-> +	 * we obviously shouldn't go mess with oom.
-> +	 */
-> +	may_oom = (gfp & __GFP_WAIT) && !(gfp & __GFP_NORETRY);
-> +
-> +	_memcg = memcg;
-> +	ret = __mem_cgroup_try_charge(NULL, gfp, size >> PAGE_SHIFT,
-> +				      &_memcg, may_oom);
-> +
-> +	if (ret == -EINTR)  {
-> +		/*
-> +		 * __mem_cgroup_try_charge() chosed to bypass to root due to
-> +		 * OOM kill or fatal signal.  Since our only options are to
-> +		 * either fail the allocation or charge it to this cgroup, do
-> +		 * it as a temporary condition. But we can't fail. From a
-> +		 * kmem/slab perspective, the cache has already been selected,
-> +		 * by mem_cgroup_get_kmem_cache(), so it is too late to change
-> +		 * our minds. This condition will only trigger if the task
-> +		 * entered memcg_charge_kmem in a sane state, but was
-> +		 * OOM-killed.  during __mem_cgroup_try_charge. Tasks that are
-> +		 * already dying when the allocation triggers should have been
-> +		 * already directed to the root cgroup.
-> +		 */
-> +		res_counter_charge_nofail(&memcg->res, size, &fail_res);
-> +		if (do_swap_account)
-> +			res_counter_charge_nofail(&memcg->memsw, size,
-> +						  &fail_res);
-> +		ret = 0;
-> +	} else if (ret)
-> +		res_counter_uncharge(&memcg->kmem, size);
-> +
-> +	return ret;
-> +}
-
-OK
--- 
-Michal Hocko
-SUSE Labs
+Marcelo, i think this fix should be backport and your idea can be a
+separate patchset. Yes?
