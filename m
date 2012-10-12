@@ -1,155 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758654Ab2JLLdr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 07:33:47 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59730 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756789Ab2JLLdp (ORCPT
+	id S1759016Ab2JLLdw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 07:33:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55743 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756789Ab2JLLdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 07:33:45 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5077FEE6.7060000@jp.fujitsu.com>
-Date: Fri, 12 Oct 2012 20:28:38 +0900
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Fri, 12 Oct 2012 07:33:49 -0400
+Date: Fri, 12 Oct 2012 04:33:22 -0700
+From: tip-bot for Ingo Molnar <mingo@kernel.org>
+Message-ID: <tip-6e08e99119e6192f4d814c9a73432ebfc755326d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, efault@gmx.de,
+        akpm@linux-foundation.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, efault@gmx.de, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/numa] sched/numa:
+  Describe the NUMA scheduling problem formally
+Git-Commit-ID: 6e08e99119e6192f4d814c9a73432ebfc755326d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: khalid@gonehiking.org
-CC: martin.wilck@ts.fujitsu.com, linux-pci@vger.kernel.org, x86@kernel.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        hbabu@us.ibm.com, andi@firstfloor.org, ddutile@redhat.com,
-        ishii.hironobu@jp.fujitsu.com, hpa@zytor.com, bhelgaas@google.com,
-        tglx@linutronix.de, mingo@redhat.com, vgoyal@redhat.com
-Subject: Re: [PATCH v3 1/2] x86, pci: Reset PCIe devices at boot time
-References: <20121010074553.1084.52175.sendpatchset@indoh>  <20121010074603.1084.92389.sendpatchset@indoh>  <1349899704.25679.14.camel@rhapsody> <50766432.9000706@jp.fujitsu.com> <1349976523.7065.22.camel@rhapsody>
-In-Reply-To: <1349976523.7065.22.camel@rhapsody>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 12 Oct 2012 04:33:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/10/12 2:28), Khalid Aziz wrote:
-> On Thu, 2012-10-11 at 15:16 +0900, Takao Indoh wrote:
->> (2012/10/11 5:08), Khalid Aziz wrote:
-> .....
->>>> +static void __init do_reset(u8 bus, u8 slot, u8 func)
->>>> +{
->>>> +	u16 ctrl;
->>>> +
->>>> +	printk(KERN_INFO "pci 0000:%02x:%02x.%d reset\n", bus, slot, func);
->>>> +
->>>> +	/* Assert Secondary Bus Reset */
->>>> +	ctrl = read_pci_config_16(bus, slot, func, PCI_BRIDGE_CONTROL);
->>>> +	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
->>>> +	write_pci_config_16(bus, slot, func, PCI_BRIDGE_CONTROL, ctrl);
->>>> +
->>>> +	pci_udelay(5000);
->>>> +
->>>> +	/* De-assert Secondary Bus Reset */
->>>> +	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
->>>> +	write_pci_config_16(bus, slot, func, PCI_BRIDGE_CONTROL, ctrl);
->>>> +
->>>> +	pci_udelay(500000);
->>>
->>> This is 0.5 second. This will add up quickly on larger servers with
->>> multiple busses. Is 0.5 second required by the spec?
->>> aer_do_secondary_bus_reset() holds PCI_BRIDGE_CTL_BUS_RESET for 2 ms and
->>> then waits another 200 ms after de-asserting it. Still long, but less
->>> than half of the delay in above code..
->>
->> According to PCIe spec, they should be more than 1ms and 100ms. The reason
->> why they're 2ms and 200ms in aer_do_secondary_bus_reset() is that it's a
->> kind of safety margin, I think.
->>
->> At first these delay were 2ms and 200ms as well as
->> aer_do_secondary_bus_reset(), but I found a problem that on certain
->> machine it was not enough. I think this problem occurs because
->> native_io_delay() is not precise. Therefore I extended them to have more
->> margin.
->>
->> If this delay should be shortened, I have two solutions.
->>
->> 1)
->> Call early_reset_pcie_devices() after calibrate_delay() so that we can
->> use precise mdelay. Personally I don't want to do this because I think
->> DMA should be stopped asap.
->>
->> 2)
->> Make it tuneable. For exmple, improve "reset_devices"
->>       reset_devices=reset_delay=500
->> or something like that. As default, 200ms is enough as far as I tested.
->> But if it is not enough, we can adjust delay time using this.
->>
->> Any other idea?
->>
->
-> I don't like the idea of asking end user to determine how many msec of
-> delay they would need on their system for a reset. If we have to go that
-> route, I would rather have a default of 200 msec and then add a kernel
-> option like "reset_devices=reset_delay=long" which changes the delay to
-> 500 msec.
->
-> Here is another idea. The code you currently have does:
->
-> for (each device) {
->    save config registers
->    reset
->    wait for 500 ms
->    restore config registers
-> }
->
-> You need to wait for 500 ms because you can not access config registers
-> until reset is complete. So how about this - why not just save config
-> registers, reset each device and then wait only once for 500 ms before
-> restoring config registers on all devices. Here is what this will look
-> like:
->
-> for (each device) {
->    save config registers
->    reset
-> }
-> wait 500 ms
-> for (each device) {
->    restore config registers
-> }
->
-> This is obviously more complex and requires you to allocate more space
-> for saving state, but it has the benefits of minimizing boot up delay
-> and making the delay constant irrespective of number of switches/bridges
-> on the system.
->
-> Does this sound reasonable?
+Commit-ID:  6e08e99119e6192f4d814c9a73432ebfc755326d
+Gitweb:     http://git.kernel.org/tip/6e08e99119e6192f4d814c9a73432ebfc755326d
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Fri, 12 Oct 2012 12:13:10 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 12 Oct 2012 12:18:00 +0200
 
-Yep, that looks good idea. I'll update my patch with this idea.
+sched/numa: Describe the NUMA scheduling problem formally
 
-Thanks,
-Takao Indoh
+This is probably a first: formal description of a complex high-level
+computing problem, within the kernel source.
 
->
->
->>>
->>> We have been seeing problems with kexec/kdump kernel for quite some time
->>> that are related to I/O devices not being quiesced before kexec. I had
->>> added code to clear Bus Master bit to help stop runaway DMAs which
->>> helped many cases, but obviously not all. If resetting downstream ports
->>> helps stop runaway I/O from PCIe devices, I am all for this approach.
->>> This patch still doesn't do anything for old PCI devices though.
->>
->> This patch does not reset PCI devices because of VGA problem. As I wrote
->> in patch description, the monitor blacks out when VGA controller is
->> reset. So when VGA device is found we need to skip it. In the case of
->> PCIe, we can decide whether we do bus reset or not on each device, but
->> we cannot in the case of PCI.
->
-> OK. My concern is there are plenty of older servers out there that
-> potentially have the problem with kexec/kdump failing often and we are
-> not solving the problem for them. If we can only solve it for PCIe for
-> now, I am ok with starting there.
->
-> --
-> Khalid
->
->
->
->
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Rik van Riel <riel@redhat.com>
+Link: http://lkml.kernel.org/n/tip-mmnlpupoetcatimvjEld16Pb@git.kernel.org
+[ Next step: generate the kernel source from such formal descriptions and retire to a tropical island! ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ Documentation/scheduler/numa-problem.txt |  230 ++++++++++++++++++++++++++++++
+ 1 files changed, 230 insertions(+), 0 deletions(-)
 
+diff --git a/Documentation/scheduler/numa-problem.txt b/Documentation/scheduler/numa-problem.txt
+new file mode 100644
+index 0000000..a5d2fee
+--- /dev/null
++++ b/Documentation/scheduler/numa-problem.txt
+@@ -0,0 +1,230 @@
++
++
++Effective NUMA scheduling problem statement, described formally:
++
++ * minimize interconnect traffic
++
++For each task 't_i' we have memory, this memory can be spread over multiple
++physical nodes, let us denote this as: 'p_i,k', the memory task 't_i' has on
++node 'k' in [pages].  
++
++If a task shares memory with another task let us denote this as:
++'s_i,k', the memory shared between tasks including 't_i' residing on node
++'k'.
++
++Let 'M' be the distribution that governs all 'p' and 's', ie. the page placement.
++
++Similarly, lets define 'fp_i,k' and 'fs_i,k' resp. as the (average) usage
++frequency over those memory regions [1/s] such that the product gives an
++(average) bandwidth 'bp' and 'bs' in [pages/s].
++
++(note: multiple tasks sharing memory naturally avoid duplicat accounting
++       because each task will have its own access frequency 'fs')
++
++(pjt: I think this frequency is more numerically consistent if you explicitly 
++      restrict p/s above to be the working-set. (It also makes explicit the 
++      requirement for <C0,M0> to change about a change in the working set.)
++
++      Doing this does have the nice property that it lets you use your frequency
++      measurement as a weak-ordering for the benefit a task would receive when
++      we can't fit everything.
++
++      e.g. task1 has working set 10mb, f=90%
++           task2 has working set 90mb, f=10%
++
++      Both are using 9mb/s of bandwidth, but we'd expect a much larger benefit
++      from task1 being on the right node than task2. )
++
++Let 'C' map every task 't_i' to a cpu 'c_i' and its corresponding node 'n_i':
++
++  C: t_i -> {c_i, n_i}
++
++This gives us the total interconnect traffic between nodes 'k' and 'l',
++'T_k,l', as:
++
++  T_k,l = \Sum_i bp_i,l + bs_i,l + \Sum bp_j,k + bs_j,k where n_i == k, n_j == l
++
++And our goal is to obtain C0 and M0 such that:
++
++  T_k,l(C0, M0) =< T_k,l(C, M) for all C, M where k != l
++
++(note: we could introduce 'nc(k,l)' as the cost function of accessing memory
++       on node 'l' from node 'k', this would be useful for bigger NUMA systems
++
++ pjt: I agree nice to have, but intuition suggests diminishing returns on more
++      usual systems given factors like things like Haswell's enormous 35mb l3
++      cache and QPI being able to do a direct fetch.)
++
++(note: do we need a limit on the total memory per node?)
++
++
++ * fairness
++
++For each task 't_i' we have a weight 'w_i' (related to nice), and each cpu
++'c_n' has a compute capacity 'P_n', again, using our map 'C' we can formulate a
++load 'L_n':
++
++  L_n = 1/P_n * \Sum_i w_i for all c_i = n
++
++using that we can formulate a load difference between CPUs
++
++  L_n,m = | L_n - L_m |
++
++Which allows us to state the fairness goal like:
++
++  L_n,m(C0) =< L_n,m(C) for all C, n != m
++
++(pjt: It can also be usefully stated that, having converged at C0:
++
++   | L_n(C0) - L_m(C0) | <= 4/3 * | G_n( U(t_i, t_j) ) - G_m( U(t_i, t_j) ) |
++
++      Where G_n,m is the greedy partition of tasks between L_n and L_m. This is
++      the "worst" partition we should accept; but having it gives us a useful 
++      bound on how much we can reasonably adjust L_n/L_m at a Pareto point to 
++      favor T_n,m. )
++
++Together they give us the complete multi-objective optimization problem:
++
++  min_C,M [ L_n,m(C), T_k,l(C,M) ]
++
++
++
++Notes:
++
++ - the memory bandwidth problem is very much an inter-process problem, in
++   particular there is no such concept as a process in the above problem.
++
++ - the naive solution would completely prefer fairness over interconnect
++   traffic, the more complicated solution could pick another Pareto point using
++   an aggregate objective function such that we balance the loss of work
++   efficiency against the gain of running, we'd want to more or less suggest
++   there to be a fixed bound on the error from the Pareto line for any
++   such solution.
++
++References:
++
++  http://en.wikipedia.org/wiki/Mathematical_optimization
++  http://en.wikipedia.org/wiki/Multi-objective_optimization
++
++
++* warning, significant hand-waving ahead, improvements welcome *
++
++
++Partial solutions / approximations:
++
++ 1) have task node placement be a pure preference from the 'fairness' pov.
++
++This means we always prefer fairness over interconnect bandwidth. This reduces
++the problem to:
++
++  min_C,M [ T_k,l(C,M) ]
++
++ 2a) migrate memory towards 'n_i' (the task's node).
++
++This creates memory movement such that 'p_i,k for k != n_i' becomes 0 -- 
++provided 'n_i' stays stable enough and there's sufficient memory (looks like
++we might need memory limits for this).
++
++This does however not provide us with any 's_i' (shared) information. It does
++however remove 'M' since it defines memory placement in terms of task
++placement.
++
++XXX properties of this M vs a potential optimal
++
++ 2b) migrate memory towards 'n_i' using 2 samples.
++
++This separates pages into those that will migrate and those that will not due
++to the two samples not matching. We could consider the first to be of 'p_i'
++(private) and the second to be of 's_i' (shared).
++
++This interpretation can be motivated by the previously observed property that
++'p_i,k for k != n_i' should become 0 under sufficient memory, leaving only
++'s_i' (shared). (here we loose the need for memory limits again, since it
++becomes indistinguishable from shared).
++
++XXX include the statistical babble on double sampling somewhere near
++
++This reduces the problem further; we loose 'M' as per 2a, it further reduces
++the 'T_k,l' (interconnect traffic) term to only include shared (since per the
++above all private will be local):
++
++  T_k,l = \Sum_i bs_i,l for every n_i = k, l != k
++
++[ more or less matches the state of sched/numa and describes its remaining
++  problems and assumptions. It should work well for tasks without significant
++  shared memory usage between tasks. ]
++
++Possible future directions:
++
++Motivated by the form of 'T_k,l', try and obtain each term of the sum, so we
++can evaluate it;
++
++ 3a) add per-task per node counters
++
++At fault time, count the number of pages the task faults on for each node.
++This should give an approximation of 'p_i' for the local node and 's_i,k' for
++all remote nodes.
++
++While these numbers provide pages per scan, and so have the unit [pages/s] they
++don't count repeat access and thus aren't actually representable for our
++bandwidth numberes.
++
++ 3b) additional frequency term
++
++Additionally (or instead if it turns out we don't need the raw 'p' and 's' 
++numbers) we can approximate the repeat accesses by using the time since marking
++the pages as indication of the access frequency.
++
++Let 'I' be the interval of marking pages and 'e' the elapsed time since the
++last marking, then we could estimate the number of accesses 'a' as 'a = I / e'.
++If we then increment the node counters using 'a' instead of 1 we might get
++a better estimate of bandwidth terms.
++
++ 3c) additional averaging; can be applied on top of either a/b.
++
++[ Rik argues that decaying averages on 3a might be sufficient for bandwidth since
++  the decaying avg includes the old accesses and therefore has a measure of repeat
++  accesses.
++
++  Rik also argued that the sample frequency is too low to get accurate access
++  frequency measurements, I'm not entirely convinced, event at low sample 
++  frequencies the avg elapsed time 'e' over multiple samples should still
++  give us a fair approximation of the avg access frequency 'a'.
++
++  So doing both b&c has a fair chance of working and allowing us to distinguish
++  between important and less important memory accesses.
++
++  Experimentation has shown no benefit from the added frequency term so far. ]
++
++This will give us 'bp_i' and 'bs_i,k' so that we can approximately compute
++'T_k,l' Our optimization problem now reads:
++
++  min_C [ \Sum_i bs_i,l for every n_i = k, l != k ]
++
++And includes only shared terms, this makes sense since all task private memory
++will become local as per 2.
++
++This suggests that if there is significant shared memory, we should try and
++move towards it.
++
++ 4) move towards where 'most' memory is
++
++The simplest significance test is comparing the biggest shared 's_i,k' against
++the private 'p_i'. If we have more shared than private, move towards it.
++
++This effectively makes us move towards where most our memory is and forms a
++feed-back loop with 2. We migrate memory towards us and we migrate towards
++where 'most' memory is.
++
++(Note: even if there were two tasks fully trashing the same shared memory, it
++       is very rare for there to be an 50/50 split in memory, lacking a perfect
++       split, the small will move towards the larger. In case of the perfect
++       split, we'll tie-break towards the lower node number.)
++
++ 5) 'throttle' 4's node placement
++
++Since per 2b our 's_i,k' and 'p_i' require at least two scans to 'stabilize'
++and show representative numbers, we should limit node-migration to not be
++faster than this.
++
++ n) poke holes in previous that require more stuff and describe it.
