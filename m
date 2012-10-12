@@ -1,128 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789Ab2JLU2v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 16:28:51 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:17318 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab2JLU2u (ORCPT
+	id S1751843Ab2JLUck (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 16:32:40 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:35508 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577Ab2JLUch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 16:28:50 -0400
-Message-ID: <50787D80.9040202@tilera.com>
-Date: Fri, 12 Oct 2012 16:28:48 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Fri, 12 Oct 2012 16:32:37 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Sourav <sourav.poddar@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Felipe Balbi <balbi@ti.com>, gregkh@linuxfoundation.org,
+        tony@atomide.com, linux-kernel@vger.kernel.org,
+        santosh.shilimkar@ti.com, linux-serial@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        alan@linux.intel.com
+Subject: Re: [RFT/PATCH] serial: omap: prevent resume if device is not suspended.
+Organization: Deep Root Systems, LLC
+References: <20120925091228.GI31374@n2100.arm.linux.org.uk>
+	<20120925091112.GK9137@arwen.pp.htv.fi>
+	<20120925092118.GJ31374@n2100.arm.linux.org.uk>
+	<CAKdam57bpTJ94Gn=mKVw1Fm-76fVPp3DGjFuNu_HfesybM1hPg@mail.gmail.com>
+	<87ipas2y4h.fsf@deeprootsystems.com>
+	<alpine.DEB.2.00.1210111748010.5736@utopia.booyaka.com>
+	<50784458.9080806@ti.com> <877gqv7imt.fsf@deeprootsystems.com>
+	<20121012164202.GQ28061@n2100.arm.linux.org.uk>
+	<877gqv4lmt.fsf@deeprootsystems.com>
+	<20121012185426.GS28061@n2100.arm.linux.org.uk>
+Date: Fri, 12 Oct 2012 13:32:34 -0700
+In-Reply-To: <20121012185426.GS28061@n2100.arm.linux.org.uk> (Russell King's
+	message of "Fri, 12 Oct 2012 19:54:26 +0100")
+Message-ID: <87lifbwhwd.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: David Howells <dhowells@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] tile updates for 3.7
-References: <21212.1349774162@warthog.procyon.org.uk>
-In-Reply-To: <21212.1349774162@warthog.procyon.org.uk>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
 
-Please pull from:
+> On Fri, Oct 12, 2012 at 10:59:22AM -0700, Kevin Hilman wrote:
+>> Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
+>> 
+>> > On Fri, Oct 12, 2012 at 09:35:54AM -0700, Kevin Hilman wrote:
+>> >> Sourav <sourav.poddar@ti.com> writes:
+>> >> > diff --git a/drivers/tty/serial/omap-serial.c
+>> >> > b/drivers/tty/serial/omap-serial.c
+>> >> > index 6ede6fd..3fbc7f7 100644
+>> >> > --- a/drivers/tty/serial/omap-serial.c
+>> >> > +++ b/drivers/tty/serial/omap-serial.c
+>> >> > @@ -1414,6 +1414,7 @@ static int __devinit serial_omap_probe(struct
+>> >> > platform_device *pdev)
+>> >> >         INIT_WORK(&up->qos_work, serial_omap_uart_qos_work);
+>> >> >
+>> >> >         platform_set_drvdata(pdev, up);
+>> >> > +       pm_runtime_set_active(&pdev->dev);
+>> >> 
+>> >> NAK.
+>> >> 
+>> >> This will obviously break platforms where the UARTs are not active
+>> >> before driver loads.
+>> >
+>> > I thought I had proposed a solution for this issue, which was this
+>> > sequence:
+>> >
+>> >         omap_device_enable(dev);                                                
+>> >         pm_runtime_set_active(dev);                                             
+>> >         pm_runtime_enable(dev);                                                 
+>> >
+>> > Yes, I can understand people not liking the omap_device_enable()
+>> > there, but I also notice that the email suggesting that never got a
+>> > reply either - not even a "I tried this and it doesn't work" or "it
+>> > does work".
+>> 
+>> Yes, that solution would work (though I didn't actually try it.)
+>> 
+>> However, we can't use omap_device_enable() in the driver.  We're trying
+>> to clean all the drivers of OMAP-specific APIs.  That being said,
+>> something similar could be done in the device/board init code to ensure
+>> the UART HW is in the state that the driver is expecting it, but again,
+>> that would just mask the real problem which is that a (re)init of the
+>> console UART on 2420/n800 is causing output to disappear.
+>
+> See my more expansive suggestion just posted.
+>
+> Whatever way, this discrepancy between runtime PM state and actual device
+> state is what is biting you, and it is that which needs fixing.  
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git master
+I'm not conviced (yet) that a mismatch is the root cause.  Yes, that's
+what the author of $SUBJECT patch assumed and stated, but I'm not
+pursuaded.  
 
-Note that this is not based off the 3.6.0 release but off an intermediate
-point that includes David Howell's uapi disintegration work; the bulk
-of this change is the tile uapi disintegration.  There is also a one-line
-change in here to enable interrupts in do_work_pending() to avoid a
-WARN_ON in _local_bh_enable_ip().
+If it's an improperly configured mux issue, then the UART will break
+whenever the device is actually omap_device_enable'd, whether in the
+driver or in the bus layer.
 
-----------------------------------------------------------------
-Chris Metcalf (2):
-      Merge tag 'tags/disintegrate-tile-20121009' into for-linus
-      arch/tile: enable interrupts in do_work_pending()
-
-David Howells (2):
-      UAPI: (Scripted) Disintegrate arch/tile/include/arch
-      UAPI: (Scripted) Disintegrate arch/tile/include/asm
-
- arch/tile/include/arch/Kbuild                      |   17 ----
- arch/tile/include/arch/spr_def.h                   |   12 +--
- arch/tile/include/asm/Kbuild                       |    3 -
- arch/tile/include/asm/hardwall.h                   |   33 +-------
- arch/tile/include/asm/ptrace.h                     |   72 +---------------
- arch/tile/include/asm/setup.h                      |    7 +-
- arch/tile/include/asm/signal.h                     |   12 +--
- arch/tile/include/asm/unistd.h                     |   25 +-----
- arch/tile/include/uapi/arch/Kbuild                 |   17 ++++
- arch/tile/include/{ => uapi}/arch/abi.h            |    0
- arch/tile/include/{ => uapi}/arch/chip.h           |    0
- arch/tile/include/{ => uapi}/arch/chip_tile64.h    |    0
- arch/tile/include/{ => uapi}/arch/chip_tilegx.h    |    0
- arch/tile/include/{ => uapi}/arch/chip_tilepro.h   |    0
- arch/tile/include/{ => uapi}/arch/icache.h         |    0
- arch/tile/include/{ => uapi}/arch/interrupts.h     |    0
- arch/tile/include/{ => uapi}/arch/interrupts_32.h  |    0
- arch/tile/include/{ => uapi}/arch/interrupts_64.h  |    0
- arch/tile/include/{ => uapi}/arch/opcode.h         |    0
- arch/tile/include/{ => uapi}/arch/opcode_tilegx.h  |    0
- arch/tile/include/{ => uapi}/arch/opcode_tilepro.h |    0
- arch/tile/include/{ => uapi}/arch/sim.h            |    0
- arch/tile/include/{ => uapi}/arch/sim_def.h        |    0
- arch/tile/include/uapi/arch/spr_def.h              |   26 ++++++
- arch/tile/include/{ => uapi}/arch/spr_def_32.h     |    6 +-
- arch/tile/include/{ => uapi}/arch/spr_def_64.h     |    6 +-
- arch/tile/include/uapi/asm/Kbuild                  |   15 ++++
- arch/tile/include/{ => uapi}/asm/auxvec.h          |    0
- arch/tile/include/{ => uapi}/asm/bitsperlong.h     |    0
- arch/tile/include/{ => uapi}/asm/byteorder.h       |    0
- arch/tile/include/{ => uapi}/asm/cachectl.h        |    0
- arch/tile/include/uapi/asm/hardwall.h              |   51 ++++++++++++
- arch/tile/include/{ => uapi}/asm/kvm_para.h        |    0
- arch/tile/include/{ => uapi}/asm/mman.h            |    0
- arch/tile/include/uapi/asm/ptrace.h                |   88 ++++++++++++++++++++
- arch/tile/include/uapi/asm/setup.h                 |   21 +++++
- arch/tile/include/{ => uapi}/asm/sigcontext.h      |    0
- arch/tile/include/{ => uapi}/asm/siginfo.h         |    0
- arch/tile/include/uapi/asm/signal.h                |   27 ++++++
- arch/tile/include/{ => uapi}/asm/stat.h            |    0
- arch/tile/include/{ => uapi}/asm/swab.h            |    0
- arch/tile/include/uapi/asm/unistd.h                |   34 ++++++++
- arch/tile/kernel/process.c                         |    3 +
- 43 files changed, 298 insertions(+), 177 deletions(-)
- rename arch/tile/include/{ => uapi}/arch/abi.h (100%)
- rename arch/tile/include/{ => uapi}/arch/chip.h (100%)
- rename arch/tile/include/{ => uapi}/arch/chip_tile64.h (100%)
- rename arch/tile/include/{ => uapi}/arch/chip_tilegx.h (100%)
- rename arch/tile/include/{ => uapi}/arch/chip_tilepro.h (100%)
- rename arch/tile/include/{ => uapi}/arch/icache.h (100%)
- rename arch/tile/include/{ => uapi}/arch/interrupts.h (100%)
- rename arch/tile/include/{ => uapi}/arch/interrupts_32.h (100%)
- rename arch/tile/include/{ => uapi}/arch/interrupts_64.h (100%)
- rename arch/tile/include/{ => uapi}/arch/opcode.h (100%)
- rename arch/tile/include/{ => uapi}/arch/opcode_tilegx.h (100%)
- rename arch/tile/include/{ => uapi}/arch/opcode_tilepro.h (100%)
- rename arch/tile/include/{ => uapi}/arch/sim.h (100%)
- rename arch/tile/include/{ => uapi}/arch/sim_def.h (100%)
- create mode 100644 arch/tile/include/uapi/arch/spr_def.h
- rename arch/tile/include/{ => uapi}/arch/spr_def_32.h (98%)
- rename arch/tile/include/{ => uapi}/arch/spr_def_64.h (98%)
- rename arch/tile/include/{ => uapi}/asm/auxvec.h (100%)
- rename arch/tile/include/{ => uapi}/asm/bitsperlong.h (100%)
- rename arch/tile/include/{ => uapi}/asm/byteorder.h (100%)
- rename arch/tile/include/{ => uapi}/asm/cachectl.h (100%)
- create mode 100644 arch/tile/include/uapi/asm/hardwall.h
- rename arch/tile/include/{ => uapi}/asm/kvm_para.h (100%)
- rename arch/tile/include/{ => uapi}/asm/mman.h (100%)
- create mode 100644 arch/tile/include/uapi/asm/ptrace.h
- create mode 100644 arch/tile/include/uapi/asm/setup.h
- rename arch/tile/include/{ => uapi}/asm/sigcontext.h (100%)
- rename arch/tile/include/{ => uapi}/asm/siginfo.h (100%)
- create mode 100644 arch/tile/include/uapi/asm/signal.h
- rename arch/tile/include/{ => uapi}/asm/stat.h (100%)
- rename arch/tile/include/{ => uapi}/asm/swab.h (100%)
- create mode 100644 arch/tile/include/uapi/asm/unistd.h
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Kevin
 
