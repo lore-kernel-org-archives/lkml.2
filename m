@@ -1,97 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997Ab2JLGqf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 02:46:35 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:26635 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755854Ab2JLGqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 02:46:33 -0400
-X-IronPort-AV: E=Sophos;i="4.80,576,1344182400"; 
-   d="scan'208";a="5988225"
-Message-ID: <5077BC82.6050105@cn.fujitsu.com>
-Date: Fri, 12 Oct 2012 14:45:22 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: x86@kernel.org, kexec@lists.infradead.org, linux-doc@vger.kernel.org,
-        Avi Kivity <avi@redhat.com>, mtosatti@redhat.com
-CC: linux-kernel@vger.kernel.org, "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: [PATCH 3/3] sysctl: introduce a new interface to control kdump-vmcs-clear
- behaviour
-References: <5077BB7B.4030203@cn.fujitsu.com>
-In-Reply-To: <5077BB7B.4030203@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/12 14:46:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/12 14:46:17,
-	Serialize complete at 2012/10/12 14:46:17
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1756013Ab2JLGv4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 02:51:56 -0400
+Received: from smtp-68.nebula.fi ([83.145.220.68]:56185 "EHLO
+	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389Ab2JLGvz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 02:51:55 -0400
+X-Greylist: delayed 532 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Oct 2012 02:51:54 EDT
+From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+To: jonas@southpole.se
+Cc: linux@openrisc.net, linux-kernel@vger.kernel.org,
+        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+Subject: [PATCH] openrisc: avoid using function parameter regs in reset vector
+Date: Fri, 12 Oct 2012 09:38:18 +0300
+Message-Id: <1350023898-15130-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch exports the variable clear_loaded_vmcs_enabled to userspace.
+The kernel might be invoked through the reset vector, so to
+preserve parameters passed to it, temp regs that are not
+in the function parameter range needs to be used.
 
-Signed-off-by: zhangyanfei <zhangyanfei@cn.fujitsu.com>
+Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
 ---
- Documentation/sysctl/kernel.txt |    8 ++++++++
- kernel/sysctl.c                 |   10 ++++++++++
- 2 files changed, 18 insertions(+), 0 deletions(-)
+ arch/openrisc/kernel/head.S |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 6d78841..038148b 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -25,6 +25,7 @@ show up in /proc/sys/kernel:
- - bootloader_version	     [ X86 only ]
- - callhome		     [ S390 only ]
- - cap_last_cap
-+- clear_loaded_vmcs	     [ X86 only ]
- - core_pattern
- - core_pipe_limit
- - core_uses_pid
-@@ -164,6 +165,13 @@ CAP_LAST_CAP from the kernel.
+diff --git a/arch/openrisc/kernel/head.S b/arch/openrisc/kernel/head.S
+index 1088b5f..46aa940 100644
+--- a/arch/openrisc/kernel/head.S
++++ b/arch/openrisc/kernel/head.S
+@@ -291,9 +291,9 @@
+ 	/* Jump to .init code at _start which lives in the .head section
+ 	 * and will be discarded after boot.
+ 	 */
+-	LOAD_SYMBOL_2_GPR(r4, _start)
+-	tophys	(r3,r4)			/* MMU disabled */
+-	l.jr	r3
++	LOAD_SYMBOL_2_GPR(r15, _start)
++	tophys	(r13,r15)			/* MMU disabled */
++	l.jr	r13
+ 	 l.nop
  
- ==============================================================
- 
-+clear_loaded_vmcs
-+
-+Controls if VMCSs should be cleared when host is doing kdump.  Exports
-+clear_loaded_vmcs_enabled from the kernel.
-+
-+==============================================================
-+
- core_pattern:
- 
- core_pattern is used to specify a core dumpfile pattern name.
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 4ab1187..3ab7d9c 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -63,6 +63,7 @@
- 
- #include <asm/uaccess.h>
- #include <asm/processor.h>
-+#include <asm/kexec.h>
- 
- #ifdef CONFIG_X86
- #include <asm/nmi.h>
-@@ -994,6 +995,15 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- #endif
-+#ifdef CONFIG_KEXEC
-+	{
-+		.procname	= "clear_loaded_vmcs",
-+		.data		= &clear_loaded_vmcs_enabled,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+#endif
- 	{ }
- };
- 
+ /* ---[ 0x200: BUS exception ]------------------------------------------- */
 -- 
-1.7.1
+1.7.9.5
+
