@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422724Ab2JLOMz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 10:12:55 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:45467 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932762Ab2JLOMy (ORCPT
+	id S934103Ab2JLOZZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 10:25:25 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:45720 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932983Ab2JLOZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 10:12:54 -0400
+	Fri, 12 Oct 2012 10:25:24 -0400
+Date: Fri, 12 Oct 2012 10:25:23 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Henrik Rydberg <rydberg@euromail.se>
+cc: Hans de Goede <hdegoede@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Peter Stuge <peter@stuge.se>
+Subject: Re: REGRESSION: usbdevfs: Use-scatter-gather-lists-for-large-bulk-transfers
+In-Reply-To: <20121011213707.GA2187@polaris.bitmath.org>
+Message-ID: <Pine.LNX.4.44L0.1210121018390.1605-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20121011204324.12787.30514.stgit@gitlad.jf.intel.com>
-References: <20121011204324.12787.30514.stgit@gitlad.jf.intel.com>
-Date: Fri, 12 Oct 2012 10:12:53 -0400
-X-Google-Sender-Auth: wMJwrMOcROOMmalDnvtO2r-gKMA
-Message-ID: <CACJDEmomjBk5CkLBWGdyAtKNgV_f39d6kWM5=Ko2Nx5GDmw5Jg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/8] Improve performance of VM translation on x86_64
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 11, 2012 at 4:49 PM, Alexander Duyck
-<alexander.h.duyck@intel.com> wrote:
-> This patch series is meant to address several issues I encountered with VM
-> translations on x86_64.  In my testing I found that swiotlb was incurring up
-> to a 5% processing overhead due to calls to __phys_addr.  To address that I
-> have updated swiotlb to use physical addresses instead of virtual addresses
-> to reduce the need to call __phys_addr.  However those patches didn't address
-> the other callers.  With these patches applied I am able to achieve an
-> additional 1% to 2% performance gain on top of the changes to swiotlb.
->
-> The first 2 patches are the performance optimizations that result in the 1% to
-> 2% increase in overall performance.  The remaining patches are various
-> cleanups for a number of spots where __pa or virt_to_phys was being called
-> and was not needed or __pa_symbol could have been used.
->
+On Thu, 11 Oct 2012, Henrik Rydberg wrote:
 
-Could you also add  a blurb in the Documentation/< appropriate file
-for device driver writes> mentioning the usage of __pa_symbol is
-preferred?
-
+> From 40b70394747eea51fdd07cc8213dd6afd24b1b30 Mon Sep 17 00:00:00 2001
+> From: Henrik Rydberg <rydberg@euromail.se>
+> Date: Thu, 11 Oct 2012 23:27:04 +0200
+> Subject: [PATCH] usbdevfs: Fix broken scatter-gather transfer
+> 
+> The recently introduced handling of large bulk transfers is completely
+> broken; the same user page is read over and over again. Fixed with
+> this patch.
+> 
+> Cc: stable@kernel.org
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 > ---
->
-> Alexander Duyck (8):
->       x86/lguest: Use __pa_symbol instead of __pa on C visible symbols
->       x86/acpi: Use __pa_symbol instead of __pa on C visible symbols
->       x86/xen: Use __pa_symbol instead of __pa on C visible symbols
->       x86/ftrace: Use __pa_symbol instead of __pa on C visible symbols
->       x86: Use __pa_symbol instead of __pa on C visible symbols
->       x86: Drop 4 unnecessary calls to __pa_symbol
->       x86: Make it so that __pa_symbol can only process kernel symbols on x86_64
->       x86: Improve __phys_addr performance by making use of carry flags and inlining
->
->
->  arch/x86/include/asm/page.h          |    3 ++-
->  arch/x86/include/asm/page_32.h       |    1 +
->  arch/x86/include/asm/page_64_types.h |   20 +++++++++++++++++--
->  arch/x86/kernel/acpi/sleep.c         |    2 +-
->  arch/x86/kernel/cpu/intel.c          |    2 +-
->  arch/x86/kernel/ftrace.c             |    4 ++--
->  arch/x86/kernel/head32.c             |    4 ++--
->  arch/x86/kernel/head64.c             |    4 ++--
->  arch/x86/kernel/setup.c              |   16 ++++++++--------
->  arch/x86/kernel/x8664_ksyms_64.c     |    3 +++
->  arch/x86/lguest/boot.c               |    3 ++-
->  arch/x86/mm/pageattr.c               |    8 ++++----
->  arch/x86/mm/physaddr.c               |   35 ++++++++++++++++++++++++++++------
->  arch/x86/platform/efi/efi.c          |    4 ++--
->  arch/x86/realmode/init.c             |    8 ++++----
->  arch/x86/xen/mmu.c                   |   19 ++++++++++--------
->  16 files changed, 91 insertions(+), 45 deletions(-)
->
-> --
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+>  drivers/usb/core/devio.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+> index ebb8a9d..6e58b59 100644
+> --- a/drivers/usb/core/devio.c
+> +++ b/drivers/usb/core/devio.c
+> @@ -1172,6 +1172,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
+>  	struct usb_ctrlrequest *dr = NULL;
+>  	unsigned int u, totlen, isofrmlen;
+>  	int i, ret, is_in, num_sgs = 0, ifnum = -1;
+> +	void __user *userbuf;
+>  	void *buf;
+>  
+>  	if (uurb->flags & ~(USBDEVFS_URB_ISO_ASAP |
+> @@ -1333,6 +1334,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
+>  		as->urb->num_sgs = num_sgs;
+>  		sg_init_table(as->urb->sg, as->urb->num_sgs);
+>  
+> +		userbuf = uurb->buffer;
+>  		totlen = uurb->buffer_length;
+>  		for (i = 0; i < as->urb->num_sgs; i++) {
+>  			u = (totlen > USB_SG_SIZE) ? USB_SG_SIZE : totlen;
+> @@ -1344,11 +1346,12 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
+>  			sg_set_buf(&as->urb->sg[i], buf, u);
+>  
+>  			if (!is_in) {
+> -				if (copy_from_user(buf, uurb->buffer, u)) {
+> +				if (copy_from_user(buf, userbuf, u)) {
+>  					ret = -EFAULT;
+>  					goto error;
+>  				}
+>  			}
+> +			userbuf += u;
+
+Instead of introducing a new local variable, why not simply update 
+uurb->buffer?  That's what we do elsewhere in the code.
+
+Alan Stern
+
