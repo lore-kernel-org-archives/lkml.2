@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933153Ab2JLNT6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 09:19:58 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:30808 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933011Ab2JLNT5 (ORCPT
+	id S933110Ab2JLNUl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 09:20:41 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61886 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932973Ab2JLNUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 09:19:57 -0400
-Date: Fri, 12 Oct 2012 09:08:01 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: [GIT PULL] (xen) stable/for-linus-3.7-rc0-tag for v3.7-rc0
-Message-ID: <20121012130800.GD32494@phenom.dumpdata.com>
+	Fri, 12 Oct 2012 09:20:40 -0400
+Date: Fri, 12 Oct 2012 14:20:29 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bryan.wu@canonical.com" <bryan.wu@canonical.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dave.martin@linaro.org" <dave.martin@linaro.org>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Leif Lindholm <Leif.Lindholm@arm.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "damm@opensource.se" <damm@opensource.se>,
+        "mmarek@suse.cz" <mmarek@suse.cz>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [GIT PULL 0/9] ARM architecture fixes for 3.7
+Message-ID: <20121012132029.GC17399@mudshark.cambridge.arm.com>
+References: <1349796183-30648-1-git-send-email-arnd@arndb.de>
+ <20121009160814.GH4625@n2100.arm.linux.org.uk>
+ <201210091840.25176.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C7zPtVaVf+AK4Oqc"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <201210091840.25176.arnd@arndb.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Arnd, Russell,
 
---C7zPtVaVf+AK4Oqc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Tue, Oct 09, 2012 at 07:40:24PM +0100, Arnd Bergmann wrote:
+> On Tuesday 09 October 2012, Russell King - ARM Linux wrote:
+> > 
+> > On Tue, Oct 09, 2012 at 05:22:54PM +0200, Arnd Bergmann wrote:
+> > > Here are some patches that belong into your domain, I hope you can
+> > > just send the lot to Linus the next time you send other patches.
+> > > 
+> > > These bug fixes all address problems found with automated build testing.
+> > > Some of them have been around for a long time, other bugs are
+> > > regressions since the merge window.
+> > 
+> > Apart from the sliced off comment in one commit (which XEN people need
+> > to confirm they're happy with the final version), I think these are
+> > otherwise fine... I'll hold off pulling them until that can be fixed.
+> 
+> Fixed that now, and I also added the Acks that I got in the meantime,
+> changed the dependency from Xen on (CPU_v7 && !CPU_V6), and edited the
+> description for patch 6 as Dave suggested.
+> 
+> 	Arnd
+> 
+> 8<---
+> The following changes since commit 0e51793e162ca432fc5f04178cf82b80a92c2659:
+> 
+>   Merge branch 'for-linus' of git://git.linaro.org/people/rmk/linux-arm (2012-10-07 21:20:57 +0900)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-rmk
+> 
+> for you to fetch changes up to 8e7fc18b5eacc37b6e6fcf486ec4eafbfef91738:
+> 
+>   ARM: warnings in arch/arm/include/asm/uaccess.h (2012-10-09 20:29:07 +0200)
 
-Hey Linus,
+It would be good to see these for -rc1 if there's still time. I'm tired of
+seeing patches to fix the export of the read_current_timer symbol!
 
-Please git pull the following tag:
+Cheers,
 
- git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.7-rc0-tag
-
-which has four bug-fixes and one tiny feature that I forgot to put initially in my tree
-due to oversight.
-
-The feature is for kdump kernels to speed up the /proc/vmcore reading. There is a
-ram_is_pfn helper function that the different platforms can register for. We are
-now doing that.
-
-The bug-fixes cover some embarrassing struct pv_cpu_ops variables being set to NULL
-on Xen (but not baremetal). We had a similar issue in the past with {write|read}_msr_safe
-and this fills the three missing ones. The other bug-fix is to make the console output
-(hvc) be capable of dealing with misbehaving backends and not fall flat on its face.
-Lastly, a quirk for older XenBus implementations that came with an ancient v3.4
-hypervisor (so RHEL5 based) - reading of certain non-existent attributes just hangs
-the guest during bootup - so we take precaution of not doing that on such older
-installations.
-
-That is it. Please pull!
-
-
- arch/x86/xen/enlighten.c           |   18 +++++++++++++++-
- arch/x86/xen/mmu.c                 |   41 ++++++++++++++++++++++++++++++++++++
- drivers/tty/hvc/hvc_xen.c          |    5 +++-
- drivers/xen/xenbus/xenbus_xs.c     |   21 ++++++++++++++++++
- include/xen/interface/hvm/hvm_op.h |   19 ++++++++++++++++
- 5 files changed, 102 insertions(+), 2 deletions(-)
-
-David Vrabel (1):
-      xen/hvc: handle backend CLOSED without CLOSING
-
-Konrad Rzeszutek Wilk (3):
-      xen/bootup: allow read_tscp call for Xen PV guests.
-      xen/bootup: allow {read|write}_cr8 pvops call.
-      xen/pv-on-hvm kexec: add quirk for Xen 3.4 and shutdown watches.
-
-Olaf Hering (1):
-      xen pv-on-hvm: add pfn_is_ram helper for kdump
-
-
---C7zPtVaVf+AK4Oqc
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAEBAgAGBQJQeBYsAAoJEFjIrFwIi8fJ2xcIALBrvKBKAcp2u/Pv0ntqvotD
-okU46cIqXVCShioKI6tlP4OwOGlGZo1XIWDQ4UGm8fh1PhogUXJ+uuRws7ELE9Bo
-ouBbFTTr+OhdsOlX3+KPtJoKjbjneEIAMAS86i+zTYJ4JDL/B8p02+dn5WQTAiMy
-wJ8ErbQqL8ByEyg058tTxc+/AbAKg+fbAeqndNKnMIAvFVCyITKvcP0ye9P7lqrH
-IGfzBnNwJW38BqhjjpjPwZWEOfwjfPcePLRJAkoUm95K39pRqDiTDI/UMs2jqE7Z
-jWKuXZuGACzW/lcPgGc8HUE6ol7MuOwg8Oz2odEl+pJ+l3b0gCqG4BkbQArcrrI=
-=4iLS
------END PGP SIGNATURE-----
-
---C7zPtVaVf+AK4Oqc--
+Will
