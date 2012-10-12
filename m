@@ -1,126 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754390Ab2JLTKu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 15:10:50 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:47896 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980Ab2JLTKs (ORCPT
+	id S1756238Ab2JLTLu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 15:11:50 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:51827 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752558Ab2JLTLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 15:10:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <50727984.20401@cn.fujitsu.com>
-References: <506C0AE8.40702@jp.fujitsu.com> <506C0C53.60205@jp.fujitsu.com>
- <CAHGf_=p7PaQs-kpnyB8uC1MntHQfL-CXhhq4QQP54mYiqOswqQ@mail.gmail.com> <50727984.20401@cn.fujitsu.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Fri, 12 Oct 2012 15:10:27 -0400
-X-Google-Sender-Auth: ttUn0qYGllWiUjkyMv4h0nE0zdk
-Message-ID: <CAHGf_=pCrx8AkL9eiSYVgwvT1v0SW2__P_DW-1Wwj_zskqcLXw@mail.gmail.com>
-Subject: Re: [PATCH 1/4] acpi,memory-hotplug : add memory offline code to acpi_memory_device_remove()
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 12 Oct 2012 15:11:47 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        w.sang@pengutronix.de, jbe@pengutronix.de, plagnioj@jcrosoft.com,
+        highguy@gmail.com, broonie@opensource.wolfsonmicro.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RFC 0/6 v3] gpio: Add block GPIO
+Date: Fri, 12 Oct 2012 21:11:19 +0200
+Message-Id: <1350069085-13283-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> -static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
->>> +static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
->>>  {
->>>         int result;
->>>         struct acpi_memory_info *info, *n;
->>>
->>> +       list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
->>
->> Which lock protect this loop?
->
-> There is no any lock to protect it now...
+This set of patches adds:
 
-When iterate an item removal list, you should use lock for protecting from
-memory corruption.
+* Block GPIO API to gpiolib
+* Sysfs support for GPIO API, to provide userland access
+* Devicetree support to instantiate GPIO blocks via DT
+* Example implementations in several gpio drivers since they need
+  special accessor functions for block wise GPIO access
 
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
+--
 
+Changes since v2:
+* Added sysfs support
+* Added devicetree support
+* Added support for lpc32xx, generic
+* Added functions for GPIO block registration
+* Added more error checking
+* Bit remapping bugfix
 
->>> +static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
->>> +{
->>> +       int result;
->>>
->>>         /*
->>>          * Ask the VM to offline this memory range.
->>>          * Note: Assume that this function returns zero on success
->>>          */
->>
->> Write function comment instead of this silly comment.
->>
->>> -       list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
->>> -               if (info->enabled) {
->>> -                       result = remove_memory(info->start_addr, info->length);
->>> -                       if (result)
->>> -                               return result;
->>> -               }
->>> -               kfree(info);
->>> -       }
->>> +       result = acpi_memory_remove_memory(mem_device);
->>> +       if (result)
->>> +               return result;
->>>
->>>         /* Power-off and eject the device */
->>>         result = acpi_memory_powerdown_device(mem_device);
->>
->> This patch move acpi_memory_powerdown_device() from ACPI_NOTIFY_EJECT_REQUEST
->> to release callback, but don't explain why.
->
-> Hmm, it doesn't move the code. It just reuse the code in acpi_memory_powerdown_device().
+Roland Stigge (6):
+ gpio: Add a block GPIO API to gpiolib
+ gpio: Add sysfs support to block GPIO API
+ gpio: Add device tree support to block GPIO API
+ gpio-max730x: Add block GPIO API
+ gpio-lpc32xx: Add block GPIO API
+ gpio-generic: Add block GPIO API
 
-Even if reuse or not reuse, you changed the behavior. If any changes
-has no good rational, you cannot get an ack.
-
-
-
-
->>> @@ -473,12 +486,23 @@ static int acpi_memory_device_add(struct
->>>  static int acpi_memory_device_remove(struct acpi_device *device, int type)
->>>  {
->>>         struct acpi_memory_device *mem_device = NULL;
->>> -
->>> +       int result;
->>>
->>>         if (!device || !acpi_driver_data(device))
->>>                 return -EINVAL;
->>>
->>>         mem_device = acpi_driver_data(device);
->>> +
->>> +       if (type == ACPI_BUS_REMOVAL_EJECT) {
->>> +               /*
->>> +                * offline and remove memory only when the memory device is
->>> +                * ejected.
->>> +                */
->>
->> This comment explain nothing. A comment should describe _why_ should we do.
->> e.g. Why REMOVAL_NORMAL and REMOVEL_EJECT should be ignored. Why
->> we need remove memory here instead of ACPI_NOTIFY_EJECT_REQUEST.
->
-> Hmm, we have 2 ways to remove a memory:
-> 1. SCI
-> 2. echo 1 >/sys/bus/acpi/devices/PNP0C80:XX/eject
->
-> In the 2nd case, there is no ACPI_NOTIFY_EJECT_REQUEST. We should offline
-> the memory and remove it from kernel in the release callback. We will poweroff
-> the memory device in acpi_bus_hot_remove_device(), so we must offline
-> and remove it if the type is ACPI_BUS_REMOVAL_EJECT.
->
-> I guess we should not poweroff the memory device when we fail to offline it.
-> But device_release_driver() doesn't returns any error...
-
-1) I think /sys/bus/acpi/devices/PNP0C80:XX/eject should emulate acpi
-eject. Can't
-you make a pseudo acpi eject event and detach device by acpi regular path?
-
-2) Your explanation didn't explain why we should ignore REMOVAL_NORMAL
-and REMOVEL_EJECT. As far as reviewers can't track your intention, we
-can't maintain
-the code and can't ack them.
+ Documentation/ABI/testing/sysfs-gpio                  |    6 
+ Documentation/devicetree/bindings/gpio/gpio-block.txt |   36 
+ Documentation/gpio.txt                                |   45 +
+ drivers/gpio/Makefile                                 |    1 
+ drivers/gpio/gpio-generic.c                           |   56 +
+ drivers/gpio/gpio-lpc32xx.c                           |   78 +
+ drivers/gpio/gpio-max730x.c                           |   60 +
+ drivers/gpio/gpioblock-of.c                           |   83 +
+ drivers/gpio/gpiolib.c                                |  449 +++++++++-
+ include/asm-generic/gpio.h                            |   25 
+ include/linux/gpio.h                                  |   74 +
+ 11 files changed, 911 insertions(+), 2 deletions(-)
