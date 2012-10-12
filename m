@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759534Ab2JLAPD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Oct 2012 20:15:03 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59367 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755828Ab2JLAPA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Oct 2012 20:15:00 -0400
-Date: Fri, 12 Oct 2012 11:14:51 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dinh Nguyen <dinguyen@altera.com>
-Subject: linux-next: build failure after merge of the l2-mtd tree
-Message-Id: <20121012111451.ad2a5db59d470cf24393226a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__12_Oct_2012_11_14_51_+1100_/M/NJYAjzvh1g4TH"
+	id S1759542Ab2JLAQg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Oct 2012 20:16:36 -0400
+Received: from ozlabs.org ([203.10.76.45]:41020 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758436Ab2JLAQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Oct 2012 20:16:34 -0400
+Date: Fri, 12 Oct 2012 11:16:33 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arch@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [RFC][CFT][CFReview] execve and kernel_thread unification work
+Message-ID: <20121012001633.GA29883@bloggs.ozlabs.ibm.com>
+References: <20121001213809.GA31155@ZenIV.linux.org.uk>
+ <20121011090023.GA28427@bloggs.ozlabs.ibm.com>
+ <20121011125306.GF2616@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121011125306.GF2616@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__12_Oct_2012_11_14_51_+1100_/M/NJYAjzvh1g4TH
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Oct 11, 2012 at 01:53:06PM +0100, Al Viro wrote:
 
-Hi Artem,
+> 	Umm...  Maybe, but let's do that as subsequent cleanup.  Again,
+> we almost certainly don't need to mess with TOC at all - the callbacks
+> are in the main kernel, there are very few of them and they really are
+> low-level details of exported mechanisms (i.e. kthread_create/run/etc.
+> in kthread.h and call_usermode... in kmod.h).  Again, we are talking
+> about out-of-tree modules, they had better mechanism for at least
+> 6 years and conversion to it is bloody trivial.  Hell, it was even
+> in late unlamented feature-removal-schedule.txt - since 2006.  If that's
+> not enough to retire an export, what is?
 
-After merging the l2-mtd tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+OK... yes we can fix things up in a subsequent cleanup.
 
-ERROR: "denali_init" [drivers/mtd/nand/denali_pci.ko] undefined!
-ERROR: "denali_remove" [drivers/mtd/nand/denali_pci.ko] undefined!
+We will need to fix the TOC handling when we go to using multiple TOCs
+in the main kernel, with the linker managing the transitions between
+TOCs.  Our toolchain guys have been pushing us to do that for years,
+because it should make things run faster, but first we'll have to stop
+using ld -r to combine objects in subdirectories.
 
-Probably caused by commit 305b1ee29c8e ("mtd: denali: split the generic
-driver and PCI layer").
-
-I have used the l2-mtd tree from next-20121011 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__12_Oct_2012_11_14_51_+1100_/M/NJYAjzvh1g4TH
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQd2D7AAoJEECxmPOUX5FEvgAP/1K9kcPD8CGYwXM6Q1mlT9Ev
-V1ooX1qZL52Tb9GlMPh/XQ1cvcPznj+zh58OXCIKl6e+JIHdSwDnAhQjOK102uag
-XVh+qo55JpNYVP+X1u6cpWnaSZegbZKs0qrJOeWmxqssqkqc0vEJ/luMdH/VDlE5
-YtzobhBuGafKr1XYPnVdePgYf7d4Q7jGPc7ZrtKX8QsGtbjCWlPNpkqLLR8F+4sd
-6iI7eMAqD31QaJ2YDPr4aM/WaCGJUBZfLThafKUqwPea/0EEqS+lri/ke2ZVSai9
-ZTP09H1kaTJXjJPzLZxmGi9CfPjmTWYcgaH0Zw41RCshm9LRApCBblSeqOIYJQr1
-d9jrKF3x8K+8HQf8EZVhX3mBVJcV6XkVFmBE8bF1esoJzpCebcJ0AYDOawg05DKv
-RrNq4Ou1Wk3n4dKq9l1Gy4qZq4kCCuK+Z595+WugcTpgRz/supwfOG5PZ1qo+99/
-MdxxtinTzEIFLdGfKTzPdCoHDWYqn9/LyAbuCtITrQDi6MakPnSGPSrvGIRv0p09
-q/i87+UZbp9L1fY+XlTDdHe4IjMc0IgBeKp6cQKKNfnNwFpJzm0FYmjxv5OJvWYW
-46PnRBK/kTmIRT1xZBVyY6AQ3HXYcIxVDPCNNPO+picqlNQSfoYZO7dABqn3P8kD
-zpqBGkFnLlAEagncok3V
-=cOXV
------END PGP SIGNATURE-----
-
---Signature=_Fri__12_Oct_2012_11_14_51_+1100_/M/NJYAjzvh1g4TH--
+Paul.
