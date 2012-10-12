@@ -1,67 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759673Ab2JLO6m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 10:58:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48966 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757497Ab2JLO6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 10:58:40 -0400
-Date: Fri, 12 Oct 2012 16:58:39 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Alex Bligh <alex@alex.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Local DoS through write heavy I/O on CFQ & Deadline
-Message-ID: <20121012145838.GD22083@dhcp22.suse.cz>
-References: <0B138F62-16BF-4295-9AD9-64C0BB39FCE2@alex.org.uk>
- <20121012133044.GA10115@dhcp22.suse.cz>
- <E6EF14955C67D6CA58918872@nimrod.local>
+	id S1757132Ab2JLPDx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 11:03:53 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:21345 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751666Ab2JLPDu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 11:03:50 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+FPM6+nDxue8MbZDEYEHbM
+Date: Fri, 12 Oct 2012 08:03:43 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: kishon <kishon@ti.com>
+Cc: Rajendra Nayak <rnayak@ti.com>, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rob@landley.net, linux@arm.linux.org.uk,
+        balbi@ti.com, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Moiz Sonasath <m-sonasath@ti.com>
+Subject: Re: [PATCH 1/4] usb: phy: add a new driver for usb3 phy
+Message-ID: <20121012150342.GA30339@atomide.com>
+References: <1348054229-27362-1-git-send-email-kishon@ti.com>
+ <1348054229-27362-2-git-send-email-kishon@ti.com>
+ <20121011005944.GX12552@atomide.com>
+ <5077DE0A.4000301@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <E6EF14955C67D6CA58918872@nimrod.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5077DE0A.4000301@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 12-10-12 15:48:34, Alex Bligh wrote:
+* kishon <kishon@ti.com> [121012 02:10]:
+> Hi Tony,
 > 
-> 
-> --On 12 October 2012 15:30:45 +0200 Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> >>Full info, including logs and scripts can be found at:
-> >>  https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1064521
+> On Thursday 11 October 2012 06:29 AM, Tony Lindgren wrote:
+> >Hi,
 > >
-> >You seem to have 8G of RAM and dirty_ratio=20 resp.
-> >dirty_background_ratio=10 which means that 1.5G worth of dirty data
-> >until writer gets throttled which is a lot. Background writeback starts
-> >at 800M which is probably not sufficient as well. Have you tried to set
-> >dirty_bytes at a reasonable value (wrt. to your storage)?
+> >* Kishon Vijay Abraham I <kishon@ti.com> [120919 04:32]:
+> >>Added a driver for usb3 phy that handles the interaction between usb phy
+> >>device and dwc3 controller.
+> >>
+> >>This also includes device tree support for usb3 phy driver and
+> >>the documentation with device tree binding information is updated.
+> >>
+> >>Currently writing to control module register is taken care in this
+> >>driver which will be removed once the control module driver is in place.
+> >
+> >You may be able to set up the control module register with one
+> >of the following Linux standard frameworks:
+> >
+> >1. Fixed regulator defined in mach-omap2/control.c
 > 
-> This is for an appliance install where we have no idea how much
-> memory the box has in advance other than 'at least 4G' so it
-> is difficult to tune by default.
+> Is it control.c?
+
+Hmm after looking into it more we're missing one piece of the puzzle
+to handle SCM regulators, which is omap-scm-regulator.c :)
+I'll do a minimal DT only version of that.
+
+> >    In this case the PHY driver can pick up the regulator by name.
 > 
-> However, I don't think that would solve the problem as the zcat/dd
-> can always generate data faster than it can be written to disk unless
-> or until it is throttled, which it never is. 
+> Do you mean we have to define something like fixed_voltage_config
+> defined in board-4430sdp.c?
+> From whatever I could make out from regulator/fixed.c,
+> enabling/disabling of regulator is done using only gpio. I'm not
+> sure how we can use that to write to control module register.
 
-Once dirty_ratio (resp. dirty_bytes) limit is hit then the process which
-writes gets throttled. If this is not the case then there is a bug in
-the throttling code.
+Yes you're right, we're missing omap-scm-regulator.c, then it will
+be trivial to select the regulator from DT like we have for the
+twl-regulator.c.
 
-> Isn't the only thing that is going to change that it ends up
-> triggering the writeback earlier?
+> >>+usb3phy@4a084400 {
+> >>+	compatible = "ti,omap-usb3";
+> >>+	reg = <0x0x4a084400 0x80>,
+> >>+	      <0x4a084800 0x64>,
+> >>+	      <0x4a084c00 0x40>,
+> >>+	      <0x4a002370 0x4>;
+> >>+};
+> >
+> >And register 0x4a002370 here. Care to post some info what the
+> >0x4a002370 register bits do? Is that same as CONTROL_DEV_CONF
+> >on omap4, or does it have other bits there too?
+> 
+> It's CONTROL_PHY_POWER_USB register and it's structure looks like this.
+> 31:22 USB_PWRCTL_CLK_FREQ
+> 21:14 USB_PWRCTL_CLK_CMD
+> 13:0 RESERVED
+> 
+> CLK_CMD takes values to power up/down the TX and RX in various combinations.
+> 
+> And CLK_FREQ takes values for clock configuration.
 
-Set the limit lowe?
- 
-> Happy to test etc - what would you suggest, dirty_ratio=5,
-> dirty_background_ratio=2 ?
+Oh, it's a clock. Then it would be best to set it up using the
+common clock framework and have the clock registered by the
+SCM core driver when those are available.
 
-These are measured in percentage. On the other hand if you use
-dirty_bytes resp. dirty_background_bytes then you get absolute numbers
-independent on the amount of memory.
+Maybe please just add a comment for that for later on?
 
--- 
-Michal Hocko
-SUSE Labs
+Regards,
+
+Tony
