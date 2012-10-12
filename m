@@ -1,77 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754451Ab2JLFAy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 01:00:54 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38231 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551Ab2JLFAw (ORCPT
+	id S1755395Ab2JLFES (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 01:04:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57672 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753320Ab2JLFEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 01:00:52 -0400
-Message-ID: <5077A3F7.6010407@gmail.com>
-Date: Fri, 12 Oct 2012 13:00:39 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Fri, 12 Oct 2012 01:04:16 -0400
+Message-ID: <5077A4C8.4060100@canonical.com>
+Date: Fri, 12 Oct 2012 13:04:08 +0800
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20121003 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 07/10] thp: implement splitting pmd for huge zero page
-References: <1349191172-28855-1-git-send-email-kirill.shutemov@linux.intel.com> <1349191172-28855-8-git-send-email-kirill.shutemov@linux.intel.com> <50778D39.1000102@gmail.com> <20121012041305.GA16854@shutemov.name>
-In-Reply-To: <20121012041305.GA16854@shutemov.name>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Matt Fleming <matt.fleming@intel.com>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH] efivarfs: Implement exclusive access for {get,set}_variable
+References: <1349961551.174484.910885224391.1.gpush@pecola> <1349962956.15966.521.camel@mfleming-mobl1.ger.corp.intel.com> <20121012044901.GA17913@kroah.com>
+In-Reply-To: <20121012044901.GA17913@kroah.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2012 12:13 PM, Kirill A. Shutemov wrote:
-> On Fri, Oct 12, 2012 at 11:23:37AM +0800, Ni zhan Chen wrote:
->> On 10/02/2012 11:19 PM, Kirill A. Shutemov wrote:
->>> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->>>
->>> We can't split huge zero page itself, but we can split the pmd which
->>> points to it.
->>>
->>> On splitting the pmd we create a table with all ptes set to normal zero
->>> page.
->>>
->>> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
->>> Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
->>> ---
->>>   mm/huge_memory.c |   32 ++++++++++++++++++++++++++++++++
->>>   1 files changed, 32 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
->>> index 95032d3..3f1c59c 100644
->>> --- a/mm/huge_memory.c
->>> +++ b/mm/huge_memory.c
->>> @@ -1600,6 +1600,7 @@ int split_huge_page(struct page *page)
->>>   	struct anon_vma *anon_vma;
->>>   	int ret = 1;
->>> +	BUG_ON(is_huge_zero_pfn(page_to_pfn(page)));
->>>   	BUG_ON(!PageAnon(page));
->>>   	anon_vma = page_lock_anon_vma(page);
->>>   	if (!anon_vma)
->>> @@ -2503,6 +2504,32 @@ static int khugepaged(void *none)
->>>   	return 0;
->>>   }
->>> +static void __split_huge_zero_page_pmd(struct vm_area_struct *vma,
->>> +		unsigned long haddr, pmd_t *pmd)
->>> +{
->>> +	pgtable_t pgtable;
->>> +	pmd_t _pmd;
->>> +	int i;
->>> +
->>> +	pmdp_clear_flush_notify(vma, haddr, pmd);
->> why I can't find function pmdp_clear_flush_notify in kernel source
->> code? Do you mean pmdp_clear_flush_young_notify or something like
->> that?
-> It was changed recently. See commit
-> 2ec74c3 mm: move all mmu notifier invocations to be done outside the PT lock
+Hi Greg,
 
-Oh, thanks!
+> Should this be backported to the stable kernels?
 
+No, the efivarfs code that this touches was only recently committed; it 
+won't be in any of the stable series.
+
+Cheers,
+
+
+Jeremy
 
