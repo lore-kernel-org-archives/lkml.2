@@ -1,121 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758781Ab2JLTN0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 15:13:26 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:45956 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757103Ab2JLTLy (ORCPT
+	id S1751851Ab2JLTQA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 15:16:00 -0400
+Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:42707 "EHLO
+	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750989Ab2JLTP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 15:11:54 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        w.sang@pengutronix.de, jbe@pengutronix.de, plagnioj@jcrosoft.com,
-        highguy@gmail.com, broonie@opensource.wolfsonmicro.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RFC 6/6 v3] gpio-generic: Add block GPIO API
-Date: Fri, 12 Oct 2012 21:11:25 +0200
-Message-Id: <1350069085-13283-7-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1350069085-13283-1-git-send-email-stigge@antcom.de>
-References: <1350069085-13283-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Fri, 12 Oct 2012 15:15:58 -0400
+X-Greylist: delayed 426 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Oct 2012 15:15:58 EDT
+Message-ID: <1350068629.7065.58.camel@rhapsody>
+Subject: Re: [PATCH 2/5] efivarfs: efivarfs_create() ensure we drop our
+ reference on inode on error
+From: Khalid Aziz <khalid@gonehiking.org>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Matt Fleming <matt.fleming@intel.com>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 12 Oct 2012 13:03:49 -0600
+In-Reply-To: <1349951541-20498-3-git-send-email-apw@canonical.com>
+References: <1349416496.810727.310563927016.1.gpush@pecola>
+	 <1349951541-20498-1-git-send-email-apw@canonical.com>
+	 <1349951541-20498-3-git-send-email-apw@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds block GPIO API support to the gpio-generic driver.
+On Thu, 2012-10-11 at 11:32 +0100, Andy Whitcroft wrote:
+> Signed-off-by: Andy Whitcroft <apw@canonical.com>
+> ---
+>  drivers/firmware/efivars.c |   14 +++++++++-----
+>  1 file changed, 9 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+> index ae50d2f..0bbf742 100644
+> --- a/drivers/firmware/efivars.c
+> +++ b/drivers/firmware/efivars.c
+> @@ -866,7 +866,7 @@ static void efivarfs_hex_to_guid(const char *str, efi_guid_t *guid)
+>  static int efivarfs_create(struct inode *dir, struct dentry *dentry,
+>  			  umode_t mode, bool excl)
+>  {
+> -	struct inode *inode = efivarfs_get_inode(dir->i_sb, dir, mode, 0);
+> +	struct inode *inode;
+>  	struct efivars *efivars = &__efivars;
+>  	struct efivar_entry *var;
+>  	int namelen, i = 0, err = 0;
+> @@ -874,13 +874,15 @@ static int efivarfs_create(struct inode *dir, struct dentry *dentry,
+>  	if (dentry->d_name.len < 38)
+>  		return -EINVAL;
+>  
+> +	inode = efivarfs_get_inode(dir->i_sb, dir, mode, 0);
+>  	if (!inode)
+>  		return -ENOSPC;
+>  
+>  	var = kzalloc(sizeof(struct efivar_entry), GFP_KERNEL);
+> -
+> -	if (!var)
+> -		return -ENOMEM;
+> +	if (!var) {
+> +		err = -ENOMEM;
+> +		goto out;
+> +	}
+>  
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+This does not read right. If kzalloc() fails, var will be a NULL
+pointer. This code will set err to -ENOMEM and jump to out: where since
+err is non-zero, this code will call kfree(Var) but var is a NULL
+pointer at this point. Now kfree() does check for NULL pointer and this
+will not cause any serious problems but why call kfree for a NULL
+pointer?
 
----
- drivers/gpio/gpio-generic.c |   56 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 56 insertions(+)
 
---- linux-2.6.orig/drivers/gpio/gpio-generic.c
-+++ linux-2.6/drivers/gpio/gpio-generic.c
-@@ -122,6 +122,13 @@ static int bgpio_get(struct gpio_chip *g
- 	return bgc->read_reg(bgc->reg_dat) & bgc->pin2mask(bgc, gpio);
- }
- 
-+static unsigned bgpio_get_block(struct gpio_chip *gc, unsigned mask)
-+{
-+	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-+
-+	return bgc->read_reg(bgc->reg_dat) & mask;
-+}
-+
- static void bgpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
- {
- 	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-@@ -170,6 +177,51 @@ static void bgpio_set_set(struct gpio_ch
- 	spin_unlock_irqrestore(&bgc->lock, flags);
- }
- 
-+static void bgpio_set_block(struct gpio_chip *gc, unsigned mask,
-+			    unsigned values)
-+{
-+	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&bgc->lock, flags);
-+
-+	bgc->data &= ~mask;
-+	bgc->data |= values & mask;
-+
-+	bgc->write_reg(bgc->reg_dat, bgc->data);
-+
-+	spin_unlock_irqrestore(&bgc->lock, flags);
-+}
-+
-+static void bgpio_set_with_clear_block(struct gpio_chip *gc, unsigned mask,
-+				       unsigned values)
-+{
-+	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-+	unsigned set_bits = values & mask;
-+	unsigned clr_bits = ~values & mask;
-+
-+	if (set_bits)
-+		bgc->write_reg(bgc->reg_set, set_bits);
-+	if (clr_bits)
-+		bgc->write_reg(bgc->reg_set, clr_bits);
-+}
-+
-+static void bgpio_set_set_block(struct gpio_chip *gc, unsigned mask,
-+				unsigned values)
-+{
-+	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&bgc->lock, flags);
-+
-+	bgc->data &= ~mask;
-+	bgc->data |= values & mask;
-+
-+	bgc->write_reg(bgc->reg_set, bgc->data);
-+
-+	spin_unlock_irqrestore(&bgc->lock, flags);
-+}
-+
- static int bgpio_simple_dir_in(struct gpio_chip *gc, unsigned int gpio)
- {
- 	return 0;
-@@ -317,14 +369,18 @@ static int bgpio_setup_io(struct bgpio_c
- 		bgc->reg_set = set;
- 		bgc->reg_clr = clr;
- 		bgc->gc.set = bgpio_set_with_clear;
-+		bgc->gc.set_block = bgpio_set_with_clear_block;
- 	} else if (set && !clr) {
- 		bgc->reg_set = set;
- 		bgc->gc.set = bgpio_set_set;
-+		bgc->gc.set_block = bgpio_set_set_block;
- 	} else {
- 		bgc->gc.set = bgpio_set;
-+		bgc->gc.set_block = bgpio_set_block;
- 	}
- 
- 	bgc->gc.get = bgpio_get;
-+	bgc->gc.get_block = bgpio_get_block;
- 
- 	return 0;
- }
+>  	namelen = dentry->d_name.len - GUID_LEN;
+>  
+> @@ -908,8 +910,10 @@ static int efivarfs_create(struct inode *dir, struct dentry *dentry,
+>  	d_instantiate(dentry, inode);
+>  	dget(dentry);
+>  out:
+> -	if (err)
+> +	if (err) {
+>  		kfree(var);
+> +		iput(inode);
+> +	}
+>  	return err;
+>  }
+>  
+
+--
+Khalid
+
+
