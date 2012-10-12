@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933890Ab2JLK0J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 06:26:09 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:56370 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933826Ab2JLK0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 06:26:06 -0400
-Date: Fri, 12 Oct 2012 12:26:03 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Steffen Persvold <sp@numascale.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: [PATCH v2] Fix AMD Northbridge-ID contiguity assumptions
-Message-ID: <20121012102603.GD19420@aftab.osrc.amd.com>
-References: <1349270474-28808-1-git-send-email-daniel@numascale-asia.com>
- <20121004131801.GD21028@aftab.osrc.amd.com>
- <20121012093310.GC19420@aftab.osrc.amd.com>
- <5077E96C.4030609@numascale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5077E96C.4030609@numascale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933922Ab2JLKcy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 06:32:54 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:43149 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751132Ab2JLKcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 06:32:52 -0400
+X-IronPort-AV: E=Sophos;i="4.80,576,1344182400"; 
+   d="scan'208";a="5989985"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: yinghai@kernel.org, lenb@kernel.org, bhelgaas@google.com,
+        izumi.taku@jp.fujitsu.com, jiang.liu@huawei.com,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] Find pci root bridges by comparing HID from acpi_device_info, not acpi_device.
+Date: Fri, 12 Oct 2012 18:31:27 +0800
+Message-Id: <1350037890-5899-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/12 18:32:26,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/12 18:32:28,
+	Serialize complete at 2012/10/12 18:32:28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 11:57:00AM +0200, Steffen Persvold wrote:
-> This patch looks very clean and should serve our purpose as well (I'll
-> double check with Daniel).
+Hi Yinghai,
 
-Thanks.
+I found a little problem in your following patches. :)
+[PATCH 00/40] PCI, ACPI, x86: pci root bus hotplug support.
 
-I'll run it today or next week to check whether it works as expected -
-will let you know if there are issues.
+In acpi_is_root_bridge(), it gets device's HID from acpi_device struct.
+If the device is not added when the system boots, there will be no
+acpi_device for it. And as a result, acpi_is_root_bridge() will fail.
+But it doesn't mean that the device is not a root bridge.
 
-> Regarding the size of the "node" variable, you asked before. The
-> theoretical maximum number of AMD NBs we can have in a confederated
-> NumaConnect system _today_ is 8*4096 (8 NBs per system, 4096
-> systems) so technically this could fit into a u16 instead of a u32
-> (you'll have to shift left by 3 instead of 8).
-> 
-> However, to allow some flexibility I think a u32 is better and I
-> think we can live with those two extra bytes per struct member, or ?
+In this case, the not-added root bridges have no handle_hotplug_event_root()
+callback registerred. And when we hot add it later, it will do nothing.
 
-Yeah, we can leave it u32 (I did it so in my patch) because of two
-reasons:
+This patch set changes the acpi_is_root_bridge()'s behavior. When we fail
+to get HID from acpi_device, we will get HID from acpi_device_info by
+acpi_get_object_info(), which gets the HID from ACPI namespace directly.
 
-* node_to_amd_nb gets an int as an argument
-* compiler padding
+So no matter the device is present or not, we will always find out if it
+is a pci root bridge, and register a handle_hotplug_event_root() callback
+for it.
 
-On the largest of your systems that's 2*8*4096 = 64K but I'll go ahead
-and assume you have enough memory on those so that nobody cares about
-64K there. :-)
+These patches are based on Lu Yinghai's for-pci-root-bus-hotplug branch.
 
-On Fri, Oct 12, 2012 at 05:46:28PM +0800, Daniel J Blueman wrote:
-> Nice. Sorry for the delays in getting back to you, since I'm just
-> chasing down the last issue we see with kobjects, amongst other work.
->
-> I'll check this out next week, and thanks for keeping an eye on it!
+Tang Chen (3):
+  Introduce a new acpi to determine HID match.
+  Do not use acpi_device to find pci root bridge in _init code.
+  Check exit status of acpi_install_notify_handler() in
+    find_root_bridges().
 
-Sure. It is probably convenient that you're busy currently - I can test
-it here first and fixup any issues before you do. I'll send an official
-version with changelog etc after having tested it here.
+ drivers/acpi/pci_root.c    |   27 ++++++++++++++++++++++-----
+ drivers/acpi/pci_root_hp.c |   12 +++++++++---
+ drivers/acpi/scan.c        |   24 ++++++++++++++++++++++++
+ include/acpi/acpi_bus.h    |    2 ++
+ 4 files changed, 57 insertions(+), 8 deletions(-)
 
-Thank you both.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
