@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932796Ab2JLTMQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 15:12:16 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:33690 "EHLO
+	id S932172Ab2JLTMN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 15:12:13 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:41880 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753699Ab2JLTMK (ORCPT
+	with ESMTP id S1758791Ab2JLTMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Oct 2012 15:12:10 -0400
 From: Roland Stigge <stigge@antcom.de>
@@ -13,9 +13,9 @@ To: grant.likely@secretlab.ca, linus.walleij@linaro.org,
         w.sang@pengutronix.de, jbe@pengutronix.de, plagnioj@jcrosoft.com,
         highguy@gmail.com, broonie@opensource.wolfsonmicro.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RFC 5/6 v3] gpio-lpc32xx: Add block GPIO API
-Date: Fri, 12 Oct 2012 21:11:24 +0200
-Message-Id: <1350069085-13283-6-git-send-email-stigge@antcom.de>
+Subject: [PATCH RFC 4/6 v3] gpio-max730x: Add block GPIO API
+Date: Fri, 12 Oct 2012 21:11:23 +0200
+Message-Id: <1350069085-13283-5-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1350069085-13283-1-git-send-email-stigge@antcom.de>
 References: <1350069085-13283-1-git-send-email-stigge@antcom.de>
@@ -24,170 +24,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds block GPIO API support to the LPC32xx driver.
+This patch adds block GPIO API support to the MAX730x driver.
+
+Due to hardware constraints in this chip, simultaneous access to GPIO lines can
+only be done in groups of 8: GPIOs 0-7, 8-15, 16-23, 24-27. However, setting
+and clearing will be done at once.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 
 ---
- drivers/gpio/gpio-lpc32xx.c |   78 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 78 insertions(+)
+ drivers/gpio/gpio-max730x.c |   60 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 60 insertions(+)
 
---- linux-2.6.orig/drivers/gpio/gpio-lpc32xx.c
-+++ linux-2.6/drivers/gpio/gpio-lpc32xx.c
-@@ -297,6 +297,21 @@ static int lpc32xx_gpio_get_value_p3(str
- 	return __get_gpio_state_p3(group, pin);
+--- linux-2.6.orig/drivers/gpio/gpio-max730x.c
++++ linux-2.6/drivers/gpio/gpio-max730x.c
+@@ -146,6 +146,43 @@ static int max7301_get(struct gpio_chip
+ 	return level;
  }
  
-+static unsigned lpc32xx_gpio_get_block_p3(struct gpio_chip *chip, unsigned mask)
++static unsigned max7301_get_block(struct gpio_chip *chip, unsigned mask)
 +{
-+	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
-+	u32 bits = __raw_readl(group->gpio_grp->inp_state);
++	struct max7301 *ts = container_of(chip, struct max7301, chip);
++	int i, j;
++	unsigned result = 0;
 +
-+	/* In P3_INP_STATE, the 6 GPIOs are scattered over the register,
-+	 * rearranging to bits 0-5
-+	 */
-+	bits >>= 10;
-+	bits &= 0x401F;
-+	bits |= (bits & 0x4000) >> 9;
++	for (i = 0; i < 4; i++) {
++		if ((mask >> (i * 8)) & 0xFF) { /* i/o only if necessary */
++			u8 in_level = ts->read(ts->dev, 0x44 + i * 8);
++			u8 in_mask = 0;
++			u8 out_level = (ts->out_level >> (i * 8 + 4)) & 0xFF;
++			u8 out_mask = 0;
 +
-+	return bits & mask & 0x3F;
++			for (j = 0; j < 8; j++) {
++				int offset = 4 + i * 8 + j;
++				int config = (ts->port_config[offset >> 2] >>
++					      ((offset & 3) << 1)) &
++					PIN_CONFIG_MASK;
++
++				switch (config) {
++				case PIN_CONFIG_OUT:
++					out_mask |= BIT(j);
++					break;
++				case PIN_CONFIG_IN_WO_PULLUP:
++				case PIN_CONFIG_IN_PULLUP:
++					in_mask |= BIT(j);
++				}
++			}
++
++			result |= ((unsigned)(in_level & in_mask) |
++				   (out_level & out_mask)) << (i * 8);
++		}
++	}
++
++	return result & mask;
 +}
 +
- static int lpc32xx_gpi_get_value(struct gpio_chip *chip, unsigned pin)
+ static void max7301_set(struct gpio_chip *chip, unsigned offset, int value)
  {
- 	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
-@@ -304,6 +319,14 @@ static int lpc32xx_gpi_get_value(struct
- 	return __get_gpi_state_p3(group, pin);
+ 	struct max7301 *ts = container_of(chip, struct max7301, chip);
+@@ -160,6 +197,27 @@ static void max7301_set(struct gpio_chip
+ 	mutex_unlock(&ts->lock);
  }
  
-+static unsigned lpc32xx_gpi_get_block(struct gpio_chip *chip, unsigned mask)
++static
++void max7301_set_block(struct gpio_chip *chip, unsigned mask, unsigned values)
 +{
-+	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
-+	u32 bits = __raw_readl(group->gpio_grp->inp_state);
++	struct max7301 *ts = container_of(chip, struct max7301, chip);
++	unsigned changes;
++	int i;
 +
-+	return bits & mask;
++	mutex_lock(&ts->lock);
++
++	changes = (ts->out_level ^ (values << 4)) & (mask << 4);
++	ts->out_level ^= changes;
++
++	for (i = 0; i < 4; i++) {
++		if ((changes >> (i * 8 + 4)) & 0xFF) /* i/o only on change */
++			ts->write(ts->dev, 0x44 + i * 8,
++				  (ts->out_level >> (i * 8 + 4)) & 0xFF);
++	}
++
++	mutex_unlock(&ts->lock);
 +}
 +
- static int lpc32xx_gpio_dir_output_p012(struct gpio_chip *chip, unsigned pin,
- 	int value)
+ int __devinit __max730x_probe(struct max7301 *ts)
  {
-@@ -351,6 +374,26 @@ static void lpc32xx_gpio_set_value_p3(st
- 	__set_gpio_level_p3(group, pin, value);
- }
+ 	struct device *dev = ts->dev;
+@@ -183,8 +241,10 @@ int __devinit __max730x_probe(struct max
  
-+static void lpc32xx_gpio_set_block_p3(struct gpio_chip *chip, unsigned mask,
-+				      unsigned values)
-+{
-+	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
-+	u32 set_bits = values & mask;
-+	u32 clr_bits = ~values & mask;
-+
-+	/* States of GPIO 0-5 start at bit 25 */
-+	set_bits <<= 25;
-+	clr_bits <<= 25;
-+
-+	/* Note: On LPC32xx, GPOs can only be set at once or cleared at once,
-+	 *       but not set and cleared at once
-+	 */
-+	if (set_bits)
-+		__raw_writel(set_bits, group->gpio_grp->outp_set);
-+	if (clr_bits)
-+		__raw_writel(clr_bits, group->gpio_grp->outp_clr);
-+}
-+
- static void lpc32xx_gpo_set_value(struct gpio_chip *chip, unsigned pin,
- 	int value)
- {
-@@ -366,6 +409,30 @@ static int lpc32xx_gpo_get_value(struct
- 	return __get_gpo_state_p3(group, pin);
- }
+ 	ts->chip.direction_input = max7301_direction_input;
+ 	ts->chip.get = max7301_get;
++	ts->chip.get_block = max7301_get_block;
+ 	ts->chip.direction_output = max7301_direction_output;
+ 	ts->chip.set = max7301_set;
++	ts->chip.set_block = max7301_set_block;
  
-+static void lpc32xx_gpo_set_block(struct gpio_chip *chip, unsigned mask,
-+				  unsigned values)
-+{
-+	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
-+	u32 set_bits = values & mask;
-+	u32 clr_bits = ~values & mask;
-+
-+	/* Note: On LPC32xx, GPOs can only be set at once or cleared at once,
-+	 *       but not set and cleared at once
-+	 */
-+	if (set_bits)
-+		__raw_writel(set_bits, group->gpio_grp->outp_set);
-+	if (clr_bits)
-+		__raw_writel(clr_bits, group->gpio_grp->outp_clr);
-+}
-+
-+static unsigned lpc32xx_gpo_get_block(struct gpio_chip *chip, unsigned mask)
-+{
-+	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
-+	u32 bits = __raw_readl(group->gpio_grp->outp_state);
-+
-+	return bits & mask;
-+}
-+
- static int lpc32xx_gpio_request(struct gpio_chip *chip, unsigned pin)
- {
- 	if (pin < chip->ngpio)
-@@ -440,8 +507,10 @@ static struct lpc32xx_gpio_chip lpc32xx_
- 			.label			= "gpio_p0",
- 			.direction_input	= lpc32xx_gpio_dir_input_p012,
- 			.get			= lpc32xx_gpio_get_value_p012,
-+			.get_block		= lpc32xx_gpi_get_block,
- 			.direction_output	= lpc32xx_gpio_dir_output_p012,
- 			.set			= lpc32xx_gpio_set_value_p012,
-+			.set_block		= lpc32xx_gpo_set_block,
- 			.request		= lpc32xx_gpio_request,
- 			.to_irq			= lpc32xx_gpio_to_irq_p01,
- 			.base			= LPC32XX_GPIO_P0_GRP,
-@@ -456,8 +525,10 @@ static struct lpc32xx_gpio_chip lpc32xx_
- 			.label			= "gpio_p1",
- 			.direction_input	= lpc32xx_gpio_dir_input_p012,
- 			.get			= lpc32xx_gpio_get_value_p012,
-+			.get_block		= lpc32xx_gpi_get_block,
- 			.direction_output	= lpc32xx_gpio_dir_output_p012,
- 			.set			= lpc32xx_gpio_set_value_p012,
-+			.set_block		= lpc32xx_gpo_set_block,
- 			.request		= lpc32xx_gpio_request,
- 			.to_irq			= lpc32xx_gpio_to_irq_p01,
- 			.base			= LPC32XX_GPIO_P1_GRP,
-@@ -472,8 +543,10 @@ static struct lpc32xx_gpio_chip lpc32xx_
- 			.label			= "gpio_p2",
- 			.direction_input	= lpc32xx_gpio_dir_input_p012,
- 			.get			= lpc32xx_gpio_get_value_p012,
-+			.get_block		= lpc32xx_gpi_get_block,
- 			.direction_output	= lpc32xx_gpio_dir_output_p012,
- 			.set			= lpc32xx_gpio_set_value_p012,
-+			.set_block		= lpc32xx_gpo_set_block,
- 			.request		= lpc32xx_gpio_request,
- 			.base			= LPC32XX_GPIO_P2_GRP,
- 			.ngpio			= LPC32XX_GPIO_P2_MAX,
-@@ -487,8 +560,10 @@ static struct lpc32xx_gpio_chip lpc32xx_
- 			.label			= "gpio_p3",
- 			.direction_input	= lpc32xx_gpio_dir_input_p3,
- 			.get			= lpc32xx_gpio_get_value_p3,
-+			.get_block		= lpc32xx_gpio_get_block_p3,
- 			.direction_output	= lpc32xx_gpio_dir_output_p3,
- 			.set			= lpc32xx_gpio_set_value_p3,
-+			.set_block		= lpc32xx_gpio_set_block_p3,
- 			.request		= lpc32xx_gpio_request,
- 			.to_irq			= lpc32xx_gpio_to_irq_gpio_p3,
- 			.base			= LPC32XX_GPIO_P3_GRP,
-@@ -503,6 +578,7 @@ static struct lpc32xx_gpio_chip lpc32xx_
- 			.label			= "gpi_p3",
- 			.direction_input	= lpc32xx_gpio_dir_in_always,
- 			.get			= lpc32xx_gpi_get_value,
-+			.get_block		= lpc32xx_gpi_get_block,
- 			.request		= lpc32xx_gpio_request,
- 			.to_irq			= lpc32xx_gpio_to_irq_gpi_p3,
- 			.base			= LPC32XX_GPI_P3_GRP,
-@@ -517,7 +593,9 @@ static struct lpc32xx_gpio_chip lpc32xx_
- 			.label			= "gpo_p3",
- 			.direction_output	= lpc32xx_gpio_dir_out_always,
- 			.set			= lpc32xx_gpo_set_value,
-+			.set_block		= lpc32xx_gpo_set_block,
- 			.get			= lpc32xx_gpo_get_value,
-+			.get_block		= lpc32xx_gpo_get_block,
- 			.request		= lpc32xx_gpio_request,
- 			.base			= LPC32XX_GPO_P3_GRP,
- 			.ngpio			= LPC32XX_GPO_P3_MAX,
+ 	ts->chip.base = pdata->base;
+ 	ts->chip.ngpio = PIN_NUMBER;
