@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130Ab2JLEJV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 00:09:21 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:43066 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325Ab2JLEJT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 00:09:19 -0400
-Date: Fri, 12 Oct 2012 15:09:16 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeff Layton <jlayton@redhat.com>
-Subject: linux-next: manual merge of the signal tree with the vfs tree
-Message-Id: <20121012150916.ef4a48cd60846edfc23f9676@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__12_Oct_2012_15_09_16_+1100_AI14n.88CL//XV=q"
+	id S1759603Ab2JLEMQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 00:12:16 -0400
+Received: from shutemov.name ([176.9.204.213]:59936 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755759Ab2JLEMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 00:12:13 -0400
+Date: Fri, 12 Oct 2012 07:13:05 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Ni zhan Chen <nizhan.chen@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 07/10] thp: implement splitting pmd for huge zero page
+Message-ID: <20121012041305.GA16854@shutemov.name>
+References: <1349191172-28855-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1349191172-28855-8-git-send-email-kirill.shutemov@linux.intel.com>
+ <50778D39.1000102@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50778D39.1000102@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__12_Oct_2012_15_09_16_+1100_AI14n.88CL//XV=q
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Oct 12, 2012 at 11:23:37AM +0800, Ni zhan Chen wrote:
+> On 10/02/2012 11:19 PM, Kirill A. Shutemov wrote:
+> >From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> >
+> >We can't split huge zero page itself, but we can split the pmd which
+> >points to it.
+> >
+> >On splitting the pmd we create a table with all ptes set to normal zero
+> >page.
+> >
+> >Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> >Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+> >---
+> >  mm/huge_memory.c |   32 ++++++++++++++++++++++++++++++++
+> >  1 files changed, 32 insertions(+), 0 deletions(-)
+> >
+> >diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> >index 95032d3..3f1c59c 100644
+> >--- a/mm/huge_memory.c
+> >+++ b/mm/huge_memory.c
+> >@@ -1600,6 +1600,7 @@ int split_huge_page(struct page *page)
+> >  	struct anon_vma *anon_vma;
+> >  	int ret = 1;
+> >+	BUG_ON(is_huge_zero_pfn(page_to_pfn(page)));
+> >  	BUG_ON(!PageAnon(page));
+> >  	anon_vma = page_lock_anon_vma(page);
+> >  	if (!anon_vma)
+> >@@ -2503,6 +2504,32 @@ static int khugepaged(void *none)
+> >  	return 0;
+> >  }
+> >+static void __split_huge_zero_page_pmd(struct vm_area_struct *vma,
+> >+		unsigned long haddr, pmd_t *pmd)
+> >+{
+> >+	pgtable_t pgtable;
+> >+	pmd_t _pmd;
+> >+	int i;
+> >+
+> >+	pmdp_clear_flush_notify(vma, haddr, pmd);
+> 
+> why I can't find function pmdp_clear_flush_notify in kernel source
+> code? Do you mean pmdp_clear_flush_young_notify or something like
+> that?
 
-Hi Al,
+It was changed recently. See commit
+2ec74c3 mm: move all mmu notifier invocations to be done outside the PT lock
 
-Today's linux-next merge of the signal tree got a conflict in
-arch/powerpc/kernel/sys_ppc32.c between commit 2a5e5beb88c5 ("vfs: define
-struct filename and have getname() return it") from the vfs tree and
-commit be6abfa769fa ("powerpc: switch to generic sys_execve()/
-kernel_execve()") from the signal tree.
-
-The latter removed removed the function that was modified by the former,
-so I did that and can carry the fix as necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__12_Oct_2012_15_09_16_+1100_AI14n.88CL//XV=q
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQd5fsAAoJEECxmPOUX5FEkBYP/iInroyMaCa4MvZjR/1IdCK0
-n6r1S+UsdEVeVud86k7rKDHyi+rtgsMgKscbOkvqe1QZ4DX4JFEYJ2D3uNl0vJD5
-eqTwnHPv8V3SbVwA/iA7DcM8iDtHb5AL431qvTQntiukYuGdPyZTkAjyZWF6UDuz
-+C+Egiys5zCHfYzIq2OXKtyGY4jCHtjKDC5nt3jhHz0PzF+mJRoSgERXEZb+N8l5
-8zZtAt3IlI6kDXSy72qVlhscxjcog+CeU+pUB0lIpI4mp3z7TIFzk0iuDV42hEps
-t8qXs2nmS62hutEDTGQKdUCu9Bz0HwY+4ShpW9uI0ev5DtY6bfVvKghCEFNyM748
-r4IKWs1atSan48QjTAYfH4rKFit8AU2t6gt+609azdqpTr8qcqdxG34cVK9eMvM/
-8uxwj6OpTzZPtaXGB0aNBOfavg04xFHZWE4XB3bWfMpjosDBOmyOoDj3A27RaXrD
-8Z2neUPEd6/mfRx0EiyqiTx0s6Txq5XpXOxL8LkecVPDBT0AhPnBC6524AXiEosx
-Xti/4SWqQqqo4wLul8P9mhcaDxNzibjjEA2BX0K/IXWIAONrQYsp5YXdXsd+0W+J
-xYF97EM7VbKYpCrTxiXxtqOHXFListdrwc6epXmGOevcKs1ypiP4qYHDfg99PeRp
-Q737vOZJogBYnaclfeeX
-=rfEm
------END PGP SIGNATURE-----
-
---Signature=_Fri__12_Oct_2012_15_09_16_+1100_AI14n.88CL//XV=q--
+-- 
+ Kirill A. Shutemov
