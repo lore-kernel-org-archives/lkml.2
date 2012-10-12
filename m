@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755761Ab2JLFLP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 01:11:15 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:49345 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179Ab2JLFLO (ORCPT
+	id S932253Ab2JLFQO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 01:16:14 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36985 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754362Ab2JLFQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 01:11:14 -0400
-Date: Fri, 12 Oct 2012 16:11:08 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warnings after merge of the tip tree
-Message-Id: <20121012161108.7e97dea0942f681a0ee9f564@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__12_Oct_2012_16_11_08_+1100_17N=dBvZAv7YWF92"
+	Fri, 12 Oct 2012 01:16:12 -0400
+Date: Fri, 12 Oct 2012 14:16:00 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Christopher Heiny <Cheiny@synaptics.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
+        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Alexandra Chin <alexandra.chin@tw.synaptics.com>
+Subject: Re: [RFC PATCH 01/06] input/rmi4: Public header and documentation
+Message-ID: <20121012051558.GK11726@opensource.wolfsonmicro.com>
+References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com>
+ <1349496603-20775-2-git-send-email-cheiny@synaptics.com>
+ <CACRpkdZb+LOk8v0aNZuPhATjS5jv-h1JJCejoh_9eFZ_fdiZQA@mail.gmail.com>
+ <20121009082719.GC8237@opensource.wolfsonmicro.com>
+ <BFABBC009FBA1C43B207B15FD485ABD922C22BE7@USW-MAIL1.synaptics-inc.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BFABBC009FBA1C43B207B15FD485ABD922C22BE7@USW-MAIL1.synaptics-inc.local>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__12_Oct_2012_16_11_08_+1100_17N=dBvZAv7YWF92
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Oct 11, 2012 at 03:56:22AM +0000, Christopher Heiny wrote:
 
-Hi all,
+Fix your mailer to word wrap within paragraphs.
 
-After merging the tip tree, today's linux-next build (powerpc allnoconfig)
-produced these warnings:
+> If this feature is a deal-breaker, we can take it out.  In the absence
+> of a generic GPIO implementation for CS, though, I'd much rather leave
+> it in.  Once generic GPIO CS arrives, we'll remove it pretty quickly.  
 
-kernel/sched/fair.c:801:22: warning: 'task_h_load' declared 'static' but ne=
-ver defined [-Wunused-function]
-kernel/sched/fair.c:1013:13: warning: 'account_offnode_enqueue' defined but=
- not used [-Wunused-function]
-
-Introduced by commit 4ae834f767c5 ("sched/numa: Implement NUMA home-node
-selection code").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__12_Oct_2012_16_11_08_+1100_17N=dBvZAv7YWF92
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQd6ZsAAoJEECxmPOUX5FEs8MP/R94XRsbWrERXFzEV8Ouvi9T
-06qBbOYNSReTUNc+wWKdqJp6MJRcW5vNfUSlG7Dxmp7148VDzWYpR1vrA9crnQSu
-DpDEXoYTzmmwfdInLzfUpAkvF7D/OZf+HKLWuJra4bGUl1hgQT5Wk5UANs4QxyeS
-4FiSkOO/mPPRSMIER6UF8zqGMr+ksDMv4c7QLFFnz9Z80OAlLwe+oMHFrWaEMsKI
-w2uRpgnCvf+/441bvDgfmbi2yS58VjDj5KC7FBg/SehrSIUOcMkLzZZQT59TtFZZ
-cs+5V590SeLpgimLF8egztY+fNXjKqYVBVnqYZM8Lh17c2ajLLYWdO+EikMLf4su
-X1Q4FXQsRNDETsKCcAgAArXFG/FRWbXjSKSZ5yEzUYMcKRB0mAHHxUNrRreY/x7T
-N0E8QJXPbNYQUJJdoEMZnDOGKHwRJsbtSzNHArk9Z4iTSkOqO6ObBLqnTPqa+Zd1
-FoebMq6l1rH5Fl+KNtgND9NOURhi7dJ/LgXauPTrn5mHH6YrE6haENvXBWn8zXeN
-d6kn1VEgNwkGG+P42ILn4gwXxCeMzolN89InYmYtA9HmDUQDlzZuWNXoYfNwbOzn
-BMbhPgZbSCRrm7/yPup13z07tdSibwCNFEDMI9UQQJiH6oR1nLmlZqjxmpn7mk1b
-wLmwu/6Y1ae33Sanvc6D
-=ZlJS
------END PGP SIGNATURE-----
-
---Signature=_Fri__12_Oct_2012_16_11_08_+1100_17N=dBvZAv7YWF92--
+Why not just implement this at an appropriate level in the SPI
+subsystem?  One of the great things about Linux is that you can change
+the core code...
