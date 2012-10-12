@@ -1,126 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933671Ab2JLIe3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 04:34:29 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:34582 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933625Ab2JLIeE (ORCPT
+	id S933647Ab2JLIje (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 04:39:34 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:59632 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933255Ab2JLIjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 04:34:04 -0400
+	Fri, 12 Oct 2012 04:39:31 -0400
+Date: Fri, 12 Oct 2012 10:39:26 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf updates/fixes
+Message-ID: <20121012083926.GA30327@gmail.com>
+References: <20121012081947.GA20570@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1350030203.10584.139.camel@smile>
-References: <142ef9170a2c69657d8a05ac127a9970d7b04965.1350020375.git.viresh.kumar@linaro.org>
-	<91e41b4cc972d298f714cbd6f400569a9710304c.1350020375.git.viresh.kumar@linaro.org>
-	<1350030203.10584.139.camel@smile>
-Date: Fri, 12 Oct 2012 14:04:02 +0530
-Message-ID: <CAKohpon4FZdPXFOXvVqExY=xrwozELYvNbE3_zHoRw2O0nszhw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] dmaengine: dw_dmac: Enhance device tree support
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121012081947.GA20570@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 October 2012 13:53, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> On Fri, 2012-10-12 at 11:14 +0530, Viresh Kumar wrote:
 
-> My few comments are below.
+* Ingo Molnar <mingo@kernel.org> wrote:
 
-Most welcome :)
+> Linus,
+> 
+> Please pull the latest perf-urgent-for-linus git tree from:
+> 
+>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+> 
+>    HEAD: 95cf59ea72331d0093010543b8951bb43f262cac perf: Fix perf_cgroup_switch for sw-events
 
->> diff --git a/Documentation/devicetree/bindings/dma/snps-dma.txt b/Documentation/devicetree/bindings/dma/snps-dma.txt
->> @@ -14,4 +34,28 @@ Example:
->>               reg = <0xfc000000 0x1000>;
->>               interrupt-parent = <&vic1>;
->>               interrupts = <12>;
->> +
->> +             nr_channels = <8>;
->> +             chan_allocation_order = <1>;
->> +             chan_priority = <1>;
->> +             block_size = <0xfff>;
->> +             nr_masters = <2>;
->> +             data_width = <3 3 0 0>;
->> +
->> +             slave_info {
->> +                     uart0-tx {
->> +                             bus_id = "uart0-tx";
->> +                             cfg_hi = <0x4000>;      /* 0x8 << 11 */
->> +                             cfg_lo = <0>;
->> +                             src_master = <0>;
->> +                             dst_master = <1>;
->> +                     };
->> +                     spi0-tx {
->> +                             bus_id = "spi0-tx";
->> +                             cfg_hi = <0x2000>;      /* 0x4 << 11 */
->> +                             cfg_lo = <0>;
->> +                             src_master = <0>;
->> +                             dst_master = <0>;
->> +                     };
->> +             };
-> Why do you locate slave information under DMA controller node? From my
-> point of view the slave info belongs to corresponding device. For
-> example, above sections belong to UART0 and SPI0.
+Note that if you merge it then there's a new semantic conflict 
+with recent rbtree.c changes in your tree, causing a tools/perf/ 
+build failure:
 
-Consider one spi driver is used on 5 different platforms with
-different DMA controllers.
-So, 5 DMA drivers and so 5 DMA platform_data. Wherever we add this node, this
-data can't be processed by spi-driver, as we can't add DT processing routines
-for all DMA drivers in spi.
+../../lib/rbtree.c:24:36: fatal error: linux/rbtree_augmented.h: No such file or directory compilation terminated.
 
-The best place to process DT nodes is DW_DMAC driver, because it is
-dw_dmac's data.
-That's why i added them under DMA.
+See the fix below.
 
->> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+( If the __maybe_unused annotations are too ugly for 
+  lib/rbtree.c then we'll fix that in tools/perf in a cleaner
+  way, weakening the compiler checks for the rbtree build. We 
+  are using stronger compiler checks in tools/perf/, which has 
+  served us very well so far and is a big net win - the price is 
+  the occasional extra annotation of dummy inline function 
+  parameters. )
 
->> +     while (++i < dw->sd_count) {
->> +             if (!strcmp(dw->sd[i].bus_id, param)) {
->> +                     found = 1;
->> +                     break;
->> +             }
->> +     }
->> +
->> +     if (!found) {
->> +             last_dw = dw;
->> +             last_bus_id = param;
->> +             return false;
-> Because of return here you could eliminate 'found' flag at all.
+Thanks,
 
-Yeah.
+	Ingo
 
->> +static struct dw_dma_platform_data *
->> +__devinit dw_dma_parse_dt(struct platform_device *pdev)
->> +{
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 
->> +     for_each_child_of_node(sn, cn)
->> +             count++;
-> Is there any other way to get amount of children?
+---
+ lib/rbtree.c                                     | 7 ++++---
+ tools/perf/util/include/linux/rbtree_augmented.h | 2 ++
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
-I tried my best to find one, referred to lots of drivers. And found
-this way in most of the places. ex: drivers/pinctrl/***
+diff --git a/lib/rbtree.c b/lib/rbtree.c
+index 4f56a11..993ffcb 100644
+--- a/lib/rbtree.c
++++ b/lib/rbtree.c
+@@ -22,6 +22,7 @@
+ */
+ 
+ #include <linux/rbtree_augmented.h>
++#include <linux/compiler.h>
+ #include <linux/export.h>
+ 
+ /*
+@@ -364,9 +365,9 @@ EXPORT_SYMBOL(__rb_erase_color);
+  * out of the rb_insert_color() and rb_erase() function definitions.
+  */
+ 
+-static inline void dummy_propagate(struct rb_node *node, struct rb_node *stop) {}
+-static inline void dummy_copy(struct rb_node *old, struct rb_node *new) {}
+-static inline void dummy_rotate(struct rb_node *old, struct rb_node *new) {}
++static inline void dummy_propagate(struct rb_node *node __maybe_unused, struct rb_node *stop __maybe_unused) {}
++static inline void dummy_copy(struct rb_node *old __maybe_unused, struct rb_node *new __maybe_unused) {}
++static inline void dummy_rotate(struct rb_node *old __maybe_unused, struct rb_node *new __maybe_unused) {}
+ 
+ static const struct rb_augment_callbacks dummy_callbacks = {
+ 	dummy_propagate, dummy_copy, dummy_rotate
+diff --git a/tools/perf/util/include/linux/rbtree_augmented.h b/tools/perf/util/include/linux/rbtree_augmented.h
+new file mode 100644
+index 0000000..9d6fcdf
+--- /dev/null
++++ b/tools/perf/util/include/linux/rbtree_augmented.h
+@@ -0,0 +1,2 @@
++#include <stdbool.h>
++#include "../../../../include/linux/rbtree_augmented.h"
 
->> +     return pdata;
-> Here you return NULL or valid pointer
->> +}
->> +#else
->> +static inline int dw_dma_parse_dt(struct platform_device *pdev)
->> +{
->> +     return -ENOSYS;
-> ...here you return an error.
-
-Look at prototype of both versions of these routines. Its a bug. Thanks
-for pointing out.
-
->>       if (!pdata || pdata->nr_channels > DW_DMA_MAX_NR_CHANNELS)
-> ...and here you didn't check for an error.
-
-With above bug fixed, this will be automatically resolved as NULL is treated as
-failure.
-
---
-viresh
