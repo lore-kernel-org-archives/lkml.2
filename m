@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932850Ab2JLHiR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 03:38:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50888 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932459Ab2JLHiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 03:38:16 -0400
-Message-ID: <5077C8DA.5030604@redhat.com>
-Date: Fri, 12 Oct 2012 09:38:02 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+	id S932900Ab2JLHnC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 03:43:02 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:39189 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932482Ab2JLHnA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 03:43:00 -0400
 MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <87wqyx7me7.fsf@rustcorp.com.au>
+References: <20120920232737.GA2953@www.outflux.net> <CAKgNAkheF8=ssrE=_JP-ApDP5zXeHSYVG+0x6Wfd6U28TcPSHQ@mail.gmail.com>
+ <87wqyx7me7.fsf@rustcorp.com.au>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Fri, 12 Oct 2012 09:42:38 +0200
+Message-ID: <CAKgNAkiKajiFxjfBEadXBtD67ApyGEvCa+uoWm7iFBBm0gnshA@mail.gmail.com>
+Subject: Re: [PATCH] init_module: update to modern interfaces
 To: Rusty Russell <rusty@rustcorp.com.au>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>,
-        virtualization@lists.linux-foundation.org,
-        Thomas Lendacky <tahm@linux.vnet.ibm.com>, avi@redhat.com,
-        Cornelia Huck <cornelia.huck@de.ibm.com>
-Subject: Re: [PATCH 0/3] virtio-net: inline header support
-References: <506C192E.5060700@redhat.com> <87bogj2j1b.fsf@rustcorp.com.au> <506D3610.7000103@redhat.com> <87ipaq1jtt.fsf@rustcorp.com.au> <506D8DD5.20904@redhat.com> <87391t1nkq.fsf__40391.6521034718$1349505001$gmane$org@rustcorp.com.au> <507029EB.2050405@redhat.com> <878vbg8cma.fsf@rustcorp.com.au> <5073D1D8.3060905@redhat.com> <87k3ux98oc.fsf@rustcorp.com.au> <20121011110430.GF5552@redhat.com> <87wqyw63et.fsf@rustcorp.com.au>
-In-Reply-To: <87wqyw63et.fsf@rustcorp.com.au>
+Cc: Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-man <linux-man@vger.kernel.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Jon Masters <jonathan@jonmasters.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 12/10/2012 00:37, Rusty Russell ha scritto:
-> "Michael S. Tsirkin" <mst@redhat.com> writes:
->> On Thu, Oct 11, 2012 at 10:33:31AM +1030, Rusty Russell wrote:
->>> OK.  Well, Anthony wants qemu to be robust in this regard, so I am
->>> tempted to rework all the qemu drivers to handle arbitrary layouts.
->>> They could use a good audit anyway.
->>
->> I agree here. Still trying to understand whether we can agree to use
->> a feature bit for this, or not.
-> 
-> I'd *like* to imply it by the new PCI layout, but if it doesn't work
-> we'll add a new feature bit.
-> 
-> I'm resisting a feature bit, since it constrains future implementations
-> which could otherwise assume it.
+Hi Rusty,
 
-Future implementations may certainly refuse to start if the feature is
-not there.  Whether it's a good idea or not, well, that depends on how
-much future they are.
+Thanks for the review! One open question below.
 
-Paolo
+On Thu, Oct 11, 2012 at 4:50 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+>> [CC widened, so that some more review might come in. Rusty?]
+>
+> Sure.
+>
+> Looks good. but:
+>
+>> .B EBUSY
+>> The module's initialization routine failed.
+>
+> Possibly.  You should mention that the individual module's
+> initialization routine can return other errors as appropriate.
 
->>> This would become a glaring exception, but I'm tempted to fix it to 32
->>> bytes at the same time as we get the new pci layout (ie. for the virtio
->>> 1.0 spec).
->>
->> But this isn't a virtio-pci only issue, is it?
->> qemu has s390 bus with same limmitation.
->> How can we tie it to pci layout?
-> 
-> They can use a transport feature if they need to, of course.  But
-> perhaps the timing with ccw will coincide with the fix, in which they
-> don't need to, but it might be a bit late.
-> 
-> Cornelia?
-> 
-> Cheers,
-> Rusty.
-> 
+Done!
 
+In fact, the existing EBUSY text seems completely bogus. Should it not
+read something like
+"Timeout while trying to resolve a symbol reference by this module."?
+
+>> .BR EINVAL " (Linux 2.4 and earlier)"
+>> Some
+>> .I image
+>> slot is filled in incorrectly,
+>> .I image\->name
+>> does not correspond to the original module name, some
+>> .I image\->deps
+>> entry does not correspond to a loaded module,
+>> or some other similar inconsistency.
+>> .TP
+>
+> Why document this?
+
+Because the general approach in man-pages is to document past as well
+as current behavior. Since there are few user-space customers of
+init_module(), perhaps you are right that this is unnecessary. I
+dropped it.
+
+>> .B ENOEXEC
+>> The ELF image in
+>> .I module_image
+>> is too small or has corrupted segments.
+>
+> Or is not an ELF image, or wrong arch...
+
+Yes, reworded here.
+
+[...]
+
+> You might want to note that the 2.4 syscall can be detected by calling
+> query_module(): 2.6 and above give ENOSYS.
+
+Done.
+
+Thanks,
+
+Michael
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
