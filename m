@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817Ab2JLUe0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 16:34:26 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:36432 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab2JLUeZ (ORCPT
+	id S1751879Ab2JLUwO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 16:52:14 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57078 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775Ab2JLUwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 16:34:25 -0400
-Message-ID: <50787ECB.1050803@gmail.com>
-Date: Fri, 12 Oct 2012 22:34:19 +0200
-From: Milan Broz <gmazyland@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Thunderbird/5.0
+	Fri, 12 Oct 2012 16:52:13 -0400
+Date: Fri, 12 Oct 2012 22:52:08 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+cc: anish kumar <anish198519851985@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] genirq: for edge interrupt IRQS_ONESHOT support with
+ irq thread
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A195A8D@SHSMSX101.ccr.corp.intel.com>
+Message-ID: <alpine.LFD.2.02.1210122248070.2779@ionos>
+References: <1350045084.13178.19.camel@cliu38-desktop-build>  <alpine.LFD.2.02.1210121427490.2779@ionos>  <27240C0AC20F114CBF8149A2696CBE4A19587A@SHSMSX101.ccr.corp.intel.com>  <alpine.LFD.2.02.1210121440160.2779@ionos>  <27240C0AC20F114CBF8149A2696CBE4A1958B9@SHSMSX101.ccr.corp.intel.com>
+  <alpine.LFD.2.02.1210121533560.2779@ionos>  <27240C0AC20F114CBF8149A2696CBE4A195A6B@SHSMSX101.ccr.corp.intel.com> <1350055478.8329.24.camel@anish-Inspiron-N5050> <27240C0AC20F114CBF8149A2696CBE4A195A8D@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Michael Zugelder <michael@zugelder.org>
-CC: linux-kernel@vger.kernel.org, dm-devel@redhat.com,
-        dm-crypt <dm-crypt@saout.de>
-Subject: Re: PROBLEM: [dm-crypt] read starvation during writeback
-References: <1350070656.2554.6.camel@vpcz1>
-In-Reply-To: <1350070656.2554.6.camel@vpcz1>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2012 09:37 PM, Michael Zugelder wrote:
-> I'm having an issue reading data via dm-crypt when there is heavy
-> writeback going on (i.e. copying large files or using dd). A single
-> read takes anywhere from a few seconds to multiple minutes.
-> 
-> Testing setup:
->  * Fedora 17, stock 3.5.4-2.fc17 kernel and a self-compiled 3.6.1 kernel
->  * 320 GiB USB hard drive (sdb)
+On Fri, 12 Oct 2012, Liu, Chuansheng wrote:
+> > -----Original Message-----
+> > From: anish kumar [mailto:anish198519851985@gmail.com]
+> > Sent: Friday, October 12, 2012 11:25 PM
+> > To: Liu, Chuansheng
+> > Cc: Thomas Gleixner; linux-kernel@vger.kernel.org
+> > Subject: RE: [PATCH] genirq: for edge interrupt IRQS_ONESHOT support with irq
+> > thread
+> > 
+> > On Fri, 2012-10-12 at 14:57 +0000, Liu, Chuansheng wrote:
+> > > > On SMP an interrupt which is raised after the ack() again before the
+> > > > handler finishes, can invoke another delivery on a different CPU,
+> > > > which then sees the IRQ_INPROGESS flag, masks it and flags it
+> > > > PENDING. When the primary handler on the first CPU returns, it sees
+> > > > the PENDING flag, unmasks and invokes the handler another time.
+> > > In this case, when IRQ_INPROGRESS flag is set, on another CPU, it will
+> > > mask and ack it, if before the primary handler on the first CPU returns,
+> > > the edge interrupt is raised again, it will be lost, right?
+> > Why will the interrupt be raised again?Is not it masked?I read tglx
+> I means because it is masked, if at this time device issues edge irq,
+> It will not be delivered and lost.
 
-I guess that USB is the key factor here... I remember to have similar
-problem some time ago even without dmcrypt.
+No, it is NOT lost. The irq is marked PENDING already, so we invoke
+the handler again and handle it. And before we invoke the handler
+another time we unmask it.
 
-Is it reproducible with the same kernel cfg but with internal disk?
+It does not matter at all whether the interrupt has been sent five
+times while it was masked. What matters is that we recorded the first
+one and set the PENDING flag. That way we invoke the interrupt handler
+again and keep stuff rolling.
 
-You can also test completely fake underlying device,
-use device-mapper- zero target:
-dmsetup create dev_zero --table "0 <sectors size> zero"
-(All writes are dropped and all reads returns zero in this case.)
+Thanks,
 
-Is there any starvation with this setup? (It shouldn't.)
-
->  * dmsetup library version 1.02.74 (2012-03-06), driver version 4.23.0
->  * dm-crypt set up using cipher_null:
->    echo "0 $(blockdev --getsize /dev/sdb) crypt cipher_null - 0 /dev/sdb 0"|dmsetup create test
-
-Btw you can use cryptsetup with cipher "null" to simplify
-(I added to cryptsetup to test exactly such scenarios).
-
-So, it means that encryption is not the problem.
-The crypto_null will cause that there is no crypto operation
-(it is just plain data copy) but the remaining dmcrypt overhead remains
-exactly the same.
-
-> * writeback induced by running 'dd if=/dev/zero of=$target bs=1M'
-
-Any change if you use oflag=direct ? (iow using direct io)
-
-> I experimented a bit with the other device mapper targets, namely linear
-> and stripe, but both worked completely fine. I also tried putting a
-> linear mapping above dm-crypt, with no impact on performance. Comparing
-> the content of the /sys/block/$DEV files of the linear mapping and
-> dm-crypt, there are no differences beside the name, dev no, stats,
-> uevent and inflight files.
-
-There is crucial difference between linear/stripe and dmcrypt:
-linear just remaps IO target device, dmcrypt queues operations
-(using kernel workqueue) and creates full bio clones.
-So comparison here is IMHO not much helpful.
-
-There are two internal dmcrypt queues, but I think that the problem
-is triggered by some combination with USB storage backend.
-
-> Any pointers would be appreciated, I haven't found much on the web about
-> this issue.
-
-Btw there was a proposed rewrite of internal dmcrypt queues, if you have time,
-you can try if it changes anything for your use case.
-Patches in dm-devel archive
-http://www.redhat.com/archives/dm-devel/2012-August/msg00210.html
-
-Milan
+	tglx
