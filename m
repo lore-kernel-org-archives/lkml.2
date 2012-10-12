@@ -1,38 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab2JLXbr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 19:31:47 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57792 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612Ab2JLXbp (ORCPT
+	id S1752798Ab2JLXtl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 19:49:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62456 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682Ab2JLXtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 19:31:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <15243.1350083203@warthog.procyon.org.uk>
-References: <30758.1349789445@warthog.procyon.org.uk> <CACxGe6u51-er_U=FBaHzhAE2orZuq_B-MSwVVnCvoqZnEeHu7w@mail.gmail.com>
- <15243.1350083203@warthog.procyon.org.uk>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sat, 13 Oct 2012 00:31:25 +0100
-X-Google-Sender-Auth: 6usFVjzPpwz-VPIY2no8mOZGFn8
-Message-ID: <CACxGe6t21=JgEYduAgcGoyz_zAbG-4RNMwouO-NzaMeez+Rc_w@mail.gmail.com>
-Subject: Re: [GIT PULL] Disintegrate UAPI for spi
-To: David Howells <dhowells@redhat.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 12 Oct 2012 19:49:40 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Cc: devel@driverdev.osuosl.org, backports@vger.kernel.org, rob@ti.com,
+        arnd@arndb.de, davej@redhat.com, airlied@linux.ie, bskeggs@redhat.com,
+        alan@lxorguk.ukuu.org.uk, dhowells@redhat.com, tglx@linutronix.de,
+        daniel.vetter@ffwll.ch, jbarnes@virtuousgeek.org,
+        alexander.deucher@amd.com, paulmck@linux.vnet.ibm.com,
+        gregkh@linuxfoundation.org, laurent.pinchart@ideasonboard.com,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Subject: [PATCH 0/2] uapi: two minor changes
+Date: Fri, 12 Oct 2012 16:49:30 -0700
+Message-Id: <1350085772-8755-1-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 13, 2012 at 12:06 AM, David Howells <dhowells@redhat.com> wrote:
-> Grant Likely <grant.likely@secretlab.ca> wrote:
->
->> > Can you merge the following branch into the spi tree please.
->>
->> Do you want this merged into 3.7? If so, go ahead and push it directly
->> to Linus. I've not been able to do any maintainership stuff for the
->> last merge window or this one. Mark Brown has covered for me on SPI.
->
-> Could I get an Ack for it?
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Here are a few minor updates to the UAPI changes [0]. The first
+one is to help with the backport effort [1], the second one is
+simply space cosmetic change to address my eyes bleeding
+while reviewing the changes on next-20121012 with git.
+
+If the changes on the first patch make sense perhaps similar
+changes can be done for the other subsystem in similar cases.
+In those cases the now kernel API header file no longer exists
+so even if userspace were using the files the only way to pick
+the header up would have been to provide the new uapi path.
+
+[0] http://lwn.net/Articles/507794/
+[1] https://backports.wiki.kernel.org
+
+Luis R. Rodriguez (2):
+  uapi: update includes for drm content when no kernel API exists
+  uapi: remove trailing spaces
+
+ drivers/gpu/drm/drm_crtc.c            |    2 +-
+ drivers/gpu/drm/nouveau/nv04_cursor.c |    2 +-
+ drivers/staging/omapdrm/omap_crtc.c   |    2 +-
+ include/drm/drmP.h                    |    4 ++--
+ include/drm/drm_crtc.h                |    4 ++--
+ include/uapi/asm-generic/siginfo.h    |    4 ++--
+ include/uapi/asm-generic/statfs.h     |    4 ++--
+ include/uapi/drm/drm.h                |    2 +-
+ include/uapi/drm/radeon_drm.h         |    2 +-
+ 9 files changed, 13 insertions(+), 13 deletions(-)
+
+-- 
+1.7.10.4
+
