@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617Ab2JLLZK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 07:25:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55618 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab2JLLZH (ORCPT
+	id S1757290Ab2JLLZf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 07:25:35 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:62031 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255Ab2JLLZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 07:25:07 -0400
-Date: Fri, 12 Oct 2012 04:24:52 -0700
-From: tip-bot for Rik van Riel <riel@redhat.com>
-Message-ID: <tip-vm3rkzevahelwhejx5uwm8ex@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, riel@redhat.com,
-        akpm@linux-foundation.org, tglx@linutronix.de
-Reply-To: riel@redhat.com, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/numa] mm:
-  Only flush the TLB when clearing an accessible pte
-Git-Commit-ID: 154e911b453560aa1e6e11d47e5f95289817b932
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 12 Oct 2012 07:25:34 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKohponxbjTTDMOA_0=MT36wRh1NpzTAH4LdkaE=Z-ahup4BFg@mail.gmail.com>
+References: <142ef9170a2c69657d8a05ac127a9970d7b04965.1350020375.git.viresh.kumar@linaro.org>
+	<91e41b4cc972d298f714cbd6f400569a9710304c.1350020375.git.viresh.kumar@linaro.org>
+	<1350030203.10584.139.camel@smile>
+	<CAOh2x=m8OVNfMm5Fn+cr9Gxuh6oyt+8d4n-bkG8Xiw5zGncLiA@mail.gmail.com>
+	<CAHp75VffAwZjfQLf=wS+nBhiRoMFOoyPeUCfrzF1G=+Kh7HHTA@mail.gmail.com>
+	<CAKohponxbjTTDMOA_0=MT36wRh1NpzTAH4LdkaE=Z-ahup4BFg@mail.gmail.com>
+Date: Fri, 12 Oct 2012 14:25:32 +0300
+Message-ID: <CAHp75Vcte64KF5k5gDjMtyff8KsOof-yT7iVWc3Gz_ECL+0+Mw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] dmaengine: dw_dmac: Enhance device tree support
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>, vinod.koul@intel.com,
+        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 12 Oct 2012 04:24:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  154e911b453560aa1e6e11d47e5f95289817b932
-Gitweb:     http://git.kernel.org/tip/154e911b453560aa1e6e11d47e5f95289817b932
-Author:     Rik van Riel <riel@redhat.com>
-AuthorDate: Tue, 9 Oct 2012 15:31:59 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 12 Oct 2012 12:07:16 +0200
+On Fri, Oct 12, 2012 at 2:01 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 12 October 2012 16:10, Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
+>>>>> +     if (!found) {
+>>>>> +             last_dw = dw;
+>>>>> +             last_bus_id = param;
+>>>>> +             return false;
+>>>> Because of return here you could eliminate 'found' flag at all.
+>
+> Here is the stuff copied from you ;)
+>
+>
+> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> index a4ff04c..c24859e 100644
+> --- a/drivers/dma/dw_dmac.c
+> +++ b/drivers/dma/dw_dmac.c
+> @@ -1184,7 +1184,7 @@ bool dw_generic_filter(struct dma_chan *chan, void *param)
+>         struct dw_dma *dw = to_dw_dma(chan->device);
+>         static struct dw_dma *last_dw;
+>         static char *last_bus_id;
+> -       int found = 0, i = -1;
+> +       int i = -1;
+>
+>         /*
+>          * dmaengine framework calls this routine for all channels of all dma
+> @@ -1212,22 +1212,17 @@ bool dw_generic_filter(struct dma_chan *chan,
+> void *param)
+>
+>         while (++i < dw->sd_count) {
+>                 if (!strcmp(dw->sd[i].bus_id, param)) {
+> -                       found = 1;
+> -                       break;
+> -               }
+> -       }
+> +                       chan->private = &dw->sd[i];
+> +                       last_dw = NULL;
+> +                       last_bus_id = NULL;
+>
+> -       if (!found) {
+> -               last_dw = dw;
+> -               last_bus_id = param;
+> -               return false;
+> +                       return true;
+> +               }
+>         }
+>
+> -       chan->private = &dw->sd[i];
+> -       last_dw = NULL;
+> -       last_bus_id = NULL;
+> -
+> -       return true;
+> +       last_dw = dw;
+> +       last_bus_id = param;
+> +       return false;
+>  }
+Yes, that what I refer to.
 
-mm: Only flush the TLB when clearing an accessible pte
+>  EXPORT_SYMBOL(dw_generic_filter);
+Could we change a name to be more precise, like dw_dma_generic_filter ?
 
-If ptep_clear_flush() is called to clear a page table entry that is
-accessible anyway by the CPU, eg. a _PAGE_PROTNONE page table entry,
-there is no need to flush the TLB on remote CPUs.
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/n/tip-vm3rkzevahelwhejx5uwm8ex@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- mm/pgtable-generic.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
-index 74c0dda..0996d34 100644
---- a/mm/pgtable-generic.c
-+++ b/mm/pgtable-generic.c
-@@ -88,7 +88,8 @@ pte_t ptep_clear_flush(struct vm_area_struct *vma, unsigned long address,
- {
- 	pte_t pte;
- 	pte = ptep_get_and_clear((vma)->vm_mm, address, ptep);
--	flush_tlb_page(vma, address);
-+	if (pte_accessible(pte))
-+		flush_tlb_page(vma, address);
- 	return pte;
- }
- #endif
+-- 
+With Best Regards,
+Andy Shevchenko
