@@ -1,37 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab2JLXHB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 19:07:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20827 "EHLO mx1.redhat.com"
+	id S1752720Ab2JLXRY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 19:17:24 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60726 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752626Ab2JLXGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 19:06:55 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CACxGe6u51-er_U=FBaHzhAE2orZuq_B-MSwVVnCvoqZnEeHu7w@mail.gmail.com>
-References: <CACxGe6u51-er_U=FBaHzhAE2orZuq_B-MSwVVnCvoqZnEeHu7w@mail.gmail.com> <30758.1349789445@warthog.procyon.org.uk>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: dhowells@redhat.com, spi-devel-general@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [GIT PULL] Disintegrate UAPI for spi
-Date: Sat, 13 Oct 2012 00:06:43 +0100
-Message-ID: <15243.1350083203@warthog.procyon.org.uk>
+	id S1751727Ab2JLXRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 19:17:23 -0400
+Date: Sat, 13 Oct 2012 01:17:19 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: George Spelvin <linux@horizon.com>
+Cc: linux-kernel@vger.kernel.org, Ma Ling <ling.ma@intel.com>, x86@kernel.org
+Subject: Re: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging
+ instruction sequence and saving register
+Message-ID: <20121012231719.GA21198@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	George Spelvin <linux@horizon.com>, linux-kernel@vger.kernel.org,
+	Ma Ling <ling.ma@intel.com>, x86@kernel.org
+References: <20121012210257.11451.qmail@science.horizon.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121012210257.11451.qmail@science.horizon.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely <grant.likely@secretlab.ca> wrote:
+On Fri, Oct 12, 2012 at 05:02:57PM -0400, George Spelvin wrote:
+> Here are some Phenom results for that benchmark.  The average time
+> increases from 700 to 760 cycles (+8.6%).
 
-> > Can you merge the following branch into the spi tree please.
-> 
-> Do you want this merged into 3.7? If so, go ahead and push it directly
-> to Linus. I've not been able to do any maintainership stuff for the
-> last merge window or this one. Mark Brown has covered for me on SPI.
+I was afraid something like that would show up.
 
-Could I get an Ack for it?
+Btw, in looking at this more and IINM, we use the REP MOVSQ version on
+AMD anyway because of X86_FEATURE_REP_GOOD being set on some K8 and
+everything from F10h on.
 
-David
+So, actually this µbenchmark should be comparing the REP MOVSQ case too
+and the changes to the unrolled copy_page shouldn't concern AMD boxes
+actually...
+
+Hmm.
+
+-- 
+Regards/Gruss,
+    Boris.
