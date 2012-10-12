@@ -1,84 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618Ab2JLLBd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 07:01:33 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33610 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914Ab2JLLBc (ORCPT
+	id S1758015Ab2JLLBz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 07:01:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:32853 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753010Ab2JLLBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 07:01:32 -0400
+	Fri, 12 Oct 2012 07:01:53 -0400
+Date: Fri, 12 Oct 2012 19:01:42 +0800
+From: Gustavo Padovan <gustavo@padovan.org>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth 2012-10-12
+Message-ID: <20121012110142.GF10739@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <CAHp75VffAwZjfQLf=wS+nBhiRoMFOoyPeUCfrzF1G=+Kh7HHTA@mail.gmail.com>
-References: <142ef9170a2c69657d8a05ac127a9970d7b04965.1350020375.git.viresh.kumar@linaro.org>
-	<91e41b4cc972d298f714cbd6f400569a9710304c.1350020375.git.viresh.kumar@linaro.org>
-	<1350030203.10584.139.camel@smile>
-	<CAOh2x=m8OVNfMm5Fn+cr9Gxuh6oyt+8d4n-bkG8Xiw5zGncLiA@mail.gmail.com>
-	<CAHp75VffAwZjfQLf=wS+nBhiRoMFOoyPeUCfrzF1G=+Kh7HHTA@mail.gmail.com>
-Date: Fri, 12 Oct 2012 16:31:31 +0530
-Message-ID: <CAKohponxbjTTDMOA_0=MT36wRh1NpzTAH4LdkaE=Z-ahup4BFg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] dmaengine: dw_dmac: Enhance device tree support
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>, vinod.koul@intel.com,
-        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 October 2012 16:10, Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
->>>> +     if (!found) {
->>>> +             last_dw = dw;
->>>> +             last_bus_id = param;
->>>> +             return false;
->>> Because of return here you could eliminate 'found' flag at all.
 
-Here is the stuff copied from you ;)
+--y0ulUmNC+osPPQO6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi John,
+
+Johan found a critical issue while at Bluetooth UnPlug Fest this week.=20
+The patch fixes a failure to pair with devices that support the LE Secure
+Connections feature. This is also marked for stable.
+
+Please pull! Thanks!
+
+	Gustavo
+---
+
+The following changes since commit a7be50b7e30f9d77cb059a7ffdb781bb0fb92eba:
+
+  iwlwifi: don't double free the interrupt in failure path (2012-09-18 20:4=
+3:23 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth master
+
+for you to fetch changes up to 065a13e2cc665f6547dc7e8a9d6b6565badf940a:
+
+  Bluetooth: SMP: Fix setting unknown auth_req bits (2012-10-12 17:55:20 +0=
+800)
+
+----------------------------------------------------------------
+Johan Hedberg (1):
+      Bluetooth: SMP: Fix setting unknown auth_req bits
+
+ net/bluetooth/smp.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index a4ff04c..c24859e 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -1184,7 +1184,7 @@ bool dw_generic_filter(struct dma_chan *chan, void *param)
-        struct dw_dma *dw = to_dw_dma(chan->device);
-        static struct dw_dma *last_dw;
-        static char *last_bus_id;
--       int found = 0, i = -1;
-+       int i = -1;
+--y0ulUmNC+osPPQO6
+Content-Type: application/pgp-signature
 
-        /*
-         * dmaengine framework calls this routine for all channels of all dma
-@@ -1212,22 +1212,17 @@ bool dw_generic_filter(struct dma_chan *chan,
-void *param)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-        while (++i < dw->sd_count) {
-                if (!strcmp(dw->sd[i].bus_id, param)) {
--                       found = 1;
--                       break;
--               }
--       }
-+                       chan->private = &dw->sd[i];
-+                       last_dw = NULL;
-+                       last_bus_id = NULL;
+iQIcBAEBAgAGBQJQd/iWAAoJEPs3PUX4s20owMYP/3cZK2BGs6XvcBLHWnjpUv9L
+Cml/CPjDXv+EtZic4H1Hv0TPk8naV9Dbr6IweJyKWmUpEZRGUSTthFsDkNpm8qMG
+HO8QTAQ0aZcZU/tQ282mxIXsirKSwCN5MkaMW0O9rD+E+lBxqrjiYGAO/qZ8zfdf
+OkWtpIeMzob7blJFyzi3DdODbThyQO75AKWbxaj8rGIl8qytiwh+s+PBb1zrk2K8
+FyvXqah9mYQg9ePJC8ygA1ICx/btFmdpntAOzcdIitD7jBk97jlzCe3YVduV3hVT
+AgdQ0hjNRa5uc1rSg3nu7XxqFtTk2dU4Oo/NewMlp7jm5qsMvMciPx2yY6h9metu
+BWSrSTCt9TEGYIHg1uO2+6qpTBJBpxAgZa2JbUhoMDw50X/CwO1ABV97z8wmGuVf
+e026j8osFKAuVyMkkxM30RqwG/Q5wRKvy0T7PfBK71opVao0O16qn4b7OWnKq0YT
+d1mic96DhhShN9dH59zPkxSK/NMWN/NiKcPnTCPbMLT33ssun04II3GIe/DiTC8q
+TpQSyXjLBDkYpCB46jn0XZKt+UKPFNaif8JyY/eDqlIOFw0f55G73kphmwc2xJc/
+qxThYnSGN+xTfdLCNkSG3IbnrsDPoq1CqmIFNp+sTH5hyskhNZvV+GxIlKiwBf2U
+FzsO1rPebsTAD7neFuRB
+=wOZZ
+-----END PGP SIGNATURE-----
 
--       if (!found) {
--               last_dw = dw;
--               last_bus_id = param;
--               return false;
-+                       return true;
-+               }
-        }
-
--       chan->private = &dw->sd[i];
--       last_dw = NULL;
--       last_bus_id = NULL;
--
--       return true;
-+       last_dw = dw;
-+       last_bus_id = param;
-+       return false;
- }
- EXPORT_SYMBOL(dw_generic_filter);
+--y0ulUmNC+osPPQO6--
