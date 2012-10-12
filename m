@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760102Ab2JLSup (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 14:50:45 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:49088 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753960Ab2JLSun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 14:50:43 -0400
-Date: Fri, 12 Oct 2012 11:50:37 -0700
-From: Kees Cook <keescook@chromium.org>
-To: halfdog <me@halfdog.net>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] binfmt_script: do not leave interp on stack
-Message-ID: <20121012185037.GJ24964@outflux.net>
-References: <20121012023240.GA24232@www.outflux.net>
+	id S1754337Ab2JLSyb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 14:54:31 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:35940 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752248Ab2JLSy3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 14:54:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121012023240.GA24232@www.outflux.net>
-Organization: Chrome OS
-X-HELO: www.outflux.net
+In-Reply-To: <20121012125708.GJ10110@dhcp22.suse.cz>
+References: <20121012125708.GJ10110@dhcp22.suse.cz>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Fri, 12 Oct 2012 14:54:08 -0400
+X-Google-Sender-Auth: wsUzi3o2pYRj7PrTxEO22zdfIgU
+Message-ID: <CAHGf_=rhjUQieH6sqqbt0ST6cbsTYLnZtwizKObBWV6w3Mff4g@mail.gmail.com>
+Subject: Re: [PATCH] add some drop_caches documentation and info messsge
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 11, 2012 at 07:32:40PM -0700, Kees Cook wrote:
-> +	/*
-> +	 * Since bprm is already modified, we cannot continue if the the
-> +	 * handlers for starting the new interpreter have failed.
-> +	 * Make sure that we do not return -ENOEXEC, as that would
-> +	 * allow searching for handlers to continue.
-> +	 */
-> +	if (retval == -ENOEXEC)
-> +		retval = -EINVAL;
+On Fri, Oct 12, 2012 at 8:57 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> Hi,
+> I would like to resurrect the following Dave's patch. The last time it
+> has been posted was here https://lkml.org/lkml/2010/9/16/250 and there
+> didn't seem to be any strong opposition.
+> Kosaki was worried about possible excessive logging when somebody drops
+> caches too often (but then he claimed he didn't have a strong opinion
+> on that) but I would say opposite. If somebody does that then I would
+> really like to know that from the log when supporting a system because
+> it almost for sure means that there is something fishy going on. It is
+> also worth mentioning that only root can write drop caches so this is
+> not an flooding attack vector.
+> I am bringing that up again because this can be really helpful when
+> chasing strange performance issues which (surprise surprise) turn out to
+> be related to artificially dropped caches done because the admin thinks
+> this would help...
+>
+> I have just refreshed the original patch on top of the current mm tree
+> but I could live with KERN_INFO as well if people think that KERN_NOTICE
+> is too hysterical.
+> ---
+> From 1f4058be9b089bc9d43d71bc63989335d7637d8d Mon Sep 17 00:00:00 2001
+> From: Dave Hansen <dave@linux.vnet.ibm.com>
+> Date: Fri, 12 Oct 2012 14:30:54 +0200
+> Subject: [PATCH] add some drop_caches documentation and info messsge
+>
+> There is plenty of anecdotal evidence and a load of blog posts
+> suggesting that using "drop_caches" periodically keeps your system
+> running in "tip top shape".  Perhaps adding some kernel
+> documentation will increase the amount of accurate data on its use.
+>
+> If we are not shrinking caches effectively, then we have real bugs.
+> Using drop_caches will simply mask the bugs and make them harder
+> to find, but certainly does not fix them, nor is it an appropriate
+> "workaround" to limit the size of the caches.
+>
+> It's a great debugging tool, and is really handy for doing things
+> like repeatable benchmark runs.  So, add a bit more documentation
+> about it, and add a little KERN_NOTICE.  It should help developers
+> who are chasing down reclaim-related bugs.
+>
+> [mhocko@suse.cz: refreshed to current -mm tree]
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Acked-by: Michal Hocko <mhocko@suse.cz>
 
-After looking at this some more, I wonder if this should be -ELOOP
-instead? Or maybe that should happen if/when the recursion depth problem is
-fixed?
+Looks fine.
 
-This is much more obvious, instead of "Invalid argument":
-$ ./dotest.sh 
-file-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfile-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA: bad interpreter: Too many levels of symbolic links
-
-
-More importantly, I also wonder if interp handling to just be
-changed to be an allocation that needs to be cleaned up, as done with
-argv? Right now interp just points to the filename argument handed to
-do_execve. Especially since it looks like binfmt_misc is vulnerable
-to this as well, since it runs the risk of getting -ENOEXEC from
-search_binary_handler, leaving bprm->interp pointing into the stack,
-only to get it recalled after module loading attempts:
-
-static int load_misc_binary(struct linux_binprm *bprm, struct pt_regs *regs)
-{
-...
-        char iname[BINPRM_BUF_SIZE];
-...
-        bprm->interp = iname;   /* for binfmt_script */
-...
-        retval = search_binary_handler (bprm, regs);
-        if (retval < 0)
-                goto _error;
-...
-_ret:
-        return retval;
-_error:
-        if (fd_binary > 0)
-                sys_close(fd_binary);
-        bprm->interp_flags = 0;
-        bprm->interp_data = 0;
-        goto _ret;
-}
-
-:(
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
