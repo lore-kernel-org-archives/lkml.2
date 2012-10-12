@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802Ab2JLFQs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 01:16:48 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:49479 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932083Ab2JLFQq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 01:16:46 -0400
-Message-ID: <5077A7AC.3090905@linux.vnet.ibm.com>
-Date: Fri, 12 Oct 2012 10:46:28 +0530
-From: preeti <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1755858Ab2JLFc5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 01:32:57 -0400
+Received: from ozlabs.org ([203.10.76.45]:51339 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754335Ab2JLFcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 01:32:55 -0400
+Date: Fri, 12 Oct 2012 16:32:48 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        David Miller <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [git pull] signal.git, pile 2 (was Re: [RFC][CFT][CFReview]
+ execve and kernel_thread unification work)
+Message-ID: <20121012053248.GA24293@drongo>
+References: <20121001213809.GA31155@ZenIV.linux.org.uk>
+ <20121011090023.GA28427@bloggs.ozlabs.ibm.com>
+ <20121011125306.GF2616@ZenIV.linux.org.uk>
+ <20121012001633.GA29883@bloggs.ozlabs.ibm.com>
+ <20121012010958.GG2616@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: peterz@infradead.org, svaidy@linux.vnet.ibm.com, pjt@google.com
-Subject: Re: [RFC PATCH 2/2] sched:Pick the apt busy sched group during load
- balancing
-References: <20121012044618.18271.88332.stgit@preeti.in.ibm.com> <20121012045047.18271.11550.stgit@preeti.in.ibm.com>
-In-Reply-To: <20121012045047.18271.11550.stgit@preeti.in.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12101205-5564-0000-0000-000004D9539C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121012010958.GG2616@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On Fri, Oct 12, 2012 at 02:09:58AM +0100, Al Viro wrote:
+> 
+> How granular are you planning to make that?  I mean, we are talking about
+> 3 objects here - init/main.o, kernel/kthread.o and kernel/kmod.o.  Do they
+> get TOC separate from that of arch/powerpc/kernel/entry_64.o?
 
-The figures SCHED_GRP1:3200 and SCHED_GRP2:1156 shown below in the
-changelog is the probable figure as calculated with the per-entity-
-load-tracking metric for the runqueue load.
+Potentially, yes, it would be up to the linker.
 
-> If a sched group has passed the test for sufficient load in
-> update_sg_lb_stats,to qualify for load balancing,then PJT's
-> metrics has to be used to qualify the right sched group as the busiest group.
-> 
-> The scenario which led to this patch is shown below:
-> Consider Task1 and Task2 to be a long running task
-> and Tasks 3,4,5,6 to be short running tasks
-> 
-> 			Task3
-> 			Task4
-> Task1			Task5
-> Task2			Task6
-> ------			------
-> SCHED_GRP1		SCHED_GRP2
-> 
-> Normal load calculator would qualify SCHED_GRP2 as
-> the candidate for sd->busiest due to the following loads
-> that it calculates.
-> 
-> SCHED_GRP1:2048
-> SCHED_GRP2:4096
-> 
-> Load calculator would probably qualify SCHED_GRP1 as the candidate
-> for sd->busiest due to the following loads that it calculates
-> 
-> SCHED_GRP1:3200
-> SCHED_GRP2:1156
-> 
-Regards
-Preeti
+> Anyway, if ppc folks can live with that stuff in its current form for now,
 
+Yes, we can.
+
+Paul.
