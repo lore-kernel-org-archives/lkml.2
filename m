@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759580Ab2JLMSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 08:18:09 -0400
-Received: from void.printf.net ([89.145.121.20]:57793 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758977Ab2JLMSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 08:18:07 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: [GIT PULL] MMC merge for 3.7-rc1, part 2
-Date: Fri, 12 Oct 2012 08:17:54 -0400
-Message-ID: <87lifb3mvh.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1759582Ab2JLMWg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 08:22:36 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:24636 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756366Ab2JLMWe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 08:22:34 -0400
+Message-id: <50780B87.3020202@samsung.com>
+Date: Fri, 12 Oct 2012 14:22:31 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912
+ Thunderbird/15.0.1
+MIME-version: 1.0
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-media <linux-media@vger.kernel.org>
+Subject: Re: mmotm 2012-10-11-16-14 uploaded (media/i2c/m5mols/m5mols_core)
+References: <20121011231551.641101E0048@wpzn4.hot.corp.google.com>
+ <5077B8F3.3050105@xenotime.net>
+In-reply-to: <5077B8F3.3050105@xenotime.net>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 10/12/2012 08:30 AM, Randy Dunlap wrote:
+> On 10/11/2012 04:15 PM, akpm@linux-foundation.org wrote:
+> 
+>> The mm-of-the-moment snapshot 2012-10-11-16-14 has been uploaded to
+>>
+>>    http://www.ozlabs.org/~akpm/mmotm/
+>>
+>> mmotm-readme.txt says
+>>
+>> README for mm-of-the-moment:
+>>
+>> http://www.ozlabs.org/~akpm/mmotm/
+>>
+>> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+>> more than once a week.
+> 
+> on x86_64:
+> 
+>   CC [M]  drivers/media/i2c/m5mols/m5mols_core.o
+> drivers/media/i2c/m5mols/m5mols_core.c: In function 'm5mols_set_frame_desc':
+> drivers/media/i2c/m5mols/m5mols_core.c:636:24: error: 'SZ_1M' undeclared (first use in this function)
+> drivers/media/i2c/m5mols/m5mols_core.c:636:24: note: each undeclared identifier is reported only once for each function it appears in
+> make[5]: *** [drivers/media/i2c/m5mols/m5mols_core.o] Error 1
 
-Please pull from:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-merge-for-3.7-rc1-part2
-
-to receive two more changes for 3.7.  There are no conflicts.  Thanks.
-
-
-The following changes since commit 12250d843e8489ee00b5b7726da855e51694e792:
-
-  Merge branch 'i2c-embedded/for-next' of git://git.pengutronix.de/git/wsa/linux (2012-10-11 10:27:51 +0900)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-merge-for-3.7-rc1-part2
-
-for you to fetch changes up to 60fe5771be6aa3f37d5887aa01c04f733130a559:
-
-  UAPI: (Scripted) Disintegrate include/linux/mmc (2012-10-11 17:27:54 -0400)
-
-----------------------------------------------------------------
- - Disintegrate UAPI, fix a mismerge that caused a build error.
-
-----------------------------------------------------------------
-David Howells (1):
-      UAPI: (Scripted) Disintegrate include/linux/mmc
-
-Marek Vasut (1):
-      mmc: mxs-mmc: Fix merge issue causing build error
-
- drivers/mmc/host/mxs-mmc.c           | 2 +-
- include/linux/mmc/Kbuild             | 1 -
- include/uapi/linux/mmc/Kbuild        | 1 +
- include/{ => uapi}/linux/mmc/ioctl.h | 0
- 4 files changed, 2 insertions(+), 2 deletions(-)
- rename include/{ => uapi}/linux/mmc/ioctl.h (100%)
-
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+This issue has been fixed with commit
+1fdead8ad31d3aa833bc37739273fcde89ace93c
+[media] m5mols: Add missing #include <linux/sizes.h>
+which is already in Linus' tree.
