@@ -1,36 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab2JLVBL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 17:01:11 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:52856 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848Ab2JLVBJ (ORCPT
+	id S1752030Ab2JLVC7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 17:02:59 -0400
+Received: from science.horizon.com ([71.41.210.146]:56261 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751848Ab2JLVC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 17:01:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121011065635.GD31607@elgon.mountain>
-References: <20121011065635.GD31607@elgon.mountain>
-Date: Fri, 12 Oct 2012 23:01:08 +0200
-Message-ID: <CACRpkdZ0EfjMi8i9_bFYwscQVPCPGUFiJwv_FCTMfLbWwsUKZw@mail.gmail.com>
-Subject: Re: [patch] gpio-timberdale: fix a potential wrapping issue
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 12 Oct 2012 17:02:58 -0400
+Date: 12 Oct 2012 17:02:57 -0400
+Message-ID: <20121012210257.11451.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging instruction sequence and saving register
+Cc: linux@horizon.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 11, 2012 at 8:56 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+Here are some Phenom results for that benchmark.  The average time
+increases from 700 to 760 cycles (+8.6%).
 
-> ->last_ier is an unsigned long but the high bits can't be used int the
-> original code because the shift wraps.
->
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+vendor_id       : AuthenticAMD
+cpu family      : 16
+model           : 2
+model name      : AMD Phenom(tm) 9850 Quad-Core Processor
+stepping        : 3
+microcode       : 0x1000083
+cpu MHz         : 2500.210
+cache size      : 512 KB
+flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm 3dnowext 3dnow constant_tsc rep_good nopl nonstop_tsc extd_apicid pni monitor cx16 popcnt lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs hw_pstate npt lbrv svm_lock
+bogomips        : 5000.42
+TLB size        : 1024 4K pages
+clflush size    : 64
+cache_alignment : 64
 
-Applied, thanks!
-Should we send this to stable? (I assume so ...)
-
-Yours,
-Linus Walleij
+                       	copy_page_org	copy_page_new	
+TPT: Len 4096, alignment  0/ 0:	678	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+                       	copy_page_org	copy_page_new	
+TPT: Len 4096, alignment  0/ 0:	667	760
+TPT: Len 4096, alignment  0/ 0:	673	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+                       	copy_page_org	copy_page_new	
+TPT: Len 4096, alignment  0/ 0:	667	760
+TPT: Len 4096, alignment  0/ 0:	673	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+                       	copy_page_org	copy_page_new	
+TPT: Len 4096, alignment  0/ 0:	671	760
+TPT: Len 4096, alignment  0/ 0:	673	760
+TPT: Len 4096, alignment  0/ 0:	671	760
+TPT: Len 4096, alignment  0/ 0:	709	760
+TPT: Len 4096, alignment  0/ 0:	708	760
+                       	copy_page_org	copy_page_new	
+TPT: Len 4096, alignment  0/ 0:	667	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+                       	copy_page_org	copy_page_new	
+TPT: Len 4096, alignment  0/ 0:	671	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+                       	copy_page_org	copy_page_new	
+TPT: Len 4096, alignment  0/ 0:	678	760
+TPT: Len 4096, alignment  0/ 0:	709	758
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	709	759
+TPT: Len 4096, alignment  0/ 0:	710	760
+                       	copy_page_org	copy_page_new	
+TPT: Len 4096, alignment  0/ 0:	680	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+                       	copy_page_org	copy_page_new	
+TPT: Len 4096, alignment  0/ 0:	667	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	709	760
+TPT: Len 4096, alignment  0/ 0:	709	759
+TPT: Len 4096, alignment  0/ 0:	710	760
+                       	copy_page_org	copy_page_new	
+TPT: Len 4096, alignment  0/ 0:	678	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
+TPT: Len 4096, alignment  0/ 0:	710	760
