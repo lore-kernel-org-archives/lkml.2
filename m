@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732Ab2JLUUO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 16:20:14 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:38672 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750917Ab2JLUUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 16:20:12 -0400
-Date: Fri, 12 Oct 2012 14:20:05 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v2] TPM: Provide a tpm_tis OF driver
-Message-ID: <20121012202005.GL4124@obsidianresearch.com>
-References: <20121002210453.GA12231@obsidianresearch.com>
- <20121010162428.GA5013@ennui.austin.ibm.com>
+	id S1751660Ab2JLUWR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 16:22:17 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:53309 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100Ab2JLUWP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 16:22:15 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1350066620.21172.12996.camel@edumazet-glaptop>
+References: <1350054908-30646-6-git-send-email-robherring2@gmail.com> <1350065099-32649-1-git-send-email-robherring2@gmail.com> <1350066620.21172.12996.camel@edumazet-glaptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121010162428.GA5013@ennui.austin.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v2] net: calxedaxgmac: rework transmit ring handling
+From: Rob Herring <robherring2@gmail.com>
+Date: Fri, 12 Oct 2012 15:21:59 -0500
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        jonathan@jonmasters.org, Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Ben Hutchings <bhutchings@solarflare.com>
+Message-ID: <ec408461-2f13-49eb-b9da-d3e092ff13f9@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 11:24:28AM -0500, Kent Yoder wrote:
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
->   Why change the structs to const here? This generates warnings for me:
+>On Fri, 2012-10-12 at 13:04 -0500, Rob Herring wrote:
+>> From: Rob Herring <rob.herring@calxeda.com>
+>> 
+>> Only generate tx interrupts on every ring size / 4 descriptors. Move
+>the
+>> netif_stop_queue call to the end of the xmit function rather than
+>> checking at the beginning.
+>> 
+>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>> ---
+>> v2:
+>> - Add missed enabling of the descriptor tx interrupt
+>
+>Seems to be net-next material to me.
+>
 
-I should have dropped this, I was added when I added the __devinitdata
-annotations..
+Perhaps, but the series as a whole is what I've been testing. This one has the least performance impact.
 
-> > +
-> > +static struct platform_driver tis_driver = {
-> >  	.driver = {
-> >  		.name = "tpm_tis",
-> >  		.owner		= THIS_MODULE,
-> >  		.pm		= &tpm_tis_pm,
-> > +		.of_match_table = of_match_ptr(tis_of_platform_match),
-> >  	},
-> 
->   Patch v2 removes the ifdef around of_match_table, which now generates
-> an error:
+>Furthermore, your changelog is a bit terse for such a patch, that could
+>easily break upper layers.
+>
+>You need to tell us how long TX completion for a packet might be
+>deferred.
 
-Yes, this update was following the style of other drivers. Obviously I
-never thought to try this on x86 (only PPC), so I will try to setup a
-compile for that as well and send v3.
+The prior behavior was only interrupting when done with all buffers.  It now will interrupt before completely emptying the ring.
 
-I suspect this is simply a missing #include.
+Rob
 
-Regards,
-Jason
+
