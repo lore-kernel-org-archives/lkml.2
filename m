@@ -1,80 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933897Ab2JLPh4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 11:37:56 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:56932 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932303Ab2JLPhz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 11:37:55 -0400
-Subject: RE: [PATCH] genirq: for edge interrupt IRQS_ONESHOT support with
- irq thread
-From: anish kumar <anish198519851985@gmail.com>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A195A8D@SHSMSX101.ccr.corp.intel.com>
-References: <1350045084.13178.19.camel@cliu38-desktop-build>
-	 <alpine.LFD.2.02.1210121427490.2779@ionos>
-	 <27240C0AC20F114CBF8149A2696CBE4A19587A@SHSMSX101.ccr.corp.intel.com>
-	 <alpine.LFD.2.02.1210121440160.2779@ionos>
-	 <27240C0AC20F114CBF8149A2696CBE4A1958B9@SHSMSX101.ccr.corp.intel.com>
-	 <alpine.LFD.2.02.1210121533560.2779@ionos>
-	 <27240C0AC20F114CBF8149A2696CBE4A195A6B@SHSMSX101.ccr.corp.intel.com>
-	 <1350055478.8329.24.camel@anish-Inspiron-N5050>
-	 <27240C0AC20F114CBF8149A2696CBE4A195A8D@SHSMSX101.ccr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 13 Oct 2012 00:37:37 +0900
-Message-ID: <1350056257.8329.31.camel@anish-Inspiron-N5050>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S933993Ab2JLPlS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 11:41:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61976 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932973Ab2JLPlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Oct 2012 11:41:16 -0400
+Message-ID: <507839FC.3060204@redhat.com>
+Date: Fri, 12 Oct 2012 11:40:44 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: John Stultz <johnstul@us.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: RCU NOHZ, tsc, and clock_gettime
+References: <5077157A.7060401@redhat.com> <50772350.1070903@us.ibm.com> <20121011202103.GB2476@linux.vnet.ibm.com>
+In-Reply-To: <20121011202103.GB2476@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-12 at 15:29 +0000, Liu, Chuansheng wrote:
-> 
-> > -----Original Message-----
-> > From: anish kumar [mailto:anish198519851985@gmail.com]
-> > Sent: Friday, October 12, 2012 11:25 PM
-> > To: Liu, Chuansheng
-> > Cc: Thomas Gleixner; linux-kernel@vger.kernel.org
-> > Subject: RE: [PATCH] genirq: for edge interrupt IRQS_ONESHOT support with irq
-> > thread
-> > 
-> > On Fri, 2012-10-12 at 14:57 +0000, Liu, Chuansheng wrote:
-> > > > On SMP an interrupt which is raised after the ack() again before the
-> > > > handler finishes, can invoke another delivery on a different CPU,
-> > > > which then sees the IRQ_INPROGESS flag, masks it and flags it
-> > > > PENDING. When the primary handler on the first CPU returns, it sees
-> > > > the PENDING flag, unmasks and invokes the handler another time.
-> > > In this case, when IRQ_INPROGRESS flag is set, on another CPU, it will
-> > > mask and ack it, if before the primary handler on the first CPU returns,
-> > > the edge interrupt is raised again, it will be lost, right?
-> > Why will the interrupt be raised again?Is not it masked?I read tglx
-> I means because it is masked, if at this time device issues edge irq,
-> It will not be delivered and lost.
-That depends on the hardware, doesn't it?If if the frequency of
-interrupt is too much that device is not able to cope up with that then
-don't you think that the interrupt controller is faulty?
-
-Well I am not a expert on the hardware but it looks to me that the
-hardware should be at a fault here.
-> 
-> > statement as this:if the interrupt is being handled on one core, then
-> > the delivery of new interrupt can be on the second core and in that case
-> > it will see IRQ_INPROGRESS flag and it will *mask* it and set the flag
-> > as pending.So there is no chance of any new interrupt.
-> > > So I think set PENDING just confirm one time, it just depends on primary
-> > handler
-> > > execution time and irq frequency.
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> 
 
 
+On 10/11/2012 04:21 PM, Paul E. McKenney wrote:
+> On Thu, Oct 11, 2012 at 12:51:44PM -0700, John Stultz wrote:
+>> On 10/11/2012 11:52 AM, Prarit Bhargava wrote:
+>>> I've been tracking an odd bug that may involve the RCU NOHZ code and
+>>> just want to know if you have any ideas on debugging and/or what might be
+>>> wrong.  Note the bug happens on *BOTH* upstream and the current RHEL6 tree.
+>>> The data in this email is from running on RHEL6 because that's what I happen
+>>> to be running ATM.  The result, however, is _identical_ to that of linux.git
+>>> latest.
+>>>
+>>> The attached program compares userspace TSC reads to the time returned from
+>>> the REALTIME_CLOCK[1].  The test does the following
+>>>
+>>> read tsc1
+>>> get REALTIME_CLOCK value
+>>> read tsc2
+>>>
+>>> and then does a comparison between the tsc read and the REALTIME_CLOCK value
+>>> to see if they are in sync with each other.
+>>>
+>>> [I'm leaving out the guts of the analysis here.  It is sufficient to show
+>>> examples of "good" data and "bad" data IMO.]
+>>>
+>>> On a good run, we see little variance in between the values:
+>>>
+>>>     0   144       0.1
+>>>     1   138       1.8
+>>>     2   147      -2.9
+>> [snip]
+>>>    29   144      -0.6
+>>> n: 30, slope: 0.50 (1.99 GHz), dev: 1.1 ns, max: 2.9 ns
+>>>
+>>>
+>>> On a bad run, there is a lot of variance between the values:
+>>>
+>>>     0   144    -346.0
+>>>     1   138    1410.8
+>>>     2   138    -806.9
+>>>     3   141    4006.6
+>>>     4   147   -3996.1
+>> [snip]
+>>>    29   141     -50.3
+>>> n: 30, slope: 0.50 (1.99 GHz), dev: 1231.4 ns, max: 4006.6 ns
+>>
+>>
+>> Do you see the same noisy variance when instead of doing:
+>>     rdtsc()
+>>     clock_gettime()
+>>     rdtsc()
+>>
+>> you do:
+>>     clock_gettime()
+>>     clock_gettime()
+>>
+>> And calculate the delta of the timestamp results?
+
+I do not see the noisy variance when comparing clock_gettime() to clock_gettime().
+
+>>
+>> Also does this behavior change if you select different clocksources
+>> on the system?
+
+No, if the clocksource is the hpet, I still see the large variance. ie) the
+behaviour does not change.
+
+>>
+>>> It was noted by the bug reporter that specifying "nohz=off" resolved the
+>>> problem.  I tested with "nohz=off" and AFAICT it fixes the issue.  I started
+>>> out debugging by assuming that delays in the c-state transitions were not being
+>>> properly accounted for in the timing calculations.
+>>>
+>>> I ran a baseline test on an unmodified kernel (with no extra boot options) and
+>>> confirmed that powertop shows the CPUs entering deep c-states while the test was
+>>> running for 300 runs.
+>>>
+>>> I then instrumented the PM QoS and the power management code (specifically
+>>> cpuidle).  I put in a large # of printk's to monitor the CPU transitions, and
+>>> monitored the power states via powertop in order to verify that the system was
+>>> behaving correctly wrt PM QoS.
+>>>
+>>> If you modify the tstsc script to run 300 times with this modified kernel, and
+>>> run powertop in the middle of the script, you will see that the processors do
+>>> NOT enter deep c-states.  **This means that PM QoS is doing its job correctly**.
+>>
+>> So its not clear here,  do you see the same noisier latencies when
+>> using PM QoS to limit deep c-states?
+
+I see the same noisier latencies when using PM QoS to limit the deep c-state
+transitions.
+
+>>
+>> Finally, how many cpus are on the machine you see this with?  Does
+>> the effect go away with maxcpus=1?
+
+
+24 physical/48 logical, 2G/core RAM
+
+The large variance is still there if maxcpus=1.
+
+> 
+> Also, what is the value of NR_CPUS?  And exactly which kernel.org kernel
+> are you using?
+
+NR_CPUS=4096
+
+I'm using the "main" kernel.org tree,
+
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+
+as of commit 4f1cd91497774488ed16119ec3f54b3daf1561de
+
+(I recompiled this morning and re-ran the tests and they still show a large
+variance)
+
+> 
+> The effect of removing the two functions you noted (on 3.6 and earlier)
+> is to prevent RCU from checking for dyntick-idle CPUs, likely incurring
+> a cache miss for each CPU with interrupts disabled.  If you have a lot
+> of CPUs (or even if NR_CPUS is large and you have a smaller number of
+> CPUs), this can result in user-space-visible delays.
+> 
+
+Interesting.  I'll lower NR_CPUS and see if that shows an improvement.
+
+> 							Thanx, Paul
+> 
+>> It looks like the TSC clocksource is being used, just because the
+>> latencies are so low, but Is the same clocksource being used in all
+>> of these cases?
+
+
+Yes, the TSC is always being used.
+
+>>
+>> One possibility is that if the cpu we're doing our timekeeping
+>> accumulation on is different then the one running the test, we might
+>> go into deeper idle for longer periods of time. Then when we
+>> accumulate time, we have more then a single tick to accumulate and
+>> that might require holding the timekeeper/xtime lock for longer
+>> times.
+>>
+>> And the max 2.9ns variance seems particularly low, given that we do
+>> call update_vsyscall every so often, and that should block
+>> clock_gettime() callers while we update the vsyscall data.  Could it
+>> be that the test is too short to see the locking effect, so you're
+>> just getting lucky, and that adding nohz is jostling the regularity
+>> of the execution so you then see the lock wait times?  If you
+>> increase the samples and sample loops by 1000 does that change the
+>> behavior?
+
+That's a possiblity, although I suspect that this has more to do with not
+executing the RCU NOHZ code given that we don't see a problem with the
+clock_gettime() vs clock_gettime() test.  I wonder if not executing the RCU NOHZ
+code somehow introduces a "regularity" with execution that results in the CPU
+always being in C0/polling when the test is run?
+
+P.
