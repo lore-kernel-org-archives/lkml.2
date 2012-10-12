@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933871Ab2JLKPF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 06:15:05 -0400
+	id S933905Ab2JLKPL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 06:15:11 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:39483 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933824Ab2JLKPC (ORCPT
+	with ESMTP id S933824Ab2JLKPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 06:15:02 -0400
+	Fri, 12 Oct 2012 06:15:07 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Pekka Enberg <penberg@kernel.org>
 Cc: Mel Gorman <mgorman@suse.de>,
@@ -17,159 +17,97 @@ Cc: Mel Gorman <mgorman@suse.de>,
         John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 1/3] mm: vmstat: Implement set_zone_stat_thresholds() helper
-Date: Fri, 12 Oct 2012 03:11:57 -0700
-Message-Id: <1350036719-29031-1-git-send-email-anton.vorontsov@linaro.org>
+Subject: =?UTF-8?q?=5BPATCH=203/3=5D=20mm=3A=20vmevent=3A=20Sum=20per=20cpu=20pagesets=20stats=20asynchronously?=
+Date: Fri, 12 Oct 2012 03:11:59 -0700
+Message-Id: <1350036719-29031-3-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <20121012101115.GA11825@lizard>
 References: <20121012101115.GA11825@lizard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two things that affect vmstat accuracy:
+Currently vmevent relies on the global page state stats, which is updated
+once per stat_interval (1 second) or when the per CPU pageset stats hit
+their threshold.
 
-- Per CPU pageset stats to global stats synchronization time;
-- Per CPU pageset stats thresholds;
+We can sum the vm_stat_diff values asynchronously: they will be possibly a
+bit inconsistent, but overall this should improve accuracy, since with
+previous scheme we would always use worst-case scenario (i.e. we'd wait
+for threshold to hit or 1 second delay), but now we use somewhat average
+accuracy.
 
-Currently user can only change vmstat update time (via stat_interval
-sysctl, which is 1 second by default).
+The idea is very similar to zone_page_state_snapshot().
 
-As for thresholds, the max threshold is 125 pages, which is per CPU, per
-zone, so the vmstat inaccuracy might be significant. With vmevent API we
-will able to set vmstat thresholds as well -- we will use this small
-helper for this.
-
-Note that since various MM areas depend on the accuracy too, we should be
-very carefully to not downgrade it. User also have to understand that
-lower thresholds puts more pressure on caches, and can somewhat degrade
-performance, especially on very large systems. But that's the price for
-accuracy (if it is needed).
-
-p.s.
-
-set_pgdat_percpu_threshold() used for_each_possible_cpu(), and
-refresh_zone_stat_thresholds() used for_each_online_cpu(). I think
-for_each_possible_cpu() is unnecessary, as on CPU hotplug we call
-refresh_zone_stat_thresholds() anyway.
+Note that this might cause more pressure on CPU caches, so we only use
+this when userland explicitly asks for accuracy, plus since we gather
+stats outside of any fastpath, this should be OK in general.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- include/linux/vmstat.h |  6 ++++++
- mm/vmstat.c            | 52 ++++++++++++++++++++++++++++++++++++++------------
- 2 files changed, 46 insertions(+), 12 deletions(-)
+ mm/vmevent.c | 43 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 42 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
-index ad2cfd5..590808d 100644
---- a/include/linux/vmstat.h
-+++ b/include/linux/vmstat.h
-@@ -202,6 +202,9 @@ int calculate_pressure_threshold(struct zone *zone);
- int calculate_normal_threshold(struct zone *zone);
- void set_pgdat_percpu_threshold(pg_data_t *pgdat,
- 				int (*calculate_pressure)(struct zone *));
-+s8 set_zone_stat_thresholds(struct zone *zone,
-+			    int (*calc_thres)(struct zone *zone),
-+			    s8 force);
- #else /* CONFIG_SMP */
- 
- /*
-@@ -248,6 +251,9 @@ static inline void __dec_zone_page_state(struct page *page,
- 
- #define set_pgdat_percpu_threshold(pgdat, callback) { }
- 
-+static inline s8 set_zone_stat_thresholds(struct zone *zone,
-+					  int (*calc_thres)(struct zone *zone),
-+					  s8 force) { return 0; }
- static inline void refresh_cpu_vm_stats(int cpu) { }
- static inline void refresh_zone_stat_thresholds(void) { }
- 
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index df7a674..3609e3e 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -155,22 +155,55 @@ int calculate_normal_threshold(struct zone *zone)
+diff --git a/mm/vmevent.c b/mm/vmevent.c
+index 8113bda..a059bed 100644
+--- a/mm/vmevent.c
++++ b/mm/vmevent.c
+@@ -52,10 +52,51 @@ static u64 vmevent_attr_swap_pages(struct vmevent_watch *watch,
+ #endif
  }
  
- /*
-+ * set_zone_stat_thresholds() - Set zone stat thresholds
-+ * @zone:	A zone to set thresholds for
-+ * @calc_thres:	An optional callback to calculate thresholds
-+ * @force:	An optional threshold value to force thresholds
++/*
++ * In the worst case, this is inaccurate by
 + *
-+ * This function sets stat thresholds for a desired zone. The thresholds
-+ * are either calculated by the optional @calc_thres callback, or set to
-+ * the @force value. If @force is greater than current zone's threshold,
-+ * the new value is ignored.
++ *	±(pcp->stat_threshold * zones * online_cpus)
++ *
++ * For say 4-core 2GB setup that would be ~350 KB worst case inaccuracy,
++ * but to reach this inaccuracy, CPUs would all need have to keep
++ * allocating (or freeing) pages from all the zones at the same time, and
++ * all their current vm_stat_diff values would need to be pretty close to
++ * pcp->stat_threshold.
++ *
++ * The larger the system, the more inaccurare vm_stat is (but at the same
++ * time, on large systems we care much less about small chunks of memory).
++ * When a more predicted behaviour is needed, userland can set a desired
++ * accuracy via attr->value2.
 + */
-+s8 set_zone_stat_thresholds(struct zone *zone,
-+			    int (*calc_thres)(struct zone *zone),
-+			    s8 force)
++static ulong vmevent_global_page_state(struct vmevent_attr *attr,
++				       enum zone_stat_item si)
 +{
-+	static s8 forced_threshold;
-+	s8 thres = force;
-+	uint cpu;
++	ulong global = global_page_state(si);
++#ifdef CONFIG_SMP
++	struct zone *zone;
 +
-+	if (!calc_thres) {
-+		if (!force)
-+			calc_thres = calculate_normal_threshold;
-+		forced_threshold = force;
++	if (!attr->value2)
++		return global;
++
++	for_each_populated_zone(zone) {
++		uint cpu;
++
++		for_each_online_cpu(cpu) {
++			struct per_cpu_pageset *pcp;
++
++			pcp = per_cpu_ptr(zone->pageset, cpu);
++
++			global += pcp->vm_stat_diff[si];
++		}
 +	}
-+
-+	if (calc_thres) {
-+		thres = calc_thres(zone);
-+		if (forced_threshold)
-+			thres = min(thres, forced_threshold);
-+	}
-+
-+	for_each_online_cpu(cpu)
-+		per_cpu_ptr(zone->pageset, cpu)->stat_threshold = thres;
-+
-+	return thres;
++#endif
++	return global;
 +}
 +
-+/*
-  * Refresh the thresholds for each zone.
-  */
- void refresh_zone_stat_thresholds(void)
+ static u64 vmevent_attr_free_pages(struct vmevent_watch *watch,
+ 				   struct vmevent_attr *attr)
  {
- 	struct zone *zone;
--	int cpu;
- 	int threshold;
- 
- 	for_each_populated_zone(zone) {
- 		unsigned long max_drift, tolerate_drift;
- 
--		threshold = calculate_normal_threshold(zone);
--
--		for_each_online_cpu(cpu)
--			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
--							= threshold;
-+		threshold = set_zone_stat_thresholds(zone,
-+				calculate_normal_threshold, 0);
- 
- 		/*
- 		 * Only set percpu_drift_mark if there is a danger that
-@@ -189,8 +222,6 @@ void set_pgdat_percpu_threshold(pg_data_t *pgdat,
- 				int (*calculate_pressure)(struct zone *))
- {
- 	struct zone *zone;
--	int cpu;
--	int threshold;
- 	int i;
- 
- 	for (i = 0; i < pgdat->nr_zones; i++) {
-@@ -198,10 +229,7 @@ void set_pgdat_percpu_threshold(pg_data_t *pgdat,
- 		if (!zone->percpu_drift_mark)
- 			continue;
- 
--		threshold = (*calculate_pressure)(zone);
--		for_each_possible_cpu(cpu)
--			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
--							= threshold;
-+		set_zone_stat_thresholds(zone, calculate_pressure, 0);
- 	}
+-	return global_page_state(NR_FREE_PAGES);
++	return vmevent_global_page_state(attr, NR_FREE_PAGES);
  }
  
+ static u64 vmevent_attr_avail_pages(struct vmevent_watch *watch,
 -- 
 1.7.12.1
 
