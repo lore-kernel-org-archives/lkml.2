@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932769Ab2JLSii (ORCPT <rfc822;w@1wt.eu>);
+	id S933299Ab2JLSio (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 14:38:44 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60763 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753973Ab2JLSii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Oct 2012 14:38:38 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42731 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753808Ab2JLSih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 14:38:37 -0400
-Message-ID: <1350067114.2243.35.camel@joe-AO722>
-Subject: Re: Spurious warning in checkpatch.pl?
-From: Joe Perches <joe@perches.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 12 Oct 2012 11:38:34 -0700
-In-Reply-To: <5078603C.9010709@lwfinger.net>
-References: <5078603C.9010709@lwfinger.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Date: Fri, 12 Oct 2012 11:38:28 -0700
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Shuah Khan <shuah.khan@hp.com>
+Cc: joerg.roedel@amd.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        Greg KH <gregkh@linuxfoundation.org>, iommu@lists.linux-foundation.org,
+        stable@vger.kernel.org, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
+Subject: Re: [PATCH -stable] amd_iommu: attach device fails on the last pci
+ device
+Message-ID: <20121012183828.GA16453@elie.Belkin>
+References: <1350059367.2643.17.camel@lorien2>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350059367.2643.17.camel@lorien2>
+User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-12 at 13:23 -0500, Larry Finger wrote:
-> Andy,
-> 
-> The checkpatch.pl version in mainline is issuing what I think are false warnings 
-> of the type
-> 
-> WARNING: networking block comments put the trailing */ on a separate line
-> #93: FILE: drivers/net/wireless/rtlwifi/wifi.h:208:
-> +       u32 rf_rb;              /* rflssi_readback */
-> 
-> Is a trailing comment for the member of a struct not allowed?
+Shuah Khan wrote:
 
-It's allowed.  Maybe even better, encouraged.
+> This bug is in linux-2.6.32 and an equivalent fix in linux-2.6.33 and has been
+> carried forward to later kernels and is in the upstream kernel. This equivalent
+> fix includes restructuring and consolidating device checks into a routine
+> check_device(). Instead of back-porting all of that work, spot-fixed the bug in
+> amd_iommu_attach_device() for linux-2.6.32.
 
-It's a change I made in commit 058806007450
-("checkpatch: check networking specific block comment style")
-without sufficient testing.
+To save Willy time: am I correct in guessing the upstream commit you
+are referring to is 98fc5a693bbdda498a556654c70d1e31a186c988
+(x86/amd-iommu: Use get_device_id and check_device where appropriate,
+2009-11-24)?
 
-I'll see about fixing it.
-
-
+Thanks,
+Jonathan
