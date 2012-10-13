@@ -1,160 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565Ab2JMFBL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 01:01:11 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:52032 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410Ab2JMFBJ (ORCPT
+	id S1751769Ab2JMFHJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 01:07:09 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:37121 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab2JMFHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 01:01:09 -0400
-From: Huang Shijie <shijie8@gmail.com>
-To: dwmw2@infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        dedekind1@gmail.com, Huang Shijie <shijie8@gmail.com>
-Subject: [PATCH] mtd: gpmi: remove unneccessary header
-Date: Sat, 13 Oct 2012 13:03:29 -0400
-Message-Id: <1350147809-19616-1-git-send-email-shijie8@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Sat, 13 Oct 2012 01:07:07 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>, Chris Mason <chris.mason@fusionio.com>,
+        Josef Bacik <jbacik@fusionio.com>, Jan Kara <jack@suse.cz>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Masatake YAMATO <yamato@redhat.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Date: Fri, 12 Oct 2012 22:06:58 -0700
+Message-ID: <87k3uvkljh.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19lZJE2Ydi/MMAUW8jVu8D+GQq3U3MP2ng=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0246]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Linus Torvalds <torvalds@linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: [GIT PULL] user namespace compile fixes for 3.7
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The whole gpmi-nand driver has turned to pure devicetree supported.
-So the linux/mtd/gpmi-nand.h is not neccessary now. Just remove it,
-and move some macros to the gpmi-nand driver itself.
 
-Signed-off-by: Huang Shijie <shijie8@gmail.com>
+Linus,
+
+Please pull the for-linus git tree from:
+
+   git://git.kernel.org:/pub/scm/linux/kernel/git/ebiederm/user-namespace.git for-linus
+
+   HEAD: e9069f470803eeb5e243a05bc717452c6218bd71 btrfs: Fix compilation with user namespace support enabled
+
+This tree contains three trivial fixes. One compiler warning, one thinko
+fix, and one build fix.
+
+Eric W. Biederman (3):
+      userns: Properly print bluetooth socket uids
+      userns: Fix posix_acl_file_xattr_userns gid conversion
+      btrfs: Fix compilation with user namespace support enabled
+
+ fs/btrfs/tree-log.c          |    4 ++--
+ fs/xattr_acl.c               |    2 +-
+ net/bluetooth/af_bluetooth.c |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
 ---
- drivers/mtd/nand/gpmi-nand/gpmi-lib.c  |    1 -
- drivers/mtd/nand/gpmi-nand/gpmi-nand.c |    7 +++-
- drivers/mtd/nand/gpmi-nand/gpmi-nand.h |    1 -
- include/linux/mtd/gpmi-nand.h          |   68 --------------------------------
- 4 files changed, 6 insertions(+), 71 deletions(-)
- delete mode 100644 include/linux/mtd/gpmi-nand.h
 
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-index 3502acc..1585c5b 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-@@ -18,7 +18,6 @@
-  * with this program; if not, write to the Free Software Foundation, Inc.,
-  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-  */
--#include <linux/mtd/gpmi-nand.h>
- #include <linux/delay.h>
- #include <linux/clk.h>
+diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
+index e9ebb47..81e407d 100644
+--- a/fs/btrfs/tree-log.c
++++ b/fs/btrfs/tree-log.c
+@@ -2952,8 +2952,8 @@ static void fill_inode_item(struct btrfs_trans_handle *trans,
+ 			    struct btrfs_inode_item *item,
+ 			    struct inode *inode, int log_inode_only)
+ {
+-	btrfs_set_inode_uid(leaf, item, inode->i_uid);
+-	btrfs_set_inode_gid(leaf, item, inode->i_gid);
++	btrfs_set_inode_uid(leaf, item, i_uid_read(inode));
++	btrfs_set_inode_gid(leaf, item, i_gid_read(inode));
+ 	btrfs_set_inode_mode(leaf, item, inode->i_mode);
+ 	btrfs_set_inode_nlink(leaf, item, inode->i_nlink);
  
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-index e2c56fc..d376198 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-@@ -25,7 +25,6 @@
- #include <linux/slab.h>
- #include <linux/interrupt.h>
- #include <linux/module.h>
--#include <linux/mtd/gpmi-nand.h>
- #include <linux/mtd/partitions.h>
- #include <linux/pinctrl/consumer.h>
- #include <linux/of.h>
-@@ -33,6 +32,12 @@
- #include <linux/of_mtd.h>
- #include "gpmi-nand.h"
- 
-+/* Resource names for the GPMI NAND driver. */
-+#define GPMI_NAND_GPMI_REGS_ADDR_RES_NAME  "gpmi-nand"
-+#define GPMI_NAND_BCH_REGS_ADDR_RES_NAME   "bch"
-+#define GPMI_NAND_BCH_INTERRUPT_RES_NAME   "bch"
-+#define GPMI_NAND_DMA_INTERRUPT_RES_NAME   "gpmi-dma"
-+
- /* add our owner bbt descriptor */
- static uint8_t scan_ff_pattern[] = { 0xff };
- static struct nand_bbt_descr gpmi_bbt_descr = {
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-index 7ac25c1..3d93a5e 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.h
-@@ -130,7 +130,6 @@ struct gpmi_nand_data {
- 	/* System Interface */
- 	struct device		*dev;
- 	struct platform_device	*pdev;
--	struct gpmi_nand_platform_data	*pdata;
- 
- 	/* Resources */
- 	struct resources	resources;
-diff --git a/include/linux/mtd/gpmi-nand.h b/include/linux/mtd/gpmi-nand.h
-deleted file mode 100644
-index ed3c4e0..0000000
---- a/include/linux/mtd/gpmi-nand.h
-+++ /dev/null
-@@ -1,68 +0,0 @@
--/*
-- * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License along
-- * with this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-- */
--
--#ifndef __MACH_MXS_GPMI_NAND_H__
--#define __MACH_MXS_GPMI_NAND_H__
--
--/* The size of the resources is fixed. */
--#define GPMI_NAND_RES_SIZE	6
--
--/* Resource names for the GPMI NAND driver. */
--#define GPMI_NAND_GPMI_REGS_ADDR_RES_NAME  "gpmi-nand"
--#define GPMI_NAND_GPMI_INTERRUPT_RES_NAME  "GPMI NAND GPMI Interrupt"
--#define GPMI_NAND_BCH_REGS_ADDR_RES_NAME   "bch"
--#define GPMI_NAND_BCH_INTERRUPT_RES_NAME   "bch"
--#define GPMI_NAND_DMA_CHANNELS_RES_NAME    "GPMI NAND DMA Channels"
--#define GPMI_NAND_DMA_INTERRUPT_RES_NAME   "gpmi-dma"
--
--/**
-- * struct gpmi_nand_platform_data - GPMI NAND driver platform data.
-- *
-- * This structure communicates platform-specific information to the GPMI NAND
-- * driver that can't be expressed as resources.
-- *
-- * @platform_init:           A pointer to a function the driver will call to
-- *                           initialize the platform (e.g., set up the pin mux).
-- * @min_prop_delay_in_ns:    Minimum propagation delay of GPMI signals to and
-- *                           from the NAND Flash device, in nanoseconds.
-- * @max_prop_delay_in_ns:    Maximum propagation delay of GPMI signals to and
-- *                           from the NAND Flash device, in nanoseconds.
-- * @max_chip_count:          The maximum number of chips for which the driver
-- *                           should configure the hardware. This value most
-- *                           likely reflects the number of pins that are
-- *                           connected to a NAND Flash device. If this is
-- *                           greater than the SoC hardware can support, the
-- *                           driver will print a message and fail to initialize.
-- * @partitions:              An optional pointer to an array of partition
-- *                           descriptions.
-- * @partition_count:         The number of elements in the partitions array.
-- */
--struct gpmi_nand_platform_data {
--	/* SoC hardware information. */
--	int		(*platform_init)(void);
--
--	/* NAND Flash information. */
--	unsigned int	min_prop_delay_in_ns;
--	unsigned int	max_prop_delay_in_ns;
--	unsigned int	max_chip_count;
--
--	/* Medium information. */
--	struct		mtd_partition *partitions;
--	unsigned	partition_count;
--};
--#endif
--- 
-1.7.4.4
-
+diff --git a/fs/xattr_acl.c b/fs/xattr_acl.c
+index 11efd83..9fbea87 100644
+--- a/fs/xattr_acl.c
++++ b/fs/xattr_acl.c
+@@ -45,7 +45,7 @@ static void posix_acl_fix_xattr_userns(
+ 			break;
+ 		case ACL_GROUP:
+ 			gid = make_kgid(from, le32_to_cpu(entry->e_id));
+-			entry->e_id = cpu_to_le32(from_kuid(to, uid));
++			entry->e_id = cpu_to_le32(from_kgid(to, gid));
+ 			break;
+ 		default:
+ 			break;
+diff --git a/net/bluetooth/af_bluetooth.c b/net/bluetooth/af_bluetooth.c
+index 9d49ee6..ba033f0 100644
+--- a/net/bluetooth/af_bluetooth.c
++++ b/net/bluetooth/af_bluetooth.c
+@@ -591,7 +591,7 @@ static int bt_seq_show(struct seq_file *seq, void *v)
+ 			   atomic_read(&sk->sk_refcnt),
+ 			   sk_rmem_alloc_get(sk),
+ 			   sk_wmem_alloc_get(sk),
+-			   sock_i_uid(sk),
++			   from_kuid(seq_user_ns(seq), sock_i_uid(sk)),
+ 			   sock_i_ino(sk),
+ 			   &src_baswapped,
+ 			   &dst_baswapped,
