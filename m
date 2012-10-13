@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab2JMKSM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 06:18:12 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:63459 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264Ab2JMKSI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 06:18:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121013022632.024527228@goodmis.org>
-References: <20121013022632.024527228@goodmis.org>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Sat, 13 Oct 2012 11:17:46 +0100
-X-Google-Sender-Auth: N2IPBDwrAIpxngKfVnrtnzpBjGM
-Message-ID: <CAHkRjk4D87V9F2-Y5d1A-s+mnt_TpkOSg+dLz6cRtR25aqqoUg@mail.gmail.com>
-Subject: Re: [PATCH 00/25] asm-generic: Convert all to use Kbuild file
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753349Ab2JMKUh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 06:20:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21561 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751433Ab2JMKUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Oct 2012 06:20:34 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: torvalds@osdl.org
+cc: dhowells@redhat.com, grant.likely@secretlab.ca,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Disintegrate UAPI for spi
+Date: Sat, 13 Oct 2012 11:20:18 +0100
+Message-ID: <10604.1350123618@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
 
-On 13 October 2012 03:26, Steven Rostedt <rostedt@goodmis.org> wrote:
-> Recently I suggested to someone that was adding a new asm file that
-> currently only contained an x86 change to add a header in all archs
-> that was just a wrapper to point to the asm-generic version. I suggested
-> this because that's the way we use to do it and just to refresh my
-> memory, I looked at div64.h in a few archs and saw that was the case.
->
-> After having the change done and just after finishing testing it, I was
-> notified that the "proper" way of doing this is to add it to the
->
->   arch/*/include/asm/Kbuild
->
-> file, as 'generic-y += foo.h' and it will reference the asm-generic
-> file automatically. Well it would have been nice if I knew this before
-> and wasn't confused by seeing the incorrect method.
+Hi Linus,
 
-Since you are  cleaning this up already, could you please merge these
-patches into your series:
+Can you merge my spi disintegration patch please?
 
-https://lkml.org/lkml/2012/10/11/291
+This is to complete part of the Userspace API (UAPI) disintegration for which
+the preparatory patches were pulled recently.  After these patches, userspace
+headers will be segregated into:
 
-The first patch adds support for generic-y in the new
-arch/*/include/uapi/asm/Kbuild file, followed by few patches to
-convert three architectures. There will probably be more to convert
-after -rc1.
+	include/uapi/linux/.../foo.h
 
-Thanks.
+for the userspace interface stuff, and:
 
--- 
-Catalin
+	include/linux/.../foo.h
+
+for the strictly kernel internal stuff.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+---
+The following changes since commit 9e2d8656f5e8aa214e66b462680cf86b210b74a8:
+
+  Merge branch 'akpm' (Andrew's patch-bomb) (2012-10-09 16:23:15 +0900)
+
+are available in the git repository at:
+
+
+  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-spi-20121009
+
+for you to fetch changes up to 7939d3c2a677b06cf111a1304710dd97892f3695:
+
+  UAPI: (Scripted) Disintegrate include/linux/spi (2012-10-09 09:49:03 +0100)
+
+----------------------------------------------------------------
+UAPI Disintegration 2012-10-09
+
+----------------------------------------------------------------
+David Howells (1):
+      UAPI: (Scripted) Disintegrate include/linux/spi
+
+ include/linux/spi/Kbuild              | 1 -
+ include/uapi/linux/spi/Kbuild         | 1 +
+ include/{ => uapi}/linux/spi/spidev.h | 0
+ 3 files changed, 1 insertion(+), 1 deletion(-)
+ rename include/{ => uapi}/linux/spi/spidev.h (100%)
+.
