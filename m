@@ -1,69 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab2JMKUh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 06:20:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21561 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751433Ab2JMKUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 06:20:34 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: torvalds@osdl.org
-cc: dhowells@redhat.com, grant.likely@secretlab.ca,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Disintegrate UAPI for spi
-Date: Sat, 13 Oct 2012 11:20:18 +0100
-Message-ID: <10604.1350123618@warthog.procyon.org.uk>
+	id S1753437Ab2JMKc4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 06:32:56 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:47202 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819Ab2JMKcv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Oct 2012 06:32:51 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, backports@vger.kernel.org, rob@ti.com,
+        arnd@arndb.de, davej@redhat.com, airlied@linux.ie, bskeggs@redhat.com,
+        alan@lxorguk.ukuu.org.uk, dhowells@redhat.com, tglx@linutronix.de,
+        daniel.vetter@ffwll.ch, jbarnes@virtuousgeek.org,
+        alexander.deucher@amd.com, paulmck@linux.vnet.ibm.com,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH 1/2] uapi: update includes for drm content when no kernel API exists
+Date: Sat, 13 Oct 2012 12:33:32 +0200
+Message-ID: <3084988.3Xup6S3alX@avalon>
+User-Agent: KMail/4.9.2 (Linux/3.4.9-gentoo; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <1350085772-8755-2-git-send-email-mcgrof@do-not-panic.com>
+References: <1350085772-8755-1-git-send-email-mcgrof@do-not-panic.com> <1350085772-8755-2-git-send-email-mcgrof@do-not-panic.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Luis,
 
-Hi Linus,
+On Friday 12 October 2012 16:49:31 Luis R. Rodriguez wrote:
+> From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+> 
+> The UAPI changes split kernel API and userspace API
+> content onto two separate header files. The userspace
+> API drm content was moved to include/uapi/drm/ with the
+> same file name while kernel specific API content was
+> kept under include/drm/ with the same file name. When
+> one file was split into two files the kernel header
+> includes the uapi header and a UAPI prefix was added to
+> the uapi header for its header guard. When there was no
+> kernel API content found the uapi header file was the
+> only one that was kept and the original guard for the
+> header file was kept. In this particular case the
+> original users of this header file were not modified
+> and the uapi header file is expected to be picked up
+> by path.
+> 
+> This may work well at compilation on the kernel but when
+> backporting this creates a few complexities.
 
-Can you merge my spi disintegration patch please?
+Could you please provide more details about those complexities ?
 
-This is to complete part of the Userspace API (UAPI) disintegration for which
-the preparatory patches were pulled recently.  After these patches, userspace
-headers will be segregated into:
+> To help with
+> backporting [0] lets be explicit about the new uapi path
+> when there is no respective kernel API header file. For
+> more details on the UAPI changes see the lwn article on
+> this [1].
+> 
+> [0] https://backports.wiki.kernel.org
+> [1] http://lwn.net/Articles/507794/
+> 
+> Cc: dri-devel@lists.freedesktop.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: devel@driverdev.osuosl.org
+> Cc: backports@vger.kernel.org
+> 
+> Cc: Rob Clark <rob@ti.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Dave Jones <davej@redhat.com>
+> Cc: David Airlie <airlied@linux.ie>
+> Cc: Ben Skeggs <bskeggs@redhat.com>
+> Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Cc: David Howells <dhowells@redhat.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Cc: Alex Deucher <alexander.deucher@amd.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
 
-	include/uapi/linux/.../foo.h
+-- 
+Regards,
 
-for the userspace interface stuff, and:
+Laurent Pinchart
 
-	include/linux/.../foo.h
-
-for the strictly kernel internal stuff.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
----
-The following changes since commit 9e2d8656f5e8aa214e66b462680cf86b210b74a8:
-
-  Merge branch 'akpm' (Andrew's patch-bomb) (2012-10-09 16:23:15 +0900)
-
-are available in the git repository at:
-
-
-  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-spi-20121009
-
-for you to fetch changes up to 7939d3c2a677b06cf111a1304710dd97892f3695:
-
-  UAPI: (Scripted) Disintegrate include/linux/spi (2012-10-09 09:49:03 +0100)
-
-----------------------------------------------------------------
-UAPI Disintegration 2012-10-09
-
-----------------------------------------------------------------
-David Howells (1):
-      UAPI: (Scripted) Disintegrate include/linux/spi
-
- include/linux/spi/Kbuild              | 1 -
- include/uapi/linux/spi/Kbuild         | 1 +
- include/{ => uapi}/linux/spi/spidev.h | 0
- 3 files changed, 1 insertion(+), 1 deletion(-)
- rename include/{ => uapi}/linux/spi/spidev.h (100%)
-.
