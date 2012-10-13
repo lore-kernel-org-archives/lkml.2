@@ -1,41 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864Ab2JMGck (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 02:32:40 -0400
-Received: from mail.southpole.se ([193.12.106.18]:48052 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956Ab2JMGcj (ORCPT
+	id S1751770Ab2JMGoo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 02:44:44 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:34005 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884Ab2JMGon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 02:32:39 -0400
+	Sat, 13 Oct 2012 02:44:43 -0400
+Date: Sat, 13 Oct 2012 15:44:35 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org, olaf@aepfle.de,
+        apw@canonical.com, jasowang@redhat.com
+Subject: Re: [PATCH 1/1] tools: hv: Return the full kernel version
+Message-ID: <20121013064435.GA9794@kroah.com>
+References: <1350085210-11108-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-In-Reply-To: <20121013022954.595178706@goodmis.org>
-References: <20121013022632.024527228@goodmis.org>
-	<20121013022954.595178706@goodmis.org>
-Date: Sat, 13 Oct 2012 08:32:36 +0200
-Message-ID: <CACM3HyHnMHj=DB5FeLUfRsKT-a=KzcmdpSbudoLU7O48RzuPoA@mail.gmail.com>
-Subject: Re: [PATCH 15/25] openrisc: Use Kbuild infrastructure for kvm_para.h
-From: Jonas Bonn <jonas@southpole.se>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-X-Assp-Version: 2.2.1(12265) on assp.southpole.se
-X-Assp-Client-SSL: yes
-X-Assp-Server-TLS: yes
-X-Assp-ID: assp.southpole.se 09957-11415
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350085210-11108-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 October 2012 04:26, Steven Rostedt <rostedt@goodmis.org> wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
->
-> All the headers but kvm_para.h use the Kbuild infrastructure to
-> get to the asm-generic headers.
->
-> Cc: linux-kbuild@vger.kernel.org
-> Cc: linux@lists.openrisc.net
-> Cc: Jonas Bonn <jonas@southpole.se>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+On Fri, Oct 12, 2012 at 04:40:10PM -0700, K. Y. Srinivasan wrote:
+> Currently, we are returning the same string for both OSBuildNumber 
+> and OSVersion keys. Return the full uts string for the OSBuild
+> key since Windows does not impose any restrictions on this. 
 
-Acked-by: Jonas Bonn <jonas@southpole.se>
+You sent me 2 patches, both 1/1, that modify the same file.  Which one
+comes first?  Please resend both properly, and also let me know if these
+are things that should be going into 3.7 or can wait for 3.8.
+
+greg k-h
