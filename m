@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab2JMTdd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 15:33:33 -0400
-Received: from mail.avalus.com ([89.16.176.221]:56709 "EHLO mail.avalus.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754014Ab2JMTdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 15:33:32 -0400
-Date: Sat, 13 Oct 2012 20:33:27 +0100
-From: Alex Bligh <alex@alex.org.uk>
-Reply-To: Alex Bligh <alex@alex.org.uk>
-To: Hillf Danton <dhillf@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Alex Bligh <alex@alex.org.uk>
-Subject: Re: Local DoS through write heavy I/O on CFQ & Deadline
-Message-ID: <97166AE58C26A44D45569412@nimrod.local>
-In-Reply-To: <CAJd=RBAdpGpSrx9e28MLmPAEhqRsCQGHNuc-sjUQPMTLO9agpQ@mail.gmail.com>
-References: <0B138F62-16BF-4295-9AD9-64C0BB39FCE2@alex.org.uk>
- 	<20121012133044.GA10115@dhcp22.suse.cz>
- 	<E6EF14955C67D6CA58918872@nimrod.local>
- 	<20121012145838.GD22083@dhcp22.suse.cz>
- 	<3D1C85A52BB960B79E37AC30@nimrod.local>
- <CAJd=RBAdpGpSrx9e28MLmPAEhqRsCQGHNuc-sjUQPMTLO9agpQ@mail.gmail.com>
-X-Mailer: Mulberry/4.0.8 (Mac OS X)
+	id S1754089Ab2JMTin (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 15:38:43 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40950 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027Ab2JMTim (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Oct 2012 15:38:42 -0400
+Date: Sat, 13 Oct 2012 20:38:39 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-arch@vger.kernel.org
+Subject: [RFC] desired behaviour of syscall tracing wrt fork()
+Message-ID: <20121013193839.GU2616@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+	There's a lovely incosistency regarding whether we call
+trace_sys_exit() for child process on return from fork()/clone()/etc.
+The current situation:
+	* called on amd64 for 32bit newborns
+	* *NOT* called on i386 or amd64 for 64bit ones
+	* not called on arm
+	* called on ppc, s390, sh and sparc64
+	* not wired on anything else
+Note that existing in-kernel users of that tracepoint (ftrace and perf)
+both at least attempt to bail out in that situation.  However, the
+way it's done is not guaranteed to work if we wire more architectures -
+it relies on syscall_get_nr() returning negative in child, which might
+or might not work everywhere.  If nothing else, it's a landmine to
+avoid...
 
+	FWIW, I'd vote for not calling syscall_trace_...() on the way
+from ret_from_fork() - nothing in there really wants to be called
+for newborns; e.g. TIF_SYSCALL_TRACE is explicitly turned off for
+newborns, audit_syscall_exit() will not see ->in_syscall set and will
+log nothing and existing users of trace_sys_exit() at least attempt
+to skip doing anything on those.
 
---On 13 October 2012 21:53:09 +0800 Hillf Danton <dhillf@gmail.com> wrote:
-
-> Take a look at the "wait for writeback" problem please.
->
-> 	Linux 3.0+ Disk performance problem - wrong pdflush behaviour
-> 	https://lkml.org/lkml/2012/10/10/412
-
-I'm guessing that's related but may not be the whole story. My
-test case is rather simpler, and Viktor says that with the
-patch causing his regression reverted, "After I've set the dirty_bytes
-over the file size the writes are never blocked.". That suggests
-to me that in order to avoid write blocking he needs dirty_bytes
-larger than the file size. As the bytes written in my test case
-exceed RAM, that's going to be be an issue as dirty_bytes is always
-going to be hit; I think it Viktor's case he is trying to avoid
-it being hit at all.
-
-Or perhaps I have the wrong end of the stick.
-
--- 
-Alex Bligh
+	Comments?  AFAICS, it's not that much surgery to do...
