@@ -1,34 +1,54 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1752627Ab2JFFx1 (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
-        Sat, 6 Oct 2012 01:53:27 -0400
-Received: from outrelay01.libero.it ([212.52.84.101]:47153 "EHLO
-        outrelay01.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1750835Ab2JFFxY (ORCPT
+        id S1753380Ab2JMKYl (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
+        Sat, 13 Oct 2012 06:24:41 -0400
+Received: from redhost.onenet.co.nz ([202.36.68.48]:38451 "EHLO
+        redhost.onenet.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751433Ab2JMKYk (ORCPT
         <rfc822;linux-kernel@vger.kernel.org>);
-        Sat, 6 Oct 2012 01:53:24 -0400
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A0B020B.506FC742.0008,ss=1,re=0.000,fgs=0
-X-libjamoibt: 1821
-Message-ID: <28787385.4642341349502785951.JavaMail.root@wmail12>
-Date: Sat, 6 Oct 2012 07:53:05 +0200 (CEST)
-From: "9913361juli@libero.it" <9913361juli@libero.it>
-Reply-To: "9913361juli@libero.it" <9913361juli@libero.it>
-Subject: hi
+        Sat, 13 Oct 2012 06:24:40 -0400
+X-Greylist: delayed 2547 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Oct 2012 06:24:40 EDT
+Message-ID: <52589.180.215.154.227.1350114812.squirrel@*>
+Date: Sat, 13 Oct 2012 07:53:32 -0000 (GMT)
+Subject: Dear Webmail Account User,
+From: "Account Maintenance" <info@webname.com>
+To: <info@webname.com>
+X-Priority: 3
+Importance: Normal
+X-MSMail-Priority: Normal
+Reply-To: webmailuser@webname.com
+X-Mailer: SquirrelMail (version 1.2.7)
 MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-SenderIP: 41.82.116.217
-X-libjamv: Dh5KWHsATTw=
-X-libjamsun: dPHtmBCjU4+mB/bqkR1j74gnY6xoTYhz
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-Hello Dear,
-my name is Juliet,
-I am, very happy to contact you, to day
-i wish to be in good relationship, with you,
-and i will be very happy if you can reply me
-through my private Email:  juillet.kamala@yahoo.com
+
+
+
+Dear Webmail Account User,
+
+We have temporarily limited all access to sensitive account features in
+our E-mail accounts. In order to restore your account access, you need to
+reply to this email immediately with your user-name_____________) and
+password______________).
+Due to much junk/spam emails you receive daily, we are currently upgrading
+all email accounts spam filter to limit unsolicited emails for security
+reasons and to upgrade our newly improved E-mail account features to
+ensure you do not experience service interruption.
+You must reply to this email immediately with your user name and password
+to enable us upgrade your E-mail Account properly.
+
+A confirmation link will be send to you for the Re-Activation of your
+e-mail Account, as soon as we received your response and you are to Click
+on the "Confirm E-mail" link on your mail Account box and then enter this
+confirmation number: 1265-6778-8250-8393-5727.
+
+Thank you for your cooperation.
+
+Webmail Help Desk.
+System Administrator
+
+
