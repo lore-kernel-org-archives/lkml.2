@@ -1,70 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254Ab2JMWn7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 18:43:59 -0400
-Received: from tryphon.debian.net ([109.190.112.8]:54284 "EHLO
-	tryphon.debian.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754203Ab2JMWn5 convert rfc822-to-8bit (ORCPT
+	id S1754306Ab2JMXRX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 19:17:23 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:33798 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754248Ab2JMXRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 18:43:57 -0400
-X-Greylist: delayed 864 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Oct 2012 18:43:57 EDT
-Date: Sun, 14 Oct 2012 00:29:24 +0200
-From: Nicolas Boullis <nboullis@debian.org>
-To: Oliver Neukum <oliver@neukum.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] usb: acm: fix the computation of the number of data bits
-Message-ID: <20121013222923.GA1984@tryphon.debian.net>
+	Sat, 13 Oct 2012 19:17:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5077D353.3010708@jp.fujitsu.com>
+References: <5077D353.3010708@jp.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Sat, 13 Oct 2012 19:17:01 -0400
+Message-ID: <CAHGf_=qX=L+Kzjez=NpHxtkSQKKAwqTQ1sYi0cn-w_Ku4jdRdg@mail.gmail.com>
+Subject: Re: [PATCH] mm: cleanup register_node()
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Boullis <nboullis@debian.org>
+On Fri, Oct 12, 2012 at 4:22 AM, Yasuaki Ishimatsu
+<isimatu.yasuaki@jp.fujitsu.com> wrote:
+> register_node() is defined as extern in include/linux/node.h. But the function
+> is only called from register_one_node() in driver/base/node.c.
+>
+> So the patch defines register_node() as static.
+>
+> CC: David Rientjes <rientjes@google.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-The current code assumes that CSIZE is 0000060, which appears to be 
-wrong on some arches (such as powerpc).
-
-Signed-off-by: Nicolas Boullis <nboullis@debian.org>
----
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 981f213..194fa8b 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -817,10 +817,6 @@ static const __u32 acm_tty_speed[] = {
- 	2500000, 3000000, 3500000, 4000000
- };
- 
--static const __u8 acm_tty_size[] = {
--	5, 6, 7, 8
--};
--
- static void acm_tty_set_termios(struct tty_struct *tty,
- 						struct ktermios *termios_old)
- {
-@@ -834,7 +830,21 @@ static void acm_tty_set_termios(struct tty_struct *tty,
- 	newline.bParityType = termios->c_cflag & PARENB ?
- 				(termios->c_cflag & PARODD ? 1 : 2) +
- 				(termios->c_cflag & CMSPAR ? 2 : 0) : 0;
--	newline.bDataBits = acm_tty_size[(termios->c_cflag & CSIZE) >> 4];
-+	switch (termios->c_cflag & CSIZE) {
-+	case CS5:
-+		newline.bDataBits = 5;
-+		break;
-+	case CS6:
-+		newline.bDataBits = 6;
-+		break;
-+	case CS7:
-+		newline.bDataBits = 7;
-+		break;
-+	case CS8:
-+	default:
-+		newline.bDataBits = 8;
-+		break;
-+	}
- 	/* FIXME: Needs to clear unsupported bits in the termios */
- 	acm->clocal = ((termios->c_cflag & CLOCAL) != 0);
- 
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
