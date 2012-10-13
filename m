@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab2JMRHH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 13:07:07 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40632 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753210Ab2JMRHG (ORCPT
+	id S1752805Ab2JMRXW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 13:23:22 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:44464 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313Ab2JMRXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 13:07:06 -0400
-Date: Sat, 13 Oct 2012 18:07:01 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Marco Stornelli <marco.stornelli@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] vfs pile 3
-Message-ID: <20121013170701.GT2616@ZenIV.linux.org.uk>
-References: <20121013002003.GL2616@ZenIV.linux.org.uk>
- <5079164D.4030307@gmail.com>
- <20121013075128.GQ2616@ZenIV.linux.org.uk>
- <20121013154810.GA9678@infradead.org>
- <20121013160115.GS2616@ZenIV.linux.org.uk>
- <20121013160455.GA32420@infradead.org>
+	Sat, 13 Oct 2012 13:23:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121013160455.GA32420@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5079012A.90407@halfdog.net>
+References: <20121012023240.GA24232@www.outflux.net>
+	<20121012185037.GJ24964@outflux.net>
+	<5079012A.90407@halfdog.net>
+Date: Sat, 13 Oct 2012 10:23:18 -0700
+X-Google-Sender-Auth: SobuTqcuC2R-GzVkkfLn7m3_m-A
+Message-ID: <CAGXu5j+4rb=LZcxYDzHGdV4BmA8g1FMEYx7KDnysBmQpE_iAjA@mail.gmail.com>
+Subject: Re: [PATCH] binfmt_script: do not leave interp on stack
+From: Kees Cook <keescook@chromium.org>
+To: halfdog <me@halfdog.net>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 13, 2012 at 12:04:55PM -0400, Christoph Hellwig wrote:
-> On Sat, Oct 13, 2012 at 05:01:15PM +0100, Al Viro wrote:
-> > You know, I'm in the middle of dealing with one such TODO.  Yours, as it
-> > were.  From six years ago.  kernel_thread() unexporting.  TODO comments
-> > of any form are routinely shat upon and ignored, especially when shuffled
-> > away into less read parts of the tree... ;-/
-> > 
-> > I'd rather see it done fs-by-fs.  Starting with something reasonably easy
-> > to test - minixfs would do nicely.  Don't get me wrong - I'm all for
-> > burying ->truncate(); what I'm worried about is that we'll end up burying
-> > the warning about the reasons why vmtruncate() was a bad idea, leaving the
-> > functionality exactly as it used to be...
-> 
-> As mentioned I agree with the concern in principle.  Let's start by
-> taking Marco's patches for filesystems that use vmtruncate but don't 
-> actually implement ->truncate.  There's a few I remember offhand, e.g.
-> procfs and ufs right now.  Then we can do the actual work required ones
-> piece by piece.
+On Fri, Oct 12, 2012 at 10:50 PM, halfdog <me@halfdog.net> wrote:
+> Kees Cook wrote:
+>> More importantly, I also wonder if interp handling to just be
+>> changed to be an allocation that needs to be cleaned up, as done with
+>> argv?
+>
+> You mean like an allocation on the stack of the new process' growing
+> stack? This would be cleaned automatically if something goes wrong
+> during exec.
 
-Umm... That would be what, procfs?  Frankly, I'm not sure that ATTR_SIZE for
-procfs actually should not be silently ignored.  ->i_size there is completely
-synthetic - it's not as if truncation would actually change the contents.
+Either in userspace like argv, or just a straight kmalloc.
 
-And ufs situation is quite different - there vmtruncate() is used only on the
-->write_begin() side.  ->setattr() is already vmtruncate-free.  What's needed
-there is an analog of e.g. ext2_write_failed().
+Looking at the code, the problem is that binfmt_script and binfmt_misc
+are "rewrite" hacks (they change the bprm instead of actually starting
+a process), and the module loading is a hack in that it retries all
+the loaders a second time. These two hacks together aren't very
+compatible if the error path of the rewrite hacks expects to see the
+bprm go away instead of getting retried.
+
+I'm concerned that the proposed patch is really just a band-aid on top
+of a broken design.
+
+To make this safe, either the bprm needs to be explicitly copied for
+each recursion attempt (so the post-module-load retry starts with a
+clean bprm), or everything about the bprm needs to stay off the stack
+(to allow rewrite modifications to be stable).
+
+I think the latter approach is best since it means we don't have to
+execute the rewrite logic twice. It just means we must take a closer
+look at the lifetime of that structure and make sure we're cleaning it
+up correctly.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
