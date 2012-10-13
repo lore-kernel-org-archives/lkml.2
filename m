@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139Ab2JMGyW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 02:54:22 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57165 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab2JMGyU (ORCPT
+	id S1751962Ab2JMHBg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 03:01:36 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:28668 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975Ab2JMHBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 02:54:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120914191535.GA5992@joi.lan>
-References: <20120712213305.GA11128@sli.dy.fi>
-	<20120914191535.GA5992@joi.lan>
-Date: Sat, 13 Oct 2012 09:54:19 +0300
-X-Google-Sender-Auth: 3ShyObrXFZeBO106k5MhHa7orBs
-Message-ID: <CAOJsxLGeS0Dv1CnJ1gsmOOPqhQ4vQQUNkkGGYzzsccUd195pWA@mail.gmail.com>
-Subject: Re: kmemcheck: Fatal error; system fails to boot when kmemcheck enabled
-From: Pekka Enberg <penberg@kernel.org>
-To: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Sami Liedes <sami.liedes@iki.fi>, Vegard Nossum <vegardno@ifi.uio.no>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 13 Oct 2012 03:01:34 -0400
+X-AuditID: cbfee61b-b7fd46d0000046e0-b0-507911cd5fc6
+Message-id: <507911BA.3080204@samsung.com>
+Date: Sat, 13 Oct 2012 16:01:14 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827
+ Thunderbird/15.0
+MIME-version: 1.0
+To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+Cc: linux-kernel@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH] sdhci: put regulator if probe fails
+References: <1350089717-4050-1-git-send-email-cascardo@holoscopio.com>
+In-reply-to: <1350089717-4050-1-git-send-email-cascardo@holoscopio.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLLMWRmVeSWpSXmKPExsVy+t9jAd2zgpUBBj8PcFhc3jWHzeLI/35G
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDKWNxQW3OOtmLTlLXMD40zuLkYODgkBE4kri6q7GDmB
+	TDGJC/fWs3UxcnEICSxilJh4bxoThPOSUeLkoc3MIFW8AloSSy9uZwGxWQRUJR4/OcQIYrMJ
+	6Ehs/3acCcQWFQiRWDL3KztEvaDEj8n3wOpFBKwlOn/sAoszC0RJ/L1+HywuLGAhsWbBcrBe
+	IQE3ia7di8BqOAXcJTYf+8QMUa8jsb91GhuELS+xec1b5gmMArOQrJiFpGwWkrIFjMyrGEVT
+	C5ILipPSc430ihNzi0vz0vWS83M3MYID8Zn0DsZVDRaHGAU4GJV4eG91VwQIsSaWFVfmHmKU
+	4GBWEuHlSwcK8aYkVlalFuXHF5XmpBYfYpTmYFES5232SAkQEkhPLEnNTk0tSC2CyTJxcEo1
+	MAb8Ff+rHp4b/HqulfIiu2VPfvx48ubd+YTK6r85wYysB9J9OOycp97mXW/x2ogtK/oKw+pJ
+	G78W+J7cfjrs8muR3O7+P7/YCt7qZ+q+PxZ96BhLbc/Hzosmt/6u2BC2/6htxdMHmzfy9u6q
+	nvns3DSO+kkOMndezOix3ffqRtXO5ZYH90sLljoqsRRnJBpqMRcVJwIAQciMs0ACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 14, 2012 at 10:15 PM, Marcin Slusarz
-<marcin.slusarz@gmail.com> wrote:
-> [    3.017200] ------------[ cut here ]------------
-> [    3.017203] ------------[ cut here ]------------
-> [    3.017208] WARNING: at arch/x86/mm/kmemcheck/kmemcheck.c:634 kmemcheck_fault+0xb9/0xd0()
->
-> this is WARN_ON_ONCE(in_nmi());
->
-> [    3.017209] Hardware name: System Product Name
-> [    3.017210] Modules linked in:
-> [    3.017211] Pid: 1, comm: swapper/0 Not tainted 3.6.0-rc5+ #1147
-> [    3.017212] Call Trace:
-> [    3.017217]  <NMI>  [<ffffffff9006f12a>] warn_slowpath_common+0x7a/0xb0
-> [    3.017219]  [<ffffffff9006f175>] warn_slowpath_null+0x15/0x20
-> [    3.017220]  [<ffffffff90069c89>] kmemcheck_fault+0xb9/0xd0
-> [    3.017222]  [<ffffffff90063d9e>] do_page_fault+0x3ae/0x490
-> [    3.017225]  [<ffffffff90364bd2>] ? put_dec+0x72/0x90
-> [    3.017226]  [<ffffffff903656f4>] ? number.isra.2+0x304/0x330
-> [    3.017228]  [<ffffffff90368cad>] ? trace_hardirqs_off_thunk+0x3a/0x3c
-> [    3.017232]  [<ffffffff906206ef>] page_fault+0x1f/0x30
-> [    3.017235]  [<ffffffff903f136f>] ? vt_console_print+0x9f/0x3a0
-> [    3.017237]  [<ffffffff903f1334>] ? vt_console_print+0x64/0x3a0
-> [    3.017239]  [<ffffffff9006faf8>] ? msg_print_text+0x158/0x1b0
-> [    3.017241]  [<ffffffff90070983>] call_console_drivers.constprop.12+0x93/0xb0
-> [    3.017242]  [<ffffffff90070b94>] console_unlock+0x1f4/0x460
-> [    3.017244]  [<ffffffff900710ae>] vprintk_emit+0x19e/0x520
-> [    3.017246]  [<ffffffff90069c89>] ? kmemcheck_fault+0xb9/0xd0
-> [    3.017248]  [<ffffffff90615523>] printk+0x5c/0x5e
-> [    3.017250]  [<ffffffff90069c89>] ? kmemcheck_fault+0xb9/0xd0
-> [    3.017252]  [<ffffffff9006f0e8>] warn_slowpath_common+0x38/0xb0
-> [    3.017253]  [<ffffffff9006f175>] warn_slowpath_null+0x15/0x20
-> [    3.017255]  [<ffffffff90069c89>] kmemcheck_fault+0xb9/0xd0
-> [    3.017256]  [<ffffffff90063d9e>] do_page_fault+0x3ae/0x490
-> [    3.017258]  [<ffffffff90368cad>] ? trace_hardirqs_off_thunk+0x3a/0x3c
-> [    3.017260]  [<ffffffff906206ef>] page_fault+0x1f/0x30
-> [    3.017263]  [<ffffffff90048ad2>] ? x86_perf_event_update+0x2/0x70
-> [    3.017265]  [<ffffffff9004e591>] ? intel_pmu_save_and_restart+0x11/0x20
-> [    3.017266]  [<ffffffff9004e6c1>] intel_pmu_handle_irq+0x121/0x300
-> [    3.017268]  [<ffffffff900489d1>] perf_event_nmi_handler+0x21/0x30
-> [    3.017271]  [<ffffffff9003c9b6>] nmi_handle.isra.1+0xa6/0x1f0
-> [    3.017272]  [<ffffffff9003c910>] ? __register_nmi_handler+0x190/0x190
-> [    3.017274]  [<ffffffff9003cc18>] do_nmi+0x118/0x390
-> [    3.017277]  [<ffffffff9015fb06>] ? __d_free+0x46/0x70
-> [    3.017278]  [<ffffffff90620a76>] end_repeat_nmi+0x1e/0x2e
-> [    3.017280]  [<ffffffff9015fb06>] ? __d_free+0x46/0x70
+On 10/13/2012 09:55 AM, Thadeu Lima de Souza Cascardo wrote:
+> When using the dummy regulator, SDHCI may fail its probing because the
+> regulator does not support any voltages.
+> 
+> When reloading the driver, you will get a warning about a duplicate
+> sysfs link.
+> 
+> [72211.963386] 0000:03:00.0 supply vmmc not found, using dummy regulator
+> [72211.963409] ------------[ cut here ]------------
+> [72211.963420] WARNING: at fs/sysfs/dir.c:536 sysfs_add_one+0x99/0xad()
+> [72211.963424] Hardware name:
+> [72211.963429] sysfs: cannot create duplicate filename '/devices/platform/reg-dummy/regulator/regulator.0/0000:03:00.0-vmmc'
+> 
+> Avoid this by properly cleaning up when the probe fails calling
+> regulator_put. Other fail paths get fixed as well.
+> 
+> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+> ---
+>  drivers/mmc/host/sdhci.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index 7922adb..dd6bc26 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -2992,7 +2992,8 @@ int sdhci_add_host(struct sdhci_host *host)
+>  	if (mmc->ocr_avail == 0) {
+>  		pr_err("%s: Hardware doesn't report any "
+>  			"support voltages.\n", mmc_hostname(mmc));
+> -		return -ENODEV;
+> +		ret = -ENODEV;
+> +		goto out_vmmc;
+>  	}
+>  
+>  	spin_lock_init(&host->lock);
+> @@ -3121,6 +3122,9 @@ reset:
+>  untasklet:
+>  	tasklet_kill(&host->card_tasklet);
+>  	tasklet_kill(&host->finish_tasklet);
+> +out_vmmc:
+> +	if (host->vmmc)
+> +		regulator_put(host->vmmc);
+If fall down to untasklet, need not to disable regulator for vmmc?
 
-Looking at the trace, we *are* in the perf NMI handler. So I'm
-guessing we ought to annotate some of the core perf kmalloc()'s with
-__GFP_NOTRACK to make sure kmemcheck does not kick in.
+Best Regards,
+Jaehoon Chung
+>  
+>  	return ret;
+>  }
+> 
+
