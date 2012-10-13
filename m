@@ -1,44 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923Ab2JMQxA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 12:53:00 -0400
-Received: from nm26-vm10.bullet.mail.sg3.yahoo.com ([106.10.151.121]:22073
-	"EHLO nm26-vm10.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751424Ab2JMQw7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 12:52:59 -0400
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 735321.58649.bm@omp1023.mail.sg3.yahoo.com
-X-YMail-OSG: wFQ7UGsVM1mxDNUCvCB_lrmdk8C.SxD8wAEbZTBs4aMMWZP
- bDESdHx3mQsbkTQNdQzeoy3ukLpjYHyC2TXPYnNFc84SizhWa9vRWg7yAIdj
- vO.sDwvZyCg5bAXglQAEgix5AvgXXDCwYEtGNLIqQZmkmOiDUrcN29IlQTeO
- X_cR9Pb44iV4WfyFOKIBC2gSNIQNyNPsyHAXUvD.hNCEflRpTEoVSVGoerbC
- lMlzAMGxnUUc.GyVzE_uGzAwFtJiN9TKHfF1Il3HmdVwk9rtUzKCVpX3L4q5
- 46C0dC4HFB5fRcQlXMW8nxDCwpDZcCmZnT7e7ieRGKwKkqbOy1jF.jLHrdrl
- 7kF2fiOs6OwlD08Rg2P3r6T._uOxJc21hYqzu7o_BIlh1eSAZFfnmeAMTah1
- RFX7AwL1A.7NF1ithBZUVnEYxRxBuM2xwj_RpkW6YfWzzreSjvtcAX900FS_
- XlNYbuiOwktTfRjEt7HOEsGMK5FPZJP1UF6BFaikrY5UucAfIpUWERYNLy1A
- lHPM8ERHsACDpVcPluDLfpQBbpIbfJk_Cs0IPwaXr_BP5ORwCA...sNm2g4P
- I.KHWhIKahxtEKG_jjE5xL7bTUXDy2keX
-X-Rocket-MIMEInfo: 001.001,CkdyZWV0aW5ncyBmcm9tIEJVUktJTkEgRkFTTzoKTGV0IG1lIHN0YXJ0IGJ5IGludHJvZHVjZSBteXNlbGYsSSBhbSBNcnMgUnV0aCBZb2RhLCBCSUxMIEFORCBFWENIQU5HRSBNQU5BR0VSIChCYW5rIG9mIEFmcmljYSkgT3VhZ2Fkb3Vnb3UsIEJ1cmtpbmEgRmFzby5JIGFtIHdyaXR0aW5nIHlvdSB0aGlzIGxldHRlciBiYXNlZCBvbiB0aGUgbGF0ZXN0IGRldmVsb3BtZW50IGF0IG91ciBiYW5rIHdoaWNoIEkgd2lsbCBsaWtlIHRvIGJyaW5nIHRvIHlvdXIgcGVyc29uYWwgZWRpZmljYXRpb24uKCQxMiwyNTABMAEBAQE-
-X-RocketYMMF: anir82
-X-Mailer: YahooMailClassic/15.0.8 YahooMailWebService/0.8.123.450
-Message-ID: <1350147177.61138.YahooMailClassic@web193103.mail.sg3.yahoo.com>
-Date: Sun, 14 Oct 2012 00:52:57 +0800 (SGT)
-From: Ruth Yoda <ruth_y2@qq.com>
-Reply-To: ruth_y1@qq.com
-Subject: Re:Very Urgent!!!
-To: undisclosed recipients:;
+	id S1753949Ab2JMRB2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 13:01:28 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:58067 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753870Ab2JMRB0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Oct 2012 13:01:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <3084988.3Xup6S3alX@avalon>
+References: <1350085772-8755-1-git-send-email-mcgrof@do-not-panic.com>
+ <1350085772-8755-2-git-send-email-mcgrof@do-not-panic.com> <3084988.3Xup6S3alX@avalon>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Sat, 13 Oct 2012 10:00:42 -0700
+X-Google-Sender-Auth: cys8VhjvKWHk-ygjaUECoLtysJs
+Message-ID: <CAB=NE6UUL+zCSMwy4yzZq7+3pDLxZNsusSvXyJv4gi3_rz2ugg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] uapi: update includes for drm content when no kernel
+ API exists
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, backports@vger.kernel.org, rob@ti.com,
+        arnd@arndb.de, davej@redhat.com, airlied@linux.ie, bskeggs@redhat.com,
+        alan@lxorguk.ukuu.org.uk, dhowells@redhat.com, tglx@linutronix.de,
+        daniel.vetter@ffwll.ch, jbarnes@virtuousgeek.org,
+        alexander.deucher@amd.com, paulmck@linux.vnet.ibm.com,
+        gregkh@linuxfoundation.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Oct 13, 2012 at 3:33 AM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hi Luis,
+>
+> On Friday 12 October 2012 16:49:31 Luis R. Rodriguez wrote:
+>> From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+>>
+>> The UAPI changes split kernel API and userspace API
+>> content onto two separate header files. The userspace
+>> API drm content was moved to include/uapi/drm/ with the
+>> same file name while kernel specific API content was
+>> kept under include/drm/ with the same file name. When
+>> one file was split into two files the kernel header
+>> includes the uapi header and a UAPI prefix was added to
+>> the uapi header for its header guard. When there was no
+>> kernel API content found the uapi header file was the
+>> only one that was kept and the original guard for the
+>> header file was kept. In this particular case the
+>> original users of this header file were not modified
+>> and the uapi header file is expected to be picked up
+>> by path.
+>>
+>> This may work well at compilation on the kernel but when
+>> backporting this creates a few complexities.
+>
+> Could you please provide more details about those complexities ?
 
-Greetings from BURKINA FASO:
-Let me start by introduce myself,I am Mrs Ruth Yoda, BILL AND EXCHANGE MANAGER (Bank of Africa) Ouagadougou, Burkina Faso.I am writting you this letter based on the latest development at our bank which I will like to bring to your personal edification.($12,250million transfer claims).This is a legitimate transaction and I agreed to offer you 30% of this money as my foreign partner after confirmation of the fund in your bank account,If you are interested,get back to me.
- 
-Yours faithful,
-Mrs Ruth Yoda.
+Sure, the backported DRM code is as-is code from linux-next. The
+header search path includes a copy of a few select header files from
+linux-next, the rest are part of the compat [0] project to help with
+backporting and the last set are from your own kernel. In this
+particular case the UAPI effort pushed into include/uapi/drm a few
+files which are now no longer present in the old include/drm/ location
+when there was no respective kernel-only APIs exposed. For DRM code
+that did not use the new uapi/drm/ path for old header includes this
+means that upon backporting the older kernel's header file would be
+used obviously leading to a series of compilation failures. By being
+explicit about the path, as was done with a few other header files, we
+can suck out DRM code intact from the kernel to be compilable for
+older kernels. As of the v3.7-rc1 the compat-drivers project [1] will
+be providing DRM modules. The new UAPI changes broke compilation on
+compat-drivers when compiling DRM code so to fix this we either patch
+code taken from the Linux kernel as I have done, force inclusion of a
+few specific headers files, or use include_next tricks. It turns out
+that forcing inclusion of -I$(M)/include/uapi as a path search prior
+to your own kernel's at compilation time did not help. The
+include_next trick can work as well but that'd mean synching the UAPI
+files regularly into compat. I'd much prefer to have code intact when
+possible when backporting so the option I stuck with then was to patch
+the code directly and then as part of compat-drivers to always copy
+that day's linux-next UAPI headers into the current directory for
+compilation. I see no other driver code using the uapi path explicitly
+though, is that by design? Would it be wrong to be explicit about
+using a UAPI header alone if no kernel API files exist?
+
+[0] https://backports.wiki.kernel.org/index.php/Documentation/compat
+[1] https://backports.wiki.kernel.org/
+
+  Luis
