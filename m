@@ -1,48 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab2JMMFT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 08:05:19 -0400
-Received: from chandra.ncl.res.in ([59.163.216.11]:55924 "EHLO
-	chandra.ncl.res.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752541Ab2JMMFM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 08:05:12 -0400
-X-Greylist: delayed 11223 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Oct 2012 08:05:11 EDT
-From: Nayana Vaval <np.vaval@ncl.res.in>
-Subject: RE-ACTIVATE YOUR EMAIL LOGIN FOR VALIDATION.
-Thread-Topic: RE-ACTIVATE YOUR EMAIL LOGIN FOR VALIDATION.
-Thread-Index: Ac2pH6dYhlsD9UPrRg2CNCDX2zkh1A==
-Date: Sat, 13 Oct 2012 08:49:28 +0000
-Message-ID: <0443825C5CEE3F4DB0C4FC4C72C2DAA881D013@mailsrv01.ncl.res.in>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [101.62.8.71]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753432Ab2JMMIp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 08:08:45 -0400
+Received: from [184.107.172.18] ([184.107.172.18]:54954 "EHLO linux.z1z.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753100Ab2JMMIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Oct 2012 08:08:41 -0400
+To: linux-kernel@vger.kernel.org
+Subject: Flood victims In Nigeria....Urgent Help needed
+From: Don Obi <creativemindincalice1@hotmail.com>
+Reply-To: donobichamber@yahoo.com
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <E1TN0kk-0006i8-Aa@linux.z1z.com>
+Date: Sat, 13 Oct 2012 08:23:38 -0400
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - linux.z1z.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [749 749] / [47 12]
+X-AntiAbuse: Sender Address Domain - linux.z1z.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear Friend, My name is Don Obi, we are flood victims in Nigeria and i need your help to help me save some funds in your country.....http://pmnewsnigeria.com/2012/10/12/flood-sacks-5-banks-in-bayelsa/     http://pmnewsnigeria.com/2012/10/12/jonathan-inspects-flood-ravaged-home-state-by-air/
+
+don obi
++2348079731210
 
 
 
-Dear Webmail Customer,
-
-Your access to Webmail Access has been suspended due to a mix-match of access code between your Security details. To enable you continue accessing your Webmail account, it will only take you few minutes to re-activate your account. Click on the guide-link below and follow the directions to instant activation of your account and Security information.
-
-
-CLICK HERE: http://www.lichtstrahl.ch/anmeldungphp/use/filter/form1.html
-
-*Important*
-
-NOTE: FAILURE CAN RESULT TO PERMANENT ACCOUNT SUSPENSION.
-
-________________________________
-
-Disclaimer:
-
-This message and the information contained herein is proprietary and confidential and subject to the policy statement of the National Chemical Laboratory, Pune, India. You may review the policy at http://www.ncl-india.org/common/webmailDisclaimer.htm
