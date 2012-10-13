@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab2JMAxh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 20:53:37 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37222 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828Ab2JMAxg (ORCPT
+	id S1752932Ab2JMBCX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 21:02:23 -0400
+Received: from liberdade2.minaslivre.org ([74.50.53.203]:58969 "EHLO
+	liberdade.minaslivre.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752728Ab2JMBCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 20:53:36 -0400
-Date: Sat, 13 Oct 2012 01:53:34 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: [git pull] signals pile 3
-Message-ID: <20121013005334.GM2616@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 12 Oct 2012 21:02:22 -0400
+X-Greylist: delayed 380 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Oct 2012 21:02:22 EDT
+From: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org
+Subject: [PATCH] sdhci: put regulator if probe fails
+Date: Fri, 12 Oct 2012 21:55:17 -0300
+Message-Id: <1350089717-4050-1-git-send-email-cascardo@holoscopio.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The last bits of infrastructure for kernel_thread() et.al., with alpha/arm/x86
-use of those.  Plus sanitizing the asm glue and do_notify_resume() on alpha,
-fixing the "disabled irq while running task_work stuff" breakage there.
+When using the dummy regulator, SDHCI may fail its probing because the
+regulator does not support any voltages.
 
-At that point the rest of kernel_thread/kernel_execve/sys_execve work can
-be done independently for different architectures.  The only pending bits
-that do depend on having all architectures converted are restrictred to
-fs/* and kernel/* - that'll obviously have to wait for the next cycle.
-I thought we'd have to wait for all of them done before we start eliminating
-the longjump-style insanity in kernel_execve(), but it turned out there's
-a very simple way to do that without flagday-style changes.
+When reloading the driver, you will get a warning about a duplicate
+sysfs link.
 
-Please, pull from
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal for-linus
+[72211.963386] 0000:03:00.0 supply vmmc not found, using dummy regulator
+[72211.963409] ------------[ cut here ]------------
+[72211.963420] WARNING: at fs/sysfs/dir.c:536 sysfs_add_one+0x99/0xad()
+[72211.963424] Hardware name:
+[72211.963429] sysfs: cannot create duplicate filename '/devices/platform/reg-dummy/regulator/regulator.0/0000:03:00.0-vmmc'
 
-Shortlog:
-Al Viro (12):
-      alpha: simplify TIF_NEED_RESCHED handling
-      alpha: take SIGPENDING/NOTIFY_RESUME loop into signal.c
-      alpha: don't bother passing switch_stack separately from regs
-      alpha: get rid of switch_stack argument of do_work_pending()
-      don't bother with kernel_thread/kernel_execve for launching linuxrc
-      ppc: eeh_event should just use kthread_run()
-      make sure that we always have a return path from kernel_execve()
-      make sure that kernel_thread() callbacks call do_exit() themselves
-      infrastructure for saner ret_from_kernel_thread semantics
-      x86, um: convert to saner kernel_execve() semantics
-      arm: switch to saner kernel_execve() semantics
-      alpha: switch to saner kernel_execve() semantics
+Avoid this by properly cleaning up when the probe fails calling
+regulator_put. Other fail paths get fixed as well.
 
-Diffstat:
- arch/Kconfig                               |    3 +
- arch/alpha/Kconfig                         |    1 +
- arch/alpha/include/asm/unistd.h            |    1 -
- arch/alpha/kernel/entry.S                  |   87 +++++++++-------------------
- arch/alpha/kernel/signal.c                 |   48 +++++++++------
- arch/arm/Kconfig                           |    1 +
- arch/arm/include/asm/unistd.h              |    1 -
- arch/arm/kernel/entry-common.S             |   29 +--------
- arch/arm/kernel/process.c                  |    5 +-
- arch/powerpc/platforms/pseries/eeh_event.c |    5 +-
- arch/um/include/asm/processor-generic.h    |    2 -
- arch/um/include/shared/os.h                |    1 -
- arch/um/kernel/exec.c                      |    5 --
- arch/um/kernel/process.c                   |   10 +--
- arch/um/os-Linux/process.c                 |   13 ----
- arch/x86/Kconfig                           |    1 +
- arch/x86/include/asm/unistd.h              |    1 -
- arch/x86/kernel/entry_32.S                 |   31 ++++------
- arch/x86/kernel/entry_64.S                 |   24 +------
- arch/x86/um/Kconfig                        |    1 +
- include/linux/syscalls.h                   |    8 +++
- init/do_mounts_initrd.c                    |   41 +++++--------
- init/main.c                                |   33 ++++++-----
- kernel/kmod.c                              |    7 ++-
- kernel/kthread.c                           |    1 +
- 25 files changed, 137 insertions(+), 223 deletions(-)
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+---
+ drivers/mmc/host/sdhci.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 7922adb..dd6bc26 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -2992,7 +2992,8 @@ int sdhci_add_host(struct sdhci_host *host)
+ 	if (mmc->ocr_avail == 0) {
+ 		pr_err("%s: Hardware doesn't report any "
+ 			"support voltages.\n", mmc_hostname(mmc));
+-		return -ENODEV;
++		ret = -ENODEV;
++		goto out_vmmc;
+ 	}
+ 
+ 	spin_lock_init(&host->lock);
+@@ -3121,6 +3122,9 @@ reset:
+ untasklet:
+ 	tasklet_kill(&host->card_tasklet);
+ 	tasklet_kill(&host->finish_tasklet);
++out_vmmc:
++	if (host->vmmc)
++		regulator_put(host->vmmc);
+ 
+ 	return ret;
+ }
+-- 
+1.7.10
+
