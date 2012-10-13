@@ -1,122 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751482Ab2JMGRp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 02:17:45 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57780 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab2JMGRo (ORCPT
+	id S1751529Ab2JMGTA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 02:19:00 -0400
+Received: from mail.southpole.se ([193.12.106.18]:48040 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab2JMGS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 02:17:44 -0400
-Date: Fri, 12 Oct 2012 23:17:39 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        Jonas Aaberg <jonas.aberg@stericsson.com>, linux-input@vger.kernel.org,
-        Philippe Langlais <philippe.langlais@linaro.org>
-Subject: Re: [PATCH 1/2] input: gpio-keys: Disable hardware on suspend
-Message-ID: <20121013061739.GB10969@core.coreip.homeip.net>
-References: <1349964927-18619-1-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349964927-18619-1-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 13 Oct 2012 02:18:59 -0400
+Message-ID: <1350109135.6232.3.camel@jerome.southpole.se>
+Subject: [GIT PULL] OpenRISC UAPI disintegration
+From: Jonas Bonn <jonas@southpole.se>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Date: Sat, 13 Oct 2012 08:18:55 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Assp-Version: 2.2.1(12265) on assp.southpole.se
+X-Assp-Client-SSL: yes
+X-Assp-Server-TLS: yes
+X-Assp-ID: assp.southpole.se 09135-00451
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+This pull request contains just the UAPI disintegration work from David
+Howells.
 
-On Thu, Oct 11, 2012 at 03:15:26PM +0100, Lee Jones wrote:
-> From: Jonas Aaberg <jonas.aberg@stericsson.com>
-> 
-> Disable hardware if active when suspending if the hw can not
-> wake the system from suspend.
-> 
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Cc: linux-input@vger.kernel.org
-> Acked-by: Lee Jones <lee.jones@linaro.org>
+/Jonas
 
-If you are sending the patch then it should be signed-off-by, not
-acked-by, and it should be the very last entry.
+------
 
-> Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
-> Signed-off-by: Philippe Langlais <philippe.langlais@linaro.org>
-> Reviewed-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-> ---
->  drivers/input/keyboard/gpio_keys.c |   13 +++++++++++++
->  1 file changed, 13 insertions(+)
-> 
-> diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
-> index cbb1add..7947315 100644
-> --- a/drivers/input/keyboard/gpio_keys.c
-> +++ b/drivers/input/keyboard/gpio_keys.c
-> @@ -46,6 +46,8 @@ struct gpio_keys_drvdata {
->  	struct input_dev *input;
->  	struct mutex disable_lock;
->  	unsigned int n_buttons;
-> +	bool enabled;
-> +	bool enable_after_suspend;
->  	int (*enable)(struct device *dev);
->  	void (*disable)(struct device *dev);
->  	struct gpio_button_data data[0];
-> @@ -524,6 +526,7 @@ static int gpio_keys_open(struct input_dev *input)
->  {
->  	struct gpio_keys_drvdata *ddata = input_get_drvdata(input);
->  
-> +	ddata->enabled = true;
->  	return ddata->enable ? ddata->enable(input->dev.parent) : 0;
->  }
->  
-> @@ -533,6 +536,7 @@ static void gpio_keys_close(struct input_dev *input)
->  
->  	if (ddata->disable)
->  		ddata->disable(input->dev.parent);
-> +	ddata->enabled = false;
->  }
->  
->  /*
-> @@ -674,6 +678,7 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
->  	ddata->n_buttons = pdata->nbuttons;
->  	ddata->enable = pdata->enable;
->  	ddata->disable = pdata->disable;
-> +	ddata->enabled = false;
->  	mutex_init(&ddata->disable_lock);
->  
->  	platform_set_drvdata(pdev, ddata);
-> @@ -789,6 +794,10 @@ static int gpio_keys_suspend(struct device *dev)
->  			if (bdata->button->wakeup)
->  				enable_irq_wake(bdata->irq);
->  		}
-> +	} else {
-> +		ddata->enable_after_suspend = ddata->enabled;
-> +		if (ddata->enabled)
-> +			gpio_keys_close(ddata->input);
+The following changes since commit
+4d7127dace8cf4b05eb7c8c8531fc204fbb195f4:
 
-I think it should take ddata->input->mutex to avoid races with
-open/close and use ddata->input->users to figure out if device shoudl be
-closed and re-opened later.
+  Merge branch 'for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security
+(2012-10-13 11:29:00 +0900)
 
-Thanks.
+are available in the git repository at:
 
->  	}
->  
->  	return 0;
-> @@ -807,6 +816,10 @@ static int gpio_keys_resume(struct device *dev)
->  		if (gpio_is_valid(bdata->button->gpio))
->  			gpio_keys_gpio_report_event(bdata);
->  	}
-> +
-> +	if (!device_may_wakeup(dev) && ddata->enable_after_suspend)
-> +		gpio_keys_open(ddata->input);
-> +
->  	input_sync(ddata->input);
->  
->  	return 0;
-> -- 
-> 1.7.9.5
-> 
 
--- 
-Dmitry
+  git://openrisc.net/jonas/linux tags/openrisc-uapi
+
+for you to fetch changes up to 6257c5740e9f876f4097f6c67ec69576c23abb82:
+
+  Merge tag 'disintegrate-openrisc-20121009' of
+git://git.infradead.org/users/dhowells/linux-headers (2012-10-13
+07:38:37 +0200)
+
+----------------------------------------------------------------
+
+OpenRISC UAPI disintegration work from David Howells.
+
+----------------------------------------------------------------
+David Howells (1):
+      UAPI: (Scripted) Disintegrate arch/openrisc/include/asm
+
+Jonas Bonn (1):
+      Merge tag 'disintegrate-openrisc-20121009' of
+git://git.infradead.org/users/dhowells/linux-headers
+
+ arch/openrisc/include/asm/Kbuild                  |    2 -
+ arch/openrisc/include/asm/elf.h                   |   51
++--------------
+ arch/openrisc/include/asm/ptrace.h                |   17 +----
+ arch/openrisc/include/uapi/asm/Kbuild             |    7 +++
+ arch/openrisc/include/{ => uapi}/asm/byteorder.h  |    0
+ arch/openrisc/include/uapi/asm/elf.h              |   69
++++++++++++++++++++++
+ arch/openrisc/include/{ => uapi}/asm/kvm_para.h   |    0
+ arch/openrisc/include/{ => uapi}/asm/param.h      |    0
+ arch/openrisc/include/uapi/asm/ptrace.h           |   35 +++++++++++
+ arch/openrisc/include/{ => uapi}/asm/sigcontext.h |    0
+ arch/openrisc/include/{ => uapi}/asm/unistd.h     |    0
+ 11 files changed, 113 insertions(+), 68 deletions(-)
+ rename arch/openrisc/include/{ => uapi}/asm/byteorder.h (100%)
+ create mode 100644 arch/openrisc/include/uapi/asm/elf.h
+ rename arch/openrisc/include/{ => uapi}/asm/kvm_para.h (100%)
+ rename arch/openrisc/include/{ => uapi}/asm/param.h (100%)
+ create mode 100644 arch/openrisc/include/uapi/asm/ptrace.h
+ rename arch/openrisc/include/{ => uapi}/asm/sigcontext.h (100%)
+ rename arch/openrisc/include/{ => uapi}/asm/unistd.h (100%)
+
+
