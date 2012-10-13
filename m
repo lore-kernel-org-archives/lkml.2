@@ -1,47 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab2JMTin (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 15:38:43 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40950 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027Ab2JMTim (ORCPT
+	id S1754094Ab2JMUwU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 16:52:20 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:64294 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752705Ab2JMUwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 15:38:42 -0400
-Date: Sat, 13 Oct 2012 20:38:39 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-arch@vger.kernel.org
-Subject: [RFC] desired behaviour of syscall tracing wrt fork()
-Message-ID: <20121013193839.GU2616@ZenIV.linux.org.uk>
+	Sat, 13 Oct 2012 16:52:19 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: =?utf-8?q?=EA=B9=80=EC=9E=AC=EA=B7=B9?= <jaegeuk.kim@samsung.com>
+Subject: Re: [PATCH 11/16] f2fs: add inode operations for special inodes
+Date: Sat, 13 Oct 2012 20:52:09 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+References: <001201cda2f1$633db960$29b92c20$%kim@samsung.com>
+In-Reply-To: <001201cda2f1$633db960$29b92c20$%kim@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201210132052.09835.arnd@arndb.de>
+X-Provags-ID: V02:K0:6iNVcYq5wiDaVCxPkWOxNDDCSYYlvsr391x/Q3+s8U4
+ t/fSo64MgiMRUM5CXwa9o1wwsM+K0JeuL/3eRwj3cfgRRr2BR1
+ 5JGyQE2OBHeBPT+at+j/tT/uEftogCW5eqLt0hVJ0dO2MMJm9Y
+ Iq6uT8Zc7xMKL7YfXnKcMYGrUHuoHHqRHhv5cIjiIVW8W/lWQH
+ g2znXounX7PyTAzqfWVgHq2OOCfr/tm6DqE1chmVMIV0OSq7dy
+ qB4DEeOXrLnjKkyflZMCcWW8mk3v0bOPnjT7DmdphibV0RyS5F
+ +bfuUUyF5Po727zP0IWtaKiVOQDyP3qYkLOuzmrokAeVW/mOm1
+ qXgBlf9uOz8DyjF6r6KM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	There's a lovely incosistency regarding whether we call
-trace_sys_exit() for child process on return from fork()/clone()/etc.
-The current situation:
-	* called on amd64 for 32bit newborns
-	* *NOT* called on i386 or amd64 for 64bit ones
-	* not called on arm
-	* called on ppc, s390, sh and sparc64
-	* not wired on anything else
-Note that existing in-kernel users of that tracepoint (ftrace and perf)
-both at least attempt to bail out in that situation.  However, the
-way it's done is not guaranteed to work if we wire more architectures -
-it relies on syscall_get_nr() returning negative in child, which might
-or might not work everywhere.  If nothing else, it's a landmine to
-avoid...
+On Friday 05 October 2012, 김재극 wrote:
+> +const char *media_ext_lists[] = {
+> +       "jpg",
+> +       "gif",
+> +       "png",
+> +       "avi",
+> +       "divx",
+> +       "mp4",
+> +       "mp3",
+> ...
 
-	FWIW, I'd vote for not calling syscall_trace_...() on the way
-from ret_from_fork() - nothing in there really wants to be called
-for newborns; e.g. TIF_SYSCALL_TRACE is explicitly turned off for
-newborns, audit_syscall_exit() will not see ->in_syscall set and will
-log nothing and existing users of trace_sys_exit() at least attempt
-to skip doing anything on those.
+> + * Set multimedia files as cold files for hot/cold data separation
+> + */
+> +static inline void set_cold_file(struct inode *inode, const unsigned char *name)
+> +{
+> +       const char **extlist = media_ext_lists;
+> +
+> +       while (*extlist) {
+> +               if (!is_multimedia_file(name, *extlist)) {
+> +                       F2FS_I(inode)->is_cold = 1;
+> +                       break;
+> +               }
+> +               extlist++;
+> +       }
+> +}
 
-	Comments?  AFAICS, it's not that much surgery to do...
+This is a very clever way of categorizing files by their name, but I wonder if hardcoding
+the list of file name extensions at in the kernel source is the best strategy. Generally
+I would consider this to be a policy that should be configurable by the user.
+
+Unfortunately I can't think of a good interface to configure this, but maybe someone
+else has a useful idea. Maybe the list can be stored in the superblock and get written
+at mkfs time from the same defaults, but with the option of overriding it using
+a debugfs tool.
+
+	Arnd
