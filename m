@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab2JMDTq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 23:19:46 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53064 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027Ab2JMDTp (ORCPT
+	id S1752415Ab2JMDy5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 23:54:57 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:46343 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819Ab2JMDy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 23:19:45 -0400
-Date: Fri, 12 Oct 2012 23:19:41 -0400 (EDT)
-Message-Id: <20121012.231941.1930318153077157651.davem@davemloft.net>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 20/25] sparc: Use Kbuild infrastructure to handle
- asm-generic headers
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20121013022955.307620438@goodmis.org>
-References: <20121013022632.024527228@goodmis.org>
-	<20121013022955.307620438@goodmis.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Oct 2012 23:54:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.0811091803320.23782@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.0811091803320.23782@swampdragon.chaosbits.net>
+Date: Sat, 13 Oct 2012 00:54:55 -0300
+Message-ID: <CALF0-+Vtmwu9rCc9BYiDx2O2GQWezK40BYR2LP_ve2YjCt=Afg@mail.gmail.com>
+Subject: Re: [PATCH] [media] stk1160: Remove dead code from stk1160_i2c_read_reg()
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
-Date: Fri, 12 Oct 2012 22:26:52 -0400
+On Sun, Nov 9, 2008 at 2:04 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> There are two checks for 'rc' being less than zero with no change to
+> 'rc' between the two, so the second is just dead code - remove it.
+>
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  drivers/media/usb/stk1160/stk1160-i2c.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/media/usb/stk1160/stk1160-i2c.c b/drivers/media/usb/stk1160/stk1160-i2c.c
+> index 176ac93..035cf8c 100644
+> --- a/drivers/media/usb/stk1160/stk1160-i2c.c
+> +++ b/drivers/media/usb/stk1160/stk1160-i2c.c
+> @@ -117,9 +117,6 @@ static int stk1160_i2c_read_reg(struct stk1160 *dev, u8 addr,
+>                 return rc;
+>
+>         stk1160_read_reg(dev, STK1160_SBUSR_RD, value);
+> -       if (rc < 0)
+> -               return rc;
+> -
+>         return 0;
+>  }
+>
 
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> Use Kbuild infrastructure to handle the asm-generic headers
-> and remove the wrapper headers that call them.
-> 
-> This only affects headers that do nothing but include the generic
-> equivalent. It does not touch any header that does a little more.
-> 
-> Cc: linux-kbuild@vger.kernel.org
-> Cc: sparclinux@vger.kernel.org
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Thanks for doing this. Wouldn't you like to save stk1160_read_reg
+return code to rc, instead of this?
 
-Acked-by: David S. Miller <davem@davemloft.net>
+    Ezequiel
