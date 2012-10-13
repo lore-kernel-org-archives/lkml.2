@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254Ab2JMKSG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 06:18:06 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:41447 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab2JMKSE (ORCPT
+	id S1753393Ab2JMKSM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 06:18:12 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:63459 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753264Ab2JMKSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 06:18:04 -0400
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnphAMQ+eVBV5h1yPGdsb2JhbABFhSmFI7UfGQEBAQEfGQ0ngk4vEwEPGIECChoKCYgIu1wUkgIDm12NLg
-X-IronPort-AV: E=Sophos;i="4.80,581,1344204000"; 
-   d="scan'208";a="428601574"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Peter Stuge <peter@stuge.se>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>, stable@kernel.org
-Subject: [PATCH v3] usbdevfs: Fix broken scatter-gather transfer
-Date: Sat, 13 Oct 2012 12:20:36 +0200
-Message-Id: <1350123636-4801-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.12.2
+	Sat, 13 Oct 2012 06:18:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121013022632.024527228@goodmis.org>
+References: <20121013022632.024527228@goodmis.org>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Sat, 13 Oct 2012 11:17:46 +0100
+X-Google-Sender-Auth: N2IPBDwrAIpxngKfVnrtnzpBjGM
+Message-ID: <CAHkRjk4D87V9F2-Y5d1A-s+mnt_TpkOSg+dLz6cRtR25aqqoUg@mail.gmail.com>
+Subject: Re: [PATCH 00/25] asm-generic: Convert all to use Kbuild file
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The handling of large output bulk transfers is broken; the same user
-page is read over and over again. Fixed with this patch.
+Hi Steven,
 
-Cc: stable@kernel.org
-Acked-by: Peter Stuge <peter@stuge.se>
-Acked-by: Hans de Goede <hdegoede@redhat.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
-Hi Greg,
+On 13 October 2012 03:26, Steven Rostedt <rostedt@goodmis.org> wrote:
+> Recently I suggested to someone that was adding a new asm file that
+> currently only contained an x86 change to add a header in all archs
+> that was just a wrapper to point to the asm-generic version. I suggested
+> this because that's the way we use to do it and just to refresh my
+> memory, I looked at div64.h in a few archs and saw that was the case.
+>
+> After having the change done and just after finishing testing it, I was
+> notified that the "proper" way of doing this is to add it to the
+>
+>   arch/*/include/asm/Kbuild
+>
+> file, as 'generic-y += foo.h' and it will reference the asm-generic
+> file automatically. Well it would have been nice if I knew this before
+> and wasn't confused by seeing the incorrect method.
 
-Here is the formal and third version of the patch. Version two still
-made me nervous, so I moved the increment to where it is clear that
-the buffer pointer is never referenced again later in the function. I
-still kept the ACKS, hope that is alright with everyone.
+Since you are  cleaning this up already, could you please merge these
+patches into your series:
 
-Thanks,
-Henrik
+https://lkml.org/lkml/2012/10/11/291
 
- drivers/usb/core/devio.c | 1 +
- 1 file changed, 1 insertion(+)
+The first patch adds support for generic-y in the new
+arch/*/include/uapi/asm/Kbuild file, followed by few patches to
+convert three architectures. There will probably be more to convert
+after -rc1.
 
-diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-index ebb8a9d..7f75343 100644
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -1348,6 +1348,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
- 					ret = -EFAULT;
- 					goto error;
- 				}
-+				uurb->buffer += u;
- 			}
- 			totlen -= u;
- 		}
+Thanks.
+
 -- 
-1.7.12.2
-
+Catalin
