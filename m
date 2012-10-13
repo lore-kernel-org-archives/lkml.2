@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640Ab2JMODf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 10:03:35 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60210 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab2JMODc (ORCPT
+	id S1753618Ab2JMOIW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 10:08:22 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:35521 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727Ab2JMOIT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 10:03:32 -0400
+	Sat, 13 Oct 2012 10:08:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <877gqu90x1.fsf@devron.myhome.or.jp>
-References: <1349598764-3252-1-git-send-email-linkinjeon@gmail.com>
-	<877gqu90x1.fsf@devron.myhome.or.jp>
-Date: Sat, 13 Oct 2012 23:03:31 +0900
-Message-ID: <CAKYAXd_vWenGBzRoh9cv_Qet_znyPhe_2QpBp29mZJqqoKEFgg@mail.gmail.com>
-Subject: Re: [PATCH v4 3/4] fat (exportfs): rebuild directory-inode if
- fat_dget() fails
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20121013122242.GL12801@game.jcrosoft.org>
+References: <142ef9170a2c69657d8a05ac127a9970d7b04965.1350051925.git.viresh.kumar@linaro.org>
+	<2039bc164224b0068bc078b6cd8df6218e754fce.1350051925.git.viresh.kumar@linaro.org>
+	<20121012144837.GE12801@game.jcrosoft.org>
+	<CAKohpo=vMchmiz70evBB5bPqt4O4DWUocd5M1o9gc8fsY_Fkiw@mail.gmail.com>
+	<20121012162148.GH12801@game.jcrosoft.org>
+	<CAKohpok5ZOmz9CCJbTGc=_tncxnZYEW7UMh2FcFcs0dB87JAcQ@mail.gmail.com>
+	<20121013064422.GJ12801@game.jcrosoft.org>
+	<CAKohpokfei_ryGKMh4wE9D=wyRZCkddc+Da1cq+3facTHradKQ@mail.gmail.com>
+	<20121013122242.GL12801@game.jcrosoft.org>
+Date: Sat, 13 Oct 2012 19:38:18 +0530
+Message-ID: <CAKohpom-P+=QfVNBsypq70+o+z_5J63RD72DA-_CakTM9LDCNA@mail.gmail.com>
+Subject: Re: [PATCH V2 3/3] ARM: SPEAr13xx: Pass DW DMAC platform data from DT
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: andriy.shevchenko@linux.intel.com, vinod.koul@intel.com,
+        spear-devel@list.st.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/13 OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->> +     if (!fat_get_dotdot_entry(child_dir->d_inode, &dotdot_bh, &de)) {
->> +             parent_logstart = fat_get_start(sbi, de);
->>               parent_inode = fat_dget(sb, parent_logstart);
->> +             if (parent_inode || sbi->options.nfs != FAT_NFS_NOSTALE_RO)
->> +                     goto out;
->> +             if (!parent_logstart)
->> +                     /*logstart of dotdot entry is zero if
->> +                     * if the directory's parent is root
->> +                     */
->> +                     parent_inode = sb->s_root->d_inode;
->
-> get_parent() should not be called for root dir, right?
-Yes.
->
->> +                     blknr = fat_clus_to_blknr(sbi, parent_logstart);
->> +                     parent_bh = sb_bread(sb, blknr);
->> +                     if (!parent_bh) {
->> +                             fat_msg(sb, KERN_ERR,
->> +                                     "NFS:unable to read cluster of parent directory");
->> +                             goto out;
->> +                     }
->> +                     de = (struct msdos_dir_entry *) parent_bh->b_data;
->> +                     clus_to_match = fat_get_start(sbi, &de[0]);
->> +                     search_clus = fat_get_start(sbi, &de[1]);
->> +                     if (!search_clus)
->> +                             search_clus = sbi->root_cluster;
->> +                     brelse(parent_bh);
->> +                     do {
->> +                             parent_inode =  fat_traverse_cluster(sb,
->> +                                             search_clus, clus_to_match);
->> +                             if (IS_ERR(parent_inode) || parent_inode)
->> +                                     break;
->> +                             search_clus = fat_read_next_clus(sb,
->> +                                                             search_clus);
->> +                             if (search_clus < 0)
->> +                                     break;
->> +                     } while (search_clus != FAT_ENT_EOF);
->> +             }
->
-> Please make this part as own function at least. And this is doing same
-> thing with readdir, so we will have to clean this up as I said before.
-Okay, I will.
+On 13 October 2012 17:52, Jean-Christophe PLAGNIOL-VILLARD
+<plagnioj@jcrosoft.com> wrote:
+> On 14:18 Sat 13 Oct     , Viresh Kumar wrote:
+>>    On Oct 13, 2012 12:16 PM, "Jean-Christophe PLAGNIOL-VILLARD"
+>>    <plagnioj@jcrosoft.com> wrote:
+>>    >
+>>    > On 22:42 Fri 12 Oct     , Viresh Kumar wrote:
+>>    > > On 12 October 2012 21:51, Jean-Christophe PLAGNIOL-VILLARD
+>>    > > <plagnioj@jcrosoft.com> wrote:
+>>    > > >> >> +     OF_DEV_AUXDATA("arasan,cf-spear1340", MCIF_CF_BASE, NULL,
+>>    "cf"),
+>>    > > >> > ?/
+>>    > > >>
+>>    > > >> Sorry. can't get it :(
+>>    > > > what is the "cf" as paltfrom data
+>>    > >
+>>    > > This is dma bus_id string, which matches with what is passed from dtb.
+>>    > so pass if via dtb too
+>>
+>>    Yes. Already passed in 13xx.dtsi.
+> so why do you keep the AUXDATA
 
-Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Because the compact flash driver expects it via platform data and not
+via DT. yes, it
+can be changed, but that wasn't the target of this patchset. If it has
+to be done, then
+it has to be done separately by ST guys.
+
+--
+viresh
