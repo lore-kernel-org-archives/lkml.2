@@ -1,129 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab2JMIx2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 04:53:28 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46764 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285Ab2JMIx0 (ORCPT
+	id S1752749Ab2JMJBS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 05:01:18 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:50229 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419Ab2JMJBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 04:53:26 -0400
-Message-ID: <50792BF7.5020908@gmail.com>
-Date: Sat, 13 Oct 2012 10:53:11 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Sat, 13 Oct 2012 05:01:17 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v4 2/4] fat (exportfs): rebuild inode if ilookup() fails
+References: <1349598747-3218-1-git-send-email-linkinjeon@gmail.com>
+Date: Sat, 13 Oct 2012 18:01:04 +0900
+In-Reply-To: <1349598747-3218-1-git-send-email-linkinjeon@gmail.com> (Namjae
+	Jeon's message of "Sun, 7 Oct 2012 04:32:27 -0400")
+Message-ID: <87bog6925r.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Balaji T K <balajitk@ti.com>, linux-mmc@vger.kernel.org,
-        Venkatraman S <svenkatr@ti.com>, Chris Ball <cjb@laptop.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-omap@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] MMC: omap_hsmmc: set platform data after probe from
- DT node
-References: <1350039495-360-1-git-send-email-zonque@gmail.com> <1350039495-360-2-git-send-email-zonque@gmail.com> <5078295E.2090803@gmail.com> <50782F82.8060206@ti.com> <507833ED.8060903@gmail.com> <507835E9.9020200@ti.com> <ae718323-6d65-4e69-b8f9-6382c6299294@email.android.com> <507920E0.2050104@gmail.com> <CACxGe6tGYrO8Z0MxiOV+rjBprRxzT-4v6CiBh8wV0Avufd0doA@mail.gmail.com>
-In-Reply-To: <CACxGe6tGYrO8Z0MxiOV+rjBprRxzT-4v6CiBh8wV0Avufd0doA@mail.gmail.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.10.2012 10:48, Grant Likely wrote:
-> On Sat, Oct 13, 2012 at 9:05 AM, Daniel Mack <zonque@gmail.com> wrote:
->> Hi Grant,
->>
->> On 13.10.2012 02:05, Grant Likely wrote:
->>>
->>>
->>> Balaji T K <balajitk@ti.com> wrote:
->>>
->>>> On Friday 12 October 2012 08:44 PM, Daniel Mack wrote:
->>>>> On 12.10.2012 16:56, Balaji T K wrote:
->>>>>> On Friday 12 October 2012 07:59 PM, Daniel Mack wrote:
->>>>>>> On 12.10.2012 12:58, Daniel Mack wrote:
->>>>>>>> diff --git a/drivers/mmc/host/omap_hsmmc.c
->>>> b/drivers/mmc/host/omap_hsmmc.c
->>>>>>>> index 19ccb59..4b70823 100644 ---
->>>>>>>> a/drivers/mmc/host/omap_hsmmc.c +++
->>>>>>>> b/drivers/mmc/host/omap_hsmmc.c @@ -1728,6 +1728,7 @@
->>>>>>>> static int __devinit omap_hsmmc_probe(struct
->>>> platform_device *pdev)
->>>>>>>> const u16 *offsetp = match->data; pdata->reg_offset =
->>>>>>>> *offsetp; } +            pdev->dev.platform_data = pdata; }
->>>>>>>>
->>>>>>>> if (pdata == NULL) {
->>>>>>>>
->>>>>>>
->>>>>>> FWIW, this is the Oops I see without this patch:
->>>>>> Hi, Shouldn't pdev->dev.platform_data be set to NULL on _remove
->>>>>> ?
->>>>>
->>>>> Why?
->>>>
->>>> To make sure on second insmod it is NULL, When built as module, So
->>>> that of_get_hsmmc_pdata is called to create pdata.
->>>
->>> Actually the driver should *never* modify the value of
->>> dev->platform_data. Ever.
->>
->> That's interesting, because many drivers do this, especially since they
->> were converted to DT probing. Mostly because that way, the platform data
->> logic in callback functions can be reused, and often the platform
->> specific data is only stored in pdata and taken from there during the
->> lifetime of a device.
->>
->> Is there any particular reason why this approach is frowned upon?
-> 
-> Yes. The platform data pointer is "owned" by the code that registered
-> the platform device, not by the device driver. Some drivers do it, but
-> it is definitely illegal. I should add code to the platform bus core
-> code to throw a warning to any drivers that do that. It is a problem
-> because it becomes easy to mess up the lifetime model of device data,
-> particularly when it comes to unbinding/rebinding devices. For
-> example, if a driver changes the pdata pointer and then gets unbound,
-> then there will be a stale pdata pointer that may point to either
-> incorrect data or a data structure that is no longer allocated. You
-> could argue that it is fine if the driver is smart about how it cleans
-> up after itself, but in my experience driver authors rarely get it
-> correct and it results in a lot more code than is necessary. It is far
-> better for the driver to either grab all the data it needs out of
-> pdata at .probe() time, or to keep a copy of the 'correct' pdata
-> (correct depending on where the device retrieved it's data) in it's
-> private data structure instead of modifying the device.
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-Ok, interesting. Thanks for writing this up.
+> --- a/fs/fat/fat.h
+> +++ b/fs/fat/fat.h
+> @@ -214,6 +214,13 @@ static inline sector_t fat_clus_to_blknr(struct msdos_sb_info *sbi, int clus)
+>  		+ sbi->data_start;
+>  }
+>  
+> +static inline void fat_get_blknr_offset(struct msdos_sb_info *sbi,
+> +				loff_t i_pos, sector_t *blknr, int *offset)
+> +{
+> +	*blknr = i_pos >> sbi->dir_per_block_bits;
+> +	*offset = i_pos & (sbi->dir_per_block - 1);
+> +}
+> +
 
->>> Make a copy instead.
->>
->> A copy of what exactly? Of all members of the legacy pdata you mean?
-> 
-> Yes. If the driver directly accesses the pdata structure outside of
-> the .probe() hook, then it should be modified to either copy the pdata
-> into the driver's private data structure, or it should copy the
-> pointer to the pdata so that OF usage can allocate one itself. For
-> example:
-> 
-> somedriver_probe(struct platform_device *pdev)
-> {
->       struct somedriver_private *somedriver;
-> 
->       somedriver = devm_kzalloc(sizeof (*somedriver), GFP_KERNEL);
->       somedriver->pdata = pdev->platform_data;
->       if (OF)
->               somedriver->pdata = devm_kzalloc(sizeof
-> (*somedriver->pdata), GFP_KERNEL);
-> }
-> 
-> The bonus with using devm_kzalloc is the driver doesn't even need to
-> do anything special to undo these allocations on failure or release.
-> :-)
+Let's separate fat_get_blknr_offset() cleanup and others.
 
-Ok, understood. Will keep an eye on this in the future. Thanks again for
-the explanation.
+> +extern loff_t fat_i_pos_read(struct msdos_sb_info *sbi, struct inode *inode);
 
-For this particular driver, this means that both my and Balaji's ways of
-fixing this are wrong?
+[...]
 
+> -static inline loff_t fat_i_pos_read(struct msdos_sb_info *sbi,
+> +loff_t fat_i_pos_read(struct msdos_sb_info *sbi,
+>  				    struct inode *inode)
+>  {
+>  	loff_t i_pos;
 
-Daniel
+Let's move fat_i_pos_read() to fat.h to make consists with
+fat_get_blknr_offset().
 
+>  static const struct export_operations fat_export_ops = {
+> +	.encode_fh      = fat_encode_fh,
+>  	.fh_to_dentry	= fat_fh_to_dentry,
+>  	.fh_to_parent	= fat_fh_to_parent,
+>  	.get_parent	= fat_get_parent,
+> diff --git a/fs/fat/nfs.c b/fs/fat/nfs.c
+> index ef4b5fa..156903b 100644
+> --- a/fs/fat/nfs.c
+> +++ b/fs/fat/nfs.c
+> @@ -14,6 +14,14 @@
+>  #include <linux/exportfs.h>
+>  #include "fat.h"
+>  
+> +struct fat_fid {
+> +	u32 ino;
+> +	u32 gen;
+> +	u64 i_pos;
+> +	u32 parent_ino;
+> +	u32 parent_gen;
+> +} __packed;
+
+This is sizeof(fat_fid)/sizoef(u32) == 6. IIRC, nfsv2 is not supporting
+FH > 6, true?
+
+> +int
+> +fat_encode_fh(struct inode *inode, __u32 *fh, int *lenp, struct inode *parent)
+> +{
+> +	int len = *lenp;
+> +	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
+> +	struct fat_fid *fid = (struct fat_fid *) fh;
+> +	loff_t i_pos;
+> +	int type = FILEID_INO32_GEN;
+> +
+> +	if (parent && (len < 5)) {
+> +		*lenp = 5;
+> +		return 255;
+> +	} else if (len < 3) {
+> +		*lenp = 3;
+> +		return 255;
+> +	}
+> +
+> +	i_pos = fat_i_pos_read(sbi, inode);
+> +	*lenp = 3;
+> +	fid->ino = inode->i_ino;
+> +	fid->gen = inode->i_generation;
+> +	fid->i_pos = i_pos;
+> +	if (parent) {
+> +		fid->parent_ino = parent->i_ino;
+> +		fid->parent_gen = parent->i_generation;
+> +		type = FILEID_INO32_GEN_PARENT;
+> +		*lenp = 5;
+> +	}
+> +
+> +	return type;
+> +}
+
+I was also thinking to use same FH though, because of limitation of FH
+size. It looks like to be better to separate with "stale_rw".
+
+So, how about to separate at export_operations level?
+
+I.e. (move export_operations to fat/nfs.c)
+
+For stale_rw,
+
+const struct export_operations fat_export_ops = {
+	.fh_to_dentry	= fat_fh_to_dentry,
+	.fh_to_parent	= fat_fh_to_parent,
+	.get_parent	= fat_get_parent,
+}
+
+For nostale_ro,
+
+const struct export_operations fat_export_ops = {
+	.fh_to_dentry	= fat_encode_fh,
+	.fh_to_dentry	= fat_fh_to_dentry,
+	.fh_to_parent	= fat_fh_to_parent,
+	.get_parent	= fat_get_parent,
+}
+
+And we have to think about FH format. I guess we don't need to
+inode->i_ino for nostale_ro.
+
+Maximum i_pos is 40bits, and i_gen is 32bit. So, inode and parent inode
+fits to FH of 5 len, we have to pack those though.
+
+I.e.
+
+struct fat_fid {
+	u32 i_gen;
+	u32 i_pos_low;
+	u16 i_pos_hi;
+	u16 parent_i_pos_hi;
+	u32 parent_i_pos_low;
+	u32 parent_i_gen;
+} __packed;
+
+And define FILEID_FAT_WITHOUT_PARENT and FILEID_FAT_WITH_PARENT.
+
+User of i_ino is only ilookup, right? So, we can add fat_ilookup() for it.
+
+struct inode *fat_ilookup(struct super_block *sb, u64 ino)
+{
+	if (stale_rw)
+        	return ilookup(sb, ino);
+
+	return fat_iget(sb, i_pos);
+}
+
+And I noticed we need lock for fat_build_inode() for nostale_ro. Because
+fat_nfs_get_inode() doesn't hold i_mutex of parent dir, right? So, add
+lock to fat_build_inode()
+
+static inline void fat_build_inode_lock(struct msdos_sb_info *sbi)
+{
+	if (sbi->options.nfs == FAT_NFS_NOSTALE_RO)
+        	mutex_lock(&sbi->nfs_build_inode_lock);
+}
+
+static inline void fat_build_inode_unlock(struct msdos_sb_info *sbi)
+{
+	if (sbi->options.nfs == FAT_NFS_NOSTALE_RO)
+        	mutex_unlock(&sbi->nfs_build_inode_lock);
+}
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
