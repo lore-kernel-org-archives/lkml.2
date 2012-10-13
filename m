@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101Ab2JMC5X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 22:57:23 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37623 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826Ab2JMC5W (ORCPT
+	id S1752219Ab2JMDTq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 23:19:46 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:53064 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab2JMDTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 22:57:22 -0400
-Date: Fri, 12 Oct 2012 21:57:18 -0500
-From: William Hubbs <w.d.hubbs@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: question about /dev/root symlink
-Message-ID: <20121013025718.GA29450@linux1>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mYCpIKhGyMATD0i+"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 12 Oct 2012 23:19:45 -0400
+Date: Fri, 12 Oct 2012 23:19:41 -0400 (EDT)
+Message-Id: <20121012.231941.1930318153077157651.davem@davemloft.net>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 20/25] sparc: Use Kbuild infrastructure to handle
+ asm-generic headers
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20121013022955.307620438@goodmis.org>
+References: <20121013022632.024527228@goodmis.org>
+	<20121013022955.307620438@goodmis.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Steven Rostedt <rostedt@goodmis.org>
+Date: Fri, 12 Oct 2012 22:26:52 -0400
 
---mYCpIKhGyMATD0i+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> From: Steven Rostedt <srostedt@redhat.com>
+> 
+> Use Kbuild infrastructure to handle the asm-generic headers
+> and remove the wrapper headers that call them.
+> 
+> This only affects headers that do nothing but include the generic
+> equivalent. It does not touch any header that does a little more.
+> 
+> Cc: linux-kbuild@vger.kernel.org
+> Cc: sparclinux@vger.kernel.org
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-All,
-
-I am part of the team that maintains udev on gentoo.
-
-This bug [1] has prompted me to ask a couple of questions about the
-/dev/root symbolic link.
-
-According to upstream udev, we should not use this at all and if tools
-are relying on it they should be fixed to not do so.
-
-Does the kernel create this symbolic link in devtmpfs as suggested by
-[2] and [3]? If not, should I be writing custom udev helpers to create
-it?
-
-Thanks much for your time,
-
-William
-
-[1] https://bugs.gentoo.org/show_bug.cgi?id=390519
-[2] https://bugs.gentoo.org/show_bug.cgi?id=390519#C20
-[3] https://bugs.gentoo.org/show_bug.cgi?id=390519#C26
-
---mYCpIKhGyMATD0i+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlB42I4ACgkQblQW9DDEZTgLtACeLF+KTQr7lAuZgZg6bjm7H3xg
-MQgAoL1Ek2MeT3Bd7h4FDFQW/vqLH2OT
-=HW1F
------END PGP SIGNATURE-----
-
---mYCpIKhGyMATD0i+--
+Acked-by: David S. Miller <davem@davemloft.net>
