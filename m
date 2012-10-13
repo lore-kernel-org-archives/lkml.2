@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505Ab2JMNxN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 09:53:13 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:52241 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752218Ab2JMNxL (ORCPT
+	id S1753544Ab2JMNyG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 09:54:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33226 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683Ab2JMNyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 09:53:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <3D1C85A52BB960B79E37AC30@nimrod.local>
-References: <0B138F62-16BF-4295-9AD9-64C0BB39FCE2@alex.org.uk>
-	<20121012133044.GA10115@dhcp22.suse.cz>
-	<E6EF14955C67D6CA58918872@nimrod.local>
-	<20121012145838.GD22083@dhcp22.suse.cz>
-	<3D1C85A52BB960B79E37AC30@nimrod.local>
-Date: Sat, 13 Oct 2012 21:53:09 +0800
-Message-ID: <CAJd=RBAdpGpSrx9e28MLmPAEhqRsCQGHNuc-sjUQPMTLO9agpQ@mail.gmail.com>
-Subject: Re: Local DoS through write heavy I/O on CFQ & Deadline
-From: Hillf Danton <dhillf@gmail.com>
-To: Alex Bligh <alex@alex.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 13 Oct 2012 09:54:03 -0400
+X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=__DW0lOuECQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=92jCHif2VFwA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=J1Y8HTJGAAAA:8 a=3HQX15at3h_AjQ3RdpEA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=4N9Db7Z2_RYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1350136440.24256.95.camel@gandalf.local.home>
+Subject: Re: [PATCH 20/25] sparc: Use Kbuild infrastructure to handle
+ asm-generic headers
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        akpm@linux-foundation.org
+Date: Sat, 13 Oct 2012 09:54:00 -0400
+In-Reply-To: <20121012.231941.1930318153077157651.davem@davemloft.net>
+References: <20121013022632.024527228@goodmis.org>
+	 <20121013022955.307620438@goodmis.org>
+	 <20121012.231941.1930318153077157651.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+On Fri, 2012-10-12 at 23:19 -0400, David Miller wrote:
+> From: Steven Rostedt <rostedt@goodmis.org>
+> Date: Fri, 12 Oct 2012 22:26:52 -0400
+> 
+> > From: Steven Rostedt <srostedt@redhat.com>
+> > 
+> > Use Kbuild infrastructure to handle the asm-generic headers
+> > and remove the wrapper headers that call them.
+> > 
+> > This only affects headers that do nothing but include the generic
+> > equivalent. It does not touch any header that does a little more.
+> > 
+> > Cc: linux-kbuild@vger.kernel.org
+> > Cc: sparclinux@vger.kernel.org
+> > Cc: "David S. Miller" <davem@davemloft.net>
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-On Sat, Oct 13, 2012 at 12:29 AM, Alex Bligh <alex@alex.org.uk> wrote:
-> Michael,
->
-> --On 12 October 2012 16:58:39 +0200 Michal Hocko <mhocko@suse.cz> wrote:
->
->> Once dirty_ratio (resp. dirty_bytes) limit is hit then the process which
->> writes gets throttled. If this is not the case then there is a bug in
->> the throttling code.
->
->
-> I believe that is the problem.
+David,
 
-Take a look at the "wait for writeback" problem please.
+Would you like to take this patch? It's not dependent on any of the
+other patches. Otherwise I'll probably ask Andrew to pull it into his
+tree. Or I can just set up a branch and have it go into linux-next for
+the next merge window.
 
-	Linux 3.0+ Disk performance problem - wrong pdflush behaviour
-	https://lkml.org/lkml/2012/10/10/412
+-- Steve
 
-Hillf
+
