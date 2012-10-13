@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab2JMMoE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 08:44:04 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:36242 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab2JMMoC (ORCPT
+	id S1753507Ab2JMMxA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 08:53:00 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:46268 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753439Ab2JMMw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 08:44:02 -0400
+	Sat, 13 Oct 2012 08:52:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1210130252030.7462@chino.kir.corp.google.com>
-References: <CALF0-+XGn5=QSE0bpa4RTag9CAJ63MKz1kvaYbpw34qUhViaZA@mail.gmail.com>
-	<m27gqwtyu9.fsf@firstfloor.org>
-	<alpine.DEB.2.00.1210111558290.6409@chino.kir.corp.google.com>
-	<m2391ktxjj.fsf@firstfloor.org>
-	<CALF0-+WLZWtwYY4taYW9D7j-abCJeY90JzcTQ2hGK64ftWsdxw@mail.gmail.com>
-	<alpine.DEB.2.00.1210130252030.7462@chino.kir.corp.google.com>
-Date: Sat, 13 Oct 2012 09:44:01 -0300
-Message-ID: <CALF0-+Xp_P_NjZpifzDSWxz=aBzy_fwaTB3poGLEJA8yBPQb_Q@mail.gmail.com>
-Subject: Re: [Q] Default SLAB allocator
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Tim Bird <tim.bird@am.sony.com>,
-        celinux-dev@lists.celinuxforum.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20121011203421.12444.32871.stgit@gitlad.jf.intel.com>
+References: <20121011203010.12444.15503.stgit@gitlad.jf.intel.com>
+	<20121011203421.12444.32871.stgit@gitlad.jf.intel.com>
+Date: Sat, 13 Oct 2012 20:52:57 +0800
+Message-ID: <CAJd=RBApQjWBA8w0y7_FhVAOoi17FO=UkCKQqnAX_vbFikkEVA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/7] swiotlb: Make io_tlb_end a physical address
+ instead of a virtual one
+From: Hillf Danton <dhillf@gmail.com>
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
+        joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
+        fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+Hi Alexander,
 
-On Sat, Oct 13, 2012 at 6:54 AM, David Rientjes <rientjes@google.com> wrote:
-> On Fri, 12 Oct 2012, Ezequiel Garcia wrote:
+On Fri, Oct 12, 2012 at 4:34 AM, Alexander Duyck
+<alexander.h.duyck@intel.com> wrote:
+> This change replaces all references to the virtual address for io_tlb_end
+> with references to the physical address io_tlb_end.  The main advantage of
+> replacing the virtual address with a physical address is that we can avoid
+> having to do multiple translations from the virtual address to the physical
+> one needed for testing an existing DMA address.
 >
->> >> SLUB is a non-starter for us and incurs a >10% performance degradation in
->> >> netperf TCP_RR.
->> >
->>
->> Where are you seeing that?
->>
+> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+> ---
 >
-> In my benchmarking results.
+>  lib/swiotlb.c |   24 +++++++++++++-----------
+>  1 files changed, 13 insertions(+), 11 deletions(-)
 >
->> Notice that many defconfigs are for embedded devices,
->> and many of them say "use SLAB"; I wonder if that's right.
->>
->
-> If a device doesn't require the smallest memory footprint possible (SLOB)
-> then SLAB is the right choice when there's a limited amount of memory;
-> SLUB requires higher order pages for the best performance (on my desktop
-> system running with CONFIG_SLUB, over 50% of the slab caches default to be
-> high order).
->
+> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+> index f114bf6..19aac9f 100644
+> --- a/lib/swiotlb.c
+> +++ b/lib/swiotlb.c
+> @@ -57,7 +57,8 @@ int swiotlb_force;
+>   * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
+>   * API.
+>   */
+> -static char *io_tlb_start, *io_tlb_end;
+> +static char *io_tlb_start;
+> +phys_addr_t io_tlb_end;
 
-But SLAB suffers from a lot more internal fragmentation than SLUB,
-which I guess is a known fact. So memory-constrained devices
-would waste more memory by using SLAB.
-I must admit a didn't look at page order (but I will now).
+If add io_tlb_start_phy and io_tlb_end_phy, could we get same results
+with less hunks?
 
-
->> Is there any intention to replace SLAB by SLUB?
->
-> There may be an intent, but it'll be nacked as long as there's a
-> performance degradation.
->
->> In that case it could make sense to change defconfigs, although
->> it wouldn't be based on any actual tests.
->>
->
-> Um, you can't just go changing defconfigs without doing some due diligence
-> in ensuring it won't be deterimental for those users.
-
-Yeah, it would be very interesting to compare SLABs on at least
-some of those platforms.
-
-
-    Ezequiel
+Hillf
