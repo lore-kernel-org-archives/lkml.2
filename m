@@ -1,36 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751770Ab2JMGoo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 02:44:44 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:34005 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab2JMGon (ORCPT
+	id S1751979Ab2JMGqp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 02:46:45 -0400
+Received: from 18.mo3.mail-out.ovh.net ([87.98.172.162]:59453 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751232Ab2JMGqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 02:44:43 -0400
-Date: Sat, 13 Oct 2012 15:44:35 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, jasowang@redhat.com
-Subject: Re: [PATCH 1/1] tools: hv: Return the full kernel version
-Message-ID: <20121013064435.GA9794@kroah.com>
-References: <1350085210-11108-1-git-send-email-kys@microsoft.com>
+	Sat, 13 Oct 2012 02:46:43 -0400
+Date: Sat, 13 Oct 2012 08:44:22 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: vinod.koul@intel.com, devicetree-discuss@lists.ozlabs.org,
+        spear-devel@list.st.com, linux-kernel@vger.kernel.org,
+        andriy.shevchenko@linux.intel.com,
+        linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH V2 3/3] ARM: SPEAr13xx: Pass DW DMAC platform data from
+ DT
+Message-ID: <20121013064422.GJ12801@game.jcrosoft.org>
+References: <142ef9170a2c69657d8a05ac127a9970d7b04965.1350051925.git.viresh.kumar@linaro.org>
+ <2039bc164224b0068bc078b6cd8df6218e754fce.1350051925.git.viresh.kumar@linaro.org>
+ <20121012144837.GE12801@game.jcrosoft.org>
+ <CAKohpo=vMchmiz70evBB5bPqt4O4DWUocd5M1o9gc8fsY_Fkiw@mail.gmail.com>
+ <20121012162148.GH12801@game.jcrosoft.org>
+ <CAKohpok5ZOmz9CCJbTGc=_tncxnZYEW7UMh2FcFcs0dB87JAcQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1350085210-11108-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKohpok5ZOmz9CCJbTGc=_tncxnZYEW7UMh2FcFcs0dB87JAcQ@mail.gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 1031324315718495003
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehuddrvdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehuddrvdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 04:40:10PM -0700, K. Y. Srinivasan wrote:
-> Currently, we are returning the same string for both OSBuildNumber 
-> and OSVersion keys. Return the full uts string for the OSBuild
-> key since Windows does not impose any restrictions on this. 
+On 22:42 Fri 12 Oct     , Viresh Kumar wrote:
+> On 12 October 2012 21:51, Jean-Christophe PLAGNIOL-VILLARD
+> <plagnioj@jcrosoft.com> wrote:
+> >> >> +     OF_DEV_AUXDATA("arasan,cf-spear1340", MCIF_CF_BASE, NULL, "cf"),
+> >> > ?/
+> >>
+> >> Sorry. can't get it :(
+> > what is the "cf" as paltfrom data
+> 
+> This is dma bus_id string, which matches with what is passed from dtb.
+so pass if via dtb too
 
-You sent me 2 patches, both 1/1, that modify the same file.  Which one
-comes first?  Please resend both properly, and also let me know if these
-are things that should be going into 3.7 or can wait for 3.8.
-
-greg k-h
+Best Regards,
+J.
