@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab2JMPK0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 11:10:26 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:61234 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898Ab2JMPKZ (ORCPT
+	id S1753666Ab2JMPOq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 11:14:46 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:34945 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752129Ab2JMPOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 11:10:25 -0400
-Subject: Re: [Q] Default SLAB allocator
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ezequiel Garcia <elezegarcia@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Tim Bird <tim.bird@am.sony.com>,
-        celinux-dev@lists.celinuxforum.org
-In-Reply-To: <alpine.DEB.2.00.1210130249070.7462@chino.kir.corp.google.com>
-References: <CALF0-+XGn5=QSE0bpa4RTag9CAJ63MKz1kvaYbpw34qUhViaZA@mail.gmail.com>
-	 <m27gqwtyu9.fsf@firstfloor.org>
-	 <alpine.DEB.2.00.1210111558290.6409@chino.kir.corp.google.com>
-	 <m2391ktxjj.fsf@firstfloor.org>
-	 <alpine.DEB.2.00.1210130249070.7462@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 13 Oct 2012 17:10:21 +0200
-Message-ID: <1350141021.21172.14949.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 13 Oct 2012 11:14:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <87391i8mny.fsf@devron.myhome.or.jp>
+References: <1349598764-3252-1-git-send-email-linkinjeon@gmail.com>
+	<877gqu90x1.fsf@devron.myhome.or.jp>
+	<CAKYAXd_vWenGBzRoh9cv_Qet_znyPhe_2QpBp29mZJqqoKEFgg@mail.gmail.com>
+	<87391i8mny.fsf@devron.myhome.or.jp>
+Date: Sun, 14 Oct 2012 00:14:43 +0900
+Message-ID: <CAKYAXd8xdb+t5ZTKtg0W7VjCuuJfYFDDFMwUZNRN8f8fcttDxQ@mail.gmail.com>
+Subject: Re: [PATCH v4 3/4] fat (exportfs): rebuild directory-inode if
+ fat_dget() fails
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-10-13 at 02:51 -0700, David Rientjes wrote:
-> On Thu, 11 Oct 2012, Andi Kleen wrote:
-> 
-> > When did you last test? Our regressions had disappeared a few kernels
-> > ago.
-> > 
-> 
-> This was in August when preparing for LinuxCon, I tested netperf TCP_RR on 
-> two 64GB machines (one client, one server), four nodes each, with thread 
-> counts in multiples of the number of cores.  SLUB does a comparable job, 
-> but once we have the the number of threads equal to three times the number 
-> of cores, it degrades almost linearly.  I'll run it again next week and 
-> get some numbers on 3.6.
+2012/10/13 OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>> 2012/10/13 OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+>>> Namjae Jeon <linkinjeon@gmail.com> writes:
+>>>
+>>>> +     if (!fat_get_dotdot_entry(child_dir->d_inode, &dotdot_bh, &de)) {
+>>>> +             parent_logstart = fat_get_start(sbi, de);
+>>>>               parent_inode = fat_dget(sb, parent_logstart);
+>>>> +             if (parent_inode || sbi->options.nfs != FAT_NFS_NOSTALE_RO)
+>>>> +                     goto out;
+>>>> +             if (!parent_logstart)
+>>>> +                     /*logstart of dotdot entry is zero if
+>>>> +                     * if the directory's parent is root
+>>>> +                     */
+>>>> +                     parent_inode = sb->s_root->d_inode;
+>>>
+>>> get_parent() should not be called for root dir, right?
+>> Yes.
+>
+> Ah, actual question was - subdir of root can be passed to this? I guess
+> it is possible...
+Yes, you're right.
 
-In latest kernels, skb->head no longer use kmalloc()/kfree(), so SLAB vs
-SLUB is less a concern for network loads.
-
-In 3.7, (commit 69b08f62e17) we use fragments of order-3 pages to
-populate skb->head.
-
-SLUB was really bad in the common workload you describe (allocations
-done by one cpu, freeing done by other cpus), because all kfree() hit
-the slow path and cpus contend in __slab_free() in the loop guarded by
-cmpxchg_double_slab(). SLAB has a cache for this, while SLUB directly
-hit the main "struct page" to add the freed object to freelist.
-
-I played some months ago adding a percpu associative cache to SLUB, then
-just moved on other strategy.
-
-(Idea for this per cpu cache was to build a temporary free list of
-objects to batch accesses to struct page)
-
-
-
+Thanks.
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
