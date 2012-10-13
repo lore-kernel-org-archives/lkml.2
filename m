@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769Ab2JMFHJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 01:07:09 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:37121 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab2JMFHH (ORCPT
+	id S1752095Ab2JMFVL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 01:21:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37296 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab2JMFVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 01:07:07 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: <linux-kernel@vger.kernel.org>, Chris Mason <chris.mason@fusionio.com>,
-        Josef Bacik <jbacik@fusionio.com>, Jan Kara <jack@suse.cz>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Masatake YAMATO <yamato@redhat.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Date: Fri, 12 Oct 2012 22:06:58 -0700
-Message-ID: <87k3uvkljh.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19lZJE2Ydi/MMAUW8jVu8D+GQq3U3MP2ng=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0246]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Linus Torvalds <torvalds@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: [GIT PULL] user namespace compile fixes for 3.7
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Sat, 13 Oct 2012 01:21:10 -0400
+Subject: RE: [PATCH] genirq: for edge interrupt IRQS_ONESHOT support with
+ irq thread
+From: anish kumar <anish198519851985@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.LFD.2.02.1210122248070.2779@ionos>
+References: <1350045084.13178.19.camel@cliu38-desktop-build>
+	 <alpine.LFD.2.02.1210121427490.2779@ionos>
+	 <27240C0AC20F114CBF8149A2696CBE4A19587A@SHSMSX101.ccr.corp.intel.com>
+	 <alpine.LFD.2.02.1210121440160.2779@ionos>
+	 <27240C0AC20F114CBF8149A2696CBE4A1958B9@SHSMSX101.ccr.corp.intel.com>
+	 <alpine.LFD.2.02.1210121533560.2779@ionos>
+	 <27240C0AC20F114CBF8149A2696CBE4A195A6B@SHSMSX101.ccr.corp.intel.com>
+	 <1350055478.8329.24.camel@anish-Inspiron-N5050>
+	 <27240C0AC20F114CBF8149A2696CBE4A195A8D@SHSMSX101.ccr.corp.intel.com>
+	 <alpine.LFD.2.02.1210122248070.2779@ionos>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 13 Oct 2012 14:21:03 +0900
+Message-ID: <1350105663.8329.50.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2012-10-12 at 22:52 +0200, Thomas Gleixner wrote:
+> On Fri, 12 Oct 2012, Liu, Chuansheng wrote:
+> > > -----Original Message-----
+> > > From: anish kumar [mailto:anish198519851985@gmail.com]
+> > > Sent: Friday, October 12, 2012 11:25 PM
+> > > To: Liu, Chuansheng
+> > > Cc: Thomas Gleixner; linux-kernel@vger.kernel.org
+> > > Subject: RE: [PATCH] genirq: for edge interrupt IRQS_ONESHOT support with irq
+> > > thread
+> > > 
+> > > On Fri, 2012-10-12 at 14:57 +0000, Liu, Chuansheng wrote:
+> > > > > On SMP an interrupt which is raised after the ack() again before the
+> > > > > handler finishes, can invoke another delivery on a different CPU,
+> > > > > which then sees the IRQ_INPROGESS flag, masks it and flags it
+> > > > > PENDING. When the primary handler on the first CPU returns, it sees
+> > > > > the PENDING flag, unmasks and invokes the handler another time.
+> > > > In this case, when IRQ_INPROGRESS flag is set, on another CPU, it will
+> > > > mask and ack it, if before the primary handler on the first CPU returns,
+> > > > the edge interrupt is raised again, it will be lost, right?
+> > > Why will the interrupt be raised again?Is not it masked?I read tglx
+> > I means because it is masked, if at this time device issues edge irq,
+> > It will not be delivered and lost.
+> 
+> No, it is NOT lost. The irq is marked PENDING already, so we invoke
+It is fairly easy for an edge triggered interrupt to be missed - for
+example if interrupts have to be masked for a period - and unless there
+is some type of hardware latch that records the event it is impossible
+to recover.
+tglx, explanation will only work if we have a hardware latch which when
+unmasked sends all those edge interrupts again (which had come when it
+was masked while the CPU was handling the same interrupts).
 
-Linus,
+PS:http://kernel.org/doc/htmldocs/genericirq.html
+> the handler again and handle it. And before we invoke the handler
+> another time we unmask it.
+> 
+> It does not matter at all whether the interrupt has been sent five
+> times while it was masked. What matters is that we recorded the first
+> one and set the PENDING flag. That way we invoke the interrupt handler
+> again and keep stuff rolling.
+> 
+> Thanks,
+> 
+> 	tglx
 
-Please pull the for-linus git tree from:
 
-   git://git.kernel.org:/pub/scm/linux/kernel/git/ebiederm/user-namespace.git for-linus
-
-   HEAD: e9069f470803eeb5e243a05bc717452c6218bd71 btrfs: Fix compilation with user namespace support enabled
-
-This tree contains three trivial fixes. One compiler warning, one thinko
-fix, and one build fix.
-
-Eric W. Biederman (3):
-      userns: Properly print bluetooth socket uids
-      userns: Fix posix_acl_file_xattr_userns gid conversion
-      btrfs: Fix compilation with user namespace support enabled
-
- fs/btrfs/tree-log.c          |    4 ++--
- fs/xattr_acl.c               |    2 +-
- net/bluetooth/af_bluetooth.c |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
-
----
-
-diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
-index e9ebb47..81e407d 100644
---- a/fs/btrfs/tree-log.c
-+++ b/fs/btrfs/tree-log.c
-@@ -2952,8 +2952,8 @@ static void fill_inode_item(struct btrfs_trans_handle *trans,
- 			    struct btrfs_inode_item *item,
- 			    struct inode *inode, int log_inode_only)
- {
--	btrfs_set_inode_uid(leaf, item, inode->i_uid);
--	btrfs_set_inode_gid(leaf, item, inode->i_gid);
-+	btrfs_set_inode_uid(leaf, item, i_uid_read(inode));
-+	btrfs_set_inode_gid(leaf, item, i_gid_read(inode));
- 	btrfs_set_inode_mode(leaf, item, inode->i_mode);
- 	btrfs_set_inode_nlink(leaf, item, inode->i_nlink);
- 
-diff --git a/fs/xattr_acl.c b/fs/xattr_acl.c
-index 11efd83..9fbea87 100644
---- a/fs/xattr_acl.c
-+++ b/fs/xattr_acl.c
-@@ -45,7 +45,7 @@ static void posix_acl_fix_xattr_userns(
- 			break;
- 		case ACL_GROUP:
- 			gid = make_kgid(from, le32_to_cpu(entry->e_id));
--			entry->e_id = cpu_to_le32(from_kuid(to, uid));
-+			entry->e_id = cpu_to_le32(from_kgid(to, gid));
- 			break;
- 		default:
- 			break;
-diff --git a/net/bluetooth/af_bluetooth.c b/net/bluetooth/af_bluetooth.c
-index 9d49ee6..ba033f0 100644
---- a/net/bluetooth/af_bluetooth.c
-+++ b/net/bluetooth/af_bluetooth.c
-@@ -591,7 +591,7 @@ static int bt_seq_show(struct seq_file *seq, void *v)
- 			   atomic_read(&sk->sk_refcnt),
- 			   sk_rmem_alloc_get(sk),
- 			   sk_wmem_alloc_get(sk),
--			   sock_i_uid(sk),
-+			   from_kuid(seq_user_ns(seq), sock_i_uid(sk)),
- 			   sock_i_ino(sk),
- 			   &src_baswapped,
- 			   &dst_baswapped,
