@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab2JMMjR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 08:39:17 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:34907 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab2JMMjO (ORCPT
+	id S1753488Ab2JMMoE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 08:44:04 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:36242 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753390Ab2JMMoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 08:39:14 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <50792BF7.5020908@gmail.com>
-References: <1350039495-360-1-git-send-email-zonque@gmail.com> <1350039495-360-2-git-send-email-zonque@gmail.com> <5078295E.2090803@gmail.com> <50782F82.8060206@ti.com> <507833ED.8060903@gmail.com> <507835E9.9020200@ti.com> <ae718323-6d65-4e69-b8f9-6382c6299294@email.android.com> <507920E0.2050104@gmail.com> <CACxGe6tGYrO8Z0MxiOV+rjBprRxzT-4v6CiBh8wV0Avufd0doA@mail.gmail.com> <50792BF7.5020908@gmail.com>
+	Sat, 13 Oct 2012 08:44:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 1/4] MMC: omap_hsmmc: set platform data after probe from DT node
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sat, 13 Oct 2012 13:37:20 +0100
-To: Daniel Mack <zonque@gmail.com>
-CC: Balaji T K <balajitk@ti.com>, linux-mmc@vger.kernel.org,
-        Venkatraman S <svenkatr@ti.com>, Chris Ball <cjb@laptop.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-omap@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <1c7b8951-3bf2-4433-8c6a-9d70ef47b3c4@email.android.com>
+In-Reply-To: <alpine.DEB.2.00.1210130252030.7462@chino.kir.corp.google.com>
+References: <CALF0-+XGn5=QSE0bpa4RTag9CAJ63MKz1kvaYbpw34qUhViaZA@mail.gmail.com>
+	<m27gqwtyu9.fsf@firstfloor.org>
+	<alpine.DEB.2.00.1210111558290.6409@chino.kir.corp.google.com>
+	<m2391ktxjj.fsf@firstfloor.org>
+	<CALF0-+WLZWtwYY4taYW9D7j-abCJeY90JzcTQ2hGK64ftWsdxw@mail.gmail.com>
+	<alpine.DEB.2.00.1210130252030.7462@chino.kir.corp.google.com>
+Date: Sat, 13 Oct 2012 09:44:01 -0300
+Message-ID: <CALF0-+Xp_P_NjZpifzDSWxz=aBzy_fwaTB3poGLEJA8yBPQb_Q@mail.gmail.com>
+Subject: Re: [Q] Default SLAB allocator
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Tim Bird <tim.bird@am.sony.com>,
+        celinux-dev@lists.celinuxforum.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi David,
 
-
-Daniel Mack <zonque@gmail.com> wrote:
-
->On 13.10.2012 10:48, Grant Likely wrote:
->> 
->> somedriver_probe(struct platform_device *pdev)
->> {
->>       struct somedriver_private *somedriver;
->> 
->>       somedriver = devm_kzalloc(sizeof (*somedriver), GFP_KERNEL);
->>       somedriver->pdata = pdev->platform_data;
->>       if (OF)
->>               somedriver->pdata = devm_kzalloc(sizeof
->> (*somedriver->pdata), GFP_KERNEL);
->> }
->> 
->> The bonus with using devm_kzalloc is the driver doesn't even need to
->> do anything special to undo these allocations on failure or release.
->> :-)
+On Sat, Oct 13, 2012 at 6:54 AM, David Rientjes <rientjes@google.com> wrote:
+> On Fri, 12 Oct 2012, Ezequiel Garcia wrote:
 >
->Ok, understood. Will keep an eye on this in the future. Thanks again
->for
->the explanation.
+>> >> SLUB is a non-starter for us and incurs a >10% performance degradation in
+>> >> netperf TCP_RR.
+>> >
+>>
+>> Where are you seeing that?
+>>
 >
->For this particular driver, this means that both my and Balaji's ways
->of
->fixing this are wrong?
+> In my benchmarking results.
+>
+>> Notice that many defconfigs are for embedded devices,
+>> and many of them say "use SLAB"; I wonder if that's right.
+>>
+>
+> If a device doesn't require the smallest memory footprint possible (SLOB)
+> then SLAB is the right choice when there's a limited amount of memory;
+> SLUB requires higher order pages for the best performance (on my desktop
+> system running with CONFIG_SLUB, over 50% of the slab caches default to be
+> high order).
+>
 
-Balaji's patch looks fine since it uses a local copy of the platform data structure. It appears that the driver is already creating a local copy and Balaji is just bug fixing call sites that aren't using it yet.
+But SLAB suffers from a lot more internal fragmentation than SLUB,
+which I guess is a known fact. So memory-constrained devices
+would waste more memory by using SLAB.
+I must admit a didn't look at page order (but I will now).
 
-g.
 
--- 
-Grant Likely, P.Eng.
-Secret Lab Technologies Ltd.
+>> Is there any intention to replace SLAB by SLUB?
+>
+> There may be an intent, but it'll be nacked as long as there's a
+> performance degradation.
+>
+>> In that case it could make sense to change defconfigs, although
+>> it wouldn't be based on any actual tests.
+>>
+>
+> Um, you can't just go changing defconfigs without doing some due diligence
+> in ensuring it won't be deterimental for those users.
+
+Yeah, it would be very interesting to compare SLABs on at least
+some of those platforms.
+
+
+    Ezequiel
