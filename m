@@ -1,161 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab2JMWUZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 18:20:25 -0400
-Received: from relay.sigmatic.fi ([80.69.161.51]:51326 "EHLO relay.sigmatic.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754166Ab2JMWUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 18:20:24 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Oct 2012 18:20:24 EDT
-From: Hannu Heikkinen <hannuxx@iki.fi>
-To: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        a.zummo@towertech.it, davinci-linux-open-source@linux.davincidsp.com,
-        nsekhar@ti.com
-Subject: [PATCH] rtc: davinci: clean up probe/remove routines
-Date: Sun, 14 Oct 2012 01:13:37 +0300
-Message-Id: <1350166417-23434-1-git-send-email-hannuxx@iki.fi>
-X-Mailer: git-send-email 1.7.12.2
-Content-Type: text/plain; charset="us-ascii:utf-8"
+	id S932069Ab2JMWVz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 18:21:55 -0400
+Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:36713 "HELO
+	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754203Ab2JMWVy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Oct 2012 18:21:54 -0400
+Subject: Re: [PATCH 11/16] f2fs: add inode operations for special inodes
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=utf-8
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
+In-Reply-To: <201210132052.09835.arnd@arndb.de>
+Date: Sun, 14 Oct 2012 02:21:42 +0400
+Cc: =?utf-8?B?6rmA7J6s6re5?= <jaegeuk.kim@samsung.com>,
+        viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E4F29864-3D97-4839-BC4E-6DCFDAC5447C@dubeyko.com>
+References: <001201cda2f1$633db960$29b92c20$%kim@samsung.com> <201210132052.09835.arnd@arndb.de>
+To: Arnd Bergmann <arnd@arndb.de>
+X-Mailer: Apple Mail (2.1085)
+X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 46.39.244.28 authed with slava@dubeyko.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the devres managed resource functions in the probe routine.
-Also affects the remove routine where the previously used free and
-release functions are not needed.
 
-The devm_* functions eliminate the need for manual resource releasing and
-simplify error handling.  Resources allocated by devm_* are freed
-automatically on driver detach.
+On Oct 14, 2012, at 12:52 AM, Arnd Bergmann wrote:
 
-Signed-off-by: Hannu Heikkinen <hannuxx@iki.fi>
----
- drivers/rtc/rtc-davinci.c | 56 +++++++++++++----------------------------------
- 1 file changed, 15 insertions(+), 41 deletions(-)
+> On Friday 05 October 2012, 김재극 wrote:
+>> +const char *media_ext_lists[] = {
+>> +       "jpg",
+>> +       "gif",
+>> +       "png",
+>> +       "avi",
+>> +       "divx",
+>> +       "mp4",
+>> +       "mp3",
+>> ...
+> 
+>> + * Set multimedia files as cold files for hot/cold data separation
+>> + */
+>> +static inline void set_cold_file(struct inode *inode, const unsigned char *name)
+>> +{
+>> +       const char **extlist = media_ext_lists;
+>> +
+>> +       while (*extlist) {
+>> +               if (!is_multimedia_file(name, *extlist)) {
+>> +                       F2FS_I(inode)->is_cold = 1;
+>> +                       break;
+>> +               }
+>> +               extlist++;
+>> +       }
+>> +}
+> 
+> This is a very clever way of categorizing files by their name, but I wonder if hardcoding
+> the list of file name extensions at in the kernel source is the best strategy. Generally
+> I would consider this to be a policy that should be configurable by the user.
+> 
+> Unfortunately I can't think of a good interface to configure this, but maybe someone
+> else has a useful idea. Maybe the list can be stored in the superblock and get written
+> at mkfs time from the same defaults, but with the option of overriding it using
+> a debugfs tool.
+> 
 
-diff --git a/drivers/rtc/rtc-davinci.c b/drivers/rtc/rtc-davinci.c
-index 14c2109..ffb09c2 100644
---- a/drivers/rtc/rtc-davinci.c
-+++ b/drivers/rtc/rtc-davinci.c
-@@ -119,8 +119,6 @@ static DEFINE_SPINLOCK(davinci_rtc_lock);
- struct davinci_rtc {
- 	struct rtc_device 		*rtc;
- 	void __iomem			*base;
--	resource_size_t			pbase;
--	size_t				base_size;
- 	int				irq;
- };
- 
-@@ -482,22 +480,16 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
- 	struct davinci_rtc *davinci_rtc;
--	struct resource *res, *mem;
-+	struct resource *res;
- 	int ret = 0;
- 
--	davinci_rtc = kzalloc(sizeof(struct davinci_rtc), GFP_KERNEL);
-+	davinci_rtc = devm_kzalloc(&pdev->dev, sizeof(struct tegra_rtc_info),
-+		GFP_KERNEL);
- 	if (!davinci_rtc) {
- 		dev_dbg(dev, "could not allocate memory for private data\n");
- 		return -ENOMEM;
- 	}
- 
--	davinci_rtc->irq = platform_get_irq(pdev, 0);
--	if (davinci_rtc->irq < 0) {
--		dev_err(dev, "no RTC irq\n");
--		ret = davinci_rtc->irq;
--		goto fail1;
--	}
--
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
- 		dev_err(dev, "no mem resource\n");
-@@ -505,23 +497,16 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 		goto fail1;
- 	}
- 
--	davinci_rtc->pbase = res->start;
--	davinci_rtc->base_size = resource_size(res);
--
--	mem = request_mem_region(davinci_rtc->pbase, davinci_rtc->base_size,
--				 pdev->name);
--	if (!mem) {
--		dev_err(dev, "RTC registers at %08x are not free\n",
--			davinci_rtc->pbase);
--		ret = -EBUSY;
--		goto fail1;
-+	davinci_rtc->base = devm_request_and_ioremap(&pdev->dev, res);
-+	if (!davinci_rtc->base) {
-+		dev_err(&pdev->dev, "Unable to request mem region and grab IOs for device.\n");
-+		return -EBUSY;
- 	}
- 
--	davinci_rtc->base = ioremap(davinci_rtc->pbase, davinci_rtc->base_size);
--	if (!davinci_rtc->base) {
--		dev_err(dev, "unable to ioremap MEM resource\n");
--		ret = -ENOMEM;
--		goto fail2;
-+	davinci_rtc->irq = platform_get_irq(pdev, 0);
-+	if (davinci_rtc->irq < 0) {
-+		dev_err(dev, "no RTC irq\n");
-+		return davinci_rtc->irq;
- 	}
- 
- 	platform_set_drvdata(pdev, davinci_rtc);
-@@ -529,9 +514,10 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 	davinci_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
- 				    &davinci_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(davinci_rtc->rtc)) {
-+		ret = PTR_ERR(davinci_rtc->rtc);
- 		dev_err(dev, "unable to register RTC device, err %ld\n",
- 				PTR_ERR(davinci_rtc->rtc));
--		goto fail3;
-+		return ret;
- 	}
- 
- 	rtcif_write(davinci_rtc, PRTCIF_INTFLG_RTCSS, PRTCIF_INTFLG);
-@@ -545,7 +531,7 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 			  0, "davinci_rtc", davinci_rtc);
- 	if (ret < 0) {
- 		dev_err(dev, "unable to register davinci RTC interrupt\n");
--		goto fail4;
-+		goto err_dev_unreg;
- 	}
- 
- 	/* Enable interrupts */
-@@ -559,15 +545,8 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 
- 	return 0;
- 
--fail4:
-+err_dev_unreg:
- 	rtc_device_unregister(davinci_rtc->rtc);
--fail3:
--	platform_set_drvdata(pdev, NULL);
--	iounmap(davinci_rtc->base);
--fail2:
--	release_mem_region(davinci_rtc->pbase, davinci_rtc->base_size);
--fail1:
--	kfree(davinci_rtc);
- 
- 	return ret;
- }
-@@ -584,13 +563,8 @@ static int __devexit davinci_rtc_remove(struct platform_device *pdev)
- 
- 	rtc_device_unregister(davinci_rtc->rtc);
- 
--	iounmap(davinci_rtc->base);
--	release_mem_region(davinci_rtc->pbase, davinci_rtc->base_size);
--
- 	platform_set_drvdata(pdev, NULL);
- 
--	kfree(davinci_rtc);
--
- 	return 0;
- }
- 
--- 
-1.7.12.2
+By the way, how about extended attributes? It is possible to save in extended attribute a hint about file's content nature during creation operation or later. Moreover, extended attribute gives possibility to change hint after renaming operation, for example.
+
+With the best regards,
+Vyacheslav Dubeyko.
+
+> 	Arnd
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
