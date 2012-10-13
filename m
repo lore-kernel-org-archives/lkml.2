@@ -1,152 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab2JMJ6g (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 05:58:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48465 "EHLO mx2.suse.de"
+	id S1753346Ab2JMKMl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 06:12:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11643 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752817Ab2JMJ6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 05:58:34 -0400
-Date: Sat, 13 Oct 2012 20:58:39 +1100
-From: NeilBrown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux RAID <linux-raid@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Jianpeng Ma <majianpeng@gmail.com>,
-        Alexander Lyakas <alex.bolshoy@gmail.com>,
-        Shaohua Li <shli@kernel.org>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Jonathan Brassow <jbrassow@redhat.com>,
-        Denis Efremov <yefremov.denis@gmail.com>
-Subject: [PULL REQUEST] md updates for 3.7
-Message-ID: <20121013205839.7dc4fe45@notabene.brown>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/Nslm=YgR.D9VpxTWLRDCO2H"; protocol="application/pgp-signature"
+	id S1752036Ab2JMKMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Oct 2012 06:12:40 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] UAPI: Unexport linux/blk_types.h [ver #2]
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Jens Axboe <jaxboe@fusionio.com>, Tejun Heo <tj@kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Date: Sat, 13 Oct 2012 11:12:35 +0100
+Message-ID: <20121013101234.10350.9980.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Nslm=YgR.D9VpxTWLRDCO2H
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+It seems that was linux/blk_types.h incorrectly exported to fix up some missing
+bits required by the exported parts of linux/fs.h (READ, WRITE, READA, etc.).
 
+So unexport linux/blk_types.h and unexport the relevant bits of linux/fs.h.
 
-MD updates for 3.7.
-Latish because I needed to wait for the block tree to get merged.
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Jens Axboe <jaxboe@fusionio.com>
+cc: Tejun Heo <tj@kernel.org>
+cc: Al Viro <viro@ZenIV.linux.org.uk>
+---
 
-Thanks,
-NeilBrown
+ include/linux/Kbuild |    1 
+ include/linux/fs.h   |  119 +++++++++++++++++++++++++-------------------------
+ 2 files changed, 59 insertions(+), 61 deletions(-)
 
+diff --git a/include/linux/Kbuild b/include/linux/Kbuild
+index d114db9..e2a1346 100644
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@ -69,7 +69,6 @@ header-y += b1lli.h
+ header-y += baycom.h
+ header-y += bfs_fs.h
+ header-y += binfmts.h
+-header-y += blk_types.h
+ header-y += blkpg.h
+ header-y += blktrace_api.h
+ header-y += bpqether.h
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 65fbf57..8cb86cf 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -8,7 +8,6 @@
+ 
+ #include <linux/limits.h>
+ #include <linux/ioctl.h>
+-#include <linux/blk_types.h>
+ #include <linux/types.h>
+ 
+ /*
+@@ -118,65 +117,6 @@ struct inodes_stat_t {
+ #define FMODE_NONOTIFY		((__force fmode_t)0x1000000)
+ 
+ /*
+- * The below are the various read and write types that we support. Some of
+- * them include behavioral modifiers that send information down to the
+- * block layer and IO scheduler. Terminology:
+- *
+- *	The block layer uses device plugging to defer IO a little bit, in
+- *	the hope that we will see more IO very shortly. This increases
+- *	coalescing of adjacent IO and thus reduces the number of IOs we
+- *	have to send to the device. It also allows for better queuing,
+- *	if the IO isn't mergeable. If the caller is going to be waiting
+- *	for the IO, then he must ensure that the device is unplugged so
+- *	that the IO is dispatched to the driver.
+- *
+- *	All IO is handled async in Linux. This is fine for background
+- *	writes, but for reads or writes that someone waits for completion
+- *	on, we want to notify the block layer and IO scheduler so that they
+- *	know about it. That allows them to make better scheduling
+- *	decisions. So when the below references 'sync' and 'async', it
+- *	is referencing this priority hint.
+- *
+- * With that in mind, the available types are:
+- *
+- * READ			A normal read operation. Device will be plugged.
+- * READ_SYNC		A synchronous read. Device is not plugged, caller can
+- *			immediately wait on this read without caring about
+- *			unplugging.
+- * READA		Used for read-ahead operations. Lower priority, and the
+- *			block layer could (in theory) choose to ignore this
+- *			request if it runs into resource problems.
+- * WRITE		A normal async write. Device will be plugged.
+- * WRITE_SYNC		Synchronous write. Identical to WRITE, but passes down
+- *			the hint that someone will be waiting on this IO
+- *			shortly. The write equivalent of READ_SYNC.
+- * WRITE_ODIRECT	Special case write for O_DIRECT only.
+- * WRITE_FLUSH		Like WRITE_SYNC but with preceding cache flush.
+- * WRITE_FUA		Like WRITE_SYNC but data is guaranteed to be on
+- *			non-volatile media on completion.
+- * WRITE_FLUSH_FUA	Combination of WRITE_FLUSH and FUA. The IO is preceded
+- *			by a cache flush and data is guaranteed to be on
+- *			non-volatile media on completion.
+- *
+- */
+-#define RW_MASK			REQ_WRITE
+-#define RWA_MASK		REQ_RAHEAD
+-
+-#define READ			0
+-#define WRITE			RW_MASK
+-#define READA			RWA_MASK
+-#define KERNEL_READ		(READ|REQ_KERNEL)
+-#define KERNEL_WRITE		(WRITE|REQ_KERNEL)
+-
+-#define READ_SYNC		(READ | REQ_SYNC)
+-#define WRITE_SYNC		(WRITE | REQ_SYNC | REQ_NOIDLE)
+-#define WRITE_ODIRECT		(WRITE | REQ_SYNC)
+-#define WRITE_FLUSH		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_FLUSH)
+-#define WRITE_FUA		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_FUA)
+-#define WRITE_FLUSH_FUA		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_FLUSH | REQ_FUA)
+-
+-
+-/*
+  * Flag for rw_copy_check_uvector and compat_rw_copy_check_uvector
+  * that indicates that they should check the contents of the iovec are
+  * valid, but not check the memory that the iovec elements
+@@ -417,6 +357,7 @@ struct inodes_stat_t {
+ #include <linux/uidgid.h>
+ #include <linux/lockdep.h>
+ #include <linux/percpu-rwsem.h>
++#include <linux/blk_types.h>
+ 
+ #include <asm/byteorder.h>
+ 
+@@ -454,6 +395,64 @@ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
+ 			bool is_async);
+ 
+ /*
++ * The below are the various read and write types that we support. Some of
++ * them include behavioral modifiers that send information down to the
++ * block layer and IO scheduler. Terminology:
++ *
++ *	The block layer uses device plugging to defer IO a little bit, in
++ *	the hope that we will see more IO very shortly. This increases
++ *	coalescing of adjacent IO and thus reduces the number of IOs we
++ *	have to send to the device. It also allows for better queuing,
++ *	if the IO isn't mergeable. If the caller is going to be waiting
++ *	for the IO, then he must ensure that the device is unplugged so
++ *	that the IO is dispatched to the driver.
++ *
++ *	All IO is handled async in Linux. This is fine for background
++ *	writes, but for reads or writes that someone waits for completion
++ *	on, we want to notify the block layer and IO scheduler so that they
++ *	know about it. That allows them to make better scheduling
++ *	decisions. So when the below references 'sync' and 'async', it
++ *	is referencing this priority hint.
++ *
++ * With that in mind, the available types are:
++ *
++ * READ			A normal read operation. Device will be plugged.
++ * READ_SYNC		A synchronous read. Device is not plugged, caller can
++ *			immediately wait on this read without caring about
++ *			unplugging.
++ * READA		Used for read-ahead operations. Lower priority, and the
++ *			block layer could (in theory) choose to ignore this
++ *			request if it runs into resource problems.
++ * WRITE		A normal async write. Device will be plugged.
++ * WRITE_SYNC		Synchronous write. Identical to WRITE, but passes down
++ *			the hint that someone will be waiting on this IO
++ *			shortly. The write equivalent of READ_SYNC.
++ * WRITE_ODIRECT	Special case write for O_DIRECT only.
++ * WRITE_FLUSH		Like WRITE_SYNC but with preceding cache flush.
++ * WRITE_FUA		Like WRITE_SYNC but data is guaranteed to be on
++ *			non-volatile media on completion.
++ * WRITE_FLUSH_FUA	Combination of WRITE_FLUSH and FUA. The IO is preceded
++ *			by a cache flush and data is guaranteed to be on
++ *			non-volatile media on completion.
++ *
++ */
++#define RW_MASK			REQ_WRITE
++#define RWA_MASK		REQ_RAHEAD
++
++#define READ			0
++#define WRITE			RW_MASK
++#define READA			RWA_MASK
++#define KERNEL_READ		(READ|REQ_KERNEL)
++#define KERNEL_WRITE		(WRITE|REQ_KERNEL)
++
++#define READ_SYNC		(READ | REQ_SYNC)
++#define WRITE_SYNC		(WRITE | REQ_SYNC | REQ_NOIDLE)
++#define WRITE_ODIRECT		(WRITE | REQ_SYNC)
++#define WRITE_FLUSH		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_FLUSH)
++#define WRITE_FUA		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_FUA)
++#define WRITE_FLUSH_FUA		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_FLUSH | REQ_FUA)
++
++/*
+  * Attribute flags.  These should be or-ed together to figure out what
+  * has been changed!
+  */
 
-
-The following changes since commit 02f3939e1a9357b7c370a4a69717cf9c02452737:
-
-  block: makes bio_split support bio without data (2012-09-28 10:38:48 +020=
-0)
-
-are available in the git repository at:
-
-  git://neil.brown.name/md/ tags/md-3.7
-
-for you to fetch changes up to 72f36d5972a166197036c1281963f6863c429bf2:
-
-  md: refine reporting of resync/reshape delays. (2012-10-11 14:25:57 +1100)
-
-----------------------------------------------------------------
-md updates for 3.7
-
-"discard" support, some dm-raid improvements and other assorted
-bits and pieces.
-
-----------------------------------------------------------------
-Alexander Lyakas (1):
-      md: When RAID5 is dirty, force reconstruct-write instead of read-modi=
-fy-write.
-
-Dan Carpenter (1):
-      md/raid10: use correct limit variable
-
-Denis Efremov (1):
-      md/linear: rcu_dereference outside read-lock section
-
-Jan Beulich (1):
-      add further __init annotations to crypto/xor.c
-
-Jianpeng Ma (2):
-      md/bitmap:Don't use IS_ERR to judge alloc_page().
-      Subject: [PATCH] md:change resync_mismatches to atomic64_t to avoid r=
-aces
-
-Jonathan Brassow (5):
-      MD RAID10: Prep for DM RAID10 device replacement capability
-      DM RAID: Move 'rebuild' checking code to its own function
-      DM RAID: Add rebuild capability for RAID10
-      DM RAID: Fix comparison of index and quantity for "rebuild" parameter
-      DM RAID: Fix for "sync" directive ineffectiveness
-
-Michael Wang (1):
-      raid: replace list_for_each_continue_rcu with new interface
-
-NeilBrown (10):
-      md/raid10: submit IO from originating thread instead of md thread.
-      md: avoid taking the mutex on some ioctls.
-      md/raid1: Don't release reference to device while handling read error.
-      md/raid5: add some missing locking in handle_failed_stripe.
-      md/raid5: protect debug message against NULL derefernce.
-      md/raid5: make sure to_read and to_write never go negative.
-      md: writing to sync_action should clear the read-auto state.
-      md: make sure manual changes to recovery checkpoint are saved.
-      md/raid5: be careful not to resize_stripes too big.
-      md: refine reporting of resync/reshape delays.
-
-Shaohua Li (7):
-      md: linear supports TRIM
-      md: raid 0 supports TRIM
-      md: raid 1 supports TRIM
-      md: raid 10 supports TRIM
-      MD: change the parameter of md thread
-      MD: raid5 trim support
-      MD: raid5 avoid unnecessary zero page for trim
-
- Documentation/device-mapper/dm-raid.txt |   9 ++
- crypto/xor.c                            |   4 +-
- drivers/md/bitmap.c                     |  17 +--
- drivers/md/dm-raid.c                    | 124 ++++++++++++++----
- drivers/md/linear.c                     |  25 +++-
- drivers/md/md.c                         | 145 +++++++++++++++------
- drivers/md/md.h                         |   9 +-
- drivers/md/multipath.c                  |   3 +-
- drivers/md/raid0.c                      |  19 ++-
- drivers/md/raid1.c                      |  37 ++++--
- drivers/md/raid10.c                     |  95 ++++++++++++--
- drivers/md/raid5.c                      | 219 ++++++++++++++++++++++++++++=
-----
- drivers/md/raid5.h                      |   1 +
- 13 files changed, 578 insertions(+), 129 deletions(-)
-
---Sig_/Nslm=YgR.D9VpxTWLRDCO2H
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUHk7Tznsnt1WYoG5AQJ2ag/9FJJcJTI7DJfV7tAyU5UjVcQnM3EXbYp/
-+u7eER4AfP543ww8pOwX7bQkqHjWleymHoEBybNvKbYaw9JooPvwkiDEF6O4EJ3U
-udas30Swhm28yJZFZiX+R5JIi35pcii012na8rsHyoBRFFQWgZMZnkHuDsUolNvk
-cCqKhv8NHHnCVp0tlB4pqJsj4ep7clfsSiRzhrlvjxuOaZixHiSvUB7muvJzmmqc
-kptYXZf5p/r/kOQBL8DlaIFqoEVJzxjeCdGAmsiAy3N+JAhHn+d4Acec9WqWXKD5
-3RhiXYRzIe/rOVDjl8LpIUIOHuh+2OYyeVapFUlQzly42LaEBvpmqUG11zNWb0cf
-4t7T0+1NPa0NgfCLW7WPNnjj7SsVAfVwhmrYNvCaAjtp8Osqjz49q3JjZrwUkjAK
-0AkHTcEAv8gL6j0QLQBbv4LghvcnZWbvhLMUqWGw5FV0F4ZzqCna6Bai2kxMSaAi
-706NODXyIupkJlA5tIxeLbqyPnUNSPlbUD4aVg3tA8yKvwLfftoIOSbAJ36Ce7CY
-MM3xeB8F/V3UjTKf09iMb3sgaAG/dH9ZvZ0VbmuNShE/2Yzg/UrW97DQXh+iYAg7
-gqR5bLl/JHanAzAc2EgL49Ix+LxwP2L3whCpRuGeVKvKNmn40hTgdzJZy/9V19eV
-sRwFKkyibb0=
-=v3qC
------END PGP SIGNATURE-----
-
---Sig_/Nslm=YgR.D9VpxTWLRDCO2H--
