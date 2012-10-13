@@ -1,400 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab2JMQvm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 12:51:42 -0400
-Received: from rsk.demon.co.uk ([80.176.90.227]:13435 "EHLO castor.rsk"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753834Ab2JMQvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 12:51:39 -0400
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Richard Kennedy <richard@rsk.demon.co.uk>
-Subject: [PATCH 2/2] SLUB: increase the range of slab sizes available to kmalloc, allowing a somewhat more effient use of memory.
-Date: Sat, 13 Oct 2012 17:31:25 +0100
-Message-Id: <1350145885-6099-3-git-send-email-richard@rsk.demon.co.uk>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1350145885-6099-2-git-send-email-richard@rsk.demon.co.uk>
-References: <1350145885-6099-1-git-send-email-richard@rsk.demon.co.uk>
- <1350145885-6099-2-git-send-email-richard@rsk.demon.co.uk>
+	id S1753923Ab2JMQxA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 12:53:00 -0400
+Received: from nm26-vm10.bullet.mail.sg3.yahoo.com ([106.10.151.121]:22073
+	"EHLO nm26-vm10.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751424Ab2JMQw7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Oct 2012 12:52:59 -0400
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 735321.58649.bm@omp1023.mail.sg3.yahoo.com
+X-YMail-OSG: wFQ7UGsVM1mxDNUCvCB_lrmdk8C.SxD8wAEbZTBs4aMMWZP
+ bDESdHx3mQsbkTQNdQzeoy3ukLpjYHyC2TXPYnNFc84SizhWa9vRWg7yAIdj
+ vO.sDwvZyCg5bAXglQAEgix5AvgXXDCwYEtGNLIqQZmkmOiDUrcN29IlQTeO
+ X_cR9Pb44iV4WfyFOKIBC2gSNIQNyNPsyHAXUvD.hNCEflRpTEoVSVGoerbC
+ lMlzAMGxnUUc.GyVzE_uGzAwFtJiN9TKHfF1Il3HmdVwk9rtUzKCVpX3L4q5
+ 46C0dC4HFB5fRcQlXMW8nxDCwpDZcCmZnT7e7ieRGKwKkqbOy1jF.jLHrdrl
+ 7kF2fiOs6OwlD08Rg2P3r6T._uOxJc21hYqzu7o_BIlh1eSAZFfnmeAMTah1
+ RFX7AwL1A.7NF1ithBZUVnEYxRxBuM2xwj_RpkW6YfWzzreSjvtcAX900FS_
+ XlNYbuiOwktTfRjEt7HOEsGMK5FPZJP1UF6BFaikrY5UucAfIpUWERYNLy1A
+ lHPM8ERHsACDpVcPluDLfpQBbpIbfJk_Cs0IPwaXr_BP5ORwCA...sNm2g4P
+ I.KHWhIKahxtEKG_jjE5xL7bTUXDy2keX
+X-Rocket-MIMEInfo: 001.001,CkdyZWV0aW5ncyBmcm9tIEJVUktJTkEgRkFTTzoKTGV0IG1lIHN0YXJ0IGJ5IGludHJvZHVjZSBteXNlbGYsSSBhbSBNcnMgUnV0aCBZb2RhLCBCSUxMIEFORCBFWENIQU5HRSBNQU5BR0VSIChCYW5rIG9mIEFmcmljYSkgT3VhZ2Fkb3Vnb3UsIEJ1cmtpbmEgRmFzby5JIGFtIHdyaXR0aW5nIHlvdSB0aGlzIGxldHRlciBiYXNlZCBvbiB0aGUgbGF0ZXN0IGRldmVsb3BtZW50IGF0IG91ciBiYW5rIHdoaWNoIEkgd2lsbCBsaWtlIHRvIGJyaW5nIHRvIHlvdXIgcGVyc29uYWwgZWRpZmljYXRpb24uKCQxMiwyNTABMAEBAQE-
+X-RocketYMMF: anir82
+X-Mailer: YahooMailClassic/15.0.8 YahooMailWebService/0.8.123.450
+Message-ID: <1350147177.61138.YahooMailClassic@web193103.mail.sg3.yahoo.com>
+Date: Sun, 14 Oct 2012 00:52:57 +0800 (SGT)
+From: Ruth Yoda <ruth_y2@qq.com>
+Reply-To: ruth_y1@qq.com
+Subject: Re:Very Urgent!!!
+To: undisclosed recipients:;
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add new slabs sized at 1.5 * 2^n.
-i.e - 24,48,96,192,384,768,1.5k,3k,6k
-Most of which already exist as kmem_cache slabs, except for 1.5k, 3k & 6k.
 
-There is no extra overhead for statically sized kmalloc, and only a small change for dynamically sized ones.
-
-Minimal code changes:
-	new list of slab sizes
-	new kmalloc functions
-	re-factored slub initialisation
-
-other than that the core slub code remains unchanged.
-
-No measurable significant performance difference, nothing above the noise anyway.
-
-Only tested on x86_64, so may not work on other architectures.
-The code should support the use of KMALLOC_MIN_SIZE, but I have no hardware to test this on.
-
-compiled with gcc 4.7.2
-patch against 3.6
-
-Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
----
- include/linux/slub_def.h |  95 +++++++++++++--------------
- mm/slub.c                | 162 ++++++++++++++++++-----------------------------
- 2 files changed, 108 insertions(+), 149 deletions(-)
-
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index df448ad..3c36009 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -143,62 +143,63 @@ struct kmem_cache {
- #endif
+Greetings from BURKINA FASO:
+Let me start by introduce myself,I am Mrs Ruth Yoda, BILL AND EXCHANGE MANAGER (Bank of Africa) Ouagadougou, Burkina Faso.I am writting you this letter based on the latest development at our bank which I will like to bring to your personal edification.($12,250million transfer claims).This is a legitimate transaction and I agreed to offer you 30% of this money as my foreign partner after confirmation of the fund in your bank account,If you are interested,get back to me.
  
- /*
-- * We keep the general caches in an array of slab caches that are used for
-- * 2^x bytes of allocations.
-+ * the table of slab sizes, should handle all of the arch cases
-+ * -- but only tested on x86_64 -- caveat emptor
-  */
--extern struct kmem_cache *kmalloc_caches[SLUB_PAGE_SHIFT];
- 
--/*
-- * Sorry that the following has to be that ugly but some versions of GCC
-- * have trouble with constant propagation and loops.
-+static const short __slab_sizes[] = {0, 8, 12, 16, 24, 32, 48, 64, 96,
-+				     128, 192, 256, 384, 512, 768, 1024,
-+				     1536, 2048, 3072, 4096, 6144, 8192};
-+
-+/* very ugly, but gcc will optimize these away.
-+ * the comment on the original finction says :-
-+ * >  Sorry that the following has to be that ugly but some versions of GCC
-+ * >  have trouble with constant propagation and loops.
-+ * so a simple loop just won't work.
-+ *
-+ * Don't allow anything smaller than, or not aligned to KMALLOC_MIN_SIZE
-  */
--static __always_inline int kmalloc_index(size_t size)
-+static __always_inline short __test_slab_size(size_t size, short index)
- {
--	if (!size)
-+	if (__slab_sizes[index] % KMALLOC_MIN_SIZE ||
-+	     __slab_sizes[index] < size)
- 		return 0;
-+	return 1;
-+}
-+
-+static __always_inline short kmalloc_index(size_t size)
-+{
-+	if (!size) return 0;
-+	if (__test_slab_size(size, 1)) return 1;
-+	if (__test_slab_size(size, 2)) return 2;
-+	if (__test_slab_size(size, 3)) return 3;
-+	if (__test_slab_size(size, 4)) return 4;
-+	if (__test_slab_size(size, 5)) return 5;
-+	if (__test_slab_size(size, 6)) return 6;
-+	if (__test_slab_size(size, 7)) return 7;
-+	if (__test_slab_size(size, 8)) return 8;
-+	if (__test_slab_size(size, 9)) return 9;
-+	if (__test_slab_size(size, 10)) return 10;
-+	if (__test_slab_size(size, 11)) return 11;
-+	if (__test_slab_size(size, 12)) return 12;
-+	if (__test_slab_size(size, 13)) return 13;
-+	if (__test_slab_size(size, 14)) return 14;
-+	if (__test_slab_size(size, 15)) return 15;
-+	if (__test_slab_size(size, 16)) return 16;
-+	if (__test_slab_size(size, 17)) return 17;
-+	if (__test_slab_size(size, 18)) return 18;
-+	if (__test_slab_size(size, 19)) return 19;
-+	if (__test_slab_size(size, 20)) return 20;
-+	if (__test_slab_size(size, 21)) return 21;
- 
--	if (size <= KMALLOC_MIN_SIZE)
--		return KMALLOC_SHIFT_LOW;
--
--	if (KMALLOC_MIN_SIZE <= 32 && size > 64 && size <= 96)
--		return 1;
--	if (KMALLOC_MIN_SIZE <= 64 && size > 128 && size <= 192)
--		return 2;
--	if (size <=          8) return 3;
--	if (size <=         16) return 4;
--	if (size <=         32) return 5;
--	if (size <=         64) return 6;
--	if (size <=        128) return 7;
--	if (size <=        256) return 8;
--	if (size <=        512) return 9;
--	if (size <=       1024) return 10;
--	if (size <=   2 * 1024) return 11;
--	if (size <=   4 * 1024) return 12;
--/*
-- * The following is only needed to support architectures with a larger page
-- * size than 4k. We need to support 2 * PAGE_SIZE here. So for a 64k page
-- * size we would have to go up to 128k.
-- */
--	if (size <=   8 * 1024) return 13;
--	if (size <=  16 * 1024) return 14;
--	if (size <=  32 * 1024) return 15;
--	if (size <=  64 * 1024) return 16;
--	if (size <= 128 * 1024) return 17;
--	if (size <= 256 * 1024) return 18;
--	if (size <= 512 * 1024) return 19;
--	if (size <= 1024 * 1024) return 20;
--	if (size <=  2 * 1024 * 1024) return 21;
- 	BUG();
--	return -1; /* Will never be reached */
-+	return -1;
-+}
- 
- /*
-- * What we really wanted to do and cannot do because of compiler issues is:
-- *	int i;
-- *	for (i = KMALLOC_SHIFT_LOW; i <= KMALLOC_SHIFT_HIGH; i++)
-- *		if (size <= (1 << i))
-- *			return i;
-+ * We keep the general caches in an array of slab caches
-  */
--}
-+extern struct kmem_cache *kmalloc_caches[ARRAY_SIZE(__slab_sizes)];
- 
- /*
-  * Find the slab cache for a given combination of allocation flags and size.
-@@ -208,7 +209,7 @@ static __always_inline int kmalloc_index(size_t size)
-  */
- static __always_inline struct kmem_cache *kmalloc_slab(size_t size)
- {
--	int index = kmalloc_index(size);
-+	short index = kmalloc_index(size);
- 
- 	if (index == 0)
- 		return NULL;
-diff --git a/mm/slub.c b/mm/slub.c
-index 804ac42..5949f78 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3223,13 +3223,13 @@ EXPORT_SYMBOL(kmem_cache_destroy);
-  *		Kmalloc subsystem
-  *******************************************************************/
- 
--struct kmem_cache *kmalloc_caches[SLUB_PAGE_SHIFT];
-+struct kmem_cache *kmalloc_caches[ARRAY_SIZE(__slab_sizes)];
- EXPORT_SYMBOL(kmalloc_caches);
- 
- static struct kmem_cache *kmem_cache;
- 
- #ifdef CONFIG_ZONE_DMA
--static struct kmem_cache *kmalloc_dma_caches[SLUB_PAGE_SHIFT];
-+static struct kmem_cache *kmalloc_dma_caches[ARRAY_SIZE(__slab_sizes)];
- #endif
- 
- static int __init setup_slub_min_order(char *str)
-@@ -3291,55 +3291,36 @@ panic:
- 	return NULL;
- }
- 
--/*
-- * Conversion table for small slabs sizes / 8 to the index in the
-- * kmalloc array. This is necessary for slabs < 192 since we have non power
-- * of two cache sizes there. The size of larger slabs can be determined using
-- * fls.
-- */
--static s8 size_index[24] = {
--	3,	/* 8 */
--	4,	/* 16 */
--	5,	/* 24 */
--	5,	/* 32 */
--	6,	/* 40 */
--	6,	/* 48 */
--	6,	/* 56 */
--	6,	/* 64 */
--	1,	/* 72 */
--	1,	/* 80 */
--	1,	/* 88 */
--	1,	/* 96 */
--	7,	/* 104 */
--	7,	/* 112 */
--	7,	/* 120 */
--	7,	/* 128 */
--	2,	/* 136 */
--	2,	/* 144 */
--	2,	/* 152 */
--	2,	/* 160 */
--	2,	/* 168 */
--	2,	/* 176 */
--	2,	/* 184 */
--	2	/* 192 */
--};
--
--static inline int size_index_elem(size_t bytes)
-+static __always_inline short get_slab_index(size_t size)
- {
--	return (bytes - 1) / 8;
-+	short index;
-+
-+	/*
-+	 * All slabs must be aligned to KMALLOC_MIN_SIZE
-+	 * so disallow the half sized slab between MIN & 2*MIN
-+	 */
-+	if (size <= KMALLOC_MIN_SIZE * 2) {
-+		if (size > KMALLOC_MIN_SIZE)
-+			return kmalloc_index(KMALLOC_MIN_SIZE * 2);
-+		return kmalloc_index(KMALLOC_MIN_SIZE);
-+	}
-+
-+	size--;
-+	index = fls(size);
-+	if (test_bit(index - 2, &size))
-+		return (index - 3) * 2 + 1;
-+	return (index - 3) * 2;
- }
- 
-+
- static struct kmem_cache *get_slab(size_t size, gfp_t flags)
- {
--	int index;
-+	short index;
- 
--	if (size <= 192) {
--		if (!size)
--			return ZERO_SIZE_PTR;
-+	if (!size)
-+		return ZERO_SIZE_PTR;
- 
--		index = size_index[size_index_elem(size)];
--	} else
--		index = fls(size - 1);
-+	index = get_slab_index(size);
- 
- #ifdef CONFIG_ZONE_DMA
- 	if (unlikely((flags & SLUB_DMA)))
-@@ -3715,6 +3696,20 @@ void __init kmem_cache_init(void)
- 	struct kmem_cache *temp_kmem_cache_node;
- 	unsigned long kmalloc_size;
- 
-+	/*
-+	 * do a simple smoke test to verify that get_slab_index is ok
-+	 * and matches __slab_sizes correctly.
-+	 * note i == 0 is unused
-+	 */
-+	for (i = 1; i < ARRAY_SIZE(__slab_sizes); i++) {
-+		short index;
-+		if (__slab_sizes[i] % KMALLOC_MIN_SIZE)
-+			continue;
-+		index = get_slab_index(__slab_sizes[i]);
-+		BUG_ON(index != i);
-+	}
-+
-+
- 	if (debug_guardpage_minorder())
- 		slub_max_order = 0;
- 
-@@ -3782,64 +3777,29 @@ void __init kmem_cache_init(void)
- 	BUILD_BUG_ON(KMALLOC_MIN_SIZE > 256 ||
- 		(KMALLOC_MIN_SIZE & (KMALLOC_MIN_SIZE - 1)));
- 
--	for (i = 8; i < KMALLOC_MIN_SIZE; i += 8) {
--		int elem = size_index_elem(i);
--		if (elem >= ARRAY_SIZE(size_index))
--			break;
--		size_index[elem] = KMALLOC_SHIFT_LOW;
--	}
- 
--	if (KMALLOC_MIN_SIZE == 64) {
--		/*
--		 * The 96 byte size cache is not used if the alignment
--		 * is 64 byte.
--		 */
--		for (i = 64 + 8; i <= 96; i += 8)
--			size_index[size_index_elem(i)] = 7;
--	} else if (KMALLOC_MIN_SIZE == 128) {
--		/*
--		 * The 192 byte sized cache is not used if the alignment
--		 * is 128 byte. Redirect kmalloc to use the 256 byte cache
--		 * instead.
--		 */
--		for (i = 128 + 8; i <= 192; i += 8)
--			size_index[size_index_elem(i)] = 8;
--	}
--
--	/* Caches that are not of the two-to-the-power-of size */
--	if (KMALLOC_MIN_SIZE <= 32) {
--		kmalloc_caches[1] = create_kmalloc_cache("kmalloc-96", 96, 0);
--		caches++;
--	}
--
--	if (KMALLOC_MIN_SIZE <= 64) {
--		kmalloc_caches[2] = create_kmalloc_cache("kmalloc-192", 192, 0);
--		caches++;
--	}
--
--	for (i = KMALLOC_SHIFT_LOW; i < SLUB_PAGE_SHIFT; i++) {
--		kmalloc_caches[i] = create_kmalloc_cache("kmalloc", 1 << i, 0);
-+	for (i = 1; i < ARRAY_SIZE(__slab_sizes); i++) {
-+		if (__slab_sizes[i] % KMALLOC_MIN_SIZE) {
-+			kmalloc_caches[i] = 0;
-+			continue;
-+		}
-+		kmalloc_caches[i] = create_kmalloc_cache("kmalloc",
-+							 __slab_sizes[i], 0);
- 		caches++;
- 	}
- 
- 	slab_state = UP;
- 
- 	/* Provide the correct kmalloc names now that the caches are up */
--	if (KMALLOC_MIN_SIZE <= 32) {
--		kmalloc_caches[1]->name = kstrdup(kmalloc_caches[1]->name, GFP_NOWAIT);
--		BUG_ON(!kmalloc_caches[1]->name);
--	}
--
--	if (KMALLOC_MIN_SIZE <= 64) {
--		kmalloc_caches[2]->name = kstrdup(kmalloc_caches[2]->name, GFP_NOWAIT);
--		BUG_ON(!kmalloc_caches[2]->name);
--	}
- 
--	for (i = KMALLOC_SHIFT_LOW; i < SLUB_PAGE_SHIFT; i++) {
--		char *s = kasprintf(GFP_NOWAIT, "kmalloc-%d", 1 << i);
--
--		BUG_ON(!s);
--		kmalloc_caches[i]->name = s;
-+	for (i = 1; i < ARRAY_SIZE(kmalloc_caches); i++) {
-+		struct kmem_cache *slab = kmalloc_caches[i];
-+		if (slab && slab->size) {
-+			char *name = kasprintf(GFP_NOWAIT, "kmalloc-%d",
-+						slab->object_size);
-+			BUG_ON(!name);
-+			slab->name = name;
-+		}
- 	}
- 
- #ifdef CONFIG_SMP
-@@ -3847,16 +3807,14 @@ void __init kmem_cache_init(void)
- #endif
- 
- #ifdef CONFIG_ZONE_DMA
--	for (i = 0; i < SLUB_PAGE_SHIFT; i++) {
--		struct kmem_cache *s = kmalloc_caches[i];
--
--		if (s && s->size) {
--			char *name = kasprintf(GFP_NOWAIT,
--				 "dma-kmalloc-%d", s->object_size);
--
-+	for (i = 1; i < ARRAY_SIZE(kmalloc_caches); i++) {
-+		struct kmem_cache *slab = kmalloc_caches[i];
-+		if (slab && slab->size) {
-+			char *name = kasprintf(GFP_NOWAIT, "dma-kmalloc-%d",
-+					       slab->object_size);
- 			BUG_ON(!name);
- 			kmalloc_dma_caches[i] = create_kmalloc_cache(name,
--				s->object_size, SLAB_CACHE_DMA);
-+				slab->object_size, SLAB_CACHE_DMA);
- 		}
- 	}
- #endif
--- 
-1.7.11.7
-
+Yours faithful,
+Mrs Ruth Yoda.
