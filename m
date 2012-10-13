@@ -1,49 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab2JMWAz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 18:00:55 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7270 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166Ab2JMWAy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 18:00:54 -0400
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=__DW0lOuECQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=92jCHif2VFwA:10 a=LMtNXrtgceZqrz_fITwA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1350165651.24256.115.camel@gandalf.local.home>
-Subject: Re: [PATCH 20/25] sparc: Use Kbuild infrastructure to handle
- asm-generic headers
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        akpm@linux-foundation.org
-Date: Sat, 13 Oct 2012 18:00:51 -0400
-In-Reply-To: <20121013.175400.1525893639346240797.davem@davemloft.net>
-References: <20121013022955.307620438@goodmis.org>
-	 <20121012.231941.1930318153077157651.davem@davemloft.net>
-	 <1350136440.24256.95.camel@gandalf.local.home>
-	 <20121013.175400.1525893639346240797.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754231Ab2JMWUZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 18:20:25 -0400
+Received: from relay.sigmatic.fi ([80.69.161.51]:51326 "EHLO relay.sigmatic.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754166Ab2JMWUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Oct 2012 18:20:24 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Oct 2012 18:20:24 EDT
+From: Hannu Heikkinen <hannuxx@iki.fi>
+To: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        a.zummo@towertech.it, davinci-linux-open-source@linux.davincidsp.com,
+        nsekhar@ti.com
+Subject: [PATCH] rtc: davinci: clean up probe/remove routines
+Date: Sun, 14 Oct 2012 01:13:37 +0300
+Message-Id: <1350166417-23434-1-git-send-email-hannuxx@iki.fi>
+X-Mailer: git-send-email 1.7.12.2
+Content-Type: text/plain; charset="us-ascii:utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-10-13 at 17:54 -0400, David Miller wrote:
+Use the devres managed resource functions in the probe routine.
+Also affects the remove routine where the previously used free and
+release functions are not needed.
 
-> I really would like to take less rather than take more.
-> 
-> This whole UAPI, Kbuild, etc. stuff is just bogging subsystem
-> maintainers down.  This kind of stuff should just go via the person
-> who does all the work and knows how it all ties together and knows
-> what dependencies, if any, exist in the series.
-> 
-> So please merge this yourself, thanks.
+The devm_* functions eliminate the need for manual resource releasing and
+simplify error handling.  Resources allocated by devm_* are freed
+automatically on driver detach.
 
-OK, will do.
+Signed-off-by: Hannu Heikkinen <hannuxx@iki.fi>
+---
+ drivers/rtc/rtc-davinci.c | 56 +++++++++++++----------------------------------
+ 1 file changed, 15 insertions(+), 41 deletions(-)
 
--- Steve
-
+diff --git a/drivers/rtc/rtc-davinci.c b/drivers/rtc/rtc-davinci.c
+index 14c2109..ffb09c2 100644
+--- a/drivers/rtc/rtc-davinci.c
++++ b/drivers/rtc/rtc-davinci.c
+@@ -119,8 +119,6 @@ static DEFINE_SPINLOCK(davinci_rtc_lock);
+ struct davinci_rtc {
+ 	struct rtc_device 		*rtc;
+ 	void __iomem			*base;
+-	resource_size_t			pbase;
+-	size_t				base_size;
+ 	int				irq;
+ };
+ 
+@@ -482,22 +480,16 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct davinci_rtc *davinci_rtc;
+-	struct resource *res, *mem;
++	struct resource *res;
+ 	int ret = 0;
+ 
+-	davinci_rtc = kzalloc(sizeof(struct davinci_rtc), GFP_KERNEL);
++	davinci_rtc = devm_kzalloc(&pdev->dev, sizeof(struct tegra_rtc_info),
++		GFP_KERNEL);
+ 	if (!davinci_rtc) {
+ 		dev_dbg(dev, "could not allocate memory for private data\n");
+ 		return -ENOMEM;
+ 	}
+ 
+-	davinci_rtc->irq = platform_get_irq(pdev, 0);
+-	if (davinci_rtc->irq < 0) {
+-		dev_err(dev, "no RTC irq\n");
+-		ret = davinci_rtc->irq;
+-		goto fail1;
+-	}
+-
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+ 		dev_err(dev, "no mem resource\n");
+@@ -505,23 +497,16 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+ 		goto fail1;
+ 	}
+ 
+-	davinci_rtc->pbase = res->start;
+-	davinci_rtc->base_size = resource_size(res);
+-
+-	mem = request_mem_region(davinci_rtc->pbase, davinci_rtc->base_size,
+-				 pdev->name);
+-	if (!mem) {
+-		dev_err(dev, "RTC registers at %08x are not free\n",
+-			davinci_rtc->pbase);
+-		ret = -EBUSY;
+-		goto fail1;
++	davinci_rtc->base = devm_request_and_ioremap(&pdev->dev, res);
++	if (!davinci_rtc->base) {
++		dev_err(&pdev->dev, "Unable to request mem region and grab IOs for device.\n");
++		return -EBUSY;
+ 	}
+ 
+-	davinci_rtc->base = ioremap(davinci_rtc->pbase, davinci_rtc->base_size);
+-	if (!davinci_rtc->base) {
+-		dev_err(dev, "unable to ioremap MEM resource\n");
+-		ret = -ENOMEM;
+-		goto fail2;
++	davinci_rtc->irq = platform_get_irq(pdev, 0);
++	if (davinci_rtc->irq < 0) {
++		dev_err(dev, "no RTC irq\n");
++		return davinci_rtc->irq;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, davinci_rtc);
+@@ -529,9 +514,10 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+ 	davinci_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
+ 				    &davinci_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(davinci_rtc->rtc)) {
++		ret = PTR_ERR(davinci_rtc->rtc);
+ 		dev_err(dev, "unable to register RTC device, err %ld\n",
+ 				PTR_ERR(davinci_rtc->rtc));
+-		goto fail3;
++		return ret;
+ 	}
+ 
+ 	rtcif_write(davinci_rtc, PRTCIF_INTFLG_RTCSS, PRTCIF_INTFLG);
+@@ -545,7 +531,7 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+ 			  0, "davinci_rtc", davinci_rtc);
+ 	if (ret < 0) {
+ 		dev_err(dev, "unable to register davinci RTC interrupt\n");
+-		goto fail4;
++		goto err_dev_unreg;
+ 	}
+ 
+ 	/* Enable interrupts */
+@@ -559,15 +545,8 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+ 
+ 	return 0;
+ 
+-fail4:
++err_dev_unreg:
+ 	rtc_device_unregister(davinci_rtc->rtc);
+-fail3:
+-	platform_set_drvdata(pdev, NULL);
+-	iounmap(davinci_rtc->base);
+-fail2:
+-	release_mem_region(davinci_rtc->pbase, davinci_rtc->base_size);
+-fail1:
+-	kfree(davinci_rtc);
+ 
+ 	return ret;
+ }
+@@ -584,13 +563,8 @@ static int __devexit davinci_rtc_remove(struct platform_device *pdev)
+ 
+ 	rtc_device_unregister(davinci_rtc->rtc);
+ 
+-	iounmap(davinci_rtc->base);
+-	release_mem_region(davinci_rtc->pbase, davinci_rtc->base_size);
+-
+ 	platform_set_drvdata(pdev, NULL);
+ 
+-	kfree(davinci_rtc);
+-
+ 	return 0;
+ }
+ 
+-- 
+1.7.12.2
 
