@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab2JMQsT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 12:48:19 -0400
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:43479
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753746Ab2JMQsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 12:48:18 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/2] tools: hv: Return the full kernel version
-Date: Sat, 13 Oct 2012 10:08:31 -0700
-Message-Id: <1350148112-16494-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1350148085-16455-1-git-send-email-kys@microsoft.com>
-References: <1350148085-16455-1-git-send-email-kys@microsoft.com>
+	id S1753899Ab2JMQuh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 12:50:37 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:50348 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753834Ab2JMQug (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Oct 2012 12:50:36 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v4 3/4] fat (exportfs): rebuild directory-inode if fat_dget() fails
+References: <1349598764-3252-1-git-send-email-linkinjeon@gmail.com>
+	<877gqu90x1.fsf@devron.myhome.or.jp>
+	<CAKYAXd_vWenGBzRoh9cv_Qet_znyPhe_2QpBp29mZJqqoKEFgg@mail.gmail.com>
+	<87391i8mny.fsf@devron.myhome.or.jp>
+	<CAKYAXd8xdb+t5ZTKtg0W7VjCuuJfYFDDFMwUZNRN8f8fcttDxQ@mail.gmail.com>
+Date: Sun, 14 Oct 2012 01:50:31 +0900
+In-Reply-To: <CAKYAXd8xdb+t5ZTKtg0W7VjCuuJfYFDDFMwUZNRN8f8fcttDxQ@mail.gmail.com>
+	(Namjae Jeon's message of "Sun, 14 Oct 2012 00:14:43 +0900")
+Message-ID: <87r4p271uw.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we are returning the same string for both OSBuildNumber
-and OSVersion keys. Return the full uts string for the OSBuild
-key since Windows does not impose any restrictions on this.
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reported-by: Claudio Latini <claudio.latini@live.com>
----
- tools/hv/hv_kvp_daemon.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+>>>>> +     if (!fat_get_dotdot_entry(child_dir->d_inode, &dotdot_bh, &de)) {
+>>>>> +             parent_logstart = fat_get_start(sbi, de);
+>>>>>               parent_inode = fat_dget(sb, parent_logstart);
+>>>>> +             if (parent_inode || sbi->options.nfs != FAT_NFS_NOSTALE_RO)
+>>>>> +                     goto out;
+>>>>> +             if (!parent_logstart)
+>>>>> +                     /*logstart of dotdot entry is zero if
+>>>>> +                     * if the directory's parent is root
+>>>>> +                     */
+>>>>> +                     parent_inode = sb->s_root->d_inode;
+>>>>
+>>>> get_parent() should not be called for root dir, right?
+>>> Yes.
+>>
+>> Ah, actual question was - subdir of root can be passed to this? I guess
+>> it is possible...
+> Yes, you're right.
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 5959aff..6c7bcb9 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -88,6 +88,7 @@ static char *os_major = "";
- static char *os_minor = "";
- static char *processor_arch;
- static char *os_build;
-+static char *os_version;
- static char *lic_version = "Unknown version";
- static struct utsname uts_buf;
- 
-@@ -453,7 +454,9 @@ void kvp_get_os_info(void)
- 	char	*p, buf[512];
- 
- 	uname(&uts_buf);
--	os_build = uts_buf.release;
-+	os_version = uts_buf.release;
-+	os_build = strdup(uts_buf.release);
-+
- 	os_name = uts_buf.sysname;
- 	processor_arch = uts_buf.machine;
- 
-@@ -462,7 +465,7 @@ void kvp_get_os_info(void)
- 	 * string to be of the form: x.y.z
- 	 * Strip additional information we may have.
- 	 */
--	p = strchr(os_build, '-');
-+	p = strchr(os_version, '-');
- 	if (p)
- 		*p = '\0';
- 
-@@ -1649,7 +1652,7 @@ int main(void)
- 			strcpy(key_name, "OSMinorVersion");
- 			break;
- 		case OSVersion:
--			strcpy(key_value, os_build);
-+			strcpy(key_value, os_version);
- 			strcpy(key_name, "OSVersion");
- 			break;
- 		case ProcessorArchitecture:
+OK, I think I got where is wrong. If it is the subdir of rootdir,
+fat_dget() should get the inode of root?
+
+So, I guess if parent_logstart == 0, it is BUG().
 -- 
-1.7.4.1
-
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
