@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318Ab2JMXqV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 19:46:21 -0400
-Received: from mga11.intel.com ([192.55.52.93]:31766 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754268Ab2JMXqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 19:46:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,580,1344236400"; 
-   d="scan'208";a="234642290"
-From: Andi Kleen <andi@firstfloor.org>
-To: Richard Kennedy <richard@rsk.demon.co.uk>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] RFC SLUB: increase range of kmalloc slab sizes
-References: <1350145885-6099-1-git-send-email-richard@rsk.demon.co.uk>
-Date: Sat, 13 Oct 2012 16:46:19 -0700
-In-Reply-To: <1350145885-6099-1-git-send-email-richard@rsk.demon.co.uk>
-	(Richard Kennedy's message of "Sat, 13 Oct 2012 17:31:23 +0100")
-Message-ID: <m2y5jarl4k.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1754328Ab2JMX7V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 19:59:21 -0400
+Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:46794 "HELO
+	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754278Ab2JMX7U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Oct 2012 19:59:20 -0400
+Message-ID: <507A004F.4080102@xenotime.net>
+Date: Sat, 13 Oct 2012 16:59:11 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: Re: [GIT PULL] (xen) stable/for-linus-3.7-uapi-tag for v3.7-rc0
+References: <20121012134529.GA1560@phenom.dumpdata.com> <CA+55aFzfmJNTtrnRsEkb6B0=eTHNGuA+jBa1METOK3ycxNsM8g@mail.gmail.com>
+In-Reply-To: <CA+55aFzfmJNTtrnRsEkb6B0=eTHNGuA+jBa1METOK3ycxNsM8g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Kennedy <richard@rsk.demon.co.uk> writes:
+On 10/12/2012 07:16 PM, Linus Torvalds wrote:
 
-> This patch increases the range of slab sizes available to kmalloc, adding
-> slabs half way between the existing power of two sized ones, so allowing slightly
->  more efficient use of memory.
-> Most of the new slabs already exist as kmem_cache slabs so only the 1.5k,3k & 6k 
-> are entirely new.
+> On Fri, Oct 12, 2012 at 10:45 PM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+>>
+>> Please pull!
+> 
+> Btw, please use the -M switch to get renames as renames (and
+> --summary). You diffstat:
+> 
+>>  include/uapi/xen/Kbuild    |    2 +
+>>  include/uapi/xen/evtchn.h  |   88 +++++++++++++++++++++++++++++++++++++++
+>>  include/uapi/xen/privcmd.h |   98 ++++++++++++++++++++++++++++++++++++++++++++
+>>  include/xen/Kbuild         |    2 -
+>>  include/xen/evtchn.h       |   88 ---------------------------------------
+>>  include/xen/privcmd.h      |   98 --------------------------------------------
+>>  6 files changed, 188 insertions(+), 188 deletions(-)
+> 
+> is misleading, the correct one is much simpler:
+> 
+>  include/{ => uapi}/xen/evtchn.h  | 0
+>  include/{ => uapi}/xen/privcmd.h | 0
+>  include/xen/Kbuild               | 2 --
+>  4 files changed, 2 insertions(+), 2 deletions(-)
+>  rename include/{ => uapi}/xen/evtchn.h (100%)
+>  rename include/{ => uapi}/xen/privcmd.h (100%)
 
-I'm not sure what order slab/slub use by default these days, but for
-order 0 none of your new sizes sound like a winner:
 
-4K / 1.5 = 2  = 4K / 2K 
-4K / 3K  = 1  = 4K / 4K
-8K / 6K  = 1  = 8K / 8K
+showing once again that people don't read documentation  :(
 
-I think you need better data that it actually saves memory with some
-reproducible workloads.
-
-Revisiting the sizes is a good idea -- the original Bonwick slab paper
-explicitely recommended against power of twos -- but I think it needs a
-more data driven process to actually select better ones than what you
-used.
-
-Most likely the best fits are different between 32bit and 64bit
-and also will change occasionally as kernel data structures grow
-(or rarely shrink)
-
-In fact I suspect it would be an interesting option for feedback
-control for embedded kernels - measure workload, reboot/recompile with
-slab fitting the workload well.
-
-So I think before trying any of this you need a good slab profiler
-and a good set of workloads.
-
--Andi
+(see Documentation/SubmittingPatches)
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+~Randy
