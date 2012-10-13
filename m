@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab2JMMxA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 08:53:00 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:46268 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753439Ab2JMMw6 (ORCPT
+	id S1753519Ab2JMNCQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 09:02:16 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:9921 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753439Ab2JMNCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 08:52:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121011203421.12444.32871.stgit@gitlad.jf.intel.com>
-References: <20121011203010.12444.15503.stgit@gitlad.jf.intel.com>
-	<20121011203421.12444.32871.stgit@gitlad.jf.intel.com>
-Date: Sat, 13 Oct 2012 20:52:57 +0800
-Message-ID: <CAJd=RBApQjWBA8w0y7_FhVAOoi17FO=UkCKQqnAX_vbFikkEVA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/7] swiotlb: Make io_tlb_end a physical address
- instead of a virtual one
-From: Hillf Danton <dhillf@gmail.com>
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
-        joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
-        fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sat, 13 Oct 2012 09:02:14 -0400
+Date: Sat, 13 Oct 2012 15:01:58 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: <w.sang@pengutronix.de>, <swarren@nvidia.com>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH] i2c: tegra: set irq name as device name
+Message-ID: <20121013150158.2eb1ece2@endymion.delvare>
+In-Reply-To: <1350064172-32417-1-git-send-email-ldewangan@nvidia.com>
+References: <1350064172-32417-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexander,
-
-On Fri, Oct 12, 2012 at 4:34 AM, Alexander Duyck
-<alexander.h.duyck@intel.com> wrote:
-> This change replaces all references to the virtual address for io_tlb_end
-> with references to the physical address io_tlb_end.  The main advantage of
-> replacing the virtual address with a physical address is that we can avoid
-> having to do multiple translations from the virtual address to the physical
-> one needed for testing an existing DMA address.
->
-> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+On Fri, 12 Oct 2012 23:19:32 +0530, Laxman Dewangan wrote:
+> When watching the irqs name of tegra i2c, all instances
+> irq name shows as tegra_i2c.
+> 
+> Passing the device name properly to have the irq names with
+> instance like tegra-i2c.0, tegra-i2c.1 etc.
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 > ---
->
->  lib/swiotlb.c |   24 +++++++++++++-----------
->  1 files changed, 13 insertions(+), 11 deletions(-)
->
-> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-> index f114bf6..19aac9f 100644
-> --- a/lib/swiotlb.c
-> +++ b/lib/swiotlb.c
-> @@ -57,7 +57,8 @@ int swiotlb_force;
->   * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
->   * API.
->   */
-> -static char *io_tlb_start, *io_tlb_end;
-> +static char *io_tlb_start;
-> +phys_addr_t io_tlb_end;
+>  drivers/i2c/busses/i2c-tegra.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+> index f981ac4..dcea77b 100644
+> --- a/drivers/i2c/busses/i2c-tegra.c
+> +++ b/drivers/i2c/busses/i2c-tegra.c
+> @@ -742,7 +742,7 @@ static int __devinit tegra_i2c_probe(struct platform_device *pdev)
+>  	}
+>  
+>  	ret = devm_request_irq(&pdev->dev, i2c_dev->irq,
+> -			tegra_i2c_isr, 0, pdev->name, i2c_dev);
+> +			tegra_i2c_isr, 0, dev_name(&pdev->dev), i2c_dev);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "Failed to request irq %i\n", i2c_dev->irq);
+>  		return ret;
 
-If add io_tlb_start_phy and io_tlb_end_phy, could we get same results
-with less hunks?
+Good idea.
 
-Hillf
+Acked-by: Jean Delvare <khali@linux-fr.org>
+
+-- 
+Jean Delvare
