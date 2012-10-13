@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094Ab2JMUwU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 16:52:20 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:64294 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705Ab2JMUwT (ORCPT
+	id S1754100Ab2JMU40 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 16:56:26 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:56179 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753366Ab2JMU4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 16:52:19 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: =?utf-8?q?=EA=B9=80=EC=9E=AC=EA=B7=B9?= <jaegeuk.kim@samsung.com>
-Subject: Re: [PATCH 11/16] f2fs: add inode operations for special inodes
-Date: Sat, 13 Oct 2012 20:52:09 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-References: <001201cda2f1$633db960$29b92c20$%kim@samsung.com>
-In-Reply-To: <001201cda2f1$633db960$29b92c20$%kim@samsung.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201210132052.09835.arnd@arndb.de>
-X-Provags-ID: V02:K0:6iNVcYq5wiDaVCxPkWOxNDDCSYYlvsr391x/Q3+s8U4
- t/fSo64MgiMRUM5CXwa9o1wwsM+K0JeuL/3eRwj3cfgRRr2BR1
- 5JGyQE2OBHeBPT+at+j/tT/uEftogCW5eqLt0hVJ0dO2MMJm9Y
- Iq6uT8Zc7xMKL7YfXnKcMYGrUHuoHHqRHhv5cIjiIVW8W/lWQH
- g2znXounX7PyTAzqfWVgHq2OOCfr/tm6DqE1chmVMIV0OSq7dy
- qB4DEeOXrLnjKkyflZMCcWW8mk3v0bOPnjT7DmdphibV0RyS5F
- +bfuUUyF5Po727zP0IWtaKiVOQDyP3qYkLOuzmrokAeVW/mOm1
- qXgBlf9uOz8DyjF6r6KM=
+	Sat, 13 Oct 2012 16:56:25 -0400
+Message-ID: <1350161777.6495.46.camel@vpcz1>
+Subject: Re: [dm-crypt] PROBLEM:  read starvation during writeback
+From: Michael Zugelder <michael@zugelder.org>
+To: Milan Broz <gmazyland@gmail.com>
+Cc: dm-crypt <dm-crypt@saout.de>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Date: Sat, 13 Oct 2012 22:56:17 +0200
+In-Reply-To: <1350083207.2673.5.camel@vpcz1>
+References: <1350070656.2554.6.camel@vpcz1> <50787ECB.1050803@gmail.com>
+	 <1350083207.2673.5.camel@vpcz1>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 05 October 2012, 김재극 wrote:
-> +const char *media_ext_lists[] = {
-> +       "jpg",
-> +       "gif",
-> +       "png",
-> +       "avi",
-> +       "divx",
-> +       "mp4",
-> +       "mp3",
-> ...
+Hi,
 
-> + * Set multimedia files as cold files for hot/cold data separation
-> + */
-> +static inline void set_cold_file(struct inode *inode, const unsigned char *name)
-> +{
-> +       const char **extlist = media_ext_lists;
-> +
-> +       while (*extlist) {
-> +               if (!is_multimedia_file(name, *extlist)) {
-> +                       F2FS_I(inode)->is_cold = 1;
-> +                       break;
-> +               }
-> +               extlist++;
-> +       }
-> +}
+I have a small update on my previously posted test case. I noticed
+'cryptsetup -c null' uses cipher_null in ecb mode, and in that case, I
+don't observe any read starvation. I'm not sure what the default cipher
+mode is (cryptsetup uses cbc-essiv:sha256), but I can reproduce the
+problem using just 'cipher_null-cbc-plain'.
 
-This is a very clever way of categorizing files by their name, but I wonder if hardcoding
-the list of file name extensions at in the kernel source is the best strategy. Generally
-I would consider this to be a policy that should be configurable by the user.
+The revised test case is as follows:
 
-Unfortunately I can't think of a good interface to configure this, but maybe someone
-else has a useful idea. Maybe the list can be stored in the superblock and get written
-at mkfs time from the same defaults, but with the option of overriding it using
-a debugfs tool.
+Preparation:
+  # dmsetup create dev_zero --table "0 $((1024*1024*1024)) zero"
+  # dmsetup create cipher_null-cbc-plain --table "0 $((1024*1024*1024)) crypt cipher_null-cbc-plain - 0 /dev/mapper/dev_zero 0"
+  # dmsetup create cipher_null-ecb --table "0 $((1024*1024*1024)) crypt cipher_null-ecb - 0 /dev/mapper/dev_zero 0"
 
-	Arnd
+Testing cipher_null-cbc-plain:
+  # dd if=/dev/zero bs=1M of=/dev/mapper/cipher_null-cbc-plain
+  # ioping -R /dev/mapper/cipher_null-cbc-plain
+    1 requests completed in 9530.3 ms, 0 iops, 0.0 mb/s
+
+Note that for some reason, dd writes extremely slow (below 100.0 MB/s on
+my machine) in this test.
+
+On the other hand, cipher_null-ecb works fine.
+  # dd if=/dev/zero bs=1M of=/dev/mapper/cipher_null-ecb
+  # ioping -R /dev/mapper/cipher_null-ecb
+    32337 requests completed in 3000.0 ms, 54042 iops, 211.1 mb/s
+    min/avg/max/mdev = 0.0/0.0/18.8/0.2 ms
+
+dd writes at around 850 MB/s in that case (1.8 GB/s directly to the null
+target).
+
+I tried similar benchmarks using aes instead of cipher_null, but found
+no bothersome spikes with aes-ecb, aes-cbc-plain, aes-cbc-essiv:sha256.
+But aes-xts-plain sometimes drops down to 5 iops (over the course of 3
+seconds).
+
+So there is probably something very wrong with cipher_null-cbc-plain
+being an order of magnitude slower than aes-cbc-plain, but the cbc mode
+itself doesn't seem to cause the problem.
+
+I also ran the benchmarks on an old Athlon 64 X2 3800+ box running
+kernel 3.2 and could reproduce it with very first try for every cipher
+spec I tried (cipher_null-cbc-plain, cipher_null-ecb, aes-cbc-plain,
+aes-ecb, aes-xts-plain). Best I could achieve was 5 iops. But
+interestingly, I didn't observe the really huge spikes (upwards of 20
+seconds), as I do on my 1nd gen Core i5 Notebook.
+
+On Sat, 2012-10-13 at 01:06 +0200, Michael Zugelder wrote:
+> On Fri, 2012-10-12 at 22:34 +0200, Milan Broz wrote:
+> > Btw there was a proposed rewrite of internal dmcrypt queues, if you have time,
+> > you can try if it changes anything for your use case.
+> > Patches in dm-devel archive
+> > http://www.redhat.com/archives/dm-devel/2012-August/msg00210.html
+> 
+> Seems interesting, I'll try it out tomorrow.
+
+I tried the patch set earlier today, but had the same issues when
+reading while writing to a 'crypt_null' mapping.
+
+Anything else I could do to diagnose this problem?
+
+
+Michael
+
