@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab2JMU40 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Oct 2012 16:56:26 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56179 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753366Ab2JMU4Z (ORCPT
+	id S1754148Ab2JMVWQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Oct 2012 17:22:16 -0400
+Received: from inx.pm.waw.pl ([195.116.170.130]:53359 "EHLO inx.pm.waw.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753849Ab2JMVWP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Oct 2012 16:56:25 -0400
-Message-ID: <1350161777.6495.46.camel@vpcz1>
-Subject: Re: [dm-crypt] PROBLEM:  read starvation during writeback
-From: Michael Zugelder <michael@zugelder.org>
-To: Milan Broz <gmazyland@gmail.com>
-Cc: dm-crypt <dm-crypt@saout.de>, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org
-Date: Sat, 13 Oct 2012 22:56:17 +0200
-In-Reply-To: <1350083207.2673.5.camel@vpcz1>
-References: <1350070656.2554.6.camel@vpcz1> <50787ECB.1050803@gmail.com>
-	 <1350083207.2673.5.camel@vpcz1>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 13 Oct 2012 17:22:15 -0400
+From: Krzysztof Halasa <khc@pm.waw.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-arm-kernel@lists.infradead.org, lkml <linux-kernel@vger.kernel.org>
+Subject: [PULL REQ] IXP4xx changes for Linux 3.7
+Date: Sat, 13 Oct 2012 23:22:12 +0200
+Message-ID: <m3bog6m5iz.fsf@intrepid.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Linus,
 
-I have a small update on my previously posted test case. I noticed
-'cryptsetup -c null' uses cipher_null in ecb mode, and in that case, I
-don't observe any read starvation. I'm not sure what the default cipher
-mode is (cryptsetup uses cbc-essiv:sha256), but I can reproduce the
-problem using just 'cipher_null-cbc-plain'.
+please pull my ARM IXP4xx changes for 3.7:
 
-The revised test case is as follows:
+The following changes since commit 4d7127dace8cf4b05eb7c8c8531fc204fbb195f4:
 
-Preparation:
-  # dmsetup create dev_zero --table "0 $((1024*1024*1024)) zero"
-  # dmsetup create cipher_null-cbc-plain --table "0 $((1024*1024*1024)) crypt cipher_null-cbc-plain - 0 /dev/mapper/dev_zero 0"
-  # dmsetup create cipher_null-ecb --table "0 $((1024*1024*1024)) crypt cipher_null-ecb - 0 /dev/mapper/dev_zero 0"
+"Merge branch 'for-linus' of git://git.kernel.org/.../jmorris/linux-security"
+(2012-10-13 11:29:00 +0900)
 
-Testing cipher_null-cbc-plain:
-  # dd if=/dev/zero bs=1M of=/dev/mapper/cipher_null-cbc-plain
-  # ioping -R /dev/mapper/cipher_null-cbc-plain
-    1 requests completed in 9530.3 ms, 0 iops, 0.0 mb/s
+are available in the git repository at:
 
-Note that for some reason, dd writes extremely slow (below 100.0 MB/s on
-my machine) in this test.
+  git://git.kernel.org/pub/scm/linux/kernel/git/chris/linux.git next
 
-On the other hand, cipher_null-ecb works fine.
-  # dd if=/dev/zero bs=1M of=/dev/mapper/cipher_null-ecb
-  # ioping -R /dev/mapper/cipher_null-ecb
-    32337 requests completed in 3000.0 ms, 54042 iops, 211.1 mb/s
-    min/avg/max/mdev = 0.0/0.0/18.8/0.2 ms
+for you to fetch changes up to b94740b3b38fd8e37fcd3bb06a18ec2796061c7d:
+  IXP4xx: use __iomem for MMIO (2012-10-13 20:37:30 +0200)
 
-dd writes at around 850 MB/s in that case (1.8 GB/s directly to the null
-target).
+Build-tested for now. This is based on your current tree tip because it
+depends on commits following 3.6 release.
 
-I tried similar benchmarks using aes instead of cipher_null, but found
-no bothersome spikes with aes-ecb, aes-cbc-plain, aes-cbc-essiv:sha256.
-But aes-xts-plain sometimes drops down to 5 iops (over the course of 3
-seconds).
+Thanks.
 
-So there is probably something very wrong with cipher_null-cbc-plain
-being an order of magnitude slower than aes-cbc-plain, but the cbc mode
-itself doesn't seem to cause the problem.
+----------------------------------------------------------------
+Arnd Bergmann (1):
+      IXP4xx: use __iomem for MMIO
 
-I also ran the benchmarks on an old Athlon 64 X2 3800+ box running
-kernel 3.2 and could reproduce it with very first try for every cipher
-spec I tried (cipher_null-cbc-plain, cipher_null-ecb, aes-cbc-plain,
-aes-ecb, aes-xts-plain). Best I could achieve was 5 iops. But
-interestingly, I didn't observe the really huge spikes (upwards of 20
-seconds), as I do on my 1nd gen Core i5 Notebook.
+Krzysztof Hałasa (9):
+      IXP4xx: Fix Goramo MultiLink platform compilation.
+      IXP4xx: Fix off-by-one bug in Goramo MultiLink platform.
+      IXP4xx: HW pseudo-random generator is available on IXP45x/46x only.
+      IXP4xx: ixp4xx_crypto driver requires Queue Manager and NPE drivers.
+      IXP4xx: Remove time limit for PCI TRDY to enable use of slow devices.
+      WAN: Remove redundant HDLC info printed by IXP4xx HSS driver.
+      IXP4xx crypto: MOD_AES{128,192,256} already include key size.
+      IXP4xx: Always ioremap() Queue Manager MMIO region at boot.
+      IXP4xx: map CPU config registers within VMALLOC region.
 
-On Sat, 2012-10-13 at 01:06 +0200, Michael Zugelder wrote:
-> On Fri, 2012-10-12 at 22:34 +0200, Milan Broz wrote:
-> > Btw there was a proposed rewrite of internal dmcrypt queues, if you have time,
-> > you can try if it changes anything for your use case.
-> > Patches in dm-devel archive
-> > http://www.redhat.com/archives/dm-devel/2012-August/msg00210.html
-> 
-> Seems interesting, I'll try it out tomorrow.
+Tim Gardner (1):
+      ixp4xx: Declare MODULE_FIRMWARE usage
 
-I tried the patch set earlier today, but had the same issues when
-reading while writing to a 'crypt_null' mapping.
+ arch/arm/mach-ixp4xx/common-pci.c               |  1 +
+ arch/arm/mach-ixp4xx/common.c                   | 13 +++++--------
+ arch/arm/mach-ixp4xx/goramo_mlr.c               |  3 ++-
+ arch/arm/mach-ixp4xx/include/mach/debug-macro.S |  4 ++--
+ arch/arm/mach-ixp4xx/include/mach/ixp4xx-regs.h | 46 +++++++++++++++++++--------------------------
+ arch/arm/mach-ixp4xx/include/mach/qmgr.h        | 12 ++++++------
+ arch/arm/mach-ixp4xx/ixp4xx_npe.c               |  9 ++++++++-
+ arch/arm/mach-ixp4xx/ixp4xx_qmgr.c              | 12 +-----------
+ drivers/char/hw_random/Kconfig                  |  6 +++---
+ drivers/char/hw_random/ixp4xx-rng.c             |  5 ++++-
+ drivers/crypto/Kconfig                          |  2 +-
+ drivers/crypto/ixp4xx_crypto.c                  | 12 ++++++------
+ drivers/net/wan/ixp4xx_hss.c                    |  2 +-
+ 13 files changed, 59 insertions(+), 68 deletions(-)
 
-Anything else I could do to diagnose this problem?
-
-
-Michael
-
+-- 
+Krzysztof Halasa
