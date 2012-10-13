@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932Ab2JMBCX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Oct 2012 21:02:23 -0400
-Received: from liberdade2.minaslivre.org ([74.50.53.203]:58969 "EHLO
-	liberdade.minaslivre.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728Ab2JMBCW (ORCPT
+	id S1752951Ab2JMBEx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 21:04:53 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:42298 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752842Ab2JMBEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Oct 2012 21:02:22 -0400
-X-Greylist: delayed 380 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Oct 2012 21:02:22 EDT
-From: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
-        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org
-Subject: [PATCH] sdhci: put regulator if probe fails
-Date: Fri, 12 Oct 2012 21:55:17 -0300
-Message-Id: <1350089717-4050-1-git-send-email-cascardo@holoscopio.com>
-X-Mailer: git-send-email 1.7.10
+	Fri, 12 Oct 2012 21:04:52 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
+To: Rusty Russell <rusty@rustcorp.com.au>, David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: CONFIG_MODULE_SIG breaks out-of-tree modules in modpost.
+From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1350090284_2902P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 12 Oct 2012 21:04:45 -0400
+Message-ID: <6862.1350090285@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020205.5078BE2D.007F,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using the dummy regulator, SDHCI may fail its probing because the
-regulator does not support any voltages.
+--==_Exmh_1350090284_2902P
+Content-Type: text/plain; charset=us-ascii
 
-When reloading the driver, you will get a warning about a duplicate
-sysfs link.
+For starters, yes, I *do* understand the security issues involved, and
+no, I *don't* want to hear about NVidia evilness, because this looks like
+a modpost problem not an NVidia problem.
 
-[72211.963386] 0000:03:00.0 supply vmmc not found, using dummy regulator
-[72211.963409] ------------[ cut here ]------------
-[72211.963420] WARNING: at fs/sysfs/dir.c:536 sysfs_add_one+0x99/0xad()
-[72211.963424] Hardware name:
-[72211.963429] sysfs: cannot create duplicate filename '/devices/platform/reg-dummy/regulator/regulator.0/0000:03:00.0-vmmc'
+I built next-20121011 with CONFIG_MODULE_SIG=y, and MODULE_SIG_FORCE=n,
+so that I could test the feature, and just accept that the nvidia module was going
+to hand me 2 taints instead of one.
 
-Avoid this by properly cleaning up when the probe fails calling
-regulator_put. Other fail paths get fixed as well.
+But then, building the NVidia module a wondrous thing happened, and it threw a
+most inexplicable error:
 
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
----
- drivers/mmc/host/sdhci.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+  cp /usr/src/valdis/NVIDIA-Linux-x86_64-304.51/kernel/nvidia.ko.unsigned /usr/src/valdis/NVIDIA-Linux-x86_64-304.51/kernel/nvidia.ko.stripped && strip -x -g /usr/src/valdis/NVIDIA-Linux-x86_64-304.51/kernel/nvidia.ko.stripped && /usr/bin/eu-strip /usr/src/valdis/NVIDIA-Linux-x86_64-304.51/kernel/nvidia.ko.stripped
+/bin/sh: -c: line 0: syntax error near unexpected token `;'
+/bin/sh: -c: line 0: `set -e;  ; echo 'cmd_/usr/src/valdis/NVIDIA-Linux-x86_64-304.51/kernel/nvidia.ko := ' > /usr/src/valdis/NVIDIA-Linux-x86_64-304.51/kernel/.nvidia.ko.cmd'
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 7922adb..dd6bc26 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -2992,7 +2992,8 @@ int sdhci_add_host(struct sdhci_host *host)
- 	if (mmc->ocr_avail == 0) {
- 		pr_err("%s: Hardware doesn't report any "
- 			"support voltages.\n", mmc_hostname(mmc));
--		return -ENODEV;
-+		ret = -ENODEV;
-+		goto out_vmmc;
- 	}
- 
- 	spin_lock_init(&host->lock);
-@@ -3121,6 +3122,9 @@ reset:
- untasklet:
- 	tasklet_kill(&host->card_tasklet);
- 	tasklet_kill(&host->finish_tasklet);
-+out_vmmc:
-+	if (host->vmmc)
-+		regulator_put(host->vmmc);
- 
- 	return ret;
- }
--- 
-1.7.10
+Looks like somebody left a $(FOO) unset between the 2 ';' characters.  I wasn't
+able to follow the way scripts/Makefile.modpost worked well enough to figure out
+where that line gets built, there's way too many 'set -e' in the scripts/ tree.
+
+Building with MODULE_SIG=n made it build just fine.
+
+This *MAY* be related to this RedHat bug: https://bugzilla.redhat.com/show_bug.cgi?id=655231
+
+
+--==_Exmh_1350090284_2902P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBUHi+LAdmEQWDXROgAQIY2xAAhL90PZfDy9l9Kkq9fvBpLtpDyPmA2hmh
+PqYT+kHq+omp18//qgZyCBxm0r+Qn0SdzztxG+Sf+5N5qBOzp4OTBq3IRN9xZQw+
+NqgsCN48Pd0lfFTADiXdx+f2jSWu4wnB7HHOT3FKVsJz3C9Rt8RdXYIrt0zySOJH
+F0iZNQqT1/mn1nj84uUR2hCndllAIJOTdebivmsHZbjEzk5oLOXhwaHznCLZm/Zo
+gZPAX4Vo8tPTf7VS+jJ1gNKEzQDQyQT1RqaD/bL9afsVo3s8f24eYxkg4LjaIRSo
+oCsZBwrwk+zNrY2vzu8qYZVaKjW36/sAS/AHEFhI+0h3VSgfIaxNDy6BbMNCpMcz
+xIH9airL0VSIABlParVbTmVxzknGPFrzUTc1GsIEk3cw0ggg8/kLPxi/4QAg9XDa
+sNQS+oxXL48x4te6nhv97YTD+YMormeoaNbKWs3d9e7ZU5bRB8OF2evglNqFSdeK
+aA89yWVY5u1zidtTAuY1yNdEKFp4pFR7D2O0ckWiuwUjbJUihdv494rDA3ZCTeWJ
+7HClfJaAngJ8HEjyk7u+hEfDHmlD/66Zo00AKOGlAx3dxJDvA3fjR/lrU4HUuCHI
+5ZNbPu6QcU9Lg7vzGc78rFmPE474NK2uIgXbIb0C1yEatIB+V38a0KX9V++iji9u
++RtBhg6nC2k=
+=R0ul
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1350090284_2902P--
 
