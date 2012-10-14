@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab2JNO5w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:57:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46518 "EHLO
+	id S1754865Ab2JNO6i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:58:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46508 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932192Ab2JNOn1 (ORCPT
+	by vger.kernel.org with ESMTP id S932190Ab2JNOn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:43:27 -0400
-Message-Id: <20121014143545.285790962@decadent.org.uk>
+Message-Id: <20121014143544.489597534@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:58 +0100
+Date: Sun, 14 Oct 2012 15:36:52 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bart Van Assche <bvanassche@acm.org>, David Dillow <dillowda@ornl.gov>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 085/147] IB/srp: Avoid having aborted requests hang
+        =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 079/147] mtd: omap2: fix omap_nand_remove segfault
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,31 +29,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Andreas Bießmann <andreas@biessmann.de>
 
-commit d8536670916a685df116b5c2cb256573fd25e4e3 upstream.
+commit 7d9b110269253b1d5858cfa57d68dfc7bf50dd77 upstream.
 
-We need to call scsi_done() for commands after we abort them.
+Do not kfree() the mtd_info; it is handled in the mtd subsystem and
+already freed by nand_release(). Instead kfree() the struct
+omap_nand_info allocated in omap_nand_probe which was not freed before.
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Acked-by: David Dillow <dillowda@ornl.gov>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+This patch fixes following error when unloading the omap2 module:
+
+---8<---
+~ $ rmmod omap2
+------------[ cut here ]------------
+kernel BUG at mm/slab.c:3126!
+Internal error: Oops - BUG: 0 [#1] PREEMPT ARM
+Modules linked in: omap2(-)
+CPU: 0    Not tainted  (3.6.0-rc3-00230-g155e36d-dirty #3)
+PC is at cache_free_debugcheck+0x2d4/0x36c
+LR is at kfree+0xc8/0x2ac
+pc : [<c01125a0>]    lr : [<c0112efc>]    psr: 200d0193
+sp : c521fe08  ip : c0e8ef90  fp : c521fe5c
+r10: bf0001fc  r9 : c521e000  r8 : c0d99c8c
+r7 : c661ebc0  r6 : c065d5a4  r5 : c65c4060  r4 : c78005c0
+r3 : 00000000  r2 : 00001000  r1 : c65c4000  r0 : 00000001
+Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 10c5387d  Table: 86694019  DAC: 00000015
+Process rmmod (pid: 549, stack limit = 0xc521e2f0)
+Stack: (0xc521fe08 to 0xc5220000)
+fe00:                   c008a874 c00bf44c c515c6d0 200d0193 c65c4860 c515c240
+fe20: c521fe3c c521fe30 c008a9c0 c008a854 c521fe5c c65c4860 c78005c0 bf0001fc
+fe40: c780ff40 a00d0113 c521e000 00000000 c521fe84 c521fe60 c0112efc c01122d8
+fe60: c65c4860 c0673778 c06737ac 00000000 00070013 00000000 c521fe9c c521fe88
+fe80: bf0001fc c0112e40 c0673778 bf001ca8 c521feac c521fea0 c02ca11c bf0001ac
+fea0: c521fec4 c521feb0 c02c82c4 c02ca100 c0673778 bf001ca8 c521fee4 c521fec8
+fec0: c02c8dd8 c02c8250 00000000 bf001ca8 bf001ca8 c0804ee0 c521ff04 c521fee8
+fee0: c02c804c c02c8d20 bf001924 00000000 bf001ca8 c521e000 c521ff1c c521ff08
+ff00: c02c950c c02c7fbc bf001d48 00000000 c521ff2c c521ff20 c02ca3a4 c02c94b8
+ff20: c521ff3c c521ff30 bf001938 c02ca394 c521ffa4 c521ff40 c009beb4 bf001930
+ff40: c521ff6c 70616d6f b6fe0032 c0014f84 70616d6f b6fe0032 00000081 60070010
+ff60: c521ff84 c521ff70 c008e1f4 c00bf328 0001a004 70616d6f c521ff94 0021ff88
+ff80: c008e368 0001a004 70616d6f b6fe0032 00000081 c0015028 00000000 c521ffa8
+ffa0: c0014dc0 c009bcd0 0001a004 70616d6f bec2ab38 00000880 bec2ab38 00000880
+ffc0: 0001a004 70616d6f b6fe0032 00000081 00000319 00000000 b6fe1000 00000000
+ffe0: bec2ab30 bec2ab20 00019f00 b6f539c0 60070010 bec2ab38 aaaaaaaa aaaaaaaa
+Backtrace:
+[<c01122cc>] (cache_free_debugcheck+0x0/0x36c) from [<c0112efc>] (kfree+0xc8/0x2ac)
+[<c0112e34>] (kfree+0x0/0x2ac) from [<bf0001fc>] (omap_nand_remove+0x5c/0x64 [omap2])
+[<bf0001a0>] (omap_nand_remove+0x0/0x64 [omap2]) from [<c02ca11c>] (platform_drv_remove+0x28/0x2c)
+ r5:bf001ca8 r4:c0673778
+[<c02ca0f4>] (platform_drv_remove+0x0/0x2c) from [<c02c82c4>] (__device_release_driver+0x80/0xdc)
+[<c02c8244>] (__device_release_driver+0x0/0xdc) from [<c02c8dd8>] (driver_detach+0xc4/0xc8)
+ r5:bf001ca8 r4:c0673778
+[<c02c8d14>] (driver_detach+0x0/0xc8) from [<c02c804c>] (bus_remove_driver+0x9c/0x104)
+ r6:c0804ee0 r5:bf001ca8 r4:bf001ca8 r3:00000000
+[<c02c7fb0>] (bus_remove_driver+0x0/0x104) from [<c02c950c>] (driver_unregister+0x60/0x80)
+ r6:c521e000 r5:bf001ca8 r4:00000000 r3:bf001924
+[<c02c94ac>] (driver_unregister+0x0/0x80) from [<c02ca3a4>] (platform_driver_unregister+0x1c/0x20)
+ r5:00000000 r4:bf001d48
+[<c02ca388>] (platform_driver_unregister+0x0/0x20) from [<bf001938>] (omap_nand_driver_exit+0x14/0x1c [omap2])
+[<bf001924>] (omap_nand_driver_exit+0x0/0x1c [omap2]) from [<c009beb4>] (sys_delete_module+0x1f0/0x2ec)
+[<c009bcc4>] (sys_delete_module+0x0/0x2ec) from [<c0014dc0>] (ret_fast_syscall+0x0/0x48)
+ r8:c0015028 r7:00000081 r6:b6fe0032 r5:70616d6f r4:0001a004
+Code: e1a00005 eb0d9172 e7f001f2 e7f001f2 (e7f001f2)
+---[ end trace 6a30b24d8c0cc2ee ]---
+Segmentation fault
+--->8---
+
+This error was introduced in 67ce04bf2746f8a1f8c2a104b313d20c63f68378 which
+was the first commit of this driver.
+
+Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/infiniband/ulp/srp/ib_srp.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/mtd/nand/omap2.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
-index ac66e6b..922d845 100644
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -1687,6 +1687,7 @@ static int srp_abort(struct scsi_cmnd *scmnd)
- 			  SRP_TSK_ABORT_TASK);
- 	srp_free_req(target, req, scmnd, 0);
- 	scmnd->result = DID_ABORT << 16;
-+	scmnd->scsi_done(scmnd);
- 
- 	return SUCCESS;
+diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
+index f47c422..e604a45 100644
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -1364,7 +1364,7 @@ static int omap_nand_remove(struct platform_device *pdev)
+ 	/* Release NAND device, its internal structures and partitions */
+ 	nand_release(&info->mtd);
+ 	iounmap(info->nand.IO_ADDR_R);
+-	kfree(&info->mtd);
++	kfree(info);
+ 	return 0;
  }
+ 
 
 
