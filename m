@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab2JNO64 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:58:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46525 "EHLO
+	id S1755009Ab2JNO6y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:58:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46523 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932202Ab2JNOn0 (ORCPT
+	by vger.kernel.org with ESMTP id S932200Ab2JNOn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:43:26 -0400
-Message-Id: <20121014143543.836365515@decadent.org.uk>
+Message-Id: <20121014143543.032989051@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:47 +0100
+Date: Sun, 14 Oct 2012 15:36:41 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michal Marek <mmarek@suse.cz>, Andi Kleen <andi@firstfloor.org>
-Subject: [ 074/147] kbuild: Do not package /boot and /lib in make tar-pkg
+        Jan Kara <jack@suse.cz>, Kristian Nielsen <knielsen@knielsen-hq.org>
+Subject: [ 068/147] ext4: fix fdatasync() for files with only i_size changes
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,49 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Marek <mmarek@suse.cz>
+From: Jan Kara <jack@suse.cz>
 
-commit fe04ddf7c2910362f3817c8156e41cbd6c0ee35d upstream.
+commit b71fc079b5d8f42b2a52743c8d2f1d35d655b1c5 upstream.
 
-There were reports of users destroying their Fedora installs by a kernel
-tarball that replaces the /lib -> /usr/lib symlink. Let's remove the
-toplevel directories from the tarball to prevent this from happening.
+Code tracking when transaction needs to be committed on fdatasync(2) forgets
+to handle a situation when only inode's i_size is changed. Thus in such
+situations fdatasync(2) doesn't force transaction with new i_size to disk
+and that can result in wrong i_size after a crash.
 
-Reported-by: Andi Kleen <andi@firstfloor.org>
-Suggested-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
-[bwh: Backported to 3.2: drop redundant changes]
+Fix the issue by updating inode's i_datasync_tid whenever its size is
+updated.
+
+Reported-by: Kristian Nielsen <knielsen@knielsen-hq.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- scripts/Makefile.fwinst  |    4 ++--
- scripts/package/buildtar |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ fs/ext4/inode.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/scripts/Makefile.fwinst b/scripts/Makefile.fwinst
-index 4d908d1..c3f69ae 100644
---- a/scripts/Makefile.fwinst
-+++ b/scripts/Makefile.fwinst
-@@ -42,7 +42,7 @@ quiet_cmd_install = INSTALL $(subst $(srctree)/,,$@)
- $(installed-fw-dirs):
- 	$(call cmd,mkdir)
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4007,6 +4007,7 @@ static int ext4_do_update_inode(handle_t
+ 	struct ext4_inode_info *ei = EXT4_I(inode);
+ 	struct buffer_head *bh = iloc->bh;
+ 	int err = 0, rc, block;
++	int need_datasync = 0;
  
--$(installed-fw): $(INSTALL_FW_PATH)/%: $(obj)/% | $(INSTALL_FW_PATH)/$$(dir %)
-+$(installed-fw): $(INSTALL_FW_PATH)/%: $(obj)/% | $$(dir $(INSTALL_FW_PATH)/%)
- 	$(call cmd,install)
+ 	/* For fields not not tracking in the in-memory inode,
+ 	 * initialise them to zero for new inodes. */
+@@ -4055,7 +4056,10 @@ static int ext4_do_update_inode(handle_t
+ 		raw_inode->i_file_acl_high =
+ 			cpu_to_le16(ei->i_file_acl >> 32);
+ 	raw_inode->i_file_acl_lo = cpu_to_le32(ei->i_file_acl);
+-	ext4_isize_set(raw_inode, ei->i_disksize);
++	if (ei->i_disksize != ext4_isize(raw_inode)) {
++		ext4_isize_set(raw_inode, ei->i_disksize);
++		need_datasync = 1;
++	}
+ 	if (ei->i_disksize > 0x7fffffffULL) {
+ 		struct super_block *sb = inode->i_sb;
+ 		if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
+@@ -4108,7 +4112,7 @@ static int ext4_do_update_inode(handle_t
+ 		err = rc;
+ 	ext4_clear_inode_state(inode, EXT4_STATE_NEW);
  
- PHONY +=  __fw_install __fw_modinst FORCE
-diff --git a/scripts/package/buildtar b/scripts/package/buildtar
-index 8a7b155..d0d748e 100644
---- a/scripts/package/buildtar
-+++ b/scripts/package/buildtar
-@@ -109,7 +109,7 @@ esac
- 	if tar --owner=root --group=root --help >/dev/null 2>&1; then
- 		opts="--owner=root --group=root"
- 	fi
--	tar cf - . $opts | ${compress} > "${tarball}${file_ext}"
-+	tar cf - boot/* lib/* $opts | ${compress} > "${tarball}${file_ext}"
- )
- 
- echo "Tarball successfully created in ${tarball}${file_ext}"
+-	ext4_update_inode_fsync_trans(handle, inode, 0);
++	ext4_update_inode_fsync_trans(handle, inode, need_datasync);
+ out_brelse:
+ 	brelse(bh);
+ 	ext4_std_error(inode->i_sb, err);
 
 
