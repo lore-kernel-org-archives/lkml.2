@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125Ab2JNPB4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:01:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46465 "EHLO
+	id S1755151Ab2JNPCW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:02:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46432 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932122Ab2JNOnO (ORCPT
+	by vger.kernel.org with ESMTP id S932075Ab2JNOnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:43:14 -0400
-Message-Id: <20121014143545.019077438@decadent.org.uk>
+	Sun, 14 Oct 2012 10:43:10 -0400
+Message-Id: <20121014143546.495048367@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:56 +0100
+Date: Sun, 14 Oct 2012 15:37:07 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Patrick McHardy <kaber@trash.net>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 083/147] IPoIB: Fix use-after-free of multicast object
+        Jean Delvare <jdelvare@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        Bernhard Walle <bernhard@bwalle.de>, Michal Marek <mmarek@suse.cz>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [ 094/147] kbuild: Fix gcc -x syntax
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,95 +29,194 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Patrick McHardy <kaber@trash.net>
+From: Jean Delvare <jdelvare@suse.de>
 
-commit bea1e22df494a729978e7f2c54f7bda328f74bc3 upstream.
+commit b1e0d8b70fa31821ebca3965f2ef8619d7c5e316 upstream.
 
-Fix a crash in ipoib_mcast_join_task().  (with help from Or Gerlitz)
+The correct syntax for gcc -x is "gcc -x assembler", not
+"gcc -xassembler". Even though the latter happens to work, the former
+is what is documented in the manual page and thus what gcc wrappers
+such as icecream do expect.
 
-Commit c8c2afe360b7 ("IPoIB: Use rtnl lock/unlock when changing device
-flags") added a call to rtnl_lock() in ipoib_mcast_join_task(), which
-is run from the ipoib_workqueue, and hence the workqueue can't be
-flushed from the context of ipoib_stop().
+This isn't a cosmetic change. The missing space prevents icecream from
+recognizing compilation tasks it can't handle, leading to silent kernel
+miscompilations.
 
-In the current code, ipoib_stop() (which doesn't flush the workqueue)
-calls ipoib_mcast_dev_flush(), which goes and deletes all the
-multicast entries.  This takes place without any synchronization with
-a possible running instance of ipoib_mcast_join_task() for the same
-ipoib device, leading to a crash due to NULL pointer dereference.
+Besides me, credits go to Michael Matz and Dirk Mueller for
+investigating the miscompilation issue and tracking it down to this
+incorrect -x parameter syntax.
 
-Fix this by making sure that the workqueue is flushed before
-ipoib_mcast_dev_flush() is called.  To make that possible, we move the
-RTNL-lock wrapped code to ipoib_mcast_join_finish().
-
-Signed-off-by: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Bernhard Walle <bernhard@bwalle.de>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+[bwh: Backported to 3.2: drop unneeded change to arch/x86/Makefile]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/infiniband/ulp/ipoib/ipoib_main.c      |    2 +-
- drivers/infiniband/ulp/ipoib/ipoib_multicast.c |   19 ++++++++++---------
- 2 files changed, 11 insertions(+), 10 deletions(-)
+ arch/mips/Makefile                         |    2 +-
+ arch/mips/kernel/Makefile                  |    2 +-
+ arch/x86/Makefile                          |    2 +-
+ scripts/Kbuild.include                     |   12 ++++++------
+ scripts/gcc-version.sh                     |    6 +++---
+ scripts/gcc-x86_32-has-stack-protector.sh  |    2 +-
+ scripts/gcc-x86_64-has-stack-protector.sh  |    2 +-
+ scripts/kconfig/check.sh                   |    2 +-
+ scripts/kconfig/lxdialog/check-lxdialog.sh |    2 +-
+ tools/perf/Makefile                        |    2 +-
+ tools/power/cpupower/Makefile              |    2 +-
+ 11 files changed, 18 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/infiniband/ulp/ipoib/ipoib_main.c b/drivers/infiniband/ulp/ipoib/ipoib_main.c
-index 1e19b5a..ea0dfc7 100644
---- a/drivers/infiniband/ulp/ipoib/ipoib_main.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_main.c
-@@ -150,7 +150,7 @@ static int ipoib_stop(struct net_device *dev)
+--- a/arch/mips/Makefile
++++ b/arch/mips/Makefile
+@@ -224,7 +224,7 @@ KBUILD_CPPFLAGS += -D"DATAOFFSET=$(if $(
+ LDFLAGS			+= -m $(ld-emul)
  
- 	netif_stop_queue(dev);
+ ifdef CONFIG_MIPS
+-CHECKFLAGS += $(shell $(CC) $(KBUILD_CFLAGS) -dM -E -xc /dev/null | \
++CHECKFLAGS += $(shell $(CC) $(KBUILD_CFLAGS) -dM -E -x c /dev/null | \
+ 	egrep -vw '__GNUC_(|MINOR_|PATCHLEVEL_)_' | \
+ 	sed -e "s/^\#define /-D'/" -e "s/ /'='/" -e "s/$$/'/")
+ ifdef CONFIG_64BIT
+--- a/arch/mips/kernel/Makefile
++++ b/arch/mips/kernel/Makefile
+@@ -102,7 +102,7 @@ obj-$(CONFIG_MIPS_MACHINE)	+= mips_machi
  
--	ipoib_ib_dev_down(dev, 0);
-+	ipoib_ib_dev_down(dev, 1);
- 	ipoib_ib_dev_stop(dev, 0);
+ obj-$(CONFIG_OF)		+= prom.o
  
- 	if (!test_bit(IPOIB_FLAG_SUBINTERFACE, &priv->flags)) {
-diff --git a/drivers/infiniband/ulp/ipoib/ipoib_multicast.c b/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
-index 7536724..cecb98a 100644
---- a/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
-@@ -175,7 +175,9 @@ static int ipoib_mcast_join_finish(struct ipoib_mcast *mcast,
+-CFLAGS_cpu-bugs64.o	= $(shell if $(CC) $(KBUILD_CFLAGS) -Wa,-mdaddi -c -o /dev/null -xc /dev/null >/dev/null 2>&1; then echo "-DHAVE_AS_SET_DADDI"; fi)
++CFLAGS_cpu-bugs64.o	= $(shell if $(CC) $(KBUILD_CFLAGS) -Wa,-mdaddi -c -o /dev/null -x c /dev/null >/dev/null 2>&1; then echo "-DHAVE_AS_SET_DADDI"; fi)
  
- 	mcast->mcmember = *mcmember;
+ obj-$(CONFIG_HAVE_STD_PC_SERIAL_PORT)	+= 8250-platform.o
  
--	/* Set the cached Q_Key before we attach if it's the broadcast group */
-+	/* Set the multicast MTU and cached Q_Key before we attach if it's
-+	 * the broadcast group.
-+	 */
- 	if (!memcmp(mcast->mcmember.mgid.raw, priv->dev->broadcast + 4,
- 		    sizeof (union ib_gid))) {
- 		spin_lock_irq(&priv->lock);
-@@ -183,10 +185,17 @@ static int ipoib_mcast_join_finish(struct ipoib_mcast *mcast,
- 			spin_unlock_irq(&priv->lock);
- 			return -EAGAIN;
- 		}
-+		priv->mcast_mtu = IPOIB_UD_MTU(ib_mtu_enum_to_int(priv->broadcast->mcmember.mtu));
- 		priv->qkey = be32_to_cpu(priv->broadcast->mcmember.qkey);
- 		spin_unlock_irq(&priv->lock);
- 		priv->tx_wr.wr.ud.remote_qkey = priv->qkey;
- 		set_qkey = 1;
-+
-+		if (!ipoib_cm_admin_enabled(dev)) {
-+			rtnl_lock();
-+			dev_set_mtu(dev, min(priv->mcast_mtu, priv->admin_mtu));
-+			rtnl_unlock();
-+		}
- 	}
+--- a/scripts/Kbuild.include
++++ b/scripts/Kbuild.include
+@@ -98,24 +98,24 @@ try-run = $(shell set -e;		\
+ # Usage: cflags-y += $(call as-option,-Wa$(comma)-isa=foo,)
  
- 	if (!test_bit(IPOIB_MCAST_FLAG_SENDONLY, &mcast->flags)) {
-@@ -574,14 +583,6 @@ void ipoib_mcast_join_task(struct work_struct *work)
- 		return;
- 	}
+ as-option = $(call try-run,\
+-	$(CC) $(KBUILD_CFLAGS) $(1) -c -xassembler /dev/null -o "$$TMP",$(1),$(2))
++	$(CC) $(KBUILD_CFLAGS) $(1) -c -x assembler /dev/null -o "$$TMP",$(1),$(2))
  
--	priv->mcast_mtu = IPOIB_UD_MTU(ib_mtu_enum_to_int(priv->broadcast->mcmember.mtu));
--
--	if (!ipoib_cm_admin_enabled(dev)) {
--		rtnl_lock();
--		dev_set_mtu(dev, min(priv->mcast_mtu, priv->admin_mtu));
--		rtnl_unlock();
--	}
--
- 	ipoib_dbg_mcast(priv, "successfully joined all multicast groups\n");
+ # as-instr
+ # Usage: cflags-y += $(call as-instr,instr,option1,option2)
  
- 	clear_bit(IPOIB_MCAST_RUN, &priv->flags);
+ as-instr = $(call try-run,\
+-	printf "%b\n" "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" -,$(2),$(3))
++	printf "%b\n" "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -x assembler -o "$$TMP" -,$(2),$(3))
+ 
+ # cc-option
+ # Usage: cflags-y += $(call cc-option,-march=winchip-c6,-march=i586)
+ 
+ cc-option = $(call try-run,\
+-	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -xc /dev/null -o "$$TMP",$(1),$(2))
++	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -x c /dev/null -o "$$TMP",$(1),$(2))
+ 
+ # cc-option-yn
+ # Usage: flag := $(call cc-option-yn,-march=winchip-c6)
+ cc-option-yn = $(call try-run,\
+-	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -xc /dev/null -o "$$TMP",y,n)
++	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -x c /dev/null -o "$$TMP",y,n)
+ 
+ # cc-option-align
+ # Prefix align with either -falign or -malign
+@@ -125,7 +125,7 @@ cc-option-align = $(subst -functions=0,,
+ # cc-disable-warning
+ # Usage: cflags-y += $(call cc-disable-warning,unused-but-set-variable)
+ cc-disable-warning = $(call try-run,\
+-	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -W$(strip $(1)) -c -xc /dev/null -o "$$TMP",-Wno-$(strip $(1)))
++	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -W$(strip $(1)) -c -x c /dev/null -o "$$TMP",-Wno-$(strip $(1)))
+ 
+ # cc-version
+ # Usage gcc-ver := $(call cc-version)
+@@ -143,7 +143,7 @@ cc-ifversion = $(shell [ $(call cc-versi
+ # cc-ldoption
+ # Usage: ldflags += $(call cc-ldoption, -Wl$(comma)--hash-style=both)
+ cc-ldoption = $(call try-run,\
+-	$(CC) $(1) -nostdlib -xc /dev/null -o "$$TMP",$(1),$(2))
++	$(CC) $(1) -nostdlib -x c /dev/null -o "$$TMP",$(1),$(2))
+ 
+ # ld-option
+ # Usage: LDFLAGS += $(call ld-option, -X)
+--- a/scripts/gcc-version.sh
++++ b/scripts/gcc-version.sh
+@@ -22,10 +22,10 @@ if [ ${#compiler} -eq 0 ]; then
+ 	exit 1
+ fi
+ 
+-MAJOR=$(echo __GNUC__ | $compiler -E -xc - | tail -n 1)
+-MINOR=$(echo __GNUC_MINOR__ | $compiler -E -xc - | tail -n 1)
++MAJOR=$(echo __GNUC__ | $compiler -E -x c - | tail -n 1)
++MINOR=$(echo __GNUC_MINOR__ | $compiler -E -x c - | tail -n 1)
+ if [ "x$with_patchlevel" != "x" ] ; then
+-	PATCHLEVEL=$(echo __GNUC_PATCHLEVEL__ | $compiler -E -xc - | tail -n 1)
++	PATCHLEVEL=$(echo __GNUC_PATCHLEVEL__ | $compiler -E -x c - | tail -n 1)
+ 	printf "%02d%02d%02d\\n" $MAJOR $MINOR $PATCHLEVEL
+ else
+ 	printf "%02d%02d\\n" $MAJOR $MINOR
+--- a/scripts/gcc-x86_32-has-stack-protector.sh
++++ b/scripts/gcc-x86_32-has-stack-protector.sh
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ 
+-echo "int foo(void) { char X[200]; return 3; }" | $* -S -xc -c -O0 -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
++echo "int foo(void) { char X[200]; return 3; }" | $* -S -x c -c -O0 -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
+ if [ "$?" -eq "0" ] ; then
+ 	echo y
+ else
+--- a/scripts/gcc-x86_64-has-stack-protector.sh
++++ b/scripts/gcc-x86_64-has-stack-protector.sh
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ 
+-echo "int foo(void) { char X[200]; return 3; }" | $* -S -xc -c -O0 -mcmodel=kernel -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
++echo "int foo(void) { char X[200]; return 3; }" | $* -S -x c -c -O0 -mcmodel=kernel -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
+ if [ "$?" -eq "0" ] ; then
+ 	echo y
+ else
+--- a/scripts/kconfig/check.sh
++++ b/scripts/kconfig/check.sh
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ # Needed for systems without gettext
+-$* -xc -o /dev/null - > /dev/null 2>&1 << EOF
++$* -x c -o /dev/null - > /dev/null 2>&1 << EOF
+ #include <libintl.h>
+ int main()
+ {
+--- a/scripts/kconfig/lxdialog/check-lxdialog.sh
++++ b/scripts/kconfig/lxdialog/check-lxdialog.sh
+@@ -38,7 +38,7 @@ trap "rm -f $tmp" 0 1 2 3 15
+ 
+ # Check if we can link to ncurses
+ check() {
+-        $cc -xc - -o $tmp 2>/dev/null <<'EOF'
++        $cc -x c - -o $tmp 2>/dev/null <<'EOF'
+ #include CURSES_LOC
+ main() {}
+ EOF
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -56,7 +56,7 @@ ifeq ($(ARCH),x86_64)
+ 	ARCH := x86
+ 	IS_X86_64 := 0
+ 	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
+-		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -xc - | tail -n 1)
++		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
+ 	endif
+ 	ifeq (${IS_X86_64}, 1)
+ 		RAW_ARCH := x86_64
+--- a/tools/power/cpupower/Makefile
++++ b/tools/power/cpupower/Makefile
+@@ -100,7 +100,7 @@ GMO_FILES = ${shell for HLANG in ${LANGU
+ export CROSS CC AR STRIP RANLIB CFLAGS LDFLAGS LIB_OBJS
+ 
+ # check if compiler option is supported
+-cc-supports = ${shell if $(CC) ${1} -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then echo "$(1)"; fi;}
++cc-supports = ${shell if $(CC) ${1} -S -o /dev/null -x c /dev/null > /dev/null 2>&1; then echo "$(1)"; fi;}
+ 
+ # use '-Os' optimization if available, else use -O2
+ OPTIMIZATION := $(call cc-supports,-Os,-O2)
 
 
