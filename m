@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab2JNPRT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:17:19 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46068 "EHLO
+	id S1753789Ab2JNOlf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:41:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46037 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753824Ab2JNOlh (ORCPT
+	by vger.kernel.org with ESMTP id S1753709Ab2JNOld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:41:37 -0400
-Message-Id: <20121014143536.203065496@decadent.org.uk>
+	Sun, 14 Oct 2012 10:41:33 -0400
+Message-Id: <20121014143535.802536633@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:35:51 +0100
+Date: Sun, 14 Oct 2012 15:35:48 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 018/147] tools/hv: Fix exit() error code
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        =?ISO-8859-15?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+Subject: [ 015/147] UBI: fix autoresize handling in R/O mode
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,60 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 6bb22fea25624ab593eee376fa5fb82d1b13f45a upstream.
+commit abb3e01103eb4e2ea5c15e6fedbc74e08bd4cc2b upstream.
 
-Linux native exit codes are 8-bit unsigned values.  exit(-1) results
-in an exit code of 255, which is usually reserved for shells reporting
-'command not found'.  Use the portable value EXIT_FAILURE.  (Not that
-this matters much for a daemon.)
+Currently UBI fails in autoresize when it is in R/O mode (e.g., because the
+underlying MTD device is R/O). This patch fixes the issue - we just skip
+autoresize and print a warning.
 
+Reported-by: Pali Rohár <pali.rohar@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: drop changes to exit() calls not in this version]
 ---
- tools/hv/hv_kvp_daemon.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ drivers/mtd/ubi/build.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -348,7 +348,7 @@ int main(void)
- 	fd = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_CONNECTOR);
- 	if (fd < 0) {
- 		syslog(LOG_ERR, "netlink socket creation failed; error:%d", fd);
--		exit(-1);
-+		exit(EXIT_FAILURE);
- 	}
- 	addr.nl_family = AF_NETLINK;
- 	addr.nl_pad = 0;
-@@ -360,7 +360,7 @@ int main(void)
- 	if (error < 0) {
- 		syslog(LOG_ERR, "bind failed; error:%d", error);
- 		close(fd);
--		exit(-1);
-+		exit(EXIT_FAILURE);
- 	}
- 	sock_opt = addr.nl_groups;
- 	setsockopt(fd, 270, 1, &sock_opt, sizeof(sock_opt));
-@@ -378,7 +378,7 @@ int main(void)
- 	if (len < 0) {
- 		syslog(LOG_ERR, "netlink_send failed; error:%d", len);
- 		close(fd);
--		exit(-1);
-+		exit(EXIT_FAILURE);
- 	}
+diff --git a/drivers/mtd/ubi/build.c b/drivers/mtd/ubi/build.c
+index 355756b..8966088 100644
+--- a/drivers/mtd/ubi/build.c
++++ b/drivers/mtd/ubi/build.c
+@@ -799,6 +799,11 @@ static int autoresize(struct ubi_device *ubi, int vol_id)
+ 	struct ubi_volume *vol = ubi->volumes[vol_id];
+ 	int err, old_reserved_pebs = vol->reserved_pebs;
  
- 	pfd.fd = fd;
-@@ -497,7 +497,7 @@ int main(void)
- 		len = netlink_send(fd, incoming_cn_msg);
- 		if (len < 0) {
- 			syslog(LOG_ERR, "net_link send failed; error:%d", len);
--			exit(-1);
-+			exit(EXIT_FAILURE);
- 		}
- 	}
- 
++	if (ubi->ro_mode) {
++		ubi_warn("skip auto-resize because of R/O mode");
++		return 0;
++	}
++
+ 	/*
+ 	 * Clear the auto-resize flag in the volume in-memory copy of the
+ 	 * volume table, and 'ubi_resize_volume()' will propagate this change
 
 
