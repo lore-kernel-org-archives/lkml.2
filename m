@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab2JNO75 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:59:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46499 "EHLO
+	id S1755095Ab2JNO7z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:59:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46504 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932182Ab2JNOnY (ORCPT
+	by vger.kernel.org with ESMTP id S932183Ab2JNOnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:43:24 -0400
-Message-Id: <20121014143544.756915397@decadent.org.uk>
+Message-Id: <20121014143544.624496464@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:54 +0100
+Date: Sun, 14 Oct 2012 15:36:53 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Brian Norris <computersforpeace@gmail.com>,
+        =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <andreas@biessmann.de>,
         Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 081/147] JFFS2: dont fail on bitflips in OOB
+Subject: [ 080/147] mtd: omap2: fix module loading
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,55 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Norris <computersforpeace@gmail.com>
+From: Andreas Bießmann <andreas@biessmann.de>
 
-commit 74d83beaa229aac7d126ac1ed9414658ff1a89d2 upstream.
+commit 4d3d688da8e7016f15483e9319b41311e1db9515 upstream.
 
-JFFS2 was designed without thought for OOB bitflips, it seems, but they
-can occur and will be reported to JFFS2 via mtd_read_oob()[1]. We don't
-want to fail on these transactions, since the data was corrected.
+Unloading the omap2 nand driver missed to release the memory region which will
+result in not being able to request it again if one want to load the driver
+later on.
 
-[1] Few drivers report bitflips for OOB-only transactions. With such
-    drivers, this patch should have no effect.
+This patch fixes following error when loading omap2 module after unloading:
+---8<---
+~ $ rmmod omap2
+~ $ modprobe omap2
+[   37.420928] omap2-nand: probe of omap2-nand.0 failed with error -16
+~ $
+--->8---
 
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+This error was introduced in 67ce04bf2746f8a1f8c2a104b313d20c63f68378 which
+was the first commit of this driver.
+
+Signed-off-by: Andreas Bießmann <andreas@biessmann.de>
 Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/jffs2/wbuf.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/mtd/nand/omap2.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/jffs2/wbuf.c
-+++ b/fs/jffs2/wbuf.c
-@@ -1032,11 +1032,11 @@ int jffs2_check_oob_empty(struct jffs2_s
- 	ops.datbuf = NULL;
- 
- 	ret = c->mtd->read_oob(c->mtd, jeb->offset, &ops);
--	if (ret || ops.oobretlen != ops.ooblen) {
-+	if ((ret && !mtd_is_bitflip(ret)) || ops.oobretlen != ops.ooblen) {
- 		printk(KERN_ERR "cannot read OOB for EB at %08x, requested %zd"
- 				" bytes, read %zd bytes, error %d\n",
- 				jeb->offset, ops.ooblen, ops.oobretlen, ret);
--		if (!ret)
-+		if (!ret || mtd_is_bitflip(ret))
- 			ret = -EIO;
- 		return ret;
- 	}
-@@ -1075,11 +1075,11 @@ int jffs2_check_nand_cleanmarker(struct
- 	ops.datbuf = NULL;
- 
- 	ret = c->mtd->read_oob(c->mtd, jeb->offset, &ops);
--	if (ret || ops.oobretlen != ops.ooblen) {
-+	if ((ret && !mtd_is_bitflip(ret)) || ops.oobretlen != ops.ooblen) {
- 		printk(KERN_ERR "cannot read OOB for EB at %08x, requested %zd"
- 				" bytes, read %zd bytes, error %d\n",
- 				jeb->offset, ops.ooblen, ops.oobretlen, ret);
--		if (!ret)
-+		if (!ret || mtd_is_bitflip(ret))
- 			ret = -EIO;
- 		return ret;
- 	}
+diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
+index e604a45..9142005 100644
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -1364,6 +1364,7 @@ static int omap_nand_remove(struct platform_device *pdev)
+ 	/* Release NAND device, its internal structures and partitions */
+ 	nand_release(&info->mtd);
+ 	iounmap(info->nand.IO_ADDR_R);
++	release_mem_region(info->phys_base, NAND_IO_SIZE);
+ 	kfree(info);
+ 	return 0;
+ }
 
 
