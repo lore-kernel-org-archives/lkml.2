@@ -1,87 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049Ab2JNMhz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 08:37:55 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40168 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752858Ab2JNMhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 08:37:54 -0400
-Message-ID: <507AB1E6.4000809@ti.com>
-Date: Sun, 14 Oct 2012 18:06:54 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Hannu Heikkinen <hannuxx@iki.fi>
-CC: <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>,
-        <a.zummo@towertech.it>,
-        <davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [PATCH v2] rtc: davinci: clean up probe/remove routines
-References: <1350166210-23313-1-git-send-email-hannuxx@iki.fi> <1350207822-4857-1-git-send-email-hannuxx@iki.fi>
-In-Reply-To: <1350207822-4857-1-git-send-email-hannuxx@iki.fi>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1753087Ab2JNMwv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 08:52:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64772 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752868Ab2JNMwv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Oct 2012 08:52:51 -0400
+From: Sangho Yi <antiroot@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        Sangho Yi <antiroot@gmail.com>
+Subject: [PATCH] Drivers: Staging: CSR: Fixed coding style warnings
+Date: Sun, 14 Oct 2012 21:48:29 +0900
+Message-Id: <1350218909-20801-1-git-send-email-antiroot@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <n>
+References: <n>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2012 3:13 PM, Hannu Heikkinen wrote:
-> Use the devres managed resource functions in the probe routine.
-> Also affects the remove routine where the previously used free and
-> release functions are not needed.
-> 
-> The devm_* functions eliminate the need for manual resource releasing and
-> simplify error handling.  Resources allocated by devm_* are freed
-> automatically on driver detach.
-> 
-> Signed-off-by: Hannu Heikkinen <hannuxx@iki.fi>
-> ---
->  drivers/rtc/rtc-davinci.c | 56 +++++++++++++----------------------------------
->  1 file changed, 15 insertions(+), 41 deletions(-)
-> 
-> diff --git a/drivers/rtc/rtc-davinci.c b/drivers/rtc/rtc-davinci.c
-> index 14c2109..d24b573 100644
-> --- a/drivers/rtc/rtc-davinci.c
-> +++ b/drivers/rtc/rtc-davinci.c
-> @@ -119,8 +119,6 @@ static DEFINE_SPINLOCK(davinci_rtc_lock);
->  struct davinci_rtc {
->  	struct rtc_device 		*rtc;
->  	void __iomem			*base;
-> -	resource_size_t			pbase;
-> -	size_t				base_size;
->  	int				irq;
->  };
->  
-> @@ -482,22 +480,16 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
->  {
->  	struct device *dev = &pdev->dev;
->  	struct davinci_rtc *davinci_rtc;
-> -	struct resource *res, *mem;
-> +	struct resource *res;
->  	int ret = 0;
->  
-> -	davinci_rtc = kzalloc(sizeof(struct davinci_rtc), GFP_KERNEL);
-> +	davinci_rtc = devm_kzalloc(&pdev->dev, sizeof(struct davinci_rtc),
-> +		GFP_KERNEL);
->  	if (!davinci_rtc) {
->  		dev_dbg(dev, "could not allocate memory for private data\n");
->  		return -ENOMEM;
->  	}
->  
-> -	davinci_rtc->irq = platform_get_irq(pdev, 0);
-> -	if (davinci_rtc->irq < 0) {
-> -		dev_err(dev, "no RTC irq\n");
-> -		ret = davinci_rtc->irq;
-> -		goto fail1;
-> -	}
-> -
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	if (!res) {
->  		dev_err(dev, "no mem resource\n");
-> @@ -505,23 +497,16 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
->  		goto fail1;
+On drivers/staging/csr/csr_time.h, there were a few warnings on
+indentation, braces, and typedef struct usage.
+All those were changed to the proper way.
 
-As mentioned last time, this will have a build break here because fail1
-is being removed down below.
+Signed-off-by: Sangho Yi <antiroot@gmail.com>
+---
+ drivers/staging/csr/csr_time.h |   72 ++++++++++++++++++++--------------------
+ 1 file changed, 36 insertions(+), 36 deletions(-)
 
-Thanks,
-Sekhar
+diff --git a/drivers/staging/csr/csr_time.h b/drivers/staging/csr/csr_time.h
+index 2a45f3e..66f1c08 100644
+--- a/drivers/staging/csr/csr_time.h
++++ b/drivers/staging/csr/csr_time.h
+@@ -2,11 +2,11 @@
+ #define CSR_TIME_H__
+ /*****************************************************************************
+ 
+-            (c) Cambridge Silicon Radio Limited 2010
+-            All rights reserved and confidential information of CSR
++(c) Cambridge Silicon Radio Limited 2010
++All rights reserved and confidential information of CSR
+ 
+-            Refer to LICENSE.txt included with this source for details
+-            on the license terms.
++Refer to LICENSE.txt included with this source for details
++on the license terms.
+ 
+ *****************************************************************************/
+ 
+@@ -18,13 +18,13 @@ extern "C" {
+ 
+ /*******************************************************************************
+ 
+-    NAME
+-        CsrTime
++NAME
++	CsrTime
+ 
+-    DESCRIPTION
+-        Type to hold a value describing the current system time, which is a
+-        measure of time elapsed since some arbitrarily defined fixed time
+-        reference, usually associated with system startup.
++DESCRIPTION
++	Type to hold a value describing the current system time, which is a
++	measure of time elapsed since some arbitrarily defined fixed time
++	reference, usually associated with system startup.
+ 
+ *******************************************************************************/
+ typedef u32 CsrTime;
+@@ -32,44 +32,44 @@ typedef u32 CsrTime;
+ 
+ /*******************************************************************************
+ 
+-    NAME
+-        CsrTimeUtc
++NAME
++	CsrTimeUtc
+ 
+-    DESCRIPTION
+-        Type to hold a value describing a UTC wallclock time expressed in
+-        seconds and milliseconds elapsed since midnight January 1st 1970.
++DESCRIPTION
++	Type to hold a value describing a UTC wallclock time expressed in
++	seconds and milliseconds elapsed since midnight January 1st 1970.
+ 
+ *******************************************************************************/
+-typedef struct
+-{
+-    u32 sec;
+-    u16 msec;
+-} CsrTimeUtc;
++struct CstTimeUtc {
++	u32 sec;
++	u16 msec;
++};
+ 
+ 
+ /*******************************************************************************
+ 
+-    NAME
+-        CsrTimeGet
++NAME
++	CsrTimeGet
+ 
+-    DESCRIPTION
+-        Returns the current system time in a low and a high part. The low part
+-        is expressed in microseconds. The high part is incremented when the low
+-        part wraps to provide an extended range.
++DESCRIPTION
++	Returns the current system time in a low and a high part. The low part
++	is expressed in microseconds. The high part is incremented when the low
++	part wraps to provide an extended range.
+ 
+-        The caller may provide a NULL pointer as the high parameter. In this case
+-        the function just returns the low part and ignores the high parameter.
++	The caller may provide a NULL pointer as the high parameter.
++	In this case the function just returns the low part and ignores the
++	high parameter.
+ 
+-        Although the time is expressed in microseconds the actual resolution is
+-        platform dependent and can be less. It is recommended that the
+-        resolution is at least 10 milliseconds.
++	Although the time is expressed in microseconds the actual resolution is
++	platform dependent and can be less. It is recommended that the
++	resolution is at least 10 milliseconds.
+ 
+-    PARAMETERS
+-        high - Pointer to variable that will receive the high part of the
+-               current system time. Passing NULL is valid.
++PARAMETERS
++	high - Pointer to variable that will receive the high part of the
++	       current system time. Passing NULL is valid.
+ 
+-    RETURNS
+-        Low part of current system time in microseconds.
++RETURNS
++	Low part of current system time in microseconds.
+ 
+ *******************************************************************************/
+ CsrTime CsrTimeGet(CsrTime *high);
+-- 
+1.7.9.5
+
