@@ -1,102 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab2JNJ11 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 05:27:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43898 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751537Ab2JNJ10 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 05:27:26 -0400
-Message-ID: <1350206827.4832.74.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: stable backport: sched: Fix migration thread runtime bogosity
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mike Galbraith <mgalbraith@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Sun, 14 Oct 2012 10:27:07 +0100
-In-Reply-To: <1349897043.24256.63.camel@gandalf.local.home>
-References: <1349897043.24256.63.camel@gandalf.local.home>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-2SLqQKny0SnS+oYiSPNB"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 77.75.106.1
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1752124Ab2JNJnr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 05:43:47 -0400
+Received: from relay.sigmatic.fi ([80.69.161.51]:54853 "EHLO relay.sigmatic.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751634Ab2JNJnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Oct 2012 05:43:46 -0400
+From: Hannu Heikkinen <hannuxx@iki.fi>
+To: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        a.zummo@towertech.it, davinci-linux-open-source@linux.davincidsp.com,
+        nsekhar@ti.com
+Subject: [PATCH v2] rtc: davinci: clean up probe/remove routines
+Date: Sun, 14 Oct 2012 12:43:42 +0300
+Message-Id: <1350207822-4857-1-git-send-email-hannuxx@iki.fi>
+X-Mailer: git-send-email 1.7.12.2
+In-Reply-To: <1350166210-23313-1-git-send-email-hannuxx@iki.fi>
+References: <1350166210-23313-1-git-send-email-hannuxx@iki.fi>
+Content-Type: text/plain; charset="us-ascii:utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use the devres managed resource functions in the probe routine.
+Also affects the remove routine where the previously used free and
+release functions are not needed.
 
---=-2SLqQKny0SnS+oYiSPNB
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The devm_* functions eliminate the need for manual resource releasing and
+simplify error handling.  Resources allocated by devm_* are freed
+automatically on driver detach.
 
-On Wed, 2012-10-10 at 15:24 -0400, Steven Rostedt wrote:
-> Greg, Ben,
->=20
-> Can you add this commit to the stable branches. Without it, the
-> migration thread's accounting is just totally screwed up:
->=20
-> By running a simple shell while loop along with a ps loop, top shows:
->=20
->   PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND     =
-      =20
->    17 root      RT   0     0    0    0 S 9999.0  0.0   9:27.50 migration/=
-3   =20
->    13 root      RT   0     0    0    0 S 128.2  0.0   9:50.23 migration/2=
-      =20
->  2805 root      20   0  105m 1904 1416 S 13.9  0.1   0:06.69 bash        =
-      =20
->  4090 root      20   0  105m 1904 1416 S  2.0  0.1   0:00.90 bash        =
-      =20
->  2773 root      20   0 85484 3372 2620 S  0.3  0.2   0:00.03 sshd        =
-      =20
->=20
->=20
-> For 3.4, the commit can be directly cherry picked:
->=20
-> commit 8f6189684eb4e85e6c593cd710693f09c944450a
-> Author: Mike Galbraith <mgalbraith@suse.de>
-> Date:   Sat Aug 4 05:44:14 2012 +0200
->=20
->     sched: Fix migration thread runtime bogosity
->=20
-> Below is a backport for 3.2.
-[...]
+Signed-off-by: Hannu Heikkinen <hannuxx@iki.fi>
+---
+ drivers/rtc/rtc-davinci.c | 56 +++++++++++++----------------------------------
+ 1 file changed, 15 insertions(+), 41 deletions(-)
 
-Queued up for 3.2, thanks.
+diff --git a/drivers/rtc/rtc-davinci.c b/drivers/rtc/rtc-davinci.c
+index 14c2109..d24b573 100644
+--- a/drivers/rtc/rtc-davinci.c
++++ b/drivers/rtc/rtc-davinci.c
+@@ -119,8 +119,6 @@ static DEFINE_SPINLOCK(davinci_rtc_lock);
+ struct davinci_rtc {
+ 	struct rtc_device 		*rtc;
+ 	void __iomem			*base;
+-	resource_size_t			pbase;
+-	size_t				base_size;
+ 	int				irq;
+ };
+ 
+@@ -482,22 +480,16 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct davinci_rtc *davinci_rtc;
+-	struct resource *res, *mem;
++	struct resource *res;
+ 	int ret = 0;
+ 
+-	davinci_rtc = kzalloc(sizeof(struct davinci_rtc), GFP_KERNEL);
++	davinci_rtc = devm_kzalloc(&pdev->dev, sizeof(struct davinci_rtc),
++		GFP_KERNEL);
+ 	if (!davinci_rtc) {
+ 		dev_dbg(dev, "could not allocate memory for private data\n");
+ 		return -ENOMEM;
+ 	}
+ 
+-	davinci_rtc->irq = platform_get_irq(pdev, 0);
+-	if (davinci_rtc->irq < 0) {
+-		dev_err(dev, "no RTC irq\n");
+-		ret = davinci_rtc->irq;
+-		goto fail1;
+-	}
+-
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+ 		dev_err(dev, "no mem resource\n");
+@@ -505,23 +497,16 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+ 		goto fail1;
+ 	}
+ 
+-	davinci_rtc->pbase = res->start;
+-	davinci_rtc->base_size = resource_size(res);
+-
+-	mem = request_mem_region(davinci_rtc->pbase, davinci_rtc->base_size,
+-				 pdev->name);
+-	if (!mem) {
+-		dev_err(dev, "RTC registers at %08x are not free\n",
+-			davinci_rtc->pbase);
+-		ret = -EBUSY;
+-		goto fail1;
++	davinci_rtc->base = devm_request_and_ioremap(&pdev->dev, res);
++	if (!davinci_rtc->base) {
++		dev_err(&pdev->dev, "Unable to request mem region and grab IOs for device.\n");
++		return -EBUSY;
+ 	}
+ 
+-	davinci_rtc->base = ioremap(davinci_rtc->pbase, davinci_rtc->base_size);
+-	if (!davinci_rtc->base) {
+-		dev_err(dev, "unable to ioremap MEM resource\n");
+-		ret = -ENOMEM;
+-		goto fail2;
++	davinci_rtc->irq = platform_get_irq(pdev, 0);
++	if (davinci_rtc->irq < 0) {
++		dev_err(dev, "no RTC irq\n");
++		return davinci_rtc->irq;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, davinci_rtc);
+@@ -529,9 +514,10 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+ 	davinci_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
+ 				    &davinci_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(davinci_rtc->rtc)) {
++		ret = PTR_ERR(davinci_rtc->rtc);
+ 		dev_err(dev, "unable to register RTC device, err %ld\n",
+ 				PTR_ERR(davinci_rtc->rtc));
+-		goto fail3;
++		return ret;
+ 	}
+ 
+ 	rtcif_write(davinci_rtc, PRTCIF_INTFLG_RTCSS, PRTCIF_INTFLG);
+@@ -545,7 +531,7 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+ 			  0, "davinci_rtc", davinci_rtc);
+ 	if (ret < 0) {
+ 		dev_err(dev, "unable to register davinci RTC interrupt\n");
+-		goto fail4;
++		goto err_dev_unreg;
+ 	}
+ 
+ 	/* Enable interrupts */
+@@ -559,15 +545,8 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+ 
+ 	return 0;
+ 
+-fail4:
++err_dev_unreg:
+ 	rtc_device_unregister(davinci_rtc->rtc);
+-fail3:
+-	platform_set_drvdata(pdev, NULL);
+-	iounmap(davinci_rtc->base);
+-fail2:
+-	release_mem_region(davinci_rtc->pbase, davinci_rtc->base_size);
+-fail1:
+-	kfree(davinci_rtc);
+ 
+ 	return ret;
+ }
+@@ -584,13 +563,8 @@ static int __devexit davinci_rtc_remove(struct platform_device *pdev)
+ 
+ 	rtc_device_unregister(davinci_rtc->rtc);
+ 
+-	iounmap(davinci_rtc->base);
+-	release_mem_region(davinci_rtc->pbase, davinci_rtc->base_size);
+-
+ 	platform_set_drvdata(pdev, NULL);
+ 
+-	kfree(davinci_rtc);
+-
+ 	return 0;
+ }
+ 
+-- 
+1.7.12.2
 
-Ben.
-
---=20
-Ben Hutchings
-Always try to do things in chronological order;
-it's less confusing that way.
-
---=-2SLqQKny0SnS+oYiSPNB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUHqFa+e/yOyVhhEJAQqMiRAAy7nTFReXD/fSAeaBD1nvc9qRn9zbsWrR
-tdi4hFXwernp9904ElOMArRcWjhPwyXuVsU5pztMM6It6jpEXXkdgNfDw6pdr73z
-BzNzFcDPhTPoxTi2MLE4DRmddINMj3Q1rFHQV44ZLJBX6A6leIVI0+3lfg3OLEfT
-eruk5YQyDrFgOvUTrI/YOj+obPNVr+wMnNqcqUMNIGGcubTXZTZJVazm5XSwxP2O
-OWWlzhGibWYOEA/adS1FXienoDEntbyzNtZNXFmOto2eH4ktPaLQc8Hc/VgOqkhj
-8deTGZve16T3yn+bHFs8S0a53xw7lraDHSrhHGLgfaTiGdUt/dkMUaoGfENeea+l
-2VFMg6aiqgbtS6Mk+6OrAxIyZH2IZqZ0Ngv43SvtWfeFc/8HjPmSaTWB029WR9wa
-c/tJuJSRzDbD4lv51PlEb2viNE/vFqr7/NP3QW3fRCfyeN2HW+WPO6AKE4dG/uRf
-AZksaTyosYupVlAnDP7e3iCkBiYvtk+nAn6UXV9R+VB5i8SiOoI1W0iZ/xmNeat0
-fndidtkJmz9GR9btyLaXyvIxC9dgCBYAT5duhsjiFUSwjLWMAVn/6S994RGOBsm5
-09nLgd7+IisQeULI+9LeMueAomibbqVBONSqFWCgZ6KVxmp8XXX2QH7E3MI3qdhU
-7uMe1n+297Y=
-=gh7U
------END PGP SIGNATURE-----
-
---=-2SLqQKny0SnS+oYiSPNB--
