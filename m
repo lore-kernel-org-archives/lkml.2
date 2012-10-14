@@ -1,69 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab2JNNv4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 09:51:56 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:47714 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab2JNNvz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 09:51:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <1350221882-7631-1-git-send-email-yamanetoshi@gmail.com>
-References: <1349699137-32366-1-git-send-email-yamanetoshi@gmail.com>
-	<1350221882-7631-1-git-send-email-yamanetoshi@gmail.com>
-Date: Sun, 14 Oct 2012 22:51:53 +0900
-Message-ID: <CAOTypNQboxf2Oy0x2vNu8MHaqddQ5CdVTAeU9yOJCucu7F7X7g@mail.gmail.com>
-Subject: Re: [PATCH] staging/comedi: Use dev_ printks in drivers/usbdux.c
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Frank Mori Hess <fmhess@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753366Ab2JNODv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:03:51 -0400
+Received: from relay.sigmatic.fi ([80.69.161.51]:46130 "EHLO relay.sigmatic.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753219Ab2JNODu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Oct 2012 10:03:50 -0400
+From: Hannu Heikkinen <hannuxx@iki.fi>
+To: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        a.zummo@towertech.it, davinci-linux-open-source@linux.davincidsp.com,
+        nsekhar@ti.com
+Subject: [PATCH v3] rtc: davinci: clean up probe/remove routines
+Date: Sun, 14 Oct 2012 17:03:46 +0300
+Message-Id: <1350223426-5369-1-git-send-email-hannuxx@iki.fi>
+X-Mailer: git-send-email 1.7.12.2
+In-Reply-To: <1350207822-4857-1-git-send-email-hannuxx@iki.fi>
+References: <1350207822-4857-1-git-send-email-hannuxx@iki.fi>
+Content-Type: text/plain; charset="us-ascii:utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 14, 2012 at 10:38 PM, YAMANE Toshiaki <yamanetoshi@gmail.com> wrote:
-> fixed below checkpatch warning.
-> - WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
->
-> Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
-> ---
->  drivers/staging/comedi/drivers/usbdux.c |   10 ++++------
->  1 file changed, 4 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/staging/comedi/drivers/usbdux.c b/drivers/staging/comedi/drivers/usbdux.c
-> index b536bba..46c5bfb 100644
-> --- a/drivers/staging/comedi/drivers/usbdux.c
-> +++ b/drivers/staging/comedi/drivers/usbdux.c
-> @@ -2386,14 +2386,12 @@ static int usbdux_attach_usb(struct comedi_device *dev,
->         down(&start_stop_sem);
->         this_usbduxsub = usb_get_intfdata(uinterf);
->         if (!this_usbduxsub || !this_usbduxsub->probed) {
-> -               printk(KERN_ERR
-> -                      "comedi%d: usbdux: error: attach_usb failed, not connected\n",
-> -                      dev->minor);
-> +               dev_err(&uinterf->dev,
-> +                       "usbdux: error: attach_usb failed, not connected\n");
->                 ret = -ENODEV;
->         } else if (this_usbduxsub->attached) {
-> -               printk(KERN_ERR
-> -                      "comedi%d: usbdux: error: attach_usb failed, already attached\n",
-> -                      dev->minor);
-> +               dev_err(&uinterf->dev,
-> +                       "error: attach_usb failed, already attached\n");
->                 ret = -ENODEV;
->         } else
->                 ret = usbdux_attach_common(dev, this_usbduxsub);
-> --
-> 1.7.9.5
->
+Use the devres managed resource functions in the probe routine.
+Also affects the remove routine where the previously used free and
+release functions are not needed.
 
-I cannot judge which is better or not ...
+The devm_* functions eliminate the need for manual resource releasing and
+simplify error handling.  Resources allocated by devm_* are freed
+automatically on driver detach.
 
+Signed-off-by: Hannu Heikkinen <hannuxx@iki.fi>
+---
+ drivers/rtc/rtc-davinci.c | 59 +++++++++++++----------------------------------
+ 1 file changed, 16 insertions(+), 43 deletions(-)
+
+diff --git a/drivers/rtc/rtc-davinci.c b/drivers/rtc/rtc-davinci.c
+index 14c2109..4a10b4b 100644
+--- a/drivers/rtc/rtc-davinci.c
++++ b/drivers/rtc/rtc-davinci.c
+@@ -119,8 +119,6 @@ static DEFINE_SPINLOCK(davinci_rtc_lock);
+ struct davinci_rtc {
+ 	struct rtc_device 		*rtc;
+ 	void __iomem			*base;
+-	resource_size_t			pbase;
+-	size_t				base_size;
+ 	int				irq;
+ };
+ 
+@@ -482,46 +480,32 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct davinci_rtc *davinci_rtc;
+-	struct resource *res, *mem;
++	struct resource *res;
+ 	int ret = 0;
+ 
+-	davinci_rtc = kzalloc(sizeof(struct davinci_rtc), GFP_KERNEL);
++	davinci_rtc = devm_kzalloc(&pdev->dev, sizeof(struct davinci_rtc),
++		GFP_KERNEL);
+ 	if (!davinci_rtc) {
+ 		dev_dbg(dev, "could not allocate memory for private data\n");
+ 		return -ENOMEM;
+ 	}
+ 
+-	davinci_rtc->irq = platform_get_irq(pdev, 0);
+-	if (davinci_rtc->irq < 0) {
+-		dev_err(dev, "no RTC irq\n");
+-		ret = davinci_rtc->irq;
+-		goto fail1;
+-	}
+-
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+ 		dev_err(dev, "no mem resource\n");
+-		ret = -EINVAL;
+-		goto fail1;
++		return -EINVAL;
+ 	}
+ 
+-	davinci_rtc->pbase = res->start;
+-	davinci_rtc->base_size = resource_size(res);
+-
+-	mem = request_mem_region(davinci_rtc->pbase, davinci_rtc->base_size,
+-				 pdev->name);
+-	if (!mem) {
+-		dev_err(dev, "RTC registers at %08x are not free\n",
+-			davinci_rtc->pbase);
+-		ret = -EBUSY;
+-		goto fail1;
++	davinci_rtc->base = devm_request_and_ioremap(&pdev->dev, res);
++	if (!davinci_rtc->base) {
++		dev_err(&pdev->dev, "Unable to request mem region and grab IOs for device.\n");
++		return -EBUSY;
+ 	}
+ 
+-	davinci_rtc->base = ioremap(davinci_rtc->pbase, davinci_rtc->base_size);
+-	if (!davinci_rtc->base) {
+-		dev_err(dev, "unable to ioremap MEM resource\n");
+-		ret = -ENOMEM;
+-		goto fail2;
++	davinci_rtc->irq = platform_get_irq(pdev, 0);
++	if (davinci_rtc->irq < 0) {
++		dev_err(dev, "no RTC irq\n");
++		return davinci_rtc->irq;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, davinci_rtc);
+@@ -529,9 +513,10 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+ 	davinci_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
+ 				    &davinci_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(davinci_rtc->rtc)) {
++		ret = PTR_ERR(davinci_rtc->rtc);
+ 		dev_err(dev, "unable to register RTC device, err %ld\n",
+ 				PTR_ERR(davinci_rtc->rtc));
+-		goto fail3;
++		return ret;
+ 	}
+ 
+ 	rtcif_write(davinci_rtc, PRTCIF_INTFLG_RTCSS, PRTCIF_INTFLG);
+@@ -545,7 +530,7 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+ 			  0, "davinci_rtc", davinci_rtc);
+ 	if (ret < 0) {
+ 		dev_err(dev, "unable to register davinci RTC interrupt\n");
+-		goto fail4;
++		goto err_dev_unreg;
+ 	}
+ 
+ 	/* Enable interrupts */
+@@ -559,15 +544,8 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+ 
+ 	return 0;
+ 
+-fail4:
++err_dev_unreg:
+ 	rtc_device_unregister(davinci_rtc->rtc);
+-fail3:
+-	platform_set_drvdata(pdev, NULL);
+-	iounmap(davinci_rtc->base);
+-fail2:
+-	release_mem_region(davinci_rtc->pbase, davinci_rtc->base_size);
+-fail1:
+-	kfree(davinci_rtc);
+ 
+ 	return ret;
+ }
+@@ -584,13 +562,8 @@ static int __devexit davinci_rtc_remove(struct platform_device *pdev)
+ 
+ 	rtc_device_unregister(davinci_rtc->rtc);
+ 
+-	iounmap(davinci_rtc->base);
+-	release_mem_region(davinci_rtc->pbase, davinci_rtc->base_size);
+-
+ 	platform_set_drvdata(pdev, NULL);
+ 
+-	kfree(davinci_rtc);
+-
+ 	return 0;
+ }
+ 
 -- 
+1.7.12.2
 
-Regards,
-
-YAMANE Toshiaki
