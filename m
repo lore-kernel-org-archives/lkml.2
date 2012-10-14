@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932464Ab2JNOoS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:44:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46740 "EHLO
+	id S932504Ab2JNOrf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:47:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46756 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932412Ab2JNOoN (ORCPT
+	by vger.kernel.org with ESMTP id S932420Ab2JNOoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:44:13 -0400
-Message-Id: <20121014143539.106176918@decadent.org.uk>
+	Sun, 14 Oct 2012 10:44:17 -0400
+Message-Id: <20121014143537.616662297@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:12 +0100
+Date: Sun, 14 Oct 2012 15:36:01 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>,
+        Samuel Thibault <sthibault@debian.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 039/147] staging: comedi: fix memory leak for saved channel list
+Subject: [ 028/147] staging: speakup_soft: Fix reading of init string
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,53 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit c8cad4c89ee3b15935c532210ae6ebb5c0a2734d upstream.
+commit 40fe4f89671fb3c7ded94190fb267402a38b0261 upstream.
 
-When `do_cmd_ioctl()` allocates memory for the kernel copy of a channel
-list, it frees any previously allocated channel list in
-`async->cmd.chanlist` and replaces it with the new one.  However, if the
-device is ever removed (or "detached") the cleanup code in
-`cleanup_device()` in "drivers.c" does not free this memory so it is
-lost.
+softsynth_read() reads a character at a time from the init string;
+when it finds the null terminator it sets the initialized flag but
+then repeats the last character.
 
-A sensible place to free the kernel copy of the channel list is in
-`do_become_nonbusy()` as at that point the comedi asynchronous command
-associated with the channel list is no longer valid.  Free the channel
-list in `do_become_nonbusy()` instead of `do_cmd_ioctl()` and clear the
-pointer to prevent it being freed more than once.
+Additionally, if the read() buffer is not big enough for the init
+string, the next read() will start reading from the beginning again.
+So the caller may never progress to reading anything else.
 
-Note that `cleanup_device()` could be called at an inappropriate time
-while the comedi device is open, but that's a separate bug not related
-to this this patch.
+Replace the simple initialized flag with the current position in
+the init string, carried over between calls.  Switch to reading
+real data once this reaches the null terminator.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
+(This assumes that the length of the init string can't change, which
+seems to be the case.  Really, the string and position belong together
+in a per-file private struct.)
+
+Tested-by: Samuel Thibault <sthibault@debian.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/comedi/comedi_fops.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/staging/speakup/speakup_soft.c |   13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1088,7 +1088,6 @@ static int do_cmd_ioctl(struct comedi_de
- 		goto cleanup;
- 	}
+diff --git a/drivers/staging/speakup/speakup_soft.c b/drivers/staging/speakup/speakup_soft.c
+index 2a67610..e2f5c81 100644
+--- a/drivers/staging/speakup/speakup_soft.c
++++ b/drivers/staging/speakup/speakup_soft.c
+@@ -40,7 +40,7 @@ static int softsynth_is_alive(struct spk_synth *synth);
+ static unsigned char get_index(void);
  
--	kfree(async->cmd.chanlist);
- 	async->cmd = user_cmd;
- 	async->cmd.data = NULL;
- 	/* load channel/gain list */
-@@ -1833,6 +1832,8 @@ void do_become_nonbusy(struct comedi_dev
- 	if (async) {
- 		comedi_reset_async_buf(async);
- 		async->inttrig = NULL;
-+		kfree(async->cmd.chanlist);
-+		async->cmd.chanlist = NULL;
- 	} else {
- 		printk(KERN_ERR
- 		       "BUG: (?) do_become_nonbusy called with async=0\n");
+ static struct miscdevice synth_device;
+-static int initialized;
++static int init_pos;
+ static int misc_registered;
+ 
+ static struct var_t vars[] = {
+@@ -194,7 +194,7 @@ static int softsynth_close(struct inode *inode, struct file *fp)
+ 	unsigned long flags;
+ 	spk_lock(flags);
+ 	synth_soft.alive = 0;
+-	initialized = 0;
++	init_pos = 0;
+ 	spk_unlock(flags);
+ 	/* Make sure we let applications go before leaving */
+ 	speakup_start_ttys();
+@@ -239,13 +239,8 @@ static ssize_t softsynth_read(struct file *fp, char *buf, size_t count,
+ 			ch = '\x18';
+ 		} else if (synth_buffer_empty()) {
+ 			break;
+-		} else if (!initialized) {
+-			if (*init) {
+-				ch = *init;
+-				init++;
+-			} else {
+-				initialized = 1;
+-			}
++		} else if (init[init_pos]) {
++			ch = init[init_pos++];
+ 		} else {
+ 			ch = synth_buffer_getc();
+ 		}
 
 
