@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139Ab2JNTXn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 15:23:43 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:65331 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094Ab2JNTXl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 15:23:41 -0400
-From: Rabin Vincent <rabin@rab.in>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, oleg@redhat.com,
-        Rabin Vincent <rabin@rab.in>
-Subject: [PATCH 2/9] uprobes: check for single step support
-Date: Sun, 14 Oct 2012 21:23:06 +0200
-Message-Id: <1350242593-17761-2-git-send-email-rabin@rab.in>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350242593-17761-1-git-send-email-rabin@rab.in>
-References: <1350242593-17761-1-git-send-email-rabin@rab.in>
+	id S1752881Ab2JNTgC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 15:36:02 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:58997 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751482Ab2JNTgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Oct 2012 15:36:00 -0400
+Message-ID: <1350243358.22442.13.camel@joe-AO722>
+Subject: [PATCH] checkpatch: Improve network block comment style checking
+From: Joe Perches <joe@perches.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Date: Sun, 14 Oct 2012 12:35:58 -0700
+In-Reply-To: <50787432.8030805@lwfinger.net>
+References: <5078603C.9010709@lwfinger.net>
+	 <1350067114.2243.35.camel@joe-AO722> <50787432.8030805@lwfinger.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check for single step support before calling user_enable_single_step(),
-since user_enable_single_step() just BUG()s if support does not exist.
-Needed by ARM.
+Some comment styles in net and drivers/net are flagged inappropriately.
 
-Signed-off-by: Rabin Vincent <rabin@rab.in>
+Avoid proclaiming inline comments like:
+	int a = b;	/* some comment */
+and block comments like:
+	/*********************
+	 * some comment
+	 ********************/
+are defective.
+
+Tested with
+$ cat drivers/net/t.c
+/* foo */
+
+/*
+ * foo
+ */
+
+/* foo
+ */
+
+/* foo
+ * bar */
+
+/****************************
+ * some long block comment
+ ***************************/
+
+struct foo {
+	int bar;	/* another test */
+};
+$
+
+Reported-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- kernel/events/uprobes.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ scripts/checkpatch.pl |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 98256bc..db4e3ab 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1450,7 +1450,8 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 21a9f5d..f18750e 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1890,8 +1890,10 @@ sub process {
+ 		}
  
- void __weak arch_uprobe_enable_step(struct arch_uprobe *arch)
- {
--	user_enable_single_step(current);
-+	if (arch_has_single_step())
-+		user_enable_single_step(current);
- }
- 
- void __weak arch_uprobe_disable_step(struct arch_uprobe *arch)
--- 
-1.7.9.5
+ 		if ($realfile =~ m@^(drivers/net/|net/)@ &&
+-		    $rawline !~ m@^\+[ \t]*(\/\*|\*\/)@ &&
+-		    $rawline =~ m@^\+[ \t]*.+\*\/[ \t]*$@) {
++		    $rawline !~ m@^\+[ \t]*\*/[ \t]*$@ &&	#trailing */
++		    $rawline !~ m@^\+.*/\*.*\*/[ \t]*$@ &&	#inline /*...*/
++		    $rawline !~ m@^\+.*\*{2,}/[ \t]*$@ &&	#trailing **/
++		    $rawline =~ m@^\+[ \t]*.+\*\/[ \t]*$@) {	#non blank */
+ 			WARN("NETWORKING_BLOCK_COMMENT_STYLE",
+ 			     "networking block comments put the trailing */ on a separate line\n" . $herecurr);
+ 		}
+
 
