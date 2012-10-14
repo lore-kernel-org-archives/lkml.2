@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab2JNPLg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:11:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46213 "EHLO
+	id S1754960Ab2JNPLw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:11:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46183 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754360Ab2JNOmL (ORCPT
+	by vger.kernel.org with ESMTP id S1754337Ab2JNOmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:42:11 -0400
-Message-Id: <20121014143550.683637434@decadent.org.uk>
+	Sun, 14 Oct 2012 10:42:10 -0400
+Message-Id: <20121014143551.061846142@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:38 +0100
+Date: Sun, 14 Oct 2012 15:37:41 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tyler Hicks <tyhicks@canonical.com>
-Subject: [ 125/147] eCryptfs: Call lower ->flush() from ecryptfs_flush()
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
+        Josh Boyer <jwboyer@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>
+Subject: [ 128/147] mempolicy: remove mempolicy sharing
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,46 +31,189 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit 64e6651dcc10e9d2cc6230208a8e6c2cfd19ae18 upstream.
+commit 869833f2c5c6e4dd09a5378cfc665ffb4615e5d2 upstream.
 
-Since eCryptfs only calls fput() on the lower file in
-ecryptfs_release(), eCryptfs should call the lower filesystem's
-->flush() from ecryptfs_flush().
+Dave Jones' system call fuzz testing tool "trinity" triggered the
+following bug error with slab debugging enabled
 
-If the lower filesystem implements ->flush(), then eCryptfs should try
-to flush out any dirty pages prior to calling the lower ->flush(). If
-the lower filesystem does not implement ->flush(), then eCryptfs has no
-need to do anything in ecryptfs_flush() since dirty pages are now
-written out to the lower filesystem in ecryptfs_release().
+    =============================================================================
+    BUG numa_policy (Not tainted): Poison overwritten
+    -----------------------------------------------------------------------------
 
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+    INFO: 0xffff880146498250-0xffff880146498250. First byte 0x6a instead of 0x6b
+    INFO: Allocated in mpol_new+0xa3/0x140 age=46310 cpu=6 pid=32154
+     __slab_alloc+0x3d3/0x445
+     kmem_cache_alloc+0x29d/0x2b0
+     mpol_new+0xa3/0x140
+     sys_mbind+0x142/0x620
+     system_call_fastpath+0x16/0x1b
+
+    INFO: Freed in __mpol_put+0x27/0x30 age=46268 cpu=6 pid=32154
+     __slab_free+0x2e/0x1de
+     kmem_cache_free+0x25a/0x260
+     __mpol_put+0x27/0x30
+     remove_vma+0x68/0x90
+     exit_mmap+0x118/0x140
+     mmput+0x73/0x110
+     exit_mm+0x108/0x130
+     do_exit+0x162/0xb90
+     do_group_exit+0x4f/0xc0
+     sys_exit_group+0x17/0x20
+     system_call_fastpath+0x16/0x1b
+
+    INFO: Slab 0xffffea0005192600 objects=27 used=27 fp=0x          (null) flags=0x20000000004080
+    INFO: Object 0xffff880146498250 @offset=592 fp=0xffff88014649b9d0
+
+The problem is that the structure is being prematurely freed due to a
+reference count imbalance. In the following case mbind(addr, len) should
+replace the memory policies of both vma1 and vma2 and thus they will
+become to share the same mempolicy and the new mempolicy will have the
+MPOL_F_SHARED flag.
+
+  +-------------------+-------------------+
+  |     vma1          |     vma2(shmem)   |
+  +-------------------+-------------------+
+  |                                       |
+ addr                                 addr+len
+
+alloc_pages_vma() uses get_vma_policy() and mpol_cond_put() pair for
+maintaining the mempolicy reference count.  The current rule is that
+get_vma_policy() only increments refcount for shmem VMA and
+mpol_conf_put() only decrements refcount if the policy has
+MPOL_F_SHARED.
+
+In above case, vma1 is not shmem vma and vma->policy has MPOL_F_SHARED!
+The reference count will be decreased even though was not increased
+whenever alloc_page_vma() is called.  This has been broken since commit
+[52cd3b07: mempolicy: rework mempolicy Reference Counting] in 2008.
+
+There is another serious bug with the sharing of memory policies.
+Currently, mempolicy rebind logic (it is called from cpuset rebinding)
+ignores a refcount of mempolicy and override it forcibly.  Thus, any
+mempolicy sharing may cause mempolicy corruption.  The bug was
+introduced by commit [68860ec1: cpusets: automatic numa mempolicy
+rebinding].
+
+Ideally, the shared policy handling would be rewritten to either
+properly handle COW of the policy structures or at least reference count
+MPOL_F_SHARED based exclusively on information within the policy.
+However, this patch takes the easier approach of disabling any policy
+sharing between VMAs.  Each new range allocated with sp_alloc will
+allocate a new policy, set the reference count to 1 and drop the
+reference count of the old policy.  This increases the memory footprint
+but is not expected to be a major problem as mbind() is unlikely to be
+used for fine-grained ranges.  It is also inefficient because it means
+we allocate a new policy even in cases where mbind_range() could use the
+new_policy passed to it.  However, it is more straight-forward and the
+change should be invisible to the user.
+
+[mgorman@suse.de: Edited changelog]
+Reported-by: Dave Jones <davej@redhat.com>,
+Cc: Christoph Lameter <cl@linux.com>,
+Reviewed-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: Josh Boyer <jwboyer@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ecryptfs/file.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ mm/mempolicy.c |   52 ++++++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 38 insertions(+), 14 deletions(-)
 
-diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
-index 44ce5c6..d45ba45 100644
---- a/fs/ecryptfs/file.c
-+++ b/fs/ecryptfs/file.c
-@@ -275,8 +275,14 @@ out:
- 
- static int ecryptfs_flush(struct file *file, fl_owner_t td)
- {
--	return file->f_mode & FMODE_WRITE
--	       ? filemap_write_and_wait(file->f_mapping) : 0;
-+	struct file *lower_file = ecryptfs_file_to_lower(file);
-+
-+	if (lower_file->f_op && lower_file->f_op->flush) {
-+		filemap_write_and_wait(file->f_mapping);
-+		return lower_file->f_op->flush(lower_file, td);
-+	}
-+
-+	return 0;
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 92daa26..f0728ae 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -607,24 +607,39 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+ 	return first;
  }
  
- static int ecryptfs_release(struct inode *inode, struct file *file)
+-/* Apply policy to a single VMA */
+-static int policy_vma(struct vm_area_struct *vma, struct mempolicy *new)
++/*
++ * Apply policy to a single VMA
++ * This must be called with the mmap_sem held for writing.
++ */
++static int vma_replace_policy(struct vm_area_struct *vma,
++						struct mempolicy *pol)
+ {
+-	int err = 0;
+-	struct mempolicy *old = vma->vm_policy;
++	int err;
++	struct mempolicy *old;
++	struct mempolicy *new;
+ 
+ 	pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
+ 		 vma->vm_start, vma->vm_end, vma->vm_pgoff,
+ 		 vma->vm_ops, vma->vm_file,
+ 		 vma->vm_ops ? vma->vm_ops->set_policy : NULL);
+ 
+-	if (vma->vm_ops && vma->vm_ops->set_policy)
++	new = mpol_dup(pol);
++	if (IS_ERR(new))
++		return PTR_ERR(new);
++
++	if (vma->vm_ops && vma->vm_ops->set_policy) {
+ 		err = vma->vm_ops->set_policy(vma, new);
+-	if (!err) {
+-		mpol_get(new);
+-		vma->vm_policy = new;
+-		mpol_put(old);
++		if (err)
++			goto err_out;
+ 	}
++
++	old = vma->vm_policy;
++	vma->vm_policy = new; /* protected by mmap_sem */
++	mpol_put(old);
++
++	return 0;
++ err_out:
++	mpol_put(new);
+ 	return err;
+ }
+ 
+@@ -676,7 +691,7 @@ static int mbind_range(struct mm_struct *mm, unsigned long start,
+ 			if (err)
+ 				goto out;
+ 		}
+-		err = policy_vma(vma, new_pol);
++		err = vma_replace_policy(vma, new_pol);
+ 		if (err)
+ 			goto out;
+ 	}
+@@ -2153,15 +2168,24 @@ static void sp_delete(struct shared_policy *sp, struct sp_node *n)
+ static struct sp_node *sp_alloc(unsigned long start, unsigned long end,
+ 				struct mempolicy *pol)
+ {
+-	struct sp_node *n = kmem_cache_alloc(sn_cache, GFP_KERNEL);
++	struct sp_node *n;
++	struct mempolicy *newpol;
+ 
++	n = kmem_cache_alloc(sn_cache, GFP_KERNEL);
+ 	if (!n)
+ 		return NULL;
++
++	newpol = mpol_dup(pol);
++	if (IS_ERR(newpol)) {
++		kmem_cache_free(sn_cache, n);
++		return NULL;
++	}
++	newpol->flags |= MPOL_F_SHARED;
++
+ 	n->start = start;
+ 	n->end = end;
+-	mpol_get(pol);
+-	pol->flags |= MPOL_F_SHARED;	/* for unref */
+-	n->policy = pol;
++	n->policy = newpol;
++
+ 	return n;
+ }
+ 
 
 
