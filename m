@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab2JNWvw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 18:51:52 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:50376 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab2JNWvv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 18:51:51 -0400
-Date: Sun, 14 Oct 2012 15:51:35 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: John Stultz <johnstul@us.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: RCU NOHZ, tsc, and clock_gettime
-Message-ID: <20121014225135.GA3288@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <5077157A.7060401@redhat.com>
- <50772350.1070903@us.ibm.com>
- <20121011202103.GB2476@linux.vnet.ibm.com>
- <507860F5.7090908@redhat.com>
+	id S1753480Ab2JNWwS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 18:52:18 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:59620 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752131Ab2JNWwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Oct 2012 18:52:17 -0400
+X-Greylist: delayed 439 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Oct 2012 18:52:17 EDT
+Message-ID: <507B4052.5000102@interlog.com>
+Date: Sun, 14 Oct 2012 18:44:34 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <507860F5.7090908@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101422-7282-0000-0000-00000DED45CB
+To: SCSI development list <linux-scsi@vger.kernel.org>
+CC: =?ISO-8859-1?Q?Dan_Hor=E1k?= <dhorak@redhat.com>,
+        Ritesh Raj Sarraf <rrs@researchut.com>,
+        "Robin H. Johnson" <robbat2@gentoo.org>,
+        Martin Pitt <mpitt@debian.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Hannes Reinecke <hare@suse.de>
+Subject: [Announce] sg3_utils-1.34 available
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 02:27:01PM -0400, Prarit Bhargava wrote:
-> 
-> > The effect of removing the two functions you noted (on 3.6 and earlier)
-> > is to prevent RCU from checking for dyntick-idle CPUs, likely incurring
-> > a cache miss for each CPU with interrupts disabled.  If you have a lot
-> > of CPUs (or even if NR_CPUS is large and you have a smaller number of
-> > CPUs), this can result in user-space-visible delays.
-> > 
-> 
-> Paul,
-> 
-> I built a kernel with NR_CPUS=48 and booted on a 48 cpu (logical) system.  I do
-> not see a difference in the test -- the variance is AFAICT just as large as if I
-> had run with NR_CPUS=4096.
+sg3_utils is a package of command line utilities for sending
+SCSI and some ATA commands to devices. This package targets
+the linux kernel (lk) 3, 2.6 and lk 2.4 series. It also has
+ports to FreeBSD, Tru64, Solaris, and Windows (cygwin and mingw).
 
-OK -- have you applied John Stultz's suggestions?
+This version adds sg_xcopy and sg_copy_results (contributed by
+Hannes Reinecke). This version tracks various changes made by
+www.t10.org since January 2012.
 
-							Thanx, Paul
+For an overview of sg3_utils and downloads see this page:
+     http://sg.danny.cz/sg/sg3_utils.html
+The sg_ses utility (for enclosure devices) is discussed at:
+     http://sg.danny.cz/sg/sg_ses.html
+The SG_IO ioctl is discussed at:
+     http://sg.danny.cz/sg/sg_io.html
+A full changelog can be found at:
+     http://sg.danny.cz/sg/p/sg3_utils.ChangeLog
 
+A release announcement will be sent to freecode.com .
+
+Changelog for sg3_utils-1.34 [20121013] [svn: r461]
+   - sg_xcopy: new dd like utility for extended copy command
+   - sg_copy_results: new utility for receive copy results
+   - sg_verify: add 16 byte cdb, bytchk (data-out buffer)
+     and group number support
+   - sync to spc4r36 and sbc3r32
+   - sg_inq: add --export so sg_inq can replace udev's scsi_id
+     - decode old EMC Symmetrix abuse of VPD page 0x83
+   - sg_vpd: decode old EMC Symmetrix abuse of VPD page 0x83
+   - sg_ses: increase max dpage response size to 64 KB
+     - allow ident,locate on enclosure controller
+     - more sanity for additional element status descriptor
+   - sg_sanitize: add --ause, --fail and --test=
+   - sg_luns: add long extended flat space addressing format
+   - sg_logs: add ATA pass-through results lpage (SAT-2)
+   - sg_rtpg: add --extended option
+   - sg_senddiag: list rebuild assist diag page name
+   - sg_pt_linux: expand DID_ (host_byte) codes
+     - cope with a transport error plus sense data
+     - prefer major() over MAJOR() macro
+   - sg_lib: fix sg_get_command_name() service actions
+     - report sdat_ovfl bit (if set) in sense data
+     - decode extended_copy and receive_copy service actions
+     - decode read_buffer and write_buffer modes
+     - decode ATA PT fixed format sense (SAT-2)
+   - sg_cmds_extra: add sg_ll_report_tgt_prt_grp2()
+   - ./configure options:
+     - change --enable-no-linux-bsg to --disable-linuxbsg
+     - add --disable-scsistrings to reduce utility sizes
+
+Changelog for sg3_utils-1.33 [20120118] [svn: r435]
+...
+
+Doug Gilbert
