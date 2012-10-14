@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab2JNPpH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:45:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60135 "EHLO mx1.redhat.com"
+	id S1753852Ab2JNPv6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:51:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6324 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752130Ab2JNPpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 11:45:01 -0400
-Message-ID: <507ADD08.40305@redhat.com>
-Date: Sun, 14 Oct 2012 17:40:56 +0200
+	id S1750942Ab2JNPv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Oct 2012 11:51:56 -0400
+Message-ID: <507ADEB0.2040303@redhat.com>
+Date: Sun, 14 Oct 2012 17:48:00 +0200
 From: Hans de Goede <hdegoede@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
 To: Henrik Rydberg <rydberg@euromail.se>
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Peter Stuge <peter@stuge.se>,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Stuge <peter@stuge.se>
-Subject: Re: REGRESSION: usbdevfs: Use-scatter-gather-lists-for-large-bulk-transfers
-References: <20121011213707.GA2187@polaris.bitmath.org> <Pine.LNX.4.44L0.1210121018390.1605-100000@iolanthe.rowland.org> <20121012150800.GA3097@polaris.bitmath.org>
-In-Reply-To: <20121012150800.GA3097@polaris.bitmath.org>
+        stable@kernel.org
+Subject: Re: [PATCH v3] usbdevfs: Fix broken scatter-gather transfer
+References: <1350123636-4801-1-git-send-email-rydberg@euromail.se>
+In-Reply-To: <1350123636-4801-1-git-send-email-rydberg@euromail.se>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,57 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-
-On 10/12/2012 05:08 PM, Henrik Rydberg wrote:
-> Hi Alan,
->
->> Instead of introducing a new local variable, why not simply update
->> uurb->buffer?  That's what we do elsewhere in the code.
->
-> It seemed fragile, due to these scary lines:
->
-> 	if (is_in && uurb->buffer_length > 0)
-> 		as->userbuffer = uurb->buffer;
-> 	else
-> 		as->userbuffer = NULL;
->
-> I suppose it works in this particular case.  How is the
-> USBDEVFS_URB_TYPE_CONTROL case supposed to work here?
->
-> I can certainly change the patch if preferred. Tested and attached
-> below.
->
-> Thanks,
-> Henrik
->
->  From 40b70394747eea51fdd07cc8213dd6afd24b1b30 Mon Sep 17 00:00:00 2001
-> From: Henrik Rydberg <rydberg@euromail.se>
-> Date: Thu, 11 Oct 2012 23:27:04 +0200
-> Subject: [PATCH v2] usbdevfs: Fix broken scatter-gather transfer
->
-> The handling of large output bulk transfers is broken; the same u
+On 10/13/2012 12:20 PM, Henrik Rydberg wrote:
+> The handling of large output bulk transfers is broken; the same user
 > page is read over and over again. Fixed with this patch.
 >
+> Cc: stable@kernel.org
+> Acked-by: Peter Stuge <peter@stuge.se>
+> Acked-by: Hans de Goede <hdegoede@redhat.com>
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
 > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 > ---
->   drivers/usb/core/devio.c | 5 ++++-
->   1 file changed, 4 insertions(+), 1 deletion(-)
+> Hi Greg,
 >
-> diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-> index ebb8a9d..6e58b59 100644
-> --- a/drivers/usb/core/devio.c
-> +++ b/drivers/usb/core/devio.c
-> @@ -1349,6 +1351,7 @@
->   					goto error;
->   				}
->   			}
-> +			uurb->buffer += u;
+> Here is the formal and third version of the patch. Version two still
+> made me nervous,
 
-I know you've already fixed this in the next revision, but still:
+And it should, as as said before I believe it would have broken large
+input transfers ...
 
-NAK, this will break large, split input transfers as it well
-set as->userbuffer to the end of the buffer instead of the beginning!
+  so I moved the increment to where it is clear that
+> the buffer pointer is never referenced again later in the function. I
+> still kept the ACKS, hope that is alright with everyone.
+
+Unlike the previous one, this version should work, so yes it may keep
+my ACK :)
 
 Regards,
 
 Hans
+
+>
+> Thanks,
+> Henrik
+>
+>   drivers/usb/core/devio.c | 1 +
+>   1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+> index ebb8a9d..7f75343 100644
+> --- a/drivers/usb/core/devio.c
+> +++ b/drivers/usb/core/devio.c
+> @@ -1348,6 +1348,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
+>   					ret = -EFAULT;
+>   					goto error;
+>   				}
+> +				uurb->buffer += u;
+>   			}
+>   			totlen -= u;
+>   		}
+>
