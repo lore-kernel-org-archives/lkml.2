@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599Ab2JNOmn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:42:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46353 "EHLO
+	id S1754615Ab2JNOmv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:42:51 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46373 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754586Ab2JNOmk (ORCPT
+	by vger.kernel.org with ESMTP id S1754303Ab2JNOmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:42:40 -0400
-Message-Id: <20121014143547.834371336@decadent.org.uk>
+	Sun, 14 Oct 2012 10:42:47 -0400
+Message-Id: <20121014143547.291345441@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:17 +0100
+Date: Sun, 14 Oct 2012 15:37:13 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Martin Michlmayr <tbm@cyrius.com>,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 104/147] drivers/scsi/atp870u.c: fix bad use of udelay
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 100/147] drm/i915: Fix GT_MODE default value
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,59 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Michlmayr <tbm@cyrius.com>
+From: Ben Widawsky <ben@bwidawsk.net>
 
-commit 0f6d93aa9d96cc9022b51bd10d462b03296be146 upstream.
+commit f8f2ac9a76b0f80a6763ca316116a7bab8486997 upstream.
 
-The ACARD driver calls udelay() with a value > 2000, which leads to to
-the following compilation error on ARM:
+I can't even find how I figured this might be needed anymore. But sure
+enough, the value I'm reading back on platforms doesn't match what the
+docs recommends.
 
-  ERROR: "__bad_udelay" [drivers/scsi/atp870u.ko] undefined!
-  make[1]: *** [__modpost] Error 1
+It seemed to fix Chris' GT1 in limited testing as well.
 
-This is because udelay is defined on ARM, roughly speaking, as
-
-	#define udelay(n) ((n) > 2000 ? __bad_udelay() : \
-		__const_udelay((n) * ((2199023U*HZ)>>11)))
-
-The argument to __const_udelay is the number of jiffies to wait divided
-by 4, but this does not work unless the multiplication does not
-overflow, and that is what the build error is designed to prevent.  The
-intended behavior can be achieved by using mdelay to call udelay
-multiple times in a loop.
-
-[jrnieder@gmail.com: adding context]
-Signed-off-by: Martin Michlmayr <tbm@cyrius.com>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Tested-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Ben Widawsky <ben@bwidawsk.net>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2: open-code _MASKED_BIT_{ENABLE,DISABLE}]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/atp870u.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_reg.h |    3 +++
+ drivers/gpu/drm/i915/intel_display.c |    5 +++++
+ 2 files changed, 8 insertions(+)
 
-diff --git a/drivers/scsi/atp870u.c b/drivers/scsi/atp870u.c
-index 68ce085..a540162 100644
---- a/drivers/scsi/atp870u.c
-+++ b/drivers/scsi/atp870u.c
-@@ -1173,7 +1173,16 @@ wait_io1:
- 	outw(val, tmport);
- 	outb(2, 0x80);
- TCM_SYNC:
--	udelay(0x800);
-+	/*
-+	 * The funny division into multiple delays is to accomodate
-+	 * arches like ARM where udelay() multiplies its argument by
-+	 * a large number to initialize a loop counter.  To avoid
-+	 * overflow, the maximum supported udelay is 2000 microseconds.
-+	 *
-+	 * XXX it would be more polite to find a way to use msleep()
-+	 */
-+	mdelay(2);
-+	udelay(48);
- 	if ((inb(tmport) & 0x80) == 0x00) {	/* bsy ? */
- 		outw(0, tmport--);
- 		outb(0, tmport);
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -401,6 +401,9 @@
+ # define VS_TIMER_DISPATCH				(1 << 6)
+ # define MI_FLUSH_ENABLE				(1 << 11)
+ 
++#define GEN6_GT_MODE	0x20d0
++#define   GEN6_GT_MODE_HI	(1 << 9)
++
+ #define GFX_MODE	0x02520
+ #define GFX_MODE_GEN7	0x0229c
+ #define   GFX_RUN_LIST_ENABLE		(1<<15)
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -8298,6 +8298,11 @@ static void gen6_init_clock_gating(struc
+ 			   DISPPLANE_TRICKLE_FEED_DISABLE);
+ 		intel_flush_display_plane(dev_priv, pipe);
+ 	}
++
++	/* The default value should be 0x200 according to docs, but the two
++	 * platforms I checked have a 0 for this. (Maybe BIOS overrides?) */
++	I915_WRITE(GEN6_GT_MODE, 0xffff << 16);
++	I915_WRITE(GEN6_GT_MODE, GEN6_GT_MODE_HI << 16 | GEN6_GT_MODE_HI);
+ }
+ 
+ static void gen7_setup_fixed_func_scheduler(struct drm_i915_private *dev_priv)
 
 
