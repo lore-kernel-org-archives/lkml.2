@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab2JNOrd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:47:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46774 "EHLO
+	id S932593Ab2JNOsG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:48:06 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46747 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932446Ab2JNOoR (ORCPT
+	by vger.kernel.org with ESMTP id S932231Ab2JNOoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:44:17 -0400
-Message-Id: <20121014143538.285496439@decadent.org.uk>
+	Sun, 14 Oct 2012 10:44:16 -0400
+Message-Id: <20121014143538.828959405@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:06 +0100
+Date: Sun, 14 Oct 2012 15:36:10 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Brian C. Huffman" <bhuffman@graze.net>, VL <vl.homutov@gmail.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 033/147] PCI: Check P2P bridge for invalid secondary/subordinate range
+        Theodore Tso <tytso@mit.edu>
+Subject: [ 037/147] ext4: fix potential deadlock in ext4_nonda_switch()
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,53 +27,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 1965f66e7db08d1ebccd24a59043eba826cc1ce8 upstream.
+commit 00d4e7362ed01987183e9528295de3213031309c upstream.
 
-For bridges with "secondary > subordinate", i.e., invalid bus number
-apertures, we don't enumerate anything behind the bridge unless the
-user specified "pci=assign-busses".
+In ext4_nonda_switch(), if the file system is getting full we used to
+call writeback_inodes_sb_if_idle().  The problem is that we can be
+holding i_mutex already, and this causes a potential deadlock when
+writeback_inodes_sb_if_idle() when it tries to take s_umount.  (See
+lockdep output below).
 
-This patch makes us automatically try to reassign the downstream bus
-numbers in this case (just for that bridge, not for all bridges as
-"pci=assign-busses" does).
+As it turns out we don't need need to hold s_umount; the fact that we
+are in the middle of the write(2) system call will keep the superblock
+pinned.  Unfortunately writeback_inodes_sb() checks to make sure
+s_umount is taken, and the VFS uses a different mechanism for making
+sure the file system doesn't get unmounted out from under us.  The
+simplest way of dealing with this is to just simply grab s_umount
+using a trylock, and skip kicking the writeback flusher thread in the
+very unlikely case that we can't take a read lock on s_umount without
+blocking.
 
-We don't discover all the devices on the Intel DP43BF motherboard
-without this change (or "pci=assign-busses") because its BIOS configures
-a bridge as:
+Also, we now check the cirteria for kicking the writeback thread
+before we decide to whether to fall back to non-delayed writeback, so
+if there are any outstanding delayed allocation writes, we try to get
+them resolved as soon as possible.
 
-    pci 0000:00:1e.0: PCI bridge to [bus 20-08] (subtractive decode)
+   [ INFO: possible circular locking dependency detected ]
+   3.6.0-rc1-00042-gce894ca #367 Not tainted
+   -------------------------------------------------------
+   dd/8298 is trying to acquire lock:
+    (&type->s_umount_key#18){++++..}, at: [<c02277d4>] writeback_inodes_sb_if_idle+0x28/0x46
 
-[bhelgaas: changelog, change message to dev_info]
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=18412
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=625754
-Reported-by: Brian C. Huffman <bhuffman@graze.net>
-Reported-by: VL <vl.homutov@gmail.com>
-Tested-by: VL <vl.homutov@gmail.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+   but task is already holding lock:
+    (&sb->s_type->i_mutex_key#8){+.+...}, at: [<c01ddcce>] generic_file_aio_write+0x5f/0xd3
+
+   which lock already depends on the new lock.
+
+   2 locks held by dd/8298:
+    #0:  (sb_writers#2){.+.+.+}, at: [<c01ddcc5>] generic_file_aio_write+0x56/0xd3
+    #1:  (&sb->s_type->i_mutex_key#8){+.+...}, at: [<c01ddcce>] generic_file_aio_write+0x5f/0xd3
+
+   stack backtrace:
+   Pid: 8298, comm: dd Not tainted 3.6.0-rc1-00042-gce894ca #367
+   Call Trace:
+    [<c015b79c>] ? console_unlock+0x345/0x372
+    [<c06d62a1>] print_circular_bug+0x190/0x19d
+    [<c019906c>] __lock_acquire+0x86d/0xb6c
+    [<c01999db>] ? mark_held_locks+0x5c/0x7b
+    [<c0199724>] lock_acquire+0x66/0xb9
+    [<c02277d4>] ? writeback_inodes_sb_if_idle+0x28/0x46
+    [<c06db935>] down_read+0x28/0x58
+    [<c02277d4>] ? writeback_inodes_sb_if_idle+0x28/0x46
+    [<c02277d4>] writeback_inodes_sb_if_idle+0x28/0x46
+    [<c026f3b2>] ext4_nonda_switch+0xe1/0xf4
+    [<c0271ece>] ext4_da_write_begin+0x27/0x193
+    [<c01dcdb0>] generic_file_buffered_write+0xc8/0x1bb
+    [<c01ddc47>] __generic_file_aio_write+0x1dd/0x205
+    [<c01ddce7>] generic_file_aio_write+0x78/0xd3
+    [<c026d336>] ext4_file_write+0x480/0x4a6
+    [<c0198c1d>] ? __lock_acquire+0x41e/0xb6c
+    [<c0180944>] ? sched_clock_cpu+0x11a/0x13e
+    [<c01967e9>] ? trace_hardirqs_off+0xb/0xd
+    [<c018099f>] ? local_clock+0x37/0x4e
+    [<c0209f2c>] do_sync_write+0x67/0x9d
+    [<c0209ec5>] ? wait_on_retry_sync_kiocb+0x44/0x44
+    [<c020a7b9>] vfs_write+0x7b/0xe6
+    [<c020a9a6>] sys_write+0x3b/0x64
+    [<c06dd4bd>] syscall_call+0x7/0xb
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/pci/probe.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/ext4/inode.c   |   17 ++++++++++-------
+ fs/fs-writeback.c |    1 +
+ 2 files changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 9f8a6b7..61859d0 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -729,8 +729,10 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
- 
- 	/* Check if setup is sensible at all */
- 	if (!pass &&
--	    (primary != bus->number || secondary <= bus->number)) {
--		dev_dbg(&dev->dev, "bus configuration invalid, reconfiguring\n");
-+	    (primary != bus->number || secondary <= bus->number ||
-+	     secondary > subordinate)) {
-+		dev_info(&dev->dev, "bridge configuration invalid ([bus %02x-%02x]), reconfiguring\n",
-+			 secondary, subordinate);
- 		broken = 1;
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index ca76b5e..0a31197 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2462,6 +2462,16 @@ static int ext4_nonda_switch(struct super_block *sb)
+ 	free_blocks  = EXT4_C2B(sbi,
+ 		percpu_counter_read_positive(&sbi->s_freeclusters_counter));
+ 	dirty_blocks = percpu_counter_read_positive(&sbi->s_dirtyclusters_counter);
++	/*
++	 * Start pushing delalloc when 1/2 of free blocks are dirty.
++	 */
++	if (dirty_blocks && (free_blocks < 2 * dirty_blocks) &&
++	    !writeback_in_progress(sb->s_bdi) &&
++	    down_read_trylock(&sb->s_umount)) {
++		writeback_inodes_sb(sb, WB_REASON_FS_FREE_SPACE);
++		up_read(&sb->s_umount);
++	}
++
+ 	if (2 * free_blocks < 3 * dirty_blocks ||
+ 		free_blocks < (dirty_blocks + EXT4_FREECLUSTERS_WATERMARK)) {
+ 		/*
+@@ -2470,13 +2480,6 @@ static int ext4_nonda_switch(struct super_block *sb)
+ 		 */
+ 		return 1;
  	}
+-	/*
+-	 * Even if we don't switch but are nearing capacity,
+-	 * start pushing delalloc when 1/2 of free blocks are dirty.
+-	 */
+-	if (free_blocks < 2 * dirty_blocks)
+-		writeback_inodes_sb_if_idle(sb, WB_REASON_FS_FREE_SPACE);
+-
+ 	return 0;
+ }
  
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index be3efc4..5602d73 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -63,6 +63,7 @@ int writeback_in_progress(struct backing_dev_info *bdi)
+ {
+ 	return test_bit(BDI_writeback_running, &bdi->state);
+ }
++EXPORT_SYMBOL(writeback_in_progress);
+ 
+ static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
+ {
 
 
