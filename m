@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236Ab2JNOnf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:43:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46494 "EHLO
+	id S932262Ab2JNOnn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:43:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46617 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932179Ab2JNOnX (ORCPT
+	by vger.kernel.org with ESMTP id S932167Ab2JNOnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:43:23 -0400
-Message-Id: <20121014143543.695060674@decadent.org.uk>
+	Sun, 14 Oct 2012 10:43:40 -0400
+Message-Id: <20121014143542.378871795@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:46 +0100
+Date: Sun, 14 Oct 2012 15:36:36 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 073/147] drm/radeon: force MSIs on RS690 asics
+        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 063/147] ext4: online defrag is not supported for journaled files
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,34 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-commit fb6ca6d154cdcd53e7f27f8dbba513830372699b upstream.
+commit f066055a3449f0e5b0ae4f3ceab4445bead47638 upstream.
 
-There are so many quirks, lets just try and force
-this for all RS690s.  See:
-https://bugs.freedesktop.org/show_bug.cgi?id=37679
+Proper block swap for inodes with full journaling enabled is
+truly non obvious task. In order to be on a safe side let's
+explicitly disable it for now.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/radeon_irq_kms.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/ext4/move_extent.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_irq_kms.c b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-index 2da4465..b06fa59 100644
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -208,6 +208,10 @@ static bool radeon_msi_ok(struct radeon_device *rdev)
- 	    (rdev->pdev->subsystem_device == 0x0185))
- 		return true;
+diff --git a/fs/ext4/move_extent.c b/fs/ext4/move_extent.c
+index df5cde5..e2016f3 100644
+--- a/fs/ext4/move_extent.c
++++ b/fs/ext4/move_extent.c
+@@ -1142,7 +1142,12 @@ ext4_move_extents(struct file *o_filp, struct file *d_filp,
+ 			orig_inode->i_ino, donor_inode->i_ino);
+ 		return -EINVAL;
+ 	}
+-
++	/* TODO: This is non obvious task to swap blocks for inodes with full
++	   jornaling enabled */
++	if (ext4_should_journal_data(orig_inode) ||
++	    ext4_should_journal_data(donor_inode)) {
++		return -EINVAL;
++	}
+ 	/* Protect orig and donor inodes against a truncate */
+ 	mext_inode_double_lock(orig_inode, donor_inode);
  
-+	/* try and enable MSIs by default on all RS690s */
-+	if (rdev->family == CHIP_RS690)
-+		return true;
-+
- 	/* RV515 seems to have MSI issues where it loses
- 	 * MSI rearms occasionally. This leads to lockups and freezes.
- 	 * disable it by default.
 
 
