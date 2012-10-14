@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab2JNPEP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:04:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46390 "EHLO
+	id S1755192Ab2JNPEM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:04:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46392 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754648Ab2JNOnB (ORCPT
+	by vger.kernel.org with ESMTP id S1754651Ab2JNOnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:43:01 -0400
-Message-Id: <20121014143547.157688566@decadent.org.uk>
+	Sun, 14 Oct 2012 10:43:02 -0400
+Message-Id: <20121014143546.626013068@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:12 +0100
+Date: Sun, 14 Oct 2012 15:37:08 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Imre Deak <imre.deak@intel.com>
-Subject: [ 099/147] drm/i915: call drm_handle_vblank before finish_page_flip
+        Vaibhav Bedia <vaibhav.bedia@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        Venkatraman S <svenkatr@ti.com>, Chris Ball <cjb@laptop.org>
+Subject: [ 095/147] mmc: omap_hsmmc: Pass on the suspend failure to the PM core
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,81 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Vaibhav Bedia <vaibhav.bedia@ti.com>
 
-commit 74d44445afb9f50126eba052adeb89827cee88f3 upstream.
+commit c4c8eeb4df00aabb641553d6fbcd46f458e56cd9 upstream.
 
-... since finish_page_flip needs the vblank timestamp generated
-in drm_handle_vblank. Somehow all the gmch platforms get it right,
-but all the pch platform irq handlers get is wrong. Hooray for copy&
-pasting!
+In some cases mmc_suspend_host() is not able to claim the
+host and proceed with the suspend process. The core returns
+-EBUSY to the host controller driver. Unfortunately, the
+host controller driver does not pass on this information
+to the PM core and hence the system suspend process continues.
 
-Currently this gets papered over by a gross hack in finish_page_flip.
-A second patch will remove that.
+	ret = mmc_suspend_host(host->mmc);
+	if (ret) {
+		host->suspended = 0;
+		if (host->pdata->resume) {
+			ret = host->pdata->resume(dev, host->slot_id);
 
-Note that without this, the new timestamp sanity checks in flip_test
-occasionally get tripped up, hence the cc: stable tag.
+The return status from mmc_suspend_host() is overwritten by return
+status from host->pdata->resume. So the original return status is lost.
 
-Reviewed-by: mario.kleiner@tuebingen.mpg.de
-Tested-by: Imre Deak <imre.deak@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2: no loop over pipes in ivybridge_irq_handler(),
- so make a similar change to that in ironlake_irq_handler()]
+In these cases the MMC core gets to an unexpected state
+during resume and multiple issues related to MMC crop up.
+1. Host controller driver starts accessing the device registers
+before the clocks are enabled which leads to a prefetch abort.
+2. A file copy thread which was launched before suspend gets
+stuck due to the host not being reclaimed during resume.
+
+To avoid such problems pass on the -EBUSY status to the PM core
+from the host controller driver. With this change, MMC core
+suspend might still fail but it does not end up making the
+system unusable. Suspend gets aborted and the user can try
+suspending the system again.
+
+Signed-off-by: Vaibhav Bedia <vaibhav.bedia@ti.com>
+Signed-off-by: Hebbar, Gururaja <gururaja.hebbar@ti.com>
+Acked-by: Venkatraman S <svenkatr@ti.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+[bwh: Backported to 3.2:
+ - Adjust context, indentation
+ - s/dev/\&pdev->dev/]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -530,6 +530,12 @@ static irqreturn_t ivybridge_irq_handler
- 	if (de_iir & DE_GSE_IVB)
- 		intel_opregion_gse_intr(dev);
- 
-+	if (de_iir & DE_PIPEA_VBLANK_IVB)
-+		drm_handle_vblank(dev, 0);
-+
-+	if (de_iir & DE_PIPEB_VBLANK_IVB)
-+		drm_handle_vblank(dev, 1);
-+
- 	if (de_iir & DE_PLANEA_FLIP_DONE_IVB) {
- 		intel_prepare_page_flip(dev, 0);
- 		intel_finish_page_flip_plane(dev, 0);
-@@ -540,12 +546,6 @@ static irqreturn_t ivybridge_irq_handler
- 		intel_finish_page_flip_plane(dev, 1);
- 	}
- 
--	if (de_iir & DE_PIPEA_VBLANK_IVB)
--		drm_handle_vblank(dev, 0);
--
--	if (de_iir & DE_PIPEB_VBLANK_IVB)
--		drm_handle_vblank(dev, 1);
--
- 	/* check event from PCH */
- 	if (de_iir & DE_PCH_EVENT_IVB) {
- 		if (pch_iir & SDE_HOTPLUG_MASK_CPT)
-@@ -622,6 +622,12 @@ static irqreturn_t ironlake_irq_handler(
- 	if (de_iir & DE_GSE)
- 		intel_opregion_gse_intr(dev);
- 
-+	if (de_iir & DE_PIPEA_VBLANK)
-+		drm_handle_vblank(dev, 0);
-+
-+	if (de_iir & DE_PIPEB_VBLANK)
-+		drm_handle_vblank(dev, 1);
-+
- 	if (de_iir & DE_PLANEA_FLIP_DONE) {
- 		intel_prepare_page_flip(dev, 0);
- 		intel_finish_page_flip_plane(dev, 0);
-@@ -632,12 +638,6 @@ static irqreturn_t ironlake_irq_handler(
- 		intel_finish_page_flip_plane(dev, 1);
- 	}
- 
--	if (de_iir & DE_PIPEA_VBLANK)
--		drm_handle_vblank(dev, 0);
--
--	if (de_iir & DE_PIPEB_VBLANK)
--		drm_handle_vblank(dev, 1);
--
- 	/* check event from PCH */
- 	if (de_iir & DE_PCH_EVENT) {
- 		if (pch_iir & hotplug_mask)
+ drivers/mmc/host/omap_hsmmc.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -2188,9 +2188,7 @@ static int omap_hsmmc_suspend(struct dev
+ 		} else {
+ 			host->suspended = 0;
+ 			if (host->pdata->resume) {
+-				ret = host->pdata->resume(&pdev->dev,
+-							  host->slot_id);
+-				if (ret)
++				if (host->pdata->resume(&pdev->dev, host->slot_id))
+ 					dev_dbg(mmc_dev(host->mmc),
+ 						"Unmask interrupt failed\n");
+ 			}
 
 
