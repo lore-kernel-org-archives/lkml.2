@@ -1,142 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab2JNP0Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:26:16 -0400
-Received: from bosmailout09.eigbox.net ([66.96.189.9]:53441 "EHLO
-	bosmailout09.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753398Ab2JNP0O (ORCPT
+	id S1753463Ab2JNPfe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:35:34 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44786 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752472Ab2JNPfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 11:26:14 -0400
-X-Greylist: delayed 2523 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Oct 2012 11:26:14 EDT
-X-Authority-Analysis: v=2.0 cv=Jc0LWz2V c=1 sm=1
- a=4iwzk5WlZPsH91DJ9+lduA==:17 a=bc2JKO6qiGsA:10 a=jAXA38P_poEA:10
- a=sJzZ5xkLnXkA:10 a=8nJEP1OIZ-IA:10 a=MqEtbqidUwgA:10
- a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=VwQbUJbxAAAA:8 a=D19gQVrFAAAA:8
- a=Fhfi7x0XTLpfPVzzwuIA:9 a=wPNLvfGTeEIA:10 a=fIc3/5IyPUehxkj7BpkQ7Q==:117
-X-EN-OrigOutIP: 10.20.18.6
-X-EN-IMPSID: B2k81k00807rX7u012k862
-Message-ID: <507A6FA5.1000800@yahoo.es>
-Date: Sun, 14 Oct 2012 15:54:13 +0800
-From: Hein Tibosch <hein_tibosch@yahoo.es>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Sun, 14 Oct 2012 11:35:31 -0400
+Message-ID: <507ADBBB.9090209@gmail.com>
+Date: Sun, 14 Oct 2012 17:35:23 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        viresh kumar <viresh.kumar@linaro.org>
-CC: spear-devel <spear-devel@list.st.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "ludovic.desroches" <ludovic.desroches@atmel.com>,
-        Havard Skinnemoen <havard@skinnemoen.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH REGRESSION FIX] dw_dmac: make driver's endianness configurable
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
-X-EN-AuthUser: hein@htibosch.net
-X-EN-OrigIP: 114.79.57.38
-X-EN-OrigHost: unknown
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [git pull] signals pile 3
+References: <20121013005334.GM2616@ZenIV.linux.org.uk>
+In-Reply-To: <20121013005334.GM2616@ZenIV.linux.org.uk>
+X-Enigmail-Version: 1.4.4
+Content-Type: multipart/mixed;
+ boundary="------------020202000702040007020602"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hein Tibosch <hein_tibosch@yahoo.es>
+This is a multi-part message in MIME format.
+--------------020202000702040007020602
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-The dw_dmac was originally developed for avr32 to be used with the Synopsys
-DesignWare AHB DMA controller. Starting from 2.6.38, access to the device's i/o
-memory was done with the little-endian readl/writel functions(1)
+Hi Al,
 
-This broke the driver for the avr32 platform, because it needs big (native)
-endian accessors.
-This patch makes the endianness configurable using 'DW_DMAC_BIG_ENDIAN_IO',
-which will default be true for AVR32
+On 13.10.2012 02:53, Al Viro wrote:
+> The last bits of infrastructure for kernel_thread() et.al., with alpha/arm/x86
+> use of those.  Plus sanitizing the asm glue and do_notify_resume() on alpha,
+> fixing the "disabled irq while running task_work stuff" breakage there.
+> 
+> At that point the rest of kernel_thread/kernel_execve/sys_execve work can
+> be done independently for different architectures.  The only pending bits
+> that do depend on having all architectures converted are restrictred to
+> fs/* and kernel/* - that'll obviously have to wait for the next cycle.
+> I thought we'd have to wait for all of them done before we start eliminating
+> the longjump-style insanity in kernel_execve(), but it turned out there's
+> a very simple way to do that without flagday-style changes.
+> 
+> Please, pull from
+> git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal for-linus
+> 
+> Shortlog:
+> Al Viro (12):
 
-I submitted this patch before(2) but then waited for Andy to finish other
-changes to the same module(3).
+[...]
 
-(1) https://patchwork.kernel.org/patch/608211
-(2) https://lkml.org/lkml/2012/8/26/148
-(3) https://lkml.org/lkml/2012/9/21/173
+>       arm: switch to saner kernel_execve() semantics
 
-Signed-off-by: Hein Tibosch <hein_tibosch@yahoo.es>
+[...]
 
----
- drivers/dma/Kconfig        |   11 +++++++++++
- drivers/dma/dw_dmac_regs.h |   18 +++++++++++++-----
- 2 files changed, 24 insertions(+), 5 deletions(-)
+> Diffstat:
 
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index 677cd6e..d4c1218 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -90,6 +90,17 @@ config DW_DMAC
- 	  Support the Synopsys DesignWare AHB DMA controller.  This
- 	  can be integrated in chips such as the Atmel AT32ap7000.
+[...]
+
+>  arch/arm/include/asm/unistd.h              |    1 -
+>  arch/arm/kernel/entry-common.S             |   29 +--------
+>  arch/arm/kernel/process.c                  |    5 +-
+
+I rebased my ARM development branch and figured that your patch 9fff2fa
+("arm: switch to saner kernel_execve() semantics") breaks the boot on my
+board right after init is invoked via NFS:
+
+[    4.682072] VFS: Mounted root (nfs filesystem) on device 0:12.
+[    4.690744] devtmpfs: mounted
+[    4.694395] Freeing init memory: 172K
+[    5.291417] Internal error: Oops - undefined instruction: 0 [#1] SMP
+THUMB2
+[    5.298734] Modules linked in:
+[    5.301952] CPU: 0    Not tainted  (3.6.0-11053-g56c8535 #128)
+[    5.308071] PC is at cpsw_probe+0x422/0x9ac
+[    5.312459] LR is at trace_hardirqs_on_caller+0x8f/0xfc
+[    5.317934] pc : [<c03493de>]    lr : [<c005e81f>]    psr: 60000113
+[    5.317934] sp : cf055fb0  ip : 00000000  fp : 00000000
+[    5.329944] r10: 00000000  r9 : 00000000  r8 : 00000000
+[    5.335413] r7 : 00000000  r6 : 00000000  r5 : c034458d  r4 : 00000000
+[    5.342244] r3 : cf057a40  r2 : 00000000  r1 : 00000001  r0 : 00000000
+[    5.349078] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM
+Segment user
+[    5.356546] Control: 50c5387d  Table: 8f434019  DAC: 00000015
+[    5.362562] Process init (pid: 1, stack limit = 0xcf054240)
+[    5.368395] Stack: (0xcf055fb0 to 0xcf056000)
+[    5.372961] 5fa0:                                     00000001
+00000000 00000000 00000000
+[    5.381525] 5fc0: cf055fb0 c000d1a8 00000000 00000000 00000000
+00000000 00000000 00000000
+[    5.390091] 5fe0: 00000000 bee83f10 00000000 b6fdedd0 00000010
+00000000 aaaabfaf a8babbaa
+[    5.398664] Code: 2206a010 718ef508 0184f8da f8b1f65d (3070f8d8)
+[    5.405049] ---[ end trace f92e44d0ab15d037 ]---
+[    5.410424] Kernel panic - not syncing: Attempted to kill init!
+exitcode=0x0000000b
+
+
+Looking at the patch, I see it does two things:
+
+ a) kill the special treatment formerly done by ret_from_kernel_thread
+ b) switch over to generic execve for ARM
+
+I know too little about the internals here, but reverting the latter
+part fixes the boot for me. Find attached the patch I used locally for
+that, on top of Linus' current merge tree (4d7127d).
+
+FWIW, the config I'm using is here: http://pastebin.com/JPwAYmrD
+
+I can test patches if you have any for me.
+
+
+Thanks,
+Daniel
+
+
+--------------020202000702040007020602
+Content-Type: text/x-patch;
+ name="arm-execve-revert.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="arm-execve-revert.diff"
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 261fdd0..1bc092e 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -12,7 +12,6 @@ config ARM
+ 	select GENERIC_IRQ_PROBE
+ 	select GENERIC_IRQ_SHOW
+ 	select GENERIC_KERNEL_THREAD
+-	select GENERIC_KERNEL_EXECVE
+ 	select GENERIC_PCI_IOMAP
+ 	select GENERIC_SMP_IDLE_THREAD
+ 	select GENERIC_STRNCPY_FROM_USER
+diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
+index 8f60b6e..202bc3a 100644
+--- a/arch/arm/include/asm/unistd.h
++++ b/arch/arm/include/asm/unistd.h
+@@ -42,6 +42,7 @@
+ #define __ARCH_WANT_SYS_SOCKETCALL
+ #endif
+ #define __ARCH_WANT_SYS_EXECVE
++#define __ARCH_WANT_KERNEL_EXECVE
  
-+config DW_DMAC_BIG_ENDIAN_IO
-+	bool "Use big endian I/O register access"
-+	default y if AVR32
-+	depends on DW_DMAC
-+	help
-+	  Say yes here to use big endian I/O access when reading and writing
-+	  to the DMA controller registers. This is needed on some platforms,
-+	  like the Atmel AVR32 architecture.
+ /*
+  * "Conditional" syscalls
+diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
+index 417bac1..c05bd28 100644
+--- a/arch/arm/kernel/entry-common.S
++++ b/arch/arm/kernel/entry-common.S
+@@ -94,6 +94,18 @@ ENTRY(ret_from_fork)
+ 	b	ret_slow_syscall
+ ENDPROC(ret_from_fork)
+ 
++/*
++ * turn a kernel thread into userland process
++ * use: ret_from_kernel_execve(struct pt_regs *normal)
++ */
++ENTRY(ret_from_kernel_execve)
++	mov     why, #0                 @ not a syscall
++	str     why, [r0, #S_R0]        @ ... and we want 0 in ->ARM_r0 as well
++	get_thread_info tsk             @ thread structure
++	mov     sp, r0                  @ stack pointer just under pt_regs
++	b       ret_slow_syscall
++ENDPROC(ret_from_kernel_execve)
 +
-+	  If unsure, use the default setting.
-+
- config AT_HDMAC
- 	tristate "Atmel AHB DMA support"
- 	depends on ARCH_AT91
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index ff39fa6..8896559 100644
---- a/drivers/dma/dw_dmac_regs.h
-+++ b/drivers/dma/dw_dmac_regs.h
-@@ -98,9 +98,17 @@ struct dw_dma_regs {
- 	u32	DW_PARAMS;
- };
- 
-+#ifdef CONFIG_DW_DMAC_BIG_ENDIAN_IO
-+#define dma_readl_native ioread32be
-+#define dma_writel_native iowrite32be
-+#else
-+#define dma_readl_native readl
-+#define dma_writel_native writel
-+#endif
-+
- /* To access the registers in early stage of probe */
- #define dma_read_byaddr(addr, name) \
--	readl((addr) + offsetof(struct dw_dma_regs, name))
-+	dma_readl_native((addr) + offsetof(struct dw_dma_regs, name))
- 
- /* Bitfields in DW_PARAMS */
- #define DW_PARAMS_NR_CHAN	8		/* number of channels */
-@@ -216,9 +224,9 @@ __dwc_regs(struct dw_dma_chan *dwc)
- }
- 
- #define channel_readl(dwc, name) \
--	readl(&(__dwc_regs(dwc)->name))
-+	dma_readl_native(&(__dwc_regs(dwc)->name))
- #define channel_writel(dwc, name, val) \
--	writel((val), &(__dwc_regs(dwc)->name))
-+	dma_writel_native((val), &(__dwc_regs(dwc)->name))
- 
- static inline struct dw_dma_chan *to_dw_dma_chan(struct dma_chan *chan)
- {
-@@ -246,9 +254,9 @@ static inline struct dw_dma_regs __iomem *__dw_regs(struct dw_dma *dw)
- }
- 
- #define dma_readl(dw, name) \
--	readl(&(__dw_regs(dw)->name))
-+	dma_readl_native(&(__dw_regs(dw)->name))
- #define dma_writel(dw, name, val) \
--	writel((val), &(__dw_regs(dw)->name))
-+	dma_writel_native((val), &(__dw_regs(dw)->name))
- 
- #define channel_set_bit(dw, reg, mask) \
- 	dma_writel(dw, reg, ((mask) << 8) | (mask))
--- 
-1.7.8.0
+ 	.equ NR_syscalls,0
+ #define CALL(x) .equ NR_syscalls,NR_syscalls+1
+ #include "calls.S"
 
-
-
+--------------020202000702040007020602--
