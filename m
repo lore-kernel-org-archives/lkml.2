@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474Ab2JNOmZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:42:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46247 "EHLO
+	id S1754579Ab2JNPJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:09:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46255 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754423Ab2JNOmV (ORCPT
+	by vger.kernel.org with ESMTP id S1754280Ab2JNOmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:42:21 -0400
-Message-Id: <20121014143550.391492464@decadent.org.uk>
+	Sun, 14 Oct 2012 10:42:23 -0400
+Message-Id: <20121014143550.115513582@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:36 +0100
+Date: Sun, 14 Oct 2012 15:37:34 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Tyler Hicks <tyhicks@canonical.com>,
-        Colin King <colin.king@canonical.com>, Thieu Le <thieule@google.com>
-Subject: [ 123/147] eCryptfs: Revert to a writethrough cache model
+        John Johansen <john.johansen@canonical.com>,
+        Colin Ian King <colin.king@canonical.com>
+Subject: [ 121/147] eCryptfs: Unlink lower inode when ecryptfs_create() fails
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,189 +31,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tyler Hicks <tyhicks@canonical.com>
 
-commit 821f7494a77627fb1ab539591c57b22cdca702d6 upstream.
+commit 8bc2d3cf612994a960c2e8eaea37f6676f67082a upstream.
 
-A change was made about a year ago to get eCryptfs to better utilize its
-page cache during writes. The idea was to do the page encryption
-operations during page writeback, rather than doing them when initially
-writing into the page cache, to reduce the number of page encryption
-operations during sequential writes. This meant that the encrypted page
-would only be written to the lower filesystem during page writeback,
-which was a change from how eCryptfs had previously wrote to the lower
-filesystem in ecryptfs_write_end().
+ecryptfs_create() creates a lower inode, allocates an eCryptfs inode,
+initializes the eCryptfs inode and cryptographic metadata attached to
+the inode, and then writes the metadata to the header of the file.
 
-The change caused a few eCryptfs-internal bugs that were shook out.
-Unfortunately, more grave side effects have been identified that will
-force changes outside of eCryptfs. Because the lower filesystem isn't
-consulted until page writeback, eCryptfs has no way to pass lower write
-errors (ENOSPC, mainly) back to userspace. Additionaly, it was reported
-that quotas could be bypassed because of the way eCryptfs may sometimes
-open the lower filesystem using a privileged kthread.
+If an error was to occur after the lower inode was created, an empty
+lower file would be left in the lower filesystem. This is a problem
+because ecryptfs_open() refuses to open any lower files which do not
+have the appropriate metadata in the file header.
 
-It would be nice to resolve the latest issues, but it is best if the
-eCryptfs commits be reverted to the old behavior in the meantime.
+This patch properly unlinks the lower inode when an error occurs in the
+later stages of ecryptfs_create(), reducing the chance that an empty
+lower file will be left in the lower filesystem.
 
-This reverts:
-32001d6f "eCryptfs: Flush file in vma close"
-5be79de2 "eCryptfs: Flush dirty pages in setattr"
-57db4e8d "ecryptfs: modify write path to encrypt page in writepage"
+https://launchpad.net/bugs/872905
 
 Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Tested-by: Colin King <colin.king@canonical.com>
-Cc: Colin King <colin.king@canonical.com>
-Cc: Thieu Le <thieule@google.com>
+Cc: John Johansen <john.johansen@canonical.com>
+Cc: Colin Ian King <colin.king@canonical.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ecryptfs/file.c  |   33 ++-------------------------------
- fs/ecryptfs/inode.c |    6 ------
- fs/ecryptfs/mmap.c  |   39 +++++++++++++--------------------------
- 3 files changed, 15 insertions(+), 63 deletions(-)
+ fs/ecryptfs/inode.c |   55 ++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 32 insertions(+), 23 deletions(-)
 
-diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
-index baf8b05..44ce5c6 100644
---- a/fs/ecryptfs/file.c
-+++ b/fs/ecryptfs/file.c
-@@ -138,27 +138,6 @@ out:
- 	return rc;
- }
- 
--static void ecryptfs_vma_close(struct vm_area_struct *vma)
--{
--	filemap_write_and_wait(vma->vm_file->f_mapping);
--}
--
--static const struct vm_operations_struct ecryptfs_file_vm_ops = {
--	.close		= ecryptfs_vma_close,
--	.fault		= filemap_fault,
--};
--
--static int ecryptfs_file_mmap(struct file *file, struct vm_area_struct *vma)
--{
--	int rc;
--
--	rc = generic_file_mmap(file, vma);
--	if (!rc)
--		vma->vm_ops = &ecryptfs_file_vm_ops;
--
--	return rc;
--}
--
- struct kmem_cache *ecryptfs_file_info_cache;
- 
- static int read_or_initialize_metadata(struct dentry *dentry)
-@@ -311,15 +290,7 @@ static int ecryptfs_release(struct inode *inode, struct file *file)
- static int
- ecryptfs_fsync(struct file *file, loff_t start, loff_t end, int datasync)
- {
--	int rc = 0;
--
--	rc = generic_file_fsync(file, start, end, datasync);
--	if (rc)
--		goto out;
--	rc = vfs_fsync_range(ecryptfs_file_to_lower(file), start, end,
--			     datasync);
--out:
--	return rc;
-+	return vfs_fsync(ecryptfs_file_to_lower(file), datasync);
- }
- 
- static int ecryptfs_fasync(int fd, struct file *file, int flag)
-@@ -388,7 +359,7 @@ const struct file_operations ecryptfs_main_fops = {
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl = ecryptfs_compat_ioctl,
- #endif
--	.mmap = ecryptfs_file_mmap,
-+	.mmap = generic_file_mmap,
- 	.open = ecryptfs_open,
- 	.flush = ecryptfs_flush,
- 	.release = ecryptfs_release,
-diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
-index 2d4143f..769fb85 100644
 --- a/fs/ecryptfs/inode.c
 +++ b/fs/ecryptfs/inode.c
-@@ -981,12 +981,6 @@ static int ecryptfs_setattr(struct dentry *dentry, struct iattr *ia)
- 			goto out;
- 	}
- 
--	if (S_ISREG(inode->i_mode)) {
--		rc = filemap_write_and_wait(inode->i_mapping);
--		if (rc)
--			goto out;
--		fsstack_copy_attr_all(inode, lower_inode);
--	}
- 	memcpy(&lower_ia, ia, sizeof(lower_ia));
- 	if (ia->ia_valid & ATTR_FILE)
- 		lower_ia.ia_file = ecryptfs_file_to_lower(ia->ia_file);
-diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
-index a46b3a8..bd1d57f 100644
---- a/fs/ecryptfs/mmap.c
-+++ b/fs/ecryptfs/mmap.c
-@@ -66,18 +66,6 @@ static int ecryptfs_writepage(struct page *page, struct writeback_control *wbc)
- {
- 	int rc;
- 
--	/*
--	 * Refuse to write the page out if we are called from reclaim context
--	 * since our writepage() path may potentially allocate memory when
--	 * calling into the lower fs vfs_write() which may in turn invoke
--	 * us again.
--	 */
--	if (current->flags & PF_MEMALLOC) {
--		redirty_page_for_writepage(wbc, page);
--		rc = 0;
--		goto out;
--	}
--
- 	rc = ecryptfs_encrypt_page(page);
- 	if (rc) {
- 		ecryptfs_printk(KERN_WARNING, "Error encrypting "
-@@ -498,7 +486,6 @@ static int ecryptfs_write_end(struct file *file,
- 	struct ecryptfs_crypt_stat *crypt_stat =
- 		&ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
- 	int rc;
--	int need_unlock_page = 1;
- 
- 	ecryptfs_printk(KERN_DEBUG, "Calling fill_zeros_to_end_of_page"
- 			"(page w/ index = [0x%.16lx], to = [%d])\n", index, to);
-@@ -519,26 +506,26 @@ static int ecryptfs_write_end(struct file *file,
- 			"zeros in page with index = [0x%.16lx]\n", index);
- 		goto out;
- 	}
--	set_page_dirty(page);
--	unlock_page(page);
--	need_unlock_page = 0;
-+	rc = ecryptfs_encrypt_page(page);
-+	if (rc) {
-+		ecryptfs_printk(KERN_WARNING, "Error encrypting page (upper "
-+				"index [0x%.16lx])\n", index);
-+		goto out;
-+	}
- 	if (pos + copied > i_size_read(ecryptfs_inode)) {
- 		i_size_write(ecryptfs_inode, pos + copied);
- 		ecryptfs_printk(KERN_DEBUG, "Expanded file size to "
- 			"[0x%.16llx]\n",
- 			(unsigned long long)i_size_read(ecryptfs_inode));
--		balance_dirty_pages_ratelimited(mapping);
--		rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
--		if (rc) {
--			printk(KERN_ERR "Error writing inode size to metadata; "
--			       "rc = [%d]\n", rc);
--			goto out;
--		}
- 	}
--	rc = copied;
-+	rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
-+	if (rc)
-+		printk(KERN_ERR "Error writing inode size to metadata; "
-+		       "rc = [%d]\n", rc);
-+	else
-+		rc = copied;
- out:
--	if (need_unlock_page)
--		unlock_page(page);
-+	unlock_page(page);
- 	page_cache_release(page);
- 	return rc;
+@@ -161,6 +161,31 @@ ecryptfs_create_underlying_file(struct i
+ 	return vfs_create(lower_dir_inode, lower_dentry, mode, NULL);
  }
+ 
++static int ecryptfs_do_unlink(struct inode *dir, struct dentry *dentry,
++			      struct inode *inode)
++{
++	struct dentry *lower_dentry = ecryptfs_dentry_to_lower(dentry);
++	struct inode *lower_dir_inode = ecryptfs_inode_to_lower(dir);
++	struct dentry *lower_dir_dentry;
++	int rc;
++
++	dget(lower_dentry);
++	lower_dir_dentry = lock_parent(lower_dentry);
++	rc = vfs_unlink(lower_dir_inode, lower_dentry);
++	if (rc) {
++		printk(KERN_ERR "Error in vfs_unlink; rc = [%d]\n", rc);
++		goto out_unlock;
++	}
++	fsstack_copy_attr_times(dir, lower_dir_inode);
++	set_nlink(inode, ecryptfs_inode_to_lower(inode)->i_nlink);
++	inode->i_ctime = dir->i_ctime;
++	d_drop(dentry);
++out_unlock:
++	unlock_dir(lower_dir_dentry);
++	dput(lower_dentry);
++	return rc;
++}
++
+ /**
+  * ecryptfs_do_create
+  * @directory_inode: inode of the new file's dentry's parent in ecryptfs
+@@ -201,8 +226,10 @@ ecryptfs_do_create(struct inode *directo
+ 	}
+ 	inode = __ecryptfs_get_inode(lower_dentry->d_inode,
+ 				     directory_inode->i_sb);
+-	if (IS_ERR(inode))
++	if (IS_ERR(inode)) {
++		vfs_unlink(lower_dir_dentry->d_inode, lower_dentry);
+ 		goto out_lock;
++	}
+ 	fsstack_copy_attr_times(directory_inode, lower_dir_dentry->d_inode);
+ 	fsstack_copy_inode_size(directory_inode, lower_dir_dentry->d_inode);
+ out_lock:
+@@ -284,7 +311,9 @@ ecryptfs_create(struct inode *directory_
+ 	 * that this on disk file is prepared to be an ecryptfs file */
+ 	rc = ecryptfs_initialize_file(ecryptfs_dentry, ecryptfs_inode);
+ 	if (rc) {
+-		drop_nlink(ecryptfs_inode);
++		ecryptfs_do_unlink(directory_inode, ecryptfs_dentry,
++				   ecryptfs_inode);
++		make_bad_inode(ecryptfs_inode);
+ 		unlock_new_inode(ecryptfs_inode);
+ 		iput(ecryptfs_inode);
+ 		goto out;
+@@ -496,27 +525,7 @@ out_lock:
+ 
+ static int ecryptfs_unlink(struct inode *dir, struct dentry *dentry)
+ {
+-	int rc = 0;
+-	struct dentry *lower_dentry = ecryptfs_dentry_to_lower(dentry);
+-	struct inode *lower_dir_inode = ecryptfs_inode_to_lower(dir);
+-	struct dentry *lower_dir_dentry;
+-
+-	dget(lower_dentry);
+-	lower_dir_dentry = lock_parent(lower_dentry);
+-	rc = vfs_unlink(lower_dir_inode, lower_dentry);
+-	if (rc) {
+-		printk(KERN_ERR "Error in vfs_unlink; rc = [%d]\n", rc);
+-		goto out_unlock;
+-	}
+-	fsstack_copy_attr_times(dir, lower_dir_inode);
+-	set_nlink(dentry->d_inode,
+-		  ecryptfs_inode_to_lower(dentry->d_inode)->i_nlink);
+-	dentry->d_inode->i_ctime = dir->i_ctime;
+-	d_drop(dentry);
+-out_unlock:
+-	unlock_dir(lower_dir_dentry);
+-	dput(lower_dentry);
+-	return rc;
++	return ecryptfs_do_unlink(dir, dentry, dentry->d_inode);
+ }
+ 
+ static int ecryptfs_symlink(struct inode *dir, struct dentry *dentry,
 
 
