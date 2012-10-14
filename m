@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab2JNPM4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:12:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46184 "EHLO
+	id S1754814Ab2JNPMz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:12:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46177 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754341Ab2JNOmI (ORCPT
+	by vger.kernel.org with ESMTP id S1754302Ab2JNOmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:42:08 -0400
-Message-Id: <20121014143551.346844468@decadent.org.uk>
+Message-Id: <20121014143551.619194043@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:43 +0100
+Date: Sun, 14 Oct 2012 15:37:45 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Christoph Lameter <cl@linux.com>,
-        Josh Boyer <jwboyer@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 130/147] mempolicy: fix refcount leak in  mpol_set_shared_policy()
+        Francois Romieu <romieu@fr.zoreil.com>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [ 132/147] r8169: Config1 is read-only on 8168c and later.
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,74 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Francois Romieu <romieu@fr.zoreil.com>
 
-commit 63f74ca21f1fad36d075e063f06dcc6d39fe86b2 upstream.
+commit 851e60221926a53344b4227879858bef841b0477 upstream.
 
-When shared_policy_replace() fails to allocate new->policy is not freed
-correctly by mpol_set_shared_policy().  The problem is that shared
-mempolicy code directly call kmem_cache_free() in multiple places where
-it is easy to make a mistake.
+Suggested by Hayes.
 
-This patch creates an sp_free wrapper function and uses it. The bug was
-introduced pre-git age (IOW, before 2.6.12-rc2).
-
-[mgorman@suse.de: Editted changelog]
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Cc: Josh Boyer <jwboyer@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Hayes Wang <hayeswang@realtek.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/mempolicy.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index b2f12ec..1763418 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2157,12 +2157,17 @@ mpol_shared_policy_lookup(struct shared_policy *sp, unsigned long idx)
- 	return pol;
- }
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 71393ea..9b0b00b 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -1396,7 +1396,6 @@ static void __rtl8169_set_wol(struct rtl8169_private *tp, u32 wolopts)
+ 		u16 reg;
+ 		u8  mask;
+ 	} cfg[] = {
+-		{ WAKE_ANY,   Config1, PMEnable },
+ 		{ WAKE_PHY,   Config3, LinkUp },
+ 		{ WAKE_MAGIC, Config3, MagicPacket },
+ 		{ WAKE_UCAST, Config5, UWF },
+@@ -1404,16 +1403,28 @@ static void __rtl8169_set_wol(struct rtl8169_private *tp, u32 wolopts)
+ 		{ WAKE_MCAST, Config5, MWF },
+ 		{ WAKE_ANY,   Config5, LanWake }
+ 	};
++	u8 options;
  
-+static void sp_free(struct sp_node *n)
-+{
-+	mpol_put(n->policy);
-+	kmem_cache_free(sn_cache, n);
-+}
+ 	RTL_W8(Cfg9346, Cfg9346_Unlock);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(cfg); i++) {
+-		u8 options = RTL_R8(cfg[i].reg) & ~cfg[i].mask;
++		options = RTL_R8(cfg[i].reg) & ~cfg[i].mask;
+ 		if (wolopts & cfg[i].opt)
+ 			options |= cfg[i].mask;
+ 		RTL_W8(cfg[i].reg, options);
+ 	}
+ 
++	switch (tp->mac_version) {
++	case RTL_GIGA_MAC_VER_01 ... RTL_GIGA_MAC_VER_17:
++		options = RTL_R8(Config1) & ~PMEnable;
++		if (wolopts)
++			options |= PMEnable;
++		RTL_W8(Config1, options);
++		break;
++	default:
++		break;
++	}
 +
- static void sp_delete(struct shared_policy *sp, struct sp_node *n)
- {
- 	pr_debug("deleting %lx-l%lx\n", n->start, n->end);
- 	rb_erase(&n->nd, &sp->root);
--	mpol_put(n->policy);
--	kmem_cache_free(sn_cache, n);
-+	sp_free(n);
+ 	RTL_W8(Cfg9346, Cfg9346_Lock);
  }
  
- static struct sp_node *sp_alloc(unsigned long start, unsigned long end,
-@@ -2301,7 +2306,7 @@ int mpol_set_shared_policy(struct shared_policy *info,
- 	}
- 	err = shared_policy_replace(info, vma->vm_pgoff, vma->vm_pgoff+sz, new);
- 	if (err && new)
--		kmem_cache_free(sn_cache, new);
-+		sp_free(new);
- 	return err;
- }
- 
-@@ -2318,9 +2323,7 @@ void mpol_free_shared_policy(struct shared_policy *p)
- 	while (next) {
- 		n = rb_entry(next, struct sp_node, nd);
- 		next = rb_next(&n->nd);
--		rb_erase(&n->nd, &p->root);
--		mpol_put(n->policy);
--		kmem_cache_free(sn_cache, n);
-+		sp_delete(p, n);
- 	}
- 	mutex_unlock(&p->mutex);
- }
 
 
