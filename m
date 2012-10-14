@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab2JNOlp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:41:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46045 "EHLO
+	id S1754088Ab2JNOlt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:41:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46115 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753761Ab2JNOlf (ORCPT
+	by vger.kernel.org with ESMTP id S1753761Ab2JNOlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:41:35 -0400
-Message-Id: <20121014143535.006934760@decadent.org.uk>
+	Sun, 14 Oct 2012 10:41:46 -0400
+Message-Id: <20121014143553.503267707@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:35:42 +0100
+Date: Sun, 14 Oct 2012 15:37:59 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Frederic Berat <fredericx.berat@intel.com>,
-        Russ Gorby <russ.gorby@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 009/147] n_gsm : Flow control handling in Mux driver
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Jiri Slaby <jirislaby@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 146/147] drm/i915: Mark untiled BLT commands as fenced on gen2/3
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,199 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Berat <fredericx.berat@intel.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit c01af4fec2c8f303d6b3354d44308d9e6bef8026 upstream.
+commit 7dd4906586274f3945f2aeaaa5a33b451c3b4bba upstream.
 
-- Correcting handling of FCon/FCoff in order to respect 27.010 spec
-- Consider FCon/off will overide all dlci flow control except for
-  dlci0 as we must be able to send control frames.
-- Dlci constipated handling according to FC, RTC and RTR values.
-- Modifying gsm_dlci_data_kick and gsm_dlci_data_sweep according
-  to dlci constipated value
+The BLT commands on gen2/3 utilize the fence registers and so we cannot
+modify any fences for the object whilst those commands are in flight.
+Currently we marked tiled commands as occupying a fence, but forgot to
+restrict the untiled commands from preventing a fence being assigned
+before they were completed.
 
-Signed-off-by: Frederic Berat <fredericx.berat@intel.com>
-Signed-off-by: Russ Gorby <russ.gorby@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+One side-effect is that we ten have to double check that a fence was
+allocated for a fenced buffer during move-to-active.
+
+Reported-by: Jiri Slaby <jirislaby@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=43427
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=47990
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Testcase: i-g-t/tests/gem_tiled_after_untiled_blt
+Tested-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2: The nesting of if-statements in the old
+ i915_gem_execbuffer_reserve() differs from pin_and_fence_object(),
+ so don't move the assignment of obj->pending_fenced_gpu_access but
+ adjust the boolean expression as recommended by Daniel Vetter.]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/n_gsm.c |   79 +++++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 57 insertions(+), 22 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c            |   15 +++++++++------
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 +-
+ 2 files changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index c028f35..db15b56 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -673,6 +673,8 @@ static struct gsm_msg *gsm_data_alloc(struct gsm_mux *gsm, u8 addr, int len,
-  *
-  *	The tty device has called us to indicate that room has appeared in
-  *	the transmit queue. Ram more data into the pipe if we have any
-+ *	If we have been flow-stopped by a CMD_FCOFF, then we can only
-+ *	send messages on DLCI0 until CMD_FCON
-  *
-  *	FIXME: lock against link layer control transmissions
-  */
-@@ -680,15 +682,19 @@ static struct gsm_msg *gsm_data_alloc(struct gsm_mux *gsm, u8 addr, int len,
- static void gsm_data_kick(struct gsm_mux *gsm)
- {
- 	struct gsm_msg *msg = gsm->tx_head;
-+	struct gsm_msg *free_msg;
- 	int len;
- 	int skip_sof = 0;
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1543,16 +1543,19 @@ i915_gem_object_move_to_active(struct dr
+ 	list_move_tail(&obj->ring_list, &ring->active_list);
  
--	/* FIXME: We need to apply this solely to data messages */
--	if (gsm->constipated)
--		return;
+ 	obj->last_rendering_seqno = seqno;
+-	if (obj->fenced_gpu_access) {
+-		struct drm_i915_fence_reg *reg;
 -
--	while (gsm->tx_head != NULL) {
--		msg = gsm->tx_head;
-+	while (msg) {
-+		if (gsm->constipated && msg->addr) {
-+			msg = msg->next;
-+			continue;
-+		}
-+		if (gsm->dlci[msg->addr]->constipated) {
-+			msg = msg->next;
-+			continue;
-+		}
- 		if (gsm->encoding != 0) {
- 			gsm->txframe[0] = GSM1_SOF;
- 			len = gsm_stuff_frame(msg->data,
-@@ -711,15 +717,19 @@ static void gsm_data_kick(struct gsm_mux *gsm)
- 						len - skip_sof) < 0)
- 			break;
- 		/* FIXME: Can eliminate one SOF in many more cases */
--		gsm->tx_head = msg->next;
--		if (gsm->tx_head == NULL)
--			gsm->tx_tail = NULL;
- 		gsm->tx_bytes -= msg->len;
--		kfree(msg);
- 		/* For a burst of frames skip the extra SOF within the
- 		   burst */
- 		skip_sof = 1;
+-		BUG_ON(obj->fence_reg == I915_FENCE_REG_NONE);
+ 
++	if (obj->fenced_gpu_access) {
+ 		obj->last_fenced_seqno = seqno;
+ 		obj->last_fenced_ring = ring;
+ 
+-		reg = &dev_priv->fence_regs[obj->fence_reg];
+-		list_move_tail(&reg->lru_list, &dev_priv->mm.fence_list);
++		/* Bump MRU to take account of the delayed flush */
++		if (obj->fence_reg != I915_FENCE_REG_NONE) {
++			struct drm_i915_fence_reg *reg;
 +
-+		if (gsm->tx_head == msg)
-+			gsm->tx_head = msg->next;
-+		free_msg = msg;
-+		msg = msg->next;
-+		kfree(free_msg);
++			reg = &dev_priv->fence_regs[obj->fence_reg];
++			list_move_tail(&reg->lru_list,
++				       &dev_priv->mm.fence_list);
++		}
  	}
-+	if (!gsm->tx_head)
-+		gsm->tx_tail = NULL;
  }
  
- /**
-@@ -738,6 +748,8 @@ static void __gsm_data_queue(struct gsm_dlci *dlci, struct gsm_msg *msg)
- 	u8 *dp = msg->data;
- 	u8 *fcs = dp + msg->len;
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -574,7 +574,8 @@ i915_gem_execbuffer_reserve(struct intel
+ 					if (ret)
+ 						break;
+ 				}
+-				obj->pending_fenced_gpu_access = need_fence;
++				obj->pending_fenced_gpu_access =
++					!!(entry->flags & EXEC_OBJECT_NEEDS_FENCE);
+ 			}
  
-+	WARN_ONCE(dlci->constipated, "%s: queueing from a constipated DLCI",
-+		__func__);
- 	/* Fill in the header */
- 	if (gsm->encoding == 0) {
- 		if (msg->len < 128)
-@@ -944,6 +956,9 @@ static void gsm_dlci_data_sweep(struct gsm_mux *gsm)
- 			break;
- 		dlci = gsm->dlci[i];
- 		if (dlci == NULL || dlci->constipated) {
-+			if (dlci && (debug & 0x20))
-+				pr_info("%s: DLCI %d is constipated",
-+					__func__, i);
- 			i++;
- 			continue;
- 		}
-@@ -973,6 +988,13 @@ static void gsm_dlci_data_kick(struct gsm_dlci *dlci)
- 	unsigned long flags;
- 	int sweep;
- 
-+	if (dlci->constipated) {
-+		if (debug & 0x20)
-+			pr_info("%s: DLCI %d is constipated",
-+				__func__, dlci->addr);
-+		return;
-+	}
-+
- 	spin_lock_irqsave(&dlci->gsm->tx_lock, flags);
- 	/* If we have nothing running then we need to fire up */
- 	sweep = (dlci->gsm->tx_bytes < TX_THRESH_LO);
-@@ -1030,6 +1052,7 @@ static void gsm_process_modem(struct tty_struct *tty, struct gsm_dlci *dlci,
- {
- 	int  mlines = 0;
- 	u8 brk = 0;
-+	int fc;
- 
- 	/* The modem status command can either contain one octet (v.24 signals)
- 	   or two octets (v.24 signals + break signals). The length field will
-@@ -1041,19 +1064,27 @@ static void gsm_process_modem(struct tty_struct *tty, struct gsm_dlci *dlci,
- 	else {
- 		brk = modem & 0x7f;
- 		modem = (modem >> 7) & 0x7f;
--	};
-+	}
- 
- 	/* Flow control/ready to communicate */
--	if (modem & MDM_FC) {
-+	fc = (modem & MDM_FC) || !(modem & MDM_RTR);
-+	if (fc && !dlci->constipated) {
-+		if (debug & 0x20)
-+			pr_info("%s: DLCI %d START constipated (tx_bytes=%d)",
-+				__func__, dlci->addr, dlci->gsm->tx_bytes);
- 		/* Need to throttle our output on this device */
- 		dlci->constipated = 1;
--	}
--	if (modem & MDM_RTC) {
--		mlines |= TIOCM_DSR | TIOCM_DTR;
-+	} else if (!fc && dlci->constipated) {
-+		if (debug & 0x20)
-+			pr_info("%s: DLCI %d END constipated (tx_bytes=%d)",
-+				__func__, dlci->addr, dlci->gsm->tx_bytes);
- 		dlci->constipated = 0;
- 		gsm_dlci_data_kick(dlci);
- 	}
-+
- 	/* Map modem bits */
-+	if (modem & MDM_RTC)
-+		mlines |= TIOCM_DSR | TIOCM_DTR;
- 	if (modem & MDM_RTR)
- 		mlines |= TIOCM_RTS | TIOCM_CTS;
- 	if (modem & MDM_IC)
-@@ -1209,17 +1240,21 @@ static void gsm_control_message(struct gsm_mux *gsm, unsigned int command,
- 		gsm_control_reply(gsm, CMD_TEST, data, clen);
- 		break;
- 	case CMD_FCON:
--		/* Modem wants us to STFU */
--		gsm->constipated = 1;
--		gsm_control_reply(gsm, CMD_FCON, NULL, 0);
--		break;
--	case CMD_FCOFF:
- 		/* Modem can accept data again */
-+		if (debug & 0x20)
-+			pr_info("%s: GSM END constipation", __func__);
- 		gsm->constipated = 0;
--		gsm_control_reply(gsm, CMD_FCOFF, NULL, 0);
-+		gsm_control_reply(gsm, CMD_FCON, NULL, 0);
- 		/* Kick the link in case it is idling */
- 		gsm_data_kick(gsm);
- 		break;
-+	case CMD_FCOFF:
-+		/* Modem wants us to STFU */
-+		if (debug & 0x20)
-+			pr_info("%s: GSM START constipation", __func__);
-+		gsm->constipated = 1;
-+		gsm_control_reply(gsm, CMD_FCOFF, NULL, 0);
-+		break;
- 	case CMD_MSC:
- 		/* Out of band modem line change indicator for a DLCI */
- 		gsm_control_modem(gsm, data, clen);
-@@ -2276,7 +2311,7 @@ static void gsmld_receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 			gsm->error(gsm, *dp, flags);
- 			break;
- 		default:
--			WARN_ONCE("%s: unknown flag %d\n",
-+			WARN_ONCE(1, "%s: unknown flag %d\n",
- 			       tty_name(tty, buf), flags);
- 			break;
- 		}
+ 			entry->offset = obj->gtt_offset;
 
 
