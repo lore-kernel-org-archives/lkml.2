@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932542Ab2JNOqc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:46:32 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46795 "EHLO
+	id S932464Ab2JNOoS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:44:18 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46740 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932467Ab2JNOoT (ORCPT
+	by vger.kernel.org with ESMTP id S932412Ab2JNOoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:44:19 -0400
-Message-Id: <20121014143537.351271985@decadent.org.uk>
+	Sun, 14 Oct 2012 10:44:13 -0400
+Message-Id: <20121014143539.106176918@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:35:59 +0100
+Date: Sun, 14 Oct 2012 15:36:12 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 026/147] [SCSI] hpsa: Use LUN reset instead of target reset
+        Ian Abbott <abbotti@mev.co.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 039/147] staging: comedi: fix memory leak for saved channel list
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,54 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 21e89afd325849eb38adccf382df16cc895911f9 upstream.
+commit c8cad4c89ee3b15935c532210ae6ebb5c0a2734d upstream.
 
-It turns out Smart Array logical drives do not support target
-reset and when the target reset fails, the logical drive will
-be taken off line.  Symptoms look like this:
+When `do_cmd_ioctl()` allocates memory for the kernel copy of a channel
+list, it frees any previously allocated channel list in
+`async->cmd.chanlist` and replaces it with the new one.  However, if the
+device is ever removed (or "detached") the cleanup code in
+`cleanup_device()` in "drivers.c" does not free this memory so it is
+lost.
 
-hpsa 0000:03:00.0: Abort request on C1:B0:T0:L0
-hpsa 0000:03:00.0: resetting device 1:0:0:0
-hpsa 0000:03:00.0: cp ffff880037c56000 is reported invalid (probably means target device no longer present)
-hpsa 0000:03:00.0: resetting device failed.
-sd 1:0:0:0: Device offlined - not ready after error recovery
-sd 1:0:0:0: rejecting I/O to offline device
-EXT3-fs error (device sdb1): read_block_bitmap:
+A sensible place to free the kernel copy of the channel list is in
+`do_become_nonbusy()` as at that point the comedi asynchronous command
+associated with the channel list is no longer valid.  Free the channel
+list in `do_become_nonbusy()` instead of `do_cmd_ioctl()` and clear the
+pointer to prevent it being freed more than once.
 
-LUN reset is supported though, and is what we should be using.
-Target reset is also disruptive in shared SAS situations,
-for example, an external MSA1210m which does support target
-reset attached to Smart Arrays in multiple hosts -- a target
-reset from one host is disruptive to other hosts as all LUNs
-on the target will be reset and will abort all outstanding i/os
-back to all the attached hosts.  So we should use LUN reset,
-not target reset.
+Note that `cleanup_device()` could be called at an inappropriate time
+while the comedi device is open, but that's a separate bug not related
+to this this patch.
 
-Tested this with Smart Array logical drives and with tape drives.
-Not sure how this bug survived since 2009, except it must be very
-rare for a Smart Array to require more than 30s to complete a request.
-
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/hpsa.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/comedi/comedi_fops.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 796482b..015a6c8 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -3265,7 +3265,7 @@ static void fill_cmd(struct CommandList *c, u8 cmd, struct ctlr_info *h,
- 			c->Request.Timeout = 0; /* Don't time out */
- 			memset(&c->Request.CDB[0], 0, sizeof(c->Request.CDB));
- 			c->Request.CDB[0] =  cmd;
--			c->Request.CDB[1] = 0x03;  /* Reset target above */
-+			c->Request.CDB[1] = HPSA_RESET_TYPE_LUN;
- 			/* If bytes 4-7 are zero, it means reset the */
- 			/* LunID device */
- 			c->Request.CDB[4] = 0x00;
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1088,7 +1088,6 @@ static int do_cmd_ioctl(struct comedi_de
+ 		goto cleanup;
+ 	}
+ 
+-	kfree(async->cmd.chanlist);
+ 	async->cmd = user_cmd;
+ 	async->cmd.data = NULL;
+ 	/* load channel/gain list */
+@@ -1833,6 +1832,8 @@ void do_become_nonbusy(struct comedi_dev
+ 	if (async) {
+ 		comedi_reset_async_buf(async);
+ 		async->inttrig = NULL;
++		kfree(async->cmd.chanlist);
++		async->cmd.chanlist = NULL;
+ 	} else {
+ 		printk(KERN_ERR
+ 		       "BUG: (?) do_become_nonbusy called with async=0\n");
 
 
