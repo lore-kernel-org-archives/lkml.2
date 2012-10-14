@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab2JNUl7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 16:41:59 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:53877 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754036Ab2JNUl6 (ORCPT
+	id S1754405Ab2JNUx7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 16:53:59 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:44114 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754036Ab2JNUx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 16:41:58 -0400
-Date: Sun, 14 Oct 2012 22:40:57 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: dmarkh@cfl.rr.com
-Cc: markh@compro.net, linux-kernel@vger.kernel.org,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Subject: Re: Intel graphics drm issue?
-Message-ID: <20121014224057.2033a769@neptune.home>
-In-Reply-To: <507B0B16.4010900@cfl.rr.com>
-References: <507812E8.3060607@compro.net>
-	<20121012231459.166e29fd@neptune.home>
-	<5079B97C.7020401@cfl.rr.com>
-	<5079BE5C.8020401@cfl.rr.com>
-	<20121014104138.7e8a9c59@neptune.home>
-	<507A997D.7070508@cfl.rr.com>
-	<20121014130323.06f0225d@neptune.home>
-	<507AEE4A.1000907@cfl.rr.com>
-	<20121014192253.5a7517ef@neptune.home>
-	<507AFE69.70405@cfl.rr.com>
-	<20121014201941.22284249@neptune.home>
-	<507B0B16.4010900@cfl.rr.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.12; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 14 Oct 2012 16:53:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFyGuy8P4Uaanmv7DncjsN6cvQxvWrrMKKnF=67J+BkshQ@mail.gmail.com>
+References: <87fw5m7ipz.fsf@rustcorp.com.au> <CA+55aFyGuy8P4Uaanmv7DncjsN6cvQxvWrrMKKnF=67J+BkshQ@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 14 Oct 2012 13:53:36 -0700
+X-Google-Sender-Auth: uLCtLU52ao8D2EKYPbSRfh4m-PA
+Message-ID: <CA+55aFyVcTT4tKTVvhzXz3t4uw=MDLU00NAAOacWt6i3xovERg@mail.gmail.com>
+Subject: Re: [PULL] modules
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: LKML <linux-kernel@vger.kernel.org>, Alex Lyashkov <umka@cloudlinux.com>,
+        Arnd Bergmann <arnd@arndb.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        David Howells <dhowells@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Josh Boyer <jwboyer@redhat.com>, linux-crypto@vger.kernel.org,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Milan Broz <mbroz@redhat.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Sam Ravnborg <sam@ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 14 October 2012 Mark Hounschell <dmarkh@cfl.rr.com> wrote:
-> I gave it a try. I don't think it liked my kernel cmdline. dmesg attached. 
-> There is a lot more in there now that nomodeset is gone and the debug is 
-> turned on.
-> 
-> # ls -al /lib/firmware/edid/lg42lb9df.edid
-> -rw-r--r-- 1 root root 1024 Oct 14  2012 /lib/firmware/edid/lg42lb9df.edid
-> 
-> ## cat /proc/cmdline
-> root=/dev/disk/by-id/ata-INTEL_SSDSC2CW060A3_CVCV205106EB060AGN-part4 
-> noresume splash=silent quiet apm=off vga=normal drm.debug=0xe irqpoll 
-> drm_kms_helper.edid_firmware=edid/lg42lb9df.edid
-> 
-> 
-> from attached dmesg:
-> 1.833032] drm_kms_helper: Unknown parameter `edid'
+On Sun, Oct 14, 2012 at 1:11 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> I've pulled and resolved the branch, and I'm going through it now, but
+> I'd like this verified before I push out if it all looks fine..
 
-As your drm drivers seem to all be built-in (according to kernel timings)
-you will have to build the EDID firmware into the kernel as well (see
-CONFIG_EXTRA_FIRMWARE), otherwise it probably can't be loaded (unless Linus'
-firmware loading patch is already in 3.6.2 and root filesystem/initrd is
-ready at that time).
+Hmm. So this thing makes me wonder:
 
-Did you set CONFIG_DRM_LOAD_EDID_FIRMWARE?
-If not, that may be the reason for unknown parameter `edid' error.
+        /* Not having a signature is only an error if we're strict. */
+        if (err < 0 && fips_enabled)
+                panic("Module verification failed with error %d in FIPS mode\n",
+                      err);
 
+do we really want to panic (even in fips_enabled mode)?
 
-But I saw I mis-remembered side of EDID blobs, they are just 128 bytes
-per block, not 512 (seems I was thinking disk sector sizes),
-thus you should just get 256 bytes output.
+Sounds like it will just kill the machine if we ever end up having an
+unsigned module by mistake anywhere.
 
-Just truncating the file to 256 bytes will do. You may also
-change your .c file to have
-  uint8_t firmware[] = {
-     ...
-  };
-  ...
-  fwrite(firmware, sizeof(firmware), 1, fd);
-  ...
+I realize that fips_enabled is only for crazy people, but it's exactly
+code like this that limits it to only crazy people. Is there some
+*reason* for this?
 
-that way compiler gets numbers right :)
-
-Kernel code rejects edid with unexpected size! Thus it would have
-complained if it had tried to load it with a size of 1k.
-
-Bruno
+                 Linus
