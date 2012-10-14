@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab2JNOue (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:50:34 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46716 "EHLO
+	id S1754765Ab2JNOub (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:50:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46717 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932117Ab2JNOoE (ORCPT
+	by vger.kernel.org with ESMTP id S932366Ab2JNOoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:44:04 -0400
-Message-Id: <20121014143540.098942410@decadent.org.uk>
+Message-Id: <20121014143539.954271222@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:19 +0100
+Date: Sun, 14 Oct 2012 15:36:18 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Steffen Maier <maier@linux.vnet.ibm.com>,
         Martin Peschke <mpeschke@linux.vnet.ibm.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 046/147] [SCSI] zfcp: Bounds checking for deferred error trace
+Subject: [ 045/147] [SCSI] zfcp: Make trace record tags unique
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,74 +31,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steffen Maier <maier@linux.vnet.ibm.com>
 
-commit 01e60527f0a49b3d7df603010bd6079bb4b6cf07 upstream.
+commit 0100998dbfe6dfcd90a6e912ca7ed6f255d48f25 upstream.
 
-The pl vector has scount elements, i.e. pl[scount-1] is the last valid
-element. For maximum sized requests, payload->counter == scount after
-the last loop iteration. Therefore, do bounds checking first (with
-boolean shortcut) to not access the invalid element pl[scount].
-
-Do not trust the maximum sbale->scount value from the HBA
-but ensure we won't access the pl vector out of our allocated bounds.
-While at it, clean up scoping and prevent unnecessary memset.
-
-Minor fix for 86a9668a8d29ea711613e1cb37efa68e7c4db564
-"[SCSI] zfcp: support for hardware data router"
+Duplicate fssrh_2 from a54ca0f62f953898b05549391ac2a8a4dad6482b
+"[SCSI] zfcp: Redesign of the debug tracing for HBA records."
+complicates distinction of generic status read response from
+local link up.
+Duplicate fsscth1 from 2c55b750a884b86dea8b4cc5f15e1484cc47a25c
+"[SCSI] zfcp: Redesign of the debug tracing for SAN records."
+complicates distinction of good common transport response from
+invalid port handle.
 
 Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
 Reviewed-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/s390/scsi/zfcp_dbf.c  |    2 +-
- drivers/s390/scsi/zfcp_qdio.c |   16 ++++++++++------
- 2 files changed, 11 insertions(+), 7 deletions(-)
+ drivers/s390/scsi/zfcp_fsf.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/s390/scsi/zfcp_dbf.c b/drivers/s390/scsi/zfcp_dbf.c
-index 3c1d220..c6e47d5 100644
---- a/drivers/s390/scsi/zfcp_dbf.c
-+++ b/drivers/s390/scsi/zfcp_dbf.c
-@@ -191,7 +191,7 @@ void zfcp_dbf_hba_def_err(struct zfcp_adapter *adapter, u64 req_id, u16 scount,
- 	length = min((u16)sizeof(struct qdio_buffer),
- 		     (u16)ZFCP_DBF_PAY_MAX_REC);
+diff --git a/drivers/s390/scsi/zfcp_fsf.c b/drivers/s390/scsi/zfcp_fsf.c
+index 30436d5..6e2892e 100644
+--- a/drivers/s390/scsi/zfcp_fsf.c
++++ b/drivers/s390/scsi/zfcp_fsf.c
+@@ -219,7 +219,7 @@ static void zfcp_fsf_status_read_handler(struct zfcp_fsf_req *req)
+ 		return;
+ 	}
  
--	while ((char *)pl[payload->counter] && payload->counter < scount) {
-+	while (payload->counter < scount && (char *)pl[payload->counter]) {
- 		memcpy(payload->data, (char *)pl[payload->counter], length);
- 		debug_event(dbf->pay, 1, payload, zfcp_dbf_plen(length));
- 		payload->counter++;
-diff --git a/drivers/s390/scsi/zfcp_qdio.c b/drivers/s390/scsi/zfcp_qdio.c
-index b9fffc8..50b5615 100644
---- a/drivers/s390/scsi/zfcp_qdio.c
-+++ b/drivers/s390/scsi/zfcp_qdio.c
-@@ -102,18 +102,22 @@ static void zfcp_qdio_int_resp(struct ccw_device *cdev, unsigned int qdio_err,
- {
- 	struct zfcp_qdio *qdio = (struct zfcp_qdio *) parm;
- 	struct zfcp_adapter *adapter = qdio->adapter;
--	struct qdio_buffer_element *sbale;
- 	int sbal_no, sbal_idx;
--	void *pl[ZFCP_QDIO_MAX_SBALS_PER_REQ + 1];
--	u64 req_id;
--	u8 scount;
+-	zfcp_dbf_hba_fsf_uss("fssrh_2", req);
++	zfcp_dbf_hba_fsf_uss("fssrh_4", req);
  
- 	if (unlikely(qdio_err)) {
--		memset(pl, 0, ZFCP_QDIO_MAX_SBALS_PER_REQ * sizeof(void *));
- 		if (zfcp_adapter_multi_buffer_active(adapter)) {
-+			void *pl[ZFCP_QDIO_MAX_SBALS_PER_REQ + 1];
-+			struct qdio_buffer_element *sbale;
-+			u64 req_id;
-+			u8 scount;
-+
-+			memset(pl, 0,
-+			       ZFCP_QDIO_MAX_SBALS_PER_REQ * sizeof(void *));
- 			sbale = qdio->res_q[idx]->element;
- 			req_id = (u64) sbale->addr;
--			scount = sbale->scount + 1; /* incl. signaling SBAL */
-+			scount = min(sbale->scount + 1,
-+				     ZFCP_QDIO_MAX_SBALS_PER_REQ + 1);
-+				     /* incl. signaling SBAL */
+ 	switch (sr_buf->status_type) {
+ 	case FSF_STATUS_READ_PORT_CLOSED:
+@@ -915,7 +915,7 @@ static void zfcp_fsf_send_ct_handler(struct zfcp_fsf_req *req)
  
- 			for (sbal_no = 0; sbal_no < scount; sbal_no++) {
- 				sbal_idx = (idx + sbal_no) %
+ 	switch (header->fsf_status) {
+         case FSF_GOOD:
+-		zfcp_dbf_san_res("fsscth1", req);
++		zfcp_dbf_san_res("fsscth2", req);
+ 		ct->status = 0;
+ 		break;
+         case FSF_SERVICE_CLASS_NOT_SUPPORTED:
 
 
