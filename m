@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab2JNOn2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:43:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46496 "EHLO
+	id S1754966Ab2JNO5Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:57:25 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46533 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932180Ab2JNOnX (ORCPT
+	by vger.kernel.org with ESMTP id S1754554Ab2JNOn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:43:23 -0400
-Message-Id: <20121014143543.563378148@decadent.org.uk>
+	Sun, 14 Oct 2012 10:43:28 -0400
+Message-Id: <20121014143543.169892076@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:45 +0100
+Date: Sun, 14 Oct 2012 15:36:42 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 072/147] drm/radeon: Add MSI quirk for gateway RS690
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [ 069/147] coredump: prevent double-free on an error path in core dumper
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,35 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
 
-commit 3a6d59df80897cc87812b6826d70085905bed013 upstream.
+commit f34f9d186df35e5c39163444c43b4fc6255e39c5 upstream.
 
-Fixes another system on:
-https://bugs.freedesktop.org/show_bug.cgi?id=37679
+In !CORE_DUMP_USE_REGSET case, if elf_note_info_init fails to allocate
+memory for info->fields, it frees already allocated stuff and returns
+error to its caller, fill_note_info.  Which in turn returns error to its
+caller, elf_core_dump.  Which jumps to cleanup label and calls
+free_note_info, which will happily try to free all info->fields again.
+BOOM.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+This is the fix.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Venu Byravarasu <vbyravarasu@nvidia.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/radeon_irq_kms.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/binfmt_elf.c |   19 ++++---------------
+ 1 file changed, 4 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_irq_kms.c b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-index c4e638d..2da4465 100644
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -202,6 +202,12 @@ static bool radeon_msi_ok(struct radeon_device *rdev)
- 	    (rdev->pdev->subsystem_device == 0x01fd))
- 		return true;
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 1b52956..0225fdd 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -1696,30 +1696,19 @@ static int elf_note_info_init(struct elf_note_info *info)
+ 		return 0;
+ 	info->psinfo = kmalloc(sizeof(*info->psinfo), GFP_KERNEL);
+ 	if (!info->psinfo)
+-		goto notes_free;
++		return 0;
+ 	info->prstatus = kmalloc(sizeof(*info->prstatus), GFP_KERNEL);
+ 	if (!info->prstatus)
+-		goto psinfo_free;
++		return 0;
+ 	info->fpu = kmalloc(sizeof(*info->fpu), GFP_KERNEL);
+ 	if (!info->fpu)
+-		goto prstatus_free;
++		return 0;
+ #ifdef ELF_CORE_COPY_XFPREGS
+ 	info->xfpu = kmalloc(sizeof(*info->xfpu), GFP_KERNEL);
+ 	if (!info->xfpu)
+-		goto fpu_free;
++		return 0;
+ #endif
+ 	return 1;
+-#ifdef ELF_CORE_COPY_XFPREGS
+- fpu_free:
+-	kfree(info->fpu);
+-#endif
+- prstatus_free:
+-	kfree(info->prstatus);
+- psinfo_free:
+-	kfree(info->psinfo);
+- notes_free:
+-	kfree(info->notes);
+-	return 0;
+ }
  
-+	/* Gateway RS690 only seems to work with MSIs. */
-+	if ((rdev->pdev->device == 0x791f) &&
-+	    (rdev->pdev->subsystem_vendor == 0x107b) &&
-+	    (rdev->pdev->subsystem_device == 0x0185))
-+		return true;
-+
- 	/* RV515 seems to have MSI issues where it loses
- 	 * MSI rearms occasionally. This leads to lockups and freezes.
- 	 * disable it by default.
+ static int fill_note_info(struct elfhdr *elf, int phdrs,
 
 
