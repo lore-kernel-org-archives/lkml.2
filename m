@@ -1,156 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079Ab2JNPBj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:01:39 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:39802 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754163Ab2JNPBg convert rfc822-to-8bit (ORCPT
+	id S1755125Ab2JNPB4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:01:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46465 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932122Ab2JNOnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 11:01:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <CABjyUiLyfHFE6ew5JPaH4YSz5k1sm4HnZFm4e12v=_Pcp6jGNw@mail.gmail.com>
-References: <CABjyUiLyfHFE6ew5JPaH4YSz5k1sm4HnZFm4e12v=_Pcp6jGNw@mail.gmail.com>
-Date: Sun, 14 Oct 2012 12:01:33 -0300
-Message-ID: <CALF0-+U=fcMnrxAxmFK-RfkbfE-j45N3TL4RJ2w+q2bEm0omPQ@mail.gmail.com>
-Subject: Re: PROBLEM: Ali m5602 won't compile (3.4.9-gentoo)
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Yuriy Davygora <davygora@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, linux-media <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Sun, 14 Oct 2012 10:43:14 -0400
+Message-Id: <20121014143545.019077438@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Sun, 14 Oct 2012 15:36:56 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Patrick McHardy <kaber@trash.net>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [ 083/147] IPoIB: Fix use-after-free of multicast object
+In-Reply-To: <20121014143533.742627615@decadent.org.uk>
+X-SA-Exim-Connect-IP: 77.75.106.1
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding media list in Cc)
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-On Sun, Oct 14, 2012 at 11:39 AM, Yuriy Davygora
-<davygora@googlemail.com> wrote:
->   Hello,
->
->   I have trouble compiling the 3.4.9 kernel with genkernel (gentoo)
-> having enabled the Ali Corp webcam (m5602) driver.
->
->   Here's the output of the ver_linux script:
->
-> =================================
->
-> yuriy-newlaptop linux # sh scripts/ver_linux
-> If some fields are empty or look unusual you may have an old version.
-> Compare to the current minimal requirements in Documentation/Changes.
->
-> Linux yuriy-newlaptop 3.4.9-gentoo #1 SMP Sat Oct 13 10:01:59 CEST
-> 2012 x86_64 Intel(R) Core(TM) i3 CPU M 380 @ 2.53GHz GenuineIntel
-> GNU/Linux
->
-> Gnu C                  4.5.4
-> Gnu make               3.82
-> binutils               2.22
-> util-linux             2.21.2
-> mount                  support
-> module-init-tools      3.16
-> e2fsprogs              1.42
-> Linux C Library        2.15
-> Dynamic linker (ldd)   2.15
-> Procps                 3.2.8
-> Net-tools              1.60_p20110409135728
-> Kbd                    1.15.3wip
-> Sh-utils               8.16
-> wireless-tools         29
-> Modules Loaded         ipv6 acpi_cpufreq i2c_i801 coretemp joydev
-> freq_table battery ac pcspkr microcode mperf processor thermal
-> sha256_generic libiscsi scsi_transport_iscsi tg3 libphy e1000 fuse nfs
-> lockd sunrpc jfs raid10 raid456 async_raid6_recov async_memcpy
-> async_pq async_xor xor async_tx raid6_pq raid1 raid0 dm_snapshot
-> dm_crypt dm_mirror dm_region_hash dm_log dm_mod scsi_wait_scan
-> hid_sunplus hid_sony hid_samsung hid_pl hid_petalynx hid_monterey
-> hid_microsoft hid_logitech hid_gyration hid_ezkey hid_cypress
-> hid_chicony hid_cherry hid_belkin hid_apple hid_a4tech sl811_hcd
-> usbhid ohci_hcd ssb uhci_hcd usb_storage ehci_hcd usbcore usb_common
-> aic94xx libsas qla2xxx megaraid_sas megaraid_mbox megaraid_mm megaraid
-> aacraid sx8 DAC960 cciss 3w_9xxx 3w_xxxx mptsas scsi_transport_sas
-> mptfc scsi_transport_fc scsi_tgt mptspi mptscsih mptbase atp870u
-> dc395x qla1280 imm parport dmx3191d sym53c8xx gdth advansys initio
-> BusLogic arcmsr aic7xxx aic79xx scsi_transport_spi sg pdc_adma
-> sata_inic162x sata_mv ata_piix ahci libahci sata_qstor sata_vsc
-> sata_uli sata_sis sata_sx4 sata_nv sata_via sata_svw sata_sil24
-> sata_sil sata_promise pata_sl82c105 pata_cs5530 pata_cs5520 pata_via
-> pata_jmicron pata_marvell pata_sis pata_netcell pata_sc1200
-> pata_pdc202xx_old pata_triflex pata_atiixp pata_opti pata_amd pata_ali
-> pata_it8213 pata_pcmcia pcmcia pcmcia_core pata_ns87415 pata_ns87410
-> pata_serverworks pata_artop pata_it821x pata_optidma pata_hpt3x2n
-> pata_hpt3x3 pata_hpt37x pata_hpt366 pata_cmd64x pata_efar pata_rz1000
-> pata_sil680 pata_radisys pata_pdc2027x pata_mpiix libata
->
-> =================================
->
->   My current kernel configuration is attached to this mail. What I
-> tried to do, was to enable the Ali Corp webcam (m5602) driver using
-> menuconfig as follows:
->
->   Device Drivers --->
->     <*> Multimedia Support --->
->       <*> Video For Linux (NEW)
->       [*] Video capture adapters (NEW) --->
->         [*] V4L USB devices (NEW) --->
->           <*> GSPCA based webcams (NEW) --->
->             <*> Ali USB m5602 Camera Driver
->
->   Here's the relevant output of genkernel:
->
-> =================================
->
-> *         >> Compiling 3.4.9-gentoo bzImage...
-> * ERROR: Failed to compile the "bzImage" target...
->
-> * -- Grepping log... --
->
->   HOSTCC  scripts/mod/file2alias.o
->   SHIPPED scripts/genksyms/parse.tab.h
->   SHIPPED scripts/genksyms/parse.tab.c
->   HOSTCC  scripts/genksyms/lex.lex.o
-> scripts/genksyms/lex.lex.c_shipped: In function ‘yylex1’:
-> scripts/genksyms/lex.lex.c_shipped:904:1: warning: ignoring return
-> value of ‘fwrite’, declared with attribute warn_unused_result
-> --
->   CC      fs/ext4/hash.o
->   CC      block/blk-map.o
->   CC      fs/ext4/resize.o
->   CC      block/blk-exec.o
-> fs/ext4/resize.c: In function ‘ext4_update_super’:
-> fs/ext4/resize.c:1144:9: warning: unused variable ‘ret’
-> --
->   CC      drivers/video/console/font_8x8.o
->   CC      drivers/video/console/font_8x16.o
->   CC      drivers/video/console/softcursor.o
->   CC      net/ipv4/udplite.o
->   CC      drivers/video/console/fbcondecor.o
-> drivers/video/console/fbcondecor.c:511:6: warning: function
-> declaration isn’t a prototype
-> --
->   CC      net/sched/sch_blackhole.o
->   CC      net/mac80211/driver-trace.o
->   CC      net/sched/cls_api.o
->   CC      net/mac80211/mlme.o
-> net/mac80211/mlme.c: In function ‘ieee80211_prep_connection’:
-> net/mac80211/mlme.c:3058:19: warning: ‘sta’ may be used uninitialized
-> in this function
-> --
-> (.text+0x16d770): undefined reference to `usb_control_msg'
-> drivers/built-in.o: In function `sd_driver_init':
-> m5602_core.c:(.init.text+0x91ad): undefined reference to `usb_register_driver'
-> drivers/built-in.o: In function `sd_driver_exit':
-> m5602_core.c:(.exit.text+0xed3): undefined reference to `usb_deregister'
-> make: *** [.tmp_vmlinux1] Error 1
-> * Gentoo Linux Genkernel; Version 3.4.24_p2
-> * Running with options: all --menuconfig
->
-> * ERROR: Failed to compile the "bzImage" target...
->
-> =================================
->
->   Files containing output about the environment are also attached to
-> this mail. Thank you very much in advance!
->
->   Best regards,
->   Yuriy
+------------------
+
+From: Patrick McHardy <kaber@trash.net>
+
+commit bea1e22df494a729978e7f2c54f7bda328f74bc3 upstream.
+
+Fix a crash in ipoib_mcast_join_task().  (with help from Or Gerlitz)
+
+Commit c8c2afe360b7 ("IPoIB: Use rtnl lock/unlock when changing device
+flags") added a call to rtnl_lock() in ipoib_mcast_join_task(), which
+is run from the ipoib_workqueue, and hence the workqueue can't be
+flushed from the context of ipoib_stop().
+
+In the current code, ipoib_stop() (which doesn't flush the workqueue)
+calls ipoib_mcast_dev_flush(), which goes and deletes all the
+multicast entries.  This takes place without any synchronization with
+a possible running instance of ipoib_mcast_join_task() for the same
+ipoib device, leading to a crash due to NULL pointer dereference.
+
+Fix this by making sure that the workqueue is flushed before
+ipoib_mcast_dev_flush() is called.  To make that possible, we move the
+RTNL-lock wrapped code to ipoib_mcast_join_finish().
+
+Signed-off-by: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/infiniband/ulp/ipoib/ipoib_main.c      |    2 +-
+ drivers/infiniband/ulp/ipoib/ipoib_multicast.c |   19 ++++++++++---------
+ 2 files changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/infiniband/ulp/ipoib/ipoib_main.c b/drivers/infiniband/ulp/ipoib/ipoib_main.c
+index 1e19b5a..ea0dfc7 100644
+--- a/drivers/infiniband/ulp/ipoib/ipoib_main.c
++++ b/drivers/infiniband/ulp/ipoib/ipoib_main.c
+@@ -150,7 +150,7 @@ static int ipoib_stop(struct net_device *dev)
+ 
+ 	netif_stop_queue(dev);
+ 
+-	ipoib_ib_dev_down(dev, 0);
++	ipoib_ib_dev_down(dev, 1);
+ 	ipoib_ib_dev_stop(dev, 0);
+ 
+ 	if (!test_bit(IPOIB_FLAG_SUBINTERFACE, &priv->flags)) {
+diff --git a/drivers/infiniband/ulp/ipoib/ipoib_multicast.c b/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
+index 7536724..cecb98a 100644
+--- a/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
++++ b/drivers/infiniband/ulp/ipoib/ipoib_multicast.c
+@@ -175,7 +175,9 @@ static int ipoib_mcast_join_finish(struct ipoib_mcast *mcast,
+ 
+ 	mcast->mcmember = *mcmember;
+ 
+-	/* Set the cached Q_Key before we attach if it's the broadcast group */
++	/* Set the multicast MTU and cached Q_Key before we attach if it's
++	 * the broadcast group.
++	 */
+ 	if (!memcmp(mcast->mcmember.mgid.raw, priv->dev->broadcast + 4,
+ 		    sizeof (union ib_gid))) {
+ 		spin_lock_irq(&priv->lock);
+@@ -183,10 +185,17 @@ static int ipoib_mcast_join_finish(struct ipoib_mcast *mcast,
+ 			spin_unlock_irq(&priv->lock);
+ 			return -EAGAIN;
+ 		}
++		priv->mcast_mtu = IPOIB_UD_MTU(ib_mtu_enum_to_int(priv->broadcast->mcmember.mtu));
+ 		priv->qkey = be32_to_cpu(priv->broadcast->mcmember.qkey);
+ 		spin_unlock_irq(&priv->lock);
+ 		priv->tx_wr.wr.ud.remote_qkey = priv->qkey;
+ 		set_qkey = 1;
++
++		if (!ipoib_cm_admin_enabled(dev)) {
++			rtnl_lock();
++			dev_set_mtu(dev, min(priv->mcast_mtu, priv->admin_mtu));
++			rtnl_unlock();
++		}
+ 	}
+ 
+ 	if (!test_bit(IPOIB_MCAST_FLAG_SENDONLY, &mcast->flags)) {
+@@ -574,14 +583,6 @@ void ipoib_mcast_join_task(struct work_struct *work)
+ 		return;
+ 	}
+ 
+-	priv->mcast_mtu = IPOIB_UD_MTU(ib_mtu_enum_to_int(priv->broadcast->mcmember.mtu));
+-
+-	if (!ipoib_cm_admin_enabled(dev)) {
+-		rtnl_lock();
+-		dev_set_mtu(dev, min(priv->mcast_mtu, priv->admin_mtu));
+-		rtnl_unlock();
+-	}
+-
+ 	ipoib_dbg_mcast(priv, "successfully joined all multicast groups\n");
+ 
+ 	clear_bit(IPOIB_MCAST_RUN, &priv->flags);
+
+
