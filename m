@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab2JNPGA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:06:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46349 "EHLO
+	id S1754568Ab2JNOmi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:42:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46289 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754570Ab2JNOmj (ORCPT
+	by vger.kernel.org with ESMTP id S1754186Ab2JNOmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:42:39 -0400
-Message-Id: <20121014143548.098973280@decadent.org.uk>
+	Sun, 14 Oct 2012 10:42:33 -0400
+Message-Id: <20121014143548.761520731@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:19 +0100
+Date: Sun, 14 Oct 2012 15:37:24 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Davidlohr Bueso <dave@gnu.org>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 106/147] lib/gcd.c: prevent possible div by 0
+        Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>,
+        Vinod Koul <vinod.koul@linux.intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 111/147] ALSA: aloop - add locking to timer access
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,39 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Davidlohr Bueso <dave@gnu.org>
+From: Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>
 
-commit e96875677fb2b7cb739c5d7769824dff7260d31d upstream.
+commit d4f1e48bd11e3df6a26811f7a1f06c4225d92f7d upstream.
 
-Account for all properties when a and/or b are 0:
-gcd(0, 0) = 0
-gcd(a, 0) = a
-gcd(0, b) = b
+When the loopback timer handler is running, calling del_timer() (for STOP
+trigger) will not wait for the handler to complete before deactivating the
+timer. The timer gets rescheduled in the handler as usual. Then a subsequent
+START trigger will try to start the timer using add_timer() with a timer pending
+leading to a kernel panic.
 
-Fixes no known problems in current kernels.
+Serialize the calls to add_timer() and del_timer() using a spin lock to avoid
+this.
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>
+Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- lib/gcd.c |    3 +++
- 1 file changed, 3 insertions(+)
+ sound/drivers/aloop.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/lib/gcd.c b/lib/gcd.c
-index cce4f3c..3657f12 100644
---- a/lib/gcd.c
-+++ b/lib/gcd.c
-@@ -9,6 +9,9 @@ unsigned long gcd(unsigned long a, unsigned long b)
+--- a/sound/drivers/aloop.c
++++ b/sound/drivers/aloop.c
+@@ -119,6 +119,7 @@ struct loopback_pcm {
+ 	unsigned int period_size_frac;
+ 	unsigned long last_jiffies;
+ 	struct timer_list timer;
++	spinlock_t timer_lock;
+ };
  
- 	if (a < b)
- 		swap(a, b);
-+
-+	if (!b)
-+		return a;
- 	while ((r = a % b) != 0) {
- 		a = b;
- 		b = r;
+ static struct platform_device *devices[SNDRV_CARDS];
+@@ -169,6 +170,7 @@ static void loopback_timer_start(struct
+ 	unsigned long tick;
+ 	unsigned int rate_shift = get_rate_shift(dpcm);
+ 
++	spin_lock(&dpcm->timer_lock);
+ 	if (rate_shift != dpcm->pcm_rate_shift) {
+ 		dpcm->pcm_rate_shift = rate_shift;
+ 		dpcm->period_size_frac = frac_pos(dpcm, dpcm->pcm_period_size);
+@@ -181,12 +183,15 @@ static void loopback_timer_start(struct
+ 	tick = (tick + dpcm->pcm_bps - 1) / dpcm->pcm_bps;
+ 	dpcm->timer.expires = jiffies + tick;
+ 	add_timer(&dpcm->timer);
++	spin_unlock(&dpcm->timer_lock);
+ }
+ 
+ static inline void loopback_timer_stop(struct loopback_pcm *dpcm)
+ {
++	spin_lock(&dpcm->timer_lock);
+ 	del_timer(&dpcm->timer);
+ 	dpcm->timer.expires = 0;
++	spin_unlock(&dpcm->timer_lock);
+ }
+ 
+ #define CABLE_VALID_PLAYBACK	(1 << SNDRV_PCM_STREAM_PLAYBACK)
+@@ -659,6 +664,7 @@ static int loopback_open(struct snd_pcm_
+ 	dpcm->substream = substream;
+ 	setup_timer(&dpcm->timer, loopback_timer_function,
+ 		    (unsigned long)dpcm);
++	spin_lock_init(&dpcm->timer_lock);
+ 
+ 	cable = loopback->cables[substream->number][dev];
+ 	if (!cable) {
 
 
