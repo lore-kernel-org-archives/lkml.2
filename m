@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754966Ab2JNO5Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:57:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46533 "EHLO
+	id S1754826Ab2JNO5X (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:57:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46539 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754554Ab2JNOn2 (ORCPT
+	by vger.kernel.org with ESMTP id S932218Ab2JNOn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:43:28 -0400
-Message-Id: <20121014143543.169892076@decadent.org.uk>
+Message-Id: <20121014143544.091971693@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:42 +0100
+Date: Sun, 14 Oct 2012 15:36:49 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [ 069/147] coredump: prevent double-free on an error path in core dumper
+        Seth Forshee <seth.forshee@canonical.com>,
+        Daniel Kurtz <djkurtz@chromium.org>, Alan Swanson <swanson@ukfsn.org>,
+        Arteom <arutemus@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [ 076/147] Input: synaptics - adjust threshold for treating position values as
+ negative
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,66 +31,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Denys Vlasenko <vda.linux@googlemail.com>
+From: Seth Forshee <seth.forshee@canonical.com>
 
-commit f34f9d186df35e5c39163444c43b4fc6255e39c5 upstream.
+commit 824efd37415961d38821ecbd9694e213fb2e8b32 upstream.
 
-In !CORE_DUMP_USE_REGSET case, if elf_note_info_init fails to allocate
-memory for info->fields, it frees already allocated stuff and returns
-error to its caller, fill_note_info.  Which in turn returns error to its
-caller, elf_core_dump.  Which jumps to cleanup label and calls
-free_note_info, which will happily try to free all info->fields again.
-BOOM.
+Commit c039450 (Input: synaptics - handle out of bounds values from the
+hardware) caused any hardware reported values over 7167 to be treated as
+a wrapped-around negative value. It turns out that some firmware uses
+the value 8176 to indicate a finger near the edge of the touchpad whose
+actual position cannot be determined. This value now gets treated as
+negative, which can cause pointer jumps and broken edge scrolling on
+these machines.
 
-This is the fix.
+I only know of one touchpad which reports negative values, and this
+hardware never reports any value lower than -8 (i.e. 8184). Moving the
+threshold for treating a value as negative up to 8176 should work fine
+then for any hardware we currently know about, and since we're dealing
+with unspecified behavior it's probably the best we can do. The special
+8176 value is also likely to result in sudden jumps in position, so
+let's also clamp this to the maximum specified value for the axis.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Venu Byravarasu <vbyravarasu@nvidia.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+BugLink: http://bugs.launchpad.net/bugs/1046512
+https://bugzilla.kernel.org/show_bug.cgi?id=46371
+
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
+Tested-by: Alan Swanson <swanson@ukfsn.org>
+Tested-by: Arteom <arutemus@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/binfmt_elf.c |   19 ++++---------------
- 1 file changed, 4 insertions(+), 15 deletions(-)
+ drivers/input/mouse/synaptics.c |   31 +++++++++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 8 deletions(-)
 
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index 1b52956..0225fdd 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -1696,30 +1696,19 @@ static int elf_note_info_init(struct elf_note_info *info)
- 		return 0;
- 	info->psinfo = kmalloc(sizeof(*info->psinfo), GFP_KERNEL);
- 	if (!info->psinfo)
--		goto notes_free;
-+		return 0;
- 	info->prstatus = kmalloc(sizeof(*info->prstatus), GFP_KERNEL);
- 	if (!info->prstatus)
--		goto psinfo_free;
-+		return 0;
- 	info->fpu = kmalloc(sizeof(*info->fpu), GFP_KERNEL);
- 	if (!info->fpu)
--		goto prstatus_free;
-+		return 0;
- #ifdef ELF_CORE_COPY_XFPREGS
- 	info->xfpu = kmalloc(sizeof(*info->xfpu), GFP_KERNEL);
- 	if (!info->xfpu)
--		goto fpu_free;
-+		return 0;
- #endif
- 	return 1;
--#ifdef ELF_CORE_COPY_XFPREGS
-- fpu_free:
--	kfree(info->fpu);
--#endif
-- prstatus_free:
--	kfree(info->prstatus);
-- psinfo_free:
--	kfree(info->psinfo);
-- notes_free:
--	kfree(info->notes);
--	return 0;
- }
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -53,14 +53,19 @@
+ #define ABS_POS_BITS 13
  
- static int fill_note_info(struct elfhdr *elf, int phdrs,
+ /*
+- * Any position values from the hardware above the following limits are
+- * treated as "wrapped around negative" values that have been truncated to
+- * the 13-bit reporting range of the hardware. These are just reasonable
+- * guesses and can be adjusted if hardware is found that operates outside
+- * of these parameters.
++ * These values should represent the absolute maximum value that will
++ * be reported for a positive position value. Some Synaptics firmware
++ * uses this value to indicate a finger near the edge of the touchpad
++ * whose precise position cannot be determined.
++ *
++ * At least one touchpad is known to report positions in excess of this
++ * value which are actually negative values truncated to the 13-bit
++ * reporting range. These values have never been observed to be lower
++ * than 8184 (i.e. -8), so we treat all values greater than 8176 as
++ * negative and any other value as positive.
+  */
+-#define X_MAX_POSITIVE (((1 << ABS_POS_BITS) + XMAX) / 2)
+-#define Y_MAX_POSITIVE (((1 << ABS_POS_BITS) + YMAX) / 2)
++#define X_MAX_POSITIVE 8176
++#define Y_MAX_POSITIVE 8176
+ 
+ /*
+  * Synaptics touchpads report the y coordinate from bottom to top, which is
+@@ -561,11 +566,21 @@ static int synaptics_parse_hw_state(cons
+ 		hw->right = (buf[0] & 0x02) ? 1 : 0;
+ 	}
+ 
+-	/* Convert wrap-around values to negative */
++	/*
++	 * Convert wrap-around values to negative. (X|Y)_MAX_POSITIVE
++	 * is used by some firmware to indicate a finger at the edge of
++	 * the touchpad whose precise position cannot be determined, so
++	 * convert these values to the maximum axis value.
++	 */
+ 	if (hw->x > X_MAX_POSITIVE)
+ 		hw->x -= 1 << ABS_POS_BITS;
++	else if (hw->x == X_MAX_POSITIVE)
++		hw->x = XMAX;
++
+ 	if (hw->y > Y_MAX_POSITIVE)
+ 		hw->y -= 1 << ABS_POS_BITS;
++	else if (hw->y == Y_MAX_POSITIVE)
++		hw->y = YMAX;
+ 
+ 	return 0;
+ }
 
 
