@@ -1,72 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab2JNICk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 04:02:40 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:45697 "EHLO ogre.sisk.pl"
+	id S1752562Ab2JNIVM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 04:21:12 -0400
+Received: from smtp5-g21.free.fr ([212.27.42.5]:47302 "EHLO smtp5-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752211Ab2JNICi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 04:02:38 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jonghwan Choi <jhbird.choi@samsung.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PM / Domains: Fix memory leak on error path in pm_genpd_attach_cpuidle
-Date: Sun, 14 Oct 2012 10:06:17 +0200
-Message-ID: <1806891.1aniohUZ1p@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.2-5-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <001d01cda8e6$3ec8bda0$bc5a38e0$%choi@samsung.com>
-References: <001d01cda8e6$3ec8bda0$bc5a38e0$%choi@samsung.com>
+	id S1752341Ab2JNIVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Oct 2012 04:21:09 -0400
+X-Greylist: delayed 1645 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Oct 2012 04:21:07 EDT
+From: Jim Meyering <jim@meyering.net>
+To: Krishna Gudipati <kgudipat@Brocade.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "linux-scsi\@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH] bfa: avoid buffer overrun for 12-byte model name
+In-Reply-To: <87wqytbic5.fsf@rho.meyering.net> (Jim Meyering's message of
+	"Sun, 14 Oct 2012 09:53:14 +0200")
+References: <1345481724-30108-1-git-send-email-jim@meyering.net>
+	<1345481724-30108-5-git-send-email-jim@meyering.net>
+	<B5EE62D80D50B84BB9E5174F7FCCE80A2839ABC2C4@HQ1-EXCH02.corp.brocade.com>
+	<87d32ll2nk.fsf@rho.meyering.net> <87wqytbic5.fsf@rho.meyering.net>
+Date: Sun, 14 Oct 2012 10:20:59 +0200
+Message-ID: <87ipadbh1w.fsf@rho.meyering.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Jim Meyering wrote:
+> Jim Meyering wrote:
+>> Krishna Gudipati wrote:
+>>>> -----Original Message-----
+>>>> From: Jim Meyering [mailto:jim@meyering.net]
+>>>> Sent: Monday, August 20, 2012 9:55 AM
+>>>> To: linux-kernel@vger.kernel.org
+>>>> Cc: Jim Meyering; Jing Huang; Krishna Gudipati; James E.J. Bottomley; linux-
+>>>> scsi@vger.kernel.org
+>>>> Subject: [PATCH] bfa: avoid buffer overrun for 12-byte model name
+>>>>
+>>>> From: Jim Meyering <meyering@redhat.com>
+>>>>
+>>>> we use strncpy to copy a model name of length up to 15 (16, if you count the
+>>>> NUL), into a buffer of size 12 (BFA_FCS_PORT_SYMBNAME_MODEL_SZ).
+>>>> However, strncpy does not always NUL-terminate, so whenever the original
+>>>> model string has strlen >= 12, the following strncat reads beyond end of the -
+>>>> >sym_name buffer as it attempts to find end of string.
+>>>>
+>>>> bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s *fabric) {
+>>>> 	bfa_ioc_get_adapter_model(&fabric->fcs->bfa->ioc, model);
+>>>> 	...
+>>>> 	strncpy((char *)&port_cfg->sym_name, model,
+>>>> 		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+>>>> 	strncat((char *)&port_cfg->sym_name,
+>>>> BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+>>>> 		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+>>>> 	...
+>>>>
+>>>> bfa_ioc_get_adapter_model(struct bfa_ioc_s *ioc, char *model) {
+>>>> 	struct bfi_ioc_attr_s	*ioc_attr;
+>>>>
+>>>> 	WARN_ON(!model);
+>>>> 	memset((void *)model, 0, BFA_ADAPTER_MODEL_NAME_LEN);
+>>>>
+>>>> BFA_ADAPTER_MODEL_NAME_LEN = 16
+>>>>
+>>>> Signed-off-by: Jim Meyering <meyering@redhat.com>
+>>>> ---
+>>>>  drivers/scsi/bfa/bfa_fcs.c | 1 +
+>>>>  1 file changed, 1 insertion(+)
+>>>>
+>>>> diff --git a/drivers/scsi/bfa/bfa_fcs.c b/drivers/scsi/bfa/bfa_fcs.c index
+>>>> eaac57e..3329493 100644
+>>>> --- a/drivers/scsi/bfa/bfa_fcs.c
+>>>> +++ b/drivers/scsi/bfa/bfa_fcs.c
+>>>> @@ -713,6 +713,7 @@ bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s
+>>>> *fabric)
+>>>>  	/* Model name/number */
+>>>>  	strncpy((char *)&port_cfg->sym_name, model,
+>>>>  		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+>>>> +	port_cfg->sym_name[BFA_FCS_PORT_SYMBNAME_MODEL_SZ - 1]
+>>>> = 0;
+>>>>  	strncat((char *)&port_cfg->sym_name,
+>>>> BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+>>>>  		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+>>>
+>>> Nacked-by: Krishna Gudipati <kgudipat@brocade.com>
+>>>
+>>> Hi Jim,
+>>>
+>>> This model number is of length 12 bytes and the logic added here will
+>>> reset the model last byte.
+>>> In addition strncat does not need the src to be null terminated, the
+>>> change does not compile even.
+>>> NACK to this change.
+>>
+>> Hi Krishna,
+>>
+>> Thanks for the quick feedback and sorry the patch wasn't quite right.
+>> However, the log is accurate: there is at least a theoretical problem
+>> when the string in "model" (a buffer of size 16 bytes) has strlen >= 12.
+>> While strncat does not require that its second argument be NUL-terminated,
+>> the first one (the destination) must be.  Otherwise, it has no way to
+>> determine the end of the string to which it must append the source bytes.
+>
+> Ping?
+> In case it wasn't clear, there *is* a risk of buffer overflow,
+> which happens when strncpy makes it so strncat's destination
+> is not NUL terminated.
+>
+> If you require support for 12-byte model numbers, then
+> you'll have to increase the length of that buffer
+> (BFA_FCS_PORT_SYMBNAME_MODEL_SZ) to at least 13.
+>
+> I've just rebased, and thus confirmed that the patches still apply.
+>
+>> Here is a v2 patch to which I've added the requisite (char*) cast.
+>> However, this whole function is rather unreadable due to the
+>> repetition (12 times!) of "(char *)&port_cfg->sym_name".
+>> In case someone prefers to factor out that repetition,
+>> I've appended a larger, v3 patch to do that.
 
-Thanks for spotting the problem and for the patch (it got corrupted
-in transfer, so please see if the one below is what you meant).
+Taking Andi's advice, I've made the offending code use
+strlcpy in place of strncpy.  More importantly, I've fixed
+the same bug also in the following, nearly identical function.
 
-I'll queue it up for v3.7, but I'm travelling now, so it may take a while.
+-- >8 --
 
-Thanks,
-Rafael
+Two functions have this problem:
+  bfa_fcs_fabric_psymb_init
+  bfa_fcs_fabric_nsymb_init
+They use strncpy to copy a model name of length up to 15 (16, if you
+count the NUL), into a buffer of size 12 (BFA_FCS_PORT_SYMBNAME_MODEL_SZ).
+However, strncpy does not always NUL-terminate, so whenever the original
+model string has strlen >= 12, the following strncat reads beyond end
+of the ->sym_name buffer as it attempts to find end of string.
+Instead, use strlcpy, which does guarantee NUL-termination.
 
+bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s *fabric)
+{
+	bfa_ioc_get_adapter_model(&fabric->fcs->bfa->ioc, model);
+	...
+	strncpy((char *)&port_cfg->sym_name, model,
+		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+	strncat((char *)&port_cfg->sym_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+	...
 
-> From: jhbird.choi@samsung.com
-> Subject: PM / Domains: Fix memory leak on error path in pm_genpd_attach_cpuidle
-> 
-> If pm_genpd_attach_cpudidle failed we leak memory stored in 'cpu_data'.
-> 
-> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-> ---
-> drivers/base/power/domain.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c index c22b869..96b71b6 100644
-> --- a/drivers/base/power/domain.c
-> +++ b/drivers/base/power/domain.c
-> @@ -1862,7 +1862,7 @@ int pm_genpd_attach_cpuidle(struct generic_pm_domain *genpd, int state)
->  	cpuidle_drv = cpuidle_driver_ref();
->  	if (!cpuidle_drv) {
->  		ret = -ENODEV;
-> -		goto out;
-> +		goto err_drv;
->  	}
->  	if (cpuidle_drv->state_count <= state) {
->  		ret = -EINVAL;
-> @@ -1884,6 +1884,9 @@ int pm_genpd_attach_cpuidle(struct generic_pm_domain *genpd, int state)
-> 
->   err:
->  	cpuidle_driver_unref();
-> +
-> + err_drv:
-> +	kfree(cpu_data);
->  	goto out;
->  }
->  
-> 
+bfa_ioc_get_adapter_model(struct bfa_ioc_s *ioc, char *model)
+{
+	struct bfi_ioc_attr_s	*ioc_attr;
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+	WARN_ON(!model);
+	memset((void *)model, 0, BFA_ADAPTER_MODEL_NAME_LEN);
+
+BFA_ADAPTER_MODEL_NAME_LEN = 16
+
+Signed-off-by: Jim Meyering <jim@meyering.net>
+---
+ drivers/scsi/bfa/bfa_fcs.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/scsi/bfa/bfa_fcs.c b/drivers/scsi/bfa/bfa_fcs.c
+index d428808..c7f476c 100644
+--- a/drivers/scsi/bfa/bfa_fcs.c
++++ b/drivers/scsi/bfa/bfa_fcs.c
+@@ -837,7 +837,7 @@ bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s *fabric)
+ 	bfa_ioc_get_adapter_model(&fabric->fcs->bfa->ioc, model);
+
+ 	/* Model name/number */
+-	strncpy((char *)&port_cfg->sym_name, model,
++	strlcpy((char *)&port_cfg->sym_name, model,
+ 		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+ 	strncat((char *)&port_cfg->sym_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+ 		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+@@ -898,7 +898,7 @@ bfa_fcs_fabric_nsymb_init(struct bfa_fcs_fabric_s *fabric)
+ 	bfa_ioc_get_adapter_model(&fabric->fcs->bfa->ioc, model);
+
+ 	/* Model name/number */
+-	strncpy((char *)&port_cfg->node_sym_name, model,
++	strlcpy((char *)&port_cfg->node_sym_name, model,
+ 		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+ 	strncat((char *)&port_cfg->node_sym_name,
+ 			BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+--
+1.8.0.rc2
