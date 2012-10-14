@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751781Ab2JNI7D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 04:59:03 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:59496 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab2JNI7A (ORCPT
+	id S1751937Ab2JNJLF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 05:11:05 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:48997 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576Ab2JNJLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 04:59:00 -0400
+	Sun, 14 Oct 2012 05:11:03 -0400
+Message-ID: <507A8189.7020402@ahsoftware.de>
+Date: Sun, 14 Oct 2012 11:10:33 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <5079BE5C.8020401@cfl.rr.com>
-References: <507812E8.3060607@compro.net>
-	<20121012231459.166e29fd@neptune.home>
-	<5079B97C.7020401@cfl.rr.com>
-	<5079BE5C.8020401@cfl.rr.com>
-Date: Sun, 14 Oct 2012 10:58:59 +0200
-X-Google-Sender-Auth: 6XQ0DlGe471azy2Ia_e4CYKzISI
-Message-ID: <CAKMK7uGXb5=fHXZa8m_0xNLGFqyf_b37g9W32eshaPFcf8i=7A@mail.gmail.com>
-Subject: Re: [Intel-gfx] Intel graphics drm issue?
-From: Daniel Vetter <daniel@ffwll.ch>
-To: dmarkh@cfl.rr.com
-Cc: markh@compro.net,
-        =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jan Kara <jack@suse.cz>
+CC: Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
+Subject: Re: kernel BUG at fs/buffer.c:3205 (stable 3.5.3)
+References: <50531629.9020107@ahsoftware.de> <20120925110206.GD28937@mwanda> <50643C4A.9010202@ahsoftware.de> <20120927151232.GA12210@quack.suse.cz> <506474E8.3030300@ahsoftware.de> <20120927200342.GB12553@quack.suse.cz> <506746EF.5070000@ahsoftware.de> <20121001091001.GA22800@quack.suse.cz> <506960AE.2000402@ahsoftware.de> <506AB426.4000407@ahsoftware.de>
+In-Reply-To: <506AB426.4000407@ahsoftware.de>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 13, 2012 at 9:17 PM, Mark Hounschell <dmarkh@cfl.rr.com> wrote:
-> One other thing I failed to mention. If i connect the TV HDMI to the Intel
-> boards DVI port using the adapter, at power up I get all the BIOS messages
-> and can enter the BIOS and all is fine. But when I let it boot all the way
-> up like this, I get nothing but "no signal" after leaving BIOS mode. Turning
-> the tv on/off, cable plug/unplug does not help.
+Am 02.10.2012 11:30, schrieb Alexander Holler:
+> Am 01.10.2012 11:21, schrieb Alexander Holler:
+>> Hello,
+>>
+>> Am 01.10.2012 11:10, schrieb Jan Kara:
+>>
+>>>> sha1sum Tainted: P           O 3.5.4-00009-gfa43f23-dirty #228
+>>>    BTW, fglrx moodule taints the kernel because it is a proprietary
+>>> driver.
+>>
+>> I know.
+>>
+>>> Can you reproduce the issue without this module loaded?
+>>
+>> I will try it with a clean 3.6. Most of the 9 additional patches here
+>> are for ARM boxes, but anyway. I will need a few days.
+>
+> Just tried my "tar cp . | mbuffer | bzip2smp >/usb3/ext4/foo.tar.bz2
+> using a kernel 3.6 without using fglrx and without any additional
+> patches. The first try already ended up in a broken archive (tar djf =>
+> bzip2: Data integrity error when decompressing), but (again) without the
+> BUG() in fs/buffer.c getting hit. Will do some more tests, trying hit
+> that BUG().
 
-Can you please boot in that configuration on latest kernel with
-drm.debug=0xe added to your kernel cmdline and then attach the
-complete dmesg?
+I found the problem. Looks like either the RAM, CPU or the stuff 
+inbetween is broken because I see some memory failures (1 bit flipped on 
+some bytes) when using memtest(86+).
 
-Thanks, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+The people which are responsible that the chips for "consumer"-HW and 
+laptops got their (already included) ECC functionality disabled should 
+get hit with Googles (now 3y old) study on that topic all the day. 
+Leaving customers in danger by not offering them at least the 
+possibility to use ECC RAM is just stupid.
+
+Sorry to everyone whose time I've wasted.
+
+Regards,
+
+Alexander
+
