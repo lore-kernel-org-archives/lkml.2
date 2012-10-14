@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826Ab2JNO5X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:57:23 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46539 "EHLO
+	id S1755013Ab2JNO5z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:57:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46521 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932218Ab2JNOn2 (ORCPT
+	by vger.kernel.org with ESMTP id S932199Ab2JNOn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:43:28 -0400
-Message-Id: <20121014143544.091971693@decadent.org.uk>
+	Sun, 14 Oct 2012 10:43:27 -0400
+Message-Id: <20121014143543.958562615@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:49 +0100
+Date: Sun, 14 Oct 2012 15:36:48 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Daniel Kurtz <djkurtz@chromium.org>, Alan Swanson <swanson@ukfsn.org>,
-        Arteom <arutemus@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 076/147] Input: synaptics - adjust threshold for treating position values as
- negative
+        Ian Abbott <abbotti@mev.co.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 075/147] staging: comedi: jr3_pci: fix iomem dereference
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,90 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 824efd37415961d38821ecbd9694e213fb2e8b32 upstream.
+commit e1878957b4676a17cf398f7f5723b365e9a2ca48 upstream.
 
-Commit c039450 (Input: synaptics - handle out of bounds values from the
-hardware) caused any hardware reported values over 7167 to be treated as
-a wrapped-around negative value. It turns out that some firmware uses
-the value 8176 to indicate a finger near the edge of the touchpad whose
-actual position cannot be determined. This value now gets treated as
-negative, which can cause pointer jumps and broken edge scrolling on
-these machines.
+Correct a direct dereference of I/O memory to use an appropriate I/O
+memory access function.  Note that the pointer being dereferenced is not
+currently tagged with `__iomem` but I plan to correct that for 3.7.
 
-I only know of one touchpad which reports negative values, and this
-hardware never reports any value lower than -8 (i.e. 8184). Moving the
-threshold for treating a value as negative up to 8176 should work fine
-then for any hardware we currently know about, and since we're dealing
-with unspecified behavior it's probably the best we can do. The special
-8176 value is also likely to result in sudden jumps in position, so
-let's also clamp this to the maximum specified value for the axis.
-
-BugLink: http://bugs.launchpad.net/bugs/1046512
-https://bugzilla.kernel.org/show_bug.cgi?id=46371
-
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
-Tested-by: Alan Swanson <swanson@ukfsn.org>
-Tested-by: Arteom <arutemus@gmail.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/input/mouse/synaptics.c |   31 +++++++++++++++++++++++--------
- 1 file changed, 23 insertions(+), 8 deletions(-)
+ drivers/staging/comedi/drivers/jr3_pci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -53,14 +53,19 @@
- #define ABS_POS_BITS 13
- 
- /*
-- * Any position values from the hardware above the following limits are
-- * treated as "wrapped around negative" values that have been truncated to
-- * the 13-bit reporting range of the hardware. These are just reasonable
-- * guesses and can be adjusted if hardware is found that operates outside
-- * of these parameters.
-+ * These values should represent the absolute maximum value that will
-+ * be reported for a positive position value. Some Synaptics firmware
-+ * uses this value to indicate a finger near the edge of the touchpad
-+ * whose precise position cannot be determined.
-+ *
-+ * At least one touchpad is known to report positions in excess of this
-+ * value which are actually negative values truncated to the 13-bit
-+ * reporting range. These values have never been observed to be lower
-+ * than 8184 (i.e. -8), so we treat all values greater than 8176 as
-+ * negative and any other value as positive.
-  */
--#define X_MAX_POSITIVE (((1 << ABS_POS_BITS) + XMAX) / 2)
--#define Y_MAX_POSITIVE (((1 << ABS_POS_BITS) + YMAX) / 2)
-+#define X_MAX_POSITIVE 8176
-+#define Y_MAX_POSITIVE 8176
- 
- /*
-  * Synaptics touchpads report the y coordinate from bottom to top, which is
-@@ -561,11 +566,21 @@ static int synaptics_parse_hw_state(cons
- 		hw->right = (buf[0] & 0x02) ? 1 : 0;
+--- a/drivers/staging/comedi/drivers/jr3_pci.c
++++ b/drivers/staging/comedi/drivers/jr3_pci.c
+@@ -913,7 +913,7 @@ static int jr3_pci_attach(struct comedi_
  	}
  
--	/* Convert wrap-around values to negative */
-+	/*
-+	 * Convert wrap-around values to negative. (X|Y)_MAX_POSITIVE
-+	 * is used by some firmware to indicate a finger at the edge of
-+	 * the touchpad whose precise position cannot be determined, so
-+	 * convert these values to the maximum axis value.
-+	 */
- 	if (hw->x > X_MAX_POSITIVE)
- 		hw->x -= 1 << ABS_POS_BITS;
-+	else if (hw->x == X_MAX_POSITIVE)
-+		hw->x = XMAX;
-+
- 	if (hw->y > Y_MAX_POSITIVE)
- 		hw->y -= 1 << ABS_POS_BITS;
-+	else if (hw->y == Y_MAX_POSITIVE)
-+		hw->y = YMAX;
+ 	/*  Reset DSP card */
+-	devpriv->iobase->channel[0].reset = 0;
++	writel(0, &devpriv->iobase->channel[0].reset);
  
- 	return 0;
- }
+ 	result = comedi_load_firmware(dev, "jr3pci.idm", jr3_download_firmware);
+ 	printk("Firmare load %d\n", result);
 
 
