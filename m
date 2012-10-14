@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab2JNOmg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:42:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46316 "EHLO
+	id S1754629Ab2JNPGp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:06:45 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46312 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754523Ab2JNOmb (ORCPT
+	by vger.kernel.org with ESMTP id S1754525Ab2JNOme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:42:31 -0400
-Message-Id: <20121014143549.569389596@decadent.org.uk>
+	Sun, 14 Oct 2012 10:42:34 -0400
+Message-Id: <20121014143549.160935001@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:30 +0100
+Date: Sun, 14 Oct 2012 15:37:27 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michal Hocko <mhocko@suse.cz>, Hillf Danton <dhillf@gmail.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>,
+        Hugh Dickins <hughd@google.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>, Ying Han <yinghan@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 117/147] hugetlb: do not use vma_hugecache_offset() for vma_prio_tree_foreach
+Subject: [ 114/147] mm: fix invalidate_complete_page2() lock ordering
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,53 +31,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Hugh Dickins <hughd@google.com>
 
-commit 36e4f20af833d1ce196e6a4ade05dc26c44652d1 upstream.
+commit ec4d9f626d5908b6052c2973f37992f1db52e967 upstream.
 
-Commit 0c176d52b0b2 ("mm: hugetlb: fix pgoff computation when unmapping
-page from vma") fixed pgoff calculation but it has replaced it by
-vma_hugecache_offset() which is not approapriate for offsets used for
-vma_prio_tree_foreach() because that one expects index in page units
-rather than in huge_page_shift.
+In fuzzing with trinity, lockdep protested "possible irq lock inversion
+dependency detected" when isolate_lru_page() reenabled interrupts while
+still holding the supposedly irq-safe tree_lock:
 
-Johannes said:
+invalidate_inode_pages2
+  invalidate_complete_page2
+    spin_lock_irq(&mapping->tree_lock)
+    clear_page_mlock
+      isolate_lru_page
+        spin_unlock_irq(&zone->lru_lock)
 
-: The resulting index may not be too big, but it can be too small: assume
-: hpage size of 2M and the address to unmap to be 0x200000.  This is regular
-: page index 512 and hpage index 1.  If you have a VMA that maps the file
-: only starting at the second huge page, that VMAs vm_pgoff will be 512 but
-: you ask for offset 1 and miss it even though it does map the page of
-: interest.  hugetlb_cow() will try to unmap, miss the vma, and retry the
-: cow until the allocation succeeds or the skipped vma(s) go away.
+isolate_lru_page() is correct to enable interrupts unconditionally:
+invalidate_complete_page2() is incorrect to call clear_page_mlock() while
+holding tree_lock, which is supposed to nest inside lru_lock.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Hillf Danton <dhillf@gmail.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Both truncate_complete_page() and invalidate_complete_page() call
+clear_page_mlock() before taking tree_lock to remove page from radix_tree.
+ I guess invalidate_complete_page2() preferred to test PageDirty (again)
+under tree_lock before committing to the munlock; but since the page has
+already been unmapped, its state is already somewhat inconsistent, and no
+worse if clear_page_mlock() moved up.
+
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Deciphered-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Ying Han <yinghan@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/hugetlb.c |    3 ++-
+ mm/truncate.c |    3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 8536741..de5d1dc 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2480,7 +2480,8 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * from page cache lookup which is in HPAGE_SIZE units.
- 	 */
- 	address = address & huge_page_mask(h);
--	pgoff = vma_hugecache_offset(h, vma, address);
-+	pgoff = ((address - vma->vm_start) >> PAGE_SHIFT) +
-+			vma->vm_pgoff;
- 	mapping = vma->vm_file->f_dentry->d_inode->i_mapping;
+diff --git a/mm/truncate.c b/mm/truncate.c
+index 75801ac..f38055c 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -394,11 +394,12 @@ invalidate_complete_page2(struct address_space *mapping, struct page *page)
+ 	if (page_has_private(page) && !try_to_release_page(page, GFP_KERNEL))
+ 		return 0;
  
- 	/*
++	clear_page_mlock(page);
++
+ 	spin_lock_irq(&mapping->tree_lock);
+ 	if (PageDirty(page))
+ 		goto failed;
+ 
+-	clear_page_mlock(page);
+ 	BUG_ON(page_has_private(page));
+ 	__delete_from_page_cache(page);
+ 	spin_unlock_irq(&mapping->tree_lock);
 
 
