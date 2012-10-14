@@ -1,98 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab2JNMfs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 08:35:48 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:34728 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab2JNMfr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 08:35:47 -0400
-From: Sangho Yi <antiroot@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Sangho Yi <antiroot@gmail.com>
-Subject: [PATCH] Drivers: Staging: CSR: fixed coding style errors
-Date: Sun, 14 Oct 2012 21:35:32 +0900
-Message-Id: <1350218132-20434-1-git-send-email-antiroot@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <n>
-References: <n>
+	id S1753049Ab2JNMhz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 08:37:55 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40168 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752858Ab2JNMhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Oct 2012 08:37:54 -0400
+Message-ID: <507AB1E6.4000809@ti.com>
+Date: Sun, 14 Oct 2012 18:06:54 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Hannu Heikkinen <hannuxx@iki.fi>
+CC: <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>,
+        <a.zummo@towertech.it>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+Subject: Re: [PATCH v2] rtc: davinci: clean up probe/remove routines
+References: <1350166210-23313-1-git-send-email-hannuxx@iki.fi> <1350207822-4857-1-git-send-email-hannuxx@iki.fi>
+In-Reply-To: <1350207822-4857-1-git-send-email-hannuxx@iki.fi>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Originally there were a lot of coding style errors so, I cleaned up the
-coding style errors including braces and indentations.
+On 10/14/2012 3:13 PM, Hannu Heikkinen wrote:
+> Use the devres managed resource functions in the probe routine.
+> Also affects the remove routine where the previously used free and
+> release functions are not needed.
+> 
+> The devm_* functions eliminate the need for manual resource releasing and
+> simplify error handling.  Resources allocated by devm_* are freed
+> automatically on driver detach.
+> 
+> Signed-off-by: Hannu Heikkinen <hannuxx@iki.fi>
+> ---
+>  drivers/rtc/rtc-davinci.c | 56 +++++++++++++----------------------------------
+>  1 file changed, 15 insertions(+), 41 deletions(-)
+> 
+> diff --git a/drivers/rtc/rtc-davinci.c b/drivers/rtc/rtc-davinci.c
+> index 14c2109..d24b573 100644
+> --- a/drivers/rtc/rtc-davinci.c
+> +++ b/drivers/rtc/rtc-davinci.c
+> @@ -119,8 +119,6 @@ static DEFINE_SPINLOCK(davinci_rtc_lock);
+>  struct davinci_rtc {
+>  	struct rtc_device 		*rtc;
+>  	void __iomem			*base;
+> -	resource_size_t			pbase;
+> -	size_t				base_size;
+>  	int				irq;
+>  };
+>  
+> @@ -482,22 +480,16 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+>  {
+>  	struct device *dev = &pdev->dev;
+>  	struct davinci_rtc *davinci_rtc;
+> -	struct resource *res, *mem;
+> +	struct resource *res;
+>  	int ret = 0;
+>  
+> -	davinci_rtc = kzalloc(sizeof(struct davinci_rtc), GFP_KERNEL);
+> +	davinci_rtc = devm_kzalloc(&pdev->dev, sizeof(struct davinci_rtc),
+> +		GFP_KERNEL);
+>  	if (!davinci_rtc) {
+>  		dev_dbg(dev, "could not allocate memory for private data\n");
+>  		return -ENOMEM;
+>  	}
+>  
+> -	davinci_rtc->irq = platform_get_irq(pdev, 0);
+> -	if (davinci_rtc->irq < 0) {
+> -		dev_err(dev, "no RTC irq\n");
+> -		ret = davinci_rtc->irq;
+> -		goto fail1;
+> -	}
+> -
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	if (!res) {
+>  		dev_err(dev, "no mem resource\n");
+> @@ -505,23 +497,16 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+>  		goto fail1;
 
-Signed-off-by: Sangho Yi <antiroot@gmail.com>
----
- .../csr/csr_wifi_router_free_upstream_contents.c   |   46 +++++++++-----------
- 1 file changed, 20 insertions(+), 26 deletions(-)
+As mentioned last time, this will have a build break here because fail1
+is being removed down below.
 
-diff --git a/drivers/staging/csr/csr_wifi_router_free_upstream_contents.c b/drivers/staging/csr/csr_wifi_router_free_upstream_contents.c
-index de1086d..352a41b 100644
---- a/drivers/staging/csr/csr_wifi_router_free_upstream_contents.c
-+++ b/drivers/staging/csr/csr_wifi_router_free_upstream_contents.c
-@@ -1,10 +1,10 @@
- /*****************************************************************************
- 
--            (c) Cambridge Silicon Radio Limited 2011
--            All rights reserved and confidential information of CSR
-+(c) Cambridge Silicon Radio Limited 2011
-+All rights reserved and confidential information of CSR
- 
--            Refer to LICENSE.txt included with this source for details
--            on the license terms.
-+Refer to LICENSE.txt included with this source for details
-+on the license terms.
- 
- *****************************************************************************/
- 
-@@ -26,28 +26,22 @@
-  *----------------------------------------------------------------------------*/
- void CsrWifiRouterFreeUpstreamMessageContents(u16 eventClass, void *message)
- {
--    if (eventClass != CSR_WIFI_ROUTER_PRIM)
--    {
--        return;
--    }
--    if (NULL == message)
--    {
--        return;
--    }
--
--    switch (*((CsrWifiRouterPrim *) message))
--    {
--        case CSR_WIFI_ROUTER_MA_PACKET_IND:
--        {
--            CsrWifiRouterMaPacketInd *p = (CsrWifiRouterMaPacketInd *)message;
--            kfree(p->frame);
--            p->frame = NULL;
--            break;
--        }
--
--        default:
--            break;
--    }
-+	if (eventClass != CSR_WIFI_ROUTER_PRIM)
-+		return;
-+	if (NULL == message)
-+		return;
-+	switch (*((CsrWifiRouterPrim *) message)) {
-+	case CSR_WIFI_ROUTER_MA_PACKET_IND:
-+	{
-+		CsrWifiRouterMaPacketInd *p =
-+			(CsrWifiRouterMaPacketInd *) message;
-+		kfree(p->frame);
-+		p->frame = NULL;
-+		break;
-+	}
-+	default:
-+		break;
-+	}
- }
- 
- 
--- 
-1.7.9.5
-
+Thanks,
+Sekhar
