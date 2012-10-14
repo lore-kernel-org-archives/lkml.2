@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab2JNPRV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:17:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46061 "EHLO
+	id S1754155Ab2JNPRT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:17:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46068 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753813Ab2JNOlh (ORCPT
+	by vger.kernel.org with ESMTP id S1753824Ab2JNOlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:41:37 -0400
-Message-Id: <20121014143536.070813274@decadent.org.uk>
+Message-Id: <20121014143536.203065496@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:35:50 +0100
+Date: Sun, 14 Oct 2012 15:35:51 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Khalid Aziz <khalid.aziz@hp.com>, Kees Cook <keescook@chromium.org>,
-        Matthew Garrett <mjg@redhat.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 017/147] firmware: Add missing attributes to EFI variable attribute print out
- from sysfs
+Subject: [ 018/147] tools/hv: Fix exit() error code
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,54 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Khalid Aziz <khalid.aziz@hp.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 7083909023bbe29b3176e92d2d089def1aa7aa1e upstream.
+commit 6bb22fea25624ab593eee376fa5fb82d1b13f45a upstream.
 
-Some of the EFI variable attributes are missing from print out from
-/sys/firmware/efi/vars/*/attributes. This patch adds those in. It also
-updates code to use pre-defined constants for masking current value
-of attributes.
+Linux native exit codes are 8-bit unsigned values.  exit(-1) results
+in an exit code of 255, which is usually reserved for shells reporting
+'command not found'.  Use the portable value EXIT_FAILURE.  (Not that
+this matters much for a daemon.)
 
-Signed-off-by: Khalid Aziz <khalid.aziz@hp.com>
-Reviewed-by: Kees Cook <keescook@chromium.org>
-Acked-by: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: drop changes to exit() calls not in this version]
 ---
- drivers/firmware/efivars.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ tools/hv/hv_kvp_daemon.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 47408e8..d10c987 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -435,12 +435,23 @@ efivar_attr_read(struct efivar_entry *entry, char *buf)
- 	if (status != EFI_SUCCESS)
- 		return -EIO;
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -348,7 +348,7 @@ int main(void)
+ 	fd = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_CONNECTOR);
+ 	if (fd < 0) {
+ 		syslog(LOG_ERR, "netlink socket creation failed; error:%d", fd);
+-		exit(-1);
++		exit(EXIT_FAILURE);
+ 	}
+ 	addr.nl_family = AF_NETLINK;
+ 	addr.nl_pad = 0;
+@@ -360,7 +360,7 @@ int main(void)
+ 	if (error < 0) {
+ 		syslog(LOG_ERR, "bind failed; error:%d", error);
+ 		close(fd);
+-		exit(-1);
++		exit(EXIT_FAILURE);
+ 	}
+ 	sock_opt = addr.nl_groups;
+ 	setsockopt(fd, 270, 1, &sock_opt, sizeof(sock_opt));
+@@ -378,7 +378,7 @@ int main(void)
+ 	if (len < 0) {
+ 		syslog(LOG_ERR, "netlink_send failed; error:%d", len);
+ 		close(fd);
+-		exit(-1);
++		exit(EXIT_FAILURE);
+ 	}
  
--	if (var->Attributes & 0x1)
-+	if (var->Attributes & EFI_VARIABLE_NON_VOLATILE)
- 		str += sprintf(str, "EFI_VARIABLE_NON_VOLATILE\n");
--	if (var->Attributes & 0x2)
-+	if (var->Attributes & EFI_VARIABLE_BOOTSERVICE_ACCESS)
- 		str += sprintf(str, "EFI_VARIABLE_BOOTSERVICE_ACCESS\n");
--	if (var->Attributes & 0x4)
-+	if (var->Attributes & EFI_VARIABLE_RUNTIME_ACCESS)
- 		str += sprintf(str, "EFI_VARIABLE_RUNTIME_ACCESS\n");
-+	if (var->Attributes & EFI_VARIABLE_HARDWARE_ERROR_RECORD)
-+		str += sprintf(str, "EFI_VARIABLE_HARDWARE_ERROR_RECORD\n");
-+	if (var->Attributes & EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS)
-+		str += sprintf(str,
-+			"EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS\n");
-+	if (var->Attributes &
-+			EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS)
-+		str += sprintf(str,
-+			"EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS\n");
-+	if (var->Attributes & EFI_VARIABLE_APPEND_WRITE)
-+		str += sprintf(str, "EFI_VARIABLE_APPEND_WRITE\n");
- 	return str - buf;
- }
+ 	pfd.fd = fd;
+@@ -497,7 +497,7 @@ int main(void)
+ 		len = netlink_send(fd, incoming_cn_msg);
+ 		if (len < 0) {
+ 			syslog(LOG_ERR, "net_link send failed; error:%d", len);
+-			exit(-1);
++			exit(EXIT_FAILURE);
+ 		}
+ 	}
  
 
 
