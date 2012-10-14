@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab2JNOmP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:42:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46160 "EHLO
+	id S1754387Ab2JNOmN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:42:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46159 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754278Ab2JNOmF (ORCPT
+	by vger.kernel.org with ESMTP id S1754277Ab2JNOmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:42:05 -0400
-Message-Id: <20121014143552.169789826@decadent.org.uk>
+	Sun, 14 Oct 2012 10:42:04 -0400
+Message-Id: <20121014143552.842662963@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:49 +0100
+Date: Sun, 14 Oct 2012 15:37:54 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Florian Westphal <fw@strlen.de>,
         Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 136/147] netfilter: nf_ct_ipv4: packets with wrong ihl are  invalid
+Subject: [ 141/147] netfilter: limit, hashlimit: avoid duplicated inline
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,55 +28,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+From: Florian Westphal <fw@strlen.de>
 
-commit 07153c6ec074257ade76a461429b567cff2b3a1e upstream.
+commit 7a909ac70f6b0823d9f23a43f19598d4b57ac901 upstream.
 
-It was reported that the Linux kernel sometimes logs:
+credit_cap can be set to credit, which avoids inlining user2credits
+twice. Also, remove inline keyword and let compiler decide.
 
-klogd: [2629147.402413] kernel BUG at net / netfilter /
-nf_conntrack_proto_tcp.c: 447!
-klogd: [1072212.887368] kernel BUG at net / netfilter /
-nf_conntrack_proto_tcp.c: 392
+old:
+    684     192       0     876     36c net/netfilter/xt_limit.o
+   4927     344      32    5303    14b7 net/netfilter/xt_hashlimit.o
+now:
+    668     192       0     860     35c net/netfilter/xt_limit.o
+   4793     344      32    5169    1431 net/netfilter/xt_hashlimit.o
 
-ipv4_get_l4proto() in nf_conntrack_l3proto_ipv4.c and tcp_error() in
-nf_conntrack_proto_tcp.c should catch malformed packets, so the errors
-at the indicated lines - TCP options parsing - should not happen.
-However, tcp_error() relies on the "dataoff" offset to the TCP header,
-calculated by ipv4_get_l4proto().  But ipv4_get_l4proto() does not check
-bogus ihl values in IPv4 packets, which then can slip through tcp_error()
-and get caught at the TCP options parsing routines.
-
-The patch fixes ipv4_get_l4proto() by invalidating packets with bogus
-ihl value.
-
-The patch closes netfilter bugzilla id 771.
-
-Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Signed-off-by: Florian Westphal <fw@strlen.de>
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/netfilter/xt_hashlimit.c |    8 +++-----
+ net/netfilter/xt_limit.c     |    5 ++---
+ 2 files changed, 5 insertions(+), 8 deletions(-)
 
-diff --git a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
-index 750b06a..cf73cc7 100644
---- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
-+++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
-@@ -84,6 +84,14 @@ static int ipv4_get_l4proto(const struct sk_buff *skb, unsigned int nhoff,
- 	*dataoff = nhoff + (iph->ihl << 2);
- 	*protonum = iph->protocol;
+diff --git a/net/netfilter/xt_hashlimit.c b/net/netfilter/xt_hashlimit.c
+index d95f9c9..2195eb0 100644
+--- a/net/netfilter/xt_hashlimit.c
++++ b/net/netfilter/xt_hashlimit.c
+@@ -389,8 +389,7 @@ static void htable_put(struct xt_hashlimit_htable *hinfo)
+ #define CREDITS_PER_JIFFY POW2_BELOW32(MAX_CPJ)
  
-+	/* Check bogus IP headers */
-+	if (*dataoff > skb->len) {
-+		pr_debug("nf_conntrack_ipv4: bogus IPv4 packet: "
-+			 "nhoff %u, ihl %u, skblen %u\n",
-+			 nhoff, iph->ihl << 2, skb->len);
-+		return -NF_ACCEPT;
-+	}
-+
- 	return NF_ACCEPT;
+ /* Precision saver. */
+-static inline u_int32_t
+-user2credits(u_int32_t user)
++static u32 user2credits(u32 user)
+ {
+ 	/* If multiplying would overflow... */
+ 	if (user > 0xFFFFFFFF / (HZ*CREDITS_PER_JIFFY))
+@@ -400,7 +399,7 @@ user2credits(u_int32_t user)
+ 	return (user * HZ * CREDITS_PER_JIFFY) / XT_HASHLIMIT_SCALE;
  }
  
+-static inline void rateinfo_recalc(struct dsthash_ent *dh, unsigned long now)
++static void rateinfo_recalc(struct dsthash_ent *dh, unsigned long now)
+ {
+ 	dh->rateinfo.credit += (now - dh->rateinfo.prev) * CREDITS_PER_JIFFY;
+ 	if (dh->rateinfo.credit > dh->rateinfo.credit_cap)
+@@ -535,8 +534,7 @@ hashlimit_mt(const struct sk_buff *skb, struct xt_action_param *par)
+ 		dh->rateinfo.prev = jiffies;
+ 		dh->rateinfo.credit = user2credits(hinfo->cfg.avg *
+ 		                      hinfo->cfg.burst);
+-		dh->rateinfo.credit_cap = user2credits(hinfo->cfg.avg *
+-		                          hinfo->cfg.burst);
++		dh->rateinfo.credit_cap = dh->rateinfo.credit;
+ 		dh->rateinfo.cost = user2credits(hinfo->cfg.avg);
+ 	} else {
+ 		/* update expiration timeout */
+diff --git a/net/netfilter/xt_limit.c b/net/netfilter/xt_limit.c
+index 32b7a57..5c22ce8 100644
+--- a/net/netfilter/xt_limit.c
++++ b/net/netfilter/xt_limit.c
+@@ -88,8 +88,7 @@ limit_mt(const struct sk_buff *skb, struct xt_action_param *par)
+ }
+ 
+ /* Precision saver. */
+-static u_int32_t
+-user2credits(u_int32_t user)
++static u32 user2credits(u32 user)
+ {
+ 	/* If multiplying would overflow... */
+ 	if (user > 0xFFFFFFFF / (HZ*CREDITS_PER_JIFFY))
+@@ -123,7 +122,7 @@ static int limit_mt_check(const struct xt_mtchk_param *par)
+ 		   128. */
+ 		priv->prev = jiffies;
+ 		priv->credit = user2credits(r->avg * r->burst); /* Credits full. */
+-		r->credit_cap = user2credits(r->avg * r->burst); /* Credits full. */
++		r->credit_cap = priv->credit; /* Credits full. */
+ 		r->cost = user2credits(r->avg);
+ 	}
+ 	return 0;
 
 
