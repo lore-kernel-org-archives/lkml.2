@@ -1,135 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab2JNLVw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 07:21:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52886 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752385Ab2JNLVu (ORCPT
+	id S1752796Ab2JNL0s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 07:26:48 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:39196 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752567Ab2JNL0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 07:21:50 -0400
-From: Sangho Yi <antiroot@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Sangho Yi <antiroot@gmail.com>
-Subject: [PATCH] Drivers: Staging: CSR: made corrections on the indentation errors
-Date: Sun, 14 Oct 2012 20:20:11 +0900
-Message-Id: <1350213611-19806-1-git-send-email-antiroot@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <n>
-References: <n>
+	Sun, 14 Oct 2012 07:26:46 -0400
+MIME-Version: 1.0
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <507A91EA.2030205@cfl.rr.com>
+References: <507812E8.3060607@compro.net>
+	<20121012231459.166e29fd@neptune.home>
+	<5079B97C.7020401@cfl.rr.com>
+	<5079BE5C.8020401@cfl.rr.com>
+	<CAKMK7uGXb5=fHXZa8m_0xNLGFqyf_b37g9W32eshaPFcf8i=7A@mail.gmail.com>
+	<507A91EA.2030205@cfl.rr.com>
+Date: Sun, 14 Oct 2012 13:26:45 +0200
+X-Google-Sender-Auth: 5Pz3NYNp0OXzV1BlgLTts5JQFnI
+Message-ID: <CAKMK7uEw8D1r4hf_mE1q6kBwZzE+qmSeTui9adX4agj=5MDbWw@mail.gmail.com>
+Subject: Re: [Intel-gfx] Intel graphics drm issue?
+From: Daniel Vetter <daniel@ffwll.ch>
+To: dmarkh@cfl.rr.com
+Cc: markh@compro.net,
+        =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Originally there were a lot mis-indentation, so I made changes to use
-only the tabs (no spaces) on indenting code.
-- Still, the typedef struct ... tells warning message on checkpatch.pl.
+On Sun, Oct 14, 2012 at 12:20 PM, Mark Hounschell <dmarkh@cfl.rr.com> wrote:
+> Hi Daniel,
+>
+> cat /proc/cmdline
+> root=/dev/disk/by-id/ata-INTEL_SSDSC2CW060A3_CVCV205106EB060AGN-part4
+> video=1024x768 noresume splash=silent quiet apm=off nomodeset vga=normal
+> drm.debug=0xe
+>
+> dmesg is attached
 
-Signed-off-by: Sangho Yi <antiroot@gmail.com>
----
- drivers/staging/csr/csr_time.h |   54 ++++++++++++++++++++--------------------
- 1 file changed, 27 insertions(+), 27 deletions(-)
+>From the dmesg:
 
-diff --git a/drivers/staging/csr/csr_time.h b/drivers/staging/csr/csr_time.h
-index 2a45f3e..e3cae82 100644
---- a/drivers/staging/csr/csr_time.h
-+++ b/drivers/staging/csr/csr_time.h
-@@ -2,11 +2,11 @@
- #define CSR_TIME_H__
- /*****************************************************************************
- 
--            (c) Cambridge Silicon Radio Limited 2010
--            All rights reserved and confidential information of CSR
-+	(c) Cambridge Silicon Radio Limited 2010
-+	All rights reserved and confidential information of CSR
- 
--            Refer to LICENSE.txt included with this source for details
--            on the license terms.
-+	Refer to LICENSE.txt included with this source for details
-+	on the license terms.
- 
- *****************************************************************************/
- 
-@@ -19,12 +19,12 @@ extern "C" {
- /*******************************************************************************
- 
-     NAME
--        CsrTime
-+	CsrTime
- 
-     DESCRIPTION
--        Type to hold a value describing the current system time, which is a
--        measure of time elapsed since some arbitrarily defined fixed time
--        reference, usually associated with system startup.
-+	Type to hold a value describing the current system time, which is a
-+	measure of time elapsed since some arbitrarily defined fixed time
-+	reference, usually associated with system startup.
- 
- *******************************************************************************/
- typedef u32 CsrTime;
-@@ -33,43 +33,43 @@ typedef u32 CsrTime;
- /*******************************************************************************
- 
-     NAME
--        CsrTimeUtc
-+	CsrTimeUtc
- 
-     DESCRIPTION
--        Type to hold a value describing a UTC wallclock time expressed in
--        seconds and milliseconds elapsed since midnight January 1st 1970.
-+	Type to hold a value describing a UTC wallclock time expressed in
-+	seconds and milliseconds elapsed since midnight January 1st 1970.
- 
- *******************************************************************************/
--typedef struct
--{
--    u32 sec;
--    u16 msec;
-+typedef struct _CsrTimeUtc {
-+	u32 sec;
-+	u16 msec;
- } CsrTimeUtc;
- 
- 
- /*******************************************************************************
- 
-     NAME
--        CsrTimeGet
-+	CsrTimeGet
- 
-     DESCRIPTION
--        Returns the current system time in a low and a high part. The low part
--        is expressed in microseconds. The high part is incremented when the low
--        part wraps to provide an extended range.
-+	Returns the current system time in a low and a high part. The low part
-+	is expressed in microseconds. The high part is incremented when the low
-+	part wraps to provide an extended range.
- 
--        The caller may provide a NULL pointer as the high parameter. In this case
--        the function just returns the low part and ignores the high parameter.
-+	The caller may provide a NULL pointer as the high parameter.
-+	In this case the function just returns the low part and ignores the
-+	high parameter.
- 
--        Although the time is expressed in microseconds the actual resolution is
--        platform dependent and can be less. It is recommended that the
--        resolution is at least 10 milliseconds.
-+	Although the time is expressed in microseconds the actual resolution is
-+	platform dependent and can be less. It is recommended that the
-+	resolution is at least 10 milliseconds.
- 
-     PARAMETERS
--        high - Pointer to variable that will receive the high part of the
--               current system time. Passing NULL is valid.
-+	high - Pointer to variable that will receive the high part of the
-+	       current system time. Passing NULL is valid.
- 
-     RETURNS
--        Low part of current system time in microseconds.
-+	Low part of current system time in microseconds.
- 
- *******************************************************************************/
- CsrTime CsrTimeGet(CsrTime *high);
+[    1.833195] [drm:drm_pci_agp_init] *ERROR* Cannot initialize the
+agpgart module.
+
+Which is the root-cause preventing i915.ko from loading. Now with 3.7
+we /shouldn't/ all that agp crap any longer on snb/ivb, so I'm a bit
+confused why it still tries to initialize it. Can you maybe attach
+your .config?
+
+Also, we need to employ some dirty runtime tricks to no longer require
+agp on newer chips, since we still need to keep it around for
+backwards-compat with old userspace on old chips. Can you please check
+with the below diff whether this hack works?
+
+Thanks, Daniel
+
+diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
+index a7837e5..1152502 100644
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -842,6 +842,7 @@ i915_pci_probe(struct pci_dev *pdev, const struct
+pci_device_id *ent)
+        if (intel_info->gen != 3) {
+                driver.driver_features &=
+                        ~(DRIVER_USE_AGP | DRIVER_REQUIRE_AGP);
++               printk("dropping agp requirement\n");
+        } else if (!intel_agp_enabled) {
+                DRM_ERROR("drm/i915 can't work without intel_agp module!\n");
+                return -ENODEV;
+
 -- 
-1.7.9.5
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
