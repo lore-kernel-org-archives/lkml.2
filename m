@@ -1,92 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab2JNJOb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 05:14:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43806 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751422Ab2JNJO3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 05:14:29 -0400
-Message-ID: <1350206037.4832.70.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 0/5] Memory policy corruption fixes -stable
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Stable <stable@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>
-Date: Sun, 14 Oct 2012 10:13:57 +0100
-In-Reply-To: <1349801921-16598-1-git-send-email-mgorman@suse.de>
-References: <1349801921-16598-1-git-send-email-mgorman@suse.de>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-61g0PzXVN+TYbu3M3vlZ"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 77.75.106.1
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1752061Ab2JNJZU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 05:25:20 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:53114 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751537Ab2JNJZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Oct 2012 05:25:19 -0400
+Message-ID: <507A84CA.3080406@ti.com>
+Date: Sun, 14 Oct 2012 14:54:26 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Hannu Heikkinen <hannuxx@iki.fi>
+CC: <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>,
+        <a.zummo@towertech.it>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+Subject: Re: [PATCH] rtc: davinci: clean up probe/remove routines
+References: <1350166417-23434-1-git-send-email-hannuxx@iki.fi>
+In-Reply-To: <1350166417-23434-1-git-send-email-hannuxx@iki.fi>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/14/2012 3:43 AM, Hannu Heikkinen wrote:
+> Use the devres managed resource functions in the probe routine.
+> Also affects the remove routine where the previously used free and
+> release functions are not needed.
+> 
+> The devm_* functions eliminate the need for manual resource releasing and
+> simplify error handling.  Resources allocated by devm_* are freed
+> automatically on driver detach.
+> 
+> Signed-off-by: Hannu Heikkinen <hannuxx@iki.fi>
+> ---
+>  drivers/rtc/rtc-davinci.c | 56 +++++++++++++----------------------------------
+>  1 file changed, 15 insertions(+), 41 deletions(-)
+> 
+> diff --git a/drivers/rtc/rtc-davinci.c b/drivers/rtc/rtc-davinci.c
+> index 14c2109..ffb09c2 100644
+> --- a/drivers/rtc/rtc-davinci.c
+> +++ b/drivers/rtc/rtc-davinci.c
+> @@ -119,8 +119,6 @@ static DEFINE_SPINLOCK(davinci_rtc_lock);
+>  struct davinci_rtc {
+>  	struct rtc_device 		*rtc;
+>  	void __iomem			*base;
+> -	resource_size_t			pbase;
+> -	size_t				base_size;
+>  	int				irq;
+>  };
+>  
+> @@ -482,22 +480,16 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+>  {
+>  	struct device *dev = &pdev->dev;
+>  	struct davinci_rtc *davinci_rtc;
+> -	struct resource *res, *mem;
+> +	struct resource *res;
+>  	int ret = 0;
+>  
+> -	davinci_rtc = kzalloc(sizeof(struct davinci_rtc), GFP_KERNEL);
+> +	davinci_rtc = devm_kzalloc(&pdev->dev, sizeof(struct tegra_rtc_info),
 
---=-61g0PzXVN+TYbu3M3vlZ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This line causes a build breakage because of wrong structure name.
 
-On Tue, 2012-10-09 at 17:58 +0100, Mel Gorman wrote:
-> This is a backport of the series "Memory policy corruption fixes V2". Thi=
-s
-> should apply to 3.6-stable, 3.5-stable, 3.4-stable and 3.0-stable without
-> any difficulty.  It will not apply cleanly to 3.2 but just drop the "reve=
-rt"
-> patch and the rest of the series should apply.
->=20
-> I tested 3.6-stable and 3.0-stable with just the revert and trinity break=
-s
-> as expected for the mempolicy tests. Applying the full series in both cas=
-e
-> allowed trinity to complete successfully. Andi Kleen reported previously
-> that the series fixed a database performance regression[1].
->=20
-> [1] https://lkml.org/lkml/2012/8/22/585
->=20
->  include/linux/mempolicy.h |    2 +-
->  mm/mempolicy.c            |  137 +++++++++++++++++++++++++++++----------=
-------
->  2 files changed, 89 insertions(+), 50 deletions(-)
 
-I've queued up patches 2-5 for 3.2, thanks.
+> +		GFP_KERNEL);
+>  	if (!davinci_rtc) {
+>  		dev_dbg(dev, "could not allocate memory for private data\n");
+>  		return -ENOMEM;
+>  	}
+>  
+> -	davinci_rtc->irq = platform_get_irq(pdev, 0);
+> -	if (davinci_rtc->irq < 0) {
+> -		dev_err(dev, "no RTC irq\n");
+> -		ret = davinci_rtc->irq;
+> -		goto fail1;
+> -	}
+> -
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	if (!res) {
+>  		dev_err(dev, "no mem resource\n");
+> @@ -505,23 +497,16 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
+>  		goto fail1;
 
-Ben.
+This goto target does not exist anymore after this patch. This causes
+build breakage too.
 
---=20
-Ben Hutchings
-Always try to do things in chronological order;
-it's less confusing that way.
+I was not able to test this on a DM365 EVM though. hwclock returned with
+this error:
 
---=-61g0PzXVN+TYbu3M3vlZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+select() to /dev/rtc to wait for clock tick timed out
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+but this is not related to this patch since the same error occurs even
+without this patch. May something to do with the particular board I
+used, need to debug and check.
 
-iQIVAwUAUHqCVee/yOyVhhEJAQpZXhAAj/pB8wli2Twm9uuaomY8RMcxOUCbemEo
-7ef6AKi5A2OC1q1TAhg4mJVSoFd8U1ZhQp56v/lteh6JXUNjnjthwclmvdSPNBFE
-A1MU5kXjqw00AlVOOMIaiB/yAGsdcpjzOCIfBXJ0x9z2cZHZC7+kZ0LLp+Smp269
-Kl/sKDvqW4hKqhNVL1xjKFeR4kBU3KxqqAA/ETm/N4FXiuUtl+LnqcRkCDkKCEVY
-FCgMDBmc/2N0kvCsGMqH7xfgNnJgNABfGIWUKrxue3Eu29Fm1ORU4CDaNjEorvcX
-HV1Sn0p6pFUrPyau4fu5Jd5gi4aHQ7E6F1V+j7/6ITIDtTaVCsTLsn3T3j2s+5At
-6uR678WKDeGySnZ1LQn59doPvhAakRZkZ3EM8gH2qZM0V6rtNCJXxxqlry+6tbcO
-bcWx9Zwe1g9feqtR/xYMPPMtZKreU7SOfmOsI2eEdPRE4QHUVDggHT6NGliGNSyU
-N8zjThiAnR5Tj1UAt8YVCAD8SFVHMbptEEMjnfMtUvIepViOvw0onBsUq9Y53Viu
-4Gjt4GSiRE5bZDJy32Z4eL15XvnND5S11cnNRdP8B8f3hZfqeXps94w+Y1MWYsnE
-AlE22VBbxD/lvOLDn1b+cW92Xvn/SVtWYW1bHpNgg0k9XrDR8YWBlQRfpgpf1Tyi
-jTfSOwiTakg=
-=qYk6
------END PGP SIGNATURE-----
-
---=-61g0PzXVN+TYbu3M3vlZ--
+Thanks,
+Sekhar
