@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932550Ab2JNOpW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:45:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46808 "EHLO
+	id S932476Ab2JNOqf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:46:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46776 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932473Ab2JNOoW (ORCPT
+	by vger.kernel.org with ESMTP id S932443Ab2JNOoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:44:22 -0400
-Message-Id: <20121014143538.018983778@decadent.org.uk>
+	Sun, 14 Oct 2012 10:44:18 -0400
+Message-Id: <20121014143537.883742001@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:04 +0100
+Date: Sun, 14 Oct 2012 15:36:03 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Donald Dutile <ddutile@redhat.com>, Chris Wright <chrisw@sous-sol.org>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [ 031/147] intel-iommu: Default to non-coherent for domains unattached to
- iommus
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 030/147] powerpc/eeh: Lock module while handling EEH event
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,53 +29,256 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
 
-commit 2e12bc29fc5a12242d68e11875db3dd58efad9ff upstream.
+commit feadf7c0a1a7c08c74bebb4a13b755f8c40e3bbc upstream.
 
-domain_update_iommu_coherency() currently defaults to setting domains
-as coherent when the domain is not attached to any iommus.  This
-allows for a window in domain_context_mapping_one() where such a
-domain can update context entries non-coherently, and only after
-update the domain capability to clear iommu_coherency.
+The EEH core is talking with the PCI device driver to determine the
+action (purely reset, or PCI device removal). During the period, the
+driver might be unloaded and in turn causes kernel crash as follows:
 
-This can be seen using KVM device assignment on VT-d systems that
-do not support coherency in the ecap register.  When a device is
-added to a guest, a domain is created (iommu_coherency = 0), the
-device is attached, and ranges are mapped.  If we then hot unplug
-the device, the coherency is updated and set to the default (1)
-since no iommus are attached to the domain.  A subsequent attach
-of a device makes use of the same dmar domain (now marked coherent)
-updates context entries with coherency enabled, and only disables
-coherency as the last step in the process.
+EEH: Detected PCI bus error on PHB#4-PE#10000
+EEH: This PCI device has failed 3 times in the last hour
+lpfc 0004:01:00.0: 0:2710 PCI channel disable preparing for reset
+Unable to handle kernel paging request for data at address 0x00000490
+Faulting instruction address: 0xd00000000e682c90
+cpu 0x1: Vector: 300 (Data Access) at [c000000fc75ffa20]
+    pc: d00000000e682c90: .lpfc_io_error_detected+0x30/0x240 [lpfc]
+    lr: d00000000e682c8c: .lpfc_io_error_detected+0x2c/0x240 [lpfc]
+    sp: c000000fc75ffca0
+   msr: 8000000000009032
+   dar: 490
+ dsisr: 40000000
+  current = 0xc000000fc79b88b0
+  paca    = 0xc00000000edb0380	 softe: 0	 irq_happened: 0x00
+    pid   = 3386, comm = eehd
+enter ? for help
+[c000000fc75ffca0] c000000fc75ffd30 (unreliable)
+[c000000fc75ffd30] c00000000004fd3c .eeh_report_error+0x7c/0xf0
+[c000000fc75ffdc0] c00000000004ee00 .eeh_pe_dev_traverse+0xa0/0x180
+[c000000fc75ffe70] c00000000004ffd8 .eeh_handle_event+0x68/0x300
+[c000000fc75fff00] c0000000000503a0 .eeh_event_handler+0x130/0x1a0
+[c000000fc75fff90] c000000000020138 .kernel_thread+0x54/0x70
+1:mon>
 
-To fix this, switch domain_update_iommu_coherency() to use the
-safer, non-coherent default for domains not attached to iommus.
+The patch increases the reference of the corresponding driver modules
+while EEH core does the negotiation with PCI device driver so that the
+corresponding driver modules can't be unloaded during the period and
+we're safe to refer the callbacks.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Tested-by: Donald Dutile <ddutile@redhat.com>
-Acked-by: Donald Dutile <ddutile@redhat.com>
-Acked-by: Chris Wright <chrisw@sous-sol.org>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-[bwh: Backported to 3.2: dmar_domain::iommu_bmp is a single unsigned long
- not an array, so add &]
+Reported-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Reporting functions return int (success = 0), not void * (success = NULL)
+ - Assume that the 'dev' arguments are non-null]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/iommu/intel-iommu.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -563,7 +563,9 @@ static void domain_update_iommu_coherenc
- {
- 	int i;
+--- a/arch/powerpc/platforms/pseries/eeh_driver.c
++++ b/arch/powerpc/platforms/pseries/eeh_driver.c
+@@ -25,6 +25,7 @@
+ #include <linux/delay.h>
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
++#include <linux/module.h>
+ #include <linux/pci.h>
+ #include <asm/eeh.h>
+ #include <asm/eeh_event.h>
+@@ -41,6 +42,41 @@ static inline const char * pcid_name (st
+ 	return "";
+ }
  
--	domain->iommu_coherency = 1;
-+	i = find_first_bit(&domain->iommu_bmp, g_num_of_iommus);
++/**
++ * eeh_pcid_get - Get the PCI device driver
++ * @pdev: PCI device
++ *
++ * The function is used to retrieve the PCI device driver for
++ * the indicated PCI device. Besides, we will increase the reference
++ * of the PCI device driver to prevent that being unloaded on
++ * the fly. Otherwise, kernel crash would be seen.
++ */
++static inline struct pci_driver *eeh_pcid_get(struct pci_dev *pdev)
++{
++	if (!pdev || !pdev->driver)
++		return NULL;
 +
-+	domain->iommu_coherency = i < g_num_of_iommus ? 1 : 0;
++	if (!try_module_get(pdev->driver->driver.owner))
++		return NULL;
++
++	return pdev->driver;
++}
++
++/**
++ * eeh_pcid_put - Dereference on the PCI device driver
++ * @pdev: PCI device
++ *
++ * The function is called to do dereference on the PCI device
++ * driver of the indicated PCI device.
++ */
++static inline void eeh_pcid_put(struct pci_dev *pdev)
++{
++	if (!pdev || !pdev->driver)
++		return;
++
++	module_put(pdev->driver->driver.owner);
++}
++
+ #if 0
+ static void print_device_node_tree(struct pci_dn *pdn, int dent)
+ {
+@@ -109,18 +145,20 @@ static void eeh_enable_irq(struct pci_de
+ static int eeh_report_error(struct pci_dev *dev, void *userdata)
+ {
+ 	enum pci_ers_result rc, *res = userdata;
+-	struct pci_driver *driver = dev->driver;
++	struct pci_driver *driver;
  
- 	for_each_set_bit(i, &domain->iommu_bmp, g_num_of_iommus) {
- 		if (!ecap_coherent(g_iommus[i]->ecap)) {
+ 	dev->error_state = pci_channel_io_frozen;
+ 
+-	if (!driver)
+-		return 0;
++	driver = eeh_pcid_get(dev);
++	if (!driver) return 0;
+ 
+ 	eeh_disable_irq(dev);
+ 
+ 	if (!driver->err_handler ||
+-	    !driver->err_handler->error_detected)
++	    !driver->err_handler->error_detected) {
++		eeh_pcid_put(dev);
+ 		return 0;
++	}
+ 
+ 	rc = driver->err_handler->error_detected (dev, pci_channel_io_frozen);
+ 
+@@ -128,6 +166,7 @@ static int eeh_report_error(struct pci_d
+ 	if (rc == PCI_ERS_RESULT_NEED_RESET) *res = rc;
+ 	if (*res == PCI_ERS_RESULT_NONE) *res = rc;
+ 
++	eeh_pcid_put(dev);
+ 	return 0;
+ }
+ 
+@@ -142,12 +181,15 @@ static int eeh_report_error(struct pci_d
+ static int eeh_report_mmio_enabled(struct pci_dev *dev, void *userdata)
+ {
+ 	enum pci_ers_result rc, *res = userdata;
+-	struct pci_driver *driver = dev->driver;
++	struct pci_driver *driver;
+ 
+-	if (!driver ||
+-	    !driver->err_handler ||
+-	    !driver->err_handler->mmio_enabled)
++	driver = eeh_pcid_get(dev);
++	if (!driver) return 0;
++	if (!driver->err_handler ||
++	    !driver->err_handler->mmio_enabled) {
++		eeh_pcid_put(dev);
+ 		return 0;
++	}
+ 
+ 	rc = driver->err_handler->mmio_enabled (dev);
+ 
+@@ -155,6 +197,7 @@ static int eeh_report_mmio_enabled(struc
+ 	if (rc == PCI_ERS_RESULT_NEED_RESET) *res = rc;
+ 	if (*res == PCI_ERS_RESULT_NONE) *res = rc;
+ 
++	eeh_pcid_put(dev);
+ 	return 0;
+ }
+ 
+@@ -165,18 +208,20 @@ static int eeh_report_mmio_enabled(struc
+ static int eeh_report_reset(struct pci_dev *dev, void *userdata)
+ {
+ 	enum pci_ers_result rc, *res = userdata;
+-	struct pci_driver *driver = dev->driver;
+-
+-	if (!driver)
+-		return 0;
++	struct pci_driver *driver;
+ 
+ 	dev->error_state = pci_channel_io_normal;
+ 
++	driver = eeh_pcid_get(dev);
++	if (!driver) return 0;
++
+ 	eeh_enable_irq(dev);
+ 
+ 	if (!driver->err_handler ||
+-	    !driver->err_handler->slot_reset)
++	    !driver->err_handler->slot_reset) {
++		eeh_pcid_put(dev);
+ 		return 0;
++	}
+ 
+ 	rc = driver->err_handler->slot_reset(dev);
+ 	if ((*res == PCI_ERS_RESULT_NONE) ||
+@@ -184,6 +229,7 @@ static int eeh_report_reset(struct pci_d
+ 	if (*res == PCI_ERS_RESULT_DISCONNECT &&
+ 	     rc == PCI_ERS_RESULT_NEED_RESET) *res = rc;
+ 
++	eeh_pcid_put(dev);
+ 	return 0;
+ }
+ 
+@@ -193,21 +239,24 @@ static int eeh_report_reset(struct pci_d
+ 
+ static int eeh_report_resume(struct pci_dev *dev, void *userdata)
+ {
+-	struct pci_driver *driver = dev->driver;
++	struct pci_driver *driver;
+ 
+ 	dev->error_state = pci_channel_io_normal;
+ 
+-	if (!driver)
+-		return 0;
++	driver = eeh_pcid_get(dev);
++	if (!driver) return 0;
+ 
+ 	eeh_enable_irq(dev);
+ 
+ 	if (!driver->err_handler ||
+-	    !driver->err_handler->resume)
++	    !driver->err_handler->resume) {
++		eeh_pcid_put(dev);
+ 		return 0;
++	}
+ 
+ 	driver->err_handler->resume(dev);
+ 
++	eeh_pcid_put(dev);
+ 	return 0;
+ }
+ 
+@@ -220,21 +269,24 @@ static int eeh_report_resume(struct pci_
+ 
+ static int eeh_report_failure(struct pci_dev *dev, void *userdata)
+ {
+-	struct pci_driver *driver = dev->driver;
++	struct pci_driver *driver;
+ 
+ 	dev->error_state = pci_channel_io_perm_failure;
+ 
+-	if (!driver)
+-		return 0;
++	driver = eeh_pcid_get(dev);
++	if (!driver) return 0;
+ 
+ 	eeh_disable_irq(dev);
+ 
+ 	if (!driver->err_handler ||
+-	    !driver->err_handler->error_detected)
++	    !driver->err_handler->error_detected) {
++		eeh_pcid_put(dev);
+ 		return 0;
++	}
+ 
+ 	driver->err_handler->error_detected(dev, pci_channel_io_perm_failure);
+ 
++	eeh_pcid_put(dev);
+ 	return 0;
+ }
+ 
 
 
