@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab2JNOlx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:41:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46129 "EHLO
+	id S1754257Ab2JNOmV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:42:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46180 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754073Ab2JNOlu (ORCPT
+	by vger.kernel.org with ESMTP id S1754303Ab2JNOmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:41:50 -0400
-Message-Id: <20121014143553.238520353@decadent.org.uk>
+	Sun, 14 Oct 2012 10:42:10 -0400
+Message-Id: <20121014143551.888316605@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:57 +0100
+Date: Sun, 14 Oct 2012 15:37:47 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Elric Fu <elricfu1@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Miroslav Sabljic <miroslav.sabljic@avl.com>
-Subject: [ 144/147] xHCI: handle command after aborting the command ring
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 134/147] [SCSI] hpsa: dial down lockup detection during firmware flash
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,239 +28,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Elric Fu <elricfu1@gmail.com>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit b63f4053cc8aa22a98e3f9a97845afe6c15d0a0d upstream.
+commit e85c59746957fd6e3595d02cf614370056b5816e upstream.
 
-According to xHCI spec section 4.6.1.1 and section 4.6.1.2,
-after aborting a command on the command ring, xHC will
-generate a command completion event with its completion
-code set to Command Ring Stopped at least. If a command is
-currently executing at the time of aborting a command, xHC
-also generate a command completion event with its completion
-code set to Command Abort. When the command ring is stopped,
-software may remove, add, or rearrage Command Descriptors.
+Dial back the aggressiveness of the controller lockup detection thread.
+Currently it will declare the controller to be locked up if it goes
+for 10 seconds with no interrupts and no change in the heartbeat
+register.  Dial back this to 30 seconds with no heartbeat change, and
+also snoop the ioctl path and if a firmware flash command is detected,
+dial it back further to 4 minutes until the firmware flash command
+completes.  The reason for this is that during the firmware flash
+operation, the controller apparently doesn't update the heartbeat
+register as frequently as it is supposed to, and we can get a false
+positive.
 
-To cancel a command, software will initialize a command
-descriptor for the cancel command, and add it into a
-cancel_cmd_list of xhci. When the command ring is stopped,
-software will find the command trbs described by command
-descriptors in cancel_cmd_list and modify it to No Op
-command. If software can't find the matched trbs, we can
-think it had been finished.
-
-This patch should be backported to kernels as old as 3.0, that contain
-the commit 7ed603ecf8b68ab81f4c83097d3063d43ec73bb8 "xhci: Add an
-assertion to check for virt_dev=0 bug." That commit papers over a NULL
-pointer dereference, and this patch fixes the underlying issue that
-caused the NULL pointer dereference.
-
-Signed-off-by: Elric Fu <elricfu1@gmail.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: Miroslav Sabljic <miroslav.sabljic@avl.com>
-[bwh: Backported to 3.2: inc_deq() needs an additional 'consumer' argument;
- Jonathan Nieder worked out that this should be false]
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci-ring.c |  171 ++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 165 insertions(+), 6 deletions(-)
+ drivers/scsi/hpsa.c     |   39 ++++++++++++++++++++++++++++++++++-----
+ drivers/scsi/hpsa.h     |    2 ++
+ drivers/scsi/hpsa_cmd.h |    1 +
+ 3 files changed, 37 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -1154,6 +1154,20 @@ static void handle_reset_ep_completion(s
- 	}
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -532,12 +532,42 @@ static void set_performant_mode(struct c
+ 		c->busaddr |= 1 | (h->blockFetchTable[c->Header.SGList] << 1);
  }
  
-+/* Complete the command and detele it from the devcie's command queue.
-+ */
-+static void xhci_complete_cmd_in_cmd_wait_list(struct xhci_hcd *xhci,
-+		struct xhci_command *command, u32 status)
++static int is_firmware_flash_cmd(u8 *cdb)
 +{
-+	command->status = status;
-+	list_del(&command->cmd_list);
-+	if (command->completion)
-+		complete(command->completion);
-+	else
-+		xhci_free_command(xhci, command);
++	return cdb[0] == BMIC_WRITE && cdb[6] == BMIC_FLASH_FIRMWARE;
 +}
 +
-+
- /* Check to see if a command in the device's command queue matches this one.
-  * Signal the completion or free the command, and return 1.  Return 0 if the
-  * completed command isn't at the head of the command list.
-@@ -1172,15 +1186,144 @@ static int handle_cmd_in_cmd_wait_list(s
- 	if (xhci->cmd_ring->dequeue != command->command_trb)
- 		return 0;
- 
--	command->status = GET_COMP_CODE(le32_to_cpu(event->status));
--	list_del(&command->cmd_list);
--	if (command->completion)
--		complete(command->completion);
--	else
--		xhci_free_command(xhci, command);
-+	xhci_complete_cmd_in_cmd_wait_list(xhci, command,
-+			GET_COMP_CODE(le32_to_cpu(event->status)));
- 	return 1;
- }
- 
 +/*
-+ * Finding the command trb need to be cancelled and modifying it to
-+ * NO OP command. And if the command is in device's command wait
-+ * list, finishing and freeing it.
-+ *
-+ * If we can't find the command trb, we think it had already been
-+ * executed.
++ * During firmware flash, the heartbeat register may not update as frequently
++ * as it should.  So we dial down lockup detection during firmware flash. and
++ * dial it back up when firmware flash completes.
 + */
-+static void xhci_cmd_to_noop(struct xhci_hcd *xhci, struct xhci_cd *cur_cd)
++#define HEARTBEAT_SAMPLE_INTERVAL_DURING_FLASH (240 * HZ)
++#define HEARTBEAT_SAMPLE_INTERVAL (30 * HZ)
++static void dial_down_lockup_detection_during_fw_flash(struct ctlr_info *h,
++		struct CommandList *c)
 +{
-+	struct xhci_segment *cur_seg;
-+	union xhci_trb *cmd_trb;
-+	u32 cycle_state;
-+
-+	if (xhci->cmd_ring->dequeue == xhci->cmd_ring->enqueue)
++	if (!is_firmware_flash_cmd(c->Request.CDB))
 +		return;
-+
-+	/* find the current segment of command ring */
-+	cur_seg = find_trb_seg(xhci->cmd_ring->first_seg,
-+			xhci->cmd_ring->dequeue, &cycle_state);
-+
-+	/* find the command trb matched by cd from command ring */
-+	for (cmd_trb = xhci->cmd_ring->dequeue;
-+			cmd_trb != xhci->cmd_ring->enqueue;
-+			next_trb(xhci, xhci->cmd_ring, &cur_seg, &cmd_trb)) {
-+		/* If the trb is link trb, continue */
-+		if (TRB_TYPE_LINK_LE32(cmd_trb->generic.field[3]))
-+			continue;
-+
-+		if (cur_cd->cmd_trb == cmd_trb) {
-+
-+			/* If the command in device's command list, we should
-+			 * finish it and free the command structure.
-+			 */
-+			if (cur_cd->command)
-+				xhci_complete_cmd_in_cmd_wait_list(xhci,
-+					cur_cd->command, COMP_CMD_STOP);
-+
-+			/* get cycle state from the origin command trb */
-+			cycle_state = le32_to_cpu(cmd_trb->generic.field[3])
-+				& TRB_CYCLE;
-+
-+			/* modify the command trb to NO OP command */
-+			cmd_trb->generic.field[0] = 0;
-+			cmd_trb->generic.field[1] = 0;
-+			cmd_trb->generic.field[2] = 0;
-+			cmd_trb->generic.field[3] = cpu_to_le32(
-+					TRB_TYPE(TRB_CMD_NOOP) | cycle_state);
-+			break;
-+		}
-+	}
++	atomic_inc(&h->firmware_flash_in_progress);
++	h->heartbeat_sample_interval = HEARTBEAT_SAMPLE_INTERVAL_DURING_FLASH;
 +}
 +
-+static void xhci_cancel_cmd_in_cd_list(struct xhci_hcd *xhci)
++static void dial_up_lockup_detection_on_fw_flash_complete(struct ctlr_info *h,
++		struct CommandList *c)
 +{
-+	struct xhci_cd *cur_cd, *next_cd;
-+
-+	if (list_empty(&xhci->cancel_cmd_list))
-+		return;
-+
-+	list_for_each_entry_safe(cur_cd, next_cd,
-+			&xhci->cancel_cmd_list, cancel_cmd_list) {
-+		xhci_cmd_to_noop(xhci, cur_cd);
-+		list_del(&cur_cd->cancel_cmd_list);
-+		kfree(cur_cd);
-+	}
++	if (is_firmware_flash_cmd(c->Request.CDB) &&
++		atomic_dec_and_test(&h->firmware_flash_in_progress))
++		h->heartbeat_sample_interval = HEARTBEAT_SAMPLE_INTERVAL;
 +}
 +
-+/*
-+ * traversing the cancel_cmd_list. If the command descriptor according
-+ * to cmd_trb is found, the function free it and return 1, otherwise
-+ * return 0.
-+ */
-+static int xhci_search_cmd_trb_in_cd_list(struct xhci_hcd *xhci,
-+		union xhci_trb *cmd_trb)
-+{
-+	struct xhci_cd *cur_cd, *next_cd;
-+
-+	if (list_empty(&xhci->cancel_cmd_list))
-+		return 0;
-+
-+	list_for_each_entry_safe(cur_cd, next_cd,
-+			&xhci->cancel_cmd_list, cancel_cmd_list) {
-+		if (cur_cd->cmd_trb == cmd_trb) {
-+			if (cur_cd->command)
-+				xhci_complete_cmd_in_cmd_wait_list(xhci,
-+					cur_cd->command, COMP_CMD_STOP);
-+			list_del(&cur_cd->cancel_cmd_list);
-+			kfree(cur_cd);
-+			return 1;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * If the cmd_trb_comp_code is COMP_CMD_ABORT, we just check whether the
-+ * trb pointed by the command ring dequeue pointer is the trb we want to
-+ * cancel or not. And if the cmd_trb_comp_code is COMP_CMD_STOP, we will
-+ * traverse the cancel_cmd_list to trun the all of the commands according
-+ * to command descriptor to NO-OP trb.
-+ */
-+static int handle_stopped_cmd_ring(struct xhci_hcd *xhci,
-+		int cmd_trb_comp_code)
-+{
-+	int cur_trb_is_good = 0;
-+
-+	/* Searching the cmd trb pointed by the command ring dequeue
-+	 * pointer in command descriptor list. If it is found, free it.
-+	 */
-+	cur_trb_is_good = xhci_search_cmd_trb_in_cd_list(xhci,
-+			xhci->cmd_ring->dequeue);
-+
-+	if (cmd_trb_comp_code == COMP_CMD_ABORT)
-+		xhci->cmd_ring_state = CMD_RING_STATE_STOPPED;
-+	else if (cmd_trb_comp_code == COMP_CMD_STOP) {
-+		/* traversing the cancel_cmd_list and canceling
-+		 * the command according to command descriptor
-+		 */
-+		xhci_cancel_cmd_in_cd_list(xhci);
-+
-+		xhci->cmd_ring_state = CMD_RING_STATE_RUNNING;
-+		/*
-+		 * ring command ring doorbell again to restart the
-+		 * command ring
-+		 */
-+		if (xhci->cmd_ring->dequeue != xhci->cmd_ring->enqueue)
-+			xhci_ring_cmd_db(xhci);
-+	}
-+	return cur_trb_is_good;
-+}
-+
- static void handle_cmd_completion(struct xhci_hcd *xhci,
- 		struct xhci_event_cmd *event)
+ static void enqueue_cmd_and_start_io(struct ctlr_info *h,
+ 	struct CommandList *c)
  {
-@@ -1206,6 +1349,22 @@ static void handle_cmd_completion(struct
- 		xhci->error_bitmask |= 1 << 5;
+ 	unsigned long flags;
+ 
+ 	set_performant_mode(h, c);
++	dial_down_lockup_detection_during_fw_flash(h, c);
+ 	spin_lock_irqsave(&h->lock, flags);
+ 	addQ(&h->reqQ, c);
+ 	h->Qdepth++;
+@@ -3032,6 +3062,7 @@ static inline int bad_tag(struct ctlr_in
+ static inline void finish_cmd(struct CommandList *c, u32 raw_tag)
+ {
+ 	removeQ(c);
++	dial_up_lockup_detection_on_fw_flash_complete(c->h, c);
+ 	if (likely(c->cmd_type == CMD_SCSI))
+ 		complete_scsi_command(c);
+ 	else if (c->cmd_type == CMD_IOCTL_PEND)
+@@ -4172,9 +4203,6 @@ static void controller_lockup_detected(s
+ 	spin_unlock_irqrestore(&h->lock, flags);
+ }
+ 
+-#define HEARTBEAT_SAMPLE_INTERVAL (10 * HZ)
+-#define HEARTBEAT_CHECK_MINIMUM_INTERVAL (HEARTBEAT_SAMPLE_INTERVAL / 2)
+-
+ static void detect_controller_lockup(struct ctlr_info *h)
+ {
+ 	u64 now;
+@@ -4185,7 +4213,7 @@ static void detect_controller_lockup(str
+ 	now = get_jiffies_64();
+ 	/* If we've received an interrupt recently, we're ok. */
+ 	if (time_after64(h->last_intr_timestamp +
+-				(HEARTBEAT_CHECK_MINIMUM_INTERVAL), now))
++				(h->heartbeat_sample_interval), now))
  		return;
- 	}
-+
-+	if ((GET_COMP_CODE(le32_to_cpu(event->status)) == COMP_CMD_ABORT) ||
-+		(GET_COMP_CODE(le32_to_cpu(event->status)) == COMP_CMD_STOP)) {
-+		/* If the return value is 0, we think the trb pointed by
-+		 * command ring dequeue pointer is a good trb. The good
-+		 * trb means we don't want to cancel the trb, but it have
-+		 * been stopped by host. So we should handle it normally.
-+		 * Otherwise, driver should invoke inc_deq() and return.
-+		 */
-+		if (handle_stopped_cmd_ring(xhci,
-+				GET_COMP_CODE(le32_to_cpu(event->status)))) {
-+			inc_deq(xhci, xhci->cmd_ring, false);
-+			return;
-+		}
-+	}
-+
- 	switch (le32_to_cpu(xhci->cmd_ring->dequeue->generic.field[3])
- 		& TRB_TYPE_BITMASK) {
- 	case TRB_TYPE(TRB_ENABLE_SLOT):
+ 
+ 	/*
+@@ -4194,7 +4222,7 @@ static void detect_controller_lockup(str
+ 	 * otherwise don't care about signals in this thread.
+ 	 */
+ 	if (time_after64(h->last_heartbeat_timestamp +
+-				(HEARTBEAT_CHECK_MINIMUM_INTERVAL), now))
++				(h->heartbeat_sample_interval), now))
+ 		return;
+ 
+ 	/* If heartbeat has not changed since we last looked, we're not ok. */
+@@ -4236,6 +4264,7 @@ static void add_ctlr_to_lockup_detector_
+ {
+ 	unsigned long flags;
+ 
++	h->heartbeat_sample_interval = HEARTBEAT_SAMPLE_INTERVAL;
+ 	spin_lock_irqsave(&lockup_detector_lock, flags);
+ 	list_add_tail(&h->lockup_list, &hpsa_ctlr_list);
+ 	spin_unlock_irqrestore(&lockup_detector_lock, flags);
+--- a/drivers/scsi/hpsa.h
++++ b/drivers/scsi/hpsa.h
+@@ -124,6 +124,8 @@ struct ctlr_info {
+ 	u64 last_intr_timestamp;
+ 	u32 last_heartbeat;
+ 	u64 last_heartbeat_timestamp;
++	u32 heartbeat_sample_interval;
++	atomic_t firmware_flash_in_progress;
+ 	u32 lockup_detected;
+ 	struct list_head lockup_list;
+ };
+--- a/drivers/scsi/hpsa_cmd.h
++++ b/drivers/scsi/hpsa_cmd.h
+@@ -163,6 +163,7 @@ struct SenseSubsystem_info {
+ #define BMIC_WRITE 0x27
+ #define BMIC_CACHE_FLUSH 0xc2
+ #define HPSA_CACHE_FLUSH 0x01	/* C2 was already being used by HPSA */
++#define BMIC_FLASH_FIRMWARE 0xF7
+ 
+ /* Command List Structure */
+ union SCSI3Addr {
 
 
