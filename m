@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab2JNSN7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 14:13:59 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:46156 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299Ab2JNSN6 (ORCPT
+	id S1752869Ab2JNSUn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 14:20:43 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:39656 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752109Ab2JNSUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 14:13:58 -0400
-From: Fabio Estevam <festevam@gmail.com>
-To: akpm@linux-foundation.org
-Cc: s.hauer@pengutronix.de, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, markus@oberhumer.com,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] lib: decompress_unlzo: Change include file name
-Date: Sun, 14 Oct 2012 15:13:10 -0300
-Message-Id: <1350238390-1549-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 14 Oct 2012 14:20:42 -0400
+Date: Sun, 14 Oct 2012 20:19:41 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: dmarkh@cfl.rr.com
+Cc: markh@compro.net, linux-kernel@vger.kernel.org,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Subject: Re: Intel graphics drm issue?
+Message-ID: <20121014201941.22284249@neptune.home>
+In-Reply-To: <507AFE69.70405@cfl.rr.com>
+References: <507812E8.3060607@compro.net>
+	<20121012231459.166e29fd@neptune.home>
+	<5079B97C.7020401@cfl.rr.com>
+	<5079BE5C.8020401@cfl.rr.com>
+	<20121014104138.7e8a9c59@neptune.home>
+	<507A997D.7070508@cfl.rr.com>
+	<20121014130323.06f0225d@neptune.home>
+	<507AEE4A.1000907@cfl.rr.com>
+	<20121014192253.5a7517ef@neptune.home>
+	<507AFE69.70405@cfl.rr.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.12; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+On Sun, 14 October 2012 Mark Hounschell <dmarkh@cfl.rr.com> wrote:
+> >> And could I ask if this simple pgm might work to build the file I need?
+> >
+> > It looks fine. You can also check the output with hexdump just to
+> > make sure it looks sane.
+> 
+> Did that and the data looks swapped compared to the array written, but I 
+> guess that's normal?
 
-Commit 7c979cebc (lib/lzo: Rename lzo1x_decompress.c to lzo1x_decompress_safe.c) 
-renamed lzo1x_decompress.c file, but missed to update lib/decompress_unlzo.c,
-which breaks imx_v6_v7_defconfig build:
+That might very well be presentation issue, how did you call hexdump?
+When called with no arguments but filename it groups bytes as words and
+those look swapped (on little-endian), but `hexdump -C $file` is fine,
+dumping each byte individually.
 
-arch/arm/boot/compressed/../../../../lib/decompress_unlzo.c:34:34: fatal error: lzo/lzo1x_decompress.c: No such file or directory
+> > If it's broken kernel will tell you that checksum does not match.
+> >
+> 
+> So the  check sum is actually already in the data provided by the service 
+> manual then.
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- lib/decompress_unlzo.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Yes, checksum byte is part of the EDID blob.
 
-diff --git a/lib/decompress_unlzo.c b/lib/decompress_unlzo.c
-index 4531294..960183d 100644
---- a/lib/decompress_unlzo.c
-+++ b/lib/decompress_unlzo.c
-@@ -31,7 +31,7 @@
-  */
- 
- #ifdef STATIC
--#include "lzo/lzo1x_decompress.c"
-+#include "lzo/lzo1x_decompress_safe.c"
- #else
- #include <linux/decompress/unlzo.h>
- #endif
--- 
-1.7.9.5
+Bruno
 
+> > In any case the (successful) loading of edid should be visible in kernel
+> > log.
+> >
+> 
+> I'll be trying this a little later in the day.
+> 
+> Thanks again
+> Mark
