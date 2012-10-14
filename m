@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362Ab2JNOoA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:44:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46679 "EHLO
+	id S932389Ab2JNOoF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:44:05 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46710 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932301Ab2JNOnx (ORCPT
+	by vger.kernel.org with ESMTP id S932301Ab2JNOoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:43:53 -0400
-Message-Id: <20121014143540.939763440@decadent.org.uk>
+	Sun, 14 Oct 2012 10:44:01 -0400
+Message-Id: <20121014143540.362379404@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:25 +0100
+Date: Sun, 14 Oct 2012 15:36:21 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Williams <djbw@fb.com>, Jack Wang <jack_wang@usish.com>,
-        John Drescher <drescherjm@gmail.com>,
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 052/147] [SCSI] scsi_remove_target: fix softlockup regression on hot remove
+Subject: [ 048/147] [SCSI] zfcp: remove invalid reference to list iterator variable
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,90 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <djbw@fb.com>
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-commit bc3f02a795d3b4faa99d37390174be2a75d091bd upstream.
+commit ca579c9f136af4274ccfd1bcaee7f38a29a0e2e9 upstream.
 
-John reports:
- BUG: soft lockup - CPU#2 stuck for 23s! [kworker/u:8:2202]
- [..]
- Call Trace:
-  [<ffffffff8141782a>] scsi_remove_target+0xda/0x1f0
-  [<ffffffff81421de5>] sas_rphy_remove+0x55/0x60
-  [<ffffffff81421e01>] sas_rphy_delete+0x11/0x20
-  [<ffffffff81421e35>] sas_port_delete+0x25/0x160
-  [<ffffffff814549a3>] mptsas_del_end_device+0x183/0x270
+If list_for_each_entry, etc complete a traversal of the list, the iterator
+variable ends up pointing to an address at an offset from the list head,
+and not a meaningful structure.  Thus this value should not be used after
+the end of the iterator.  Replace port->adapter->scsi_host by
+adapter->scsi_host.
 
-...introduced by commit 3b661a9 "[SCSI] fix hot unplug vs async scan race".
+This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
 
-Don't restart lookup of more stargets in the multi-target case, just
-arrange to traverse the list once, on the assumption that new targets
-are always added at the end.  There is no guarantee that the target will
-change state in scsi_target_reap() so we can end up spinning if we
-restart.
+Oversight in upsteam commit of v2.6.37
+a1ca48319a9aa1c5b57ce142f538e76050bb8972
+"[SCSI] zfcp: Move ACL/CFDC code to zfcp_cfdc.c"
+which merged the content of zfcp_erp_port_access_changed().
 
-Acked-by: Jack Wang <jack_wang@usish.com>
-LKML-Reference: <CAEhu1-6wq1YsNiscGMwP4ud0Q+MrViRzv=kcWCQSBNc8c68N5Q@mail.gmail.com>
-Reported-by: John Drescher <drescherjm@gmail.com>
-Tested-by: John Drescher <drescherjm@gmail.com>
-Signed-off-by: Dan Williams <djbw@fb.com>
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Reviewed-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/scsi_sysfs.c |   30 ++++++++++++++----------------
- 1 file changed, 14 insertions(+), 16 deletions(-)
+ drivers/s390/scsi/zfcp_cfdc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index 093d4f6..ce5224c 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -1031,33 +1031,31 @@ static void __scsi_remove_target(struct scsi_target *starget)
- void scsi_remove_target(struct device *dev)
- {
- 	struct Scsi_Host *shost = dev_to_shost(dev->parent);
--	struct scsi_target *starget, *found;
-+	struct scsi_target *starget, *last = NULL;
- 	unsigned long flags;
- 
-- restart:
--	found = NULL;
-+	/* remove targets being careful to lookup next entry before
-+	 * deleting the last
-+	 */
- 	spin_lock_irqsave(shost->host_lock, flags);
- 	list_for_each_entry(starget, &shost->__targets, siblings) {
- 		if (starget->state == STARGET_DEL)
- 			continue;
- 		if (starget->dev.parent == dev || &starget->dev == dev) {
--			found = starget;
--			found->reap_ref++;
--			break;
-+			/* assuming new targets arrive at the end */
-+			starget->reap_ref++;
-+			spin_unlock_irqrestore(shost->host_lock, flags);
-+			if (last)
-+				scsi_target_reap(last);
-+			last = starget;
-+			__scsi_remove_target(starget);
-+			spin_lock_irqsave(shost->host_lock, flags);
- 		}
+diff --git a/drivers/s390/scsi/zfcp_cfdc.c b/drivers/s390/scsi/zfcp_cfdc.c
+index fbd8b4d..49b82e4 100644
+--- a/drivers/s390/scsi/zfcp_cfdc.c
++++ b/drivers/s390/scsi/zfcp_cfdc.c
+@@ -293,7 +293,7 @@ void zfcp_cfdc_adapter_access_changed(struct zfcp_adapter *adapter)
  	}
- 	spin_unlock_irqrestore(shost->host_lock, flags);
+ 	read_unlock_irqrestore(&adapter->port_list_lock, flags);
  
--	if (found) {
--		__scsi_remove_target(found);
--		scsi_target_reap(found);
--		/* in the case where @dev has multiple starget children,
--		 * continue removing.
--		 *
--		 * FIXME: does such a case exist?
--		 */
--		goto restart;
--	}
-+	if (last)
-+		scsi_target_reap(last);
- }
- EXPORT_SYMBOL(scsi_remove_target);
- 
+-	shost_for_each_device(sdev, port->adapter->scsi_host) {
++	shost_for_each_device(sdev, adapter->scsi_host) {
+ 		zfcp_sdev = sdev_to_zfcp(sdev);
+ 		status = atomic_read(&zfcp_sdev->status);
+ 		if ((status & ZFCP_STATUS_COMMON_ACCESS_DENIED) ||
 
 
