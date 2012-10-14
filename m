@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab2JNPRx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:17:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46044 "EHLO
+	id S1753723Ab2JNOld (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:41:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46017 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753757Ab2JNOlf (ORCPT
+	by vger.kernel.org with ESMTP id S1753422Ab2JNOl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:41:35 -0400
-Message-Id: <20121014143534.740486772@decadent.org.uk>
+	Sun, 14 Oct 2012 10:41:29 -0400
+Message-Id: <20121014143535.671135982@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:35:40 +0100
+Date: Sun, 14 Oct 2012 15:35:47 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        xiaojin <jin.xiao@intel.com>, "Yin, Fengwei" <fengwei.yin@intel.com>,
+        Russ Gorby <russ.gorby@intel.com>,
+        "Kappel, LaurentX" <laurentx.kappel@intel.com>,
         Alan Cox <alan@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 007/147] n_gsm.c: Implement 3GPP27.010 DLC start-up procedure in MUX
+Subject: [ 014/147] n_gsm: memory leak in uplink error path
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,41 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: xiaojin <jin.xiao@intel.com>
+From: Russ Gorby <russ.gorby@intel.com>
 
-commit 7e8ac7b23b67416700dfb8b4136a4e81ce675b48 upstream.
+commit 88ed2a60610974443335c924d7cb8e5dcf9dbdc1 upstream.
 
-In 3GPP27.010 5.8.1, it defined:
-The TE multiplexer initiates the establishment of the multiplexer control channel by sending a SABM frame on DLCI 0 using the procedures of clause 5.4.1.
-Once the multiplexer channel is established other DLCs may be established using the procedures of clause 5.4.1.
-This patch implement 5.8.1 in MUX level, it make sure DLC0 is the first channel to be setup.
+Uplink (TX) network data will go through gsm_dlci_data_output_framed
+there is a bug where if memory allocation fails, the skb which
+has already been pulled off the list will be lost.
 
-[or for those not familiar with the specification: it was possible to try
- and open a data connection while the control channel was not yet fully
- open, which is a spec violation and confuses some modems]
+In addition TX skbs were being processed in LIFO order
 
-Signed-off-by: xiaojin <jin.xiao@intel.com>
-Tested-by: Yin, Fengwei <fengwei.yin@intel.com>
-[tweaked the order we check things and error code]
+Fixed the memory leak, and changed to FIFO order processing
+
+Signed-off-by: Russ Gorby <russ.gorby@intel.com>
+Tested-by: Kappel, LaurentX <laurentx.kappel@intel.com>
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/n_gsm.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/tty/n_gsm.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
+index a8c82f5..3e210a4 100644
 --- a/drivers/tty/n_gsm.c
 +++ b/drivers/tty/n_gsm.c
-@@ -2889,6 +2889,10 @@ static int gsmtty_open(struct tty_struct
- 	gsm = gsm_mux[mux];
- 	if (gsm->dead)
- 		return -EL2HLT;
-+	/* If DLCI 0 is not yet fully open return an error. This is ok from a locking
-+	   perspective as we don't have to worry about this if DLCI0 is lost */
-+	if (gsm->dlci[0] && gsm->dlci[0]->state != DLCI_OPEN) 
-+		return -EL2NSYNC;
- 	dlci = gsm->dlci[line];
- 	if (dlci == NULL)
- 		dlci = gsm_dlci_alloc(gsm, line);
+@@ -868,7 +868,7 @@ static int gsm_dlci_data_output_framed(struct gsm_mux *gsm,
+ 
+ 	/* dlci->skb is locked by tx_lock */
+ 	if (dlci->skb == NULL) {
+-		dlci->skb = skb_dequeue(&dlci->skb_list);
++		dlci->skb = skb_dequeue_tail(&dlci->skb_list);
+ 		if (dlci->skb == NULL)
+ 			return 0;
+ 		first = 1;
+@@ -892,8 +892,11 @@ static int gsm_dlci_data_output_framed(struct gsm_mux *gsm,
+ 
+ 	/* FIXME: need a timer or something to kick this so it can't
+ 	   get stuck with no work outstanding and no buffer free */
+-	if (msg == NULL)
++	if (msg == NULL) {
++		skb_queue_tail(&dlci->skb_list, dlci->skb);
++		dlci->skb = NULL;
+ 		return -ENOMEM;
++	}
+ 	dp = msg->data;
+ 
+ 	if (dlci->adaption == 4) { /* Interruptible framed (Packetised Data) */
 
 
