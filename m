@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754429Ab2JNOmS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:42:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46190 "EHLO
+	id S1754408Ab2JNOmP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:42:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46160 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754344Ab2JNOmJ (ORCPT
+	by vger.kernel.org with ESMTP id S1754278Ab2JNOmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:42:09 -0400
-Message-Id: <20121014143551.483150486@decadent.org.uk>
+	Sun, 14 Oct 2012 10:42:05 -0400
+Message-Id: <20121014143552.169789826@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:44 +0100
+Date: Sun, 14 Oct 2012 15:37:49 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, Josh Boyer <jwboyer@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 131/147] mempolicy: fix a memory corruption by refcount  imbalance in alloc_pages_vma()
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [ 136/147] netfilter: nf_ct_ipv4: packets with wrong ihl are  invalid
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,56 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
 
-commit 00442ad04a5eac08a98255697c510e708f6082e2 upstream.
+commit 07153c6ec074257ade76a461429b567cff2b3a1e upstream.
 
-Commit cc9a6c877661 ("cpuset: mm: reduce large amounts of memory barrier
-related damage v3") introduced a potential memory corruption.
-shmem_alloc_page() uses a pseudo vma and it has one significant unique
-combination, vma->vm_ops=NULL and vma->policy->flags & MPOL_F_SHARED.
+It was reported that the Linux kernel sometimes logs:
 
-get_vma_policy() does NOT increase a policy ref when vma->vm_ops=NULL
-and mpol_cond_put() DOES decrease a policy ref when a policy has
-MPOL_F_SHARED.  Therefore, when a cpuset update race occurs,
-alloc_pages_vma() falls in 'goto retry_cpuset' path, decrements the
-reference count and frees the policy prematurely.
+klogd: [2629147.402413] kernel BUG at net / netfilter /
+nf_conntrack_proto_tcp.c: 447!
+klogd: [1072212.887368] kernel BUG at net / netfilter /
+nf_conntrack_proto_tcp.c: 392
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Cc: Josh Boyer <jwboyer@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+ipv4_get_l4proto() in nf_conntrack_l3proto_ipv4.c and tcp_error() in
+nf_conntrack_proto_tcp.c should catch malformed packets, so the errors
+at the indicated lines - TCP options parsing - should not happen.
+However, tcp_error() relies on the "dataoff" offset to the TCP header,
+calculated by ipv4_get_l4proto().  But ipv4_get_l4proto() does not check
+bogus ihl values in IPv4 packets, which then can slip through tcp_error()
+and get caught at the TCP options parsing routines.
+
+The patch fixes ipv4_get_l4proto() by invalidating packets with bogus
+ihl value.
+
+The patch closes netfilter bugzilla id 771.
+
+Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/mempolicy.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 1763418..3d64b36 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1552,8 +1552,18 @@ struct mempolicy *get_vma_policy(struct task_struct *task,
- 									addr);
- 			if (vpol)
- 				pol = vpol;
--		} else if (vma->vm_policy)
-+		} else if (vma->vm_policy) {
- 			pol = vma->vm_policy;
+diff --git a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
+index 750b06a..cf73cc7 100644
+--- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
++++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
+@@ -84,6 +84,14 @@ static int ipv4_get_l4proto(const struct sk_buff *skb, unsigned int nhoff,
+ 	*dataoff = nhoff + (iph->ihl << 2);
+ 	*protonum = iph->protocol;
+ 
++	/* Check bogus IP headers */
++	if (*dataoff > skb->len) {
++		pr_debug("nf_conntrack_ipv4: bogus IPv4 packet: "
++			 "nhoff %u, ihl %u, skblen %u\n",
++			 nhoff, iph->ihl << 2, skb->len);
++		return -NF_ACCEPT;
++	}
 +
-+			/*
-+			 * shmem_alloc_page() passes MPOL_F_SHARED policy with
-+			 * a pseudo vma whose vma->vm_ops=NULL. Take a reference
-+			 * count on these policies which will be dropped by
-+			 * mpol_cond_put() later
-+			 */
-+			if (mpol_needs_cond_ref(pol))
-+				mpol_get(pol);
-+		}
- 	}
- 	if (!pol)
- 		pol = &default_policy;
+ 	return NF_ACCEPT;
+ }
+ 
 
 
