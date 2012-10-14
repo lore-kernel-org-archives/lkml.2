@@ -1,111 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175Ab2JNPT6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:19:58 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:53928 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932080Ab2JNPTz (ORCPT
+	id S1753543Ab2JNOl1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:41:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46001 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753422Ab2JNOlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 11:19:55 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vyacheslav Dubeyko <slava@dubeyko.com>
-Subject: Re: [PATCH 11/16] f2fs: add inode operations for special inodes
-Date: Sun, 14 Oct 2012 15:19:37 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Jaegeuk Kim <jaegeuk.kim@gmail.com>,
-        =?utf-8?q?=EA=B9=80=EC=9E=AC=EA=B7=B9?= <jaegeuk.kim@samsung.com>,
-        viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-References: <001201cda2f1$633db960$29b92c20$%kim@samsung.com> <1350198545.1915.233.camel@kjgkr> <A7BD3CDD-330C-498A-BB36-631DE6B9777C@dubeyko.com>
-In-Reply-To: <A7BD3CDD-330C-498A-BB36-631DE6B9777C@dubeyko.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201210141519.37752.arnd@arndb.de>
-X-Provags-ID: V02:K0:RG86EFzFQYUe0jHage3D6avOiJhtO9Rmk+dI5x4v1uI
- sr2ZSkn7im107YK2GmmEXGeflXUd2oADFV6XSXY1CVlxgQbP9b
- gs4iylkpRkACsmtRPiYzcGhtD1xPgrmUmfzmLgFVRe/E4GhyEw
- OfLNESA16Hmo30rruWPrgJsuOrrXbn4Q+9w2AoMeB9e9uGBGLa
- tGC9j2alfYP3FsqOcP8hk+ieqORnaQ8XUbYF3rxvZhATv2oLpR
- FtcgZ/OMabWdeB8JieVNirFnRW0PbbEyD/e0FgKFoSvTmx4PAZ
- QJvoqqrRvvRAnJ0ViZY2MT/kkjz4eRH1VesV2lJ/2veBFqZbAX
- krgvCz/QYp0XP8XabwDI=
+	Sun, 14 Oct 2012 10:41:24 -0400
+Message-Id: <20121014143535.407123363@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Sun, 14 Oct 2012 15:35:45 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Russ Gorby <russ.gorby@intel.com>,
+        "Yin, Fengwei" <fengwei.yin@intel.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 012/147] n_gsm: avoid accessing freed memory during CMD_FCOFF condition
+In-Reply-To: <20121014143533.742627615@decadent.org.uk>
+X-SA-Exim-Connect-IP: 77.75.106.1
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 14 October 2012, Vyacheslav Dubeyko wrote: 
-> On Oct 14, 2012, at 11:09 AM, Jaegeuk Kim wrote:
-> > 2012-10-14 (일), 02:21 +0400, Vyacheslav Dubeyko:
-> >> 
-> >> By the way, how about extended attributes? It is possible to save in extended attribute
-> >> a hint about file's content nature during creation operation or later. Moreover, extended
-'> >> attribute gives possibility to change hint after renaming operation, for example.
-> >> 
-> > 
-> > I think xattr is not a proper way to communicate between file system and
-> > users.
-> 
-> I don't understand why you think that xattr is not proper way. Extended attributes are the
-> way of adding some additional properties to filesystem object, from my point of view.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-There are different kinds of extended attributes, as described by
-http://linux.die.net/man/5/attr
+------------------
 
-I would think that the system namespace can hold an attribute that can be used for this.
+From: Russ Gorby <russ.gorby@intel.com>
 
-> > How about fadvise()?
-> > 
-> 
-> The fadvise() is a good suggestion. But, as I can understand, such solution requires
-> using fadvise() during application implementation. So, from one point of view, it exists
-> many applications that doesn't use fadvise() and, from another point of view, developers
-> change style of coding not so easy.
+commit b4338e1efc339986cf6c0a3652906e914a86e2d3 upstream.
 
-Most importantly, fadvise is about accessing an open file, and I would expect anything
-passed in there to be forgotten after the file is closed, while an attribute is associated
-with the inode and should persist across open/close as well as mount/umount cycles.
+gsm_data_kick was recently modified to allow messages on the
+tx queue bound for DLCI0 to flow even during FCOFF conditions.
+Unfortunately we introduced a bug discovered by code inspection
+where subsequent list traversers can access freed memory if
+the DLCI0 messages were not all at the head of the list.
 
-> Extended attributes are more flexible way, from my point of view. The xattr gives
-> possibility to make hint to filesystem at any time and without any dependencies with
-> application's functional opportunities. Documented way of using such extended attributes
-> gives to user flexible way of manipulation of filesystem behavior (but I remember that
-> you don't believe in an user :-)).
-> 
-> So, I think that fadvise() and extended attributes can be complementary solutions.
+Replaced singly linked tx list w/ a list_head and used
+provided interfaces for traversing and deleting members.
 
-Right. Another option is to have ext4 style attributes, see 
-http://linux.die.net/man/1/chattr
+Signed-off-by: Russ Gorby <russ.gorby@intel.com>
+Tested-by: Yin, Fengwei <fengwei.yin@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/tty/n_gsm.c |   40 +++++++++++++---------------------------
+ 1 file changed, 13 insertions(+), 27 deletions(-)
 
-Unlike extended attributes, there is a limited number of those, and they can
-only be boolean flags, but that might be enough for this particular use case.
+diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
+index 0d93e51..6f4f8d3 100644
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -108,7 +108,7 @@ struct gsm_mux_net {
+  */
+ 
+ struct gsm_msg {
+-	struct gsm_msg *next;
++	struct list_head list;
+ 	u8 addr;		/* DLCI address + flags */
+ 	u8 ctrl;		/* Control byte + flags */
+ 	unsigned int len;	/* Length of data block (can be zero) */
+@@ -245,8 +245,7 @@ struct gsm_mux {
+ 	unsigned int tx_bytes;		/* TX data outstanding */
+ #define TX_THRESH_HI		8192
+ #define TX_THRESH_LO		2048
+-	struct gsm_msg *tx_head;	/* Pending data packets */
+-	struct gsm_msg *tx_tail;
++	struct list_head tx_list;	/* Pending data packets */
+ 
+ 	/* Control messages */
+ 	struct timer_list t2_timer;	/* Retransmit timer for commands */
+@@ -663,7 +662,7 @@ static struct gsm_msg *gsm_data_alloc(struct gsm_mux *gsm, u8 addr, int len,
+ 	m->len = len;
+ 	m->addr = addr;
+ 	m->ctrl = ctrl;
+-	m->next = NULL;
++	INIT_LIST_HEAD(&m->list);
+ 	return m;
+ }
+ 
+@@ -681,16 +680,13 @@ static struct gsm_msg *gsm_data_alloc(struct gsm_mux *gsm, u8 addr, int len,
+ 
+ static void gsm_data_kick(struct gsm_mux *gsm)
+ {
+-	struct gsm_msg *msg = gsm->tx_head;
+-	struct gsm_msg *free_msg;
++	struct gsm_msg *msg, *nmsg;
+ 	int len;
+ 	int skip_sof = 0;
+ 
+-	while (msg) {
+-		if (gsm->constipated && msg->addr) {
+-			msg = msg->next;
++	list_for_each_entry_safe(msg, nmsg, &gsm->tx_list, list) {
++		if (gsm->constipated && msg->addr)
+ 			continue;
+-		}
+ 		if (gsm->encoding != 0) {
+ 			gsm->txframe[0] = GSM1_SOF;
+ 			len = gsm_stuff_frame(msg->data,
+@@ -718,14 +714,9 @@ static void gsm_data_kick(struct gsm_mux *gsm)
+ 		   burst */
+ 		skip_sof = 1;
+ 
+-		if (gsm->tx_head == msg)
+-			gsm->tx_head = msg->next;
+-		free_msg = msg;
+-		msg = msg->next;
+-		kfree(free_msg);
++		list_del(&msg->list);
++		kfree(msg);
+ 	}
+-	if (!gsm->tx_head)
+-		gsm->tx_tail = NULL;
+ }
+ 
+ /**
+@@ -774,11 +765,7 @@ static void __gsm_data_queue(struct gsm_dlci *dlci, struct gsm_msg *msg)
+ 	msg->data = dp;
+ 
+ 	/* Add to the actual output queue */
+-	if (gsm->tx_tail)
+-		gsm->tx_tail->next = msg;
+-	else
+-		gsm->tx_head = msg;
+-	gsm->tx_tail = msg;
++	list_add_tail(&msg->list, &gsm->tx_list);
+ 	gsm->tx_bytes += msg->len;
+ 	gsm_data_kick(gsm);
+ }
+@@ -2026,7 +2013,7 @@ void gsm_cleanup_mux(struct gsm_mux *gsm)
+ {
+ 	int i;
+ 	struct gsm_dlci *dlci = gsm->dlci[0];
+-	struct gsm_msg *txq;
++	struct gsm_msg *txq, *utxq;
+ 	struct gsm_control *gc;
+ 
+ 	gsm->dead = 1;
+@@ -2061,11 +2048,9 @@ void gsm_cleanup_mux(struct gsm_mux *gsm)
+ 		if (gsm->dlci[i])
+ 			gsm_dlci_release(gsm->dlci[i]);
+ 	/* Now wipe the queues */
+-	for (txq = gsm->tx_head; txq != NULL; txq = gsm->tx_head) {
+-		gsm->tx_head = txq->next;
++	list_for_each_entry_safe(txq, ntxq, &gsm->tx_list, list)
+ 		kfree(txq);
+-	}
+-	gsm->tx_tail = NULL;
++	INIT_LIST_HEAD(&gsm->tx_list);
+ }
+ EXPORT_SYMBOL_GPL(gsm_cleanup_mux);
+ 
+@@ -2176,6 +2161,7 @@ struct gsm_mux *gsm_alloc_mux(void)
+ 	}
+ 	spin_lock_init(&gsm->lock);
+ 	kref_init(&gsm->ref);
++	INIT_LIST_HEAD(&gsm->tx_list);
+ 
+ 	gsm->t1 = T1;
+ 	gsm->t2 = T2;
 
-The main reason I can see against extended attributes is that they are not stored
-very efficiently in f2fs, unless a lot of work is put into coming up with a good
-implementation. A single flags bit can trivially be added to the inode in
-comparison (if it's not there already).
 
-> Anyway, hardcoding or saving in filesystem list of file extensions is a nasty way. It
-> can be not safe or hardly understandable by users the way of reconfiguration filesystem 
-> by means of tunefs or debugfs with the purpose of file extensions addition in such 
-> "black-box" as TV or smartphones, from my point of view.
-
-It is only a performance hint though, so it is not a correctness issue the
-file system gets it wrong. In order to do efficient garbage collection, a log
-structured file system should take all the information it can get about the
-expected life of data it writes. I agree that the list, even in the form of
-mkfs time settings, is not a clean abstraction, but in the place of an Android
-phone manufacturer I would still enable it if it promises a significant
-performance advantage over not using it. I guess it would be nice if this
-could be overridden in some form, e.g. using an ioctl on the file as ext4 does.
-
-We should also take the kinds of access we have seen on a file into account.
-E.g. if someone opens a file O_RDWR and performs seek or pwrite on it, we can
-assume that it's not in the category of typical media files, and a file that
-gets written to disk linearly in multiple megabytes might belong into the
-category even if it is named otherwise.
-
-	Arnd
