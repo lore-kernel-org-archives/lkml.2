@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab2JNO5z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:57:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46521 "EHLO
+	id S1754994Ab2JNO5y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:57:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46528 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932199Ab2JNOn1 (ORCPT
+	by vger.kernel.org with ESMTP id S932206Ab2JNOn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:43:27 -0400
-Message-Id: <20121014143543.958562615@decadent.org.uk>
+Message-Id: <20121014143543.299048513@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:48 +0100
+Date: Sun, 14 Oct 2012 15:36:43 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 075/147] staging: comedi: jr3_pci: fix iomem dereference
+        Jani Nikula <jani.nikula@intel.com>, Adam Jackson <ajax@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 070/147] drm/i915: use adjusted_mode instead of mode for checking the 6bpc
+ force flag
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,31 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit e1878957b4676a17cf398f7f5723b365e9a2ca48 upstream.
+commit 0c96c65b48fba3ffe9822a554cbc0cd610765cd5 upstream.
 
-Correct a direct dereference of I/O memory to use an appropriate I/O
-memory access function.  Note that the pointer being dereferenced is not
-currently tagged with `__iomem` but I plan to correct that for 3.7.
+The dithering introduced in
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+commit 3b5c78a35cf7511c15e09a9b0ffab290a42d9bcf
+Author: Adam Jackson <ajax@redhat.com>
+Date:   Tue Dec 13 15:41:00 2011 -0800
+
+    drm/i915/dp: Dither down to 6bpc if it makes the mode fit
+
+stores the INTEL_MODE_DP_FORCE_6BPC flag in the private_flags of the
+adjusted mode, while i9xx_crtc_mode_set() and ironlake_crtc_mode_set() use
+the original mode, without the flag, so it would never have any
+effect. However, the BPC was clamped by VBT settings, making things work by
+coincidence, until that part was removed in
+
+commit 4344b813f105a19f793f1fd93ad775b784648b95
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Fri Aug 10 11:10:20 2012 +0200
+
+Use adjusted_mode instead of mode when checking for
+INTEL_MODE_DP_FORCE_6BPC to make the flag have effect.
+
+v2: Don't forget to fix this in i9xx_crtc_mode_set() also, pointed out by
+Daniel both before and after sending the first patch.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=47621
+CC: Adam Jackson <ajax@redhat.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Reviewed-by: Adam Jackson <ajax@redhat.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - intel_choose_pipe_bpp_dither() doesn't take a drm_framebuffer argument]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/comedi/drivers/jr3_pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/staging/comedi/drivers/jr3_pci.c
-+++ b/drivers/staging/comedi/drivers/jr3_pci.c
-@@ -913,7 +913,7 @@ static int jr3_pci_attach(struct comedi_
- 	}
- 
- 	/*  Reset DSP card */
--	devpriv->iobase->channel[0].reset = 0;
-+	writel(0, &devpriv->iobase->channel[0].reset);
- 
- 	result = comedi_load_firmware(dev, "jr3pci.idm", jr3_download_firmware);
- 	printk("Firmare load %d\n", result);
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -5027,7 +5027,7 @@ static int i9xx_crtc_mode_set(struct drm
+ 	/* default to 8bpc */
+ 	pipeconf &= ~(PIPECONF_BPP_MASK | PIPECONF_DITHER_EN);
+ 	if (is_dp) {
+-		if (mode->private_flags & INTEL_MODE_DP_FORCE_6BPC) {
++		if (adjusted_mode->private_flags & INTEL_MODE_DP_FORCE_6BPC) {
+ 			pipeconf |= PIPECONF_BPP_6 |
+ 				    PIPECONF_DITHER_EN |
+ 				    PIPECONF_DITHER_TYPE_SP;
+@@ -5495,7 +5495,7 @@ static int ironlake_crtc_mode_set(struct
+ 	/* determine panel color depth */
+ 	temp = I915_READ(PIPECONF(pipe));
+ 	temp &= ~PIPE_BPC_MASK;
+-	dither = intel_choose_pipe_bpp_dither(crtc, &pipe_bpp, mode);
++	dither = intel_choose_pipe_bpp_dither(crtc, &pipe_bpp, adjusted_mode);
+ 	switch (pipe_bpp) {
+ 	case 18:
+ 		temp |= PIPE_6BPC;
 
 
