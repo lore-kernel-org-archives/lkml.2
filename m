@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932609Ab2JNOqh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:46:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46787 "EHLO
+	id S932574Ab2JNOqd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:46:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46779 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932456Ab2JNOoS (ORCPT
+	by vger.kernel.org with ESMTP id S932449Ab2JNOoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:44:18 -0400
-Message-Id: <20121014143537.486043451@decadent.org.uk>
+	Sun, 14 Oct 2012 10:44:19 -0400
+Message-Id: <20121014143539.546741046@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:00 +0100
+Date: Sun, 14 Oct 2012 15:36:15 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 027/147] [media] rc: ite-cir: Initialise ite_dev::rdev earlier
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 042/147] can: mscan-mpc5xxx: fix return value check in
+ mpc512x_can_get_clock()
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,43 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit 4b961180ef275035b1538317ffd0e21e80e63e77 upstream.
+commit f61bd0585dfc7d99db4936d7467de4ca8e2f7ea0 upstream.
 
-ite_dev::rdev is currently initialised in ite_probe() after
-rc_register_device() returns.  If a newly registered device is opened
-quickly enough, we may enable interrupts and try to use ite_dev::rdev
-before it has been initialised.  Move it up to the earliest point we
-can, right after calling rc_allocate_device().
+In case of error, the function clk_get() returns ERR_PTR()
+and never returns NULL pointer. The NULL test in the error
+handling should be replaced with IS_ERR().
 
-Reported-and-tested-by: YunQiang Su <wzssyqa@gmail.com>
+dpatch engine is used to auto generated this patch.
+(https://github.com/weiyj/dpatch)
 
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Acked-by: Wolfgang Grandegger <wg@grandegger.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/media/rc/ite-cir.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/can/mscan/mpc5xxx_can.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/rc/ite-cir.c b/drivers/media/rc/ite-cir.c
-index 36fe5a3..24c77a4 100644
---- a/drivers/media/rc/ite-cir.c
-+++ b/drivers/media/rc/ite-cir.c
-@@ -1473,6 +1473,7 @@ static int ite_probe(struct pnp_dev *pdev, const struct pnp_device_id
- 	rdev = rc_allocate_device();
- 	if (!rdev)
- 		goto failure;
-+	itdev->rdev = rdev;
+diff --git a/drivers/net/can/mscan/mpc5xxx_can.c b/drivers/net/can/mscan/mpc5xxx_can.c
+index 06adf88..524ef96 100644
+--- a/drivers/net/can/mscan/mpc5xxx_can.c
++++ b/drivers/net/can/mscan/mpc5xxx_can.c
+@@ -181,7 +181,7 @@ static u32 __devinit mpc512x_can_get_clock(struct platform_device *ofdev,
  
- 	ret = -ENODEV;
+ 		if (!clock_name || !strcmp(clock_name, "sys")) {
+ 			sys_clk = clk_get(&ofdev->dev, "sys_clk");
+-			if (!sys_clk) {
++			if (IS_ERR(sys_clk)) {
+ 				dev_err(&ofdev->dev, "couldn't get sys_clk\n");
+ 				goto exit_unmap;
+ 			}
+@@ -204,7 +204,7 @@ static u32 __devinit mpc512x_can_get_clock(struct platform_device *ofdev,
  
-@@ -1604,7 +1605,6 @@ static int ite_probe(struct pnp_dev *pdev, const struct pnp_device_id
- 	if (ret)
- 		goto failure;
- 
--	itdev->rdev = rdev;
- 	ite_pr(KERN_NOTICE, "driver has been successfully loaded\n");
- 
- 	return 0;
+ 		if (clocksrc < 0) {
+ 			ref_clk = clk_get(&ofdev->dev, "ref_clk");
+-			if (!ref_clk) {
++			if (IS_ERR(ref_clk)) {
+ 				dev_err(&ofdev->dev, "couldn't get ref_clk\n");
+ 				goto exit_unmap;
+ 			}
 
 
