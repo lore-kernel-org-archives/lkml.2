@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752251Ab2JNJsN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 05:48:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:44038 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751862Ab2JNJsL (ORCPT
+	id S1752246Ab2JNKGI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 06:06:08 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:51764 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774Ab2JNKGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 05:48:11 -0400
-Message-ID: <1350208077.4832.76.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [STABLE REQUEST] add: e1000: fix lockdep splat in shutdown
- handler
-From: Ben Hutchings <ben@decadent.org.uk>
-To: David Miller <davem@davemloft.net>, Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, tglx@linutronix.de,
-        stable@vger.kernel.org, jesse.brandeburg@intel.com,
-        jeffrey.t.kirsher@intel.com
-Date: Sun, 14 Oct 2012 10:47:57 +0100
-In-Reply-To: <20121011.182214.2229957213838024407.davem@davemloft.net>
-References: <1349993385.24256.79.camel@gandalf.local.home>
-	 <20121011.182214.2229957213838024407.davem@davemloft.net>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-sXYyfrqyjadw1YBOTpQo"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 77.75.106.1
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 14 Oct 2012 06:06:06 -0400
+Message-ID: <507A8CFE.8000501@gmail.com>
+Date: Sun, 14 Oct 2012 11:59:26 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120825 Thunderbird/15.0
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Christoph Hellwig <hch@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] vfs pile 3
+References: <20121013002003.GL2616@ZenIV.linux.org.uk> <5079164D.4030307@gmail.com> <20121013075128.GQ2616@ZenIV.linux.org.uk> <20121013154810.GA9678@infradead.org> <20121013160115.GS2616@ZenIV.linux.org.uk> <20121013160455.GA32420@infradead.org> <20121013170701.GT2616@ZenIV.linux.org.uk>
+In-Reply-To: <20121013170701.GT2616@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 13/10/2012 19:07, Al Viro ha scritto:
+> On Sat, Oct 13, 2012 at 12:04:55PM -0400, Christoph Hellwig wrote:
+>> On Sat, Oct 13, 2012 at 05:01:15PM +0100, Al Viro wrote:
+>>> You know, I'm in the middle of dealing with one such TODO.  Yours, as it
+>>> were.  From six years ago.  kernel_thread() unexporting.  TODO comments
+>>> of any form are routinely shat upon and ignored, especially when shuffled
+>>> away into less read parts of the tree... ;-/
+>>>
+>>> I'd rather see it done fs-by-fs.  Starting with something reasonably easy
+>>> to test - minixfs would do nicely.  Don't get me wrong - I'm all for
+>>> burying ->truncate(); what I'm worried about is that we'll end up burying
+>>> the warning about the reasons why vmtruncate() was a bad idea, leaving the
+>>> functionality exactly as it used to be...
+>>
+>> As mentioned I agree with the concern in principle.  Let's start by
+>> taking Marco's patches for filesystems that use vmtruncate but don't
+>> actually implement ->truncate.  There's a few I remember offhand, e.g.
+>> procfs and ufs right now.  Then we can do the actual work required ones
+>> piece by piece.
+>
+> Umm... That would be what, procfs?  Frankly, I'm not sure that ATTR_SIZE for
+> procfs actually should not be silently ignored.  ->i_size there is completely
+> synthetic - it's not as if truncation would actually change the contents.
+>
+> And ufs situation is quite different - there vmtruncate() is used only on the
+> ->write_begin() side.  ->setattr() is already vmtruncate-free.  What's needed
+> there is an analog of e.g. ext2_write_failed().
+>
 
---=-sXYyfrqyjadw1YBOTpQo
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I'm open to change the series and give any help. My original idea was to 
+do a cleanup patch and after that give to each fs maintainer the 
+possibility to do ad-hoc fix. Each fs  maintainer has got a deep 
+knowledge of its fs so it was a safe approach from testing point of view 
+and so on. However if you tell me that in this case another approach is 
+better is ok for me. I'll fix the patches according to the comments of 
+Christoph.
 
-On Thu, 2012-10-11 at 18:22 -0400, David Miller wrote:
-> From: Steven Rostedt <rostedt@goodmis.org>
-> Date: Thu, 11 Oct 2012 18:09:45 -0400
->=20
-> > Can you add this to the 3.2 stable tree.
-> >=20
-> > commit 3a3847e007aae732d64d8fd1374126393e9879a3
-> > Author: Jesse Brandeburg <jesse.brandeburg@intel.com>
-> > Date:   Wed Jan 4 20:23:33 2012 +0000
-> >=20
-> >     e1000: fix lockdep splat in shutdown handler
->=20
-> Acked-by: David S. Miller <davem@davemloft.net>
+Regards,
 
-Added to the queue, thanks.
-
-Ben.
-
---=20
-Ben Hutchings
-Always try to do things in chronological order;
-it's less confusing that way.
-
---=-sXYyfrqyjadw1YBOTpQo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUHqKTee/yOyVhhEJAQrn2xAAkEVVKn+5lXPi0rAPmWjPf1zkeud5k8vt
-3ymeI79sHk9/LJblCXslH1uNefPIJHkQBe+znKku0Zjt2lVqcBmv3JWZGFHOpDSN
-yZf6biyU1SwB4Z0aBwuTsvNche262K2uBfK54pVW+fics9bjSv7xuDC4HyEJZowp
-QV2Tt8Czr1EulOC8nUTLGbuU0fab9sJCca43VnJQUgGZK3euNF0CNXREqovhYwRY
-3BFbqO42ZwWkapsFG1O8HBP9Yk6sYZ+eblkB9Ca2RdkX0ragjJbI7gxQgVEjpepu
-UcOEjdHEGme5ed/TrDDT/53vIfV6l7fFoqFXDVgFz8qqi3kG2U0Ny0oxOHV3pk2j
-lnLS/x40IVd2cS/o6eYunOlVQaEM2lZQf9oXiqzFogztfe87hmWv8sLhKKWLAjSA
-7ykiMCR0lzcHjtoglBi+YnbrODqrEdZd2Ta771JkikzaBTGsoDkqz+6g1atJOKNk
-mFo2Ln4YEnTJE1G16Gz0ChBEhNQKATiwva1rtn1w5CovIWskov+RBox5tYhlPOcu
-EHrTek92GtcK4a9mVam3uyVZvF1PujK94f4r3yXduX5f3HsBn8tj48D9eqYNdvOk
-TD2F0tkX41S+eCDwMwtBUeNRKRhaYjd2j03sdv0eBbBoM8nD8uYKuHc78bsfkQeb
-KcoIv631PdU=
-=F9g8
------END PGP SIGNATURE-----
-
---=-sXYyfrqyjadw1YBOTpQo--
+Marco
