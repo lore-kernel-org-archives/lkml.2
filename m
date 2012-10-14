@@ -1,228 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932325Ab2JNOn4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:43:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46672 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932256Ab2JNOnw (ORCPT
+	id S1754818Ab2JNOvr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:51:47 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:33237 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754784Ab2JNOvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:43:52 -0400
-Message-Id: <20121014143540.513912147@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:22 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 049/147] [SCSI] zfcp: restore refcount check on port_remove
-In-Reply-To: <20121014143533.742627615@decadent.org.uk>
-X-SA-Exim-Connect-IP: 77.75.106.1
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 14 Oct 2012 10:51:43 -0400
+From: Sangho Yi <antiroot@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        Sangho Yi <antiroot@gmail.com>
+Subject: [PATCH 1/2] Drivers: Staging: CSR: fixed indentation warnings based on coding style
+Date: Sun, 14 Oct 2012 23:50:01 +0900
+Message-Id: <1350226202-30158-1-git-send-email-antiroot@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <n>
+References: <n>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+I fixed the indentation warnings on csr_time.h.
 
-------------------
-
-From: Steffen Maier <maier@linux.vnet.ibm.com>
-
-commit d99b601b63386f3395dc26a699ae703a273d9982 upstream.
-
-Upstream commit f3450c7b917201bb49d67032e9f60d5125675d6a
-"[SCSI] zfcp: Replace local reference counting with common kref"
-accidentally dropped a reference count check before tearing down
-zfcp_ports that are potentially in use by zfcp_units.
-Even remote ports in use can be removed causing
-unreachable garbage objects zfcp_ports with zfcp_units.
-Thus units won't come back even after a manual port_rescan.
-The kref of zfcp_port->dev.kobj is already used by the driver core.
-We cannot re-use it to track the number of zfcp_units.
-Re-introduce our own counter for units per port
-and check on port_remove.
-
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Reviewed-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Sangho Yi <antiroot@gmail.com>
 ---
- drivers/s390/scsi/zfcp_aux.c   |    1 +
- drivers/s390/scsi/zfcp_def.h   |    1 +
- drivers/s390/scsi/zfcp_ext.h   |    1 +
- drivers/s390/scsi/zfcp_sysfs.c |   18 ++++++++++++++++--
- drivers/s390/scsi/zfcp_unit.c  |   36 ++++++++++++++++++++++++++----------
- 5 files changed, 45 insertions(+), 12 deletions(-)
+ drivers/staging/csr/csr_time.h |   63 ++++++++++++++++++++--------------------
+ 1 file changed, 32 insertions(+), 31 deletions(-)
 
-diff --git a/drivers/s390/scsi/zfcp_aux.c b/drivers/s390/scsi/zfcp_aux.c
-index aff8621..f6adde4 100644
---- a/drivers/s390/scsi/zfcp_aux.c
-+++ b/drivers/s390/scsi/zfcp_aux.c
-@@ -519,6 +519,7 @@ struct zfcp_port *zfcp_port_enqueue(struct zfcp_adapter *adapter, u64 wwpn,
+diff --git a/drivers/staging/csr/csr_time.h b/drivers/staging/csr/csr_time.h
+index 2a45f3e..7ded6dd 100644
+--- a/drivers/staging/csr/csr_time.h
++++ b/drivers/staging/csr/csr_time.h
+@@ -2,11 +2,11 @@
+ #define CSR_TIME_H__
+ /*****************************************************************************
  
- 	rwlock_init(&port->unit_list_lock);
- 	INIT_LIST_HEAD(&port->unit_list);
-+	atomic_set(&port->units, 0);
+-            (c) Cambridge Silicon Radio Limited 2010
+-            All rights reserved and confidential information of CSR
++(c) Cambridge Silicon Radio Limited 2010
++All rights reserved and confidential information of CSR
  
- 	INIT_WORK(&port->gid_pn_work, zfcp_fc_port_did_lookup);
- 	INIT_WORK(&port->test_link_work, zfcp_fc_link_test_work);
-diff --git a/drivers/s390/scsi/zfcp_def.h b/drivers/s390/scsi/zfcp_def.h
-index 5bc4afba..1305955 100644
---- a/drivers/s390/scsi/zfcp_def.h
-+++ b/drivers/s390/scsi/zfcp_def.h
-@@ -205,6 +205,7 @@ struct zfcp_port {
- 	struct zfcp_adapter    *adapter;       /* adapter used to access port */
- 	struct list_head	unit_list;	/* head of logical unit list */
- 	rwlock_t		unit_list_lock; /* unit list lock */
-+	atomic_t		units;	       /* zfcp_unit count */
- 	atomic_t	       status;	       /* status of this remote port */
- 	u64		       wwnn;	       /* WWNN if known */
- 	u64		       wwpn;	       /* WWPN */
-diff --git a/drivers/s390/scsi/zfcp_ext.h b/drivers/s390/scsi/zfcp_ext.h
-index 4eeef78..03441a7f 100644
---- a/drivers/s390/scsi/zfcp_ext.h
-+++ b/drivers/s390/scsi/zfcp_ext.h
-@@ -159,6 +159,7 @@ extern void zfcp_scsi_dif_sense_error(struct scsi_cmnd *, int);
- extern struct attribute_group zfcp_sysfs_unit_attrs;
- extern struct attribute_group zfcp_sysfs_adapter_attrs;
- extern struct attribute_group zfcp_sysfs_port_attrs;
-+extern struct mutex zfcp_sysfs_port_units_mutex;
- extern struct device_attribute *zfcp_sysfs_sdev_attrs[];
- extern struct device_attribute *zfcp_sysfs_shost_attrs[];
+-            Refer to LICENSE.txt included with this source for details
+-            on the license terms.
++Refer to LICENSE.txt included with this source for details
++on the license terms.
  
-diff --git a/drivers/s390/scsi/zfcp_sysfs.c b/drivers/s390/scsi/zfcp_sysfs.c
-index c66af27..1e0eb08 100644
---- a/drivers/s390/scsi/zfcp_sysfs.c
-+++ b/drivers/s390/scsi/zfcp_sysfs.c
-@@ -227,6 +227,8 @@ static ssize_t zfcp_sysfs_port_rescan_store(struct device *dev,
- static ZFCP_DEV_ATTR(adapter, port_rescan, S_IWUSR, NULL,
- 		     zfcp_sysfs_port_rescan_store);
+ *****************************************************************************/
  
-+DEFINE_MUTEX(zfcp_sysfs_port_units_mutex);
-+
- static ssize_t zfcp_sysfs_port_remove_store(struct device *dev,
- 					    struct device_attribute *attr,
- 					    const char *buf, size_t count)
-@@ -249,6 +251,16 @@ static ssize_t zfcp_sysfs_port_remove_store(struct device *dev,
- 	else
- 		retval = 0;
+@@ -18,13 +18,13 @@ extern "C" {
  
-+	mutex_lock(&zfcp_sysfs_port_units_mutex);
-+	if (atomic_read(&port->units) > 0) {
-+		retval = -EBUSY;
-+		mutex_unlock(&zfcp_sysfs_port_units_mutex);
-+		goto out;
-+	}
-+	/* port is about to be removed, so no more unit_add */
-+	atomic_set(&port->units, -1);
-+	mutex_unlock(&zfcp_sysfs_port_units_mutex);
-+
- 	write_lock_irq(&adapter->port_list_lock);
- 	list_del(&port->list);
- 	write_unlock_irq(&adapter->port_list_lock);
-@@ -289,12 +301,14 @@ static ssize_t zfcp_sysfs_unit_add_store(struct device *dev,
- {
- 	struct zfcp_port *port = container_of(dev, struct zfcp_port, dev);
- 	u64 fcp_lun;
-+	int retval;
+ /*******************************************************************************
  
- 	if (strict_strtoull(buf, 0, (unsigned long long *) &fcp_lun))
- 		return -EINVAL;
+-    NAME
+-        CsrTime
++NAME
++	CsrTime
  
--	if (zfcp_unit_add(port, fcp_lun))
--		return -EINVAL;
-+	retval = zfcp_unit_add(port, fcp_lun);
-+	if (retval)
-+		return retval;
+-    DESCRIPTION
+-        Type to hold a value describing the current system time, which is a
+-        measure of time elapsed since some arbitrarily defined fixed time
+-        reference, usually associated with system startup.
++DESCRIPTION
++	Type to hold a value describing the current system time, which is a
++	measure of time elapsed since some arbitrarily defined fixed time
++	reference, usually associated with system startup.
  
- 	return count;
- }
-diff --git a/drivers/s390/scsi/zfcp_unit.c b/drivers/s390/scsi/zfcp_unit.c
-index 3f2bff0..1cd2b99 100644
---- a/drivers/s390/scsi/zfcp_unit.c
-+++ b/drivers/s390/scsi/zfcp_unit.c
-@@ -104,7 +104,7 @@ static void zfcp_unit_release(struct device *dev)
- {
- 	struct zfcp_unit *unit = container_of(dev, struct zfcp_unit, dev);
+ *******************************************************************************/
+ typedef u32 CsrTime;
+@@ -32,12 +32,12 @@ typedef u32 CsrTime;
  
--	put_device(&unit->port->dev);
-+	atomic_dec(&unit->port->units);
- 	kfree(unit);
- }
+ /*******************************************************************************
  
-@@ -119,16 +119,27 @@ static void zfcp_unit_release(struct device *dev)
- int zfcp_unit_add(struct zfcp_port *port, u64 fcp_lun)
- {
- 	struct zfcp_unit *unit;
-+	int retval = 0;
-+
-+	mutex_lock(&zfcp_sysfs_port_units_mutex);
-+	if (atomic_read(&port->units) == -1) {
-+		/* port is already gone */
-+		retval = -ENODEV;
-+		goto out;
-+	}
+-    NAME
+-        CsrTimeUtc
++NAME
++	CsrTimeUtc
  
- 	unit = zfcp_unit_find(port, fcp_lun);
- 	if (unit) {
- 		put_device(&unit->dev);
--		return -EEXIST;
-+		retval = -EEXIST;
-+		goto out;
- 	}
+-    DESCRIPTION
+-        Type to hold a value describing a UTC wallclock time expressed in
+-        seconds and milliseconds elapsed since midnight January 1st 1970.
++DESCRIPTION
++	Type to hold a value describing a UTC wallclock time expressed in
++	seconds and milliseconds elapsed since midnight January 1st 1970.
  
- 	unit = kzalloc(sizeof(struct zfcp_unit), GFP_KERNEL);
--	if (!unit)
--		return -ENOMEM;
-+	if (!unit) {
-+		retval = -ENOMEM;
-+		goto out;
-+	}
+ *******************************************************************************/
+ typedef struct
+@@ -49,27 +49,28 @@ typedef struct
  
- 	unit->port = port;
- 	unit->fcp_lun = fcp_lun;
-@@ -139,28 +150,33 @@ int zfcp_unit_add(struct zfcp_port *port, u64 fcp_lun)
- 	if (dev_set_name(&unit->dev, "0x%016llx",
- 			 (unsigned long long) fcp_lun)) {
- 		kfree(unit);
--		return -ENOMEM;
-+		retval = -ENOMEM;
-+		goto out;
- 	}
+ /*******************************************************************************
  
--	get_device(&port->dev);
--
- 	if (device_register(&unit->dev)) {
- 		put_device(&unit->dev);
--		return -ENOMEM;
-+		retval = -ENOMEM;
-+		goto out;
- 	}
+-    NAME
+-        CsrTimeGet
++NAME
++	CsrTimeGet
  
- 	if (sysfs_create_group(&unit->dev.kobj, &zfcp_sysfs_unit_attrs)) {
- 		device_unregister(&unit->dev);
--		return -EINVAL;
-+		retval = -EINVAL;
-+		goto out;
- 	}
+-    DESCRIPTION
+-        Returns the current system time in a low and a high part. The low part
+-        is expressed in microseconds. The high part is incremented when the low
+-        part wraps to provide an extended range.
++DESCRIPTION
++	Returns the current system time in a low and a high part. The low part
++	is expressed in microseconds. The high part is incremented when the low
++	part wraps to provide an extended range.
  
-+	atomic_inc(&port->units); /* under zfcp_sysfs_port_units_mutex ! */
-+
- 	write_lock_irq(&port->unit_list_lock);
- 	list_add_tail(&unit->list, &port->unit_list);
- 	write_unlock_irq(&port->unit_list_lock);
+-        The caller may provide a NULL pointer as the high parameter. In this case
+-        the function just returns the low part and ignores the high parameter.
++	The caller may provide a NULL pointer as the high parameter.
++	In this case the function just returns the low part and ignores the
++	high parameter.
  
- 	zfcp_unit_scsi_scan(unit);
+-        Although the time is expressed in microseconds the actual resolution is
+-        platform dependent and can be less. It is recommended that the
+-        resolution is at least 10 milliseconds.
++	Although the time is expressed in microseconds the actual resolution is
++	platform dependent and can be less. It is recommended that the
++	resolution is at least 10 milliseconds.
  
--	return 0;
-+out:
-+	mutex_unlock(&zfcp_sysfs_port_units_mutex);
-+	return retval;
- }
+-    PARAMETERS
+-        high - Pointer to variable that will receive the high part of the
+-               current system time. Passing NULL is valid.
++PARAMETERS
++	high - Pointer to variable that will receive the high part of the
++	       current system time. Passing NULL is valid.
  
- /**
-
+-    RETURNS
+-        Low part of current system time in microseconds.
++RETURNS
++	Low part of current system time in microseconds.
+ 
+ *******************************************************************************/
+ CsrTime CsrTimeGet(CsrTime *high);
+-- 
+1.7.9.5
 
