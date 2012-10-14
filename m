@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107Ab2JNPEK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:04:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46394 "EHLO
+	id S1754685Ab2JNPFm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:05:42 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46348 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754652Ab2JNOnC (ORCPT
+	by vger.kernel.org with ESMTP id S1754026Ab2JNOmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:43:02 -0400
-Message-Id: <20121014143546.361566240@decadent.org.uk>
+	Sun, 14 Oct 2012 10:42:42 -0400
+Message-Id: <20121014143547.966741383@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:06 +0100
+Date: Sun, 14 Oct 2012 15:37:18 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bernhard Walle <bernhard@bwalle.de>, Michal Marek <mmarek@suse.cz>
-Subject: [ 093/147] scripts/Kbuild.include: Fix portability problem of "echo -e"
+        Shawn Guo <shawn.guo@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 105/147] kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,41 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bernhard Walle <bernhard@bwalle.de>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit 875de98623fa2b29f0cb19915fe3292ab6daa1cb upstream.
+commit f96972f2dc6365421cf2366ebd61ee4cf060c8d5 upstream.
 
-"echo -e" is a GNU extension. When cross-compiling the kernel on a
-BSD-like operating system (Mac OS X in my case), this doesn't work.
+As kernel_power_off() calls disable_nonboot_cpus(), we may also want to
+have kernel_restart() call disable_nonboot_cpus().  Doing so can help
+machines that require boot cpu be the last alive cpu during reboot to
+survive with kernel restart.
 
-One could install a GNU version of echo, put that in the $PATH before
-the system echo and use "/usr/bin/env echo", but the solution with
-printf is simpler.
+This fixes one reboot issue seen on imx6q (Cortex-A9 Quad).  The machine
+requires that the restart routine be run on the primary cpu rather than
+secondary ones.  Otherwise, the secondary core running the restart
+routine will fail to come to online after reboot.
 
-Since it is no disadvantage on Linux, I hope that gets accepted even if
-cross-compiling the Linux kernel on another Unix operating system is
-quite a rare use case.
-
-Signed-off-by: Bernhard Walle <bernhard@bwalle.de>
-Andreas Bießmann <andreas@biessmann.de>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- scripts/Kbuild.include |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sys.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
-index d897278..6a3ee98 100644
---- a/scripts/Kbuild.include
-+++ b/scripts/Kbuild.include
-@@ -104,7 +104,7 @@ as-option = $(call try-run,\
- # Usage: cflags-y += $(call as-instr,instr,option1,option2)
- 
- as-instr = $(call try-run,\
--	/bin/echo -e "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" -,$(2),$(3))
-+	printf "%b\n" "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" -,$(2),$(3))
- 
- # cc-option
- # Usage: cflags-y += $(call cc-option,-march=winchip-c6,-march=i586)
+diff --git a/kernel/sys.c b/kernel/sys.c
+index f949228..fdad206 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -368,6 +368,7 @@ EXPORT_SYMBOL(unregister_reboot_notifier);
+ void kernel_restart(char *cmd)
+ {
+ 	kernel_restart_prepare(cmd);
++	disable_nonboot_cpus();
+ 	if (!cmd)
+ 		printk(KERN_EMERG "Restarting system.\n");
+ 	else
 
 
