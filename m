@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387Ab2JNOmN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:42:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46159 "EHLO
+	id S1754642Ab2JNPKo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:10:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46222 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754277Ab2JNOmE (ORCPT
+	by vger.kernel.org with ESMTP id S1754375Ab2JNOmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:42:04 -0400
-Message-Id: <20121014143552.842662963@decadent.org.uk>
+	Sun, 14 Oct 2012 10:42:13 -0400
+Message-Id: <20121014143550.525935256@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:54 +0100
+Date: Sun, 14 Oct 2012 15:37:37 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Florian Westphal <fw@strlen.de>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 141/147] netfilter: limit, hashlimit: avoid duplicated inline
+        Tyler Hicks <tyhicks@canonical.com>, Artemy Tregubenko <me@arty.name>,
+        Colin Ian King <colin.king@canonical.com>
+Subject: [ 124/147] eCryptfs: Write out all dirty pages just before releasing the lower
+ file
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,83 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit 7a909ac70f6b0823d9f23a43f19598d4b57ac901 upstream.
+commit 7149f2558d5b5b988726662fe58b1c388337805b upstream.
 
-credit_cap can be set to credit, which avoids inlining user2credits
-twice. Also, remove inline keyword and let compiler decide.
+Fixes a regression caused by:
 
-old:
-    684     192       0     876     36c net/netfilter/xt_limit.o
-   4927     344      32    5303    14b7 net/netfilter/xt_hashlimit.o
-now:
-    668     192       0     860     35c net/netfilter/xt_limit.o
-   4793     344      32    5169    1431 net/netfilter/xt_hashlimit.o
+821f749 eCryptfs: Revert to a writethrough cache model
 
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+That patch reverted some code (specifically, 32001d6f) that was
+necessary to properly handle open() -> mmap() -> close() -> dirty pages
+-> munmap(), because the lower file could be closed before the dirty
+pages are written out.
+
+Rather than reapplying 32001d6f, this approach is a better way of
+ensuring that the lower file is still open in order to handle writing
+out the dirty pages. It is called from ecryptfs_release(), while we have
+a lock on the lower file pointer, just before the lower file gets the
+final fput() and we overwrite the pointer.
+
+https://launchpad.net/bugs/1047261
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Reported-by: Artemy Tregubenko <me@arty.name>
+Tested-by: Artemy Tregubenko <me@arty.name>
+Tested-by: Colin Ian King <colin.king@canonical.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/netfilter/xt_hashlimit.c |    8 +++-----
- net/netfilter/xt_limit.c     |    5 ++---
- 2 files changed, 5 insertions(+), 8 deletions(-)
+ fs/ecryptfs/main.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/netfilter/xt_hashlimit.c b/net/netfilter/xt_hashlimit.c
-index d95f9c9..2195eb0 100644
---- a/net/netfilter/xt_hashlimit.c
-+++ b/net/netfilter/xt_hashlimit.c
-@@ -389,8 +389,7 @@ static void htable_put(struct xt_hashlimit_htable *hinfo)
- #define CREDITS_PER_JIFFY POW2_BELOW32(MAX_CPJ)
- 
- /* Precision saver. */
--static inline u_int32_t
--user2credits(u_int32_t user)
-+static u32 user2credits(u32 user)
- {
- 	/* If multiplying would overflow... */
- 	if (user > 0xFFFFFFFF / (HZ*CREDITS_PER_JIFFY))
-@@ -400,7 +399,7 @@ user2credits(u_int32_t user)
- 	return (user * HZ * CREDITS_PER_JIFFY) / XT_HASHLIMIT_SCALE;
- }
- 
--static inline void rateinfo_recalc(struct dsthash_ent *dh, unsigned long now)
-+static void rateinfo_recalc(struct dsthash_ent *dh, unsigned long now)
- {
- 	dh->rateinfo.credit += (now - dh->rateinfo.prev) * CREDITS_PER_JIFFY;
- 	if (dh->rateinfo.credit > dh->rateinfo.credit_cap)
-@@ -535,8 +534,7 @@ hashlimit_mt(const struct sk_buff *skb, struct xt_action_param *par)
- 		dh->rateinfo.prev = jiffies;
- 		dh->rateinfo.credit = user2credits(hinfo->cfg.avg *
- 		                      hinfo->cfg.burst);
--		dh->rateinfo.credit_cap = user2credits(hinfo->cfg.avg *
--		                          hinfo->cfg.burst);
-+		dh->rateinfo.credit_cap = dh->rateinfo.credit;
- 		dh->rateinfo.cost = user2credits(hinfo->cfg.avg);
- 	} else {
- 		/* update expiration timeout */
-diff --git a/net/netfilter/xt_limit.c b/net/netfilter/xt_limit.c
-index 32b7a57..5c22ce8 100644
---- a/net/netfilter/xt_limit.c
-+++ b/net/netfilter/xt_limit.c
-@@ -88,8 +88,7 @@ limit_mt(const struct sk_buff *skb, struct xt_action_param *par)
- }
- 
- /* Precision saver. */
--static u_int32_t
--user2credits(u_int32_t user)
-+static u32 user2credits(u32 user)
- {
- 	/* If multiplying would overflow... */
- 	if (user > 0xFFFFFFFF / (HZ*CREDITS_PER_JIFFY))
-@@ -123,7 +122,7 @@ static int limit_mt_check(const struct xt_mtchk_param *par)
- 		   128. */
- 		priv->prev = jiffies;
- 		priv->credit = user2credits(r->avg * r->burst); /* Credits full. */
--		r->credit_cap = user2credits(r->avg * r->burst); /* Credits full. */
-+		r->credit_cap = priv->credit; /* Credits full. */
- 		r->cost = user2credits(r->avg);
- 	}
- 	return 0;
+diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
+index 2768138..9b627c1 100644
+--- a/fs/ecryptfs/main.c
++++ b/fs/ecryptfs/main.c
+@@ -162,6 +162,7 @@ void ecryptfs_put_lower_file(struct inode *inode)
+ 	inode_info = ecryptfs_inode_to_private(inode);
+ 	if (atomic_dec_and_mutex_lock(&inode_info->lower_file_count,
+ 				      &inode_info->lower_file_mutex)) {
++		filemap_write_and_wait(inode->i_mapping);
+ 		fput(inode_info->lower_file);
+ 		inode_info->lower_file = NULL;
+ 		mutex_unlock(&inode_info->lower_file_mutex);
 
 
