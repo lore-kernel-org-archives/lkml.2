@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab2JNOsD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:48:03 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46755 "EHLO
+	id S932503Ab2JNOsB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:48:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46765 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932419Ab2JNOoQ (ORCPT
+	by vger.kernel.org with ESMTP id S932425Ab2JNOoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:44:16 -0400
-Message-Id: <20121014143538.150333794@decadent.org.uk>
+Message-Id: <20121014143539.812085262@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:05 +0100
+Date: Sun, 14 Oct 2012 15:36:17 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
-Subject: [ 032/147] workqueue: fix possible stall on try_to_grab_pending() of a delayed
- work item
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Becky Bruce <bgillbruce@gmail.com>,
+        Subodh Nijsure <snijsure@grid-net.com>, Paul Walmsley <paul@pwsan.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [ 044/147] rcu: Fix day-one dyntick-idle stall-warning bug
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,92 +30,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-commit 3aa62497594430ea522050b75c033f71f2c60ee6 upstream.
+commit a10d206ef1a83121ab7430cb196e0376a7145b22 upstream.
 
-Currently, when try_to_grab_pending() grabs a delayed work item, it
-leaves its linked work items alone on the delayed_works.  The linked
-work items are always NO_COLOR and will cause future
-cwq_activate_first_delayed() increase cwq->nr_active incorrectly, and
-may cause the whole cwq to stall.  For example,
+Each grace period is supposed to have at least one callback waiting
+for that grace period to complete.  However, if CONFIG_NO_HZ=n, an
+extra callback-free grace period is no big problem -- it will chew up
+a tiny bit of CPU time, but it will complete normally.  In contrast,
+CONFIG_NO_HZ=y kernels have the potential for all the CPUs to go to
+sleep indefinitely, in turn indefinitely delaying completion of the
+callback-free grace period.  Given that nothing is waiting on this grace
+period, this is also not a problem.
 
-state: cwq->max_active = 1, cwq->nr_active = 1
-       one work in cwq->pool, many in cwq->delayed_works.
+That is, unless RCU CPU stall warnings are also enabled, as they are
+in recent kernels.  In this case, if a CPU wakes up after at least one
+minute of inactivity, an RCU CPU stall warning will result.  The reason
+that no one noticed until quite recently is that most systems have enough
+OS noise that they will never remain absolutely idle for a full minute.
+But there are some embedded systems with cut-down userspace configurations
+that consistently get into this situation.
 
-step1: try_to_grab_pending() removes a work item from delayed_works
-       but leaves its NO_COLOR linked work items on it.
+All this begs the question of exactly how a callback-free grace period
+gets started in the first place.  This can happen due to the fact that
+CPUs do not necessarily agree on which grace period is in progress.
+If a CPU still believes that the grace period that just completed is
+still ongoing, it will believe that it has callbacks that need to wait for
+another grace period, never mind the fact that the grace period that they
+were waiting for just completed.  This CPU can therefore erroneously
+decide to start a new grace period.  Note that this can happen in
+TREE_RCU and TREE_PREEMPT_RCU even on a single-CPU system:  Deadlock
+considerations mean that the CPU that detected the end of the grace
+period is not necessarily officially informed of this fact for some time.
 
-step2: Later on, cwq_activate_first_delayed() activates the linked
-       work item increasing ->nr_active.
+Once this CPU notices that the earlier grace period completed, it will
+invoke its callbacks.  It then won't have any callbacks left.  If no
+other CPU has any callbacks, we now have a callback-free grace period.
 
-step3: cwq->nr_active = 1, but all activated work items of the cwq are
-       NO_COLOR.  When they finish, cwq->nr_active will not be
-       decreased due to NO_COLOR, and no further work items will be
-       activated from cwq->delayed_works. the cwq stalls.
+This commit therefore makes CPUs check more carefully before starting a
+new grace period.  This new check relies on an array of tail pointers
+into each CPU's list of callbacks.  If the CPU is up to date on which
+grace periods have completed, it checks to see if any callbacks follow
+the RCU_DONE_TAIL segment, otherwise it checks to see if any callbacks
+follow the RCU_WAIT_TAIL segment.  The reason that this works is that
+the RCU_WAIT_TAIL segment will be promoted to the RCU_DONE_TAIL segment
+as soon as the CPU is officially notified that the old grace period
+has ended.
 
-Fix it by ensuring the target work item is activated before stealing
-PENDING in try_to_grab_pending().  This ensures that all the linked
-work items are activated without incorrectly bumping cwq->nr_active.
+This change is to cpu_needs_another_gp(), which is called in a number
+of places.  The only one that really matters is in rcu_start_gp(), where
+the root rcu_node structure's ->lock is held, which prevents any
+other CPU from starting or completing a grace period, so that the
+comparison that determines whether the CPU is missing the completion
+of a grace period is stable.
 
-tj: Updated comment and description.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-[bwh: Backported to 3.2: adjust context]
+Reported-by: Becky Bruce <bgillbruce@gmail.com>
+Reported-by: Subodh Nijsure <snijsure@grid-net.com>
+Reported-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Tested-by: Paul Walmsley <paul@pwsan.com>  # OMAP3730, OMAP4430
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/workqueue.c |   25 ++++++++++++++++++++++---
- 1 file changed, 22 insertions(+), 3 deletions(-)
+ kernel/rcutree.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1726,10 +1726,9 @@ static void move_linked_works(struct wor
- 		*nextp = n;
- }
- 
--static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
-+static void cwq_activate_delayed_work(struct work_struct *work)
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index f280e54..f7bcd9e 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -305,7 +305,9 @@ cpu_has_callbacks_ready_to_invoke(struct rcu_data *rdp)
+ static int
+ cpu_needs_another_gp(struct rcu_state *rsp, struct rcu_data *rdp)
  {
--	struct work_struct *work = list_first_entry(&cwq->delayed_works,
--						    struct work_struct, entry);
-+	struct cpu_workqueue_struct *cwq = get_work_cwq(work);
- 	struct list_head *pos = gcwq_determine_ins_pos(cwq->gcwq, cwq);
- 
- 	trace_workqueue_activate_work(work);
-@@ -1738,6 +1737,14 @@ static void cwq_activate_first_delayed(s
- 	cwq->nr_active++;
+-	return *rdp->nxttail[RCU_DONE_TAIL] && !rcu_gp_in_progress(rsp);
++	return *rdp->nxttail[RCU_DONE_TAIL +
++			     ACCESS_ONCE(rsp->completed) != rdp->completed] &&
++	       !rcu_gp_in_progress(rsp);
  }
  
-+static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
-+{
-+	struct work_struct *work = list_first_entry(&cwq->delayed_works,
-+						    struct work_struct, entry);
-+
-+	cwq_activate_delayed_work(work);
-+}
-+
- /**
-  * cwq_dec_nr_in_flight - decrement cwq's nr_in_flight
-  * @cwq: cwq of interest
-@@ -2628,6 +2635,18 @@ static int try_to_grab_pending(struct wo
- 		smp_rmb();
- 		if (gcwq == get_work_gcwq(work)) {
- 			debug_work_deactivate(work);
-+
-+			/*
-+			 * A delayed work item cannot be grabbed directly
-+			 * because it might have linked NO_COLOR work items
-+			 * which, if left on the delayed_list, will confuse
-+			 * cwq->nr_active management later on and cause
-+			 * stall.  Make sure the work item is activated
-+			 * before grabbing.
-+			 */
-+			if (*work_data_bits(work) & WORK_STRUCT_DELAYED)
-+				cwq_activate_delayed_work(work);
-+
- 			list_del_init(&work->entry);
- 			cwq_dec_nr_in_flight(get_work_cwq(work),
- 				get_work_color(work),
+ /*
 
 
