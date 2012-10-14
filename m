@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814Ab2JNPMz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:12:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46177 "EHLO
+	id S1754979Ab2JNPNd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:13:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46174 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754302Ab2JNOmI (ORCPT
+	by vger.kernel.org with ESMTP id S1754299Ab2JNOmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:42:08 -0400
-Message-Id: <20121014143551.619194043@decadent.org.uk>
+	Sun, 14 Oct 2012 10:42:07 -0400
+Message-Id: <20121014143552.573739382@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:45 +0100
+Date: Sun, 14 Oct 2012 15:37:52 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [ 132/147] r8169: Config1 is read-only on 8168c and later.
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Rafal Fitt <rafalf@aplusc.com.pl>, Patrick McHardy <kaber@trash.net>
+Subject: [ 139/147] netfilter: nf_ct_expect: fix possible access to  uninitialized timer
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,60 +28,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Francois Romieu <romieu@fr.zoreil.com>
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-commit 851e60221926a53344b4227879858bef841b0477 upstream.
+commit 2614f86490122bf51eb7c12ec73927f1900f4e7d upstream.
 
-Suggested by Hayes.
+In __nf_ct_expect_check, the function refresh_timer returns 1
+if a matching expectation is found and its timer is successfully
+refreshed. This results in nf_ct_expect_related returning 0.
+Note that at this point:
 
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Hayes Wang <hayeswang@realtek.com>
+- the passed expectation is not inserted in the expectation table
+  and its timer was not initialized, since we have refreshed one
+  matching/existing expectation.
+
+- nf_ct_expect_alloc uses kmem_cache_alloc, so the expectation
+  timer is in some undefined state just after the allocation,
+  until it is appropriately initialized.
+
+This can be a problem for the SIP helper during the expectation
+addition:
+
+ ...
+ if (nf_ct_expect_related(rtp_exp) == 0) {
+         if (nf_ct_expect_related(rtcp_exp) != 0)
+                 nf_ct_unexpect_related(rtp_exp);
+ ...
+
+Note that nf_ct_expect_related(rtp_exp) may return 0 for the timer refresh
+case that is detailed above. Then, if nf_ct_unexpect_related(rtcp_exp)
+returns != 0, nf_ct_unexpect_related(rtp_exp) is called, which does:
+
+ spin_lock_bh(&nf_conntrack_lock);
+ if (del_timer(&exp->timeout)) {
+         nf_ct_unlink_expect(exp);
+         nf_ct_expect_put(exp);
+ }
+ spin_unlock_bh(&nf_conntrack_lock);
+
+Note that del_timer always returns false if the timer has been
+initialized.  However, the timer was not initialized since setup_timer
+was not called, therefore, the expectation timer remains in some
+undefined state. If I'm not missing anything, this may lead to the
+removal an unexistent expectation.
+
+To fix this, the optimization that allows refreshing an expectation
+is removed. Now nf_conntrack_expect_related looks more consistent
+to me since it always add the expectation in case that it returns
+success.
+
+Thanks to Patrick McHardy for participating in the discussion of
+this patch.
+
+I think this may be the source of the problem described by:
+http://marc.info/?l=netfilter-devel&m=134073514719421&w=2
+
+Reported-by: Rafal Fitt <rafalf@aplusc.com.pl>
+Acked-by: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/realtek/r8169.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ net/netfilter/nf_conntrack_expect.c |   29 ++++++-----------------------
+ 1 file changed, 6 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 71393ea..9b0b00b 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -1396,7 +1396,6 @@ static void __rtl8169_set_wol(struct rtl8169_private *tp, u32 wolopts)
- 		u16 reg;
- 		u8  mask;
- 	} cfg[] = {
--		{ WAKE_ANY,   Config1, PMEnable },
- 		{ WAKE_PHY,   Config3, LinkUp },
- 		{ WAKE_MAGIC, Config3, MagicPacket },
- 		{ WAKE_UCAST, Config5, UWF },
-@@ -1404,16 +1403,28 @@ static void __rtl8169_set_wol(struct rtl8169_private *tp, u32 wolopts)
- 		{ WAKE_MCAST, Config5, MWF },
- 		{ WAKE_ANY,   Config5, LanWake }
- 	};
-+	u8 options;
- 
- 	RTL_W8(Cfg9346, Cfg9346_Unlock);
- 
- 	for (i = 0; i < ARRAY_SIZE(cfg); i++) {
--		u8 options = RTL_R8(cfg[i].reg) & ~cfg[i].mask;
-+		options = RTL_R8(cfg[i].reg) & ~cfg[i].mask;
- 		if (wolopts & cfg[i].opt)
- 			options |= cfg[i].mask;
- 		RTL_W8(cfg[i].reg, options);
+--- a/net/netfilter/nf_conntrack_expect.c
++++ b/net/netfilter/nf_conntrack_expect.c
+@@ -366,23 +366,6 @@ static void evict_oldest_expect(struct n
  	}
- 
-+	switch (tp->mac_version) {
-+	case RTL_GIGA_MAC_VER_01 ... RTL_GIGA_MAC_VER_17:
-+		options = RTL_R8(Config1) & ~PMEnable;
-+		if (wolopts)
-+			options |= PMEnable;
-+		RTL_W8(Config1, options);
-+		break;
-+	default:
-+		break;
-+	}
-+
- 	RTL_W8(Cfg9346, Cfg9346_Lock);
  }
  
+-static inline int refresh_timer(struct nf_conntrack_expect *i)
+-{
+-	struct nf_conn_help *master_help = nfct_help(i->master);
+-	const struct nf_conntrack_expect_policy *p;
+-
+-	if (!del_timer(&i->timeout))
+-		return 0;
+-
+-	p = &rcu_dereference_protected(
+-		master_help->helper,
+-		lockdep_is_held(&nf_conntrack_lock)
+-		)->expect_policy[i->class];
+-	i->timeout.expires = jiffies + p->timeout * HZ;
+-	add_timer(&i->timeout);
+-	return 1;
+-}
+-
+ static inline int __nf_ct_expect_check(struct nf_conntrack_expect *expect)
+ {
+ 	const struct nf_conntrack_expect_policy *p;
+@@ -390,7 +373,7 @@ static inline int __nf_ct_expect_check(s
+ 	struct nf_conn *master = expect->master;
+ 	struct nf_conn_help *master_help = nfct_help(master);
+ 	struct net *net = nf_ct_exp_net(expect);
+-	struct hlist_node *n;
++	struct hlist_node *n, *next;
+ 	unsigned int h;
+ 	int ret = 1;
+ 
+@@ -401,12 +384,12 @@ static inline int __nf_ct_expect_check(s
+ 		goto out;
+ 	}
+ 	h = nf_ct_expect_dst_hash(&expect->tuple);
+-	hlist_for_each_entry(i, n, &net->ct.expect_hash[h], hnode) {
++	hlist_for_each_entry_safe(i, n, next, &net->ct.expect_hash[h], hnode) {
+ 		if (expect_matches(i, expect)) {
+-			/* Refresh timer: if it's dying, ignore.. */
+-			if (refresh_timer(i)) {
+-				ret = 0;
+-				goto out;
++			if (del_timer(&i->timeout)) {
++				nf_ct_unlink_expect(i);
++				nf_ct_expect_put(i);
++				break;
+ 			}
+ 		} else if (expect_clash(i, expect)) {
+ 			ret = -EBUSY;
 
 
