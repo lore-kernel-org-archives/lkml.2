@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab2JNOmi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:42:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46289 "EHLO
+	id S1754550Ab2JNOmg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:42:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46316 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754186Ab2JNOmd (ORCPT
+	by vger.kernel.org with ESMTP id S1754523Ab2JNOmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:42:33 -0400
-Message-Id: <20121014143548.761520731@decadent.org.uk>
+	Sun, 14 Oct 2012 10:42:31 -0400
+Message-Id: <20121014143549.569389596@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:24 +0100
+Date: Sun, 14 Oct 2012 15:37:30 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 111/147] ALSA: aloop - add locking to timer access
+        Michal Hocko <mhocko@suse.cz>, Hillf Danton <dhillf@gmail.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 117/147] hugetlb: do not use vma_hugecache_offset() for vma_prio_tree_foreach
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,68 +33,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit d4f1e48bd11e3df6a26811f7a1f06c4225d92f7d upstream.
+commit 36e4f20af833d1ce196e6a4ade05dc26c44652d1 upstream.
 
-When the loopback timer handler is running, calling del_timer() (for STOP
-trigger) will not wait for the handler to complete before deactivating the
-timer. The timer gets rescheduled in the handler as usual. Then a subsequent
-START trigger will try to start the timer using add_timer() with a timer pending
-leading to a kernel panic.
+Commit 0c176d52b0b2 ("mm: hugetlb: fix pgoff computation when unmapping
+page from vma") fixed pgoff calculation but it has replaced it by
+vma_hugecache_offset() which is not approapriate for offsets used for
+vma_prio_tree_foreach() because that one expects index in page units
+rather than in huge_page_shift.
 
-Serialize the calls to add_timer() and del_timer() using a spin lock to avoid
-this.
+Johannes said:
 
-Signed-off-by: Omair Mohammed Abdullah <omair.m.abdullah@linux.intel.com>
-Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+: The resulting index may not be too big, but it can be too small: assume
+: hpage size of 2M and the address to unmap to be 0x200000.  This is regular
+: page index 512 and hpage index 1.  If you have a VMA that maps the file
+: only starting at the second huge page, that VMAs vm_pgoff will be 512 but
+: you ask for offset 1 and miss it even though it does map the page of
+: interest.  hugetlb_cow() will try to unmap, miss the vma, and retry the
+: cow until the allocation succeeds or the skipped vma(s) go away.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Hillf Danton <dhillf@gmail.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: David Rientjes <rientjes@google.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/drivers/aloop.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ mm/hugetlb.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/sound/drivers/aloop.c
-+++ b/sound/drivers/aloop.c
-@@ -119,6 +119,7 @@ struct loopback_pcm {
- 	unsigned int period_size_frac;
- 	unsigned long last_jiffies;
- 	struct timer_list timer;
-+	spinlock_t timer_lock;
- };
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 8536741..de5d1dc 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2480,7 +2480,8 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	 * from page cache lookup which is in HPAGE_SIZE units.
+ 	 */
+ 	address = address & huge_page_mask(h);
+-	pgoff = vma_hugecache_offset(h, vma, address);
++	pgoff = ((address - vma->vm_start) >> PAGE_SHIFT) +
++			vma->vm_pgoff;
+ 	mapping = vma->vm_file->f_dentry->d_inode->i_mapping;
  
- static struct platform_device *devices[SNDRV_CARDS];
-@@ -169,6 +170,7 @@ static void loopback_timer_start(struct
- 	unsigned long tick;
- 	unsigned int rate_shift = get_rate_shift(dpcm);
- 
-+	spin_lock(&dpcm->timer_lock);
- 	if (rate_shift != dpcm->pcm_rate_shift) {
- 		dpcm->pcm_rate_shift = rate_shift;
- 		dpcm->period_size_frac = frac_pos(dpcm, dpcm->pcm_period_size);
-@@ -181,12 +183,15 @@ static void loopback_timer_start(struct
- 	tick = (tick + dpcm->pcm_bps - 1) / dpcm->pcm_bps;
- 	dpcm->timer.expires = jiffies + tick;
- 	add_timer(&dpcm->timer);
-+	spin_unlock(&dpcm->timer_lock);
- }
- 
- static inline void loopback_timer_stop(struct loopback_pcm *dpcm)
- {
-+	spin_lock(&dpcm->timer_lock);
- 	del_timer(&dpcm->timer);
- 	dpcm->timer.expires = 0;
-+	spin_unlock(&dpcm->timer_lock);
- }
- 
- #define CABLE_VALID_PLAYBACK	(1 << SNDRV_PCM_STREAM_PLAYBACK)
-@@ -659,6 +664,7 @@ static int loopback_open(struct snd_pcm_
- 	dpcm->substream = substream;
- 	setup_timer(&dpcm->timer, loopback_timer_function,
- 		    (unsigned long)dpcm);
-+	spin_lock_init(&dpcm->timer_lock);
- 
- 	cable = loopback->cables[substream->number][dev];
- 	if (!cable) {
+ 	/*
 
 
