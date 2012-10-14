@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795Ab2JNTY6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 15:24:58 -0400
-Received: from www.linutronix.de ([62.245.132.108]:60886 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753571Ab2JNTY4 (ORCPT
+	id S1753911Ab2JNTZc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 15:25:32 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:50480 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751094Ab2JNTXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 15:24:56 -0400
-Date: Sun, 14 Oct 2012 21:24:46 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Ben Hutchings <ben@decadent.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        stable <stable@vger.kernel.org>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: Re: [STABLE REQUEST] add: e1000: fix lockdep splat in shutdown
- handler
-In-Reply-To: <1349993385.24256.79.camel@gandalf.local.home>
-Message-ID: <alpine.LFD.2.02.1210142102300.2868@ionos>
-References: <1349993385.24256.79.camel@gandalf.local.home>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Sun, 14 Oct 2012 15:23:44 -0400
+From: Rabin Vincent <rabin@rab.in>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, oleg@redhat.com,
+        Rabin Vincent <rabin@rab.in>
+Subject: [PATCH 4/9] uprobes: allow arch access to xol slot
+Date: Sun, 14 Oct 2012 21:23:08 +0200
+Message-Id: <1350242593-17761-4-git-send-email-rabin@rab.in>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1350242593-17761-1-git-send-email-rabin@rab.in>
+References: <1350242593-17761-1-git-send-email-rabin@rab.in>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Oct 2012, Steven Rostedt wrote:
-> commit 3a3847e007aae732d64d8fd1374126393e9879a3
-> Author: Jesse Brandeburg <jesse.brandeburg@intel.com>
-> Date:   Wed Jan 4 20:23:33 2012 +0000
-> 
->     e1000: fix lockdep splat in shutdown handler
+Allow arches to customize how the instruction is filled into the xol
+slot.  ARM will use this to insert an undefined instruction after the
+real instruction in order to simulate a single step of the instruction
+without hardware support.
 
-as I discussed with Jesse on IRC, there is another possible deadlock
-lurking in the e1000 code.
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+---
+ include/linux/uprobes.h |    1 +
+ kernel/events/uprobes.c |    7 ++++++-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-static void e1000_reinit_safe(struct e1000_adapter *adapter)
-{
-	while (test_and_set_bit(__E1000_RESETTING, &adapter->flags))
-		msleep(1);
-	mutex_lock(&adapter->mutex);
-	e1000_down(adapter);
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index da21b66..b4380ad 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -129,6 +129,7 @@ extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
+ extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
+ extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+ extern bool __weak arch_uprobe_ignore(struct arch_uprobe *aup, struct pt_regs *regs);
++extern void __weak arch_uprobe_xol_copy(struct arch_uprobe *auprobe, void *vaddr);
+ #else /* !CONFIG_UPROBES */
+ struct uprobes_state {
+ };
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index a0e1a38..f7ff3a4 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1211,6 +1211,11 @@ static unsigned long xol_take_insn_slot(struct xol_area *area)
+ 	return slot_addr;
+ }
+ 
++void __weak arch_uprobe_xol_copy(struct arch_uprobe *auprobe, void *vaddr)
++{
++	memcpy(vaddr, auprobe->insn, MAX_UINSN_BYTES);
++}
++
+ /*
+  * xol_get_insn_slot - If was not allocated a slot, then
+  * allocate a slot.
+@@ -1240,7 +1245,7 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe, unsigned long slot
+ 	current->utask->vaddr = slot_addr;
+ 	offset = current->utask->xol_vaddr & ~PAGE_MASK;
+ 	vaddr = kmap_atomic(area->page);
+-	memcpy(vaddr + offset, uprobe->arch.insn, MAX_UINSN_BYTES);
++	arch_uprobe_xol_copy(&uprobe->arch, vaddr + offset);
+ 	kunmap_atomic(vaddr);
+ 
+ 	return current->utask->xol_vaddr;
+-- 
+1.7.9.5
 
-e1000_down() waits on the various work tasks to shut down, but those
-work functions might be blocked on the adapter mutex.
-
-I have no idea how I managed to trigger that one, but it's real. The
-task dump I got out of the machine shows stuff waiting on each other
-forever.
-
-I can't give you a receipe to reprodruce. Looking at the code this is
-not very surprising. It takes quite some coincidence of having
-e1000_reinit_safe() being invoked and the delayed work timer bringing
-the work on right after e1000_reinit_safe() took the adapter mutex.
-
-Thanks,
-
-	tglx
