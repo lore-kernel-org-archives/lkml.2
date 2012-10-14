@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645Ab2JNPIu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:08:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46283 "EHLO
+	id S1754474Ab2JNOmZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:42:25 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46247 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754480Ab2JNOm1 (ORCPT
+	by vger.kernel.org with ESMTP id S1754423Ab2JNOmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:42:27 -0400
-Message-Id: <20121014143549.295464960@decadent.org.uk>
+	Sun, 14 Oct 2012 10:42:21 -0400
+Message-Id: <20121014143550.391492464@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:28 +0100
+Date: Sun, 14 Oct 2012 15:37:36 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 115/147] mm: thp: fix pmd_present for split_huge_page and PROT_NONE with THP
+        Tyler Hicks <tyhicks@canonical.com>,
+        Colin King <colin.king@canonical.com>, Thieu Le <thieule@google.com>
+Subject: [ 123/147] eCryptfs: Revert to a writethrough cache model
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,73 +28,191 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit 027ef6c87853b0a9df53175063028edb4950d476 upstream.
+commit 821f7494a77627fb1ab539591c57b22cdca702d6 upstream.
 
-In many places !pmd_present has been converted to pmd_none.  For pmds
-that's equivalent and pmd_none is quicker so using pmd_none is better.
+A change was made about a year ago to get eCryptfs to better utilize its
+page cache during writes. The idea was to do the page encryption
+operations during page writeback, rather than doing them when initially
+writing into the page cache, to reduce the number of page encryption
+operations during sequential writes. This meant that the encrypted page
+would only be written to the lower filesystem during page writeback,
+which was a change from how eCryptfs had previously wrote to the lower
+filesystem in ecryptfs_write_end().
 
-However (unless we delete pmd_present) we should provide an accurate
-pmd_present too.  This will avoid the risk of code thinking the pmd is non
-present because it's under __split_huge_page_map, see the pmd_mknotpresent
-there and the comment above it.
+The change caused a few eCryptfs-internal bugs that were shook out.
+Unfortunately, more grave side effects have been identified that will
+force changes outside of eCryptfs. Because the lower filesystem isn't
+consulted until page writeback, eCryptfs has no way to pass lower write
+errors (ENOSPC, mainly) back to userspace. Additionaly, it was reported
+that quotas could be bypassed because of the way eCryptfs may sometimes
+open the lower filesystem using a privileged kthread.
 
-If the page has been mprotected as PROT_NONE, it would also lead to a
-pmd_present false negative in the same way as the race with
-split_huge_page.
+It would be nice to resolve the latest issues, but it is best if the
+eCryptfs commits be reverted to the old behavior in the meantime.
 
-Because the PSE bit stays on at all times (both during split_huge_page and
-when the _PAGE_PROTNONE bit get set), we could only check for the PSE bit,
-but checking the PROTNONE bit too is still good to remember pmd_present
-must always keep PROT_NONE into account.
+This reverts:
+32001d6f "eCryptfs: Flush file in vma close"
+5be79de2 "eCryptfs: Flush dirty pages in setattr"
+57db4e8d "ecryptfs: modify write path to encrypt page in writepage"
 
-This explains a not reproducible BUG_ON that was seldom reported on the
-lists.
-
-The same issue is in pmd_large, it would go wrong with both PROT_NONE and
-if it races with split_huge_page.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Tested-by: Colin King <colin.king@canonical.com>
+Cc: Colin King <colin.king@canonical.com>
+Cc: Thieu Le <thieule@google.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/include/asm/pgtable.h |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ fs/ecryptfs/file.c  |   33 ++-------------------------------
+ fs/ecryptfs/inode.c |    6 ------
+ fs/ecryptfs/mmap.c  |   39 +++++++++++++--------------------------
+ 3 files changed, 15 insertions(+), 63 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index fc99484..a1f780d 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -146,8 +146,7 @@ static inline unsigned long pmd_pfn(pmd_t pmd)
- 
- static inline int pmd_large(pmd_t pte)
- {
--	return (pmd_flags(pte) & (_PAGE_PSE | _PAGE_PRESENT)) ==
--		(_PAGE_PSE | _PAGE_PRESENT);
-+	return pmd_flags(pte) & _PAGE_PSE;
+diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
+index baf8b05..44ce5c6 100644
+--- a/fs/ecryptfs/file.c
++++ b/fs/ecryptfs/file.c
+@@ -138,27 +138,6 @@ out:
+ 	return rc;
  }
  
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
-@@ -415,7 +414,13 @@ static inline int pte_hidden(pte_t pte)
+-static void ecryptfs_vma_close(struct vm_area_struct *vma)
+-{
+-	filemap_write_and_wait(vma->vm_file->f_mapping);
+-}
+-
+-static const struct vm_operations_struct ecryptfs_file_vm_ops = {
+-	.close		= ecryptfs_vma_close,
+-	.fault		= filemap_fault,
+-};
+-
+-static int ecryptfs_file_mmap(struct file *file, struct vm_area_struct *vma)
+-{
+-	int rc;
+-
+-	rc = generic_file_mmap(file, vma);
+-	if (!rc)
+-		vma->vm_ops = &ecryptfs_file_vm_ops;
+-
+-	return rc;
+-}
+-
+ struct kmem_cache *ecryptfs_file_info_cache;
  
- static inline int pmd_present(pmd_t pmd)
+ static int read_or_initialize_metadata(struct dentry *dentry)
+@@ -311,15 +290,7 @@ static int ecryptfs_release(struct inode *inode, struct file *file)
+ static int
+ ecryptfs_fsync(struct file *file, loff_t start, loff_t end, int datasync)
  {
--	return pmd_flags(pmd) & _PAGE_PRESENT;
-+	/*
-+	 * Checking for _PAGE_PSE is needed too because
-+	 * split_huge_page will temporarily clear the present bit (but
-+	 * the _PAGE_PSE flag will remain set at all times while the
-+	 * _PAGE_PRESENT bit is clear).
-+	 */
-+	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE);
+-	int rc = 0;
+-
+-	rc = generic_file_fsync(file, start, end, datasync);
+-	if (rc)
+-		goto out;
+-	rc = vfs_fsync_range(ecryptfs_file_to_lower(file), start, end,
+-			     datasync);
+-out:
+-	return rc;
++	return vfs_fsync(ecryptfs_file_to_lower(file), datasync);
  }
  
- static inline int pmd_none(pmd_t pmd)
+ static int ecryptfs_fasync(int fd, struct file *file, int flag)
+@@ -388,7 +359,7 @@ const struct file_operations ecryptfs_main_fops = {
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl = ecryptfs_compat_ioctl,
+ #endif
+-	.mmap = ecryptfs_file_mmap,
++	.mmap = generic_file_mmap,
+ 	.open = ecryptfs_open,
+ 	.flush = ecryptfs_flush,
+ 	.release = ecryptfs_release,
+diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
+index 2d4143f..769fb85 100644
+--- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -981,12 +981,6 @@ static int ecryptfs_setattr(struct dentry *dentry, struct iattr *ia)
+ 			goto out;
+ 	}
+ 
+-	if (S_ISREG(inode->i_mode)) {
+-		rc = filemap_write_and_wait(inode->i_mapping);
+-		if (rc)
+-			goto out;
+-		fsstack_copy_attr_all(inode, lower_inode);
+-	}
+ 	memcpy(&lower_ia, ia, sizeof(lower_ia));
+ 	if (ia->ia_valid & ATTR_FILE)
+ 		lower_ia.ia_file = ecryptfs_file_to_lower(ia->ia_file);
+diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
+index a46b3a8..bd1d57f 100644
+--- a/fs/ecryptfs/mmap.c
++++ b/fs/ecryptfs/mmap.c
+@@ -66,18 +66,6 @@ static int ecryptfs_writepage(struct page *page, struct writeback_control *wbc)
+ {
+ 	int rc;
+ 
+-	/*
+-	 * Refuse to write the page out if we are called from reclaim context
+-	 * since our writepage() path may potentially allocate memory when
+-	 * calling into the lower fs vfs_write() which may in turn invoke
+-	 * us again.
+-	 */
+-	if (current->flags & PF_MEMALLOC) {
+-		redirty_page_for_writepage(wbc, page);
+-		rc = 0;
+-		goto out;
+-	}
+-
+ 	rc = ecryptfs_encrypt_page(page);
+ 	if (rc) {
+ 		ecryptfs_printk(KERN_WARNING, "Error encrypting "
+@@ -498,7 +486,6 @@ static int ecryptfs_write_end(struct file *file,
+ 	struct ecryptfs_crypt_stat *crypt_stat =
+ 		&ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
+ 	int rc;
+-	int need_unlock_page = 1;
+ 
+ 	ecryptfs_printk(KERN_DEBUG, "Calling fill_zeros_to_end_of_page"
+ 			"(page w/ index = [0x%.16lx], to = [%d])\n", index, to);
+@@ -519,26 +506,26 @@ static int ecryptfs_write_end(struct file *file,
+ 			"zeros in page with index = [0x%.16lx]\n", index);
+ 		goto out;
+ 	}
+-	set_page_dirty(page);
+-	unlock_page(page);
+-	need_unlock_page = 0;
++	rc = ecryptfs_encrypt_page(page);
++	if (rc) {
++		ecryptfs_printk(KERN_WARNING, "Error encrypting page (upper "
++				"index [0x%.16lx])\n", index);
++		goto out;
++	}
+ 	if (pos + copied > i_size_read(ecryptfs_inode)) {
+ 		i_size_write(ecryptfs_inode, pos + copied);
+ 		ecryptfs_printk(KERN_DEBUG, "Expanded file size to "
+ 			"[0x%.16llx]\n",
+ 			(unsigned long long)i_size_read(ecryptfs_inode));
+-		balance_dirty_pages_ratelimited(mapping);
+-		rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
+-		if (rc) {
+-			printk(KERN_ERR "Error writing inode size to metadata; "
+-			       "rc = [%d]\n", rc);
+-			goto out;
+-		}
+ 	}
+-	rc = copied;
++	rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
++	if (rc)
++		printk(KERN_ERR "Error writing inode size to metadata; "
++		       "rc = [%d]\n", rc);
++	else
++		rc = copied;
+ out:
+-	if (need_unlock_page)
+-		unlock_page(page);
++	unlock_page(page);
+ 	page_cache_release(page);
+ 	return rc;
+ }
 
 
