@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755000Ab2JNPNr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:13:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46169 "EHLO
+	id S1754230Ab2JNOl7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:41:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46142 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754287Ab2JNOmG (ORCPT
+	by vger.kernel.org with ESMTP id S1754180Ab2JNOlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:42:06 -0400
-Message-Id: <20121014143552.024876567@decadent.org.uk>
+	Sun, 14 Oct 2012 10:41:53 -0400
+Message-Id: <20121014143553.104568198@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:48 +0100
+Date: Sun, 14 Oct 2012 15:37:56 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mike Galbraith <mgalbraith@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 135/147] [PATCH] sched: Fix migration thread runtime bogosity
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 143/147] e1000: fix lockdep splat in shutdown handler
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,85 +31,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Galbraith <mgalbraith@suse.de>
+From: Jesse Brandeburg <jesse.brandeburg@intel.com>
 
-commit 8f6189684eb4e85e6c593cd710693f09c944450a upstream.
+commit 3a3847e007aae732d64d8fd1374126393e9879a3 upstream.
 
-Make stop scheduler class do the same accounting as other classes,
+As reported by Steven Rostedt, e1000 has a lockdep splat added
+during the recent merge window.  The issue is that
+cancel_delayed_work is called while holding our private mutex.
 
-Migration threads can be caught in the act while doing exec balancing,
-leading to the below due to use of unmaintained ->se.exec_start.  The
-load that triggered this particular instance was an apparently out of
-control heavily threaded application that does system monitoring in
-what equated to an exec bomb, with one of the VERY frequently migrated
-tasks being ps.
+There is no reason that I can see to hold the mutex during pci
+shutdown, it was more just paranoia that I put the mutex_lock
+around the call to e1000_down.
 
-%CPU   PID USER     CMD
-99.3    45 root     [migration/10]
-97.7    53 root     [migration/12]
-97.0    57 root     [migration/13]
-90.1    49 root     [migration/11]
-89.6    65 root     [migration/15]
-88.7    17 root     [migration/3]
-80.4    37 root     [migration/8]
-78.1    41 root     [migration/9]
-44.2    13 root     [migration/2]
+In a quick survey lots of drivers handle locking differently when
+being called by the pci layer.  The assumption here is that we
+don't need the mutexes' protection in this function because
+the driver could not be unloaded while in the shutdown handler
+which is only called at reboot or poweroff.
 
-Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1344051854.6739.19.camel@marge.simpson.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-[Steven Rostedt: backport for 3.2.]
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Tested-by: Steven Rostedt <rostedt@goodmis.org>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/sched_stoptask.c |   22 +++++++++++++++++++++-
- 1 files changed, 21 insertions(+), 1 deletions(-)
+ drivers/net/ethernet/intel/e1000/e1000_main.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
---- a/kernel/sched_stoptask.c
-+++ b/kernel/sched_stoptask.c
-@@ -25,8 +25,10 @@ static struct task_struct *pick_next_tas
- {
- 	struct task_struct *stop = rq->stop;
+diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
+index 985d589..934d5aa 100644
+--- a/drivers/net/ethernet/intel/e1000/e1000_main.c
++++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
+@@ -4724,8 +4724,6 @@ static int __e1000_shutdown(struct pci_dev *pdev, bool *enable_wake)
  
--	if (stop && stop->on_rq)
-+	if (stop && stop->on_rq) {
-+		stop->se.exec_start = rq->clock_task;
- 		return stop;
-+	}
+ 	netif_device_detach(netdev);
  
- 	return NULL;
- }
-@@ -50,6 +52,21 @@ static void yield_task_stop(struct rq *r
+-	mutex_lock(&adapter->mutex);
+-
+ 	if (netif_running(netdev)) {
+ 		WARN_ON(test_bit(__E1000_RESETTING, &adapter->flags));
+ 		e1000_down(adapter);
+@@ -4733,10 +4731,8 @@ static int __e1000_shutdown(struct pci_dev *pdev, bool *enable_wake)
  
- static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
- {
-+	struct task_struct *curr = rq->curr;
-+	u64 delta_exec;
-+
-+	delta_exec = rq->clock_task - curr->se.exec_start;
-+	if (unlikely((s64)delta_exec < 0))
-+		delta_exec = 0;
-+
-+	schedstat_set(curr->se.statistics.exec_max,
-+			max(curr->se.statistics.exec_max, delta_exec));
-+
-+	curr->se.sum_exec_runtime += delta_exec;
-+	account_group_exec_runtime(curr, delta_exec);
-+
-+	curr->se.exec_start = rq->clock_task;
-+	cpuacct_charge(curr, delta_exec);
- }
+ #ifdef CONFIG_PM
+ 	retval = pci_save_state(pdev);
+-	if (retval) {
+-		mutex_unlock(&adapter->mutex);
++	if (retval)
+ 		return retval;
+-	}
+ #endif
  
- static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
-@@ -58,6 +75,9 @@ static void task_tick_stop(struct rq *rq
+ 	status = er32(STATUS);
+@@ -4791,8 +4787,6 @@ static int __e1000_shutdown(struct pci_dev *pdev, bool *enable_wake)
+ 	if (netif_running(netdev))
+ 		e1000_free_irq(adapter);
  
- static void set_curr_task_stop(struct rq *rq)
- {
-+	struct task_struct *stop = rq->stop;
-+
-+	stop->se.exec_start = rq->clock_task;
- }
+-	mutex_unlock(&adapter->mutex);
+-
+ 	pci_disable_device(pdev);
  
- static void switched_to_stop(struct rq *rq, struct task_struct *p)
+ 	return 0;
 
 
