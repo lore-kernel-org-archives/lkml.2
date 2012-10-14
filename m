@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642Ab2JNPKo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:10:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46222 "EHLO
+	id S932135Ab2JNPLE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:11:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46218 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754375Ab2JNOmN (ORCPT
+	by vger.kernel.org with ESMTP id S1754368Ab2JNOmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:42:13 -0400
-Message-Id: <20121014143550.525935256@decadent.org.uk>
+	Sun, 14 Oct 2012 10:42:12 -0400
+Message-Id: <20121014143550.928342644@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:37 +0100
+Date: Sun, 14 Oct 2012 15:37:40 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tyler Hicks <tyhicks@canonical.com>, Artemy Tregubenko <me@arty.name>,
-        Colin Ian King <colin.king@canonical.com>
-Subject: [ 124/147] eCryptfs: Write out all dirty pages just before releasing the lower
- file
+        Seiji Aguchi <seiji.aguchi@hds.com>, Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [ 127/147] efi: initialize efi.runtime_version to make
+ query_variable_info/update_capsule workable
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,47 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Seiji Aguchi <seiji.aguchi@hds.com>
 
-commit 7149f2558d5b5b988726662fe58b1c388337805b upstream.
+commit d6cf86d8f23253225fe2a763d627ecf7dfee9dae upstream.
 
-Fixes a regression caused by:
+A value of efi.runtime_version is checked before calling
+update_capsule()/query_variable_info() as follows.
+But it isn't initialized anywhere.
 
-821f749 eCryptfs: Revert to a writethrough cache model
+<snip>
+static efi_status_t virt_efi_query_variable_info(u32 attr,
+                                                 u64 *storage_space,
+                                                 u64 *remaining_space,
+                                                 u64 *max_variable_size)
+{
+        if (efi.runtime_version < EFI_2_00_SYSTEM_TABLE_REVISION)
+                return EFI_UNSUPPORTED;
+<snip>
 
-That patch reverted some code (specifically, 32001d6f) that was
-necessary to properly handle open() -> mmap() -> close() -> dirty pages
--> munmap(), because the lower file could be closed before the dirty
-pages are written out.
+This patch initializes a value of efi.runtime_version at boot time.
 
-Rather than reapplying 32001d6f, this approach is a better way of
-ensuring that the lower file is still open in order to handle writing
-out the dirty pages. It is called from ecryptfs_release(), while we have
-a lock on the lower file pointer, just before the lower file gets the
-final fput() and we overwrite the pointer.
-
-https://launchpad.net/bugs/1047261
-
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Reported-by: Artemy Tregubenko <me@arty.name>
-Tested-by: Artemy Tregubenko <me@arty.name>
-Tested-by: Colin Ian King <colin.king@canonical.com>
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Acked-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ecryptfs/main.c |    1 +
+ arch/x86/platform/efi/efi.c |    1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
-index 2768138..9b627c1 100644
---- a/fs/ecryptfs/main.c
-+++ b/fs/ecryptfs/main.c
-@@ -162,6 +162,7 @@ void ecryptfs_put_lower_file(struct inode *inode)
- 	inode_info = ecryptfs_inode_to_private(inode);
- 	if (atomic_dec_and_mutex_lock(&inode_info->lower_file_count,
- 				      &inode_info->lower_file_mutex)) {
-+		filemap_write_and_wait(inode->i_mapping);
- 		fput(inode_info->lower_file);
- 		inode_info->lower_file = NULL;
- 		mutex_unlock(&inode_info->lower_file_mutex);
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 92660eda..f55a4ce 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -890,6 +890,7 @@ void __init efi_enter_virtual_mode(void)
+ 	 *
+ 	 * Call EFI services through wrapper functions.
+ 	 */
++	efi.runtime_version = efi_systab.fw_revision;
+ 	efi.get_time = virt_efi_get_time;
+ 	efi.set_time = virt_efi_set_time;
+ 	efi.get_wakeup_time = virt_efi_get_wakeup_time;
 
 
