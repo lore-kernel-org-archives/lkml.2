@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab2JNOlt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:41:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46115 "EHLO
+	id S1754274Ab2JNOmB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:42:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46139 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753761Ab2JNOlq (ORCPT
+	by vger.kernel.org with ESMTP id S1754147Ab2JNOlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:41:46 -0400
-Message-Id: <20121014143553.503267707@decadent.org.uk>
+	Sun, 14 Oct 2012 10:41:53 -0400
+Message-Id: <20121014143552.971003867@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:59 +0100
+Date: Sun, 14 Oct 2012 15:37:55 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jiri Slaby <jirislaby@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 146/147] drm/i915: Mark untiled BLT commands as fenced on gen2/3
+        Jan Engelhardt <jengelh@inai.de>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [ 142/147] netfilter: xt_limit: have r->cost != 0 case work
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,76 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Jan Engelhardt <jengelh@inai.de>
 
-commit 7dd4906586274f3945f2aeaaa5a33b451c3b4bba upstream.
+commit 82e6bfe2fbc4d48852114c4f979137cd5bf1d1a8 upstream.
 
-The BLT commands on gen2/3 utilize the fence registers and so we cannot
-modify any fences for the object whilst those commands are in flight.
-Currently we marked tiled commands as occupying a fence, but forgot to
-restrict the untiled commands from preventing a fence being assigned
-before they were completed.
+Commit v2.6.19-rc1~1272^2~41 tells us that r->cost != 0 can happen when
+a running state is saved to userspace and then reinstated from there.
 
-One side-effect is that we ten have to double check that a fence was
-allocated for a fenced buffer during move-to-active.
+Make sure that private xt_limit area is initialized with correct values.
+Otherwise, random matchings due to use of uninitialized memory.
 
-Reported-by: Jiri Slaby <jirislaby@gmail.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=43427
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=47990
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Testcase: i-g-t/tests/gem_tiled_after_untiled_blt
-Tested-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2: The nesting of if-statements in the old
- i915_gem_execbuffer_reserve() differs from pin_and_fence_object(),
- so don't move the assignment of obj->pending_fenced_gpu_access but
- adjust the boolean expression as recommended by Daniel Vetter.]
+Signed-off-by: Jan Engelhardt <jengelh@inai.de>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/i915_gem.c            |   15 +++++++++------
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 +-
- 2 files changed, 10 insertions(+), 7 deletions(-)
+ net/netfilter/xt_limit.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -1543,16 +1543,19 @@ i915_gem_object_move_to_active(struct dr
- 	list_move_tail(&obj->ring_list, &ring->active_list);
+diff --git a/net/netfilter/xt_limit.c b/net/netfilter/xt_limit.c
+index 5c22ce8..a4c1e45 100644
+--- a/net/netfilter/xt_limit.c
++++ b/net/netfilter/xt_limit.c
+@@ -117,11 +117,11 @@ static int limit_mt_check(const struct xt_mtchk_param *par)
  
- 	obj->last_rendering_seqno = seqno;
--	if (obj->fenced_gpu_access) {
--		struct drm_i915_fence_reg *reg;
--
--		BUG_ON(obj->fence_reg == I915_FENCE_REG_NONE);
- 
-+	if (obj->fenced_gpu_access) {
- 		obj->last_fenced_seqno = seqno;
- 		obj->last_fenced_ring = ring;
- 
--		reg = &dev_priv->fence_regs[obj->fence_reg];
--		list_move_tail(&reg->lru_list, &dev_priv->mm.fence_list);
-+		/* Bump MRU to take account of the delayed flush */
-+		if (obj->fence_reg != I915_FENCE_REG_NONE) {
-+			struct drm_i915_fence_reg *reg;
-+
-+			reg = &dev_priv->fence_regs[obj->fence_reg];
-+			list_move_tail(&reg->lru_list,
-+				       &dev_priv->mm.fence_list);
-+		}
+ 	/* For SMP, we only want to use one set of state. */
+ 	r->master = priv;
++	/* User avg in seconds * XT_LIMIT_SCALE: convert to jiffies *
++	   128. */
++	priv->prev = jiffies;
++	priv->credit = user2credits(r->avg * r->burst); /* Credits full. */
+ 	if (r->cost == 0) {
+-		/* User avg in seconds * XT_LIMIT_SCALE: convert to jiffies *
+-		   128. */
+-		priv->prev = jiffies;
+-		priv->credit = user2credits(r->avg * r->burst); /* Credits full. */
+ 		r->credit_cap = priv->credit; /* Credits full. */
+ 		r->cost = user2credits(r->avg);
  	}
- }
- 
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -574,7 +574,8 @@ i915_gem_execbuffer_reserve(struct intel
- 					if (ret)
- 						break;
- 				}
--				obj->pending_fenced_gpu_access = need_fence;
-+				obj->pending_fenced_gpu_access =
-+					!!(entry->flags & EXEC_OBJECT_NEEDS_FENCE);
- 			}
- 
- 			entry->offset = obj->gtt_offset;
 
 
