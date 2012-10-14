@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab2JNOzl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:55:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46576 "EHLO
+	id S1754894Ab2JNOzk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:55:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46568 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754693Ab2JNOnd (ORCPT
+	by vger.kernel.org with ESMTP id S1754689Ab2JNOnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:43:33 -0400
-Message-Id: <20121014143542.508980657@decadent.org.uk>
+Message-Id: <20121014143542.639088195@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:37 +0100
+Date: Sun, 14 Oct 2012 15:36:38 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Flavio Leitner <fbl@redhat.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 064/147] staging: comedi: s626: dont dereference insn->data
+Subject: [ 065/147] serial: set correct baud_base for EXSYS EX-41092 Dual 16950
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,34 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Flavio Leitner <fbl@redhat.com>
 
-commit b655c2c4782ed3e2e71d2608154e295a3e860311 upstream.
+commit 26e8220adb0aec43b7acafa0f1431760eee28522 upstream.
 
-`s626_enc_insn_config()` is incorrectly dereferencing `insn->data` which
-is a pointer to user memory.  It should be dereferencing the separate
-`data` parameter that points to a copy of the data in kernel memory.
+Apparently the same card model has two IDs, so this patch
+complements the commit 39aced68d664291db3324d0fcf0985ab5626aac2
+adding the missing one.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Signed-off-by: Flavio Leitner <fbl@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/comedi/drivers/s626.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/serial/8250_pci.c |    9 +++++++--
+ include/linux/pci_ids.h            |    1 -
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
-index e1d10f3..430e26b 100644
---- a/drivers/staging/comedi/drivers/s626.c
-+++ b/drivers/staging/comedi/drivers/s626.c
-@@ -1825,7 +1825,7 @@ static int s626_enc_insn_config(struct comedi_device *dev,
- 	/*   (data==NULL) ? (Preloadvalue=0) : (Preloadvalue=data[0]); */
+--- a/drivers/tty/serial/8250_pci.c
++++ b/drivers/tty/serial/8250_pci.c
+@@ -1118,6 +1118,8 @@ pci_xr17c154_setup(struct serial_private
+ #define PCI_SUBDEVICE_ID_OCTPRO422	0x0208
+ #define PCI_SUBDEVICE_ID_POCTAL232	0x0308
+ #define PCI_SUBDEVICE_ID_POCTAL422	0x0408
++#define PCI_SUBDEVICE_ID_SIIG_DUAL_00	0x2500
++#define PCI_SUBDEVICE_ID_SIIG_DUAL_30	0x2530
+ #define PCI_VENDOR_ID_ADVANTECH		0x13fe
+ #define PCI_DEVICE_ID_INTEL_CE4100_UART 0x2e66
+ #define PCI_DEVICE_ID_ADVANTECH_PCI3620	0x3620
+@@ -3168,8 +3170,11 @@ static struct pci_device_id serial_pci_t
+ 		 * For now just used the hex ID 0x950a.
+ 		 */
+ 	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
+-		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_SERIAL, 0, 0,
+-		pbn_b0_2_115200 },
++		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_00,
++		0, 0, pbn_b0_2_115200 },
++	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
++		PCI_SUBVENDOR_ID_SIIG, PCI_SUBDEVICE_ID_SIIG_DUAL_30,
++		0, 0, pbn_b0_2_115200 },
+ 	{	PCI_VENDOR_ID_OXSEMI, 0x950a,
+ 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
+ 		pbn_b0_2_1130000 },
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -1823,7 +1823,6 @@
+ #define PCI_DEVICE_ID_SIIG_8S_20x_650	0x2081
+ #define PCI_DEVICE_ID_SIIG_8S_20x_850	0x2082
+ #define PCI_SUBDEVICE_ID_SIIG_QUARTET_SERIAL	0x2050
+-#define PCI_SUBDEVICE_ID_SIIG_DUAL_SERIAL	0x2530
  
- 	k->SetMode(dev, k, Setup, TRUE);
--	Preload(dev, k, *(insn->data));
-+	Preload(dev, k, data[0]);
- 	k->PulseIndex(dev, k);
- 	SetLatchSource(dev, k, valueSrclatch);
- 	k->SetEnable(dev, k, (uint16_t) (enab != 0));
+ #define PCI_VENDOR_ID_RADISYS		0x1331
+ 
 
 
