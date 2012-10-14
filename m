@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab2JNTKi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 15:10:38 -0400
-Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:51812 "EHLO
+	id S1754065Ab2JNTKr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 15:10:47 -0400
+Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:47650 "EHLO
 	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753364Ab2JNTKd (ORCPT
+	with ESMTP id S1753705Ab2JNTKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 15:10:33 -0400
+	Sun, 14 Oct 2012 15:10:45 -0400
 From: Ondrej Zary <linux@rainbow-software.org>
 To: alsa-devel@alsa-project.org
 Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
-Subject: [PATCH 2/5] snd-ice1712: Add Wolfson Microelectronics WM8766 codec support
-Date: Sun, 14 Oct 2012 21:09:20 +0200
-Message-Id: <1350241763-7248-3-git-send-email-linux@rainbow-software.org>
+Subject: [PATCH 3/5] snd-ice1712: Add Wolfson Microelectronics WM8776 codec support
+Date: Sun, 14 Oct 2012 21:09:21 +0200
+Message-Id: <1350241763-7248-4-git-send-email-linux@rainbow-software.org>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1350241763-7248-1-git-send-email-linux@rainbow-software.org>
 References: <1350241763-7248-1-git-send-email-linux@rainbow-software.org>
@@ -26,22 +26,22 @@ converted to use this generic code.
 
 Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 ---
- sound/pci/ice1712/wm8766.c |  361 ++++++++++++++++++++++++++++++++++++++++++++
- sound/pci/ice1712/wm8766.h |  163 ++++++++++++++++++++
- 2 files changed, 524 insertions(+), 0 deletions(-)
- create mode 100644 sound/pci/ice1712/wm8766.c
- create mode 100644 sound/pci/ice1712/wm8766.h
+ sound/pci/ice1712/wm8776.c |  632 ++++++++++++++++++++++++++++++++++++++++++++
+ sound/pci/ice1712/wm8776.h |  226 ++++++++++++++++
+ 2 files changed, 858 insertions(+), 0 deletions(-)
+ create mode 100644 sound/pci/ice1712/wm8776.c
+ create mode 100644 sound/pci/ice1712/wm8776.h
 
-diff --git a/sound/pci/ice1712/wm8766.c b/sound/pci/ice1712/wm8766.c
+diff --git a/sound/pci/ice1712/wm8776.c b/sound/pci/ice1712/wm8776.c
 new file mode 100644
-index 0000000..8072ade
+index 0000000..dc333ce
 --- /dev/null
-+++ b/sound/pci/ice1712/wm8766.c
-@@ -0,0 +1,361 @@
++++ b/sound/pci/ice1712/wm8776.c
+@@ -0,0 +1,632 @@
 +/*
 + *   ALSA driver for ICEnsemble VT17xx
 + *
-+ *   Lowlevel functions for WM8766 codec
++ *   Lowlevel functions for WM8776 codec
 + *
 + *	Copyright (c) 2012 Ondrej Zary <linux@rainbow-software.org>
 + *
@@ -65,217 +65,489 @@ index 0000000..8072ade
 +#include <sound/core.h>
 +#include <sound/control.h>
 +#include <sound/tlv.h>
-+#include "wm8766.h"
++#include "wm8776.h"
 +
 +/* low-level access */
 +
-+static void snd_wm8766_write(struct snd_wm8766 *wm, u16 addr, u16 data)
++static void snd_wm8776_write(struct snd_wm8776 *wm, u16 addr, u16 data)
 +{
-+	if (addr < WM8766_REG_RESET)
++	u8 bus_addr = addr << 1 | data >> 8;	/* addr + 9th data bit */
++	u8 bus_data = data & 0xff;		/* remaining 8 data bits */
++
++	if (addr < WM8776_REG_RESET)
 +		wm->regs[addr] = data;
-+	wm->ops.write(wm, addr, data);
++	wm->ops.write(wm, bus_addr, bus_data);
++}
++
++/* register-level functions */
++
++static void snd_wm8776_activate_ctl(struct snd_wm8776 *wm, char *ctl_name,
++				    bool active)
++{
++	struct snd_card *card = wm->card;
++	struct snd_kcontrol *kctl;
++	struct snd_kcontrol_volatile *vd;
++	struct snd_ctl_elem_id elem_id;
++	unsigned int index_offset;
++
++	memset(&elem_id, 0, sizeof(elem_id));
++	strncpy(elem_id.name, ctl_name, sizeof(elem_id.name));
++	elem_id.iface = SNDRV_CTL_ELEM_IFACE_MIXER;
++	kctl = snd_ctl_find_id(card, &elem_id);
++	if (!kctl)
++		return;
++	index_offset = snd_ctl_get_ioff(kctl, &kctl->id);
++	vd = &kctl->vd[index_offset];
++	if (active)
++		vd->access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
++	else
++		vd->access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
++	snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_INFO, &kctl->id);
++}
++
++static void snd_wm8776_update_agc_ctl(struct snd_wm8776 *wm)
++{
++	int i, flags_on = 0, flags_off = 0;
++
++	switch (wm->agc_mode) {
++	case WM8776_AGC_OFF:
++		flags_off = WM8776_FLAG_LIM | WM8776_FLAG_ALC;
++		break;
++	case WM8776_AGC_LIM:
++		flags_off = WM8776_FLAG_ALC;
++		flags_on = WM8776_FLAG_LIM;
++		break;
++	case WM8776_AGC_ALC_R:
++	case WM8776_AGC_ALC_L:
++	case WM8776_AGC_ALC_STEREO:
++		flags_off = WM8776_FLAG_LIM;
++		flags_on = WM8776_FLAG_ALC;
++		break;
++	}
++
++	for (i = 0; i < WM8776_CTL_COUNT; i++)
++		if (wm->ctl[i].flags & flags_off)
++			snd_wm8776_activate_ctl(wm, wm->ctl[i].name, false);
++		else if (wm->ctl[i].flags & flags_on)
++			snd_wm8776_activate_ctl(wm, wm->ctl[i].name, true);
++}
++
++static void snd_wm8776_set_agc(struct snd_wm8776 *wm, u16 agc, u16 nothing)
++{
++	u16 alc1 = wm->regs[WM8776_REG_ALCCTRL1] & ~WM8776_ALC1_LCT_MASK;
++	u16 alc2 = wm->regs[WM8776_REG_ALCCTRL2] & ~WM8776_ALC2_LCEN;
++
++	switch (agc) {
++	case 0:	/* Off */
++		wm->agc_mode = WM8776_AGC_OFF;
++		break;
++	case 1: /* Limiter */
++		alc2 |= WM8776_ALC2_LCEN;
++		wm->agc_mode = WM8776_AGC_LIM;
++		break;
++	case 2: /* ALC Right */
++		alc1 |= WM8776_ALC1_LCSEL_ALCR;
++		alc2 |= WM8776_ALC2_LCEN;
++		wm->agc_mode = WM8776_AGC_ALC_R;
++		break;
++	case 3: /* ALC Left */
++		alc1 |= WM8776_ALC1_LCSEL_ALCL;
++		alc2 |= WM8776_ALC2_LCEN;
++		wm->agc_mode = WM8776_AGC_ALC_L;
++		break;
++	case 4: /* ALC Stereo */
++		alc1 |= WM8776_ALC1_LCSEL_ALCSTEREO;
++		alc2 |= WM8776_ALC2_LCEN;
++		wm->agc_mode = WM8776_AGC_ALC_STEREO;
++		break;
++	}
++	snd_wm8776_write(wm, WM8776_REG_ALCCTRL1, alc1);
++	snd_wm8776_write(wm, WM8776_REG_ALCCTRL2, alc2);
++	snd_wm8776_update_agc_ctl(wm);
++}
++
++static void snd_wm8776_get_agc(struct snd_wm8776 *wm, u16 *mode, u16 *nothing)
++{
++	*mode = wm->agc_mode;
 +}
 +
 +/* mixer controls */
 +
-+static const DECLARE_TLV_DB_SCALE(wm8766_tlv, -12750, 50, 1);
++static const DECLARE_TLV_DB_SCALE(wm8776_hp_tlv, -7400, 100, 1);
++static const DECLARE_TLV_DB_SCALE(wm8776_dac_tlv, -12750, 50, 1);
++static const DECLARE_TLV_DB_SCALE(wm8776_adc_tlv, -10350, 50, 1);
++static const DECLARE_TLV_DB_SCALE(wm8776_lct_tlv, -1600, 100, 0);
++static const DECLARE_TLV_DB_SCALE(wm8776_maxgain_tlv, 0, 400, 0);
++static const DECLARE_TLV_DB_SCALE(wm8776_ngth_tlv, -7800, 600, 0);
++static const DECLARE_TLV_DB_SCALE(wm8776_maxatten_lim_tlv, -1200, 100, 0);
++static const DECLARE_TLV_DB_SCALE(wm8776_maxatten_alc_tlv, -2100, 400, 0);
 +
-+static struct snd_wm8766_ctl snd_wm8766_default_ctl[WM8766_CTL_COUNT] = {
-+	[WM8766_CTL_CH1_VOL] = {
-+		.name = "Channel 1 Playback Volume",
++static struct snd_wm8776_ctl snd_wm8776_default_ctl[WM8776_CTL_COUNT] = {
++	[WM8776_CTL_DAC_VOL] = {
++		.name = "Master Playback Volume",
 +		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
-+		.tlv = wm8766_tlv,
-+		.reg1 = WM8766_REG_DACL1,
-+		.reg2 = WM8766_REG_DACR1,
-+		.mask1 = WM8766_VOL_MASK,
-+		.mask2 = WM8766_VOL_MASK,
++		.tlv = wm8776_dac_tlv,
++		.reg1 = WM8776_REG_DACLVOL,
++		.reg2 = WM8776_REG_DACRVOL,
++		.mask1 = WM8776_DACVOL_MASK,
++		.mask2 = WM8776_DACVOL_MASK,
 +		.max = 0xff,
-+		.flags = WM8766_FLAG_STEREO | WM8766_FLAG_VOL_UPDATE,
++		.flags = WM8776_FLAG_STEREO | WM8776_FLAG_VOL_UPDATE,
 +	},
-+	[WM8766_CTL_CH2_VOL] = {
-+		.name = "Channel 2 Playback Volume",
++	[WM8776_CTL_DAC_SW] = {
++		.name = "Master Playback Switch",
++		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
++		.reg1 = WM8776_REG_DACCTRL1,
++		.reg2 = WM8776_REG_DACCTRL1,
++		.mask1 = WM8776_DAC_PL_LL,
++		.mask2 = WM8776_DAC_PL_RR,
++		.flags = WM8776_FLAG_STEREO,
++	},
++	[WM8776_CTL_DAC_ZC_SW] = {
++		.name = "Master Zero Cross Detect Playback Switch",
++		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
++		.reg1 = WM8776_REG_DACCTRL1,
++		.mask1 = WM8776_DAC_DZCEN,
++	},
++	[WM8776_CTL_HP_VOL] = {
++		.name = "Headphone Playback Volume",
 +		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
-+		.tlv = wm8766_tlv,
-+		.reg1 = WM8766_REG_DACL2,
-+		.reg2 = WM8766_REG_DACR2,
-+		.mask1 = WM8766_VOL_MASK,
-+		.mask2 = WM8766_VOL_MASK,
-+		.max = 0xff,
-+		.flags = WM8766_FLAG_STEREO | WM8766_FLAG_VOL_UPDATE,
++		.tlv = wm8776_hp_tlv,
++		.reg1 = WM8776_REG_HPLVOL,
++		.reg2 = WM8776_REG_HPRVOL,
++		.mask1 = WM8776_HPVOL_MASK,
++		.mask2 = WM8776_HPVOL_MASK,
++		.min = 0x2f,
++		.max = 0x7f,
++		.flags = WM8776_FLAG_STEREO | WM8776_FLAG_VOL_UPDATE,
 +	},
-+	[WM8766_CTL_CH3_VOL] = {
-+		.name = "Channel 3 Playback Volume",
-+		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
-+		.tlv = wm8766_tlv,
-+		.reg1 = WM8766_REG_DACL3,
-+		.reg2 = WM8766_REG_DACR3,
-+		.mask1 = WM8766_VOL_MASK,
-+		.mask2 = WM8766_VOL_MASK,
-+		.max = 0xff,
-+		.flags = WM8766_FLAG_STEREO | WM8766_FLAG_VOL_UPDATE,
-+	},
-+	[WM8766_CTL_CH1_SW] = {
-+		.name = "Channel 1 Playback Switch",
++	[WM8776_CTL_HP_SW] = {
++		.name = "Headphone Playback Switch",
 +		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8766_REG_DACCTRL2,
-+		.mask1 = WM8766_DAC2_MUTE1,
-+		.flags = WM8766_FLAG_INVERT,
++		.reg1 = WM8776_REG_PWRDOWN,
++		.mask1 = WM8776_PWR_HPPD,
++		.flags = WM8776_FLAG_INVERT,
 +	},
-+	[WM8766_CTL_CH2_SW] = {
-+		.name = "Channel 2 Playback Switch",
++	[WM8776_CTL_HP_ZC_SW] = {
++		.name = "Headphone Zero Cross Detect Playback Switch",
 +		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8766_REG_DACCTRL2,
-+		.mask1 = WM8766_DAC2_MUTE2,
-+		.flags = WM8766_FLAG_INVERT,
++		.reg1 = WM8776_REG_HPLVOL,
++		.reg2 = WM8776_REG_HPRVOL,
++		.mask1 = WM8776_VOL_HPZCEN,
++		.mask2 = WM8776_VOL_HPZCEN,
++		.flags = WM8776_FLAG_STEREO,
 +	},
-+	[WM8766_CTL_CH3_SW] = {
-+		.name = "Channel 3 Playback Switch",
++	[WM8776_CTL_AUX_SW] = {
++		.name = "AUX Playback Switch",
 +		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8766_REG_DACCTRL2,
-+		.mask1 = WM8766_DAC2_MUTE3,
-+		.flags = WM8766_FLAG_INVERT,
++		.reg1 = WM8776_REG_OUTMUX,
++		.mask1 = WM8776_OUTMUX_AUX,
 +	},
-+	[WM8766_CTL_PHASE1_SW] = {
-+		.name = "Channel 1 Phase Invert Playback Switch",
++	[WM8776_CTL_BYPASS_SW] = {
++		.name = "Bypass Playback Switch",
 +		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8766_REG_IFCTRL,
-+		.mask1 = WM8766_PHASE_INVERT1,
++		.reg1 = WM8776_REG_OUTMUX,
++		.mask1 = WM8776_OUTMUX_BYPASS,
 +	},
-+	[WM8766_CTL_PHASE2_SW] = {
-+		.name = "Channel 2 Phase Invert Playback Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8766_REG_IFCTRL,
-+		.mask1 = WM8766_PHASE_INVERT2,
-+	},
-+	[WM8766_CTL_PHASE3_SW] = {
-+		.name = "Channel 3 Phase Invert Playback Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8766_REG_IFCTRL,
-+		.mask1 = WM8766_PHASE_INVERT3,
-+	},
-+	[WM8766_CTL_DEEMPH1_SW] = {
-+		.name = "Channel 1 Deemphasis Playback Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8766_REG_DACCTRL2,
-+		.mask1 = WM8766_DAC2_DEEMP1,
-+	},
-+	[WM8766_CTL_DEEMPH2_SW] = {
-+		.name = "Channel 2 Deemphasis Playback Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8766_REG_DACCTRL2,
-+		.mask1 = WM8766_DAC2_DEEMP2,
-+	},
-+	[WM8766_CTL_DEEMPH3_SW] = {
-+		.name = "Channel 3 Deemphasis Playback Switch",
-+		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8766_REG_DACCTRL2,
-+		.mask1 = WM8766_DAC2_DEEMP3,
-+	},
-+	[WM8766_CTL_IZD_SW] = {
++	[WM8776_CTL_DAC_IZD_SW] = {
 +		.name = "Infinite Zero Detect Playback Switch",
 +		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8766_REG_DACCTRL1,
-+		.mask1 = WM8766_DAC_IZD,
++		.reg1 = WM8776_REG_DACCTRL1,
++		.mask1 = WM8776_DAC_IZD,
 +	},
-+	[WM8766_CTL_ZC_SW] = {
-+		.name = "Zero Cross Detect Playback Switch",
++	[WM8776_CTL_PHASE_SW] = {
++		.name = "Phase Invert Playback Switch",
 +		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
-+		.reg1 = WM8766_REG_DACCTRL2,
-+		.mask1 = WM8766_DAC2_ZCD,
-+		.flags = WM8766_FLAG_INVERT,
++		.reg1 = WM8776_REG_PHASESWAP,
++		.reg2 = WM8776_REG_PHASESWAP,
++		.mask1 = WM8776_PHASE_INVERTL,
++		.mask2 = WM8776_PHASE_INVERTR,
++		.flags = WM8776_FLAG_STEREO,
++	},
++	[WM8776_CTL_DEEMPH_SW] = {
++		.name = "Deemphasis Playback Switch",
++		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
++		.reg1 = WM8776_REG_DACCTRL2,
++		.mask1 = WM8776_DAC2_DEEMPH,
++	},
++	[WM8776_CTL_ADC_VOL] = {
++		.name = "Input Capture Volume",
++		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
++		.tlv = wm8776_adc_tlv,
++		.reg1 = WM8776_REG_ADCLVOL,
++		.reg2 = WM8776_REG_ADCRVOL,
++		.mask1 = WM8776_ADC_GAIN_MASK,
++		.mask2 = WM8776_ADC_GAIN_MASK,
++		.max = 0xff,
++		.flags = WM8776_FLAG_STEREO | WM8776_FLAG_VOL_UPDATE,
++	},
++	[WM8776_CTL_ADC_SW] = {
++		.name = "Input Capture Switch",
++		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
++		.reg1 = WM8776_REG_ADCMUX,
++		.reg2 = WM8776_REG_ADCMUX,
++		.mask1 = WM8776_ADC_MUTEL,
++		.mask2 = WM8776_ADC_MUTER,
++		.flags = WM8776_FLAG_STEREO | WM8776_FLAG_INVERT,
++	},
++	[WM8776_CTL_INPUT1_SW] = {
++		.name = "AIN1 Capture Switch",
++		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
++		.reg1 = WM8776_REG_ADCMUX,
++		.mask1 = WM8776_ADC_MUX_AIN1,
++	},
++	[WM8776_CTL_INPUT2_SW] = {
++		.name = "AIN2 Capture Switch",
++		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
++		.reg1 = WM8776_REG_ADCMUX,
++		.mask1 = WM8776_ADC_MUX_AIN2,
++	},
++	[WM8776_CTL_INPUT3_SW] = {
++		.name = "AIN3 Capture Switch",
++		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
++		.reg1 = WM8776_REG_ADCMUX,
++		.mask1 = WM8776_ADC_MUX_AIN3,
++	},
++	[WM8776_CTL_INPUT4_SW] = {
++		.name = "AIN4 Capture Switch",
++		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
++		.reg1 = WM8776_REG_ADCMUX,
++		.mask1 = WM8776_ADC_MUX_AIN4,
++	},
++	[WM8776_CTL_INPUT5_SW] = {
++		.name = "AIN5 Capture Switch",
++		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
++		.reg1 = WM8776_REG_ADCMUX,
++		.mask1 = WM8776_ADC_MUX_AIN5,
++	},
++	[WM8776_CTL_AGC_SEL] = {
++		.name = "AGC Select Capture Enum",
++		.type = SNDRV_CTL_ELEM_TYPE_ENUMERATED,
++		.enum_names = { "Off", "Limiter", "ALC Right", "ALC Left",
++				"ALC Stereo" },
++		.max = 5,	/* .enum_names item count */
++		.set = snd_wm8776_set_agc,
++		.get = snd_wm8776_get_agc,
++	},
++	[WM8776_CTL_LIM_THR] = {
++		.name = "Limiter Threshold Capture Volume",
++		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
++		.tlv = wm8776_lct_tlv,
++		.reg1 = WM8776_REG_ALCCTRL1,
++		.mask1 = WM8776_ALC1_LCT_MASK,
++		.max = 15,
++		.flags = WM8776_FLAG_LIM,
++	},
++	[WM8776_CTL_LIM_ATK] = {
++		.name = "Limiter Attack Time Capture Enum",
++		.type = SNDRV_CTL_ELEM_TYPE_ENUMERATED,
++		.enum_names = { "0.25 ms", "0.5 ms", "1 ms", "2 ms", "4 ms",
++			"8 ms", "16 ms", "32 ms", "64 ms", "128 ms", "256 ms" },
++		.max = 11,	/* .enum_names item count */
++		.reg1 = WM8776_REG_ALCCTRL3,
++		.mask1 = WM8776_ALC3_ATK_MASK,
++		.flags = WM8776_FLAG_LIM,
++	},
++	[WM8776_CTL_LIM_DCY] = {
++		.name = "Limiter Decay Time Capture Enum",
++		.type = SNDRV_CTL_ELEM_TYPE_ENUMERATED,
++		.enum_names = {	"1.2 ms", "2.4 ms", "4.8 ms", "9.6 ms",
++			"19.2 ms", "38.4 ms", "76.8 ms", "154 ms", "307 ms",
++			"614 ms", "1.23 s" },
++		.max = 11,	/* .enum_names item count */
++		.reg1 = WM8776_REG_ALCCTRL3,
++		.mask1 = WM8776_ALC3_DCY_MASK,
++		.flags = WM8776_FLAG_LIM,
++	},
++	[WM8776_CTL_LIM_TRANWIN] = {
++		.name = "Limiter Transient Window Capture Enum",
++		.type = SNDRV_CTL_ELEM_TYPE_ENUMERATED,
++		.enum_names = {	"0 us", "62.5 us", "125 us", "250 us", "500 us",
++			"1 ms", "2 ms", "4 ms" },
++		.max = 8,	/* .enum_names item count */
++		.reg1 = WM8776_REG_LIMITER,
++		.mask1 = WM8776_LIM_TRANWIN_MASK,
++		.flags = WM8776_FLAG_LIM,
++	},
++	[WM8776_CTL_LIM_MAXATTN] = {
++		.name = "Limiter Maximum Attenuation Capture Volume",
++		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
++		.tlv = wm8776_maxatten_lim_tlv,
++		.reg1 = WM8776_REG_LIMITER,
++		.mask1 = WM8776_LIM_MAXATTEN_MASK,
++		.min = 3,
++		.max = 12,
++		.flags = WM8776_FLAG_LIM | WM8776_FLAG_INVERT,
++	},
++	[WM8776_CTL_ALC_TGT] = {
++		.name = "ALC Target Level Capture Volume",
++		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
++		.tlv = wm8776_lct_tlv,
++		.reg1 = WM8776_REG_ALCCTRL1,
++		.mask1 = WM8776_ALC1_LCT_MASK,
++		.max = 15,
++		.flags = WM8776_FLAG_ALC,
++	},
++	[WM8776_CTL_ALC_ATK] = {
++		.name = "ALC Attack Time Capture Enum",
++		.type = SNDRV_CTL_ELEM_TYPE_ENUMERATED,
++		.enum_names = { "8.40 ms", "16.8 ms", "33.6 ms", "67.2 ms",
++			"134 ms", "269 ms", "538 ms", "1.08 s",	"2.15 s",
++			"4.3 s", "8.6 s" },
++		.max = 11,	/* .enum_names item count */
++		.reg1 = WM8776_REG_ALCCTRL3,
++		.mask1 = WM8776_ALC3_ATK_MASK,
++		.flags = WM8776_FLAG_ALC,
++	},
++	[WM8776_CTL_ALC_DCY] = {
++		.name = "ALC Decay Time Capture Enum",
++		.type = SNDRV_CTL_ELEM_TYPE_ENUMERATED,
++		.enum_names = {	"33.5 ms", "67.0 ms", "134 ms", "268 ms",
++			"536 ms", "1.07 s", "2.14 s", "4.29 s",	"8.58 s",
++			"17.2 s", "34.3 s" },
++		.max = 11,	/* .enum_names item count */
++		.reg1 = WM8776_REG_ALCCTRL3,
++		.mask1 = WM8776_ALC3_DCY_MASK,
++		.flags = WM8776_FLAG_ALC,
++	},
++	[WM8776_CTL_ALC_MAXGAIN] = {
++		.name = "ALC Maximum Gain Capture Volume",
++		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
++		.tlv = wm8776_maxgain_tlv,
++		.reg1 = WM8776_REG_ALCCTRL1,
++		.mask1 = WM8776_ALC1_MAXGAIN_MASK,
++		.min = 1,
++		.max = 7,
++		.flags = WM8776_FLAG_ALC,
++	},
++	[WM8776_CTL_ALC_MAXATTN] = {
++		.name = "ALC Maximum Attenuation Capture Volume",
++		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
++		.tlv = wm8776_maxatten_alc_tlv,
++		.reg1 = WM8776_REG_LIMITER,
++		.mask1 = WM8776_LIM_MAXATTEN_MASK,
++		.min = 10,
++		.max = 15,
++		.flags = WM8776_FLAG_ALC | WM8776_FLAG_INVERT,
++	},
++	[WM8776_CTL_ALC_HLD] = {
++		.name = "ALC Hold Time Capture Enum",
++		.type = SNDRV_CTL_ELEM_TYPE_ENUMERATED,
++		.enum_names = {	"0 ms", "2.67 ms", "5.33 ms", "10.6 ms",
++			"21.3 ms", "42.7 ms", "85.3 ms", "171 ms", "341 ms",
++			"683 ms", "1.37 s", "2.73 s", "5.46 s", "10.9 s",
++			"21.8 s", "43.7 s" },
++		.max = 16,	/* .enum_names item count */
++		.reg1 = WM8776_REG_ALCCTRL2,
++		.mask1 = WM8776_ALC2_HOLD_MASK,
++		.flags = WM8776_FLAG_ALC,
++	},
++	[WM8776_CTL_NGT_SW] = {
++		.name = "Noise Gate Capture Switch",
++		.type = SNDRV_CTL_ELEM_TYPE_BOOLEAN,
++		.reg1 = WM8776_REG_NOISEGATE,
++		.mask1 = WM8776_NGAT_ENABLE,
++		.flags = WM8776_FLAG_ALC,
++	},
++	[WM8776_CTL_NGT_THR] = {
++		.name = "Noise Gate Threshold Capture Volume",
++		.type = SNDRV_CTL_ELEM_TYPE_INTEGER,
++		.tlv = wm8776_ngth_tlv,
++		.reg1 = WM8776_REG_NOISEGATE,
++		.mask1 = WM8776_NGAT_THR_MASK,
++		.max = 7,
++		.flags = WM8776_FLAG_ALC,
 +	},
 +};
 +
 +/* exported functions */
 +
-+void snd_wm8766_init(struct snd_wm8766 *wm)
++void snd_wm8776_init(struct snd_wm8776 *wm)
 +{
 +	int i;
 +	static const u16 default_values[] = {
-+		0x000, 0x100,
-+		0x120, 0x000,
-+		0x000, 0x100, 0x000, 0x100, 0x000,
-+		0x000, 0x080,
++		0x000, 0x100, 0x000,
++		0x000, 0x100, 0x000,
++		0x000, 0x090, 0x000, 0x000,
++		0x022, 0x022, 0x022,
++		0x008, 0x0cf, 0x0cf, 0x07b, 0x000,
++		0x032, 0x000, 0x0a6, 0x001, 0x001
 +	};
 +
-+	memcpy(wm->ctl, snd_wm8766_default_ctl, sizeof(wm->ctl));
++	memcpy(wm->ctl, snd_wm8776_default_ctl, sizeof(wm->ctl));
 +
-+	snd_wm8766_write(wm, WM8766_REG_RESET, 0x00); /* reset */
++	snd_wm8776_write(wm, WM8776_REG_RESET, 0x00); /* reset */
 +	udelay(10);
 +	/* load defaults */
 +	for (i = 0; i < ARRAY_SIZE(default_values); i++)
-+		snd_wm8766_write(wm, i, default_values[i]);
++		snd_wm8776_write(wm, i, default_values[i]);
 +}
 +
-+void snd_wm8766_resume(struct snd_wm8766 *wm)
++void snd_wm8776_resume(struct snd_wm8776 *wm)
 +{
 +	int i;
 +
-+	for (i = 0; i < WM8766_REG_COUNT; i++)
-+		snd_wm8766_write(wm, i, wm->regs[i]);
++	for (i = 0; i < WM8776_REG_COUNT; i++)
++		snd_wm8776_write(wm, i, wm->regs[i]);
 +}
 +
-+void snd_wm8766_set_if(struct snd_wm8766 *wm, u16 dac)
++void snd_wm8776_set_dac_if(struct snd_wm8776 *wm, u16 dac)
 +{
-+	u16 val = wm->regs[WM8766_REG_IFCTRL] & ~WM8766_IF_MASK;
-+
-+	dac &= WM8766_IF_MASK;
-+	snd_wm8766_write(wm, WM8766_REG_IFCTRL, val | dac);
++	snd_wm8776_write(wm, WM8776_REG_DACIFCTRL, dac);
 +}
 +
-+void snd_wm8766_set_master_mode(struct snd_wm8766 *wm, u16 mode)
++void snd_wm8776_set_adc_if(struct snd_wm8776 *wm, u16 adc)
 +{
-+	u16 val = wm->regs[WM8766_REG_DACCTRL3] & ~WM8766_DAC3_MSTR_MASK;
-+
-+	mode &= WM8766_DAC3_MSTR_MASK;
-+	snd_wm8766_write(wm, WM8766_REG_DACCTRL3, val | mode);
++	snd_wm8776_write(wm, WM8776_REG_ADCIFCTRL, adc);
 +}
 +
-+void snd_wm8766_set_power(struct snd_wm8766 *wm, u16 power)
++void snd_wm8776_set_master_mode(struct snd_wm8776 *wm, u16 mode)
 +{
-+	u16 val = wm->regs[WM8766_REG_DACCTRL3] & ~WM8766_DAC3_POWER_MASK;
-+
-+	power &= WM8766_DAC3_POWER_MASK;
-+	snd_wm8766_write(wm, WM8766_REG_DACCTRL3, val | power);
++	snd_wm8776_write(wm, WM8776_REG_MSTRCTRL, mode);
 +}
 +
-+void snd_wm8766_volume_restore(struct snd_wm8766 *wm)
++void snd_wm8776_set_power(struct snd_wm8776 *wm, u16 power)
 +{
-+	u16 val = wm->regs[WM8766_REG_DACR1];
++	snd_wm8776_write(wm, WM8776_REG_PWRDOWN, power);
++}
++
++void snd_wm8776_volume_restore(struct snd_wm8776 *wm)
++{
++	u16 val = wm->regs[WM8776_REG_DACRVOL];
 +	/* restore volume after MCLK stopped */
-+	snd_wm8766_write(wm, WM8766_REG_DACR1, val | WM8766_VOL_UPDATE);
++	snd_wm8776_write(wm, WM8776_REG_DACRVOL, val | WM8776_VOL_UPDATE);
 +}
 +
 +/* mixer callbacks */
 +
-+static int snd_wm8766_volume_info(struct snd_kcontrol *kcontrol,
++static int snd_wm8776_volume_info(struct snd_kcontrol *kcontrol,
 +				   struct snd_ctl_elem_info *uinfo)
 +{
-+	struct snd_wm8766 *wm = snd_kcontrol_chip(kcontrol);
++	struct snd_wm8776 *wm = snd_kcontrol_chip(kcontrol);
 +	int n = kcontrol->private_value;
 +
 +	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
-+	uinfo->count = (wm->ctl[n].flags & WM8766_FLAG_STEREO) ? 2 : 1;
++	uinfo->count = (wm->ctl[n].flags & WM8776_FLAG_STEREO) ? 2 : 1;
 +	uinfo->value.integer.min = wm->ctl[n].min;
 +	uinfo->value.integer.max = wm->ctl[n].max;
 +
 +	return 0;
 +}
 +
-+static int snd_wm8766_enum_info(struct snd_kcontrol *kcontrol,
++static int snd_wm8776_enum_info(struct snd_kcontrol *kcontrol,
 +				      struct snd_ctl_elem_info *uinfo)
 +{
-+	struct snd_wm8766 *wm = snd_kcontrol_chip(kcontrol);
++	struct snd_wm8776 *wm = snd_kcontrol_chip(kcontrol);
 +	int n = kcontrol->private_value;
 +
 +	return snd_ctl_enum_info(uinfo, 1, wm->ctl[n].max,
 +						wm->ctl[n].enum_names);
 +}
 +
-+static int snd_wm8766_ctl_get(struct snd_kcontrol *kcontrol,
++static int snd_wm8776_ctl_get(struct snd_kcontrol *kcontrol,
 +				  struct snd_ctl_elem_value *ucontrol)
 +{
-+	struct snd_wm8766 *wm = snd_kcontrol_chip(kcontrol);
++	struct snd_wm8776 *wm = snd_kcontrol_chip(kcontrol);
 +	int n = kcontrol->private_value;
 +	u16 val1, val2;
 +
@@ -284,35 +556,35 @@ index 0000000..8072ade
 +	else {
 +		val1 = wm->regs[wm->ctl[n].reg1] & wm->ctl[n].mask1;
 +		val1 >>= __ffs(wm->ctl[n].mask1);
-+		if (wm->ctl[n].flags & WM8766_FLAG_STEREO) {
++		if (wm->ctl[n].flags & WM8776_FLAG_STEREO) {
 +			val2 = wm->regs[wm->ctl[n].reg2] & wm->ctl[n].mask2;
 +			val2 >>= __ffs(wm->ctl[n].mask2);
-+			if (wm->ctl[n].flags & WM8766_FLAG_VOL_UPDATE)
-+				val2 &= ~WM8766_VOL_UPDATE;
++			if (wm->ctl[n].flags & WM8776_FLAG_VOL_UPDATE)
++				val2 &= ~WM8776_VOL_UPDATE;
 +		}
 +	}
-+	if (wm->ctl[n].flags & WM8766_FLAG_INVERT) {
++	if (wm->ctl[n].flags & WM8776_FLAG_INVERT) {
 +		val1 = wm->ctl[n].max - (val1 - wm->ctl[n].min);
 +		val2 = wm->ctl[n].max - (val2 - wm->ctl[n].min);
 +	}
 +	ucontrol->value.integer.value[0] = val1;
-+	if (wm->ctl[n].flags & WM8766_FLAG_STEREO)
++	if (wm->ctl[n].flags & WM8776_FLAG_STEREO)
 +		ucontrol->value.integer.value[1] = val2;
 +
 +	return 0;
 +}
 +
-+static int snd_wm8766_ctl_put(struct snd_kcontrol *kcontrol,
++static int snd_wm8776_ctl_put(struct snd_kcontrol *kcontrol,
 +				  struct snd_ctl_elem_value *ucontrol)
 +{
-+	struct snd_wm8766 *wm = snd_kcontrol_chip(kcontrol);
++	struct snd_wm8776 *wm = snd_kcontrol_chip(kcontrol);
 +	int n = kcontrol->private_value;
 +	u16 val, regval1, regval2;
 +
 +	/* this also works for enum because value is an union */
 +	regval1 = ucontrol->value.integer.value[0];
 +	regval2 = ucontrol->value.integer.value[1];
-+	if (wm->ctl[n].flags & WM8766_FLAG_INVERT) {
++	if (wm->ctl[n].flags & WM8776_FLAG_INVERT) {
 +		regval1 = wm->ctl[n].max - (regval1 - wm->ctl[n].min);
 +		regval2 = wm->ctl[n].max - (regval2 - wm->ctl[n].min);
 +	}
@@ -322,27 +594,27 @@ index 0000000..8072ade
 +		val = wm->regs[wm->ctl[n].reg1] & ~wm->ctl[n].mask1;
 +		val |= regval1 << __ffs(wm->ctl[n].mask1);
 +		/* both stereo controls in one register */
-+		if (wm->ctl[n].flags & WM8766_FLAG_STEREO &&
++		if (wm->ctl[n].flags & WM8776_FLAG_STEREO &&
 +				wm->ctl[n].reg1 == wm->ctl[n].reg2) {
 +			val &= ~wm->ctl[n].mask2;
 +			val |= regval2 << __ffs(wm->ctl[n].mask2);
 +		}
-+		snd_wm8766_write(wm, wm->ctl[n].reg1, val);
++		snd_wm8776_write(wm, wm->ctl[n].reg1, val);
 +		/* stereo controls in different registers */
-+		if (wm->ctl[n].flags & WM8766_FLAG_STEREO &&
++		if (wm->ctl[n].flags & WM8776_FLAG_STEREO &&
 +				wm->ctl[n].reg1 != wm->ctl[n].reg2) {
 +			val = wm->regs[wm->ctl[n].reg2] & ~wm->ctl[n].mask2;
 +			val |= regval2 << __ffs(wm->ctl[n].mask2);
-+			if (wm->ctl[n].flags & WM8766_FLAG_VOL_UPDATE)
-+				val |= WM8766_VOL_UPDATE;
-+			snd_wm8766_write(wm, wm->ctl[n].reg2, val);
++			if (wm->ctl[n].flags & WM8776_FLAG_VOL_UPDATE)
++				val |= WM8776_VOL_UPDATE;
++			snd_wm8776_write(wm, wm->ctl[n].reg2, val);
 +		}
 +	}
 +
 +	return 0;
 +}
 +
-+static int snd_wm8766_add_control(struct snd_wm8766 *wm, int num)
++static int snd_wm8776_add_control(struct snd_wm8776 *wm, int num)
 +{
 +	struct snd_kcontrol_new cont;
 +	struct snd_kcontrol *ctl;
@@ -352,28 +624,28 @@ index 0000000..8072ade
 +	cont.private_value = num;
 +	cont.name = wm->ctl[num].name;
 +	cont.access = SNDRV_CTL_ELEM_ACCESS_READWRITE;
-+	if (wm->ctl[num].flags & WM8766_FLAG_LIM ||
-+	    wm->ctl[num].flags & WM8766_FLAG_ALC)
++	if (wm->ctl[num].flags & WM8776_FLAG_LIM ||
++	    wm->ctl[num].flags & WM8776_FLAG_ALC)
 +		cont.access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
 +	cont.tlv.p = NULL;
-+	cont.get = snd_wm8766_ctl_get;
-+	cont.put = snd_wm8766_ctl_put;
++	cont.get = snd_wm8776_ctl_get;
++	cont.put = snd_wm8776_ctl_put;
 +
 +	switch (wm->ctl[num].type) {
 +	case SNDRV_CTL_ELEM_TYPE_INTEGER:
-+		cont.info = snd_wm8766_volume_info;
++		cont.info = snd_wm8776_volume_info;
 +		cont.access |= SNDRV_CTL_ELEM_ACCESS_TLV_READ;
 +		cont.tlv.p = wm->ctl[num].tlv;
 +		break;
 +	case SNDRV_CTL_ELEM_TYPE_BOOLEAN:
 +		wm->ctl[num].max = 1;
-+		if (wm->ctl[num].flags & WM8766_FLAG_STEREO)
++		if (wm->ctl[num].flags & WM8776_FLAG_STEREO)
 +			cont.info = snd_ctl_boolean_stereo_info;
 +		else
 +			cont.info = snd_ctl_boolean_mono_info;
 +		break;
 +	case SNDRV_CTL_ELEM_TYPE_ENUMERATED:
-+		cont.info = snd_wm8766_enum_info;
++		cont.info = snd_wm8776_enum_info;
 +		break;
 +	default:
 +		return -EINVAL;
@@ -381,37 +653,36 @@ index 0000000..8072ade
 +	ctl = snd_ctl_new1(&cont, wm);
 +	if (!ctl)
 +		return -ENOMEM;
-+	wm->ctl[num].kctl = ctl;
 +
 +	return snd_ctl_add(wm->card, ctl);
 +}
 +
-+int snd_wm8766_build_controls(struct snd_wm8766 *wm)
++int snd_wm8776_build_controls(struct snd_wm8776 *wm)
 +{
 +	int err, i;
 +
-+	for (i = 0; i < WM8766_CTL_COUNT; i++)
++	for (i = 0; i < WM8776_CTL_COUNT; i++)
 +		if (wm->ctl[i].name) {
-+			err = snd_wm8766_add_control(wm, i);
++			err = snd_wm8776_add_control(wm, i);
 +			if (err < 0)
 +				return err;
 +		}
 +
 +	return 0;
 +}
-diff --git a/sound/pci/ice1712/wm8766.h b/sound/pci/ice1712/wm8766.h
+diff --git a/sound/pci/ice1712/wm8776.h b/sound/pci/ice1712/wm8776.h
 new file mode 100644
-index 0000000..dfa3bbf
+index 0000000..414a3f6
 --- /dev/null
-+++ b/sound/pci/ice1712/wm8766.h
-@@ -0,0 +1,163 @@
-+#ifndef __SOUND_WM8766_H
-+#define __SOUND_WM8766_H
++++ b/sound/pci/ice1712/wm8776.h
+@@ -0,0 +1,226 @@
++#ifndef __SOUND_WM8776_H
++#define __SOUND_WM8776_H
 +
 +/*
 + *   ALSA driver for ICEnsemble VT17xx
 + *
-+ *   Lowlevel functions for WM8766 codec
++ *   Lowlevel functions for WM8776 codec
 + *
 + *	Copyright (c) 2012 Ondrej Zary <linux@rainbow-software.org>
 + *
@@ -431,143 +702,206 @@ index 0000000..dfa3bbf
 + *
 + */
 +
-+#define WM8766_REG_DACL1	0x00
-+#define WM8766_REG_DACR1	0x01
-+#define WM8766_VOL_MASK			0x1ff		/* incl. update bit */
-+#define WM8766_VOL_UPDATE		(1 << 8)	/* update volume */
-+#define WM8766_REG_DACCTRL1	0x02
-+#define WM8766_DAC_MUTEALL		(1 << 0)
-+#define WM8766_DAC_DEEMPALL		(1 << 1)
-+#define WM8766_DAC_PDWN			(1 << 2)
-+#define WM8766_DAC_ATC			(1 << 3)
-+#define WM8766_DAC_IZD			(1 << 4)
-+#define WM8766_DAC_PL_MASK		0x1e0
-+#define WM8766_DAC_PL_LL		(1 << 5)	/* L chan: L signal */
-+#define WM8766_DAC_PL_LR		(2 << 5)	/* L chan: R signal */
-+#define WM8766_DAC_PL_LB		(3 << 5)	/* L chan: both */
-+#define WM8766_DAC_PL_RL		(1 << 7)	/* R chan: L signal */
-+#define WM8766_DAC_PL_RR		(2 << 7)	/* R chan: R signal */
-+#define WM8766_DAC_PL_RB		(3 << 7)	/* R chan: both */
-+#define WM8766_REG_IFCTRL	0x03
-+#define WM8766_IF_FMT_RIGHTJ		(0 << 0)
-+#define WM8766_IF_FMT_LEFTJ		(1 << 0)
-+#define WM8766_IF_FMT_I2S		(2 << 0)
-+#define WM8766_IF_FMT_DSP		(3 << 0)
-+#define WM8766_IF_DSP_LATE		(1 << 2)	/* in DSP mode */
-+#define WM8766_IF_LRC_INVERTED		(1 << 2)	/* in other modes */
-+#define WM8766_IF_BCLK_INVERTED		(1 << 3)
-+#define WM8766_IF_IWL_16BIT		(0 << 4)
-+#define WM8766_IF_IWL_20BIT		(1 << 4)
-+#define WM8766_IF_IWL_24BIT		(2 << 4)
-+#define WM8766_IF_IWL_32BIT		(3 << 4)
-+#define WM8766_IF_MASK			0x3f
-+#define WM8766_PHASE_INVERT1		(1 << 6)
-+#define WM8766_PHASE_INVERT2		(1 << 7)
-+#define WM8766_PHASE_INVERT3		(1 << 8)
-+#define WM8766_REG_DACL2	0x04
-+#define WM8766_REG_DACR2	0x05
-+#define WM8766_REG_DACL3	0x06
-+#define WM8766_REG_DACR3	0x07
-+#define WM8766_REG_MASTDA	0x08
-+#define WM8766_REG_DACCTRL2	0x09
-+#define WM8766_DAC2_ZCD			(1 << 0)
-+#define WM8766_DAC2_ZFLAG_ALL		(0 << 1)
-+#define WM8766_DAC2_ZFLAG_1		(1 << 1)
-+#define WM8766_DAC2_ZFLAG_2		(2 << 1)
-+#define WM8766_DAC2_ZFLAG_3		(3 << 1)
-+#define WM8766_DAC2_MUTE1		(1 << 3)
-+#define WM8766_DAC2_MUTE2		(1 << 4)
-+#define WM8766_DAC2_MUTE3		(1 << 5)
-+#define WM8766_DAC2_DEEMP1		(1 << 6)
-+#define WM8766_DAC2_DEEMP2		(1 << 7)
-+#define WM8766_DAC2_DEEMP3		(1 << 8)
-+#define WM8766_REG_DACCTRL3	0x0a
-+#define WM8766_DAC3_DACPD1		(1 << 1)
-+#define WM8766_DAC3_DACPD2		(1 << 2)
-+#define WM8766_DAC3_DACPD3		(1 << 3)
-+#define WM8766_DAC3_PWRDNALL		(1 << 4)
-+#define WM8766_DAC3_POWER_MASK		0x1e
-+#define WM8766_DAC3_MASTER		(1 << 5)
-+#define WM8766_DAC3_DAC128FS		(0 << 6)
-+#define WM8766_DAC3_DAC192FS		(1 << 6)
-+#define WM8766_DAC3_DAC256FS		(2 << 6)
-+#define WM8766_DAC3_DAC384FS		(3 << 6)
-+#define WM8766_DAC3_DAC512FS		(4 << 6)
-+#define WM8766_DAC3_DAC768FS		(5 << 6)
-+#define WM8766_DAC3_MSTR_MASK		0x1e0
-+#define WM8766_REG_MUTE1	0x0c
-+#define WM8766_MUTE1_MPD		(1 << 6)
-+#define WM8766_REG_MUTE2	0x0f
-+#define WM8766_MUTE2_MPD		(1 << 5)
-+#define WM8766_REG_RESET	0x1f
++#define WM8776_REG_HPLVOL	0x00
++#define WM8776_REG_HPRVOL	0x01
++#define WM8776_REG_HPMASTER	0x02
++#define WM8776_HPVOL_MASK		0x17f		/* incl. update bit */
++#define WM8776_VOL_HPZCEN		(1 << 7)	/* zero cross detect */
++#define WM8776_VOL_UPDATE		(1 << 8)	/* update volume */
++#define WM8776_REG_DACLVOL	0x03
++#define WM8776_REG_DACRVOL	0x04
++#define WM8776_REG_DACMASTER	0x05
++#define WM8776_DACVOL_MASK		0x1ff		/* incl. update bit */
++#define WM8776_REG_PHASESWAP	0x06
++#define WM8776_PHASE_INVERTL		(1 << 0)
++#define WM8776_PHASE_INVERTR		(1 << 1)
++#define WM8776_REG_DACCTRL1	0x07
++#define WM8776_DAC_DZCEN		(1 << 0)
++#define WM8776_DAC_ATC			(1 << 1)
++#define WM8776_DAC_IZD			(1 << 2)
++#define WM8776_DAC_TOD			(1 << 3)
++#define WM8776_DAC_PL_MASK		0xf0
++#define WM8776_DAC_PL_LL		(1 << 4)	/* L chan: L signal */
++#define WM8776_DAC_PL_LR		(2 << 4)	/* L chan: R signal */
++#define WM8776_DAC_PL_LB		(3 << 4)	/* L chan: both */
++#define WM8776_DAC_PL_RL		(1 << 6)	/* R chan: L signal */
++#define WM8776_DAC_PL_RR		(2 << 6)	/* R chan: R signal */
++#define WM8776_DAC_PL_RB		(3 << 6)	/* R chan: both */
++#define WM8776_REG_DACMUTE	0x08
++#define WM8776_DACMUTE			(1 << 0)
++#define WM8776_REG_DACCTRL2	0x09
++#define WM8776_DAC2_DEEMPH		(1 << 0)
++#define WM8776_DAC2_ZFLAG_DISABLE	(0 << 1)
++#define WM8776_DAC2_ZFLAG_OWN		(1 << 1)
++#define WM8776_DAC2_ZFLAG_BOTH		(2 << 1)
++#define WM8776_DAC2_ZFLAG_EITHER	(3 << 1)
++#define WM8776_REG_DACIFCTRL	0x0a
++#define WM8776_FMT_RIGHTJ		(0 << 0)
++#define WM8776_FMT_LEFTJ		(1 << 0)
++#define WM8776_FMT_I2S			(2 << 0)
++#define WM8776_FMT_DSP			(3 << 0)
++#define WM8776_FMT_DSP_LATE		(1 << 2)	/* in DSP mode */
++#define WM8776_FMT_LRC_INVERTED		(1 << 2)	/* in other modes */
++#define WM8776_FMT_BCLK_INVERTED	(1 << 3)
++#define WM8776_FMT_16BIT		(0 << 4)
++#define WM8776_FMT_20BIT		(1 << 4)
++#define WM8776_FMT_24BIT		(2 << 4)
++#define WM8776_FMT_32BIT		(3 << 4)
++#define WM8776_REG_ADCIFCTRL	0x0b
++#define WM8776_FMT_ADCMCLK_INVERTED	(1 << 6)
++#define WM8776_FMT_ADCHPD		(1 << 8)
++#define WM8776_REG_MSTRCTRL	0x0c
++#define WM8776_IF_ADC256FS		(2 << 0)
++#define WM8776_IF_ADC384FS		(3 << 0)
++#define WM8776_IF_ADC512FS		(4 << 0)
++#define WM8776_IF_ADC768FS		(5 << 0)
++#define WM8776_IF_OVERSAMP64		(1 << 3)
++#define WM8776_IF_DAC128FS		(0 << 4)
++#define WM8776_IF_DAC192FS		(1 << 4)
++#define WM8776_IF_DAC256FS		(2 << 4)
++#define WM8776_IF_DAC384FS		(3 << 4)
++#define WM8776_IF_DAC512FS		(4 << 4)
++#define WM8776_IF_DAC768FS		(5 << 4)
++#define WM8776_IF_DAC_MASTER		(1 << 7)
++#define WM8776_IF_ADC_MASTER		(1 << 8)
++#define WM8776_REG_PWRDOWN	0x0d
++#define WM8776_PWR_PDWN			(1 << 0)
++#define WM8776_PWR_ADCPD		(1 << 1)
++#define WM8776_PWR_DACPD		(1 << 2)
++#define WM8776_PWR_HPPD			(1 << 3)
++#define WM8776_PWR_AINPD		(1 << 6)
++#define WM8776_REG_ADCLVOL	0x0e
++#define WM8776_REG_ADCRVOL	0x0f
++#define WM8776_ADC_GAIN_MASK		0xff
++#define WM8776_ADC_ZCEN			(1 << 8)
++#define WM8776_REG_ALCCTRL1	0x10
++#define WM8776_ALC1_LCT_MASK		0x0f	/* 0=-16dB, 1=-15dB..15=-1dB */
++#define WM8776_ALC1_MAXGAIN_MASK	0x70	/* 0,1=0dB, 2=+4dB...7=+24dB */
++#define WM8776_ALC1_LCSEL_MASK		0x180
++#define WM8776_ALC1_LCSEL_LIMITER	(0 << 7)
++#define WM8776_ALC1_LCSEL_ALCR		(1 << 7)
++#define WM8776_ALC1_LCSEL_ALCL		(2 << 7)
++#define WM8776_ALC1_LCSEL_ALCSTEREO	(3 << 7)
++#define WM8776_REG_ALCCTRL2	0x11
++#define WM8776_ALC2_HOLD_MASK		0x0f	/*0=0ms, 1=2.67ms, 2=5.33ms.. */
++#define WM8776_ALC2_ZCEN		(1 << 7)
++#define WM8776_ALC2_LCEN		(1 << 8)
++#define WM8776_REG_ALCCTRL3	0x12
++#define WM8776_ALC3_ATK_MASK		0x0f
++#define WM8776_ALC3_DCY_MASK		0xf0
++#define WM8776_ALC3_FDECAY		(1 << 8)
++#define WM8776_REG_NOISEGATE	0x13
++#define WM8776_NGAT_ENABLE		(1 << 0)
++#define WM8776_NGAT_THR_MASK		0x1c	/*0=-78dB, 1=-72dB...7=-36dB */
++#define WM8776_REG_LIMITER	0x14
++#define WM8776_LIM_MAXATTEN_MASK	0x0f
++#define WM8776_LIM_TRANWIN_MASK		0x70	/*0=0us, 1=62.5us, 2=125us.. */
++#define WM8776_REG_ADCMUX	0x15
++#define WM8776_ADC_MUX_AIN1		(1 << 0)
++#define WM8776_ADC_MUX_AIN2		(1 << 1)
++#define WM8776_ADC_MUX_AIN3		(1 << 2)
++#define WM8776_ADC_MUX_AIN4		(1 << 3)
++#define WM8776_ADC_MUX_AIN5		(1 << 4)
++#define WM8776_ADC_MUTER		(1 << 6)
++#define WM8776_ADC_MUTEL		(1 << 7)
++#define WM8776_ADC_LRBOTH		(1 << 8)
++#define WM8776_REG_OUTMUX	0x16
++#define WM8776_OUTMUX_DAC		(1 << 0)
++#define WM8776_OUTMUX_AUX		(1 << 1)
++#define WM8776_OUTMUX_BYPASS		(1 << 2)
++#define WM8776_REG_RESET	0x17
 +
-+#define WM8766_REG_COUNT	0x10	/* don't cache the RESET register */
++#define WM8776_REG_COUNT	0x17	/* don't cache the RESET register */
 +
-+struct snd_wm8766;
++struct snd_wm8776;
 +
-+struct snd_wm8766_ops {
-+	void (*write)(struct snd_wm8766 *wm, u16 addr, u16 data);
++struct snd_wm8776_ops {
++	void (*write)(struct snd_wm8776 *wm, u8 addr, u8 data);
 +};
 +
-+enum snd_wm8766_ctl_id {
-+	WM8766_CTL_CH1_VOL,
-+	WM8766_CTL_CH2_VOL,
-+	WM8766_CTL_CH3_VOL,
-+	WM8766_CTL_CH1_SW,
-+	WM8766_CTL_CH2_SW,
-+	WM8766_CTL_CH3_SW,
-+	WM8766_CTL_PHASE1_SW,
-+	WM8766_CTL_PHASE2_SW,
-+	WM8766_CTL_PHASE3_SW,
-+	WM8766_CTL_DEEMPH1_SW,
-+	WM8766_CTL_DEEMPH2_SW,
-+	WM8766_CTL_DEEMPH3_SW,
-+	WM8766_CTL_IZD_SW,
-+	WM8766_CTL_ZC_SW,
++enum snd_wm8776_ctl_id {
++	WM8776_CTL_DAC_VOL,
++	WM8776_CTL_DAC_SW,
++	WM8776_CTL_DAC_ZC_SW,
++	WM8776_CTL_HP_VOL,
++	WM8776_CTL_HP_SW,
++	WM8776_CTL_HP_ZC_SW,
++	WM8776_CTL_AUX_SW,
++	WM8776_CTL_BYPASS_SW,
++	WM8776_CTL_DAC_IZD_SW,
++	WM8776_CTL_PHASE_SW,
++	WM8776_CTL_DEEMPH_SW,
++	WM8776_CTL_ADC_VOL,
++	WM8776_CTL_ADC_SW,
++	WM8776_CTL_INPUT1_SW,
++	WM8776_CTL_INPUT2_SW,
++	WM8776_CTL_INPUT3_SW,
++	WM8776_CTL_INPUT4_SW,
++	WM8776_CTL_INPUT5_SW,
++	WM8776_CTL_AGC_SEL,
++	WM8776_CTL_LIM_THR,
++	WM8776_CTL_LIM_ATK,
++	WM8776_CTL_LIM_DCY,
++	WM8776_CTL_LIM_TRANWIN,
++	WM8776_CTL_LIM_MAXATTN,
++	WM8776_CTL_ALC_TGT,
++	WM8776_CTL_ALC_ATK,
++	WM8776_CTL_ALC_DCY,
++	WM8776_CTL_ALC_MAXGAIN,
++	WM8776_CTL_ALC_MAXATTN,
++	WM8776_CTL_ALC_HLD,
++	WM8776_CTL_NGT_SW,
++	WM8776_CTL_NGT_THR,
 +
-+	WM8766_CTL_COUNT,
++	WM8776_CTL_COUNT,
 +};
 +
-+#define WM8766_ENUM_MAX		16
++#define WM8776_ENUM_MAX		16
 +
-+#define WM8766_FLAG_STEREO	(1 << 0)
-+#define WM8766_FLAG_VOL_UPDATE	(1 << 1)
-+#define WM8766_FLAG_INVERT	(1 << 2)
-+#define WM8766_FLAG_LIM		(1 << 3)
-+#define WM8766_FLAG_ALC		(1 << 4)
++#define WM8776_FLAG_STEREO	(1 << 0)
++#define WM8776_FLAG_VOL_UPDATE	(1 << 1)
++#define WM8776_FLAG_INVERT	(1 << 2)
++#define WM8776_FLAG_LIM		(1 << 3)
++#define WM8776_FLAG_ALC		(1 << 4)
 +
-+struct snd_wm8766_ctl {
-+	struct snd_kcontrol *kctl;
++struct snd_wm8776_ctl {
 +	char *name;
 +	snd_ctl_elem_type_t type;
-+	const char *const enum_names[WM8766_ENUM_MAX];
++	const char *const enum_names[WM8776_ENUM_MAX];
 +	const unsigned int *tlv;
 +	u16 reg1, reg2, mask1, mask2, min, max, flags;
-+	void (*set)(struct snd_wm8766 *wm, u16 ch1, u16 ch2);
-+	void (*get)(struct snd_wm8766 *wm, u16 *ch1, u16 *ch2);
++	void (*set)(struct snd_wm8776 *wm, u16 ch1, u16 ch2);
++	void (*get)(struct snd_wm8776 *wm, u16 *ch1, u16 *ch2);
 +};
 +
-+enum snd_wm8766_agc_mode { WM8766_AGC_OFF, WM8766_AGC_LIM, WM8766_AGC_ALC };
++enum snd_wm8776_agc_mode {
++	WM8776_AGC_OFF,
++	WM8776_AGC_LIM,
++	WM8776_AGC_ALC_R,
++	WM8776_AGC_ALC_L,
++	WM8776_AGC_ALC_STEREO
++};
 +
-+struct snd_wm8766 {
++struct snd_wm8776 {
 +	struct snd_card *card;
-+	struct snd_wm8766_ctl ctl[WM8766_CTL_COUNT];
-+	enum snd_wm8766_agc_mode agc_mode;
-+	struct snd_wm8766_ops ops;
-+	u16 regs[WM8766_REG_COUNT];	/* 9-bit registers */
++	struct snd_wm8776_ctl ctl[WM8776_CTL_COUNT];
++	enum snd_wm8776_agc_mode agc_mode;
++	struct snd_wm8776_ops ops;
++	u16 regs[WM8776_REG_COUNT];	/* 9-bit registers */
 +};
 +
 +
 +
-+void snd_wm8766_init(struct snd_wm8766 *wm);
-+void snd_wm8766_resume(struct snd_wm8766 *wm);
-+void snd_wm8766_set_if(struct snd_wm8766 *wm, u16 dac);
-+void snd_wm8766_set_master_mode(struct snd_wm8766 *wm, u16 mode);
-+void snd_wm8766_set_power(struct snd_wm8766 *wm, u16 power);
-+void snd_wm8766_volume_restore(struct snd_wm8766 *wm);
-+int snd_wm8766_build_controls(struct snd_wm8766 *wm);
++void snd_wm8776_init(struct snd_wm8776 *wm);
++void snd_wm8776_resume(struct snd_wm8776 *wm);
++void snd_wm8776_set_dac_if(struct snd_wm8776 *wm, u16 dac);
++void snd_wm8776_set_adc_if(struct snd_wm8776 *wm, u16 adc);
++void snd_wm8776_set_master_mode(struct snd_wm8776 *wm, u16 mode);
++void snd_wm8776_set_power(struct snd_wm8776 *wm, u16 power);
++void snd_wm8776_volume_restore(struct snd_wm8776 *wm);
++int snd_wm8776_build_controls(struct snd_wm8776 *wm);
 +
-+#endif /* __SOUND_WM8766_H */
++#endif /* __SOUND_WM8776_H */
 -- 
 Ondrej Zary
 
