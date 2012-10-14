@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab2JNO5y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:57:54 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46528 "EHLO
+	id S1754981Ab2JNO5w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:57:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46518 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932206Ab2JNOn1 (ORCPT
+	by vger.kernel.org with ESMTP id S932192Ab2JNOn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:43:27 -0400
-Message-Id: <20121014143543.299048513@decadent.org.uk>
+Message-Id: <20121014143545.285790962@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:43 +0100
+Date: Sun, 14 Oct 2012 15:36:58 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jani Nikula <jani.nikula@intel.com>, Adam Jackson <ajax@redhat.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 070/147] drm/i915: use adjusted_mode instead of mode for checking the 6bpc
- force flag
+        Bart Van Assche <bvanassche@acm.org>, David Dillow <dillowda@ornl.gov>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [ 085/147] IB/srp: Avoid having aborted requests hang
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,63 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit 0c96c65b48fba3ffe9822a554cbc0cd610765cd5 upstream.
+commit d8536670916a685df116b5c2cb256573fd25e4e3 upstream.
 
-The dithering introduced in
+We need to call scsi_done() for commands after we abort them.
 
-commit 3b5c78a35cf7511c15e09a9b0ffab290a42d9bcf
-Author: Adam Jackson <ajax@redhat.com>
-Date:   Tue Dec 13 15:41:00 2011 -0800
-
-    drm/i915/dp: Dither down to 6bpc if it makes the mode fit
-
-stores the INTEL_MODE_DP_FORCE_6BPC flag in the private_flags of the
-adjusted mode, while i9xx_crtc_mode_set() and ironlake_crtc_mode_set() use
-the original mode, without the flag, so it would never have any
-effect. However, the BPC was clamped by VBT settings, making things work by
-coincidence, until that part was removed in
-
-commit 4344b813f105a19f793f1fd93ad775b784648b95
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Fri Aug 10 11:10:20 2012 +0200
-
-Use adjusted_mode instead of mode when checking for
-INTEL_MODE_DP_FORCE_6BPC to make the flag have effect.
-
-v2: Don't forget to fix this in i9xx_crtc_mode_set() also, pointed out by
-Daniel both before and after sending the first patch.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=47621
-CC: Adam Jackson <ajax@redhat.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Reviewed-by: Adam Jackson <ajax@redhat.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2:
- - Adjust context
- - intel_choose_pipe_bpp_dither() doesn't take a drm_framebuffer argument]
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Acked-by: David Dillow <dillowda@ornl.gov>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -5027,7 +5027,7 @@ static int i9xx_crtc_mode_set(struct drm
- 	/* default to 8bpc */
- 	pipeconf &= ~(PIPECONF_BPP_MASK | PIPECONF_DITHER_EN);
- 	if (is_dp) {
--		if (mode->private_flags & INTEL_MODE_DP_FORCE_6BPC) {
-+		if (adjusted_mode->private_flags & INTEL_MODE_DP_FORCE_6BPC) {
- 			pipeconf |= PIPECONF_BPP_6 |
- 				    PIPECONF_DITHER_EN |
- 				    PIPECONF_DITHER_TYPE_SP;
-@@ -5495,7 +5495,7 @@ static int ironlake_crtc_mode_set(struct
- 	/* determine panel color depth */
- 	temp = I915_READ(PIPECONF(pipe));
- 	temp &= ~PIPE_BPC_MASK;
--	dither = intel_choose_pipe_bpp_dither(crtc, &pipe_bpp, mode);
-+	dither = intel_choose_pipe_bpp_dither(crtc, &pipe_bpp, adjusted_mode);
- 	switch (pipe_bpp) {
- 	case 18:
- 		temp |= PIPE_6BPC;
+ drivers/infiniband/ulp/srp/ib_srp.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
+index ac66e6b..922d845 100644
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -1687,6 +1687,7 @@ static int srp_abort(struct scsi_cmnd *scmnd)
+ 			  SRP_TSK_ABORT_TASK);
+ 	srp_free_req(target, req, scmnd, 0);
+ 	scmnd->result = DID_ABORT << 16;
++	scmnd->scsi_done(scmnd);
+ 
+ 	return SUCCESS;
+ }
 
 
