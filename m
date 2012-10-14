@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172Ab2JNP4l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:56:41 -0400
-Received: from smtprelay.restena.lu ([158.64.1.62]:49666 "EHLO
-	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753959Ab2JNP4k (ORCPT
+	id S932192Ab2JNP5V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:57:21 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:58021 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753959Ab2JNP5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 11:56:40 -0400
-Date: Sun, 14 Oct 2012 17:55:38 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: dmarkh@cfl.rr.com, markh@compro.net,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Intel-gfx] Intel graphics drm issue?
-Message-ID: <20121014175538.3bdd7cb8@neptune.home>
-In-Reply-To: <CAKMK7uGCyHaXko102_VDus3RCarDobeiRcNKnzjqX3YFK2ouBw@mail.gmail.com>
-References: <507812E8.3060607@compro.net>
-	<20121012231459.166e29fd@neptune.home>
-	<5079B97C.7020401@cfl.rr.com>
-	<5079BE5C.8020401@cfl.rr.com>
-	<CAKMK7uGXb5=fHXZa8m_0xNLGFqyf_b37g9W32eshaPFcf8i=7A@mail.gmail.com>
-	<507A91EA.2030205@cfl.rr.com>
-	<CAKMK7uEw8D1r4hf_mE1q6kBwZzE+qmSeTui9adX4agj=5MDbWw@mail.gmail.com>
-	<507AC9DC.4030701@cfl.rr.com>
-	<CAKMK7uERj4+QtxMzzHsbxbqvUYNGWxmieZeebS3+CjAbj6Kq1g@mail.gmail.com>
-	<507ADD14.7050503@cfl.rr.com>
-	<CAKMK7uGCyHaXko102_VDus3RCarDobeiRcNKnzjqX3YFK2ouBw@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.12; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 14 Oct 2012 11:57:20 -0400
+X-Authenticated: #787645
+X-Provags-ID: V01U2FsdGVkX19uD5ho1Sxul7rurJqkLfAXKbAeTHpjjPxKLaS8iI
+	cgeK3TzKiozDr1
+Message-ID: <507AE0D8.6090909@gmx.net>
+Date: Sun, 14 Oct 2012 17:57:12 +0200
+From: Witold Szczeponik <Witold.Szczeponik@gmx.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: bhelgaas@google.com, lenb@kernel.org
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Borislav Petkov <bp@alien8.de>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH V3 0/3] PNP: Allow PNP resources to be disabled (interface)
+References: <50158321.4030007@gmx.net> <201208022340.16948.rjw@sisk.pl> <5055DFB6.6070809@gmx.net> <201209182342.30244.rjw@sisk.pl> <506C6065.3070202@gmx.net>
+In-Reply-To: <506C6065.3070202@gmx.net>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 14 October 2012 Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Sun, Oct 14, 2012 at 5:41 PM, Mark Hounschell <dmarkh@cfl.rr.com> wrote:
-> > There is something amiss. Here is my  i915_pci_probe routine. I Added a
-> > couple more printks. NONE of these show up in dmesg. Not even the "Entered"
-> > printk. ????
+On 03/10/12 17:57, Witold Szczeponik wrote:
+
+[...]
+
 > 
-> That's rather strange indeed. Is there another driver bound by
-> accident to the intel graphics? You can check that with lspci -k
-> -Daniel
+> Len and Bjorn, 
+> 
+> any chances to include the patches in 3.7?  I checked them 
+> against 3.6 and they applied without any change.  Or should 
+> I resend them individually? 
+> 
+> Thanks. 
+> 
+> --- Witold
+> 
 
-A few mails ago in a kernel cmd I saw a nomodeset, could it be that
-it's still around?
+Hi Len, hello Bjorn, 
 
-Bruno
+the patches submitted in https://lkml.org/lkml/2012/7/29/85 have
+not been objected by anyone, make the code simpler, and fix a 
+current problem when using the "/sys/bus/pnp/devices/*/resources" 
+interface.  I have been running them since at least Linux 3.0, 
+with adapted changes in previous versions.  I have not seen any
+regressions and I do not expect any regressions from these
+patches. 
+
+Bjorn had reviewed them and I am wondering what I can do to have 
+them included in (one of) the next Linux kernel(s).
+
+If there is any information that you need before an inclusion is
+possible, just let me know. 
+
+--- Witold
