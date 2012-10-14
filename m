@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755154Ab2JNPCj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:02:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46434 "EHLO
+	id S1755158Ab2JNPCz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:02:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46430 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932077Ab2JNOnI (ORCPT
+	by vger.kernel.org with ESMTP id S932068Ab2JNOnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:43:08 -0400
-Message-Id: <20121014143545.550459117@decadent.org.uk>
+Message-Id: <20121014143546.893386383@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:00 +0100
+Date: Sun, 14 Oct 2012 15:37:10 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 087/147] lockd: use rpc clients cl_nodename for id encoding
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>
+Subject: [ 097/147] iscsi-target: Bump defaults for nopin_timeout +
+ nopin_response_timeout values
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,49 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 303a7ce92064c285a04c870f2dc0192fdb2968cb upstream.
+commit cf0eb28d3ba60098865bf7dbcbfdd6b1cc483e3b upstream.
 
-Taking hostname from uts namespace if not safe, because this cuold be
-performind during umount operation on child reaper death. And in this case
-current->nsproxy is NULL already.
+This patch increases the default for nopin_timeout to 15 seconds (wait
+between sending a new NopIN ping) and nopin_response_timeout to 30 seconds
+(wait for NopOUT response before failing the connection) in order to avoid
+false positives by iSCSI Initiators who are not always able (under load) to
+respond to NopIN echo PING requests within the current 5 second window.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+False positives have been observed recently using Open-iSCSI code on v3.3.x
+with heavy large-block READ workloads over small MTU 1 Gb/sec ports, and
+increasing these values to more reasonable defaults significantly reduces
+the possibility of false positive NopIN response timeout events under
+this specific workload.
+
+Historically these have been set low to initiate connection recovery as
+soon as possible if we don't hear a ping back, but for modern v3.x code
+on 1 -> 10 Gb/sec ports these new defaults make alot more sense.
+
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Andy Grover <agrover@redhat.com>
+Cc: Mike Christie <michaelc@cs.wisc.edu>
+Cc: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/lockd/mon.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/target/iscsi/iscsi_target_core.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c
-index 38f240e..e0bc36e 100644
---- a/fs/lockd/mon.c
-+++ b/fs/lockd/mon.c
-@@ -42,6 +42,7 @@ struct nsm_args {
- 	u32			proc;
- 
- 	char			*mon_name;
-+	char			*nodename;
- };
- 
- struct nsm_res {
-@@ -141,6 +142,7 @@ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
- 		.vers		= 3,
- 		.proc		= NLMPROC_NSM_NOTIFY,
- 		.mon_name	= nsm->sm_mon_name,
-+		.nodename	= utsname()->nodename,
- 	};
- 	struct rpc_message msg = {
- 		.rpc_argp	= &args,
-@@ -477,7 +479,7 @@ static void encode_my_id(struct xdr_stream *xdr, const struct nsm_args *argp)
- {
- 	__be32 *p;
- 
--	encode_nsm_string(xdr, utsname()->nodename);
-+	encode_nsm_string(xdr, argp->nodename);
- 	p = xdr_reserve_space(xdr, 4 + 4 + 4);
- 	*p++ = cpu_to_be32(argp->prog);
- 	*p++ = cpu_to_be32(argp->vers);
+diff --git a/drivers/target/iscsi/iscsi_target_core.h b/drivers/target/iscsi/iscsi_target_core.h
+index ff3f482..2ba9f9b 100644
+--- a/drivers/target/iscsi/iscsi_target_core.h
++++ b/drivers/target/iscsi/iscsi_target_core.h
+@@ -25,10 +25,10 @@
+ #define NA_DATAOUT_TIMEOUT_RETRIES	5
+ #define NA_DATAOUT_TIMEOUT_RETRIES_MAX	15
+ #define NA_DATAOUT_TIMEOUT_RETRIES_MIN	1
+-#define NA_NOPIN_TIMEOUT		5
++#define NA_NOPIN_TIMEOUT		15
+ #define NA_NOPIN_TIMEOUT_MAX		60
+ #define NA_NOPIN_TIMEOUT_MIN		3
+-#define NA_NOPIN_RESPONSE_TIMEOUT	5
++#define NA_NOPIN_RESPONSE_TIMEOUT	30
+ #define NA_NOPIN_RESPONSE_TIMEOUT_MAX	60
+ #define NA_NOPIN_RESPONSE_TIMEOUT_MIN	3
+ #define NA_RANDOM_DATAIN_PDU_OFFSETS	0
 
 
