@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496Ab2JNOm2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:42:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46258 "EHLO
+	id S1754540Ab2JNPIf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:08:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46291 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754432Ab2JNOmV (ORCPT
+	by vger.kernel.org with ESMTP id S1754493Ab2JNOm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:42:21 -0400
-Message-Id: <20121014143549.976365232@decadent.org.uk>
+	Sun, 14 Oct 2012 10:42:28 -0400
+Message-Id: <20121014143548.496729030@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:33 +0100
+Date: Sun, 14 Oct 2012 15:37:22 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nikola Pajkovsky <npajkovs@redhat.com>, Jan Kara <jack@suse.cz>
-Subject: [ 120/147] udf: fix retun value on error path in udf_load_logicalvol
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 109/147] ALSA: HDA: Add inverted internal mic quirk for Lenovo S205
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,43 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nikola Pajkovsky <npajkovs@redhat.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 68766a2edcd5cd744262a70a2f67a320ac944760 upstream.
+commit b3c5dce81584391af8b6dedb0647e65c17aab3a2 upstream.
 
-In case we detect a problem and bail out, we fail to set "ret" to a
-nonzero value, and udf_load_logicalvol will mistakenly report success.
+The Lenovo Ideapad S205 has an internal mic where the right channel
+is phase inverted.
 
-Signed-off-by: Nikola Pajkovsky <npajkovs@redhat.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+BugLink: https://bugs.launchpad.net/bugs/884652
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/udf/super.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_conexant.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/udf/super.c b/fs/udf/super.c
-index 9f55f79..18fc038 100644
---- a/fs/udf/super.c
-+++ b/fs/udf/super.c
-@@ -1344,6 +1344,7 @@ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
- 		udf_err(sb, "error loading logical volume descriptor: "
- 			"Partition table too long (%u > %lu)\n", table_len,
- 			sb->s_blocksize - sizeof(*lvd));
-+		ret = 1;
- 		goto out_bh;
- 	}
+diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+index 172370b..2af0868 100644
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -4466,6 +4466,7 @@ static const struct snd_pci_quirk cxt5066_fixups[] = {
+ 	SND_PCI_QUIRK(0x17aa, 0x21ce, "Lenovo T420", CXT_PINCFG_LENOVO_TP410),
+ 	SND_PCI_QUIRK(0x17aa, 0x21cf, "Lenovo T520", CXT_PINCFG_LENOVO_TP410),
+ 	SND_PCI_QUIRK(0x17aa, 0x3975, "Lenovo U300s", CXT_FIXUP_STEREO_DMIC),
++	SND_PCI_QUIRK(0x17aa, 0x397b, "Lenovo S205", CXT_FIXUP_STEREO_DMIC),
+ 	{}
+ };
  
-@@ -1388,8 +1389,10 @@ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
- 						UDF_ID_SPARABLE,
- 						strlen(UDF_ID_SPARABLE))) {
- 				if (udf_load_sparable_map(sb, map,
--				    (struct sparablePartitionMap *)gpm) < 0)
-+				    (struct sparablePartitionMap *)gpm) < 0) {
-+					ret = 1;
- 					goto out_bh;
-+				}
- 			} else if (!strncmp(upm2->partIdent.ident,
- 						UDF_ID_METADATA,
- 						strlen(UDF_ID_METADATA))) {
 
 
