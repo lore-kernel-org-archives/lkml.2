@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab2JNOtF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:49:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46745 "EHLO
+	id S1754756Ab2JNOtD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:49:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46763 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932257Ab2JNOoP (ORCPT
+	by vger.kernel.org with ESMTP id S932423Ab2JNOoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:44:15 -0400
-Message-Id: <20121014143538.561856584@decadent.org.uk>
+Message-Id: <20121014143538.966779793@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:08 +0100
+Date: Sun, 14 Oct 2012 15:36:11 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 035/147] staging: comedi: dont dereference user memory for INSN_INTTRIG
+        Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [ 038/147] block: fix request_queue->flags initialization
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,34 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Tejun Heo <tj@kernel.org>
 
-commit 5d06e3df280bd230e2eadc16372e62818c63e894 upstream.
+commit 60ea8226cbd5c8301f9a39edc574ddabcb8150e0 upstream.
 
-`parse_insn()` is dereferencing the user-space pointer `insn->data`
-directly when handling the `INSN_INTTRIG` comedi instruction.  It
-shouldn't be using `insn->data` at all; it should be using the separate
-`data` pointer passed to the function.  Fix it.
+A queue newly allocated with blk_alloc_queue_node() has only
+QUEUE_FLAG_BYPASS set.  For request-based drivers,
+blk_init_allocated_queue() is called and q->queue_flags is overwritten
+with QUEUE_FLAG_DEFAULT which doesn't include BYPASS even though the
+initial bypass is still in effect.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+In blk_init_allocated_queue(), or QUEUE_FLAG_DEFAULT to q->queue_flags
+instead of overwriting.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/comedi/comedi_fops.c |    2 +-
+ block/blk-core.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-index 9b9d4e8..f496f4d 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -950,7 +950,7 @@ static int parse_insn(struct comedi_device *dev, struct comedi_insn *insn,
- 				ret = -EAGAIN;
- 				break;
- 			}
--			ret = s->async->inttrig(dev, s, insn->data[0]);
-+			ret = s->async->inttrig(dev, s, data[0]);
- 			if (ret >= 0)
- 				ret = 1;
- 			break;
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 80e29c9..a17869f 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -696,7 +696,7 @@ blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
+ 	q->request_fn		= rfn;
+ 	q->prep_rq_fn		= NULL;
+ 	q->unprep_rq_fn		= NULL;
+-	q->queue_flags		= QUEUE_FLAG_DEFAULT;
++	q->queue_flags		|= QUEUE_FLAG_DEFAULT;
+ 
+ 	/* Override internal queue lock with supplied lock pointer */
+ 	if (lock)
 
 
