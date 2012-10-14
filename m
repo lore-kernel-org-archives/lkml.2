@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755151Ab2JNPCW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:02:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46432 "EHLO
+	id S932086Ab2JNOnJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:43:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46411 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932075Ab2JNOnK (ORCPT
+	by vger.kernel.org with ESMTP id S1754515Ab2JNOnF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:43:10 -0400
-Message-Id: <20121014143546.495048367@decadent.org.uk>
+	Sun, 14 Oct 2012 10:43:05 -0400
+Message-Id: <20121014143545.955359349@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:07 +0100
+Date: Sun, 14 Oct 2012 15:37:03 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <jdelvare@suse.de>, Ingo Molnar <mingo@kernel.org>,
-        Bernhard Walle <bernhard@bwalle.de>, Michal Marek <mmarek@suse.cz>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [ 094/147] kbuild: Fix gcc -x syntax
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Ferry <iscsitmp@bananateam.nl>, Christoph Hellwig <hch@lst.de>
+Subject: [ 090/147] target/file: Re-enable optional fd_buffered_io=1 operation
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,194 +28,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit b1e0d8b70fa31821ebca3965f2ef8619d7c5e316 upstream.
+commit b32f4c7ed85c5cee2a21a55c9f59ebc9d57a2463 upstream.
 
-The correct syntax for gcc -x is "gcc -x assembler", not
-"gcc -xassembler". Even though the latter happens to work, the former
-is what is documented in the manual page and thus what gcc wrappers
-such as icecream do expect.
+This patch re-adds the ability to optionally run in buffered FILEIO mode
+(eg: w/o O_DSYNC) for device backends in order to once again use the
+Linux buffered cache as a write-back storage mechanism.
 
-This isn't a cosmetic change. The missing space prevents icecream from
-recognizing compilation tasks it can't handle, leading to silent kernel
-miscompilations.
+This logic was originally dropped with mainline v3.5-rc commit:
 
-Besides me, credits go to Michael Matz and Dirk Mueller for
-investigating the miscompilation issue and tracking it down to this
-incorrect -x parameter syntax.
+commit a4dff3043c231d57f982af635c9d2192ee40e5ae
+Author: Nicholas Bellinger <nab@linux-iscsi.org>
+Date:   Wed May 30 16:25:41 2012 -0700
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Bernhard Walle <bernhard@bwalle.de>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
-[bwh: Backported to 3.2: drop unneeded change to arch/x86/Makefile]
+    target/file: Use O_DSYNC by default for FILEIO backends
+
+This difference with this patch is that fd_create_virtdevice() now
+forces the explicit setting of emulate_write_cache=1 when buffered FILEIO
+operation has been enabled.
+
+(v2: Switch to FDBD_HAS_BUFFERED_IO_WCE + add more detailed
+     comment as requested by hch)
+
+Reported-by: Ferry <iscsitmp@bananateam.nl>
+Cc: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/mips/Makefile                         |    2 +-
- arch/mips/kernel/Makefile                  |    2 +-
- arch/x86/Makefile                          |    2 +-
- scripts/Kbuild.include                     |   12 ++++++------
- scripts/gcc-version.sh                     |    6 +++---
- scripts/gcc-x86_32-has-stack-protector.sh  |    2 +-
- scripts/gcc-x86_64-has-stack-protector.sh  |    2 +-
- scripts/kconfig/check.sh                   |    2 +-
- scripts/kconfig/lxdialog/check-lxdialog.sh |    2 +-
- tools/perf/Makefile                        |    2 +-
- tools/power/cpupower/Makefile              |    2 +-
- 11 files changed, 18 insertions(+), 18 deletions(-)
+ drivers/target/target_core_file.c |   41 ++++++++++++++++++++++++++++++++++---
+ drivers/target/target_core_file.h |    1 +
+ 2 files changed, 39 insertions(+), 3 deletions(-)
 
---- a/arch/mips/Makefile
-+++ b/arch/mips/Makefile
-@@ -224,7 +224,7 @@ KBUILD_CPPFLAGS += -D"DATAOFFSET=$(if $(
- LDFLAGS			+= -m $(ld-emul)
+--- a/drivers/target/target_core_file.c
++++ b/drivers/target/target_core_file.c
+@@ -139,6 +139,19 @@ static struct se_device *fd_create_virtd
+ 	 * of pure timestamp updates.
+ 	 */
+ 	flags = O_RDWR | O_CREAT | O_LARGEFILE | O_DSYNC;
++	/*
++	 * Optionally allow fd_buffered_io=1 to be enabled for people
++	 * who want use the fs buffer cache as an WriteCache mechanism.
++	 *
++	 * This means that in event of a hard failure, there is a risk
++	 * of silent data-loss if the SCSI client has *not* performed a
++	 * forced unit access (FUA) write, or issued SYNCHRONIZE_CACHE
++	 * to write-out the entire device cache.
++	 */
++	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
++		pr_debug("FILEIO: Disabling O_DSYNC, using buffered FILEIO\n");
++		flags &= ~O_DSYNC;
++	}
  
- ifdef CONFIG_MIPS
--CHECKFLAGS += $(shell $(CC) $(KBUILD_CFLAGS) -dM -E -xc /dev/null | \
-+CHECKFLAGS += $(shell $(CC) $(KBUILD_CFLAGS) -dM -E -x c /dev/null | \
- 	egrep -vw '__GNUC_(|MINOR_|PATCHLEVEL_)_' | \
- 	sed -e "s/^\#define /-D'/" -e "s/ /'='/" -e "s/$$/'/")
- ifdef CONFIG_64BIT
---- a/arch/mips/kernel/Makefile
-+++ b/arch/mips/kernel/Makefile
-@@ -102,7 +102,7 @@ obj-$(CONFIG_MIPS_MACHINE)	+= mips_machi
+ 	file = filp_open(dev_p, flags, 0600);
+ 	if (IS_ERR(file)) {
+@@ -206,6 +219,12 @@ static struct se_device *fd_create_virtd
+ 	if (!dev)
+ 		goto fail;
  
- obj-$(CONFIG_OF)		+= prom.o
++	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
++		pr_debug("FILEIO: Forcing setting of emulate_write_cache=1"
++			" with FDBD_HAS_BUFFERED_IO_WCE\n");
++		dev->se_sub_dev->se_dev_attrib.emulate_write_cache = 1;
++	}
++
+ 	fd_dev->fd_dev_id = fd_host->fd_host_dev_id_count++;
+ 	fd_dev->fd_queue_depth = dev->queue_depth;
  
--CFLAGS_cpu-bugs64.o	= $(shell if $(CC) $(KBUILD_CFLAGS) -Wa,-mdaddi -c -o /dev/null -xc /dev/null >/dev/null 2>&1; then echo "-DHAVE_AS_SET_DADDI"; fi)
-+CFLAGS_cpu-bugs64.o	= $(shell if $(CC) $(KBUILD_CFLAGS) -Wa,-mdaddi -c -o /dev/null -x c /dev/null >/dev/null 2>&1; then echo "-DHAVE_AS_SET_DADDI"; fi)
+@@ -450,6 +469,7 @@ enum {
+ static match_table_t tokens = {
+ 	{Opt_fd_dev_name, "fd_dev_name=%s"},
+ 	{Opt_fd_dev_size, "fd_dev_size=%s"},
++	{Opt_fd_buffered_io, "fd_buffered_io=%d"},
+ 	{Opt_err, NULL}
+ };
  
- obj-$(CONFIG_HAVE_STD_PC_SERIAL_PORT)	+= 8250-platform.o
+@@ -461,7 +481,7 @@ static ssize_t fd_set_configfs_dev_param
+ 	struct fd_dev *fd_dev = se_dev->se_dev_su_ptr;
+ 	char *orig, *ptr, *arg_p, *opts;
+ 	substring_t args[MAX_OPT_ARGS];
+-	int ret = 0, token;
++	int ret = 0, arg, token;
  
---- a/scripts/Kbuild.include
-+++ b/scripts/Kbuild.include
-@@ -98,24 +98,24 @@ try-run = $(shell set -e;		\
- # Usage: cflags-y += $(call as-option,-Wa$(comma)-isa=foo,)
+ 	opts = kstrdup(page, GFP_KERNEL);
+ 	if (!opts)
+@@ -505,6 +525,19 @@ static ssize_t fd_set_configfs_dev_param
+ 					" bytes\n", fd_dev->fd_dev_size);
+ 			fd_dev->fbd_flags |= FBDF_HAS_SIZE;
+ 			break;
++		case Opt_fd_buffered_io:
++			match_int(args, &arg);
++			if (arg != 1) {
++				pr_err("bogus fd_buffered_io=%d value\n", arg);
++				ret = -EINVAL;
++				goto out;
++			}
++
++			pr_debug("FILEIO: Using buffered I/O"
++				" operations for struct fd_dev\n");
++
++			fd_dev->fbd_flags |= FDBD_HAS_BUFFERED_IO_WCE;
++			break;
+ 		default:
+ 			break;
+ 		}
+@@ -536,8 +569,10 @@ static ssize_t fd_show_configfs_dev_para
+ 	ssize_t bl = 0;
  
- as-option = $(call try-run,\
--	$(CC) $(KBUILD_CFLAGS) $(1) -c -xassembler /dev/null -o "$$TMP",$(1),$(2))
-+	$(CC) $(KBUILD_CFLAGS) $(1) -c -x assembler /dev/null -o "$$TMP",$(1),$(2))
+ 	bl = sprintf(b + bl, "TCM FILEIO ID: %u", fd_dev->fd_dev_id);
+-	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: O_DSYNC\n",
+-		fd_dev->fd_dev_name, fd_dev->fd_dev_size);
++	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: %s\n",
++		fd_dev->fd_dev_name, fd_dev->fd_dev_size,
++		(fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) ?
++		"Buffered-WCE" : "O_DSYNC");
+ 	return bl;
+ }
  
- # as-instr
- # Usage: cflags-y += $(call as-instr,instr,option1,option2)
+--- a/drivers/target/target_core_file.h
++++ b/drivers/target/target_core_file.h
+@@ -18,6 +18,7 @@ struct fd_request {
  
- as-instr = $(call try-run,\
--	printf "%b\n" "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -xassembler -o "$$TMP" -,$(2),$(3))
-+	printf "%b\n" "$(1)" | $(CC) $(KBUILD_AFLAGS) -c -x assembler -o "$$TMP" -,$(2),$(3))
+ #define FBDF_HAS_PATH		0x01
+ #define FBDF_HAS_SIZE		0x02
++#define FDBD_HAS_BUFFERED_IO_WCE 0x04
  
- # cc-option
- # Usage: cflags-y += $(call cc-option,-march=winchip-c6,-march=i586)
- 
- cc-option = $(call try-run,\
--	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -xc /dev/null -o "$$TMP",$(1),$(2))
-+	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -x c /dev/null -o "$$TMP",$(1),$(2))
- 
- # cc-option-yn
- # Usage: flag := $(call cc-option-yn,-march=winchip-c6)
- cc-option-yn = $(call try-run,\
--	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -xc /dev/null -o "$$TMP",y,n)
-+	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(1) -c -x c /dev/null -o "$$TMP",y,n)
- 
- # cc-option-align
- # Prefix align with either -falign or -malign
-@@ -125,7 +125,7 @@ cc-option-align = $(subst -functions=0,,
- # cc-disable-warning
- # Usage: cflags-y += $(call cc-disable-warning,unused-but-set-variable)
- cc-disable-warning = $(call try-run,\
--	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -W$(strip $(1)) -c -xc /dev/null -o "$$TMP",-Wno-$(strip $(1)))
-+	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -W$(strip $(1)) -c -x c /dev/null -o "$$TMP",-Wno-$(strip $(1)))
- 
- # cc-version
- # Usage gcc-ver := $(call cc-version)
-@@ -143,7 +143,7 @@ cc-ifversion = $(shell [ $(call cc-versi
- # cc-ldoption
- # Usage: ldflags += $(call cc-ldoption, -Wl$(comma)--hash-style=both)
- cc-ldoption = $(call try-run,\
--	$(CC) $(1) -nostdlib -xc /dev/null -o "$$TMP",$(1),$(2))
-+	$(CC) $(1) -nostdlib -x c /dev/null -o "$$TMP",$(1),$(2))
- 
- # ld-option
- # Usage: LDFLAGS += $(call ld-option, -X)
---- a/scripts/gcc-version.sh
-+++ b/scripts/gcc-version.sh
-@@ -22,10 +22,10 @@ if [ ${#compiler} -eq 0 ]; then
- 	exit 1
- fi
- 
--MAJOR=$(echo __GNUC__ | $compiler -E -xc - | tail -n 1)
--MINOR=$(echo __GNUC_MINOR__ | $compiler -E -xc - | tail -n 1)
-+MAJOR=$(echo __GNUC__ | $compiler -E -x c - | tail -n 1)
-+MINOR=$(echo __GNUC_MINOR__ | $compiler -E -x c - | tail -n 1)
- if [ "x$with_patchlevel" != "x" ] ; then
--	PATCHLEVEL=$(echo __GNUC_PATCHLEVEL__ | $compiler -E -xc - | tail -n 1)
-+	PATCHLEVEL=$(echo __GNUC_PATCHLEVEL__ | $compiler -E -x c - | tail -n 1)
- 	printf "%02d%02d%02d\\n" $MAJOR $MINOR $PATCHLEVEL
- else
- 	printf "%02d%02d\\n" $MAJOR $MINOR
---- a/scripts/gcc-x86_32-has-stack-protector.sh
-+++ b/scripts/gcc-x86_32-has-stack-protector.sh
-@@ -1,6 +1,6 @@
- #!/bin/sh
- 
--echo "int foo(void) { char X[200]; return 3; }" | $* -S -xc -c -O0 -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
-+echo "int foo(void) { char X[200]; return 3; }" | $* -S -x c -c -O0 -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
- if [ "$?" -eq "0" ] ; then
- 	echo y
- else
---- a/scripts/gcc-x86_64-has-stack-protector.sh
-+++ b/scripts/gcc-x86_64-has-stack-protector.sh
-@@ -1,6 +1,6 @@
- #!/bin/sh
- 
--echo "int foo(void) { char X[200]; return 3; }" | $* -S -xc -c -O0 -mcmodel=kernel -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
-+echo "int foo(void) { char X[200]; return 3; }" | $* -S -x c -c -O0 -mcmodel=kernel -fstack-protector - -o - 2> /dev/null | grep -q "%gs"
- if [ "$?" -eq "0" ] ; then
- 	echo y
- else
---- a/scripts/kconfig/check.sh
-+++ b/scripts/kconfig/check.sh
-@@ -1,6 +1,6 @@
- #!/bin/sh
- # Needed for systems without gettext
--$* -xc -o /dev/null - > /dev/null 2>&1 << EOF
-+$* -x c -o /dev/null - > /dev/null 2>&1 << EOF
- #include <libintl.h>
- int main()
- {
---- a/scripts/kconfig/lxdialog/check-lxdialog.sh
-+++ b/scripts/kconfig/lxdialog/check-lxdialog.sh
-@@ -38,7 +38,7 @@ trap "rm -f $tmp" 0 1 2 3 15
- 
- # Check if we can link to ncurses
- check() {
--        $cc -xc - -o $tmp 2>/dev/null <<'EOF'
-+        $cc -x c - -o $tmp 2>/dev/null <<'EOF'
- #include CURSES_LOC
- main() {}
- EOF
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -56,7 +56,7 @@ ifeq ($(ARCH),x86_64)
- 	ARCH := x86
- 	IS_X86_64 := 0
- 	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
--		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -xc - | tail -n 1)
-+		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
- 	endif
- 	ifeq (${IS_X86_64}, 1)
- 		RAW_ARCH := x86_64
---- a/tools/power/cpupower/Makefile
-+++ b/tools/power/cpupower/Makefile
-@@ -100,7 +100,7 @@ GMO_FILES = ${shell for HLANG in ${LANGU
- export CROSS CC AR STRIP RANLIB CFLAGS LDFLAGS LIB_OBJS
- 
- # check if compiler option is supported
--cc-supports = ${shell if $(CC) ${1} -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then echo "$(1)"; fi;}
-+cc-supports = ${shell if $(CC) ${1} -S -o /dev/null -x c /dev/null > /dev/null 2>&1; then echo "$(1)"; fi;}
- 
- # use '-Os' optimization if available, else use -O2
- OPTIMIZATION := $(call cc-supports,-Os,-O2)
+ struct fd_dev {
+ 	u32		fbd_flags;
 
 
