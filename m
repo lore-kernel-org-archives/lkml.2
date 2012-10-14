@@ -1,162 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124Ab2JNJnr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 05:43:47 -0400
-Received: from relay.sigmatic.fi ([80.69.161.51]:54853 "EHLO relay.sigmatic.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751634Ab2JNJnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 05:43:46 -0400
-From: Hannu Heikkinen <hannuxx@iki.fi>
-To: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        a.zummo@towertech.it, davinci-linux-open-source@linux.davincidsp.com,
-        nsekhar@ti.com
-Subject: [PATCH v2] rtc: davinci: clean up probe/remove routines
-Date: Sun, 14 Oct 2012 12:43:42 +0300
-Message-Id: <1350207822-4857-1-git-send-email-hannuxx@iki.fi>
-X-Mailer: git-send-email 1.7.12.2
-In-Reply-To: <1350166210-23313-1-git-send-email-hannuxx@iki.fi>
-References: <1350166210-23313-1-git-send-email-hannuxx@iki.fi>
-Content-Type: text/plain; charset="us-ascii:utf-8"
+	id S1752251Ab2JNJsN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 05:48:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:44038 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751862Ab2JNJsL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Oct 2012 05:48:11 -0400
+Message-ID: <1350208077.4832.76.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [STABLE REQUEST] add: e1000: fix lockdep splat in shutdown
+ handler
+From: Ben Hutchings <ben@decadent.org.uk>
+To: David Miller <davem@davemloft.net>, Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, tglx@linutronix.de,
+        stable@vger.kernel.org, jesse.brandeburg@intel.com,
+        jeffrey.t.kirsher@intel.com
+Date: Sun, 14 Oct 2012 10:47:57 +0100
+In-Reply-To: <20121011.182214.2229957213838024407.davem@davemloft.net>
+References: <1349993385.24256.79.camel@gandalf.local.home>
+	 <20121011.182214.2229957213838024407.davem@davemloft.net>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-sXYyfrqyjadw1YBOTpQo"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 77.75.106.1
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the devres managed resource functions in the probe routine.
-Also affects the remove routine where the previously used free and
-release functions are not needed.
 
-The devm_* functions eliminate the need for manual resource releasing and
-simplify error handling.  Resources allocated by devm_* are freed
-automatically on driver detach.
+--=-sXYyfrqyjadw1YBOTpQo
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Hannu Heikkinen <hannuxx@iki.fi>
----
- drivers/rtc/rtc-davinci.c | 56 +++++++++++++----------------------------------
- 1 file changed, 15 insertions(+), 41 deletions(-)
+On Thu, 2012-10-11 at 18:22 -0400, David Miller wrote:
+> From: Steven Rostedt <rostedt@goodmis.org>
+> Date: Thu, 11 Oct 2012 18:09:45 -0400
+>=20
+> > Can you add this to the 3.2 stable tree.
+> >=20
+> > commit 3a3847e007aae732d64d8fd1374126393e9879a3
+> > Author: Jesse Brandeburg <jesse.brandeburg@intel.com>
+> > Date:   Wed Jan 4 20:23:33 2012 +0000
+> >=20
+> >     e1000: fix lockdep splat in shutdown handler
+>=20
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-diff --git a/drivers/rtc/rtc-davinci.c b/drivers/rtc/rtc-davinci.c
-index 14c2109..d24b573 100644
---- a/drivers/rtc/rtc-davinci.c
-+++ b/drivers/rtc/rtc-davinci.c
-@@ -119,8 +119,6 @@ static DEFINE_SPINLOCK(davinci_rtc_lock);
- struct davinci_rtc {
- 	struct rtc_device 		*rtc;
- 	void __iomem			*base;
--	resource_size_t			pbase;
--	size_t				base_size;
- 	int				irq;
- };
- 
-@@ -482,22 +480,16 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
- 	struct davinci_rtc *davinci_rtc;
--	struct resource *res, *mem;
-+	struct resource *res;
- 	int ret = 0;
- 
--	davinci_rtc = kzalloc(sizeof(struct davinci_rtc), GFP_KERNEL);
-+	davinci_rtc = devm_kzalloc(&pdev->dev, sizeof(struct davinci_rtc),
-+		GFP_KERNEL);
- 	if (!davinci_rtc) {
- 		dev_dbg(dev, "could not allocate memory for private data\n");
- 		return -ENOMEM;
- 	}
- 
--	davinci_rtc->irq = platform_get_irq(pdev, 0);
--	if (davinci_rtc->irq < 0) {
--		dev_err(dev, "no RTC irq\n");
--		ret = davinci_rtc->irq;
--		goto fail1;
--	}
--
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
- 		dev_err(dev, "no mem resource\n");
-@@ -505,23 +497,16 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 		goto fail1;
- 	}
- 
--	davinci_rtc->pbase = res->start;
--	davinci_rtc->base_size = resource_size(res);
--
--	mem = request_mem_region(davinci_rtc->pbase, davinci_rtc->base_size,
--				 pdev->name);
--	if (!mem) {
--		dev_err(dev, "RTC registers at %08x are not free\n",
--			davinci_rtc->pbase);
--		ret = -EBUSY;
--		goto fail1;
-+	davinci_rtc->base = devm_request_and_ioremap(&pdev->dev, res);
-+	if (!davinci_rtc->base) {
-+		dev_err(&pdev->dev, "Unable to request mem region and grab IOs for device.\n");
-+		return -EBUSY;
- 	}
- 
--	davinci_rtc->base = ioremap(davinci_rtc->pbase, davinci_rtc->base_size);
--	if (!davinci_rtc->base) {
--		dev_err(dev, "unable to ioremap MEM resource\n");
--		ret = -ENOMEM;
--		goto fail2;
-+	davinci_rtc->irq = platform_get_irq(pdev, 0);
-+	if (davinci_rtc->irq < 0) {
-+		dev_err(dev, "no RTC irq\n");
-+		return davinci_rtc->irq;
- 	}
- 
- 	platform_set_drvdata(pdev, davinci_rtc);
-@@ -529,9 +514,10 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 	davinci_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
- 				    &davinci_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(davinci_rtc->rtc)) {
-+		ret = PTR_ERR(davinci_rtc->rtc);
- 		dev_err(dev, "unable to register RTC device, err %ld\n",
- 				PTR_ERR(davinci_rtc->rtc));
--		goto fail3;
-+		return ret;
- 	}
- 
- 	rtcif_write(davinci_rtc, PRTCIF_INTFLG_RTCSS, PRTCIF_INTFLG);
-@@ -545,7 +531,7 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 			  0, "davinci_rtc", davinci_rtc);
- 	if (ret < 0) {
- 		dev_err(dev, "unable to register davinci RTC interrupt\n");
--		goto fail4;
-+		goto err_dev_unreg;
- 	}
- 
- 	/* Enable interrupts */
-@@ -559,15 +545,8 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 
- 	return 0;
- 
--fail4:
-+err_dev_unreg:
- 	rtc_device_unregister(davinci_rtc->rtc);
--fail3:
--	platform_set_drvdata(pdev, NULL);
--	iounmap(davinci_rtc->base);
--fail2:
--	release_mem_region(davinci_rtc->pbase, davinci_rtc->base_size);
--fail1:
--	kfree(davinci_rtc);
- 
- 	return ret;
- }
-@@ -584,13 +563,8 @@ static int __devexit davinci_rtc_remove(struct platform_device *pdev)
- 
- 	rtc_device_unregister(davinci_rtc->rtc);
- 
--	iounmap(davinci_rtc->base);
--	release_mem_region(davinci_rtc->pbase, davinci_rtc->base_size);
--
- 	platform_set_drvdata(pdev, NULL);
- 
--	kfree(davinci_rtc);
--
- 	return 0;
- }
- 
--- 
-1.7.12.2
+Added to the queue, thanks.
 
+Ben.
+
+--=20
+Ben Hutchings
+Always try to do things in chronological order;
+it's less confusing that way.
+
+--=-sXYyfrqyjadw1YBOTpQo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUHqKTee/yOyVhhEJAQrn2xAAkEVVKn+5lXPi0rAPmWjPf1zkeud5k8vt
+3ymeI79sHk9/LJblCXslH1uNefPIJHkQBe+znKku0Zjt2lVqcBmv3JWZGFHOpDSN
+yZf6biyU1SwB4Z0aBwuTsvNche262K2uBfK54pVW+fics9bjSv7xuDC4HyEJZowp
+QV2Tt8Czr1EulOC8nUTLGbuU0fab9sJCca43VnJQUgGZK3euNF0CNXREqovhYwRY
+3BFbqO42ZwWkapsFG1O8HBP9Yk6sYZ+eblkB9Ca2RdkX0ragjJbI7gxQgVEjpepu
+UcOEjdHEGme5ed/TrDDT/53vIfV6l7fFoqFXDVgFz8qqi3kG2U0Ny0oxOHV3pk2j
+lnLS/x40IVd2cS/o6eYunOlVQaEM2lZQf9oXiqzFogztfe87hmWv8sLhKKWLAjSA
+7ykiMCR0lzcHjtoglBi+YnbrODqrEdZd2Ta771JkikzaBTGsoDkqz+6g1atJOKNk
+mFo2Ln4YEnTJE1G16Gz0ChBEhNQKATiwva1rtn1w5CovIWskov+RBox5tYhlPOcu
+EHrTek92GtcK4a9mVam3uyVZvF1PujK94f4r3yXduX5f3HsBn8tj48D9eqYNdvOk
+TD2F0tkX41S+eCDwMwtBUeNRKRhaYjd2j03sdv0eBbBoM8nD8uYKuHc78bsfkQeb
+KcoIv631PdU=
+=F9g8
+-----END PGP SIGNATURE-----
+
+--=-sXYyfrqyjadw1YBOTpQo--
