@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086Ab2JNOnJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:43:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46411 "EHLO
+	id S1755154Ab2JNPCj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:02:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46434 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754515Ab2JNOnF (ORCPT
+	by vger.kernel.org with ESMTP id S932077Ab2JNOnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:43:05 -0400
-Message-Id: <20121014143545.955359349@decadent.org.uk>
+	Sun, 14 Oct 2012 10:43:08 -0400
+Message-Id: <20121014143545.550459117@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:03 +0100
+Date: Sun, 14 Oct 2012 15:37:00 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Ferry <iscsitmp@bananateam.nl>, Christoph Hellwig <hch@lst.de>
-Subject: [ 090/147] target/file: Re-enable optional fd_buffered_io=1 operation
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 087/147] lockd: use rpc clients cl_nodename for id encoding
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,132 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-commit b32f4c7ed85c5cee2a21a55c9f59ebc9d57a2463 upstream.
+commit 303a7ce92064c285a04c870f2dc0192fdb2968cb upstream.
 
-This patch re-adds the ability to optionally run in buffered FILEIO mode
-(eg: w/o O_DSYNC) for device backends in order to once again use the
-Linux buffered cache as a write-back storage mechanism.
+Taking hostname from uts namespace if not safe, because this cuold be
+performind during umount operation on child reaper death. And in this case
+current->nsproxy is NULL already.
 
-This logic was originally dropped with mainline v3.5-rc commit:
-
-commit a4dff3043c231d57f982af635c9d2192ee40e5ae
-Author: Nicholas Bellinger <nab@linux-iscsi.org>
-Date:   Wed May 30 16:25:41 2012 -0700
-
-    target/file: Use O_DSYNC by default for FILEIO backends
-
-This difference with this patch is that fd_create_virtdevice() now
-forces the explicit setting of emulate_write_cache=1 when buffered FILEIO
-operation has been enabled.
-
-(v2: Switch to FDBD_HAS_BUFFERED_IO_WCE + add more detailed
-     comment as requested by hch)
-
-Reported-by: Ferry <iscsitmp@bananateam.nl>
-Cc: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/target_core_file.c |   41 ++++++++++++++++++++++++++++++++++---
- drivers/target/target_core_file.h |    1 +
- 2 files changed, 39 insertions(+), 3 deletions(-)
+ fs/lockd/mon.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -139,6 +139,19 @@ static struct se_device *fd_create_virtd
- 	 * of pure timestamp updates.
- 	 */
- 	flags = O_RDWR | O_CREAT | O_LARGEFILE | O_DSYNC;
-+	/*
-+	 * Optionally allow fd_buffered_io=1 to be enabled for people
-+	 * who want use the fs buffer cache as an WriteCache mechanism.
-+	 *
-+	 * This means that in event of a hard failure, there is a risk
-+	 * of silent data-loss if the SCSI client has *not* performed a
-+	 * forced unit access (FUA) write, or issued SYNCHRONIZE_CACHE
-+	 * to write-out the entire device cache.
-+	 */
-+	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
-+		pr_debug("FILEIO: Disabling O_DSYNC, using buffered FILEIO\n");
-+		flags &= ~O_DSYNC;
-+	}
+diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c
+index 38f240e..e0bc36e 100644
+--- a/fs/lockd/mon.c
++++ b/fs/lockd/mon.c
+@@ -42,6 +42,7 @@ struct nsm_args {
+ 	u32			proc;
  
- 	file = filp_open(dev_p, flags, 0600);
- 	if (IS_ERR(file)) {
-@@ -206,6 +219,12 @@ static struct se_device *fd_create_virtd
- 	if (!dev)
- 		goto fail;
- 
-+	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
-+		pr_debug("FILEIO: Forcing setting of emulate_write_cache=1"
-+			" with FDBD_HAS_BUFFERED_IO_WCE\n");
-+		dev->se_sub_dev->se_dev_attrib.emulate_write_cache = 1;
-+	}
-+
- 	fd_dev->fd_dev_id = fd_host->fd_host_dev_id_count++;
- 	fd_dev->fd_queue_depth = dev->queue_depth;
- 
-@@ -450,6 +469,7 @@ enum {
- static match_table_t tokens = {
- 	{Opt_fd_dev_name, "fd_dev_name=%s"},
- 	{Opt_fd_dev_size, "fd_dev_size=%s"},
-+	{Opt_fd_buffered_io, "fd_buffered_io=%d"},
- 	{Opt_err, NULL}
+ 	char			*mon_name;
++	char			*nodename;
  };
  
-@@ -461,7 +481,7 @@ static ssize_t fd_set_configfs_dev_param
- 	struct fd_dev *fd_dev = se_dev->se_dev_su_ptr;
- 	char *orig, *ptr, *arg_p, *opts;
- 	substring_t args[MAX_OPT_ARGS];
--	int ret = 0, token;
-+	int ret = 0, arg, token;
+ struct nsm_res {
+@@ -141,6 +142,7 @@ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
+ 		.vers		= 3,
+ 		.proc		= NLMPROC_NSM_NOTIFY,
+ 		.mon_name	= nsm->sm_mon_name,
++		.nodename	= utsname()->nodename,
+ 	};
+ 	struct rpc_message msg = {
+ 		.rpc_argp	= &args,
+@@ -477,7 +479,7 @@ static void encode_my_id(struct xdr_stream *xdr, const struct nsm_args *argp)
+ {
+ 	__be32 *p;
  
- 	opts = kstrdup(page, GFP_KERNEL);
- 	if (!opts)
-@@ -505,6 +525,19 @@ static ssize_t fd_set_configfs_dev_param
- 					" bytes\n", fd_dev->fd_dev_size);
- 			fd_dev->fbd_flags |= FBDF_HAS_SIZE;
- 			break;
-+		case Opt_fd_buffered_io:
-+			match_int(args, &arg);
-+			if (arg != 1) {
-+				pr_err("bogus fd_buffered_io=%d value\n", arg);
-+				ret = -EINVAL;
-+				goto out;
-+			}
-+
-+			pr_debug("FILEIO: Using buffered I/O"
-+				" operations for struct fd_dev\n");
-+
-+			fd_dev->fbd_flags |= FDBD_HAS_BUFFERED_IO_WCE;
-+			break;
- 		default:
- 			break;
- 		}
-@@ -536,8 +569,10 @@ static ssize_t fd_show_configfs_dev_para
- 	ssize_t bl = 0;
- 
- 	bl = sprintf(b + bl, "TCM FILEIO ID: %u", fd_dev->fd_dev_id);
--	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: O_DSYNC\n",
--		fd_dev->fd_dev_name, fd_dev->fd_dev_size);
-+	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: %s\n",
-+		fd_dev->fd_dev_name, fd_dev->fd_dev_size,
-+		(fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) ?
-+		"Buffered-WCE" : "O_DSYNC");
- 	return bl;
- }
- 
---- a/drivers/target/target_core_file.h
-+++ b/drivers/target/target_core_file.h
-@@ -18,6 +18,7 @@ struct fd_request {
- 
- #define FBDF_HAS_PATH		0x01
- #define FBDF_HAS_SIZE		0x02
-+#define FDBD_HAS_BUFFERED_IO_WCE 0x04
- 
- struct fd_dev {
- 	u32		fbd_flags;
+-	encode_nsm_string(xdr, utsname()->nodename);
++	encode_nsm_string(xdr, argp->nodename);
+ 	p = xdr_reserve_space(xdr, 4 + 4 + 4);
+ 	*p++ = cpu_to_be32(argp->prog);
+ 	*p++ = cpu_to_be32(argp->vers);
 
 
