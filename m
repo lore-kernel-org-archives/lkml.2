@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491Ab2JNOoX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:44:23 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46742 "EHLO
+	id S932510Ab2JNOo3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:44:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46826 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932301Ab2JNOoO (ORCPT
+	by vger.kernel.org with ESMTP id S932397Ab2JNOoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:44:14 -0400
-Message-Id: <20121014143539.258997542@decadent.org.uk>
+	Sun, 14 Oct 2012 10:44:25 -0400
+Message-Id: <20121014143536.638265112@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:13 +0100
+Date: Sun, 14 Oct 2012 15:35:54 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "Shawn J. Goff" <shawn7400@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 040/147] USB: option: blacklist QMI interface on ZTE MF683
+        =?UTF-8?q?Frank=20Sch=C3=A4fer?= <fschaefer.oss@googlemail.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 021/147] [media] gspca_pac7302: add support for device 1ae7:2001 Speedlink
+ Snappy Microphone SL-6825-SBK
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,33 +30,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Frank Schäfer <fschaefer.oss@googlemail.com>
 
-commit 160c9425ac52cb30502be2d9c5e848cec91bb115 upstream.
+commit 97d2fbf501e3cf105ac957086c7e40e62e15cdf8 upstream.
 
-Interface #5 on ZTE MF683 is a QMI/wwan interface.
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Cc: Shawn J. Goff <shawn7400@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Frank Schäfer <fschaefer.oss@googlemail.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/option.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/media/video/gspca/pac7302.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 53bd5f4..30cff03 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -870,7 +870,8 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0153, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0155, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0156, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0157, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0157, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0158, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0159, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0161, 0xff, 0xff, 0xff) },
+--- a/drivers/media/video/gspca/pac7302.c
++++ b/drivers/media/video/gspca/pac7302.c
+@@ -1198,6 +1198,7 @@ static const struct usb_device_id device
+ 	{USB_DEVICE(0x093a, 0x262a)},
+ 	{USB_DEVICE(0x093a, 0x262c)},
+ 	{USB_DEVICE(0x145f, 0x013c)},
++	{USB_DEVICE(0x1ae7, 0x2001)}, /* SpeedLink Snappy Mic SL-6825-SBK */
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(usb, device_table);
 
 
