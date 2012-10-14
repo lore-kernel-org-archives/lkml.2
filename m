@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab2JNOll (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:41:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46050 "EHLO
+	id S1754076Ab2JNPPl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:15:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46094 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753805Ab2JNOlg (ORCPT
+	by vger.kernel.org with ESMTP id S1753709Ab2JNOll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:41:36 -0400
-Message-Id: <20121014143535.143856643@decadent.org.uk>
+	Sun, 14 Oct 2012 10:41:41 -0400
+Message-Id: <20121014143536.339219261@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:35:43 +0100
+Date: Sun, 14 Oct 2012 15:35:52 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "samix.lebsir" <samix.lebsir@intel.com>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 010/147] char: n_gsm: remove message filtering for contipated DLCI
+        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [ 019/147] slab: fix the DEADLOCK issue on l3 alien lock
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,111 +30,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "samix.lebsir" <samix.lebsir@intel.com>
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
 
-commit 10c6c383e43565c9c6ec07ff8eb2825f8091bdf0 upstream.
+commit 947ca1856a7e60aa6d20536785e6a42dff25aa6e upstream.
 
-The design of uplink flow control in the mux driver is
-that for constipated channels data will backup into the
-per-channel fifos, and any messages that make it to the
-outbound message queue will still go out.
-Code was added to also stop messages that were in the outbound
-queue but this requires filtering through all the messages on the
-queue for stopped dlcis and changes some of the mux logic unneccessarily.
+DEADLOCK will be report while running a kernel with NUMA and LOCKDEP enabled,
+the process of this fake report is:
 
-The message fiiltering was removed to be in line w/ the original design
-as the message filtering does not provide any solution.
-Extra debug messages used during investigation were also removed.
+	   kmem_cache_free()	//free obj in cachep
+	-> cache_free_alien()	//acquire cachep's l3 alien lock
+	-> __drain_alien_cache()
+	-> free_block()
+	-> slab_destroy()
+	-> kmem_cache_free()	//free slab in cachep->slabp_cache
+	-> cache_free_alien()	//acquire cachep->slabp_cache's l3 alien lock
 
-Signed-off-by: samix.lebsir <samix.lebsir@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Since the cachep and cachep->slabp_cache's l3 alien are in the same lock class,
+fake report generated.
+
+This should not happen since we already have init_lock_keys() which will
+reassign the lock class for both l3 list and l3 alien.
+
+However, init_lock_keys() was invoked at a wrong position which is before we
+invoke enable_cpucache() on each cache.
+
+Since until set slab_state to be FULL, we won't invoke enable_cpucache()
+on caches to build their l3 alien while creating them, so although we invoked
+init_lock_keys(), the l3 alien lock class won't change since we don't have
+them until invoked enable_cpucache() later.
+
+This patch will invoke init_lock_keys() after we done enable_cpucache()
+instead of before to avoid the fake DEADLOCK report.
+
+Michael traced the problem back to a commit in release 3.0.0:
+
+commit 30765b92ada267c5395fc788623cb15233276f5c
+Author: Peter Zijlstra <peterz@infradead.org>
+Date:   Thu Jul 28 23:22:56 2011 +0200
+
+    slab, lockdep: Annotate the locks before using them
+
+    Fernando found we hit the regular OFF_SLAB 'recursion' before we
+    annotate the locks, cure this.
+
+    The relevant portion of the stack-trace:
+
+    > [    0.000000]  [<c085e24f>] rt_spin_lock+0x50/0x56
+    > [    0.000000]  [<c04fb406>] __cache_free+0x43/0xc3
+    > [    0.000000]  [<c04fb23f>] kmem_cache_free+0x6c/0xdc
+    > [    0.000000]  [<c04fb2fe>] slab_destroy+0x4f/0x53
+    > [    0.000000]  [<c04fb396>] free_block+0x94/0xc1
+    > [    0.000000]  [<c04fc551>] do_tune_cpucache+0x10b/0x2bb
+    > [    0.000000]  [<c04fc8dc>] enable_cpucache+0x7b/0xa7
+    > [    0.000000]  [<c0bd9d3c>] kmem_cache_init_late+0x1f/0x61
+    > [    0.000000]  [<c0bba687>] start_kernel+0x24c/0x363
+    > [    0.000000]  [<c0bba0ba>] i386_start_kernel+0xa9/0xaf
+
+    Reported-by: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+    Acked-by: Pekka Enberg <penberg@kernel.org>
+    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Link: http://lkml.kernel.org/r/1311888176.2617.379.camel@laptop
+    Signed-off-by: Ingo Molnar <mingo@elte.hu>
+
+The commit moved init_lock_keys() before we build up the alien, so we
+failed to reclass it.
+
+Acked-by: Christoph Lameter <cl@linux.com>
+Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/n_gsm.c |   25 +------------------------
- 1 file changed, 1 insertion(+), 24 deletions(-)
+ mm/slab.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index db15b56..5f68f2a 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -691,10 +691,6 @@ static void gsm_data_kick(struct gsm_mux *gsm)
- 			msg = msg->next;
- 			continue;
- 		}
--		if (gsm->dlci[msg->addr]->constipated) {
--			msg = msg->next;
--			continue;
--		}
- 		if (gsm->encoding != 0) {
- 			gsm->txframe[0] = GSM1_SOF;
- 			len = gsm_stuff_frame(msg->data,
-@@ -748,8 +744,6 @@ static void __gsm_data_queue(struct gsm_dlci *dlci, struct gsm_msg *msg)
- 	u8 *dp = msg->data;
- 	u8 *fcs = dp + msg->len;
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1669,9 +1669,6 @@ void __init kmem_cache_init_late(void)
  
--	WARN_ONCE(dlci->constipated, "%s: queueing from a constipated DLCI",
--		__func__);
- 	/* Fill in the header */
- 	if (gsm->encoding == 0) {
- 		if (msg->len < 128)
-@@ -956,9 +950,6 @@ static void gsm_dlci_data_sweep(struct gsm_mux *gsm)
- 			break;
- 		dlci = gsm->dlci[i];
- 		if (dlci == NULL || dlci->constipated) {
--			if (dlci && (debug & 0x20))
--				pr_info("%s: DLCI %d is constipated",
--					__func__, i);
- 			i++;
- 			continue;
- 		}
-@@ -988,12 +979,8 @@ static void gsm_dlci_data_kick(struct gsm_dlci *dlci)
- 	unsigned long flags;
- 	int sweep;
+ 	g_cpucache_up = LATE;
  
--	if (dlci->constipated) {
--		if (debug & 0x20)
--			pr_info("%s: DLCI %d is constipated",
--				__func__, dlci->addr);
-+	if (dlci->constipated) 
- 		return;
--	}
+-	/* Annotate slab for lockdep -- annotate the malloc caches */
+-	init_lock_keys();
+-
+ 	/* 6) resize the head arrays to their final sizes */
+ 	mutex_lock(&cache_chain_mutex);
+ 	list_for_each_entry(cachep, &cache_chain, next)
+@@ -1679,6 +1676,9 @@ void __init kmem_cache_init_late(void)
+ 			BUG();
+ 	mutex_unlock(&cache_chain_mutex);
  
- 	spin_lock_irqsave(&dlci->gsm->tx_lock, flags);
- 	/* If we have nothing running then we need to fire up */
-@@ -1069,15 +1056,9 @@ static void gsm_process_modem(struct tty_struct *tty, struct gsm_dlci *dlci,
- 	/* Flow control/ready to communicate */
- 	fc = (modem & MDM_FC) || !(modem & MDM_RTR);
- 	if (fc && !dlci->constipated) {
--		if (debug & 0x20)
--			pr_info("%s: DLCI %d START constipated (tx_bytes=%d)",
--				__func__, dlci->addr, dlci->gsm->tx_bytes);
- 		/* Need to throttle our output on this device */
- 		dlci->constipated = 1;
- 	} else if (!fc && dlci->constipated) {
--		if (debug & 0x20)
--			pr_info("%s: DLCI %d END constipated (tx_bytes=%d)",
--				__func__, dlci->addr, dlci->gsm->tx_bytes);
- 		dlci->constipated = 0;
- 		gsm_dlci_data_kick(dlci);
- 	}
-@@ -1241,8 +1222,6 @@ static void gsm_control_message(struct gsm_mux *gsm, unsigned int command,
- 		break;
- 	case CMD_FCON:
- 		/* Modem can accept data again */
--		if (debug & 0x20)
--			pr_info("%s: GSM END constipation", __func__);
- 		gsm->constipated = 0;
- 		gsm_control_reply(gsm, CMD_FCON, NULL, 0);
- 		/* Kick the link in case it is idling */
-@@ -1250,8 +1229,6 @@ static void gsm_control_message(struct gsm_mux *gsm, unsigned int command,
- 		break;
- 	case CMD_FCOFF:
- 		/* Modem wants us to STFU */
--		if (debug & 0x20)
--			pr_info("%s: GSM START constipation", __func__);
- 		gsm->constipated = 1;
- 		gsm_control_reply(gsm, CMD_FCOFF, NULL, 0);
- 		break;
++	/* Annotate slab for lockdep -- annotate the malloc caches */
++	init_lock_keys();
++
+ 	/* Done! */
+ 	g_cpucache_up = FULL;
+ 
 
 
