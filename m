@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab2JNPQN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:16:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46060 "EHLO
+	id S1754123Ab2JNPQL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:16:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46074 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753825Ab2JNOli (ORCPT
+	by vger.kernel.org with ESMTP id S1753841Ab2JNOli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:41:38 -0400
-Message-Id: <20121014143533.967665518@decadent.org.uk>
+Message-Id: <20121014143534.214799251@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:35:34 +0100
+Date: Sun, 14 Oct 2012 15:35:36 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Williams <dan.j.williams@intel.com>,
-        Don Morris <don.morris@hp.com>
-Subject: [ 001/147] isci: fix isci_pci_probe() generates warning on efi failure path
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [ 003/147] drm/i915: prevent possible pin leak on error path
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,45 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Eugeni Dodonov <eugeni.dodonov@intel.com>
 
-commit 6d70a74ffd616073a68ae0974d98819bfa8e6da6 upstream.
+commit ab3951eb74e7c33a2f5b7b64d72e82f1eea61571 upstream.
 
-The oem parameter image embedded in the efi variable is at an offset
-from the start of the variable.  However, in the failure path we try to
-free the 'orom' pointer which is only valid when the paramaters are
-being read from the legacy option-rom space.
+We should not hit this under any sane conditions, but still, this does not
+looks right.
 
-Since failure to load the oem parameters is unlikely and we keep the
-memory around in the success case just defer all de-allocation to devm.
-
-Reported-by: Don Morris <don.morris@hp.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+CC: Chris Wilson <chris@chris-wilson.co.uk>
+CC: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reported-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Reviewed-by: Chris Wlison <chris@chris-wilson.co.uk>
+Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/isci/init.c       |    1 -
- drivers/scsi/isci/probe_roms.c |    1 -
- 2 files changed, 2 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/isci/init.c
-+++ b/drivers/scsi/isci/init.c
-@@ -469,7 +469,6 @@ static int __devinit isci_pci_probe(stru
- 		if (sci_oem_parameters_validate(&orom->ctrl[i])) {
- 			dev_warn(&pdev->dev,
- 				 "[%d]: invalid oem parameters detected, falling back to firmware\n", i);
--			devm_kfree(&pdev->dev, orom);
- 			orom = NULL;
- 			break;
- 		}
---- a/drivers/scsi/isci/probe_roms.c
-+++ b/drivers/scsi/isci/probe_roms.c
-@@ -104,7 +104,6 @@ struct isci_orom *isci_request_oprom(str
- 
- 	if (i >= len) {
- 		dev_err(&pdev->dev, "oprom parse error\n");
--		devm_kfree(&pdev->dev, rom);
- 		rom = NULL;
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 17020cd..2e1f28f 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -6317,7 +6317,7 @@ static int intel_gen7_queue_flip(struct drm_device *dev,
+ 	default:
+ 		WARN_ONCE(1, "unknown plane in flip command\n");
+ 		ret = -ENODEV;
+-		goto err;
++		goto err_unpin;
  	}
- 	pci_unmap_biosrom(oprom);
+ 
+ 	ret = intel_ring_begin(ring, 4);
 
 
