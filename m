@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932575Ab2JNOsF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:48:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46753 "EHLO
+	id S1754712Ab2JNOsD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:48:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46755 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932416Ab2JNOoQ (ORCPT
+	by vger.kernel.org with ESMTP id S932419Ab2JNOoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:44:16 -0400
-Message-Id: <20121014143537.745836336@decadent.org.uk>
+Message-Id: <20121014143538.150333794@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:02 +0100
+Date: Sun, 14 Oct 2012 15:36:05 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 029/147] target: fix return code in target_core_init_configfs error path
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 032/147] workqueue: fix possible stall on try_to_grab_pending() of a delayed
+ work item
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,91 +28,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Senna Tschudin <peter.senna@gmail.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 37bb7899ca366dc212b71b150e78566d04808cc0 upstream.
+commit 3aa62497594430ea522050b75c033f71f2c60ee6 upstream.
 
-This patch fixes error cases within target_core_init_configfs() to
-properly set ret = -ENOMEM before jumping to the out_global exception
-path.
+Currently, when try_to_grab_pending() grabs a delayed work item, it
+leaves its linked work items alone on the delayed_works.  The linked
+work items are always NO_COLOR and will cause future
+cwq_activate_first_delayed() increase cwq->nr_active incorrectly, and
+may cause the whole cwq to stall.  For example,
 
-This was originally discovered with the following Coccinelle semantic
-match information:
+state: cwq->max_active = 1, cwq->nr_active = 1
+       one work in cwq->pool, many in cwq->delayed_works.
 
-Convert a nonnegative error return code to a negative one, as returned
-elsewhere in the function.  A simplified version of the semantic match
-that finds this problem is as follows: (http://coccinelle.lip6.fr/)
+step1: try_to_grab_pending() removes a work item from delayed_works
+       but leaves its NO_COLOR linked work items on it.
 
-// <smpl>
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != ret = e1
-    when != &ret
-*if(...)
-{
-  ... when != ret = e2
-      when forall
- return ret;
-}
-// </smpl>
+step2: Later on, cwq_activate_first_delayed() activates the linked
+       work item increasing ->nr_active.
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+step3: cwq->nr_active = 1, but all activated work items of the cwq are
+       NO_COLOR.  When they finish, cwq->nr_active will not be
+       decreased due to NO_COLOR, and no further work items will be
+       activated from cwq->delayed_works. the cwq stalls.
+
+Fix it by ensuring the target work item is activated before stealing
+PENDING in try_to_grab_pending().  This ensures that all the linked
+work items are activated without incorrectly bumping cwq->nr_active.
+
+tj: Updated comment and description.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/target_core_configfs.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ kernel/workqueue.c |   25 ++++++++++++++++++++++---
+ 1 file changed, 22 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
-index a1b4171..015f5be 100644
---- a/drivers/target/target_core_configfs.c
-+++ b/drivers/target/target_core_configfs.c
-@@ -3124,6 +3124,7 @@ static int __init target_core_init_configfs(void)
- 				GFP_KERNEL);
- 	if (!target_cg->default_groups) {
- 		pr_err("Unable to allocate target_cg->default_groups\n");
-+		ret = -ENOMEM;
- 		goto out_global;
- 	}
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1726,10 +1726,9 @@ static void move_linked_works(struct wor
+ 		*nextp = n;
+ }
  
-@@ -3139,6 +3140,7 @@ static int __init target_core_init_configfs(void)
- 				GFP_KERNEL);
- 	if (!hba_cg->default_groups) {
- 		pr_err("Unable to allocate hba_cg->default_groups\n");
-+		ret = -ENOMEM;
- 		goto out_global;
- 	}
- 	config_group_init_type_name(&alua_group,
-@@ -3154,6 +3156,7 @@ static int __init target_core_init_configfs(void)
- 			GFP_KERNEL);
- 	if (!alua_cg->default_groups) {
- 		pr_err("Unable to allocate alua_cg->default_groups\n");
-+		ret = -ENOMEM;
- 		goto out_global;
- 	}
+-static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
++static void cwq_activate_delayed_work(struct work_struct *work)
+ {
+-	struct work_struct *work = list_first_entry(&cwq->delayed_works,
+-						    struct work_struct, entry);
++	struct cpu_workqueue_struct *cwq = get_work_cwq(work);
+ 	struct list_head *pos = gcwq_determine_ins_pos(cwq->gcwq, cwq);
  
-@@ -3165,14 +3168,17 @@ static int __init target_core_init_configfs(void)
- 	 * Add core/alua/lu_gps/default_lu_gp
- 	 */
- 	lu_gp = core_alua_allocate_lu_gp("default_lu_gp", 1);
--	if (IS_ERR(lu_gp))
-+	if (IS_ERR(lu_gp)) {
-+		ret = -ENOMEM;
- 		goto out_global;
-+	}
+ 	trace_workqueue_activate_work(work);
+@@ -1738,6 +1737,14 @@ static void cwq_activate_first_delayed(s
+ 	cwq->nr_active++;
+ }
  
- 	lu_gp_cg = &alua_lu_gps_group;
- 	lu_gp_cg->default_groups = kzalloc(sizeof(struct config_group) * 2,
- 			GFP_KERNEL);
- 	if (!lu_gp_cg->default_groups) {
- 		pr_err("Unable to allocate lu_gp_cg->default_groups\n");
-+		ret = -ENOMEM;
- 		goto out_global;
- 	}
- 
++static void cwq_activate_first_delayed(struct cpu_workqueue_struct *cwq)
++{
++	struct work_struct *work = list_first_entry(&cwq->delayed_works,
++						    struct work_struct, entry);
++
++	cwq_activate_delayed_work(work);
++}
++
+ /**
+  * cwq_dec_nr_in_flight - decrement cwq's nr_in_flight
+  * @cwq: cwq of interest
+@@ -2628,6 +2635,18 @@ static int try_to_grab_pending(struct wo
+ 		smp_rmb();
+ 		if (gcwq == get_work_gcwq(work)) {
+ 			debug_work_deactivate(work);
++
++			/*
++			 * A delayed work item cannot be grabbed directly
++			 * because it might have linked NO_COLOR work items
++			 * which, if left on the delayed_list, will confuse
++			 * cwq->nr_active management later on and cause
++			 * stall.  Make sure the work item is activated
++			 * before grabbing.
++			 */
++			if (*work_data_bits(work) & WORK_STRUCT_DELAYED)
++				cwq_activate_delayed_work(work);
++
+ 			list_del_init(&work->entry);
+ 			cwq_dec_nr_in_flight(get_work_cwq(work),
+ 				get_work_color(work),
 
 
