@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158Ab2JNPCz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:02:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46430 "EHLO
+	id S1755143Ab2JNPDM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:03:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46428 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932068Ab2JNOnI (ORCPT
+	by vger.kernel.org with ESMTP id S932066Ab2JNOnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:43:08 -0400
-Message-Id: <20121014143546.893386383@decadent.org.uk>
+Message-Id: <20121014143546.758284287@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:10 +0100
+Date: Sun, 14 Oct 2012 15:37:09 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>
-Subject: [ 097/147] iscsi-target: Bump defaults for nopin_timeout +
- nopin_response_timeout values
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Tetsuyuki Kobayashi <koba@kmckk.co.jp>, Chris Ball <cjb@laptop.org>
+Subject: [ 096/147] mmc: sh-mmcif: avoid oops on spurious interrupts
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,52 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-commit cf0eb28d3ba60098865bf7dbcbfdd6b1cc483e3b upstream.
+commit 8464dd52d3198dd05cafb005371d76e5339eb842 upstream.
 
-This patch increases the default for nopin_timeout to 15 seconds (wait
-between sending a new NopIN ping) and nopin_response_timeout to 30 seconds
-(wait for NopOUT response before failing the connection) in order to avoid
-false positives by iSCSI Initiators who are not always able (under load) to
-respond to NopIN echo PING requests within the current 5 second window.
+On some systems, e.g., kzm9g, MMCIF interfaces can produce spurious
+interrupts without any active request. To prevent the Oops, that results
+in such cases, don't dereference the mmc request pointer until we make
+sure, that we are indeed processing such a request.
 
-False positives have been observed recently using Open-iSCSI code on v3.3.x
-with heavy large-block READ workloads over small MTU 1 Gb/sec ports, and
-increasing these values to more reasonable defaults significantly reduces
-the possibility of false positive NopIN response timeout events under
-this specific workload.
-
-Historically these have been set low to initiate connection recovery as
-soon as possible if we don't hear a ping back, but for modern v3.x code
-on 1 -> 10 Gb/sec ports these new defaults make alot more sense.
-
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Andy Grover <agrover@redhat.com>
-Cc: Mike Christie <michaelc@cs.wisc.edu>
-Cc: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Tetsuyuki Kobayashi <koba@kmckk.co.jp>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/iscsi/iscsi_target_core.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mmc/host/sh_mmcif.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/target/iscsi/iscsi_target_core.h b/drivers/target/iscsi/iscsi_target_core.h
-index ff3f482..2ba9f9b 100644
---- a/drivers/target/iscsi/iscsi_target_core.h
-+++ b/drivers/target/iscsi/iscsi_target_core.h
-@@ -25,10 +25,10 @@
- #define NA_DATAOUT_TIMEOUT_RETRIES	5
- #define NA_DATAOUT_TIMEOUT_RETRIES_MAX	15
- #define NA_DATAOUT_TIMEOUT_RETRIES_MIN	1
--#define NA_NOPIN_TIMEOUT		5
-+#define NA_NOPIN_TIMEOUT		15
- #define NA_NOPIN_TIMEOUT_MAX		60
- #define NA_NOPIN_TIMEOUT_MIN		3
--#define NA_NOPIN_RESPONSE_TIMEOUT	5
-+#define NA_NOPIN_RESPONSE_TIMEOUT	30
- #define NA_NOPIN_RESPONSE_TIMEOUT_MAX	60
- #define NA_NOPIN_RESPONSE_TIMEOUT_MIN	3
- #define NA_RANDOM_DATAIN_PDU_OFFSETS	0
+--- a/drivers/mmc/host/sh_mmcif.c
++++ b/drivers/mmc/host/sh_mmcif.c
+@@ -1003,6 +1003,10 @@ static irqreturn_t sh_mmcif_intr(int irq
+ 		host->sd_error = true;
+ 		dev_dbg(&host->pd->dev, "int err state = %08x\n", state);
+ 	}
++	if (host->state == STATE_IDLE) {
++		dev_info(&host->pd->dev, "Spurious IRQ status 0x%x", state);
++		return IRQ_HANDLED;
++	}
+ 	if (state & ~(INT_CMD12RBE | INT_CMD12CRE))
+ 		complete(&host->intr_wait);
+ 	else
 
 
