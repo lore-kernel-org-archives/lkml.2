@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932389Ab2JNOoF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:44:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46710 "EHLO
+	id S932491Ab2JNOoX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:44:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46742 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932301Ab2JNOoB (ORCPT
+	by vger.kernel.org with ESMTP id S932301Ab2JNOoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:44:01 -0400
-Message-Id: <20121014143540.362379404@decadent.org.uk>
+	Sun, 14 Oct 2012 10:44:14 -0400
+Message-Id: <20121014143539.258997542@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:21 +0100
+Date: Sun, 14 Oct 2012 15:36:13 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 048/147] [SCSI] zfcp: remove invalid reference to list iterator variable
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "Shawn J. Goff" <shawn7400@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 040/147] USB: option: blacklist QMI interface on ZTE MF683
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,44 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit ca579c9f136af4274ccfd1bcaee7f38a29a0e2e9 upstream.
+commit 160c9425ac52cb30502be2d9c5e848cec91bb115 upstream.
 
-If list_for_each_entry, etc complete a traversal of the list, the iterator
-variable ends up pointing to an address at an offset from the list head,
-and not a meaningful structure.  Thus this value should not be used after
-the end of the iterator.  Replace port->adapter->scsi_host by
-adapter->scsi_host.
+Interface #5 on ZTE MF683 is a QMI/wwan interface.
 
-This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
-
-Oversight in upsteam commit of v2.6.37
-a1ca48319a9aa1c5b57ce142f538e76050bb8972
-"[SCSI] zfcp: Move ACL/CFDC code to zfcp_cfdc.c"
-which merged the content of zfcp_erp_port_access_changed().
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Reviewed-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Cc: Shawn J. Goff <shawn7400@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/s390/scsi/zfcp_cfdc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/option.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/s390/scsi/zfcp_cfdc.c b/drivers/s390/scsi/zfcp_cfdc.c
-index fbd8b4d..49b82e4 100644
---- a/drivers/s390/scsi/zfcp_cfdc.c
-+++ b/drivers/s390/scsi/zfcp_cfdc.c
-@@ -293,7 +293,7 @@ void zfcp_cfdc_adapter_access_changed(struct zfcp_adapter *adapter)
- 	}
- 	read_unlock_irqrestore(&adapter->port_list_lock, flags);
- 
--	shost_for_each_device(sdev, port->adapter->scsi_host) {
-+	shost_for_each_device(sdev, adapter->scsi_host) {
- 		zfcp_sdev = sdev_to_zfcp(sdev);
- 		status = atomic_read(&zfcp_sdev->status);
- 		if ((status & ZFCP_STATUS_COMMON_ACCESS_DENIED) ||
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 53bd5f4..30cff03 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -870,7 +870,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0153, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0155, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0156, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0157, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0157, 0xff, 0xff, 0xff),
++	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0158, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0159, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0161, 0xff, 0xff, 0xff) },
 
 
