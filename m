@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab2JNOxi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:53:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46654 "EHLO
+	id S1753586Ab2JNOxk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:53:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46651 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932270Ab2JNOns (ORCPT
+	by vger.kernel.org with ESMTP id S932269Ab2JNOns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:43:48 -0400
-Message-Id: <20121014143541.050528990@decadent.org.uk>
+Message-Id: <20121014143541.450616040@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:26 +0100
+Date: Sun, 14 Oct 2012 15:36:29 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bart Van Assche <bvanassche@acm.org>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 053/147] [SCSI] scsi_dh_alua: Enable STPG for unavailable ports
+        Antonio Ospite <ospite@studenti.unina.it>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 056/147] USB: ftdi_sio: add TIAO USB Multi-Protocol Adapter (TUMPA) support
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,38 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Antonio Ospite <ospite@studenti.unina.it>
 
-commit e47f8976d8e573928824a06748f7bc82c58d747f upstream.
+commit 54575b05af36959dfb6a49a3e9ca0c2b456b7126 upstream.
 
-A quote from SPC-4: "While in the unavailable primary target port
-asymmetric access state, the device server shall support those of
-the following commands that it supports while in the active/optimized
-state: [ ... ] d) SET TARGET PORT GROUPS; [ ... ]". Hence enable
-sending STPG to a target port group that is in the unavailable state.
+TIAO/DIYGADGET USB Multi-Protocol Adapter (TUMPA) is an FTDI FT2232H
+based device which provides an easily accessible JTAG, SPI, I2C, serial
+breakout.
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
-Acked-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+http://www.diygadget.com/tiao-usb-multi-protocol-adapter-jtag-spi-i2c-serial.html
+http://www.tiaowiki.com/w/TIAO_USB_Multi_Protocol_Adapter_User%27s_Manual
+
+FTDI FT2232H provides two serial channels (A and B), but on the TUMPA
+channel A is dedicated to JTAG/SPI while channel B can be used for
+UART/RS-232: use the ftdi_jtag_quirk to expose only channel B as
+a usb-serial interface to userspace.
+
+Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/device_handler/scsi_dh_alua.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    2 ++
+ drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
+ 2 files changed, 7 insertions(+)
 
-diff --git a/drivers/scsi/device_handler/scsi_dh_alua.c b/drivers/scsi/device_handler/scsi_dh_alua.c
-index 08d80a6..6f4d8e6 100644
---- a/drivers/scsi/device_handler/scsi_dh_alua.c
-+++ b/drivers/scsi/device_handler/scsi_dh_alua.c
-@@ -641,8 +641,7 @@ static int alua_rtpg(struct scsi_device *sdev, struct alua_dh_data *h)
- 		h->state = TPGS_STATE_STANDBY;
- 		break;
- 	case TPGS_STATE_OFFLINE:
--	case TPGS_STATE_UNAVAILABLE:
--		/* Path unusable for unavailable/offline */
-+		/* Path unusable */
- 		err = SCSI_DH_DEV_OFFLINED;
- 		break;
- 	default:
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 8742a0e..9169f51 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -579,6 +579,8 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_PEDO_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_PROD_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_TAVIR_STK500_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_TIAO_UMPA_PID),
++		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	/*
+ 	 * ELV devices:
+ 	 */
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 41fe582..57c12ef 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -517,6 +517,11 @@
+  */
+ #define FTDI_TAVIR_STK500_PID	0xFA33	/* STK500 AVR programmer */
+ 
++/*
++ * TIAO product ids (FTDI_VID)
++ * http://www.tiaowiki.com/w/Main_Page
++ */
++#define FTDI_TIAO_UMPA_PID	0x8a98	/* TIAO/DIYGADGET USB Multi-Protocol Adapter */
+ 
+ 
+ /********************************/
 
 
