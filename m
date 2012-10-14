@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab2JNOpU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:45:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46834 "EHLO
+	id S932539Ab2JNOpy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:45:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46805 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932485Ab2JNOo0 (ORCPT
+	by vger.kernel.org with ESMTP id S932469Ab2JNOoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:44:26 -0400
-Message-Id: <20121014143536.911004545@decadent.org.uk>
+	Sun, 14 Oct 2012 10:44:22 -0400
+Message-Id: <20121014143537.178259898@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:35:56 +0100
+Date: Sun, 14 Oct 2012 15:35:58 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Elric Fu <elricfu1@gmail.com>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Miroslav Sabljic <miroslav.sabljic@avl.com>
-Subject: [ 023/147] xHCI: add cmd_ring_state
+Subject: [ 025/147] xHCI: cancel command after command timeout
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,83 +31,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Elric Fu <elricfu1@gmail.com>
 
-commit c181bc5b5d5c79b71203cd10cef97f802fb6f9c1 upstream.
+commit 6e4468b9a0793dfb53eb80d9fe52c739b13b27fd upstream.
 
-Adding cmd_ring_state for command ring. It helps to verify
-the current command ring state for controlling the command
-ring operations.
+The patch is used to cancel command when the command isn't
+acknowledged and a timeout occurs.
 
-This patch should be backported to kernels as old as 3.0.  The commit
-7ed603ecf8b68ab81f4c83097d3063d43ec73bb8 "xhci: Add an assertion to
-check for virt_dev=0 bug." papers over the NULL pointer dereference that
-I now believe is related to a timed out Set Address command.  This (and
-the four patches that follow it) contain the real fix that also allows
-VIA USB 3.0 hubs to consistently re-enumerate during the plug/unplug
-stress tests.
+This patch should be backported to kernels as old as 3.0, that contain
+the commit 7ed603ecf8b68ab81f4c83097d3063d43ec73bb8 "xhci: Add an
+assertion to check for virt_dev=0 bug." That commit papers over a NULL
+pointer dereference, and this patch fixes the underlying issue that
+caused the NULL pointer dereference.
 
 Signed-off-by: Elric Fu <elricfu1@gmail.com>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Tested-by: Miroslav Sabljic <miroslav.sabljic@avl.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci-ring.c |    3 +++
- drivers/usb/host/xhci.c      |    6 ++++--
- drivers/usb/host/xhci.h      |    4 ++++
- 3 files changed, 11 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci.c |   26 +++++++++++++++++++-------
+ drivers/usb/host/xhci.h |    3 +++
+ 2 files changed, 22 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 643c2f3..75c857e 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -280,6 +280,9 @@ static inline int room_on_ring(struct xhci_hcd *xhci, struct xhci_ring *ring,
- /* Ring the host controller doorbell after placing a command on the ring */
- void xhci_ring_cmd_db(struct xhci_hcd *xhci)
- {
-+	if (!(xhci->cmd_ring_state & CMD_RING_STATE_RUNNING))
-+		return;
-+
- 	xhci_dbg(xhci, "// Ding dong!\n");
- 	xhci_writel(xhci, DB_VALUE_HOST, &xhci->dba->doorbell[0]);
- 	/* Flush PCI posted writes */
 diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index c59d5b5..f425356 100644
+index 3f0763d..b95e3e8 100644
 --- a/drivers/usb/host/xhci.c
 +++ b/drivers/usb/host/xhci.c
-@@ -104,9 +104,10 @@ int xhci_halt(struct xhci_hcd *xhci)
+@@ -2402,6 +2402,7 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
+ 	struct completion *cmd_completion;
+ 	u32 *cmd_status;
+ 	struct xhci_virt_device *virt_dev;
++	union xhci_trb *cmd_trb;
  
- 	ret = handshake(xhci, &xhci->op_regs->status,
- 			STS_HALT, STS_HALT, XHCI_MAX_HALT_USEC);
--	if (!ret)
-+	if (!ret) {
- 		xhci->xhc_state |= XHCI_STATE_HALTED;
--	else
-+		xhci->cmd_ring_state = CMD_RING_STATE_STOPPED;
-+	} else
- 		xhci_warn(xhci, "Host not halted after %u microseconds.\n",
- 				XHCI_MAX_HALT_USEC);
- 	return ret;
-@@ -485,6 +486,7 @@ static int xhci_run_finished(struct xhci_hcd *xhci)
- 		return -ENODEV;
+ 	spin_lock_irqsave(&xhci->lock, flags);
+ 	virt_dev = xhci->devs[udev->slot_id];
+@@ -2447,6 +2448,7 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
  	}
- 	xhci->shared_hcd->state = HC_STATE_RUNNING;
-+	xhci->cmd_ring_state = CMD_RING_STATE_RUNNING;
+ 	init_completion(cmd_completion);
  
- 	if (xhci->quirks & XHCI_NEC_HOST)
- 		xhci_ring_cmd_db(xhci);
++	cmd_trb = xhci->cmd_ring->dequeue;
+ 	if (!ctx_change)
+ 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
+ 				udev->slot_id, must_succeed);
+@@ -2468,14 +2470,17 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
+ 	/* Wait for the configure endpoint command to complete */
+ 	timeleft = wait_for_completion_interruptible_timeout(
+ 			cmd_completion,
+-			USB_CTRL_SET_TIMEOUT);
++			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for %s command\n",
+ 				timeleft == 0 ? "Timeout" : "Signal",
+ 				ctx_change == 0 ?
+ 					"configure endpoint" :
+ 					"evaluate context");
+-		/* FIXME cancel the configure endpoint command */
++		/* cancel the configure endpoint command */
++		ret = xhci_cancel_cmd(xhci, command, cmd_trb);
++		if (ret < 0)
++			return ret;
+ 		return -ETIME;
+ 	}
+ 
+@@ -3424,8 +3429,10 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
+ 	unsigned long flags;
+ 	int timeleft;
+ 	int ret;
++	union xhci_trb *cmd_trb;
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
++	cmd_trb = xhci->cmd_ring->dequeue;
+ 	ret = xhci_queue_slot_control(xhci, TRB_ENABLE_SLOT, 0);
+ 	if (ret) {
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+@@ -3437,12 +3444,12 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
+ 
+ 	/* XXX: how much time for xHC slot assignment? */
+ 	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
+-			USB_CTRL_SET_TIMEOUT);
++			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for a slot\n",
+ 				timeleft == 0 ? "Timeout" : "Signal");
+-		/* FIXME cancel the enable slot request */
+-		return 0;
++		/* cancel the enable slot request */
++		return xhci_cancel_cmd(xhci, NULL, cmd_trb);
+ 	}
+ 
+ 	if (!xhci->slot_id) {
+@@ -3503,6 +3510,7 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 	struct xhci_slot_ctx *slot_ctx;
+ 	struct xhci_input_control_ctx *ctrl_ctx;
+ 	u64 temp_64;
++	union xhci_trb *cmd_trb;
+ 
+ 	if (!udev->slot_id) {
+ 		xhci_dbg(xhci, "Bad Slot ID %d\n", udev->slot_id);
+@@ -3541,6 +3549,7 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 	xhci_dbg_ctx(xhci, virt_dev->in_ctx, 2);
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
++	cmd_trb = xhci->cmd_ring->dequeue;
+ 	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
+ 					udev->slot_id);
+ 	if (ret) {
+@@ -3553,7 +3562,7 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 
+ 	/* ctrl tx can take up to 5 sec; XXX: need more time for xHC? */
+ 	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
+-			USB_CTRL_SET_TIMEOUT);
++			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	/* FIXME: From section 4.3.4: "Software shall be responsible for timing
+ 	 * the SetAddress() "recovery interval" required by USB and aborting the
+ 	 * command on a timeout.
+@@ -3561,7 +3570,10 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for address device command\n",
+ 				timeleft == 0 ? "Timeout" : "Signal");
+-		/* FIXME cancel the address device command */
++		/* cancel the address device command */
++		ret = xhci_cancel_cmd(xhci, NULL, cmd_trb);
++		if (ret < 0)
++			return ret;
+ 		return -ETIME;
+ 	}
+ 
 diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index c713256..33f24e9 100644
+index fdfcebf..e81ccfa 100644
 --- a/drivers/usb/host/xhci.h
 +++ b/drivers/usb/host/xhci.h
-@@ -1421,6 +1421,10 @@ struct xhci_hcd {
- 	/* data structures */
- 	struct xhci_device_context_array *dcbaa;
- 	struct xhci_ring	*cmd_ring;
-+	unsigned int            cmd_ring_state;
-+#define CMD_RING_STATE_RUNNING         (1 << 0)
-+#define CMD_RING_STATE_ABORTED         (1 << 1)
-+#define CMD_RING_STATE_STOPPED         (1 << 2)
- 	unsigned int		cmd_ring_reserved_trbs;
- 	struct xhci_ring	*event_ring;
- 	struct xhci_erst	erst;
+@@ -1256,6 +1256,9 @@ struct xhci_td {
+ 	union xhci_trb		*last_trb;
+ };
+ 
++/* xHCI command default timeout value */
++#define XHCI_CMD_DEFAULT_TIMEOUT	(5 * HZ)
++
+ /* command descriptor */
+ struct xhci_cd {
+ 	struct list_head	cancel_cmd_list;
 
 
