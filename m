@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552Ab2JNOqN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:46:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46799 "EHLO
+	id S932550Ab2JNOpW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:45:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46808 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932412Ab2JNOoU (ORCPT
+	by vger.kernel.org with ESMTP id S932473Ab2JNOoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:44:20 -0400
-Message-Id: <20121014143536.779061089@decadent.org.uk>
+	Sun, 14 Oct 2012 10:44:22 -0400
+Message-Id: <20121014143538.018983778@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:35:55 +0100
+Date: Sun, 14 Oct 2012 15:36:04 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 022/147] xhci: Warn when hosts dont halt.
+        Alex Williamson <alex.williamson@redhat.com>,
+        Donald Dutile <ddutile@redhat.com>, Chris Wright <chrisw@sous-sol.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [ 031/147] intel-iommu: Default to non-coherent for domains unattached to
+ iommus
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,39 +30,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit 5af98bb06dee79d28c805f9fd0805ce791121784 upstream.
+commit 2e12bc29fc5a12242d68e11875db3dd58efad9ff upstream.
 
-Eric Fu reports a problem with his VIA host controller fetching a zeroed
-event ring pointer on resume from suspend.  The host should have been
-halted, but we can't be sure because that code ignores the return value
-from xhci_halt().  Print a warning when the host controller refuses to
-halt within XHCI_MAX_HALT_USEC (currently 16 seconds).
+domain_update_iommu_coherency() currently defaults to setting domains
+as coherent when the domain is not attached to any iommus.  This
+allows for a window in domain_context_mapping_one() where such a
+domain can update context entries non-coherently, and only after
+update the domain capability to clear iommu_coherency.
 
-(Update: it turns out that the VIA host controller is reporting a halted
-state when it fetches the zeroed event ring pointer.  However, we still
-need this warning for other host controllers.)
+This can be seen using KVM device assignment on VT-d systems that
+do not support coherency in the ecap register.  When a device is
+added to a guest, a domain is created (iommu_coherency = 0), the
+device is attached, and ranges are mapped.  If we then hot unplug
+the device, the coherency is updated and set to the default (1)
+since no iommus are attached to the domain.  A subsequent attach
+of a device makes use of the same dmar domain (now marked coherent)
+updates context entries with coherency enabled, and only disables
+coherency as the last step in the process.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To fix this, switch domain_update_iommu_coherency() to use the
+safer, non-coherent default for domains not attached to iommus.
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Tested-by: Donald Dutile <ddutile@redhat.com>
+Acked-by: Donald Dutile <ddutile@redhat.com>
+Acked-by: Chris Wright <chrisw@sous-sol.org>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+[bwh: Backported to 3.2: dmar_domain::iommu_bmp is a single unsigned long
+ not an array, so add &]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/iommu/intel-iommu.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index e1963d4..f68bc15 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -106,6 +106,9 @@ int xhci_halt(struct xhci_hcd *xhci)
- 			STS_HALT, STS_HALT, XHCI_MAX_HALT_USEC);
- 	if (!ret)
- 		xhci->xhc_state |= XHCI_STATE_HALTED;
-+	else
-+		xhci_warn(xhci, "Host not halted after %u microseconds.\n",
-+				XHCI_MAX_HALT_USEC);
- 	return ret;
- }
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -563,7 +563,9 @@ static void domain_update_iommu_coherenc
+ {
+ 	int i;
  
+-	domain->iommu_coherency = 1;
++	i = find_first_bit(&domain->iommu_bmp, g_num_of_iommus);
++
++	domain->iommu_coherency = i < g_num_of_iommus ? 1 : 0;
+ 
+ 	for_each_set_bit(i, &domain->iommu_bmp, g_num_of_iommus) {
+ 		if (!ecap_coherent(g_iommus[i]->ecap)) {
 
 
