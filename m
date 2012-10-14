@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab2JNOnD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:43:03 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46384 "EHLO
+	id S1755146Ab2JNPDt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:03:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46402 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754515Ab2JNOm7 (ORCPT
+	by vger.kernel.org with ESMTP id S1754658Ab2JNOnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:42:59 -0400
-Message-Id: <20121014143548.230457808@decadent.org.uk>
+	Sun, 14 Oct 2012 10:43:03 -0400
+Message-Id: <20121014143547.685720731@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:20 +0100
+Date: Sun, 14 Oct 2012 15:37:16 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        "David S. Miller" <davem@davemloft.net>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Jan Luebbe <jlu@pengutronix.de>,
+        Sam Ravnborg <sam@ravnborg.org>, Bernhard Walle <bernhard@bwalle.de>,
+        Michal Marek <mmarek@suse.cz>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 107/147] rapidio/rionet: fix multicast packet transmit logic
+Subject: [ 103/147] kbuild: make: fix if_changed when command contains backslashes
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,104 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexandre Bounine <alexandre.bounine@idt.com>
+From: Sascha Hauer <s.hauer@pengutronix.de>
 
-commit 7c4a6106d6451fc03c491e61df37c044505d843a upstream.
+commit c353acba28fb3fa1fd05fd6b85a9fc7938330f9c upstream.
 
-Fix multicast packet transmit logic to account for repetitive transmission
-of single skb:
-- correct check for available buffers (this bug may produce NULL pointer
-  crash dump in case of heavy traffic);
-- update skb user count (incorrect user counter causes a warning dump from
-  net_tx_action routine during multicast transfers in systems with three or
-  more rionet participants).
+The call if_changed mechanism does not work when the command contains
+backslashes.  This basically is an issue with lzo and bzip2 compressed
+kernels.  The compressed binaries do not contain the uncompressed image
+size, so these use size_append to append the size.  This results in
+backslashes in the executed command.  With this if_changed always
+detects a change in the command and rebuilds the compressed image even
+if nothing has changed.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: David S. Miller <davem@davemloft.net>
+Fix this by escaping backslashes in make-cmd
+
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: Bernhard Walle <bernhard@bwalle.de>
+Cc: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/rionet.c |   20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+ scripts/Kbuild.include |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/rionet.c b/drivers/net/rionet.c
-index 91d2588..1470d3e 100644
---- a/drivers/net/rionet.c
-+++ b/drivers/net/rionet.c
-@@ -79,6 +79,7 @@ static int rionet_capable = 1;
-  * on system trade-offs.
-  */
- static struct rio_dev **rionet_active;
-+static int nact;	/* total number of active rionet peers */
+diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
+index 6a3ee98..afa4459 100644
+--- a/scripts/Kbuild.include
++++ b/scripts/Kbuild.include
+@@ -209,7 +209,7 @@ endif
+ # >$< substitution to preserve $ when reloading .cmd file
+ # note: when using inline perl scripts [perl -e '...$$t=1;...']
+ # in $(cmd_xxx) double $$ your perl vars
+-make-cmd = $(subst \#,\\\#,$(subst $$,$$$$,$(call escsq,$(cmd_$(1)))))
++make-cmd = $(subst \\,\\\\,$(subst \#,\\\#,$(subst $$,$$$$,$(call escsq,$(cmd_$(1))))))
  
- #define is_rionet_capable(src_ops, dst_ops)			\
- 			((src_ops & RIO_SRC_OPS_DATA_MSG) &&	\
-@@ -175,6 +176,7 @@ static int rionet_start_xmit(struct sk_buff *skb, struct net_device *ndev)
- 	struct ethhdr *eth = (struct ethhdr *)skb->data;
- 	u16 destid;
- 	unsigned long flags;
-+	int add_num = 1;
- 
- 	local_irq_save(flags);
- 	if (!spin_trylock(&rnet->tx_lock)) {
-@@ -182,7 +184,10 @@ static int rionet_start_xmit(struct sk_buff *skb, struct net_device *ndev)
- 		return NETDEV_TX_LOCKED;
- 	}
- 
--	if ((rnet->tx_cnt + 1) > RIONET_TX_RING_SIZE) {
-+	if (is_multicast_ether_addr(eth->h_dest))
-+		add_num = nact;
-+
-+	if ((rnet->tx_cnt + add_num) > RIONET_TX_RING_SIZE) {
- 		netif_stop_queue(ndev);
- 		spin_unlock_irqrestore(&rnet->tx_lock, flags);
- 		printk(KERN_ERR "%s: BUG! Tx Ring full when queue awake!\n",
-@@ -191,11 +196,16 @@ static int rionet_start_xmit(struct sk_buff *skb, struct net_device *ndev)
- 	}
- 
- 	if (is_multicast_ether_addr(eth->h_dest)) {
-+		int count = 0;
- 		for (i = 0; i < RIO_MAX_ROUTE_ENTRIES(rnet->mport->sys_size);
- 				i++)
--			if (rionet_active[i])
-+			if (rionet_active[i]) {
- 				rionet_queue_tx_msg(skb, ndev,
- 						    rionet_active[i]);
-+				if (count)
-+					atomic_inc(&skb->users);
-+				count++;
-+			}
- 	} else if (RIONET_MAC_MATCH(eth->h_dest)) {
- 		destid = RIONET_GET_DESTID(eth->h_dest);
- 		if (rionet_active[destid])
-@@ -220,14 +230,17 @@ static void rionet_dbell_event(struct rio_mport *mport, void *dev_id, u16 sid, u
- 	if (info == RIONET_DOORBELL_JOIN) {
- 		if (!rionet_active[sid]) {
- 			list_for_each_entry(peer, &rionet_peers, node) {
--				if (peer->rdev->destid == sid)
-+				if (peer->rdev->destid == sid) {
- 					rionet_active[sid] = peer->rdev;
-+					nact++;
-+				}
- 			}
- 			rio_mport_send_doorbell(mport, sid,
- 						RIONET_DOORBELL_JOIN);
- 		}
- 	} else if (info == RIONET_DOORBELL_LEAVE) {
- 		rionet_active[sid] = NULL;
-+		nact--;
- 	} else {
- 		if (netif_msg_intr(rnet))
- 			printk(KERN_WARNING "%s: unhandled doorbell\n",
-@@ -523,6 +536,7 @@ static int rionet_probe(struct rio_dev *rdev, const struct rio_device_id *id)
- 
- 		rc = rionet_setup_netdev(rdev->net->hport, ndev);
- 		rionet_check = 1;
-+		nact = 0;
- 	}
- 
- 	/*
+ # Find any prerequisites that is newer than target or that does not exist.
+ # PHONY targets skipped in both cases.
 
 
