@@ -1,93 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab2JNPUn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:20:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46002 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753420Ab2JNOlX (ORCPT
+	id S1753528Ab2JNP0Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:26:16 -0400
+Received: from bosmailout09.eigbox.net ([66.96.189.9]:53441 "EHLO
+	bosmailout09.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab2JNP0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:41:23 -0400
-Message-Id: <20121014143535.537156446@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:35:46 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Russ Gorby <russ.gorby@intel.com>,
-        "Yin, Fengwei" <fengwei.yin@intel.com>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 013/147] n_gsm: replace kfree_skb w/ appropriate dev_* versions
-In-Reply-To: <20121014143533.742627615@decadent.org.uk>
-X-SA-Exim-Connect-IP: 77.75.106.1
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 14 Oct 2012 11:26:14 -0400
+X-Greylist: delayed 2523 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Oct 2012 11:26:14 EDT
+X-Authority-Analysis: v=2.0 cv=Jc0LWz2V c=1 sm=1
+ a=4iwzk5WlZPsH91DJ9+lduA==:17 a=bc2JKO6qiGsA:10 a=jAXA38P_poEA:10
+ a=sJzZ5xkLnXkA:10 a=8nJEP1OIZ-IA:10 a=MqEtbqidUwgA:10
+ a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=VwQbUJbxAAAA:8 a=D19gQVrFAAAA:8
+ a=Fhfi7x0XTLpfPVzzwuIA:9 a=wPNLvfGTeEIA:10 a=fIc3/5IyPUehxkj7BpkQ7Q==:117
+X-EN-OrigOutIP: 10.20.18.6
+X-EN-IMPSID: B2k81k00807rX7u012k862
+Message-ID: <507A6FA5.1000800@yahoo.es>
+Date: Sun, 14 Oct 2012 15:54:13 +0800
+From: Hein Tibosch <hein_tibosch@yahoo.es>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        viresh kumar <viresh.kumar@linaro.org>
+CC: spear-devel <spear-devel@list.st.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH REGRESSION FIX] dw_dmac: make driver's endianness configurable
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
+X-EN-AuthUser: hein@htibosch.net
+X-EN-OrigIP: 114.79.57.38
+X-EN-OrigHost: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+From: Hein Tibosch <hein_tibosch@yahoo.es>
 
-------------------
+The dw_dmac was originally developed for avr32 to be used with the Synopsys
+DesignWare AHB DMA controller. Starting from 2.6.38, access to the device's i/o
+memory was done with the little-endian readl/writel functions(1)
 
-From: Russ Gorby <russ.gorby@intel.com>
+This broke the driver for the avr32 platform, because it needs big (native)
+endian accessors.
+This patch makes the endianness configurable using 'DW_DMAC_BIG_ENDIAN_IO',
+which will default be true for AVR32
 
-commit 329e56780e514a7ab607bcb51a52ab0dc2669414 upstream.
+I submitted this patch before(2) but then waited for Andy to finish other
+changes to the same module(3).
 
-Drivers are supposed to use the dev_* versions of the kfree_skb
-interfaces. In a couple of cases we were called with IRQs
-disabled as well which kfree_skb() does not expect.
+(1) https://patchwork.kernel.org/patch/608211
+(2) https://lkml.org/lkml/2012/8/26/148
+(3) https://lkml.org/lkml/2012/9/21/173
 
-Replaced kfree_skb calls w/ dev_kfree_skb and dev_kfree_skb_any
+Signed-off-by: Hein Tibosch <hein_tibosch@yahoo.es>
 
-Signed-off-by: Russ Gorby <russ.gorby@intel.com>
-Tested-by: Yin, Fengwei <fengwei.yin@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/n_gsm.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/dma/Kconfig        |   11 +++++++++++
+ drivers/dma/dw_dmac_regs.h |   18 +++++++++++++-----
+ 2 files changed, 24 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index 6f4f8d3..a8c82f5 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -879,7 +879,7 @@ static int gsm_dlci_data_output_framed(struct gsm_mux *gsm,
- 	if (len > gsm->mtu) {
- 		if (dlci->adaption == 3) {
- 			/* Over long frame, bin it */
--			kfree_skb(dlci->skb);
-+			dev_kfree_skb_any(dlci->skb);
- 			dlci->skb = NULL;
- 			return 0;
- 		}
-@@ -905,7 +905,7 @@ static int gsm_dlci_data_output_framed(struct gsm_mux *gsm,
- 	skb_pull(dlci->skb, len);
- 	__gsm_data_queue(dlci, msg);
- 	if (last) {
--		kfree_skb(dlci->skb);
-+		dev_kfree_skb_any(dlci->skb);
- 		dlci->skb = NULL;
- 	}
- 	return size;
-@@ -1674,7 +1674,7 @@ static void gsm_dlci_free(struct kref *ref)
- 	dlci->gsm->dlci[dlci->addr] = NULL;
- 	kfifo_free(dlci->fifo);
- 	while ((dlci->skb = skb_dequeue(&dlci->skb_list)))
--		kfree_skb(dlci->skb);
-+		dev_kfree_skb(dlci->skb);
- 	kfree(dlci);
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index 677cd6e..d4c1218 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -90,6 +90,17 @@ config DW_DMAC
+ 	  Support the Synopsys DesignWare AHB DMA controller.  This
+ 	  can be integrated in chips such as the Atmel AT32ap7000.
+ 
++config DW_DMAC_BIG_ENDIAN_IO
++	bool "Use big endian I/O register access"
++	default y if AVR32
++	depends on DW_DMAC
++	help
++	  Say yes here to use big endian I/O access when reading and writing
++	  to the DMA controller registers. This is needed on some platforms,
++	  like the Atmel AVR32 architecture.
++
++	  If unsure, use the default setting.
++
+ config AT_HDMAC
+ 	tristate "Atmel AHB DMA support"
+ 	depends on ARCH_AT91
+diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+index ff39fa6..8896559 100644
+--- a/drivers/dma/dw_dmac_regs.h
++++ b/drivers/dma/dw_dmac_regs.h
+@@ -98,9 +98,17 @@ struct dw_dma_regs {
+ 	u32	DW_PARAMS;
+ };
+ 
++#ifdef CONFIG_DW_DMAC_BIG_ENDIAN_IO
++#define dma_readl_native ioread32be
++#define dma_writel_native iowrite32be
++#else
++#define dma_readl_native readl
++#define dma_writel_native writel
++#endif
++
+ /* To access the registers in early stage of probe */
+ #define dma_read_byaddr(addr, name) \
+-	readl((addr) + offsetof(struct dw_dma_regs, name))
++	dma_readl_native((addr) + offsetof(struct dw_dma_regs, name))
+ 
+ /* Bitfields in DW_PARAMS */
+ #define DW_PARAMS_NR_CHAN	8		/* number of channels */
+@@ -216,9 +224,9 @@ __dwc_regs(struct dw_dma_chan *dwc)
  }
  
-@@ -2013,7 +2013,7 @@ void gsm_cleanup_mux(struct gsm_mux *gsm)
- {
- 	int i;
- 	struct gsm_dlci *dlci = gsm->dlci[0];
--	struct gsm_msg *txq, *utxq;
-+	struct gsm_msg *txq, *ntxq;
- 	struct gsm_control *gc;
+ #define channel_readl(dwc, name) \
+-	readl(&(__dwc_regs(dwc)->name))
++	dma_readl_native(&(__dwc_regs(dwc)->name))
+ #define channel_writel(dwc, name, val) \
+-	writel((val), &(__dwc_regs(dwc)->name))
++	dma_writel_native((val), &(__dwc_regs(dwc)->name))
  
- 	gsm->dead = 1;
+ static inline struct dw_dma_chan *to_dw_dma_chan(struct dma_chan *chan)
+ {
+@@ -246,9 +254,9 @@ static inline struct dw_dma_regs __iomem *__dw_regs(struct dw_dma *dw)
+ }
+ 
+ #define dma_readl(dw, name) \
+-	readl(&(__dw_regs(dw)->name))
++	dma_readl_native(&(__dw_regs(dw)->name))
+ #define dma_writel(dw, name, val) \
+-	writel((val), &(__dw_regs(dw)->name))
++	dma_writel_native((val), &(__dw_regs(dw)->name))
+ 
+ #define channel_set_bit(dw, reg, mask) \
+ 	dma_writel(dw, reg, ((mask) << 8) | (mask))
+-- 
+1.7.8.0
+
 
 
