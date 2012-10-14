@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045Ab2JNPNt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 11:13:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46167 "EHLO
+	id S1755000Ab2JNPNr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:13:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46169 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754285Ab2JNOmG (ORCPT
+	by vger.kernel.org with ESMTP id S1754287Ab2JNOmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Oct 2012 10:42:06 -0400
-Message-Id: <20121014143552.299243513@decadent.org.uk>
+Message-Id: <20121014143552.024876567@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:37:50 +0100
+Date: Sun, 14 Oct 2012 15:37:48 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Rafal Fitt <rafalf@aplusc.com.pl>
-Subject: [ 137/147] netfilter: nf_nat_sip: fix incorrect handling of EBUSY  for RTCP expectation
+        Mike Galbraith <mgalbraith@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 135/147] [PATCH] sched: Fix migration thread runtime bogosity
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,51 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pablo Neira Ayuso <pablo@netfilter.org>
+From: Mike Galbraith <mgalbraith@suse.de>
 
-commit 3f509c689a07a4aa989b426893d8491a7ffcc410 upstream.
+commit 8f6189684eb4e85e6c593cd710693f09c944450a upstream.
 
-We're hitting bug while trying to reinsert an already existing
-expectation:
+Make stop scheduler class do the same accounting as other classes,
 
-kernel BUG at kernel/timer.c:895!
-invalid opcode: 0000 [#1] SMP
-[...]
-Call Trace:
- <IRQ>
- [<ffffffffa0069563>] nf_ct_expect_related_report+0x4a0/0x57a [nf_conntrack]
- [<ffffffff812d423a>] ? in4_pton+0x72/0x131
- [<ffffffffa00ca69e>] ip_nat_sdp_media+0xeb/0x185 [nf_nat_sip]
- [<ffffffffa00b5b9b>] set_expected_rtp_rtcp+0x32d/0x39b [nf_conntrack_sip]
- [<ffffffffa00b5f15>] process_sdp+0x30c/0x3ec [nf_conntrack_sip]
- [<ffffffff8103f1eb>] ? irq_exit+0x9a/0x9c
- [<ffffffffa00ca738>] ? ip_nat_sdp_media+0x185/0x185 [nf_nat_sip]
+Migration threads can be caught in the act while doing exec balancing,
+leading to the below due to use of unmaintained ->se.exec_start.  The
+load that triggered this particular instance was an apparently out of
+control heavily threaded application that does system monitoring in
+what equated to an exec bomb, with one of the VERY frequently migrated
+tasks being ps.
 
-We have to remove the RTP expectation if the RTCP expectation hits EBUSY
-since we keep trying with other ports until we succeed.
+%CPU   PID USER     CMD
+99.3    45 root     [migration/10]
+97.7    53 root     [migration/12]
+97.0    57 root     [migration/13]
+90.1    49 root     [migration/11]
+89.6    65 root     [migration/15]
+88.7    17 root     [migration/3]
+80.4    37 root     [migration/8]
+78.1    41 root     [migration/9]
+44.2    13 root     [migration/2]
 
-Reported-by: Rafal Fitt <rafalf@aplusc.com.pl>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1344051854.6739.19.camel@marge.simpson.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[Steven Rostedt: backport for 3.2.]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/netfilter/nf_nat_sip.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ kernel/sched_stoptask.c |   22 +++++++++++++++++++++-
+ 1 files changed, 21 insertions(+), 1 deletions(-)
 
-diff --git a/net/ipv4/netfilter/nf_nat_sip.c b/net/ipv4/netfilter/nf_nat_sip.c
-index 4ad9cf1..9c87cde 100644
---- a/net/ipv4/netfilter/nf_nat_sip.c
-+++ b/net/ipv4/netfilter/nf_nat_sip.c
-@@ -502,7 +502,10 @@ static unsigned int ip_nat_sdp_media(struct sk_buff *skb, unsigned int dataoff,
- 		ret = nf_ct_expect_related(rtcp_exp);
- 		if (ret == 0)
- 			break;
--		else if (ret != -EBUSY) {
-+		else if (ret == -EBUSY) {
-+			nf_ct_unexpect_related(rtp_exp);
-+			continue;
-+		} else if (ret < 0) {
- 			nf_ct_unexpect_related(rtp_exp);
- 			port = 0;
- 			break;
+--- a/kernel/sched_stoptask.c
++++ b/kernel/sched_stoptask.c
+@@ -25,8 +25,10 @@ static struct task_struct *pick_next_tas
+ {
+ 	struct task_struct *stop = rq->stop;
+ 
+-	if (stop && stop->on_rq)
++	if (stop && stop->on_rq) {
++		stop->se.exec_start = rq->clock_task;
+ 		return stop;
++	}
+ 
+ 	return NULL;
+ }
+@@ -50,6 +52,21 @@ static void yield_task_stop(struct rq *r
+ 
+ static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
+ {
++	struct task_struct *curr = rq->curr;
++	u64 delta_exec;
++
++	delta_exec = rq->clock_task - curr->se.exec_start;
++	if (unlikely((s64)delta_exec < 0))
++		delta_exec = 0;
++
++	schedstat_set(curr->se.statistics.exec_max,
++			max(curr->se.statistics.exec_max, delta_exec));
++
++	curr->se.sum_exec_runtime += delta_exec;
++	account_group_exec_runtime(curr, delta_exec);
++
++	curr->se.exec_start = rq->clock_task;
++	cpuacct_charge(curr, delta_exec);
+ }
+ 
+ static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
+@@ -58,6 +75,9 @@ static void task_tick_stop(struct rq *rq
+ 
+ static void set_curr_task_stop(struct rq *rq)
+ {
++	struct task_struct *stop = rq->stop;
++
++	stop->se.exec_start = rq->clock_task;
+ }
+ 
+ static void switched_to_stop(struct rq *rq, struct task_struct *p)
 
 
