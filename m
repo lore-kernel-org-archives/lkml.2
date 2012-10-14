@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab2JNOl2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:41:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46005 "EHLO
+	id S1754511Ab2JNPSk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 11:18:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46024 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753464Ab2JNOlY (ORCPT
+	by vger.kernel.org with ESMTP id S1753592Ab2JNOl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:41:24 -0400
-Message-Id: <20121014143534.078956561@decadent.org.uk>
+	Sun, 14 Oct 2012 10:41:29 -0400
+Message-Id: <20121014143534.873218526@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:35:35 +0100
+Date: Sun, 14 Oct 2012 15:35:41 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 002/147] mtd: nand: Use the mirror BBT descriptor when reading its version
+        Russ Gorby <russ.gorby@intel.com>,
+        "Kappel, LaurentX" <laurentx.kappel@intel.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 008/147] n_gsm: uplink SKBs accumulate on list
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,37 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+From: Russ Gorby <russ.gorby@intel.com>
 
-commit 7bb9c75436212813b38700c34df4bbb6eb82debe upstream.
+commit 192b6041e75bb4a2aae73834037038cea139a92d upstream.
 
-The code responsible for reading the version of the mirror bbt was
-incorrectly using the descriptor of the main bbt.
+gsm_dlci_data_kick will not call any output function if tx_bytes > THRESH_LO
+furthermore it will call the output function only once if tx_bytes == 0
+If the size of the IP writes are on the order of THRESH_LO
+we can get into a situation where skbs accumulate on the outbound list
+being starved for events to call the output function.
 
-Pass the mirror bbt descriptor to 'scan_read_raw' when reading the
-version of the mirror bbt.
+gsm_dlci_data_kick now calls the sweep function when tx_bytes==0
 
-Signed-off-by: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Russ Gorby <russ.gorby@intel.com>
+Tested-by: Kappel, LaurentX <laurentx.kappel@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mtd/nand/nand_bbt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/n_gsm.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mtd/nand/nand_bbt.c b/drivers/mtd/nand/nand_bbt.c
-index 30d1319..c126469 100644
---- a/drivers/mtd/nand/nand_bbt.c
-+++ b/drivers/mtd/nand/nand_bbt.c
-@@ -390,7 +390,7 @@ static int read_abs_bbts(struct mtd_info *mtd, uint8_t *buf,
- 	/* Read the mirror version, if available */
- 	if (md && (md->options & NAND_BBT_VERSION)) {
- 		scan_read_raw(mtd, buf, (loff_t)md->pages[0] << this->page_shift,
--			      mtd->writesize, td);
-+			      mtd->writesize, md);
- 		md->version[0] = buf[bbt_get_ver_offs(mtd, md)];
- 		pr_info("Bad block table at page %d, version 0x%02X\n",
- 			 md->pages[0], md->version[0]);
+diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
+index 0988aaa..c028f35 100644
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -971,16 +971,19 @@ static void gsm_dlci_data_sweep(struct gsm_mux *gsm)
+ static void gsm_dlci_data_kick(struct gsm_dlci *dlci)
+ {
+ 	unsigned long flags;
++	int sweep;
+ 
+ 	spin_lock_irqsave(&dlci->gsm->tx_lock, flags);
+ 	/* If we have nothing running then we need to fire up */
++	sweep = (dlci->gsm->tx_bytes < TX_THRESH_LO);
+ 	if (dlci->gsm->tx_bytes == 0) {
+ 		if (dlci->net)
+ 			gsm_dlci_data_output_framed(dlci->gsm, dlci);
+ 		else
+ 			gsm_dlci_data_output(dlci->gsm, dlci);
+-	} else if (dlci->gsm->tx_bytes < TX_THRESH_LO)
+-		gsm_dlci_data_sweep(dlci->gsm);
++	}
++	if (sweep)
++ 		gsm_dlci_data_sweep(dlci->gsm);
+ 	spin_unlock_irqrestore(&dlci->gsm->tx_lock, flags);
+ }
+ 
 
 
