@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586Ab2JNOxk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 10:53:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46651 "EHLO
+	id S932381Ab2JNOyM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 10:54:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46625 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932269Ab2JNOns (ORCPT
+	by vger.kernel.org with ESMTP id S932240Ab2JNOnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 10:43:48 -0400
-Message-Id: <20121014143541.450616040@decadent.org.uk>
+	Sun, 14 Oct 2012 10:43:42 -0400
+Message-Id: <20121014143541.983171752@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 14 Oct 2012 15:36:29 +0100
+Date: Sun, 14 Oct 2012 15:36:33 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 056/147] USB: ftdi_sio: add TIAO USB Multi-Protocol Adapter (TUMPA) support
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 060/147] drm/i915: add some barriers when changing DIPs
 In-Reply-To: <20121014143533.742627615@decadent.org.uk>
 X-SA-Exim-Connect-IP: 77.75.106.1
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,58 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antonio Ospite <ospite@studenti.unina.it>
+From: Paulo Zanoni <paulo.r.zanoni@intel.com>
 
-commit 54575b05af36959dfb6a49a3e9ca0c2b456b7126 upstream.
+commit 9d9740f099f2eaf309c4c9cbc0d732507140db28 upstream.
 
-TIAO/DIYGADGET USB Multi-Protocol Adapter (TUMPA) is an FTDI FT2232H
-based device which provides an easily accessible JTAG, SPI, I2C, serial
-breakout.
+On IVB and older, we basically have two registers: the control and the
+data register. We write a few consecutitve times to the control
+register, and we need these writes to arrive exactly in the specified
+order.
 
-http://www.diygadget.com/tiao-usb-multi-protocol-adapter-jtag-spi-i2c-serial.html
-http://www.tiaowiki.com/w/TIAO_USB_Multi_Protocol_Adapter_User%27s_Manual
+Also, when we're changing the data register, we need to guarantee that
+anything written to the control register already arrived (since
+changing the control register can change where the data register
+points to). Also, we need to make sure all the writes to the data
+register happen exactly in the specified order, and we also *can't*
+read the data register during this process, since reading and/or
+writing it will change the place it points to.
 
-FTDI FT2232H provides two serial channels (A and B), but on the TUMPA
-channel A is dedicated to JTAG/SPI while channel B can be used for
-UART/RS-232: use the ftdi_jtag_quirk to expose only channel B as
-a usb-serial interface to userspace.
+So invoke the "better safe than sorry" rule and just be careful and
+put barriers everywhere :)
 
-Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On HSW we still have a control register that we write many times, but
+we have many data registers.
+
+Demanded-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2:
+ - There are only two write_infoframe functions to be modified
+ - The other VIDEO_DIP_CTL writes are in entirely different functions]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
- 2 files changed, 7 insertions(+)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 8742a0e..9169f51 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -579,6 +579,8 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_PEDO_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_PROD_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_TAVIR_STK500_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_TIAO_UMPA_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	/*
- 	 * ELV devices:
- 	 */
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 41fe582..57c12ef 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -517,6 +517,11 @@
-  */
- #define FTDI_TAVIR_STK500_PID	0xFA33	/* STK500 AVR programmer */
+--- a/drivers/gpu/drm/i915/intel_hdmi.c
++++ b/drivers/gpu/drm/i915/intel_hdmi.c
+@@ -138,14 +138,17 @@ static void i9xx_write_infoframe(struct
  
-+/*
-+ * TIAO product ids (FTDI_VID)
-+ * http://www.tiaowiki.com/w/Main_Page
-+ */
-+#define FTDI_TIAO_UMPA_PID	0x8a98	/* TIAO/DIYGADGET USB Multi-Protocol Adapter */
+ 	I915_WRITE(VIDEO_DIP_CTL, VIDEO_DIP_ENABLE | val | port | flags);
  
++	mmiowb();
+ 	for (i = 0; i < len; i += 4) {
+ 		I915_WRITE(VIDEO_DIP_DATA, *data);
+ 		data++;
+ 	}
++	mmiowb();
  
- /********************************/
+ 	flags |= intel_infoframe_flags(frame);
+ 
+ 	I915_WRITE(VIDEO_DIP_CTL, VIDEO_DIP_ENABLE | val | port | flags);
++	POSTING_READ(VIDEO_DIP_CTL);
+ }
+ 
+ static void ironlake_write_infoframe(struct drm_encoder *encoder,
+@@ -168,14 +171,17 @@ static void ironlake_write_infoframe(str
+ 
+ 	I915_WRITE(reg, VIDEO_DIP_ENABLE | val | flags);
+ 
++	mmiowb();
+ 	for (i = 0; i < len; i += 4) {
+ 		I915_WRITE(TVIDEO_DIP_DATA(intel_crtc->pipe), *data);
+ 		data++;
+ 	}
++	mmiowb();
+ 
+ 	flags |= intel_infoframe_flags(frame);
+ 
+ 	I915_WRITE(reg, VIDEO_DIP_ENABLE | val | flags);
++	POSTING_READ(reg);
+ }
+ static void intel_set_infoframe(struct drm_encoder *encoder,
+ 				struct dip_infoframe *frame)
+@@ -546,10 +552,13 @@ void intel_hdmi_init(struct drm_device *
+ 	if (!HAS_PCH_SPLIT(dev)) {
+ 		intel_hdmi->write_infoframe = i9xx_write_infoframe;
+ 		I915_WRITE(VIDEO_DIP_CTL, 0);
++		POSTING_READ(VIDEO_DIP_CTL);
+ 	} else {
+ 		intel_hdmi->write_infoframe = ironlake_write_infoframe;
+-		for_each_pipe(i)
++		for_each_pipe(i) {
+ 			I915_WRITE(TVIDEO_DIP_CTL(i), 0);
++			POSTING_READ(TVIDEO_DIP_CTL(i));
++		}
+ 	}
+ 
+ 	drm_encoder_helper_add(&intel_encoder->base, &intel_hdmi_helper_funcs);
 
 
