@@ -1,81 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab2JOXeA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 19:34:00 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42032 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754Ab2JOXd6 (ORCPT
+	id S1754898Ab2JOXeV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 19:34:21 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:60509 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752207Ab2JOXcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 19:33:58 -0400
-From: Irina Tirdea <irina.tirdea@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH v4 0/6] perf tools: fixes for Android
-Date: Tue, 16 Oct 2012 02:33:34 +0300
-Message-Id: <1350344020-8071-1-git-send-email-irina.tirdea@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 15 Oct 2012 19:32:07 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        w.sang@pengutronix.de, jbe@pengutronix.de, plagnioj@jcrosoft.com,
+        highguy@gmail.com, broonie@opensource.wolfsonmicro.com,
+        daniel-gl@gmx.net, gregkh@linuxfoundation.org, rmallon@gmail.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RFC 05/11 v4] gpio-lpc32xx: Add block GPIO API
+Date: Tue, 16 Oct 2012 01:31:21 +0200
+Message-Id: <1350343887-7344-6-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1350343887-7344-1-git-send-email-stigge@antcom.de>
+References: <1350343887-7344-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Irina Tirdea <irina.tirdea@intel.com>
+This patch adds block GPIO API support to the LPC32xx driver.
 
-This is version 4 for the Android fixes.
-Thanks for the review! This version contains fixes for issues raised by Arnaldo [1].
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Changes v3->v4:
-() patch 1: fixed compilation issue when calling make from kernel root directory
-() patch 4: renamed try_binutils_path to perf_session_env__lookup_binutils_path
-() patch 4: replaced scnprintf + strdup with asprintf
-() patch 4: handle errors and print messages in case cross-built objdump is not
-found
-() patch 3,5: split patch with addr2line changes in 2 patches
-() patch 6: set default ret to -ENOMEM in order to avoid setting it every time
+---
+ drivers/gpio/gpio-lpc32xx.c |   82 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 82 insertions(+)
 
-[1] https://lkml.org/lkml/2012/10/8/45
-
-Irina Tirdea (5):
-  perf tools: configure tmp path at build time
-  perf tools: configure shell path at compile time
-  perf tools: add --addr2line command line option
-  perf tools: Try to find cross-built addr2line path
-  perf stat: implement --big-num grouping
-
-Namhyung Kim (1):
-  perf tools: Try to find cross-built objdump path
-
- tools/perf/Documentation/android.txt       |   19 +++
- tools/perf/Documentation/jit-interface.txt |    4 +-
- tools/perf/Documentation/perf-annotate.txt |    2 +
- tools/perf/Documentation/perf-report.txt   |    2 +
- tools/perf/Makefile                        |   36 +++++-
- tools/perf/arch/common.c                   |  184 ++++++++++++++++++++++++++++
- tools/perf/arch/common.h                   |   12 ++
- tools/perf/builtin-annotate.c              |   16 +++
- tools/perf/builtin-help.c                  |    2 +-
- tools/perf/builtin-report.c                |   16 +++
- tools/perf/builtin-script.c                |   12 +-
- tools/perf/builtin-stat.c                  |  106 ++++++++++++++--
- tools/perf/config/feature-tests.mak        |   18 +++
- tools/perf/perf-archive.sh                 |   13 +-
- tools/perf/util/annotate.c                 |   13 +-
- tools/perf/util/annotate.h                 |    1 -
- tools/perf/util/dso-test-data.c            |    2 +-
- tools/perf/util/map.c                      |    3 +-
- tools/perf/util/pmu.c                      |    2 +-
- tools/perf/util/sort.c                     |   15 ++-
- tools/perf/util/symbol.c                   |    4 +-
- tools/perf/util/trace-event-info.c         |    2 +-
- tools/perf/util/vdso.c                     |    2 +-
- 23 files changed, 456 insertions(+), 30 deletions(-)
- create mode 100644 tools/perf/arch/common.c
- create mode 100644 tools/perf/arch/common.h
-
--- 
-1.7.9.5
-
+--- linux-2.6.orig/drivers/gpio/gpio-lpc32xx.c
++++ linux-2.6/drivers/gpio/gpio-lpc32xx.c
+@@ -297,6 +297,22 @@ static int lpc32xx_gpio_get_value_p3(str
+ 	return __get_gpio_state_p3(group, pin);
+ }
+ 
++static unsigned long lpc32xx_gpio_get_block_p3(struct gpio_chip *chip,
++					       unsigned long mask)
++{
++	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
++	u32 bits = __raw_readl(group->gpio_grp->inp_state);
++
++	/* In P3_INP_STATE, the 6 GPIOs are scattered over the register,
++	 * rearranging to bits 0-5
++	 */
++	bits >>= 10;
++	bits &= 0x401F;
++	bits |= (bits & 0x4000) >> 9;
++
++	return bits & mask & 0x3F;
++}
++
+ static int lpc32xx_gpi_get_value(struct gpio_chip *chip, unsigned pin)
+ {
+ 	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
+@@ -304,6 +320,15 @@ static int lpc32xx_gpi_get_value(struct
+ 	return __get_gpi_state_p3(group, pin);
+ }
+ 
++static unsigned long lpc32xx_gpi_get_block(struct gpio_chip *chip,
++					   unsigned long mask)
++{
++	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
++	u32 bits = __raw_readl(group->gpio_grp->inp_state);
++
++	return bits & mask;
++}
++
+ static int lpc32xx_gpio_dir_output_p012(struct gpio_chip *chip, unsigned pin,
+ 	int value)
+ {
+@@ -351,6 +376,27 @@ static void lpc32xx_gpio_set_value_p3(st
+ 	__set_gpio_level_p3(group, pin, value);
+ }
+ 
++static void lpc32xx_gpio_set_block_p3(struct gpio_chip *chip,
++				      unsigned long mask,
++				      unsigned long values)
++{
++	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
++	u32 set_bits = values & mask;
++	u32 clr_bits = ~values & mask;
++
++	/* States of GPIO 0-5 start at bit 25 */
++	set_bits <<= 25;
++	clr_bits <<= 25;
++
++	/* Note: On LPC32xx, GPOs can only be set at once or cleared at once,
++	 *       but not set and cleared at once
++	 */
++	if (set_bits)
++		__raw_writel(set_bits, group->gpio_grp->outp_set);
++	if (clr_bits)
++		__raw_writel(clr_bits, group->gpio_grp->outp_clr);
++}
++
+ static void lpc32xx_gpo_set_value(struct gpio_chip *chip, unsigned pin,
+ 	int value)
+ {
+@@ -366,6 +412,31 @@ static int lpc32xx_gpo_get_value(struct
+ 	return __get_gpo_state_p3(group, pin);
+ }
+ 
++static void lpc32xx_gpo_set_block(struct gpio_chip *chip, unsigned long mask,
++				  unsigned long values)
++{
++	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
++	u32 set_bits = values & mask;
++	u32 clr_bits = ~values & mask;
++
++	/* Note: On LPC32xx, GPOs can only be set at once or cleared at once,
++	 *       but not set and cleared at once
++	 */
++	if (set_bits)
++		__raw_writel(set_bits, group->gpio_grp->outp_set);
++	if (clr_bits)
++		__raw_writel(clr_bits, group->gpio_grp->outp_clr);
++}
++
++static unsigned long lpc32xx_gpo_get_block(struct gpio_chip *chip,
++					   unsigned long mask)
++{
++	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
++	u32 bits = __raw_readl(group->gpio_grp->outp_state);
++
++	return bits & mask;
++}
++
+ static int lpc32xx_gpio_request(struct gpio_chip *chip, unsigned pin)
+ {
+ 	if (pin < chip->ngpio)
+@@ -440,8 +511,10 @@ static struct lpc32xx_gpio_chip lpc32xx_
+ 			.label			= "gpio_p0",
+ 			.direction_input	= lpc32xx_gpio_dir_input_p012,
+ 			.get			= lpc32xx_gpio_get_value_p012,
++			.get_block		= lpc32xx_gpi_get_block,
+ 			.direction_output	= lpc32xx_gpio_dir_output_p012,
+ 			.set			= lpc32xx_gpio_set_value_p012,
++			.set_block		= lpc32xx_gpo_set_block,
+ 			.request		= lpc32xx_gpio_request,
+ 			.to_irq			= lpc32xx_gpio_to_irq_p01,
+ 			.base			= LPC32XX_GPIO_P0_GRP,
+@@ -456,8 +529,10 @@ static struct lpc32xx_gpio_chip lpc32xx_
+ 			.label			= "gpio_p1",
+ 			.direction_input	= lpc32xx_gpio_dir_input_p012,
+ 			.get			= lpc32xx_gpio_get_value_p012,
++			.get_block		= lpc32xx_gpi_get_block,
+ 			.direction_output	= lpc32xx_gpio_dir_output_p012,
+ 			.set			= lpc32xx_gpio_set_value_p012,
++			.set_block		= lpc32xx_gpo_set_block,
+ 			.request		= lpc32xx_gpio_request,
+ 			.to_irq			= lpc32xx_gpio_to_irq_p01,
+ 			.base			= LPC32XX_GPIO_P1_GRP,
+@@ -472,8 +547,10 @@ static struct lpc32xx_gpio_chip lpc32xx_
+ 			.label			= "gpio_p2",
+ 			.direction_input	= lpc32xx_gpio_dir_input_p012,
+ 			.get			= lpc32xx_gpio_get_value_p012,
++			.get_block		= lpc32xx_gpi_get_block,
+ 			.direction_output	= lpc32xx_gpio_dir_output_p012,
+ 			.set			= lpc32xx_gpio_set_value_p012,
++			.set_block		= lpc32xx_gpo_set_block,
+ 			.request		= lpc32xx_gpio_request,
+ 			.base			= LPC32XX_GPIO_P2_GRP,
+ 			.ngpio			= LPC32XX_GPIO_P2_MAX,
+@@ -487,8 +564,10 @@ static struct lpc32xx_gpio_chip lpc32xx_
+ 			.label			= "gpio_p3",
+ 			.direction_input	= lpc32xx_gpio_dir_input_p3,
+ 			.get			= lpc32xx_gpio_get_value_p3,
++			.get_block		= lpc32xx_gpio_get_block_p3,
+ 			.direction_output	= lpc32xx_gpio_dir_output_p3,
+ 			.set			= lpc32xx_gpio_set_value_p3,
++			.set_block		= lpc32xx_gpio_set_block_p3,
+ 			.request		= lpc32xx_gpio_request,
+ 			.to_irq			= lpc32xx_gpio_to_irq_gpio_p3,
+ 			.base			= LPC32XX_GPIO_P3_GRP,
+@@ -503,6 +582,7 @@ static struct lpc32xx_gpio_chip lpc32xx_
+ 			.label			= "gpi_p3",
+ 			.direction_input	= lpc32xx_gpio_dir_in_always,
+ 			.get			= lpc32xx_gpi_get_value,
++			.get_block		= lpc32xx_gpi_get_block,
+ 			.request		= lpc32xx_gpio_request,
+ 			.to_irq			= lpc32xx_gpio_to_irq_gpi_p3,
+ 			.base			= LPC32XX_GPI_P3_GRP,
+@@ -517,7 +597,9 @@ static struct lpc32xx_gpio_chip lpc32xx_
+ 			.label			= "gpo_p3",
+ 			.direction_output	= lpc32xx_gpio_dir_out_always,
+ 			.set			= lpc32xx_gpo_set_value,
++			.set_block		= lpc32xx_gpo_set_block,
+ 			.get			= lpc32xx_gpo_get_value,
++			.get_block		= lpc32xx_gpo_get_block,
+ 			.request		= lpc32xx_gpio_request,
+ 			.base			= LPC32XX_GPO_P3_GRP,
+ 			.ngpio			= LPC32XX_GPO_P3_MAX,
