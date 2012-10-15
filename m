@@ -1,94 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724Ab2JOI6V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 04:58:21 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:11866 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab2JOI6U (ORCPT
+	id S1751837Ab2JOJBm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 05:01:42 -0400
+Received: from smtp-out-100.synserver.de ([212.40.185.100]:1081 "EHLO
+	smtp-out-100.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab2JOJBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 04:58:20 -0400
-X-IronPort-AV: E=Sophos;i="4.80,587,1344211200"; 
-   d="scan'208";a="15163228"
-Message-ID: <1350291497.18058.5.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH V2 2/7]: PVH: use native irq, enable
- callback, use HVM ring ops, ...
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 15 Oct 2012 09:58:17 +0100
-In-Reply-To: <20121012120619.6d8f3317@mantra.us.oracle.com>
-References: <20121011145711.0d9c27df@mantra.us.oracle.com>
-	 <1350031937.14806.49.camel@zakaz.uk.xensource.com>
-	 <20121012120619.6d8f3317@mantra.us.oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+	Mon, 15 Oct 2012 05:01:41 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 3316
+Message-ID: <507BD13C.9020103@metafoo.de>
+Date: Mon, 15 Oct 2012 11:02:52 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120922 Icedove/10.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+To: David Howells <dhowells@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: UAPI fdpic problems
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-12 at 20:06 +0100, Mukesh Rathor wrote:
-> On Fri, 12 Oct 2012 09:52:17 +0100
-> Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> 
-> > >  drivers/xen/cpu_hotplug.c            |    4 +++-
-> > >  drivers/xen/events.c                 |    9 ++++++++-
-> > >  drivers/xen/xenbus/xenbus_client.c   |    3 ++-
-> > >  7 files changed, 27 insertions(+), 8 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/include/asm/xen/interface.h
-> > > b/arch/x86/include/asm/xen/interface.h index 555f94d..f11edb0 100644
-> > > --- a/arch/x86/include/asm/xen/interface.h
-> > > +++ b/arch/x86/include/asm/xen/interface.h
-> > > @@ -143,7 +143,13 @@ struct vcpu_guest_context {
-> > >      struct cpu_user_regs user_regs;         /* User-level CPU
-> > > registers     */ struct trap_info trap_ctxt[256];        /* Virtual
-> > > IDT                  */ unsigned long ldt_base, ldt_ents;       /*
-> > > LDT (linear address, # ents) */
-> > > -    unsigned long gdt_frames[16], gdt_ents; /* GDT (machine
-> > > frames, # ents) */
-> > > +    union {
-> > > +	struct {
-> > > +		/* PV: GDT (machine frames, # ents).*/
-> > > +		unsigned long gdt_frames[16], gdt_ents;
-> > > +	} s;
-> > > +	unsigned long gdtaddr, gdtsz;	    /* PVH: GDTR addr
-> > > and size */
-> > 
-> > I've pointed out a few times that I think this is wrong -- gdtaddr and
-> > gdtsz will overlap each other in the union. I'm not sure how it even
-> > works, unless the hypervisor is ignoring one or the other. You need:
-> > 
-> > union {
-> > 	struct {
-> > 		unsigned long gdt_frames[16], gdt_ents;
-> > 	} pv;
-> > 	struct {
-> > 		unsigned long gdtaddr, gdtsz;
-> > 	} pvh;
-> > } gdt;
-> > 
-> > (I've gone with naming the union gdt instead of u. You might want
-> > therefore to also drop the gdt prefix from the members?)
-> 
-> Is it worth it, I mean, making it a union. Would you be OK if I just
-> used gdt_frames[0] and gdt_ends for gdtaddr and size?
+Hi,
 
-What's the problem with making it a union? Seems like you are 80% of the
-way there.
+I just tried to build 3.7-rc1 and hit some problems when trying to build the
+fdpic elf loader:
 
-Why is this different between PV and PVH in the first place (at the API
-level I mean, obviously the handling in the h/v will differ)?
+fs/binfmt_elf_fdpic.c:60: warning: ‘struct elf_fdpic_params’ declared inside
+parameter list
+fs/binfmt_elf_fdpic.c:60: warning: its scope is only this definition or
+declaration, which is probably not what you want
+fs/binfmt_elf_fdpic.c:62: warning: ‘struct elf_fdpic_params’ declared inside
+parameter list
+fs/binfmt_elf_fdpic.c:66: warning: ‘struct elf_fdpic_params’ declared inside
+parameter list
+fs/binfmt_elf_fdpic.c:73: warning: ‘struct elf_fdpic_params’ declared inside
+parameter list
+fs/binfmt_elf_fdpic.c:77: warning: ‘struct elf_fdpic_params’ declared inside
+parameter list
+fs/binfmt_elf_fdpic.c:124: warning: ‘struct elf_fdpic_params’ declared
+inside parameter list
+fs/binfmt_elf_fdpic.c:123: error: conflicting types for ‘elf_fdpic_fetch_phdrs’
+fs/binfmt_elf_fdpic.c:60: error: previous declaration of
+‘elf_fdpic_fetch_phdrs’ was here
+...
 
-At the very least gdtsz and gdt_ents are the same thing with different
-units AFAICT and so can be combined.
+The problem is caused by commit 607ca46e97a ("UAPI: (Scripted) Disintegrate
+include/linux").
 
-How come you don't need the same stuff for ldt*?
+This is the change made by the patch to elf-fdpic.h, where struct
+elf_fdpic_params is declared.
 
-Ian.
+--- a/include/linux/elf-fdpic.h
++++ b/include/uapi/linux/elf-fdpic.h
+@@ -31,6 +31,7 @@ struct elf32_fdpic_loadmap {
+
+ #define ELF32_FDPIC_LOADMAP_VERSION    0x0000
+
++#ifndef __KERNEL__
+ /*
+  * binfmt binary parameters structure
+  */
+@@ -58,7 +59,6 @@ struct elf_fdpic_params {
+ #define ELF_FDPIC_FLAG_PRESENT         0x80000000
+ };
+
+-#ifdef __KERNEL__
+ #ifdef CONFIG_MMU
+ extern void elf_fdpic_arch_lay_out_mm(struct elf_fdpic_params *exec_params,
+                                      struct elf_fdpic_params
 
 
+So the patch removed the #ifdef __KERNEL__ around
+elf_fdpic_arch_lay_out_mm() and added a #ifndef __KERNEL__ around both
+struct elf_fdpic_params and elf_fdpic_arch_lay_out_mm(), which does not seem
+to make much sense, since both are used (only?) inside the kernel. David do
+you know why your script made this change?
+
+The fix I'm using for now is the following, but I'm not quite sure if it is
+the correct solution.
+
+--- a/include/uapi/linux/elf-fdpic.h
++++ b/include/uapi/linux/elf-fdpic.h
+@@ -31,7 +31,7 @@ struct elf32_fdpic_loadmap {
+
+ #define ELF32_FDPIC_LOADMAP_VERSION    0x0000
+
+-#ifndef __KERNEL__
++#ifdef __KERNEL__
+ /*
+  * binfmt binary parameters structure
+  */
+
+Thanks,
+- Lars
