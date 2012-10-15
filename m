@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab2JOQ1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 12:27:40 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47503 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639Ab2JOQ1i (ORCPT
+	id S1753503Ab2JOQam (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 12:30:42 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:49402 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753049Ab2JOQak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 12:27:38 -0400
-Date: Mon, 15 Oct 2012 17:27:32 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Daniel Mack <zonque@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [revert request for commit 9fff2fa] Re: [git pull] signals pile 3
-Message-ID: <20121015162732.GG2616@ZenIV.linux.org.uk>
-References: <20121013005334.GM2616@ZenIV.linux.org.uk>
- <507ADBBB.9090209@gmail.com>
- <20121014164020.GV2616@ZenIV.linux.org.uk>
- <CACTFLAOpcLtHNx-TCHQkUOPNAkTO8EgDhbyZSGQ9ag+Wu_cNRw@mail.gmail.com>
- <20121014172640.GW2616@ZenIV.linux.org.uk>
- <20121014192402.GZ2616@ZenIV.linux.org.uk>
- <20121014195611.GA2616@ZenIV.linux.org.uk>
- <20121015160710.GC30907@arm.com>
+	Mon, 15 Oct 2012 12:30:40 -0400
+Message-ID: <507C3A29.7040102@xenotime.net>
+Date: Mon, 15 Oct 2012 09:30:33 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121015160710.GC30907@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Richard Weinberger <richard@nod.at>
+Subject: Re: Linux 3.7-rc1 (uml uapi errors)
+References: <CA+55aFyt0KFNp5Binu-c3-XzF=MG+23EDOk1R6t4qqgW58ksAw@mail.gmail.com> <507B63AC.3010807@xenotime.net> <507B68C0.9050409@xenotime.net>
+In-Reply-To: <507B68C0.9050409@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 05:07:10PM +0100, Catalin Marinas wrote:
-> On Sun, Oct 14, 2012 at 08:56:11PM +0100, Al Viro wrote:
-> > On Sun, Oct 14, 2012 at 08:24:03PM +0100, Al Viro wrote:
-> > 
-> > > Russell, could you recall what those had been about?  I'm not sure if that
-> > > had been oopsable that far back (again, oops scenario is userland stack
-> > > page getting swapped out before we get to start_thread(), leading to
-> > > direct read from an absent page in start_thread() by plain ldr, without
-> > > anything in exception table about that insn), but it looks very odd
-> > > regardless of that problem.
-> > 
-> > BTW, arm64 has copied that logics, so it also seems to be unsafe and very
-> > odd - there we definitely have only ELF to cope with.  arm64 folks Cc'd...
-> 
-> Good point. We don't need this on arm64 and probably neither on arm (at
-> least since EABI).
-> 
-> Setting x0 may cause other issues as well. The dynamic loader simply
-> ignores the startup registers but for static binaries the _start code in
-> glibc expects r0 to contain a function pointer to be registered with
-> atexit() in __libc_start_main() or NULL. Since we pass argc in there,
-> for static binaries the rtld_fini argument to __libc_start_main() is
-> neither NULL nor something meaningful.
+On 10/14/2012 06:37 PM, Randy Dunlap wrote:
 
-The value left there by start_thread() will not reach the userland anyway...
+> On 10/14/2012 06:15 PM, Randy Dunlap wrote:
+> 
+>> On 10/14/2012 03:27 PM, Linus Torvalds wrote:
+>>
+>>> The two weeks are up, and I was merging during my trip, so no reason
+>>> for merge window extensions.
+>>>
+>>> The 3.7-rc1 kernel is out there. There's a few big things worth noting here:
+>>>
+>>>  - the "uapi" include file cleanups. The idea is that the stuff
+>>> exported to user space should now be found under include/uapi and
+>>> arch/$(ARCH)/include/uapi.
+>>>
+>>>    Let's hope it actually works. Because otherwise this was just a
+>>> totally pointless pain in the *ss. And regardless, I'm definitely done
+>>> with these kinds of "let's do massive cleanup of the include files"
+>>> forever.
+>>
+>>
+>>
+>> Building um (uml) for x86_64 (defconfig) has lots of errors like:
+>>
+>> In file included from include/linux/irq.h:22:0,
+>>                  from include/asm-generic/hardirq.h:12,
+>>                  from arch/um/include/generated/asm/hardirq.h:1,
+>>                  from include/linux/hardirq.h:7,
+>>                  from include/linux/ftrace_event.h:7,
+>>                  from include/trace/syscall.h:6,
+>>                  from include/linux/syscalls.h:78,
+>>                  from init/noinitramfs.c:23:
+>> include/linux/irqnr.h:4:30: fatal error: uapi/linux/irqnr.h: No such file or directory
+>>
+>> make[2]: *** [init/main.o] Error 1
+>> make[2]: *** [init/noinitramfs.o] Error 1
+>> make[2]: *** [init/do_mounts.o] Error 1
+>> make[2]: *** [arch/um/kernel/irq.o] Error 1
+> 
+> 
+> 
+> Similar build errors on i386 (X86_32) and x86_64.
+> Maybe they are due to using O=subdir when building....?
+
+
+
+These builds work after adding an empty file
+include/uapi/linux/irqnr.h.
+I am building from linux-3.6 tarball + 3.7-rc1 patch file.
+David thinks that 'patch' is deleting the empty header file.
+
+Thanks for your help, David.
+
+-- 
+~Randy
