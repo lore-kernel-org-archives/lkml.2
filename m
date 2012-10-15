@@ -1,69 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751038Ab2JOOY7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 10:24:59 -0400
-Received: from antcom.de ([188.40.178.216]:55402 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750782Ab2JOOY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 10:24:58 -0400
-Message-ID: <507C1CB4.7070203@antcom.de>
-Date: Mon, 15 Oct 2012 16:24:52 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S1751378Ab2JOOZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 10:25:26 -0400
+Received: from smtp-out-103.synserver.de ([212.40.185.103]:1065 "EHLO
+	smtp-out-102.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751271Ab2JOOZX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 10:25:23 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 11396
+Message-ID: <507C1D1C.2030607@metafoo.de>
+Date: Mon, 15 Oct 2012 16:26:36 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120922 Icedove/10.0.7
 MIME-Version: 1.0
-To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] usb: gadget: lpc32xx_udc: Fix compatibility with
- STOTG04
-References: <1350305256-27295-1-git-send-email-aletes.xgr@gmail.com>
-In-Reply-To: <1350305256-27295-1-git-send-email-aletes.xgr@gmail.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
+To: Lars Poeschel <larsi@wh2.tu-dresden.de>
+CC: sameo@linux.intel.com, linux-kernel@vger.kernel.org, jic23@cam.ac.uk,
+        khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
+        grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        Lars Poeschel <poeschel@lemonage.de>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Subject: Re: [PATCH v2 4/4] iio: adc: add viperboard adc driver
+References: <20120925085559.GL28670@sortiz-mobl> <1350052469-27802-1-git-send-email-larsi@wh2.tu-dresden.de> <1350052469-27802-4-git-send-email-larsi@wh2.tu-dresden.de>
+In-Reply-To: <1350052469-27802-4-git-send-email-larsi@wh2.tu-dresden.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2012 02:47 PM, Alexandre Pereira da Silva wrote:
-> The STOTG04 is an replacement for ISP1301.
-> 
-> Most of the registers on STOTG04 are the same as on ISP1301, but the
-> register ISP1301_I2C_OTG_CONTROL_2 (address 0x10) doesn't exist on the
-> ST part.
-> 
-> This is a work around for this by using the interrupt source register that
-> should behave the same on both parts and has the needed information.
-> 
-> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Added linux-iio@vger.kernel.org to Cc.
 
-Tested-by: Roland Stigge <stigge@antcom.de>
+On 10/12/2012 04:34 PM, Lars Poeschel wrote:
+> From: Lars Poeschel <poeschel@lemonage.de>
+> 
+> This adds the mfd cell to use the adc part of the Nano River Technologies
+> viperboard.
+> 
+> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+
+Looks good in general, just some minor code style issues.
 
 > ---
+>  drivers/iio/adc/Kconfig          |    7 ++
+>  drivers/iio/adc/Makefile         |    1 +
+>  drivers/iio/adc/viperboard_adc.c |  185 ++++++++++++++++++++++++++++++++++++++
+>  drivers/mfd/viperboard.c         |    3 +
+>  4 files changed, 196 insertions(+)
+>  create mode 100644 drivers/iio/adc/viperboard_adc.c
 > 
-> This patch is very important to LPC32xx users. IMHO this should go in for 3.7-rc2.
-> 
->  drivers/usb/gadget/lpc32xx_udc.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/lpc32xx_udc.c b/drivers/usb/gadget/lpc32xx_udc.c
-> index f696fb9..21a9861 100644
-> --- a/drivers/usb/gadget/lpc32xx_udc.c
-> +++ b/drivers/usb/gadget/lpc32xx_udc.c
-> @@ -2930,10 +2930,10 @@ static void vbus_work(struct work_struct *work)
+[...]
+> diff --git a/drivers/iio/adc/viperboard_adc.c b/drivers/iio/adc/viperboard_adc.c
+> new file mode 100644
+> index 0000000..8ae6634
+> --- /dev/null
+> +++ b/drivers/iio/adc/viperboard_adc.c
+> @@ -0,0 +1,185 @@
+> +/*
+> + *  Nano River Technologies viperboard iio ADC driver
+> + *
+> + *  (C) 2012 by Lemonage GmbH
+> + *  Author: Lars Poeschel <poeschel@lemonage.de>
+> + *  All rights reserved.
+> + *
+> + *  This program is free software; you can redistribute  it and/or modify it
+> + *  under  the terms of  the GNU General  Public License as published by the
+> + *  Free Software Foundation;  either version 2 of the	License, or (at your
+> + *  option) any later version.
+> + *
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/errno.h>
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/types.h>
+> +#include <linux/mutex.h>
+> +#include <linux/platform_device.h>
+> +
+> +#include <linux/usb.h>
+> +#include <linux/iio/iio.h>
+> +
+> +#include <linux/mfd/viperboard.h>
+> +
+> +#define VPRBRD_ADC_CMD_GET		0x00
+> +
+> +struct __packed vprbrd_adc_msg {
+> +	u8 cmd;
+> +	u8 chan;
+> +	u8 val;
+> +};
+
+put the __packed between } and ;
+
+> +
+> +struct vprbrd_adc {
+> +	struct vprbrd *vb;
+> +};
+> +
+> +#define VPRBRD_ADC_CHANNEL(_index) {			\
+> +	.type = IIO_VOLTAGE,				\
+> +	.indexed = 1,					\
+> +	.channel = _index,				\
+> +	.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT,	\
+
+It would be good if you could also report the channel scale.
+
+> +	.scan_index = _index,				\
+> +	.scan_type.sign = 'u',				\
+> +	.scan_type.realbits = 8,			\
+> +	.scan_type.storagebits = 8,			\
+
+Usually this is written as
+	.scan_type = {
+		.sign = 'u',
+		....
+	},
+
+> +}
+> +
+> +static struct iio_chan_spec vprbrd_adc_iio_channels[] = {
+const
+
+> +	VPRBRD_ADC_CHANNEL(0),
+> +	VPRBRD_ADC_CHANNEL(1),
+> +	VPRBRD_ADC_CHANNEL(2),
+> +	VPRBRD_ADC_CHANNEL(3),
+> +};
+> +
+> +static int vprbrd_iio_read_raw(struct iio_dev *iio_dev,
+> +				struct iio_chan_spec const *chan,
+> +				int *val,
+> +				int *val2,
+> +				long mask)
+
+'mask' used to be a mask and that's why it is still called 'mask' in older
+drivers. For new drivers we should use 'info'.
+
+> +{
+> +	int ret, error = 0;
+> +	struct vprbrd_adc *adc = iio_priv(iio_dev);
+> +	struct vprbrd *vb = adc->vb;
+> +	struct vprbrd_adc_msg *admsg = (struct vprbrd_adc_msg *)vb->buf;
+> +
+> +	if (mask == IIO_CHAN_INFO_RAW) {
+> +
+
+Use switch instead of if. Otherwise you'd end up with if(mask == ...) else
+if(mask == ...) else if (mask == ...) if you add support for more channel
+attributes.
+
+> +		mutex_lock(&vb->lock);
+> +
+> +		admsg->cmd = VPRBRD_ADC_CMD_GET;
+> +		admsg->chan = chan->scan_index;
+> +		admsg->val = 0x00;
+> +
+> +		ret = usb_control_msg(vb->usb_dev,
+> +			usb_sndctrlpipe(vb->usb_dev, 0), 0xec, 0x40,
+> +			0x0000, 0x0000, admsg,
+> +			sizeof(struct vprbrd_adc_msg), 100);
+> +		if (ret != sizeof(struct vprbrd_adc_msg)) {
+> +			dev_err(&iio_dev->dev, "usb send error on adc read\n");
+> +			error = -EREMOTEIO;
+> +		}
+
+Does it make sense to send out the second msg if the first one failed?
+
+> +
+> +		ret = usb_control_msg(vb->usb_dev,
+> +			usb_rcvctrlpipe(vb->usb_dev, 0), 0xec, 0xc0,
+> +			0x0000, 0x0000, admsg,
+> +			sizeof(struct vprbrd_adc_msg), 100);
+> +
+
+It would be good to have some defines for the magic constants used for
+request and request_type.
+
+> +		*val = admsg->val;
+> +
+> +		mutex_unlock(&vb->lock);
+> +
+> +		if (ret != sizeof(struct vprbrd_adc_msg)) {
+> +			dev_err(&iio_dev->dev, "usb recv error on adc read\n");
+> +			error = -EREMOTEIO;
+> +		}
+> +
+> +		if (error)
+> +			goto error;
+> +
+> +		return IIO_VAL_INT;
+> +	}
+> +	error =  -EINVAL;
+> +error:
+> +	return error;
+> +}
+> +
+> +static const struct iio_info vprbrd_adc_iio_info = {
+> +	.read_raw = &vprbrd_iio_read_raw,
+> +	.driver_module = THIS_MODULE,
+> +};
+> +
+> +static int __devinit vprbrd_adc_probe(struct platform_device *pdev)
+> +{
+> +	struct vprbrd *vb = dev_get_drvdata(pdev->dev.parent);
+> +	struct vprbrd_adc *adc;
+> +	struct iio_dev *iodev;
+
+Usually this is called indio_dev, would be good for consistency if you'd do
+this as well.
+
+> +	int ret;
+> +
+> +	/* registering iio */
+> +	iodev = iio_device_alloc(sizeof(struct vprbrd_adc));
+> +	if (!iodev) {
+> +		dev_err(&pdev->dev, "failed allocating iio device\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	adc = iio_priv(iodev);
+> +	adc->vb = vb;
+> +	iodev->name = "viperboard adc";
+> +	iodev->dev.parent = &pdev->dev;
+> +	iodev->info = &vprbrd_adc_iio_info;
+> +	iodev->modes = INDIO_DIRECT_MODE;
+> +	iodev->channels = vprbrd_adc_iio_channels;
+> +	iodev->num_channels = ARRAY_SIZE(vprbrd_adc_iio_channels);
+> +
+> +	ret = iio_device_register(iodev);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "could not register iio (adc)");
+> +		goto error;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, iodev);
+> +
+> +	return 0;
+> +
+> +error:
+> +	iio_device_free(iodev);
+> +	return ret;
+> +}
+> +
+> +static int __devexit vprbrd_adc_remove(struct platform_device *pdev)
+> +{
+> +	struct iio_dev *iodev = platform_get_drvdata(pdev);
+> +
+> +	iio_device_unregister(iodev);
+> +	iio_device_free(iodev);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver vprbrd_adc_driver = {
+> +	.driver.name	= "viperboard-adc",
+> +	.driver.owner	= THIS_MODULE,
+
+Same as with scan_type, usually this is written as
+
+.driver = {
+	.name = ...
+	....
+},
+
+> +	.probe		= vprbrd_adc_probe,
+> +	.remove		= __devexit_p(vprbrd_adc_remove),
+> +};
+> +
+> +static int __init vprbrd_adc_init(void)
+> +{
+> +	return platform_driver_register(&vprbrd_adc_driver);
+> +}
+> +subsys_initcall(vprbrd_adc_init);
+> +
+> +static void __exit vprbrd_adc_exit(void)
+> +{
+> +	platform_driver_unregister(&vprbrd_adc_driver);
+> +}
+> +module_exit(vprbrd_adc_exit);
+
+module_platform_driver(vprbrd_adc_driver);
+
+> +
+> +MODULE_AUTHOR("Lars Poeschel <poeschel@lemonage.de>");
+> +MODULE_DESCRIPTION("IIO ADC driver for Nano River Techs Viperboard");
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS("platform:viperboard-adc");
+> diff --git a/drivers/mfd/viperboard.c b/drivers/mfd/viperboard.c
+> index a25e07e..eb1cf89 100644
+> --- a/drivers/mfd/viperboard.c
+> +++ b/drivers/mfd/viperboard.c
+> @@ -55,6 +55,9 @@ static struct mfd_cell vprbrd_devs[] = {
+>  	{
+>  		.name = "viperboard-i2c",
+>  	},
+> +	{
+> +		.name = "viperboard-adc",
+> +	},
+>  };
 >  
->  		/* Get the VBUS status from the transceiver */
->  		value = i2c_smbus_read_byte_data(udc->isp1301_i2c_client,
-> -						 ISP1301_I2C_OTG_CONTROL_2);
-> +						 ISP1301_I2C_INTERRUPT_SOURCE);
->  
->  		/* VBUS on or off? */
-> -		if (value & OTG_B_SESS_VLD)
-> +		if (value & INT_SESS_VLD)
->  			udc->vbus = 1;
->  		else
->  			udc->vbus = 0;
+>  static int vprbrd_probe(struct usb_interface *interface,
 
