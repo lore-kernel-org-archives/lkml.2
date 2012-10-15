@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751Ab2JOXik (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 19:38:40 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:37099 "EHLO e7.ny.us.ibm.com"
+	id S1753614Ab2JOXkU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 19:40:20 -0400
+Received: from c60.cesmail.net ([216.154.195.49]:35083 "EHLO c60.cesmail.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754578Ab2JOXij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 19:38:39 -0400
-Date: Mon, 15 Oct 2012 16:38:31 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
+	id S1751327Ab2JOXkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 19:40:18 -0400
+Date: Mon, 15 Oct 2012 19:40:08 -0400
+From: Pavel Roskin <proski@gnu.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] srcu: Add DEFINE_SRCU()
-Message-ID: <20121015233831.GA11650@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1350062057-2439-1-git-send-email-laijs@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350062057-2439-1-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101523-5806-0000-0000-00001AABF2B5
+Subject: Re: Bisected regression in Linux 3.7.0-rc1, hang on login caused by
+ replace_fd()
+Message-ID: <20121015194008.29e38086@mj>
+In-Reply-To: <20121015232705.GM2616@ZenIV.linux.org.uk>
+References: <20121015171437.32e9a4ac@mj>
+	<20121015215127.GK2616@ZenIV.linux.org.uk>
+	<20121015191105.2dac4cac@mj>
+	<20121015232705.GM2616@ZenIV.linux.org.uk>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 13, 2012 at 01:14:13AM +0800, Lai Jiangshan wrote:
-> These patches add a simple DEFINE_SRCU() which define and init
-> the srcu struct in build time, and allow us use srcu in very early
-> boot time.
+On Tue, 16 Oct 2012 00:27:05 +0100
+Al Viro <viro@ZenIV.linux.org.uk> wrote:
 
-So queue for 3.8, thank you!
+> 	I think I understand what's going on there.  Add
+> fput(files[0]) after that replace_fd(); we have a leak and while
+> that's not the right way to fix it, that'd verify if anything else is
+> going on there.
 
-						Thanx, Paul
+Yes, it's working now!  No more hang on login!
 
-> Lai Jiangshan (4):
->   srcu: add my name
->   srcu: export process_srcu()
->   srcu: add DEFINE_SRCU
->   rcutorture: use DEFINE_STATIC_SRCU()
-> 
->  include/linux/srcu.h |   34 ++++++++++++++++++++++++++++++++++
->  kernel/rcutorture.c  |   41 ++++++-----------------------------------
->  kernel/srcu.c        |    8 ++++----
->  3 files changed, 44 insertions(+), 39 deletions(-)
-> 
-> -- 
-> 1.7.7.6
-> 
-
+-- 
+Regards,
+Pavel Roskin
