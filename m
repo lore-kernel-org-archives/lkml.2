@@ -1,118 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630Ab2JOEik (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 00:38:40 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:43962 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab2JOEij (ORCPT
+	id S1751834Ab2JOEv1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 00:51:27 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:10637 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398Ab2JOEv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 00:38:39 -0400
+	Mon, 15 Oct 2012 00:51:26 -0400
+X-Spam-Score: -100.6
+Message-ID: <507B968A.9090104@asianux.com>
+Date: Mon, 15 Oct 2012 12:52:26 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <cover.1348736069.git.viresh.kumar@linaro.org>
-References: <cover.1348736069.git.viresh.kumar@linaro.org>
-Date: Mon, 15 Oct 2012 10:08:38 +0530
-Message-ID: <CAKohpoko6p4z729YTcHXHhKE63+ZG=d43OuPmWvPyf1QmWrgFA@mail.gmail.com>
-Subject: Re: [PATCH V2 0/3] Create sched_select_cpu() and use it in workqueues
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de
-Cc: pjt@google.com, paul.mckenney@linaro.org, tj@kernel.org,
-        suresh.b.siddha@intel.com, venki@google.com, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, amit.kucheria@linaro.org,
-        vincent.guittot@linaro.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: Jeff Layton <jlayton@redhat.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Bug fix] nfs-client: fix nfs_inode_attrs_need_update for async
+ read_done comes during truncating to smaller size
+References: <507B70F1.7040903@asianux.com> <4FA345DA4F4AE44899BD2B03EEEC2FA909236BB5@SACEXCMBX04-PRD.hq.netapp.com>
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA909236BB5@SACEXCMBX04-PRD.hq.netapp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 September 2012 14:34, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> This is V2 of my sched_select_cpu() work.
->
-> In order to save power, it would be useful to schedule work onto non-IDLE cpus
-> instead of waking up an IDLE one.
->
-> To achieve this, we need scheduler to guide kernel frameworks (like: timers &
-> workqueues) on which is the most preferred CPU that must be used for these
-> tasks.
->
-> This patchset is about implementing this concept.
->
-> - The first patch adds sched_select_cpu() routine which returns the preferred
->   cpu which is non-idle.
-> - Second patch removes idle_cpu() calls from timer & hrtimer.
-> - Third patch is about adapting this change in workqueue framework.
->
-> Earlier discussions over v1 can be found here:
-> http://www.mail-archive.com/linaro-dev@lists.linaro.org/msg13342.html
->
-> Earlier discussions over this concept were done at last LPC:
-> http://summit.linuxplumbersconf.org/lpc-2012/meeting/90/lpc2012-sched-timer-workqueue/
->
-> Module created for testing this behavior is present here:
-> http://git.linaro.org/gitweb?p=people/vireshk/module.git;a=summary
->
-> Following are the steps followed in test module:
-> 1. Run single work on each cpu
-> 2. This work will start a timer after x (tested with 10) jiffies of delay
-> 3. Timer routine queues a work... (This may be called from idle or non-idle cpu)
->    and starts the same timer again STEP 3 is done for n number of times (i.e.
->    queuing n works, one after other)
-> 4. All works will call a single routine, which will count following per cpu:
->  - Total works processed by a CPU
->  - Total works processed by a CPU, which are queued from it
->  - Total works processed by a CPU, which aren't queued from it
->
-> Setup:
-> -----
-> - ARM Vexpress TC2 - big.LITTLE CPU
-> - Core 0-1: A15, 2-4: A7
-> - rootfs: linaro-ubuntu-nano
->
-> Results:
-> -------
-> Without Workqueue Modification, i.e. PATCH 3/3:
-> [ 2493.022335] Workqueue Analyser: works processsed by CPU0, Total: 1000, Own: 0, migrated: 0
-> [ 2493.047789] Workqueue Analyser: works processsed by CPU1, Total: 1000, Own: 0, migrated: 0
-> [ 2493.072918] Workqueue Analyser: works processsed by CPU2, Total: 1000, Own: 0, migrated: 0
-> [ 2493.098576] Workqueue Analyser: works processsed by CPU3, Total: 1000, Own: 0, migrated: 0
-> [ 2493.123702] Workqueue Analyser: works processsed by CPU4, Total: 1000, Own: 0, migrated: 0
->
-> With Workqueue Modification, i.e. PATCH 3/3:
-> [ 2493.022335] Workqueue Analyser: works processsed by CPU0, Total: 1002, Own: 999, migrated: 3
-> [ 2493.047789] Workqueue Analyser: works processsed by CPU1, Total: 998,  Own: 997, migrated: 1
-> [ 2493.072918] Workqueue Analyser: works processsed by CPU2, Total: 1013, Own: 996, migrated: 17
-> [ 2493.098576] Workqueue Analyser: works processsed by CPU3, Total: 998,  Own: 993, migrated: 5
-> [ 2493.123702] Workqueue Analyser: works processsed by CPU4, Total: 989,  Own: 987, migrated: 2
->
-> V1->V2
-> -----
-> - New SD_* macros removed now and earlier ones used
-> - sched_select_cpu() rewritten and it includes the check on current cpu's
->   idleness.
-> - cpu_idle() calls from timer and hrtimer removed now.
-> - Patch 2/3 from V1, removed as it doesn't apply to latest workqueue branch from
->   tejun.
-> - CONFIG_MIGRATE_WQ removed and so is wq_select_cpu()
-> - sched_select_cpu() called only from __queue_work()
-> - got tejun/for-3.7 branch in my tree, before making workqueue changes.
->
-> Viresh Kumar (3):
->   sched: Create sched_select_cpu() to give preferred CPU for power
->     saving
->   timer: hrtimer: Don't check idle_cpu() before calling
->     get_nohz_timer_target()
->   workqueue: Schedule work on non-idle cpu instead of current one
+于 2012年10月15日 12:27, Myklebust, Trond 写道:
+> nfs_size_need_update is not about performance. It is a heuristic that is
+> entirely about ensuring correctness when faced with the fact that most
+> Linux filesystems are utterly incapable of reporting with modifications
+> that occur within < 1 second intervals because their mtime/ctime is
+> limited to 1 second resolutions.
+> 
 
-Hi Guys,
+if truly it was for correctness, why not use "!=" instead of '>' ?
 
-I totally understand since last few weeks you guys were very busy as the
-merge window was around. So, didn't tried to disturb you then :)
+> Now, what are the conditions of your test setup? The above bug report is
+> meaningless unless it includes a description of what is being exported
+> by the server (including a proper listing of the contents
+> of /etc/exports and /proc/mounts). It should also include a description
+> of the NFS client mount options (see /proc/mounts on the client).
 
-Can you please share your viewpoint on this patchset now? And also
-the running timer migration patch (which was sent separately)?
+they are below, if you need additional information, please tell me again.
 
-Thanks in Advance.
+for server:
+(nfsx-linux using rsh auto exportfs in cmd line, not in /etc/exports)
+--------------------------------------------------------------------
+root@dhcp122:~# exportfs
+/tmp/fsx18251.testdir
+		<world>
+/tmp          	<world>
+root@dhcp122:~#
+root@dhcp122:~# cat /etc/exports
+# /etc/exports: the access control list for filesystems which may be
+exported
+#		to NFS clients.  See exports(5).
+#
+# Example for NFSv2 and NFSv3:
+# /srv/homes       hostname1(rw,sync,no_subtree_check)
+hostname2(ro,sync,no_subtree_check)
+#
+# Example for NFSv4:
+# /srv/nfs4        gss/krb5i(rw,sync,fsid=0,crossmnt,no_subtree_check)
+# /srv/nfs4/homes  gss/krb5i(rw,sync,no_subtree_check)
+#
+/tmp *(rw,sync,no_root_squash,no_subtree_check)
+root@dhcp122:~#
+root@dhcp122:~# cat /proc/mounts
+rootfs / rootfs rw 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+udev /dev devtmpfs rw,relatime,size=1229628k,nr_inodes=189901,mode=755 0 0
+devpts /dev/pts devpts
+rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000 0 0
+tmpfs /run tmpfs rw,nosuid,relatime,size=516280k,mode=755 0 0
+/dev/disk/by-uuid/e843c57e-98ce-44cc-8e02-6d8e8d8a01b6 / ext4
+rw,relatime,errors=remount-ro,data=ordered 0 0
+cgroup /sys/fs/cgroup tmpfs rw,relatime,mode=755 0 0
+cgroup /sys/fs/cgroup/cpuset cgroup rw,relatime,cpuset 0 0
+cgroup /sys/fs/cgroup/cpu cgroup rw,relatime,cpu 0 0
+cgroup /sys/fs/cgroup/cpuacct cgroup rw,relatime,cpuacct 0 0
+cgroup /sys/fs/cgroup/devices cgroup rw,relatime,devices 0 0
+cgroup /sys/fs/cgroup/freezer cgroup rw,relatime,freezer 0 0
+cgroup /sys/fs/cgroup/blkio cgroup rw,relatime,blkio 0 0
+cgroup /sys/fs/cgroup/perf_event cgroup rw,relatime,perf_event 0 0
+none /sys/fs/fuse/connections fusectl rw,relatime 0 0
+none /sys/kernel/debug debugfs rw,relatime 0 0
+none /sys/kernel/security securityfs rw,relatime 0 0
+none /run/lock tmpfs rw,nosuid,nodev,noexec,relatime,size=5120k 0 0
+none /run/shm tmpfs rw,nosuid,nodev,relatime 0 0
+rpc_pipefs /run/rpc_pipefs rpc_pipefs rw,relatime 0 0
+nfsd /proc/fs/nfsd nfsd rw,relatime 0 0
+root@dhcp122:~#
+-----------------------------------------------------------------------
 
---
-viresh
+for client:
+-----------------------------------------------------------------------
+
+root@dhcp159:/opt/ltp/testscripts# cat /proc/mounts
+rootfs / rootfs rw 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+udev /dev devtmpfs rw,relatime,size=1103700k,nr_inodes=190392,mode=755 0 0
+devpts /dev/pts devpts
+rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000 0 0
+tmpfs /run tmpfs rw,nosuid,relatime,size=465908k,mode=755 0 0
+/dev/disk/by-uuid/418ec1f1-ed9d-4cae-9336-6c742accf538 / ext4
+rw,relatime,errors=remount-ro,data=ordered 0 0
+cgroup /sys/fs/cgroup tmpfs rw,relatime,mode=755 0 0
+cgroup /sys/fs/cgroup/cpuset cgroup rw,relatime,cpuset 0 0
+cgroup /sys/fs/cgroup/cpu cgroup rw,relatime,cpu 0 0
+cgroup /sys/fs/cgroup/cpuacct cgroup rw,relatime,cpuacct 0 0
+cgroup /sys/fs/cgroup/devices cgroup rw,relatime,devices 0 0
+cgroup /sys/fs/cgroup/freezer cgroup rw,relatime,freezer 0 0
+cgroup /sys/fs/cgroup/blkio cgroup rw,relatime,blkio 0 0
+cgroup /sys/fs/cgroup/perf_event cgroup rw,relatime,perf_event 0 0
+none /sys/fs/fuse/connections fusectl rw,relatime 0 0
+none /sys/kernel/debug debugfs rw,relatime 0 0
+none /sys/kernel/security securityfs rw,relatime 0 0
+none /run/lock tmpfs rw,nosuid,nodev,noexec,relatime,size=5120k 0 0
+none /run/shm tmpfs rw,nosuid,nodev,relatime 0 0
+rpc_pipefs /run/rpc_pipefs rpc_pipefs rw,relatime 0 0
+nfsd /proc/fs/nfsd nfsd rw,relatime 0 0
+/dev/sda1 /mnt/sda1 ext3
+rw,relatime,errors=continue,user_xattr,acl,barrier=1,data=ordered 0 0
+dhcp122.asianux.net:/tmp/fsx18251.testdir/
+/opt/ltp/testcases/bin/fsx18251 nfs
+rw,relatime,vers=2,rsize=8192,wsize=8192,namlen=255,hard,proto=udp,timeo=11,retrans=3,sec=sys,mountaddr=10.1.0.139,mountvers=1,mountport=39973,mountproto=udp,local_lock=none,addr=10.1.0.139
+0 0
+root@dhcp159:/opt/ltp/testscripts#
+
+
+-- 
+Chen Gang
+
+Asianux Corporation
