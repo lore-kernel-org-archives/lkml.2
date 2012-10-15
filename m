@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab2JOK6N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 06:58:13 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63320 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752046Ab2JOK6M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 06:58:12 -0400
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Frank Mori Hess <fmhess@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/comedi: Use dev_ printks in drivers/vmk80xx.c
-Date: Mon, 15 Oct 2012 19:58:06 +0900
-Message-Id: <1350298686-20770-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <507BD53D.2070407@mev.co.uk>
-References: <507BD53D.2070407@mev.co.uk>
+	id S1752234Ab2JOLJV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 07:09:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60258 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752042Ab2JOLJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 07:09:20 -0400
+Date: Mon, 15 Oct 2012 12:09:14 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Valdis.Kletnieks@vt.edu,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mm: vmscan: scale number of pages reclaimed by
+ reclaim/compaction only in direct reclaim
+Message-ID: <20121015110914.GD29125@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch warning.
-- Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+Jiri Slaby reported the following:
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+	(It's an effective revert of "mm: vmscan: scale number of pages
+	reclaimed by reclaim/compaction based on failures".)
+	Given kswapd had hours of runtime in ps/top output yesterday in the
+	morning and after the revert it's now 2 minutes in sum for the last 24h,
+	I would say, it's gone.
+
+The intention of the patch in question was to compensate for the loss of
+lumpy reclaim. Part of the reason lumpy reclaim worked is because it
+aggressively reclaimed pages and this patch was meant to be a
+sane compromise.
+
+When compaction fails, it gets deferred and both compaction and
+reclaim/compaction is deferred avoid excessive reclaim. However, since
+commit c6543459 (mm: remove __GFP_NO_KSWAPD), kswapd is woken up each time
+and continues reclaiming which was not taken into account when the patch
+was developed.
+
+As it is not taking deferred compaction into account in this path it scans
+aggressively before falling out and making the compaction_deferred check in
+compaction_ready. This patch avoids kswapd scaling pages for reclaim and
+leaves the aggressive reclaim to the process attempting the THP
+allocation.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- drivers/staging/comedi/drivers/vmk80xx.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ mm/vmscan.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/vmk80xx.c b/drivers/staging/comedi/drivers/vmk80xx.c
-index df277aa..3df4fcf 100644
---- a/drivers/staging/comedi/drivers/vmk80xx.c
-+++ b/drivers/staging/comedi/drivers/vmk80xx.c
-@@ -1371,12 +1371,12 @@ static int vmk80xx_usb_probe(struct usb_interface *intf,
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 2624edc..2b7edfa 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1763,14 +1763,20 @@ static bool in_reclaim_compaction(struct scan_control *sc)
+ #ifdef CONFIG_COMPACTION
+ /*
+  * If compaction is deferred for sc->order then scale the number of pages
+- * reclaimed based on the number of consecutive allocation failures
++ * reclaimed based on the number of consecutive allocation failures. This
++ * scaling only happens for direct reclaim as it is about to attempt
++ * compaction. If compaction fails, future allocations will be deferred
++ * and reclaim avoided. On the other hand, kswapd does not take compaction
++ * deferral into account so if it scaled, it could scan excessively even
++ * though allocations are temporarily not being attempted.
+  */
+ static unsigned long scale_for_compaction(unsigned long pages_for_compaction,
+ 			struct lruvec *lruvec, struct scan_control *sc)
+ {
+ 	struct zone *zone = lruvec_zone(lruvec);
  
- 	if (dev->board.model == VMK8061_MODEL) {
- 		vmk80xx_read_eeprom(dev, IC3_VERSION);
--		printk(KERN_INFO "comedi#: vmk80xx: %s\n", dev->fw.ic3_vers);
-+		dev_info(&intf->dev, "vmk80xx: %s\n", dev->fw.ic3_vers);
- 
- 		if (vmk80xx_check_data_link(dev)) {
- 			vmk80xx_read_eeprom(dev, IC6_VERSION);
--			printk(KERN_INFO "comedi#: vmk80xx: %s\n",
--			       dev->fw.ic6_vers);
-+			dev_info(&intf->dev, "vmk80xx: %s\n",
-+				 dev->fw.ic6_vers);
- 		} else {
- 			dbgcm("comedi#: vmk80xx: no conn. to CPU\n");
- 		}
-@@ -1387,8 +1387,8 @@ static int vmk80xx_usb_probe(struct usb_interface *intf,
- 
- 	dev->probed = 1;
- 
--	printk(KERN_INFO "comedi#: vmk80xx: board #%d [%s] now attached\n",
--	       dev->count, dev->board.name);
-+	dev_info(&intf->dev, "vmk80xx: board #%d [%s] now attached\n",
-+		 dev->count, dev->board.name);
- 
- 	mutex_unlock(&glb_mutex);
- 
-@@ -1422,8 +1422,8 @@ static void vmk80xx_usb_disconnect(struct usb_interface *intf)
- 	kfree(dev->usb_rx_buf);
- 	kfree(dev->usb_tx_buf);
- 
--	printk(KERN_INFO "comedi#: vmk80xx: board #%d [%s] now detached\n",
--	       dev->count, dev->board.name);
-+	dev_info(&intf->dev, "vmk80xx: board #%d [%s] now detached\n",
-+		 dev->count, dev->board.name);
- 
- 	up(&dev->limit_sem);
- 	mutex_unlock(&glb_mutex);
--- 
-1.7.9.5
-
+-	if (zone->compact_order_failed <= sc->order)
++	if (zone->compact_order_failed <= sc->order &&
++	    !current_is_kswapd())
+ 		pages_for_compaction <<= zone->compact_defer_shift;
+ 	return pages_for_compaction;
+ }
