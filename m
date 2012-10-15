@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab2JOBYS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 21:24:18 -0400
-Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:55428 "HELO
-	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752617Ab2JOBYR (ORCPT
+	id S1753419Ab2JOB20 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 21:28:26 -0400
+Received: from bosmailout16.eigbox.net ([66.96.185.16]:39507 "EHLO
+	bosmailout16.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752555Ab2JOB2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 21:24:17 -0400
-Message-ID: <507B65B9.4080603@xenotime.net>
-Date: Sun, 14 Oct 2012 18:24:09 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Sun, 14 Oct 2012 21:28:25 -0400
+X-Greylist: delayed 2875 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Oct 2012 21:28:25 EDT
+X-Authority-Analysis: v=2.0 cv=LIXRtuq9 c=1 sm=1
+ a=xCnBQGcVMpKAnt6pssLkvQ==:17 a=bc2JKO6qiGsA:10 a=jAXA38P_poEA:10
+ a=nlncmwdmcoAA:10 a=IkcTkHD0fZMA:10 a=cRAXhCL3cXIA:10
+ a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=5z8PQ-8DrPULJUTkwQsA:9 a=QEXdDO2ut3YA:10
+ a=x8qw8EAkfcRkIpZA8Q87Bg==:117
+X-EN-OrigOutIP: 10.20.18.7
+X-EN-IMPSID: BCgU1k001099BUA01CgUkV
+Message-ID: <507B5B3E.60102@yahoo.es>
+Date: Mon, 15 Oct 2012 08:39:26 +0800
+From: Hein Tibosch <hein_tibosch@yahoo.es>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: akpm@linux-foundation.org
-CC: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Subject: [PATCH -mmotm] kernel: fix synchro-test.c printk format warrnings
-References: <20121011231551.641101E0048@wpzn4.hot.corp.google.com>
-In-Reply-To: <20121011231551.641101E0048@wpzn4.hot.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        viresh kumar <viresh.kumar@linaro.org>,
+        spear-devel <spear-devel@list.st.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [PATCH REGRESSION FIX] dw_dmac: make driver's endianness configurable
+References: <507A6FA5.1000800@yahoo.es> <CAHp75VdaqzoJPwJpQ9U1kpR-egveajeM71FLAxveWHz7gB+6Eg@mail.gmail.com>
+In-Reply-To: <CAHp75VdaqzoJPwJpQ9U1kpR-egveajeM71FLAxveWHz7gB+6Eg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
+X-EN-AuthUser: hein@htibosch.net
+X-EN-OrigIP: 114.79.56.37
+X-EN-OrigHost: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+Hi Andy,
+On 10/15/2012 4:08 AM, Andy Shevchenko wrote:
+> On Sun, Oct 14, 2012 at 10:54 AM, Hein Tibosch <hein_tibosch@yahoo.es> wrote:
+>> From: Hein Tibosch <hein_tibosch@yahoo.es>
+>>
+>> The dw_dmac was originally developed for avr32 to be used with the Synopsys
+>> DesignWare AHB DMA controller. Starting from 2.6.38, access to the device's i/o
+>> <snip>
+>>  #define dma_readl(dw, name) \
+>> -       readl(&(__dw_regs(dw)->name))
+>> +       dma_readl_native(&(__dw_regs(dw)->name))
+>>  #define dma_writel(dw, name, val) \
+>> -       writel((val), &(__dw_regs(dw)->name))
+>> +       dma_writel_native((val), &(__dw_regs(dw)->name))
+>>
+>>  #define channel_set_bit(dw, reg, mask) \
+>>         dma_writel(dw, reg, ((mask) << 8) | (mask))
+> Why did you not change this one?
 
-Fix printk format warnings in kernel/synchro-test.c.
-Fixes warnings on i386 and on x86_64.
+Because "dma_writel" already calls "dma_writel_native"
 
-kernel/synchro-test.c:432:4: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'long unsigned int'
-kernel/synchro-test.c:437:4: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'long unsigned int'
-kernel/synchro-test.c:442:4: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'long unsigned int'
-kernel/synchro-test.c:447:4: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'long unsigned int'
-kernel/synchro-test.c:452:4: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'long unsigned int'
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- kernel/synchro-test.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
---- mmotm-2012-1011-1614.orig/kernel/synchro-test.c
-+++ mmotm-2012-1011-1614/kernel/synchro-test.c
-@@ -429,27 +429,27 @@ static int __init do_tests(void)
- 	for (loop = 0; loop < MAX_THREADS; loop++) {
- 		if (loop < nummx) {
- 			init_completion(&mx_comp[loop]);
--			kthread_run(mutexer, (void *) loop, "Mutex%u", loop);
-+			kthread_run(mutexer, (void *) loop, "Mutex%lu", loop);
- 		}
- 
- 		if (loop < numsm) {
- 			init_completion(&sm_comp[loop]);
--			kthread_run(semaphorer, (void *) loop, "Sem%u", loop);
-+			kthread_run(semaphorer, (void *) loop, "Sem%lu", loop);
- 		}
- 
- 		if (loop < numrd) {
- 			init_completion(&rd_comp[loop]);
--			kthread_run(reader, (void *) loop, "Read%u", loop);
-+			kthread_run(reader, (void *) loop, "Read%lu", loop);
- 		}
- 
- 		if (loop < numwr) {
- 			init_completion(&wr_comp[loop]);
--			kthread_run(writer, (void *) loop, "Write%u", loop);
-+			kthread_run(writer, (void *) loop, "Write%lu", loop);
- 		}
- 
- 		if (loop < numdg) {
- 			init_completion(&dg_comp[loop]);
--			kthread_run(downgrader, (void *) loop, "Down%u", loop);
-+			kthread_run(downgrader, (void *) loop, "Down%lu", loop);
- 		}
- 	}
- 
