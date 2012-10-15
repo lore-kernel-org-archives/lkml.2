@@ -1,112 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab2JOXOd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 19:14:33 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:47511 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab2JOXOc (ORCPT
+	id S1754441Ab2JOXWM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 19:22:12 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:38575 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751798Ab2JOXWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 19:14:32 -0400
+	Mon, 15 Oct 2012 19:22:09 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtQmAPmZfFB5LH33/2dsb2JhbABFuh+EbQKBBIEJgiABAQUnExwjEAgDDgYELhQlAyETiAOrYZBPFItFgWeEVgOVa5AxgwE
+Date: Tue, 16 Oct 2012 10:21:47 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: William Dauchy <wdauchy@gmail.com>
+Cc: stable@vger.kernel.org, Dave Chinner <dchinner@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        Mark Tinguely <tinguely@sgi.com>, Ben Myers <bpm@sgi.com>
+Subject: Re: xfs: fix buffer lookup race on allocation failure
+Message-ID: <20121015232147.GG2739@dastard>
+References: <CAJ75kXZsBfhydOSF1Tjpp_OOndWs=jbC_YvrZ9Fw22+Q4rp1yw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1210160051100.1682@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.0811091803320.23782@swampdragon.chaosbits.net>
-	<CALF0-+Vtmwu9rCc9BYiDx2O2GQWezK40BYR2LP_ve2YjCt=Afg@mail.gmail.com>
-	<alpine.LNX.2.00.1210152025300.1038@swampdragon.chaosbits.net>
-	<alpine.LNX.2.00.1210160051100.1682@swampdragon.chaosbits.net>
-Date: Mon, 15 Oct 2012 20:14:30 -0300
-Message-ID: <CALF0-+UuB0y_8+SLE05Sn997HDcP5u=AJsoGvjmfSUBB__DkhQ@mail.gmail.com>
-Subject: Re: [PATCH] [media] stk1160: Check return value of stk1160_read_reg()
- in stk1160_i2c_read_reg()
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJ75kXZsBfhydOSF1Tjpp_OOndWs=jbC_YvrZ9Fw22+Q4rp1yw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 7:52 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> On Mon, 15 Oct 2012, Jesper Juhl wrote:
->
->> On Sat, 13 Oct 2012, Ezequiel Garcia wrote:
->>
->> > On Sun, Nov 9, 2008 at 2:04 PM, Jesper Juhl <jj@chaosbits.net> wrote:
->> > > There are two checks for 'rc' being less than zero with no change to
->> > > 'rc' between the two, so the second is just dead code - remove it.
->> > >
->> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
->> > > ---
->> > >  drivers/media/usb/stk1160/stk1160-i2c.c |    3 ---
->> > >  1 files changed, 0 insertions(+), 3 deletions(-)
->> > >
->> > > diff --git a/drivers/media/usb/stk1160/stk1160-i2c.c b/drivers/media/usb/stk1160/stk1160-i2c.c
->> > > index 176ac93..035cf8c 100644
->> > > --- a/drivers/media/usb/stk1160/stk1160-i2c.c
->> > > +++ b/drivers/media/usb/stk1160/stk1160-i2c.c
->> > > @@ -117,9 +117,6 @@ static int stk1160_i2c_read_reg(struct stk1160 *dev, u8 addr,
->> > >                 return rc;
->> > >
->> > >         stk1160_read_reg(dev, STK1160_SBUSR_RD, value);
->> > > -       if (rc < 0)
->> > > -               return rc;
->> > > -
->> > >         return 0;
->> > >  }
->> > >
->> >
->> > Thanks for doing this. Wouldn't you like to save stk1160_read_reg
->> > return code to rc, instead of this?
->> >
->> Ahh yes, I guess I was too quick to just assume it was dead code.
->> Looking at it again; what you suggest must have been the original
->> intention. I'll cook up a new patch.
->>
->> Thanks.
->>
-> From: Jesper Juhl <jj@chaosbits.net>
-> Date: Sat, 13 Oct 2012 00:16:37 +0200
-> Subject: [PATCH] [media] stk1160: Check return value of stk1160_read_reg() in stk1160_i2c_read_reg()
->
-> Currently there are two checks for 'rc' being less than zero with no
-> change to 'rc' between the two, so the second is just dead code.
-> The intention seems to have been to assign the return value of
-> 'stk1160_read_reg()' to 'rc' before the (currently dead) second check
-> and then test /that/. This patch does that.
->
+On Mon, Oct 15, 2012 at 11:27:58AM +0200, William Dauchy wrote:
+> Hello,
+> 
+> I believe, the commit fe2429b fixes the attached kernel trace.
+> I tested it both on top of 3.2 and 3.4 stable tree.
+> Could we consider adding this patch in stable tree at least for 3.2 and 3.4?
+> 
+> commit fe2429b0966a7ec42b5fe3bf96f0f10de0a3b536
+> Author: Dave Chinner <dchinner@redhat.com>
+> Date:   Mon Apr 23 15:58:45 2012 +1000
+> 
+>     xfs: fix buffer lookup race on allocation failure
+> 
+>     When memory allocation fails to add the page array or tht epages to
+>     a buffer during xfs_buf_get(), the buffer is left in the cache in a
+>     partially initialised state. There is enough state left for the next
+>     lookup on that buffer to find the buffer, and for the buffer to then
+>     be used without finishing the initialisation.  As a result, when an
+>     attempt to do IO on the buffer occurs, it fails with EIO because
+>     there are no pages attached to the buffer.
+> 
+>     We cannot remove the buffer from the cache immediately and free it,
+>     because there may already be a racing lookup that is blocked on the
+>     buffer lock. Hence the moment we unlock the buffer to then free it,
+>     the other user is woken and we have a use-after-free situation.
+> 
+>     To avoid this race condition altogether, allocate the pages for the
+>     buffer before we insert it into the cache.  This then means that we
+>     don't have an allocation  failure case to deal after the buffer is
+>     already present in the cache, and hence avoid the problem
+>     altogether.  In most cases we won't have racing inserts for the same
+>     buffer, and so won't increase the memory pressure allocation before
+>     insertion may entail.
+> 
+>     Signed-off-by: Dave Chinner <dchinner@redhat.com>
+>     Reviewed-by: Mark Tinguely <tinguely@sgi.com>
+>     Signed-off-by: Ben Myers <bpm@sgi.com>
+> 
+> 
+> XFS: Assertion failed: bp->b_bn != XFS_BUF_DADDR_NULL, file:
+> fs/xfs/xfs_buf.c, line: 598
 
+You're running a CONFIG_XFS_DEBUG kernel. If you can reproduce the
+problem with CONFIG_XFS_DEBUG, then it probably should be
+backported.
 
-This is an overly complicated explanation for such a small patch.
-Can you try to simplify it?
+If you are using CONFIG_XFS_DEBUG on production systems, then you
+shouldn't be because it does nasty things to allocation patterns,
+not to mention a 25-30% CPU overhead and will panic in places where
+errors are recoverable but as a developer we want to try to find out
+what went wrong.
 
+In this case, you'll get a transient EIO error when the I/O is
+issued on the malformed buffer, but other than that the system can
+continue alon just fine and the next read ofthe buffer will work
+prefectly...
 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  drivers/media/usb/stk1160/stk1160-i2c.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/media/usb/stk1160/stk1160-i2c.c b/drivers/media/usb/stk1160/stk1160-i2c.c
-> index 176ac93..a2370e4 100644
-> --- a/drivers/media/usb/stk1160/stk1160-i2c.c
-> +++ b/drivers/media/usb/stk1160/stk1160-i2c.c
-> @@ -116,10 +116,9 @@ static int stk1160_i2c_read_reg(struct stk1160 *dev, u8 addr,
->         if (rc < 0)
->                 return rc;
->
-> -       stk1160_read_reg(dev, STK1160_SBUSR_RD, value);
-> +       rc = stk1160_read_reg(dev, STK1160_SBUSR_RD, value);
->         if (rc < 0)
->                 return rc;
+Cheers,
 
-Why are you removing this line?
-
-
-> -
->         return 0;
->  }
->
-
-
-Thanks,
-
-    Ezequiel
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
