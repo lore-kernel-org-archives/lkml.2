@@ -1,198 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab2JOXeV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 19:34:21 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:60509 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752207Ab2JOXcH (ORCPT
+	id S1754877Ab2JOXef (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 19:34:35 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:37369 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104Ab2JOXec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 19:32:07 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        w.sang@pengutronix.de, jbe@pengutronix.de, plagnioj@jcrosoft.com,
-        highguy@gmail.com, broonie@opensource.wolfsonmicro.com,
-        daniel-gl@gmx.net, gregkh@linuxfoundation.org, rmallon@gmail.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RFC 05/11 v4] gpio-lpc32xx: Add block GPIO API
-Date: Tue, 16 Oct 2012 01:31:21 +0200
-Message-Id: <1350343887-7344-6-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1350343887-7344-1-git-send-email-stigge@antcom.de>
-References: <1350343887-7344-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Mon, 15 Oct 2012 19:34:32 -0400
+From: Irina Tirdea <irina.tirdea@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Irina Tirdea <irina.tirdea@intel.com>
+Subject: [PATCH v4 1/6] perf tools: configure tmp path at build time
+Date: Tue, 16 Oct 2012 02:33:35 +0300
+Message-Id: <1350344020-8071-2-git-send-email-irina.tirdea@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1350344020-8071-1-git-send-email-irina.tirdea@gmail.com>
+References: <1350344020-8071-1-git-send-email-irina.tirdea@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds block GPIO API support to the LPC32xx driver.
+From: Irina Tirdea <irina.tirdea@intel.com>
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+Temporary perf files are hardcoded to point to /tmp. Android does not have
+a /tmp directory so it needs to set this path at compile time.
 
+Add a compile-time definition (PERF_TMP_DIR) in the Makefile that sets the path
+to temp directory. By default it points to /tmp.
+
+Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- drivers/gpio/gpio-lpc32xx.c |   82 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 82 insertions(+)
+ tools/perf/Documentation/android.txt       |    1 +
+ tools/perf/Documentation/jit-interface.txt |    4 +++-
+ tools/perf/Makefile                        |   20 +++++++++++++++++++-
+ tools/perf/perf-archive.sh                 |   13 +++++++++++--
+ tools/perf/util/dso-test-data.c            |    2 +-
+ tools/perf/util/map.c                      |    3 ++-
+ tools/perf/util/pmu.c                      |    2 +-
+ tools/perf/util/symbol.c                   |    4 +++-
+ tools/perf/util/trace-event-info.c         |    2 +-
+ tools/perf/util/vdso.c                     |    2 +-
+ 10 files changed, 43 insertions(+), 10 deletions(-)
 
---- linux-2.6.orig/drivers/gpio/gpio-lpc32xx.c
-+++ linux-2.6/drivers/gpio/gpio-lpc32xx.c
-@@ -297,6 +297,22 @@ static int lpc32xx_gpio_get_value_p3(str
- 	return __get_gpio_state_p3(group, pin);
- }
+diff --git a/tools/perf/Documentation/android.txt b/tools/perf/Documentation/android.txt
+index a39dbbb..24fd01c 100644
+--- a/tools/perf/Documentation/android.txt
++++ b/tools/perf/Documentation/android.txt
+@@ -68,6 +68,7 @@ Some perf features need environment variables to run properly.
+ You need to set these before running perf on the target:
+   adb shell
+   # PERF_PAGER=cat
++  # PERF_TMP_DIR=/data/local/tmp
  
-+static unsigned long lpc32xx_gpio_get_block_p3(struct gpio_chip *chip,
-+					       unsigned long mask)
-+{
-+	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
-+	u32 bits = __raw_readl(group->gpio_grp->inp_state);
-+
-+	/* In P3_INP_STATE, the 6 GPIOs are scattered over the register,
-+	 * rearranging to bits 0-5
-+	 */
-+	bits >>= 10;
-+	bits &= 0x401F;
-+	bits |= (bits & 0x4000) >> 9;
-+
-+	return bits & mask & 0x3F;
-+}
-+
- static int lpc32xx_gpi_get_value(struct gpio_chip *chip, unsigned pin)
- {
- 	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
-@@ -304,6 +320,15 @@ static int lpc32xx_gpi_get_value(struct
- 	return __get_gpi_state_p3(group, pin);
- }
+ IV. Run perf
+ ------------------------------------------------
+diff --git a/tools/perf/Documentation/jit-interface.txt b/tools/perf/Documentation/jit-interface.txt
+index a8656f5..10cb6ec 100644
+--- a/tools/perf/Documentation/jit-interface.txt
++++ b/tools/perf/Documentation/jit-interface.txt
+@@ -1,7 +1,9 @@
+ perf supports a simple JIT interface to resolve symbols for dynamic code generated
+ by a JIT.
  
-+static unsigned long lpc32xx_gpi_get_block(struct gpio_chip *chip,
-+					   unsigned long mask)
-+{
-+	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
-+	u32 bits = __raw_readl(group->gpio_grp->inp_state);
-+
-+	return bits & mask;
-+}
-+
- static int lpc32xx_gpio_dir_output_p012(struct gpio_chip *chip, unsigned pin,
- 	int value)
- {
-@@ -351,6 +376,27 @@ static void lpc32xx_gpio_set_value_p3(st
- 	__set_gpio_level_p3(group, pin, value);
- }
+-The JIT has to write a /tmp/perf-%d.map  (%d = pid of process) file
++The JIT has to write a $PERF_TMP_DIR/perf-%d.map  (%d = pid of process) file.
++You can set $PERF_TMP_DIR at compile time in the Makefile.
++By default it is /tmp.
  
-+static void lpc32xx_gpio_set_block_p3(struct gpio_chip *chip,
-+				      unsigned long mask,
-+				      unsigned long values)
-+{
-+	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
-+	u32 set_bits = values & mask;
-+	u32 clr_bits = ~values & mask;
-+
-+	/* States of GPIO 0-5 start at bit 25 */
-+	set_bits <<= 25;
-+	clr_bits <<= 25;
-+
-+	/* Note: On LPC32xx, GPOs can only be set at once or cleared at once,
-+	 *       but not set and cleared at once
-+	 */
-+	if (set_bits)
-+		__raw_writel(set_bits, group->gpio_grp->outp_set);
-+	if (clr_bits)
-+		__raw_writel(clr_bits, group->gpio_grp->outp_clr);
-+}
-+
- static void lpc32xx_gpo_set_value(struct gpio_chip *chip, unsigned pin,
- 	int value)
- {
-@@ -366,6 +412,31 @@ static int lpc32xx_gpo_get_value(struct
- 	return __get_gpo_state_p3(group, pin);
- }
+ This is a text file.
  
-+static void lpc32xx_gpo_set_block(struct gpio_chip *chip, unsigned long mask,
-+				  unsigned long values)
-+{
-+	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
-+	u32 set_bits = values & mask;
-+	u32 clr_bits = ~values & mask;
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 318bec8..005840b 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -141,6 +141,7 @@ sysconfdir = $(prefix)/etc
+ ETC_PERFCONFIG = etc/perfconfig
+ endif
+ lib = lib
++PERF_TMP_DIR = /tmp
+ 
+ export prefix bindir sharedir sysconfdir
+ 
+@@ -177,6 +178,7 @@ ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS)),y)
+ 	EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
+ 	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
+ 	BASIC_CFLAGS += -I.
++	PERF_TMP_DIR = /data/local/tmp
+ endif
+ 
+ # Guard against environment variables
+@@ -255,7 +257,8 @@ $(OUTPUT)util/pmu-bison.c: util/pmu.y
+ 	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
+ 
+ $(OUTPUT)util/parse-events.o: $(OUTPUT)util/parse-events-flex.c $(OUTPUT)util/parse-events-bison.c
+-$(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c
++$(OUTPUT)util/pmu.o: util/pmu.c $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
+ 
+ LIB_FILE=$(OUTPUT)libperf.a
+ 
+@@ -889,6 +892,21 @@ $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
+ $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+ 
++$(OUTPUT)util/dso-test-data.o: util/dso-test-data.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
 +
-+	/* Note: On LPC32xx, GPOs can only be set at once or cleared at once,
-+	 *       but not set and cleared at once
-+	 */
-+	if (set_bits)
-+		__raw_writel(set_bits, group->gpio_grp->outp_set);
-+	if (clr_bits)
-+		__raw_writel(clr_bits, group->gpio_grp->outp_clr);
-+}
++$(OUTPUT)util/map.o: util/map.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
 +
-+static unsigned long lpc32xx_gpo_get_block(struct gpio_chip *chip,
-+					   unsigned long mask)
-+{
-+	struct lpc32xx_gpio_chip *group = to_lpc32xx_gpio(chip);
-+	u32 bits = __raw_readl(group->gpio_grp->outp_state);
++$(OUTPUT)util/symbol.o: util/symbol.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
 +
-+	return bits & mask;
-+}
++$(OUTPUT)util/trace-event-info.o: util/trace-event-info.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
 +
- static int lpc32xx_gpio_request(struct gpio_chip *chip, unsigned pin)
++$(OUTPUT)util/vdso.o: util/vdso.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
++
+ $(OUTPUT)ui/browser.o: ui/browser.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
+ 
+diff --git a/tools/perf/perf-archive.sh b/tools/perf/perf-archive.sh
+index e919306..058c3b7 100644
+--- a/tools/perf/perf-archive.sh
++++ b/tools/perf/perf-archive.sh
+@@ -18,7 +18,16 @@ else
+         PERF_BUILDID_DIR=$PERF_BUILDID_DIR/
+ fi
+ 
+-BUILDIDS=$(mktemp /tmp/perf-archive-buildids.XXXXXX)
++#
++# PERF_TMP_DIR environment variable set by perf
++# path to temp directory, default to /tmp
++#
++if [ -z $PERF_TMP_DIR ]; then
++	PERF_TMP_DIR=/tmp
++fi
++
++
++BUILDIDS=$(mktemp $PERF_TMP_DIR/perf-archive-buildids.XXXXXX)
+ NOBUILDID=0000000000000000000000000000000000000000
+ 
+ perf buildid-list -i $PERF_DATA --with-hits | grep -v "^$NOBUILDID " > $BUILDIDS
+@@ -28,7 +37,7 @@ if [ ! -s $BUILDIDS ] ; then
+ 	exit 1
+ fi
+ 
+-MANIFEST=$(mktemp /tmp/perf-archive-manifest.XXXXXX)
++MANIFEST=$(mktemp $PERF_TMP_DIR/perf-archive-manifest.XXXXXX)
+ PERF_BUILDID_LINKDIR=$(readlink -f $PERF_BUILDID_DIR)/
+ 
+ cut -d ' ' -f 1 $BUILDIDS | \
+diff --git a/tools/perf/util/dso-test-data.c b/tools/perf/util/dso-test-data.c
+index c6caede..ca81e65 100644
+--- a/tools/perf/util/dso-test-data.c
++++ b/tools/perf/util/dso-test-data.c
+@@ -18,7 +18,7 @@ do { \
+ 
+ static char *test_file(int size)
  {
- 	if (pin < chip->ngpio)
-@@ -440,8 +511,10 @@ static struct lpc32xx_gpio_chip lpc32xx_
- 			.label			= "gpio_p0",
- 			.direction_input	= lpc32xx_gpio_dir_input_p012,
- 			.get			= lpc32xx_gpio_get_value_p012,
-+			.get_block		= lpc32xx_gpi_get_block,
- 			.direction_output	= lpc32xx_gpio_dir_output_p012,
- 			.set			= lpc32xx_gpio_set_value_p012,
-+			.set_block		= lpc32xx_gpo_set_block,
- 			.request		= lpc32xx_gpio_request,
- 			.to_irq			= lpc32xx_gpio_to_irq_p01,
- 			.base			= LPC32XX_GPIO_P0_GRP,
-@@ -456,8 +529,10 @@ static struct lpc32xx_gpio_chip lpc32xx_
- 			.label			= "gpio_p1",
- 			.direction_input	= lpc32xx_gpio_dir_input_p012,
- 			.get			= lpc32xx_gpio_get_value_p012,
-+			.get_block		= lpc32xx_gpi_get_block,
- 			.direction_output	= lpc32xx_gpio_dir_output_p012,
- 			.set			= lpc32xx_gpio_set_value_p012,
-+			.set_block		= lpc32xx_gpo_set_block,
- 			.request		= lpc32xx_gpio_request,
- 			.to_irq			= lpc32xx_gpio_to_irq_p01,
- 			.base			= LPC32XX_GPIO_P1_GRP,
-@@ -472,8 +547,10 @@ static struct lpc32xx_gpio_chip lpc32xx_
- 			.label			= "gpio_p2",
- 			.direction_input	= lpc32xx_gpio_dir_input_p012,
- 			.get			= lpc32xx_gpio_get_value_p012,
-+			.get_block		= lpc32xx_gpi_get_block,
- 			.direction_output	= lpc32xx_gpio_dir_output_p012,
- 			.set			= lpc32xx_gpio_set_value_p012,
-+			.set_block		= lpc32xx_gpo_set_block,
- 			.request		= lpc32xx_gpio_request,
- 			.base			= LPC32XX_GPIO_P2_GRP,
- 			.ngpio			= LPC32XX_GPIO_P2_MAX,
-@@ -487,8 +564,10 @@ static struct lpc32xx_gpio_chip lpc32xx_
- 			.label			= "gpio_p3",
- 			.direction_input	= lpc32xx_gpio_dir_input_p3,
- 			.get			= lpc32xx_gpio_get_value_p3,
-+			.get_block		= lpc32xx_gpio_get_block_p3,
- 			.direction_output	= lpc32xx_gpio_dir_output_p3,
- 			.set			= lpc32xx_gpio_set_value_p3,
-+			.set_block		= lpc32xx_gpio_set_block_p3,
- 			.request		= lpc32xx_gpio_request,
- 			.to_irq			= lpc32xx_gpio_to_irq_gpio_p3,
- 			.base			= LPC32XX_GPIO_P3_GRP,
-@@ -503,6 +582,7 @@ static struct lpc32xx_gpio_chip lpc32xx_
- 			.label			= "gpi_p3",
- 			.direction_input	= lpc32xx_gpio_dir_in_always,
- 			.get			= lpc32xx_gpi_get_value,
-+			.get_block		= lpc32xx_gpi_get_block,
- 			.request		= lpc32xx_gpio_request,
- 			.to_irq			= lpc32xx_gpio_to_irq_gpi_p3,
- 			.base			= LPC32XX_GPI_P3_GRP,
-@@ -517,7 +597,9 @@ static struct lpc32xx_gpio_chip lpc32xx_
- 			.label			= "gpo_p3",
- 			.direction_output	= lpc32xx_gpio_dir_out_always,
- 			.set			= lpc32xx_gpo_set_value,
-+			.set_block		= lpc32xx_gpo_set_block,
- 			.get			= lpc32xx_gpo_get_value,
-+			.get_block		= lpc32xx_gpo_get_block,
- 			.request		= lpc32xx_gpio_request,
- 			.base			= LPC32XX_GPO_P3_GRP,
- 			.ngpio			= LPC32XX_GPO_P3_MAX,
+-	static char buf_templ[] = "/tmp/test-XXXXXX";
++	static char buf_templ[] = PERF_TMP_DIR "/test-XXXXXX";
+ 	char *templ = buf_templ;
+ 	int fd, i;
+ 	unsigned char *buf;
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 6109fa4..4e69b57 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -59,7 +59,8 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 		no_dso = is_no_dso_memory(filename);
+ 
+ 		if (anon) {
+-			snprintf(newfilename, sizeof(newfilename), "/tmp/perf-%d.map", pid);
++			snprintf(newfilename, sizeof(newfilename),
++				 PERF_TMP_DIR "/perf-%d.map", pid);
+ 			filename = newfilename;
+ 		}
+ 
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 8a2229d..5ebde18 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -637,7 +637,7 @@ static char *test_format_dir_get(void)
+ 	static char dir[PATH_MAX];
+ 	unsigned int i;
+ 
+-	snprintf(dir, PATH_MAX, "/tmp/perf-pmu-test-format-XXXXXX");
++	snprintf(dir, PATH_MAX, PERF_TMP_DIR "/perf-pmu-test-format-XXXXXX");
+ 	if (!mkdtemp(dir))
+ 		return NULL;
+ 
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index e2e8c69..d8aca82 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1051,7 +1051,9 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 
+ 	dso->adjust_symbols = 0;
+ 
+-	if (strncmp(dso->name, "/tmp/perf-", 10) == 0) {
++	if (strncmp
++	    (dso->name, PERF_TMP_DIR "/perf-",
++	     strlen(PERF_TMP_DIR "/perf-")) == 0) {
+ 		struct stat st;
+ 
+ 		if (lstat(dso->name, &st) < 0)
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index a8d81c3..e50ea61 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -481,7 +481,7 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+ 		int temp_fd;
+ 
+ 		snprintf(tdata->temp_file, sizeof(tdata->temp_file),
+-			 "/tmp/perf-XXXXXX");
++			 PERF_TMP_DIR "/perf-XXXXXX");
+ 		if (!mkstemp(tdata->temp_file))
+ 			die("Can't make temp file");
+ 
+diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
+index e60951f..8b9613b 100644
+--- a/tools/perf/util/vdso.c
++++ b/tools/perf/util/vdso.c
+@@ -14,7 +14,7 @@
+ #include "linux/string.h"
+ 
+ static bool vdso_found;
+-static char vdso_file[] = "/tmp/perf-vdso.so-XXXXXX";
++static char vdso_file[] = PERF_TMP_DIR "/perf-vdso.so-XXXXXX";
+ 
+ static int find_vdso_map(void **start, void **end)
+ {
+-- 
+1.7.9.5
+
