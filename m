@@ -1,42 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208Ab2JOVnb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 17:43:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28767 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932086Ab2JOVna (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 17:43:30 -0400
-X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=4xDcOe4IjvRdPVVETi+CqA==:17 a=TtU46XPs5IkA:10 a=TRgVYD6ZyiEA:10 a=ha3O63_jkVoA:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=yQdBAQUQAAAA:8 a=jo8P0UgX770A:10 a=_DFGc7OWwY14PL9uOa8A:9 a=CjuIK1q_8ugA:10 a=IcxpeKGZWnEA:10 a=4xDcOe4IjvRdPVVETi+CqA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 75.81.36.228
-Date: Mon, 15 Oct 2012 16:43:27 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] include/version.h: Update for kernel 3.7
-Message-ID: <507c837f.D1Nk8uFiYhA4dhxy%Larry.Finger@lwfinger.net>
-User-Agent: Heirloom mailx 12.5 7/5/10
+	id S932225Ab2JOVnj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 17:43:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57988 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932086Ab2JOVnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 17:43:37 -0400
+Date: Mon, 15 Oct 2012 23:43:29 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: [RESEND] [PATCH 2/2] random: fix debug format strings
+In-Reply-To: <alpine.LNX.2.00.1210081639340.28357@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1210152343050.14002@pobox.suse.cz>
+References: <alpine.LNX.2.00.1210081637170.28357@pobox.suse.cz> <alpine.LNX.2.00.1210081639340.28357@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=ISO-8859-7
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The value for LINUX_VERSION_CODE was not updated for kernel 3.7-rc1.
+Fix the following warnings in formatting debug output:
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
----
- version.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
----
+drivers/char/random.c: In function ¡xfer_secondary_pool¢:
+drivers/char/random.c:827: warning: format ¡%d¢ expects type ¡int¢, but argument 7 has type ¡size_t¢
+drivers/char/random.c: In function ¡account¢:
+drivers/char/random.c:859: warning: format ¡%d¢ expects type ¡int¢, but argument 5 has type ¡size_t¢
+drivers/char/random.c:881: warning: format ¡%d¢ expects type ¡int¢, but argument 5 has type ¡size_t¢
+drivers/char/random.c: In function ¡random_read¢:
+drivers/char/random.c:1141: warning: format ¡%d¢ expects type ¡int¢, but argument 5 has type ¡ssize_t¢
+drivers/char/random.c:1145: warning: format ¡%d¢ expects type ¡int¢, but argument 5 has type ¡ssize_t¢
+drivers/char/random.c:1145: warning: format ¡%d¢ expects type ¡int¢, but argument 6 has type ¡long unsigned int¢
 
-Index: linux-2.6/include/linux/version.h
-===================================================================
---- linux-2.6.orig/include/linux/version.h
-+++ linux-2.6/include/linux/version.h
-@@ -1,2 +1,2 @@
--#define LINUX_VERSION_CODE 198144
-+#define LINUX_VERSION_CODE 198400
- #define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))
+by using '%zd' instead of '%d' to properly denote ssize_t/size_t conversion.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
+ drivers/char/random.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 9ac4443..5d513c3 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -825,7 +825,7 @@ static void xfer_secondary_pool(struct entropy_store *r, size_t nbytes)
+ 		bytes = min_t(int, bytes, sizeof(tmp));
+ 
+ 		DEBUG_ENT("going to reseed %s with %d bits "
+-			  "(%d of %d requested)\n",
++			  "(%zd of %d requested)\n",
+ 			  r->name, bytes * 8, nbytes * 8, r->entropy_count);
+ 
+ 		bytes = extract_entropy(r->pull, tmp, bytes,
+@@ -856,7 +856,7 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+ 	spin_lock_irqsave(&r->lock, flags);
+ 
+ 	BUG_ON(r->entropy_count > r->poolinfo->POOLBITS);
+-	DEBUG_ENT("trying to extract %d bits from %s\n",
++	DEBUG_ENT("trying to extract %zd bits from %s\n",
+ 		  nbytes * 8, r->name);
+ 
+ 	/* Can we pull enough? */
+@@ -878,7 +878,7 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+ 		}
+ 	}
+ 
+-	DEBUG_ENT("debiting %d entropy credits from %s%s\n",
++	DEBUG_ENT("debiting %zd entropy credits from %s%s\n",
+ 		  nbytes * 8, r->name, r->limit ? "" : " (unlimited)");
+ 
+ 	spin_unlock_irqrestore(&r->lock, flags);
+@@ -1138,11 +1138,11 @@ random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
+ 		if (n > SEC_XFER_SIZE)
+ 			n = SEC_XFER_SIZE;
+ 
+-		DEBUG_ENT("reading %d bits\n", n*8);
++		DEBUG_ENT("reading %zd bits\n", n*8);
+ 
+ 		n = extract_entropy_user(&blocking_pool, buf, n);
+ 
+-		DEBUG_ENT("read got %d bits (%d still needed)\n",
++		DEBUG_ENT("read got %zd bits (%zd still needed)\n",
+ 			  n*8, (nbytes-n)*8);
+ 
+ 		if (n == 0) {
+-- 
+Jiri Kosina
+SUSE Labs
