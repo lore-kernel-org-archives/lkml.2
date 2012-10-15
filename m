@@ -1,65 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779Ab2JOOPb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 10:15:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36811 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753777Ab2JOOP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 10:15:29 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <507B63AC.3010807@xenotime.net>
-References: <507B63AC.3010807@xenotime.net> <CA+55aFyt0KFNp5Binu-c3-XzF=MG+23EDOk1R6t4qqgW58ksAw@mail.gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>
-Subject: Re: Linux 3.7-rc1 (uml uapi errors)
-Date: Mon, 15 Oct 2012 15:15:20 +0100
-Message-ID: <17841.1350310520@warthog.procyon.org.uk>
+	id S1750942Ab2JOOUj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 10:20:39 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:57251 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab2JOOUi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 10:20:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 1/2] mmc: core: Support all MMC capabilities when booting from Device Tree
+Date: Mon, 15 Oct 2012 14:20:29 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, Chris Ball <cjb@laptop.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-mmc@vger.kernel.org
+References: <1350306959-5843-1-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1350306959-5843-1-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210151420.29930.arnd@arndb.de>
+X-Provags-ID: V02:K0:a6A7wZdKFkowTdr59BLSx/S5ZIQIFCuiXHgqX+5+/Qk
+ jHOPEAq2R2iST8Y+rMEIulK0XALYSrSmDLEAVku3zVOXu6nU/S
+ v7op+5X3dHSPVVCGnx+DmggGaOhYlNYa+3sWzn3KOrOkNOyFB9
+ GBCQsZxlOG0Ox3ajCsqU8JMn7+gpKvfFGNViF+EL/jzyH3apLO
+ 81ZFoBSVAD5zzYDJz/qus77tz/Vsoc0Ko0KPCAzheBFqGAbjkw
+ U1Htrm41aCUTULmeKGYRyIvYLpxqETD3WIhQAiy6364NQ/vr1E
+ i09IwydPzETKeL/uQEL+80wa0CHpk5RziOIDOpmeOl+Qcz0Gm3
+ Pgvtn68f4/FWYE+S+Vts=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 15 October 2012, Lee Jones wrote:
+> Capabilities are an important part of the MMC subsystem. Much
+> supported functionality would be lost if we didn't provide the
+> same level of support when booting Device Tree as we currently
+> do when the subsystem is passed capabilities via platform data.
+> This patch supplies this support with one simple call to a
+> DT parsing function.
 
-Hi Randy,
+We already document all the commonly used properties
+in Documentation/devicetree/bindings/mmc/mmc.txt
 
-Randy Dunlap <rdunlap@xenotime.net> wrote:
+Please don't add any duplicates or those that are not used
+so far.
 
-> Building um (uml) for x86_64 (defconfig) has lots of errors like:
-> 
-> In file included from include/linux/irq.h:22:0,
->                  from include/asm-generic/hardirq.h:12,
->                  from arch/um/include/generated/asm/hardirq.h:1,
->                  from include/linux/hardirq.h:7,
->                  from include/linux/ftrace_event.h:7,
->                  from include/trace/syscall.h:6,
->                  from include/linux/syscalls.h:78,
->                  from init/noinitramfs.c:23:
-> include/linux/irqnr.h:4:30: fatal error: uapi/linux/irqnr.h: No such file or directory
+> +	if(of_property_read_bool(np, "mmc-cap-4-bit-data"))
+> +		*caps |= MMC_CAP_4_BIT_DATA;
 
-Did you build from a GIT tree, from a tarball or patch?
+see "bus-width" property.
 
-include/uapi/linux/irqnr.h ended up a zero-length file in GIT as there was
-nothing in the original file outside of the __KERNEL__ guards.  Indeed, if I
-look in /usr/include/irqnr.h, I see:
+> +	if(of_property_read_bool(np, "mmc-cap-mmc-highspeed"))
+> +		*caps |= MMC_CAP_MMC_HIGHSPEED;
+> +	if(of_property_read_bool(np, "mmc-cap-sd-highspeed"))
+> +		*caps |= MMC_CAP_SD_HIGHSPEED;
 
-	#ifndef _LINUX_IRQNR_H
-	#define _LINUX_IRQNR_H
+implied by "max-frequency" property.
 
-	/*
-	 * Generic irq_desc iterators:
-	 */
+> +	if(of_property_read_bool(np, "mmc-cap-sdio-irq"))
+> +		*caps |= MMC_CAP_SDIO_IRQ;
 
-	#endif
+implied by presence of SDIO irq property.
 
-I suspect somehow the file got deleted, even though the patch shows it:
+> +	if(of_property_read_bool(np, "mmc-cap-spi"))
+> +		*caps |= MMC_CAP_SPI;
 
-	diff --git a/include/uapi/linux/irqnr.h b/include/uapi/linux/irqnr.h
-	new file mode 100644
-	index 000000000000..e69de29bb2d1
+Only used by the mmc_spi driver, can be hardcoded there.
 
-David
+> +	if(of_property_read_bool(np, "mmc-cap-needs-poll"))
+> +		*caps |= MMC_CAP_NEEDS_POLL;
+
+implied by absence of irqs property.
+
+> +	if(of_property_read_bool(np, "mmc-cap-8-bit-data"))
+> +		*caps |= MMC_CAP_8_BIT_DATA;
+
+see "bus-width" property.
+
+> +	if(of_property_read_bool(np, "mmc-cap-nonremovable"))
+> +		*caps |= MMC_CAP_NONREMOVABLE;
+
+see "non-removable property.
+
+> +	if(of_property_read_bool(np, "mmc-cap-wait-while-busy"))
+> +		*caps |= MMC_CAP_WAIT_WHILE_BUSY;
+
+This seems to be a linux device driver specific quirk that doesn't
+belong into a hardware description.
+
+> +	if(of_property_read_bool(np, "mmc-cap-erase"))
+> +		*caps |= MMC_CAP_ERASE;
+
+driver specific.
+
+> ...
+
+and so on. What are you actually missing in the properties that
+are already there?
+
+	Arnd
