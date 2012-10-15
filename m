@@ -1,121 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab2JOQ7t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 12:59:49 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:56604 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753955Ab2JOQ7X (ORCPT
+	id S1754003Ab2JOREM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 13:04:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41139 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753912Ab2JOREK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 12:59:23 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 2/3] tick: Consolidate tick handling for high and low res handlers
-Date: Mon, 15 Oct 2012 18:59:13 +0200
-Message-Id: <1350320354-17214-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1350320354-17214-1-git-send-email-fweisbec@gmail.com>
-References: <1350320354-17214-1-git-send-email-fweisbec@gmail.com>
+	Mon, 15 Oct 2012 13:04:10 -0400
+Subject: Re: [RFC PATCH] posix timers: allocate timer id per task
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: mingo@redhat.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        devel@openvz.org
+In-Reply-To: <20121015161559.7806.72762.stgit@localhost.localdomain>
+References: <20121015161559.7806.72762.stgit@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Oct 2012 19:04:05 +0200
+Message-ID: <1350320645.2336.38.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Besides unifying code, this also adds the idle check before
-processing idle accounting specifics on the low res handler.
-This way we also generalize this part of the nohz code for
-!CONFIG_HIGH_RES_TIMERS to prepare for the adaptive tickless
-features.
+On Mon, 2012-10-15 at 20:17 +0400, Stanislav Kinsbursky wrote:
+> This patch is required CRIU project (www.criu.org).
+> To migrate processes with posix timers we have to make sure, that we can
+> restore posix timer with proper id.
+> Currently, this is not true, because timer ids are allocated globally.
+> So, this is precursor patch and it's purpose is make posix timer id to be
+> allocated per task.
+> 
+> Patch replaces global idr with global hash table for posix timers and
+> makes timer ids unique not globally, but per task. Next free timer id is type
+> of integer and stored on signal struct (posix_timer_id). If free timer id
+> reaches negative value on timer creation, it will be dropped to zero and
+> -EAGAIN will be returned to user.
+> Hash table is size of page (4KB).
+> Key is constructed as follows:
+> key = hash_ptr(current->signal) ^ hash_32(posix_timer_id); 
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
----
- kernel/time/tick-sched.c |   55 ++++++++++++++++++---------------------------
- 1 files changed, 22 insertions(+), 33 deletions(-)
-
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 360674c..68a873a 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -120,6 +120,25 @@ static void tick_sched_do_timer(ktime_t now)
- 		tick_do_update_jiffies64(now);
- }
- 
-+static void tick_sched_handle(struct tick_sched *ts, struct pt_regs *regs)
-+{
-+	/*
-+	 * When we are idle and the tick is stopped, we have to touch
-+	 * the watchdog as we might not schedule for a really long
-+	 * time. This happens on complete idle SMP systems while
-+	 * waiting on the login prompt. We also increment the "start of
-+	 * idle" jiffy stamp so the idle accounting adjustment we do
-+	 * when we go busy again does not account too much ticks.
-+	 */
-+	if (ts->tick_stopped) {
-+		touch_softlockup_watchdog();
-+		if (is_idle_task(current))
-+			ts->idle_jiffies++;
-+	}
-+	update_process_times(user_mode(regs));
-+	profile_tick(CPU_PROFILING);
-+}
-+
- /*
-  * NOHZ - aka dynamic tick functionality
-  */
-@@ -675,22 +694,7 @@ static void tick_nohz_handler(struct clock_event_device *dev)
- 	dev->next_event.tv64 = KTIME_MAX;
- 
- 	tick_sched_do_timer(now);
--
--	/*
--	 * When we are idle and the tick is stopped, we have to touch
--	 * the watchdog as we might not schedule for a really long
--	 * time. This happens on complete idle SMP systems while
--	 * waiting on the login prompt. We also increment the "start
--	 * of idle" jiffy stamp so the idle accounting adjustment we
--	 * do when we go busy again does not account too much ticks.
--	 */
--	if (ts->tick_stopped) {
--		touch_softlockup_watchdog();
--		ts->idle_jiffies++;
--	}
--
--	update_process_times(user_mode(regs));
--	profile_tick(CPU_PROFILING);
-+	tick_sched_handle(ts, regs);
- 
- 	while (tick_nohz_reprogram(ts, now)) {
- 		now = ktime_get();
-@@ -818,23 +822,8 @@ static enum hrtimer_restart tick_sched_timer(struct hrtimer *timer)
- 	 * Do not call, when we are not in irq context and have
- 	 * no valid regs pointer
- 	 */
--	if (regs) {
--		/*
--		 * When we are idle and the tick is stopped, we have to touch
--		 * the watchdog as we might not schedule for a really long
--		 * time. This happens on complete idle SMP systems while
--		 * waiting on the login prompt. We also increment the "start of
--		 * idle" jiffy stamp so the idle accounting adjustment we do
--		 * when we go busy again does not account too much ticks.
--		 */
--		if (ts->tick_stopped) {
--			touch_softlockup_watchdog();
--			if (is_idle_task(current))
--				ts->idle_jiffies++;
--		}
--		update_process_times(user_mode(regs));
--		profile_tick(CPU_PROFILING);
--	}
-+	if (regs)
-+		tick_sched_handle(ts, regs);
- 
- 	hrtimer_forward(timer, now, tick_period);
- 
--- 
-1.7.5.4
+but but but.. isn't this what namespaces were invented for to solve? Why
+not use the regular namespace infrastructure?
 
