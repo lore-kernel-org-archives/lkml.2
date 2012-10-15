@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540Ab2JOIal (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 04:30:41 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39120 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750849Ab2JOIak (ORCPT
+	id S1751572Ab2JOIcz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 04:32:55 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:37789 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237Ab2JOIcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 04:30:40 -0400
+	Mon, 15 Oct 2012 04:32:53 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAGjg+kHFA=o4W9dsgts-ux768TiDp+py0K-m=-N_Lz-vManSwA@mail.gmail.com>
-References: <CA+55aFyt0KFNp5Binu-c3-XzF=MG+23EDOk1R6t4qqgW58ksAw@mail.gmail.com>
-	<507B63AC.3010807@xenotime.net>
-	<CAGjg+kHFA=o4W9dsgts-ux768TiDp+py0K-m=-N_Lz-vManSwA@mail.gmail.com>
-Date: Mon, 15 Oct 2012 10:30:38 +0200
-Message-ID: <CAFLxGvwo3W7tA1QcParfqdUSUsJjWrim_45vBVTPWihBjKHA+w@mail.gmail.com>
-Subject: Re: Linux 3.7-rc1 (uml uapi errors)
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Alex Shi <lkml.alex@gmail.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Richard Weinberger <richard@nod.at>, rmk+kernel@arm.linux.org.uk
+In-Reply-To: <506CCAB9.4070402@xenotime.net>
+References: <20121003173007.c322d79c31676b9494a6bfd5@canb.auug.org.au>
+	<506CCAB9.4070402@xenotime.net>
+Date: Mon, 15 Oct 2012 16:32:53 +0800
+Message-ID: <CAP1dx+yw93nUPozq8kcmQKtmHm5K+qMvEPQatn6Km1pHOC5dbw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Oct 3 (mfd/syscon)
+From: Dong Aisheng <dong.aisheng@linaro.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 6:16 AM, Alex Shi <lkml.alex@gmail.com> wrote:
+Hi Randy,
+
+On 4 October 2012 07:31, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On 10/03/2012 12:30 AM, Stephen Rothwell wrote:
+>
+>> Hi all,
 >>
->> Building um (uml) for x86_64 (defconfig) has lots of errors like:
+>> Do not add stuff destined for v3.8 to your linux-next included branches
+>> until after v3.7-rc1 is released.
 >>
->> In file included from include/linux/irq.h:22:0,
->>                  from include/asm-generic/hardirq.h:12,
->>                  from arch/um/include/generated/asm/hardirq.h:1,
->>                  from include/linux/hardirq.h:7,
->>                  from include/linux/ftrace_event.h:7,
->>                  from include/trace/syscall.h:6,
->>                  from include/linux/syscalls.h:78,
->>                  from init/noinitramfs.c:23:
->> include/linux/irqnr.h:4:30: fatal error: uapi/linux/irqnr.h: No such file or directory
+>> Changes since 201201002:
 >>
 >
-> Bisect said the commit 244acb1ba3777c2eb4d33ddc246cab5419656442 cause
-> this issue.
 >
+> on i386:
+>
+>   CC      drivers/mfd/syscon.o
+> drivers/mfd/syscon.c:94:15: error: variable 'syscon_regmap_config' has initializer but incomplete type
+> drivers/mfd/syscon.c:95:2: error: unknown field 'reg_bits' specified in initializer
+> drivers/mfd/syscon.c:95:2: warning: excess elements in struct initializer
+> drivers/mfd/syscon.c:95:2: warning: (near initialization for 'syscon_regmap_config')
+> drivers/mfd/syscon.c:96:2: error: unknown field 'val_bits' specified in initializer
+> drivers/mfd/syscon.c:96:2: warning: excess elements in struct initializer
+> drivers/mfd/syscon.c:96:2: warning: (near initialization for 'syscon_regmap_config')
+> drivers/mfd/syscon.c:97:2: error: unknown field 'reg_stride' specified in initializer
+> drivers/mfd/syscon.c:97:2: warning: excess elements in struct initializer
+> drivers/mfd/syscon.c:97:2: warning: (near initialization for 'syscon_regmap_config')
+> drivers/mfd/syscon.c: In function 'syscon_probe':
+> drivers/mfd/syscon.c:124:2: error: invalid use of undefined type 'struct regmap_config'
+> drivers/mfd/syscon.c:125:2: error: implicit declaration of function 'devm_regmap_init_mmio'
+> drivers/mfd/syscon.c:125:17: warning: assignment makes pointer from integer without a cast
+> make[3]: *** [drivers/mfd/syscon.o] Error 1
+>
+>
+> Full randconfig file is attached.
+>
+I sent out the fix patch with you CC-ed.
 
-Alex, are you sure?
-This is a merge commit.
-
--- 
-Thanks,
-//richard
+Regards
+Dong Aisheng
