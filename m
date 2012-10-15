@@ -1,108 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683Ab2JOIrz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 04:47:55 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45298 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab2JOIrx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 04:47:53 -0400
+	id S1751657Ab2JOIvk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 04:51:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54574 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751073Ab2JOIvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 04:51:39 -0400
+Date: Mon, 15 Oct 2012 10:51:37 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, tglx@linutronix.de, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        Robin.Randhawa@arm.com
+Subject: Re: [PATCH] cpufreq: timer: Move tick-sched specific code outside of
+ cpufreq governors
+Message-ID: <20121015085137.GD29069@dhcp22.suse.cz>
+References: <10f0412be71dec50a3e57732c1f2aa5b94fe1df8.1350288504.git.viresh.kumar@linaro.org>
+ <20121015083533.GB29356@dhcp22.suse.cz>
+ <CAKohponUigqKOkj3i2=LDgVG0bi4dXsbrJCDpzv6M3k1E_Y6Ew@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20121015080427.GA2739@dastard>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
-	<1349863655-29320-13-git-send-email-zwu.kernel@gmail.com>
-	<20121015080427.GA2739@dastard>
-Date: Mon, 15 Oct 2012 16:47:51 +0800
-Message-ID: <CAEH94LhP02Z2kLi-HfpoiL8=tHWuCZ-cWt7VR3TznFj+wpQ-gQ@mail.gmail.com>
-Subject: Re: [RFC v3 12/13] vfs: add debugfs support
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
-        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKohponUigqKOkj3i2=LDgVG0bi4dXsbrJCDpzv6M3k1E_Y6Ew@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 4:04 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Wed, Oct 10, 2012 at 06:07:34PM +0800, zwu.kernel@gmail.com wrote:
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>
->>   Add a /sys/kernel/debug/hot_track/<device_name>/ directory for each
->> volume that contains two files. The first, `inode_data', contains the
->> heat information for inodes that have been brought into the hot data map
->> structures. The second, `range_data', contains similar information for
->> subfile ranges.
->>
->> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> ---
->>  fs/hot_tracking.c |  462 +++++++++++++++++++++++++++++++++++++++++++++++++++++
->>  fs/hot_tracking.h |   43 +++++
->>  2 files changed, 505 insertions(+), 0 deletions(-)
-> .....
->> +static int hot_debugfs_copy(struct debugfs_vol_data *data, char *msg, int len)
->> +{
->> +     struct lstring *debugfs_log = data->debugfs_log;
->> +     uint new_log_alloc_size;
->> +     char *new_log;
->> +     static char err_msg[] = "No more memory!\n";
->> +
->> +     if (len >= data->log_alloc_size - debugfs_log->len) {
-> ......
->> +     }
->> +
->> +     memcpy(debugfs_log->str + debugfs_log->len, data->log_work_buff, len);
->> +     debugfs_log->len += (unsigned long) len;
->> +
->> +     return len;
->> +}
->> +
->> +/* Returns the number of bytes written to the log. */
->> +static int hot_debugfs_log(struct debugfs_vol_data *data, const char *fmt, ...)
->> +{
->> +     struct lstring *debugfs_log = data->debugfs_log;
->> +     va_list args;
->> +     int len;
->> +     static char trunc_msg[] =
->> +                     "The next message has been truncated.\n";
->> +
->> +     if (debugfs_log->str == NULL)
->> +             return -1;
->> +
->> +     spin_lock(&data->log_lock);
->> +
->> +     va_start(args, fmt);
->> +     len = vsnprintf(data->log_work_buff,
->> +                     sizeof(data->log_work_buff), fmt, args);
->> +     va_end(args);
->> +
->> +     if (len >= sizeof(data->log_work_buff)) {
->> +             hot_debugfs_copy(data, trunc_msg, sizeof(trunc_msg));
->> +     }
->> +
->> +     len = hot_debugfs_copy(data, data->log_work_buff, len);
->> +     spin_unlock(&data->log_lock);
->> +
->> +     return len;
->> +}
->
-> Aren't you just recreating seq_printf() here? i.e. can't you replace
-> all this complexity with generic seq_file/seq_operations constructs?
-It seems to be a good suggestion, let me try it. thanks.
+On Mon 15-10-12 14:11:53, Viresh Kumar wrote:
+> On 15 October 2012 14:05, Michal Hocko <mhocko@suse.cz> wrote:
+[...]
+> > I would suggest moving the common functionality into drivers/cpufreq/
+> > (e.g. cpufreq_common.c).
+> 
+> Initially i did that only, but then thought these routines must be present in
+> more generic files if possible, available across frameworks.
+> 
+> Can we try renaming these to show there exact functionality and then put
+> them in generic files like, tick-sched.c?
 
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
-
-
+But we already do have generic generic functionality for nohz case
+get_cpu_{idle,iowait}_time_us and kcpustat_cpu for !nohz. The only one
+that cares for both is /proc/stat code and it has its own helpers
+get_{idle,iowait}_time and as you can see it's demands are different
+from what governors want.
 
 -- 
-Regards,
-
-Zhi Yong Wu
+Michal Hocko
+SUSE Labs
