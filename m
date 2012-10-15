@@ -1,105 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325Ab2JOLJm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 07:09:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60279 "EHLO mx2.suse.de"
+	id S1752254Ab2JOLOA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 07:14:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43214 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752262Ab2JOLJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 07:09:40 -0400
-Date: Mon, 15 Oct 2012 12:09:37 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Valdis.Kletnieks@vt.edu, Jiri Slaby <jirislaby@gmail.com>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: kswapd0: excessive CPU usage
-Message-ID: <20121015110937.GE29125@suse.de>
-References: <507688CC.9000104@suse.cz>
- <106695.1349963080@turing-police.cc.vt.edu>
- <5076E700.2030909@suse.cz>
- <118079.1349978211@turing-police.cc.vt.edu>
- <50770905.5070904@suse.cz>
- <119175.1349979570@turing-police.cc.vt.edu>
- <5077434D.7080008@suse.cz>
- <50780F26.7070007@suse.cz>
- <20121012135726.GY29125@suse.de>
- <507BDD45.1070705@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <507BDD45.1070705@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752146Ab2JOLN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 07:13:59 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20121011232044.GZ16230@one.firstfloor.org>
+References: <20121011232044.GZ16230@one.firstfloor.org> <1345311022-26328-1-git-send-email-andi@firstfloor.org> <1345311022-26328-4-git-send-email-andi@firstfloor.org> <CAMuHMdWJCLnWpuNFvQQSJU0w4fQLg6rYbDOQF2But1__NrgiAg@mail.gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: dhowells@redhat.com, Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        James.Bottomley@hansenpartnership.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 03/31] sections: Fix section conflicts in arch/frv
+Date: Mon, 15 Oct 2012 12:13:43 +0100
+Message-ID: <30148.1350299623@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 11:54:13AM +0200, Jiri Slaby wrote:
-> On 10/12/2012 03:57 PM, Mel Gorman wrote:
-> > mm: vmscan: scale number of pages reclaimed by reclaim/compaction only in direct reclaim
-> > 
-> > Jiri Slaby reported the following:
-> > 
-> > 	(It's an effective revert of "mm: vmscan: scale number of pages
-> > 	reclaimed by reclaim/compaction based on failures".)
-> > 	Given kswapd had hours of runtime in ps/top output yesterday in the
-> > 	morning and after the revert it's now 2 minutes in sum for the last 24h,
-> > 	I would say, it's gone.
-> > 
-> > The intention of the patch in question was to compensate for the loss of
-> > lumpy reclaim. Part of the reason lumpy reclaim worked is because it
-> > aggressively reclaimed pages and this patch was meant to be a
-> > sane compromise.
-> > 
-> > When compaction fails, it gets deferred and both compaction and
-> > reclaim/compaction is deferred avoid excessive reclaim. However, since
-> > commit c6543459 (mm: remove __GFP_NO_KSWAPD), kswapd is woken up each time
-> > and continues reclaiming which was not taken into account when the patch
-> > was developed.
-> > 
-> > As it is not taking deferred compaction into account in this path it scans
-> > aggressively before falling out and making the compaction_deferred check in
-> > compaction_ready. This patch avoids kswapd scaling pages for reclaim and
-> > leaves the aggressive reclaim to the process attempting the THP
-> > allocation.
-> > 
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > ---
-> >  mm/vmscan.c |   10 ++++++++--
-> >  1 file changed, 8 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 2624edc..2b7edfa 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -1763,14 +1763,20 @@ static bool in_reclaim_compaction(struct scan_control *sc)
-> >  #ifdef CONFIG_COMPACTION
-> >  /*
-> >   * If compaction is deferred for sc->order then scale the number of pages
-> > - * reclaimed based on the number of consecutive allocation failures
-> > + * reclaimed based on the number of consecutive allocation failures. This
-> > + * scaling only happens for direct reclaim as it is about to attempt
-> > + * compaction. If compaction fails, future allocations will be deferred
-> > + * and reclaim avoided. On the other hand, kswapd does not take compaction
-> > + * deferral into account so if it scaled, it could scan excessively even
-> > + * though allocations are temporarily not being attempted.
-> >   */
-> >  static unsigned long scale_for_compaction(unsigned long pages_for_compaction,
-> >  			struct lruvec *lruvec, struct scan_control *sc)
-> >  {
-> >  	struct zone *zone = lruvec_zone(lruvec);
-> >  
-> > -	if (zone->compact_order_failed <= sc->order)
-> > +	if (zone->compact_order_failed <= sc->order &&
-> > +	    !current_is_kswapd())
-> >  		pages_for_compaction <<= zone->compact_defer_shift;
-> >  	return pages_for_compaction;
-> >  }
-> 
-> Yes, applying this instead of the revert fixes the issue as well.
-> 
+Andi Kleen <andi@firstfloor.org> wrote:
 
-Thanks Jiri.
+> Does this fix it? -Andi
 
--- 
-Mel Gorman
-SUSE Labs
+Works for me.  I've added it to my FRV fixup patches.
+
+David
