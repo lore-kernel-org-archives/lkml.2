@@ -1,108 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999Ab2JOHkJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 03:40:09 -0400
-Received: from mga11.intel.com ([192.55.52.93]:57295 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751026Ab2JOHkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 03:40:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,587,1344236400"; 
-   d="scan'208";a="235027931"
-Message-ID: <1350286789.2207.6.camel@ymzhang.sh.intel.com>
-Subject: Re: Subject: [PATCH] drivers-core: move device_pm_remove behind
- bus_remove_device
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Reply-To: yanmin_zhang@linux.intel.com
-To: "Zhang, LongX" <longx.zhang@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>
-Date: Mon, 15 Oct 2012 15:39:49 +0800
-In-Reply-To: <F7B8FD780A346D46A0042F5C63B06AE775B2B0@SHSMSX102.ccr.corp.intel.com>
-References: <F7B8FD780A346D46A0042F5C63B06AE775B2B0@SHSMSX102.ccr.corp.intel.com>
-Organization: Intel.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751623Ab2JOHsR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 03:48:17 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:15643 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750744Ab2JOHsP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 03:48:15 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvMoAGu+e1B5LH33/2dsb2JhbABFhSm0X4RnAoEEgQmCIAEBBTocIxAIAxUDLhQNGAM0h3IDDrMMDYlUFIpfZoFngTWDIQOUF4FUiySFDYMB
+Date: Mon, 15 Oct 2012 18:48:11 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
+        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [RFC v3 11/13] vfs: add 3 new ioctl interfaces
+Message-ID: <20121015074811.GY2739@dastard>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+ <1349863655-29320-12-git-send-email-zwu.kernel@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349863655-29320-12-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-21 at 01:58 +0000, Zhang, LongX wrote:
-> From: LongX Zhang <longx.zhang@intel.com>
+On Wed, Oct 10, 2012 at 06:07:33PM +0800, zwu.kernel@gmail.com wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 > 
-> device_pm_remove will call pm_runtime_remove which would disable
-> runtime PM of the device. After that pm_runtime_get* or
-> pm_runtime_put* will be ingored. So if we disable the runtime PM
-> before device really be removed, drivers' _remove callback may
-> access HW even pm_runtime_get* fails. That is bad.
-The background about the patch: We hit an hang issue when removing a mmc
-device on Medfield Android phone by sysfs interface.
-
-Consider below call sequence when removing a device:
-device_del => device_pm_remove
-           => class_intf->remove_dev(dev, class_intf)  => pm_runtime_get_sync/put_sync
-           => bus_remove_device => device_release_driver => pm_runtime_get_sync/put_sync
-
-remove_dev might call pm_runtime_get_sync/put_sync.
-Then, generic device_release_driver also calls pm_runtime_get_sync/put_sync.
-Since device_del => device_pm_remove firstly, later _get_sync wouldn't really
-wake up the device.
-
-I git log -p to find the patch which moves the calling to device_pm_remove ahead.
-It's below patch:
-
-commit 775b64d2b6ca37697de925f70799c710aab5849a
-Author: Rafael J. Wysocki <rjw@sisk.pl>
-Date:   Sat Jan 12 20:40:46 2008 +0100
-
-    PM: Acquire device locks on suspend
-    
-    This patch reorganizes the way suspend and resume notifications are
-    sent to drivers.  The major changes are that now the PM core acquires
-    every device semaphore before calling the methods, and calls to
-    device_add() during suspends will fail, while calls to device_del()
-    during suspends will block.
-    
-    It also provides a way to safely remove a suspended device with the
-    help of the PM core, by using the device_pm_schedule_removal() callback
-    introduced specifically for this purpose, and updates two drivers (msr
-    and cpuid) that need to use it.
-
-
-As device_pm_schedule_removal is deleted by another patch, we need also revert
-other parts of the patch, i.e. move the calling of device_pm_remove after
-the calling to bus_remove_device.
-
+>   FS_IOC_GET_HEAT_INFO: return a struct containing the various
+> metrics collected in btrfs_freq_data structs, and also return a
+> calculated data temperature based on those metrics. Optionally, retrieve
+> the temperature from the hot data hash list instead of recalculating it.
 > 
-> Signed-off-by: LongX Zhang <longx.zhang@intel.com>
-> ---
->  drivers/base/core.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>   FS_IOC_GET_HEAT_OPTS: return an integer representing the current
+> state of hot data tracking and migration:
 > 
-> diff --git a/drivers/base/core.c b/drivers/base/core.c
-> index 5e6e00b..81ea7f2 100644
-> --- a/drivers/base/core.c
-> +++ b/drivers/base/core.c
-> @@ -1169,7 +1169,6 @@ void device_del(struct device *dev)
->  	if (dev->bus)
->  		blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
->  					     BUS_NOTIFY_DEL_DEVICE, dev);
-> -	device_pm_remove(dev);
->  	dpm_sysfs_remove(dev);
->  	if (parent)
->  		klist_del(&dev->p->knode_parent);
-> @@ -1194,6 +1193,7 @@ void device_del(struct device *dev)
->  	device_remove_file(dev, &uevent_attr);
->  	device_remove_attrs(dev);
->  	bus_remove_device(dev);
-> +	device_pm_remove(dev);
->  	driver_deferred_probe_del(dev);
->  
->  	/*
+> 0 = do nothing
+> 1 = track frequency of access
+> 
+>   FS_IOC_SET_HEAT_OPTS: change the state of hot data tracking and
+> migration, as described above.
+.....
+> +struct hot_heat_info {
+> +	__u64 avg_delta_reads;
+> +	__u64 avg_delta_writes;
+> +	__u64 last_read_time;
+> +	__u64 last_write_time;
+> +	__u32 num_reads;
+> +	__u32 num_writes;
+> +	__u32 temperature;
+> +	__u8 live;
+> +	char filename[PATH_MAX];
 
+Don't put the filename in the ioctl and open the file in the kernel.
+Have userspace open the file directly and issue the ioctl on the fd
+that is returned.
 
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
