@@ -1,98 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab2JOUmy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 16:42:54 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:2431 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754583Ab2JOUmv (ORCPT
+	id S1754850Ab2JOUot (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 16:44:49 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:35469 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754692Ab2JOUos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 16:42:51 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtQmALt0fFB5LH33/2dsb2JhbABFuhOEbQKBBIEJgiABAQQBOhwjBQsIAxUDLhQNGAM0h3IDCQWsUIZqDYlUFIpfZoFngTWCQWADlBeBVIskhQ2DAQ
-Date: Tue, 16 Oct 2012 07:42:17 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
-        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [RFC v3 00/13] vfs: hot data tracking
-Message-ID: <20121015204217.GB2739@dastard>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+	Mon, 15 Oct 2012 16:44:48 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Dajun Chen <dchen@diasemi.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] mfd/DA9055: Remove Unicode Byte Order Marks
+Date: Mon, 15 Oct 2012 22:44:45 +0200
+Message-Id: <1350333885-20323-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 06:07:22PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> 
-> NOTE:
-> 
->   The patchset is currently post out mainly to make sure
-> it is going in the correct direction and hope to get some
-> helpful comments from other guys.
->   For more infomation, please check hot_tracking.txt in Documentation
-> 
-> TODO List:
+Older gcc (< 4.4) doesn't like files starting with Unicode BOMs:
 
-1) Fix OOM issues - the hot inode tracking caches grow very large
-and don't get trimmed under memory pressure. From slabtop, after
-creating roughly 24 million single byte files(*) on a machine with
-8GB RAM:
+include/linux/mfd/da9055/core.h:1: error: stray ‘\357’ in program
+include/linux/mfd/da9055/core.h:1: error: stray ‘\273’ in program
+include/linux/mfd/da9055/core.h:1: error: stray ‘\277’ in program
+include/linux/mfd/da9055/pdata.h:1: error: stray ‘\357’ in program
+include/linux/mfd/da9055/pdata.h:1: error: stray ‘\273’ in program
+include/linux/mfd/da9055/pdata.h:1: error: stray ‘\277’ in program
+include/linux/mfd/da9055/reg.h:1: error: stray ‘\357’ in program
+include/linux/mfd/da9055/reg.h:1: error: stray ‘\273’ in program
+include/linux/mfd/da9055/reg.h:1: error: stray ‘\277’ in program
 
-  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME                   
-23859510 23859476  99%    0.12K 795317       30   3181268K hot_range_item
-23859441 23859439  99%    0.16K 1037367       23   4149468K hot_inode_item
-572530 572530 100%    0.55K  81790        7    327160K radix_tree_node
-241706 241406  99%    0.22K  14218       17     56872K xfs_ili
-241206 241204  99%    1.06K  80402        3    321608K xfs_inode
+Remove the BOMs, the rest of the files is plain ASCII anyway.
 
-The inode tracking is trying to track all 24 million inodes even
-though they have been written only once, and there are only 240,000
-inodes in the cache at this point in time. That was the last update
-that slabtop got, so it is indicative of the impending OOM situation
-that occurred.
+Output of "file" before:
 
-> Changelog from v2:
->  1.) Converted to Radix trees, not RB-tree [Zhiyong, Dave Chinner]
->  2.) Added memory shrinker [Dave Chinner]
+include/linux/mfd/da9055/core.h:  UTF-8 Unicode (with BOM) C program text
+include/linux/mfd/da9055/pdata.h: UTF-8 Unicode (with BOM) C program text
+include/linux/mfd/da9055/reg.h:   UTF-8 Unicode (with BOM) C program text
 
-I haven't looked at the shrinker, but clearly it is not working,
-otherwise the above OOM situation would not be occurring.
+Output of "file" after:
 
-Cheers,
+include/linux/mfd/da9055/core.h:  ASCII C program text
+include/linux/mfd/da9055/pdata.h: ASCII C program text
+include/linux/mfd/da9055/reg.h:   ASCII C program text
 
-Dave.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ include/linux/mfd/da9055/core.h  |    2 +-
+ include/linux/mfd/da9055/pdata.h |    2 +-
+ include/linux/mfd/da9055/reg.h   |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-(*) Tested on an empty 17TB XFS filesystem with:
-
-$ sudo mkfs.xfs -f -l size=131072b,sunit=8 /dev/vdc
-meta-data=/dev/vdc               isize=256    agcount=17, agsize=268435455 blks
-         =                       sectsz=512   attr=2, projid32bit=0
-data     =                       bsize=4096   blocks=4563402735, imaxpct=5
-         =                       sunit=0      swidth=0 blks
-naming   =version 2              bsize=4096   ascii-ci=0
-log      =internal log           bsize=4096   blocks=131072, version=2
-         =                       sectsz=512   sunit=1 blks, lazy-count=1
-realtime =none                   extsz=4096   blocks=0, rtextents=0
-$ sudo mount -o logbsize=256k /dev/vdc /mnt/scratch
-$ sudo chmod 777 /mnt/scratch
-$ fs_mark  -D  10000  -S0  -n  100000  -s  1  -L  63  -d \
-/mnt/scratch/0  -d  /mnt/scratch/1  -d  /mnt/scratch/2  -d \
-/mnt/scratch/3  -d  /mnt/scratch/4  -d  /mnt/scratch/5  -d \
-/mnt/scratch/6  -d  /mnt/scratch/7
-.....
-     0     21600000            1      16679.3         12552262
-     0     22400000            1      15412.4         12588587
-     0     23200000            1      16367.6         14199322
-     0     24000000            1      15680.4         15741205
-<hangs here w/ OOM>
-
+diff --git a/include/linux/mfd/da9055/core.h b/include/linux/mfd/da9055/core.h
+index c96ad68..956afa4 100644
+--- a/include/linux/mfd/da9055/core.h
++++ b/include/linux/mfd/da9055/core.h
+@@ -1,4 +1,4 @@
+-﻿/*
++/*
+  * da9055 declarations for DA9055 PMICs.
+  *
+  * Copyright(c) 2012 Dialog Semiconductor Ltd.
+diff --git a/include/linux/mfd/da9055/pdata.h b/include/linux/mfd/da9055/pdata.h
+index 147293b..b9b204e 100644
+--- a/include/linux/mfd/da9055/pdata.h
++++ b/include/linux/mfd/da9055/pdata.h
+@@ -1,4 +1,4 @@
+-﻿/* Copyright (C) 2012 Dialog Semiconductor Ltd.
++/* Copyright (C) 2012 Dialog Semiconductor Ltd.
+  *
+  *  This program is free software; you can redistribute it and/or modify
+  *  it under the terms of the GNU General Public License as published by
+diff --git a/include/linux/mfd/da9055/reg.h b/include/linux/mfd/da9055/reg.h
+index df237ee..2b592e0 100644
+--- a/include/linux/mfd/da9055/reg.h
++++ b/include/linux/mfd/da9055/reg.h
+@@ -1,4 +1,4 @@
+-﻿/*
++/*
+  * DA9055 declarations for DA9055 PMICs.
+  *
+  * Copyright(c) 2012 Dialog Semiconductor Ltd.
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.0.4
+
