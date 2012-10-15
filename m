@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047Ab2JOKBY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 06:01:24 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:57437 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727Ab2JOKBX (ORCPT
+	id S1752117Ab2JOKDQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 06:03:16 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:55944 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751727Ab2JOKDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 06:01:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGjg+kGxv-Hxi2wwsBt+3cjUQjvEf4tQ7WTCTPyp+M1AxdHhsg@mail.gmail.com>
-References: <CA+55aFyt0KFNp5Binu-c3-XzF=MG+23EDOk1R6t4qqgW58ksAw@mail.gmail.com>
-	<507B63AC.3010807@xenotime.net>
-	<CAGjg+kHFA=o4W9dsgts-ux768TiDp+py0K-m=-N_Lz-vManSwA@mail.gmail.com>
-	<CAFLxGvwo3W7tA1QcParfqdUSUsJjWrim_45vBVTPWihBjKHA+w@mail.gmail.com>
-	<CAGjg+kGxv-Hxi2wwsBt+3cjUQjvEf4tQ7WTCTPyp+M1AxdHhsg@mail.gmail.com>
-Date: Mon, 15 Oct 2012 18:01:23 +0800
-Message-ID: <CAGjg+kG0BqvbA8+gpDzpXqdoFb8ShvS304fZJyaRj9hOi01+Ug@mail.gmail.com>
-Subject: Re: Linux 3.7-rc1 (uml uapi errors)
-From: Alex Shi <lkml.alex@gmail.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Richard Weinberger <richard@nod.at>, rmk+kernel@arm.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 15 Oct 2012 06:03:15 -0400
+Message-ID: <1350295389.1516.27.camel@x61.thuisdomein>
+Subject: [PATCH] xen/xenbus: silence GCC warning
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 15 Oct 2012 12:03:09 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 15 Oct 2012 10:03:10.0468 (UTC) FILETIME=[4826AC40:01CDAABC]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 5:18 PM, Alex Shi <lkml.alex@gmail.com> wrote:
-> Sorry, something in my side. the bisect result is unreliable. I will redo.
+Compiling xenbus_xs.o triggers this GCC warning:
+    drivers/xen/xenbus/xenbus_xs.c:628:13: warning: function declaration isn’t a prototype [-Wstrict-prototypes]
 
-Seems the patch-3.7-rc1.bz2 at ftp://www.kernel.org/pub/linux/kernel/
-is missed some patches.
-but Linus' tree works fine.
+Add the obvious and trivial fix.
 
+While we're touching this function add some equally obvious and trivial
+whitespace fixes.
 
->
-> On Mon, Oct 15, 2012 at 4:30 PM, richard -rw- weinberger
-> <richard.weinberger@gmail.com> wrote:
->> On Mon, Oct 15, 2012 at 6:16 AM, Alex Shi <lkml.alex@gmail.com> wrote:
->>>>
->>>> Building um (uml) for x86_64 (defconfig) has lots of errors like:
->>>>
->>>> In file included from include/linux/irq.h:22:0,
->>>>                  from include/asm-generic/hardirq.h:12,
->>>>                  from arch/um/include/generated/asm/hardirq.h:1,
->>>>                  from include/linux/hardirq.h:7,
->>>>                  from include/linux/ftrace_event.h:7,
->>>>                  from include/trace/syscall.h:6,
->>>>                  from include/linux/syscalls.h:78,
->>>>                  from init/noinitramfs.c:23:
->>>> include/linux/irqnr.h:4:30: fatal error: uapi/linux/irqnr.h: No such file or directory
->>>>
->>>
->>> Bisect said the commit 244acb1ba3777c2eb4d33ddc246cab5419656442 cause
->>> this issue.
->>>
->>
->> Alex, are you sure?
->> This is a merge commit.
->>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Triggered by compiling v3.7-rc1 using (basically) Fedora 17's current
+config. Compile tested only.
 
+1) Obligatory reference: https://lwn.net/Articles/487493/ .
 
+ drivers/xen/xenbus/xenbus_xs.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/xen/xenbus/xenbus_xs.c b/drivers/xen/xenbus/xenbus_xs.c
+index 48220e1..7a2b0da 100644
+--- a/drivers/xen/xenbus/xenbus_xs.c
++++ b/drivers/xen/xenbus/xenbus_xs.c
+@@ -619,13 +619,14 @@ static struct xenbus_watch *find_watch(const char *token)
+ 
+ 	return NULL;
+ }
++
+ /*
+  * Certain older XenBus toolstack cannot handle reading values that are
+  * not populated. Some Xen 3.4 installation are incapable of doing this
+  * so if we are running on anything older than 4 do not attempt to read
+  * control/platform-feature-xs_reset_watches.
+  */
+-static bool xen_strict_xenbus_quirk()
++static bool xen_strict_xenbus_quirk(void)
+ {
+ 	uint32_t eax, ebx, ecx, edx, base;
+ 
+@@ -635,8 +636,8 @@ static bool xen_strict_xenbus_quirk()
+ 	if ((eax >> 16) < 4)
+ 		return true;
+ 	return false;
+-
+ }
++
+ static void xs_reset_watches(void)
+ {
+ 	int err, supported = 0;
 -- 
-Thanks
-    Alex
+1.7.11.7
+
