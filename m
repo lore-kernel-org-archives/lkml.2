@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab2JOUkO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 16:40:14 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:47953 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754583Ab2JOUkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 16:40:12 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: myungjoo.ham@samsung.com
-Cc: Rajagopal Venkat <rajagopal.venkat@linaro.org>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        =?utf-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 2/3] devfreq: Add suspend and resume apis
-Date: Mon, 15 Oct 2012 22:43:51 +0200
-Message-ID: <13521737.MW7piF1i8B@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <5414519.716731349693303781.JavaMail.weblogic@epml02>
-References: <5414519.716731349693303781.JavaMail.weblogic@epml02>
+	id S1754874Ab2JOUkZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 16:40:25 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52738 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754583Ab2JOUkS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 16:40:18 -0400
+Date: Mon, 15 Oct 2012 13:40:15 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+cc: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>, Viresh Kumar <viresh.linux@gmail.com>,
+        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org
+Subject: [patch for-3.7] thermal, cpufreq: Fix build when CPU_FREQ_TABLE
+ isn't configured
+Message-ID: <alpine.DEB.2.00.1210151333450.17947@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 of October 2012 10:48:24 MyungJoo Ham wrote:
-> > On 8 October 2012 03:31, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > On Thursday 04 of October 2012 14:58:33 Rajagopal Venkat wrote:
-> > >> Add devfreq suspend/resume apis for devfreq users. This patch
-> > >> supports suspend and resume of devfreq load monitoring, required
-> > >> for devices which can idle.
-> > >>
-> > >> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-> > >> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> > >
-> > > Well, I wonder if this may be tied in to the runtime PM framework, so that,
-> > > for example, pm_runtime_suspend() will automatically suspend devfreq on
-> > > success (and the runtime resume of the device will resume devfreq)?
-> > 
-> > That's a good idea. If you agree, we can handle this as separate patch on
-> > top this patchset.
+Commit 02361418 ("thermal: add generic cpufreq cooling implementation") 
+requires cpufreq_frequency_get_table(), but that function is only defined 
+for CONFIG_CPU_FREQ_TABLE resulting in the following build error:
 
-Sure.
+drivers/built-in.o: In function `cpufreq_get_max_state':
+drivers/thermal/cpu_cooling.c:259: undefined reference to `cpufreq_frequency_get_table'
+drivers/built-in.o: In function `get_cpu_frequency':
+drivers/thermal/cpu_cooling.c:129: undefined reference to `cpufreq_frequency_get_table'
 
-> I guess implementing the idea may be not so obvious; thus, seperating
-> the patchset would be appropriate.
-> 
-> When we implement the idea, we may need to implement at the
-> pm_runtime core. Because devfreq->dev is a child of the target dev, not
-> a parent, runtime-pm event of the target dev does not automatically
-> invoke a cascaded action on the devfreq->dev.
+Fix it by selecting CONFIG_CPU_FREQ_TABLE for such a configuration.
 
-I'm not exactly sure what you mean, care to explain?
+It turns out CONFIG_EXYNOS_THERMAL also needs CONFIG_CPU_FREQ_TABLE, so 
+select it there as well.
 
-> Maybe either
-> 1) capability to allow a child to monitor the power state of a parent
-> (I remember Inki Dae once suggested to add notifiers at runtime-pm, but
-> it seems to be not merged)
-> or
-> 2) letting runtime-pm be aware of devfreq
-> (doesn't feel alright with this??)
-> is required?
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ drivers/thermal/Kconfig |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-I'm not a big fan of notifiers, so I'd prefer to avoid using them, if
-possible.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+--- a/drivers/thermal/Kconfig
++++ b/drivers/thermal/Kconfig
+@@ -22,6 +22,7 @@ config THERMAL_HWMON
+ config CPU_THERMAL
+ 	bool "generic cpu cooling support"
+ 	depends on THERMAL && CPU_FREQ
++	select CPU_FREQ_TABLE
+ 	help
+ 	  This implements the generic cpu cooling mechanism through frequency
+ 	  reduction, cpu hotplug and any other ways of reducing temperature. An
+@@ -50,6 +51,7 @@ config RCAR_THERMAL
+ config EXYNOS_THERMAL
+ 	tristate "Temperature sensor on Samsung EXYNOS"
+ 	depends on (ARCH_EXYNOS4 || ARCH_EXYNOS5) && THERMAL
++	select CPU_FREQ_TABLE
+ 	help
+ 	  If you say yes here you get support for TMU (Thermal Managment
+ 	  Unit) on SAMSUNG EXYNOS series of SoC.
