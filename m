@@ -1,59 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586Ab2JOWtt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 18:49:49 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:46376 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609Ab2JOWts (ORCPT
+	id S1753973Ab2JOWwa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 18:52:30 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:20679 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930Ab2JOWw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 18:49:48 -0400
-Date: Mon, 15 Oct 2012 15:49:40 -0700
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH V2 0/7]: PVH: PV guest with extensions
-Message-ID: <20121015154940.4033c64f@mantra.us.oracle.com>
-In-Reply-To: <1350317743.18058.85.camel@zakaz.uk.xensource.com>
-References: <20121011144929.06e71a9e@mantra.us.oracle.com>
-	<1350317743.18058.85.camel@zakaz.uk.xensource.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Mon, 15 Oct 2012 18:52:28 -0400
+Date: Tue, 16 Oct 2012 00:52:26 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Ezequiel Garcia <elezegarcia@gmail.com>
+cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] [media] stk1160: Check return value of stk1160_read_reg()
+ in stk1160_i2c_read_reg()
+In-Reply-To: <alpine.LNX.2.00.1210152025300.1038@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1210160051100.1682@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.0811091803320.23782@swampdragon.chaosbits.net> <CALF0-+Vtmwu9rCc9BYiDx2O2GQWezK40BYR2LP_ve2YjCt=Afg@mail.gmail.com> <alpine.LNX.2.00.1210152025300.1038@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Oct 2012 17:15:43 +0100
-Ian Campbell <Ian.Campbell@citrix.com> wrote:
+On Mon, 15 Oct 2012, Jesper Juhl wrote:
 
-> On Thu, 2012-10-11 at 22:49 +0100, Mukesh Rathor wrote:
-> > Hi guys,
-> > 
-> > Ok, I've made all the changes from prev RFC patch submissions.
-> > Tested all the combinations. The patches are organized slightly
-> > differently from prev version because of the nature of changes
-> > after last review. I am building xen patch just for the
-> > corresponding header file changes. Following that I'll refresh xen
-> > tree, debug, test, and send patches.
-> > 
-> > For linux kernel mailing list introduction, PVH is a PV guest that
-> > can run in an HVM container, uses native pagetables, uses callback
-> > vector, native IDT, and native syscalls.
-> > 
-> > They were built on top of 89d0307af2b9957d59bfb2a86aaa57464ff921de
-> > commit.
+> On Sat, 13 Oct 2012, Ezequiel Garcia wrote:
 > 
-> Are they in a git branch anywhere?
+> > On Sun, Nov 9, 2008 at 2:04 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> > > There are two checks for 'rc' being less than zero with no change to
+> > > 'rc' between the two, so the second is just dead code - remove it.
+> > >
+> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > > ---
+> > >  drivers/media/usb/stk1160/stk1160-i2c.c |    3 ---
+> > >  1 files changed, 0 insertions(+), 3 deletions(-)
+> > >
+> > > diff --git a/drivers/media/usb/stk1160/stk1160-i2c.c b/drivers/media/usb/stk1160/stk1160-i2c.c
+> > > index 176ac93..035cf8c 100644
+> > > --- a/drivers/media/usb/stk1160/stk1160-i2c.c
+> > > +++ b/drivers/media/usb/stk1160/stk1160-i2c.c
+> > > @@ -117,9 +117,6 @@ static int stk1160_i2c_read_reg(struct stk1160 *dev, u8 addr,
+> > >                 return rc;
+> > >
+> > >         stk1160_read_reg(dev, STK1160_SBUSR_RD, value);
+> > > -       if (rc < 0)
+> > > -               return rc;
+> > > -
+> > >         return 0;
+> > >  }
+> > >
+> > 
+> > Thanks for doing this. Wouldn't you like to save stk1160_read_reg
+> > return code to rc, instead of this?
+> > 
+> Ahh yes, I guess I was too quick to just assume it was dead code. 
+> Looking at it again; what you suggest must have been the original 
+> intention. I'll cook up a new patch.
 > 
+> Thanks.
+> 
+From: Jesper Juhl <jj@chaosbits.net>
+Date: Sat, 13 Oct 2012 00:16:37 +0200
+Subject: [PATCH] [media] stk1160: Check return value of stk1160_read_reg() in stk1160_i2c_read_reg()
 
-not in a public accessible location. we are very close to getting this
-done (it appears ;)), and once konrad puts in his tree it should be
-publicly available.
+Currently there are two checks for 'rc' being less than zero with no
+change to 'rc' between the two, so the second is just dead code.
+The intention seems to have been to assign the return value of
+'stk1160_read_reg()' to 'rc' before the (currently dead) second check
+and then test /that/. This patch does that.
 
-thanks
-mukesh
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/media/usb/stk1160/stk1160-i2c.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/usb/stk1160/stk1160-i2c.c b/drivers/media/usb/stk1160/stk1160-i2c.c
+index 176ac93..a2370e4 100644
+--- a/drivers/media/usb/stk1160/stk1160-i2c.c
++++ b/drivers/media/usb/stk1160/stk1160-i2c.c
+@@ -116,10 +116,9 @@ static int stk1160_i2c_read_reg(struct stk1160 *dev, u8 addr,
+ 	if (rc < 0)
+ 		return rc;
+ 
+-	stk1160_read_reg(dev, STK1160_SBUSR_RD, value);
++	rc = stk1160_read_reg(dev, STK1160_SBUSR_RD, value);
+ 	if (rc < 0)
+ 		return rc;
+-
+ 	return 0;
+ }
+ 
+-- 
+1.7.1
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
