@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab2JOHek (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 03:34:40 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:7122 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab2JOHej (ORCPT
+	id S1753085Ab2JOHfO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 03:35:14 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29276 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750810Ab2JOHfM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 03:34:39 -0400
-Date: Mon, 15 Oct 2012 09:34:28 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Peter Korsgaard <jacmet@sunsite.dk>,
-        "Wolfram Sang" <w.sang@pengutronix.de>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: i2c-ocores: Use devm_request_and_ioremap()
-Message-ID: <20121015093428.0cc935be@endymion.delvare>
-In-Reply-To: <20121015072141.GA18741@avionic-0098.mockup.avionic-design.de>
-References: <1344408872-1051-1-git-send-email-thierry.reding@avionic-design.de>
-	<20121015091015.2887fcb9@endymion.delvare>
-	<20121015072141.GA18741@avionic-0098.mockup.avionic-design.de>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	Mon, 15 Oct 2012 03:35:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,587,1344236400"; 
+   d="scan'208";a="205675725"
+Message-ID: <1350286504.10584.176.camel@smile>
+Subject: Re: [PATCH V2 2/3] dmaengine: dw_dmac: Enhance device tree support
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org
+Date: Mon, 15 Oct 2012 10:35:04 +0300
+In-Reply-To: <CAKohpo=20mwje+9AVgs7b-_DshyRO2DZ=Nacjm7vFAhed=Wkqg@mail.gmail.com>
+References: <142ef9170a2c69657d8a05ac127a9970d7b04965.1350051925.git.viresh.kumar@linaro.org>
+	 <9688d98010716880c1bbd966ead312c446282204.1350051925.git.viresh.kumar@linaro.org>
+	 <1350053897.10584.172.camel@smile>
+	 <CAKohpo=20mwje+9AVgs7b-_DshyRO2DZ=Nacjm7vFAhed=Wkqg@mail.gmail.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Oct 2012 09:21:41 +0200, Thierry Reding wrote:
-> On Mon, Oct 15, 2012 at 09:10:15AM +0200, Jean Delvare wrote:
-> > On Wed,  8 Aug 2012 08:54:32 +0200, Thierry Reding wrote:
-> > > Replacing the devm_request_mem_region() and devm_ioremap_nocache() calls
-> > > by a single call to devm_request_and_ioremap() simplifies the code.
-> > > 
-> > > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> > > ---
-> > >  drivers/i2c/busses/i2c-ocores.c | 15 +++------------
-> > >  1 file changed, 3 insertions(+), 12 deletions(-)
-> > > 
-> > > diff --git a/drivers/i2c/busses/i2c-ocores.c b/drivers/i2c/busses/i2c-ocores.c
-> > > index bffd550..1fad4ae 100644
-> > > --- a/drivers/i2c/busses/i2c-ocores.c
-> > > +++ b/drivers/i2c/busses/i2c-ocores.c
-> > > @@ -283,18 +283,9 @@ static int __devinit ocores_i2c_probe(struct platform_device *pdev)
-> > >  	if (!i2c)
-> > >  		return -ENOMEM;
-> > >  
-> > > -	if (!devm_request_mem_region(&pdev->dev, res->start,
-> > > -				     resource_size(res), pdev->name)) {
-> > > -		dev_err(&pdev->dev, "Memory region busy\n");
-> > > -		return -EBUSY;
-> > > -	}
-> > > -
-> > > -	i2c->base = devm_ioremap_nocache(&pdev->dev, res->start,
-> > > -					 resource_size(res));
-> > > -	if (!i2c->base) {
-> > > -		dev_err(&pdev->dev, "Unable to map registers\n");
-> > > -		return -EIO;
-> > > -	}
-> > > +	i2c->base = devm_request_and_ioremap(&pdev->dev, res);
-> > > +	if (!i2c->base)
-> > > +		return -EADDRNOTAVAIL;
-> > 
-> > I would suggest sticking to -EBUSY, AFAIK EADDRNOTAVAIL is for network
-> > address errors.
+On Mon, 2012-10-15 at 08:59 +0530, Viresh Kumar wrote: 
+> On 12 October 2012 20:28, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+> >> +     if (last_dw) {
+> >> +             if ((last_bus_id == param) && (last_dw == dw))
+> >> +                     return false;
+> >> +     }
+> > Just came to my mind.
+> > dw can't be NULL, can't it?
+> > Then
+> > if (last_dw) {
+> > ...
+> > }
+> > is unneeded.
 > 
-> Actually the kerneldoc comment for devm_request_and_ioremap()
-> (lib/devres.c) explicitly lists this as the error code to return on
-> failure. EBUSY could be misleading since the error could just as well
-> come from a failed ioremap().
+> Fixup for this:
+> 
+> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+> index d72c26f..764c159 100644
+> --- a/drivers/dma/dw_dmac.c
+> +++ b/drivers/dma/dw_dmac.c
+> @@ -1196,11 +1196,8 @@ bool dw_dma_generic_filter(struct dma_chan
+> *chan, void *param)
+>          * failure. If dw and param are same, i.e. trying on same dw with
+>          * different channel, return false.
+>          */
+> -       if (last_dw) {
+> -               if ((last_bus_id == param) && (last_dw == dw))
+> -                       return false;
+> -       }
+> -
+> +       if ((last_dw == dw) && (last_bus_id == param))
+> +               return false;
+>         /*
+>          * Return true:
+>          * - If dw_dma's platform data is not filled with slave info, then all
+Good.
+So, have my 
 
-Ah, my bad, I missed that comment.
+Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com> 
 
-It's probably not relevant as I'm not in charge of the devm
-infrastructure, but I don't like it. There are 3 different possible
-causes of failure for devm_request_and_ioremap, and the caller can't
-tell which one happened. We have ERR_PTR for cases like this... OTOH I
-guess the caller wouldn't behave differently based on the error code,
-so it probably doesn't matter that much. So...
+for this patch.
 
-Acked-by: Jean Delvare <khali@linux-fr.org>
 
-Wolfram, can you please pick this patch?
-
-Thanks,
 -- 
-Jean Delvare
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
