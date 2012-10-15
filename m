@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425Ab2JOIkR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 04:40:17 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47329 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750722Ab2JOIkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 04:40:14 -0400
-Date: Mon, 15 Oct 2012 10:40:11 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH] cpufreq, powernow-k8: Remove usage of smp_processor_id()
- in preemptible code
-Message-ID: <20121015084011.GA5000@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	Andreas Herrmann <andreas.herrmann3@amd.com>,
-	linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-	Tejun Heo <tj@kernel.org>, linux-pm@vger.kernel.org
-References: <20121009193844.GC7724@alberich>
- <20121012151841.GA4571@alberich>
- <27008283.MeT6T60WP8@vostro.rjw.lan>
- <1395148.DypXQr3MdC@vostro.rjw.lan>
+	id S1751483Ab2JOIl4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 04:41:56 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:62267 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003Ab2JOIly (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 04:41:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1395148.DypXQr3MdC@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121015083533.GB29356@dhcp22.suse.cz>
+References: <10f0412be71dec50a3e57732c1f2aa5b94fe1df8.1350288504.git.viresh.kumar@linaro.org>
+	<20121015083533.GB29356@dhcp22.suse.cz>
+Date: Mon, 15 Oct 2012 14:11:53 +0530
+Message-ID: <CAKohponUigqKOkj3i2=LDgVG0bi4dXsbrJCDpzv6M3k1E_Y6Ew@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: timer: Move tick-sched specific code outside of
+ cpufreq governors
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: rjw@sisk.pl, tglx@linutronix.de, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        Robin.Randhawa@arm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 07:50:13AM +0200, Rafael J. Wysocki wrote:
-> Well, please don't tag patches for -stable, because -stable doesn't
-> take _patches_.
+On 15 October 2012 14:05, Michal Hocko <mhocko@suse.cz> wrote:
+> On Mon 15-10-12 13:41:20, Viresh Kumar wrote:
+>> Multiple cpufreq governers have defined similar get_cpu_idle_time_***()
+>> routines. These routines must be moved to some common place, so that all
+>> governors can use them.
+>>
+>> So moving them to tick-sched.c, which seems to be a better place for keeping
+>> these routines.
+>
+> I do agree that this code duplication should be removed but tick-sched.c
+> is not a right place IMO. Who, apart from governors, should use those
+> "common" functions?
 
-Really, I didn't know that?! :-)
+Nobody leaving cpufreq for now.
 
-> It takes commits from the Linus' tree and backports them and that's
-> maintainer's job to tag them for -stable, not yours.
+> Having a generic get_cpu_idle_time, which in fact includes iowait time
+> as well is definitely not good. It is confusing and it doesn't match
+> get_cpu_idle_time_us.
 
-You're not serious, right? This is not the case in at least 50% of the
-cases.
+ok
 
-And this is OK because maintainers don't always know whether the patch
-should be tagged for stable. So yes, people should add the stable tag
-and yes, committers still have a veto over it.
+> I would suggest moving the common functionality into drivers/cpufreq/
+> (e.g. cpufreq_common.c).
 
-And yes, Andreas and I *know* how stable patches get applied, thank you
-very much.
+Initially i did that only, but then thought these routines must be present in
+more generic files if possible, available across frameworks.
 
-[ … ]
+Can we try renaming these to show there exact functionality and then put
+them in generic files like, tick-sched.c?
 
-> Yes, they do, but that means it doesn't make sense to send them stuff
-> before it's been merged, right?
-
-Ok, I get it, you don't want people to send patches to stable@vger
-*before* they've hit mainline.
-
-Nothing in <Documentation/stable_kernel_rules.txt> states that
-stable@vger shouldn't get CCed on submissions unless the patch is
-upstream and besides, stable@vger gets CCed in a lot of discussions
-anyway so there's other traffic just the same.
-
-Bottomline: If you think people shouldn't spam stable@vger, then tough
-luck - I don't think you can stop people from accidentally/due to the
-automated nature of the process, CC stable. Even if it said so in the
-above doc file.
-
-As a result, stable maintainers simply rely on scripts which verify the
-patch is actually upstream before applying it to stable.
-
--- 
-Regards/Gruss,
-    Boris.
+--
+viresh
