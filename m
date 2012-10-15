@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752353Ab2JOLgD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 07:36:03 -0400
-Received: from mga03.intel.com ([143.182.124.21]:6779 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752146Ab2JOLgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 07:36:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,587,1344236400"; 
-   d="scan'208";a="156285222"
-From: dragos.tatulea@intel.com
-To: cbouatmailru@gmail.com, linux-kernel@vger.kernel.org
-Cc: adrian.hunter@intel.com, octavian.purdila@intel.com,
-        Dragos Tatulea <dragos.tatulea@intel.com>
-Subject: [PATCH 0/8] pstore: add interface for dumpers and add task list dumper
-Date: Mon, 15 Oct 2012 14:38:49 +0300
-Message-Id: <1350301137-16912-1-git-send-email-dragos.tatulea@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752727Ab2JOLlu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 07:41:50 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17834 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab2JOLlt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 07:41:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 15 Oct 2012 04:41:47 -0700
+Message-ID: <507BF65F.9010803@nvidia.com>
+Date: Mon, 15 Oct 2012 17:11:19 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 4/5] regmap: add API to get irq_domain from regmap
+ irq
+References: <1349889545-21517-1-git-send-email-ldewangan@nvidia.com> <1349889545-21517-5-git-send-email-ldewangan@nvidia.com> <20121015005634.GA24935@opensource.wolfsonmicro.com>
+In-Reply-To: <20121015005634.GA24935@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dragos Tatulea <dragos.tatulea@intel.com>
+On Monday 15 October 2012 06:26 AM, Mark Brown wrote:
+> On Wed, Oct 10, 2012 at 10:49:04PM +0530, Laxman Dewangan wrote:
+>> Add API regmap_irq_get_irq_domain() for getting the
+>> irq domain from regmap irq. The irq domain created on
+>> result of regmap_add_irq_chip() from driver.
+> Sorry, when doing the merge down after the merge window I realised that
+> I already have a patch there adding a function regmap_irq_get_domain()
+> which has been sitting there for a while now, I think it was just fat
+> fingers that meant it didn't make v3.7.
+Thanks, then I need to create to the patch5 based on this new API.
+So patch 1 to 3 can be applied directly without any new patches.
 
-This patchset adds an interface for registering various clients (dumpers)
-that can save info into pstore at crash time.
-
-Such a dumper is added which does task list dumping.
-
-Adrian Hunter (4):
-  pstore: add flags
-  pstore: add debugfs support for causing dumps and panics
-  pstore: add support for external writers
-  pstore: do not run timer while pstore is not mounted
-
-Dragos Tatulea (4):
-  pstore: allow storing different type id's in ram backend
-  pstore: add task list dumper
-  pstore: make sure pstore_write exists on flush error
-  pstore: max out console log level during sysfs dump switch
-
- fs/pstore/Kconfig      |   12 ++++
- fs/pstore/Makefile     |    1 +
- fs/pstore/dump_tasks.c |  107 ++++++++++++++++++++++++++++
- fs/pstore/inode.c      |    6 ++
- fs/pstore/internal.h   |    2 +
- fs/pstore/platform.c   |  184 ++++++++++++++++++++++++++++++++++++++++++++++--
- fs/pstore/ram.c        |   18 +++--
- include/linux/pstore.h |   46 ++++++++++--
- 8 files changed, 356 insertions(+), 20 deletions(-)
- create mode 100644 fs/pstore/dump_tasks.c
-
-- 
-1.7.9.5
 
