@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874Ab2JOUkZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 16:40:25 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52738 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583Ab2JOUkS (ORCPT
+	id S1754788Ab2JOUmp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 16:42:45 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:53193 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754583Ab2JOUmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 16:40:18 -0400
-Date: Mon, 15 Oct 2012 13:40:15 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-cc: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>, Viresh Kumar <viresh.linux@gmail.com>,
-        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org
-Subject: [patch for-3.7] thermal, cpufreq: Fix build when CPU_FREQ_TABLE
- isn't configured
-Message-ID: <alpine.DEB.2.00.1210151333450.17947@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 15 Oct 2012 16:42:43 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20121007210359.29f40ecf@endymion.delvare>
+References: <1347630103-4105-1-git-send-email-benjamin.tissoires@gmail.com>
+	<20121007162838.01f36b7c@endymion.delvare>
+	<CAN+gG=E3nmXZ9RL3wN2tvKqSOu5hWYLXLf+Z=ag7VvZGJfhQ-w@mail.gmail.com>
+	<20121007210359.29f40ecf@endymion.delvare>
+Date: Mon, 15 Oct 2012 22:42:41 +0200
+Message-ID: <CAN+gG=H9OfEyVaOD6r3Q5CZHNY2d1gAUr=kBAgXs-qacUDqsOw@mail.gmail.com>
+Subject: Re: [PATCH v1] i2c-hid: introduce HID over i2c specification implementation
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, fabien.andre@gmail.com,
+        scott.liu@emc.com.tw, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>, linux-i2c@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 02361418 ("thermal: add generic cpufreq cooling implementation") 
-requires cpufreq_frequency_get_table(), but that function is only defined 
-for CONFIG_CPU_FREQ_TABLE resulting in the following build error:
+On Sun, Oct 7, 2012 at 9:03 PM, Jean Delvare <khali@linux-fr.org> wrote:
+> On Sun, 7 Oct 2012 18:57:36 +0200, Benjamin Tissoires wrote:
+>> On Sun, Oct 7, 2012 at 4:28 PM, Jean Delvare <khali@linux-fr.org> wrote:
+>> > On Fri, 14 Sep 2012 15:41:43 +0200, benjamin.tissoires wrote:
+>> >> +     u16 readRegister = ihid->hdesc.wDataRegister;
+>> >
+>> > This is missing le16_to_cpu().
+>>
+>> I agree this is awful, but not putting it allows me to not have to
+>> check the endianness when I'm using it.
+>> But I may be totally wrong on this.
+>
+> I'm afraid I don't follow you. I want to see:
+>
+>         u16 readRegister = le16_to_cpu(ihid->hdesc.wDataRegister);
+>
+> If you don't do that, your driver is broken on bigendian systems. And
+> there's no need to "check the endianness when you're using it", the
+> above should be enough for things to work just fine.
+>
 
-drivers/built-in.o: In function `cpufreq_get_max_state':
-drivers/thermal/cpu_cooling.c:259: undefined reference to `cpufreq_frequency_get_table'
-drivers/built-in.o: In function `get_cpu_frequency':
-drivers/thermal/cpu_cooling.c:129: undefined reference to `cpufreq_frequency_get_table'
+a little bit late, but yes, you are entirely right. I was confused by
+the fact that I only wanted to use the number coming from the device
+to communicate with it, but as I made bit shifting within the CPU, I
+need to convert it.
+So forget my previous words here, it is fixed in v2.
 
-Fix it by selecting CONFIG_CPU_FREQ_TABLE for such a configuration.
+Thanks
+Benjamin
 
-It turns out CONFIG_EXYNOS_THERMAL also needs CONFIG_CPU_FREQ_TABLE, so 
-select it there as well.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- drivers/thermal/Kconfig |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -22,6 +22,7 @@ config THERMAL_HWMON
- config CPU_THERMAL
- 	bool "generic cpu cooling support"
- 	depends on THERMAL && CPU_FREQ
-+	select CPU_FREQ_TABLE
- 	help
- 	  This implements the generic cpu cooling mechanism through frequency
- 	  reduction, cpu hotplug and any other ways of reducing temperature. An
-@@ -50,6 +51,7 @@ config RCAR_THERMAL
- config EXYNOS_THERMAL
- 	tristate "Temperature sensor on Samsung EXYNOS"
- 	depends on (ARCH_EXYNOS4 || ARCH_EXYNOS5) && THERMAL
-+	select CPU_FREQ_TABLE
- 	help
- 	  If you say yes here you get support for TMU (Thermal Managment
- 	  Unit) on SAMSUNG EXYNOS series of SoC.
+> --
+> Jean Delvare
