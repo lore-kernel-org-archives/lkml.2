@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049Ab2JOHEN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 03:04:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:39903 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752602Ab2JOHEM convert rfc822-to-8bit (ORCPT
+	id S1754175Ab2JOHEg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 03:04:36 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38994 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752602Ab2JOHEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 03:04:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,587,1344236400"; 
-   d="scan'208";a="226919117"
-From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
-To: "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        "davej@redhat.com" <davej@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>
-CC: "Tang, Guifang" <guifang.tang@intel.com>, "Zuo, Alex" <alex.zuo@intel.com>
-Subject: RE: Fix memory leak in cpufreq stats.
-Thread-Topic: Fix memory leak in cpufreq stats.
-Thread-Index: Ac2qf44L6sEdIyqARSu/TKndOmxt0QAI6r8w
-Date: Mon, 15 Oct 2012 07:04:07 +0000
-Message-ID: <EE928378561BF1449699C96571234A740FE67925@SHSMSX102.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 15 Oct 2012 03:04:34 -0400
 MIME-Version: 1.0
+In-Reply-To: <20121015003527.GA23324@gmail.com>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+	<1349863655-29320-14-git-send-email-zwu.kernel@gmail.com>
+	<20121015003527.GA23324@gmail.com>
+Date: Mon, 15 Oct 2012 15:04:32 +0800
+Message-ID: <CAEH94Ljr0MOgpgW1gtFpTbMsRHnTZM4afFOBCnTo42hC4W6r8Q@mail.gmail.com>
+Subject: Re: [RFC v3 13/13] vfs: add documentation
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+        viro@zeniv.linux.org.uk, david@fromorbit.com, dave@jikos.cz,
+        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+alex
+On Mon, Oct 15, 2012 at 8:35 AM, Zheng Liu <gnehzuil.liu@gmail.com> wrote:
+> Hi Zhi Yong,
+>
+> [cut...]
+>> +3. The Design
+>> +
+>> +These include the following parts:
+>> +
+>> +    * Hooks in existing vfs functions to track data access frequency
+>> +
+>> +    * New rbtrees for tracking access frequency of inodes and sub-file
+>              ^^^^^^^ s/rbtrees/radix-trees
+>> +ranges (hot_rb.c)
+>            ^^^^^^^^ Now it seems that all codes are in the same file.
+HI, Zheng,
 
------Original Message-----
-From: Tu, Xiaobing 
-Sent: Monday, October 15, 2012 10:48 AM
-To: 'davej@redhat.com'; 'akpm@linux-foundation.org'; 'mingo@elte.hu'; 'rusty@rustcorp.com.au'; 'a.p.zijlstra@chello.nl'; 'linux-kernel@vger.kernel.org'; 'rostedt@goodmis.org'
-Cc: Tang, Guifang; Tu, Xiaobing
-Subject: Fix memory leak in cpufreq stats.
-
-
-Fix memory leak in cpufreq stats.
-
-When system enter sleep, non-boot CPUs will be disable.
-Cpufreq stats sysfs is created when the CPU is up, but it is not freed when the CPU going down. This will cause memory leak.
-signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
-signed-off-by: guifang tang <guifang.tang@intel.com>
-
-diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c index b40ee14..3998316 100644
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -328,6 +328,7 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
-                cpufreq_update_policy(cpu);
-                break;
-        case CPU_DOWN_PREPARE:
-+       case CPU_DOWN_PREPARE_FROZEN:
-                cpufreq_stats_free_sysfs(cpu);
-                break;
-        case CPU_DEAD:
-
-Br
-XiaoBing Tu
-PSI@System Integration Shanghai
+Good catch, i will update them, thanks.
+>
+> Regards,
+> Zheng
 
 
+
+-- 
+Regards,
+
+Zhi Yong Wu
