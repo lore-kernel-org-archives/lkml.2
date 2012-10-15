@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045Ab2JOUKs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 16:10:48 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37612 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754983Ab2JOUKk (ORCPT
+	id S932088Ab2JOUOf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 16:14:35 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:42248 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754959Ab2JOUKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 16:10:40 -0400
+	Mon, 15 Oct 2012 16:10:47 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
         neilb@suse.de
-Subject: [PATCH v2 09/26] block: Remove some unnecessary bi_vcnt usage
-Date: Mon, 15 Oct 2012 13:09:12 -0700
-Message-Id: <1350331769-14856-39-git-send-email-koverstreet@google.com>
+Subject: [PATCH v2 14/26] raid1: Refactor narrow_write_error() to not use bi_idx
+Date: Mon, 15 Oct 2012 13:09:17 -0700
+Message-Id: <1350331769-14856-44-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1350331769-14856-1-git-send-email-koverstreet@google.com>
 References: <1350331769-14856-1-git-send-email-koverstreet@google.com>
@@ -22,106 +22,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-More prep work for immutable bvecs/effecient bio splitting - usage of
-bi_vcnt has to be auditing, so getting rid of all the unnecessary usage
-makes that easier.
-
-Plus, bio_segments() is really what this code wanted, as it respects the
-current value of bi_idx.
+More bi_idx removal. This code was just open coding bio_clone(). This
+could probably be further improved by using bio_advance() instead of
+skipping over null pages, but that'd be a larger rework.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
+CC: NeilBrown <neilb@suse.de>
 ---
- drivers/message/fusion/mptsas.c          |  6 +++---
- drivers/scsi/libsas/sas_expander.c       |  6 +++---
- drivers/scsi/mpt2sas/mpt2sas_transport.c | 10 +++++-----
- 3 files changed, 11 insertions(+), 11 deletions(-)
+ drivers/md/raid1.c | 36 ++++++++++++++++++------------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
-index 551262e..5406a9f 100644
---- a/drivers/message/fusion/mptsas.c
-+++ b/drivers/message/fusion/mptsas.c
-@@ -2235,10 +2235,10 @@ static int mptsas_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 	}
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index bd3e3b9..b1072da 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -2052,8 +2052,6 @@ static int narrow_write_error(struct r1bio *r1_bio, int i)
+ 	struct mddev *mddev = r1_bio->mddev;
+ 	struct r1conf *conf = mddev->private;
+ 	struct md_rdev *rdev = conf->mirrors[i].rdev;
+-	int vcnt, idx;
+-	struct bio_vec *vec;
  
- 	/* do we need to support multiple segments? */
--	if (req->bio->bi_vcnt > 1 || rsp->bio->bi_vcnt > 1) {
-+	if (bio_segments(req->bio) > 1 || bio_segments(rsp->bio) > 1) {
- 		printk(MYIOC_s_ERR_FMT "%s: multiple segments req %u %u, rsp %u %u\n",
--		    ioc->name, __func__, req->bio->bi_vcnt, blk_rq_bytes(req),
--		    rsp->bio->bi_vcnt, blk_rq_bytes(rsp));
-+		    ioc->name, __func__, bio_segments(req->bio), blk_rq_bytes(req),
-+		    bio_segments(rsp->bio), blk_rq_bytes(rsp));
- 		return -EINVAL;
- 	}
+ 	/* bio has the data to be written to device 'i' where
+ 	 * we just recently had a write error.
+@@ -2081,30 +2079,32 @@ static int narrow_write_error(struct r1bio *r1_bio, int i)
+ 		   & ~(sector_t)(block_sectors - 1))
+ 		- sector;
  
-diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
-index efc6e72..ee331a7 100644
---- a/drivers/scsi/libsas/sas_expander.c
-+++ b/drivers/scsi/libsas/sas_expander.c
-@@ -2151,10 +2151,10 @@ int sas_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 	}
+-	if (test_bit(R1BIO_BehindIO, &r1_bio->state)) {
+-		vcnt = r1_bio->behind_page_count;
+-		vec = r1_bio->behind_bvecs;
+-		idx = 0;
+-		while (vec[idx].bv_page == NULL)
+-			idx++;
+-	} else {
+-		vcnt = r1_bio->master_bio->bi_vcnt;
+-		vec = r1_bio->master_bio->bi_io_vec;
+-		idx = r1_bio->master_bio->bi_idx;
+-	}
+ 	while (sect_to_write) {
+ 		struct bio *wbio;
+ 		if (sectors > sect_to_write)
+ 			sectors = sect_to_write;
+ 		/* Write at 'sector' for 'sectors'*/
  
- 	/* do we need to support multiple segments? */
--	if (req->bio->bi_vcnt > 1 || rsp->bio->bi_vcnt > 1) {
-+	if (bio_segments(req->bio) > 1 || bio_segments(rsp->bio) > 1) {
- 		printk("%s: multiple segments req %u %u, rsp %u %u\n",
--		       __func__, req->bio->bi_vcnt, blk_rq_bytes(req),
--		       rsp->bio->bi_vcnt, blk_rq_bytes(rsp));
-+		       __func__, bio_segments(req->bio), blk_rq_bytes(req),
-+		       bio_segments(rsp->bio), blk_rq_bytes(rsp));
- 		return -EINVAL;
- 	}
+-		wbio = bio_alloc_mddev(GFP_NOIO, vcnt, mddev);
+-		memcpy(wbio->bi_io_vec, vec, vcnt * sizeof(struct bio_vec));
+-		wbio->bi_sector = r1_bio->sector;
++		if (test_bit(R1BIO_BehindIO, &r1_bio->state)) {
++			unsigned vcnt = r1_bio->behind_page_count;
++			struct bio_vec *vec = r1_bio->behind_bvecs;
++
++			while (!vec->bv_page) {
++				vec++;
++				vcnt--;
++			}
++
++			wbio = bio_alloc_mddev(GFP_NOIO, vcnt, mddev);
++			memcpy(wbio->bi_io_vec, vec, vcnt * sizeof(struct bio_vec));
++
++			wbio->bi_vcnt = vcnt;
++		} else {
++			wbio = bio_clone_mddev(r1_bio->master_bio, GFP_NOIO, mddev);
++		}
++
+ 		wbio->bi_rw = WRITE;
+-		wbio->bi_vcnt = vcnt;
++		wbio->bi_sector = r1_bio->sector;
+ 		wbio->bi_size = r1_bio->sectors << 9;
+-		wbio->bi_idx = idx;
  
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_transport.c b/drivers/scsi/mpt2sas/mpt2sas_transport.c
-index c6cf20f..403a57b 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_transport.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_transport.c
-@@ -1939,7 +1939,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 	ioc->transport_cmds.status = MPT2_CMD_PENDING;
- 
- 	/* Check if the request is split across multiple segments */
--	if (req->bio->bi_vcnt > 1) {
-+	if (bio_segments(req->bio) > 1) {
- 		u32 offset = 0;
- 
- 		/* Allocate memory and copy the request */
-@@ -1971,7 +1971,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 
- 	/* Check if the response needs to be populated across
- 	 * multiple segments */
--	if (rsp->bio->bi_vcnt > 1) {
-+	if (bio_segments(rsp->bio) > 1) {
- 		pci_addr_in = pci_alloc_consistent(ioc->pdev, blk_rq_bytes(rsp),
- 		    &pci_dma_in);
- 		if (!pci_addr_in) {
-@@ -2038,7 +2038,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 	sgl_flags = (MPI2_SGE_FLAGS_SIMPLE_ELEMENT |
- 	    MPI2_SGE_FLAGS_END_OF_BUFFER | MPI2_SGE_FLAGS_HOST_TO_IOC);
- 	sgl_flags = sgl_flags << MPI2_SGE_FLAGS_SHIFT;
--	if (req->bio->bi_vcnt > 1) {
-+	if (bio_segments(req->bio) > 1) {
- 		ioc->base_add_sg_single(psge, sgl_flags |
- 		    (blk_rq_bytes(req) - 4), pci_dma_out);
- 	} else {
-@@ -2054,7 +2054,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 	    MPI2_SGE_FLAGS_LAST_ELEMENT | MPI2_SGE_FLAGS_END_OF_BUFFER |
- 	    MPI2_SGE_FLAGS_END_OF_LIST);
- 	sgl_flags = sgl_flags << MPI2_SGE_FLAGS_SHIFT;
--	if (rsp->bio->bi_vcnt > 1) {
-+	if (bio_segments(rsp->bio) > 1) {
- 		ioc->base_add_sg_single(psge, sgl_flags |
- 		    (blk_rq_bytes(rsp) + 4), pci_dma_in);
- 	} else {
-@@ -2099,7 +2099,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 		    le16_to_cpu(mpi_reply->ResponseDataLength);
- 		/* check if the resp needs to be copied from the allocated
- 		 * pci mem */
--		if (rsp->bio->bi_vcnt > 1) {
-+		if (bio_segments(rsp->bio) > 1) {
- 			u32 offset = 0;
- 			u32 bytes_to_copy =
- 			    le16_to_cpu(mpi_reply->ResponseDataLength);
+ 		md_trim_bio(wbio, sector - r1_bio->sector, sectors);
+ 		wbio->bi_sector += rdev->data_offset;
 -- 
 1.7.12
 
