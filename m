@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab2JOFA6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 01:00:58 -0400
-Received: from mga14.intel.com ([143.182.124.37]:38290 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751405Ab2JOFA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 01:00:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,586,1344236400"; 
-   d="scan'208";a="204444620"
-From: "Ma, Ling" <ling.ma@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: Konrad Rzeszutek Wilk <konrad@kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iant@google.com" <iant@google.com>,
-        George Spelvin <linux@horizon.com>
-Subject: RE: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging
- instruction sequence and saving register
-Thread-Topic: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging
- instruction sequence and saving register
-Thread-Index: AQHNp3KHe7EK2OTz7EWBVGWon0YSZpezpk8AgAFdKsD//6o9gIAAnmeAgAAm14CAAq2wgIABs1Pg
-Date: Mon, 15 Oct 2012 05:00:53 +0000
-Message-ID: <B2310DA9850C8743AA7AA0055500E90F0FD70D8B@SHSMSX102.ccr.corp.intel.com>
-References: <1349958548-1868-1-git-send-email-ling.ma@intel.com>
- <20121011143527.GA2408@localhost.localdomain>
- <B2310DA9850C8743AA7AA0055500E90F0FD709F9@SHSMSX102.ccr.corp.intel.com>
- <20121012061813.GC9881@liondog.tnic>
- <B2310DA9850C8743AA7AA0055500E90F0FD70AC5@SHSMSX102.ccr.corp.intel.com>
- <20121012180411.GA26245@liondog.tnic> <20121014105821.GB2165@liondog.tnic>
+	id S1752011Ab2JOFNf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 01:13:35 -0400
+Received: from science.horizon.com ([71.41.210.146]:25834 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751534Ab2JOFNe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 01:13:34 -0400
+Date: 15 Oct 2012 01:13:32 -0400
+Message-ID: <20121015051332.13610.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: bp@alien8.de, ling.ma@intel.com
+Subject: Re: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging instruction sequence and saving register
+Cc: hpa@zytor.com, iant@google.com, konrad@kernel.org,
+        linux-kernel@vger.kernel.org, linux@horizon.com, mingo@elte.hu,
+        tglx@linutronix.de
 In-Reply-To: <20121014105821.GB2165@liondog.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9F516Qv023396
 
-Thanks Boris!
-So the patch is helpful and no impact for other/older machines,
-I will re-send new version according to comments.
-Any further comments are appreciated!
+Just for everyone's information, here's the updated benchmark code on
+the same Phenom.  The REP MOVSQ code is indeed much faster.
 
-Regards
-Ling
+vendor_id       : AuthenticAMD
+cpu family      : 16
+model           : 2
+model name      : AMD Phenom(tm) 9850 Quad-Core Processor
+stepping        : 3
+microcode       : 0x1000083
+cpu MHz         : 2500.210
+cache size      : 512 KB
+flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm 3dnowext 3dnow constant_tsc rep_good nopl nonstop_tsc extd_apicid pni monitor cx16 popcnt lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs hw_pstate npt lbrv svm_lock
+bogomips        : 5000.42
+TLB size        : 1024 4K pages
+clflush size    : 64
+cache_alignment : 64
 
-> -----Original Message-----
-> From: Borislav Petkov [mailto:bp@alien8.de]
-> Sent: Sunday, October 14, 2012 6:58 PM
-> To: Ma, Ling
-> Cc: Konrad Rzeszutek Wilk; mingo@elte.hu; hpa@zytor.com;
-> tglx@linutronix.de; linux-kernel@vger.kernel.org; iant@google.com;
-> George Spelvin
-> Subject: Re: [PATCH RFC 2/2] [x86] Optimize copy_page by re-arranging
-> instruction sequence and saving register
-> 
-> On Fri, Oct 12, 2012 at 08:04:11PM +0200, Borislav Petkov wrote:
-> > Right, so benchmark shows around 20% speedup on Bulldozer but this is
-> > a microbenchmark and before pursue this further, we need to verify
-> > whether this brings any palpable speedup with a real benchmark, I
-> > don't know, kernbench, netbench, whatever. Even something as boring
-> as
-> > kernel build. And probably check for perf regressions on the rest of
-> > the uarches.
-> 
-> Ok, so to summarize, on AMD we're using REP MOVSQ which is even faster
-> than the unrolled version. I've added the REP MOVSQ version to the
-> ¬µbenchmark. It nicely validates that we're correctly setting
-> X86_FEATURE_REP_GOOD on everything >= F10h and some K8s.
-> 
-> So, to answer Konrad's question: those patches don't concern AMD
-> machines.
-> 
-> Thanks.
-> 
-> --
-> Regards/Gruss,
->     Boris.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+                                   	copy_page_org	copy_page_new	REP MOVSQ
+TPT: Len 4096, alignment  0/ 0:		708		758		611
+TPT: Len 4096, alignment  0/ 0:		672		758		611
+TPT: Len 4096, alignment  0/ 0:		708		758		611
+TPT: Len 4096, alignment  0/ 0:		708		758		611
+TPT: Len 4096, alignment  0/ 0:		708		758		611
+                                   	copy_page_org	copy_page_new	REP MOVSQ
+TPT: Len 4096, alignment  0/ 0:		694		759		611
+TPT: Len 4096, alignment  0/ 0:		672		758		611
+TPT: Len 4096, alignment  0/ 0:		708		758		611
+TPT: Len 4096, alignment  0/ 0:		708		759		611
+TPT: Len 4096, alignment  0/ 0:		708		757		611
+                                   	copy_page_org	copy_page_new	REP MOVSQ
+TPT: Len 4096, alignment  0/ 0:		697		758		611
+TPT: Len 4096, alignment  0/ 0:		708		758		611
+TPT: Len 4096, alignment  0/ 0:		708		758		611
+TPT: Len 4096, alignment  0/ 0:		708		758		611
+TPT: Len 4096, alignment  0/ 0:		708		757		611
+                                   	copy_page_org	copy_page_new	REP MOVSQ
+TPT: Len 4096, alignment  0/ 0:		703		758		612
+TPT: Len 4096, alignment  0/ 0:		709		758		611
+TPT: Len 4096, alignment  0/ 0:		709		757		611
+TPT: Len 4096, alignment  0/ 0:		709		759		613
+TPT: Len 4096, alignment  0/ 0:		709		759		611
+                                   	copy_page_org	copy_page_new	REP MOVSQ
+TPT: Len 4096, alignment  0/ 0:		669		758		613
+TPT: Len 4096, alignment  0/ 0:		671		758		611
+TPT: Len 4096, alignment  0/ 0:		708		758		611
+TPT: Len 4096, alignment  0/ 0:		708		758		611
+TPT: Len 4096, alignment  0/ 0:		708		758		613
+                                   	copy_page_org	copy_page_new	REP MOVSQ
+TPT: Len 4096, alignment  0/ 0:		679		758		612
+TPT: Len 4096, alignment  0/ 0:		671		758		612
+TPT: Len 4096, alignment  0/ 0:		684		759		612
+TPT: Len 4096, alignment  0/ 0:		709		759		613
+TPT: Len 4096, alignment  0/ 0:		709		759		611
+                                   	copy_page_org	copy_page_new	REP MOVSQ
+TPT: Len 4096, alignment  0/ 0:		682		758		612
+TPT: Len 4096, alignment  0/ 0:		673		758		613
+TPT: Len 4096, alignment  0/ 0:		704		759		613
+TPT: Len 4096, alignment  0/ 0:		709		758		613
+TPT: Len 4096, alignment  0/ 0:		709		758		611
+                                   	copy_page_org	copy_page_new	REP MOVSQ
+TPT: Len 4096, alignment  0/ 0:		669		759		611
+TPT: Len 4096, alignment  0/ 0:		671		759		611
+TPT: Len 4096, alignment  0/ 0:		709		759		613
+TPT: Len 4096, alignment  0/ 0:		709		759		613
+TPT: Len 4096, alignment  0/ 0:		708		759		613
+                                   	copy_page_org	copy_page_new	REP MOVSQ
+TPT: Len 4096, alignment  0/ 0:		668		759		612
+TPT: Len 4096, alignment  0/ 0:		709		759		612
+TPT: Len 4096, alignment  0/ 0:		709		759		612
+TPT: Len 4096, alignment  0/ 0:		709		759		612
+TPT: Len 4096, alignment  0/ 0:		709		759		612
+                                   	copy_page_org	copy_page_new	REP MOVSQ
+TPT: Len 4096, alignment  0/ 0:		694		758		611
+TPT: Len 4096, alignment  0/ 0:		671		759		611
+TPT: Len 4096, alignment  0/ 0:		708		759		611
+TPT: Len 4096, alignment  0/ 0:		708		759		611
+TPT: Len 4096, alignment  0/ 0:		708		759		613
