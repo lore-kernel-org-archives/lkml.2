@@ -1,35 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab2JOP0u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 11:26:50 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:53114 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab2JOP0t convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Mon, 15 Oct 2012 11:26:49 -0400
-Message-Id: <507C475502000078000A17AA@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 15 Oct 2012 16:26:45 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Michal Marek" <mmarek@suse.cz>
-Cc: <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>
-Subject: commit fe04ddf7c2910362f3817c8156e41cbd6c0ee35d reverts
- unrelated changes
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752199Ab2JOP2K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 11:28:10 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:44411 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752006Ab2JOP2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 11:28:08 -0400
+Subject: [PATCH] proc: check vma->vm_file before dereferencing
+To: akpm@linux-foundation.org, viro@zeniv.linux.org.uk
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-kernel@vger.kernel.org, criu@openvz.org, ebiederm@xmission.com,
+        rientjes@google.com, gorcunov@openvz.org, devel@openvz.org
+Date: Mon, 15 Oct 2012 19:30:03 +0400
+Message-ID: <20121015152957.24859.7960.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal,
+It can be equal to NULL.
 
-is there any reason why that commit reverts two other changes
-(to arch/x86/Makefile and scripts/Makefile.fwinst) without any
-mention of the reason for this in the description?
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ fs/proc/base.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-Also, Greg, didn't this get merged into stable a little too quickly?
-
-Thanks, Jan
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 144a967..74fc562 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1770,8 +1770,9 @@ static struct dentry *proc_map_files_lookup(struct inode *dir,
+ 	if (!vma)
+ 		goto out_no_vma;
+ 
+-	result = proc_map_files_instantiate(dir, dentry, task,
+-			(void *)(unsigned long)vma->vm_file->f_mode);
++	if (vma->vm_file)
++		result = proc_map_files_instantiate(dir, dentry, task,
++				(void *)(unsigned long)vma->vm_file->f_mode);
+ 
+ out_no_vma:
+ 	up_read(&mm->mmap_sem);
 
