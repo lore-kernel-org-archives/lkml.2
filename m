@@ -1,125 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073Ab2JOWl2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 18:41:28 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:46835 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab2JOWl0 (ORCPT
+	id S1753586Ab2JOWtt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 18:49:49 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:46376 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752609Ab2JOWts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 18:41:26 -0400
-Date: Mon, 15 Oct 2012 15:40:44 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] srcu: add DEFINE_SRCU()
-Message-ID: <20121015224044.GA9788@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1350062057-2439-1-git-send-email-laijs@cn.fujitsu.com>
- <1350062057-2439-4-git-send-email-laijs@cn.fujitsu.com>
- <20121015215607.GB3010@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121015215607.GB3010@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101522-7606-0000-0000-0000048751F7
+	Mon, 15 Oct 2012 18:49:48 -0400
+Date: Mon, 15 Oct 2012 15:49:40 -0700
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH V2 0/7]: PVH: PV guest with extensions
+Message-ID: <20121015154940.4033c64f@mantra.us.oracle.com>
+In-Reply-To: <1350317743.18058.85.camel@zakaz.uk.xensource.com>
+References: <20121011144929.06e71a9e@mantra.us.oracle.com>
+	<1350317743.18058.85.camel@zakaz.uk.xensource.com>
+Organization: Oracle Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 02:56:07PM -0700, Paul E. McKenney wrote:
-> On Sat, Oct 13, 2012 at 01:14:16AM +0800, Lai Jiangshan wrote:
-> > In old days, we have two different API sets for dynamic-allocated per_cpu data
-> > and DEFINE_PER_CPU()-defined per_cpu data, and since we used
-> > dynamic-allocated per_cpu data, we can't use DEFINE_PER_CPU()-defined
-> > per_cpu data(otherwise we will introduce a lot of duplicated code.
+On Mon, 15 Oct 2012 17:15:43 +0100
+Ian Campbell <Ian.Campbell@citrix.com> wrote:
+
+> On Thu, 2012-10-11 at 22:49 +0100, Mukesh Rathor wrote:
+> > Hi guys,
 > > 
-> > In new days, we have only one API sets for both type of per_cpu data,
-> > so we can use DEFINE_PER_CPU() for DEFINE_SRCU() which allows us
-> > define and init srcu struct in build time and allows us use srcu APIs
-> > in very early boot time.
+> > Ok, I've made all the changes from prev RFC patch submissions.
+> > Tested all the combinations. The patches are organized slightly
+> > differently from prev version because of the nature of changes
+> > after last review. I am building xen patch just for the
+> > corresponding header file changes. Following that I'll refresh xen
+> > tree, debug, test, and send patches.
 > > 
-> > We also provide DEFINE_STATIC_SRCU() which defines an internal srcu struct
-> > inside a single *.c.
+> > For linux kernel mailing list introduction, PVH is a PV guest that
+> > can run in an HVM container, uses native pagetables, uses callback
+> > vector, native IDT, and native syscalls.
 > > 
-> > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> > ---
-> >  include/linux/srcu.h |   30 ++++++++++++++++++++++++++++++
-> >  1 files changed, 30 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/include/linux/srcu.h b/include/linux/srcu.h
-> > index 5cce128..f986df1 100644
-> > --- a/include/linux/srcu.h
-> > +++ b/include/linux/srcu.h
-> > @@ -42,6 +42,8 @@ struct rcu_batch {
-> >  	struct rcu_head *head, **tail;
-> >  };
-> > 
-> > +#define RCU_BATCH_INIT(name) { NULL, &(name.head) }
-> > +
-> >  struct srcu_struct {
-> >  	unsigned completed;
-> >  	struct srcu_struct_array __percpu *per_cpu_ref;
-> > @@ -72,14 +74,42 @@ int __init_srcu_struct(struct srcu_struct *sp, const char *name,
-> >  	__init_srcu_struct((sp), #sp, &__srcu_key); \
-> >  })
-> > 
-> > +#define __SRCU_DEP_MAP_INIT(srcu_name)	.dep_map = { .name = #srcu_name },
-> >  #else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-> > 
-> >  int init_srcu_struct(struct srcu_struct *sp);
-> > 
-> > +#define __SRCU_DEP_MAP_INIT(srcu_name)
-> >  #endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-> > 
-> >  void process_srcu(struct work_struct *work);
-> > 
-> > +#define __SRCU_STRUCT_INIT(name)					\
-> > +	{								\
-> > +		.completed = -300,					\
-> > +		.per_cpu_ref = &name##_srcu_array,			\
-> > +		.queue_lock = __SPIN_LOCK_UNLOCKED(name.queue_lock),	\
-> > +		.running = false,					\
-> > +		.batch_queue = RCU_BATCH_INIT(name.batch_queue),	\
-> > +		.batch_check0 = RCU_BATCH_INIT(name.batch_check0),	\
-> > +		.batch_check1 = RCU_BATCH_INIT(name.batch_check1),	\
-> > +		.batch_done = RCU_BATCH_INIT(name.batch_done),		\
-> > +		.work = __DELAYED_WORK_INITIALIZER(name.work, process_srcu),\
-> > +		__SRCU_DEP_MAP_INIT(name)				\
-> > +	}
-> > +
-> > +/*
-> > + * define and init a srcu struct at build time.
-> > + * dont't call init_srcu_struct() nor cleanup_srcu_struct() on it.
-> > + */
-> > +#define DEFINE_SRCU(name)						\
-> > +	static DEFINE_PER_CPU(struct srcu_struct_array, name##_srcu_array);\
-> > +	struct srcu_struct name = __SRCU_STRUCT_INIT(name);
-> > +
-> > +#define DEFINE_STATIC_SRCU(name)						\
-> > +	static DEFINE_PER_CPU(struct srcu_struct_array, name##_srcu_array);\
-> > +	static struct srcu_struct name = __SRCU_STRUCT_INIT(name);
-> > +
+> > They were built on top of 89d0307af2b9957d59bfb2a86aaa57464ff921de
+> > commit.
 > 
-> Why not collapse DEFINE_SRCU() and DEFINE_STATIC_SRCU() as follows?
+> Are they in a git branch anywhere?
 > 
-> +#define DEFINE_SRCU(name)						\
-> +	struct srcu_struct name = __SRCU_STRUCT_INIT(name);		\
-> +	static DEFINE_PER_CPU(struct srcu_struct_array, name##_srcu_array);
-> 
-> Then "static DEFINE_SRCU(foo)" would create a static srcu_struct without
-> the need for a separate DEFINE_STATIC_SRCU().
 
-Never mind!!!  This of course results in a forward reference and a
-compiler warning...
+not in a public accessible location. we are very close to getting this
+done (it appears ;)), and once konrad puts in his tree it should be
+publicly available.
 
-							Thanx, Paul
-
-> >  /**
-> >   * call_srcu() - Queue a callback for invocation after an SRCU grace period
-> >   * @sp: srcu_struct in queue the callback
-> > -- 
-> > 1.7.7.6
-> > 
-
+thanks
+mukesh
