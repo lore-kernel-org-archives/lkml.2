@@ -1,76 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749Ab2JOGVg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 02:21:36 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:46681 "EHLO ogre.sisk.pl"
+	id S1752535Ab2JOGgI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 02:36:08 -0400
+Received: from linux-sh.org ([111.68.239.195]:45785 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753083Ab2JOGVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 02:21:35 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: pavel@ucw.cz, len.brown@intel.com, gregkh@linuxfoundation.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mturquette@linaro.org, linux-sh@vger.kernel.org, cyril@ti.com
-Subject: Re: [PATCH] base: power - use clk_prepare_enable and clk_prepare_disable
-Date: Mon, 15 Oct 2012 08:25:14 +0200
-Message-ID: <2015319.CVFbHOo6Yt@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1348155576-18881-1-git-send-email-m-karicheri2@ti.com>
-References: <1348155576-18881-1-git-send-email-m-karicheri2@ti.com>
+	id S1751096Ab2JOGgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 02:36:06 -0400
+Date: Mon, 15 Oct 2012 15:35:58 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] sh updates for 3.7-rc2
+Message-ID: <20121015063557.GB32566@linux-sh.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 of September 2012 11:39:36 Murali Karicheri wrote:
-> When PM runtime is enabled in DaVinci and the machine migrates to
-> common clk framework, the clk_enable() gets called without
-> clk_prepare(). This patch is to fix this issue so that PM run
-> time can inter work with common clk framework.
-> 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
 
-OK.  I'm not seeing people having problems with this patch, so I'll tentatively
-queue it up for v3.8.
+  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
 
-Thanks,
-Rafael
+are available in the git repository at:
 
+  git://github.com/pmundt/linux-sh tags/sh-for-linus
 
-> diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
-> index eb78e96..9d8fde7 100644
-> --- a/drivers/base/power/clock_ops.c
-> +++ b/drivers/base/power/clock_ops.c
-> @@ -99,7 +99,7 @@ static void __pm_clk_remove(struct pm_clock_entry *ce)
->  
->  	if (ce->status < PCE_STATUS_ERROR) {
->  		if (ce->status == PCE_STATUS_ENABLED)
-> -			clk_disable(ce->clk);
-> +			clk_disable_unprepare(ce->clk);
->  
->  		if (ce->status >= PCE_STATUS_ACQUIRED)
->  			clk_put(ce->clk);
-> @@ -396,7 +396,7 @@ static void enable_clock(struct device *dev, const char *con_id)
->  
->  	clk = clk_get(dev, con_id);
->  	if (!IS_ERR(clk)) {
-> -		clk_enable(clk);
-> +		clk_prepare_enable(clk);
->  		clk_put(clk);
->  		dev_info(dev, "Runtime PM disabled, clock forced on.\n");
->  	}
-> @@ -413,7 +413,7 @@ static void disable_clock(struct device *dev, const char *con_id)
->  
->  	clk = clk_get(dev, con_id);
->  	if (!IS_ERR(clk)) {
-> -		clk_disable(clk);
-> +		clk_disable_unprepare(clk);
->  		clk_put(clk);
->  		dev_info(dev, "Runtime PM disabled, clock forced off.\n");
->  	}
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+for you to fetch changes up to 0dd4d5cbe4c38165dc9b3ad329ebb23f24d74fdb:
+
+  sh: Fix up more fallout from pointless ARM __iomem churn. (2012-10-15 14:08:48 +0900)
+
+----------------------------------------------------------------
+SuperH updates for 3.7-rc2
+
+----------------------------------------------------------------
+David Howells (1):
+      UAPI: (Scripted) Disintegrate arch/sh/include/asm
+
+Paul Mundt (3):
+      Merge tag 'disintegrate-sh-20121009' of git://git.infradead.org/users/dhowells/linux-headers into sh-latest
+      sh: Wire up kcmp syscall.
+      sh: Fix up more fallout from pointless ARM __iomem churn.
+
+ arch/sh/include/asm/Kbuild                      | 11 ----
+ arch/sh/include/asm/hw_breakpoint.h             |  4 +-
+ arch/sh/include/asm/posix_types.h               |  8 ---
+ arch/sh/include/asm/ptrace.h                    | 34 +----------
+ arch/sh/include/asm/ptrace_32.h                 | 75 +-----------------------
+ arch/sh/include/asm/ptrace_64.h                 | 12 +---
+ arch/sh/include/asm/setup.h                     |  5 +-
+ arch/sh/include/asm/types.h                     |  5 +-
+ arch/sh/include/asm/unistd.h                    |  9 +--
+ arch/sh/include/uapi/asm/Kbuild                 | 22 +++++++
+ arch/sh/include/{ => uapi}/asm/auxvec.h         |  0
+ arch/sh/include/{ => uapi}/asm/byteorder.h      |  0
+ arch/sh/include/{ => uapi}/asm/cachectl.h       |  0
+ arch/sh/include/{ => uapi}/asm/cpu-features.h   |  0
+ arch/sh/include/{ => uapi}/asm/ioctls.h         |  0
+ arch/sh/include/uapi/asm/posix_types.h          |  7 +++
+ arch/sh/include/{ => uapi}/asm/posix_types_32.h |  0
+ arch/sh/include/{ => uapi}/asm/posix_types_64.h |  0
+ arch/sh/include/uapi/asm/ptrace.h               | 34 +++++++++++
+ arch/sh/include/uapi/asm/ptrace_32.h            | 77 +++++++++++++++++++++++++
+ arch/sh/include/uapi/asm/ptrace_64.h            | 14 +++++
+ arch/sh/include/uapi/asm/setup.h                |  1 +
+ arch/sh/include/{ => uapi}/asm/sigcontext.h     |  0
+ arch/sh/include/{ => uapi}/asm/signal.h         |  0
+ arch/sh/include/{ => uapi}/asm/sockios.h        |  0
+ arch/sh/include/{ => uapi}/asm/stat.h           |  0
+ arch/sh/include/{ => uapi}/asm/swab.h           |  0
+ arch/sh/include/uapi/asm/types.h                |  1 +
+ arch/sh/include/uapi/asm/unistd.h               |  7 +++
+ arch/sh/include/{ => uapi}/asm/unistd_32.h      |  3 +-
+ arch/sh/include/{ => uapi}/asm/unistd_64.h      |  3 +-
+ arch/sh/kernel/syscalls_32.S                    |  1 +
+ arch/sh/kernel/syscalls_64.S                    |  1 +
+ drivers/sh/intc/access.c                        | 45 +++++++++------
+ drivers/sh/intc/chip.c                          |  4 +-
+ drivers/tty/serial/sh-sci.c                     |  3 +-
+ 36 files changed, 210 insertions(+), 176 deletions(-)
+ rename arch/sh/include/{ => uapi}/asm/auxvec.h (100%)
+ rename arch/sh/include/{ => uapi}/asm/byteorder.h (100%)
+ rename arch/sh/include/{ => uapi}/asm/cachectl.h (100%)
+ rename arch/sh/include/{ => uapi}/asm/cpu-features.h (100%)
+ create mode 100644 arch/sh/include/uapi/asm/hw_breakpoint.h
+ rename arch/sh/include/{ => uapi}/asm/ioctls.h (100%)
+ create mode 100644 arch/sh/include/uapi/asm/posix_types.h
+ rename arch/sh/include/{ => uapi}/asm/posix_types_32.h (100%)
+ rename arch/sh/include/{ => uapi}/asm/posix_types_64.h (100%)
+ create mode 100644 arch/sh/include/uapi/asm/ptrace.h
+ create mode 100644 arch/sh/include/uapi/asm/ptrace_32.h
+ create mode 100644 arch/sh/include/uapi/asm/ptrace_64.h
+ create mode 100644 arch/sh/include/uapi/asm/setup.h
+ rename arch/sh/include/{ => uapi}/asm/sigcontext.h (100%)
+ rename arch/sh/include/{ => uapi}/asm/signal.h (100%)
+ rename arch/sh/include/{ => uapi}/asm/sockios.h (100%)
+ rename arch/sh/include/{ => uapi}/asm/stat.h (100%)
+ rename arch/sh/include/{ => uapi}/asm/swab.h (100%)
+ create mode 100644 arch/sh/include/uapi/asm/types.h
+ create mode 100644 arch/sh/include/uapi/asm/unistd.h
+ rename arch/sh/include/{ => uapi}/asm/unistd_32.h (99%)
+ rename arch/sh/include/{ => uapi}/asm/unistd_64.h (99%)
