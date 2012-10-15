@@ -1,127 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334Ab2JOPdL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 11:33:11 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:44248 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab2JOPdJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 11:33:09 -0400
+	id S1752759Ab2JOPnp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 11:43:45 -0400
+Received: from mga01.intel.com ([192.55.52.88]:65199 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752480Ab2JOPno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 11:43:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,588,1344236400"; 
+   d="scan'208";a="235216198"
+Message-ID: <507C2F20.8000504@intel.com>
+Date: Mon, 15 Oct 2012 08:43:28 -0700
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <20603.47887.262025.941051@pilspetsen.it.uu.se>
-References: <DA41BE1DDCA941489001C7FBD7A8820E3CB407A4@szxeml549-mbx.china.huawei.com>
-	<20603.47887.262025.941051@pilspetsen.it.uu.se>
-Date: Mon, 15 Oct 2012 23:33:08 +0800
-Message-ID: <CAKw8HL154a=K9O7CzPFZ-EqtT+BxYU-uRHodtutdRfYmNpWVww@mail.gmail.com>
-Subject: [PATCH] Re: Hardcoded instruction causes certain features to fail on
- ARM platfrom due to endianness
-From: Fei Yang <yangfei.kernel@gmail.com>
-To: Mikael Pettersson <mikpe@it.uu.se>, linux@arm.linux.org.uk,
-        lethal@linux-sh.org, magnus.damm@gmail.com, kgene.kim@samsung.com,
-        linux-arm-kernel@lists.infradead.org
-Cc: linux-hotplug@vger.kernel.org,
-        "linux-assembly@vger.kernel.org" <linux-assembly@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Yangfei (Felix)" <felix.yang@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hillf Danton <dhillf@gmail.com>
+CC: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
+        joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
+        fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH v2 1/7] swiotlb: Make io_tlb_end a physical address instead
+ of a virtual one
+References: <20121011203010.12444.15503.stgit@gitlad.jf.intel.com> <20121011203421.12444.32871.stgit@gitlad.jf.intel.com> <CAJd=RBApQjWBA8w0y7_FhVAOoi17FO=UkCKQqnAX_vbFikkEVA@mail.gmail.com>
+In-Reply-To: <CAJd=RBApQjWBA8w0y7_FhVAOoi17FO=UkCKQqnAX_vbFikkEVA@mail.gmail.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/15 Mikael Pettersson <mikpe@it.uu.se>:
-> Yangfei (Felix) writes:
->  > Hi all,
->  >
->  >     I found that hardcoded instruction in inline asm can cause certains certain features fail to work on ARM platform due to endianness.
->  >     As an example, consider the following code snippet of platform_do_lowpower function from arch/arm/mach-realview/hotplug.c:
->  >                 / *
->  >                  * here's the WFI
->  >                  */
->  >                 asm(".word      0xe320f003\n"
->  >                     :
->  >                     :
->  >                     : "memory", "cc");
->  >
->  >     The instruction generated from this inline asm will not work on big-endian ARM platform, such as ARM BE-8 format. Instead, an exception will be generated.
->  >
->  >     Here the code should be:
->  >                 / *
->  >                  * here's the WFI
->  >                  */
->  >                 asm("WFI\n"
->  >                     :
->  >                     :
->  >                     : "memory", "cc");
->  >
->  >     Seems the kernel doesn't support ARM BE-8 well. I don't know why this problem happens.
->  >     Can anyone tell me who owns this part? I can prepare a patch then.
->  >     Thanks.
+On 10/13/2012 05:52 AM, Hillf Danton wrote:
+> Hi Alexander,
 >
-> Questions regarding the ARM kernel should go to the linux-arm-kernel mailing list
-> (see the MAINTAINERS file), with an optional cc: to the regular LKML.
+> On Fri, Oct 12, 2012 at 4:34 AM, Alexander Duyck
+> <alexander.h.duyck@intel.com> wrote:
+>> This change replaces all references to the virtual address for io_tlb_end
+>> with references to the physical address io_tlb_end.  The main advantage of
+>> replacing the virtual address with a physical address is that we can avoid
+>> having to do multiple translations from the virtual address to the physical
+>> one needed for testing an existing DMA address.
+>>
+>> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+>> ---
+>>
+>>  lib/swiotlb.c |   24 +++++++++++++-----------
+>>  1 files changed, 13 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+>> index f114bf6..19aac9f 100644
+>> --- a/lib/swiotlb.c
+>> +++ b/lib/swiotlb.c
+>> @@ -57,7 +57,8 @@ int swiotlb_force;
+>>   * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
+>>   * API.
+>>   */
+>> -static char *io_tlb_start, *io_tlb_end;
+>> +static char *io_tlb_start;
+>> +phys_addr_t io_tlb_end;
+> If add io_tlb_start_phy and io_tlb_end_phy, could we get same results
+> with less hunks?
 >
-> BE-8 is, if I recall correctly, ARMv7's broken format where code and data have
-> different endianess.  GAS supports an ".inst" directive which is like ".word"
-> except the data is assumed to be code.  This matters for disassembly, and may
-> also be required for BE-8.
->
-> That is, just s/.word/.inst/g above and report back if that works or not.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+> Hillf
 
-Hi Mikael,
+What do you mean by less hunks?  Are you referring to the memory space? 
+If so, then the patches I am submitting do not impact how much space is
+used for the bounce buffer.  The only real result of these patches is
+that the total code path is significantly reduced since we don't have to
+perform any virtual to physical translations in the hot-path.
 
-Thanks for the reply. I modified the code as suggested and rebuilt the
-kernel, cpu-hotplug feature now works on big-endian(BE-8) ARM
-platform.
-Since the ARM core can be configured by system software to work in
-big-endian mode, it's necessary to fix this problem. And here is a
-small patch :
+Thanks,
 
-diff -urN linux-3.6.2/arch/arm/mach-exynos/hotplug.c
-linux/arch/arm/mach-exynos/hotplug.c
---- linux-3.6.2/arch/arm/mach-exynos/hotplug.c	2012-10-13
-04:50:59.000000000 +0800
-+++ linux/arch/arm/mach-exynos/hotplug.c	2012-10-15 23:05:44.000000000 +0800
-@@ -72,7 +72,7 @@
- 		/*
- 		 * here's the WFI
- 		 */
--		asm(".word	0xe320f003\n"
-+		asm(".inst	0xe320f003\n"
- 		    :
- 		    :
- 		    : "memory", "cc");
-diff -urN linux-3.6.2/arch/arm/mach-realview/hotplug.c
-linux/arch/arm/mach-realview/hotplug.c
---- linux-3.6.2/arch/arm/mach-realview/hotplug.c	2012-10-13
-04:50:59.000000000 +0800
-+++ linux/arch/arm/mach-realview/hotplug.c	2012-10-15 23:05:00.000000000 +0800
-@@ -66,7 +66,7 @@
- 		/*
- 		 * here's the WFI
- 		 */
--		asm(".word	0xe320f003\n"
-+		asm(".inst	0xe320f003\n"
- 		    :
- 		    :
- 		    : "memory", "cc");
-diff -urN linux-3.6.2/arch/arm/mach-shmobile/hotplug.c
-linux/arch/arm/mach-shmobile/hotplug.c
---- linux-3.6.2/arch/arm/mach-shmobile/hotplug.c	2012-10-13
-04:50:59.000000000 +0800
-+++ linux/arch/arm/mach-shmobile/hotplug.c	2012-10-15 23:05:25.000000000 +0800
-@@ -53,7 +53,7 @@
- 		/*
- 		 * here's the WFI
- 		 */
--		asm(".word	0xe320f003\n"
-+		asm(".inst	0xe320f003\n"
- 		    :
- 		    :
- 		    : "memory", "cc");
+Alex
