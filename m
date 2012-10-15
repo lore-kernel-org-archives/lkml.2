@@ -1,81 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085Ab2JOHfO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 03:35:14 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29276 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810Ab2JOHfM convert rfc822-to-8bit (ORCPT
+	id S1752027Ab2JOHhC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 03:37:02 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:48998 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab2JOHhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 03:35:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,587,1344236400"; 
-   d="scan'208";a="205675725"
-Message-ID: <1350286504.10584.176.camel@smile>
-Subject: Re: [PATCH V2 2/3] dmaengine: dw_dmac: Enhance device tree support
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org
-Date: Mon, 15 Oct 2012 10:35:04 +0300
-In-Reply-To: <CAKohpo=20mwje+9AVgs7b-_DshyRO2DZ=Nacjm7vFAhed=Wkqg@mail.gmail.com>
-References: <142ef9170a2c69657d8a05ac127a9970d7b04965.1350051925.git.viresh.kumar@linaro.org>
-	 <9688d98010716880c1bbd966ead312c446282204.1350051925.git.viresh.kumar@linaro.org>
-	 <1350053897.10584.172.camel@smile>
-	 <CAKohpo=20mwje+9AVgs7b-_DshyRO2DZ=Nacjm7vFAhed=Wkqg@mail.gmail.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.3-1 
+	Mon, 15 Oct 2012 03:37:00 -0400
+Date: Mon, 15 Oct 2012 09:36:44 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Ben Dooks <ben-linux@fluff.org>, Daniel Kurtz <djkurtz@chromium.org>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c-i801: Add device tree support
+Message-ID: <20121015093644.545af0ce@endymion.delvare>
+In-Reply-To: <20120821082906.GC28886@pengutronix.de>
+References: <1344409609-1904-1-git-send-email-thierry.reding@avionic-design.de>
+	<20120821082906.GC28886@pengutronix.de>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-10-15 at 08:59 +0530, Viresh Kumar wrote: 
-> On 12 October 2012 20:28, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
-> >> +     if (last_dw) {
-> >> +             if ((last_bus_id == param) && (last_dw == dw))
-> >> +                     return false;
-> >> +     }
-> > Just came to my mind.
-> > dw can't be NULL, can't it?
-> > Then
-> > if (last_dw) {
-> > ...
-> > }
-> > is unneeded.
+On Tue, 21 Aug 2012 10:29:06 +0200, Wolfram Sang wrote:
+> On Wed, Aug 08, 2012 at 09:06:47AM +0200, Thierry Reding wrote:
+> > This commit adds support for probing slave devices parsed from the
+> > device tree.
+> > 
+> > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 > 
-> Fixup for this:
+> Acked-by: Wolfram Sang <w.sang@pengutronix.de>
 > 
-> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> index d72c26f..764c159 100644
-> --- a/drivers/dma/dw_dmac.c
-> +++ b/drivers/dma/dw_dmac.c
-> @@ -1196,11 +1196,8 @@ bool dw_dma_generic_filter(struct dma_chan
-> *chan, void *param)
->          * failure. If dw and param are same, i.e. trying on same dw with
->          * different channel, return false.
->          */
-> -       if (last_dw) {
-> -               if ((last_bus_id == param) && (last_dw == dw))
-> -                       return false;
-> -       }
-> -
-> +       if ((last_dw == dw) && (last_bus_id == param))
-> +               return false;
->         /*
->          * Return true:
->          * - If dw_dma's platform data is not filled with slave info, then all
-Good.
-So, have my 
+> Jean, this one is for you, I guess?
 
-Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com> 
-
-for this patch.
-
+Yes, sorry for the delay, applied.
 
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Jean Delvare
