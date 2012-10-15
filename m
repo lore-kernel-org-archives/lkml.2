@@ -1,150 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886Ab2JOIfk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 04:35:40 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:55408 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab2JOIfX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 04:35:23 -0400
-From: Hideki EIRAKU <hdk@igel.co.jp>
-To: Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Simon Horman <horms@verge.net.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Katsuya MATSUBARA <matsu@igel.co.jp>,
-        Damian Hobson-Garcia <dhobsong@igel.co.jp>,
-        Hideki EIRAKU <hdk@igel.co.jp>
-Subject: [PATCH v4 2/2] ARM: mach-shmobile: sh7372: Add IPMMU device
-Date: Mon, 15 Oct 2012 17:34:53 +0900
-Message-Id: <1350290093-998-3-git-send-email-hdk@igel.co.jp>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1350290093-998-1-git-send-email-hdk@igel.co.jp>
-References: <1350290093-998-1-git-send-email-hdk@igel.co.jp>
+	id S1751425Ab2JOIkR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 04:40:17 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47329 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750722Ab2JOIkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 04:40:14 -0400
+Date: Mon, 15 Oct 2012 10:40:11 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH] cpufreq, powernow-k8: Remove usage of smp_processor_id()
+ in preemptible code
+Message-ID: <20121015084011.GA5000@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	Andreas Herrmann <andreas.herrmann3@amd.com>,
+	linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+	Tejun Heo <tj@kernel.org>, linux-pm@vger.kernel.org
+References: <20121009193844.GC7724@alberich>
+ <20121012151841.GA4571@alberich>
+ <27008283.MeT6T60WP8@vostro.rjw.lan>
+ <1395148.DypXQr3MdC@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395148.DypXQr3MdC@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds an IPMMU device and notifies the IPMMU driver which
-devices are connected via the IPMMU module.  All devices connected to the main
-memory bus via the IPMMU module MUST be registered when SHMOBILE_IPMMU and
-SHMOBILE_IOMMU are enabled because physical address cannot be used
-while the IPMMU module's MMU function is enabled.
+On Mon, Oct 15, 2012 at 07:50:13AM +0200, Rafael J. Wysocki wrote:
+> Well, please don't tag patches for -stable, because -stable doesn't
+> take _patches_.
 
-Signed-off-by: Hideki EIRAKU <hdk@igel.co.jp>
----
- arch/arm/mach-shmobile/board-ap4evb.c   |    5 +++++
- arch/arm/mach-shmobile/board-mackerel.c |    5 +++++
- arch/arm/mach-shmobile/setup-sh7372.c   |   26 ++++++++++++++++++++++++++
- 3 files changed, 36 insertions(+), 0 deletions(-)
+Really, I didn't know that?! :-)
 
-diff --git a/arch/arm/mach-shmobile/board-ap4evb.c b/arch/arm/mach-shmobile/board-ap4evb.c
-index 790dc68..7006abb 100644
---- a/arch/arm/mach-shmobile/board-ap4evb.c
-+++ b/arch/arm/mach-shmobile/board-ap4evb.c
-@@ -61,6 +61,7 @@
- #include <mach/common.h>
- #include <mach/irqs.h>
- #include <mach/sh7372.h>
-+#include <mach/ipmmu.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -1459,6 +1460,10 @@ static void __init ap4evb_init(void)
- 
- 	sh7372_add_standard_devices();
- 
-+	ipmmu_add_device(&lcdc_device.dev);
-+	ipmmu_add_device(&lcdc1_device.dev);
-+	ipmmu_add_device(&ceu_device.dev);
-+
- 	/* HDMI */
- 	gpio_request(GPIO_FN_HDMI_HPD, NULL);
- 	gpio_request(GPIO_FN_HDMI_CEC, NULL);
-diff --git a/arch/arm/mach-shmobile/board-mackerel.c b/arch/arm/mach-shmobile/board-mackerel.c
-index 0c27c81..1c34520 100644
---- a/arch/arm/mach-shmobile/board-mackerel.c
-+++ b/arch/arm/mach-shmobile/board-mackerel.c
-@@ -60,6 +60,7 @@
- #include <mach/common.h>
- #include <mach/irqs.h>
- #include <mach/sh7372.h>
-+#include <mach/ipmmu.h>
- 
- #include <asm/mach/arch.h>
- #include <asm/mach-types.h>
-@@ -1640,6 +1641,10 @@ static void __init mackerel_init(void)
- 
- 	sh7372_add_standard_devices();
- 
-+	ipmmu_add_device(&lcdc_device.dev);
-+	ipmmu_add_device(&hdmi_lcdc_device.dev);
-+	ipmmu_add_device(&ceu_device.dev);
-+
- 	platform_add_devices(mackerel_devices, ARRAY_SIZE(mackerel_devices));
- 
- 	rmobile_add_devices_to_domains(domain_devices,
-diff --git a/arch/arm/mach-shmobile/setup-sh7372.c b/arch/arm/mach-shmobile/setup-sh7372.c
-index a07954f..aadb769 100644
---- a/arch/arm/mach-shmobile/setup-sh7372.c
-+++ b/arch/arm/mach-shmobile/setup-sh7372.c
-@@ -38,6 +38,7 @@
- #include <mach/irqs.h>
- #include <mach/sh7372.h>
- #include <mach/common.h>
-+#include <mach/ipmmu.h>
- #include <asm/mach/map.h>
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -968,6 +969,23 @@ static struct platform_device spu1_device = {
- 	.num_resources	= ARRAY_SIZE(spu1_resources),
- };
- 
-+/* IPMMUI (an IPMMU module for ICB/LMB) */
-+static struct resource ipmmu_resources[] = {
-+	[0] = {
-+		.name	= "IPMMUI",
-+		.start	= 0xfe951000,
-+		.end	= 0xfe9510ff,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+static struct platform_device ipmmu_device = {
-+	.name           = "ipmmu",
-+	.id             = -1,
-+	.resource       = ipmmu_resources,
-+	.num_resources  = ARRAY_SIZE(ipmmu_resources),
-+};
-+
- static struct platform_device *sh7372_early_devices[] __initdata = {
- 	&scif0_device,
- 	&scif1_device,
-@@ -979,6 +997,7 @@ static struct platform_device *sh7372_early_devices[] __initdata = {
- 	&cmt2_device,
- 	&tmu00_device,
- 	&tmu01_device,
-+	&ipmmu_device,
- };
- 
- static struct platform_device *sh7372_late_devices[] __initdata = {
-@@ -1033,6 +1052,13 @@ void __init sh7372_add_standard_devices(void)
- 	platform_add_devices(sh7372_early_devices,
- 			    ARRAY_SIZE(sh7372_early_devices));
- 
-+	ipmmu_add_device(&vpu_device.dev);
-+	ipmmu_add_device(&jpu_device.dev);
-+	ipmmu_add_device(&veu0_device.dev);
-+	ipmmu_add_device(&veu1_device.dev);
-+	ipmmu_add_device(&veu2_device.dev);
-+	ipmmu_add_device(&veu3_device.dev);
-+
- 	platform_add_devices(sh7372_late_devices,
- 			    ARRAY_SIZE(sh7372_late_devices));
- 
+> It takes commits from the Linus' tree and backports them and that's
+> maintainer's job to tag them for -stable, not yours.
+
+You're not serious, right? This is not the case in at least 50% of the
+cases.
+
+And this is OK because maintainers don't always know whether the patch
+should be tagged for stable. So yes, people should add the stable tag
+and yes, committers still have a veto over it.
+
+And yes, Andreas and I *know* how stable patches get applied, thank you
+very much.
+
+[ … ]
+
+> Yes, they do, but that means it doesn't make sense to send them stuff
+> before it's been merged, right?
+
+Ok, I get it, you don't want people to send patches to stable@vger
+*before* they've hit mainline.
+
+Nothing in <Documentation/stable_kernel_rules.txt> states that
+stable@vger shouldn't get CCed on submissions unless the patch is
+upstream and besides, stable@vger gets CCed in a lot of discussions
+anyway so there's other traffic just the same.
+
+Bottomline: If you think people shouldn't spam stable@vger, then tough
+luck - I don't think you can stop people from accidentally/due to the
+automated nature of the process, CC stable. Even if it said so in the
+above doc file.
+
+As a result, stable maintainers simply rely on scripts which verify the
+patch is actually upstream before applying it to stable.
+
 -- 
-1.7.0.4
-
+Regards/Gruss,
+    Boris.
