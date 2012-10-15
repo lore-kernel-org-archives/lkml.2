@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab2JOUmp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 16:42:45 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:53193 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583Ab2JOUmn (ORCPT
+	id S1754920Ab2JOUmy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 16:42:54 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:2431 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754583Ab2JOUmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 16:42:43 -0400
+	Mon, 15 Oct 2012 16:42:51 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtQmALt0fFB5LH33/2dsb2JhbABFuhOEbQKBBIEJgiABAQQBOhwjBQsIAxUDLhQNGAM0h3IDCQWsUIZqDYlUFIpfZoFngTWCQWADlBeBVIskhQ2DAQ
+Date: Tue, 16 Oct 2012 07:42:17 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
+        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [RFC v3 00/13] vfs: hot data tracking
+Message-ID: <20121015204217.GB2739@dastard>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20121007210359.29f40ecf@endymion.delvare>
-References: <1347630103-4105-1-git-send-email-benjamin.tissoires@gmail.com>
-	<20121007162838.01f36b7c@endymion.delvare>
-	<CAN+gG=E3nmXZ9RL3wN2tvKqSOu5hWYLXLf+Z=ag7VvZGJfhQ-w@mail.gmail.com>
-	<20121007210359.29f40ecf@endymion.delvare>
-Date: Mon, 15 Oct 2012 22:42:41 +0200
-Message-ID: <CAN+gG=H9OfEyVaOD6r3Q5CZHNY2d1gAUr=kBAgXs-qacUDqsOw@mail.gmail.com>
-Subject: Re: [PATCH v1] i2c-hid: introduce HID over i2c specification implementation
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, fabien.andre@gmail.com,
-        scott.liu@emc.com.tw, Ben Dooks <ben-linux@fluff.org>,
-        Wolfram Sang <w.sang@pengutronix.de>, linux-i2c@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 7, 2012 at 9:03 PM, Jean Delvare <khali@linux-fr.org> wrote:
-> On Sun, 7 Oct 2012 18:57:36 +0200, Benjamin Tissoires wrote:
->> On Sun, Oct 7, 2012 at 4:28 PM, Jean Delvare <khali@linux-fr.org> wrote:
->> > On Fri, 14 Sep 2012 15:41:43 +0200, benjamin.tissoires wrote:
->> >> +     u16 readRegister = ihid->hdesc.wDataRegister;
->> >
->> > This is missing le16_to_cpu().
->>
->> I agree this is awful, but not putting it allows me to not have to
->> check the endianness when I'm using it.
->> But I may be totally wrong on this.
->
-> I'm afraid I don't follow you. I want to see:
->
->         u16 readRegister = le16_to_cpu(ihid->hdesc.wDataRegister);
->
-> If you don't do that, your driver is broken on bigendian systems. And
-> there's no need to "check the endianness when you're using it", the
-> above should be enough for things to work just fine.
->
+On Wed, Oct 10, 2012 at 06:07:22PM +0800, zwu.kernel@gmail.com wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> 
+> NOTE:
+> 
+>   The patchset is currently post out mainly to make sure
+> it is going in the correct direction and hope to get some
+> helpful comments from other guys.
+>   For more infomation, please check hot_tracking.txt in Documentation
+> 
+> TODO List:
 
-a little bit late, but yes, you are entirely right. I was confused by
-the fact that I only wanted to use the number coming from the device
-to communicate with it, but as I made bit shifting within the CPU, I
-need to convert it.
-So forget my previous words here, it is fixed in v2.
+1) Fix OOM issues - the hot inode tracking caches grow very large
+and don't get trimmed under memory pressure. From slabtop, after
+creating roughly 24 million single byte files(*) on a machine with
+8GB RAM:
 
-Thanks
-Benjamin
+  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME                   
+23859510 23859476  99%    0.12K 795317       30   3181268K hot_range_item
+23859441 23859439  99%    0.16K 1037367       23   4149468K hot_inode_item
+572530 572530 100%    0.55K  81790        7    327160K radix_tree_node
+241706 241406  99%    0.22K  14218       17     56872K xfs_ili
+241206 241204  99%    1.06K  80402        3    321608K xfs_inode
 
-> --
-> Jean Delvare
+The inode tracking is trying to track all 24 million inodes even
+though they have been written only once, and there are only 240,000
+inodes in the cache at this point in time. That was the last update
+that slabtop got, so it is indicative of the impending OOM situation
+that occurred.
+
+> Changelog from v2:
+>  1.) Converted to Radix trees, not RB-tree [Zhiyong, Dave Chinner]
+>  2.) Added memory shrinker [Dave Chinner]
+
+I haven't looked at the shrinker, but clearly it is not working,
+otherwise the above OOM situation would not be occurring.
+
+Cheers,
+
+Dave.
+
+(*) Tested on an empty 17TB XFS filesystem with:
+
+$ sudo mkfs.xfs -f -l size=131072b,sunit=8 /dev/vdc
+meta-data=/dev/vdc               isize=256    agcount=17, agsize=268435455 blks
+         =                       sectsz=512   attr=2, projid32bit=0
+data     =                       bsize=4096   blocks=4563402735, imaxpct=5
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0
+log      =internal log           bsize=4096   blocks=131072, version=2
+         =                       sectsz=512   sunit=1 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+$ sudo mount -o logbsize=256k /dev/vdc /mnt/scratch
+$ sudo chmod 777 /mnt/scratch
+$ fs_mark  -D  10000  -S0  -n  100000  -s  1  -L  63  -d \
+/mnt/scratch/0  -d  /mnt/scratch/1  -d  /mnt/scratch/2  -d \
+/mnt/scratch/3  -d  /mnt/scratch/4  -d  /mnt/scratch/5  -d \
+/mnt/scratch/6  -d  /mnt/scratch/7
+.....
+     0     21600000            1      16679.3         12552262
+     0     22400000            1      15412.4         12588587
+     0     23200000            1      16367.6         14199322
+     0     24000000            1      15680.4         15741205
+<hangs here w/ OOM>
+
+-- 
+Dave Chinner
+david@fromorbit.com
