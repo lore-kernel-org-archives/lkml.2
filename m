@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab2JOLsp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 07:48:45 -0400
-Received: from ozlabs.org ([203.10.76.45]:46887 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752432Ab2JOLso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 07:48:44 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Alex Lyashkov <umka@cloudlinux.com>,
-        Arnd Bergmann <arnd@arndb.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        David Howells <dhowells@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Josh Boyer <jwboyer@redhat.com>, linux-crypto@vger.kernel.org,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Milan Broz <mbroz@redhat.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PULL] modules
-In-Reply-To: <CA+55aFyGuy8P4Uaanmv7DncjsN6cvQxvWrrMKKnF=67J+BkshQ@mail.gmail.com>
-References: <87fw5m7ipz.fsf@rustcorp.com.au> <CA+55aFyGuy8P4Uaanmv7DncjsN6cvQxvWrrMKKnF=67J+BkshQ@mail.gmail.com>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 15 Oct 2012 19:46:40 +1030
-Message-ID: <87mwzo3xjb.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752788Ab2JOLs7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 07:48:59 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:38935 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752432Ab2JOLs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 07:48:58 -0400
+Message-ID: <1350301737.6851.9.camel@joe-AO722>
+Subject: Re: [PATCH] init: main: fixed coding style issues and errors
+From: Joe Perches <joe@perches.com>
+To: "\"Levan Giguashvili" <levangig@gmail.com>
+Cc: rusty@rustcorp.com.au, mingo@kernel.org, jim.cromie@gmail.com,
+        viro@zeniv.linux.org.uk, hpa@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Date: Mon, 15 Oct 2012 04:48:57 -0700
+In-Reply-To: <1350290504-13931-1-git-send-email-user@ubuntu>
+References: <1350290504-13931-1-git-send-email-user@ubuntu>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+On Mon, 2012-10-15 at 10:41 +0200, "Levan Giguashvili wrote:
+> From: Odinn <odinn@ubuntu.(none)>
 
-> On Wed, Oct 10, 2012 at 2:57 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>
->> ----------------------------------------------------------------
->> module signing is the highlight, but it's an all-over David Howells frenzy...
->>
->> ----------------------------------------------------------------
->
-> Hmm. What happened here? It *looks* from your pull request like you
-> had a tag, and you usually do, but there's no tag anywhere..
->
-> I've pulled and resolved the branch, and I'm going through it now, but
-> I'd like this verified before I push out if it all looks fine..
->
->           Linus
+who's that?  Make sure your from line is correct please.
 
-Ah, I missed pushing the tag.  I used to fabricate a git tree for you
-from my quilt series, and that script did the right thing.
+> Fixed coding style issues regarding spaces and braces.
+> Removed init of a static variable.
+> Added KERN_DEBUG to printk that was missing it
 
-Thanks,
-Rusty.
+Added unnecessary continuation lines to printks.
+
+> diff --git a/init/main.c b/init/main.c
+[]
+> @@ -172,8 +172,8 @@ static int __init obsolete_checksetup(char *line)
+>  				if (line[n] == '\0' || line[n] == '=')
+>  					had_early_param = 1;
+>  			} else if (!p->setup_func) {
+> -				printk(KERN_WARNING "Parameter %s is obsolete,"
+> -				       " ignored\n", p->str);
+> +				printk(KERN_WARNING "Parameter %s is obsolete" \
+> +				       ", ignored\n", p->str);
+
+Don't add unnecessary line continuations please.
+Better would be to coalesce the formats like:
+				printk(KERN_WARNING "Parameter %s is obsolete, ignored\n"
+				       p->str);
+
+It would also be better and easier to review if you
+broke out the whitespace only changes as a separate
+patch from the other changes you make.
+
+Oh, and please make these sorts of changes only in
+the drivers/staging tree until you are _very_ familiar
+with kernel style.  Don't rely on checkpatch to tell
+you what to do.  It's pretty brain-dead.  checkpatch
+is a patch checking tool not really a code style tool
+for existing code.
+
+
