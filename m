@@ -1,95 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922Ab2JOJyU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 05:54:20 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:56270 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751605Ab2JOJyS (ORCPT
+	id S1751969Ab2JOJ6F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 05:58:05 -0400
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:31028 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751605Ab2JOJ6D convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 05:54:18 -0400
-Message-ID: <507BDD45.1070705@suse.cz>
-Date: Mon, 15 Oct 2012 11:54:13 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 15 Oct 2012 05:58:03 -0400
+X-Authority-Analysis: v=2.0 cv=EOyEIilC c=1 sm=0 a=YPDeGStqRoQnMAluW+pq4Q==:17 a=65KWcu232dMA:10 a=h9GbcFHyNoYA:10 a=DpEkYpXRGzUA:10 a=05ChyHeVI94A:10 a=8nJEP1OIZ-IA:10 a=ayC55rCoAAAA:8 a=nULq49Tkjo8A:10 a=-2DtkfXt_sO_AtlXuDQA:9 a=wPNLvfGTeEIA:10 a=YPDeGStqRoQnMAluW+pq4Q==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 50.89.247.146
+Message-ID: <507BDE28.30907@cfl.rr.com>
+Date: Mon, 15 Oct 2012 05:58:00 -0400
+From: Mark Hounschell <dmarkh@cfl.rr.com>
+Reply-To: dmarkh@cfl.rr.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Valdis.Kletnieks@vt.edu, Jiri Slaby <jirislaby@gmail.com>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: kswapd0: excessive CPU usage
-References: <507688CC.9000104@suse.cz> <106695.1349963080@turing-police.cc.vt.edu> <5076E700.2030909@suse.cz> <118079.1349978211@turing-police.cc.vt.edu> <50770905.5070904@suse.cz> <119175.1349979570@turing-police.cc.vt.edu> <5077434D.7080008@suse.cz> <50780F26.7070007@suse.cz> <20121012135726.GY29125@suse.de>
-In-Reply-To: <20121012135726.GY29125@suse.de>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+CC: markh@compro.net, linux-kernel@vger.kernel.org,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Subject: Re: Intel graphics drm issue?
+References: <507812E8.3060607@compro.net> <20121012231459.166e29fd@neptune.home> <5079B97C.7020401@cfl.rr.com> <5079BE5C.8020401@cfl.rr.com> <20121014104138.7e8a9c59@neptune.home> <507A997D.7070508@cfl.rr.com> <20121014130323.06f0225d@neptune.home> <507AEE4A.1000907@cfl.rr.com> <20121014192253.5a7517ef@neptune.home> <507AFE69.70405@cfl.rr.com> <20121014201941.22284249@neptune.home> <507B0B16.4010900@cfl.rr.com> <20121014224057.2033a769@neptune.home>
+In-Reply-To: <20121014224057.2033a769@neptune.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2012 03:57 PM, Mel Gorman wrote:
-> mm: vmscan: scale number of pages reclaimed by reclaim/compaction only in direct reclaim
-> 
-> Jiri Slaby reported the following:
-> 
-> 	(It's an effective revert of "mm: vmscan: scale number of pages
-> 	reclaimed by reclaim/compaction based on failures".)
-> 	Given kswapd had hours of runtime in ps/top output yesterday in the
-> 	morning and after the revert it's now 2 minutes in sum for the last 24h,
-> 	I would say, it's gone.
-> 
-> The intention of the patch in question was to compensate for the loss of
-> lumpy reclaim. Part of the reason lumpy reclaim worked is because it
-> aggressively reclaimed pages and this patch was meant to be a
-> sane compromise.
-> 
-> When compaction fails, it gets deferred and both compaction and
-> reclaim/compaction is deferred avoid excessive reclaim. However, since
-> commit c6543459 (mm: remove __GFP_NO_KSWAPD), kswapd is woken up each time
-> and continues reclaiming which was not taken into account when the patch
-> was developed.
-> 
-> As it is not taking deferred compaction into account in this path it scans
-> aggressively before falling out and making the compaction_deferred check in
-> compaction_ready. This patch avoids kswapd scaling pages for reclaim and
-> leaves the aggressive reclaim to the process attempting the THP
-> allocation.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->  mm/vmscan.c |   10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 2624edc..2b7edfa 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1763,14 +1763,20 @@ static bool in_reclaim_compaction(struct scan_control *sc)
->  #ifdef CONFIG_COMPACTION
->  /*
->   * If compaction is deferred for sc->order then scale the number of pages
-> - * reclaimed based on the number of consecutive allocation failures
-> + * reclaimed based on the number of consecutive allocation failures. This
-> + * scaling only happens for direct reclaim as it is about to attempt
-> + * compaction. If compaction fails, future allocations will be deferred
-> + * and reclaim avoided. On the other hand, kswapd does not take compaction
-> + * deferral into account so if it scaled, it could scan excessively even
-> + * though allocations are temporarily not being attempted.
->   */
->  static unsigned long scale_for_compaction(unsigned long pages_for_compaction,
->  			struct lruvec *lruvec, struct scan_control *sc)
->  {
->  	struct zone *zone = lruvec_zone(lruvec);
->  
-> -	if (zone->compact_order_failed <= sc->order)
-> +	if (zone->compact_order_failed <= sc->order &&
-> +	    !current_is_kswapd())
->  		pages_for_compaction <<= zone->compact_defer_shift;
->  	return pages_for_compaction;
->  }
+On 10/14/2012 04:40 PM, Bruno Prémont wrote:
+> On Sun, 14 October 2012 Mark Hounschell <dmarkh@cfl.rr.com> wrote:
+>> I gave it a try. I don't think it liked my kernel cmdline. dmesg attached.
+>> There is a lot more in there now that nomodeset is gone and the debug is
+>> turned on.
+>>
+>> # ls -al /lib/firmware/edid/lg42lb9df.edid
+>> -rw-r--r-- 1 root root 1024 Oct 14  2012 /lib/firmware/edid/lg42lb9df.edid
+>>
+>> ## cat /proc/cmdline
+>> root=/dev/disk/by-id/ata-INTEL_SSDSC2CW060A3_CVCV205106EB060AGN-part4
+>> noresume splash=silent quiet apm=off vga=normal drm.debug=0xe irqpoll
+>> drm_kms_helper.edid_firmware=edid/lg42lb9df.edid
+>>
+>>
+>> from attached dmesg:
+>> 1.833032] drm_kms_helper: Unknown parameter `edid'
+>
+> As your drm drivers seem to all be built-in (according to kernel timings)
+> you will have to build the EDID firmware into the kernel as well (see
+> CONFIG_EXTRA_FIRMWARE), otherwise it probably can't be loaded (unless Linus'
+> firmware loading patch is already in 3.6.2 and root filesystem/initrd is
+> ready at that time).
+>
+> Did you set CONFIG_DRM_LOAD_EDID_FIRMWARE?
+> If not, that may be the reason for unknown parameter `edid' error.
+>
+>
+> But I saw I mis-remembered side of EDID blobs, they are just 128 bytes
+> per block, not 512 (seems I was thinking disk sector sizes),
+> thus you should just get 256 bytes output.
+>
+> Just truncating the file to 256 bytes will do. You may also
+> change your .c file to have
+>    uint8_t firmware[] = {
+>       ...
+>    };
+>    ...
+>    fwrite(firmware, sizeof(firmware), 1, fd);
+>    ...
+>
+> that way compiler gets numbers right :)
+>
+> Kernel code rejects edid with unexpected size! Thus it would have
+> complained if it had tried to load it with a size of 1k.
+>
 
-Yes, applying this instead of the revert fixes the issue as well.
+Good morning Bruno.
 
-thanks,
--- 
-js
-suse labs
+Still no luck here. I must be doing something wrong.
+
+geexbox:/usr/src/linux-3.6.2 # grep -rn CONFIG_EXTRA_FIRMWARE .config
+1406:CONFIG_EXTRA_FIRMWARE="edid/lg42lb9df.edid"
+1407:CONFIG_EXTRA_FIRMWARE_DIR="firmware"
+
+geexbox:/usr/src/linux-3.6.2 # grep CONFIG_DRM_LOAD_EDID_FIRMWARE .config
+CONFIG_DRM_LOAD_EDID_FIRMWARE=y
+
+geexbox:/usr/src/linux-3.6.2 # ls -al firmware/edid/
+-rw-r--r-- 1 root root  256 Oct 14 19:18 firmware/edid/lg42lb9df.edid
+
+
+I believe the the drm modules are modules and in initrd.
+geexbox:/boot # mkinitrd -i initrd-3.6.2 -k vmlinuz-3.6.2
+
+Kernel image:   /boot/vmlinuz-3.6.2
+Initrd image:   /boot/initrd-3.6.2
+KMS drivers:     i915
+Root device: 
+/dev/disk/by-id/ata-INTEL_SSDSC2CW060A3_CVCV205106EB060AGN-part4 
+(/dev/sda4) (mounted on / as ext4)
+Kernel Modules: thermal fan scsi_dh scsi_dh_emc scsi_dh_rdac scsi_dh_alua 
+scsi_dh_hp_sw crc16 jbd2 ext4 video button i2c-algo-bit drm drm_kms_helper 
+i915 xhci-hcd hid-logitech-dj hid-generic
+Features:       acpi kms plymouth block usb resume.userspace resume.kernel
+
+
+After the kernel build, I have these in /usr/src/linux-3.6.2/firmware/edid/
+
+geexbox:/usr/src/linux-3.6.2 # ls -al firmware/edid/
+lg42lb9df.edid             lg42lb9df.edid.gen.o 
+.lg42lb9df.edid.gen.o.cmd  lg42lb9df.edid.gen.S
+geexbox:/usr/src/linux-3.6.2 # ls -al firmware/edid/*
+-rw-r--r-- 1 root root  256 Oct 14 19:18 firmware/edid/lg42lb9df.edid
+-rw-r--r-- 1 root root 1104 Oct 15 00:52 firmware/edid/lg42lb9df.edid.gen.o
+-rw-r--r-- 1 root root  475 Oct 15 00:52 firmware/edid/lg42lb9df.edid.gen.S
+
+
+After boot, from dmesg:
+
+[    0.000000] Kernel command line: 
+root=/dev/disk/by-id/ata-INTEL_SSDSC2CW060A3_CVCV205106EB060AGN-part4 
+noresume splash=silent quiet apm=off vga=normal irqpoll 
+drm_kms_helper.edid_firmware=card0-HDMI-A-1:edid/lg42lb9df.edid,card0-HDMI-A-3:edid/lg42lb9df.edid,card0-HDMI-A-3:edid/lg42lb9df.edid
+
+[    1.835741] drm_kms_helper: Unknown parameter `edid'
+
+
+Regards
+Mark
+
