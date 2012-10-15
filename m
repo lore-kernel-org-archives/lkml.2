@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab2JOHDi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 03:03:38 -0400
-Received: from mga09.intel.com ([134.134.136.24]:39351 "EHLO mga09.intel.com"
+	id S1754049Ab2JOHEN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 03:04:13 -0400
+Received: from mga09.intel.com ([134.134.136.24]:39903 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753395Ab2JOHDh convert rfc822-to-8bit (ORCPT
+	id S1752602Ab2JOHEM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 03:03:37 -0400
+	Mon, 15 Oct 2012 03:04:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,587,1344236400"; 
-   d="scan'208";a="226918934"
+   d="scan'208";a="226919117"
 From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
 To: "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        "ccross@android.com" <ccross@android.com>,
         "davej@redhat.com" <davej@redhat.com>,
         "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "mingo@elte.hu" <mingo@elte.hu>,
@@ -20,13 +19,12 @@ To: "Tu, Xiaobing" <xiaobing.tu@intel.com>,
         "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "rostedt@goodmis.org" <rostedt@goodmis.org>
-CC: "Zhang, Di" <di.zhang@intel.com>, "Ma, Xindong" <xindong.ma@intel.com>,
-        "Zuo, Alex" <alex.zuo@intel.com>
-Subject: RE: Fix memory leak in binder
-Thread-Topic: Fix memory leak in binder
-Thread-Index: Ac2qoyERn9VOsHHUS6WvzdrsGtV9EAAAAtog
-Date: Mon, 15 Oct 2012 07:03:32 +0000
-Message-ID: <EE928378561BF1449699C96571234A740FE67913@SHSMSX102.ccr.corp.intel.com>
+CC: "Tang, Guifang" <guifang.tang@intel.com>, "Zuo, Alex" <alex.zuo@intel.com>
+Subject: RE: Fix memory leak in cpufreq stats.
+Thread-Topic: Fix memory leak in cpufreq stats.
+Thread-Index: Ac2qf44L6sEdIyqARSu/TKndOmxt0QAI6r8w
+Date: Mon, 15 Oct 2012 07:04:07 +0000
+Message-ID: <EE928378561BF1449699C96571234A740FE67925@SHSMSX102.ccr.corp.intel.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -39,78 +37,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
++alex
 
 -----Original Message-----
 From: Tu, Xiaobing 
-Sent: Monday, October 15, 2012 3:03 PM
-To: 'ccross@android.com'; 'davej@redhat.com'; 'akpm@linux-foundation.org'; 'mingo@elte.hu'; 'rusty@rustcorp.com.au'; 'a.p.zijlstra@chello.nl'; 'linux-kernel@vger.kernel.org'; 'rostedt@goodmis.org'
-Cc: Zhang, Di; Ma, Xindong
-Subject: Fix memory leak in binder
+Sent: Monday, October 15, 2012 10:48 AM
+To: 'davej@redhat.com'; 'akpm@linux-foundation.org'; 'mingo@elte.hu'; 'rusty@rustcorp.com.au'; 'a.p.zijlstra@chello.nl'; 'linux-kernel@vger.kernel.org'; 'rostedt@goodmis.org'
+Cc: Tang, Guifang; Tu, Xiaobing
+Subject: Fix memory leak in cpufreq stats.
 
-After enabling kmemleak and run monkey, following memleak is reported:
-unreferenced object 0xeed27f80 (size 64):
-  comm "Binder_8", pid 641, jiffies 4294946341 (age 2275.810s)
-  hex dump (first 32 bytes):
-    4f dd 00 00 84 7f d2 ee 84 7f d2 ee 01 00 00 00  O...............
-    00 00 00 00 00 00 00 00 00 aa 4c d7 00 00 00 00  ..........L.....
-  backtrace:
-    [<c184fabc>] kmemleak_alloc+0x3c/0xa0
-    [<c12f391e>] kmem_cache_alloc_trace+0x9e/0x180
-    [<c1668bb5>] binder_thread_write+0xcf5/0x23a0
-    [<c166b091>] binder_ioctl+0x1f1/0x530
-    [<c130dcf6>] do_vfs_ioctl+0x86/0x5e0
-    [<c130e282>] sys_ioctl+0x32/0x60
-    [<c1872e01>] syscall_call+0x7/0xb
-    [<ffffffff>] 0xffffffff
 
-The work item in async_todo list is not freed when binder released.
-Also the async transaction should also be freed in binder_release_work.
+Fix memory leak in cpufreq stats.
 
-Signed-off-by: Leon Ma <xindong.ma@intel.com>
-Signed-off-by: Di Zhang <di.zhang@intel.com>
----
- drivers/staging/android/binder.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+When system enter sleep, non-boot CPUs will be disable.
+Cpufreq stats sysfs is created when the CPU is up, but it is not freed when the CPU going down. This will cause memory leak.
+signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
+signed-off-by: guifang tang <guifang.tang@intel.com>
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 7df2a89..d23de68 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -1281,6 +1281,7 @@ static void binder_send_failed_reply(struct binder_transaction *t,
- 					"already\n", target_thread->proc->pid,
- 					target_thread->pid,
- 					target_thread->return_error);
-+				kfree(t);
- 			}
- 			return;
- 		} else {
-@@ -2509,6 +2510,11 @@ static void binder_release_work(struct list_head *list)
- 			t = container_of(w, struct binder_transaction, work);
- 			if (t->buffer->target_node && !(t->flags & TF_ONE_WAY))
- 				binder_send_failed_reply(t, BR_DEAD_REPLY);
-+			else {
-+				t->buffer->transaction = NULL;
-+				kfree(t);
-+				binder_stats_deleted(BINDER_STAT_TRANSACTION);
-+			}
- 		} break;
- 		case BINDER_WORK_TRANSACTION_COMPLETE: {
- 			kfree(w);
-@@ -2982,6 +2988,7 @@ static void binder_deferred_release(struct binder_proc *proc)
- 
- 		nodes++;
- 		rb_erase(&node->rb_node, &proc->nodes);
-+		binder_release_work(&node->async_todo);
- 		list_del_init(&node->work.entry);
- 		if (hlist_empty(&node->refs)) {
- 			kfree(node);
--- 
-1.7.6
+diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c index b40ee14..3998316 100644
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -328,6 +328,7 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
+                cpufreq_update_policy(cpu);
+                break;
+        case CPU_DOWN_PREPARE:
++       case CPU_DOWN_PREPARE_FROZEN:
+                cpufreq_stats_free_sysfs(cpu);
+                break;
+        case CPU_DEAD:
 
 Br
 XiaoBing Tu
 PSI@System Integration Shanghai
-
 
 
