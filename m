@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113Ab2JOKy5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 06:54:57 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:53135 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643Ab2JOKyz (ORCPT
+	id S1752182Ab2JOKzu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 06:55:50 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:59336 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643Ab2JOKzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 06:54:55 -0400
+	Mon, 15 Oct 2012 06:55:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <CABjyUiLyfHFE6ew5JPaH4YSz5k1sm4HnZFm4e12v=_Pcp6jGNw@mail.gmail.com>
+In-Reply-To: <CALF0-+WP8_uLqFjSJ5YJ4_Hrpk2Y1+U_mx=baeGWSTpw+kTw2Q@mail.gmail.com>
 References: <CABjyUiLyfHFE6ew5JPaH4YSz5k1sm4HnZFm4e12v=_Pcp6jGNw@mail.gmail.com>
-Date: Mon, 15 Oct 2012 07:54:55 -0300
-Message-ID: <CALF0-+WP8_uLqFjSJ5YJ4_Hrpk2Y1+U_mx=baeGWSTpw+kTw2Q@mail.gmail.com>
-Subject: Re: PROBLEM: Ali m5602 won't compile (3.4.9-gentoo)
+	<CALF0-+WP8_uLqFjSJ5YJ4_Hrpk2Y1+U_mx=baeGWSTpw+kTw2Q@mail.gmail.com>
+Date: Mon, 15 Oct 2012 07:55:49 -0300
+Message-ID: <CALF0-+Xg2GMCK3c7qpgH5pZq=EdcGf=zHJdS5SGSqLpOSRhbQA@mail.gmail.com>
+Subject: PROBLEM: Ali m5602 won't compile (3.4.9-gentoo)
 From: Ezequiel Garcia <elezegarcia@gmail.com>
 To: Yuriy Davygora <davygora@googlemail.com>
-Cc: linux-kernel@vger.kernel.org
+Cc: linux-media <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
