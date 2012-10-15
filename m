@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363Ab2JOH2c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 03:28:32 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39114 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497Ab2JOH2b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 03:28:31 -0400
+	id S1752714Ab2JOHad (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 03:30:33 -0400
+Received: from smtp1.uu.se ([130.238.7.54]:33163 "EHLO smtp1.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751713Ab2JOHab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 03:30:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <87r4p271uw.fsf@devron.myhome.or.jp>
-References: <1349598764-3252-1-git-send-email-linkinjeon@gmail.com>
-	<877gqu90x1.fsf@devron.myhome.or.jp>
-	<CAKYAXd_vWenGBzRoh9cv_Qet_znyPhe_2QpBp29mZJqqoKEFgg@mail.gmail.com>
-	<87391i8mny.fsf@devron.myhome.or.jp>
-	<CAKYAXd8xdb+t5ZTKtg0W7VjCuuJfYFDDFMwUZNRN8f8fcttDxQ@mail.gmail.com>
-	<87r4p271uw.fsf@devron.myhome.or.jp>
-Date: Mon, 15 Oct 2012 16:28:30 +0900
-Message-ID: <CAKYAXd-zV+SH4-CqYCxK1Ph34+5CKPKrbG9_rnH1c9rD_wcsng@mail.gmail.com>
-Subject: Re: [PATCH v4 3/4] fat (exportfs): rebuild directory-inode if
- fat_dget() fails
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <20603.47887.262025.941051@pilspetsen.it.uu.se>
+Date: Mon, 15 Oct 2012 09:28:15 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: "Yangfei (Felix)" <felix.yang@huawei.com>
+Cc: "linux-assembly@vger.kernel.org" <linux-assembly@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Hardcoded instruction causes certain features to fail on ARM
+ platfrom due to endianness
+In-Reply-To: <DA41BE1DDCA941489001C7FBD7A8820E3CB407A4@szxeml549-mbx.china.huawei.com>
+References: <DA41BE1DDCA941489001C7FBD7A8820E3CB407A4@szxeml549-mbx.china.huawei.com>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/14, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->>>>>> +     if (!fat_get_dotdot_entry(child_dir->d_inode, &dotdot_bh, &de))
->>>>>> {
->>>>>> +             parent_logstart = fat_get_start(sbi, de);
->>>>>>               parent_inode = fat_dget(sb, parent_logstart);
->>>>>> +             if (parent_inode || sbi->options.nfs !=
->>>>>> FAT_NFS_NOSTALE_RO)
->>>>>> +                     goto out;
->>>>>> +             if (!parent_logstart)
->>>>>> +                     /*logstart of dotdot entry is zero if
->>>>>> +                     * if the directory's parent is root
->>>>>> +                     */
->>>>>> +                     parent_inode = sb->s_root->d_inode;
->>>>>
->>>>> get_parent() should not be called for root dir, right?
->>>> Yes.
->>>
->>> Ah, actual question was - subdir of root can be passed to this? I guess
->>> it is possible...
->> Yes, you're right.
->
-> OK, I think I got where is wrong. If it is the subdir of rootdir,
-> fat_dget() should get the inode of root?
-That is correct. Whenever fat_dget() is called for sub-directories
-which is in root folder, we assign root inode as parent inode.
->
-> So, I guess if parent_logstart == 0, it is BUG().
-Would you explain more why you think it is BUG() ?
+Yangfei (Felix) writes:
+ > Hi all,
+ > 
+ >     I found that hardcoded instruction in inline asm can cause certains certain features fail to work on ARM platform due to endianness.
+ >     As an example, consider the following code snippet of platform_do_lowpower function from arch/arm/mach-realview/hotplug.c:
+ >                 / *
+ >                  * here's the WFI
+ >                  */
+ >                 asm(".word      0xe320f003\n"
+ >                     :
+ >                     :
+ >                     : "memory", "cc");
+ > 
+ >     The instruction generated from this inline asm will not work on big-endian ARM platform, such as ARM BE-8 format. Instead, an exception will be generated.
+ > 
+ >     Here the code should be:
+ >                 / *
+ >                  * here's the WFI
+ >                  */
+ >                 asm("WFI\n"
+ >                     :
+ >                     :
+ >                     : "memory", "cc");
+ > 
+ >     Seems the kernel doesn't support ARM BE-8 well. I don't know why this problem happens.
+ >     Can anyone tell me who owns this part? I can prepare a patch then. 
+ >     Thanks.
 
-Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+Questions regarding the ARM kernel should go to the linux-arm-kernel mailing list
+(see the MAINTAINERS file), with an optional cc: to the regular LKML.
+
+BE-8 is, if I recall correctly, ARMv7's broken format where code and data have
+different endianess.  GAS supports an ".inst" directive which is like ".word"
+except the data is assumed to be code.  This matters for disassembly, and may
+also be required for BE-8.
+
+That is, just s/.word/.inst/g above and report back if that works or not.
