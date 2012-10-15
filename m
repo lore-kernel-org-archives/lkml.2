@@ -1,60 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811Ab2JOMQo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 08:16:44 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:57205 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752262Ab2JOMQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 08:16:43 -0400
-From: AnilKumar Ch <anilkumar@ti.com>
-To: <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>
-CC: <linux-kernel@vger.kernel.org>, AnilKumar Ch <anilkumar@ti.com>
-Subject: [PATCH] regulator: tps65910: fix BUG_ON() shown with vrtc regulator
-Date: Mon, 15 Oct 2012 17:45:58 +0530
-Message-ID: <1350303358-13667-1-git-send-email-anilkumar@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752830Ab2JOMSj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 08:18:39 -0400
+Received: from mail.free-electrons.com ([88.190.12.23]:47631 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752313Ab2JOMSi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 08:18:38 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Ben Dooks <ben-linux@fluff.org>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Li Li <li.li@canonical.com>,
+        Ike Pan <ike.pan@canonical.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH V3 0/3]  Add clock framework for armada 370/XP
+Date: Mon, 15 Oct 2012 14:18:16 +0200
+Message-Id: <1350303499-30868-1-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix BUG_ON() error if tps65910 VRTC regulator is used with out
-rdev->desc->volt_table data. Recent changes in regulator core driver
-which add support for "regulator_list_voltage_table" have BUG_ON() if
-regulator descriptor do not voltage table information. This patch adds
-the voltage table information to fix the issue.
+Hello Mike,
 
-Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
----
- drivers/regulator/tps65910-regulator.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+The v3.7-rc1 was released yesterday. So here it is the updated version
+of my patch set. The rebase was flawless. An I have just fixed a typo
+in the device tree and warnings from checkpatch. I built and test it
+for the Armada 370 and Armada XP evaluation board.
 
-diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
-index 793adda..1d2dd18 100644
---- a/drivers/regulator/tps65910-regulator.c
-+++ b/drivers/regulator/tps65910-regulator.c
-@@ -38,6 +38,11 @@ static const unsigned int VIO_VSEL_table[] = {
- 
- /* VSEL tables for TPS65910 specific LDOs and dcdc's */
- 
-+/* supported VRTC voltages in microvolts */
-+static const unsigned int VRTC_VSEL_table[] = {
-+	1800000,
-+};
-+
- /* supported VDD3 voltages in microvolts */
- static const unsigned int VDD3_VSEL_table[] = {
- 	5000000,
-@@ -95,6 +100,8 @@ static struct tps_info tps65910_regs[] = {
- 	{
- 		.name = "vrtc",
- 		.vin_name = "vcc7",
-+		.n_voltages = ARRAY_SIZE(VRTC_VSEL_table),
-+		.voltage_table = VRTC_VSEL_table,
- 		.enable_time_us = 2200,
- 	},
- 	{
+The purpose of this patch set is to add support for clock framework
+for Armada 370 and Armada XP SoCs. All the support is done under the
+directory drivers/clk/mvebu/ as the support for other mvebu SoCs was
+in mind during the writing of the code.
+
+Two kinds of clocks are added:
+
+- The CPU clocks are only for Armada XP (which is multi-core)
+
+- The core clocks are clocks which have their rate fixed during
+  reset.
+
+Many thanks to Thomas Petazzoni and Sebastian Hesselbarth for their
+review and feedback. The device tree bindings were really improved
+with the advices of Sebastian.
+
+Changelog:
+V2 -> V3:
+- Rebased on top of v3.7-rc1
+- Fixed a typo in device trees
+- Fixed warning from checkpatch
+
+V1 -> V2:
+
+- Improved the spelling and the wording of the documentation and the
+  1st commit log
+- Removed the "end_of_list" name which are unused here.
+- Fix the cpu clock by using of_clk_src_onecell_get in the same way it
+  was used for the core clocks
+
+Regards,
+
+
+Gregory CLEMENT (3):
+  clk: mvebu: add armada-370-xp specific clocks
+  clk: armada-370-xp: add support for clock framework
+  clocksource: time-armada-370-xp converted to clk framework
+
+ .../devicetree/bindings/clock/mvebu-core-clock.txt |   40 +++
+ .../devicetree/bindings/clock/mvebu-cpu-clock.txt  |   21 ++
+ arch/arm/boot/dts/armada-370-db.dts                |    4 -
+ arch/arm/boot/dts/armada-370-xp.dtsi               |    1 +
+ arch/arm/boot/dts/armada-370.dtsi                  |   12 +
+ arch/arm/boot/dts/armada-xp.dtsi                   |   48 +++
+ arch/arm/mach-mvebu/Kconfig                        |    5 +
+ arch/arm/mach-mvebu/armada-370-xp.c                |    8 +-
+ arch/arm/mach-mvebu/common.h                       |    1 +
+ drivers/clk/Makefile                               |    1 +
+ drivers/clk/mvebu/Makefile                         |    2 +
+ drivers/clk/mvebu/clk-core.c                       |  312 ++++++++++++++++++++
+ drivers/clk/mvebu/clk-core.h                       |   19 ++
+ drivers/clk/mvebu/clk-cpu.c                        |  155 ++++++++++
+ drivers/clk/mvebu/clk-cpu.h                        |   19 ++
+ drivers/clk/mvebu/clk.c                            |   36 +++
+ drivers/clocksource/time-armada-370-xp.c           |   11 +-
+ 17 files changed, 685 insertions(+), 10 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/mvebu-core-clock.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/mvebu-cpu-clock.txt
+ create mode 100644 drivers/clk/mvebu/Makefile
+ create mode 100644 drivers/clk/mvebu/clk-core.c
+ create mode 100644 drivers/clk/mvebu/clk-core.h
+ create mode 100644 drivers/clk/mvebu/clk-cpu.c
+ create mode 100644 drivers/clk/mvebu/clk-cpu.h
+ create mode 100644 drivers/clk/mvebu/clk.c
+
 -- 
 1.7.9.5
 
