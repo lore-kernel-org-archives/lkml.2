@@ -1,107 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab2JON2q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 09:28:46 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43790 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353Ab2JON2o (ORCPT
+	id S1753507Ab2JONdF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 09:33:05 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:37204 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753227Ab2JONdD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 09:28:44 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <balbi@ti.com>, <gregkh@linuxfoundation.org>, <kishon@ti.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-CC: <sshtylyov@mvista.com>
-Subject: [PATCH v4 7/7] usb: dwc3: core: add dt support for dwc3 core
-Date: Mon, 15 Oct 2012 18:58:00 +0530
-Message-ID: <1350307680-24938-8-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350307680-24938-1-git-send-email-kishon@ti.com>
-References: <1350307680-24938-1-git-send-email-kishon@ti.com>
+	Mon, 15 Oct 2012 09:33:03 -0400
+Date: Mon, 15 Oct 2012 09:20:52 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xen/xenbus: silence GCC warning
+Message-ID: <20121015132052.GD4000@phenom.dumpdata.com>
+References: <1350295389.1516.27.camel@x61.thuisdomein>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1350295389.1516.27.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added dwc3 support for dwc3 core and update the documentation with
-device tree binding information.
+On Mon, Oct 15, 2012 at 12:03:09PM +0200, Paul Bolle wrote:
+> Compiling xenbus_xs.o triggers this GCC warning:
+>     drivers/xen/xenbus/xenbus_xs.c:628:13: warning: function declaration isn’t a prototype [-Wstrict-prototypes]
+> 
+> Add the obvious and trivial fix.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- Documentation/devicetree/bindings/usb/dwc3.txt |   23 +++++++++++++++++++++++
- drivers/usb/dwc3/core.c                        |   14 ++++++++++++--
- 2 files changed, 35 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/usb/dwc3.txt
+I already got the fix for this in my tree. Thanks!
 
-diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
-new file mode 100644
-index 0000000..9ec9316
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/dwc3.txt
-@@ -0,0 +1,23 @@
-+synopsys DWC3 CORE
-+
-+DWC3- USB3 CONTROLLER
-+
-+Required properties:
-+ - compatible: must be "synopsys,dwc3"
-+ - reg : Address and length of the register set for the device
-+ - interrupts: Interrupts used by the dwc3 controller.
-+ - interrupt-parent: the phandle for the interrupt controller that
-+   services interrupts for this device.
-+
-+Optional properties:
-+ - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
-+
-+This is usually a subnode to DWC3 glue to which it is connected.
-+
-+dwc3@4a030000 {
-+	compatible = "synopsys,dwc3";
-+	reg = <0x4a030000 0xcfff>;
-+	interrupts = <0 92 4>
-+	interrupt-parent = <&gic>
-+	tx-fifo-resize;
-+};
-diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index b923183..c76d8e9 100644
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -491,8 +491,7 @@ static int __devinit dwc3_probe(struct platform_device *pdev)
- 	else
- 		dwc->maximum_speed = DWC3_DCFG_SUPERSPEED;
- 
--	if (of_get_property(node, "tx-fifo-resize", NULL))
--		dwc->needs_fifo_resize = true;
-+	dwc->needs_fifo_resize = of_property_read_bool(node, "tx-fifo-resize");
- 
- 	pm_runtime_enable(dev);
- 	pm_runtime_get_sync(dev);
-@@ -619,11 +618,22 @@ static int __devexit dwc3_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id of_dwc3_match[] = {
-+	{
-+		.compatible = "synopsys,dwc3"
-+	},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, of_dwc3_match);
-+#endif
-+
- static struct platform_driver dwc3_driver = {
- 	.probe		= dwc3_probe,
- 	.remove		= __devexit_p(dwc3_remove),
- 	.driver		= {
- 		.name	= "dwc3",
-+		.of_match_table	= of_match_ptr(of_dwc3_match),
- 	},
- };
- 
--- 
-1.7.9.5
-
+> 
+> While we're touching this function add some equally obvious and trivial
+> whitespace fixes.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> 0) Triggered by compiling v3.7-rc1 using (basically) Fedora 17's current
+> config. Compile tested only.
+> 
+> 1) Obligatory reference: https://lwn.net/Articles/487493/ .
+> 
+>  drivers/xen/xenbus/xenbus_xs.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/xen/xenbus/xenbus_xs.c b/drivers/xen/xenbus/xenbus_xs.c
+> index 48220e1..7a2b0da 100644
+> --- a/drivers/xen/xenbus/xenbus_xs.c
+> +++ b/drivers/xen/xenbus/xenbus_xs.c
+> @@ -619,13 +619,14 @@ static struct xenbus_watch *find_watch(const char *token)
+>  
+>  	return NULL;
+>  }
+> +
+>  /*
+>   * Certain older XenBus toolstack cannot handle reading values that are
+>   * not populated. Some Xen 3.4 installation are incapable of doing this
+>   * so if we are running on anything older than 4 do not attempt to read
+>   * control/platform-feature-xs_reset_watches.
+>   */
+> -static bool xen_strict_xenbus_quirk()
+> +static bool xen_strict_xenbus_quirk(void)
+>  {
+>  	uint32_t eax, ebx, ecx, edx, base;
+>  
+> @@ -635,8 +636,8 @@ static bool xen_strict_xenbus_quirk()
+>  	if ((eax >> 16) < 4)
+>  		return true;
+>  	return false;
+> -
+>  }
+> +
+>  static void xs_reset_watches(void)
+>  {
+>  	int err, supported = 0;
+> -- 
+> 1.7.11.7
