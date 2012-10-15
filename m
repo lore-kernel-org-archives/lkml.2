@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab2JOHzk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 03:55:40 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:37851 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751483Ab2JOHzi (ORCPT
+	id S1752443Ab2JOH4M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 03:56:12 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47416 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332Ab2JOH4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 03:55:38 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvMoALXAe1B5LH33/2dsb2JhbABFhSm0X4RnAoEEgQmCIAEBBTocIxAIAxUDLhQNGAM0h3IDDrMODYlUFIpfZgGBZoE1gyEDlBeBVIskhQ2DAYFP
-Date: Mon, 15 Oct 2012 18:55:30 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
-        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [RFC v3 12/13] vfs: add debugfs support
-Message-ID: <20121015075530.GZ2739@dastard>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
- <1349863655-29320-13-git-send-email-zwu.kernel@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349863655-29320-13-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 15 Oct 2012 03:56:11 -0400
+From: SeongJae Park <sj38.park@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: SeongJae Park <sj38.park@gmail.com>
+Subject: [PATCH] staging: csr: fix coding style
+Date: Mon, 15 Oct 2012 16:55:45 +0900
+Message-Id: <1350287745-14442-1-git-send-email-sj38.park@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 06:07:34PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> 
->   Add a /sys/kernel/debug/hot_track/<device_name>/ directory for each
-> volume that contains two files. The first, `inode_data', contains the
-> heat information for inodes that have been brought into the hot data map
-> structures. The second, `range_data', contains similar information for
-> subfile ranges.
-....
-> +	/* create debugfs range_data file */
-> +	debugfs_range_entry = debugfs_create_file("range_data",
-> +				S_IFREG | S_IRUSR | S_IWUSR | S_IRUGO,
-> +				debugfs_volume_entry,
-> +				(void *) range_data,
-> +				&hot_debugfs_range_fops);
+Fix coding style of csr_framework_ext_types.h
 
-These should not be world readable. 0600 is probably the correct
-permissions for them as we do not want random users to be able to
-infer what files users are accessing from this information.
+Signed-off-by: SeongJae Park <sj38.park@gmail.com>
+---
+ drivers/staging/csr/csr_framework_ext_types.h |   33 +++++++++++--------------
+ 1 file changed, 15 insertions(+), 18 deletions(-)
 
-Cheers,
-
-Dave.
+diff --git a/drivers/staging/csr/csr_framework_ext_types.h b/drivers/staging/csr/csr_framework_ext_types.h
+index 57194ee..7e9cf8e 100644
+--- a/drivers/staging/csr/csr_framework_ext_types.h
++++ b/drivers/staging/csr/csr_framework_ext_types.h
+@@ -2,11 +2,11 @@
+ #define CSR_FRAMEWORK_EXT_TYPES_H__
+ /*****************************************************************************
+ 
+-            (c) Cambridge Silicon Radio Limited 2010
+-            All rights reserved and confidential information of CSR
++	(c) Cambridge Silicon Radio Limited 2010
++	All rights reserved and confidential information of CSR
+ 
+-            Refer to LICENSE.txt included with this source for details
+-            on the license terms.
++	Refer to LICENSE.txt included with this source for details
++	on the license terms.
+ 
+ *****************************************************************************/
+ 
+@@ -24,17 +24,15 @@ extern "C" {
+ 
+ #ifdef __KERNEL__
+ 
+-struct CsrThread
+-{
+-    struct task_struct *thread_task;
+-    char                name[16];
++struct CsrThreadi {
++	struct task_struct *thread_task;
++	char                name[16];
+ };
+ 
+-struct CsrEvent
+-{
+-    /* wait_queue for waking the kernel thread */
+-    wait_queue_head_t wakeup_q;
+-    unsigned int      wakeup_flag;
++struct CsrEvent {
++	/* wait_queue for waking the kernel thread */
++	wait_queue_head_t wakeup_q;
++	unsigned int      wakeup_flag;
+ };
+ 
+ typedef struct CsrEvent CsrEventHandle;
+@@ -43,11 +41,10 @@ typedef struct CsrThread CsrThreadHandle;
+ 
+ #else /* __KERNEL __ */
+ 
+-struct CsrEvent
+-{
+-    pthread_cond_t  event;
+-    pthread_mutex_t mutex;
+-    u32       eventBits;
++struct CsrEvent {
++	pthread_cond_t  event;
++	pthread_mutex_t mutex;
++	u32       eventBits;
+ };
+ 
+ typedef struct CsrEvent CsrEventHandle;
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.9.5
+
