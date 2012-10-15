@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab2JORms (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 13:42:48 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56600 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753803Ab2JORmr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 13:42:47 -0400
-Message-ID: <507C4B14.4070809@wwwdotorg.org>
-Date: Mon, 15 Oct 2012 11:42:44 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1754283Ab2JORmx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 13:42:53 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:47635 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754231Ab2JORmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 13:42:50 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org
+Subject: Re: [PATCH] cpufreq: core: Fix typo in comment describing show_bios_limit()
+Date: Mon, 15 Oct 2012 19:46:31 +0200
+Message-ID: <1774345.Nnc7VcJkzQ@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <718816abb84888e786c8bc478104668440b77324.1349766028.git.viresh.kumar@linaro.org>
+References: <718816abb84888e786c8bc478104668440b77324.1349766028.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-To: Joerg Roedel <joerg.roedel@amd.com>
-CC: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] iommu: tegra: remove include of <mach/iomap.h>
-References: <1349216149-858-1-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1349216149-858-1-git-send-email-swarren@wwwdotorg.org>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2012 04:15 PM, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
+On Tuesday 09 of October 2012 12:32:48 Viresh Kumar wrote:
+> show_bios_limit is mistakenly written as show_scaling_driver in a comment
+> describing purpose of show_bios_limit() routine.
 > 
-> Nothing from this file is used, and the file will hopefully be deleted
-> soon.
+> Fix it.
 > 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+
+Thanks for the patch, I will queue it up for v3.8.
+
+Rafael
+
+
 > ---
-> Joerg, if this patch can get into 3.7 (it's late, I know) then that
-> would be great. If not, may I please request an ack so I can take the
-> change through the Tegra tree in 3.8, since I will probably have cleanup
-> patches that depend on this change. Thanks.
-
-Joerg, given 3.7-rc1 is now out, I'd like to take this through the Tegra
-tree due to other patches depending on it.
-
-Given the patch is so trivial, I'll probably just apply it anyway soon -
-this is more of a heads-up to avoid it being taken through the IOMMU tree.
-
-Thanks.
-
-> This is based on the IOMMU arm/tegra branch.
-> ---
->  drivers/iommu/tegra-smmu.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
+>  drivers/cpufreq/cpufreq.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
-> index e1d17fe..e7b56da 100644
-> --- a/drivers/iommu/tegra-smmu.c
-> +++ b/drivers/iommu/tegra-smmu.c
-> @@ -38,7 +38,6 @@
->  #include <asm/page.h>
->  #include <asm/cacheflush.h>
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index fb8a527..021973b 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -581,7 +581,7 @@ static ssize_t show_scaling_setspeed(struct cpufreq_policy *policy, char *buf)
+>  }
 >  
-> -#include <mach/iomap.h>
->  #include <mach/tegra-ahb.h>
->  
->  enum smmu_hwgrp {
-
+>  /**
+> - * show_scaling_driver - show the current cpufreq HW/BIOS limitation
+> + * show_bios_limit - show the current cpufreq HW/BIOS limitation
+>   */
+>  static ssize_t show_bios_limit(struct cpufreq_policy *policy, char *buf)
+>  {
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
