@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838Ab2JOGCk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 02:02:40 -0400
-Received: from mga11.intel.com ([192.55.52.93]:64486 "EHLO mga11.intel.com"
+	id S1753229Ab2JOGDs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 02:03:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:48312 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752455Ab2JOGAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 02:00:15 -0400
+	id S1752455Ab2JOGDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 02:03:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,587,1344236400"; 
-   d="scan'208";a="234991762"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
-Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH v4 03/10] thp: copy_huge_pmd(): copy huge zero page
-Date: Mon, 15 Oct 2012 09:00:52 +0300
-Message-Id: <1350280859-18801-4-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1350280859-18801-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1350280859-18801-1-git-send-email-kirill.shutemov@linux.intel.com>
+   d="scan'208";a="205651237"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: peterz@infradead.org, tglx@linutronix.de, eranian@google.com,
+        mingo@kernel.org, linux-kernel@vger.kernel.org
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH] perf/x86: Avoid kfree() in CPU_{STARTING,DYING}
+Date: Mon, 15 Oct 2012 14:03:43 +0800
+Message-Id: <1350281023-9262-1-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-It's easy to copy huge zero page. Just set destination pmd to huge zero
-page.
+On -rt kfree() can schedule, but CPU_{STARTING,DYING} should be
+atomic. So use a list to defer kfree until CPU_{ONLINE,DEAD}.
 
-It's safe to copy huge zero page since we have none yet :-p
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- mm/huge_memory.c |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 27 ++++++++++++++++++++++++---
+ 1 file changed, 24 insertions(+), 3 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 680c27f..9f5e5cb 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -700,6 +700,18 @@ static inline struct page *alloc_hugepage(int defrag)
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 99d96a4..6df0e60 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2611,6 +2611,20 @@ static void __init uncore_pci_exit(void)
+ 	}
  }
- #endif
  
-+static void set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
-+		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd)
++static LIST_HEAD(boxes_to_free);
++
++static void __cpuinit uncore_kfree_boxes(void)
 +{
-+	pmd_t entry;
-+	entry = pfn_pmd(huge_zero_pfn, vma->vm_page_prot);
-+	entry = pmd_wrprotect(entry);
-+	entry = pmd_mkhuge(entry);
-+	set_pmd_at(mm, haddr, pmd, entry);
-+	pgtable_trans_huge_deposit(mm, pgtable);
-+	mm->nr_ptes++;
++	struct intel_uncore_box *box;
++
++	while (!list_empty(&boxes_to_free)) {
++		box = list_entry(boxes_to_free.next,
++				 struct intel_uncore_box, list);
++		list_del(&box->list);
++		kfree(box);
++	}
 +}
 +
- int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			       unsigned long address, pmd_t *pmd,
- 			       unsigned int flags)
-@@ -777,6 +789,11 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 		pte_free(dst_mm, pgtable);
- 		goto out_unlock;
+ static void __cpuinit uncore_cpu_dying(int cpu)
+ {
+ 	struct intel_uncore_type *type;
+@@ -2625,7 +2639,7 @@ static void __cpuinit uncore_cpu_dying(int cpu)
+ 			box = *per_cpu_ptr(pmu->box, cpu);
+ 			*per_cpu_ptr(pmu->box, cpu) = NULL;
+ 			if (box && atomic_dec_and_test(&box->refcnt))
+-				kfree(box);
++				list_add(&box->list, &boxes_to_free);
+ 		}
  	}
-+	if (is_huge_zero_pmd(pmd)) {
-+		set_huge_zero_page(pgtable, dst_mm, vma, addr, dst_pmd);
-+		ret = 0;
-+		goto out_unlock;
-+	}
- 	if (unlikely(pmd_trans_splitting(pmd))) {
- 		/* split huge page running from under us */
- 		spin_unlock(&src_mm->page_table_lock);
+ }
+@@ -2655,8 +2669,11 @@ static int __cpuinit uncore_cpu_starting(int cpu)
+ 				if (exist && exist->phys_id == phys_id) {
+ 					atomic_inc(&exist->refcnt);
+ 					*per_cpu_ptr(pmu->box, cpu) = exist;
+-					kfree(box);
+-					box = NULL;
++					if (box) {
++						list_add(&box->list,
++							 &boxes_to_free);
++						box = NULL;
++					}
+ 					break;
+ 				}
+ 			}
+@@ -2795,6 +2812,10 @@ static int
+ 	case CPU_DYING:
+ 		uncore_cpu_dying(cpu);
+ 		break;
++	case CPU_ONLINE:
++	case CPU_DEAD:
++		uncore_kfree_boxes();
++		break;
+ 	default:
+ 		break;
+ 	}
 -- 
-1.7.7.6
+1.7.11.7
 
