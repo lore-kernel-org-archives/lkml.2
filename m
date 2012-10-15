@@ -1,56 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737Ab2JOLhL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 07:37:11 -0400
+	id S1752750Ab2JOLkZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 07:40:25 -0400
 Received: from mga02.intel.com ([134.134.136.20]:48571 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752479Ab2JOLhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 07:37:09 -0400
+	id S1752609Ab2JOLhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 07:37:10 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,587,1344236400"; 
-   d="scan'208";a="227002329"
+   d="scan'208";a="227002335"
 From: dragos.tatulea@intel.com
 To: cbouatmailru@gmail.com, linux-kernel@vger.kernel.org
-Cc: adrian.hunter@intel.com, octavian.purdila@intel.com,
-        Dragos Tatulea <dragos.tatulea@intel.com>
-Subject: [PATCH 0/8] pstore: add interface for dumpers and add task list dumper
-Date: Mon, 15 Oct 2012 14:40:02 +0300
-Message-Id: <1350301210-16953-1-git-send-email-dragos.tatulea@intel.com>
+Cc: adrian.hunter@intel.com, octavian.purdila@intel.com
+Subject: [PATCH 1/8] pstore: add flags
+Date: Mon, 15 Oct 2012 14:40:03 +0300
+Message-Id: <1350301210-16953-2-git-send-email-dragos.tatulea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1350301210-16953-1-git-send-email-dragos.tatulea@intel.com>
+References: <1350301210-16953-1-git-send-email-dragos.tatulea@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dragos Tatulea <dragos.tatulea@intel.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-This patchset adds an interface for registering various clients (dumpers)
-that can save info into pstore at crash time.
+Let the back end tweak pstore behaviour.  Flags added are:
 
-Such a dumper is added which does task list dumping.
+	PSTORE_NO_HEADINGS
 
-Adrian Hunter (4):
-  pstore: add flags
-  pstore: add debugfs support for causing dumps and panics
-  pstore: add support for external writers
-  pstore: do not run timer while pstore is not mounted
+		Omit pstore heading lines from dumped data
 
-Dragos Tatulea (4):
-  pstore: allow storing different type id's in ram backend
-  pstore: add task list dumper
-  pstore: make sure pstore_write exists on flush error
-  pstore: max out console log level during sysfs dump switch
+	PSTORE_MAX_KMSG_BYTES
 
- fs/pstore/Kconfig      |   12 ++++
- fs/pstore/Makefile     |    1 +
- fs/pstore/dump_tasks.c |  107 ++++++++++++++++++++++++++++
- fs/pstore/inode.c      |    6 ++
- fs/pstore/internal.h   |    2 +
- fs/pstore/platform.c   |  184 ++++++++++++++++++++++++++++++++++++++++++++++--
- fs/pstore/ram.c        |   18 +++--
- include/linux/pstore.h |   46 ++++++++++--
- 8 files changed, 356 insertions(+), 20 deletions(-)
- create mode 100644 fs/pstore/dump_tasks.c
+		Default kmsg_bytes to ULONG_MAX
 
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ fs/pstore/platform.c   |    9 ++++++++-
+ include/linux/pstore.h |    4 ++++
+ 2 files changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index a40da07..c4ea778 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -128,7 +128,11 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 		size_t len;
+ 
+ 		dst = psinfo->buf;
+-		hsize = sprintf(dst, "%s#%d Part%d\n", why, oopscount, part);
++		if (psinfo->flags & PSTORE_NO_HEADINGS)
++			hsize = 0;
++		else
++			hsize = sprintf(dst, "%s#%d Part%d\n", why, oopscount,
++					part);
+ 		size = psinfo->bufsize - hsize;
+ 		dst += hsize;
+ 
+@@ -237,6 +241,9 @@ int pstore_register(struct pstore_info *psi)
+ 		return -EINVAL;
+ 	}
+ 
++	if (psinfo->flags & PSTORE_MAX_KMSG_BYTES)
++		kmsg_bytes = ULONG_MAX;
++
+ 	if (pstore_is_mounted())
+ 		pstore_get_records(0);
+ 
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index ee3034a..55ab23f 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -40,9 +40,13 @@ enum pstore_type_id {
+ 
+ struct module;
+ 
++#define PSTORE_NO_HEADINGS	BIT(0)
++#define PSTORE_MAX_KMSG_BYTES	BIT(1)
++
+ struct pstore_info {
+ 	struct module	*owner;
+ 	char		*name;
++	unsigned int	flags;
+ 	spinlock_t	buf_lock;	/* serialize access to 'buf' */
+ 	char		*buf;
+ 	size_t		bufsize;
 -- 
 1.7.9.5
 
