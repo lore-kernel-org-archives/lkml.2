@@ -1,103 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab2JOUDi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 16:03:38 -0400
-Received: from mga11.intel.com ([192.55.52.93]:43508 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754662Ab2JOUDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 16:03:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,590,1344236400"; 
-   d="scan'208";a="235330774"
-Message-ID: <507C6C13.4000609@intel.com>
-Date: Mon, 15 Oct 2012 13:03:31 -0700
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Dmitry Fleytman <dmitry@daynix.com>
-CC: linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-        Chris Webb <chris.webb@elastichosts.com>,
-        Richard Davies <richard.davies@elastichosts.com>
-Subject: Re: [PATCH] e1000 driver RX race condition fixed
-References: <1350235151-11146-1-git-send-email-dmitry@daynix.com> <507C5BC7.1060108@intel.com> <CAGHCxhe=2N8G8v66uZaNDQKyiRVRN11_Lw17mkOdxxrrpXgPHQ@mail.gmail.com>
-In-Reply-To: <CAGHCxhe=2N8G8v66uZaNDQKyiRVRN11_Lw17mkOdxxrrpXgPHQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754696Ab2JOUIu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 16:08:50 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:42803 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754677Ab2JOUIt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 16:08:49 -0400
+Message-ID: <1350331287.4475.1.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] [resend] ACPI: Fix memory leak in acpi_bind_one() (fwd)
+From: Toshi Kani <toshi.kani@hp.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>
+Date: Mon, 15 Oct 2012 14:01:27 -0600
+In-Reply-To: <alpine.LNX.2.00.1210152049550.1038@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1210152049550.1038@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dmitry,
+On Mon, 2012-10-15 at 20:51 +0200, Jesper Juhl wrote:
+> Ok, so I had a little problem with my mail servers clock that caused the 
+> mail below to be timestamped a few years in the past, so I assume noone 
+> saw it - thus, resending.
+> 
+> -- 
+> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+> Plain text mails only, please.
+> 
+> 
+> ---------- Forwarded message ----------
+> Date: Sun, 9 Nov 2008 14:38:30 +0100 (CET)
+> From: Jesper Juhl <jj@chaosbits.net>
+> To: linux-acpi@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>
+> Subject: [PATCH] ACPI: Fix memory leak in acpi_bind_one()
+> 
+> Memory is allocated with kzalloc() and assigned to
+> 'physical_node'. Then 'physical_node->node_id' is initialized with a
+> call to 'find_first_zero_bit()', if that results in a value greater
+> than ACPI_MAX_PHYSICAL_NODE we'll end up jumping to the 'err:' label
+> and there leave the function and let 'physical_node' go out of scope
+> and leak the memory we allocated.
+> This patch fixes the leak by simply freeing the unused/unneeded memory
+> pointed to by 'physical_node' just before we jump to 'err:'.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-My concern is that on many of our parts the behavior is to initialize
-both the head and tail to 0, enable Rx for either the ring or device
-depending on the queue configuration, and then allocate buffers and bump
-tail to indicate that the new buffers are present.  The reason behind
-enabling Rx and bumping tail is because that signals the DMA engine to
-start fetching buffers.  In my experience most of our hardware will
-ignore the tail bump if it is done first and the Rx is enabled.
+Looks good.
 
-With both head and tail at the same value it should not be possible for
-any of the devices to start a DMA.  This is probably what you should be
-checking for in fixing QEMU/KVM as it may be incorrectly assuming it can
-fetch the descriptor pointed to by tail.
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
 
-We have your patch in our queue and can test to verify my assumptions
-are correct.  If they are we will let you know and reject the patch.
+-Toshi
 
-Thanks,
+> ---
+>  drivers/acpi/glue.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/acpi/glue.c b/drivers/acpi/glue.c
+> index d1a2d74..0837308 100644
+> --- a/drivers/acpi/glue.c
+> +++ b/drivers/acpi/glue.c
+> @@ -159,6 +159,7 @@ static int acpi_bind_one(struct device *dev, acpi_handle handle)
+>  	if (physical_node->node_id >= ACPI_MAX_PHYSICAL_NODE) {
+>  		retval = -ENOSPC;
+>  		mutex_unlock(&acpi_dev->physical_node_lock);
+> +		kfree(physical_node);
+>  		goto err;
+>  	}
+>  
+> -- 
+> 1.7.1
+> 
+> 
 
-Alex
-
-
-
-On 10/15/2012 12:44 PM, Dmitry Fleytman wrote:
-> Hello, Alex
->
-> Originally this bug was reported for virtual machines running on top
-> of QEMU/KVM.
-> After patch preparation I've tested it on physical e1000 card and it
-> worked fine.
->
-> However, it could be I've missed something, as I see now other Intel
-> drivers (e1000e, ixgb, etc.)
-> use the same sequence (RX enable and then ring allocate), so I'm
-> starting to suspect that this is
-> the correct behavior.
->
-> If you confirm this is the way HW works, the this patch should be
-> ignored. This is pure QEMU bug and we'll fix it there.
->
-> Thanks,
-> Dmitry.
->
-> On Mon, Oct 15, 2012 at 8:53 PM, Alexander Duyck
-> <alexander.h.duyck@intel.com> wrote:
->> On 10/14/2012 10:19 AM, Dmitry Fleytman wrote:
->>> There is a race condition in e1000 driver.
->>> It enables HW receive before RX rings initalization.
->>> In case of specific timing this may lead to host memory corruption
->>> due to DMA write to arbitrary memory location.
->>> Following patch fixes this issue by reordering initialization steps.
->>>
->>> Other Intel network drivers does not seem to have this issue.
->>>
->>> Dmitry Fleytman (1):
->>>   RX initialization sequence fixed - enable RX after corresponding ring
->>>     initialization only
->>>
->>>  drivers/net/ethernet/intel/e1000/e1000_ethtool.c |    9 +++++----
->>>  drivers/net/ethernet/intel/e1000/e1000_main.c    |   18 ++++++++++++++++--
->>>  2 files changed, 21 insertions(+), 6 deletions(-)
->>>
->> What device was it you saw this issue with?  The reason why I ask is
->> because I suspect this change should cause most of our e1000 hardware to
->> lock up since normally if you allocate buffers and then enable Rx it
->> will mean the ring was not updated and it will treat it as if there are
->> no buffers available.
->>
->> Thanks,
->>
->> Alex
 
