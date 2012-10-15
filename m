@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab2JOXK0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 19:10:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15637 "EHLO mx1.redhat.com"
+	id S1754808Ab2JOXKh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 19:10:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37998 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754533Ab2JOXKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 19:10:21 -0400
+	id S1754654Ab2JOXKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 19:10:32 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 1/4] FRV: Fix VLIW packing constraint violation in entry.S
+Subject: [PATCH 3/4] FRV: Fix const sections change
 To: torvalds@osdl.org
 Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
-Date: Tue, 16 Oct 2012 00:10:13 +0100
-Message-ID: <20121015231012.23936.58430.stgit@warthog.procyon.org.uk>
+Date: Tue, 16 Oct 2012 00:10:28 +0100
+Message-ID: <20121015231028.23936.31400.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20121015231012.23936.58430.stgit@warthog.procyon.org.uk>
+References: <20121015231012.23936.58430.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -24,36 +26,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix VLIW packing constraint violation in entry.S:
+From: Andi Kleen <andi@firstfloor.org>
 
-	arch/frv/kernel/entry.S: Assembler messages:
-	arch/frv/kernel/entry.S:871: Error: VLIW packing constraint violation
+Add __pminitconst to fix the build, otherwise the following error can occur:
 
-When packing CALLL with OR, CALLL must go in the first slot.  The instructions
-are executed simultaneously, so it doesn't matter which way round they're
-packed from that point of view.
+	arch/frv/kernel/setup.c:187:47: error: expected '=', ',', ';', 'asm' or '__attribute__' before '*' token
+	arch/frv/kernel/setup.c:386:2: error: 'clock_cmodes' undeclared (first use in this function)
+	arch/frv/kernel/setup.c:571:6: error: 'clock_cmodes' undeclared (first use in this function)
+	make[2]: *** [arch/frv/kernel/setup.o] Error 1
 
+http://kisskb.ellerman.id.au/kisskb/buildresult/7344691/
+
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Al Viro <viro@ZenIV.linux.org.uk>
+cc: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
 
- arch/frv/kernel/entry.S |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/frv/kernel/setup.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
 
-diff --git a/arch/frv/kernel/entry.S b/arch/frv/kernel/entry.S
-index 0027329..ee0beb3 100644
---- a/arch/frv/kernel/entry.S
-+++ b/arch/frv/kernel/entry.S
-@@ -867,8 +867,8 @@ ret_from_fork:
- ret_from_kernel_thread:
- 	lddi.p		@(gr28,#REG_GR(8)),gr20
- 	call		schedule_tail
--	or.p		gr20,gr20,gr8
--	calll		@(gr21,gr0)
-+	calll.p		@(gr21,gr0)
-+	or		gr20,gr20,gr8
- 	bra		sys_exit
+diff --git a/arch/frv/kernel/setup.c b/arch/frv/kernel/setup.c
+index 1f1e5ef..b8993c8 100644
+--- a/arch/frv/kernel/setup.c
++++ b/arch/frv/kernel/setup.c
+@@ -112,9 +112,11 @@ char __initdata redboot_command_line[COMMAND_LINE_SIZE];
+ #ifdef CONFIG_PM
+ #define __pminit
+ #define __pminitdata
++#define __pminitconst
+ #else
+ #define __pminit __init
+ #define __pminitdata __initdata
++#define __pminitconst __initconst
+ #endif
  
- 	.globl		ret_from_kernel_execve
+ struct clock_cmode {
 
