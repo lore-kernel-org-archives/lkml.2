@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932115Ab2JOURI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 16:17:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37612 "EHLO
+	id S932156Ab2JOURe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 16:17:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56987 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754949Ab2JOUKc (ORCPT
+	with ESMTP id S1754934Ab2JOUKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 16:10:32 -0400
+	Mon, 15 Oct 2012 16:10:31 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
         neilb@suse.de
-Subject: [PATCH v2 03/26] block: Refactor blk_update_request()
-Date: Mon, 15 Oct 2012 13:09:06 -0700
-Message-Id: <1350331769-14856-33-git-send-email-koverstreet@google.com>
+Subject: [PATCH v2 02/26] block: Add bio_advance()
+Date: Mon, 15 Oct 2012 13:09:05 -0700
+Message-Id: <1350331769-14856-32-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1350331769-14856-1-git-send-email-koverstreet@google.com>
 References: <1350331769-14856-1-git-send-email-koverstreet@google.com>
@@ -22,143 +22,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Converts it to use bio_advance(), simplifying it quite a bit in the
-process.
+This is prep work for immutable bio vecs; we first want to centralize
+where bvecs are modified.
+
+Next two patches convert some existing code to use this function.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
 ---
- block/blk-core.c | 84 +++++++++++---------------------------------------------
- 1 file changed, 16 insertions(+), 68 deletions(-)
+ fs/bio.c            | 41 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/bio.h |  2 ++
+ 2 files changed, 43 insertions(+)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 2d739ca..55c833c9 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -153,25 +153,19 @@ EXPORT_SYMBOL(blk_rq_init);
- static void req_bio_endio(struct request *rq, struct bio *bio,
- 			  unsigned int nbytes, int error)
- {
-+	/*
-+	 * XXX: bio_endio() does this. only need this because of the weird
-+	 * flush seq thing.
-+	 */
- 	if (error)
- 		clear_bit(BIO_UPTODATE, &bio->bi_flags);
- 	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
- 		error = -EIO;
+diff --git a/fs/bio.c b/fs/bio.c
+index 4783e31..07587c0 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -750,6 +750,47 @@ int bio_add_page(struct bio *bio, struct page *page, unsigned int len,
+ }
+ EXPORT_SYMBOL(bio_add_page);
  
--	if (unlikely(nbytes > bio->bi_size)) {
--		printk(KERN_ERR "%s: want %u bytes done, %u left\n",
--		       __func__, nbytes, bio->bi_size);
--		nbytes = bio->bi_size;
--	}
--
- 	if (unlikely(rq->cmd_flags & REQ_QUIET))
- 		set_bit(BIO_QUIET, &bio->bi_flags);
- 
--	bio->bi_size -= nbytes;
--	bio->bi_sector += (nbytes >> 9);
--
--	if (bio_integrity(bio))
--		bio_integrity_advance(bio, nbytes);
-+	bio_advance(bio, nbytes);
- 
- 	/* don't actually finish bio if it's part of flush sequence */
- 	if (bio->bi_size == 0 && !(rq->cmd_flags & REQ_FLUSH_SEQ))
-@@ -2214,8 +2208,7 @@ EXPORT_SYMBOL(blk_fetch_request);
-  **/
- bool blk_update_request(struct request *req, int error, unsigned int nr_bytes)
- {
--	int total_bytes, bio_nbytes, next_idx = 0;
--	struct bio *bio;
-+	int total_bytes;
- 
- 	if (!req->bio)
- 		return false;
-@@ -2259,56 +2252,21 @@ bool blk_update_request(struct request *req, int error, unsigned int nr_bytes)
- 
- 	blk_account_io_completion(req, nr_bytes);
- 
--	total_bytes = bio_nbytes = 0;
--	while ((bio = req->bio) != NULL) {
--		int nbytes;
-+	total_bytes = 0;
-+	while (req->bio) {
-+		struct bio *bio = req->bio;
-+		unsigned bio_bytes = min(bio->bi_size, nr_bytes);
- 
--		if (nr_bytes >= bio->bi_size) {
-+		if (bio_bytes == bio->bi_size)
- 			req->bio = bio->bi_next;
--			nbytes = bio->bi_size;
--			req_bio_endio(req, bio, nbytes, error);
--			next_idx = 0;
--			bio_nbytes = 0;
--		} else {
--			int idx = bio->bi_idx + next_idx;
--
--			if (unlikely(idx >= bio->bi_vcnt)) {
--				blk_dump_rq_flags(req, "__end_that");
--				printk(KERN_ERR "%s: bio idx %d >= vcnt %d\n",
--				       __func__, idx, bio->bi_vcnt);
--				break;
--			}
--
--			nbytes = bio_iovec_idx(bio, idx)->bv_len;
--			BIO_BUG_ON(nbytes > bio->bi_size);
--
--			/*
--			 * not a complete bvec done
--			 */
--			if (unlikely(nbytes > nr_bytes)) {
--				bio_nbytes += nr_bytes;
--				total_bytes += nr_bytes;
--				break;
--			}
- 
--			/*
--			 * advance to the next vector
--			 */
--			next_idx++;
--			bio_nbytes += nbytes;
--		}
-+		req_bio_endio(req, bio, bio_bytes, error);
- 
--		total_bytes += nbytes;
--		nr_bytes -= nbytes;
-+		total_bytes += bio_bytes;
-+		nr_bytes -= bio_bytes;
- 
--		bio = req->bio;
--		if (bio) {
--			/*
--			 * end more in this run, or just return 'not-done'
--			 */
--			if (unlikely(nr_bytes <= 0))
--				break;
--		}
-+		if (!nr_bytes)
++/**
++ * bio_advance - increment/complete a bio by some number of bytes
++ * @bio:	bio to advance
++ * @bytes:	number of bytes to complete
++ *
++ * This updates bi_sector, bi_size and bi_idx; if the number of bytes to
++ * complete doesn't align with a bvec boundary, then bv_len and bv_offset will
++ * be updated on the last bvec as well.
++ *
++ * @bio will then represent the remaining, uncompleted portion of the io.
++ */
++void bio_advance(struct bio *bio, unsigned bytes)
++{
++	if (bio_integrity(bio))
++		bio_integrity_advance(bio, bytes);
++
++	bio->bi_sector += bytes >> 0;
++	bio->bi_size -= bytes;
++
++	if (!bio->bi_size)
++		return;
++
++	while (bytes) {
++		if (unlikely(bio->bi_idx >= bio->bi_vcnt)) {
++			printk(KERN_ERR "%s: bio idx %d >= vcnt %d\n",
++			       __func__, bio->bi_idx, bio->bi_vcnt);
 +			break;
- 	}
++		}
++
++		if (bytes >= bio_iovec(bio)->bv_len) {
++			bytes -= bio_iovec(bio)->bv_len;
++			bio->bi_idx++;
++		} else {
++			bio_iovec(bio)->bv_len -= bytes;
++			bio_iovec(bio)->bv_offset += bytes;
++			bytes = 0;
++		}
++	}
++}
++EXPORT_SYMBOL(bio_advance);
++
+ struct bio_map_data {
+ 	struct bio_vec *iovecs;
+ 	struct sg_iovec *sgvecs;
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 7873465..6763cdf 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -248,6 +248,8 @@ extern void bio_endio(struct bio *, int);
+ struct request_queue;
+ extern int bio_phys_segments(struct request_queue *, struct bio *);
  
- 	/*
-@@ -2324,16 +2282,6 @@ bool blk_update_request(struct request *req, int error, unsigned int nr_bytes)
- 		return false;
- 	}
- 
--	/*
--	 * if the request wasn't completed, update state
--	 */
--	if (bio_nbytes) {
--		req_bio_endio(req, bio, bio_nbytes, error);
--		bio->bi_idx += next_idx;
--		bio_iovec(bio)->bv_offset += nr_bytes;
--		bio_iovec(bio)->bv_len -= nr_bytes;
--	}
--
- 	req->__data_len -= total_bytes;
- 	req->buffer = bio_data(req->bio);
++void bio_advance(struct bio *, unsigned);
++
+ extern void bio_init(struct bio *);
+ extern void bio_reset(struct bio *);
  
 -- 
 1.7.12
