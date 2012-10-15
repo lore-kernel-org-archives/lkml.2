@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab2JOQGN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 12:06:13 -0400
-Received: from smtp-out002.kontent.com ([81.88.40.216]:33457 "EHLO
-	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302Ab2JOQGL (ORCPT
+	id S1753784Ab2JOQGT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 12:06:19 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:17288 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255Ab2JOQGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 12:06:11 -0400
-From: Oliver Neukum <oliver@neukum.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RFC PATCH 3/3] USB: forbid memory allocation with I/O during bus reset if storage interface exits
-Date: Mon, 15 Oct 2012 18:04:22 +0200
-Message-ID: <2156600.XT6jqS6j21@linux-lqwf.site>
-User-Agent: KMail/4.8.4 (Linux/3.6.0-rc4-12-desktop+; KDE/4.9.1; x86_64; ; )
-In-Reply-To: <CACVXFVM9bSX+iMx_7Z+S=HsNqNTpR0=qU3MeDQ1wD1LLM0UK-g@mail.gmail.com>
-References: <1350278059-14904-1-git-send-email-ming.lei@canonical.com> <1921559.OPsFBnvatA@linux-lqwf.site> <CACVXFVM9bSX+iMx_7Z+S=HsNqNTpR0=qU3MeDQ1wD1LLM0UK-g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Mon, 15 Oct 2012 12:06:15 -0400
+Message-ID: <1350317173.3452.9.camel@lorien2>
+Subject: Re: WARNING: at lib/dma-debug.c:948 check_unmap()
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "e1000-devel@lists.sourcefor..." <e1000-devel@lists.sourceforge.net>,
+        shuahkhan@gmail.com
+Date: Mon, 15 Oct 2012 10:06:13 -0600
+In-Reply-To: <20121014170226.GA3235@localhost>
+References: <20121014170226.GA3235@localhost>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 15 October 2012 21:21:13 Ming Lei wrote:
-> On Mon, Oct 15, 2012 at 8:30 PM, Oliver Neukum <oneukum@suse.de> wrote:
+On Mon, 2012-10-15 at 01:02 +0800, Fengguang Wu wrote:
+> Hi Shuah,
 > 
-> >
-> > All network devices?
+> FYI, your debug commit
 > 
-> Good point, but I am wondering if there are guys who would like to
-> bring up iSCSI over usb network dongle, which should be
-
-LTE, UMTS. Those people may have no choice.
-
-> very slow at least with high speed.  For super speed device,
-> looks there are few network dongles in market now.
+> commit 224d4b5563b005836628b1c02ebe374684df118f
+> Author: Shuah Khan <shuah.khan@hp.com>
+> Date:   Fri Oct 12 15:23:05 2012 +1100
 > 
-> So how about keeping the limit now?
+>     dma-debug: new interfaces to debug dma mapping errors
+> 
+> triggers the below warning. Hopefully you know better than me the real
+> issue and relevant developers to CC.
+> 
 
-I am perfectly happy with _adding_ code only when it is needed.
-Removal looks like another thing to me.
- 
-	Regards
-		Oliver
+This warning indicates that the driver failed to check dma mapping error
+on a buffer returned by dma_map_single() or dma_map_page() call. Looking
+at the the area where mapping is done, it appears it does call
+dma_mapping_error(). It does allocate several buffers in a loop, so it
+not obvious to me why the warning is showing up. I will follow-up on
+this to make sure it is not a false alarm, before I get the driver team
+involved. Thanks for reporting it.
+
+-- Shuah
 
