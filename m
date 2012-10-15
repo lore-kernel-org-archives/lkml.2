@@ -1,110 +1,1193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab2JOUaS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 16:30:18 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:34999 "EHLO
+	id S1754766Ab2JOUja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 16:39:30 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:53081 "EHLO
 	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043Ab2JOUaR convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754583Ab2JOUj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 16:30:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121015181928.GB27923@kroah.com>
-References: <1350069085-13283-1-git-send-email-stigge@antcom.de>
-	<1350069085-13283-3-git-send-email-stigge@antcom.de>
-	<20121015180702.GA12801@game.jcrosoft.org>
-	<20121015181928.GB27923@kroah.com>
-Date: Mon, 15 Oct 2012 22:30:15 +0200
-Message-ID: <CACRpkdZmg4+7Zjm2UJktt1uKvytUW3uaYtKz0nJvLeM2MMSV-Q@mail.gmail.com>
-Subject: Re: [PATCH RFC 2/6 v3] gpio: Add sysfs support to block GPIO API
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        =?ISO-8859-1?Q?Daniel_Gl=F6ckner?= <daniel-gl@gmx.net>
-Cc: Roland Stigge <stigge@antcom.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, highguy@gmail.com,
-        broonie@opensource.wolfsonmicro.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 15 Oct 2012 16:39:27 -0400
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
+        fabien.andre@gmail.com, scott.liu@emc.com.tw,
+        Jean Delvare <khali@linux-fr.org>, JJ Ding <jj_ding@emc.com.tw>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        linux-i2c@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] i2c-hid: introduce HID over i2c specification implementation
+Date: Mon, 15 Oct 2012 22:38:53 +0200
+Message-Id: <1350333533-13366-1-git-send-email-benjamin.tissoires@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I really request Grant to comment on this...too.
+Microsoft published the protocol specification of HID over i2c:
+http://msdn.microsoft.com/en-us/library/windows/hardware/hh852380.aspx
 
-On Mon, Oct 15, 2012 at 8:19 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Mon, Oct 15, 2012 at 08:07:02PM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
->> On 21:11 Fri 12 Oct     , Roland Stigge wrote:
->> > This patch adds sysfs support to the block GPIO API.
->> >
->> > Signed-off-by: Roland Stigge <stigge@antcom.de>
->> >
->> > ---
->> >  Documentation/ABI/testing/sysfs-gpio |    6
->> >  drivers/gpio/gpiolib.c               |  226 ++++++++++++++++++++++++++++++++++-
->> >  include/asm-generic/gpio.h           |   11 +
->> >  include/linux/gpio.h                 |   13 ++
->> >  4 files changed, 254 insertions(+), 2 deletions(-)
->> I really don't like this sysfs we need to add a specific device with ioctl
->
-> Why?
+This patch introduces an implementation of this protocol.
 
-I don't like it either, basically because the GPIO sysfs is not
-entirely sound.
+This implementation does not includes the ACPI part of the specification.
+This will come when ACPI 5.0 devices will be available.
 
-Another patch that is circulating concerns edge triggers and similar,
-and it appear that some parts of the GPIO sysfs is for example
-redefining and exporting IRQchip properties like trigger edge
-in sysfs, while the settings of the irqchip actually used by the driver
-is not reflected in the other direction. So you can *set* these things
-by writing in the GPIO sysfs, but never trust what you *read* from
-there. And you can set what edges an IRQ will trigger on a certain
-GPIO, and the way to handle the IRQs from usespace is to poll
-on a value. This is not really documented but well ...
+Once the ACPI part is done, OEM will not have to declare HID over I2C
+devices in their platform specific driver.
 
-Part of me just want to delete that, but I can't because it's now
-an ABI.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+---
 
-The "devices" that the sysfs files are tied to are not real devices,
-instead the code look like this: whenever a gpio is exported to
-sysfs, the code calls (drivers/gpio/gpiolib.c):
+Hi Guys,
 
-    dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
-                    desc, ioname ? ioname : "gpio%u", gpio);
+here is the v2 of the HID over I2C driver.
 
-Mock device just to get a sysfs opening. And once device for
-every GPIO with no hierarchical correspondence to anything
-in the system.
+Changes since v1:
+* s/i2chid/i2c_hid/
+* remove i2c_hid_print_buffer function and use "%*ph" instead
+* define i2c_hid_dbg macro
+* remove retries in __i2c_hid_command
+* fix return values
+* fix imports (I hope)
+* drop hiddev and pidff_init support as the used functions were usb only
+* make memory allocation more static {1}
+* remove spinlock {2}
+* don't use an array for the commands, but static const declarations instead
+* move i2c-hid into drivers/hid {3}
+* remove HID_MAX_BUFFER_SIZE test {4}
+* implement missing output reports sending (not tested)
+* typos, spacing, and many small thinks that appeared in the previous review
 
-The thing is that struct gpio_chip is not a device at all, it's something
-else.
+Notes:
+{1}: I don't have all the informations in the beginning of the probe function to
+get the real size I need to allocate. So the behavior is to allocate first a
+buffer by using HID_MIN_BUFFER_SIZE and once I got the information, I can
+reallocate the buffer to the right size (in i2c_hid_start).
 
-This inconsistency in the GPIO sysfs implementation make me
-fear adding new stuff to it. The other problems need fixing first.
+{2}: This version presents no more spinlock and dynamic allocation, but there
+may be sources of races through two means:
+- irqs: if an event occurs while we are in __i2c_hid_command -> this should not
+be a problem as there is no shared ressource for input reports.
+- hidraw: if several clients write commands in /dev/hidrawX -> this is more
+problematic unless hidraw already locks the driver.
 
-The reason an ioctl() IMO is better suited to do the job is that
-it can properly represent a multiple-value operation on several
-GPIOs at the same time in a struct, and it can conversely inform
-userspace about which GPIOs may be a block of signals that
-can be fired simultaneously instead of going to string parsing
-and binary values in sysfs which look like worse hacks to me.
+{3}: I didn't moved the .h (in include/linux/i2c) because it will be used by
+mach-xxx and I think it's better to leave it there. But again, I may be wrong
+and we can move it elsewhere.
 
-The last thing I'm a bit softer on though. Mainly I fear of this
-sysfs ABI growing into a beast.
+{4}: This check introduced more bugs than adding security. I currently don't
+think it will be problematic unless we found out a very buggy hid device.
 
-It was all merged prior to Grant becoming maintainer and
-me becoming co-maintainer of it, so this is legacy business.
+Cheers,
+Benjamin
 
-Sadly the main creator of this ABI is David Brownell who is
-not able to respond nor maintain it from where he is now. But
-we need to think hard about what we shall do with this particular
-piece of legacy. Some of the stuff was added by Daniel
-Glöckner so requesting advice from him.
+ drivers/hid/Kconfig           |   2 +
+ drivers/hid/Makefile          |   1 +
+ drivers/hid/i2c-hid/Kconfig   |  21 +
+ drivers/hid/i2c-hid/Makefile  |   5 +
+ drivers/hid/i2c-hid/i2c-hid.c | 990 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/i2c/i2c-hid.h   |  35 ++
+ 6 files changed, 1054 insertions(+)
+ create mode 100644 drivers/hid/i2c-hid/Kconfig
+ create mode 100644 drivers/hid/i2c-hid/Makefile
+ create mode 100644 drivers/hid/i2c-hid/i2c-hid.c
+ create mode 100644 include/linux/i2c/i2c-hid.h
 
-Daniel: are you interested in helping us fixing the GPIOlib
-sysfs ABI and kernel internals? I'm a bit afraid of it.
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index fbf4950..4bc0995 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -696,4 +696,6 @@ endif # HID
+ 
+ source "drivers/hid/usbhid/Kconfig"
+ 
++source "drivers/hid/i2c-hid/Kconfig"
++
+ endmenu
+diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+index f975485..bb1e4536 100644
+--- a/drivers/hid/Makefile
++++ b/drivers/hid/Makefile
+@@ -96,3 +96,4 @@ obj-$(CONFIG_USB_HID)		+= usbhid/
+ obj-$(CONFIG_USB_MOUSE)		+= usbhid/
+ obj-$(CONFIG_USB_KBD)		+= usbhid/
+ 
++obj-$(CONFIG_I2C_HID)		+= i2c-hid/
+diff --git a/drivers/hid/i2c-hid/Kconfig b/drivers/hid/i2c-hid/Kconfig
+new file mode 100644
+index 0000000..5b7d4d8
+--- /dev/null
++++ b/drivers/hid/i2c-hid/Kconfig
+@@ -0,0 +1,21 @@
++menu "I2C HID support"
++	depends on I2C
++
++config I2C_HID
++	tristate "HID over I2C transport layer"
++	default n
++	depends on I2C && INPUT
++	select HID
++	---help---
++	  Say Y here if you want to use the HID over i2c protocol
++	  implementation.
++
++	  If unsure, say N.
++
++	  This support is also available as a module.  If so, the module
++	  will be called i2c-hid.
++
++comment "Input core support is needed for HID over I2C input layer"
++	depends on I2C_HID && INPUT=n
++
++endmenu
+diff --git a/drivers/hid/i2c-hid/Makefile b/drivers/hid/i2c-hid/Makefile
+new file mode 100644
+index 0000000..832d8f9
+--- /dev/null
++++ b/drivers/hid/i2c-hid/Makefile
+@@ -0,0 +1,5 @@
++#
++# Makefile for the I2C input drivers
++#
++
++obj-$(CONFIG_I2C_HID)				+= i2c-hid.o
+diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+new file mode 100644
+index 0000000..8b6c31a
+--- /dev/null
++++ b/drivers/hid/i2c-hid/i2c-hid.c
+@@ -0,0 +1,990 @@
++/*
++ * HID over I2C protocol implementation
++ *
++ * Copyright (c) 2012 Benjamin Tissoires <benjamin.tissoires@gmail.com>
++ * Copyright (c) 2012 Ecole Nationale de l'Aviation Civile, France
++ *
++ * This code is partly based on "USB HID support for Linux":
++ *
++ *  Copyright (c) 1999 Andreas Gal
++ *  Copyright (c) 2000-2005 Vojtech Pavlik <vojtech@suse.cz>
++ *  Copyright (c) 2005 Michael Haboustak <mike-@cinci.rr.com> for Concept2, Inc
++ *  Copyright (c) 2007-2008 Oliver Neukum
++ *  Copyright (c) 2006-2010 Jiri Kosina
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file COPYING in the main directory of this archive for
++ * more details.
++ */
++
++#include <linux/module.h>
++#include <linux/i2c.h>
++#include <linux/interrupt.h>
++#include <linux/input.h>
++#include <linux/delay.h>
++#include <linux/slab.h>
++#include <linux/pm.h>
++#include <linux/device.h>
++#include <linux/wait.h>
++#include <linux/err.h>
++#include <linux/string.h>
++#include <linux/list.h>
++#include <linux/jiffies.h>
++#include <linux/kernel.h>
++#include <linux/bug.h>
++#include <linux/hid.h>
++
++#include <linux/i2c/i2c-hid.h>
++
++/* flags */
++#define I2C_HID_STARTED		(1 << 0)
++#define I2C_HID_RESET_PENDING	(1 << 1)
++#define I2C_HID_READ_PENDING	(1 << 2)
++
++#define I2C_HID_PWR_ON		0x00
++#define I2C_HID_PWR_SLEEP	0x01
++
++/* debug option */
++static bool debug = false;
++module_param(debug, bool, 0444);
++MODULE_PARM_DESC(debug, "print a lot of debug information");
++
++#define i2c_hid_dbg(ihid, fmt, arg...)	\
++	if (debug)			\
++		dev_printk(KERN_DEBUG, &(ihid)->client->dev, fmt, ##arg)
++
++struct i2c_hid_desc {
++	__le16 wHIDDescLength;
++	__le16 bcdVersion;
++	__le16 wReportDescLength;
++	__le16 wReportDescRegister;
++	__le16 wInputRegister;
++	__le16 wMaxInputLength;
++	__le16 wOutputRegister;
++	__le16 wMaxOutputLength;
++	__le16 wCommandRegister;
++	__le16 wDataRegister;
++	__le16 wVendorID;
++	__le16 wProductID;
++	__le16 wVersionID;
++} __packed;
++
++struct i2c_hid_cmd {
++	unsigned int registerIndex;
++	__u8 opcode;
++	unsigned int length;
++	bool wait;
++};
++
++union command {
++	u8 data[0];
++	struct cmd {
++		__le16 reg;
++		__u8 reportTypeID;
++		__u8 opcode;
++	} __packed c;
++};
++
++#define I2C_HID_CMD(opcode_) \
++	.opcode = opcode_, .length = 4, \
++	.registerIndex = offsetof(struct i2c_hid_desc, wCommandRegister)
++
++/* fetch HID descriptor */
++static const struct i2c_hid_cmd hid_descr_cmd = { .length = 2 };
++/* fetch report descriptors */
++static const struct i2c_hid_cmd hid_report_descr_cmd = {
++		.registerIndex = offsetof(struct i2c_hid_desc,
++			wReportDescRegister),
++		.opcode = 0x00,
++		.length = 2 };
++/* commands */
++static const struct i2c_hid_cmd hid_reset_cmd =		{ I2C_HID_CMD(0x01),
++							  .wait = true };
++static const struct i2c_hid_cmd hid_get_report_cmd =	{ I2C_HID_CMD(0x02) };
++static const struct i2c_hid_cmd hid_set_report_cmd =	{ I2C_HID_CMD(0x03) };
++static const struct i2c_hid_cmd hid_get_idle_cmd =	{ I2C_HID_CMD(0x04) };
++static const struct i2c_hid_cmd hid_set_idle_cmd =	{ I2C_HID_CMD(0x05) };
++static const struct i2c_hid_cmd hid_get_protocol_cmd =	{ I2C_HID_CMD(0x06) };
++static const struct i2c_hid_cmd hid_set_protocol_cmd =	{ I2C_HID_CMD(0x07) };
++static const struct i2c_hid_cmd hid_set_power_cmd =	{ I2C_HID_CMD(0x08) };
++/* read/write data register */
++static const struct i2c_hid_cmd hid_data_cmd = {
++		.registerIndex = offsetof(struct i2c_hid_desc, wDataRegister),
++		.opcode = 0x00,
++		.length = 2 };
++/* write output reports */
++static const struct i2c_hid_cmd hid_out_cmd = {
++		.registerIndex = offsetof(struct i2c_hid_desc,
++			wOutputRegister),
++		.opcode = 0x00,
++		.length = 2 };
++
++/* The main device structure */
++struct i2c_hid {
++	struct i2c_client	*client;	/* i2c client */
++	struct hid_device	*hid;	/* pointer to corresponding HID dev */
++	union {
++		__u8 hdesc_buffer[sizeof(struct i2c_hid_desc)];
++		struct i2c_hid_desc hdesc;	/* the HID Descriptor */
++	};
++	__le16			wHIDDescRegister; /* location of the i2c
++						   * register of the HID
++						   * descriptor. */
++	unsigned int		bufsize;	/* i2c buffer size */
++	char			*inbuf;		/* Input buffer */
++	char			*cmdbuf;	/* Command buffer */
++	char			*argsbuf;	/* Command arguments buffer */
++
++	unsigned long		flags;		/* device flags */
++
++	int			irq;		/* the interrupt line irq */
++
++	wait_queue_head_t	wait;		/* For waiting the interrupt */
++};
++
++static int __i2c_hid_command(struct i2c_client *client,
++		const struct i2c_hid_cmd *command, u8 reportID,
++		u8 reportType, u8 *args, int args_len,
++		unsigned char *buf_recv, int data_len)
++{
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++	union command *cmd = (union command *)ihid->cmdbuf;
++	int ret;
++	struct i2c_msg msg[2];
++	int msg_num = 1;
++
++	int length = command->length;
++	bool wait = command->wait;
++	unsigned int registerIndex = command->registerIndex;
++
++	/* special case for hid_descr_cmd */
++	if (command == &hid_descr_cmd) {
++		cmd->c.reg = ihid->wHIDDescRegister;
++	} else {
++		cmd->data[0] = ihid->hdesc_buffer[registerIndex];
++		cmd->data[1] = ihid->hdesc_buffer[registerIndex + 1];
++	}
++
++	if (length > 2) {
++		cmd->c.opcode = command->opcode;
++		cmd->c.reportTypeID = reportID | reportType << 4;
++	}
++
++	memcpy(cmd->data + length, args, args_len);
++	length += args_len;
++
++	i2c_hid_dbg(ihid, "%s: cmd=%*ph\n", __func__, length, cmd->data);
++
++	msg[0].addr = client->addr;
++	msg[0].flags = client->flags & I2C_M_TEN;
++	msg[0].len = length;
++	msg[0].buf = cmd->data;
++	if (data_len > 0) {
++		msg[1].addr = client->addr;
++		msg[1].flags = client->flags & I2C_M_TEN;
++		msg[1].flags |= I2C_M_RD;
++		msg[1].len = data_len;
++		msg[1].buf = buf_recv;
++		msg_num = 2;
++		set_bit(I2C_HID_READ_PENDING, &ihid->flags);
++	}
++
++	if (wait)
++		set_bit(I2C_HID_RESET_PENDING, &ihid->flags);
++
++	ret = i2c_transfer(client->adapter, msg, msg_num);
++
++	if (data_len > 0)
++		clear_bit(I2C_HID_READ_PENDING, &ihid->flags);
++
++	if (ret != msg_num)
++		return ret < 0 ? ret : -EIO;
++
++	ret = 0;
++
++	if (wait) {
++		i2c_hid_dbg(ihid, "%s: waiting...\n", __func__);
++		if (!wait_event_timeout(ihid->wait,
++				!test_bit(I2C_HID_RESET_PENDING, &ihid->flags),
++				msecs_to_jiffies(5000)))
++			ret = -ENODATA;
++		i2c_hid_dbg(ihid, "%s: finished.\n", __func__);
++	}
++
++	return ret;
++}
++
++static int i2c_hid_command(struct i2c_client *client,
++		const struct i2c_hid_cmd *command,
++		unsigned char *buf_recv, int data_len)
++{
++	return __i2c_hid_command(client, command, 0, 0, NULL, 0,
++				buf_recv, data_len);
++}
++
++static int i2c_hid_get_report(struct i2c_client *client, u8 reportType,
++		u8 reportID, unsigned char *buf_recv, int data_len)
++{
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++	u8 args[3];
++	int ret;
++	int args_len = 0;
++	u16 readRegister = le16_to_cpu(ihid->hdesc.wDataRegister);
++
++	i2c_hid_dbg(ihid, "%s\n", __func__);
++
++	if (reportID >= 0x0F) {
++		args[args_len++] = reportID;
++		reportID = 0x0F;
++	}
++
++	args[args_len++] = readRegister & 0xFF;
++	args[args_len++] = readRegister >> 8;
++
++	ret = __i2c_hid_command(client, &hid_get_report_cmd, reportID,
++		reportType, args, args_len, buf_recv, data_len);
++	if (ret) {
++		dev_err(&client->dev, "hid_get_report_cmd Fail\n");
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static int i2c_hid_set_report(struct i2c_client *client, u8 reportType,
++		u8 reportID, unsigned char *buf, size_t data_len)
++{
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++	u8 *args = ihid->argsbuf;
++	int ret;
++	u16 dataRegister = le16_to_cpu(ihid->hdesc.wDataRegister);
++	int args_len =  (reportID >= 0x0F ? 1 : 0) +
++			2 /* dataRegister */ +
++			2 /* data_len */ +
++			data_len;
++	int index = 0;
++
++	i2c_hid_dbg(ihid, "%s\n", __func__);
++
++	if (reportID >= 0x0F) {
++		args[index++] = reportID;
++		reportID = 0x0F;
++	}
++
++	args[index++] = dataRegister & 0xFF;
++	args[index++] = dataRegister >> 8;
++
++	/* hidraw already checked that data_len < HID_MAX_BUFFER_SIZE */
++	args[index++] = data_len & 0xFF;
++	args[index++] = (data_len >> 8) & 0xFF;
++
++	memcpy(&args[index], buf, data_len);
++
++	ret = __i2c_hid_command(client, &hid_set_report_cmd, reportID,
++		reportType, args, args_len, NULL, 0);
++	if (ret) {
++		dev_err(&client->dev, "hid_set_report_cmd Fail\n");
++		return -EINVAL;
++	}
++
++	return data_len;
++}
++
++static int i2c_hid_write_out_report(struct i2c_client *client,
++		u8 reportID, unsigned char *buf, size_t data_len)
++{
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++	u8 *args = ihid->argsbuf;
++	int ret;
++	int args_len =  1 /* reportID */ +
++			2 /* data_len */ +
++			data_len;
++	int index = 0;
++
++	i2c_hid_dbg(ihid, "%s\n", __func__);
++
++	args[index++] = reportID;
++
++	/* hidraw already checked that data_len < HID_MAX_BUFFER_SIZE */
++	args[index++] = data_len & 0xFF;
++	args[index++] = (data_len >> 8) & 0xFF;
++
++	memcpy(&args[index], buf, data_len);
++
++	ret = __i2c_hid_command(client, &hid_out_cmd, 0, 0, args, args_len,
++		NULL, 0);
++	if (ret) {
++		dev_err(&client->dev, "hid_out_cmd Fail\n");
++		return -EINVAL;
++	}
++
++	return data_len;
++}
++
++static int i2c_hid_set_power(struct i2c_client *client, int power_state)
++{
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++	int ret;
++
++	i2c_hid_dbg(ihid, "%s\n", __func__);
++
++	ret = __i2c_hid_command(client, &hid_set_power_cmd, power_state,
++		0, NULL, 0, NULL, 0);
++	if (ret)
++		dev_err(&client->dev, "hid_set_power_cmd Fail\n");
++
++	return ret;
++}
++
++static int i2c_hid_hwreset(struct i2c_client *client)
++{
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++	int ret;
++
++	i2c_hid_dbg(ihid, "%s\n", __func__);
++
++	ret = i2c_hid_set_power(client, I2C_HID_PWR_ON);
++	if (ret)
++		return ret;
++
++	i2c_hid_dbg(ihid, "resetting...\n");
++
++	ret = i2c_hid_command(client, &hid_reset_cmd, NULL, 0);
++	if (ret) {
++		dev_err(&client->dev, "hid_reset_cmd Fail\n");
++		i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
++		return ret;
++	}
++
++	return 0;
++}
++
++static int i2c_hid_get_input(struct i2c_hid *ihid)
++{
++	int ret, ret_size;
++	int size = le16_to_cpu(ihid->hdesc.wMaxInputLength);
++
++	ret = i2c_master_recv(ihid->client, ihid->inbuf, size);
++	if (ret != size) {
++		if (ret < 0)
++			return ret;
++
++		dev_err(&ihid->client->dev, "%s: got %d data instead of %d\n",
++			__func__, ret, size);
++		return ret;
++	}
++
++	ret_size = ihid->inbuf[0] | ihid->inbuf[1] << 8;
++
++	if (!ret_size) {
++		/* host or device initiated RESET completed */
++		if (test_and_clear_bit(I2C_HID_RESET_PENDING, &ihid->flags))
++			wake_up(&ihid->wait);
++		return 0;
++	}
++
++	if (ret_size > size) {
++		dev_err(&ihid->client->dev, "%s: incomplete report (%d/%d)\n",
++			__func__, size, ret_size);
++		return -EIO;
++	}
++
++	i2c_hid_dbg(ihid, "input: %*ph\n", ret_size, ihid->inbuf);
++
++	if (test_bit(I2C_HID_STARTED, &ihid->flags))
++		hid_input_report(ihid->hid, HID_INPUT_REPORT, ihid->inbuf + 2,
++				ret_size - 2, 1);
++
++	return 0;
++}
++
++static irqreturn_t i2c_hid_irq(int irq, void *dev_id)
++{
++	struct i2c_hid *ihid = dev_id;
++
++	if (test_bit(I2C_HID_READ_PENDING, &ihid->flags))
++		return IRQ_HANDLED;
++
++	i2c_hid_get_input(ihid);
++
++	return IRQ_HANDLED;
++}
++
++static int i2c_hid_get_report_length(struct hid_report *report)
++{
++	return ((report->size - 1) >> 3) + 1 +
++		report->device->report_enum[report->type].numbered + 2;
++}
++
++static void i2c_hid_init_report(struct hid_report *report, u8 *buffer,
++	size_t bufsize)
++{
++	struct hid_device *hid = report->device;
++	struct i2c_client *client = hid->driver_data;
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++	unsigned int size, ret_size;
++
++	size = i2c_hid_get_report_length(report);
++	i2c_hid_get_report(client,
++			report->type == HID_FEATURE_REPORT ? 0x03 : 0x01,
++			report->id, buffer, size);
++
++	i2c_hid_dbg(ihid, "report (len=%d): %*ph\n", size, size, ihid->inbuf);
++
++	ret_size = buffer[0] | (buffer[1] << 8);
++
++	if (ret_size != size) {
++		dev_err(&client->dev, "error in %s size:%d / ret_size:%d\n",
++			__func__, size, ret_size);
++		return;
++	}
++
++	/* hid->driver_lock is held as we are in probe function,
++	 * we just need to setup the input fields, so using
++	 * hid_report_raw_event is safe. */
++	hid_report_raw_event(hid, report->type, buffer + 2, size - 2, 1);
++}
++
++/*
++ * Initialize all reports
++ */
++static void i2c_hid_init_reports(struct hid_device *hid)
++{
++	struct hid_report *report;
++	struct i2c_client *client = hid->driver_data;
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++	u8 *inbuf = kzalloc(ihid->bufsize, GFP_KERNEL);
++
++	if (!inbuf)
++		return;
++
++	list_for_each_entry(report,
++		&hid->report_enum[HID_INPUT_REPORT].report_list, list)
++		i2c_hid_init_report(report, inbuf, ihid->bufsize);
++
++	list_for_each_entry(report,
++		&hid->report_enum[HID_FEATURE_REPORT].report_list, list)
++		i2c_hid_init_report(report, inbuf, ihid->bufsize);
++
++	kfree(inbuf);
++}
++
++/*
++ * Traverse the supplied list of reports and find the longest
++ */
++static void i2c_hid_find_max_report(struct hid_device *hid, unsigned int type,
++		unsigned int *max)
++{
++	struct hid_report *report;
++	unsigned int size;
++
++	/* We should not rely on wMaxInputLength, as some devices may set it to
++	 * a wrong length. */
++	list_for_each_entry(report, &hid->report_enum[type].report_list, list) {
++		size = i2c_hid_get_report_length(report);
++		if (*max < size)
++			*max = size;
++	}
++}
++
++static int i2c_hid_alloc_buffers(struct i2c_hid *ihid)
++{
++	/* the worst case is computed from the set_report command with a
++	 * reportID > 15 and the maximum report length */
++	int args_len = sizeof(__u8) + /* optional ReportID byte */
++		       sizeof(__u16) + /* data register */
++		       sizeof(__u16) + /* size of the report */
++		       ihid->bufsize; /* report */
++
++	ihid->inbuf = kzalloc(ihid->bufsize, GFP_KERNEL);
++
++	if (!ihid->inbuf)
++		return -ENOMEM;
++
++	ihid->argsbuf = kzalloc(args_len, GFP_KERNEL);
++
++	if (!ihid->argsbuf) {
++		kfree(ihid->inbuf);
++		return -ENOMEM;
++	}
++
++	ihid->cmdbuf = kzalloc(sizeof(union command) + args_len, GFP_KERNEL);
++
++	if (!ihid->cmdbuf) {
++		kfree(ihid->inbuf);
++		kfree(ihid->argsbuf);
++		return -ENOMEM;
++	}
++
++	return 0;
++}
++
++static void i2c_hid_free_buffers(struct i2c_hid *ihid)
++{
++	kfree(ihid->inbuf);
++	kfree(ihid->argsbuf);
++	kfree(ihid->cmdbuf);
++	ihid->inbuf = NULL;
++	ihid->cmdbuf = NULL;
++	ihid->argsbuf = NULL;
++}
++
++static int i2c_hid_get_raw_report(struct hid_device *hid,
++		unsigned char report_number, __u8 *buf, size_t count,
++		unsigned char report_type)
++{
++	struct i2c_client *client = hid->driver_data;
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++	int ret;
++
++	if (count > ihid->bufsize)
++		count = ihid->bufsize;
++
++	ret = i2c_hid_get_report(client,
++			report_type == HID_FEATURE_REPORT ? 0x03 : 0x01,
++			report_number, ihid->inbuf, count);
++
++	if (ret < 0)
++		return ret;
++
++	count = ihid->inbuf[0] | (ihid->inbuf[1] << 8);
++
++	memcpy(buf, ihid->inbuf + 2, count);
++
++	return count;
++}
++
++static int i2c_hid_output_raw_report(struct hid_device *hid, __u8 *buf,
++		size_t count, unsigned char report_type)
++{
++	struct i2c_client *client = hid->driver_data;
++	int report_id = buf[0];
++
++	if (report_type == HID_OUTPUT_REPORT)
++		return i2c_hid_write_out_report(client, report_id, buf, count);
++
++	return i2c_hid_set_report(client,
++				report_type == HID_FEATURE_REPORT ? 0x03 : 0x01,
++				report_id, buf, count);
++}
++
++static int i2c_hid_parse(struct hid_device *hid)
++{
++	struct i2c_client *client = hid->driver_data;
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++	struct i2c_hid_desc *hdesc = &ihid->hdesc;
++	unsigned int rsize;
++	char *rdesc;
++	int ret;
++	int tries = 3;
++
++	i2c_hid_dbg(ihid, "entering %s\n", __func__);
++
++	rsize = le16_to_cpu(hdesc->wReportDescLength);
++	if (!rsize || rsize > HID_MAX_DESCRIPTOR_SIZE) {
++		dbg_hid("weird size of report descriptor (%u)\n", rsize);
++		return -EINVAL;
++	}
++
++	do {
++		ret = i2c_hid_hwreset(client);
++		if (ret)
++			msleep(1000);
++	} while (tries-- > 0 && ret);
++
++	if (ret)
++		return ret;
++
++	rdesc = kzalloc(rsize, GFP_KERNEL);
++
++	if (!rdesc) {
++		dbg_hid("couldn't allocate rdesc memory\n");
++		return -ENOMEM;
++	}
++
++	i2c_hid_dbg(ihid, "asking HID report descriptor\n");
++
++	ret = i2c_hid_command(client, &hid_report_descr_cmd, rdesc, rsize);
++	if (ret) {
++		hid_err(hid, "reading report descriptor failed\n");
++		kfree(rdesc);
++		return -EIO;
++	}
++
++	i2c_hid_dbg(ihid, "Report Descriptor: %*ph\n", rsize, rdesc);
++
++	ret = hid_parse_report(hid, rdesc, rsize);
++	kfree(rdesc);
++	if (ret) {
++		dbg_hid("parsing report descriptor failed\n");
++		return ret;
++	}
++
++	return 0;
++}
++
++static int i2c_hid_start(struct hid_device *hid)
++{
++	struct i2c_client *client = hid->driver_data;
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++	int ret;
++	int old_bufsize = ihid->bufsize;
++
++	ihid->bufsize = HID_MIN_BUFFER_SIZE;
++	i2c_hid_find_max_report(hid, HID_INPUT_REPORT, &ihid->bufsize);
++	i2c_hid_find_max_report(hid, HID_OUTPUT_REPORT, &ihid->bufsize);
++	i2c_hid_find_max_report(hid, HID_FEATURE_REPORT, &ihid->bufsize);
++
++	if (ihid->bufsize > old_bufsize || !ihid->inbuf || !ihid->cmdbuf) {
++		i2c_hid_free_buffers(ihid);
++
++		ret = i2c_hid_alloc_buffers(ihid);
++
++		if (ret)
++			return ret;
++	}
++
++	if (!(hid->quirks & HID_QUIRK_NO_INIT_REPORTS))
++		i2c_hid_init_reports(hid);
++
++	return 0;
++}
++
++static void i2c_hid_stop(struct hid_device *hid)
++{
++	struct i2c_client *client = hid->driver_data;
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++
++	hid->claimed = 0;
++
++	i2c_hid_free_buffers(ihid);
++}
++
++static int i2c_hid_open(struct hid_device *hid)
++{
++	struct i2c_client *client = hid->driver_data;
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++	int ret;
++
++	if (!hid->open++) {
++		ret = i2c_hid_set_power(client, I2C_HID_PWR_ON);
++		if (ret) {
++			hid->open--;
++			return -EIO;
++		}
++		set_bit(I2C_HID_STARTED, &ihid->flags);
++	}
++	return 0;
++}
++
++static void i2c_hid_close(struct hid_device *hid)
++{
++	struct i2c_client *client = hid->driver_data;
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++
++	/* protecting hid->open to make sure we don't restart
++	 * data acquistion due to a resumption we no longer
++	 * care about
++	 */
++	if (!--hid->open) {
++		clear_bit(I2C_HID_STARTED, &ihid->flags);
++
++		/* Save some power */
++		i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
++	}
++}
++
++static int i2c_hid_power(struct hid_device *hid, int lvl)
++{
++	struct i2c_client *client = hid->driver_data;
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++	int ret = 0;
++
++	i2c_hid_dbg(ihid, "%s lvl:%d\n", __func__, lvl);
++
++	switch (lvl) {
++	case PM_HINT_FULLON:
++		ret = i2c_hid_set_power(client, I2C_HID_PWR_ON);
++		break;
++	case PM_HINT_NORMAL:
++		ret = i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
++		break;
++	}
++	return ret;
++}
++
++static int i2c_hid_hidinput_input_event(struct input_dev *dev,
++		unsigned int type, unsigned int code, int value)
++{
++	struct hid_device *hid = input_get_drvdata(dev);
++	struct hid_field *field;
++	int offset;
++
++	if (type == EV_FF)
++		return input_ff_event(dev, type, code, value);
++
++	if (type != EV_LED)
++		return -1;
++
++	offset = hidinput_find_field(hid, type, code, &field);
++
++	if (offset == -1) {
++		hid_warn(dev, "event field not found\n");
++		return -1;
++	}
++
++	hid_set_field(field, offset, value);
++
++	return 0;
++}
++
++static struct hid_ll_driver i2c_hid_ll_driver = {
++	.parse = i2c_hid_parse,
++	.start = i2c_hid_start,
++	.stop = i2c_hid_stop,
++	.open = i2c_hid_open,
++	.close = i2c_hid_close,
++	.power = i2c_hid_power,
++	.hidinput_input_event = i2c_hid_hidinput_input_event,
++};
++
++static int __devinit i2c_hid_init_irq(struct i2c_client *client)
++{
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++	int ret;
++
++	dev_dbg(&client->dev, "Requesting IRQ: %d\n", client->irq);
++
++	ret = request_threaded_irq(client->irq, NULL, i2c_hid_irq,
++			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++			client->name, ihid);
++	if (ret < 0) {
++		dev_dbg(&client->dev,
++			"Could not register for %s interrupt, irq = %d,"
++			" ret = %d\n",
++		client->name, client->irq, ret);
++
++		return ret;
++	}
++
++	ihid->irq = client->irq;
++
++	return 0;
++}
++
++static int __devinit i2c_hid_fetch_hid_descriptor(struct i2c_hid *ihid)
++{
++	struct i2c_client *client = ihid->client;
++	struct i2c_hid_desc *hdesc = &ihid->hdesc;
++	unsigned int dsize;
++	int ret;
++
++	/* Fetch the length of HID description, retrieve the 4 first bytes:
++	 * bytes 0-1 -> length
++	 * bytes 2-3 -> bcdVersion (has to be 1.00) */
++	ret = i2c_hid_command(client, &hid_descr_cmd, ihid->hdesc_buffer, 4);
++
++	i2c_hid_dbg(ihid, "%s, ihid->hdesc_buffer: %*ph\n",
++			__func__, 4, ihid->hdesc_buffer);
++
++	if (ret) {
++		dev_err(&client->dev, "HID_DESCR_LENGTH_CMD Fail (ret=%d)\n",
++			ret);
++		return -ENODEV;
++	}
++
++	dsize = le16_to_cpu(hdesc->wHIDDescLength);
++	if (!dsize || dsize > HID_MAX_DESCRIPTOR_SIZE) {
++		dev_err(&client->dev, "weird size of HID descriptor (%u)\n",
++			dsize);
++		return -ENODEV;
++	}
++
++	/* check bcdVersion == 1.0 */
++	if (le16_to_cpu(hdesc->bcdVersion) != 0x0100) {
++		dev_err(&client->dev,
++			"unexpected HID descriptor bcdVersion (0x%04x)\n",
++			le16_to_cpu(hdesc->bcdVersion));
++		return -ENODEV;
++	}
++
++	i2c_hid_dbg(ihid, "Fetching the HID descriptor\n");
++
++	ret = i2c_hid_command(client, &hid_descr_cmd, ihid->hdesc_buffer,
++				dsize);
++	if (ret) {
++		dev_err(&client->dev, "hid_descr_cmd Fail\n");
++		return -ENODEV;
++	}
++
++	i2c_hid_dbg(ihid, "HID Descriptor: %*ph\n", dsize, ihid->hdesc_buffer);
++
++	return 0;
++}
++
++static int __devinit i2c_hid_probe(struct i2c_client *client,
++		const struct i2c_device_id *dev_id)
++{
++	int ret;
++	struct i2c_hid *ihid;
++	struct hid_device *hid;
++	__u16 hidRegister;
++	struct i2c_hid_platform_data *platform_data = client->dev.platform_data;
++
++	dbg_hid("HID probe called for i2c 0x%02x\n", client->addr);
++
++	if (!platform_data) {
++		dev_err(&client->dev, "HID register address not provided\n");
++		return -EINVAL;
++	}
++
++	if (!client->irq) {
++		dev_err(&client->dev,
++			"HID over i2c has not been provided an Int IRQ\n");
++		return -EINVAL;
++	}
++
++	ihid = kzalloc(sizeof(struct i2c_hid), GFP_KERNEL);
++	if (!ihid)
++		return -ENOMEM;
++
++	i2c_set_clientdata(client, ihid);
++
++	ihid->client = client;
++
++	hidRegister = platform_data->hid_descriptor_address;
++	ihid->wHIDDescRegister = cpu_to_le16(hidRegister);
++
++	init_waitqueue_head(&ihid->wait);
++
++	/* we need to allocate the command buffer without knowing the maximum
++	 * size of the reports. Let's use HID_MIN_BUFFER_SIZE, then we do the
++	 * real computation later. */
++	ihid->bufsize = HID_MIN_BUFFER_SIZE;
++	i2c_hid_alloc_buffers(ihid);
++
++	ret = i2c_hid_fetch_hid_descriptor(ihid);
++	if (ret < 0)
++		goto err;
++
++	ret = i2c_hid_init_irq(client);
++	if (ret < 0)
++		goto err;
++
++	hid = hid_allocate_device();
++	if (IS_ERR(hid)) {
++		ret = PTR_ERR(hid);
++		goto err;
++	}
++
++	ihid->hid = hid;
++
++	hid->driver_data = client;
++	hid->ll_driver = &i2c_hid_ll_driver;
++	hid->hid_get_raw_report = i2c_hid_get_raw_report;
++	hid->hid_output_raw_report = i2c_hid_output_raw_report;
++	hid->dev.parent = &client->dev;
++	hid->bus = BUS_I2C;
++	hid->version = le16_to_cpu(ihid->hdesc.bcdVersion);
++	hid->vendor = le16_to_cpu(ihid->hdesc.wVendorID);
++	hid->product = le16_to_cpu(ihid->hdesc.wProductID);
++
++	snprintf(hid->name, sizeof(hid->name), "%s %04X:%04X",
++		 client->name, hid->vendor, hid->product);
++
++	ret = hid_add_device(hid);
++	if (ret) {
++		if (ret != -ENODEV)
++			hid_err(client, "can't add hid device: %d\n", ret);
++		goto err_mem_free;
++	}
++
++	return 0;
++
++err_mem_free:
++	hid_destroy_device(hid);
++
++err:
++	if (ihid->irq)
++		free_irq(ihid->irq, ihid);
++
++	kfree(ihid);
++	return ret;
++}
++
++static int __devexit i2c_hid_remove(struct i2c_client *client)
++{
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++	struct hid_device *hid;
++
++	if (WARN_ON(!ihid))
++		return -1;
++
++	hid = ihid->hid;
++	hid_destroy_device(hid);
++
++	free_irq(client->irq, ihid);
++
++	kfree(ihid);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM_SLEEP
++static int i2c_hid_suspend(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct i2c_hid *ihid = i2c_get_clientdata(client);
++
++	if (device_may_wakeup(&client->dev))
++		enable_irq_wake(ihid->irq);
++
++	/* Save some power */
++	i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
++
++	return 0;
++}
++
++static int i2c_hid_resume(struct device *dev)
++{
++	int ret;
++	struct i2c_client *client = to_i2c_client(dev);
++
++	ret = i2c_hid_hwreset(client);
++	if (ret)
++		return ret;
++
++	if (device_may_wakeup(&client->dev))
++		disable_irq_wake(client->irq);
++
++	return 0;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(i2c_hid_pm, i2c_hid_suspend, i2c_hid_resume);
++
++static const struct i2c_device_id i2c_hid_id_table[] = {
++	{ "i2c_hid", 0 },
++	{ },
++};
++MODULE_DEVICE_TABLE(i2c, i2c_hid_id_table);
++
++
++static struct i2c_driver i2c_hid_driver = {
++	.driver = {
++		.name	= "i2c_hid",
++		.owner	= THIS_MODULE,
++		.pm	= &i2c_hid_pm,
++	},
++
++	.probe		= i2c_hid_probe,
++	.remove		= __devexit_p(i2c_hid_remove),
++
++	.id_table	= i2c_hid_id_table,
++};
++
++module_i2c_driver(i2c_hid_driver);
++
++MODULE_DESCRIPTION("HID over I2C core driver");
++MODULE_AUTHOR("Benjamin Tissoires <benjamin.tissoires@gmail.com>");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/i2c/i2c-hid.h b/include/linux/i2c/i2c-hid.h
+new file mode 100644
+index 0000000..60e411d
+--- /dev/null
++++ b/include/linux/i2c/i2c-hid.h
+@@ -0,0 +1,35 @@
++/*
++ * HID over I2C protocol implementation
++ *
++ * Copyright (c) 2012 Benjamin Tissoires <benjamin.tissoires@gmail.com>
++ * Copyright (c) 2012 Ecole Nationale de l'Aviation Civile, France
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file COPYING in the main directory of this archive for
++ * more details.
++ */
++
++#ifndef __LINUX_I2C_HID_H
++#define __LINUX_I2C_HID_H
++
++#include <linux/types.h>
++
++/**
++ * struct i2chid_platform_data - used by hid over i2c implementation.
++ * @hid_descriptor_address: i2c register where the HID descriptor is stored.
++ *
++ * Note that it is the responsibility of the platform driver (or the acpi 5.0
++ * driver) to setup the irq related to the gpio in the struct i2c_board_info.
++ * The platform driver should also setup the gpio according to the device:
++ *
++ * A typical example is the following:
++ *	irq = gpio_to_irq(intr_gpio);
++ *	hkdk4412_i2c_devs5[0].irq = irq; // store the irq in i2c_board_info
++ *	gpio_request(intr_gpio, "elan-irq");
++ *	s3c_gpio_setpull(intr_gpio, S3C_GPIO_PULL_UP);
++ */
++struct i2c_hid_platform_data {
++	u16 hid_descriptor_address;
++};
++
++#endif /* __LINUX_I2C_HID_H */
+-- 
+1.7.11.7
 
-Yours,
-Linus Walleij
