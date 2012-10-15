@@ -1,160 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802Ab2JOPwJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 11:52:09 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47788 "EHLO bear.ext.ti.com"
+	id S1753051Ab2JOPw3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 11:52:29 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:44803 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751292Ab2JOPwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 11:52:07 -0400
-From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
-To: "Nori, Sekhar" <nsekhar@ti.com>
-CC: "mturquette@linaro.org" <mturquette@linaro.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hilman, Kevin" <khilman@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-keystone@list.ti.com - Linux developers for Keystone family of
-	devices (May contain non-TIers)" <linux-keystone@list.ti.com>,
-        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
-        "Chemparathy, Cyril" <cyril@ti.com>
-Subject: RE: [PATCH v2 09/13] ARM: davinci - update the dm644x soc code to
- use common clk drivers
-Thread-Topic: [PATCH v2 09/13] ARM: davinci - update the dm644x soc code to
- use common clk drivers
-Thread-Index: AQHNp6t77vVliQFxq0CE7FMivrMa2Je0KyOggAGmRQCABLRnYA==
-Date: Mon, 15 Oct 2012 15:51:53 +0000
-Message-ID: <3E54258959B69E4282D79E01AB1F32B704201DE5@DFLE12.ent.ti.com>
-References: <1348683037-9705-1-git-send-email-m-karicheri2@ti.com>
- <1348683037-9705-10-git-send-email-m-karicheri2@ti.com>
- <5076BAA2.6010404@ti.com>
- <3E54258959B69E4282D79E01AB1F32B7041FDB5B@DFLE12.ent.ti.com>
- <5077F466.6020707@ti.com>
-In-Reply-To: <5077F466.6020707@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.50]
-Content-Type: text/plain; charset="utf-8"
+	id S1752723Ab2JOPw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 11:52:28 -0400
+Message-ID: <507C3125.70702@ti.com>
+Date: Mon, 15 Oct 2012 10:52:05 -0500
+From: Dan Murphy <dmurphy@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nishanth Menon <nm@ti.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linus.walleij@stericsson.com>,
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
+Subject: Re: [PATCH] Boottime: A tool for automatic measurement of kernel/bootloader
+ boot time
+References: <1349966545-19340-1-git-send-email-lee.jones@linaro.org> <20121012134542.GH12567@gmail.com> <20121012134813.GK21164@n2100.arm.linux.org.uk> <201210121353.16798.arnd@arndb.de> <20121012140149.GJ12567@gmail.com> <50784729.4030302@ti.com> <20121012164221.GN12567@gmail.com>
+In-Reply-To: <20121012164221.GN12567@gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9FFqF0E025507
 
---Cut----
 
->> Subject: Re: [PATCH v2 09/13] ARM: davinci - update the dm644x soc code to use
->> common clk drivers
->> 
->> >>> You have chosen to keep all clock related data in platform files
->> >>> while using the common clock framework to provide just the
->> >>> infrastructure. If you look at how mxs and spear have been migrated, they have
->> migrated the soc specific clock data to drivers/clk as well.
->> >>> See "drivers/clk/spear/spear3xx_clock.c" or
->> >>> "drivers/clk/mxs/clk-imx23.c
->> >
->> > I have to disagree on this one. I had investigated these code already
->> > and came up with a way that we can re-use code across all of the
->> > davinci platforms as well as other architectures that re-uses the clk hardware IPs.
->> 
->> Which code you are talking about here? Even if you introduce clk-dm644x.c, clk-
->> keystone.c etc in drivers/clk/davinci/ you can reuse the code you introduce in patches 1-
->> 3. I cant see how that will be prevented.
 
-I was talking about re-use of davinci_common_clk_init in drivers/clk/davinci/davinci-clock.c.
-This is meant to be re-used across all of the DaVinci devices.
+On 10/12/2012 11:42 AM, Lee Jones wrote:
+> On Fri, 12 Oct 2012, Dan Murphy wrote:
+>
+>> On 10/12/2012 09:01 AM, Lee Jones wrote:
+>>> On Fri, 12 Oct 2012, Arnd Bergmann wrote:
+>>>
+>>>> On Friday 12 October 2012, Russell King - ARM Linux wrote:
+>>>>>> root@ME:/ cat /sys/kernel/debug/boottime/bootgraph
+>>>>>> [    0.185254] calling  splash+0x0/0x0
+>>>>>> [    2.984335] initcall splash+0x0/0x0 returned 0 after 2799 msecs.
+>>>>>> [    2.984335] calling  autoboot_delay+0x0/0x0
+>>>>>> [    4.089513] initcall autoboot_delay+0x0/0x0 returned 0 after 1105 msecs.
+>>>>>> [    4.089513] calling  load_kernel+0x0/0x0
+>>>>>> [    4.239174] initcall load_kernel+0x0/0x0 returned 0 after 149 msecs.
+>>>>>> [    4.239174] calling  boot_kernel+0x0/0x0
+>>>>>> [    4.276260] initcall boot_kernel+0x0/0x0 returned 0 after 37 msecs.
+>>>>>> [    4.276260] calling  uncompress_ll_init+0x0/0x0
+>>>>>> [    4.276260] initcall uncompress_ll_init+0x0/0x0 returned 0 after 0 msecs.
+>>>>>> [    4.276260] Freeing init memory: 0K
+>>>>> Umm, what happened to sysfs not becoming procfs v2?  I thought we had
+>>>>> a fairly strict requirement for "one value per file and not nicely
+>>>>> formatted" for sysfs?
+>>>>>
+>>>> I was thinking the same thing at first, but then I noticed it's actually
+>>>> debugfs, which has no such rules.
+>>> Right. :)
+>>>
+>> OK I don't see when boottime_activate is called.
+>>
+>> Where would this call actually be made from?
+>>
+>> I see the call to deactivate but no call to activate.
+> Here perhaps (Jonas, alerted me to the missing patch):
+>
+> commit 4c49a18bcfd2d041cbad7f41c6e6b39d90008382 (HEAD, refs/heads/dt-snowball-pre-rc1)
+> Author: Jonas Aaberg<jonas.aberg@stericsson.com>
+> Date:   Wed Sep 14 09:29:20 2011 +0200
+>
+>      drivers: clocksource: dbx500-prcmu: Add boottime support
+>
+>      Change-Id: I9b5e3d050131c08c08786ae84cb76619c0525049
+>      Signed-off-by: Jonas Aaberg<jonas.aberg@stericsson.com>
+>      Reviewed-on: http://gerrit.lud.stericsson.com/gerrit/32055
+>
+> diff --git a/drivers/clocksource/clksrc-dbx500-prcmu.c b/drivers/clocksource/clksrc-dbx500-prcmu.c
+> index c26c369..0069cd9 100644
+> --- a/drivers/clocksource/clksrc-dbx500-prcmu.c
+> +++ b/drivers/clocksource/clksrc-dbx500-prcmu.c
+> @@ -14,6 +14,7 @@
+>    */
+>   #include<linux/clockchips.h>
+>   #include<linux/clksrc-dbx500-prcmu.h>
+> +#include<linux/boottime.h>
+>
+>   #include<asm/sched_clock.h>
+>
+> @@ -68,6 +69,23 @@ static u32 notrace dbx500_prcmu_sched_clock_read(void)
+>
+>   #endif
+>
+> +#ifdef CONFIG_BOOTTIME
+> +static unsigned long __init boottime_get_time(void)
+> +{
+> +	return div_s64(clocksource_cyc2ns(clocksource_dbx500_prcmu.read(
+> +						&clocksource_dbx500_prcmu),
+> +					  clocksource_dbx500_prcmu.mult,
+> +					  clocksource_dbx500_prcmu.shift),
+> +		       1000);
+> +}
+> +
+> +static struct boottime_timer __initdata boottime_timer = {
+> +	.init     = NULL,
+> +	.get_time = boottime_get_time,
+> +	.finalize = NULL,
+> +};
+> +#endif
+> +
+>   void __init clksrc_dbx500_prcmu_init(void __iomem *base)
+>   {
+>   	clksrc_dbx500_timer_base = base;
+> @@ -90,4 +108,6 @@ void __init clksrc_dbx500_prcmu_init(void __iomem *base)
+>   			 32, RATE_32K);
+>   #endif
+>   	clocksource_register_hz(&clocksource_dbx500_prcmu, RATE_32K);
+> +
+> +	boottime_activate(&boottime_timer);
+>   }
+>
 
->> 
->> > spear3xx_clock.c has initialization code for each of the platforms and
->> > so is the case with imx23.c.
->> 
->> By each of the platforms, you mean they all cater to a family of devices? This depends on
->> how close together the family of devices are.
->> Otherwise, there would be a file per soc. DM644x also represents a family for that matter.
->> 
->> > By using platform_data approach, we are able to define clks for each of the SoC and
->> then use davinci_common_clk_init() to do initialize the clk drivers based on platform
->> data.
->> 
->> You need to define and register the clocks present on each SoC either which way. I don't
->> see why just the platform_data approach allows this.
->> And looking closely, you have defined platform data, but don't actually have a platform
->> device, making things more confusing.
->> 
+OK So has this been validated and tested on any other IC then a ST part?
+This boottime_activate patch seems to be only for the dbx500.  If this 
+is supposed to be a generic solution I would expect
+a generic patch for ARM to enable boot time activation.
 
-Ok. There are multiple ways to implement this software. We had discussed this
-internally and picked the platform_data approach. The clk drivers are written not
-following the platform driver model. But I don't see why we can't use platform data
-to configure this drivers. Down below, you have made two interesting points, one is
-ARM code reduction. This patch already does this by moving the API that initializes
-the clk drivers (davinci_common_clk_init()) out of ARM to drivers/clk/davinci. So
-this + removal of existing clk driver under arm/mach-davinci/clock.[ch], we have
-achieved this goal. The second point is the moving of SoC specific clk data out of SoC
-code to drive. Are you 100% sure this is the right thing to do for these drivers. If so,
-I can start working on this change right away. As I am working on this as a background
-activity, I want to be double or triple sure before doing the rework of these patches :).
-So please confirm.
+Have you profiled how much time the boot time logging has added to the 
+over all boot?
+Also the boottime commit message should explain a little more what it is 
+measuring.
+i.e.  This patch enables logging the boot time from point x to point y 
+for the kernel only.  This does not include init.
 
->> > Later once we migrate to device tree, davinci_common_clk_init() will
->> > go way and also the clk structures defined in the SoC file. I have prototyped this on
->> one of the device that I am working on. davinci_common_clk_init() will be replaced with a
->> of_davinci_clk_init() that will use device tree to get all of the platform data for the clk
->> providers and do the initialization based on that. See highbank_clocks_init() in clk-
->> highbank.c. I have used this model for device tree based clk initialization.
->> 
->> I don't think we should wait till DT migration to get rid of clock data from platform code.
->> For many of the older DaVinci platforms, DT migration is a big if and when. This approach
->> you gave above might work for newer DT-only platforms, but even if there is one board
->> that is not migrated to DT, the entire clock data will have to stay. I have very less hope
->> this will happen for DaVinci (at least in the near term). So, I would rather take the
->> opportunity of common clock tree migration to move clock data out of mach-davinci.
->> 
->> Also, just moving soc-specific clk data to drivers/clk/davinci/* does not impede a future
->> DT conversion, no?
->> 
->> > So it make sense to keep the design the way it is. Otherwise we will
->> > end up writing dm644x_clk_init(), dm355_clk_init(), etc for each of the platforms and
->> these code will get thrown away once we migrate to device tree.
->> 
->> I still don't see why davinci/keystone cannot follow the same approach taken by multiple
->> other socs - spear, mxs and ux500. I am unconvinced that we have a significantly
->> different case.
->> 
->> >>> ". I feel the
->> >>> latter way is better and I also think it will simplify some of the
->> >>> look-up infrastructure you had to build. This will also help some real code reduction
->> from arch/arm/mach-davinci/.
->> >>>
->> >
->> > The look-up infrastructure is pretty much re-use of the existing code base in SoC
->> specific file.
->> 
->> Yes, but that's no reason to keep maintaining it.
->> 
->> > About code reduction, I can't say I agree, as we need to add platform_specific clock
->> initialization code if we follow spear3xx_clock.c model and end up probably adding more
->> code.
->> > SoC specific file (for example dm644x.c) has only data structures and all of SoC will re-
->> use davinci_common_clk_init() to do the initialization. So I am not sure how you conclude
->> we will have code reduction?
->> 
->> Is about code reduction from arch/arm/. That's what ARM community is working towards.
->> 
->> Thanks,
->> Sekhar
->> 
->> PS: When replying, can you please hit an enter after every 70 or so characters.
->> Otherwise quoting from your mails is becoming very difficult. I tried manually adjusting it
->> but finally gave up.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+What about adding the boot time from the init sequence to init complete?
+
