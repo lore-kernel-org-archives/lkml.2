@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603Ab2JON2t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 09:28:49 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43791 "EHLO
+	id S1753540Ab2JON2q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 09:28:46 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43790 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753391Ab2JON2o (ORCPT
+	with ESMTP id S1753353Ab2JON2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Oct 2012 09:28:44 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
@@ -14,9 +14,9 @@ To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
         <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
         <linux-omap@vger.kernel.org>
 CC: <sshtylyov@mvista.com>
-Subject: [PATCH v4 6/7] usb: dwc3-omap: Minor fixes to get dt working
-Date: Mon, 15 Oct 2012 18:57:59 +0530
-Message-ID: <1350307680-24938-7-git-send-email-kishon@ti.com>
+Subject: [PATCH v4 7/7] usb: dwc3: core: add dt support for dwc3 core
+Date: Mon, 15 Oct 2012 18:58:00 +0530
+Message-ID: <1350307680-24938-8-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1350307680-24938-1-git-send-email-kishon@ti.com>
 References: <1350307680-24938-1-git-send-email-kishon@ti.com>
@@ -26,72 +26,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Includes few minor fixes in dwc3-omap like populating the compatible
-string in a correct way, extracting the utmi-mode property properly and
-changing the index of get_irq since irq of core is removed from hwmod
-entry.
-Also updated the documentation with dwc3-omap device tree binding
-information.
+Added dwc3 support for dwc3 core and update the documentation with
+device tree binding information.
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/usb/dwc3/dwc3-omap.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ Documentation/devicetree/bindings/usb/dwc3.txt |   23 +++++++++++++++++++++++
+ drivers/usb/dwc3/core.c                        |   14 ++++++++++++--
+ 2 files changed, 35 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/usb/dwc3.txt
 
-diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index b84ddf3..10aad46 100644
---- a/drivers/usb/dwc3/dwc3-omap.c
-+++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -318,11 +318,10 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
- 	struct resource		*res;
- 	struct device		*dev = &pdev->dev;
+diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
+new file mode 100644
+index 0000000..9ec9316
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/dwc3.txt
+@@ -0,0 +1,23 @@
++synopsys DWC3 CORE
++
++DWC3- USB3 CONTROLLER
++
++Required properties:
++ - compatible: must be "synopsys,dwc3"
++ - reg : Address and length of the register set for the device
++ - interrupts: Interrupts used by the dwc3 controller.
++ - interrupt-parent: the phandle for the interrupt controller that
++   services interrupts for this device.
++
++Optional properties:
++ - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
++
++This is usually a subnode to DWC3 glue to which it is connected.
++
++dwc3@4a030000 {
++	compatible = "synopsys,dwc3";
++	reg = <0x4a030000 0xcfff>;
++	interrupts = <0 92 4>
++	interrupt-parent = <&gic>
++	tx-fifo-resize;
++};
+diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+index b923183..c76d8e9 100644
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -491,8 +491,7 @@ static int __devinit dwc3_probe(struct platform_device *pdev)
+ 	else
+ 		dwc->maximum_speed = DWC3_DCFG_SUPERSPEED;
  
--	int			size;
- 	int			ret = -ENOMEM;
- 	int			irq;
+-	if (of_get_property(node, "tx-fifo-resize", NULL))
+-		dwc->needs_fifo_resize = true;
++	dwc->needs_fifo_resize = of_property_read_bool(node, "tx-fifo-resize");
  
--	const u32		*utmi_mode;
-+	u32			utmi_mode;
- 	u32			reg;
+ 	pm_runtime_enable(dev);
+ 	pm_runtime_get_sync(dev);
+@@ -619,11 +618,22 @@ static int __devexit dwc3_remove(struct platform_device *pdev)
+ 	return 0;
+ }
  
- 	void __iomem		*base;
-@@ -336,13 +335,13 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, omap);
- 
--	irq = platform_get_irq(pdev, 1);
-+	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0) {
- 		dev_err(dev, "missing IRQ resource\n");
- 		return -EINVAL;
- 	}
- 
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
- 		dev_err(dev, "missing memory base resource\n");
- 		return -EINVAL;
-@@ -389,9 +388,8 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
- 
- 	reg = dwc3_omap_readl(omap->base, USBOTGSS_UTMI_OTG_STATUS);
- 
--	utmi_mode = of_get_property(node, "utmi-mode", &size);
--	if (utmi_mode && size == sizeof(*utmi_mode)) {
--		reg |= *utmi_mode;
-+	if (!of_property_read_u32(node, "utmi-mode", &utmi_mode)) {
-+		reg |= utmi_mode;
- 	} else {
- 		if (!pdata) {
- 			dev_dbg(dev, "missing platform data\n");
-@@ -469,7 +467,7 @@ static int __devexit dwc3_omap_remove(struct platform_device *pdev)
- 
- static const struct of_device_id of_dwc3_matach[] = {
- 	{
--		"ti,dwc3",
-+		.compatible =	"ti,dwc3"
++#ifdef CONFIG_OF
++static const struct of_device_id of_dwc3_match[] = {
++	{
++		.compatible = "synopsys,dwc3"
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(of, of_dwc3_match);
++#endif
++
+ static struct platform_driver dwc3_driver = {
+ 	.probe		= dwc3_probe,
+ 	.remove		= __devexit_p(dwc3_remove),
+ 	.driver		= {
+ 		.name	= "dwc3",
++		.of_match_table	= of_match_ptr(of_dwc3_match),
  	},
- 	{ },
  };
+ 
 -- 
 1.7.9.5
 
