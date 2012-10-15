@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557Ab2JOIfP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 04:35:15 -0400
-Received: from smtp2.infineon.com ([217.10.60.23]:41724 "EHLO
-	smtp2.infineon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab2JOIfN convert rfc822-to-8bit (ORCPT
+	id S1751659Ab2JOIfS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 04:35:18 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:55408 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237Ab2JOIfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 04:35:13 -0400
-X-SBRS: None
-From: <Peter.Huewe@infineon.com>
-To: <jgunthorpe@obsidianresearch.com>, <key@linux.vnet.ibm.com>
-CC: <tpmdd-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>
-Subject: RE: [tpmdd-devel] [PATCH] TPM: Let the tpm char device be openable
-	multiple times
-Thread-Topic: [tpmdd-devel] [PATCH] TPM: Let the tpm char device be openable
-	multiple times
-Thread-Index: AQHNn2Y1yFzAZfQ3OkOolIErIs1buZeyqZsAgANuTgCABAh+sA==
-Date: Mon, 15 Oct 2012 08:35:09 +0000
-Message-ID: <74A44E99E3274B4CB570415926B37D440ED140@MUCSE501.eu.infineon.com>
-References: <20120930233345.GJ30637@obsidianresearch.com>
-	<20121010163324.GB5013@ennui.austin.ibm.com>
- <20121012205658.GM4124@obsidianresearch.com>
-In-Reply-To: <20121012205658.GM4124@obsidianresearch.com>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.8.248]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 15 Oct 2012 04:35:16 -0400
+From: Hideki EIRAKU <hdk@igel.co.jp>
+To: Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Katsuya MATSUBARA <matsu@igel.co.jp>,
+        Damian Hobson-Garcia <dhobsong@igel.co.jp>,
+        Hideki EIRAKU <hdk@igel.co.jp>
+Subject: [PATCH v4 0/2] Renesas IPMMU driver for sh7372
+Date: Mon, 15 Oct 2012 17:34:51 +0900
+Message-Id: <1350290093-998-1-git-send-email-hdk@igel.co.jp>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------Original Message-----
-> From: Jason Gunthorpe [mailto:jgunthorpe@obsidianresearch.com] 
+This is the Renesas IPMMU driver, IOMMU API implementation and IPMMU
+device support for sh7372 (AP4EVB and Mackerel).
 
-> Using open/close is an interesting idea, but it wouldn't work. open()
-> is coded to return EBUSY if another process has it open, rather than
-> block, and spinning on open would be unacceptable.
+The IPMMU module supports the MMU function and the PMB function.  The
+MMU function provides address translation by pagetable compatible with
+ARMv6.  The PMB function provides address translation including
+tile-linear translation.  This is implementation of the MMU function.
 
-Hmm, maybe write a small pass through program which opens /dev/tpm once and accepts its data via a socket or pipe?
+v4:
+- Rebased on 3.7-rc1.
+- Use address space size instead of page table size in config.
+- Use Kconfig default value instead of #ifdef-#define-#endif.
+v3:
+- Rebased on 3.6-rc5.
+- Simplify configs.  SHMOBILE_IPMMU is now selected by setting
+  SHMOBILE_IOMMU.
+- Remove weak symbols.
+- Use drvdata to store private driver data.
+- Make a function for writing to a register of IPMMU.
+- Add a lock to accessing the tlb_enabled member.
+- Make unmap work correctly with size larger than map size.
+- Free L2 page table when 1MiB page is mapped or unmapped.
+- Add VEU devices as IP blocks on the ICB.
+v2:
+- Rebased on v3.6-rc1.
+- Make variable names clear.
+- Page table size can now be selected by config.
 
-Thanks,
-Peter
+Hideki EIRAKU (2):
+  iommu/shmobile: Add iommu driver for Renesas IPMMU modules
+  ARM: mach-shmobile: sh7372: Add IPMMU device
 
+ arch/arm/mach-shmobile/Kconfig              |    6 +
+ arch/arm/mach-shmobile/Makefile             |    3 +
+ arch/arm/mach-shmobile/board-ap4evb.c       |    5 +
+ arch/arm/mach-shmobile/board-mackerel.c     |    5 +
+ arch/arm/mach-shmobile/include/mach/ipmmu.h |   16 ++
+ arch/arm/mach-shmobile/ipmmu.c              |  150 ++++++++++++
+ arch/arm/mach-shmobile/setup-sh7372.c       |   26 ++
+ drivers/iommu/Kconfig                       |   56 +++++
+ drivers/iommu/Makefile                      |    1 +
+ drivers/iommu/shmobile-iommu.c              |  352 +++++++++++++++++++++++++++
+ 10 files changed, 620 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-shmobile/include/mach/ipmmu.h
+ create mode 100644 arch/arm/mach-shmobile/ipmmu.c
+ create mode 100644 drivers/iommu/shmobile-iommu.c
 
