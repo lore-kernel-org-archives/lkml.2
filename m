@@ -1,105 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535Ab2JOGgI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 02:36:08 -0400
-Received: from linux-sh.org ([111.68.239.195]:45785 "EHLO linux-sh.org"
+	id S1753225Ab2JOG4S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 02:56:18 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:46716 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751096Ab2JOGgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 02:36:06 -0400
-Date: Mon, 15 Oct 2012 15:35:58 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] sh updates for 3.7-rc2
-Message-ID: <20121015063557.GB32566@linux-sh.org>
+	id S1752175Ab2JOG4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 02:56:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Pavel Machek <pavel@ucw.cz>, Daniel Walter <sahne@0x90.at>
+Cc: linux-pm@vger.kernel.org, kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] power: replace strict_str* with kstrto*
+Date: Mon, 15 Oct 2012 08:59:56 +0200
+Message-ID: <1860757.uv0ZbIMsfa@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20120927123156.GA25811@elf.ucw.cz>
+References: <20120926201506.GD1244@0x90.at> <20120927123156.GA25811@elf.ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
+On Thursday 27 of September 2012 14:31:56 Pavel Machek wrote:
+> On Wed 2012-09-26 22:15:06, Daniel Walter wrote:
+> > power: replace strict_strtoul with kstrtoul
+> > 
+> > Signed-off-by: Daniel Walter <sahne@0x90.at>
+> 
+> ACK.
 
-  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
+Thanks!  I'll queue it up for v3.8 when I get back home from the current trip.
 
-are available in the git repository at:
+Rafael
 
-  git://github.com/pmundt/linux-sh tags/sh-for-linus
 
-for you to fetch changes up to 0dd4d5cbe4c38165dc9b3ad329ebb23f24d74fdb:
-
-  sh: Fix up more fallout from pointless ARM __iomem churn. (2012-10-15 14:08:48 +0900)
-
-----------------------------------------------------------------
-SuperH updates for 3.7-rc2
-
-----------------------------------------------------------------
-David Howells (1):
-      UAPI: (Scripted) Disintegrate arch/sh/include/asm
-
-Paul Mundt (3):
-      Merge tag 'disintegrate-sh-20121009' of git://git.infradead.org/users/dhowells/linux-headers into sh-latest
-      sh: Wire up kcmp syscall.
-      sh: Fix up more fallout from pointless ARM __iomem churn.
-
- arch/sh/include/asm/Kbuild                      | 11 ----
- arch/sh/include/asm/hw_breakpoint.h             |  4 +-
- arch/sh/include/asm/posix_types.h               |  8 ---
- arch/sh/include/asm/ptrace.h                    | 34 +----------
- arch/sh/include/asm/ptrace_32.h                 | 75 +-----------------------
- arch/sh/include/asm/ptrace_64.h                 | 12 +---
- arch/sh/include/asm/setup.h                     |  5 +-
- arch/sh/include/asm/types.h                     |  5 +-
- arch/sh/include/asm/unistd.h                    |  9 +--
- arch/sh/include/uapi/asm/Kbuild                 | 22 +++++++
- arch/sh/include/{ => uapi}/asm/auxvec.h         |  0
- arch/sh/include/{ => uapi}/asm/byteorder.h      |  0
- arch/sh/include/{ => uapi}/asm/cachectl.h       |  0
- arch/sh/include/{ => uapi}/asm/cpu-features.h   |  0
- arch/sh/include/{ => uapi}/asm/ioctls.h         |  0
- arch/sh/include/uapi/asm/posix_types.h          |  7 +++
- arch/sh/include/{ => uapi}/asm/posix_types_32.h |  0
- arch/sh/include/{ => uapi}/asm/posix_types_64.h |  0
- arch/sh/include/uapi/asm/ptrace.h               | 34 +++++++++++
- arch/sh/include/uapi/asm/ptrace_32.h            | 77 +++++++++++++++++++++++++
- arch/sh/include/uapi/asm/ptrace_64.h            | 14 +++++
- arch/sh/include/uapi/asm/setup.h                |  1 +
- arch/sh/include/{ => uapi}/asm/sigcontext.h     |  0
- arch/sh/include/{ => uapi}/asm/signal.h         |  0
- arch/sh/include/{ => uapi}/asm/sockios.h        |  0
- arch/sh/include/{ => uapi}/asm/stat.h           |  0
- arch/sh/include/{ => uapi}/asm/swab.h           |  0
- arch/sh/include/uapi/asm/types.h                |  1 +
- arch/sh/include/uapi/asm/unistd.h               |  7 +++
- arch/sh/include/{ => uapi}/asm/unistd_32.h      |  3 +-
- arch/sh/include/{ => uapi}/asm/unistd_64.h      |  3 +-
- arch/sh/kernel/syscalls_32.S                    |  1 +
- arch/sh/kernel/syscalls_64.S                    |  1 +
- drivers/sh/intc/access.c                        | 45 +++++++++------
- drivers/sh/intc/chip.c                          |  4 +-
- drivers/tty/serial/sh-sci.c                     |  3 +-
- 36 files changed, 210 insertions(+), 176 deletions(-)
- rename arch/sh/include/{ => uapi}/asm/auxvec.h (100%)
- rename arch/sh/include/{ => uapi}/asm/byteorder.h (100%)
- rename arch/sh/include/{ => uapi}/asm/cachectl.h (100%)
- rename arch/sh/include/{ => uapi}/asm/cpu-features.h (100%)
- create mode 100644 arch/sh/include/uapi/asm/hw_breakpoint.h
- rename arch/sh/include/{ => uapi}/asm/ioctls.h (100%)
- create mode 100644 arch/sh/include/uapi/asm/posix_types.h
- rename arch/sh/include/{ => uapi}/asm/posix_types_32.h (100%)
- rename arch/sh/include/{ => uapi}/asm/posix_types_64.h (100%)
- create mode 100644 arch/sh/include/uapi/asm/ptrace.h
- create mode 100644 arch/sh/include/uapi/asm/ptrace_32.h
- create mode 100644 arch/sh/include/uapi/asm/ptrace_64.h
- create mode 100644 arch/sh/include/uapi/asm/setup.h
- rename arch/sh/include/{ => uapi}/asm/sigcontext.h (100%)
- rename arch/sh/include/{ => uapi}/asm/signal.h (100%)
- rename arch/sh/include/{ => uapi}/asm/sockios.h (100%)
- rename arch/sh/include/{ => uapi}/asm/stat.h (100%)
- rename arch/sh/include/{ => uapi}/asm/swab.h (100%)
- create mode 100644 arch/sh/include/uapi/asm/types.h
- create mode 100644 arch/sh/include/uapi/asm/unistd.h
- rename arch/sh/include/{ => uapi}/asm/unistd_32.h (99%)
- rename arch/sh/include/{ => uapi}/asm/unistd_64.h (99%)
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
