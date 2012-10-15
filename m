@@ -1,70 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab2JOXpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 19:45:15 -0400
-Received: from mail.servus.at ([193.170.194.20]:42443 "EHLO mail.servus.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752237Ab2JOXpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 19:45:13 -0400
-Message-ID: <507CA000.5040905@oberhumer.com>
-Date: Tue, 16 Oct 2012 01:45:04 +0200
-From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
-Organization: oberhumer.com
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.9) Gecko/20121011 Thunderbird/10.0.9
+	id S1754688Ab2JOXsz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 19:48:55 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49367 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752042Ab2JOXsy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 19:48:54 -0400
+Date: Tue, 16 Oct 2012 00:48:53 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Pavel Roskin <proski@gnu.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Bisected regression in Linux 3.7.0-rc1, hang on login caused by
+ replace_fd()
+Message-ID: <20121015234853.GN2616@ZenIV.linux.org.uk>
+References: <20121015171437.32e9a4ac@mj>
+ <20121015215127.GK2616@ZenIV.linux.org.uk>
+ <20121015191105.2dac4cac@mj>
+ <20121015232705.GM2616@ZenIV.linux.org.uk>
+ <20121015194008.29e38086@mj>
 MIME-Version: 1.0
-To: cover.1349621096.git.markus@oberhumer.co
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Johannes Stezenbach <js@sig21.net>,
-        Richard Weinberger <richard.weinberger@gmail.com>
-Subject: Re: [PATCH 0/3] Update LZO compression
-References: <507C61B2.9060503@linux.vnet.ibm.com>
-In-Reply-To: <507C61B2.9060503@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121015194008.29e38086@mj>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-10-15 21:19, Seth Jennings wrote:
->> As requested by akpm I am sending my "lzo-update" branch at
->>
->>   git://github.com/markus-oberhumer/linux.git lzo-update
->>
->> to lkml as a patch series created by "git format-patch -M v3.5..lzo-update".
->>
->> You can also browse the branch at
->>
->>   https://github.com/markus-oberhumer/linux/compare/lzo-update
->>
->> and review the three patches at
->>
->>   https://github.com/markus-oberhumer/linux/commit/7c979cebc0f93dc692b734c12665a6824d219c20
->>   https://github.com/markus-oberhumer/linux/commit/10f6781c8591fe5fe4c8c733131915e5ae057826
->>   https://github.com/markus-oberhumer/linux/commit/5f702781f158cb59075cfa97e5c21f52275057f1
+On Mon, Oct 15, 2012 at 07:40:08PM -0400, Pavel Roskin wrote:
+> On Tue, 16 Oct 2012 00:27:05 +0100
+> Al Viro <viro@ZenIV.linux.org.uk> wrote:
 > 
-> As this relates to my work on zcache, I just tested these patches on PPC64 and
-> they cause the LZO crypto module to fail its self-test:
+> > 	I think I understand what's going on there.  Add
+> > fput(files[0]) after that replace_fd(); we have a leak and while
+> > that's not the right way to fix it, that'd verify if anything else is
+> > going on there.
 > 
-> [    0.521137] alg: comp: Compression test 1 failed for lzo-generic: output len = 62
-> 
-> I built the exact same kernel for x86_64 and all is fine.  I suspect an endianness
-> related bug, but I haven't looked at the code that closely yet.
-> 
-> Any ideas?  I'd be happy to test any potential fixes.
+> Yes, it's working now!  No more hang on login!
 
-The crypto LZO test vectors had to be updated - this should land in linux-next
-soon (or you can just pull from my branch).
+That should be closer to the final variant.
 
-BTW, this cannot have worked on x86_64 (or any other arch), so you probably
-tested the wrong kernel.
-
-Cheers,
-Markus
-
-> Seth
-
--- 
-Markus Oberhumer, <markus@oberhumer.com>, http://www.oberhumer.com/
+diff --git a/fs/coredump.c b/fs/coredump.c
+index fd37fac..ce47379 100644
+--- a/fs/coredump.c
++++ b/fs/coredump.c
+@@ -450,11 +450,12 @@ static int umh_pipe_setup(struct subprocess_info *info, struct cred *new)
+ 
+ 	cp->file = files[1];
+ 
+-	replace_fd(0, files[0], 0);
++	err = replace_fd(0, files[0], 0);
++	fput(files[0]);
+ 	/* and disallow core files too */
+ 	current->signal->rlim[RLIMIT_CORE] = (struct rlimit){1, 1};
+ 
+-	return 0;
++	return err;
+ }
+ 
+ void do_coredump(siginfo_t *siginfo, struct pt_regs *regs)
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 24ab414..61a5336 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -2132,18 +2132,14 @@ static inline void flush_unauthorized_files(const struct cred *cred,
+ 		return;
+ 
+ 	devnull = dentry_open(&selinux_null, O_RDWR, cred);
+-	if (!IS_ERR(devnull)) {
+-		/* replace all the matching ones with this */
+-		do {
+-			replace_fd(n - 1, get_file(devnull), 0);
+-		} while ((n = iterate_fd(files, n, match_file, cred)) != 0);
++	if (IS_ERR(devnull))
++		devnull = NULL;
++	/* replace all the matching ones with this */
++	do {
++		replace_fd(n - 1, devnull, 0);
++	} while ((n = iterate_fd(files, n, match_file, cred)) != 0);
++	if (devnull)
+ 		fput(devnull);
+-	} else {
+-		/* just close all the matching ones */
+-		do {
+-			replace_fd(n - 1, NULL, 0);
+-		} while ((n = iterate_fd(files, n, match_file, cred)) != 0);
+-	}
+ }
+ 
+ /*
