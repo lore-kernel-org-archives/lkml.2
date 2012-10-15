@@ -1,92 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043Ab2JOOrm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 10:47:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42503 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751875Ab2JOOrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 10:47:40 -0400
-Date: Mon, 15 Oct 2012 16:47:36 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] memcg: oom: fix totalpages calculation for
- swappiness==0
-Message-ID: <20121015144736.GI29069@dhcp22.suse.cz>
-References: <20121010141142.GG23011@dhcp22.suse.cz>
- <507BD33C.4030209@jp.fujitsu.com>
- <20121015094907.GE29069@dhcp22.suse.cz>
- <CAHGf_=p4d33t7i5++YHTkc0PbAUckca1oBxR5dZ48EzybKYHgw@mail.gmail.com>
+	id S1751787Ab2JOOxu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 10:53:50 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:35351 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872Ab2JOOxt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 10:53:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHGf_=p4d33t7i5++YHTkc0PbAUckca1oBxR5dZ48EzybKYHgw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <20ADAB092842284E95860F279283C56439C8F5@BGSMSX101.gar.corp.intel.com>
+References: <7103095.833841349851943826.JavaMail.weblogic@epml02>
+	<20ADAB092842284E95860F279283C56439C8F5@BGSMSX101.gar.corp.intel.com>
+Date: Mon, 15 Oct 2012 23:53:48 +0900
+X-Google-Sender-Auth: m2yZOIEnGnF2FH1CRFRB4YuK-zE
+Message-ID: <CAJ0PZbQTR=DD8E-YGUSwtAqNRXrdtf0yoKbPyAksZY6QtjiXgg@mail.gmail.com>
+Subject: Re: [PATCH] extcon : register for cable interest by cable name
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: "Tc, Jenny" <jenny.tc@intel.com>
+Cc: "???" <cw00.choi@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 15-10-12 10:25:14, KOSAKI Motohiro wrote:
-> > diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-> > index 078701f..308fd77 100644
-> > --- a/Documentation/sysctl/vm.txt
-> > +++ b/Documentation/sysctl/vm.txt
-> > @@ -640,6 +640,9 @@ swappiness
-> >  This control is used to define how aggressive the kernel will swap
-> >  memory pages.  Higher values will increase agressiveness, lower values
-> >  decrease the amount of swap.
-> > +The value can be used from the [0, 100] range, where 0 means no swapping
-> > +at all (even if there is a swap storage enabled) while 100 means that
-> > +anonymous pages are reclaimed in the same rate as file pages.
-> 
-> I think this only correct when memcg. Even if swappiness==0, global reclaim swap
-> out anon pages before oom.
+On Thu, Oct 11, 2012 at 7:37 PM, Tc, Jenny <jenny.tc@intel.com> wrote:
+>
+>
+>> Subject: Re: [PATCH] extcon : register for cable interest by cable name
+>>
+>> > There are some scnearios where a driver/framework needs to register
+>> > interest for a particular cable without specifying the extcon device
+>> > name. One such scenario is charger notifications. The platform will
+>> > have charger cabel which will be bound to any extcon device. It's not
+>> > mandatory for the charger driver to know which extcon device it should
+>> > use. This patch enables the support for registering interest for a
+>> > cable just by cable name wihtout specifying the extcon device name
+>> >
+>> > Signed-off-by: Jenny TC <jenny.tc@intel.com>
+>> > ---
+>> []
+>> > +extern struct extcon_dev *register_interest_cable_byname
+>> > +           (struct extcon_specific_cable_nb *extcon_dev,
+>> > +           const char *cable_name, struct notifier_block *nb);
+>>
+>> What about allowing extcon_register_interest() to support the functionality?
+>>
+> register_interest_cable_byname  internally uses extcon_register_interest   function.
+> If we want to use  extcon_register_interest()  in both scenarios,  then we need to define
+> two local functions
 
-Right you are (we really do swap when the file pages are really
-low)! Sorry about the confusion. I kind of became if(global_reclaim)
-block blind...
+Then, you can use recursion. (calling recursively if the extcon_name
+is NULL and when it calls recursively itself, extcon_name should not
+be NULL)
 
-Then this really needs a memcg specific documentation fix. What about
-the following?
----
->From 59a60705abd2faf9e266a4270bbf302001845588 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Mon, 15 Oct 2012 11:43:56 +0200
-Subject: [PATCH] doc: describe memcg swappiness more precisely
+>
+>  extcon_register_interest__ and  register_interest_cable_byname.
+>
+> Then the code would be
+>
+> int extcon_register_interest(struct extcon_specific_cable_nb *obj,
+>                  const char *extcon_name, const char *cable_name,
+>                                 struct notifier_block *nb) {
+>
+>         if (extcon_name == NULL)
+>                 return register_interest_cable_byname(obj,cable_name,nb);
+>         else
+>                 return extcon_register_interest__(obj,extcon_name,cable_name,nb);
+> }
+>
+> Is that fine?
+>
+>> I.e., allowing extcon_register_interest() to accept NULL extcon_name.
+>>
+>>
+>> ps. anyway, usually, the "platforms" have the list of node paths, don't they?
+>>
+> My intention is to make it generic and less dependent on platform data. This way the same consumer
+> driver can work on any platform without looking for extcon dev name in the platform data.
+> For example a charger driver can work on any platform without knowing the extcon provider name for
+> The charger cable.
+>
+>
+>
 
-since fe35004f (mm: avoid swapping out with swappiness==0) memcg reclaim
-stopped swapping out anon pages completely when 0 value is used.
-Although this is somehow expected it hasn't been done for a really long
-time this way and so it is probably better to be explicit about the
-effect. Moreover global reclaim swapps out even when swappiness is 0
-to prevent from OOM killer.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- Documentation/cgroups/memory.txt |    4 ++++
- 1 file changed, 4 insertions(+)
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index c07f7b4..71c4da4 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -466,6 +466,10 @@ Note:
- 5.3 swappiness
- 
- Similar to /proc/sys/vm/swappiness, but affecting a hierarchy of groups only.
-+Please note that unlike the global swappiness, memcg knob set to 0
-+really prevents from any swapping even if there is a swap storage
-+available. This might lead to memcg OOM killer if there are no file
-+pages to reclaim.
- 
- Following cgroups' swappiness can't be changed.
- - root cgroup (uses /proc/sys/vm/swappiness).
 -- 
-1.7.10.4
-
--- 
-Michal Hocko
-SUSE Labs
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab, DMC Business, Samsung Electronics
