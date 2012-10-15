@@ -1,121 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab2JOWeO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 18:34:14 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:4933 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750917Ab2JOWeN (ORCPT
+	id S1753363Ab2JOWhM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 18:37:12 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:45572 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752611Ab2JOWhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 18:34:13 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuAmAGGOfFB5LH33/2dsb2JhbABFhhK0DYRtAoEEgQmCIAEBBAEjDwEjIwULCAMYAgIRFQICFCUDIRMZAodjBQypOII7kFEUgQ2KOBSBU4EpghsyYAOSO4MwgRaPG4MBgUY
-Date: Tue, 16 Oct 2012 09:34:09 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Jaegeuk Kim <jaegeuk.kim@gmail.com>,
-        =?utf-8?B?6rmA7J6s6re5?= <jaegeuk.kim@samsung.com>,
-        viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-Subject: Re: [PATCH 11/16] f2fs: add inode operations for special inodes
-Message-ID: <20121015223409.GE2739@dastard>
-References: <001201cda2f1$633db960$29b92c20$%kim@samsung.com>
- <1350198545.1915.233.camel@kjgkr>
- <A7BD3CDD-330C-498A-BB36-631DE6B9777C@dubeyko.com>
- <201210141519.37752.arnd@arndb.de>
+	Mon, 15 Oct 2012 18:37:08 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Sourav <sourav.poddar@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Felipe Balbi <balbi@ti.com>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, santosh.shilimkar@ti.com,
+        linux-serial@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, alan@linux.intel.com
+Subject: Re: [RFT/PATCH] serial: omap: prevent resume if device is not suspended.
+Organization: Deep Root Systems, LLC
+References: <20120925092118.GJ31374@n2100.arm.linux.org.uk>
+	<CAKdam57bpTJ94Gn=mKVw1Fm-76fVPp3DGjFuNu_HfesybM1hPg@mail.gmail.com>
+	<87ipas2y4h.fsf@deeprootsystems.com>
+	<alpine.DEB.2.00.1210111748010.5736@utopia.booyaka.com>
+	<50784458.9080806@ti.com> <877gqv7imt.fsf@deeprootsystems.com>
+	<20121012164202.GQ28061@n2100.arm.linux.org.uk>
+	<877gqv4lmt.fsf@deeprootsystems.com>
+	<20121012185426.GS28061@n2100.arm.linux.org.uk>
+	<87lifbwhwd.fsf@deeprootsystems.com>
+	<20121012215156.GL30339@atomide.com>
+Date: Mon, 15 Oct 2012 15:37:17 -0700
+In-Reply-To: <20121012215156.GL30339@atomide.com> (Tony Lindgren's message of
+	"Fri, 12 Oct 2012 14:51:56 -0700")
+Message-ID: <87391fs6oy.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201210141519.37752.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 14, 2012 at 03:19:37PM +0000, Arnd Bergmann wrote:
-> On Sunday 14 October 2012, Vyacheslav Dubeyko wrote: 
-> > On Oct 14, 2012, at 11:09 AM, Jaegeuk Kim wrote:
-> > > 2012-10-14 (일), 02:21 +0400, Vyacheslav Dubeyko:
-> > Extended attributes are more flexible way, from my point of view. The xattr gives
-> > possibility to make hint to filesystem at any time and without any dependencies with
-> > application's functional opportunities. Documented way of using such extended attributes
-> > gives to user flexible way of manipulation of filesystem behavior (but I remember that
-> > you don't believe in an user :-)).
-> > 
-> > So, I think that fadvise() and extended attributes can be complementary solutions.
-> 
-> Right. Another option is to have ext4 style attributes, see 
-> http://linux.die.net/man/1/chattr
+Tony Lindgren <tony@atomide.com> writes:
 
-Xattrs are much prefered to more "ext4 style" flags because xattrs
-are filesystem independent. Indeed, some filesystems can't store any
-new "ext4 style" flags without a change of disk format or
-internally mapping them to an xattr. So really, xattrs are the best
-way forward for such hints.
+> * Kevin Hilman <khilman@deeprootsystems.com> [121012 13:34]:
+>>
+>> I'm not conviced (yet) that a mismatch is the root cause.  Yes, that's
+>> what the author of $SUBJECT patch assumed and stated, but I'm not
+>> pursuaded.  
+>> 
+>> If it's an improperly configured mux issue, then the UART will break
+>> whenever the device is actually omap_device_enable'd, whether in the
+>> driver or in the bus layer.
+>
+> I tried booting n800 here with CONFIG_OMAP_MUX disabled, and no
+> change. Serial console output stops right when the console initializes.
 
-> Unlike extended attributes, there is a limited number of those,
-> and they can only be boolean flags, but that might be enough for
-> this particular use case.
+OK, since it's not mux, and since those who actually maintain this
+driver don't seem to be taking care of this, I did some digging today.
 
-A boolean is not sufficient for access policy hints. An extensible
-xattr format is probably the best approach to take here, so that we
-can easily introduce new access policy hints as functionality is
-required. Indeed, an extensible xattr could start with just a
-hot/cold boolean, and grow from there....
+Russell is right.  It's a mismatch between assumed runtime PM state
+(disabled) and actual HW state.
 
-> The main reason I can see against extended attributes is that they are not stored
-> very efficiently in f2fs, unless a lot of work is put into coming up with a good
-> implementation. A single flags bit can trivially be added to the inode in
-> comparison (if it's not there already).
+During init, all omap_devices are idled by default, so that they are
+correctly in the state that the runtime PM framework will later expect
+them to be.  That is, all devices *except* the console UART.  For that
+one, we use the special hwmod flag to not idle/reset the UART since that
+will cause problems during earlyprintk usage, and the switch between
+the earlyprintk console and the real console driver.
 
-That's a deficiency that should be corrected, then, because xattrs
-are very common these days.
+Since the console uart was left enabled during init, it needs to be
+fully enabled and the runtime PM status set accordingly.
 
-And given that stuff like access frequency tracking is being
-implemented at the VFS level, access policy hints should also be VFS
-functionality. A bad filesystem implementation should not dictate
-the interface for generically useful functionality....
+The patch below does this, and works fine on 2420/n810, as well as on
+3530/Overo, 3730/OveroSTORM, 3730/Beagle-XM and 4430/PandaES.
 
-> > Anyway, hardcoding or saving in filesystem list of file extensions is a nasty way. It
-> > can be not safe or hardly understandable by users the way of reconfiguration filesystem 
-> > by means of tunefs or debugfs with the purpose of file extensions addition in such 
-> > "black-box" as TV or smartphones, from my point of view.
-> 
-> It is only a performance hint though, so it is not a correctness issue the
-> file system gets it wrong. In order to do efficient garbage collection, a log
-> structured file system should take all the information it can get about the
-> expected life of data it writes. I agree that the list, even in the form of
-> mkfs time settings, is not a clean abstraction, but in the place of an Android
-> phone manufacturer I would still enable it if it promises a significant
-> performance advantage over not using it. I guess it would be nice if this
-> could be overridden in some form, e.g. using an ioctl on the file as ext4 does.
+Will send patch with a proper changelog shortly,
 
-An xattr on the root inode that holds a list like this is something
-that could be set at mkfs time, but then also updated easily by new
-software packages that are installed...
+Kevin
 
-> We should also take the kinds of access we have seen on a file into account.
-
-Yes, but it should be done at the VFS level, not in the filesystem
-itself. Integrated into the current hot inode/range tracking that is
-being worked on right now, I'd suggest.
-
-IOWs, these access policy issues are not unique to F2FS or it's use
-case. Anything to do with access hints, policy, tracking, file
-classification, etc that can influence data locality, reclaim,
-migration, etc need to be dealt with at the VFS, independently of a
-specific filesystem. Filesystems can make use of that information
-how they please (whether in the kernel or via userspace tools), but
-having filesystem specific interfaces and implementations of the
-same functionality is extremely wasteful. Let's do it once, and do
-it right the first time. ;)
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+diff --git a/arch/arm/mach-omap2/serial.c b/arch/arm/mach-omap2/serial.c
+index 0405c81..37b5dbe 100644
+--- a/arch/arm/mach-omap2/serial.c
++++ b/arch/arm/mach-omap2/serial.c
+@@ -327,6 +327,11 @@ void __init omap_serial_init_port(struct omap_board_data *bdata,
+ 	if ((console_uart_id == bdata->id) && no_console_suspend)
+ 		omap_device_disable_idle_on_suspend(pdev);
+ 
++	if (console_uart_id == bdata->id) {
++		omap_device_enable(pdev);
++		pm_runtime_set_active(&pdev->dev);
++	}
++
+ 	oh->mux = omap_hwmod_mux_init(bdata->pads, bdata->pads_cnt);
+ 
+ 	oh->dev_attr = uart;
