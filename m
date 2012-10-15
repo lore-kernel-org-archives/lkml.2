@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577Ab2JOH5U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 03:57:20 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:50787 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028Ab2JOH5T (ORCPT
+	id S1751793Ab2JOH52 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 03:57:28 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48864 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121Ab2JOH5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 03:57:19 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v4 3/4] fat (exportfs): rebuild directory-inode if fat_dget() fails
-References: <1349598764-3252-1-git-send-email-linkinjeon@gmail.com>
-	<877gqu90x1.fsf@devron.myhome.or.jp>
-	<CAKYAXd_vWenGBzRoh9cv_Qet_znyPhe_2QpBp29mZJqqoKEFgg@mail.gmail.com>
-	<87391i8mny.fsf@devron.myhome.or.jp>
-	<CAKYAXd8xdb+t5ZTKtg0W7VjCuuJfYFDDFMwUZNRN8f8fcttDxQ@mail.gmail.com>
-	<87r4p271uw.fsf@devron.myhome.or.jp>
-	<CAKYAXd-zV+SH4-CqYCxK1Ph34+5CKPKrbG9_rnH1c9rD_wcsng@mail.gmail.com>
-Date: Mon, 15 Oct 2012 16:57:12 +0900
-In-Reply-To: <CAKYAXd-zV+SH4-CqYCxK1Ph34+5CKPKrbG9_rnH1c9rD_wcsng@mail.gmail.com>
-	(Namjae Jeon's message of "Mon, 15 Oct 2012 16:28:30 +0900")
-Message-ID: <87r4p0417r.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Mon, 15 Oct 2012 03:57:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20121015074811.GY2739@dastard>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+	<1349863655-29320-12-git-send-email-zwu.kernel@gmail.com>
+	<20121015074811.GY2739@dastard>
+Date: Mon, 15 Oct 2012 15:57:22 +0800
+Message-ID: <CAEH94LhtOXuiz7FqdiV3+9aoFmwvSbq0ybOyev0dY9veV9wcQg@mail.gmail.com>
+Subject: Re: [RFC v3 11/13] vfs: add 3 new ioctl interfaces
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
+        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
-
->> OK, I think I got where is wrong. If it is the subdir of rootdir,
->> fat_dget() should get the inode of root?
-> That is correct. Whenever fat_dget() is called for sub-directories
-> which is in root folder, we assign root inode as parent inode.
+On Mon, Oct 15, 2012 at 3:48 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Wed, Oct 10, 2012 at 06:07:33PM +0800, zwu.kernel@gmail.com wrote:
+>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 >>
->> So, I guess if parent_logstart == 0, it is BUG().
-> Would you explain more why you think it is BUG() ?
+>>   FS_IOC_GET_HEAT_INFO: return a struct containing the various
+>> metrics collected in btrfs_freq_data structs, and also return a
+>> calculated data temperature based on those metrics. Optionally, retrieve
+>> the temperature from the hot data hash list instead of recalculating it.
+>>
+>>   FS_IOC_GET_HEAT_OPTS: return an integer representing the current
+>> state of hot data tracking and migration:
+>>
+>> 0 = do nothing
+>> 1 = track frequency of access
+>>
+>>   FS_IOC_SET_HEAT_OPTS: change the state of hot data tracking and
+>> migration, as described above.
+> .....
+>> +struct hot_heat_info {
+>> +     __u64 avg_delta_reads;
+>> +     __u64 avg_delta_writes;
+>> +     __u64 last_read_time;
+>> +     __u64 last_write_time;
+>> +     __u32 num_reads;
+>> +     __u32 num_writes;
+>> +     __u32 temperature;
+>> +     __u8 live;
+>> +     char filename[PATH_MAX];
+>
+> Don't put the filename in the ioctl and open the file in the kernel.
+> Have userspace open the file directly and issue the ioctl on the fd
+> that is returned.
+OK, thanks. By the way, do you think that it is necessary to provide
+another new ioctl interface to set the temperature value?
+>
+> Cheers,
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
 
-Because root dentry is never expired until umount. So, fat_dget()
-shouldn't never fail to get inode for subdir of rootdir. Otherwise,
-"stale_rw" will not be working in the case even if there is cache.
 
-I.e. I think we don't need to check parent_logstart == 0.
 
-Thanks.
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Regards,
+
+Zhi Yong Wu
