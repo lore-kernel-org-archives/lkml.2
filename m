@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab2JOLgJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 07:36:09 -0400
+	id S1752602Ab2JOLgO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 07:36:14 -0400
 Received: from mga03.intel.com ([143.182.124.21]:6779 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752411Ab2JOLgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 07:36:06 -0400
+	id S1752421Ab2JOLgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 07:36:11 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,587,1344236400"; 
-   d="scan'208";a="156285270"
+   d="scan'208";a="156285287"
 From: dragos.tatulea@intel.com
 To: cbouatmailru@gmail.com, linux-kernel@vger.kernel.org
-Cc: adrian.hunter@intel.com, octavian.purdila@intel.com
-Subject: [PATCH 2/8] pstore: add debugfs support for causing dumps and panics
-Date: Mon, 15 Oct 2012 14:38:51 +0300
-Message-Id: <1350301137-16912-3-git-send-email-dragos.tatulea@intel.com>
+Cc: adrian.hunter@intel.com, octavian.purdila@intel.com,
+        Dragos Tatulea <dragos.tatulea@intel.com>
+Subject: [PATCH 4/8] pstore: allow storing different type id's in ram backend
+Date: Mon, 15 Oct 2012 14:38:53 +0300
+Message-Id: <1350301137-16912-5-git-send-email-dragos.tatulea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1350301137-16912-1-git-send-email-dragos.tatulea@intel.com>
 References: <1350301137-16912-1-git-send-email-dragos.tatulea@intel.com>
@@ -22,98 +23,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Dragos Tatulea <dragos.tatulea@intel.com>
 
-There are 2 debugfs files:
+Added pstore_type_id in message header when storing to ram.
+On write, take into account the contents of this header and
+set the type accordingly.
 
-	pstore/dump	writing a kmsg dump reason code
-			will cause a dump to persistent
-			storage
-
-	pstore/panic	writing anything will cause
-			a panic
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Dragos Tatulea <dragos.tatulea@intel.com>
 --
- fs/pstore/platform.c |   51 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 51 insertions(+)
+ fs/pstore/ram.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index c4ea778..9d65723 100644
--- a/fs/pstore/platform.c
-++ b/fs/pstore/platform.c
-@@ -33,6 +33,7 @@
- #include <linux/hardirq.h>
- #include <linux/jiffies.h>
- #include <linux/workqueue.h>
-#include <linux/debugfs.h>
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 1a4f6da..e1684ef 100644
+-- a/fs/pstore/ram.c
+++ b/fs/pstore/ram.c
+@@ -157,23 +157,30 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+ 	time->tv_nsec = 0;
  
- #include "internal.h"
+ 	size = persistent_ram_old_size(prz);
+	if (!size)
+		return 0;
+ 	*buf = kmalloc(size, GFP_KERNEL);
+ 	if (*buf == NULL)
+ 		return -ENOMEM;
+ 	memcpy(*buf, persistent_ram_old(prz), size);
+	/* Read header. */
+	sscanf(*buf, "%u" RAMOOPS_KERNMSG_HDR "%lu.%lu",
+		type, &time->tv_sec, &time->tv_nsec);
+	time->tv_nsec *= 1000;
  
-@@ -206,6 +207,54 @@ static int pstore_write_compat(enum pstore_type_id type,
- 	return psi->write_buf(type, reason, id, part, psinfo->buf, size, psi);
+ 	return size;
  }
  
-#ifdef CONFIG_DEBUG_FS
-
-static DEFINE_SPINLOCK(dbg_lock);
-
-static int dbg_dump(void *data, u64 val)
-{
-	unsigned long flags;
-
-	switch (val) {
-	case KMSG_DUMP_PANIC:
-	case KMSG_DUMP_OOPS:
-	case KMSG_DUMP_EMERG:
-	case KMSG_DUMP_RESTART:
-	case KMSG_DUMP_HALT:
-	case KMSG_DUMP_POWEROFF:
-		spin_lock_irqsave(&dbg_lock, flags);
-		kmsg_dump(val);
-		spin_unlock_irqrestore(&dbg_lock, flags);
-		return 0;
-	}
-	return -EINVAL;
-}
-DEFINE_SIMPLE_ATTRIBUTE(dbg_dump_fops, NULL, dbg_dump, "%llu\n");
-
-static int dbg_panic(void *data, u64 val)
-{
-	panic(KERN_EMERG "pstore debugging panic!\n");
-	return 0;
-}
-DEFINE_SIMPLE_ATTRIBUTE(dbg_panic_fops, NULL, dbg_panic, "%llu\n");
-
-static void pstore_debugfs_init(void)
-{
-	struct dentry *root;
-
-	root = debugfs_create_dir("pstore", NULL);
-	debugfs_create_file("dump", S_IWUSR, root, NULL, &dbg_dump_fops);
-	debugfs_create_file("panic", S_IWUSR, root, NULL, &dbg_panic_fops);
-}
-
-#else
-
-static inline void pstore_debugfs_init(void)
-{
-}
-
-#endif
-
- /*
-  * platform specific persistent storage driver registers with
-  * us here. If pstore is already mounted, call the platform
-@@ -257,6 +306,8 @@ int pstore_register(struct pstore_info *psi)
- 		add_timer(&pstore_timer);
+static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
+static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz,
+				     enum pstore_type_id type)
+ {
+ 	char *hdr;
+ 	struct timeval timestamp;
+ 	size_t len;
+ 
+ 	do_gettimeofday(&timestamp);
+	hdr = kasprintf(GFP_ATOMIC, RAMOOPS_KERNMSG_HDR "%lu.%lu\n",
+		(long)timestamp.tv_sec, (long)timestamp.tv_usec);
+	hdr = kasprintf(GFP_ATOMIC, "%u" RAMOOPS_KERNMSG_HDR "%lu.%lu\n",
+		type, (long)timestamp.tv_sec, (long)timestamp.tv_usec);
+ 	WARN_ON_ONCE(!hdr);
+ 	len = hdr ? strlen(hdr) : 0;
+ 	persistent_ram_write(prz, hdr, len);
+@@ -204,9 +211,6 @@ static int notrace ramoops_pstore_write_buf(enum pstore_type_id type,
+ 		return 0;
  	}
  
-	pstore_debugfs_init();
+	if (type != PSTORE_TYPE_DMESG)
+		return -EINVAL;
 
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(pstore_register);
+ 	/* Out of the various dmesg dump types, ramoops is currently designed
+ 	 * to only store crash logs, rather than storing general kernel logs.
+ 	 */
+@@ -226,7 +230,7 @@ static int notrace ramoops_pstore_write_buf(enum pstore_type_id type,
+ 	if (part != 1)
+ 		return -ENOSPC;
+ 
+	hlen = ramoops_write_kmsg_hdr(prz);
+	hlen = ramoops_write_kmsg_hdr(prz, type);
+ 	if (size + hlen > prz->buffer_size)
+ 		size = prz->buffer_size - hlen;
+ 	persistent_ram_write(prz, buf, size);
 - 
 1.7.9.5
 
