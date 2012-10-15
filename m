@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab2JOXkU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 19:40:20 -0400
-Received: from c60.cesmail.net ([216.154.195.49]:35083 "EHLO c60.cesmail.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327Ab2JOXkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 19:40:18 -0400
-Date: Mon, 15 Oct 2012 19:40:08 -0400
-From: Pavel Roskin <proski@gnu.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Bisected regression in Linux 3.7.0-rc1, hang on login caused by
- replace_fd()
-Message-ID: <20121015194008.29e38086@mj>
-In-Reply-To: <20121015232705.GM2616@ZenIV.linux.org.uk>
-References: <20121015171437.32e9a4ac@mj>
-	<20121015215127.GK2616@ZenIV.linux.org.uk>
-	<20121015191105.2dac4cac@mj>
-	<20121015232705.GM2616@ZenIV.linux.org.uk>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754533Ab2JOXmy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 19:42:54 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:33662 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341Ab2JOXmw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 19:42:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <1350343478.4523.7.camel@air.home.fifi.org>
+References: <7i391fto34.fsf@lanthane.pps.jussieu.fr>
+	<20121015231302.GF2739@dastard>
+	<1350343478.4523.7.camel@air.home.fifi.org>
+Date: Tue, 16 Oct 2012 03:42:52 +0400
+Message-ID: <CAMo8BfLp2e_sO=3-++TkjxiUm_syTuxndj5H37YLddYqk-54tg@mail.gmail.com>
+Subject: Re: Write is not atomic?
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Philippe Troin <phil@fifi.org>
+Cc: Dave Chinner <david@fromorbit.com>,
+        Juliusz Chroboczek <jch@pps.jussieu.fr>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Oct 2012 00:27:05 +0100
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
+On Tue, Oct 16, 2012 at 3:24 AM, Philippe Troin <phil@fifi.org> wrote:
+> On Tue, 2012-10-16 at 10:13 +1100, Dave Chinner wrote:
+>> On Mon, Oct 15, 2012 at 11:36:15PM +0200, Juliusz Chroboczek wrote:
+>> > The following fragment of code
+>> >
+>> >     int fd;
+>> >     fd = open("exemple", O_CREAT | O_WRONLY | O_TRUNC, 0666);
+>> >     fork();
+>> >     write(fd, "Ouille", 6);
+>> >     close(fd);
+>
+> can be replaced with:
+>
+>         int fd;
+>         fd = open("exemple", O_CREAT | O_WRONLY | O_TRUNC | O_APPEND, 0666);
+>         fork();
+>         write(fd, "Ouille", 6);
+>         close(fd);
 
-> 	I think I understand what's going on there.  Add
-> fput(files[0]) after that replace_fd(); we have a leak and while
-> that's not the right way to fix it, that'd verify if anything else is
-> going on there.
-
-Yes, it's working now!  No more hang on login!
+Fails the same way as the original. I guess O_APPEND doesn't work this way
+for writes to the shared file descriptor.
 
 -- 
-Regards,
-Pavel Roskin
+Thanks.
+-- Max
