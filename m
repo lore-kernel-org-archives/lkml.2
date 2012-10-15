@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab2JOCsx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 22:48:53 -0400
-Received: from mga14.intel.com ([143.182.124.37]:6529 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753734Ab2JOCsw convert rfc822-to-8bit (ORCPT
+	id S1752605Ab2JODTt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 23:19:49 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:59385 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937Ab2JODTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 22:48:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,585,1344236400"; 
-   d="scan'208";a="156162226"
-From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
-To: "davej@redhat.com" <davej@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>
-CC: "Tang, Guifang" <guifang.tang@intel.com>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>
-Subject: Fix memory leak in cpufreq stats.
-Thread-Topic: Fix memory leak in cpufreq stats.
-Thread-Index: Ac2qf44L6sEdIyqARSu/TKndOmxt0Q==
-Date: Mon, 15 Oct 2012 02:48:28 +0000
-Message-ID: <EE928378561BF1449699C96571234A740FE66C2A@SHSMSX102.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 14 Oct 2012 23:19:48 -0400
 MIME-Version: 1.0
+In-Reply-To: <507A6FA5.1000800@yahoo.es>
+References: <507A6FA5.1000800@yahoo.es>
+Date: Mon, 15 Oct 2012 08:49:47 +0530
+X-Google-Sender-Auth: t9RgsQ2ciUpSxksIRkGLI58i_-0
+Message-ID: <CAOh2x=n+tUxuR4B2c=0uh7a1L0Dx8cz2MOCKv-1=qmmRCYYEWg@mail.gmail.com>
+Subject: Re: [PATCH REGRESSION FIX] dw_dmac: make driver's endianness configurable
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Hein Tibosch <hein_tibosch@yahoo.es>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        spear-devel <spear-devel@list.st.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ludovic.desroches" <ludovic.desroches@atmel.com>,
+        Havard Skinnemoen <havard@skinnemoen.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Oct 14, 2012 at 1:24 PM, Hein Tibosch <hein_tibosch@yahoo.es> wrote:
+> From: Hein Tibosch <hein_tibosch@yahoo.es>
+>
+> The dw_dmac was originally developed for avr32 to be used with the Synopsys
+> DesignWare AHB DMA controller. Starting from 2.6.38, access to the device's i/o
+> memory was done with the little-endian readl/writel functions(1)
+>
+> This broke the driver for the avr32 platform, because it needs big (native)
+> endian accessors.
+> This patch makes the endianness configurable using 'DW_DMAC_BIG_ENDIAN_IO',
+> which will default be true for AVR32
+>
+> I submitted this patch before(2) but then waited for Andy to finish other
+> changes to the same module(3).
+>
+> (1) https://patchwork.kernel.org/patch/608211
+> (2) https://lkml.org/lkml/2012/8/26/148
+> (3) https://lkml.org/lkml/2012/9/21/173
+>
+> Signed-off-by: Hein Tibosch <hein_tibosch@yahoo.es>
 
-Fix memory leak in cpufreq stats.
+Good.
 
-When system enter sleep, non-boot CPUs will be disable.
-Cpufreq stats sysfs is created when the CPU is up, but it is not freed when
-the CPU going down. This will cause memory leak.
-signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
-signed-off-by: guifang tang <guifang.tang@intel.com>
-
-diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-index b40ee14..3998316 100644
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -328,6 +328,7 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
-                cpufreq_update_policy(cpu);
-                break;
-        case CPU_DOWN_PREPARE:
-+       case CPU_DOWN_PREPARE_FROZEN:
-                cpufreq_stats_free_sysfs(cpu);
-                break;
-        case CPU_DEAD:
-
-Br
-XiaoBing Tu
-PSI@System Integration Shanghai
-
-
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
