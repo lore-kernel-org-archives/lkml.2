@@ -1,116 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788Ab2JOJtM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 05:49:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56840 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925Ab2JOJtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 05:49:10 -0400
-Date: Mon, 15 Oct 2012 11:49:07 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] memcg: oom: fix totalpages calculation for
- swappiness==0
-Message-ID: <20121015094907.GE29069@dhcp22.suse.cz>
-References: <20121010141142.GG23011@dhcp22.suse.cz>
- <507BD33C.4030209@jp.fujitsu.com>
+	id S1751922Ab2JOJyU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 05:54:20 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56270 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751605Ab2JOJyS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 05:54:18 -0400
+Message-ID: <507BDD45.1070705@suse.cz>
+Date: Mon, 15 Oct 2012 11:54:13 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <507BD33C.4030209@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mel Gorman <mgorman@suse.de>
+CC: Valdis.Kletnieks@vt.edu, Jiri Slaby <jirislaby@gmail.com>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: kswapd0: excessive CPU usage
+References: <507688CC.9000104@suse.cz> <106695.1349963080@turing-police.cc.vt.edu> <5076E700.2030909@suse.cz> <118079.1349978211@turing-police.cc.vt.edu> <50770905.5070904@suse.cz> <119175.1349979570@turing-police.cc.vt.edu> <5077434D.7080008@suse.cz> <50780F26.7070007@suse.cz> <20121012135726.GY29125@suse.de>
+In-Reply-To: <20121012135726.GY29125@suse.de>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 15-10-12 18:11:24, KAMEZAWA Hiroyuki wrote:
-> (2012/10/10 23:11), Michal Hocko wrote:
-[...]
-> > From 445c2ced957cd77cbfca44d0e3f5056fed252a34 Mon Sep 17 00:00:00 2001
-> >From: Michal Hocko <mhocko@suse.cz>
-> >Date: Wed, 10 Oct 2012 15:46:54 +0200
-> >Subject: [PATCH] memcg: oom: fix totalpages calculation for swappiness==0
-> >
-> >oom_badness takes totalpages argument which says how many pages are
-> >available and it uses it as a base for the score calculation. The value
-> >is calculated by mem_cgroup_get_limit which considers both limit and
-> >total_swap_pages (resp. memsw portion of it).
-> >
-> >This is usually correct but since fe35004f (mm: avoid swapping out
-> >with swappiness==0) we do not swap when swappiness is 0 which means
-> >that we cannot really use up all the totalpages pages. This in turn
-> >confuses oom score calculation if the memcg limit is much smaller
-> >than the available swap because the used memory (capped by the limit)
-> >is negligible comparing to totalpages so the resulting score is too
-> >small. A wrong process might be selected as result.
-> >
-> >The same issue exists for the global oom killer as well but it is not
-> >that problematic as the amount of the RAM is usually much bigger than
-> >the swap space.
-> >
-> >The problem can be worked around by checking swappiness==0 and not
-> >considering swap at all.
-> >
-> >Signed-off-by: Michal Hocko <mhocko@suse.cz>@jp.fujitsu.com>
+On 10/12/2012 03:57 PM, Mel Gorman wrote:
+> mm: vmscan: scale number of pages reclaimed by reclaim/compaction only in direct reclaim
 > 
-> Hm...where should we describe this behavior....
-> Documentation/cgroup/memory.txt "5.3 swappiness" ?
-
-Hmm. The swappiness behavior is consistent with the global knob. On the
-other hand the visible effects are still "stronger" as the environment
-is much more constrained with memcgs so the corner cases are hit more
-frequently. But this is somehow expected so I am not sure whether we
-need to be explicit about this one.
-Maybe we could be more explicit about the swappiness==0 behavior in
-Documentation/sysctl/vm.txt because the current description is quite
-vague as it doesn't say anything about the range. Maybe a patch bellow
-will help to clarify this?
-
-> Anyway, the patch itself seems good.
+> Jiri Slaby reported the following:
 > 
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 	(It's an effective revert of "mm: vmscan: scale number of pages
+> 	reclaimed by reclaim/compaction based on failures".)
+> 	Given kswapd had hours of runtime in ps/top output yesterday in the
+> 	morning and after the revert it's now 2 minutes in sum for the last 24h,
+> 	I would say, it's gone.
+> 
+> The intention of the patch in question was to compensate for the loss of
+> lumpy reclaim. Part of the reason lumpy reclaim worked is because it
+> aggressively reclaimed pages and this patch was meant to be a
+> sane compromise.
+> 
+> When compaction fails, it gets deferred and both compaction and
+> reclaim/compaction is deferred avoid excessive reclaim. However, since
+> commit c6543459 (mm: remove __GFP_NO_KSWAPD), kswapd is woken up each time
+> and continues reclaiming which was not taken into account when the patch
+> was developed.
+> 
+> As it is not taking deferred compaction into account in this path it scans
+> aggressively before falling out and making the compaction_deferred check in
+> compaction_ready. This patch avoids kswapd scaling pages for reclaim and
+> leaves the aggressive reclaim to the process attempting the THP
+> allocation.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/vmscan.c |   10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 2624edc..2b7edfa 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1763,14 +1763,20 @@ static bool in_reclaim_compaction(struct scan_control *sc)
+>  #ifdef CONFIG_COMPACTION
+>  /*
+>   * If compaction is deferred for sc->order then scale the number of pages
+> - * reclaimed based on the number of consecutive allocation failures
+> + * reclaimed based on the number of consecutive allocation failures. This
+> + * scaling only happens for direct reclaim as it is about to attempt
+> + * compaction. If compaction fails, future allocations will be deferred
+> + * and reclaim avoided. On the other hand, kswapd does not take compaction
+> + * deferral into account so if it scaled, it could scan excessively even
+> + * though allocations are temporarily not being attempted.
+>   */
+>  static unsigned long scale_for_compaction(unsigned long pages_for_compaction,
+>  			struct lruvec *lruvec, struct scan_control *sc)
+>  {
+>  	struct zone *zone = lruvec_zone(lruvec);
+>  
+> -	if (zone->compact_order_failed <= sc->order)
+> +	if (zone->compact_order_failed <= sc->order &&
+> +	    !current_is_kswapd())
+>  		pages_for_compaction <<= zone->compact_defer_shift;
+>  	return pages_for_compaction;
+>  }
 
-Thanks!
+Yes, applying this instead of the revert fixes the issue as well.
 
----
->From 712995bc656cb7ad278aad45974b9e23fb524498 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Mon, 15 Oct 2012 11:43:56 +0200
-Subject: [PATCH] doc: describe swappiness more precisely
-
-since fe35004f (mm: avoid swapping out with swappiness==0) reclaim
-stopped swapping out anon pages completely when 0 value is used.
-Although this is somehow expected it hasn't been done for a really long
-time this way and so it is probably better to be explicit about the
-effect.
-While we are at it also mention the upper limit and its effect.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- Documentation/sysctl/vm.txt |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index 078701f..308fd77 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -640,6 +640,9 @@ swappiness
- This control is used to define how aggressive the kernel will swap
- memory pages.  Higher values will increase agressiveness, lower values
- decrease the amount of swap.
-+The value can be used from the [0, 100] range, where 0 means no swapping
-+at all (even if there is a swap storage enabled) while 100 means that
-+anonymous pages are reclaimed in the same rate as file pages.
- 
- The default value is 60.
- 
+thanks,
 -- 
-1.7.10.4
-
--- 
-Michal Hocko
-SUSE Labs
+js
+suse labs
