@@ -1,67 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab2JOB20 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 21:28:26 -0400
-Received: from bosmailout16.eigbox.net ([66.96.185.16]:39507 "EHLO
-	bosmailout16.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab2JOB2Z (ORCPT
+	id S1753422Ab2JOBaV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 21:30:21 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44423 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752555Ab2JOBaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 21:28:25 -0400
-X-Greylist: delayed 2875 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Oct 2012 21:28:25 EDT
-X-Authority-Analysis: v=2.0 cv=LIXRtuq9 c=1 sm=1
- a=xCnBQGcVMpKAnt6pssLkvQ==:17 a=bc2JKO6qiGsA:10 a=jAXA38P_poEA:10
- a=nlncmwdmcoAA:10 a=IkcTkHD0fZMA:10 a=cRAXhCL3cXIA:10
- a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=5z8PQ-8DrPULJUTkwQsA:9 a=QEXdDO2ut3YA:10
- a=x8qw8EAkfcRkIpZA8Q87Bg==:117
-X-EN-OrigOutIP: 10.20.18.7
-X-EN-IMPSID: BCgU1k001099BUA01CgUkV
-Message-ID: <507B5B3E.60102@yahoo.es>
-Date: Mon, 15 Oct 2012 08:39:26 +0800
-From: Hein Tibosch <hein_tibosch@yahoo.es>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Sun, 14 Oct 2012 21:30:18 -0400
+Date: Mon, 15 Oct 2012 02:30:09 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-arch@vger.kernel.org,
+        David Miller <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [RFC][CFT][CFReview] execve and kernel_thread unification work
+Message-ID: <20121015013009.GB2616@ZenIV.linux.org.uk>
+References: <20121001213809.GA31155@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        viresh kumar <viresh.kumar@linaro.org>,
-        spear-devel <spear-devel@list.st.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "ludovic.desroches" <ludovic.desroches@atmel.com>,
-        Havard Skinnemoen <havard@skinnemoen.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH REGRESSION FIX] dw_dmac: make driver's endianness configurable
-References: <507A6FA5.1000800@yahoo.es> <CAHp75VdaqzoJPwJpQ9U1kpR-egveajeM71FLAxveWHz7gB+6Eg@mail.gmail.com>
-In-Reply-To: <CAHp75VdaqzoJPwJpQ9U1kpR-egveajeM71FLAxveWHz7gB+6Eg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
-X-EN-AuthUser: hein@htibosch.net
-X-EN-OrigIP: 114.79.56.37
-X-EN-OrigHost: unknown
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121001213809.GA31155@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
-On 10/15/2012 4:08 AM, Andy Shevchenko wrote:
-> On Sun, Oct 14, 2012 at 10:54 AM, Hein Tibosch <hein_tibosch@yahoo.es> wrote:
->> From: Hein Tibosch <hein_tibosch@yahoo.es>
->>
->> The dw_dmac was originally developed for avr32 to be used with the Synopsys
->> DesignWare AHB DMA controller. Starting from 2.6.38, access to the device's i/o
->> <snip>
->>  #define dma_readl(dw, name) \
->> -       readl(&(__dw_regs(dw)->name))
->> +       dma_readl_native(&(__dw_regs(dw)->name))
->>  #define dma_writel(dw, name, val) \
->> -       writel((val), &(__dw_regs(dw)->name))
->> +       dma_writel_native((val), &(__dw_regs(dw)->name))
->>
->>  #define channel_set_bit(dw, reg, mask) \
->>         dma_writel(dw, reg, ((mask) << 8) | (mask))
-> Why did you not change this one?
+On Mon, Oct 01, 2012 at 10:38:09PM +0100, Al Viro wrote:
+> [with apologies for folks Cc'd, resent due to mis-autoexpanded l-k address
+> on the original posting ;-/  Mea culpa...]
+> 
+> 	There's an interesting ongoing project around kernel_thread() and
+> friends, including execve() variants.  I really need help from architecture
+> maintainers on that one; I'd been able to handle (and test) quite a few
+> architectures on my own [alpha, arm, m68k, powerpc, s390, sparc, x86, um]
+> plus two more untested [frv, mn10300].  c6x patches had been supplied by
+> Mark Salter; everything else remains to be done.  Right now it's at
+> minus 1.2KLoC, quite a bit of that removed from asm glue and other black magic.
 
-Because "dma_writel" already calls "dma_writel_native"
+Update:
+	* all infrastructure is in mainline now, along with conversion for
+kernel_thread() callbacks to the form that allows really simple model for
+kernel_execve() _without_ flagday changes.
+	* #experimental-kernel_thread is gone; this stuff is in for-next
+now.
+	* a lot of architecture conversions had been done and some are
+even tested.  Currently missing are only 7 - avr32, hexagon, m32r, openrisc,
+score, tile and xtensa.  OTOH, a lot are completely untested.  I've put
+per-architecture stuff into separate branches and I promise never rebase
+those once arch maintainers will be OK with the stuff in them.  IOW, they'll
+be safe to pull into respective architecture trees.
 
+Folks, *please* review the stuff in signal.git#arch-*.  All of them are
+completely independent.  I'll be glad to get ACKs/fixes/replacements/etc.
+I've merged some of those into for-next, but that can change at any time -
+it's not final; for-next will be rebased.  Obviously, I hope to get to
+the situation when all of those branches (plus currently missing ones)
+get into shape that satisfies architecture maintainers.  Once that happens,
+all those branches will be merged into for-next.
+
+I think the model is about final wrt kernel_thread()/kernel_execve()/
+sys_execve().  There's one possible change on top of it, but it's reasonably
+well-isolated from the rest.  As it is, the model to aim for is this:
+	* select GENERIC_KERNEL_THREAD and GENERIC_KERNEL_EXECVE
+	* kill local kernel_thread()/kernel_execve() implementations
+	* generic kernel_thread() will call your copy_thread() with
+NULL regs and fn/arg passed in the pair of arguments that are blindly
+passed all the way through to copy_thread() - usp and stack_size resp.
+In such case copy_thread() should arrange for the newborn to be woken
+up in a function that is very similar to ret_from_fork().  The only
+difference is that between the call of schedule_tail() and jumping into
+the "return from syscall" code it should call fn(arg), using the data
+left for it by copy_thread().
+	* unlike the previous variant, ret_from_kernel_execve() is not
+needed at all; no need to play longjmp()-like games when kernel_thread()
+callbacks had been taught to return normally all the way out when
+kernel_execve() returns 0; any updates of sp/manipulations of register
+windows/etc. will happen without any magic.
+	* provide current_pt_regs() if needed.  Default is
+task_pt_regs(current), but you might want to optimize it and unlike
+task_pt_regs() it must work whenever we are in syscall or in a kernel thread.
+task_pt_regs(task), OTOH, is required to work only when task can be
+interrogated by tracer.
+	* no more syscalls-from-kernel, which often allows for simplifications
+in the syscall entry/exit logics.  I haven't done any of those; up to the
+architecture maintainers.
+
+	One thing to keep in mind is that right now on SMP architectures
+there's the third caller of copy_thread(), besides fork()/clone()/vfork()
+(all pass userland pt_regs, with the address being current_pt_regs()) and
+kernel_thread() (pass NULL pt_regs, kthread creation time).  It's fork_idle()
+and it passes zero-filled pt_regs.  Frankly, I'm not even sure we want to
+call copy_thread() in that case - the stuff set up by it goes nowhere.
+We do that for each possible secondary CPU on SMP and we do *not* expose
+those threads to scheduler.  When CPU gets initialized we have the
+secondary bootstrap take that task_struct as current.  Its kernel stack,
+thread_info, etc. are set up by said secondary bootstrap, overriding whatever
+copy_thread() has done.  Eventually the bootstrap reaches cpu_idle(),
+which is where we schedule away.  switch_to() done by schedule() is what
+completes setting the things up; at that point they are ready to be woken
+up - and not in ret_from_fork(), of course.
+	For the majority of architectures nothing done by copy_thread() in
+that case is used afterwards, so we might as well stop calling it when
+copy_process() is called by fork_idle().  I know of only one dubious case -
+powerpc sets thread->ksp_limit on copy_thread() and I'm not sure if
+that's get overwritten in secondary bootstrap - the value would be still
+correct and I don't see any obvious places where it would be reassigned
+on that codepath.  There might be other cases like that, though.  I would
+argue that for this kind of stuff the right place is arch_dup_task_struct(),
+not copy_thread()...  Hell knows.  Note that we are pretty much hitting
+the random path in copy_thread() in that case - what zeroed pt_regs look
+like to user_regs() is arch-dependent.
+
+	This is the possible change I've mentioned above.  Not sure; I'd
+really like comments on that one.
+
+	Branches in there:
+arch-blackfin - conversion; completely untested
+arch-cris - conversion; completely untested
+arch-h8300 - conversion; completely untested
+arch-microblaze - conversion; completely untested
+arch-sh - conversion; completely untested
+arch-unicore32 - conversion; completely untested
+arch-ia64 - conversion; tested only on ski, which is worth very little
+arch-c6x - followup to mainline; while it's minor, it's pretty much done
+blindly and *really* needs review by maintainer.
+arch-arm - contains heroic fix by rmk and nothing else.  Seems to work fine.
+arch-m68k - minor followup to stuff already in mainline; works on aranym
+arch-parisc - mostly the stuff tested by parisc folks + minor followup
+similar to m68k one.
+arch-s390 - minor followup to mainline; works in hercules
+arch-arm64 - patches from maintainer with minor followup folded
+arch-frv - minor followup to mainline, needs testing
+arch-mn10300 - minor followup to mainline, needs testing
+arch-mips - patches from me and Ralf; works on qemu
+arch-sparc - conversions for sparc32 and sparc64, plus the syscall_noerror
+optimization
+arch-powerpc - minor followups to mainline, need review by maintainers
+
+"Completely untested" in the above reads "no promises it even compiles, let
+alone isn't horribly broken".  Please, treat that as a possible starting
+point for doing the conversion for arch in question.  I might have misread
+the CPU manuals, your switch_to() implementation, etc., or just have been
+temporary insane from digging through dozens of architectures.  Hopefully
+temporary, that is...
+
+And folks, for pity sake, do the remaining seven.  The merge window is
+over, so...
+
+			Al, buggering off to get some VFS work done.
