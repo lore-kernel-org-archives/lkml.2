@@ -1,322 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab2JORUs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 13:20:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:15395 "EHLO mga01.intel.com"
+	id S1754203Ab2JORUy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 13:20:54 -0400
+Received: from antcom.de ([188.40.178.216]:50616 "EHLO chuck.antcom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753812Ab2JORTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 13:19:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,588,1344236400"; 
-   d="scan'208";a="235262034"
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-Subject: [PATCH v3 4/7] swiotlb: Return physical addresses when calling
-	swiotlb_tbl_map_single
-To: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
-        joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
-        fujita.tomonori@lab.ntt.co.jp
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Date: Mon, 15 Oct 2012 10:19:39 -0700
-Message-ID: <20121015171939.25171.25452.stgit@gitlad.jf.intel.com>
-In-Reply-To: <20121015171707.25171.35294.stgit@gitlad.jf.intel.com>
-References: <20121015171707.25171.35294.stgit@gitlad.jf.intel.com>
-User-Agent: StGIT/0.14.2
+	id S1754167Ab2JORUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 13:20:50 -0400
+Message-ID: <507C45EF.7080203@antcom.de>
+Date: Mon, 15 Oct 2012 19:20:47 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Ryan Mallon <rmallon@gmail.com>
+CC: grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        w.sang@pengutronix.de, jbe@pengutronix.de, plagnioj@jcrosoft.com,
+        highguy@gmail.com, broonie@opensource.wolfsonmicro.com
+Subject: Re: [PATCH RFC 1/6 v3] gpio: Add a block GPIO API to gpiolib
+References: <1350069085-13283-1-git-send-email-stigge@antcom.de> <1350069085-13283-2-git-send-email-stigge@antcom.de> <507B9D05.1000204@gmail.com>
+In-Reply-To: <507B9D05.1000204@gmail.com>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change makes it so that swiotlb_tbl_map_single will return a physical
-address instead of a virtual address when called.  The advantage to this once
-again is that we are avoiding a number of virt_to_phys and phys_to_virt
-translations by working with everything as a physical address.
+Hi Ryan,
 
-One change I had to make in order to support using physical addresses is that
-I could no longer trust 0 to be a invalid physical address on all platforms.
-So instead I made it so that ~0 is returned on error.  This should never be a
-valid return value as it implies that only one byte would be available for
-use.
+thank you for your feedback, I will include it, except for some points
+noted below:
 
-In order to clarify things since we now have 2 physical addresses in use
-inside of swiotlb_tbl_map_single I am renaming phys to orig_addr, and
-dma_addr to tlb_addr.  This way is should be clear that orig_addr is
-contained within io_orig_addr and tlb_addr is an address within the
-io_tlb_addr buffer.
+On 10/15/2012 07:20 AM, Ryan Mallon wrote:
+>> +The above described interface concentrates on handling single GPIOs.  However,
+>> +in applications where it is critical to set several GPIOs at once, this
+>> +interface doesn't work well, e.g. bit-banging protocols via grouped GPIO lines.
+>> +Consider a GPIO controller that is connected via a slow I2C line. When
+>> +switching two or more GPIOs one after another, there can be considerable time
+>> +between those events. This is solved by an interface called Block GPIO:
+> 
+> The emulate behaviour of gpio block switches gpios one after the other.
+> Is the problem only solved if the block_get/block_set callbacks can be
+> implemented?
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
----
+Right, this is documented some lines away:
 
- drivers/xen/swiotlb-xen.c |   22 ++++++-------
- include/linux/swiotlb.h   |   11 +++++-
- lib/swiotlb.c             |   78 +++++++++++++++++++++++----------------------
- 3 files changed, 59 insertions(+), 52 deletions(-)
+>> +struct gpio_block *gpio_block_create(unsigned int *gpios, size_t size);
+>> +
+>> +This creates a new block of GPIOs as a list of GPIO numbers with the specified
+>> +size which are accessible via the returned struct gpio_block and the accessor
+>> +functions described below. Please note that you need to request the GPIOs
+>> +separately via gpio_request(). An arbitrary list of globally valid GPIOs can be
+>> +specified, even ranging over several gpio_chips. Actual handling of I/O
+>> +operations will be done on a best effort base, i.e. simultaneous I/O only where
+>> +possible by hardware and implemented in the respective GPIO driver. The number
+>> +of GPIOs in one block is limited to 32 on a 32 bit system, and 64 on a 64 bit
+>> +system. However, several blocks can be defined at once.
+>> +
+>> +unsigned gpio_block_get(struct gpio_block *block);
+>> +void gpio_block_set(struct gpio_block *block, unsigned value);
+>> +
+>> +With those accessor functions, setting and getting the GPIO values is possible,
+>> +analogous to gpio_get_value() and gpio_set_value(). Each bit in the return
+>> +value of gpio_block_get() and in the value argument of gpio_block_set()
+>> +corresponds to a bit specified on gpio_block_create(). Block operations in
+>> +hardware are only possible where the respective GPIO driver implements it,
+>> +falling back to using single GPIO operations where the driver only implements
+>> +single GPIO access.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+... here.
 
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 58db6df..8a6035a 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -338,9 +338,8 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
- 				enum dma_data_direction dir,
- 				struct dma_attrs *attrs)
- {
--	phys_addr_t phys = page_to_phys(page) + offset;
-+	phys_addr_t map, phys = page_to_phys(page) + offset;
- 	dma_addr_t dev_addr = xen_phys_to_bus(phys);
--	void *map;
- 
- 	BUG_ON(dir == DMA_NONE);
- 	/*
-@@ -356,16 +355,16 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
- 	 * Oh well, have to allocate and map a bounce buffer.
- 	 */
- 	map = swiotlb_tbl_map_single(dev, start_dma_addr, phys, size, dir);
--	if (!map)
-+	if (map == SWIOTLB_MAP_ERROR)
- 		return DMA_ERROR_CODE;
- 
--	dev_addr = xen_virt_to_bus(map);
-+	dev_addr = xen_phys_to_bus(map);
- 
- 	/*
- 	 * Ensure that the address returned is DMA'ble
- 	 */
- 	if (!dma_capable(dev, dev_addr, size)) {
--		swiotlb_tbl_unmap_single(dev, map, size, dir);
-+		swiotlb_tbl_unmap_single(dev, phys_to_virt(map), size, dir);
- 		dev_addr = 0;
- 	}
- 	return dev_addr;
-@@ -494,11 +493,12 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
- 		if (swiotlb_force ||
- 		    !dma_capable(hwdev, dev_addr, sg->length) ||
- 		    range_straddles_page_boundary(paddr, sg->length)) {
--			void *map = swiotlb_tbl_map_single(hwdev,
--							   start_dma_addr,
--							   sg_phys(sg),
--							   sg->length, dir);
--			if (!map) {
-+			phys_addr_t map = swiotlb_tbl_map_single(hwdev,
-+								 start_dma_addr,
-+								 sg_phys(sg),
-+								 sg->length,
-+								 dir);
-+			if (map == SWIOTLB_MAP_ERROR) {
- 				/* Don't panic here, we expect map_sg users
- 				   to do proper error handling. */
- 				xen_swiotlb_unmap_sg_attrs(hwdev, sgl, i, dir,
-@@ -506,7 +506,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
- 				sgl[0].dma_length = 0;
- 				return DMA_ERROR_CODE;
- 			}
--			sg->dma_address = xen_virt_to_bus(map);
-+			sg->dma_address = xen_phys_to_bus(map);
- 		} else
- 			sg->dma_address = dev_addr;
- 		sg->dma_length = sg->length;
-diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
-index 8d08b3e..1995f3e 100644
---- a/include/linux/swiotlb.h
-+++ b/include/linux/swiotlb.h
-@@ -34,9 +34,14 @@ enum dma_sync_target {
- 	SYNC_FOR_CPU = 0,
- 	SYNC_FOR_DEVICE = 1,
- };
--extern void *swiotlb_tbl_map_single(struct device *hwdev, dma_addr_t tbl_dma_addr,
--				    phys_addr_t phys, size_t size,
--				    enum dma_data_direction dir);
-+
-+/* define the last possible byte of physical address space as a mapping error */
-+#define SWIOTLB_MAP_ERROR (~(phys_addr_t)0x0)
-+
-+extern phys_addr_t swiotlb_tbl_map_single(struct device *hwdev,
-+					  dma_addr_t tbl_dma_addr,
-+					  phys_addr_t phys, size_t size,
-+					  enum dma_data_direction dir);
- 
- extern void swiotlb_tbl_unmap_single(struct device *hwdev, char *dma_addr,
- 				     size_t size, enum dma_data_direction dir);
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index f8c0d4e..3adc148 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -393,12 +393,13 @@ void swiotlb_bounce(phys_addr_t phys, char *dma_addr, size_t size,
- }
- EXPORT_SYMBOL_GPL(swiotlb_bounce);
- 
--void *swiotlb_tbl_map_single(struct device *hwdev, dma_addr_t tbl_dma_addr,
--			     phys_addr_t phys, size_t size,
--			     enum dma_data_direction dir)
-+phys_addr_t swiotlb_tbl_map_single(struct device *hwdev,
-+				   dma_addr_t tbl_dma_addr,
-+				   phys_addr_t orig_addr, size_t size,
-+				   enum dma_data_direction dir)
- {
- 	unsigned long flags;
--	char *dma_addr;
-+	phys_addr_t tlb_addr;
- 	unsigned int nslots, stride, index, wrap;
- 	int i;
- 	unsigned long mask;
-@@ -462,7 +463,7 @@ void *swiotlb_tbl_map_single(struct device *hwdev, dma_addr_t tbl_dma_addr,
- 				io_tlb_list[i] = 0;
- 			for (i = index - 1; (OFFSET(i, IO_TLB_SEGSIZE) != IO_TLB_SEGSIZE - 1) && io_tlb_list[i]; i--)
- 				io_tlb_list[i] = ++count;
--			dma_addr = (char *)phys_to_virt(io_tlb_start) + (index << IO_TLB_SHIFT);
-+			tlb_addr = io_tlb_start + (index << IO_TLB_SHIFT);
- 
- 			/*
- 			 * Update the indices to avoid searching in the next
-@@ -480,7 +481,7 @@ void *swiotlb_tbl_map_single(struct device *hwdev, dma_addr_t tbl_dma_addr,
- 
- not_found:
- 	spin_unlock_irqrestore(&io_tlb_lock, flags);
--	return NULL;
-+	return SWIOTLB_MAP_ERROR;
- found:
- 	spin_unlock_irqrestore(&io_tlb_lock, flags);
- 
-@@ -490,11 +491,12 @@ found:
- 	 * needed.
- 	 */
- 	for (i = 0; i < nslots; i++)
--		io_tlb_orig_addr[index+i] = phys + (i << IO_TLB_SHIFT);
-+		io_tlb_orig_addr[index+i] = orig_addr + (i << IO_TLB_SHIFT);
- 	if (dir == DMA_TO_DEVICE || dir == DMA_BIDIRECTIONAL)
--		swiotlb_bounce(phys, dma_addr, size, DMA_TO_DEVICE);
-+		swiotlb_bounce(orig_addr, phys_to_virt(tlb_addr), size,
-+			       DMA_TO_DEVICE);
- 
--	return dma_addr;
-+	return tlb_addr;
- }
- EXPORT_SYMBOL_GPL(swiotlb_tbl_map_single);
- 
-@@ -502,9 +504,8 @@ EXPORT_SYMBOL_GPL(swiotlb_tbl_map_single);
-  * Allocates bounce buffer and returns its kernel virtual address.
-  */
- 
--static void *
--map_single(struct device *hwdev, phys_addr_t phys, size_t size,
--	   enum dma_data_direction dir)
-+phys_addr_t map_single(struct device *hwdev, phys_addr_t phys, size_t size,
-+		       enum dma_data_direction dir)
- {
- 	dma_addr_t start_dma_addr = phys_to_dma(hwdev, io_tlb_start);
- 
-@@ -598,12 +599,15 @@ swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 		dma_mask = hwdev->coherent_dma_mask;
- 
- 	ret = (void *)__get_free_pages(flags, order);
--	if (ret && swiotlb_virt_to_bus(hwdev, ret) + size - 1 > dma_mask) {
--		/*
--		 * The allocated memory isn't reachable by the device.
--		 */
--		free_pages((unsigned long) ret, order);
--		ret = NULL;
-+	if (ret) {
-+		dev_addr = swiotlb_virt_to_bus(hwdev, ret);
-+		if (dev_addr + size - 1 > dma_mask) {
-+			/*
-+			 * The allocated memory isn't reachable by the device.
-+			 */
-+			free_pages((unsigned long) ret, order);
-+			ret = NULL;
-+		}
- 	}
- 	if (!ret) {
- 		/*
-@@ -611,13 +615,13 @@ swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 		 * GFP_DMA memory; fall back on map_single(), which
- 		 * will grab memory from the lowest available address range.
- 		 */
--		ret = map_single(hwdev, 0, size, DMA_FROM_DEVICE);
--		if (!ret)
-+		phys_addr_t paddr = map_single(hwdev, 0, size, DMA_FROM_DEVICE);
-+		if (paddr == SWIOTLB_MAP_ERROR)
- 			return NULL;
--	}
- 
--	memset(ret, 0, size);
--	dev_addr = swiotlb_virt_to_bus(hwdev, ret);
-+		ret = phys_to_virt(paddr);
-+		dev_addr = phys_to_dma(hwdev, paddr);
-+	}
- 
- 	/* Confirm address can be DMA'd by device */
- 	if (dev_addr + size - 1 > dma_mask) {
-@@ -629,7 +633,10 @@ swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 		swiotlb_tbl_unmap_single(hwdev, ret, size, DMA_TO_DEVICE);
- 		return NULL;
- 	}
-+
- 	*dma_handle = dev_addr;
-+	memset(ret, 0, size);
-+
- 	return ret;
- }
- EXPORT_SYMBOL(swiotlb_alloc_coherent);
-@@ -686,9 +693,8 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
- 			    enum dma_data_direction dir,
- 			    struct dma_attrs *attrs)
- {
--	phys_addr_t phys = page_to_phys(page) + offset;
-+	phys_addr_t map, phys = page_to_phys(page) + offset;
- 	dma_addr_t dev_addr = phys_to_dma(dev, phys);
--	void *map;
- 
- 	BUG_ON(dir == DMA_NONE);
- 	/*
-@@ -699,22 +705,18 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
- 	if (dma_capable(dev, dev_addr, size) && !swiotlb_force)
- 		return dev_addr;
- 
--	/*
--	 * Oh well, have to allocate and map a bounce buffer.
--	 */
-+	/* Oh well, have to allocate and map a bounce buffer. */
- 	map = map_single(dev, phys, size, dir);
--	if (!map) {
-+	if (map == SWIOTLB_MAP_ERROR) {
- 		swiotlb_full(dev, size, dir, 1);
- 		return phys_to_dma(dev, io_tlb_overflow_buffer);
- 	}
- 
--	dev_addr = swiotlb_virt_to_bus(dev, map);
-+	dev_addr = phys_to_dma(dev, map);
- 
--	/*
--	 * Ensure that the address returned is DMA'ble
--	 */
-+	/* Ensure that the address returned is DMA'ble */
- 	if (!dma_capable(dev, dev_addr, size)) {
--		swiotlb_tbl_unmap_single(dev, map, size, dir);
-+		swiotlb_tbl_unmap_single(dev, phys_to_virt(map), size, dir);
- 		return phys_to_dma(dev, io_tlb_overflow_buffer);
- 	}
- 
-@@ -840,9 +842,9 @@ swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl, int nelems,
- 
- 		if (swiotlb_force ||
- 		    !dma_capable(hwdev, dev_addr, sg->length)) {
--			void *map = map_single(hwdev, sg_phys(sg),
--					       sg->length, dir);
--			if (!map) {
-+			phys_addr_t map = map_single(hwdev, sg_phys(sg),
-+						     sg->length, dir);
-+			if (map == SWIOTLB_MAP_ERROR) {
- 				/* Don't panic here, we expect map_sg users
- 				   to do proper error handling. */
- 				swiotlb_full(hwdev, sg->length, dir, 0);
-@@ -851,7 +853,7 @@ swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl, int nelems,
- 				sgl[0].dma_length = 0;
- 				return 0;
- 			}
--			sg->dma_address = swiotlb_virt_to_bus(hwdev, map);
-+			sg->dma_address = phys_to_dma(hwdev, map);
- 		} else
- 			sg->dma_address = dev_addr;
- 		sg->dma_length = sg->length;
+>> +struct gpio_block *gpio_block_create(unsigned *gpios, size_t size,
+>> +				     const char *name)
+>> +{
+>> +	struct gpio_block *block;
+>> +	struct gpio_block_chip *gbc;
+>> +	struct gpio_remap *remap;
+>> +	int i;
+>> +
+>> +	if (size < 1 || size > sizeof(unsigned) * 8)
+>> +		return ERR_PTR(-EINVAL);
+>> +
+>> +	block = kzalloc(sizeof(struct gpio_block), GFP_KERNEL);
+>> +	if (!block)
+>> +		return ERR_PTR(-ENOMEM);
+>> +
+>> +	block->name = name;
+>> +	block->ngpio = size;
+>> +	block->gpio = kzalloc(sizeof(*block->gpio) * size, GFP_KERNEL);
+>> +	if (!block->gpio)
+>> +		goto err1;
+>> +
+>> +	memcpy(block->gpio, gpios, sizeof(*block->gpio) * size);
+>> +
+>> +	for (i = 0; i < size; i++)
+>> +		if (!gpio_is_valid(gpios[i]))
+>> +			goto err2;
+> 
+> This loop should probably go at the start of the function, so you can
+> avoid doing the kzalloc/memcpy if it fails.
 
+OK.
+
+> This function doesn't call gpio_request. Either it should, or it should
+> rely on the caller to have already done so, and call
+> gpio_ensure_requested here. There is also an implicit rule that any
+> gpios inside a block must not be freed as long as the block exists.
+
+The idea is analogous to GPIOs itself. Just the existence of it doesn't
+require it being requested. This way, it is possible to e.g. instantiate
+a block via device tree and let the user itself take care for direction,
+requesting and so on. Look at the sysfs binding: Only when someone
+exports the actual block values to userspace (write 0/1 to "exported"),
+the GPIOs in the block are requested by "sysfs".
+
+Please note that this is already documented above (look for "Please note").
+
+>> +
+>> +	for (i = 0; i < size; i++) {
+>> +		struct gpio_chip *gc = gpio_to_chip(gpios[i]);
+>> +		int bit = gpios[i] - gc->base;
+>> +		int index = gpio_block_chip_index(block, gc);
+>> +
+>> +		if (index < 0) {
+>> +			block->nchip++;
+>> +			block->gbc = krealloc(block->gbc,
+>> +					      sizeof(struct gpio_block_chip) *
+>> +					      block->nchip, GFP_KERNEL);
+> 
+> krealloc is a bit nasty. Can't you add a struct list_head to struct
+> gpio_block_chip or something?
+
+I also hesitated. But having it this way provides quite efficient access
+later on.
+
+> This also leaks memory if the krealloc fails, since the original pointer
+> is lost. You need to use a temporary for the re-allocation.
+
+OK.
+
+>> +		/* represents the mask necessary on calls to the driver's
+>> +		 * .get_block() and .set_block()
+>> +		 */
+> 
+>   /*
+>    * Nitpick - multi-line comment style looks like this.
+>    * However, other comments in this file use this style
+>    * so maybe keep for consistency.
+>    */
+
+Right, decided for the latter.
+
+>> +		gbc->mask |= BIT(bit);
+>> +
+>> +		/* collect gpios that are specified together, represented by
+>> +		 * neighboring bits
+>> +		 */
+>> +		remap = &gbc->remap[gbc->nremap - 1];
+> 
+> This looks broken. If gbc was re-alloced above (index < 0) then
+> gbc->remap == NULL and this will oops?
+
+No, because I took care that even though index can be < 0, the resulting
+pointer is never dereferenced for -1.
+
+> 
+>> +		if (!gbc->nremap || (bit - i != remap->offset)) {
+> 
+> gbc->nremap would have to be non-zero here, otherwise you have:
+> 
+>   gbc->remap[0 - 1]
+> 
+> above.
+> 
+>> +			gbc->nremap++;
+                        ^^^^^^^^^^^^^^
+... here it is: in the gbc->nremap == 0 case, it gets incremented
+immediately and remap is not dereferenced. Even in the above ( || ), the
+right side is only evaluated if gbc->nremap > 0.
+
+>> +			if (!gbc->remap)
+>> +				goto err3;
+>> +			remap = &gbc->remap[gbc->nremap - 1];
+>> +			remap->offset = bit - i;
+>> +			remap->mask = 0;
+>> +		}
+>> +
+>> +		/* represents the mask necessary for bit reordering between
+>> +		 * gpio_block (i.e. as specified on gpio_block_get() and
+>> +		 * gpio_block_set()) and gpio_chip domain (i.e. as specified on
+>> +		 * the driver's .set_block() and .get_block())
+>> +		 */
+>> +		remap->mask |= BIT(i);
+>> +	}
+> 
+> The remap functionality isn't very well explained
+
+Documenting now in gpio.h like this:
+
+/*
+ * struct gpio_remap - a structure for describing a bit mapping
+ * @mask:       a bit mask
+ * @offset:     how many bits to shift to the left (negative: to the
+ *              right)
+ *
+ * When we are mapping bit values from one word to another (here: from
+ * GPIO block domain to GPIO driver domain), we first mask them out
+ * with mask and shift them as specified with offset. More complicated
+ * mappings are done by grouping several of those structs and adding
+ * the results together.
+ */
+struct gpio_remap {
+        int     mask;
+        int     offset;
+};
+
+> (and looks like it doesn't work properly anyway).
+
+If you find an issue, please let me know. Works fine for me. Have you
+tried? :-)
+
+>> +unsigned gpio_block_get(const struct gpio_block *block)
+>> +{
+>> +	struct gpio_block_chip *gbc;
+>> +	int i, j;
+>> +	unsigned values = 0;
+>> +
+>> +	for (i = 0; i < block->nchip; i++) {
+>> +		unsigned remapped = 0;
+>> +
+>> +		gbc = &block->gbc[i];
+>> +
+>> +		if (gbc->gc->get_block) {
+>> +			remapped = gbc->gc->get_block(gbc->gc, gbc->mask);
+>> +		} else { /* emulate */
+>> +			unsigned bit = 1;
+>> +
+>> +			for (j = 0; j < sizeof(unsigned) * 8; j++, bit <<= 1) {
+>> +				if (gbc->mask & bit)
+> 
+> A proper bitmask might be more ideal for this. It would remove the
+> sizeof(unsigned) restriction and allow you to use for_each_set_bit for
+> these loops.
+
+In a previous version of these patches, I actually had a generic bit
+mask which was in turn awkward to handle, especially for the bit
+remapping. Stijn brought me to the idea that for pragmatic reasons, 32
+bit access is fully sufficient in most cases.
+
+I also needed userland access (via sysfs), so there was no way of
+accessing a block except via an int.
+
+When there are GPIO drivers where we seriously need (and can handle
+simultaneously) more than 32 bits, we can still extend the API. For now,
+the cases where it is used is typically creating 8/16/32 bit busses with
+GPIO lines, and on 64bit architectures even 64bit busses.
+
+For this, the current API is working fine, even enabling userland access
+via sysfs.
+
+>> +			unsigned bit = 1;
+>> +
+>> +			for (j = 0; j < sizeof(unsigned) * 8; j++, bit <<= 1) {
+>> +				if (gbc->mask & bit)
+>> +					gbc->gc->set(gbc->gc, gbc->gc->base + j,
+>> +						     (remapped >> j) & 1);
+>> +			}
+> 
+> This doesn't clear pins which are set to zero?
+
+It does. gbc->mask only masks which bits to set and clear. remapped
+contains the actual bit values to set. 0 or 1.
+
+Including all the other suggestions in the next update.
+
+Thanks,
+
+Roland
