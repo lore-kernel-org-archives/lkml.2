@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019Ab2JOQtF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 12:49:05 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:63413 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498Ab2JOQtC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 12:49:02 -0400
-Date: Mon, 15 Oct 2012 09:48:50 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Oliver Neukum <oneukum@suse.de>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RFC PATCH 3/3] USB: forbid memory allocation with I/O during
- bus reset if storage interface exits
-Message-ID: <20121015164850.GB6458@kroah.com>
-References: <1350278059-14904-1-git-send-email-ming.lei@canonical.com>
- <1350278059-14904-4-git-send-email-ming.lei@canonical.com>
- <2564763.3cNFlv543H@linux-lqwf.site>
- <CACVXFVPi=fq1NP-nuWQi34xTpGgWbaceW1Hbzcq38RqQMF_T-w@mail.gmail.com>
+	id S1753340Ab2JOQvJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 12:51:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29143 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750722Ab2JOQvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 12:51:08 -0400
+Date: Mon, 15 Oct 2012 18:52:18 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rabin Vincent <rabin@rab.in>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [PATCH 3/9] uprobes: allow ignoring of probe hits
+Message-ID: <20121015165218.GA10239@redhat.com>
+References: <1350242593-17761-1-git-send-email-rabin@rab.in> <1350242593-17761-3-git-send-email-rabin@rab.in>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACVXFVPi=fq1NP-nuWQi34xTpGgWbaceW1Hbzcq38RqQMF_T-w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1350242593-17761-3-git-send-email-rabin@rab.in>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 08:06:36PM +0800, Ming Lei wrote:
-> On Mon, Oct 15, 2012 at 5:34 PM, Oliver Neukum <oneukum@suse.de> wrote:
-> >
-> > I think limiting this to devices which have a storage device is not
-> > productive. What if you are using iSCSI or nbd? In the long run
-> 
-> You mean other non-mass storage or non-uas usb interfaces may
-> be involved in iSCSI or nbd? If not, the patch should be OK.
-> If yes, could you list them?
+On 10/14, Rabin Vincent wrote:
+>
+> Allow arches to decided to ignore a probe hit.  ARM will use this to
+> only call handlers if the conditions to execute a conditionally executed
+> instruction are satisfied.
 
-Networking over USB to serial devices (sadly, it does happen, and some
-network devices actually show up this way.)
+Not sure I understand why we shouldn't call handlers in this case,
+but OK, I know nothing about arm.
 
-In other words, don't put policy like this in the USB core for no good
-reason.
+>  static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
+>  {
+>  	struct mm_struct *mm = current->mm;
+> @@ -1469,6 +1474,7 @@ static void handle_swbp(struct pt_regs *regs)
+>  	struct uprobe *uprobe;
+>  	unsigned long bp_vaddr;
+>  	int uninitialized_var(is_swbp);
+> +	bool ignored = false;
+>  
+>  	bp_vaddr = uprobe_get_swbp_addr(regs);
+>  	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
+> @@ -1499,6 +1505,12 @@ static void handle_swbp(struct pt_regs *regs)
+>  			goto cleanup_ret;
+>  	}
+>  	utask->active_uprobe = uprobe;
+> +
+> +	if (arch_uprobe_ignore(&uprobe->arch, regs)) {
+> +		ignored = true;
+> +		goto cleanup_ret;
+> +	}
+> +
+>  	handler_chain(uprobe, regs);
+>  	if (uprobe->flags & UPROBE_SKIP_SSTEP && can_skip_sstep(uprobe, regs))
+>  		goto cleanup_ret;
+> @@ -1514,7 +1526,7 @@ cleanup_ret:
+>  		utask->active_uprobe = NULL;
+>  		utask->state = UTASK_RUNNING;
+>  	}
+> -	if (!(uprobe->flags & UPROBE_SKIP_SSTEP))
+> +	if (!ignored && !(uprobe->flags & UPROBE_SKIP_SSTEP))
+>  
+>  		/*
+>  		 * cannot singlestep; cannot skip instruction;
 
-greg k-h
+This conflicts with other changes in
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
+
+Could you re-diff?
+
+I'll try to read 1-7 tomorrow.
+
+Oleg.
+
