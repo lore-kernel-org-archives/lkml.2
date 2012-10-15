@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab2JOS4r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 14:56:47 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:41598 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab2JOS4p (ORCPT
+	id S1754520Ab2JOS5X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 14:57:23 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:63287 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753157Ab2JOS5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 14:56:45 -0400
+	Mon, 15 Oct 2012 14:57:20 -0400
 From: Peter Korsgaard <jacmet@sunsite.dk>
 To: "Philip\, Avinash" <avinashphilip@ti.com>
 Cc: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
@@ -14,13 +14,13 @@ Cc: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
         devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         linux-mtd@lists.infradead.org, ivan.djelic@parrot.com,
         linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/4] mtd: nand: omap2: Update nerrors using ecc.strength
+Subject: Re: [PATCH 3/4] ARM: OMAP2: gpmc: Add support for BCH ECC scheme
 References: <1349274589-11389-1-git-send-email-avinashphilip@ti.com>
-	<1349274589-11389-2-git-send-email-avinashphilip@ti.com>
-Date: Mon, 15 Oct 2012 20:56:40 +0200
-In-Reply-To: <1349274589-11389-2-git-send-email-avinashphilip@ti.com> (Avinash
-	Philip's message of "Wed, 3 Oct 2012 19:59:46 +0530")
-Message-ID: <87obk3va1j.fsf@macbook.be.48ers.dk>
+	<1349274589-11389-4-git-send-email-avinashphilip@ti.com>
+Date: Mon, 15 Oct 2012 20:48:30 +0200
+In-Reply-To: <1349274589-11389-4-git-send-email-avinashphilip@ti.com> (Avinash
+	Philip's message of "Wed, 3 Oct 2012 19:59:48 +0530")
+Message-ID: <87vcebvaf5.fsf@macbook.be.48ers.dk>
 User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -30,30 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 >>>>> Philip, Avinash <avinashphilip@ti.com> writes:
 
- > Update number of errors using nand ecc strength.
- > Also add macro definitions BCH8_ERROR_MAX & BCH4_ERROR_MAX
+ > Add support for BCH ECC scheme to gpmc driver and also enabling multi
+ > sector read/write. This helps in doing single shot NAND page read and
+ > write.
 
- > Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
- > ---
- > :100644 100644 5b31386... af511a9... M	drivers/mtd/nand/omap2.c
- >  drivers/mtd/nand/omap2.c |   12 ++++++++----
- >  1 files changed, 8 insertions(+), 4 deletions(-)
+ > ECC engine configurations
+ > BCH 4 bit support
+ > 1. write => ECC engine configured in wrap mode 6 and with ecc_size0 as 32.
+ > 2. read  => ECC engine configured in wrap mode 1 and with ecc_size0 as
+ > 13 and ecc_size1 as 1.
 
- > diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
- > index 5b31386..af511a9 100644
- > --- a/drivers/mtd/nand/omap2.c
- > +++ b/drivers/mtd/nand/omap2.c
- > @@ -111,6 +111,9 @@
- >  #define	ECCCLEAR			0x100
- >  #define	ECC1				0x1
- 
- > +#define BCH8_MAX_ERROR		8	/* upto 8 bit coorectable */
- > +#define BCH4_MAX_ERROR		4	/* upto 4 bit correctable */
+ > BCH 8 bit support
+ > 1. write => ECC engine configured in wrap mode 6 and with ecc_size0 as 32.
+ > 2. read  => ECC engine configured in wrap mode 1 and with ecc_size0 as
+ > 26 and ecc_size1 as 2.
 
-First 'correctable' misspelled.
+ > Note: For BCH8 ECC bytes set to 14 to make compatible with RBL.
 
-I don't personally think these defines improve readability very much
-compared to to just using 4/8, though.
+On what device? In the am335x TRM (spruh73f.pdf) figure 26-15 (pg 4273)
+the rom code is documented to not use any padding on the ECC bytes
+(E.G. oob 2..53):
+
+http://www.ti.com/litv/pdf/spruh73f
+
+I see the driver in the u-boot-am33x tree (ti81xx_nand.c) seems to use
+4x14 bytes as well though, so perhaps that's a bug in the documentation
+instead?
 
 -- 
 Bye, Peter Korsgaard
