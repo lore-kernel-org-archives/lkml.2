@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995Ab2JOUWN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 16:22:13 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44843 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754715Ab2JOUKG (ORCPT
+	id S1755229Ab2JOUWb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 16:22:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56987 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754801Ab2JOUKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 16:10:06 -0400
+	Mon, 15 Oct 2012 16:10:04 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
         neilb@suse.de, vgoyal@redhat.com
-Subject: [PATCH v4 14/24] block: Add bio_copy_data()
-Date: Mon, 15 Oct 2012 13:08:48 -0700
-Message-Id: <1350331769-14856-15-git-send-email-koverstreet@google.com>
+Subject: [PATCH v4 13/24] raid1: Refactor narrow_write_error() to not use bi_idx
+Date: Mon, 15 Oct 2012 13:08:47 -0700
+Message-Id: <1350331769-14856-14-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1350331769-14856-1-git-send-email-koverstreet@google.com>
 References: <1350331769-14856-1-git-send-email-koverstreet@google.com>
@@ -22,110 +22,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This gets open coded quite a bit and it's tricky to get right, so make a
-generic version and convert some existing users over to it instead.
+More bi_idx removal. This code was just open coding bio_clone(). This
+could probably be further improved by using bio_advance() instead of
+skipping over null pages, but that'd be a larger rework.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
+CC: NeilBrown <neilb@suse.de>
 ---
- fs/bio.c            | 70 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/bio.h |  2 ++
- 2 files changed, 72 insertions(+)
+ drivers/md/raid1.c | 36 ++++++++++++++++++------------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
 
-diff --git a/fs/bio.c b/fs/bio.c
-index aeb74b8..d698f29d 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -827,6 +827,76 @@ void bio_advance(struct bio *bio, unsigned bytes)
- }
- EXPORT_SYMBOL(bio_advance);
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index 4614b9e..af39f74 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -2052,8 +2052,6 @@ static int narrow_write_error(struct r1bio *r1_bio, int i)
+ 	struct mddev *mddev = r1_bio->mddev;
+ 	struct r1conf *conf = mddev->private;
+ 	struct md_rdev *rdev = conf->mirrors[i].rdev;
+-	int vcnt, idx;
+-	struct bio_vec *vec;
  
-+/**
-+ * bio_copy_data - copy contents of data buffers from one chain of bios to
-+ * another
-+ * @src: source bio list
-+ * @dst: destination bio list
-+ *
-+ * If @src and @dst are single bios, bi_next must be NULL - otherwise, treats
-+ * @src and @dst as linked lists of bios.
-+ *
-+ * Stops when it reaches the end of either @src or @dst - that is, copies
-+ * min(src->bi_size, dst->bi_size) bytes (or the equivalent for lists of bios).
-+ */
-+void bio_copy_data(struct bio *dst, struct bio *src)
-+{
-+	struct bio_vec *src_bv, *dst_bv;
-+	unsigned src_offset, dst_offset, bytes;
-+	void *src_p, *dst_p;
+ 	/* bio has the data to be written to device 'i' where
+ 	 * we just recently had a write error.
+@@ -2081,30 +2079,32 @@ static int narrow_write_error(struct r1bio *r1_bio, int i)
+ 		   & ~(sector_t)(block_sectors - 1))
+ 		- sector;
+ 
+-	if (test_bit(R1BIO_BehindIO, &r1_bio->state)) {
+-		vcnt = r1_bio->behind_page_count;
+-		vec = r1_bio->behind_bvecs;
+-		idx = 0;
+-		while (vec[idx].bv_page == NULL)
+-			idx++;
+-	} else {
+-		vcnt = r1_bio->master_bio->bi_vcnt;
+-		vec = r1_bio->master_bio->bi_io_vec;
+-		idx = r1_bio->master_bio->bi_idx;
+-	}
+ 	while (sect_to_write) {
+ 		struct bio *wbio;
+ 		if (sectors > sect_to_write)
+ 			sectors = sect_to_write;
+ 		/* Write at 'sector' for 'sectors'*/
+ 
+-		wbio = bio_alloc_mddev(GFP_NOIO, vcnt, mddev);
+-		memcpy(wbio->bi_io_vec, vec, vcnt * sizeof(struct bio_vec));
+-		wbio->bi_sector = r1_bio->sector;
++		if (test_bit(R1BIO_BehindIO, &r1_bio->state)) {
++			unsigned vcnt = r1_bio->behind_page_count;
++			struct bio_vec *vec = r1_bio->behind_bvecs;
 +
-+	src_bv = bio_iovec(src);
-+	dst_bv = bio_iovec(dst);
-+
-+	src_offset = src_bv->bv_offset;
-+	dst_offset = dst_bv->bv_offset;
-+
-+	while (1) {
-+		if (src_offset == src_bv->bv_offset + src_bv->bv_len) {
-+			src_bv++;
-+			if (src_bv == bio_iovec_idx(src, src->bi_vcnt)) {
-+				src = src->bi_next;
-+				if (!src)
-+					break;
-+
-+				src_bv = bio_iovec(src);
++			while (!vec->bv_page) {
++				vec++;
++				vcnt--;
 +			}
 +
-+			src_offset = src_bv->bv_offset;
++			wbio = bio_alloc_mddev(GFP_NOIO, vcnt, mddev);
++			memcpy(wbio->bi_io_vec, vec, vcnt * sizeof(struct bio_vec));
++
++			wbio->bi_vcnt = vcnt;
++		} else {
++			wbio = bio_clone_mddev(r1_bio->master_bio, GFP_NOIO, mddev);
 +		}
 +
-+		if (dst_offset == dst_bv->bv_offset + dst_bv->bv_len) {
-+			dst_bv++;
-+			if (dst_bv == bio_iovec_idx(dst, dst->bi_vcnt)) {
-+				dst = dst->bi_next;
-+				if (!dst)
-+					break;
-+
-+				dst_bv = bio_iovec(dst);
-+			}
-+
-+			dst_offset = dst_bv->bv_offset;
-+		}
-+
-+		bytes = min(dst_bv->bv_offset + dst_bv->bv_len - dst_offset,
-+			    src_bv->bv_offset + src_bv->bv_len - src_offset);
-+
-+		src_p = kmap_atomic(src_bv->bv_page);
-+		dst_p = kmap_atomic(dst_bv->bv_page);
-+
-+		memcpy(dst_p + dst_bv->bv_offset,
-+		       src_p + src_bv->bv_offset,
-+		       bytes);
-+
-+		kunmap_atomic(dst_p);
-+		kunmap_atomic(src_p);
-+
-+		src_offset += bytes;
-+		dst_offset += bytes;
-+	}
-+}
-+EXPORT_SYMBOL(bio_copy_data);
-+
- struct bio_map_data {
- 	struct bio_vec *iovecs;
- 	struct sg_iovec *sgvecs;
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index b20a9cd..90d36c6 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -286,6 +286,8 @@ static inline void bio_flush_dcache_pages(struct bio *bi)
- }
- #endif
+ 		wbio->bi_rw = WRITE;
+-		wbio->bi_vcnt = vcnt;
++		wbio->bi_sector = r1_bio->sector;
+ 		wbio->bi_size = r1_bio->sectors << 9;
+-		wbio->bi_idx = idx;
  
-+extern void bio_copy_data(struct bio *dst, struct bio *src);
-+
- extern struct bio *bio_copy_user(struct request_queue *, struct rq_map_data *,
- 				 unsigned long, unsigned int, int, gfp_t);
- extern struct bio *bio_copy_user_iov(struct request_queue *,
+ 		md_trim_bio(wbio, sector - r1_bio->sector, sectors);
+ 		wbio->bi_sector += rdev->data_offset;
 -- 
 1.7.12
 
