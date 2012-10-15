@@ -1,91 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab2JOUDc (ORCPT <rfc822;w@1wt.eu>);
+	id S1754686Ab2JOUDi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 16:03:38 -0400
+Received: from mga11.intel.com ([192.55.52.93]:43508 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754662Ab2JOUDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Oct 2012 16:03:32 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:18277 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754484Ab2JOUDa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 16:03:30 -0400
-Message-ID: <1350331403.2819.25.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH v6 08/10] IPC: message queue receive cleanup
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: <akpm@linux-foundation.org>, <catalin.marinas@arm.com>,
-        <will.deacon@arm.com>, <dhowells@redhat.com>,
-        <manfred@colorfullife.com>, <hughd@google.com>, <jmorris@namei.org>,
-        <mtk.manpages@gmail.com>, <kosaki.motohiro@jp.fujitsu.com>,
-        <paulmck@linux.vnet.ibm.com>, <sds@tycho.nsa.gov>, <devel@openvz.org>,
-        <a.p.zijlstra@chello.nl>, <cmetcalf@tilera.com>,
-        <linux-driver@qlogic.com>, <ron.mercer@qlogic.com>,
-        <viro@zeniv.linux.org.uk>, <eparis@parisplace.org>,
-        <tglx@linutronix.de>, <jitendra.kalsaria@qlogic.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-security-module@vger.kernel.org>, <ebiederm@xmission.com>,
-        <casey@schaufler-ca.com>
-Date: Mon, 15 Oct 2012 21:03:23 +0100
-In-Reply-To: <20121015160017.28348.44238.stgit@localhost.localdomain>
-References: <20121015155800.28348.23561.stgit@localhost.localdomain>
-	 <20121015160017.28348.44238.stgit@localhost.localdomain>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,590,1344236400"; 
+   d="scan'208";a="235330774"
+Message-ID: <507C6C13.4000609@intel.com>
+Date: Mon, 15 Oct 2012 13:03:31 -0700
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+To: Dmitry Fleytman <dmitry@daynix.com>
+CC: linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        Chris Webb <chris.webb@elastichosts.com>,
+        Richard Davies <richard.davies@elastichosts.com>
+Subject: Re: [PATCH] e1000 driver RX race condition fixed
+References: <1350235151-11146-1-git-send-email-dmitry@daynix.com> <507C5BC7.1060108@intel.com> <CAGHCxhe=2N8G8v66uZaNDQKyiRVRN11_Lw17mkOdxxrrpXgPHQ@mail.gmail.com>
+In-Reply-To: <CAGHCxhe=2N8G8v66uZaNDQKyiRVRN11_Lw17mkOdxxrrpXgPHQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-10-15 at 20:00 +0400, Stanislav Kinsbursky wrote:
-> This patch moves all message related manipulation into one function msg_fill().
-> Actually, two functions because of the compat one.
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> ---
->  include/linux/msg.h |    5 +++--
->  ipc/compat.c        |   36 +++++++++++++++++++-----------------
->  ipc/msg.c           |   44 +++++++++++++++++++++++---------------------
->  3 files changed, 45 insertions(+), 40 deletions(-)
-> 
-> diff --git a/include/linux/msg.h b/include/linux/msg.h
-> index 7a4b9e9..f38edba 100644
-> --- a/include/linux/msg.h
-> +++ b/include/linux/msg.h
-> @@ -34,7 +34,8 @@ struct msg_queue {
->  /* Helper routines for sys_msgsnd and sys_msgrcv */
->  extern long do_msgsnd(int msqid, long mtype, void __user *mtext,
->  			size_t msgsz, int msgflg);
-> -extern long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
-> -			size_t msgsz, long msgtyp, int msgflg);
-> +extern long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
-> +		      int msgflg,
-> +		      long (*msg_fill)(void __user *, struct msg_msg *, size_t ));
->  
->  #endif /* _LINUX_MSG_H */
-> diff --git a/ipc/compat.c b/ipc/compat.c
-> index 84d8efd..b879d50 100644
-> --- a/ipc/compat.c
-> +++ b/ipc/compat.c
-[...]
-> @@ -394,7 +395,8 @@ long compat_sys_msgrcv(int msqid, struct compat_msgbuf __user *msgp,
->  {
->  	long err, mtype;
->  
-> -	err =  do_msgrcv(msqid, &mtype, msgp->mtext, (ssize_t)msgsz, msgtyp, msgflg);
-> +	err =  do_msgrcv(msqid, &mtype, msgp->mtext, (ssize_t)msgsz, msgtyp,
-> +			 msgflg, compat_do_msg_fill);
->  	if (err < 0)
->  		goto out;
->  
-[...]
+Hello Dmitry,
 
-That isn't even the right number of arguments now...
+My concern is that on many of our parts the behavior is to initialize
+both the head and tail to 0, enable Rx for either the ring or device
+depending on the queue configuration, and then allocate buffers and bump
+tail to indicate that the new buffers are present.  The reason behind
+enabling Rx and bumping tail is because that signals the DMA engine to
+start fetching buffers.  In my experience most of our hardware will
+ignore the tail bump if it is done first and the Rx is enabled.
 
-Ben.
+With both head and tail at the same value it should not be possible for
+any of the devices to start a DMA.  This is probably what you should be
+checking for in fixing QEMU/KVM as it may be incorrectly assuming it can
+fetch the descriptor pointed to by tail.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+We have your patch in our queue and can test to verify my assumptions
+are correct.  If they are we will let you know and reject the patch.
+
+Thanks,
+
+Alex
+
+
+
+On 10/15/2012 12:44 PM, Dmitry Fleytman wrote:
+> Hello, Alex
+>
+> Originally this bug was reported for virtual machines running on top
+> of QEMU/KVM.
+> After patch preparation I've tested it on physical e1000 card and it
+> worked fine.
+>
+> However, it could be I've missed something, as I see now other Intel
+> drivers (e1000e, ixgb, etc.)
+> use the same sequence (RX enable and then ring allocate), so I'm
+> starting to suspect that this is
+> the correct behavior.
+>
+> If you confirm this is the way HW works, the this patch should be
+> ignored. This is pure QEMU bug and we'll fix it there.
+>
+> Thanks,
+> Dmitry.
+>
+> On Mon, Oct 15, 2012 at 8:53 PM, Alexander Duyck
+> <alexander.h.duyck@intel.com> wrote:
+>> On 10/14/2012 10:19 AM, Dmitry Fleytman wrote:
+>>> There is a race condition in e1000 driver.
+>>> It enables HW receive before RX rings initalization.
+>>> In case of specific timing this may lead to host memory corruption
+>>> due to DMA write to arbitrary memory location.
+>>> Following patch fixes this issue by reordering initialization steps.
+>>>
+>>> Other Intel network drivers does not seem to have this issue.
+>>>
+>>> Dmitry Fleytman (1):
+>>>   RX initialization sequence fixed - enable RX after corresponding ring
+>>>     initialization only
+>>>
+>>>  drivers/net/ethernet/intel/e1000/e1000_ethtool.c |    9 +++++----
+>>>  drivers/net/ethernet/intel/e1000/e1000_main.c    |   18 ++++++++++++++++--
+>>>  2 files changed, 21 insertions(+), 6 deletions(-)
+>>>
+>> What device was it you saw this issue with?  The reason why I ask is
+>> because I suspect this change should cause most of our e1000 hardware to
+>> lock up since normally if you allocate buffers and then enable Rx it
+>> will mean the ring was not updated and it will treat it as if there are
+>> no buffers available.
+>>
+>> Thanks,
+>>
+>> Alex
 
