@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab2JOF3s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 01:29:48 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:38027 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752796Ab2JOF3a (ORCPT
+	id S1753324Ab2JOF3q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 01:29:46 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:60598 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752772Ab2JOF3b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 01:29:30 -0400
+	Mon, 15 Oct 2012 01:29:31 -0400
 From: Arun Murthy <arun.murthy@stericsson.com>
 To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
         <alan@lxorguk.ukuu.org.uk>
 Cc: Arun Murthy <arun.murthy@stericsson.com>
-Subject: [PATCHv5 1/4] modem_shm: Add Modem Access Framework
-Date: Mon, 15 Oct 2012 10:58:37 +0530
-Message-ID: <1350278920-25510-2-git-send-email-arun.murthy@stericsson.com>
+Subject: [PATCHv5 4/4] Doc: Add u8500_shrm document
+Date: Mon, 15 Oct 2012 10:58:40 +0530
+Message-ID: <1350278920-25510-5-git-send-email-arun.murthy@stericsson.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1350278920-25510-1-git-send-email-arun.murthy@stericsson.com>
 References: <1350278920-25510-1-git-send-email-arun.murthy@stericsson.com>
@@ -24,364 +24,421 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds Modem Access Framework, which allows for registering platform specific
-modem access mechanisms. The framework also exposes APIs for client drivers
-for getting and releasing access to modem, regardless of the underlying
-platform specific access mechanism.
+Add document for u8500 shared memory(shrm)and kernel Docbook.
 
 Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
 ---
- drivers/Kconfig                  |    2 +
- drivers/Makefile                 |    1 +
- drivers/modem_shm/Kconfig        |    9 ++
- drivers/modem_shm/Makefile       |    1 +
- drivers/modem_shm/modem_access.c |  226 ++++++++++++++++++++++++++++++++++++++
- include/linux/modem_shm/modem.h  |   59 ++++++++++
- 6 files changed, 298 insertions(+), 0 deletions(-)
- create mode 100644 drivers/modem_shm/Kconfig
- create mode 100644 drivers/modem_shm/Makefile
- create mode 100644 drivers/modem_shm/modem_access.c
- create mode 100644 include/linux/modem_shm/modem.h
+ Documentation/DocBook/Makefile         |    2 +-
+ Documentation/DocBook/shrm.tmpl        |  125 ++++++++++++++++
+ Documentation/modem_shm/u8500_shrm.txt |  254 ++++++++++++++++++++++++++++++++
+ 3 files changed, 380 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/DocBook/shrm.tmpl
+ create mode 100644 Documentation/modem_shm/u8500_shrm.txt
 
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index ece958d..dc7c14a 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -152,4 +152,6 @@ source "drivers/vme/Kconfig"
+diff --git a/Documentation/DocBook/Makefile b/Documentation/DocBook/Makefile
+index bc3d9f8..673ea06 100644
+--- a/Documentation/DocBook/Makefile
++++ b/Documentation/DocBook/Makefile
+@@ -14,7 +14,7 @@ DOCBOOKS := z8530book.xml device-drivers.xml \
+ 	    genericirq.xml s390-drivers.xml uio-howto.xml scsi.xml \
+ 	    80211.xml debugobjects.xml sh.xml regulator.xml \
+ 	    alsa-driver-api.xml writing-an-alsa-driver.xml \
+-	    tracepoint.xml drm.xml media_api.xml
++	    tracepoint.xml drm.xml media_api.xml shrm.xml
  
- source "drivers/pwm/Kconfig"
+ include $(srctree)/Documentation/DocBook/media/Makefile
  
-+source "drivers/modem_shm/Kconfig"
-+
- endmenu
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 5b42184..902dfec 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -139,3 +139,4 @@ obj-$(CONFIG_EXTCON)		+= extcon/
- obj-$(CONFIG_MEMORY)		+= memory/
- obj-$(CONFIG_IIO)		+= iio/
- obj-$(CONFIG_VME_BUS)		+= vme/
-+obj-$(CONFIG_MODEM_SHM)		+= modem_shm/
-diff --git a/drivers/modem_shm/Kconfig b/drivers/modem_shm/Kconfig
+diff --git a/Documentation/DocBook/shrm.tmpl b/Documentation/DocBook/shrm.tmpl
 new file mode 100644
-index 0000000..f4b7e54
+index 0000000..400f9b2
 --- /dev/null
-+++ b/drivers/modem_shm/Kconfig
-@@ -0,0 +1,9 @@
-+config MODEM_SHM
-+        bool "Modem Access Framework"
-+        default n
-+        help
-+         Add support for Modem Access Framework. It allows different
-+	 platform specific drivers to register modem access mechanisms
-+	 and allows transparent access to modem to the client drivers.
++++ b/Documentation/DocBook/shrm.tmpl
+@@ -0,0 +1,125 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
++	"http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" []>
 +
-+	 If unsure, say N.
-diff --git a/drivers/modem_shm/Makefile b/drivers/modem_shm/Makefile
++<book id="SHRM">
++ <bookinfo>
++  <title>Shared Memory</title>
++  <authorgroup>
++   <author>
++    <firstname>Arun</firstname>
++    <surname>Murthy</surname>
++    <affiliation>
++     <address>
++      <email>arun.murthy@stericsson.com</email>
++     </address>
++    </affiliation>
++   </author>
++  </authorgroup>
++
++  <copyright>
++   <year>2009-2010</year>
++   <holder>ST-Ericsson</holder>
++  </copyright>
++
++  <subjectset>
++    <subject>
++      <subjectterm>Linux standard functions</subjectterm>
++    </subject>
++  </subjectset>
++
++  <legalnotice>
++   <!-- Do NOT remove the legal notice below -->
++   <para>
++     Licence terms: GNU General Public Licence (GPL) version 2.
++   </para>
++  </legalnotice>
++ </bookinfo>
++
++<toc></toc>
++  <chapter id="intro">
++    <title>Introduction</title>
++    <para>
++	This Documentation describes the ST-Ericsson's adaptation on protocol used for CMT/APE communication when SHaRedMemory is used as IPC link.
++    </para>
++  </chapter>
++
++  <chapter id="design">
++    <title>Design</title>
++    <para>
++	The APE consists Cortex A9 dual core SMP, a multimedia DSP and PRCMU. Modem consists of 2 Cortex R4 ARM processor.
++	The exchange of messages between CMT(Cellular Mobile Terminal) and APE includes copying the data to a shared area DDR.
++	This region is accessible by both CMT and APE. The design includes 2 channels common and audio. Common channel is used for exchanging ISI, RPC and SECURITY messages.
++	udio channel is used for exchanging AUDIO messages. Each channel consists of 2 FIFO. One FIFO for sending message from CMT to APE and other from APE to CMT.
++	ach of these FIFO have write and read pointer shared between APE and CMT. Writer pointer is updated on copying the message to FIFO and reader will read the messages from the read pointer upto the writer pointer. Writer and reader notifications are used to notify the completion of read/write operation(seperate for APE and CMT).
++	river includes 4 queues. Once the messages are sent from CMT to APE it resides in the FIFO and then copied to one of the 4 queues based on the message type(ISI, RPC, AUDIO, SECURITY) and then the net/char device interface fetches this message from the queue and copies to the user space buffer.
++    </para>
++  </chapter>
++
++  <chapter id="concepts">
++    <title>Concepts</title>
++    <para>
++	The user space application sends ISI/RPC/AUDIO/SECURITY messages. ISI is sent through the phonet to shrm driver. For achieving this there are 2 interfaces to the shrm driver. Net interface used for exchanging the ISI message and char interface for RPC, AUDIO and SECURITY messages. On receiving any of these messages from the user space application, it is copied to a memory in kernel space. From here it is then copied to respective FIFO from where the CMT reads the message.
++	CMT(Cellular Mobile Terminal) writes messages to the respective FIFO and thereafter to respective queue. The net/char device copies this message from the queue to the user space buffer.
++    </para>
++  </chapter>
++
++  <chapter id="bugs">
++     <title>Known Bugs And Assumptions</title>
++  <para>
++     <variablelist>
++     <varlistentry>
++       <term>None</term>
++       <listitem>
++         <para>
++		Assumptions
++		1. ApeShmFifo#0 is of 128kB in size. As this is used for transmission except CS audio call data. Expected message size is 1.5kB with a max of 16kB.
++		2. ApeShmFifo#1 is of 4kB in size. This is used for transmission of CS audio call data. Expected message size is 24kb.
++		3. CmtShmFifo#0 is of 128kB in size. As this is used for transmission except CS audio call data. Expected message size is 1.5kB with a max of 16kB.
++		4. CmtShmFifo#1 is of 4kB in size. This is used for transmission of CS audio call data. Expected message size is 24kb.
++		The total size of the FIFO is 264 kB.
++         </para>
++       </listitem>
++     </varlistentry>
++     </variablelist>
++  </para>
++  </chapter>
++
++  <chapter id="pubfunctions">
++     <title>Public Functions Provided</title>
++     <para>
++	This Section lists the API's provided by the SHRM driver to phonet drivers.
++     </para>
++!Edrivers/modem_shm/u8500_shm/shrm_fifo.c
++     <para>
++	This Section lists the API's provided by the SHRM driver used in transmission of RPC, AUDIO and SECURITY messages.
++     </para>
++!Edrivers/modem_shm/u8500_shm/shrm_char.c
++
++  </chapter>
++
++  <chapter id="private">
++    <title>Private Functions</title>
++    <para>
++	This Section lists the functions used internally by the SHRM driver to implement FIFO management. It physically reads/writes data to/from memory.
++    </para>
++!Idrivers/modem_shm/u8500_shm/shrm_fifo.c
++    <para>
++	This Section lists the functions used internally by the SHRM driver to implement the SHRM protocol and handle all interrupt callback.
++    </para>
++!Idrivers/modem_shm/u8500_shm/shrm_protocol.c
++    <para>
++	This Section lists the functions used internally by the SHRM driver to implement Modem-Host communication L1 interface specifications.
++    </para>
++!Idrivers/modem_shm/u8500_shm/shrm_driver.c
++  </chapter>
++
++  <chapter id="Other">
++    <title>Other Data Structures</title>
++    <para>
++	This Section lists some of the Data structure used by the SHRM driver.
++    </para>
++!Idrivers/modem_shm/u8500_shm/shrm_driver.h
++!Idrivers/modem_shm/u8500_shm/shrm_private.h
++  </chapter>
++</book>
+diff --git a/Documentation/modem_shm/u8500_shrm.txt b/Documentation/modem_shm/u8500_shrm.txt
 new file mode 100644
-index 0000000..b77bcc0
+index 0000000..7bbc0cb
 --- /dev/null
-+++ b/drivers/modem_shm/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_MODEM_SHM)		:= modem_access.o
-diff --git a/drivers/modem_shm/modem_access.c b/drivers/modem_shm/modem_access.c
-new file mode 100644
-index 0000000..e06c51a
---- /dev/null
-+++ b/drivers/modem_shm/modem_access.c
-@@ -0,0 +1,226 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2011
-+ *
-+ * License Terms: GNU General Public License v2
-+ * Author: Kumar Sanghvi
-+ *	Arun Murthy <arun.murthy@stericsson.com>
-+ *
-+ * Heavily adapted from Regulator framework.
-+ * Provides mechanisms for registering platform specific access
-+ * mechanisms for modem.
-+ * Also, exposes APIs for gettng/releasing the access and even
-+ * query the access status, and the modem usage status.
-+ */
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <linux/printk.h>
-+#include <linux/modem_shm/modem.h>
++++ b/Documentation/modem_shm/u8500_shrm.txt
+@@ -0,0 +1,254 @@
++SHaRed Memory (SHRM)
++--------------------
++Shared memroy IPC driver is the implementation of SHRM protocol used for the
++communication between application processor (APE) of DB8500 SoC and the modem
++subsystem (CMT) of DB8500 SoC.
 +
-+static struct class *modem_class;
++System Overview
++---------------
++The APE system is made of cortex A9 dual core SMP, a multimedia DSP and Power
++and Reset Control Management Unit(PRCMU).
++The modem subsystem is made of cortex R4 ARM processor.
 +
-+static int __modem_get_usage(struct device *dev, void *data)
-+{
-+	struct modem_desc *mdesc = (struct modem_desc *)data;
++Shared Memory Structure
++-----------------------
++The exchange of messages between APE and modem includes copying data in the
++shared area of the DDR. The shared memory structure includes 4 FIFO. Each
++communication channel (common or audio) is made of two FIFO's.
++There are 4 types of messages that are communicated between APE and CMT.
++(these are also referred to as L2 header in the shrm protocol)
++	-> ISI message
++	-> RPC message (filesystem)
++	-> Security message
++	-> Audio message
++First 3 of the above messages are transferred through the common channel and
++audio message is transferred via the audio channel. Now each of these 2 channel
++have two FIFO.
++	-> FIFO-1: APE to CMT common channel
++	-> FIFO-2: CMT to APE common channel
++	-> FIFO-3: APE to CMT audio channel
++	-> FIFO-4: CMT to APE audio channel
++Each of these fifo'a have 4 pointers.
++	-> Shared read pointer
++	-> Shared write pointer
++	-> local read pointer
++	-> local write pointer
++The read/write permission of the above 4 pointer depends on the fifo.
++Size of common fifo is 128KB each and that of audio fifo is 4KB each.
 +
-+	if (!mdesc->mclients) {
-+		printk(KERN_ERR "modem_access: modem description is NULL\n");
-+		return 0;
-+	}
-+	return atomic_read(&mdesc->mclients->cnt);
-+}
++Notification
++------------
++The SHRM protocol uses interrupt generation register in CMT to support crossed
++notifications. For APE to CMT notifications, the APE sets a corresponding bit
++in the interrupt generation register of CMT. This triggers an interrupt in the
++cortex R4 of CMT. This interrupt generation module is regerred to as General
++Output Port(GOP) register. The register is a standard GOP, SET/CLEAR/TOGGLE.
++Below are the list of interrupts:
++	AcMsgPendNotif:	APE notifies CMT that it has written some message to the
++			fifo or that there are some messages unread by CMT.
++	AcReadNotif:	CMT notifies APE that it has read the message.
++	CaMsgPendNotif: CMT notifies APE that it has written some message to the
++			fifo or that there are some messages unread by APE.
++	CaReadNotif:	APE notifies CMT that it has read the message.
++	AcWakeReq:	APE has some messages to communicate with CMT and hence
++			requests CMT to wake up.
++	AcWakeAck:	CMT acknowledges to AcWakeReq after waking up by sending
++			AcWakeAck.
++	AcSleepReq:	APE notifies CMT that it has no more messages to
++			communicate and if required CMT can sleep.
++	AcSleepAck:	CMT acknowledges to AcSleepReq.
++	CaWakeReq:	CMT has some messages to communicate with APE and hence
++			requests APE to wakeup.
++	CaWakeAck:	APE acknowledges to CaWakeReq after waking up by sending
++			this interrupt.
++	CaResetReq:	CMT notifies APE that it has reset.
 +
-+/**
-+ * modem_is_requested - check if modem access to APE is already enabled
-+ * @mdesc:	pointer to the struct modem_desc
-+ *
-+ * check if any of the client on ape has requested access to modem
-+ * and return non-zero on success and zero on failure.
-+ */
-+int modem_get_usage(struct modem_desc *mdesc)
-+{
-+	return class_for_each_device(modem_class, NULL, (void *)mdesc, __modem_get_usage);
-+}
++Note: There are 2 copies of first 4 interrupts mentioned above each representing
++for common and audio channel.
++Notation used is 0->common channel and 1->audio channel
 +
-+/**
-+ * modem_is_requested - check if modem access to APE is already enabled
-+ * @mdesc:	pointer to the struct modem_desc
-+ *
-+ * check for a particular client if ape has requested access to modem
-+ * and return non-zero on success and zero on failure.
-+ */
-+int modem_is_requested(struct modem_desc *mdesc)
-+{
-+	return atomic_read(&mdesc->mclients->cnt);
-+}
++FIFO Operation
++--------------
++Initially all the 4 pointer are reset to 0. Now assume that APE wants to send
++some data to modem then it writes to the corresponding fifo starting from the
++address in 'Shared write pointer'. Now CMT will start reading this message
++starting from the address mentioned in 'Shared read pointer' and will continue
++reading the message until it meets the address in 'Shared write pointer' and
++'Shared read pointer' is updated accordingly.
++Consider that APE has written a message in FIFO and CMT has not yet read that
++message, in the mean time APE has another message, so APE will write to the
++shared memory and now instead of updating the 'Shared write pointer', will
++update 'local write pointer' and keep on writing the messages thereby not
++blocking the messages that are sent to the shrm driver through modem has not
++yet read the previous message.
 +
-+/**
-+ * modem_release - disable modem access for APE
-+ * @mdesc:	pointer to the struct modem_desc
-+ *
-+ * disable modem access to the APE. For a particluar client it checks if modem
-+ * has already been releases and if so returns else will call the platform
-+ * specific function to disable access to modem.
-+ */
-+int modem_release(struct modem_desc *mdesc)
-+{
-+	if (!mdesc->release)
-+		return -EFAULT;
++SHRM Message format
++-------------------
++Message is made of a header plus a data. Header is made of several fields which
++includes the L1 and L2 header.
 +
-+	if (modem_is_requested(mdesc)) {
-+		atomic_dec(&mdesc->mclients->cnt);
-+		if (atomic_read(&mdesc->use_cnt) == 1) {
-+			mdesc->release(mdesc);
-+			atomic_dec(&mdesc->use_cnt);
-+		}
-+	} else
-+		printk(KERN_WARNING
-+			"modem_shm: client %s has not requested modem to release\n",
-+			mdesc->mclients->name);
-+	return 0;
-+}
++L1 Header:
++	L1 header is used in the message sent by the writer during the
++	initialization of the SHRM protocol. Available L1 headers are
++		BOOT_INFO_REQ - CMT sends this to APE
++		BOOT_INFO_RESP - APE sends this to CMT
++		MESSAGE - Used by both APE and CMT while communicating.
++	The first two L1 headers are used only during the boot and it includes
++	no other data apart from the L1 header.
 +
-+/**
-+ * modem_request - enable modem access for APE
-+ * @mdesc:	pointer to the struct modem_desc
-+ *
-+ * enable modem access to the APE. For a particluar client it checks if modem
-+ * has already been accessed and if so returns else will call the platform
-+ * specific function to enable access to modem.
-+ */
-+int modem_request(struct modem_desc *mdesc)
-+{
-+	if (!mdesc->request)
-+		return -EFAULT;
++	BOOT_INFO_REQ
++		_________________________________________
++		|31 ... 28|27 ....... 16|15 ... 8|7 ... 0|  bits
++		-----------------------------------------
++		|cmd 0x01 | Reserved    |config  |Version|
++		|         |             |   Info | Id    |
 +
-+	if (atomic_read(&mdesc->mclients->cnt) == 0) {
-+		mdesc->request(mdesc);
-+		atomic_inc(&mdesc->mclients->cnt);
-+		atomic_inc(&mdesc->use_cnt);
-+		if (atomic_read(&mdesc->use_cnt) > mdesc->no_clients) {
-+			dev_warn(mdesc->dev,
-+					"modem_shm: mismatch in the modem count\n");
-+		}
-+	} else
-+		dev_warn(mdesc->dev,
-+				"modem_shm: client '%s' has already requested modem\n",
-+				dev_name(mdesc->mclients->dev));
-+	return 0;
-+}
++	BOOT_INFO_RESP
++		_________________________________________
++		|31 ... 28|27 ....... 16|15 ... 8|7 ... 0|  bits
++		-----------------------------------------
++		|cmd 0x02 | Reserved    |config  |Version|
++		|         |             |   Info | Id    |
 +
-+/**
-+ * modem_put - free the modem corresponding to the client
-+ * @mdesc:	pointer to the struct modem_desc
-+ *
-+ * Free the modem associated to the client, makeing the modem no more
-+ * usable to the client.
-+ */
-+int modem_put(struct modem_desc *mdesc)
-+{
-+	if (atomic_read(&mdesc->cli_cnt)) {
-+		atomic_dec(&mdesc->cli_cnt);
-+		modem_release(mdesc);
-+		kfree(mdesc->mclients);
-+		return 0;
-+	} else {
-+		dev_err(mdesc->dev, "mismatch in the no of clients\n");
-+		return -EFAULT;
-+	}
-+}
++	MESSAGE
++		_________________________________________
++		|31 ... 28|27 ....... 20|19 ........... 0|  bits
++		-----------------------------------------
++		|cmd 0x03 | Counter    | Length of data |
++		|         |            |                |
 +
-+static int modem_match_device_by_name(struct device *dev, void *data)
-+{
-+	const char *name = data;
-+	struct modem_desc *mdesc = dev_get_drvdata(dev);
++L2 Header:
++	L2 header or L2 mux is used to route specific type of message on
++	specific channel.
++		ISI -> 0
++		RPC -> 1
++		Audio -> 2
++		Security -> 3
 +
-+	return strcmp(mdesc->name, name) == 0;
-+}
++SHRM Boot Sequence
++------------------
++	SHRM driver is a communication between two entities APE and CMT. Hence
++there has to be some sync during boot so that a communication can exist. This
++is first initiated by the CMT:-
 +
-+/**
-+ * modem_get - get reference to platform specific modem
-+ * @pdev:	pointer to the client's device struct
-+ * @name:	pointer to the modem's name
-+ *
-+ * This function checks if the requested modem is present in the modem access
-+ * framework and if present returns the pointer to the struct modem_desc.
-+ */
-+struct modem_desc *modem_get(struct device *pdev, const char *name)
-+{
-+	struct clients *mcli;
-+	struct modem_desc *mdesc = NULL;
-+	struct device *dev = class_find_device(modem_class, NULL, (void *)name,
-+			modem_match_device_by_name);
-+	mdesc = dev ? dev_get_drvdata(dev): NULL;
-+	if (mdesc) {
-+		if (atomic_read(&mdesc->cli_cnt) >= mdesc->no_clients) {
-+			dev_err(pdev, "already %d clients have requested\n",
-+					mdesc->no_clients);
-+			return NULL;
-+		}
-+		mcli = kzalloc(sizeof(struct clients), GFP_KERNEL);
-+		if (!mcli) {
-+			dev_err(pdev, "uanable to allocate memory\n");
-+			return NULL;
-+		}
-+		mdesc->mclients = mcli;
-+		mdesc->mclients->dev = pdev;
-+		atomic_inc(&mdesc->cli_cnt);
-+		atomic_set(&mdesc->mclients->cnt, 0);
-+	}
-+	return mdesc;
-+}
++	CMT			APE
++	 -------CaWakeReq------->
 +
-+/**
-+ * modem_unregister - unregister the modem
-+ * @mdec:	pointer to the struct modem_desc
-+ *
-+ * This function registers the modem device with the modem access framework,
-+ * so that it could be used by clients for accessing and releasing modem.
-+ */
-+int modem_register(struct device *parent, struct modem_desc *mdesc)
-+{
-+	mdesc->dev = device_create(modem_class, parent, 0, mdesc, "%s", mdesc->name);
-+	if (IS_ERR(mdesc->dev)) {
-+		dev_err(parent, "failed to create device\n");
-+		return PTR_ERR(mdesc->dev);
-+	}
++	 <------CaWakeAck--------
 +
-+	atomic_set(&mdesc->use_cnt, 0);
-+	atomic_set(&mdesc->cli_cnt, 0);
-+	return 0;
-+}
++	 ---msg BOOT_INFO_REQ--->
 +
-+/**
-+ * modem_unregister - unregister the modem
-+ * @mdec:	pointer to the struct modem_desc
-+ *
-+ * This function unregisters the modem device from the modem access framework
-+ * and makes the modem no more useful.
-+ */
-+int modem_unregister(struct modem_desc *mdesc)
-+{
-+	device_unregister(mdesc->dev);
-+	return 0;
-+}
++	 <---BOOT_INFO_RESP msg--
 +
-+static int modem_init(void)
-+{
-+	modem_class = class_create(THIS_MODULE, "modem_access");
-+	if (IS_ERR(modem_class)) {
-+		printk(KERN_ERR "modem_access: unable to create class\n");
-+		return PTR_ERR(modem_class);
-+	}
++APE Initiated communication
++---------------------------
++	APE			CMT
++	 -------AcWakeReq-------->
 +
-+	if (modem_class == NULL || IS_ERR(modem_class))
-+		printk(KERN_ERR "modem_access: MODEM ERR0R");
++	 <------AcWakeAck---------
 +
-+	return 0;
-+}
++	 -----AcMsgPendNotif----->
 +
-+static void modem_exit(void)
-+{
-+	class_destroy(modem_class);
-+}
++	 <------AcReadNotif-------
 +
-+arch_initcall(modem_init);
-+module_exit(modem_exit);
-diff --git a/include/linux/modem_shm/modem.h b/include/linux/modem_shm/modem.h
-new file mode 100644
-index 0000000..7a58fff
---- /dev/null
-+++ b/include/linux/modem_shm/modem.h
-@@ -0,0 +1,59 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2011
-+ *
-+ * License Terms: GNU General Public License v2
-+ * Author: Kumar Sanghvi
-+ *	Arun Murthy <arun.murthy@stericsson.com>
-+ *
-+ * Heavily adapted from Regulator framework
-+ */
-+#ifndef __MODEM_H__
-+#define __MODEM_H__
++	 -----AcMsgPendNotif----->
 +
-+#include <linux/device.h>
++	 <------AcReadNotif-------
++			|
++			|
++	 -------AcSleepReq------->
 +
-+struct clients {
-+	struct device *dev;
-+	const char *name;
-+	atomic_t cnt;
-+};
++	 <------AcSleepAck--------
 +
-+struct modem_desc {
-+	int (*request)(struct modem_desc *);
-+	void (*release)(struct modem_desc *);
-+	int (*is_requested)(struct modem_desc *);
-+	struct clients *mclients;
-+	struct device *dev;
-+	char *name;
-+	u8 no_clients;
-+	atomic_t use_cnt;
-+	atomic_t cli_cnt;
-+};
++SHRM driver interfaces
++----------------------
++The application using the shrm driver is audio, security, filesystem and the
++android RIL. All of these exist in the user space. Hence in order to pass this
++message to the user space there exist two types of interface
++	Character interface
++	Network interface
 +
-+#ifdef CONFIG_MODEM_SHM
-+int modem_register(struct device *parent, struct modem_desc *mdesc);
-+int modem_unregister(struct modem_desc *mdesc);
-+struct modem_desc *modem_get(struct device *dev, const char *name);
-+int modem_put(struct modem_desc *mdesc);
-+int modem_release(struct modem_desc *mdesc);
-+int modem_is_requested(struct modem_desc *mdesc);
-+int modem_get_usage(struct modem_desc *mdesc);
-+int modem_request(struct modem_desc *mdesc);
++Character Interface
++	Character devices are created for RPC, Security and Audi with the major	
++	ID being the L2 header. Message queues are created for each of available
++	L2 headers, which will be used during the Rx for copying the message
++	from the shared memory. Further the user space application will reques
++	for this message from the character deivce points which will fet the
++	data from the corresponding queue and provide it to the user space.
++	For the Tx path again the data is to be copied from the user space to
++	the shared memory. There exist static memory for each L2 header or
++	message type each of size 512k. This statch memeory will be used in the
++	Tx path. First the message will be copied from user space to this static
++	memory and then passed on the the shrm protocol where it will be moved
++	to the shared memory.
++	All operations like adding message to queue, removing messages to queue
++	resides in this file.
++Network Interface
++	The CMT used in u8500 platform is the Renessas modem and hence will use
++	phonet for Tx and Rx of the ISI messages. A network driver is registered
++	with name 'shrm0'. On Tx path the message comes via the phonet to the
++	shrm network interface driver. The same is passed to the shrm protocol
++	to transmit it to the modem. On Rx path ISI message is copied to skbuff
++	and corresponding phonet addr is added. This message is routed via
++	phonet, network and then to the user space from the socket depending
++	on the type od message, i.e ISI message or data packets.
 +
++Modem Silent Reset
++------------------
++On getting a modem reset interrupt from CMT, APE will inform all its clients via
++netlink so that none of the clients will further send any messages to send it to
++the CMT. Then shrm driver will disable all interrupts reset its state machine,
++clear all message queues, stop any communication if any in progress and waits
++for the modem to book. Since the modem reset status is sent via netlink to the
++user clients, the client responsible for collecting modem dump and reloading
++CMT image will be done and then CMT will be released from reset wherein it
++starts booting up.
 +
-+#else
-+int modem_register(struct device *parent, struct modem_desc *mdesc)
-+{
-+	return NULL;
-+}
++Implementation
++--------------
++The shrm protocol driver is spread over many files:
++	shrm_driver.c
++	shrm_protocol.c
++	shrm_fifo.c
++	shrm_driver.h
++	shrm_char.c
++	shrm_net.c
++	shrm_driver.h
++	shrm_config.h
++	shrm_net.h
++	shrm_private.h
++	shrm.h
 +
-+static inline int modem_unregister(struct modem_desc *mdesc)
-+{
-+	return NULL;
-+}
-+int modem_get_usage(struct modem_desc *mdesc)
-+{
-+	return 0;
-+}
-+#endif
-+#endif /* __MODEM_H__ */
++shrm_driver.c
++-------------
++This file is the main entry for the shrm driver and includes:
++	-> memory ioremapping (shared memory)
++	-> work queue initialization
++	-> registering of interrupts
++	-> suspend/resume control
++		The criteria for shrm driver suspend is that AcSleepReq and
++		CaSleepReq should be set and the Rx message queue for RPC,
++		Security should be empty.
++	-> Rx calback handler - On modem sending any message based on the
++	   channel the callback handler gets executed which will add the message
++	   to the corresponding message queue or call the shrm network interface
++	   if its an ISI message, which will route the packets via phonet.
++
++shrm_protocol.c
++---------------
++This file includes the shrm protocol implementation and also includes Modem
++Silent Reset(MSR) implementation. Interrupt handlers for all interrupts raised
++by modem are present in this file. This file makes access to the shared memory
++for read and write process. Hence a state machine and prorper check for the shrm
++protocol is validated.
++
++shrm_fifo.c
++-----------
++As said shared memory is classified into 4 FIFO's and hence data read or written
++to the shared memoery is nothing by reading/writing to the FIFO. This operations
++made on FIFO is present in this file. It includes the shared and local reader
++and writer pointer, all updation of this pointer happends in this file. The fifo
++is desinged in a manner to sufficiently hold the data in it without encountering
++the fifo full situation.
++
++For futher information on implementation details refer the kernel doc.
 -- 
 1.7.0.4
 
