@@ -1,139 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab2JOPrc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 11:47:32 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61763 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab2JOPra (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 11:47:30 -0400
-Date: Tue, 16 Oct 2012 00:47:24 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>, Jiri Kosina <jiri.kosina@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-mm <linux-mm@kvack.org>
-Subject: Re: [RFC PATCH 1/3] mm: teach mm by current context info to not do
- I/O during memory allocation
-Message-ID: <20121015154724.GA2840@barrios>
-References: <1350278059-14904-1-git-send-email-ming.lei@canonical.com>
- <1350278059-14904-2-git-send-email-ming.lei@canonical.com>
+	id S1752802Ab2JOPwJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 11:52:09 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:47788 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751292Ab2JOPwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 11:52:07 -0400
+From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hilman, Kevin" <khilman@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-keystone@list.ti.com - Linux developers for Keystone family of
+	devices (May contain non-TIers)" <linux-keystone@list.ti.com>,
+        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
+        "Chemparathy, Cyril" <cyril@ti.com>
+Subject: RE: [PATCH v2 09/13] ARM: davinci - update the dm644x soc code to
+ use common clk drivers
+Thread-Topic: [PATCH v2 09/13] ARM: davinci - update the dm644x soc code to
+ use common clk drivers
+Thread-Index: AQHNp6t77vVliQFxq0CE7FMivrMa2Je0KyOggAGmRQCABLRnYA==
+Date: Mon, 15 Oct 2012 15:51:53 +0000
+Message-ID: <3E54258959B69E4282D79E01AB1F32B704201DE5@DFLE12.ent.ti.com>
+References: <1348683037-9705-1-git-send-email-m-karicheri2@ti.com>
+ <1348683037-9705-10-git-send-email-m-karicheri2@ti.com>
+ <5076BAA2.6010404@ti.com>
+ <3E54258959B69E4282D79E01AB1F32B7041FDB5B@DFLE12.ent.ti.com>
+ <5077F466.6020707@ti.com>
+In-Reply-To: <5077F466.6020707@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [128.247.5.50]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350278059-14904-2-git-send-email-ming.lei@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9FFqF0E025507
 
-On Mon, Oct 15, 2012 at 01:14:17PM +0800, Ming Lei wrote:
-> This patch introduces PF_MEMALLOC_NOIO on process flag('flags' field of
-> 'struct task_struct'), so that the flag can be set by one task
-> to avoid doing I/O inside memory allocation in the task's context.
-> 
-> The patch trys to solve one deadlock problem caused by block device,
-> and the problem can be occured at least in the below situations:
-> 
-> - during block device runtime resume situation, if memory allocation
-> with GFP_KERNEL is called inside runtime resume callback of any one
-> of its ancestors(or the block device itself), the deadlock may be
-> triggered inside the memory allocation since it might not complete
-> until the block device becomes active and the involed page I/O finishes.
-> The situation is pointed out first by Alan Stern. It is not a good
-> approach to convert all GFP_KERNEL in the path into GFP_NOIO because
-> several subsystems may be involved(for example, PCI, USB and SCSI may
-> be involved for usb mass stoarage device)
+--Cut----
 
-Couldn't we expand pm_restrict_gfp_mask to cover resume path as well as
-suspend path?
+>> Subject: Re: [PATCH v2 09/13] ARM: davinci - update the dm644x soc code to use
+>> common clk drivers
+>> 
+>> >>> You have chosen to keep all clock related data in platform files
+>> >>> while using the common clock framework to provide just the
+>> >>> infrastructure. If you look at how mxs and spear have been migrated, they have
+>> migrated the soc specific clock data to drivers/clk as well.
+>> >>> See "drivers/clk/spear/spear3xx_clock.c" or
+>> >>> "drivers/clk/mxs/clk-imx23.c
+>> >
+>> > I have to disagree on this one. I had investigated these code already
+>> > and came up with a way that we can re-use code across all of the
+>> > davinci platforms as well as other architectures that re-uses the clk hardware IPs.
+>> 
+>> Which code you are talking about here? Even if you introduce clk-dm644x.c, clk-
+>> keystone.c etc in drivers/clk/davinci/ you can reuse the code you introduce in patches 1-
+>> 3. I cant see how that will be prevented.
 
-> 
-> - during error handling situation of usb mass storage deivce, USB
-> bus reset will be put on the device, so there shouldn't have any
-> memory allocation with GFP_KERNEL during USB bus reset, otherwise
-> the deadlock similar with above may be triggered. Unfortunately, any
-> usb device may include one mass storage interface in theory, so it
-> requires all usb interface drivers to handle the situation. In fact,
-> most usb drivers don't know how to handle bus reset on the device
-> and don't provide .pre_set() and .post_reset() callback at all, so
-> USB core has to unbind and bind driver for these devices. So it
-> is still not practical to resort to GFP_NOIO for solving the problem.
+I was talking about re-use of davinci_common_clk_init in drivers/clk/davinci/davinci-clock.c.
+This is meant to be re-used across all of the DaVinci devices.
 
-I hope this case could be handled by usb core like usb_restrict_gfp_mask
-rather than adding new branch on fast path.
+>> 
+>> > spear3xx_clock.c has initialization code for each of the platforms and
+>> > so is the case with imx23.c.
+>> 
+>> By each of the platforms, you mean they all cater to a family of devices? This depends on
+>> how close together the family of devices are.
+>> Otherwise, there would be a file per soc. DM644x also represents a family for that matter.
+>> 
+>> > By using platform_data approach, we are able to define clks for each of the SoC and
+>> then use davinci_common_clk_init() to do initialize the clk drivers based on platform
+>> data.
+>> 
+>> You need to define and register the clocks present on each SoC either which way. I don't
+>> see why just the platform_data approach allows this.
+>> And looking closely, you have defined platform data, but don't actually have a platform
+>> device, making things more confusing.
+>> 
 
-> 
-> Also the introduced solution can be used by block subsystem or block
-> drivers too, for example, set the PF_MEMALLOC_NOIO flag before doing
-> actual I/O transfer.
-> 
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: Oliver Neukum <oneukum@suse.de>
-> Cc: Jiri Kosina <jiri.kosina@suse.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: linux-mm <linux-mm@kvack.org>
-> 
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
-> ---
->  include/linux/sched.h |    5 +++++
->  mm/page_alloc.c       |    2 ++
->  2 files changed, 7 insertions(+)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index f6961c9..33be290 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1811,6 +1811,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
->  #define PF_FROZEN	0x00010000	/* frozen for system suspend */
->  #define PF_FSTRANS	0x00020000	/* inside a filesystem transaction */
->  #define PF_KSWAPD	0x00040000	/* I am kswapd */
-> +#define PF_MEMALLOC_NOIO 0x00080000	/* Allocating memory without IO involved */
->  #define PF_LESS_THROTTLE 0x00100000	/* Throttle me less: I clean memory */
->  #define PF_KTHREAD	0x00200000	/* I am a kernel thread */
->  #define PF_RANDOMIZE	0x00400000	/* randomize virtual address space */
-> @@ -1848,6 +1849,10 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
->  #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
->  #define used_math() tsk_used_math(current)
->  
-> +#define tsk_memalloc_no_io(p) ((p)->flags & PF_MEMALLOC_NOIO)
-> +#define tsk_memalloc_allow_io(p) do { (p)->flags &= ~PF_MEMALLOC_NOIO; } while (0)
-> +#define tsk_memalloc_forbid_io(p) do { (p)->flags |= PF_MEMALLOC_NOIO; } while (0)
-> +
->  /*
->   * task->jobctl flags
->   */
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 8e1be1c..e15381f 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -2596,6 +2596,8 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
->  	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET;
->  
->  	gfp_mask &= gfp_allowed_mask;
-> +	if (unlikely(tsk_memalloc_no_io(current)))
-> +		gfp_mask &= ~GFP_IOFS;
->  
->  	lockdep_trace_alloc(gfp_mask);
->  
-> -- 
-> 1.7.9.5
-> 
+Ok. There are multiple ways to implement this software. We had discussed this
+internally and picked the platform_data approach. The clk drivers are written not
+following the platform driver model. But I don't see why we can't use platform data
+to configure this drivers. Down below, you have made two interesting points, one is
+ARM code reduction. This patch already does this by moving the API that initializes
+the clk drivers (davinci_common_clk_init()) out of ARM to drivers/clk/davinci. So
+this + removal of existing clk driver under arm/mach-davinci/clock.[ch], we have
+achieved this goal. The second point is the moving of SoC specific clk data out of SoC
+code to drive. Are you 100% sure this is the right thing to do for these drivers. If so,
+I can start working on this change right away. As I am working on this as a background
+activity, I want to be double or triple sure before doing the rework of these patches :).
+So please confirm.
 
--- 
-Kind Regards,
-Minchan Kim
+>> > Later once we migrate to device tree, davinci_common_clk_init() will
+>> > go way and also the clk structures defined in the SoC file. I have prototyped this on
+>> one of the device that I am working on. davinci_common_clk_init() will be replaced with a
+>> of_davinci_clk_init() that will use device tree to get all of the platform data for the clk
+>> providers and do the initialization based on that. See highbank_clocks_init() in clk-
+>> highbank.c. I have used this model for device tree based clk initialization.
+>> 
+>> I don't think we should wait till DT migration to get rid of clock data from platform code.
+>> For many of the older DaVinci platforms, DT migration is a big if and when. This approach
+>> you gave above might work for newer DT-only platforms, but even if there is one board
+>> that is not migrated to DT, the entire clock data will have to stay. I have very less hope
+>> this will happen for DaVinci (at least in the near term). So, I would rather take the
+>> opportunity of common clock tree migration to move clock data out of mach-davinci.
+>> 
+>> Also, just moving soc-specific clk data to drivers/clk/davinci/* does not impede a future
+>> DT conversion, no?
+>> 
+>> > So it make sense to keep the design the way it is. Otherwise we will
+>> > end up writing dm644x_clk_init(), dm355_clk_init(), etc for each of the platforms and
+>> these code will get thrown away once we migrate to device tree.
+>> 
+>> I still don't see why davinci/keystone cannot follow the same approach taken by multiple
+>> other socs - spear, mxs and ux500. I am unconvinced that we have a significantly
+>> different case.
+>> 
+>> >>> ". I feel the
+>> >>> latter way is better and I also think it will simplify some of the
+>> >>> look-up infrastructure you had to build. This will also help some real code reduction
+>> from arch/arm/mach-davinci/.
+>> >>>
+>> >
+>> > The look-up infrastructure is pretty much re-use of the existing code base in SoC
+>> specific file.
+>> 
+>> Yes, but that's no reason to keep maintaining it.
+>> 
+>> > About code reduction, I can't say I agree, as we need to add platform_specific clock
+>> initialization code if we follow spear3xx_clock.c model and end up probably adding more
+>> code.
+>> > SoC specific file (for example dm644x.c) has only data structures and all of SoC will re-
+>> use davinci_common_clk_init() to do the initialization. So I am not sure how you conclude
+>> we will have code reduction?
+>> 
+>> Is about code reduction from arch/arm/. That's what ARM community is working towards.
+>> 
+>> Thanks,
+>> Sekhar
+>> 
+>> PS: When replying, can you please hit an enter after every 70 or so characters.
+>> Otherwise quoting from your mails is becoming very difficult. I tried manually adjusting it
+>> but finally gave up.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
