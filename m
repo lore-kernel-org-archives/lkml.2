@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119Ab2JOPLZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 11:11:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48453 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab2JOPLY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 11:11:24 -0400
-Date: Mon, 15 Oct 2012 08:11:19 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>, stable@vger.kernel.org
-Subject: Re: [PATCH] drm/i915: disable cpu relocs on ilk and earlier
-Message-ID: <20121015151119.GB30606@kroah.com>
-References: <1350288682-6236-1-git-send-email-daniel.vetter@ffwll.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350288682-6236-1-git-send-email-daniel.vetter@ffwll.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752209Ab2JOPPj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 11:15:39 -0400
+Received: from mga11.intel.com ([192.55.52.93]:57288 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752004Ab2JOPPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 11:15:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,588,1344236400"; 
+   d="asc'?scan'208";a="234087072"
+Message-ID: <1350314130.5769.17.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] ubi: use list_move_tail instead of
+ list_del/list_add_tail
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: richard@nod.at, dwmw2@infradead.org, yongjun_wei@trendmicro.com.cn,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Mon, 15 Oct 2012 18:15:30 +0300
+In-Reply-To: <CAPgLHd_AHHe7=H18K54LvbiS0M7_w1vTMOxwwxgVdRaiXNN-OA@mail.gmail.com>
+References: <CAPgLHd_AHHe7=H18K54LvbiS0M7_w1vTMOxwwxgVdRaiXNN-OA@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-tRnwX2uJOF5+MjvTCJEn"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 10:11:22AM +0200, Daniel Vetter wrote:
-> Hi Greg&stable-team,
-> 
-> The below patch papers over a graphics corruption issue in 3.5/3.6. The
-> regression happened due to pwrite tunings in 3.5, which made cpu relocations
-> much more likely.
-> 
-> The issue seems to have disappeared in 3.7-rc1, but it takes a few days to test
-> a patch, so we haven't figured out what exactly fixed things. Now users are
-> taking out their pitchforks already, so instead of wasting more days (maybe
-> weeks?) to fully understand the bug before backporting the fix, we've opted for
-> the below disable patch, which should have minimal impact (at most it undoes the
-> tuning improvements in 3.5).
-> 
-> Patch is tested by reporters & acked by all relevant ppl, please apply to
-> 3.5/3.6 series kernels.
 
-No, I'd really like to wait until you figure out what is happening in
-3.7-rc1 right now before applying the patch.  We have the rule, "it must
-be in Linus's tree first" for a very good reason :)
+--=-tRnwX2uJOF5+MjvTCJEn
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-So, I'll hold onto this until you say what's up with 3.7-rc1, ok?
+On Tue, 2012-10-09 at 14:14 +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>=20
+> Using list_move_tail() instead of list_del() + list_add_tail().
+>=20
+> dpatch engine is used to auto generate this patch.
+> (https://github.com/weiyj/dpatch)
+>=20
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-thanks,
+Pushed to linux-ubi.git, thanks!
 
-greg k-h
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-tRnwX2uJOF5+MjvTCJEn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJQfCiSAAoJECmIfjd9wqK0DUUP/1V4hLIYHK81ac+KlW/oNFiy
+8H2QSbPCfJhS6hsIXpKOOZ/09M1qbt+J0klUyKShnqr2ZbrBmrJgr+1KcYWYYn5u
+o2RCuq//IV8YCuINZVmOyt+FoK1ooueKSXQnKXZNPo14Z9oqyzlGkHgLygh1Df8P
+HaC2zU4SO+XnSiveYlqVYrf/EOarYUYbFb9JZHg6UxqfHJUr7eIAeSkB/rjEwPNX
+ifhU2AO5H4VNaHrfAvQAP+GGOHQhTrl52Z42Da80fmWxSr3Jjnfl7e5Ml1E2XPI+
+sistT7laUmTvTFhet0ajBu2cHkyKxVZaonoHbrqQy30ONk7ORaqfvE4miKDN4wuJ
+g6P3ye9VJJSuZ37OjOHDNhOFlN0R694Ld5/hHbMxJDxuvLw0r0qS9PM2bR8p4cDc
+WswqZ+BIer98uiJi7wJZJDEGDfHlpDh+OksYeytXLCuiBj0+4JPVV3RyzYZtU3cl
+NQ9/u07dOBuFMkFe8BLQ2HkVL8fSHoSmrRDryJDhHhrBG9Xgfdplv9pZhSYwfcsq
+HFeRhemRDd5pdlBJmuBB2azg+eKzsfwbRrZySLzY4qAeBev8mvIhPNZViLrYLU1N
+4lVxX4WnkEtnjA6vPCBK9lXp47ZdRONUMDO+DTTmODFjgZfc40t4F4UY4HpKtFP5
+AAHtWF0CPJzBapzSSV5l
+=7VKN
+-----END PGP SIGNATURE-----
+
+--=-tRnwX2uJOF5+MjvTCJEn--
+
