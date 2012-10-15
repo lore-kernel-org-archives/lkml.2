@@ -1,95 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab2JOGDs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 02:03:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48312 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752455Ab2JOGDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 02:03:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,587,1344236400"; 
-   d="scan'208";a="205651237"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: peterz@infradead.org, tglx@linutronix.de, eranian@google.com,
-        mingo@kernel.org, linux-kernel@vger.kernel.org
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH] perf/x86: Avoid kfree() in CPU_{STARTING,DYING}
-Date: Mon, 15 Oct 2012 14:03:43 +0800
-Message-Id: <1350281023-9262-1-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1753635Ab2JOGSn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 02:18:43 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:55325 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752394Ab2JOGSm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 02:18:42 -0400
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, Paul Mackerras <paulus@samba.org>,
+        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] powerpc: added DSCR support to ptrace
+Date: Mon, 15 Oct 2012 17:18:30 +1100
+Message-Id: <1350281910-5238-1-git-send-email-aik@ozlabs.ru>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+The DSCR (aka Data Stream Control Register) is supported on some
+server PowerPC chips and allow some control over the prefetch
+of data streams.
 
-On -rt kfree() can schedule, but CPU_{STARTING,DYING} should be
-atomic. So use a list to defer kfree until CPU_{ONLINE,DEAD}.
+The kernel already supports DSCR value per thread but there is also
+a need in a ability to change it from an external process for
+the specific pid.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+The patch adds new register index PT_DSCR (index=44) which can be
+set/get by:
+  ptrace(PTRACE_POKEUSER, traced_process, PT_DSCR << 3, dscr);
+  dscr = ptrace(PTRACE_PEEKUSER, traced_process, PT_DSCR << 3, NULL);
+
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 27 ++++++++++++++++++++++++---
- 1 file changed, 24 insertions(+), 3 deletions(-)
+ arch/powerpc/include/asm/ptrace.h |    3 ++-
+ arch/powerpc/kernel/ptrace.c      |   16 ++++++++++++++++
+ 2 files changed, 18 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 99d96a4..6df0e60 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -2611,6 +2611,20 @@ static void __init uncore_pci_exit(void)
- 	}
+diff --git a/arch/powerpc/include/asm/ptrace.h b/arch/powerpc/include/asm/ptrace.h
+index 84cc784..946c556 100644
+--- a/arch/powerpc/include/asm/ptrace.h
++++ b/arch/powerpc/include/asm/ptrace.h
+@@ -276,7 +276,8 @@ static inline unsigned long regs_get_kernel_stack_nth(struct pt_regs *regs,
+ #define PT_DAR	41
+ #define PT_DSISR 42
+ #define PT_RESULT 43
+-#define PT_REGS_COUNT 44
++#define PT_DSCR 44
++#define PT_REGS_COUNT 45
+ 
+ #define PT_FPR0	48	/* each FP reg occupies 2 slots in this space */
+ 
+diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
+index 8d8e028..4798acf 100644
+--- a/arch/powerpc/kernel/ptrace.c
++++ b/arch/powerpc/kernel/ptrace.c
+@@ -179,6 +179,17 @@ static int set_user_msr(struct task_struct *task, unsigned long msr)
+ 	return 0;
  }
  
-+static LIST_HEAD(boxes_to_free);
-+
-+static void __cpuinit uncore_kfree_boxes(void)
++static unsigned long get_user_dscr(struct task_struct *task)
 +{
-+	struct intel_uncore_box *box;
-+
-+	while (!list_empty(&boxes_to_free)) {
-+		box = list_entry(boxes_to_free.next,
-+				 struct intel_uncore_box, list);
-+		list_del(&box->list);
-+		kfree(box);
-+	}
++	return task->thread.dscr;
 +}
 +
- static void __cpuinit uncore_cpu_dying(int cpu)
- {
- 	struct intel_uncore_type *type;
-@@ -2625,7 +2639,7 @@ static void __cpuinit uncore_cpu_dying(int cpu)
- 			box = *per_cpu_ptr(pmu->box, cpu);
- 			*per_cpu_ptr(pmu->box, cpu) = NULL;
- 			if (box && atomic_dec_and_test(&box->refcnt))
--				kfree(box);
-+				list_add(&box->list, &boxes_to_free);
- 		}
- 	}
- }
-@@ -2655,8 +2669,11 @@ static int __cpuinit uncore_cpu_starting(int cpu)
- 				if (exist && exist->phys_id == phys_id) {
- 					atomic_inc(&exist->refcnt);
- 					*per_cpu_ptr(pmu->box, cpu) = exist;
--					kfree(box);
--					box = NULL;
-+					if (box) {
-+						list_add(&box->list,
-+							 &boxes_to_free);
-+						box = NULL;
-+					}
- 					break;
- 				}
- 			}
-@@ -2795,6 +2812,10 @@ static int
- 	case CPU_DYING:
- 		uncore_cpu_dying(cpu);
- 		break;
-+	case CPU_ONLINE:
-+	case CPU_DEAD:
-+		uncore_kfree_boxes();
-+		break;
- 	default:
- 		break;
- 	}
++static int set_user_dscr(struct task_struct *task, unsigned long dscr)
++{
++	task->thread.dscr = dscr;
++	return 0;
++}
++
+ /*
+  * We prevent mucking around with the reserved area of trap
+  * which are used internally by the kernel.
+@@ -200,6 +211,9 @@ unsigned long ptrace_get_reg(struct task_struct *task, int regno)
+ 	if (regno == PT_MSR)
+ 		return get_user_msr(task);
+ 
++	if (regno == PT_DSCR)
++		return get_user_dscr(task);
++
+ 	if (regno < (sizeof(struct pt_regs) / sizeof(unsigned long)))
+ 		return ((unsigned long *)task->thread.regs)[regno];
+ 
+@@ -218,6 +232,8 @@ int ptrace_put_reg(struct task_struct *task, int regno, unsigned long data)
+ 		return set_user_msr(task, data);
+ 	if (regno == PT_TRAP)
+ 		return set_user_trap(task, data);
++	if (regno == PT_DSCR)
++		return set_user_dscr(task, data);
+ 
+ 	if (regno <= PT_MAX_PUT_REG) {
+ 		((unsigned long *)task->thread.regs)[regno] = data;
 -- 
-1.7.11.7
+1.7.10.4
 
