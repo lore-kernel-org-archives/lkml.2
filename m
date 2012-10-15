@@ -1,63 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753099Ab2JOAs5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 20:48:57 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:36482 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562Ab2JOAs4 (ORCPT
+	id S1753237Ab2JOA4o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 20:56:44 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40394 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752539Ab2JOA4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 20:48:56 -0400
-From: Thiago Farina <tfransosi@gmail.com>
-To: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] power: remove duplicated include of abx500.h from ab8500_fb.c
-Date: Sun, 14 Oct 2012 21:48:45 -0300
-Message-Id: <1350262125-25883-1-git-send-email-tfarina@chromium.org>
-X-Mailer: git-send-email 1.8.0.rc2
+	Sun, 14 Oct 2012 20:56:43 -0400
+Date: Mon, 15 Oct 2012 09:56:36 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: gregkh@linuxfoundation.org, sameo@linux.intel.com, swarren@nvidia.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 4/5] regmap: add API to get irq_domain from regmap irq
+Message-ID: <20121015005634.GA24935@opensource.wolfsonmicro.com>
+References: <1349889545-21517-1-git-send-email-ldewangan@nvidia.com>
+ <1349889545-21517-5-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349889545-21517-5-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Beware the one behind you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Thiago Farina <tfarina@chromium.org>
----
- drivers/power/ab8500_fg.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+On Wed, Oct 10, 2012 at 10:49:04PM +0530, Laxman Dewangan wrote:
+> Add API regmap_irq_get_irq_domain() for getting the
+> irq domain from regmap irq. The irq domain created on
+> result of regmap_add_irq_chip() from driver.
 
-diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
-index 2db8cc2..1041397 100644
---- a/drivers/power/ab8500_fg.c
-+++ b/drivers/power/ab8500_fg.c
-@@ -15,22 +15,21 @@
-  *	Arun R Murthy <arun.murthy@stericsson.com>
-  */
- 
--#include <linux/init.h>
--#include <linux/module.h>
-+#include <linux/completion.h>
-+#include <linux/delay.h>
- #include <linux/device.h>
-+#include <linux/init.h>
- #include <linux/interrupt.h>
--#include <linux/platform_device.h>
--#include <linux/power_supply.h>
- #include <linux/kobject.h>
--#include <linux/mfd/abx500/ab8500.h>
- #include <linux/mfd/abx500.h>
--#include <linux/slab.h>
- #include <linux/mfd/abx500/ab8500-bm.h>
--#include <linux/delay.h>
- #include <linux/mfd/abx500/ab8500-gpadc.h>
--#include <linux/mfd/abx500.h>
-+#include <linux/mfd/abx500/ab8500.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/power_supply.h>
-+#include <linux/slab.h>
- #include <linux/time.h>
--#include <linux/completion.h>
- 
- #define MILLI_TO_MICRO			1000
- #define FG_LSB_IN_MA			1627
--- 
-1.8.0.rc2
-
+Sorry, when doing the merge down after the merge window I realised that
+I already have a patch there adding a function regmap_irq_get_domain()
+which has been sitting there for a while now, I think it was just fat
+fingers that meant it didn't make v3.7.
