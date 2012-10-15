@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694Ab2JOOdJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 10:33:09 -0400
-Received: from mail.servus.at ([193.170.194.20]:59385 "EHLO mail.servus.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750898Ab2JOOdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 10:33:07 -0400
-Message-ID: <507C1E97.3020006@oberhumer.com>
-Date: Mon, 15 Oct 2012 16:32:55 +0200
-From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
-Organization: oberhumer.com
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.9) Gecko/20121011 Thunderbird/10.0.9
+	id S1751864Ab2JOOdl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 10:33:41 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:50328 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751184Ab2JOOdk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 10:33:40 -0400
+Date: Mon, 15 Oct 2012 10:33:39 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Ming Lei <ming.lei@canonical.com>
+cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Oliver Neukum <oneukum@suse.de>, Jiri Kosina <jiri.kosina@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [RFC PATCH 1/3] mm: teach mm by current context info to not do
+ I/O during memory allocation
+In-Reply-To: <1350278059-14904-2-git-send-email-ming.lei@canonical.com>
+Message-ID: <Pine.LNX.4.44L0.1210151029350.1702-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Fabio Estevam <festevam@gmail.com>
-CC: akpm@linux-foundation.org, s.hauer@pengutronix.de,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] lib: decompress_unlzo: Change include file name
-References: <1350238390-1549-1-git-send-email-festevam@gmail.com>
-In-Reply-To: <1350238390-1549-1-git-send-email-festevam@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Fabio,
+On Mon, 15 Oct 2012, Ming Lei wrote:
 
-that should already be fixed on the "lzo-update" branch at
+> This patch introduces PF_MEMALLOC_NOIO on process flag('flags' field of
+> 'struct task_struct'), so that the flag can be set by one task
+> to avoid doing I/O inside memory allocation in the task's context.
+> 
+> The patch trys to solve one deadlock problem caused by block device,
+> and the problem can be occured at least in the below situations:
+> 
+> - during block device runtime resume situation, if memory allocation
+> with GFP_KERNEL is called inside runtime resume callback of any one
+> of its ancestors(or the block device itself), the deadlock may be
+> triggered inside the memory allocation since it might not complete
+> until the block device becomes active and the involed page I/O finishes.
+> The situation is pointed out first by Alan Stern. It is not a good
+> approach to convert all GFP_KERNEL in the path into GFP_NOIO because
+> several subsystems may be involved(for example, PCI, USB and SCSI may
+> be involved for usb mass stoarage device)
+> 
+> - during error handling situation of usb mass storage deivce, USB
+> bus reset will be put on the device, so there shouldn't have any
+> memory allocation with GFP_KERNEL during USB bus reset, otherwise
+> the deadlock similar with above may be triggered. Unfortunately, any
+> usb device may include one mass storage interface in theory, so it
+> requires all usb interface drivers to handle the situation. In fact,
+> most usb drivers don't know how to handle bus reset on the device
+> and don't provide .pre_set() and .post_reset() callback at all, so
+> USB core has to unbind and bind driver for these devices. So it
+> is still not practical to resort to GFP_NOIO for solving the problem.
+> 
+> Also the introduced solution can be used by block subsystem or block
+> drivers too, for example, set the PF_MEMALLOC_NOIO flag before doing
+> actual I/O transfer.
 
-  git://github.com/markus-oberhumer/linux.git lzo-update
-
-Cheers,
-Markus
-
-On 2012-10-14 20:13, Fabio Estevam wrote:
-> From: Fabio Estevam <fabio.estevam@freescale.com>
-> 
-> Commit 7c979cebc (lib/lzo: Rename lzo1x_decompress.c to lzo1x_decompress_safe.c) 
-> renamed lzo1x_decompress.c file, but missed to update lib/decompress_unlzo.c,
-> which breaks imx_v6_v7_defconfig build:
-> 
-> arch/arm/boot/compressed/../../../../lib/decompress_unlzo.c:34:34: fatal error: lzo/lzo1x_decompress.c: No such file or directory
-> 
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-> ---
->  lib/decompress_unlzo.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/lib/decompress_unlzo.c b/lib/decompress_unlzo.c
-> index 4531294..960183d 100644
-> --- a/lib/decompress_unlzo.c
-> +++ b/lib/decompress_unlzo.c
-> @@ -31,7 +31,7 @@
->   */
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1811,6 +1811,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+>  #define PF_FROZEN	0x00010000	/* frozen for system suspend */
+>  #define PF_FSTRANS	0x00020000	/* inside a filesystem transaction */
+>  #define PF_KSWAPD	0x00040000	/* I am kswapd */
+> +#define PF_MEMALLOC_NOIO 0x00080000	/* Allocating memory without IO involved */
+>  #define PF_LESS_THROTTLE 0x00100000	/* Throttle me less: I clean memory */
+>  #define PF_KTHREAD	0x00200000	/* I am a kernel thread */
+>  #define PF_RANDOMIZE	0x00400000	/* randomize virtual address space */
+> @@ -1848,6 +1849,10 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+>  #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
+>  #define used_math() tsk_used_math(current)
 >  
->  #ifdef STATIC
-> -#include "lzo/lzo1x_decompress.c"
-> +#include "lzo/lzo1x_decompress_safe.c"
->  #else
->  #include <linux/decompress/unlzo.h>
->  #endif
+> +#define tsk_memalloc_no_io(p) ((p)->flags & PF_MEMALLOC_NOIO)
+> +#define tsk_memalloc_allow_io(p) do { (p)->flags &= ~PF_MEMALLOC_NOIO; } while (0)
+> +#define tsk_memalloc_forbid_io(p) do { (p)->flags |= PF_MEMALLOC_NOIO; } while (0)
 
--- 
-Markus Oberhumer, <markus@oberhumer.com>, http://www.oberhumer.com/
+Instead of allow/forbid, the API should be save/restore (like 
+local_irq_save and local_irq_restore).  This makes nesting much easier.
+
+Also, do we really the "p" argument?  This is not at all likely to be 
+used with any task other than the current one.
+
+Alan Stern
+
