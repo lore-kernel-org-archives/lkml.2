@@ -1,72 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930Ab2JOOrV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 10:47:21 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:48022
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750840Ab2JOOrU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 10:47:20 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(zz98dI936eI148cI1432I4015Izz1202h1d1ah1d2ahzz8275bh8275dhz2dh668h839h944hd25hf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1441h14afh1155h)
-X-WSS-ID: 0MBXVQN-02-HFO-02
-X-M-MSG: 
-Date: Mon, 15 Oct 2012 16:47:08 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@kernel.org>
-CC: Dan Carpenter <dan.carpenter@oracle.com>,
-        <oprofile-list@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] oprofile fixes
-Message-ID: <20121015144708.GQ8285@erda.amd.com>
-References: <20121010071835.GA26201@elgon.mountain>
- <20121015143912.GP8285@erda.amd.com>
+	id S1752043Ab2JOOrm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 10:47:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42503 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751875Ab2JOOrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 10:47:40 -0400
+Date: Mon, 15 Oct 2012 16:47:36 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] memcg: oom: fix totalpages calculation for
+ swappiness==0
+Message-ID: <20121015144736.GI29069@dhcp22.suse.cz>
+References: <20121010141142.GG23011@dhcp22.suse.cz>
+ <507BD33C.4030209@jp.fujitsu.com>
+ <20121015094907.GE29069@dhcp22.suse.cz>
+ <CAHGf_=p4d33t7i5++YHTkc0PbAUckca1oBxR5dZ48EzybKYHgw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121015143912.GP8285@erda.amd.com>
+In-Reply-To: <CAHGf_=p4d33t7i5++YHTkc0PbAUckca1oBxR5dZ48EzybKYHgw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
-
-On 15.10.12 16:39:12, Robert Richter wrote:
-> On 10.10.12 10:18:35, Dan Carpenter wrote:
-> > The "event" variable is a u16 so the shift will always wrap to zero
-> > making the line a no-op.
-> > 
-> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+On Mon 15-10-12 10:25:14, KOSAKI Motohiro wrote:
+> > diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+> > index 078701f..308fd77 100644
+> > --- a/Documentation/sysctl/vm.txt
+> > +++ b/Documentation/sysctl/vm.txt
+> > @@ -640,6 +640,9 @@ swappiness
+> >  This control is used to define how aggressive the kernel will swap
+> >  memory pages.  Higher values will increase agressiveness, lower values
+> >  decrease the amount of swap.
+> > +The value can be used from the [0, 100] range, where 0 means no swapping
+> > +at all (even if there is a swap storage enabled) while 100 means that
+> > +anonymous pages are reclaimed in the same rate as file pages.
 > 
-> Patch applied. Thanks for reporting and fixing.
+> I think this only correct when memcg. Even if swappiness==0, global reclaim swap
+> out anon pages before oom.
 
-please pull this fix for tip:perf/urgent from
+Right you are (we really do swap when the file pages are really
+low)! Sorry about the confusion. I kind of became if(global_reclaim)
+block blind...
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+Then this really needs a memcg specific documentation fix. What about
+the following?
+---
+>From 59a60705abd2faf9e266a4270bbf302001845588 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Mon, 15 Oct 2012 11:43:56 +0200
+Subject: [PATCH] doc: describe memcg swappiness more precisely
 
-Thanks,
+since fe35004f (mm: avoid swapping out with swappiness==0) memcg reclaim
+stopped swapping out anon pages completely when 0 value is used.
+Although this is somehow expected it hasn't been done for a really long
+time this way and so it is probably better to be explicit about the
+effect. Moreover global reclaim swapps out even when swappiness is 0
+to prevent from OOM killer.
 
--Robert
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ Documentation/cgroups/memory.txt |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-
-
-The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
-
-  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
-
-Dan Carpenter (1):
-      oprofile, x86: Fix wrapping bug in op_x86_get_ctrl()
-
- arch/x86/oprofile/nmi_int.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index c07f7b4..71c4da4 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -466,6 +466,10 @@ Note:
+ 5.3 swappiness
+ 
+ Similar to /proc/sys/vm/swappiness, but affecting a hierarchy of groups only.
++Please note that unlike the global swappiness, memcg knob set to 0
++really prevents from any swapping even if there is a swap storage
++available. This might lead to memcg OOM killer if there are no file
++pages to reclaim.
+ 
+ Following cgroups' swappiness can't be changed.
+ - root cgroup (uses /proc/sys/vm/swappiness).
+-- 
+1.7.10.4
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Michal Hocko
+SUSE Labs
