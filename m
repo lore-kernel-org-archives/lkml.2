@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751509Ab2JOO17 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 10:27:59 -0400
-Received: from antcom.de ([188.40.178.216]:45115 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750896Ab2JOO16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 10:27:58 -0400
-Message-ID: <507C1D6C.1080108@antcom.de>
-Date: Mon, 15 Oct 2012 16:27:56 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S1751360Ab2JOOcY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 10:32:24 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:58133 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750896Ab2JOOcX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 10:32:23 -0400
+Date: Mon, 15 Oct 2012 22:31:35 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: "David S. Miller" <davem@davemloft.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Cote <david.m.cote@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Chaohong Guo <chaohong.guo@intel.com>,
+        Austin Zhang <austin_zhang@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>, Min Li <min.a.li@intel.com>
+Subject: Re: [PATCH 0/3 v2] Optimize CRC32C calculation using PCLMULQDQ in
+ crc32c-intel module
+Message-ID: <20121015143135.GA25426@gondor.apana.org.au>
+References: <cover.1348784343.git.tim.c.chen@linux.intel.com>
+ <1348785854.17632.15.camel@schen9-DESK>
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] usb: gadget: lpc32xx_udc: Fix compatibility with
- STOTG04
-References: <1350305256-27295-1-git-send-email-aletes.xgr@gmail.com> <20121015130150.GQ24333@arwen.pp.htv.fi>
-In-Reply-To: <20121015130150.GQ24333@arwen.pp.htv.fi>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348785854.17632.15.camel@schen9-DESK>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2012 03:01 PM, Felipe Balbi wrote:
-> On Mon, Oct 15, 2012 at 09:47:35AM -0300, Alexandre Pereira da
-> Silva wrote:
->> The STOTG04 is an replacement for ISP1301.
->> 
->> Most of the registers on STOTG04 are the same as on ISP1301, but
->> the register ISP1301_I2C_OTG_CONTROL_2 (address 0x10) doesn't
->> exist on the ST part.
->> 
->> This is a work around for this by using the interrupt source
->> register that should behave the same on both parts and has the
->> needed information.
->> 
->> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com> 
->> ---
->> 
->> This patch is very important to LPC32xx users. IMHO this should
->> go in for 3.7-rc2.
->> 
->> drivers/usb/gadget/lpc32xx_udc.c |    4 ++-- 1 file changed, 2
->> insertions(+), 2 deletions(-)
->> 
->> diff --git a/drivers/usb/gadget/lpc32xx_udc.c
->> b/drivers/usb/gadget/lpc32xx_udc.c index f696fb9..21a9861 100644 
->> --- a/drivers/usb/gadget/lpc32xx_udc.c +++
->> b/drivers/usb/gadget/lpc32xx_udc.c @@ -2930,10 +2930,10 @@ static
->> void vbus_work(struct work_struct *work)
->> 
->> /* Get the VBUS status from the transceiver */ value =
->> i2c_smbus_read_byte_data(udc->isp1301_i2c_client, -
->> ISP1301_I2C_OTG_CONTROL_2); +
->> ISP1301_I2C_INTERRUPT_SOURCE);
->> 
->> /* VBUS on or off? */ -		if (value & OTG_B_SESS_VLD) +		if (value
->> & INT_SESS_VLD)
+On Thu, Sep 27, 2012 at 03:44:14PM -0700, Tim Chen wrote:
+> Version 2
+> This version of the patch series fixes compilation errors for
+> 32 bit x86 targets.
 > 
-> why isn't this using a PHY driver instead ?
+> Version 1
+> This patch series optimized CRC32C calculations with PCLMULQDQ
+> instruction for crc32c-intel module.  It speeds up the original
+> implementation by 1.6x for 1K buffer and by 3x for buffer 4k or
+> more.  The tcrypt module was enhanced for doing speed test
+> on crc32c calculations.
+> 
+> Tim
+> 
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 
-Right, should definitely be done in a subsequent patch.
-
-Thanks for pointing this out.
+All applied.  Thanks!
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
