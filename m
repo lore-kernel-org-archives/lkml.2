@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546Ab2JOMGj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 08:06:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:39537 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab2JOMGi (ORCPT
+	id S1752657Ab2JOMJG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 08:09:06 -0400
+Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:57687 "EHLO
+	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752388Ab2JOMJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 08:06:38 -0400
+	Mon, 15 Oct 2012 08:09:04 -0400
+Message-ID: <507BFCD9.6070302@ti.com>
+Date: Mon, 15 Oct 2012 14:08:57 +0200
+From: =?ISO-8859-1?Q?P=E9ter_Ujfalusi?= <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120917 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <2564763.3cNFlv543H@linux-lqwf.site>
-References: <1350278059-14904-1-git-send-email-ming.lei@canonical.com>
-	<1350278059-14904-4-git-send-email-ming.lei@canonical.com>
-	<2564763.3cNFlv543H@linux-lqwf.site>
-Date: Mon, 15 Oct 2012 20:06:36 +0800
-Message-ID: <CACVXFVPi=fq1NP-nuWQi34xTpGgWbaceW1Hbzcq38RqQMF_T-w@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/3] USB: forbid memory allocation with I/O during bus
- reset if storage interface exits
-From: Ming Lei <ming.lei@canonical.com>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+CC: Dmitry Torokhov <dtor@mail.ru>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Input: twl*-vibra probe cleanups (devm_* conversion)
+References: <1339755732-23774-1-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1339755732-23774-1-git-send-email-peter.ujfalusi@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 5:34 PM, Oliver Neukum <oneukum@suse.de> wrote:
->
-> I think limiting this to devices which have a storage device is not
-> productive. What if you are using iSCSI or nbd? In the long run
+Hi Dmitry,
 
-You mean other non-mass storage or non-uas usb interfaces may
-be involved in iSCSI or nbd? If not, the patch should be OK.
-If yes, could you list them?
+On 06/15/2012 12:22 PM, Peter Ujfalusi wrote:
+> Hello,
+> 
+> Convert the twl4030, twl6040 vibra drivers to use devm_ at probe time to clean
+> up the code a bit.
+> The twl6040-vibra driver needed bigger change since the ordering of the
+> initialization was not correct.
 
-> we will see busses attached to busses and as soon as the daughter
-> bus is hotpluggable you are thwarted anyway. Just do it unconditionally.
+Would it be possible to include this two patch for 3.7-rc2?
+I can resend them if you no longer have them.
 
-IMO, doing it unconditionally is not good because big chunk buffer
-is often allocated in probe() path.
+Thank you,
+Péter
 
-Thanks,
---
-Ming Lei
+> 
+> Regards,
+> Peter
+> ---
+> Peter Ujfalusi (2):
+>   Input: twl4030-vibra: Convert to use devm_* in probe
+>   Input: twl6040-vibra: Code cleanup in probe with devm_* conversion
+> 
+>  drivers/input/misc/twl4030-vibra.c |    8 +--
+>  drivers/input/misc/twl6040-vibra.c |   99 ++++++++++++++++-------------------
+>  2 files changed, 47 insertions(+), 60 deletions(-)
+> 
+
+
+
