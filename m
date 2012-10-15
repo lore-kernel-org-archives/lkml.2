@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753028Ab2JOLiN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 07:38:13 -0400
-Received: from mail.atsec.com ([195.30.99.214]:35006 "EHLO mail.atsec.com"
+	id S1753097Ab2JOLim (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 07:38:42 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48571 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752934Ab2JOLhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 07:37:55 -0400
-Message-ID: <507BF36F.10205@atsec.com>
-Date: Mon, 15 Oct 2012 13:28:47 +0200
-From: Stephan Mueller <stephan.mueller@atsec.com>
-Organization: atsec information security GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alex Lyashkov <umka@cloudlinux.com>, Arnd Bergmann <arnd@arndb.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Josh Boyer <jwboyer@redhat.com>, linux-crypto@vger.kernel.org,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Milan Broz <mbroz@redhat.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: FIPS-mode panic? (was Re: [PULL] modules)
-References: <CA+55aFyVcTT4tKTVvhzXz3t4uw=MDLU00NAAOacWt6i3xovERg@mail.gmail.com> <87fw5m7ipz.fsf@rustcorp.com.au> <CA+55aFyGuy8P4Uaanmv7DncjsN6cvQxvWrrMKKnF=67J+BkshQ@mail.gmail.com> <15269.1350287454@warthog.procyon.org.uk>
-In-Reply-To: <15269.1350287454@warthog.procyon.org.uk>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1752828Ab2JOLhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 07:37:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,587,1344236400"; 
+   d="scan'208";a="227002394"
+From: dragos.tatulea@intel.com
+To: cbouatmailru@gmail.com, linux-kernel@vger.kernel.org
+Cc: adrian.hunter@intel.com, octavian.purdila@intel.com,
+        Dragos Tatulea <dragos.tatulea@intel.com>
+Subject: [PATCH 7/8] pstore: make sure pstore_write exists on flush error
+Date: Mon, 15 Oct 2012 14:40:09 +0300
+Message-Id: <1350301210-16953-8-git-send-email-dragos.tatulea@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1350301210-16953-1-git-send-email-dragos.tatulea@intel.com>
+References: <1350301210-16953-1-git-send-email-dragos.tatulea@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.10.2012 09:50:54, +0200, David Howells <dhowells@redhat.com> wrote:
+From: Dragos Tatulea <dragos.tatulea@intel.com>
 
-Hi David,
+Return error if flushing to backend failed.
 
-> Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> 
->> Hmm. So this thing makes me wonder:
->>
->>         /* Not having a signature is only an error if we're strict. */
->>         if (err < 0 && fips_enabled)
->>                 panic("Module verification failed with error %d in FIPS mode\n",
->>                       err);
->>
->> do we really want to panic (even in fips_enabled mode)?
-> 
-> That's what the FIPS people want.  As I understand it, if there's some
-> indication that the crypto stuff is compromised, the box should be shut down
-> immediately.
-> 
-> I've added Stephan Mueller to see if he can illuminate further.
-> 
-> David
-> 
+Signed-off-by: Dragos Tatulea <dragos.tatulea@intel.com>
+---
+ fs/pstore/platform.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-The requirement for a FIPS 140-2 module is to disable the entire module
-if any component of its self test or integrity test failed.
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index 3a4c38f..25f59ed 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -445,7 +445,7 @@ void pstore_del_timer(void)
+ int pstore_write(enum pstore_type_id type, const char *buf, size_t size)
+ {
+ 	size_t len;
+-	int err = 0, err2;
++	int err = 0;
+ 
+ 	if (!psinfo)
+ 		return -ENODEV;
+@@ -461,16 +461,14 @@ int pstore_write(enum pstore_type_id type, const char *buf, size_t size)
+ 		psinfo->ext_part = 1;
+ 	}
+ 
+-	while (size) {
++	while (size && !err) {
+ 		len = min(size, psinfo->bufsize - psinfo->ext_len);
+ 		memcpy(psinfo->buf + psinfo->ext_len, buf, len);
+ 		psinfo->ext_len += len;
+ 		buf += len;
+ 		size -= len;
+ 		if (psinfo->ext_len == psinfo->bufsize) {
+-			err2 = pstore_ext_flush();
+-			if (err2 && !err)
+-				err = err2;
++			err = pstore_ext_flush();
+ 		}
+ 	}
+ 
+-- 
+1.7.9.5
 
-In the kernel, we have the FIPS 140-2 module of the kernel crypto API
-(the API itself plus the relevant kernel modules implementing the
-ciphers, block chaining modes, etc). Therefore, the requirement would be
-translated into the following: the kernel crypto API must be disabled if
-any of the self test or integrity tests failed. The self tests are the
-known answer tests in the kernel crypto API test manager. The integrity
-tests are the DSA signature checks of the kernel modules (at least the
-kernel crypto API ones) plus the static kernel binary itself (for the
-static kernel crypto API part -- this is done outside the kernel).
-
-The requirement to disable the module implies that the module is
-technically unavailable.
-
-There are two solutions that were contemplated for disabling the module:
-having a kind of global status of the crypto API that makes it
-non-responsive in case of an integrity/self-test error. The other
-solution is to simply terminate the entire kernel. As the former one
-also will lead to a kernel failure eventually as many parts of the
-kernel depend on the crypto API, the implementation of the latter option
-was chosen.
