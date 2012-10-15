@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab2JODqy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 23:46:54 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:15140 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000Ab2JODqw convert rfc822-to-8bit (ORCPT
+	id S1751376Ab2JOEQF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 00:16:05 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:42038 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab2JOEQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 23:46:52 -0400
-From: "Yangfei (Felix)" <felix.yang@huawei.com>
-To: "linux-assembly@vger.kernel.org" <linux-assembly@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Hardcoded instruction causes certain features to fail on ARM
- platfrom due to endianness
-Thread-Topic: Hardcoded instruction causes certain features to fail on ARM
- platfrom due to endianness
-Thread-Index: Ac2qh4xbYCm2qA8uSCiJR4GBLTZbOg==
-Date: Mon, 15 Oct 2012 03:46:47 +0000
-Message-ID: <DA41BE1DDCA941489001C7FBD7A8820E3CB407A4@szxeml549-mbx.china.huawei.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.135.72.226]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 15 Oct 2012 00:16:03 -0400
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+In-Reply-To: <507B63AC.3010807@xenotime.net>
+References: <CA+55aFyt0KFNp5Binu-c3-XzF=MG+23EDOk1R6t4qqgW58ksAw@mail.gmail.com>
+	<507B63AC.3010807@xenotime.net>
+Date: Mon, 15 Oct 2012 12:16:02 +0800
+Message-ID: <CAGjg+kHFA=o4W9dsgts-ux768TiDp+py0K-m=-N_Lz-vManSwA@mail.gmail.com>
+Subject: Re: Linux 3.7-rc1 (uml uapi errors)
+From: Alex Shi <lkml.alex@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Richard Weinberger <richard@nod.at>, rmk+kernel@arm.linux.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+>
+> Building um (uml) for x86_64 (defconfig) has lots of errors like:
+>
+> In file included from include/linux/irq.h:22:0,
+>                  from include/asm-generic/hardirq.h:12,
+>                  from arch/um/include/generated/asm/hardirq.h:1,
+>                  from include/linux/hardirq.h:7,
+>                  from include/linux/ftrace_event.h:7,
+>                  from include/trace/syscall.h:6,
+>                  from include/linux/syscalls.h:78,
+>                  from init/noinitramfs.c:23:
+> include/linux/irqnr.h:4:30: fatal error: uapi/linux/irqnr.h: No such file or directory
+>
 
-    I found that hardcoded instruction in inline asm can cause certains certain features fail to work on ARM platform due to endianness.
-    As an example, consider the following code snippet of platform_do_lowpower function from arch/arm/mach-realview/hotplug.c:
-                / *
-                 * here's the WFI
-                 */
-                asm(".word      0xe320f003\n"
-                    :
-                    :
-                    : "memory", "cc");
+Bisect said the commit 244acb1ba3777c2eb4d33ddc246cab5419656442 cause
+this issue.
 
-    The instruction generated from this inline asm will not work on big-endian ARM platform, such as ARM BE-8 format. Instead, an exception will be generated.
-
-    Here the code should be:
-                / *
-                 * here's the WFI
-                 */
-                asm("WFI\n"
-                    :
-                    :
-                    : "memory", "cc");
-
-    Seems the kernel doesn't support ARM BE-8 well. I don't know why this problem happens.
-    Can anyone tell me who owns this part? I can prepare a patch then. 
-    Thanks.
+-- 
+Thanks
+    Alex
