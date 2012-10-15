@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167Ab2JOULK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 16:11:10 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:47102 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932133Ab2JOULB (ORCPT
+	id S932154Ab2JOULH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 16:11:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43029 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932136Ab2JOULD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 16:11:01 -0400
+	Mon, 15 Oct 2012 16:11:03 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
-        neilb@suse.de
-Subject: [PATCH v2 24/26] block: Add an explicit bio flag for bios that own their bvec
-Date: Mon, 15 Oct 2012 13:09:27 -0700
-Message-Id: <1350331769-14856-54-git-send-email-koverstreet@google.com>
+        neilb@suse.de, "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: [PATCH v2 25/26] bio-integrity: Add explicit field for owner of bip_buf
+Date: Mon, 15 Oct 2012 13:09:28 -0700
+Message-Id: <1350331769-14856-55-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1350331769-14856-1-git-send-email-koverstreet@google.com>
 References: <1350331769-14856-1-git-send-email-koverstreet@google.com>
@@ -22,68 +22,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is for the new bio splitting code. When we split a bio, if the
-split occured on a bvec boundry we reuse the bvec for the new bio. But
-that means bio_free() can't free it, hence the explicit flag.
+This was the only real user of BIO_CLONED, which didn't have very clear
+semantics. Convert to its own flag so we can get rid of BIO_CLONED.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
-Acked-by: Tejun Heo <tj@kernel.org>
+CC: Martin K. Petersen <martin.petersen@oracle.com>
 ---
- fs/bio.c                  | 4 +++-
- include/linux/bio.h       | 5 -----
- include/linux/blk_types.h | 1 +
- 3 files changed, 4 insertions(+), 6 deletions(-)
+ fs/bio-integrity.c  | 5 ++---
+ include/linux/bio.h | 1 +
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/bio.c b/fs/bio.c
-index 65e6eac..5e91e36 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -250,7 +250,7 @@ static void bio_free(struct bio *bio)
- 	__bio_free(bio);
+diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+index e8555a5..462a131 100644
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -94,9 +94,7 @@ void bio_integrity_free(struct bio *bio)
+ 	struct bio_integrity_payload *bip = bio->bi_integrity;
+ 	struct bio_set *bs = bio->bi_pool;
+ 
+-	/* A cloned bio doesn't own the integrity metadata */
+-	if (!bio_flagged(bio, BIO_CLONED) && !bio_flagged(bio, BIO_FS_INTEGRITY)
+-	    && bip->bip_buf != NULL)
++	if (bip->bip_owns_buf)
+ 		kfree(bip->bip_buf);
  
  	if (bs) {
--		if (bio_has_allocated_vec(bio))
-+		if (bio_flagged(bio, BIO_OWNS_VEC))
- 			bvec_free_bs(bs, bio->bi_io_vec, BIO_POOL_IDX(bio));
- 
- 		/*
-@@ -449,6 +449,8 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
- 
- 		if (unlikely(!bvl))
- 			goto err_free;
-+
-+		bio->bi_flags |= 1 << BIO_OWNS_VEC;
- 	} else if (nr_iovecs) {
- 		bvl = bio->bi_inline_vecs;
+@@ -382,6 +380,7 @@ int bio_integrity_prep(struct bio *bio)
+ 		return -EIO;
  	}
+ 
++	bip->bip_owns_buf = 1;
+ 	bip->bip_buf = buf;
+ 	bip->bip_size = len;
+ 	bip->bip_sector = bio->bi_sector;
 diff --git a/include/linux/bio.h b/include/linux/bio.h
-index bd45154..edd66f3 100644
+index edd66f3..f429d0f 100644
 --- a/include/linux/bio.h
 +++ b/include/linux/bio.h
-@@ -85,11 +85,6 @@ static inline void *bio_data(struct bio *bio)
- 	return NULL;
- }
+@@ -178,6 +178,7 @@ struct bio_integrity_payload {
+ 	unsigned short		bip_slab;	/* slab the bip came from */
+ 	unsigned short		bip_vcnt;	/* # of integrity bio_vecs */
+ 	unsigned short		bip_idx;	/* current bip_vec index */
++	unsigned		bip_owns_buf:1;	/* should free bip_buf */
  
--static inline int bio_has_allocated_vec(struct bio *bio)
--{
--	return bio->bi_io_vec && bio->bi_io_vec != bio->bi_inline_vecs;
--}
--
- /*
-  * will die
-  */
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 3eefbb2..e9375cf 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -117,6 +117,7 @@ struct bio {
-  * BIO_POOL_IDX()
-  */
- #define BIO_RESET_BITS	12
-+#define BIO_OWNS_VEC	12	/* bio_free() should free bvec */
- 
- #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
+ 	struct work_struct	bip_work;	/* I/O completion */
  
 -- 
 1.7.12
