@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab2JOW7z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 18:59:55 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:58642 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753902Ab2JOW7x (ORCPT
+	id S1754543Ab2JOXFL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 19:05:11 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40419 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752975Ab2JOXFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 18:59:53 -0400
-Message-ID: <507C955D.8030401@xenotime.net>
-Date: Mon, 15 Oct 2012 15:59:41 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Dave Airlie <airlied@gmail.com>, dri-devel@lists.freedesktop.org
-Subject: [PATCH resend] drm: radeon: fix printk format warnings
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 15 Oct 2012 19:05:10 -0400
+Date: Tue, 16 Oct 2012 00:10:07 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Mikko C." <mikko.cal@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Kernel panic on CentOS
+Message-ID: <20121016001007.35aa5bbb@pyramind.ukuu.org.uk>
+In-Reply-To: <507C66E0.6070802@gmail.com>
+References: <507C66E0.6070802@gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Mon, 15 Oct 2012 21:41:20 +0200
+"Mikko C." <mikko.cal@gmail.com> wrote:
 
-Fix printk format warnings in gpu/drm/radeon/:
+> Hi,
+> we keep getting kernel panics on our CentOS 6.3 server, running about 40 
+> KVM virtual machines.
+> 
+> Here's the screenshot of the trace: http://i.imgur.com/yaRyF.png
+> 
+> # uname -a
+> Linux srv010 2.6.32-71.el6.x86_64 #1 SMP Fri May 20 03:51:51 BST 2011 
+> x86_64 x86_64 x86_64 GNU/Linux
+> 
+> CPU is Intel i7-2600K with 32GB DDR3 ram.
+> 
+> If there's any more info we can provide, please let me know.
 
-drivers/gpu/drm/radeon/radeon_atpx_handler.c:151:3: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'size_t'
-drivers/gpu/drm/radeon/radeon_acpi.c:204:3: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'size_t'
-drivers/gpu/drm/radeon/radeon_acpi.c:488:3: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'size_t'
+You are in the wrong place - the Red Hat enterprise kernels deviate a lot
+from upstream and are very old. Really you need to go back to the Centos
+community with it.
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc:	David Airlie <airlied@linux.ie>
-Cc:	dri-devel@lists.freedesktop.org
----
-Originally posted for linux-next, but now needed in mainline.
-
- drivers/gpu/drm/radeon/radeon_acpi.c         |    4 ++--
- drivers/gpu/drm/radeon/radeon_atpx_handler.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
---- lnx-37-rc1.orig/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-+++ lnx-37-rc1/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-@@ -148,7 +148,7 @@ static int radeon_atpx_verify_interface(
- 
- 	size = *(u16 *) info->buffer.pointer;
- 	if (size < 8) {
--		printk("ATPX buffer is too small: %lu\n", size);
-+		printk("ATPX buffer is too small: %zu\n", size);
- 		err = -EINVAL;
- 		goto out;
- 	}
---- lnx-37-rc1.orig/drivers/gpu/drm/radeon/radeon_acpi.c
-+++ lnx-37-rc1/drivers/gpu/drm/radeon/radeon_acpi.c
-@@ -201,7 +201,7 @@ static int radeon_atif_verify_interface(
- 
- 	size = *(u16 *) info->buffer.pointer;
- 	if (size < 12) {
--		DRM_INFO("ATIF buffer is too small: %lu\n", size);
-+		DRM_INFO("ATIF buffer is too small: %zu\n", size);
- 		err = -EINVAL;
- 		goto out;
- 	}
-@@ -485,7 +485,7 @@ static int radeon_atcs_verify_interface(
- 
- 	size = *(u16 *) info->buffer.pointer;
- 	if (size < 8) {
--		DRM_INFO("ATCS buffer is too small: %lu\n", size);
-+		DRM_INFO("ATCS buffer is too small: %zu\n", size);
- 		err = -EINVAL;
- 		goto out;
- 	}
+Alan
