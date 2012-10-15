@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab2JOXzX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 19:55:23 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:41138 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333Ab2JOXzW convert rfc822-to-8bit (ORCPT
+	id S1754724Ab2JOX51 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 19:57:27 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:51201 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752333Ab2JOX5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 19:55:22 -0400
+	Mon, 15 Oct 2012 19:57:25 -0400
+Date: Mon, 15 Oct 2012 16:57:20 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Roland Stigge <stigge@antcom.de>
+Cc: grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        w.sang@pengutronix.de, jbe@pengutronix.de, plagnioj@jcrosoft.com,
+        highguy@gmail.com, broonie@opensource.wolfsonmicro.com,
+        daniel-gl@gmx.net, rmallon@gmail.com
+Subject: Re: [PATCH RFC 02/11 v4] gpio: Add sysfs support to block GPIO API
+Message-ID: <20121015235720.GA3132@kroah.com>
+References: <1350343887-7344-1-git-send-email-stigge@antcom.de>
+ <1350343887-7344-3-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
-In-Reply-To: <20121015225252.GA14167@kroah.com>
-References: <EE928378561BF1449699C96571234A740FE67913@SHSMSX102.ccr.corp.intel.com>
-	<EE928378561BF1449699C96571234A740FE67A7D@SHSMSX102.ccr.corp.intel.com>
-	<20121015225252.GA14167@kroah.com>
-Date: Mon, 15 Oct 2012 16:55:21 -0700
-Message-ID: <CAMP5Xgfo3u5QoKmkOpCyxHaEkCScWwKFDLnfQMH3mevcrF7aJQ@mail.gmail.com>
-Subject: Re: Fix memory leak in binder--version2
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        "ccross@android.com" <ccross@android.com>,
-        "davej@redhat.com" <davej@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "Zhang, Di" <di.zhang@intel.com>, "Ma, Xindong" <xindong.ma@intel.com>,
-        "Zuo, Alex" <alex.zuo@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350343887-7344-3-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 3:52 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Mon, Oct 15, 2012 at 07:20:01AM +0000, Tu, Xiaobing wrote:
->> After enabling kmemleak and run monkey, following memleak is reported:
->> unreferenced object 0xeed27f80 (size 64):
->>   comm "Binder_8", pid 641, jiffies 4294946341 (age 2275.810s)
->>   hex dump (first 32 bytes):
->>     4f dd 00 00 84 7f d2 ee 84 7f d2 ee 01 00 00 00  O...............
->>     00 00 00 00 00 00 00 00 00 aa 4c d7 00 00 00 00  ..........L.....
->>   backtrace:
->>     [<c184fabc>] kmemleak_alloc+0x3c/0xa0
->>     [<c12f391e>] kmem_cache_alloc_trace+0x9e/0x180
->>     [<c1668bb5>] binder_thread_write+0xcf5/0x23a0
->>     [<c166b091>] binder_ioctl+0x1f1/0x530
->>     [<c130dcf6>] do_vfs_ioctl+0x86/0x5e0
->>     [<c130e282>] sys_ioctl+0x32/0x60
->>     [<c1872e01>] syscall_call+0x7/0xb
->>     [<ffffffff>] 0xffffffff
->>
->> The work item in async_todo list is not freed when binder released.
->> Also the async transaction should also be freed in binder_release_work.
->>
->> Signed-off-by: Leon Ma <xindong.ma@intel.com>
->> Signed-off-by: Di Zhang <di.zhang@intel.com>
->> ---
->>  drivers/staging/android/binder.c |    6 ++++++
->>  1 files changed, 6 insertions(+), 0 deletions(-)
->
-> Nice fix, but next time can you at least use scripts/get_maintainer.pl
-> to figure out who to send this to?  I'll queue it up soon, but it took
-> akpm to point me at this for me to notice it.
+On Tue, Oct 16, 2012 at 01:31:18AM +0200, Roland Stigge wrote:
+> +int gpio_block_export(struct gpio_block *block)
+> +{
+> +	int		status;
+> +	struct device	*dev;
+> +
+> +	/* can't export until sysfs is available ... */
+> +	if (!gpio_class.p) {
+> +		pr_debug("%s: called too early!\n", __func__);
+> +		return -ENOENT;
+> +	}
+> +
+> +	mutex_lock(&sysfs_lock);
+> +	dev = device_create(&gpio_class, NULL, MKDEV(0, 0), block,
+> +			    block->name);
+> +	if (!IS_ERR(dev))
+> +		status = sysfs_create_group(&dev->kobj, &gpio_block_attr_group);
+> +	else
+> +		status = PTR_ERR(dev);
+> +	mutex_unlock(&sysfs_lock);
 
-This patch was just pointer out to me as well. I have a similar fix
-queued up at https://android-review.googlesource.com/#/c/43801/ that
-is still being tested. It fixes this leak and a theoretical leak of
-death notification objects.
+You just raced with userspace telling it that the device was present,
+yet the attributes are not there.  Don't do that, use the default class
+attributes for the class and then the driver core will create them
+automagically without needing to this "by hand" at all.
 
--- 
-Arve Hjønnevåg
+thanks,
+
+greg k-h
