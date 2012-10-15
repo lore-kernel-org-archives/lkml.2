@@ -1,62 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959Ab2JOWCq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 18:02:46 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:50427 "EHLO e9.ny.us.ibm.com"
+	id S1755127Ab2JOWEM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 18:04:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58551 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753902Ab2JOWCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 18:02:45 -0400
-Date: Mon, 15 Oct 2012 17:02:20 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
-Subject: Re: [PATCH] TPM: Let the tpm char device be openable multiple times
-Message-ID: <20121015220220.GC30592@ennui.austin.ibm.com>
-References: <20120930233345.GJ30637@obsidianresearch.com>
- <20121010163324.GB5013@ennui.austin.ibm.com>
- <20121012205658.GM4124@obsidianresearch.com>
+	id S1754509Ab2JOWEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 18:04:11 -0400
+Date: Tue, 16 Oct 2012 00:04:08 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] memcg: oom: fix totalpages calculation for
+ memory.swappiness==0
+Message-ID: <20121015220354.GA11682@dhcp22.suse.cz>
+References: <20121011085038.GA29295@dhcp22.suse.cz>
+ <1349945859-1350-1-git-send-email-mhocko@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121012205658.GM4124@obsidianresearch.com>
+In-Reply-To: <1349945859-1350-1-git-send-email-mhocko@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101522-7182-0000-0000-000002D5BD9B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Using open/close is an interesting idea, but it wouldn't work. open()
-> is coded to return EBUSY if another process has it open, rather than
-> block, and spinning on open would be unacceptable.
+As Kosaki correctly pointed out, the glogal reclaim doesn't have this
+issue because we _do_ swap on swappinnes==0 so the swap space has
+to be considered. So the v2 is just acks + changelog fix.
 
-  I'm trying to imagine when spinning would be unacceptable? Keygen
-could take several seconds, regardless of whether you can get the
-command to the chip right away or not...
+Changes since v1
+- drop a note about global swappiness affected as well from the
+  changelog
+- stable needs 3.2+ rather than 3.5+ because the fe35004f has been
+  backported to stable
+---
+>From c2ae4849f09dbfda6b61472c6dd1fd8c2fe8ac81 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Wed, 10 Oct 2012 15:46:54 +0200
+Subject: [PATCH] memcg: oom: fix totalpages calculation for
+ memory.swappiness==0
 
-> > around any use of the device node. That seems simple enough to me. In
-> > places where you do want TSS to be the sole opener, it can't enforce
-> > that rule itself, so I think we need to preserve the option of a single
-> > open at a minimum.
-> 
-> I agree, but I'm not sure how to expose this function? I've seen other
-> places abuse O_EXCL for this, but that would not be compatible with
-> existing implementations.
-> 
-> Three things come to mind
->  - O_EXCL means the open only succeeds if it the only open and
->    prevents others (not compatible)
->  - Some other O_ flag is hijacked to mean the opposite of the above
->    (yuk)
->  - A sysfs flag is added to turn on the new O_EXCL behavior
-> 
-> What do you think?
+oom_badness takes totalpages argument which says how many pages are
+available and it uses it as a base for the score calculation. The value
+is calculated by mem_cgroup_get_limit which considers both limit and
+total_swap_pages (resp. memsw portion of it).
 
-  My first thought was a sysfs var to turn off exclusivity that
-defaulted to today's behavior.
+This is usually correct but since fe35004f (mm: avoid swapping out
+with swappiness==0) we do not swap when swappiness is 0 which means
+that we cannot really use up all the totalpages pages. This in turn
+confuses oom score calculation if the memcg limit is much smaller than
+the available swap because the used memory (capped by the limit) is
+negligible comparing to totalpages so the resulting score is too small
+if adj!=0 (typically task with CAP_SYS_ADMIN or non zero oom_score_adj).
+A wrong process might be selected as result.
 
-Kent
+The problem can be worked around by checking mem_cgroup_swappiness==0
+and not considering swap at all in such a case.
 
-> Jason
-> 
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: stable [3.2+]
+---
+ mm/memcontrol.c |   21 +++++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 7acf43b..93a7e36 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1452,17 +1452,26 @@ static int mem_cgroup_count_children(struct mem_cgroup *memcg)
+ static u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
+ {
+ 	u64 limit;
+-	u64 memsw;
+ 
+ 	limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
+-	limit += total_swap_pages << PAGE_SHIFT;
+ 
+-	memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
+ 	/*
+-	 * If memsw is finite and limits the amount of swap space available
+-	 * to this memcg, return that limit.
++	 * Do not consider swap space if we cannot swap due to swappiness
+ 	 */
+-	return min(limit, memsw);
++	if (mem_cgroup_swappiness(memcg)) {
++		u64 memsw;
++
++		limit += total_swap_pages << PAGE_SHIFT;
++		memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
++
++		/*
++		 * If memsw is finite and limits the amount of swap space
++		 * available to this memcg, return that limit.
++		 */
++		limit = min(limit, memsw);
++	}
++
++	return limit;
+ }
+ 
+ void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+-- 
+1.7.10.4
+
+-- 
+Michal Hocko
+SUSE Labs
