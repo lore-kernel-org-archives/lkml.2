@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753967Ab2JOR0w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 13:26:52 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:44300 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120Ab2JOR0t (ORCPT
+	id S1754275Ab2JOR04 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 13:26:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34587 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754183Ab2JOR0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 13:26:49 -0400
+	Mon, 15 Oct 2012 13:26:52 -0400
 From: Sangho Yi <antiroot@gmail.com>
 To: devel@driverdev.osuosl.org
 Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         Sangho Yi <antiroot@gmail.com>
-Subject: [PATCH 10/14] staging: csr: Fixed return(xxx); --> return xxx; on io.c
-Date: Tue, 16 Oct 2012 02:25:32 +0900
-Message-Id: <1350321936-2664-1-git-send-email-antiroot@gmail.com>
+Subject: [PATCH 11/14] staging: csr: Fixed minor coding style error like array = {{..}};
+Date: Tue, 16 Oct 2012 02:25:33 +0900
+Message-Id: <1350321936-2664-2-git-send-email-antiroot@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <n>
+In-Reply-To: <1350321936-2664-1-git-send-email-antiroot@gmail.com>
 References: <n>
+ <1350321936-2664-1-git-send-email-antiroot@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just fixed the coding style errors like return(xxx); to return xxx;.
+Fixed a coding style error like array = {{...., ...}}; to ...} };
 
 Signed-off-by: Sangho Yi <antiroot@gmail.com>
 ---
- drivers/staging/csr/io.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/csr/io.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/staging/csr/io.c b/drivers/staging/csr/io.c
-index e85fe94..ae069f0 100644
+index ae069f0..b7087c7 100644
 --- a/drivers/staging/csr/io.c
 +++ b/drivers/staging/csr/io.c
-@@ -956,7 +956,7 @@ uf_read_proc(char *page, char **start, off_t offset, int count,
- 	if (offset >= written) {
- 		*eof = 1;
- 		kfree(orig_p);
--		return(0);
-+		return 0;
- 	}
+@@ -516,7 +516,7 @@ cleanup_unifi_sdio(unifi_priv_t *priv)
+ 	int priv_instance;
+ 	int i;
+ 	static const CsrWifiMacAddress broadcast_address = {{0xFF,
+-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF}};
++		0xFF, 0xFF, 0xFF, 0xFF, 0xFF} };
  
- 	if (offset + count > written) {
-@@ -970,7 +970,7 @@ uf_read_proc(char *page, char **start, off_t offset, int count,
- 
- 	kfree(orig_p);
- 
--	return(actual_amount_to_copy);
-+	return actual_amount_to_copy;
- } /* uf_read_proc() */
- #endif
+ 	func_enter();
  
 -- 
 1.7.9.5
