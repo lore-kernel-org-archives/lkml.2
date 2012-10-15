@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab2JOBPd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 21:15:33 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:41279 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752660Ab2JOBPc (ORCPT
+	id S1753393Ab2JOBYS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 21:24:18 -0400
+Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:55428 "HELO
+	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752617Ab2JOBYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 21:15:32 -0400
-Message-ID: <507B63AC.3010807@xenotime.net>
-Date: Sun, 14 Oct 2012 18:15:24 -0700
+	Sun, 14 Oct 2012 21:24:17 -0400
+Message-ID: <507B65B9.4080603@xenotime.net>
+Date: Sun, 14 Oct 2012 18:24:09 -0700
 From: Randy Dunlap <rdunlap@xenotime.net>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Richard Weinberger <richard@nod.at>
-Subject: Re: Linux 3.7-rc1 (uml uapi errors)
-References: <CA+55aFyt0KFNp5Binu-c3-XzF=MG+23EDOk1R6t4qqgW58ksAw@mail.gmail.com>
-In-Reply-To: <CA+55aFyt0KFNp5Binu-c3-XzF=MG+23EDOk1R6t4qqgW58ksAw@mail.gmail.com>
+To: akpm@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Subject: [PATCH -mmotm] kernel: fix synchro-test.c printk format warrnings
+References: <20121011231551.641101E0048@wpzn4.hot.corp.google.com>
+In-Reply-To: <20121011231551.641101E0048@wpzn4.hot.corp.google.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
@@ -26,45 +25,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2012 03:27 PM, Linus Torvalds wrote:
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-> The two weeks are up, and I was merging during my trip, so no reason
-> for merge window extensions.
-> 
-> The 3.7-rc1 kernel is out there. There's a few big things worth noting here:
-> 
->  - the "uapi" include file cleanups. The idea is that the stuff
-> exported to user space should now be found under include/uapi and
-> arch/$(ARCH)/include/uapi.
-> 
->    Let's hope it actually works. Because otherwise this was just a
-> totally pointless pain in the *ss. And regardless, I'm definitely done
-> with these kinds of "let's do massive cleanup of the include files"
-> forever.
+Fix printk format warnings in kernel/synchro-test.c.
+Fixes warnings on i386 and on x86_64.
 
+kernel/synchro-test.c:432:4: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'long unsigned int'
+kernel/synchro-test.c:437:4: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'long unsigned int'
+kernel/synchro-test.c:442:4: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'long unsigned int'
+kernel/synchro-test.c:447:4: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'long unsigned int'
+kernel/synchro-test.c:452:4: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'long unsigned int'
 
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ kernel/synchro-test.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Building um (uml) for x86_64 (defconfig) has lots of errors like:
-
-In file included from include/linux/irq.h:22:0,
-                 from include/asm-generic/hardirq.h:12,
-                 from arch/um/include/generated/asm/hardirq.h:1,
-                 from include/linux/hardirq.h:7,
-                 from include/linux/ftrace_event.h:7,
-                 from include/trace/syscall.h:6,
-                 from include/linux/syscalls.h:78,
-                 from init/noinitramfs.c:23:
-include/linux/irqnr.h:4:30: fatal error: uapi/linux/irqnr.h: No such file or directory
-
-make[2]: *** [init/main.o] Error 1
-make[2]: *** [init/noinitramfs.o] Error 1
-make[2]: *** [init/do_mounts.o] Error 1
-make[2]: *** [arch/um/kernel/irq.o] Error 1
-
-
-
-
-
-
--- 
-~Randy
+--- mmotm-2012-1011-1614.orig/kernel/synchro-test.c
++++ mmotm-2012-1011-1614/kernel/synchro-test.c
+@@ -429,27 +429,27 @@ static int __init do_tests(void)
+ 	for (loop = 0; loop < MAX_THREADS; loop++) {
+ 		if (loop < nummx) {
+ 			init_completion(&mx_comp[loop]);
+-			kthread_run(mutexer, (void *) loop, "Mutex%u", loop);
++			kthread_run(mutexer, (void *) loop, "Mutex%lu", loop);
+ 		}
+ 
+ 		if (loop < numsm) {
+ 			init_completion(&sm_comp[loop]);
+-			kthread_run(semaphorer, (void *) loop, "Sem%u", loop);
++			kthread_run(semaphorer, (void *) loop, "Sem%lu", loop);
+ 		}
+ 
+ 		if (loop < numrd) {
+ 			init_completion(&rd_comp[loop]);
+-			kthread_run(reader, (void *) loop, "Read%u", loop);
++			kthread_run(reader, (void *) loop, "Read%lu", loop);
+ 		}
+ 
+ 		if (loop < numwr) {
+ 			init_completion(&wr_comp[loop]);
+-			kthread_run(writer, (void *) loop, "Write%u", loop);
++			kthread_run(writer, (void *) loop, "Write%lu", loop);
+ 		}
+ 
+ 		if (loop < numdg) {
+ 			init_completion(&dg_comp[loop]);
+-			kthread_run(downgrader, (void *) loop, "Down%u", loop);
++			kthread_run(downgrader, (void *) loop, "Down%lu", loop);
+ 		}
+ 	}
+ 
