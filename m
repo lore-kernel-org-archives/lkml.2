@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab2JOHDM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 03:03:12 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36075 "EHLO mga09.intel.com"
+	id S1754056Ab2JOHDi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 03:03:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:39351 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751461Ab2JOHDL convert rfc822-to-8bit (ORCPT
+	id S1753395Ab2JOHDh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 03:03:11 -0400
+	Mon, 15 Oct 2012 03:03:37 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,587,1344236400"; 
-   d="scan'208";a="226918779"
+   d="scan'208";a="226918934"
 From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
-To: "ccross@android.com" <ccross@android.com>,
+To: "Tu, Xiaobing" <xiaobing.tu@intel.com>,
+        "ccross@android.com" <ccross@android.com>,
         "davej@redhat.com" <davej@redhat.com>,
         "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "mingo@elte.hu" <mingo@elte.hu>,
@@ -19,12 +20,13 @@ To: "ccross@android.com" <ccross@android.com>,
         "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "rostedt@goodmis.org" <rostedt@goodmis.org>
-CC: "Zhang, Di" <di.zhang@intel.com>, "Ma, Xindong" <xindong.ma@intel.com>
-Subject: Fix memory leak in binder
+CC: "Zhang, Di" <di.zhang@intel.com>, "Ma, Xindong" <xindong.ma@intel.com>,
+        "Zuo, Alex" <alex.zuo@intel.com>
+Subject: RE: Fix memory leak in binder
 Thread-Topic: Fix memory leak in binder
-Thread-Index: Ac2qoyERn9VOsHHUS6WvzdrsGtV9EA==
-Date: Mon, 15 Oct 2012 07:03:08 +0000
-Message-ID: <EE928378561BF1449699C96571234A740FE6790E@SHSMSX102.ccr.corp.intel.com>
+Thread-Index: Ac2qoyERn9VOsHHUS6WvzdrsGtV9EAAAAtog
+Date: Mon, 15 Oct 2012 07:03:32 +0000
+Message-ID: <EE928378561BF1449699C96571234A740FE67913@SHSMSX102.ccr.corp.intel.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -36,6 +38,15 @@ MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+
+
+-----Original Message-----
+From: Tu, Xiaobing 
+Sent: Monday, October 15, 2012 3:03 PM
+To: 'ccross@android.com'; 'davej@redhat.com'; 'akpm@linux-foundation.org'; 'mingo@elte.hu'; 'rusty@rustcorp.com.au'; 'a.p.zijlstra@chello.nl'; 'linux-kernel@vger.kernel.org'; 'rostedt@goodmis.org'
+Cc: Zhang, Di; Ma, Xindong
+Subject: Fix memory leak in binder
 
 After enabling kmemleak and run monkey, following memleak is reported:
 unreferenced object 0xeed27f80 (size 64):
