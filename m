@@ -1,54 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432Ab2JOS2V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 14:28:21 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:6187 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754375Ab2JOS2U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 14:28:20 -0400
-Message-ID: <1350325693.2819.19.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH v6 06/10] glge driver: rename internal SEM_SET macro to
- SEM_INIT
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: <akpm@linux-foundation.org>, <catalin.marinas@arm.com>,
-        <will.deacon@arm.com>, <dhowells@redhat.com>,
-        <manfred@colorfullife.com>, <hughd@google.com>, <jmorris@namei.org>,
-        <mtk.manpages@gmail.com>, <kosaki.motohiro@jp.fujitsu.com>,
-        <paulmck@linux.vnet.ibm.com>, <sds@tycho.nsa.gov>, <devel@openvz.org>,
-        <a.p.zijlstra@chello.nl>, <cmetcalf@tilera.com>,
-        <linux-driver@qlogic.com>, <ron.mercer@qlogic.com>,
-        <viro@zeniv.linux.org.uk>, <eparis@parisplace.org>,
-        <tglx@linutronix.de>, <jitendra.kalsaria@qlogic.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-security-module@vger.kernel.org>, <ebiederm@xmission.com>,
-        <casey@schaufler-ca.com>
-Date: Mon, 15 Oct 2012 19:28:13 +0100
-In-Reply-To: <20121015160006.28348.79520.stgit@localhost.localdomain>
-References: <20121015155800.28348.23561.stgit@localhost.localdomain>
-	 <20121015160006.28348.79520.stgit@localhost.localdomain>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+	id S1754473Ab2JOS2k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 14:28:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5584 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754386Ab2JOS2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 14:28:39 -0400
+From: Stefan Hajnoczi <stefanha@redhat.com>
+To: Markus Grabner <grabner@icg.tugraz.at>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, <linux-kernel@vger.kernel.org>,
+        Stefan Hajnoczi <stefanha@redhat.com>
+Subject: [PATCH] staging: line6: drop unused line6_devices[] array
+Date: Mon, 15 Oct 2012 20:26:46 +0200
+Message-Id: <1350325606-17139-1-git-send-email-stefanha@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-10-15 at 20:00 +0400, Stanislav Kinsbursky wrote:
-> The reason for shit patch is that SET_SET is desired to be a part of new part
-> of API of IPC sys_semctl() system call.
-[...]
+There is no reason to limit the number of line6 devices.  Drop the
+static array.
 
-Two spelling errors above. :-)
+Signed-off-by: Stefan Hajnoczi <stefanha@redhat.com>
+---
+ drivers/staging/line6/driver.c | 20 +-------------------
+ drivers/staging/line6/driver.h |  2 --
+ 2 files changed, 1 insertion(+), 21 deletions(-)
 
-Ben.
-
+diff --git a/drivers/staging/line6/driver.c b/drivers/staging/line6/driver.c
+index b8358ca..ac11a3b 100644
+--- a/drivers/staging/line6/driver.c
++++ b/drivers/staging/line6/driver.c
+@@ -96,8 +96,6 @@ static const char line6_request_version[] = {
+ 	0xf0, 0x7e, 0x7f, 0x06, 0x01, 0xf7
+ };
+ 
+-struct usb_line6 *line6_devices[LINE6_MAX_DEVICES];
+-
+ /**
+ 	 Class for asynchronous messages.
+ */
+@@ -740,7 +738,6 @@ static int line6_probe(struct usb_interface *interface,
+ 	struct usb_device *usbdev;
+ 	struct usb_line6 *line6;
+ 	const struct line6_properties *properties;
+-	int devnum;
+ 	int interface_number, alternate = 0;
+ 	int product;
+ 	int size = 0;
+@@ -774,16 +771,6 @@ static int line6_probe(struct usb_interface *interface,
+ 		goto err_put;
+ 	}
+ 
+-	/* find free slot in device table: */
+-	for (devnum = 0; devnum < LINE6_MAX_DEVICES; ++devnum)
+-		if (line6_devices[devnum] == NULL)
+-			break;
+-
+-	if (devnum == LINE6_MAX_DEVICES) {
+-		ret = -ENODEV;
+-		goto err_put;
+-	}
+-
+ 	/* initialize device info: */
+ 	properties = &line6_properties_table[devtype];
+ 	dev_info(&interface->dev, "Line6 %s found\n", properties->name);
+@@ -1112,7 +1099,6 @@ static int line6_probe(struct usb_interface *interface,
+ 
+ 	dev_info(&interface->dev, "Line6 %s now attached\n",
+ 		 line6->properties->name);
+-	line6_devices[devnum] = line6;
+ 
+ 	switch (product) {
+ 	case LINE6_DEVID_PODX3:
+@@ -1141,7 +1127,7 @@ static void line6_disconnect(struct usb_interface *interface)
+ {
+ 	struct usb_line6 *line6;
+ 	struct usb_device *usbdev;
+-	int interface_number, i;
++	int interface_number;
+ 
+ 	if (interface == NULL)
+ 		return;
+@@ -1214,10 +1200,6 @@ static void line6_disconnect(struct usb_interface *interface)
+ 
+ 		dev_info(&interface->dev, "Line6 %s now disconnected\n",
+ 			 line6->properties->name);
+-
+-		for (i = LINE6_MAX_DEVICES; i--;)
+-			if (line6_devices[i] == line6)
+-				line6_devices[i] = NULL;
+ 	}
+ 
+ 	line6_destruct(interface);
+diff --git a/drivers/staging/line6/driver.h b/drivers/staging/line6/driver.h
+index a3029eb..35246cf 100644
+--- a/drivers/staging/line6/driver.h
++++ b/drivers/staging/line6/driver.h
+@@ -25,7 +25,6 @@
+ #endif
+ 
+ #define LINE6_TIMEOUT 1
+-#define LINE6_MAX_DEVICES 8
+ #define LINE6_BUFSIZE_LISTEN 32
+ #define LINE6_MESSAGE_MAXLEN 256
+ 
+@@ -78,7 +77,6 @@ do {					\
+ } while (0)
+ 
+ extern const unsigned char line6_midi_id[3];
+-extern struct usb_line6 *line6_devices[LINE6_MAX_DEVICES];
+ 
+ static const int SYSEX_DATA_OFS = sizeof(line6_midi_id) + 3;
+ static const int SYSEX_EXTRA_SIZE = sizeof(line6_midi_id) + 4;
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+1.7.11.7
 
