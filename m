@@ -1,55 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab2JORTd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 13:19:33 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:39333 "EHLO e6.ny.us.ibm.com"
+	id S1754177Ab2JORTq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 13:19:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:46617 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754124Ab2JORTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 13:19:30 -0400
-Date: Mon, 15 Oct 2012 22:49:32 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Rabin Vincent <rabin@rab.in>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Peter Zijlstra <peterz@infradead.org>, oleg@redhat.com
-Subject: Re: [PATCH 1/9] uprobes: move function declarations out of arch
-Message-ID: <20121015171932.GA28723@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1350242593-17761-1-git-send-email-rabin@rab.in>
+	id S1751120Ab2JORTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 13:19:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,588,1344236400"; 
+   d="scan'208";a="227132650"
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+Subject: [PATCH v3 6/7] swiotlb: Use physical addresses instead of virtual in
+	swiotlb_tbl_sync_single
+To: konrad.wilk@oracle.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rob@landley.net, akpm@linux-foundation.org,
+        joerg.roedel@amd.com, bhelgaas@google.com, shuahkhan@gmail.com,
+        fujita.tomonori@lab.ntt.co.jp
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org
+Date: Mon, 15 Oct 2012 10:19:49 -0700
+Message-ID: <20121015171949.25171.31763.stgit@gitlad.jf.intel.com>
+In-Reply-To: <20121015171707.25171.35294.stgit@gitlad.jf.intel.com>
+References: <20121015171707.25171.35294.stgit@gitlad.jf.intel.com>
+User-Agent: StGIT/0.14.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1350242593-17761-1-git-send-email-rabin@rab.in>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101517-1976-0000-0000-0000126213CD
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Rabin Vincent <rabin@rab.in> [2012-10-14 21:23:05]:
+This change makes it so that the sync functionality also uses physical
+addresses.  This helps to further reduce the use of virt_to_phys and
+phys_to_virt functions.
 
-> It seems odd to keep the function declarations in the arch header where
-> they will need to be copy/pasted verbatim across arches.  Move them to
-> the common header.
-> 
+In order to clarify things since we now have 2 physical addresses in use
+inside of swiotlb_tbl_sync_single I am renaming phys to orig_addr, and
+dma_addr to tlb_addr.  This way is should be clear that orig_addr is
+contained within io_orig_addr and tlb_addr is an address within the
+io_tlb_addr buffer.
 
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+---
 
+ drivers/xen/swiotlb-xen.c |    3 +--
+ include/linux/swiotlb.h   |    3 ++-
+ lib/swiotlb.c             |   22 +++++++++++-----------
+ 3 files changed, 14 insertions(+), 14 deletions(-)
 
-> Signed-off-by: Rabin Vincent <rabin@rab.in>
-> ---
->  arch/x86/include/asm/uprobes.h |    6 ------
->  include/linux/uprobes.h        |    8 ++++++++
->  2 files changed, 8 insertions(+), 6 deletions(-)
-> 
-
-You need to take care of the powerpc port
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=8b7b80b9ebb46dd88fbb94e918297295cf312b59
-
-Also as Oleg pointed out, He has already posted changes on top of -tip.
-So it probably makes sense to redo these patches on top of those
-patches.
-
--- 
-Thanks and Regards
-Srikar
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index 4cedc28..af47e75 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -433,8 +433,7 @@ xen_swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
+ 
+ 	/* NOTE: We use dev_addr here, not paddr! */
+ 	if (is_xen_swiotlb_buffer(dev_addr)) {
+-		swiotlb_tbl_sync_single(hwdev, phys_to_virt(paddr), size, dir,
+-				       target);
++		swiotlb_tbl_sync_single(hwdev, paddr, size, dir, target);
+ 		return;
+ 	}
+ 
+diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
+index 291643c..e0ac98f 100644
+--- a/include/linux/swiotlb.h
++++ b/include/linux/swiotlb.h
+@@ -47,7 +47,8 @@ extern void swiotlb_tbl_unmap_single(struct device *hwdev,
+ 				     phys_addr_t tlb_addr,
+ 				     size_t size, enum dma_data_direction dir);
+ 
+-extern void swiotlb_tbl_sync_single(struct device *hwdev, char *dma_addr,
++extern void swiotlb_tbl_sync_single(struct device *hwdev,
++				    phys_addr_t tlb_addr,
+ 				    size_t size, enum dma_data_direction dir,
+ 				    enum dma_sync_target target);
+ 
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index d7701dc..16a548d 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -557,26 +557,27 @@ void swiotlb_tbl_unmap_single(struct device *hwdev, phys_addr_t tlb_addr,
+ }
+ EXPORT_SYMBOL_GPL(swiotlb_tbl_unmap_single);
+ 
+-void
+-swiotlb_tbl_sync_single(struct device *hwdev, char *dma_addr, size_t size,
+-			enum dma_data_direction dir,
+-			enum dma_sync_target target)
++void swiotlb_tbl_sync_single(struct device *hwdev, phys_addr_t tlb_addr,
++			     size_t size, enum dma_data_direction dir,
++			     enum dma_sync_target target)
+ {
+-	int index = (dma_addr - (char *)phys_to_virt(io_tlb_start)) >> IO_TLB_SHIFT;
+-	phys_addr_t phys = io_tlb_orig_addr[index];
++	int index = (tlb_addr - io_tlb_start) >> IO_TLB_SHIFT;
++	phys_addr_t orig_addr = io_tlb_orig_addr[index];
+ 
+-	phys += ((unsigned long)dma_addr & ((1 << IO_TLB_SHIFT) - 1));
++	orig_addr += (unsigned long)tlb_addr & ((1 << IO_TLB_SHIFT) - 1);
+ 
+ 	switch (target) {
+ 	case SYNC_FOR_CPU:
+ 		if (likely(dir == DMA_FROM_DEVICE || dir == DMA_BIDIRECTIONAL))
+-			swiotlb_bounce(phys, dma_addr, size, DMA_FROM_DEVICE);
++			swiotlb_bounce(orig_addr, phys_to_virt(tlb_addr),
++				       size, DMA_FROM_DEVICE);
+ 		else
+ 			BUG_ON(dir != DMA_TO_DEVICE);
+ 		break;
+ 	case SYNC_FOR_DEVICE:
+ 		if (likely(dir == DMA_TO_DEVICE || dir == DMA_BIDIRECTIONAL))
+-			swiotlb_bounce(phys, dma_addr, size, DMA_TO_DEVICE);
++			swiotlb_bounce(orig_addr, phys_to_virt(tlb_addr),
++				       size, DMA_TO_DEVICE);
+ 		else
+ 			BUG_ON(dir != DMA_FROM_DEVICE);
+ 		break;
+@@ -785,8 +786,7 @@ swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
+ 	BUG_ON(dir == DMA_NONE);
+ 
+ 	if (is_swiotlb_buffer(paddr)) {
+-		swiotlb_tbl_sync_single(hwdev, phys_to_virt(paddr), size, dir,
+-				       target);
++		swiotlb_tbl_sync_single(hwdev, paddr, size, dir, target);
+ 		return;
+ 	}
+ 
 
