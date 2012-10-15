@@ -1,72 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126Ab2JOWde (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 18:33:34 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:58275 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab2JOWdc (ORCPT
+	id S1753413Ab2JOWeO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 18:34:14 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:4933 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750917Ab2JOWeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 18:33:32 -0400
+	Mon, 15 Oct 2012 18:34:13 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuAmAGGOfFB5LH33/2dsb2JhbABFhhK0DYRtAoEEgQmCIAEBBAEjDwEjIwULCAMYAgIRFQICFCUDIRMZAodjBQypOII7kFEUgQ2KOBSBU4EpghsyYAOSO4MwgRaPG4MBgUY
+Date: Tue, 16 Oct 2012 09:34:09 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Vyacheslav Dubeyko <slava@dubeyko.com>,
+        Jaegeuk Kim <jaegeuk.kim@gmail.com>,
+        =?utf-8?B?6rmA7J6s6re5?= <jaegeuk.kim@samsung.com>,
+        viro@zeniv.linux.org.uk, "'Theodore Ts'o'" <tytso@mit.edu>,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+Subject: Re: [PATCH 11/16] f2fs: add inode operations for special inodes
+Message-ID: <20121015223409.GE2739@dastard>
+References: <001201cda2f1$633db960$29b92c20$%kim@samsung.com>
+ <1350198545.1915.233.camel@kjgkr>
+ <A7BD3CDD-330C-498A-BB36-631DE6B9777C@dubeyko.com>
+ <201210141519.37752.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <20121015144736.GI29069@dhcp22.suse.cz>
-References: <20121010141142.GG23011@dhcp22.suse.cz> <507BD33C.4030209@jp.fujitsu.com>
- <20121015094907.GE29069@dhcp22.suse.cz> <CAHGf_=p4d33t7i5++YHTkc0PbAUckca1oBxR5dZ48EzybKYHgw@mail.gmail.com>
- <20121015144736.GI29069@dhcp22.suse.cz>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Mon, 15 Oct 2012 18:33:12 -0400
-X-Google-Sender-Auth: 0CuliqVcSANDxxwjtOU5tUA2Uvg
-Message-ID: <CAHGf_=qniFPXUMoQ6Ayi6iAQ9h4_AUr4_aaJUJcYHmW57L4gKQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] memcg: oom: fix totalpages calculation for swappiness==0
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201210141519.37752.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> I think this only correct when memcg. Even if swappiness==0, global reclaim swap
->> out anon pages before oom.
->
-> Right you are (we really do swap when the file pages are really
-> low)! Sorry about the confusion. I kind of became if(global_reclaim)
-> block blind...
->
-> Then this really needs a memcg specific documentation fix. What about
-> the following?
-> ---
-> From 59a60705abd2faf9e266a4270bbf302001845588 Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Mon, 15 Oct 2012 11:43:56 +0200
-> Subject: [PATCH] doc: describe memcg swappiness more precisely
->
-> since fe35004f (mm: avoid swapping out with swappiness==0) memcg reclaim
-> stopped swapping out anon pages completely when 0 value is used.
-> Although this is somehow expected it hasn't been done for a really long
-> time this way and so it is probably better to be explicit about the
-> effect. Moreover global reclaim swapps out even when swappiness is 0
-> to prevent from OOM killer.
->
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  Documentation/cgroups/memory.txt |    4 ++++
->  1 file changed, 4 insertions(+)
->
-> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> index c07f7b4..71c4da4 100644
-> --- a/Documentation/cgroups/memory.txt
-> +++ b/Documentation/cgroups/memory.txt
-> @@ -466,6 +466,10 @@ Note:
->  5.3 swappiness
->
->  Similar to /proc/sys/vm/swappiness, but affecting a hierarchy of groups only.
-> +Please note that unlike the global swappiness, memcg knob set to 0
-> +really prevents from any swapping even if there is a swap storage
-> +available. This might lead to memcg OOM killer if there are no file
-> +pages to reclaim.
+On Sun, Oct 14, 2012 at 03:19:37PM +0000, Arnd Bergmann wrote:
+> On Sunday 14 October 2012, Vyacheslav Dubeyko wrote: 
+> > On Oct 14, 2012, at 11:09 AM, Jaegeuk Kim wrote:
+> > > 2012-10-14 (일), 02:21 +0400, Vyacheslav Dubeyko:
+> > Extended attributes are more flexible way, from my point of view. The xattr gives
+> > possibility to make hint to filesystem at any time and without any dependencies with
+> > application's functional opportunities. Documented way of using such extended attributes
+> > gives to user flexible way of manipulation of filesystem behavior (but I remember that
+> > you don't believe in an user :-)).
+> > 
+> > So, I think that fadvise() and extended attributes can be complementary solutions.
+> 
+> Right. Another option is to have ext4 style attributes, see 
+> http://linux.die.net/man/1/chattr
 
-Pretty good to me. Thank you!
+Xattrs are much prefered to more "ext4 style" flags because xattrs
+are filesystem independent. Indeed, some filesystems can't store any
+new "ext4 style" flags without a change of disk format or
+internally mapping them to an xattr. So really, xattrs are the best
+way forward for such hints.
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Unlike extended attributes, there is a limited number of those,
+> and they can only be boolean flags, but that might be enough for
+> this particular use case.
+
+A boolean is not sufficient for access policy hints. An extensible
+xattr format is probably the best approach to take here, so that we
+can easily introduce new access policy hints as functionality is
+required. Indeed, an extensible xattr could start with just a
+hot/cold boolean, and grow from there....
+
+> The main reason I can see against extended attributes is that they are not stored
+> very efficiently in f2fs, unless a lot of work is put into coming up with a good
+> implementation. A single flags bit can trivially be added to the inode in
+> comparison (if it's not there already).
+
+That's a deficiency that should be corrected, then, because xattrs
+are very common these days.
+
+And given that stuff like access frequency tracking is being
+implemented at the VFS level, access policy hints should also be VFS
+functionality. A bad filesystem implementation should not dictate
+the interface for generically useful functionality....
+
+> > Anyway, hardcoding or saving in filesystem list of file extensions is a nasty way. It
+> > can be not safe or hardly understandable by users the way of reconfiguration filesystem 
+> > by means of tunefs or debugfs with the purpose of file extensions addition in such 
+> > "black-box" as TV or smartphones, from my point of view.
+> 
+> It is only a performance hint though, so it is not a correctness issue the
+> file system gets it wrong. In order to do efficient garbage collection, a log
+> structured file system should take all the information it can get about the
+> expected life of data it writes. I agree that the list, even in the form of
+> mkfs time settings, is not a clean abstraction, but in the place of an Android
+> phone manufacturer I would still enable it if it promises a significant
+> performance advantage over not using it. I guess it would be nice if this
+> could be overridden in some form, e.g. using an ioctl on the file as ext4 does.
+
+An xattr on the root inode that holds a list like this is something
+that could be set at mkfs time, but then also updated easily by new
+software packages that are installed...
+
+> We should also take the kinds of access we have seen on a file into account.
+
+Yes, but it should be done at the VFS level, not in the filesystem
+itself. Integrated into the current hot inode/range tracking that is
+being worked on right now, I'd suggest.
+
+IOWs, these access policy issues are not unique to F2FS or it's use
+case. Anything to do with access hints, policy, tracking, file
+classification, etc that can influence data locality, reclaim,
+migration, etc need to be dealt with at the VFS, independently of a
+specific filesystem. Filesystems can make use of that information
+how they please (whether in the kernel or via userspace tools), but
+having filesystem specific interfaces and implementations of the
+same functionality is extremely wasteful. Let's do it once, and do
+it right the first time. ;)
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
