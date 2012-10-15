@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab2JOOPY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 10:15:24 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41463 "EHLO bear.ext.ti.com"
+	id S1753779Ab2JOOPb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 10:15:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36811 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753784Ab2JOOPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 10:15:22 -0400
-From: Nishanth Menon <nm@ti.com>
-To: <linux-pm@vger.kernel.org>
-CC: Nishanth Menon <nm@ti.com>, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] PM / devfreq: make devfreq_class static
-Date: Mon, 15 Oct 2012 09:15:13 -0500
-Message-ID: <1350310513-27682-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753777Ab2JOOP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 10:15:29 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <507B63AC.3010807@xenotime.net>
+References: <507B63AC.3010807@xenotime.net> <CA+55aFyt0KFNp5Binu-c3-XzF=MG+23EDOk1R6t4qqgW58ksAw@mail.gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>
+Subject: Re: Linux 3.7-rc1 (uml uapi errors)
+Date: Mon, 15 Oct 2012 15:15:20 +0100
+Message-ID: <17841.1350310520@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devfreq_class is used internally by devfreq and has no
-need to be globally available.
 
-This also fixes the following sparse warning:
-drivers/devfreq/devfreq.c:30:14: warning: symbol 'devfreq_class' was not declared. Should it be static?
+Hi Randy,
 
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Kevin Hilman <khilman@ti.com>
-Cc: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+Randy Dunlap <rdunlap@xenotime.net> wrote:
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- drivers/devfreq/devfreq.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Building um (uml) for x86_64 (defconfig) has lots of errors like:
+> 
+> In file included from include/linux/irq.h:22:0,
+>                  from include/asm-generic/hardirq.h:12,
+>                  from arch/um/include/generated/asm/hardirq.h:1,
+>                  from include/linux/hardirq.h:7,
+>                  from include/linux/ftrace_event.h:7,
+>                  from include/trace/syscall.h:6,
+>                  from include/linux/syscalls.h:78,
+>                  from init/noinitramfs.c:23:
+> include/linux/irqnr.h:4:30: fatal error: uapi/linux/irqnr.h: No such file or directory
 
-diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-index 9f562ae..964e08d 100644
---- a/drivers/devfreq/devfreq.c
-+++ b/drivers/devfreq/devfreq.c
-@@ -27,7 +27,7 @@
- #include <linux/hrtimer.h>
- #include "governor.h"
- 
--struct class *devfreq_class;
-+static struct class *devfreq_class;
- 
- /*
-  * devfreq_work periodically monitors every registered device.
--- 
-1.7.9.5
+Did you build from a GIT tree, from a tarball or patch?
 
+include/uapi/linux/irqnr.h ended up a zero-length file in GIT as there was
+nothing in the original file outside of the __KERNEL__ guards.  Indeed, if I
+look in /usr/include/irqnr.h, I see:
+
+	#ifndef _LINUX_IRQNR_H
+	#define _LINUX_IRQNR_H
+
+	/*
+	 * Generic irq_desc iterators:
+	 */
+
+	#endif
+
+I suspect somehow the file got deleted, even though the patch shows it:
+
+	diff --git a/include/uapi/linux/irqnr.h b/include/uapi/linux/irqnr.h
+	new file mode 100644
+	index 000000000000..e69de29bb2d1
+
+David
