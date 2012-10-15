@@ -1,38 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481Ab2JOSzH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 14:55:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52165 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751827Ab2JOSzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 14:55:06 -0400
-Message-ID: <507C5C04.4040506@suse.cz>
-Date: Mon, 15 Oct 2012 20:55:00 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
+	id S1754498Ab2JOS4r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 14:56:47 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:41598 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab2JOS4p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 14:56:45 -0400
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: "Philip\, Avinash" <avinashphilip@ti.com>
+Cc: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
+        <tony@atomide.com>, afzal@ti.com, linux-doc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, ivan.djelic@parrot.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/4] mtd: nand: omap2: Update nerrors using ecc.strength
+References: <1349274589-11389-1-git-send-email-avinashphilip@ti.com>
+	<1349274589-11389-2-git-send-email-avinashphilip@ti.com>
+Date: Mon, 15 Oct 2012 20:56:40 +0200
+In-Reply-To: <1349274589-11389-2-git-send-email-avinashphilip@ti.com> (Avinash
+	Philip's message of "Wed, 3 Oct 2012 19:59:46 +0530")
+Message-ID: <87obk3va1j.fsf@macbook.be.48ers.dk>
+User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: commit fe04ddf7c2910362f3817c8156e41cbd6c0ee35d reverts unrelated
- changes
-References: <507C475502000078000A17AA@nat28.tlf.novell.com>
-In-Reply-To: <507C475502000078000A17AA@nat28.tlf.novell.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 15.10.2012 17:26, Jan Beulich napsal(a):
-> Michal,
-> 
-> is there any reason why that commit reverts two other changes
-> (to arch/x86/Makefile and scripts/Makefile.fwinst) without any
-> mention of the reason for this in the description?
+>>>>> Philip, Avinash <avinashphilip@ti.com> writes:
 
-Oh, I don't know how this could have happened. It seems that I did a git
-commit --amend at some point :-(.
+ > Update number of errors using nand ecc strength.
+ > Also add macro definitions BCH8_ERROR_MAX & BCH4_ERROR_MAX
 
-Michal
+ > Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+ > ---
+ > :100644 100644 5b31386... af511a9... M	drivers/mtd/nand/omap2.c
+ >  drivers/mtd/nand/omap2.c |   12 ++++++++----
+ >  1 files changed, 8 insertions(+), 4 deletions(-)
 
+ > diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
+ > index 5b31386..af511a9 100644
+ > --- a/drivers/mtd/nand/omap2.c
+ > +++ b/drivers/mtd/nand/omap2.c
+ > @@ -111,6 +111,9 @@
+ >  #define	ECCCLEAR			0x100
+ >  #define	ECC1				0x1
+ 
+ > +#define BCH8_MAX_ERROR		8	/* upto 8 bit coorectable */
+ > +#define BCH4_MAX_ERROR		4	/* upto 4 bit correctable */
+
+First 'correctable' misspelled.
+
+I don't personally think these defines improve readability very much
+compared to to just using 4/8, though.
+
+-- 
+Bye, Peter Korsgaard
