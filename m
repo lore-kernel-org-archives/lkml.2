@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971Ab2JOJU5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 05:20:57 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:56533 "EHLO gir.skynet.ie"
+	id S1751938Ab2JOJZU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 05:25:20 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:46018 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751767Ab2JOJU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 05:20:56 -0400
-Date: Mon, 15 Oct 2012 10:20:44 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, pzijlstr@redhat.com, mingo@elte.hu,
-        hughd@google.com, riel@redhat.com, hannes@cmpxchg.org,
-        dhillf@gmail.com, drjones@redhat.com, tglx@linutronix.de,
-        pjt@google.com, cl@linux.com, suresh.b.siddha@intel.com, efault@gmx.de,
-        paulmck@linux.vnet.ibm.com, laijs@cn.fujitsu.com,
-        Lee.Schermerhorn@hp.com, alex.shi@intel.com, benh@kernel.crashing.org
-Subject: Re: [PATCH 19/33] autonuma: memory follows CPU algorithm and
- task/mm_autonuma stats collection
-Message-ID: <20121015092044.GU3317@csn.ul.ie>
-References: <1349308275-2174-1-git-send-email-aarcange@redhat.com>
- <1349308275-2174-20-git-send-email-aarcange@redhat.com>
- <20121013180618.GC31442@linux.vnet.ibm.com>
- <20121015082413.GD17364@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121015082413.GD17364@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751526Ab2JOJZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 05:25:18 -0400
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+To: linux-kernel@vger.kernel.org
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kbuild@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] unicore32: Use Kbuild infrastructure for kvm_para.h
+Date: Mon, 15 Oct 2012 17:23:27 +0800
+Message-Id: <1350293007-10237-1-git-send-email-gxt@mprc.pku.edu.cn>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 01:54:13PM +0530, Srikar Dronamraju wrote:
-> * Srikar Dronamraju <srikar@linux.vnet.ibm.com> [2012-10-13 23:36:18]:
-> 
-> > > +
-> > > +bool numa_hinting_fault(struct page *page, int numpages)
-> > > +{
-> > > +	bool migrated = false;
-> > > +
-> > > +	/*
-> > > +	 * "current->mm" could be different from the "mm" where the
-> > > +	 * NUMA hinting page fault happened, if get_user_pages()
-> > > +	 * triggered the fault on some other process "mm". That is ok,
-> > > +	 * all we care about is to count the "page_nid" access on the
-> > > +	 * current->task_autonuma, even if the page belongs to a
-> > > +	 * different "mm".
-> > > +	 */
-> > > +	WARN_ON_ONCE(!current->mm);
-> > 
-> > Given the above comment, Do we really need this warn_on?
-> > I think I have seen this warning when using autonuma.
-> > 
-> 
-> ------------[ cut here ]------------
-> WARNING: at ../mm/autonuma.c:359 numa_hinting_fault+0x60d/0x7c0()
-> Hardware name: BladeCenter HS22V -[7871AC1]-
-> Modules linked in: ebtable_nat ebtables autofs4 sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf bridge stp llc iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 vhost_net macvtap macvlan tun iTCO_wdt iTCO_vendor_support cdc_ether usbnet mii kvm_intel kvm microcode serio_raw lpc_ich mfd_core i2c_i801 i2c_core shpchp ioatdma i7core_edac edac_core bnx2 ixgbe dca mdio sg ext4 mbcache jbd2 sd_mod crc_t10dif mptsas mptscsih mptbase scsi_transport_sas dm_mirror dm_region_hash dm_log dm_mod
-> Pid: 116, comm: ksmd Tainted: G      D      3.6.0-autonuma27+ #3
+All the headers but kvm_para.h use the Kbuild infrastructure to
+get to the asm-generic headers.
 
-The kernel is tainted "D" which implies that it has already oopsed
-before this warning was triggered. What was the other oops?
+Cc: linux-kbuild@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+---
+ arch/unicore32/include/uapi/asm/Kbuild     |    2 ++
+ arch/unicore32/include/uapi/asm/kvm_para.h |    1 -
+ 2 files changed, 2 insertions(+), 1 deletions(-)
+ delete mode 100644 arch/unicore32/include/uapi/asm/kvm_para.h
 
+diff --git a/arch/unicore32/include/uapi/asm/Kbuild b/arch/unicore32/include/uapi/asm/Kbuild
+index a44b1c4..0514d7a 100644
+--- a/arch/unicore32/include/uapi/asm/Kbuild
++++ b/arch/unicore32/include/uapi/asm/Kbuild
+@@ -6,3 +6,5 @@ header-y += kvm_para.h
+ header-y += ptrace.h
+ header-y += sigcontext.h
+ header-y += unistd.h
++
++generic-y += kvm_para.h
+diff --git a/arch/unicore32/include/uapi/asm/kvm_para.h b/arch/unicore32/include/uapi/asm/kvm_para.h
+deleted file mode 100644
+index 14fab8f..0000000
+--- a/arch/unicore32/include/uapi/asm/kvm_para.h
++++ /dev/null
+@@ -1 +0,0 @@
+-#include <asm-generic/kvm_para.h>
 -- 
-Mel Gorman
-SUSE Labs
+1.7.0.4
+
