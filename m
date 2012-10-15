@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492Ab2JOTFb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 15:05:31 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:33167 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628Ab2JOTFa (ORCPT
+	id S1754529Ab2JOTIg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 15:08:36 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37759 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940Ab2JOTIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 15:05:30 -0400
+	Mon, 15 Oct 2012 15:08:35 -0400
+Date: Mon, 15 Oct 2012 21:08:18 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+cc: peterz@infradead.org, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        devel@openvz.org
+Subject: Re: [RFC PATCH] posix timers: allocate timer id per task
+In-Reply-To: <20121015161559.7806.72762.stgit@localhost.localdomain>
+Message-ID: <alpine.LFD.2.02.1210152105090.5541@ionos>
+References: <20121015161559.7806.72762.stgit@localhost.localdomain>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1350042118.24256.93.camel@gandalf.local.home>
-References: <1349998076-15495-1-git-send-email-dhsharp@google.com>
- <1349998076-15495-2-git-send-email-dhsharp@google.com> <CAMuHMdVx5PU--fo+J1c04qcdG6r+B1DJwD6cxR8evFAyVpJBHQ@mail.gmail.com>
- <1350042118.24256.93.camel@gandalf.local.home>
-From: David Sharp <dhsharp@google.com>
-Date: Mon, 15 Oct 2012 12:05:08 -0700
-Message-ID: <CAJL_eks6dbXZa28e2me1P3V07zqWGp57WPqQTBp55e6onkPVfQ@mail.gmail.com>
-Subject: Re: [PATCH v6 1/6] tracing,x86: Add a TSC trace_clock
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 4:41 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Fri, 2012-10-12 at 07:05 +0200, Geert Uytterhoeven wrote:
->> On Fri, Oct 12, 2012 at 1:27 AM, David Sharp <dhsharp@google.com> wrote:
->> > +#include <asm-generic/trace_clock.h>
->>
->> Please use the Kbuild infrastructure ("generic-y += ..." in
->> arch/*/include/asm/Kbuild)
->> instead of adding wrappers around the asm-generic version.
->
-> So that's how that's done. Learn something new everyday. Too bad the one
-> file I checked (div64.h) doesn't seem to do it for ia64 and others.
->
-> Can we please have someone clean up all the archs and remove any *.h
-> wrappers and use the kbuild infrastructure instead. That way, when
-> another developer goes to look at how this is done, they wont copy the
-> wrong method again. (Maybe I'll just do it :-p)
->
-> David,
->
-> Can you just send an update of this one patch.
+On Mon, 15 Oct 2012, Stanislav Kinsbursky wrote:
 
-Will do. Thanks for the education, Geert. :)
+> This patch is required CRIU project (www.criu.org).
+> To migrate processes with posix timers we have to make sure, that we can
+> restore posix timer with proper id.
+> Currently, this is not true, because timer ids are allocated globally.
+> So, this is precursor patch and it's purpose is make posix timer id to be
+> allocated per task.
 
-d#
+You can't allocate them per task. posix timers are process wide.
+
+What's the reason why you did not make the posix timer ids per name
+space instead of going down to the per process level ?
+
+> Patch replaces global idr with global hash table for posix timers and
+> makes timer ids unique not globally, but per task. Next free timer id is type
+> of integer and stored on signal struct (posix_timer_id). If free timer id
+> reaches negative value on timer creation, it will be dropped to zero and
+> -EAGAIN will be returned to user.
+
+So you want to allow 2^31 posix timers created for a single process?
+
+> +static struct k_itimer *__posix_timers_find(struct hlist_head *head, struct signal_struct *sig, timer_t id)
+> +{
+> +	struct hlist_node *node;
+> +	struct k_itimer *timer;
+> +
+> +	hlist_for_each_entry(timer, node, head, t_hash) {
+> +		if ((timer->it_signal == sig) && (timer->it_id == id))
+> +			return timer;
+> +	}
+> +	return NULL;
+> +}
+> +
+> +static struct k_itimer *posix_timer_find(timer_t id, unsigned long *flags)
+> +{
+> +	struct k_itimer *timer;
+> +	struct signal_struct *sig = current->signal;
+> +	struct hlist_head *head = &posix_timers_hashtable[hash(sig, id)];
+> +
+> +	spin_lock_irqsave(&hash_lock, *flags);
+
+This is not going to fly. You just reintroduced a massive scalability
+problem. See commit 8af08871
+
+Thanks,
+
+	tglx
