@@ -1,164 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191Ab2JOMc2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 08:32:28 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:54535 "EHLO mx2.netapp.com"
+	id S1753238Ab2JOMcw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 08:32:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35832 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753116Ab2JOMc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 08:32:26 -0400
-X-IronPort-AV: E=Sophos;i="4.80,587,1344236400"; 
-   d="scan'208";a="700817734"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Chen Gang <gang.chen@asianux.com>
-CC: Jeff Layton <jlayton@redhat.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Bug fix] nfs-client: fix nfs_inode_attrs_need_update for async
- read_done comes during truncating to smaller size
-Thread-Topic: [Bug fix] nfs-client: fix nfs_inode_attrs_need_update for
- async read_done comes during truncating to smaller size
-Thread-Index: AQHNqnpVDDzstrioNkubCev8dufUjZe6OzGAgAAG8QCAAICBAA==
-Date: Mon, 15 Oct 2012 12:32:24 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA90923F1C4@SACEXCMBX04-PRD.hq.netapp.com>
-References: <507B70F1.7040903@asianux.com>
-	 <4FA345DA4F4AE44899BD2B03EEEC2FA909236BB5@SACEXCMBX04-PRD.hq.netapp.com>
-	 <507B968A.9090104@asianux.com>
-In-Reply-To: <507B968A.9090104@asianux.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.114]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <2C5D1DEDF14A914381F21A85D246B20D@tahoe.netapp.com>
-MIME-Version: 1.0
+	id S1753052Ab2JOMct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 08:32:49 -0400
+Message-ID: <1350304367.25134.21.camel@tucsk.pomaz.szeredi.hu>
+Subject: Re: Fwd: PROBLEM: 3.6.0 kernel BUG at fs/dcache.c:967 during
+ shutdown / restart
+From: Miklos Szeredi <mszeredi@suse.cz>
+To: Neil Salstrom <salstrom@paintedocean.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        miklos@szeredi.hu
+Date: Mon, 15 Oct 2012 14:32:47 +0200
+In-Reply-To: <CA+W8Zy+Q6T09+WRooiYghXoKorBHzcHdVfHygPSGWG_PkUz=fw@mail.gmail.com>
+References: <CA+W8ZyK4NYGUtXce-dP69J8L6WJ81_fOOXWrMebK3BO_K7FozA@mail.gmail.com>
+	 <CA+W8Zy+Q6T09+WRooiYghXoKorBHzcHdVfHygPSGWG_PkUz=fw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9FCWeZn024907
 
-On Mon, 2012-10-15 at 12:52 +0800, Chen Gang wrote:
-> äºŽ 2012å¹´10æœˆ15æ—¥ 12:27, Myklebust, Trond å†™é“:
-> > nfs_size_need_update is not about performance. It is a heuristic that is
-> > entirely about ensuring correctness when faced with the fact that most
-> > Linux filesystems are utterly incapable of reporting with modifications
-> > that occur within < 1 second intervals because their mtime/ctime is
-> > limited to 1 second resolutions.
-> > 
+On Thu, 2012-10-04 at 14:16 -0700, Neil Salstrom wrote:
+
 > 
-> if truly it was for correctness, why not use "!=" instead of '>' ?
-
-RPC is not ordered. The fact that we get one RPC reply before another
-does not mean that the server sent them in that order.
-
-This is doubly true when you use UDP as the transport protocol.
-
-> > Now, what are the conditions of your test setup? The above bug report is
-> > meaningless unless it includes a description of what is being exported
-> > by the server (including a proper listing of the contents
-> > of /etc/exports and /proc/mounts). It should also include a description
-> > of the NFS client mount options (see /proc/mounts on the client).
+> I've not submitted a kernel bug before but I've read the bug reporting
+> pages.  I'll try to do my best and if you need more information please
+> let me know.
 > 
-> they are below, if you need additional information, please tell me again.
+> I'm using Linux Mint 13 (64 bit) on AMD hardware with a self compiled
+> 3.6.0 kernel for my MythTV HTPC.
 > 
-> for server:
-> (nfsx-linux using rsh auto exportfs in cmd line, not in /etc/exports)
-> --------------------------------------------------------------------
-> root@dhcp122:~# exportfs
-> /tmp/fsx18251.testdir
-> 		<world>
-> /tmp          	<world>
-> root@dhcp122:~#
-> root@dhcp122:~# cat /etc/exports
-> # /etc/exports: the access control list for filesystems which may be
-> exported
-> #		to NFS clients.  See exports(5).
-> #
-> # Example for NFSv2 and NFSv3:
-> # /srv/homes       hostname1(rw,sync,no_subtree_check)
-> hostname2(ro,sync,no_subtree_check)
-> #
-> # Example for NFSv4:
-> # /srv/nfs4        gss/krb5i(rw,sync,fsid=0,crossmnt,no_subtree_check)
-> # /srv/nfs4/homes  gss/krb5i(rw,sync,no_subtree_check)
-> #
-> /tmp *(rw,sync,no_root_squash,no_subtree_check)
-> root@dhcp122:~#
-> root@dhcp122:~# cat /proc/mounts
-> rootfs / rootfs rw 0 0
-> sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
-> proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
-> udev /dev devtmpfs rw,relatime,size=1229628k,nr_inodes=189901,mode=755 0 0
-> devpts /dev/pts devpts
-> rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000 0 0
-> tmpfs /run tmpfs rw,nosuid,relatime,size=516280k,mode=755 0 0
-> /dev/disk/by-uuid/e843c57e-98ce-44cc-8e02-6d8e8d8a01b6 / ext4
-
-OK. So the export is part of this ext4 filesystem?
-
-> rw,relatime,errors=remount-ro,data=ordered 0 0
-> cgroup /sys/fs/cgroup tmpfs rw,relatime,mode=755 0 0
-> cgroup /sys/fs/cgroup/cpuset cgroup rw,relatime,cpuset 0 0
-> cgroup /sys/fs/cgroup/cpu cgroup rw,relatime,cpu 0 0
-> cgroup /sys/fs/cgroup/cpuacct cgroup rw,relatime,cpuacct 0 0
-> cgroup /sys/fs/cgroup/devices cgroup rw,relatime,devices 0 0
-> cgroup /sys/fs/cgroup/freezer cgroup rw,relatime,freezer 0 0
-> cgroup /sys/fs/cgroup/blkio cgroup rw,relatime,blkio 0 0
-> cgroup /sys/fs/cgroup/perf_event cgroup rw,relatime,perf_event 0 0
-> none /sys/fs/fuse/connections fusectl rw,relatime 0 0
-> none /sys/kernel/debug debugfs rw,relatime 0 0
-> none /sys/kernel/security securityfs rw,relatime 0 0
-> none /run/lock tmpfs rw,nosuid,nodev,noexec,relatime,size=5120k 0 0
-> none /run/shm tmpfs rw,nosuid,nodev,relatime 0 0
-> rpc_pipefs /run/rpc_pipefs rpc_pipefs rw,relatime 0 0
-> nfsd /proc/fs/nfsd nfsd rw,relatime 0 0
-> root@dhcp122:~#
-> -----------------------------------------------------------------------
+> Kernel version: Linux version 3.6.0 (gcc version 4.6.3 (Ubuntu/Linaro
+> 4.6.3-1ubuntu5) ) #1 SMP Tue Oct 2 15:34:46 PDT 2012
 > 
-> for client:
-> -----------------------------------------------------------------------
+> CPU: model name      : AMD A6-3500 APU with Radeon(tm) HD Graphics
 > 
-> root@dhcp159:/opt/ltp/testscripts# cat /proc/mounts
-> rootfs / rootfs rw 0 0
-> sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
-> proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
-> udev /dev devtmpfs rw,relatime,size=1103700k,nr_inodes=190392,mode=755 0 0
-> devpts /dev/pts devpts
-> rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000 0 0
-> tmpfs /run tmpfs rw,nosuid,relatime,size=465908k,mode=755 0 0
-> /dev/disk/by-uuid/418ec1f1-ed9d-4cae-9336-6c742accf538 / ext4
-> rw,relatime,errors=remount-ro,data=ordered 0 0
-> cgroup /sys/fs/cgroup tmpfs rw,relatime,mode=755 0 0
-> cgroup /sys/fs/cgroup/cpuset cgroup rw,relatime,cpuset 0 0
-> cgroup /sys/fs/cgroup/cpu cgroup rw,relatime,cpu 0 0
-> cgroup /sys/fs/cgroup/cpuacct cgroup rw,relatime,cpuacct 0 0
-> cgroup /sys/fs/cgroup/devices cgroup rw,relatime,devices 0 0
-> cgroup /sys/fs/cgroup/freezer cgroup rw,relatime,freezer 0 0
-> cgroup /sys/fs/cgroup/blkio cgroup rw,relatime,blkio 0 0
-> cgroup /sys/fs/cgroup/perf_event cgroup rw,relatime,perf_event 0 0
-> none /sys/fs/fuse/connections fusectl rw,relatime 0 0
-> none /sys/kernel/debug debugfs rw,relatime 0 0
-> none /sys/kernel/security securityfs rw,relatime 0 0
-> none /run/lock tmpfs rw,nosuid,nodev,noexec,relatime,size=5120k 0 0
-> none /run/shm tmpfs rw,nosuid,nodev,relatime 0 0
-> rpc_pipefs /run/rpc_pipefs rpc_pipefs rw,relatime 0 0
-> nfsd /proc/fs/nfsd nfsd rw,relatime 0 0
-> /dev/sda1 /mnt/sda1 ext3
-> rw,relatime,errors=continue,user_xattr,acl,barrier=1,data=ordered 0 0
-> dhcp122.asianux.net:/tmp/fsx18251.testdir/
-> /opt/ltp/testcases/bin/fsx18251 nfs
-> rw,relatime,vers=2,rsize=8192,wsize=8192,namlen=255,hard,proto=udp,timeo=11,retrans=3,sec=sys,mountaddr=10.1.0.139,mountvers=1,mountport=39973,mountproto=udp,local_lock=none,addr=10.1.0.139
-> 0 0
-> root@dhcp159:/opt/ltp/testscripts#
+> If you need any other system variables please let me know and I can
+> get those as well.
+> 
+> Upon shutdown or restart (from either the hard button on the case or a
+> "sudo shutdown -r now" the system crashes and does not actually shut
+> down.  I can ssh in to the system and a dmesg shows the following:
 
-...and you are using NFSv2 with UDP?
+There should be a line before the "[ cut here ]" something like:
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+BUG: Dentry foobar still in use ...
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Please send this information as well.
+
+Thanks,
+Miklos
+
+> 
+> [102792.710563] ------------[ cut here ]------------
+> [102792.710564] kernel BUG at fs/dcache.c:967!
+> [102792.710566] invalid opcode: 0000 [#1] SMP 
+> [102792.710568] Modules linked in: nls_utf8 udf crc_itu_t nfsv4
+> binfmt_misc nfsd nfs_acl auth_rpcgss nfs fscache lockd sunrpc
+> snd_hda_codec_hdmi xfs nvidia(PO) rc_imon_mce imon rc_core
+> snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_seq_midi
+> snd_hwdep snd_rawmidi snd_pcm psmouse snd_seq_midi_event snd_seq
+> serio_raw snd_seq_device snd_timer snd soundcore snd_page_alloc
+> f71882fg r8169 ahci libahci
+> [102792.710587] CPU 0 
+> [102792.710590] Pid: 29771, comm: umount Tainted: P           O 3.6.0
+> #1 System manufacturer System Product Name/F1A55-M LX PLUS
+> [102792.710592] RIP: 0010:[<ffffffff8116c606>]  [<ffffffff8116c606>]
+> shrink_dcache_for_umount_subtree+0x1e6/0x1f0
+> [102792.710598] RSP: 0018:ffff880118f6dd98  EFLAGS: 00010296
+> [102792.710600] RAX: 000000000000005d RBX: ffff88011092acc0 RCX:
+> 00000000000013ae
+> [102792.710601] RDX: 0000000000004663 RSI: 0000000000000046 RDI:
+> ffffffff81bbf9bc
+> [102792.710602] RBP: ffff880118f6ddb8 R08: 000000000000000a R09:
+> 0000000000000000
+> [102792.710604] R10: 000000000000039a R11: 0000000000000399 R12:
+> ffff880110a5c900
+> [102792.710605] R13: ffff880118fa9d00 R14: ffff880118fa9d30 R15:
+> ffff8801180c9000
+> [102792.710607] FS:  00007f9cc4c16800(0000) GS:ffff88011ec00000(0000)
+> knlGS:0000000000000000
+> [102792.710608] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [102792.710609] CR2: 00007f9cc4241120 CR3: 0000000117993000 CR4:
+> 00000000000007f0
+> [102792.710611] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+> 0000000000000000
+> [102792.710612] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+> 0000000000000400
+> [102792.710614] Process umount (pid: 29771, threadinfo
+> ffff880118f6c000, task ffff88007b8edb00)
+> [102792.710614] Stack:
+> [102792.710616]  ffff8801180c9350 ffff880110a5c6c0 ffff8801180c9000
+> ffffffffa0d0f3c0
+> [102792.710618]  ffff880118f6ddd8 ffffffff8116de93 0000000000000001
+> ffff8801180c9000
+> [102792.710620]  ffff880118f6de08 ffffffff811583bc ffff880110a5c760
+> 0000000000000014
+> [102792.710622] Call Trace:
+> [102792.710626]  [<ffffffff8116de93>] shrink_dcache_for_umount
+> +0x33/0x60
+> [102792.710629]  [<ffffffff811583bc>] generic_shutdown_super+0x2c/0xf0
+> [102792.710632]  [<ffffffff81158516>] kill_anon_super+0x16/0x30
+> [102792.710634]  [<ffffffff81158557>] kill_litter_super+0x27/0x30
+> [102792.710650]  [<ffffffffa0d094a9>] rpc_kill_sb+0x99/0xc0 [sunrpc]
+> [102792.710653]  [<ffffffff8115877c>] deactivate_locked_super
+> +0x3c/0xa0
+> [102792.710655]  [<ffffffff8115938e>] deactivate_super+0x4e/0x70
+> [102792.710658]  [<ffffffff81174416>] mntput_no_expire+0x106/0x160
+> [102792.710661]  [<ffffffff8117543e>] sys_umount+0x6e/0x3b0
+> [102792.710664]  [<ffffffff81583d96>] system_call_fastpath+0x1a/0x1f
+> [102792.710665] Code: 00 00 48 8b 40 28 4c 8b 08 48 8b 43 30 48 85 c0
+> 74 04 48 8b 50 40 48 89 34 24 48 c7 c7 48 69 7c 81 48 89 de 31 c0 e8
+> 09 62 40 00 <0f> 0b 0f 0b 66 0f 1f 44 00 00 55 48 89 e5 41 54 53 66 66
+> 66 66 
+> [102792.710686] RIP  [<ffffffff8116c606>]
+> shrink_dcache_for_umount_subtree+0x1e6/0x1f0
+> [102792.710689]  RSP <ffff880118f6dd98>
+> [102792.710705] ---[ end trace 6cebf99f8c65907b ]---
+> 
+> Thank you,
+> 
+> Neil
+> 
+> 
+
+
