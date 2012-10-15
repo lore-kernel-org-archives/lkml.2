@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721Ab2JOOlv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 10:41:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40497 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781Ab2JOOlt (ORCPT
+	id S1751930Ab2JOOrV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 10:47:21 -0400
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:48022
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750840Ab2JOOrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 10:41:49 -0400
+	Mon, 15 Oct 2012 10:47:20 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VPS-5(zz98dI936eI148cI1432I4015Izz1202h1d1ah1d2ahzz8275bh8275dhz2dh668h839h944hd25hf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1441h14afh1155h)
+X-WSS-ID: 0MBXVQN-02-HFO-02
+X-M-MSG: 
+Date: Mon, 15 Oct 2012 16:47:08 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@kernel.org>
+CC: Dan Carpenter <dan.carpenter@oracle.com>,
+        <oprofile-list@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] oprofile fixes
+Message-ID: <20121015144708.GQ8285@erda.amd.com>
+References: <20121010071835.GA26201@elgon.mountain>
+ <20121015143912.GP8285@erda.amd.com>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1210151029350.1702-100000@iolanthe.rowland.org>
-References: <1350278059-14904-2-git-send-email-ming.lei@canonical.com>
-	<Pine.LNX.4.44L0.1210151029350.1702-100000@iolanthe.rowland.org>
-Date: Mon, 15 Oct 2012 22:41:48 +0800
-Message-ID: <CACVXFVM=nNEthvSOzoTnoZ-7uhLGGmZ8ULsPu0N0d8QegtHYew@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/3] mm: teach mm by current context info to not do
- I/O during memory allocation
-From: Ming Lei <ming.lei@canonical.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>, Jiri Kosina <jiri.kosina@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20121015143912.GP8285@erda.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 10:33 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
->
-> Instead of allow/forbid, the API should be save/restore (like
-> local_irq_save and local_irq_restore).  This makes nesting much easier.
+Ingo,
 
-Good point.
+On 15.10.12 16:39:12, Robert Richter wrote:
+> On 10.10.12 10:18:35, Dan Carpenter wrote:
+> > The "event" variable is a u16 so the shift will always wrap to zero
+> > making the line a no-op.
+> > 
+> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> Patch applied. Thanks for reporting and fixing.
 
-> Also, do we really the "p" argument?  This is not at all likely to be
-> used with any task other than the current one.
+please pull this fix for tip:perf/urgent from
 
-Yes, only 'current' can be passed now. I keep it because no performance
-effect with macro implementation. But that is not good since it may
-cause misuse. Will remove the 'p' argument.
+ git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
 
 Thanks,
---
-Ming Lei
+
+-Robert
+
+
+
+The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
+
+  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git urgent
+
+Dan Carpenter (1):
+      oprofile, x86: Fix wrapping bug in op_x86_get_ctrl()
+
+ arch/x86/oprofile/nmi_int.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
