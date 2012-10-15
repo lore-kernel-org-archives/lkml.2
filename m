@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652Ab2JOD3T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 23:29:19 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:62294 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915Ab2JOD3S (ORCPT
+	id S1752691Ab2JODj5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 23:39:57 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:53649 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab2JODj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 23:29:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <1350053897.10584.172.camel@smile>
-References: <142ef9170a2c69657d8a05ac127a9970d7b04965.1350051925.git.viresh.kumar@linaro.org>
-	<9688d98010716880c1bbd966ead312c446282204.1350051925.git.viresh.kumar@linaro.org>
-	<1350053897.10584.172.camel@smile>
-Date: Mon, 15 Oct 2012 08:59:17 +0530
-Message-ID: <CAKohpo=20mwje+9AVgs7b-_DshyRO2DZ=Nacjm7vFAhed=Wkqg@mail.gmail.com>
-Subject: Re: [PATCH V2 2/3] dmaengine: dw_dmac: Enhance device tree support
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 14 Oct 2012 23:39:56 -0400
+X-AuditID: 9c93016f-b7c7bae000000eb7-89-507b858a366a
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 1/2] perf tools: Fix segfault when using srcline sort key
+Date: Mon, 15 Oct 2012 12:39:42 +0900
+Message-Id: <1350272383-7016-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.4
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 October 2012 20:28, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
->> +     if (last_dw) {
->> +             if ((last_bus_id == param) && (last_dw == dw))
->> +                     return false;
->> +     }
-> Just came to my mind.
-> dw can't be NULL, can't it?
-> Then
-> if (last_dw) {
-> ...
-> }
-> is unneeded.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Fixup for this:
+The srcline sort key is for grouping samples based on their source
+file and line number.  It use addr2line tool to get the information
+but it requires dso name.  It caused a segfault when a sample does not
+have the name by dereferencing a NULL pointer.  Fix it by using raw ip
+addresses for those samples.
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index d72c26f..764c159 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -1196,11 +1196,8 @@ bool dw_dma_generic_filter(struct dma_chan
-*chan, void *param)
-         * failure. If dw and param are same, i.e. trying on same dw with
-         * different channel, return false.
-         */
--       if (last_dw) {
--               if ((last_bus_id == param) && (last_dw == dw))
--                       return false;
--       }
--
-+       if ((last_dw == dw) && (last_bus_id == param))
-+               return false;
-        /*
-         * Return true:
-         * - If dw_dma's platform data is not filled with slave info, then all
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/sort.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index b5b1b9211960..dd68f115d392 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -260,6 +260,9 @@ static int hist_entry__srcline_snprintf(struct hist_entry *self, char *bf,
+ 	if (path != NULL)
+ 		goto out_path;
+ 
++	if (!self->ms.map)
++		goto out_ip;
++
+ 	snprintf(cmd, sizeof(cmd), "addr2line -e %s %016" PRIx64,
+ 		 self->ms.map->dso->long_name, self->ip);
+ 	fp = popen(cmd, "r");
+-- 
+1.7.11.4
+
