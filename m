@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab2JOUKq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 16:10:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46616 "EHLO
+	id S932137Ab2JOUOy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 16:14:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56987 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754959Ab2JOUKl (ORCPT
+	with ESMTP id S1754998Ab2JOUKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 16:10:41 -0400
+	Mon, 15 Oct 2012 16:10:46 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
         dm-devel@redhat.com
 Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
         neilb@suse.de
-Subject: [PATCH v2 10/26] block: Add submit_bio_wait(), remove from md
-Date: Mon, 15 Oct 2012 13:09:13 -0700
-Message-Id: <1350331769-14856-40-git-send-email-koverstreet@google.com>
+Subject: [PATCH v2 13/26] raid5: use bio_reset()
+Date: Mon, 15 Oct 2012 13:09:16 -0700
+Message-Id: <1350331769-14856-43-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1350331769-14856-1-git-send-email-koverstreet@google.com>
 References: <1350331769-14856-1-git-send-email-koverstreet@google.com>
@@ -22,140 +22,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Random cleanup - this code was duplicated and it's not really specific
-to md.
-
-Also added the ability to return the actual error code.
+Had to shuffle the code around a bit (where bi_rw and bi_end_io were
+set), but shouldn't really be anything tricky here
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
 CC: NeilBrown <neilb@suse.de>
 ---
- drivers/md/raid1.c  | 19 -------------------
- drivers/md/raid10.c | 19 -------------------
- fs/bio.c            | 36 ++++++++++++++++++++++++++++++++++++
- include/linux/bio.h |  1 +
- 4 files changed, 37 insertions(+), 38 deletions(-)
+ drivers/md/raid5.c | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index 2488440..ee85154 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -2048,25 +2048,6 @@ static void fix_read_error(struct r1conf *conf, int read_disk,
- 	}
- }
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index 7c19dbe..ebe43f7 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -561,14 +561,6 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+ 		bi = &sh->dev[i].req;
+ 		rbi = &sh->dev[i].rreq; /* For writing to replacement */
  
--static void bi_complete(struct bio *bio, int error)
--{
--	complete((struct completion *)bio->bi_private);
--}
+-		bi->bi_rw = rw;
+-		rbi->bi_rw = rw;
+-		if (rw & WRITE) {
+-			bi->bi_end_io = raid5_end_write_request;
+-			rbi->bi_end_io = raid5_end_write_request;
+-		} else
+-			bi->bi_end_io = raid5_end_read_request;
 -
--static int submit_bio_wait(int rw, struct bio *bio)
--{
--	struct completion event;
--	rw |= REQ_SYNC;
--
--	init_completion(&event);
--	bio->bi_private = &event;
--	bio->bi_end_io = bi_complete;
--	submit_bio(rw, bio);
--	wait_for_completion(&event);
--
--	return test_bit(BIO_UPTODATE, &bio->bi_flags);
--}
--
- static int narrow_write_error(struct r1bio *r1_bio, int i)
- {
- 	struct mddev *mddev = r1_bio->mddev;
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index 6d06d83..f001c1b 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -2410,25 +2410,6 @@ static void fix_read_error(struct r10conf *conf, struct mddev *mddev, struct r10
- 	}
- }
+ 		rcu_read_lock();
+ 		rrdev = rcu_dereference(conf->disks[i].replacement);
+ 		smp_mb(); /* Ensure that if rrdev is NULL, rdev won't be */
+@@ -643,7 +635,14 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
  
--static void bi_complete(struct bio *bio, int error)
--{
--	complete((struct completion *)bio->bi_private);
--}
--
--static int submit_bio_wait(int rw, struct bio *bio)
--{
--	struct completion event;
--	rw |= REQ_SYNC;
--
--	init_completion(&event);
--	bio->bi_private = &event;
--	bio->bi_end_io = bi_complete;
--	submit_bio(rw, bio);
--	wait_for_completion(&event);
--
--	return test_bit(BIO_UPTODATE, &bio->bi_flags);
--}
--
- static int narrow_write_error(struct r10bio *r10_bio, int i)
- {
- 	struct bio *bio = r10_bio->master_bio;
-diff --git a/fs/bio.c b/fs/bio.c
-index addeac2..1342a16 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -750,6 +750,42 @@ int bio_add_page(struct bio *bio, struct page *page, unsigned int len,
- }
- EXPORT_SYMBOL(bio_add_page);
+ 			set_bit(STRIPE_IO_STARTED, &sh->state);
  
-+struct submit_bio_ret {
-+	struct completion event;
-+	int error;
-+};
++			bio_reset(bi);
+ 			bi->bi_bdev = rdev->bdev;
++			bi->bi_rw = rw;
++			bi->bi_end_io = (rw & WRITE)
++				? raid5_end_write_request
++				: raid5_end_read_request;
++			bi->bi_private = sh;
 +
-+static void submit_bio_wait_endio(struct bio *bio, int error)
-+{
-+	struct submit_bio_ret *ret = bio->bi_private;
-+
-+	ret->error = error;
-+	complete(&ret->event);
-+}
-+
-+/**
-+ * submit_bio_wait - submit a bio, and wait until it completes
-+ * @rw: whether to %READ or %WRITE, or maybe to %READA (read ahead)
-+ * @bio: The &struct bio which describes the I/O
-+ *
-+ * Simple wrapper around submit_bio(). Returns 0 on success, or the error from
-+ * bio_endio() on failure.
-+ */
-+int submit_bio_wait(int rw, struct bio *bio)
-+{
-+	struct submit_bio_ret ret;
-+
-+	rw |= REQ_SYNC;
-+	init_completion(&ret.event);
-+	bio->bi_private = &ret;
-+	bio->bi_end_io = submit_bio_wait_endio;
-+	submit_bio(rw, bio);
-+	wait_for_completion(&ret.event);
-+
-+	return ret.error;
-+}
-+EXPORT_SYMBOL(submit_bio_wait);
-+
- /**
-  * bio_advance - increment/complete a bio by some number of bytes
-  * @bio:	bio to advance
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 92bff0e..949c48a 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -249,6 +249,7 @@ extern void bio_endio(struct bio *, int);
- struct request_queue;
- extern int bio_phys_segments(struct request_queue *, struct bio *);
+ 			pr_debug("%s: for %llu schedule op %ld on disc %d\n",
+ 				__func__, (unsigned long long)sh->sector,
+ 				bi->bi_rw, i);
+@@ -657,12 +656,9 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+ 			if (test_bit(R5_ReadNoMerge, &sh->dev[i].flags))
+ 				bi->bi_rw |= REQ_FLUSH;
  
-+extern int submit_bio_wait(int rw, struct bio *bio);
- void bio_advance(struct bio *, unsigned);
+-			bi->bi_flags = 1 << BIO_UPTODATE;
+-			bi->bi_idx = 0;
+ 			bi->bi_io_vec[0].bv_len = STRIPE_SIZE;
+ 			bi->bi_io_vec[0].bv_offset = 0;
+ 			bi->bi_size = STRIPE_SIZE;
+-			bi->bi_next = NULL;
+ 			if (rrdev)
+ 				set_bit(R5_DOUBLE_LOCKED, &sh->dev[i].flags);
+ 			generic_make_request(bi);
+@@ -674,7 +670,14 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
  
- extern void bio_init(struct bio *);
+ 			set_bit(STRIPE_IO_STARTED, &sh->state);
+ 
++			bio_reset(rbi);
+ 			rbi->bi_bdev = rrdev->bdev;
++			rbi->bi_rw = rw;
++			rbi->bi_end_io = (rw & WRITE)
++				? raid5_end_write_request
++				: raid5_end_read_request;
++			rbi->bi_private = sh;
++
+ 			pr_debug("%s: for %llu schedule op %ld on "
+ 				 "replacement disc %d\n",
+ 				__func__, (unsigned long long)sh->sector,
+@@ -686,12 +689,9 @@ static void ops_run_io(struct stripe_head *sh, struct stripe_head_state *s)
+ 			else
+ 				rbi->bi_sector = (sh->sector
+ 						  + rrdev->data_offset);
+-			rbi->bi_flags = 1 << BIO_UPTODATE;
+-			rbi->bi_idx = 0;
+ 			rbi->bi_io_vec[0].bv_len = STRIPE_SIZE;
+ 			rbi->bi_io_vec[0].bv_offset = 0;
+ 			rbi->bi_size = STRIPE_SIZE;
+-			rbi->bi_next = NULL;
+ 			generic_make_request(rbi);
+ 		}
+ 		if (!rdev && !rrdev) {
 -- 
 1.7.12
 
