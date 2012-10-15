@@ -1,125 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409Ab2JONSU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 09:18:20 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:51257 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753325Ab2JONST (ORCPT
+	id S1753465Ab2JONUS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 09:20:18 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61137 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325Ab2JONUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 09:18:19 -0400
+	Mon, 15 Oct 2012 09:20:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <CANejiEWL5_tdSbfzMq3YAtOfVtEkTQFYqLZ8t39eDhTaHTBb4g@mail.gmail.com>
-References: <2012101520345871894911@gmail.com>
-	<CANejiEWL5_tdSbfzMq3YAtOfVtEkTQFYqLZ8t39eDhTaHTBb4g@mail.gmail.com>
-Date: Mon, 15 Oct 2012 21:18:17 +0800
-X-Google-Sender-Auth: 9ZmSXx8cuuw9wEK9PoNaP8clLmA
-Message-ID: <CANejiEWWnrY_dKKuKLvjRms85crO+A7hi8P6nTkGMX9O2TL4kQ@mail.gmail.com>
-Subject: Re: [PATCH] block: Add blk_rq_pos(rq) to sort rq when plushing plug-list.
-From: Shaohua Li <shli@kernel.org>
-To: Jianpeng Ma <majianpeng@gmail.com>
-Cc: axboe <axboe@kernel.dk>, linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <87r4p0417r.fsf@devron.myhome.or.jp>
+References: <1349598764-3252-1-git-send-email-linkinjeon@gmail.com>
+	<877gqu90x1.fsf@devron.myhome.or.jp>
+	<CAKYAXd_vWenGBzRoh9cv_Qet_znyPhe_2QpBp29mZJqqoKEFgg@mail.gmail.com>
+	<87391i8mny.fsf@devron.myhome.or.jp>
+	<CAKYAXd8xdb+t5ZTKtg0W7VjCuuJfYFDDFMwUZNRN8f8fcttDxQ@mail.gmail.com>
+	<87r4p271uw.fsf@devron.myhome.or.jp>
+	<CAKYAXd-zV+SH4-CqYCxK1Ph34+5CKPKrbG9_rnH1c9rD_wcsng@mail.gmail.com>
+	<87r4p0417r.fsf@devron.myhome.or.jp>
+Date: Mon, 15 Oct 2012 22:20:14 +0900
+Message-ID: <CAKYAXd9Lqw5fwuaY7gEJiFK2qYSRW-WNVP1cEjc1sbJqBLLt+g@mail.gmail.com>
+Subject: Re: [PATCH v4 3/4] fat (exportfs): rebuild directory-inode if
+ fat_dget() fails
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: akpm@linux-foundation.org, bfields@fieldses.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/15 Shaohua Li <shli@fusionio.com>:
-> 2012/10/15 Jianpeng Ma <majianpeng@gmail.com>:
->> My workload is a raid5 which had 16 disks. And used our filesystem to
->> write using direct-io mode.
->> I used the blktrace to find those message:
->>
->> 8,16   0     3570     1.083923979  2519  I   W 144323176 + 24 [md127_raid5]
->> 8,16   0        0     1.083926214     0  m   N cfq2519 insert_request
->> 8,16   0     3571     1.083926586  2519  I   W 144323072 + 104 [md127_raid5]
->> 8,16   0        0     1.083926952     0  m   N cfq2519 insert_request
->> 8,16   0     3572     1.083927180  2519  U   N [md127_raid5] 2
->> 8,16   0        0     1.083927870     0  m   N cfq2519 Not idling.st->count:1
->> 8,16   0        0     1.083928320     0  m   N cfq2519 dispatch_insert
->> 8,16   0        0     1.083928951     0  m   N cfq2519 dispatched a request
->> 8,16   0        0     1.083929443     0  m   N cfq2519 activate rq,drv=1
->> 8,16   0     3573     1.083929530  2519  D   W 144323176 + 24 [md127_raid5]
->> 8,16   0        0     1.083933883     0  m   N cfq2519 Not idling.st->count:1
->> 8,16   0        0     1.083934189     0  m   N cfq2519 dispatch_insert
->> 8,16   0        0     1.083934654     0  m   N cfq2519 dispatched a request
->> 8,16   0        0     1.083935014     0  m   N cfq2519 activate rq,drv=2
->> 8,16   0     3574     1.083935101  2519  D   W 144323072 + 104 [md127_raid5]
->> 8,16   0     3575     1.084196179     0  C   W 144323176 + 24 [0]
->> 8,16   0        0     1.084197979     0  m   N cfq2519 complete rqnoidle 0
->> 8,16   0     3576     1.084769073     0  C   W 144323072 + 104 [0]
->>   ......
->> 8,16   1     3596     1.091394357  2519  I   W 144322544 + 16 [md127_raid5]
->> 8,16   1        0     1.091396181     0  m   N cfq2519 insert_request
->> 8,16   1     3597     1.091396571  2519  I   W 144322520 + 24 [md127_raid5]
->> 8,16   1        0     1.091396934     0  m   N cfq2519 insert_request
->> 8,16   1     3598     1.091397165  2519  I   W 144322488 + 32 [md127_raid5]
->> 8,16   1        0     1.091397477     0  m   N cfq2519 insert_request
->> 8,16   1     3599     1.091397708  2519  I   W 144322432 + 56 [md127_raid5]
->> 8,16   1        0     1.091398023     0  m   N cfq2519 insert_request
->> 8,16   1     3600     1.091398284  2519  U   N [md127_raid5] 4
->> 8,16   1        0     1.091398986     0  m   N cfq2519 Not idling. st->count:1
->> 8,16   1        0     1.091399511     0  m   N cfq2519 dispatch_insert
->> 8,16   1        0     1.091400217     0  m   N cfq2519 dispatched a request
->> 8,16   1        0     1.091400688     0  m   N cfq2519 activate rq,drv=1
->> 8,16   1     3601     1.091400766  2519  D   W 144322544 + 16 [md127_raid5]
->> 8,16   1        0     1.091406151     0  m   N cfq2519 Not idling.st->count:1
->> 8,16   1        0     1.091406460     0  m   N cfq2519 dispatch_insert
->> 8,16   1        0     1.091406931     0  m   N cfq2519 dispatched a request
->> 8,16   1        0     1.091407291     0  m   N cfq2519 activate rq,drv=2
->> 8,16   1     3602     1.091407378  2519  D   W 144322520 + 24 [md127_raid5]
->> 8,16   1        0     1.091414006     0  m   N cfq2519 Not idling.st->count:1
->> 8,16   1        0     1.091414297     0  m   N cfq2519 dispatch_insert
->> 8,16   1        0     1.091414702     0  m   N cfq2519 dispatched a request
->> 8,16   1        0     1.091415047     0  m   N cfq2519 activate rq, drv=3
->> 8,16   1     3603     1.091415125  2519  D   W 144322488 + 32 [md127_raid5]
->> 8,16   1        0     1.091416469     0  m   N cfq2519 Not idling.st->count:1
->> 8,16   1        0     1.091416754     0  m   N cfq2519 dispatch_insert
->> 8,16   1        0     1.091417186     0  m   N cfq2519 dispatched a request
->> 8,16   1        0     1.091417535     0  m   N cfq2519 activate rq,drv=4
->> 8,16   1     3604     1.091417628  2519  D   W 144322432 + 56 [md127_raid5]
->> 8,16   1     3605     1.091857225  4393  C   W 144322544 + 16 [0]
->> 8,16   1        0     1.091858753     0  m   N cfq2519 complete rqnoidle 0
->> 8,16   1     3606     1.092068456  4393  C   W 144322520 + 24 [0]
->> 8,16   1        0     1.092069851     0  m   N cfq2519 complete rqnoidle 0
->> 8,16   1     3607     1.092350440  4393  C   W 144322488 + 32 [0]
->> 8,16   1        0     1.092351688     0  m   N cfq2519 complete rqnoidle 0
->> 8,16   1     3608     1.093629323     0  C   W 144322432 + 56 [0]
->> 8,16   1        0     1.093631151     0  m   N cfq2519 complete rqnoidle 0
->> 8,16   1        0     1.093631574     0  m   N cfq2519 will busy wait
->> 8,16   1        0     1.093631829     0  m   N cfq schedule dispatch
->>
->> Because in func "elv_attempt_insert_merge", it only to try to
->> backmerge.So the four request can't merge in theory.
->> I trace ten minutes and count those situation, it can count 25%.
->>
->> With the patch,i tested and not found situation like above.
->>
->> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
->> ---
->>  block/blk-core.c |    3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/block/blk-core.c b/block/blk-core.c
->> index a33870b..3c95c4d 100644
->> --- a/block/blk-core.c
->> +++ b/block/blk-core.c
->> @@ -2868,7 +2868,8 @@ static int plug_rq_cmp(void *priv, struct list_head *a, struct list_head *b)
->>         struct request *rqa = container_of(a, struct request, queuelist);
->>         struct request *rqb = container_of(b, struct request, queuelist);
->>
->> -       return !(rqa->q <= rqb->q);
->> +       return !(rqa->q < rqb->q ||
->> +               (rqa->q == rqb->q && blk_rq_pos(rqa) < blk_rq_pos(rqb)));
->>  }
+2012/10/15 OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
 >
-> Does this one help too?
-> http://marc.info/?l=linux-kernel&m=132399972114668&w=2
+>>> OK, I think I got where is wrong. If it is the subdir of rootdir,
+>>> fat_dget() should get the inode of root?
+>> That is correct. Whenever fat_dget() is called for sub-directories
+>> which is in root folder, we assign root inode as parent inode.
+>>>
+>>> So, I guess if parent_logstart == 0, it is BUG().
+>> Would you explain more why you think it is BUG() ?
 >
-> I thought the real problem is we don't do recursive request
-> merge. I had no objection to the patch itself, but just hope we
-> can make recursive merge work, which is more generic.
-
-Oh, wait, the 4 requests aren't merged completely in your case.
-And the requests are from one thread and plug context.
-Not the issue I mentioned. I'm wondering how this could happen.
-they should be merged in attempt_plug_merge already.
+> Because root dentry is never expired until umount. So, fat_dget()
+> shouldn't never fail to get inode for subdir of rootdir. Otherwise,
+> "stale_rw" will not be working in the case even if there is cache.
+>
+> I.e. I think we don't need to check parent_logstart == 0.
+Yes, You're right.  I found this condition is really not needed when I
+check again.
+I will remove this code.
+Thanks OGAWA!
+>
+> Thanks.
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
