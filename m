@@ -1,114 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498Ab2JOUzu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 16:55:50 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:47997 "EHLO ogre.sisk.pl"
+	id S1754320Ab2JOVRo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 17:17:44 -0400
+Received: from mga03.intel.com ([143.182.124.21]:62116 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750754Ab2JOUzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 16:55:49 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: yanmin_zhang@linux.intel.com
-Cc: "Zhang, LongX" <longx.zhang@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>
-Subject: Re: Subject: [PATCH] drivers-core: move device_pm_remove behind bus_remove_device
-Date: Mon, 15 Oct 2012 22:59:28 +0200
-Message-ID: <2338561.PDRRozbqko@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1350286789.2207.6.camel@ymzhang.sh.intel.com>
-References: <F7B8FD780A346D46A0042F5C63B06AE775B2B0@SHSMSX102.ccr.corp.intel.com> <1350286789.2207.6.camel@ymzhang.sh.intel.com>
+	id S1752165Ab2JOVRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 17:17:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,590,1344236400"; 
+   d="scan'208";a="156466491"
+Message-ID: <507C7D76.3010602@intel.com>
+Date: Mon, 15 Oct 2012 14:17:42 -0700
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Dmitry Fleytman <dmitry@daynix.com>
+CC: linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        Chris Webb <chris.webb@elastichosts.com>,
+        Richard Davies <richard.davies@elastichosts.com>
+Subject: Re: [PATCH] e1000 driver RX race condition fixed
+References: <1350235151-11146-1-git-send-email-dmitry@daynix.com> <507C5BC7.1060108@intel.com> <CAGHCxhe=2N8G8v66uZaNDQKyiRVRN11_Lw17mkOdxxrrpXgPHQ@mail.gmail.com> <507C6C13.4000609@intel.com> <CAGHCxhcad=zx7ihX5zoDB=ZOLGGuZty=Bck6zSoMQ-9S3ZJo7w@mail.gmail.com>
+In-Reply-To: <CAGHCxhcad=zx7ihX5zoDB=ZOLGGuZty=Bck6zSoMQ-9S3ZJo7w@mail.gmail.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 15 of October 2012 15:39:49 Yanmin Zhang wrote:
-> On Fri, 2012-09-21 at 01:58 +0000, Zhang, LongX wrote:
-> > From: LongX Zhang <longx.zhang@intel.com>
-> > 
-> > device_pm_remove will call pm_runtime_remove which would disable
-> > runtime PM of the device. After that pm_runtime_get* or
-> > pm_runtime_put* will be ingored. So if we disable the runtime PM
-> > before device really be removed, drivers' _remove callback may
-> > access HW even pm_runtime_get* fails. That is bad.
-> The background about the patch: We hit an hang issue when removing a mmc
-> device on Medfield Android phone by sysfs interface.
-> 
-> Consider below call sequence when removing a device:
-> device_del => device_pm_remove
->            => class_intf->remove_dev(dev, class_intf)  => pm_runtime_get_sync/put_sync
->            => bus_remove_device => device_release_driver => pm_runtime_get_sync/put_sync
-> 
-> remove_dev might call pm_runtime_get_sync/put_sync.
-> Then, generic device_release_driver also calls pm_runtime_get_sync/put_sync.
-> Since device_del => device_pm_remove firstly, later _get_sync wouldn't really
-> wake up the device.
-> 
-> I git log -p to find the patch which moves the calling to device_pm_remove ahead.
-> It's below patch:
-> 
-> commit 775b64d2b6ca37697de925f70799c710aab5849a
-> Author: Rafael J. Wysocki <rjw@sisk.pl>
-> Date:   Sat Jan 12 20:40:46 2008 +0100
-> 
->     PM: Acquire device locks on suspend
->     
->     This patch reorganizes the way suspend and resume notifications are
->     sent to drivers.  The major changes are that now the PM core acquires
->     every device semaphore before calling the methods, and calls to
->     device_add() during suspends will fail, while calls to device_del()
->     during suspends will block.
->     
->     It also provides a way to safely remove a suspended device with the
->     help of the PM core, by using the device_pm_schedule_removal() callback
->     introduced specifically for this purpose, and updates two drivers (msr
->     and cpuid) that need to use it.
-> 
-> 
-> As device_pm_schedule_removal is deleted by another patch, we need also revert
-> other parts of the patch, i.e. move the calling of device_pm_remove after
-> the calling to bus_remove_device.
-> 
-> > 
-> > Signed-off-by: LongX Zhang <longx.zhang@intel.com>
+The datasheets for most of the parts are available at:
+http://developer.intel.com/products/ethernet/resource.htm
 
-Can you please resend the patch?  I lost the track of it unfortunately.
+You just need to select one of the parts supported by e1000 and select
+either the datasheet or software developers manual depending on the part.
 
 Thanks,
-Rafael
 
+Alex
 
-> > ---
-> >  drivers/base/core.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/base/core.c b/drivers/base/core.c
-> > index 5e6e00b..81ea7f2 100644
-> > --- a/drivers/base/core.c
-> > +++ b/drivers/base/core.c
-> > @@ -1169,7 +1169,6 @@ void device_del(struct device *dev)
-> >  	if (dev->bus)
-> >  		blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
-> >  					     BUS_NOTIFY_DEL_DEVICE, dev);
-> > -	device_pm_remove(dev);
-> >  	dpm_sysfs_remove(dev);
-> >  	if (parent)
-> >  		klist_del(&dev->p->knode_parent);
-> > @@ -1194,6 +1193,7 @@ void device_del(struct device *dev)
-> >  	device_remove_file(dev, &uevent_attr);
-> >  	device_remove_attrs(dev);
-> >  	bus_remove_device(dev);
-> > +	device_pm_remove(dev);
-> >  	driver_deferred_probe_del(dev);
-> >  
-> >  	/*
-> 
-> 
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+On 10/15/2012 01:20 PM, Dmitry Fleytman wrote:
+> Hello, Alex
+>
+> Many thanks for clarification. I think your assumption is
+> correct and this is exactly what needs to be fixed in QEMU.
+>
+> Is there any publicly available specification for Intel devices that
+> explains their operation in such a great details?
+>
+> Dmitry.
+>
+>
+> On Mon, Oct 15, 2012 at 10:03 PM, Alexander Duyck
+> <alexander.h.duyck@intel.com> wrote:
+>> Hello Dmitry,
+>>
+>> My concern is that on many of our parts the behavior is to initialize
+>> both the head and tail to 0, enable Rx for either the ring or device
+>> depending on the queue configuration, and then allocate buffers and bump
+>> tail to indicate that the new buffers are present.  The reason behind
+>> enabling Rx and bumping tail is because that signals the DMA engine to
+>> start fetching buffers.  In my experience most of our hardware will
+>> ignore the tail bump if it is done first and the Rx is enabled.
+>>
+>> With both head and tail at the same value it should not be possible for
+>> any of the devices to start a DMA.  This is probably what you should be
+>> checking for in fixing QEMU/KVM as it may be incorrectly assuming it can
+>> fetch the descriptor pointed to by tail.
+>>
+>> We have your patch in our queue and can test to verify my assumptions
+>> are correct.  If they are we will let you know and reject the patch.
+>>
+>> Thanks,
+>>
+>> Alex
+>>
+>>
+>>
+>> On 10/15/2012 12:44 PM, Dmitry Fleytman wrote:
+>>> Hello, Alex
+>>>
+>>> Originally this bug was reported for virtual machines running on top
+>>> of QEMU/KVM.
+>>> After patch preparation I've tested it on physical e1000 card and it
+>>> worked fine.
+>>>
+>>> However, it could be I've missed something, as I see now other Intel
+>>> drivers (e1000e, ixgb, etc.)
+>>> use the same sequence (RX enable and then ring allocate), so I'm
+>>> starting to suspect that this is
+>>> the correct behavior.
+>>>
+>>> If you confirm this is the way HW works, the this patch should be
+>>> ignored. This is pure QEMU bug and we'll fix it there.
+>>>
+>>> Thanks,
+>>> Dmitry.
+>>>
+>>> On Mon, Oct 15, 2012 at 8:53 PM, Alexander Duyck
+>>> <alexander.h.duyck@intel.com> wrote:
+>>>> On 10/14/2012 10:19 AM, Dmitry Fleytman wrote:
+>>>>> There is a race condition in e1000 driver.
+>>>>> It enables HW receive before RX rings initalization.
+>>>>> In case of specific timing this may lead to host memory corruption
+>>>>> due to DMA write to arbitrary memory location.
+>>>>> Following patch fixes this issue by reordering initialization steps.
+>>>>>
+>>>>> Other Intel network drivers does not seem to have this issue.
+>>>>>
+>>>>> Dmitry Fleytman (1):
+>>>>>   RX initialization sequence fixed - enable RX after corresponding ring
+>>>>>     initialization only
+>>>>>
+>>>>>  drivers/net/ethernet/intel/e1000/e1000_ethtool.c |    9 +++++----
+>>>>>  drivers/net/ethernet/intel/e1000/e1000_main.c    |   18 ++++++++++++++++--
+>>>>>  2 files changed, 21 insertions(+), 6 deletions(-)
+>>>>>
+>>>> What device was it you saw this issue with?  The reason why I ask is
+>>>> because I suspect this change should cause most of our e1000 hardware to
+>>>> lock up since normally if you allocate buffers and then enable Rx it
+>>>> will mean the ring was not updated and it will treat it as if there are
+>>>> no buffers available.
+>>>>
+>>>> Thanks,
+>>>>
+>>>> Alex
+>
+>
+
