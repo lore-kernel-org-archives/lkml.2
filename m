@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab2JOHFx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 03:05:53 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46501 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753042Ab2JOHFv (ORCPT
+	id S1754042Ab2JOHKn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 03:10:43 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:12781 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753353Ab2JOHKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 03:05:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121015003917.GB23324@gmail.com>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
-	<20121015003917.GB23324@gmail.com>
-Date: Mon, 15 Oct 2012 15:05:50 +0800
-Message-ID: <CAEH94LgkgiXo3jjErifezj7oCJK_7EGan8djejWVkG3a-br3eA@mail.gmail.com>
-Subject: Re: [RFC v3 00/13] vfs: hot data tracking
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-        viro@zeniv.linux.org.uk, david@fromorbit.com, dave@jikos.cz,
-        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 15 Oct 2012 03:10:41 -0400
+Date: Mon, 15 Oct 2012 09:10:15 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Peter Korsgaard <jacmet@sunsite.dk>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: i2c-ocores: Use devm_request_and_ioremap()
+Message-ID: <20121015091015.2887fcb9@endymion.delvare>
+In-Reply-To: <1344408872-1051-1-git-send-email-thierry.reding@avionic-design.de>
+References: <1344408872-1051-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 8:39 AM, Zheng Liu <gnehzuil.liu@gmail.com> wrote:
-> On Wed, Oct 10, 2012 at 06:07:22PM +0800, zwu.kernel@gmail.com wrote:
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>
->> NOTE:
->>
->>   The patchset is currently post out mainly to make sure
->> it is going in the correct direction and hope to get some
->> helpful comments from other guys.
->>   For more infomation, please check hot_tracking.txt in Documentation
->
-> Hi Zhi Yong,
->
-> If I want to use this patch set in ext4, could I apply this patch set
-> directly or I need to call some functions like in btrfs.  Thanks.
-Hi ,Zheng,
+Hi Thierry,
 
-It is the latter. If you have any questions, please feel free to catch me.
+On Wed,  8 Aug 2012 08:54:32 +0200, Thierry Reding wrote:
+> Replacing the devm_request_mem_region() and devm_ioremap_nocache() calls
+> by a single call to devm_request_and_ioremap() simplifies the code.
+> 
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> ---
+>  drivers/i2c/busses/i2c-ocores.c | 15 +++------------
+>  1 file changed, 3 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/i2c/busses/i2c-ocores.c b/drivers/i2c/busses/i2c-ocores.c
+> index bffd550..1fad4ae 100644
+> --- a/drivers/i2c/busses/i2c-ocores.c
+> +++ b/drivers/i2c/busses/i2c-ocores.c
+> @@ -283,18 +283,9 @@ static int __devinit ocores_i2c_probe(struct platform_device *pdev)
+>  	if (!i2c)
+>  		return -ENOMEM;
+>  
+> -	if (!devm_request_mem_region(&pdev->dev, res->start,
+> -				     resource_size(res), pdev->name)) {
+> -		dev_err(&pdev->dev, "Memory region busy\n");
+> -		return -EBUSY;
+> -	}
+> -
+> -	i2c->base = devm_ioremap_nocache(&pdev->dev, res->start,
+> -					 resource_size(res));
+> -	if (!i2c->base) {
+> -		dev_err(&pdev->dev, "Unable to map registers\n");
+> -		return -EIO;
+> -	}
+> +	i2c->base = devm_request_and_ioremap(&pdev->dev, res);
+> +	if (!i2c->base)
+> +		return -EADDRNOTAVAIL;
 
->
-> Regards,
-> Zheng
+I would suggest sticking to -EBUSY, AFAIK EADDRNOTAVAIL is for network
+address errors.
 
-
+>  
+>  	pdata = pdev->dev.platform_data;
+>  	if (pdata) {
 
 -- 
-Regards,
-
-Zhi Yong Wu
+Jean Delvare
