@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab2JOLgq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 07:36:46 -0400
+	id S1752720Ab2JOLg7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 07:36:59 -0400
 Received: from mga14.intel.com ([143.182.124.37]:13722 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752546Ab2JOLgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752609Ab2JOLgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Oct 2012 07:36:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,587,1344236400"; 
-   d="scan'208";a="156285309"
+   d="scan'208";a="156285313"
 From: dragos.tatulea@intel.com
 To: cbouatmailru@gmail.com, linux-kernel@vger.kernel.org
 Cc: adrian.hunter@intel.com, octavian.purdila@intel.com,
         Dragos Tatulea <dragos.tatulea@intel.com>
-Subject: [PATCH 7/8] pstore: make sure pstore_write exists on flush error
-Date: Mon, 15 Oct 2012 14:38:56 +0300
-Message-Id: <1350301137-16912-8-git-send-email-dragos.tatulea@intel.com>
+Subject: [PATCH 8/8] pstore: max out console log level during sysfs dump switch
+Date: Mon, 15 Oct 2012 14:38:57 +0300
+Message-Id: <1350301137-16912-9-git-send-email-dragos.tatulea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1350301137-16912-1-git-send-email-dragos.tatulea@intel.com>
 References: <1350301137-16912-1-git-send-email-dragos.tatulea@intel.com>
@@ -25,45 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dragos Tatulea <dragos.tatulea@intel.com>
 
-Return error if flushing to backend failed.
+Otherwise we might miss out on some pstore dumpers that use
+printks below current log level.
 
 Signed-off-by: Dragos Tatulea <dragos.tatulea@intel.com>
 --
- fs/pstore/platform.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ fs/pstore/platform.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
 diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index 3a4c38f..25f59ed 100644
+index 25f59ed..e3ad13e 100644
 -- a/fs/pstore/platform.c
 ++ b/fs/pstore/platform.c
-@@ -445,7 +445,7 @@ void pstore_del_timer(void)
- int pstore_write(enum pstore_type_id type, const char *buf, size_t size)
+@@ -267,6 +267,7 @@ static DEFINE_SPINLOCK(dbg_lock);
+ static int dbg_dump(void *data, u64 val)
  {
- 	size_t len;
-	int err = 0, err2;
-	int err = 0;
+ 	unsigned long flags;
+	int saved_loglevel;
  
- 	if (!psinfo)
- 		return -ENODEV;
-@@ -461,16 +461,14 @@ int pstore_write(enum pstore_type_id type, const char *buf, size_t size)
- 		psinfo->ext_part = 1;
+ 	switch (val) {
+ 	case KMSG_DUMP_PANIC:
+@@ -276,7 +277,10 @@ static int dbg_dump(void *data, u64 val)
+ 	case KMSG_DUMP_HALT:
+ 	case KMSG_DUMP_POWEROFF:
+ 		spin_lock_irqsave(&dbg_lock, flags);
+		saved_loglevel = console_loglevel;
+		console_loglevel =  15;
+ 		kmsg_dump(val);
+		console_loglevel = saved_loglevel;
+ 		spin_unlock_irqrestore(&dbg_lock, flags);
+ 		return 0;
  	}
- 
-	while (size) {
-	while (size && !err) {
- 		len = min(size, psinfo->bufsize - psinfo->ext_len);
- 		memcpy(psinfo->buf + psinfo->ext_len, buf, len);
- 		psinfo->ext_len += len;
- 		buf += len;
- 		size -= len;
- 		if (psinfo->ext_len == psinfo->bufsize) {
-			err2 = pstore_ext_flush();
-			if (err2 && !err)
-				err = err2;
-			err = pstore_ext_flush();
- 		}
- 	}
- 
 - 
 1.7.9.5
 
