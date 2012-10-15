@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab2JORjT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 13:39:19 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42960 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603Ab2JORjS (ORCPT
+	id S1754200Ab2JORlP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 13:41:15 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:47468 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753014Ab2JORlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 13:39:18 -0400
-From: Pranav Ravichandran <me@onloop.net>
-To: gregkh@linuxfoundation.org, me@onloop.net
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: sbe-2t3e3: fix coding style issues in netdev.c
-Date: Mon, 15 Oct 2012 23:08:26 +0530
-Message-Id: <1350322706-31687-1-git-send-email-me@onloop.net>
-X-Mailer: git-send-email 1.7.12.2
+	Mon, 15 Oct 2012 13:41:14 -0400
+MIME-Version: 1.0
+X-Originating-IP: [91.205.155.63]
+In-Reply-To: <1350280341.2152.12.camel@jtkirshe-mobl>
+References: <1350235151-11146-1-git-send-email-dmitry@daynix.com>
+	<1350235151-11146-2-git-send-email-dmitry@daynix.com>
+	<1350280341.2152.12.camel@jtkirshe-mobl>
+Date: Mon, 15 Oct 2012 19:41:13 +0200
+Message-ID: <CAGHCxhcsbQsKu4SyUNRf28N1Bt7pW0_LVsj3Hjvs+915cVZQVQ@mail.gmail.com>
+Subject: Re: [E1000-devel] [PATCH] RX initialization sequence fixed - enable
+ RX after corresponding ring initialization only
+From: Dmitry Fleytman <dmitry@daynix.com>
+To: jeffrey.t.kirsher@intel.com
+Cc: linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        Chris Webb <chris.webb@elastichosts.com>,
+        Richard Davies <richard.davies@elastichosts.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a POINTER_LOCATION error(changed foo* bar to foo *bar)
-and an ASSIGN_IN_IF error(moved assignment out of if condition).
+Thanks, Jeff
 
-Signed-off-by: Pranav Ravichandran <me@onloop.net>
----
- drivers/staging/sbe-2t3e3/netdev.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+According to what we see this problem is very old and exists in stable
+branches at least back to 2.6.x.
 
-diff --git a/drivers/staging/sbe-2t3e3/netdev.c b/drivers/staging/sbe-2t3e3/netdev.c
-index 180c963..1f5088b 100644
---- a/drivers/staging/sbe-2t3e3/netdev.c
-+++ b/drivers/staging/sbe-2t3e3/netdev.c
-@@ -57,7 +57,7 @@ static int t3e3_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 	return 0;
- }
- 
--static struct net_device_stats* t3e3_get_stats(struct net_device *dev)
-+static struct net_device_stats *t3e3_get_stats(struct net_device *dev)
- {
- 	struct net_device_stats *nstats = &dev->stats;
- 	struct channel *sc = dev_to_priv(dev);
-@@ -134,7 +134,8 @@ int setup_device(struct net_device *dev, struct channel *sc)
- 	dev->tx_queue_len = 100;
- 	hdlc->xmit = t3e3_if_start_xmit;
- 	hdlc->attach = t3e3_attach;
--	if ((retval = register_hdlc_device(dev))) {
-+	retval = register_hdlc_device(dev);
-+	if (retval) {
- 		dev_err(&sc->pdev->dev, "error registering HDLC device\n");
- 		return retval;
- 	}
--- 
-1.7.12.2
+Since we see this problem a lot on our servers and we cannot recompile
+some kernels we use, we are
+highly interested in backporting of this patch to older versions to
+make it merged into stable distributions.
 
+Is there any chance you could commit it in stable series?
+Can we help you with this (i.e. prepare backported patches, etc.)?
+
+Please, advise.
+
+Thanks in advance,
+Dmitry Fleytman
+
+On Mon, Oct 15, 2012 at 7:52 AM, Jeff Kirsher
+<jeffrey.t.kirsher@intel.com> wrote:
+>
+> On Sun, 2012-10-14 at 19:19 +0200, Dmitry Fleytman wrote:
+> > Reported-by: Chris Webb <chris.webb@elastichosts.com>
+> > Reported-by: Richard Davies <richard.davies@elastichosts.com>
+> >
+> > Signed-off-by: Dmitry Fleytman <dmitry@daynix.com>
+> > ---
+> >  drivers/net/ethernet/intel/e1000/e1000_ethtool.c |    9 +++++----
+> >  drivers/net/ethernet/intel/e1000/e1000_main.c    |   18
+> > ++++++++++++++++--
+> >  2 files changed, 21 insertions(+), 6 deletions(-)
+>
+> I will add it to my queue.  Thanks!
+
+
+
+
+--
+Dmitry Fleytman
+Technology Expert and Consultant,
+
+Daynix Computing Ltd.
+
+Cell: +972-54-2819481
+
+Skype: dmitry.fleytman
