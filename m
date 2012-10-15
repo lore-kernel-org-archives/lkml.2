@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab2JOJSI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 05:18:08 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:64892 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681Ab2JOJSH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 05:18:07 -0400
+	id S1751898Ab2JOJUG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 05:20:06 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:51304 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751605Ab2JOJUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 05:20:05 -0400
+Message-ID: <507BD53D.2070407@mev.co.uk>
+Date: Mon, 15 Oct 2012 10:19:57 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAFLxGvwo3W7tA1QcParfqdUSUsJjWrim_45vBVTPWihBjKHA+w@mail.gmail.com>
-References: <CA+55aFyt0KFNp5Binu-c3-XzF=MG+23EDOk1R6t4qqgW58ksAw@mail.gmail.com>
-	<507B63AC.3010807@xenotime.net>
-	<CAGjg+kHFA=o4W9dsgts-ux768TiDp+py0K-m=-N_Lz-vManSwA@mail.gmail.com>
-	<CAFLxGvwo3W7tA1QcParfqdUSUsJjWrim_45vBVTPWihBjKHA+w@mail.gmail.com>
-Date: Mon, 15 Oct 2012 17:18:05 +0800
-Message-ID: <CAGjg+kGxv-Hxi2wwsBt+3cjUQjvEf4tQ7WTCTPyp+M1AxdHhsg@mail.gmail.com>
-Subject: Re: Linux 3.7-rc1 (uml uapi errors)
-From: Alex Shi <lkml.alex@gmail.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Richard Weinberger <richard@nod.at>, rmk+kernel@arm.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+To: YAMANE Toshiaki <yamanetoshi@gmail.com>
+CC: Greg Kroah-Hartman <greg@kroah.com>, Ian Abbott <ian.abbott@mev.co.uk>,
+        Frank Mori Hess <fmhess@users.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging/comedi: Use dev_ printks in drivers/vmk80xx.c
+References: <1350222055-7666-1-git-send-email-yamanetoshi@gmail.com>
+In-Reply-To: <1350222055-7666-1-git-send-email-yamanetoshi@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, something in my side. the bisect result is unreliable. I will redo.
+On 2012/10/14 02:40 PM, YAMANE Toshiaki wrote:
+> fixed below checkpatch warning.
+> - Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+> 
+> Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+> ---
+>  drivers/staging/comedi/drivers/vmk80xx.c |   14 +++++++-------
+>  1 file changed, 7 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/staging/comedi/drivers/vmk80xx.c b/drivers/staging/comedi/drivers/vmk80xx.c
+> index df277aa..3e77d40 100644
+> --- a/drivers/staging/comedi/drivers/vmk80xx.c
+> +++ b/drivers/staging/comedi/drivers/vmk80xx.c
+> @@ -1371,12 +1371,12 @@ static int vmk80xx_usb_probe(struct usb_interface *intf,
+>  
+>  	if (dev->board.model == VMK8061_MODEL) {
+>  		vmk80xx_read_eeprom(dev, IC3_VERSION);
+> -		printk(KERN_INFO "comedi#: vmk80xx: %s\n", dev->fw.ic3_vers);
+> +		dev_info(&intf->dev, "%s: %s\n", __FILE__, dev->fw.ic3_vers);
 
-On Mon, Oct 15, 2012 at 4:30 PM, richard -rw- weinberger
-<richard.weinberger@gmail.com> wrote:
-> On Mon, Oct 15, 2012 at 6:16 AM, Alex Shi <lkml.alex@gmail.com> wrote:
->>>
->>> Building um (uml) for x86_64 (defconfig) has lots of errors like:
->>>
->>> In file included from include/linux/irq.h:22:0,
->>>                  from include/asm-generic/hardirq.h:12,
->>>                  from arch/um/include/generated/asm/hardirq.h:1,
->>>                  from include/linux/hardirq.h:7,
->>>                  from include/linux/ftrace_event.h:7,
->>>                  from include/trace/syscall.h:6,
->>>                  from include/linux/syscalls.h:78,
->>>                  from init/noinitramfs.c:23:
->>> include/linux/irqnr.h:4:30: fatal error: uapi/linux/irqnr.h: No such file or directory
->>>
->>
->> Bisect said the commit 244acb1ba3777c2eb4d33ddc246cab5419656442 cause
->> this issue.
->>
->
-> Alex, are you sure?
-> This is a merge commit.
->
-> --
-> Thanks,
-> //richard
+I think __FILE__ is the wrong thing to use in these logs.  Better to use
+vmk80xx or perhaps KBUILD_MODNAME.
 
+>  
+>  		if (vmk80xx_check_data_link(dev)) {
+>  			vmk80xx_read_eeprom(dev, IC6_VERSION);
+> -			printk(KERN_INFO "comedi#: vmk80xx: %s\n",
+> -			       dev->fw.ic6_vers);
+> +			dev_info(&intf->dev, "%s: %s\n",
+> +				 __FILE__, dev->fw.ic6_vers);
+>  		} else {
+>  			dbgcm("comedi#: vmk80xx: no conn. to CPU\n");
+>  		}
+> @@ -1387,8 +1387,8 @@ static int vmk80xx_usb_probe(struct usb_interface *intf,
+>  
+>  	dev->probed = 1;
+>  
+> -	printk(KERN_INFO "comedi#: vmk80xx: board #%d [%s] now attached\n",
+> -	       dev->count, dev->board.name);
+> +	dev_info(&intf->dev, "%s: board #%d [%s] now attached\n",
+> +		 __FILE__, dev->count, dev->board.name);
+>  
+>  	mutex_unlock(&glb_mutex);
+>  
+> @@ -1422,8 +1422,8 @@ static void vmk80xx_usb_disconnect(struct usb_interface *intf)
+>  	kfree(dev->usb_rx_buf);
+>  	kfree(dev->usb_tx_buf);
+>  
+> -	printk(KERN_INFO "comedi#: vmk80xx: board #%d [%s] now detached\n",
+> -	       dev->count, dev->board.name);
+> +	dev_info(&intf->dev, "%s: board #%d [%s] now detached\n",
+> +		 __FILE__, dev->count, dev->board.name);
+>  
+>  	up(&dev->limit_sem);
+>  	mutex_unlock(&glb_mutex);
+> 
 
 
 -- 
-Thanks
-    Alex
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>             )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587              )=-
