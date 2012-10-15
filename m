@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab2JOTRO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 15:17:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52938 "EHLO mx2.suse.de"
+	id S1754555Ab2JOTTd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 15:19:33 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:53280 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754488Ab2JOTRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 15:17:12 -0400
-From: Michal Marek <mmarek@suse.cz>
-To: torvalds@linux-foundation.org, JBeulich@suse.com
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] kbuild: Fix accidental revert in commit fe04ddf
-Date: Mon, 15 Oct 2012 21:16:56 +0200
-Message-Id: <1350328616-4486-1-git-send-email-mmarek@suse.cz>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <507C475502000078000A17AA@nat28.tlf.novell.com>
-References: <507C475502000078000A17AA@nat28.tlf.novell.com>
+	id S1753960Ab2JOTTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 15:19:31 -0400
+Message-ID: <507C61B2.9060503@linux.vnet.ibm.com>
+Date: Mon, 15 Oct 2012 14:19:14 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Reply-To: cover.1349621096.git.markus@oberhumer.co
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+CC: Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Johannes Stezenbach <js@sig21.net>,
+        Richard Weinberger <richard.weinberger@gmail.com>
+Subject: Re: [PATCH 0/3] Update LZO compression
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101519-9360-0000-0000-00000BB8CBE8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit fe04ddf (kbuild: Do not package /boot and /lib in make tar-pkg)
-accidentally reverted two previous kbuild commits. I don't know what I
-was thinking. This patch brings back changes made by
-24cc7fb (x86/kbuild: archscripts depends on scripts_basic)
-c1c1a59 (firmware: fix directory creation rule matching with make 3.80)
+> As requested by akpm I am sending my "lzo-update" branch at
+> 
+>   git://github.com/markus-oberhumer/linux.git lzo-update
+> 
+> to lkml as a patch series created by "git format-patch -M v3.5..lzo-update".
+> 
+> You can also browse the branch at
+> 
+>   https://github.com/markus-oberhumer/linux/compare/lzo-update
+> 
+> and review the three patches at
+> 
+>   https://github.com/markus-oberhumer/linux/commit/7c979cebc0f93dc692b734c12665a6824d219c20
+>   https://github.com/markus-oberhumer/linux/commit/10f6781c8591fe5fe4c8c733131915e5ae057826
+>   https://github.com/markus-oberhumer/linux/commit/5f702781f158cb59075cfa97e5c21f52275057f1
 
-Reported-by: Jan Beulich <JBeulich@suse.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
- arch/x86/Makefile       |    2 +-
- scripts/Makefile.fwinst |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+As this relates to my work on zcache, I just tested these patches on PPC64 and
+they cause the LZO crypto module to fail its self-test:
 
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 58790bd..05afcca 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -142,7 +142,7 @@ KBUILD_CFLAGS += $(call cc-option,-mno-avx,)
- KBUILD_CFLAGS += $(mflags-y)
- KBUILD_AFLAGS += $(mflags-y)
- 
--archscripts:
-+archscripts: scripts_basic
- 	$(Q)$(MAKE) $(build)=arch/x86/tools relocs
- 
- ###
-diff --git a/scripts/Makefile.fwinst b/scripts/Makefile.fwinst
-index c3f69ae..4d908d1 100644
---- a/scripts/Makefile.fwinst
-+++ b/scripts/Makefile.fwinst
-@@ -27,7 +27,7 @@ endif
- installed-mod-fw := $(addprefix $(INSTALL_FW_PATH)/,$(mod-fw))
- 
- installed-fw := $(addprefix $(INSTALL_FW_PATH)/,$(fw-shipped-all))
--installed-fw-dirs := $(sort $(dir $(installed-fw))) $(INSTALL_FW_PATH)/.
-+installed-fw-dirs := $(sort $(dir $(installed-fw))) $(INSTALL_FW_PATH)/./
- 
- # Workaround for make < 3.81, where .SECONDEXPANSION doesn't work.
- PHONY += $(INSTALL_FW_PATH)/$$(%) install-all-dirs
-@@ -42,7 +42,7 @@ quiet_cmd_install = INSTALL $(subst $(srctree)/,,$@)
- $(installed-fw-dirs):
- 	$(call cmd,mkdir)
- 
--$(installed-fw): $(INSTALL_FW_PATH)/%: $(obj)/% | $$(dir $(INSTALL_FW_PATH)/%)
-+$(installed-fw): $(INSTALL_FW_PATH)/%: $(obj)/% | $(INSTALL_FW_PATH)/$$(dir %)
- 	$(call cmd,install)
- 
- PHONY +=  __fw_install __fw_modinst FORCE
--- 
-1.7.10.4
+[    0.521137] alg: comp: Compression test 1 failed for lzo-generic: output len = 62
+
+I built the exact same kernel for x86_64 and all is fine.  I suspect an endianness
+related bug, but I haven't looked at the code that closely yet.
+
+Any ideas?  I'd be happy to test any potential fixes.
+
+Seth
 
