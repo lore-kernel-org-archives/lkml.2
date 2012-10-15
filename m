@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab2JOOOi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 10:14:38 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:50309 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753772Ab2JOOOg (ORCPT
+	id S1753922Ab2JOOOm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 10:14:42 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:46867 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753779Ab2JOOOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 10:14:36 -0400
-Date: Mon, 15 Oct 2012 10:14:35 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ming Lei <ming.lei@canonical.com>
-cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        Oliver Neukum <oneukum@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [RFC PATCH 2/3] PM / Runtime: force memory allocation with no
- I/O during runtime_resume callbcack
-In-Reply-To: <1350278059-14904-3-git-send-email-ming.lei@canonical.com>
-Message-ID: <Pine.LNX.4.44L0.1210151013310.1702-100000@iolanthe.rowland.org>
+	Mon, 15 Oct 2012 10:14:39 -0400
+From: Nishanth Menon <nm@ti.com>
+To: <linux-pm@vger.kernel.org>
+CC: Nishanth Menon <nm@ti.com>, MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] PM / devfreq: fix sscanf handling for writable sysfs entries
+Date: Mon, 15 Oct 2012 09:14:30 -0500
+Message-ID: <1350310470-27621-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Oct 2012, Ming Lei wrote:
+sscanf returns 0 when an invalid parameter like:
+echo -n "a">min_freq
+is attempted. Returning back the return result(0) will
+cause the command not to return back to command
+prompt.
 
-> This patch applies the introduces tsk_memalloc_forbid_io() and
-> tsk_memalloc_allow_io() to force memory allocation with no I/O
-> during runtime_resume callback.
-> 
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: Oliver Neukum <oneukum@suse.de>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
-> ---
->  drivers/base/power/runtime.c |   13 +++++++++++++
->  1 file changed, 13 insertions(+)
-> 
-> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-> index 3148b10..76836c1 100644
-> --- a/drivers/base/power/runtime.c
-> +++ b/drivers/base/power/runtime.c
-> @@ -652,7 +652,20 @@ static int rpm_resume(struct device *dev, int rpmflags)
->  	if (!callback && dev->driver && dev->driver->pm)
->  		callback = dev->driver->pm->runtime_resume;
->  
-> +	/*
-> +	 * Deadlock might be caused if memory allocation with GFP_KERNEL
-> +	 * happens inside runtime_resume callback of one block device's
-> +	 * ancestor or the block device itself. The easiest approach is
-> +	 * to forbid I/O inside runtime_resume of all devices.
-> +	 *
-> +	 * In fact, it can be done only if the deivce is a block device
-> +	 * or there is one block device descendant. But that may become
-> +	 * complicated and not efficient because device tree traversing
-> +	 * is involved.
-> +	 */
-> +	tsk_memalloc_forbid_io(current);
->  	retval = rpm_callback(callback, dev);
-> +	tsk_memalloc_allow_io(current);
+Instead, just return -EINVAL when sscanf does not
+return 1.
 
-This is not so good.  What happens if I/O was already forbidden when
-this function was called?
+This is done for min_freq, max_freq and polling_interval
 
-Alan Stern
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ drivers/devfreq/devfreq.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+index b146d76..9f562ae 100644
+--- a/drivers/devfreq/devfreq.c
++++ b/drivers/devfreq/devfreq.c
+@@ -488,7 +488,7 @@ static ssize_t store_polling_interval(struct device *dev,
+ 
+ 	ret = sscanf(buf, "%u", &value);
+ 	if (ret != 1)
+-		goto out;
++		return -EINVAL;
+ 
+ 	mutex_lock(&df->lock);
+ 	df->profile->polling_ms = value;
+@@ -529,7 +529,7 @@ static ssize_t store_min_freq(struct device *dev, struct device_attribute *attr,
+ 
+ 	ret = sscanf(buf, "%lu", &value);
+ 	if (ret != 1)
+-		goto out;
++		return -EINVAL;
+ 
+ 	mutex_lock(&df->lock);
+ 	max = df->max_freq;
+@@ -543,7 +543,6 @@ static ssize_t store_min_freq(struct device *dev, struct device_attribute *attr,
+ 	ret = count;
+ unlock:
+ 	mutex_unlock(&df->lock);
+-out:
+ 	return ret;
+ }
+ 
+@@ -563,7 +562,7 @@ static ssize_t store_max_freq(struct device *dev, struct device_attribute *attr,
+ 
+ 	ret = sscanf(buf, "%lu", &value);
+ 	if (ret != 1)
+-		goto out;
++		return -EINVAL;
+ 
+ 	mutex_lock(&df->lock);
+ 	min = df->min_freq;
+@@ -577,7 +576,6 @@ static ssize_t store_max_freq(struct device *dev, struct device_attribute *attr,
+ 	ret = count;
+ unlock:
+ 	mutex_unlock(&df->lock);
+-out:
+ 	return ret;
+ }
+ 
+-- 
+1.7.9.5
 
