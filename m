@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623Ab2JOHsR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 03:48:17 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:15643 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750744Ab2JOHsP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 03:48:15 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvMoAGu+e1B5LH33/2dsb2JhbABFhSm0X4RnAoEEgQmCIAEBBTocIxAIAxUDLhQNGAM0h3IDDrMMDYlUFIpfZoFngTWDIQOUF4FUiySFDYMB
-Date: Mon, 15 Oct 2012 18:48:11 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
-        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [RFC v3 11/13] vfs: add 3 new ioctl interfaces
-Message-ID: <20121015074811.GY2739@dastard>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
- <1349863655-29320-12-git-send-email-zwu.kernel@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349863655-29320-12-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751685Ab2JOHvk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 03:51:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53298 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750744Ab2JOHvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 03:51:39 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CA+55aFyVcTT4tKTVvhzXz3t4uw=MDLU00NAAOacWt6i3xovERg@mail.gmail.com>
+References: <CA+55aFyVcTT4tKTVvhzXz3t4uw=MDLU00NAAOacWt6i3xovERg@mail.gmail.com> <87fw5m7ipz.fsf@rustcorp.com.au> <CA+55aFyGuy8P4Uaanmv7DncjsN6cvQxvWrrMKKnF=67J+BkshQ@mail.gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephan Mueller <stephan.mueller@atsec.com>
+Cc: dhowells@redhat.com, Rusty Russell <rusty@rustcorp.com.au>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alex Lyashkov <umka@cloudlinux.com>, Arnd Bergmann <arnd@arndb.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Josh Boyer <jwboyer@redhat.com>, linux-crypto@vger.kernel.org,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Milan Broz <mbroz@redhat.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Sam Ravnborg <sam@ravnborg.org>
+Subject: FIPS-mode panic? (was Re: [PULL] modules)
+Date: Mon, 15 Oct 2012 08:50:54 +0100
+Message-ID: <15269.1350287454@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 06:07:33PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> 
->   FS_IOC_GET_HEAT_INFO: return a struct containing the various
-> metrics collected in btrfs_freq_data structs, and also return a
-> calculated data temperature based on those metrics. Optionally, retrieve
-> the temperature from the hot data hash list instead of recalculating it.
-> 
->   FS_IOC_GET_HEAT_OPTS: return an integer representing the current
-> state of hot data tracking and migration:
-> 
-> 0 = do nothing
-> 1 = track frequency of access
-> 
->   FS_IOC_SET_HEAT_OPTS: change the state of hot data tracking and
-> migration, as described above.
-.....
-> +struct hot_heat_info {
-> +	__u64 avg_delta_reads;
-> +	__u64 avg_delta_writes;
-> +	__u64 last_read_time;
-> +	__u64 last_write_time;
-> +	__u32 num_reads;
-> +	__u32 num_writes;
-> +	__u32 temperature;
-> +	__u8 live;
-> +	char filename[PATH_MAX];
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Don't put the filename in the ioctl and open the file in the kernel.
-Have userspace open the file directly and issue the ioctl on the fd
-that is returned.
+> Hmm. So this thing makes me wonder:
+> 
+>         /* Not having a signature is only an error if we're strict. */
+>         if (err < 0 && fips_enabled)
+>                 panic("Module verification failed with error %d in FIPS mode\n",
+>                       err);
+> 
+> do we really want to panic (even in fips_enabled mode)?
 
-Cheers,
+That's what the FIPS people want.  As I understand it, if there's some
+indication that the crypto stuff is compromised, the box should be shut down
+immediately.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+I've added Stephan Mueller to see if he can illuminate further.
+
+David
