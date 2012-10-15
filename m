@@ -1,72 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab2JOHKn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 03:10:43 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:12781 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353Ab2JOHKl (ORCPT
+	id S1754152Ab2JOHUI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 03:20:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:46121 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752602Ab2JOHUF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 03:10:41 -0400
-Date: Mon, 15 Oct 2012 09:10:15 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Peter Korsgaard <jacmet@sunsite.dk>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: i2c-ocores: Use devm_request_and_ioremap()
-Message-ID: <20121015091015.2887fcb9@endymion.delvare>
-In-Reply-To: <1344408872-1051-1-git-send-email-thierry.reding@avionic-design.de>
-References: <1344408872-1051-1-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Oct 2012 03:20:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,587,1344236400"; 
+   d="scan'208";a="205671746"
+From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
+To: "Tu, Xiaobing" <xiaobing.tu@intel.com>,
+        "ccross@android.com" <ccross@android.com>,
+        "davej@redhat.com" <davej@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>
+CC: "Zhang, Di" <di.zhang@intel.com>, "Ma, Xindong" <xindong.ma@intel.com>,
+        "Zuo, Alex" <alex.zuo@intel.com>
+Subject: Fix memory leak in binder--version2
+Thread-Topic: Fix memory leak in binder--version2
+Thread-Index: Ac2qoyERn9VOsHHUS6WvzdrsGtV9EAAAAtogAACO+HA=
+Date: Mon, 15 Oct 2012 07:20:01 +0000
+Message-ID: <EE928378561BF1449699C96571234A740FE67A7D@SHSMSX102.ccr.corp.intel.com>
+References: <EE928378561BF1449699C96571234A740FE67913@SHSMSX102.ccr.corp.intel.com>
+In-Reply-To: <EE928378561BF1449699C96571234A740FE67913@SHSMSX102.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+After enabling kmemleak and run monkey, following memleak is reported:
+unreferenced object 0xeed27f80 (size 64):
+  comm "Binder_8", pid 641, jiffies 4294946341 (age 2275.810s)
+  hex dump (first 32 bytes):
+    4f dd 00 00 84 7f d2 ee 84 7f d2 ee 01 00 00 00  O...............
+    00 00 00 00 00 00 00 00 00 aa 4c d7 00 00 00 00  ..........L.....
+  backtrace:
+    [<c184fabc>] kmemleak_alloc+0x3c/0xa0
+    [<c12f391e>] kmem_cache_alloc_trace+0x9e/0x180
+    [<c1668bb5>] binder_thread_write+0xcf5/0x23a0
+    [<c166b091>] binder_ioctl+0x1f1/0x530
+    [<c130dcf6>] do_vfs_ioctl+0x86/0x5e0
+    [<c130e282>] sys_ioctl+0x32/0x60
+    [<c1872e01>] syscall_call+0x7/0xb
+    [<ffffffff>] 0xffffffff
 
-On Wed,  8 Aug 2012 08:54:32 +0200, Thierry Reding wrote:
-> Replacing the devm_request_mem_region() and devm_ioremap_nocache() calls
-> by a single call to devm_request_and_ioremap() simplifies the code.
-> 
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> ---
->  drivers/i2c/busses/i2c-ocores.c | 15 +++------------
->  1 file changed, 3 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-ocores.c b/drivers/i2c/busses/i2c-ocores.c
-> index bffd550..1fad4ae 100644
-> --- a/drivers/i2c/busses/i2c-ocores.c
-> +++ b/drivers/i2c/busses/i2c-ocores.c
-> @@ -283,18 +283,9 @@ static int __devinit ocores_i2c_probe(struct platform_device *pdev)
->  	if (!i2c)
->  		return -ENOMEM;
->  
-> -	if (!devm_request_mem_region(&pdev->dev, res->start,
-> -				     resource_size(res), pdev->name)) {
-> -		dev_err(&pdev->dev, "Memory region busy\n");
-> -		return -EBUSY;
-> -	}
-> -
-> -	i2c->base = devm_ioremap_nocache(&pdev->dev, res->start,
-> -					 resource_size(res));
-> -	if (!i2c->base) {
-> -		dev_err(&pdev->dev, "Unable to map registers\n");
-> -		return -EIO;
-> -	}
-> +	i2c->base = devm_request_and_ioremap(&pdev->dev, res);
-> +	if (!i2c->base)
-> +		return -EADDRNOTAVAIL;
+The work item in async_todo list is not freed when binder released.
+Also the async transaction should also be freed in binder_release_work.
 
-I would suggest sticking to -EBUSY, AFAIK EADDRNOTAVAIL is for network
-address errors.
+Signed-off-by: Leon Ma <xindong.ma@intel.com>
+Signed-off-by: Di Zhang <di.zhang@intel.com>
+---
+ drivers/staging/android/binder.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
->  
->  	pdata = pdev->dev.platform_data;
->  	if (pdata) {
-
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index 7df2a89..022c9f8 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -2509,6 +2509,11 @@ static void binder_release_work(struct list_head *list)
+ 			t = container_of(w, struct binder_transaction, work);
+ 			if (t->buffer->target_node && !(t->flags & TF_ONE_WAY))
+ 				binder_send_failed_reply(t, BR_DEAD_REPLY);
++			else {
++				t->buffer->transaction = NULL;
++				kfree(t);
++				binder_stats_deleted(BINDER_STAT_TRANSACTION);
++			}
+ 		} break;
+ 		case BINDER_WORK_TRANSACTION_COMPLETE: {
+ 			kfree(w);
+@@ -2982,6 +2987,7 @@ static void binder_deferred_release(struct binder_proc *proc)
+ 
+ 		nodes++;
+ 		rb_erase(&node->rb_node, &proc->nodes);
++		binder_release_work(&node->async_todo);
+ 		list_del_init(&node->work.entry);
+ 		if (hlist_empty(&node->refs)) {
+ 			kfree(node);
 -- 
-Jean Delvare
+1.7.6
+
