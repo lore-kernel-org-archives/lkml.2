@@ -1,80 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab2JOCHi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Oct 2012 22:07:38 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:49786 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab2JOCHh (ORCPT
+	id S1753685Ab2JOC35 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Oct 2012 22:29:57 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:55956 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753617Ab2JOC3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Oct 2012 22:07:37 -0400
-Date: Mon, 15 Oct 2012 13:07:28 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: linux-next: manual merge of the akpm tree with Linus' tree
-Message-Id: <20121015130728.06a0da8ae06c362aed2871fa@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__15_Oct_2012_13_07_28_+1100__bkrKz=T4y+7364H"
+	Sun, 14 Oct 2012 22:29:55 -0400
+X-Greylist: delayed 1134 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Oct 2012 22:29:55 EDT
+X-Spam-Score: -100.6
+Message-ID: <507B70F1.7040903@asianux.com>
+Date: Mon, 15 Oct 2012 10:12:01 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Jeff Layton <jlayton@redhat.com>, Trond.Myklebust@netapp.com,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [Bug fix] nfs-client: fix nfs_inode_attrs_need_update for async read_done
+ comes during truncating to smaller size
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__15_Oct_2012_13_07_28_+1100__bkrKz=T4y+7364H
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello Trond Myklebust, Jeff Layton:
 
-Hi Andrew,
+1) Root Cause:
+   A) begin truncate to smaller, after async read finish starting.
+   B) async read done come, after truncate operation change inode size.
+   C) in nfs_inode_attrs_need_update, nfs_size_need_update return true.
+      i)   the bigger size is the original old size of client itself.
+      ii)  the smaller size is the current true size.
+      iii) nfs_inode_attrs_need_update not consider this situation.
 
-Today's linux-next merge of the akpm tree got a conflict in
-arch/arm64/include/asm/unistd32.h between commit f3d447a97f24 ("arm64: Do
-not include asm/unistd32.h in asm/unistd.h") from Linus' tree and commit
-"compat: generic compat_sys_sched_rr_get_interval implementation" from
-the akpm tree.
+2) Fix nfs_size_need_update:
+   A) delete it:
+      i)   it is for performance, not necessary (not for correctness).
+      ii)  if it was necessary, it should use "!=" instead of '>'.
+      iii) it is the simplest way to fix this bug (maybe not best way).
+   B) consider this situation in it:
+      i)   it is the best way.
+      ii)  it is a little complex (need think of)
+      iii) sorry for I do not know how to fix it (at least now).
+   C) not touch it:
+      i)   correct another place (such as nfs_update_inode)
+      ii)  it is a bad idea (at least, I think it is)
+      iii) we need keep the source code as clearer as possible.
 
-I fixed it up (I think - see below) and can carry the fix as necessary
-(no action is required).
+3) Test Result:
+   A) it is one client and one server separately, under 3.6-rc5 x86_32.
+   B) use one process (fsx-linux) test (only one user mode thread).
+   C) only use read, truncate, llseek, fstat operation for one file.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+   Before delete nfs_size_need_update, it causes issue.
+   After delete nfs_size_need_update, it is ok.
 
-diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unist=
-d.h
-index 63f853f..0f13ca8 100644
---- a/arch/arm64/include/asm/unistd.h
-+++ b/arch/arm64/include/asm/unistd.h
-@@ -25,5 +25,6 @@
- #define __ARCH_WANT_SYS_SIGPROCMASK
- #define __ARCH_WANT_COMPAT_SYS_RT_SIGSUSPEND
- #define __ARCH_WANT_COMPAT_SYS_SENDFILE
-+#define __ARCH_WANT_COMPAT_SYS_SCHED_RR_GET_INTERVAL
- #endif
- #include <uapi/asm/unistd.h>
 
---Signature=_Mon__15_Oct_2012_13_07_28_+1100__bkrKz=T4y+7364H
-Content-Type: application/pgp-signature
+User Mode Log:
+-------------------------------------------------------------------------
+<<<test_start>>>
+tag=nfsx-linux stime=1350202875
+cmdline="export VERSION SOCKET_TYPE; TCbin=$LTPROOT/testcases/bin fsx.sh"
+contacts=""
+analysis=exit
+<<<test_output>>>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Test Options:
+ VERSION: 2
+ RHOST: dhcp122.asianux.net
+ ITERATIONS: 50000
+ SOCKET_TYPE: udp
+ NFS_TYPE: nfs
+Setting up remote machine: dhcp122.asianux.net
+Mounting NFS filesystem dhcp122.asianux.net:/tmp/fsx1447.testdir on
+/opt/ltp/testcases/bin/fsx1447 with options '-o proto=udp,vers=2 '
+fsx-linux -N 50000 /opt/ltp/testcases/bin/fsx1447/testfile Starting
+truncating to largest ever: 0x13e76
+truncating to largest ever: 0x2e52c
+truncating to largest ever: 0x3c2c2
+truncating to largest ever: 0x3f15f
+truncating to largest ever: 0x3fcb9
+truncating to largest ever: 0x3fe96
+truncating to largest ever: 0x3ff9d
+Size error: expected 0x36ef9 stat 0x3bbca seek 0x36ef9
+LOG DUMP (5652 total operations):
 
-iQIcBAEBCAAGBQJQe2/gAAoJEECxmPOUX5FE19gP/j6pMH2jP09PmvJxJnqrw0VT
-mozvusIzOCN2mhAwLX2yhg9/lQUK9KzY0CMcunyBMTRJvy0aGAr8PJda1RqdhkNk
-lmo/HCFGrFY/DdE/yZ6blMKnY1h+XzCfe6QUpmtTvJCYDKo1/gAVSDkjbha47sGH
-6/Gpnpgckn3ZzR1y0EHhlMm5VKHa5drsgEWKVN9Nu58X3k1Gx7bMZBNg9dEK9HXS
-sudJ7S2qhRhHdSYcEzVWUtxoTLxqPHnA5YucjwMpTiam1KIQvdhj5jKzcrqJH2eF
-+1WNI/S0vEJNOmckK7X8Jvrhp6BcKfN8Cf+ZvLxOO52ZoGn5tpW2mqqmafsJ5ToF
-MdYwElXOOq/VcJAMXXWDOyvhP848Op+W1sp6OfmNm1yFuK7C639BuhuvTiP31tnY
-YJsxBlirA64Bv6g+hVJyUeSYQDumX/Mzo3H6ot3GxKME2hBW/u9UijOq1Oo/Ffwr
-acgGpd8GFOE9D6XrRt3ZmVTCEeCZGcPRvLLbT/gxZswKWrLEaLMPI+T6D0ynbn/b
-8mB3a1Lxwqy808PnX7zm2Sxx0R0nTmn8PwZhbht2lY25+Zi4zl5SHsHumUsO/WjH
-GPQ7+2SOeEDOZyatLmSV688cGcjpbPTLrddGKGtoYia9jOuqfcaeIDIqMIbjSgmR
-JDx930cguyiWxUeUiWFM
-=xD0Y
------END PGP SIGNATURE-----
+...
 
---Signature=_Mon__15_Oct_2012_13_07_28_+1100__bkrKz=T4y+7364H--
+5636: 1350203089.781599 READ     0x143b6 thru 0x21ccb (0xd916 bytes)
+5637: 1350203090.028214 READ     0x2a629 thru 0x2d0a1 (0x2a79 bytes)
+5638: 1350203090.072029 TRUNCATE DOWN   from 0x2d0a2 to 0x1bb35
+5639: 1350203090.087401 READ     0x11a05 thru 0x1bb34 (0xa130 bytes)
+5640: 1350203090.223985 READ     0x508c thru 0xa9da (0x594f bytes)
+5641: 1350203090.245717 TRUNCATE DOWN   from 0x1bb35 to 0x8830
+5642: 1350203090.353502 READ     0x548f thru 0x882f (0x33a1 bytes)
+5643: 1350203090.366596 READ     0x5802 thru 0x882f (0x302e bytes)
+5644: 1350203090.366629 TRUNCATE UP     from 0x8830 to 0x20011
+5645: 1350203090.379476 TRUNCATE DOWN   from 0x20011 to 0x134f4
+5646: 1350203090.396234 READ     0x124a0 thru 0x134f3 (0x1054 bytes)
+5647: 1350203090.401805 READ     0x880b thru 0x1189d (0x9093 bytes)
+5648: 1350203090.532050 READ     0x134c7 thru 0x134f3 (0x2d bytes)
+5649: 1350203090.532057 TRUNCATE UP     from 0x134f4 to 0x3bbca
+5650: 1350203090.546373 READ     0x2944c thru 0x2c1d6 (0x2d8b bytes)
+5651: 1350203090.561228 READ     0xdbe1 thru 0x16260 (0x8680 bytes)
+5652: 1350203090.751937 TRUNCATE DOWN   from 0x3bbca to 0x36ef9
+Correct content saved for comparison
+(maybe hexdump "/opt/ltp/testcases/bin/fsx1447/testfile" vs
+"/opt/ltp/testcases/bin/fsx1447/testfile.fsxgood")
+fsx-linux -N 50000 /opt/ltp/testcases/bin/fsx1447/testfile Finished
+Cleaning up testcase
+Unmounting /opt/ltp/testcases/bin/fsx1447
+Test Failed: Errors have resulted from this test
+incrementing stop
+<<<execution_status>>>
+initiation_status="ok"
+duration=218 termination_type=exited termination_id=1 corefile=no
+cutime=43 cstime=82
+<<<test_end>>>
+
+
+-------------------------------------------------------------------------
+
+
+Kernel Mode Log: (using printk which I add)
+-------------------------------------------------------------------------
+Time:          My Mark:   Task ptr:  comments (include function name):
+[  280.883701] gchen_tag: f5c30000, nfs_read_done call
+nfs_refresh_inode, cur=0x3bbca, new=0x3bbca
+[  280.890677] gchen_tag: f5c30000, nfs_read_done call
+nfs_refresh_inode, cur=0x3bbca, new=0x3bbca
+[  280.897437] gchen_tag: f5c30000, nfs_read_done call
+nfs_refresh_inode, cur=0x3bbca, new=0x3bbca
+[  280.897441] gchen_tag: f5e48c90, nfs_setattr_update_inode, cur=3bbca,
+new=36ef9
+[  280.897450] gchen_tag: f5e48c90, nfs_setattr
+[  280.897462] gchen_tag: hit, f5c30000, nfs_refresh_inode_locked,
+cur=36ef9, new=3bbca
+[  280.897469] gchen_tag: f5c30000, nfs_update_inode, change size,
+cur=36ef9, new=3bbca
+[  280.898129] gchen_tag: f5e48c90, nfs_update_inode, change size,
+cur=3bbca, new=36ef9
+[  280.977915] gchen_tag: f5c30000, nfs_update_inode, not change size,
+cur=36ef9, new=2000, pages=55
+[  281.019879] gchen_tag: f5c30000, nfs_update_inode, not change size,
+cur=36ef9, new=a000, pages=53
+[  281.070325] gchen_tag: f5c30000, nfs_update_inode, not change size,
+cur=36ef9, new=e000, pages=45
+[  281.087103] gchen_tag: f5c30000, nfs_update_inode, not change size,
+cur=36ef9, new=12000, pages=43
+[  281.129061] gchen_tag: f5c30000, nfs_update_inode, not change size,
+cur=36ef9, new=16000, pages=41
+[  281.163012] gchen_tag: f5c30000, nfs_update_inode, not change size,
+cur=36ef9, new=18000, pages=37
+[  281.213481] gchen_tag: f5c30000, nfs_update_inode, not change size,
+cur=36ef9, new=1c000, pages=33
+[  281.255727] gchen_tag: f5c30000, nfs_update_inode, not change size,
+cur=36ef9, new=22000, pages=31
+[  281.306177] gchen_tag: f5c30000, nfs_update_inode, not change size,
+cur=36ef9, new=24000, pages=27
+[  281.356888] gchen_tag: f5c30000, nfs_update_inode, not change size,
+cur=36ef9, new=2e000, pages=21
+[  281.398859] gchen_tag: f5c30000, nfs_update_inode, not change size,
+cur=36ef9, new=36000, pages=19
+[  281.585491] gchen_tag: f5c30000, nfs_update_inode, not change size,
+cur=104d8, new=2000, pages=17
+[  281.644207] gchen_tag: f5c30000, nfs_update_inode, not change size,
+cur=104d8, new=10000, pages=15
+-------------------------------------------------------------------------
+
+
+Thanks.
+
+--
+Chen Gang
+
+Asianux Corporation
+
