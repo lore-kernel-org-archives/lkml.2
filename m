@@ -1,61 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab2JOLg7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 07:36:59 -0400
-Received: from mga14.intel.com ([143.182.124.37]:13722 "EHLO mga14.intel.com"
+	id S1752768Ab2JOLhO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 07:37:14 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48571 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752609Ab2JOLgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 07:36:45 -0400
+	id S1752479Ab2JOLhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 07:37:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,587,1344236400"; 
-   d="scan'208";a="156285313"
+   d="scan'208";a="227002344"
 From: dragos.tatulea@intel.com
 To: cbouatmailru@gmail.com, linux-kernel@vger.kernel.org
-Cc: adrian.hunter@intel.com, octavian.purdila@intel.com,
-        Dragos Tatulea <dragos.tatulea@intel.com>
-Subject: [PATCH 8/8] pstore: max out console log level during sysfs dump switch
-Date: Mon, 15 Oct 2012 14:38:57 +0300
-Message-Id: <1350301137-16912-9-git-send-email-dragos.tatulea@intel.com>
+Cc: adrian.hunter@intel.com, octavian.purdila@intel.com
+Subject: [PATCH 2/8] pstore: add debugfs support for causing dumps and panics
+Date: Mon, 15 Oct 2012 14:40:04 +0300
+Message-Id: <1350301210-16953-3-git-send-email-dragos.tatulea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350301137-16912-1-git-send-email-dragos.tatulea@intel.com>
-References: <1350301137-16912-1-git-send-email-dragos.tatulea@intel.com>
+In-Reply-To: <1350301210-16953-1-git-send-email-dragos.tatulea@intel.com>
+References: <1350301210-16953-1-git-send-email-dragos.tatulea@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dragos Tatulea <dragos.tatulea@intel.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-Otherwise we might miss out on some pstore dumpers that use
-printks below current log level.
+There are 2 debugfs files:
 
-Signed-off-by: Dragos Tatulea <dragos.tatulea@intel.com>
---
- fs/pstore/platform.c |    4 ++++
- 1 file changed, 4 insertions(+)
+	pstore/dump	writing a kmsg dump reason code
+			will cause a dump to persistent
+			storage
+
+	pstore/panic	writing anything will cause
+			a panic
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ fs/pstore/platform.c |   51 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 51 insertions(+)
 
 diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index 25f59ed..e3ad13e 100644
--- a/fs/pstore/platform.c
-++ b/fs/pstore/platform.c
-@@ -267,6 +267,7 @@ static DEFINE_SPINLOCK(dbg_lock);
- static int dbg_dump(void *data, u64 val)
- {
- 	unsigned long flags;
-	int saved_loglevel;
+index c4ea778..9d65723 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -33,6 +33,7 @@
+ #include <linux/hardirq.h>
+ #include <linux/jiffies.h>
+ #include <linux/workqueue.h>
++#include <linux/debugfs.h>
  
- 	switch (val) {
- 	case KMSG_DUMP_PANIC:
-@@ -276,7 +277,10 @@ static int dbg_dump(void *data, u64 val)
- 	case KMSG_DUMP_HALT:
- 	case KMSG_DUMP_POWEROFF:
- 		spin_lock_irqsave(&dbg_lock, flags);
-		saved_loglevel = console_loglevel;
-		console_loglevel =  15;
- 		kmsg_dump(val);
-		console_loglevel = saved_loglevel;
- 		spin_unlock_irqrestore(&dbg_lock, flags);
- 		return 0;
+ #include "internal.h"
+ 
+@@ -206,6 +207,54 @@ static int pstore_write_compat(enum pstore_type_id type,
+ 	return psi->write_buf(type, reason, id, part, psinfo->buf, size, psi);
+ }
+ 
++#ifdef CONFIG_DEBUG_FS
++
++static DEFINE_SPINLOCK(dbg_lock);
++
++static int dbg_dump(void *data, u64 val)
++{
++	unsigned long flags;
++
++	switch (val) {
++	case KMSG_DUMP_PANIC:
++	case KMSG_DUMP_OOPS:
++	case KMSG_DUMP_EMERG:
++	case KMSG_DUMP_RESTART:
++	case KMSG_DUMP_HALT:
++	case KMSG_DUMP_POWEROFF:
++		spin_lock_irqsave(&dbg_lock, flags);
++		kmsg_dump(val);
++		spin_unlock_irqrestore(&dbg_lock, flags);
++		return 0;
++	}
++	return -EINVAL;
++}
++DEFINE_SIMPLE_ATTRIBUTE(dbg_dump_fops, NULL, dbg_dump, "%llu\n");
++
++static int dbg_panic(void *data, u64 val)
++{
++	panic(KERN_EMERG "pstore debugging panic!\n");
++	return 0;
++}
++DEFINE_SIMPLE_ATTRIBUTE(dbg_panic_fops, NULL, dbg_panic, "%llu\n");
++
++static void pstore_debugfs_init(void)
++{
++	struct dentry *root;
++
++	root = debugfs_create_dir("pstore", NULL);
++	debugfs_create_file("dump", S_IWUSR, root, NULL, &dbg_dump_fops);
++	debugfs_create_file("panic", S_IWUSR, root, NULL, &dbg_panic_fops);
++}
++
++#else
++
++static inline void pstore_debugfs_init(void)
++{
++}
++
++#endif
++
+ /*
+  * platform specific persistent storage driver registers with
+  * us here. If pstore is already mounted, call the platform
+@@ -257,6 +306,8 @@ int pstore_register(struct pstore_info *psi)
+ 		add_timer(&pstore_timer);
  	}
-- 
+ 
++	pstore_debugfs_init();
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(pstore_register);
+-- 
 1.7.9.5
 
