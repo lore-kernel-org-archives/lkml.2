@@ -1,101 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515Ab2JOIEq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 04:04:46 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:18314 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750925Ab2JOIEo (ORCPT
+	id S1751400Ab2JOIGc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 04:06:32 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:65028 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002Ab2JOIGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 04:04:44 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvQoAFjDe1B5LH33/2dsb2JhbABFhSm0X4RnAoEEgQmCIAEBBScTHCMQCAMVAy4UDRgDNIdyAw6zFw2JVBSKX2aBZ4E1gkFgA5QXgVSLJIUNgwE
-Date: Mon, 15 Oct 2012 19:04:27 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
-        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [RFC v3 12/13] vfs: add debugfs support
-Message-ID: <20121015080427.GA2739@dastard>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
- <1349863655-29320-13-git-send-email-zwu.kernel@gmail.com>
+	Mon, 15 Oct 2012 04:06:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349863655-29320-13-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1350287772.10584.178.camel@smile>
+References: <425b4bec021bce9a2de49959121907aeede6a0b9.1350064805.git.viresh.kumar@linaro.org>
+	<1350287772.10584.178.camel@smile>
+Date: Mon, 15 Oct 2012 13:36:30 +0530
+Message-ID: <CAKohpok5+zPcq3cA4yLiThTkKyYcrdv_g9x-uZ-Smp2x5FyoZg@mail.gmail.com>
+Subject: Re: [PATCH] dt: add helper function to read u8 & u16 variables & arrays
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+Cc: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "spear-devel@list.st.com" <spear-devel@list.st.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 06:07:34PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> 
->   Add a /sys/kernel/debug/hot_track/<device_name>/ directory for each
-> volume that contains two files. The first, `inode_data', contains the
-> heat information for inodes that have been brought into the hot data map
-> structures. The second, `range_data', contains similar information for
-> subfile ranges.
-> 
-> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> ---
->  fs/hot_tracking.c |  462 +++++++++++++++++++++++++++++++++++++++++++++++++++++
->  fs/hot_tracking.h |   43 +++++
->  2 files changed, 505 insertions(+), 0 deletions(-)
-.....
-> +static int hot_debugfs_copy(struct debugfs_vol_data *data, char *msg, int len)
-> +{
-> +	struct lstring *debugfs_log = data->debugfs_log;
-> +	uint new_log_alloc_size;
-> +	char *new_log;
-> +	static char err_msg[] = "No more memory!\n";
-> +
-> +	if (len >= data->log_alloc_size - debugfs_log->len) {
-......
-> +	}
-> +
-> +	memcpy(debugfs_log->str + debugfs_log->len, data->log_work_buff, len);
-> +	debugfs_log->len += (unsigned long) len;
-> +
-> +	return len;
-> +}
-> +
-> +/* Returns the number of bytes written to the log. */
-> +static int hot_debugfs_log(struct debugfs_vol_data *data, const char *fmt, ...)
-> +{
-> +	struct lstring *debugfs_log = data->debugfs_log;
-> +	va_list args;
-> +	int len;
-> +	static char trunc_msg[] =
-> +			"The next message has been truncated.\n";
-> +
-> +	if (debugfs_log->str == NULL)
-> +		return -1;
-> +
-> +	spin_lock(&data->log_lock);
-> +
-> +	va_start(args, fmt);
-> +	len = vsnprintf(data->log_work_buff,
-> +			sizeof(data->log_work_buff), fmt, args);
-> +	va_end(args);
-> +
-> +	if (len >= sizeof(data->log_work_buff)) {
-> +		hot_debugfs_copy(data, trunc_msg, sizeof(trunc_msg));
-> +	}
-> +
-> +	len = hot_debugfs_copy(data, data->log_work_buff, len);
-> +	spin_unlock(&data->log_lock);
-> +
-> +	return len;
-> +}
+On 15 October 2012 13:26, Shevchenko, Andriy
+<andriy.shevchenko@intel.com> wrote:
+> On Fri, 2012-10-12 at 23:31 +0530, Viresh Kumar wrote:
 
-Aren't you just recreating seq_printf() here? i.e. can't you replace
-all this complexity with generic seq_file/seq_operations constructs?
+>> +     while (_sz--)                                                   \
+>> +             *_out++ = (_type)be32_to_cpup(_val++);                  \
+> How about
+> *_out++ = (typeof(*_out))...
+> ?
 
-Cheers,
+:)
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index c5a09c2..039e178 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -670,7 +670,7 @@ struct device_node *of_find_node_by_phandle(phandle handle)
+ }
+ EXPORT_SYMBOL(of_find_node_by_phandle);
+
+-#define of_property_read_array(_np, _pname, _out, _sz, _type)          \
++#define of_property_read_array(_np, _pname, _out, _sz)                 \
+        struct property *_prop = of_find_property(_np, _pname, NULL);   \
+        const __be32 *_val;                                             \
+                                                                        \
+@@ -683,7 +683,7 @@ EXPORT_SYMBOL(of_find_node_by_phandle);
+                                                                        \
+        _val = _prop->value;                                            \
+        while (_sz--)                                                   \
+-               *_out++ = (_type)be32_to_cpup(_val++);                  \
++               *_out++ = (typeof(*_out))be32_to_cpup(_val++);          \
+        return 0;
+
+ /**
+@@ -703,7 +703,7 @@ EXPORT_SYMBOL(of_find_node_by_phandle);
+ int of_property_read_u8_array(const struct device_node *np,
+                        const char *propname, u8 *out_values, size_t sz)
+ {
+-       of_property_read_array(np, propname, out_values, sz, u8);
++       of_property_read_array(np, propname, out_values, sz);
+ }
+ EXPORT_SYMBOL_GPL(of_property_read_u8_array);
+
+@@ -724,7 +724,7 @@ EXPORT_SYMBOL_GPL(of_property_read_u8_array);
+ int of_property_read_u16_array(const struct device_node *np,
+                        const char *propname, u16 *out_values, size_t sz)
+ {
+-       of_property_read_array(np, propname, out_values, sz, u16);
++       of_property_read_array(np, propname, out_values, sz);
+ }
+ EXPORT_SYMBOL_GPL(of_property_read_u16_array);
+
+@@ -747,7 +747,7 @@ int of_property_read_u32_array(const struct device_node *np,
+                               const char *propname, u32 *out_values,
+                               size_t sz)
+ {
+-       of_property_read_array(np, propname, out_values, sz, u32);
++       of_property_read_array(np, propname, out_values, sz);
+ }
+ EXPORT_SYMBOL_GPL(of_property_read_u32_array);
