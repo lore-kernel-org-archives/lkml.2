@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237Ab2JOWH2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 18:07:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58661 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932079Ab2JOWH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 18:07:27 -0400
-Date: Tue, 16 Oct 2012 00:07:25 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] doc: describe memcg swappiness more precisely
- memory.swappiness==0
-Message-ID: <20121015220725.GB11682@dhcp22.suse.cz>
-References: <20121011085038.GA29295@dhcp22.suse.cz>
- <1349945859-1350-1-git-send-email-mhocko@suse.cz>
- <20121015220354.GA11682@dhcp22.suse.cz>
+	id S932258Ab2JOWOQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 18:14:16 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:53630 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932206Ab2JOWOP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 18:14:15 -0400
+Date: Mon, 15 Oct 2012 23:14:06 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the akpm tree with Linus' tree
+Message-ID: <20121015221406.GA19848@arm.com>
+References: <20121015130728.06a0da8ae06c362aed2871fa@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20121015130728.06a0da8ae06c362aed2871fa@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 15 Oct 2012 22:14:12.0717 (UTC) FILETIME=[6816B9D0:01CDAB22]
+X-MC-Unique: 112101523141302001
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20121015220354.GA11682@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And a follow up for memcg.swappiness documentation which is more
-specific about spwappiness==0 meaning.
----
->From 1bc3a94fea728107ed108edd42df464b908cd067 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Mon, 15 Oct 2012 11:43:56 +0200
-Subject: [PATCH] doc: describe memcg swappiness more precisely
+Hi Stephen,
 
-since fe35004f (mm: avoid swapping out with swappiness==0) memcg reclaim
-stopped swapping out anon pages completely when 0 value is used.
-Although this is somehow expected it hasn't been done for a really long
-time this way and so it is probably better to be explicit about the
-effect. Moreover global reclaim swapps out even when swappiness is 0
-to prevent from OOM killer.
+On Mon, Oct 15, 2012 at 03:07:28AM +0100, Stephen Rothwell wrote:
+> Today's linux-next merge of the akpm tree got a conflict in
+> arch/arm64/include/asm/unistd32.h between commit f3d447a97f24 ("arm64: Do
+> not include asm/unistd32.h in asm/unistd.h") from Linus' tree and commit
+> "compat: generic compat_sys_sched_rr_get_interval implementation" from
+> the akpm tree.
+> 
+> I fixed it up (I think - see below) and can carry the fix as necessary
+> (no action is required).
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
+> index 63f853f..0f13ca8 100644
+> --- a/arch/arm64/include/asm/unistd.h
+> +++ b/arch/arm64/include/asm/unistd.h
+> @@ -25,5 +25,6 @@
+>  #define __ARCH_WANT_SYS_SIGPROCMASK
+>  #define __ARCH_WANT_COMPAT_SYS_RT_SIGSUSPEND
+>  #define __ARCH_WANT_COMPAT_SYS_SENDFILE
+> +#define __ARCH_WANT_COMPAT_SYS_SCHED_RR_GET_INTERVAL
+>  #endif
+>  #include <uapi/asm/unistd.h>
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- Documentation/cgroups/memory.txt |    4 ++++
- 1 file changed, 4 insertions(+)
+The fix is correct (I moved the __ARCH_WANT_* from unistd32.h to
+unistd.h) but I'll post another version of the patch tomorrow for Andrew
+to merge.
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index c07f7b4..71c4da4 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -466,6 +466,10 @@ Note:
- 5.3 swappiness
- 
- Similar to /proc/sys/vm/swappiness, but affecting a hierarchy of groups only.
-+Please note that unlike the global swappiness, memcg knob set to 0
-+really prevents from any swapping even if there is a swap storage
-+available. This might lead to memcg OOM killer if there are no file
-+pages to reclaim.
- 
- Following cgroups' swappiness can't be changed.
- - root cgroup (uses /proc/sys/vm/swappiness).
--- 
-1.7.10.4
+Thanks.
 
 -- 
-Michal Hocko
-SUSE Labs
+Catalin
+
