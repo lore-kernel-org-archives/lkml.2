@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752031Ab2JOPFJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 11:05:09 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39695 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751603Ab2JOPFG convert rfc822-to-8bit (ORCPT
+	id S1752119Ab2JOPLZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 11:11:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48453 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab2JOPLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 11:05:06 -0400
-From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
-To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-keystone@list.ti.com - Linux developers for Keystone family of
-	devices (May contain non-TIers)" <linux-keystone@list.ti.com>
-CC: "Chemparathy, Cyril" <cyril@ti.com>
-Subject: RE: [RESET PATCH 2/2] Documentation: of-serial.txt - update for
- clocks phandle for clk
-Thread-Topic: [RESET PATCH 2/2] Documentation: of-serial.txt - update for
- clocks phandle for clk
-Thread-Index: AQHNquWzZ3YkNUSIEEOohpn9Z3q1lZe6dulw
-Date: Mon, 15 Oct 2012 15:05:03 +0000
-Message-ID: <3E54258959B69E4282D79E01AB1F32B704201C79@DFLE12.ent.ti.com>
-References: <1350313178-3753-1-git-send-email-m-karicheri2@ti.com>
- <1350313178-3753-3-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1350313178-3753-3-git-send-email-m-karicheri2@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.50]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 15 Oct 2012 11:11:24 -0400
+Date: Mon, 15 Oct 2012 08:11:19 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>, stable@vger.kernel.org
+Subject: Re: [PATCH] drm/i915: disable cpu relocs on ilk and earlier
+Message-ID: <20121015151119.GB30606@kroah.com>
+References: <1350288682-6236-1-git-send-email-daniel.vetter@ffwll.ch>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350288682-6236-1-git-send-email-daniel.vetter@ffwll.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> -----Original Message-----
->> From: Karicheri, Muralidharan
->> Sent: Monday, October 15, 2012 11:00 AM
->> To: alan@linux.intel.com; gregkh@linuxfoundation.org; linux-serial@vger.kernel.org;
->> linux-kernel@vger.kernel.org; linux-keystone@list.ti.com - Linux developers for Keystone
->> family of devices (May contain non-TIers)
->> Cc: Chemparathy, Cyril; Karicheri, Muralidharan
->> Subject: [RESET PATCH 2/2] Documentation: of-serial.txt - update for clocks phandle for
->> clk
-Sorry for the typo, RESET->RESEND. 
->> 
->> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->> 
->> diff --git a/Documentation/devicetree/bindings/tty/serial/of-serial.txt
->> b/Documentation/devicetree/bindings/tty/serial/of-serial.txt
->> index 0847fde..423b7ff 100644
->> --- a/Documentation/devicetree/bindings/tty/serial/of-serial.txt
->> +++ b/Documentation/devicetree/bindings/tty/serial/of-serial.txt
->> @@ -14,7 +14,10 @@ Required properties:
->>  	- "serial" if the port type is unknown.
->>  - reg : offset and length of the register set for the device.
->>  - interrupts : should contain uart interrupt.
->> -- clock-frequency : the input clock frequency for the UART.
->> +- clock-frequency : the input clock frequency for the UART
->> +	 or
->> +  clocks phandle to refer to the clk used as per Documentation/devicetree
->> +  /bindings/clock/clock-bindings.txt
->> 
->>  Optional properties:
->>  - current-speed : the current active speed of the UART.
->> --
->> 1.7.9.5
+On Mon, Oct 15, 2012 at 10:11:22AM +0200, Daniel Vetter wrote:
+> Hi Greg&stable-team,
+> 
+> The below patch papers over a graphics corruption issue in 3.5/3.6. The
+> regression happened due to pwrite tunings in 3.5, which made cpu relocations
+> much more likely.
+> 
+> The issue seems to have disappeared in 3.7-rc1, but it takes a few days to test
+> a patch, so we haven't figured out what exactly fixed things. Now users are
+> taking out their pitchforks already, so instead of wasting more days (maybe
+> weeks?) to fully understand the bug before backporting the fix, we've opted for
+> the below disable patch, which should have minimal impact (at most it undoes the
+> tuning improvements in 3.5).
+> 
+> Patch is tested by reporters & acked by all relevant ppl, please apply to
+> 3.5/3.6 series kernels.
 
+No, I'd really like to wait until you figure out what is happening in
+3.7-rc1 right now before applying the patch.  We have the rule, "it must
+be in Linus's tree first" for a very good reason :)
+
+So, I'll hold onto this until you say what's up with 3.7-rc1, ok?
+
+thanks,
+
+greg k-h
