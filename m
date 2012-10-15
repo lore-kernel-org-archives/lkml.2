@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250Ab2JOVyu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 17:54:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62303 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932182Ab2JOVyr (ORCPT
+	id S932233Ab2JOVyq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 17:54:46 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:50881 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932182Ab2JOVyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 17:54:47 -0400
+	Mon, 15 Oct 2012 17:54:44 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
         Sascha Hauer <kernel@pengutronix.de>, Tony Lindgren <tony@atomide.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>
-Subject: [PATCH 04/10] ASoC: imx: Don't use {en,dis}able_fiq() calls
-Date: Mon, 15 Oct 2012 14:51:28 -0700
-Message-Id: <1350337894-9744-4-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 03/10] [media] mx1_camera: Don't use {en,dis}able_fiq() calls
+Date: Mon, 15 Oct 2012 14:51:27 -0700
+Message-Id: <1350337894-9744-3-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.12.3
 In-Reply-To: <20121015214954.GA3352@lizard>
 References: <20121015214954.GA3352@lizard>
@@ -34,31 +34,40 @@ since we're about to remove FIQ-specific variants.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- sound/soc/fsl/imx-pcm-fiq.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/media/platform/soc_camera/mx1_camera.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/sound/soc/fsl/imx-pcm-fiq.c b/sound/soc/fsl/imx-pcm-fiq.c
-index 22c6130..8f1a4a6 100644
---- a/sound/soc/fsl/imx-pcm-fiq.c
-+++ b/sound/soc/fsl/imx-pcm-fiq.c
-@@ -139,7 +139,7 @@ static int snd_imx_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
- 		hrtimer_start(&iprtd->hrt, ns_to_ktime(iprtd->poll_time_ns),
- 		      HRTIMER_MODE_REL);
- 		if (++fiq_enable == 1)
--			enable_fiq(imx_pcm_fiq);
-+			enable_irq(imx_pcm_fiq);
+diff --git a/drivers/media/platform/soc_camera/mx1_camera.c b/drivers/media/platform/soc_camera/mx1_camera.c
+index bbe7099..4855a46 100644
+--- a/drivers/media/platform/soc_camera/mx1_camera.c
++++ b/drivers/media/platform/soc_camera/mx1_camera.c
+@@ -801,7 +801,7 @@ static int __init mx1_camera_probe(struct platform_device *pdev)
+ 	set_fiq_regs(&regs);
  
- 		break;
+ 	mxc_set_irq_fiq(irq, 1);
+-	enable_fiq(irq);
++	enable_irq(irq);
  
-@@ -149,7 +149,7 @@ static int snd_imx_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
- 		atomic_set(&iprtd->running, 0);
+ 	pcdev->soc_host.drv_name	= DRIVER_NAME;
+ 	pcdev->soc_host.ops		= &mx1_soc_camera_host_ops;
+@@ -817,7 +817,7 @@ static int __init mx1_camera_probe(struct platform_device *pdev)
+ 	return 0;
  
- 		if (--fiq_enable == 0)
--			disable_fiq(imx_pcm_fiq);
-+			disable_irq(imx_pcm_fiq);
+ exit_free_irq:
+-	disable_fiq(irq);
++	disable_irq(irq);
+ 	mxc_set_irq_fiq(irq, 0);
+ 	release_fiq(&fh);
+ exit_free_dma:
+@@ -842,7 +842,7 @@ static int __exit mx1_camera_remove(struct platform_device *pdev)
+ 	struct resource *res;
  
- 		break;
- 	default:
+ 	imx_dma_free(pcdev->dma_chan);
+-	disable_fiq(pcdev->irq);
++	disable_irq(pcdev->irq);
+ 	mxc_set_irq_fiq(pcdev->irq, 0);
+ 	release_fiq(&fh);
+ 
 -- 
 1.7.12.3
 
