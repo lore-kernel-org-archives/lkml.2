@@ -1,99 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837Ab2JOJBm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 05:01:42 -0400
-Received: from smtp-out-100.synserver.de ([212.40.185.100]:1081 "EHLO
-	smtp-out-100.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab2JOJBl (ORCPT
+	id S1751843Ab2JOJEt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 05:04:49 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37013 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751605Ab2JOJEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 05:01:41 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 3316
-Message-ID: <507BD13C.9020103@metafoo.de>
-Date: Mon, 15 Oct 2012 11:02:52 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120922 Icedove/10.0.7
+	Mon, 15 Oct 2012 05:04:48 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <507BD1A3.3040004@jp.fujitsu.com>
+Date: Mon, 15 Oct 2012 18:04:35 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: UAPI fdpic problems
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Michal Hocko <mhocko@suse.cz>
+CC: linux-mm@kvack.org, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] add some drop_caches documentation and info messsge
+References: <20121012125708.GJ10110@dhcp22.suse.cz>
+In-Reply-To: <20121012125708.GJ10110@dhcp22.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+(2012/10/12 21:57), Michal Hocko wrote:
+> Hi,
+> I would like to resurrect the following Dave's patch. The last time it
+> has been posted was here https://lkml.org/lkml/2010/9/16/250 and there
+> didn't seem to be any strong opposition.
+> Kosaki was worried about possible excessive logging when somebody drops
+> caches too often (but then he claimed he didn't have a strong opinion
+> on that) but I would say opposite. If somebody does that then I would
+> really like to know that from the log when supporting a system because
+> it almost for sure means that there is something fishy going on. It is
+> also worth mentioning that only root can write drop caches so this is
+> not an flooding attack vector.
+> I am bringing that up again because this can be really helpful when
+> chasing strange performance issues which (surprise surprise) turn out to
+> be related to artificially dropped caches done because the admin thinks
+> this would help...
+>
+> I have just refreshed the original patch on top of the current mm tree
+> but I could live with KERN_INFO as well if people think that KERN_NOTICE
+> is too hysterical.
+> ---
+>  From 1f4058be9b089bc9d43d71bc63989335d7637d8d Mon Sep 17 00:00:00 2001
+> From: Dave Hansen <dave@linux.vnet.ibm.com>
+> Date: Fri, 12 Oct 2012 14:30:54 +0200
+> Subject: [PATCH] add some drop_caches documentation and info messsge
+>
+> There is plenty of anecdotal evidence and a load of blog posts
+> suggesting that using "drop_caches" periodically keeps your system
+> running in "tip top shape".  Perhaps adding some kernel
+> documentation will increase the amount of accurate data on its use.
+>
+> If we are not shrinking caches effectively, then we have real bugs.
+> Using drop_caches will simply mask the bugs and make them harder
+> to find, but certainly does not fix them, nor is it an appropriate
+> "workaround" to limit the size of the caches.
+>
+> It's a great debugging tool, and is really handy for doing things
+> like repeatable benchmark runs.  So, add a bit more documentation
+> about it, and add a little KERN_NOTICE.  It should help developers
+> who are chasing down reclaim-related bugs.
+>
+> [mhocko@suse.cz: refreshed to current -mm tree]
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Acked-by: Michal Hocko <mhocko@suse.cz>
 
-I just tried to build 3.7-rc1 and hit some problems when trying to build the
-fdpic elf loader:
-
-fs/binfmt_elf_fdpic.c:60: warning: ‘struct elf_fdpic_params’ declared inside
-parameter list
-fs/binfmt_elf_fdpic.c:60: warning: its scope is only this definition or
-declaration, which is probably not what you want
-fs/binfmt_elf_fdpic.c:62: warning: ‘struct elf_fdpic_params’ declared inside
-parameter list
-fs/binfmt_elf_fdpic.c:66: warning: ‘struct elf_fdpic_params’ declared inside
-parameter list
-fs/binfmt_elf_fdpic.c:73: warning: ‘struct elf_fdpic_params’ declared inside
-parameter list
-fs/binfmt_elf_fdpic.c:77: warning: ‘struct elf_fdpic_params’ declared inside
-parameter list
-fs/binfmt_elf_fdpic.c:124: warning: ‘struct elf_fdpic_params’ declared
-inside parameter list
-fs/binfmt_elf_fdpic.c:123: error: conflicting types for ‘elf_fdpic_fetch_phdrs’
-fs/binfmt_elf_fdpic.c:60: error: previous declaration of
-‘elf_fdpic_fetch_phdrs’ was here
-...
-
-The problem is caused by commit 607ca46e97a ("UAPI: (Scripted) Disintegrate
-include/linux").
-
-This is the change made by the patch to elf-fdpic.h, where struct
-elf_fdpic_params is declared.
-
---- a/include/linux/elf-fdpic.h
-+++ b/include/uapi/linux/elf-fdpic.h
-@@ -31,6 +31,7 @@ struct elf32_fdpic_loadmap {
-
- #define ELF32_FDPIC_LOADMAP_VERSION    0x0000
-
-+#ifndef __KERNEL__
- /*
-  * binfmt binary parameters structure
-  */
-@@ -58,7 +59,6 @@ struct elf_fdpic_params {
- #define ELF_FDPIC_FLAG_PRESENT         0x80000000
- };
-
--#ifdef __KERNEL__
- #ifdef CONFIG_MMU
- extern void elf_fdpic_arch_lay_out_mm(struct elf_fdpic_params *exec_params,
-                                      struct elf_fdpic_params
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
 
-So the patch removed the #ifdef __KERNEL__ around
-elf_fdpic_arch_lay_out_mm() and added a #ifndef __KERNEL__ around both
-struct elf_fdpic_params and elf_fdpic_arch_lay_out_mm(), which does not seem
-to make much sense, since both are used (only?) inside the kernel. David do
-you know why your script made this change?
-
-The fix I'm using for now is the following, but I'm not quite sure if it is
-the correct solution.
-
---- a/include/uapi/linux/elf-fdpic.h
-+++ b/include/uapi/linux/elf-fdpic.h
-@@ -31,7 +31,7 @@ struct elf32_fdpic_loadmap {
-
- #define ELF32_FDPIC_LOADMAP_VERSION    0x0000
-
--#ifndef __KERNEL__
-+#ifdef __KERNEL__
- /*
-  * binfmt binary parameters structure
-  */
-
-Thanks,
-- Lars
