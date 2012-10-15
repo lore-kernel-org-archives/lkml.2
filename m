@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab2JOGBT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 02:01:19 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37547 "EHLO mga01.intel.com"
+	id S1753946Ab2JOGBh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 02:01:37 -0400
+Received: from mga03.intel.com ([143.182.124.21]:50230 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753821Ab2JOGAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 02:00:38 -0400
+	id S1753820Ab2JOGAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 02:00:37 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,587,1344236400"; 
-   d="scan'208";a="233918599"
+   d="scan'208";a="204457309"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
@@ -16,253 +16,264 @@ Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH v4 00/10, REBASED] Introduce huge zero page
-Date: Mon, 15 Oct 2012 09:00:49 +0300
-Message-Id: <1350280859-18801-1-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH v4 06/10] thp: change split_huge_page_pmd() interface
+Date: Mon, 15 Oct 2012 09:00:55 +0300
+Message-Id: <1350280859-18801-7-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1350280859-18801-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1350280859-18801-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Hi,
+Pass vma instead of mm and add address parameter.
 
-Andrew, here's huge zero page patchset rebased to v3.7-rc1.
+In most cases we already have vma on the stack. We provides
+split_huge_page_pmd_mm() for few cases when we have mm, but not vma.
 
-Andrea, I've dropped your Reviewed-by due not-so-trivial conflicts in during
-rebase. Could you look through it again. Patches 2, 3, 4, 7, 10 had conflicts.
-Mostly due new MMU notifiers interface.
+This change is preparation to huge zero pmd splitting implementation.
 
-=================
-
-During testing I noticed big (up to 2.5 times) memory consumption overhead
-on some workloads (e.g. ft.A from NPB) if THP is enabled.
-
-The main reason for that big difference is lacking zero page in THP case.
-We have to allocate a real page on read page fault.
-
-A program to demonstrate the issue:
-#include <assert.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#define MB 1024*1024
-
-int main(int argc, char **argv)
-{
-        char *p;
-        int i;
-
-        posix_memalign((void **)&p, 2 * MB, 200 * MB);
-        for (i = 0; i < 200 * MB; i+= 4096)
-                assert(p[i] == 0);
-        pause();
-        return 0;
-}
-
-With thp-never RSS is about 400k, but with thp-always it's 200M.
-After the patcheset thp-always RSS is 400k too.
-
-Design overview.
-
-Huge zero page (hzp) is a non-movable huge page (2M on x86-64) filled with
-zeros.  The way how we allocate it changes in the patchset:
-
-- [01/10] simplest way: hzp allocated on boot time in hugepage_init();
-- [09/10] lazy allocation on first use;
-- [10/10] lockless refcounting + shrinker-reclaimable hzp;
-
-We setup it in do_huge_pmd_anonymous_page() if area around fault address
-is suitable for THP and we've got read page fault.
-If we fail to setup hzp (ENOMEM) we fallback to handle_pte_fault() as we
-normally do in THP.
-
-On wp fault to hzp we allocate real memory for the huge page and clear it.
-If ENOMEM, graceful fallback: we create a new pmd table and set pte around
-fault address to newly allocated normal (4k) page. All other ptes in the
-pmd set to normal zero page.
-
-We cannot split hzp (and it's bug if we try), but we can split the pmd
-which points to it. On splitting the pmd we create a table with all ptes
-set to normal zero page.
-
-Patchset organized in bisect-friendly way:
- Patches 01-07: prepare all code paths for hzp
- Patch 08: all code paths are covered: safe to setup hzp
- Patch 09: lazy allocation
- Patch 10: lockless refcounting for hzp
-
-v4:
- - Rebase to v3.7-rc1;
- - Update commit message;
-v3:
- - fix potential deadlock in refcounting code on preemptive kernel.
- - do not mark huge zero page as movable.
- - fix typo in comment.
- - Reviewed-by tag from Andrea Arcangeli.
-v2:
- - Avoid find_vma() if we've already had vma on stack.
-   Suggested by Andrea Arcangeli.
- - Implement refcounting for huge zero page.
-
---------------------------------------------------------------------------
-
-By hpa request I've tried alternative approach for hzp implementation (see
-Virtual huge zero page patchset): pmd table with all entries set to zero
-page. This way should be more cache friendly, but it increases TLB
-pressure.
-
-The problem with virtual huge zero page: it requires per-arch enabling.
-We need a way to mark that pmd table has all ptes set to zero page.
-
-Some numbers to compare two implementations (on 4s Westmere-EX):
-
-Mirobenchmark1
-==============
-
-test:
-        posix_memalign((void **)&p, 2 * MB, 8 * GB);
-        for (i = 0; i < 100; i++) {
-                assert(memcmp(p, p + 4*GB, 4*GB) == 0);
-                asm volatile ("": : :"memory");
-        }
-
-hzp:
- Performance counter stats for './test_memcmp' (5 runs):
-
-      32356.272845 task-clock                #    0.998 CPUs utilized            ( +-  0.13% )
-                40 context-switches          #    0.001 K/sec                    ( +-  0.94% )
-                 0 CPU-migrations            #    0.000 K/sec
-             4,218 page-faults               #    0.130 K/sec                    ( +-  0.00% )
-    76,712,481,765 cycles                    #    2.371 GHz                      ( +-  0.13% ) [83.31%]
-    36,279,577,636 stalled-cycles-frontend   #   47.29% frontend cycles idle     ( +-  0.28% ) [83.35%]
-     1,684,049,110 stalled-cycles-backend    #    2.20% backend  cycles idle     ( +-  2.96% ) [66.67%]
-   134,355,715,816 instructions              #    1.75  insns per cycle
-                                             #    0.27  stalled cycles per insn  ( +-  0.10% ) [83.35%]
-    13,526,169,702 branches                  #  418.039 M/sec                    ( +-  0.10% ) [83.31%]
-         1,058,230 branch-misses             #    0.01% of all branches          ( +-  0.91% ) [83.36%]
-
-      32.413866442 seconds time elapsed                                          ( +-  0.13% )
-
-vhzp:
- Performance counter stats for './test_memcmp' (5 runs):
-
-      30327.183829 task-clock                #    0.998 CPUs utilized            ( +-  0.13% )
-                38 context-switches          #    0.001 K/sec                    ( +-  1.53% )
-                 0 CPU-migrations            #    0.000 K/sec
-             4,218 page-faults               #    0.139 K/sec                    ( +-  0.01% )
-    71,964,773,660 cycles                    #    2.373 GHz                      ( +-  0.13% ) [83.35%]
-    31,191,284,231 stalled-cycles-frontend   #   43.34% frontend cycles idle     ( +-  0.40% ) [83.32%]
-       773,484,474 stalled-cycles-backend    #    1.07% backend  cycles idle     ( +-  6.61% ) [66.67%]
-   134,982,215,437 instructions              #    1.88  insns per cycle
-                                             #    0.23  stalled cycles per insn  ( +-  0.11% ) [83.32%]
-    13,509,150,683 branches                  #  445.447 M/sec                    ( +-  0.11% ) [83.34%]
-         1,017,667 branch-misses             #    0.01% of all branches          ( +-  1.07% ) [83.32%]
-
-      30.381324695 seconds time elapsed                                          ( +-  0.13% )
-
-Mirobenchmark2
-==============
-
-test:
-        posix_memalign((void **)&p, 2 * MB, 8 * GB);
-        for (i = 0; i < 1000; i++) {
-                char *_p = p;
-                while (_p < p+4*GB) {
-                        assert(*_p == *(_p+4*GB));
-                        _p += 4096;
-                        asm volatile ("": : :"memory");
-                }
-        }
-
-hzp:
- Performance counter stats for 'taskset -c 0 ./test_memcmp2' (5 runs):
-
-       3505.727639 task-clock                #    0.998 CPUs utilized            ( +-  0.26% )
-                 9 context-switches          #    0.003 K/sec                    ( +-  4.97% )
-             4,384 page-faults               #    0.001 M/sec                    ( +-  0.00% )
-     8,318,482,466 cycles                    #    2.373 GHz                      ( +-  0.26% ) [33.31%]
-     5,134,318,786 stalled-cycles-frontend   #   61.72% frontend cycles idle     ( +-  0.42% ) [33.32%]
-     2,193,266,208 stalled-cycles-backend    #   26.37% backend  cycles idle     ( +-  5.51% ) [33.33%]
-     9,494,670,537 instructions              #    1.14  insns per cycle
-                                             #    0.54  stalled cycles per insn  ( +-  0.13% ) [41.68%]
-     2,108,522,738 branches                  #  601.451 M/sec                    ( +-  0.09% ) [41.68%]
-           158,746 branch-misses             #    0.01% of all branches          ( +-  1.60% ) [41.71%]
-     3,168,102,115 L1-dcache-loads
-          #  903.693 M/sec                    ( +-  0.11% ) [41.70%]
-     1,048,710,998 L1-dcache-misses
-         #   33.10% of all L1-dcache hits    ( +-  0.11% ) [41.72%]
-     1,047,699,685 LLC-load
-                 #  298.854 M/sec                    ( +-  0.03% ) [33.38%]
-             2,287 LLC-misses
-               #    0.00% of all LL-cache hits     ( +-  8.27% ) [33.37%]
-     3,166,187,367 dTLB-loads
-               #  903.147 M/sec                    ( +-  0.02% ) [33.35%]
-         4,266,538 dTLB-misses
-              #    0.13% of all dTLB cache hits   ( +-  0.03% ) [33.33%]
-
-       3.513339813 seconds time elapsed                                          ( +-  0.26% )
-
-vhzp:
- Performance counter stats for 'taskset -c 0 ./test_memcmp2' (5 runs):
-
-      27313.891128 task-clock                #    0.998 CPUs utilized            ( +-  0.24% )
-                62 context-switches          #    0.002 K/sec                    ( +-  0.61% )
-             4,384 page-faults               #    0.160 K/sec                    ( +-  0.01% )
-    64,747,374,606 cycles                    #    2.370 GHz                      ( +-  0.24% ) [33.33%]
-    61,341,580,278 stalled-cycles-frontend   #   94.74% frontend cycles idle     ( +-  0.26% ) [33.33%]
-    56,702,237,511 stalled-cycles-backend    #   87.57% backend  cycles idle     ( +-  0.07% ) [33.33%]
-    10,033,724,846 instructions              #    0.15  insns per cycle
-                                             #    6.11  stalled cycles per insn  ( +-  0.09% ) [41.65%]
-     2,190,424,932 branches                  #   80.195 M/sec                    ( +-  0.12% ) [41.66%]
-         1,028,630 branch-misses             #    0.05% of all branches          ( +-  1.50% ) [41.66%]
-     3,302,006,540 L1-dcache-loads
-          #  120.891 M/sec                    ( +-  0.11% ) [41.68%]
-       271,374,358 L1-dcache-misses
-         #    8.22% of all L1-dcache hits    ( +-  0.04% ) [41.66%]
-        20,385,476 LLC-load
-                 #    0.746 M/sec                    ( +-  1.64% ) [33.34%]
-            76,754 LLC-misses
-               #    0.38% of all LL-cache hits     ( +-  2.35% ) [33.34%]
-     3,309,927,290 dTLB-loads
-               #  121.181 M/sec                    ( +-  0.03% ) [33.34%]
-     2,098,967,427 dTLB-misses
-              #   63.41% of all dTLB cache hits   ( +-  0.03% ) [33.34%]
-
-      27.364448741 seconds time elapsed                                          ( +-  0.24% )
-
---------------------------------------------------------------------------
-
-I personally prefer implementation present in this patchset. It doesn't
-touch arch-specific code.
-
-
-Kirill A. Shutemov (10):
-  thp: huge zero page: basic preparation
-  thp: zap_huge_pmd(): zap huge zero pmd
-  thp: copy_huge_pmd(): copy huge zero page
-  thp: do_huge_pmd_wp_page(): handle huge zero page
-  thp: change_huge_pmd(): keep huge zero page write-protected
-  thp: change split_huge_page_pmd() interface
-  thp: implement splitting pmd for huge zero page
-  thp: setup huge zero page on non-write page fault
-  thp: lazy huge zero page allocation
-  thp: implement refcounting for huge zero page
-
- Documentation/vm/transhuge.txt |    4 +-
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ Documentation/vm/transhuge.txt |    4 ++--
  arch/x86/kernel/vm86_32.c      |    2 +-
  fs/proc/task_mmu.c             |    2 +-
- include/linux/huge_mm.h        |   14 ++-
- include/linux/mm.h             |    8 +
- mm/huge_memory.c               |  331 +++++++++++++++++++++++++++++++++++++---
- mm/memory.c                    |   11 +-
+ include/linux/huge_mm.h        |   14 ++++++++++----
+ mm/huge_memory.c               |   24 +++++++++++++++++++-----
+ mm/memory.c                    |    4 ++--
  mm/mempolicy.c                 |    2 +-
  mm/mprotect.c                  |    2 +-
  mm/mremap.c                    |    2 +-
  mm/pagewalk.c                  |    2 +-
- 11 files changed, 334 insertions(+), 46 deletions(-)
+ 10 files changed, 39 insertions(+), 19 deletions(-)
 
+diff --git a/Documentation/vm/transhuge.txt b/Documentation/vm/transhuge.txt
+index f734bb2..677a599 100644
+--- a/Documentation/vm/transhuge.txt
++++ b/Documentation/vm/transhuge.txt
+@@ -276,7 +276,7 @@ unaffected. libhugetlbfs will also work fine as usual.
+ == Graceful fallback ==
+ 
+ Code walking pagetables but unware about huge pmds can simply call
+-split_huge_page_pmd(mm, pmd) where the pmd is the one returned by
++split_huge_page_pmd(vma, pmd, addr) where the pmd is the one returned by
+ pmd_offset. It's trivial to make the code transparent hugepage aware
+ by just grepping for "pmd_offset" and adding split_huge_page_pmd where
+ missing after pmd_offset returns the pmd. Thanks to the graceful
+@@ -299,7 +299,7 @@ diff --git a/mm/mremap.c b/mm/mremap.c
+ 		return NULL;
+ 
+ 	pmd = pmd_offset(pud, addr);
+-+	split_huge_page_pmd(mm, pmd);
+++	split_huge_page_pmd(vma, pmd, addr);
+ 	if (pmd_none_or_clear_bad(pmd))
+ 		return NULL;
+ 
+diff --git a/arch/x86/kernel/vm86_32.c b/arch/x86/kernel/vm86_32.c
+index 5c9687b..1dfe69c 100644
+--- a/arch/x86/kernel/vm86_32.c
++++ b/arch/x86/kernel/vm86_32.c
+@@ -182,7 +182,7 @@ static void mark_screen_rdonly(struct mm_struct *mm)
+ 	if (pud_none_or_clear_bad(pud))
+ 		goto out;
+ 	pmd = pmd_offset(pud, 0xA0000);
+-	split_huge_page_pmd(mm, pmd);
++	split_huge_page_pmd_mm(mm, 0xA0000, pmd);
+ 	if (pmd_none_or_clear_bad(pmd))
+ 		goto out;
+ 	pte = pte_offset_map_lock(mm, pmd, 0xA0000, &ptl);
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 79827ce..866aa48 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -597,7 +597,7 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
+ 	spinlock_t *ptl;
+ 	struct page *page;
+ 
+-	split_huge_page_pmd(walk->mm, pmd);
++	split_huge_page_pmd(vma, addr, pmd);
+ 	if (pmd_trans_unstable(pmd))
+ 		return 0;
+ 
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index b31cb7d..856f080 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -91,12 +91,14 @@ extern int handle_pte_fault(struct mm_struct *mm,
+ 			    struct vm_area_struct *vma, unsigned long address,
+ 			    pte_t *pte, pmd_t *pmd, unsigned int flags);
+ extern int split_huge_page(struct page *page);
+-extern void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd);
+-#define split_huge_page_pmd(__mm, __pmd)				\
++extern void __split_huge_page_pmd(struct vm_area_struct *vma,
++		unsigned long address, pmd_t *pmd);
++#define split_huge_page_pmd(__vma, __address, __pmd)			\
+ 	do {								\
+ 		pmd_t *____pmd = (__pmd);				\
+ 		if (unlikely(pmd_trans_huge(*____pmd)))			\
+-			__split_huge_page_pmd(__mm, ____pmd);		\
++			__split_huge_page_pmd(__vma, __address,		\
++					____pmd);			\
+ 	}  while (0)
+ #define wait_split_huge_page(__anon_vma, __pmd)				\
+ 	do {								\
+@@ -106,6 +108,8 @@ extern void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd);
+ 		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
+ 		       pmd_trans_huge(*____pmd));			\
+ 	} while (0)
++extern void split_huge_page_pmd_mm(struct mm_struct *mm, unsigned long address,
++		pmd_t *pmd);
+ #if HPAGE_PMD_ORDER > MAX_ORDER
+ #error "hugepages can't be allocated by the buddy allocator"
+ #endif
+@@ -173,10 +177,12 @@ static inline int split_huge_page(struct page *page)
+ {
+ 	return 0;
+ }
+-#define split_huge_page_pmd(__mm, __pmd)	\
++#define split_huge_page_pmd(__vma, __address, __pmd)	\
+ 	do { } while (0)
+ #define wait_split_huge_page(__anon_vma, __pmd)	\
+ 	do { } while (0)
++#define split_huge_page_pmd_mm(__mm, __address, __pmd)	\
++	do { } while (0)
+ #define compound_trans_head(page) compound_head(page)
+ static inline int hugepage_madvise(struct vm_area_struct *vma,
+ 				   unsigned long *vm_flags, int advice)
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 8dbb1e4..87359f1 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -2508,19 +2508,23 @@ static int khugepaged(void *none)
+ 	return 0;
+ }
+ 
+-void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd)
++void __split_huge_page_pmd(struct vm_area_struct *vma, unsigned long address,
++		pmd_t *pmd)
+ {
+ 	struct page *page;
++	unsigned long haddr = address & HPAGE_PMD_MASK;
+ 
+-	spin_lock(&mm->page_table_lock);
++	BUG_ON(vma->vm_start > haddr || vma->vm_end < haddr + HPAGE_PMD_SIZE);
++
++	spin_lock(&vma->vm_mm->page_table_lock);
+ 	if (unlikely(!pmd_trans_huge(*pmd))) {
+-		spin_unlock(&mm->page_table_lock);
++		spin_unlock(&vma->vm_mm->page_table_lock);
+ 		return;
+ 	}
+ 	page = pmd_page(*pmd);
+ 	VM_BUG_ON(!page_count(page));
+ 	get_page(page);
+-	spin_unlock(&mm->page_table_lock);
++	spin_unlock(&vma->vm_mm->page_table_lock);
+ 
+ 	split_huge_page(page);
+ 
+@@ -2528,6 +2532,16 @@ void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd)
+ 	BUG_ON(pmd_trans_huge(*pmd));
+ }
+ 
++void split_huge_page_pmd_mm(struct mm_struct *mm, unsigned long address,
++		pmd_t *pmd)
++{
++	struct vm_area_struct *vma;
++
++	vma = find_vma(mm, address);
++	BUG_ON(vma == NULL);
++	split_huge_page_pmd(vma, address, pmd);
++}
++
+ static void split_huge_page_address(struct mm_struct *mm,
+ 				    unsigned long address)
+ {
+@@ -2552,7 +2566,7 @@ static void split_huge_page_address(struct mm_struct *mm,
+ 	 * Caller holds the mmap_sem write mode, so a huge pmd cannot
+ 	 * materialize from under us.
+ 	 */
+-	split_huge_page_pmd(mm, pmd);
++	split_huge_page_pmd_mm(mm, address, pmd);
+ }
+ 
+ void __vma_adjust_trans_huge(struct vm_area_struct *vma,
+diff --git a/mm/memory.c b/mm/memory.c
+index 6edc030..6017e23 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1243,7 +1243,7 @@ static inline unsigned long zap_pmd_range(struct mmu_gather *tlb,
+ 					BUG();
+ 				}
+ #endif
+-				split_huge_page_pmd(vma->vm_mm, pmd);
++				split_huge_page_pmd(vma, addr, pmd);
+ 			} else if (zap_huge_pmd(tlb, vma, pmd, addr))
+ 				goto next;
+ 			/* fall through */
+@@ -1512,7 +1512,7 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
+ 	}
+ 	if (pmd_trans_huge(*pmd)) {
+ 		if (flags & FOLL_SPLIT) {
+-			split_huge_page_pmd(mm, pmd);
++			split_huge_page_pmd(vma, address, pmd);
+ 			goto split_fallthrough;
+ 		}
+ 		spin_lock(&mm->page_table_lock);
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 0b78fb9..a32bbfc 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -511,7 +511,7 @@ static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+ 	pmd = pmd_offset(pud, addr);
+ 	do {
+ 		next = pmd_addr_end(addr, end);
+-		split_huge_page_pmd(vma->vm_mm, pmd);
++		split_huge_page_pmd(vma, addr, pmd);
+ 		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
+ 			continue;
+ 		if (check_pte_range(vma, pmd, addr, next, nodes,
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index a409926..e8c3938 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -90,7 +90,7 @@ static inline void change_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+ 		next = pmd_addr_end(addr, end);
+ 		if (pmd_trans_huge(*pmd)) {
+ 			if (next - addr != HPAGE_PMD_SIZE)
+-				split_huge_page_pmd(vma->vm_mm, pmd);
++				split_huge_page_pmd(vma, addr, pmd);
+ 			else if (change_huge_pmd(vma, pmd, addr, newprot))
+ 				continue;
+ 			/* fall through */
+diff --git a/mm/mremap.c b/mm/mremap.c
+index 1b61c2d..eabb24d 100644
+--- a/mm/mremap.c
++++ b/mm/mremap.c
+@@ -182,7 +182,7 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
+ 				need_flush = true;
+ 				continue;
+ 			} else if (!err) {
+-				split_huge_page_pmd(vma->vm_mm, old_pmd);
++				split_huge_page_pmd(vma, old_addr, old_pmd);
+ 			}
+ 			VM_BUG_ON(pmd_trans_huge(*old_pmd));
+ 		}
+diff --git a/mm/pagewalk.c b/mm/pagewalk.c
+index 6c118d0..35aa294 100644
+--- a/mm/pagewalk.c
++++ b/mm/pagewalk.c
+@@ -58,7 +58,7 @@ again:
+ 		if (!walk->pte_entry)
+ 			continue;
+ 
+-		split_huge_page_pmd(walk->mm, pmd);
++		split_huge_page_pmd_mm(walk->mm, addr, pmd);
+ 		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
+ 			goto again;
+ 		err = walk_pte_range(pmd, addr, next, walk);
 -- 
 1.7.7.6
 
