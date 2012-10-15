@@ -1,90 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400Ab2JOIGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 04:06:32 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:65028 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab2JOIGb (ORCPT
+	id S1751260Ab2JOIKe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 04:10:34 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:55642 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab2JOIKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 04:06:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <1350287772.10584.178.camel@smile>
-References: <425b4bec021bce9a2de49959121907aeede6a0b9.1350064805.git.viresh.kumar@linaro.org>
-	<1350287772.10584.178.camel@smile>
-Date: Mon, 15 Oct 2012 13:36:30 +0530
-Message-ID: <CAKohpok5+zPcq3cA4yLiThTkKyYcrdv_g9x-uZ-Smp2x5FyoZg@mail.gmail.com>
-Subject: Re: [PATCH] dt: add helper function to read u8 & u16 variables & arrays
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-Cc: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "spear-devel@list.st.com" <spear-devel@list.st.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 15 Oct 2012 04:10:30 -0400
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        greg@kroah.com
+Cc: LKML <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, stable@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH] drm/i915: disable cpu relocs on ilk and earlier
+Date: Mon, 15 Oct 2012 10:11:22 +0200
+Message-Id: <1350288682-6236-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 October 2012 13:26, Shevchenko, Andriy
-<andriy.shevchenko@intel.com> wrote:
-> On Fri, 2012-10-12 at 23:31 +0530, Viresh Kumar wrote:
+Hi Greg&stable-team,
 
->> +     while (_sz--)                                                   \
->> +             *_out++ = (_type)be32_to_cpup(_val++);                  \
-> How about
-> *_out++ = (typeof(*_out))...
-> ?
+The below patch papers over a graphics corruption issue in 3.5/3.6. The
+regression happened due to pwrite tunings in 3.5, which made cpu relocations
+much more likely.
 
-:)
+The issue seems to have disappeared in 3.7-rc1, but it takes a few days to test
+a patch, so we haven't figured out what exactly fixed things. Now users are
+taking out their pitchforks already, so instead of wasting more days (maybe
+weeks?) to fully understand the bug before backporting the fix, we've opted for
+the below disable patch, which should have minimal impact (at most it undoes the
+tuning improvements in 3.5).
 
+Patch is tested by reporters & acked by all relevant ppl, please apply to
+3.5/3.6 series kernels.
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index c5a09c2..039e178 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -670,7 +670,7 @@ struct device_node *of_find_node_by_phandle(phandle handle)
- }
- EXPORT_SYMBOL(of_find_node_by_phandle);
+Thanks, Daniel
 
--#define of_property_read_array(_np, _pname, _out, _sz, _type)          \
-+#define of_property_read_array(_np, _pname, _out, _sz)                 \
-        struct property *_prop = of_find_property(_np, _pname, NULL);   \
-        const __be32 *_val;                                             \
-                                                                        \
-@@ -683,7 +683,7 @@ EXPORT_SYMBOL(of_find_node_by_phandle);
-                                                                        \
-        _val = _prop->value;                                            \
-        while (_sz--)                                                   \
--               *_out++ = (_type)be32_to_cpup(_val++);                  \
-+               *_out++ = (typeof(*_out))be32_to_cpup(_val++);          \
-        return 0;
+---
 
- /**
-@@ -703,7 +703,7 @@ EXPORT_SYMBOL(of_find_node_by_phandle);
- int of_property_read_u8_array(const struct device_node *np,
-                        const char *propname, u8 *out_values, size_t sz)
+They seem to be implicated in render corruptions. And up to now no one
+really seems to understand the issue, so let's just disable them for
+now. Most of the machines exhibiting this issue have only a 128 gtt
+mmio window, so increased pressure on the mappable part (and so higher
+chance for cpu relocs) seems to be the key.
+
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=852210
+Tested-by: Dave Airlie <airlied@gmail.com>
+Cc: stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+index ff2819e..682156a 100644
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -268,6 +268,12 @@ eb_destroy(struct eb_objects *eb)
+ 
+ static inline int use_cpu_reloc(struct drm_i915_gem_object *obj)
  {
--       of_property_read_array(np, propname, out_values, sz, u8);
-+       of_property_read_array(np, propname, out_values, sz);
++	/* cpu relocs are implicated in some not-yet-understood render
++	 * corruptions on at least ilk, but probably also gm45. Until we know
++	 * what's going on, just disable them. */
++	if (INTEL_INFO(obj->base.dev)->gen < 6)
++		return false;
++
+ 	return (obj->base.write_domain == I915_GEM_DOMAIN_CPU ||
+ 		obj->cache_level != I915_CACHE_NONE);
  }
- EXPORT_SYMBOL_GPL(of_property_read_u8_array);
+-- 
+1.7.10.4
 
-@@ -724,7 +724,7 @@ EXPORT_SYMBOL_GPL(of_property_read_u8_array);
- int of_property_read_u16_array(const struct device_node *np,
-                        const char *propname, u16 *out_values, size_t sz)
- {
--       of_property_read_array(np, propname, out_values, sz, u16);
-+       of_property_read_array(np, propname, out_values, sz);
- }
- EXPORT_SYMBOL_GPL(of_property_read_u16_array);
-
-@@ -747,7 +747,7 @@ int of_property_read_u32_array(const struct device_node *np,
-                               const char *propname, u32 *out_values,
-                               size_t sz)
- {
--       of_property_read_array(np, propname, out_values, sz, u32);
-+       of_property_read_array(np, propname, out_values, sz);
- }
- EXPORT_SYMBOL_GPL(of_property_read_u32_array);
