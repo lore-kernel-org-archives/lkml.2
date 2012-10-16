@@ -1,103 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab2JPWaf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 18:30:35 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:50838 "EHLO
+	id S1755940Ab2JPWac (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 18:30:32 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43293 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755720Ab2JPWa1 (ORCPT
+	with ESMTP id S1755732Ab2JPWa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 18:30:27 -0400
-From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-To: gregkh@linuxfoundation.org
-Cc: xiaobing.tu@intel.com, ccross@android.com, davej@redhat.com,
-        akpm@linux-foundation.org, mingo@elte.hu, rusty@rustcorp.com.au,
-        a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, di.zhang@intel.com, xindong.ma@intel.com,
-        alex.zuo@intel.com,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-Subject: [PATCH 3/4] Staging: android: binder: Fix memory leak on thread/process exit
-Date: Tue, 16 Oct 2012 15:29:54 -0700
-Message-Id: <1350426595-18059-3-git-send-email-arve@android.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1350426595-18059-1-git-send-email-arve@android.com>
-References: <20121016071101.GA5172@kroah.com>
- <1350426595-18059-1-git-send-email-arve@android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 16 Oct 2012 18:30:28 -0400
+Message-ID: <1350426621.1958.119.camel@kjgkr>
+Subject: Re: [PATCH 11/16] f2fs: add inode operations for special inodes
+From: Jaegeuk Kim <jaegeuk.kim@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        "'Vyacheslav Dubeyko'" <slava@dubeyko.com>, viro@zeniv.linux.org.uk,
+        "'Theodore Ts'o'" <tytso@mit.edu>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, chur.lee@samsung.com,
+        cm224.lee@samsung.com, jooyoung.hwang@samsung.com
+Date: Wed, 17 Oct 2012 07:30:21 +0900
+In-Reply-To: <20121016204412.GF2864@dastard>
+References: <001201cda2f1$633db960$29b92c20$%kim@samsung.com>
+	 <20121015223409.GE2739@dastard>
+	 <015901cdab42$06deac20$149c0460$%kim@samsung.com>
+	 <201210161138.35388.arnd@arndb.de> <20121016204412.GF2864@dastard>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a thread or process exited while a reply, one-way transaction or
-death notification was pending, the struct holding the pending work
-was leaked.
+> > > > > The main reason I can see against extended attributes is that they are not stored
+> > > > > very efficiently in f2fs, unless a lot of work is put into coming up with a good
+> > > > > implementation. A single flags bit can trivially be added to the inode in
+> > > > > comparison (if it's not there already).
+> > > > 
+> > > > That's a deficiency that should be corrected, then, because xattrs
+> > > > are very common these days.
+> > > 
+> > > IMO, most file systems including f2fs have some inefficiency to store
+> > > and retrieve xattrs, since they have to allocate an additional block.
+> > > The only distinct problem in f2fs is that there is a cleaning overhead.
+> > > So, that's the why xattr is not an efficient way in f2fs.
+> > 
+> > I would hope that there is a better way to encode extented attributes
+> > if the current method is not efficient enough. Maybe Dave or someone
+> > else who is experienced with this can make suggestions.
+> > 
+> > What is the "expected" size of the attributes normally?
+> 
+> Most attributes are small. Even "large" user attributes don't
+> generally get to be more than a couple of hundred bytes, though the
+> maximum size for a single xattr is 64K.
+> 
+> > Does it
+> > make sense to put attributes for multiple files into a single block?
+> 
+> There are two main ways of dealing with attributes. The first is a
+> tree-like structure to index and store unique xattrs, and have the
+> inode siimply keep pointers to the main xattr tree. This is great
+> for keeping space down when there are lots of identical xattrs, but
+> is a serialisation point for modification an modification can be
+> complex (i.e. shared entries in the tree need COW semantics.) This
+> is the approach ZFS takes, IIRC, and is the most space efficient way
+> of dealing with xattrs. It's not the most performance efficient way,
+> however, and the reference counting means frequent tree rewrites.
+> 
+> The second is the XFS/ext4 approach, where xattrs are stored in a
+> per-inode tree, with no sharing. The attribute tree holds the
+> attributes in it's leaves, and the tree grows and shrinks as you add
+> or remove xattrs. There are optimisations on top of this - e.g. for
+> XFS if the xattrs fit in the spare space in the inode, they are
+> packed into the inode ("shortform") and don't require an external
+> block. IIUC, there are patches to implement this optimisation for
+> ext4 floating around at the moment. This is a worthwhile
+> optimisation, because with a 512 byte inode size on XFS there is
+> enough spare space (roughly 380 bytes) for most systems to store all
+> their xattrs in the inode itself. XFS also has "remote attr storage"
+> for large xattrs (i.e. larger than a leaf block), where the tree
+> just keeps a pointer to an external extent that holds the xattr.
 
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
----
- drivers/staging/android/binder.c |   28 +++++++++++++++++++++++++++-
- 1 files changed, 27 insertions(+), 1 deletions(-)
+Thank you for great explanation. :)
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index b7cfcdb..91ce956 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -2460,14 +2460,38 @@ static void binder_release_work(struct list_head *list)
- 			struct binder_transaction *t;
- 
- 			t = container_of(w, struct binder_transaction, work);
--			if (t->buffer->target_node && !(t->flags & TF_ONE_WAY))
-+			if (t->buffer->target_node &&
-+			    !(t->flags & TF_ONE_WAY)) {
- 				binder_send_failed_reply(t, BR_DEAD_REPLY);
-+			} else {
-+				binder_debug(BINDER_DEBUG_DEAD_TRANSACTION,
-+					"binder: undelivered transaction %d\n",
-+					t->debug_id);
-+				t->buffer->transaction = NULL;
-+				kfree(t);
-+				binder_stats_deleted(BINDER_STAT_TRANSACTION);
-+			}
- 		} break;
- 		case BINDER_WORK_TRANSACTION_COMPLETE: {
-+			binder_debug(BINDER_DEBUG_DEAD_TRANSACTION,
-+				"binder: undelivered TRANSACTION_COMPLETE\n");
- 			kfree(w);
- 			binder_stats_deleted(BINDER_STAT_TRANSACTION_COMPLETE);
- 		} break;
-+		case BINDER_WORK_DEAD_BINDER_AND_CLEAR:
-+		case BINDER_WORK_CLEAR_DEATH_NOTIFICATION: {
-+			struct binder_ref_death *death;
-+
-+			death = container_of(w, struct binder_ref_death, work);
-+			binder_debug(BINDER_DEBUG_DEAD_TRANSACTION,
-+				"binder: undelivered death notification, %p\n",
-+				death->cookie);
-+			kfree(death);
-+			binder_stats_deleted(BINDER_STAT_DEATH);
-+		} break;
- 		default:
-+			pr_err("binder: unexpected work type, %d, not freed\n",
-+			       w->type);
- 			break;
- 		}
- 	}
-@@ -2951,6 +2975,7 @@ static void binder_deferred_release(struct binder_proc *proc)
- 		nodes++;
- 		rb_erase(&node->rb_node, &proc->nodes);
- 		list_del_init(&node->work.entry);
-+		binder_release_work(&node->async_todo);
- 		if (hlist_empty(&node->refs)) {
- 			kfree(node);
- 			binder_stats_deleted(BINDER_STAT_NODE);
-@@ -2989,6 +3014,7 @@ static void binder_deferred_release(struct binder_proc *proc)
- 		binder_delete_ref(ref);
- 	}
- 	binder_release_work(&proc->todo);
-+	binder_release_work(&proc->delivered_death);
- 	buffers = 0;
- 
- 	while ((n = rb_first(&proc->allocated_buffers))) {
+> 
+> IIRC, fs2fs uses 4k inodes, so IMO per-inode xattr tress with
+> internal storage before spilling to an external block is probably
+> the best approach to take...
+
+Yes, indeed this is the best approach to f2fs's xattr.
+Apart from giving fs hints, it is worth enough to optimize later.
+
+> 
+> > > OTOH, I think xattr itself is for users, not for communicating
+> > > between file system and users.
+> > 
+> > No, you are mistaken in that point, as Dave explained.
+> 
+> e.g. selinux, IMA, ACLs, capabilities, etc all communicate
+> information that the kernel uses for access control. That's why
+> xattrs have different namespaces like "system", "security" and
+> "user". Only user attributes are truly for user data
+> - the rest are for communicating information to the kernel....
+> 
+
+I agree that "system" is used by kernel.
+How about the file system view?
+Would you explain what file systems retrieve xattrs and use
+them with their own purpose?
+Sorry, I'm not familiar with xattrs in depth.
+
+Unfortunately, "system" is not implemented in f2fs yet. :(
+
+> A file usage policy xattr would definitely exist under the "system"
+> namespace - it's not a user xattr at all.
+> 
+> Cheers,
+> 
+> Dave.
+
 -- 
-1.7.7.3
+Jaegeuk Kim
+Samsung
 
