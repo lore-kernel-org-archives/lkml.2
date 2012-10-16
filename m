@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab2JPLnh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 07:43:37 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:23594 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754542Ab2JPLnf (ORCPT
+	id S1754008Ab2JPLpz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 07:45:55 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60770 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038Ab2JPLpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 07:43:35 -0400
-X-Spam-Score: -100.8
-Message-ID: <507D48A6.3070601@asianux.com>
-Date: Tue, 16 Oct 2012 19:44:38 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Bug fix] nfs-client: fix nfs_inode_attrs_need_update for async
- read_done comes during truncating to smaller size
-References: <507B70F1.7040903@asianux.com> <4FA345DA4F4AE44899BD2B03EEEC2FA909236BB5@SACEXCMBX04-PRD.hq.netapp.com> <507B968A.9090104@asianux.com> <4FA345DA4F4AE44899BD2B03EEEC2FA90923F1C4@SACEXCMBX04-PRD.hq.netapp.com> <507CBA3F.6000204@asianux.com> <4FA345DA4F4AE44899BD2B03EEEC2FA909253103@SACEXCMBX04-PRD.hq.netapp.com> <507CDEF2.2060809@asianux.com> <20121016063348.7b225bfb@tlielax.poochiereds.net>
-In-Reply-To: <20121016063348.7b225bfb@tlielax.poochiereds.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 16 Oct 2012 07:45:54 -0400
+From: "hongbo.zhang" <hongbo.zhang@linaro.org>
+To: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
+        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>
+Subject: [PATCH 0/5] Fix thermal bugs and Upstream ST-Ericsson thermal driver
+Date: Tue, 16 Oct 2012 19:44:44 +0800
+Message-Id: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
+X-Mailer: git-send-email 1.7.11.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "hongbo.zhang" <hongbo.zhang@linaro.com>
 
-于 2012年10月16日 18:33, Jeff Layton 写道:
-> In any situation where we get back attributes, we have to decide
-> whether they are valid or stale. It's always possible for replies or
-> their handling to be reordered such that an older set of attributes
-> is processed after a newer set.
-> 
-> Unfortunately, the v2/v3 protocols do not have great support for
-> helping the client detect this situation, so we do the best we can with
-> what we do have. Unfortunately when things are changing very quickly we
-> can still get it wrong, especially with v2/3. [1]
-> 
-> In any case, the logic to determine this is in
-> nfs_inode_attrs_need_update(). Looking at the size is sort of the "last
-> resort" after we look at the timestamps and gencount.
-> 
-
-I agree with you (what I understood originally is just like what you
-said above).
-
-thank for your confirmation.
-
-> The problem with doing what you suggest is that if we get it wrong, the
-> consequences are worse than the file appearing to be bigger than it is.
-> It means that written data may be silently lost.
-> 
-
-1) I understand why my suggestion is not quite suitable. I agree you.
-
-2) but, are we truly no ways to solve this issue ?  (I do not think so).
-
-3) I think an executable way (but maybe not a good way) is :
-
-   A) for each client, check each task id of the client its own (such as
-rpc task xid), so can know the order of tasks of the client its own.
-
-   B) maybe also need another some synchronization code, but I think it
-does not have much negative effect with performance.
+Hi all,
+This patch set is to upstream ST-Ericsson thermal driver and fix some bugs
+of thermal layer at the same time.
+All of these patches are based on v3.7-rc1.
 
 
-> ======
-> 
-> [1]: v4 has a change attribute so it's slightly simpler there when the
-> server supports it. Unrelated Q for Trond: should we be checking the v4
-> change_attr in nfs_inode_attrs_need_update too? 
+[PATCH 1/5] Thermal: do bind operation after thermal zone or cooling
+ device register returns.
 
-sorry for I am truly not quite familiar with nfs, I also think it is not
-quite relative with current issue, so I have to skip it (although I
-think these contents are valulable for Trond)
+In the previous bind function, cdev->get_max_state(cdev, &max_state) is called
+before the registration function finishes, but at this moment, the parameter
+cdev at thermal driver layer isn't ready--it will get ready only after its
+registration, so the the get_max_state callback cannot tell the max_state
+according to the cdev input.
+This problem can be fixed by separating the bind operation out of registration
+and doing it when registration completely finished.
+
+There is no such problem with the current exynos thermal driver because it 
+regsters cooling device before thermal zone device. As a generic thermal layer
+any sequence should be supported, thermal zone first or cooling device first,
+this will be also helpful to add/remove cooling device dynamically.
+
+
+[PATCH 2/5] Thermal: add indent for code alignment.
+[PATCH 3/5] Thermal: fix empty list checking method.
+[PATCH 4/5] Thermal: make sure cpufreq cooling register after
+ cpufreq driver
+
+Bug fix for generic cpufreq cooling layer as described in the commit logs.
+
+
+[PATCH 5/5] Thermal: Add ST-Ericsson db8500 thermal dirver.
+
+This patch is to add ST-Ericsson into the latest kervel version.
+
+
+hongbo.zhang (5):
+  Thermal: do bind operation after thermal zone or cooling device
+    register returns.
+  Thermal: add indent for code alignment.
+  Thermal: fix empty list checking method.
+  Thermal: make sure cpufreq cooling register after cpufreq driver
+  Thermal: Add ST-Ericsson db8500 thermal dirver.
+
+ arch/arm/boot/dts/dbx5x0.dtsi                |  11 +
+ arch/arm/configs/u8500_defconfig             |   4 +
+ arch/arm/mach-ux500/board-mop500.c           |  73 ++++
+ drivers/thermal/Kconfig                      |  20 ++
+ drivers/thermal/Makefile                     |   2 +
+ drivers/thermal/cpu_cooling.c                |  19 +-
+ drivers/thermal/db8500_cpufreq_cooling.c     | 118 +++++++
+ drivers/thermal/db8500_thermal.c             | 507 +++++++++++++++++++++++++++
+ drivers/thermal/thermal_sys.c                |  86 +++--
+ include/linux/platform_data/db8500_thermal.h |  39 +++
+ 10 files changed, 847 insertions(+), 32 deletions(-)
+ create mode 100644 drivers/thermal/db8500_cpufreq_cooling.c
+ create mode 100644 drivers/thermal/db8500_thermal.c
+ create mode 100644 include/linux/platform_data/db8500_thermal.h
 
 -- 
-Chen Gang
+1.7.11.3
 
-Asianux Corporation
