@@ -1,51 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab2JPP76 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 11:59:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35298 "EHLO
+	id S1755107Ab2JPQAb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 12:00:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39118 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754371Ab2JPP75 (ORCPT
+	with ESMTP id S1754864Ab2JPQA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 11:59:57 -0400
+	Tue, 16 Oct 2012 12:00:29 -0400
 From: Ming Lei <ming.lei@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alan Stern <stern@rowland.harvard.edu>, Oliver Neukum <oneukum@suse.de>,
         Minchan Kim <minchan@kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: [RFC PATCH v1 0/3] mm/PM/USB: memory allocation with no io in need
-Date: Tue, 16 Oct 2012 23:59:40 +0800
-Message-Id: <1350403183-12650-1-git-send-email-ming.lei@canonical.com>
+        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
+        Ming Lei <ming.lei@canonical.com>, Jiri Kosina <jiri.kosina@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-mm <linux-mm@kvack.org>
+Subject: [RFC PATCH v1 1/3] mm: teach mm by current context info to not do I/O during memory allocation
+Date: Tue, 16 Oct 2012 23:59:41 +0800
+Message-Id: <1350403183-12650-2-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1350403183-12650-1-git-send-email-ming.lei@canonical.com>
+References: <1350403183-12650-1-git-send-email-ming.lei@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch introduces PF_MEMALLOC_NOIO on process flag('flags' field of
+'struct task_struct'), so that the flag can be set by one task
+to avoid doing I/O inside memory allocation in the task's context.
 
-This patch set introduces one process flag and trys to fix one deadlock
-problem on block device during runtime resume or usb bus reset.
+The patch trys to solve one deadlock problem caused by block device,
+and the problem may happen at least in the below situations:
 
-The 1st one is the change on include/sched.h and mm.
+- during block device runtime resume, if memory allocation with
+GFP_KERNEL is called inside runtime resume callback of any one
+of its ancestors(or the block device itself), the deadlock may be
+triggered inside the memory allocation since it might not complete
+until the block device becomes active and the involed page I/O finishes.
+The situation is pointed out first by Alan Stern. It is not a good
+approach to convert all GFP_KERNEL in the path into GFP_NOIO because
+several subsystems may be involved(for example, PCI, USB and SCSI may
+be involved for usb mass stoarage device)
 
-The other 2 patches are applied again PM and USB subsystem to demo
-how to use the introduced mechanism to fix the deadlock problem.
+- during error handling of usb mass storage deivce, USB bus reset
+will be put on the device, so there shouldn't have any
+memory allocation with GFP_KERNEL during USB bus reset, otherwise
+the deadlock similar with above may be triggered. Unfortunately, any
+usb device may include one mass storage interface in theory, so it
+requires all usb interface drivers to handle the situation. In fact,
+most usb drivers don't know how to handle bus reset on the device
+and don't provide .pre_set() and .post_reset() callback at all, so
+USB core has to unbind and bind driver for these devices. So it
+is still not practical to resort to GFP_NOIO for solving the problem.
 
-V1:
-        - take Minchan's change to avoid the check in alloc_page hot path
-	- change the helpers' style into save/restore as suggested by Alan
-	- memory allocation with no io in usb bus reset path for all devices
-	as suggested by Greg and Oliver
+Also the introduced solution can be used by block subsystem or block
+drivers too, for example, set the PF_MEMALLOC_NOIO flag before doing
+actual I/O transfer.
 
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Oliver Neukum <oneukum@suse.de>
+Cc: Jiri Kosina <jiri.kosina@suse.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-mm <linux-mm@kvack.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ include/linux/sched.h |   11 +++++++++++
+ mm/page_alloc.c       |   10 +++++++++-
+ mm/vmscan.c           |   13 +++++++++++++
+ 3 files changed, 33 insertions(+), 1 deletion(-)
 
- drivers/base/power/runtime.c |   14 ++++++++++++++
- drivers/usb/core/hub.c       |   11 +++++++++++
- include/linux/sched.h        |   11 +++++++++++
- mm/page_alloc.c              |   10 +++++++++-
- mm/vmscan.c                  |   13 +++++++++++++
- 5 files changed, 58 insertions(+), 1 deletion(-)
-
-Thanks,
---
-Ming Lei
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index f6961c9..c149ae7 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1811,6 +1811,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+ #define PF_FROZEN	0x00010000	/* frozen for system suspend */
+ #define PF_FSTRANS	0x00020000	/* inside a filesystem transaction */
+ #define PF_KSWAPD	0x00040000	/* I am kswapd */
++#define PF_MEMALLOC_NOIO 0x00080000	/* Allocating memory without IO involved */
+ #define PF_LESS_THROTTLE 0x00100000	/* Throttle me less: I clean memory */
+ #define PF_KTHREAD	0x00200000	/* I am a kernel thread */
+ #define PF_RANDOMIZE	0x00400000	/* randomize virtual address space */
+@@ -1848,6 +1849,16 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+ #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
+ #define used_math() tsk_used_math(current)
+ 
++#define memalloc_noio() (current->flags & PF_MEMALLOC_NOIO)
++#define memalloc_noio_save(noio_flag) do { \
++	(noio_flag) = current->flags & PF_MEMALLOC_NOIO; \
++	current->flags |= PF_MEMALLOC_NOIO; \
++} while (0)
++#define memalloc_noio_restore(noio_flag) do { \
++	if (!(noio_flag)) \
++		current->flags &= ~PF_MEMALLOC_NOIO; \
++} while (0)
++
+ /*
+  * task->jobctl flags
+  */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 8e1be1c..e3746dd 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2630,10 +2630,18 @@ retry_cpuset:
+ 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
+ 			zonelist, high_zoneidx, alloc_flags,
+ 			preferred_zone, migratetype);
+-	if (unlikely(!page))
++	if (unlikely(!page)) {
++		/*
++		 * Resume, block IO and its error handling path
++		 * can deadlock because I/O on the device might not
++		 * complete.
++		 */
++		if (unlikely(memalloc_noio()))
++			gfp_mask &= ~GFP_IOFS;
+ 		page = __alloc_pages_slowpath(gfp_mask, order,
+ 				zonelist, high_zoneidx, nodemask,
+ 				preferred_zone, migratetype);
++	}
+ 
+ 	trace_mm_page_alloc(page, order, gfp_mask, migratetype);
+ 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 1e9aa66..6647805 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -3298,6 +3298,19 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 	};
+ 	unsigned long nr_slab_pages0, nr_slab_pages1;
+ 
++	if (unlikely(memalloc_noio())) {
++		sc.gfp_mask &= ~GFP_IOFS;
++		shrink.gfp_mask = sc.gfp_mask;
++		/*
++		 * We allow to reclaim only clean pages.
++		 * It can affect RECLAIM_SWAP and RECLAIM_WRITE mode
++		 * but this is really rare event and allocator can
++		 * fallback to other zones.
++		 */
++		sc.may_writepage = 0;
++		sc.may_swap = 0;
++	}
++
+ 	cond_resched();
+ 	/*
+ 	 * We need to be able to allocate from the reserves for RECLAIM_SWAP
+-- 
+1.7.9.5
 
