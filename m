@@ -1,101 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab2JPALq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 20:11:46 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:64016 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751558Ab2JPALo (ORCPT
+	id S1754833Ab2JPARn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 20:17:43 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36762 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558Ab2JPARm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 20:11:44 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtImAMukfFB5LH33/2dsb2JhbABFuh+EbQKBBYEJgiABAQU6HCMQCAMVAy4UDRgDNIdyAw6rL4ZyDYlUFIpfZoFng3ZgA5QXgVSLJIUNgwE
-Date: Tue, 16 Oct 2012 11:11:41 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
-        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [RFC v3 00/13] vfs: hot data tracking
-Message-ID: <20121016001140.GB2864@dastard>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+	Mon, 15 Oct 2012 20:17:42 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <507CA784.6010701@jp.fujitsu.com>
+Date: Tue, 16 Oct 2012 09:17:08 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jesper Juhl <jj@chaosbits.net>
+CC: <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH] [resend] ACPI: Fix memory leak in acpi_bind_one() (fwd)
+References: <alpine.LNX.2.00.1210152049550.1038@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1210152049550.1038@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 06:07:22PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> 
-> NOTE:
-> 
->   The patchset is currently post out mainly to make sure
-> it is going in the correct direction and hope to get some
-> helpful comments from other guys.
->   For more infomation, please check hot_tracking.txt in Documentation
-> 
+On Mon, 2012-10-15 at 20:51 +0200, Jesper Juhl wrote:
+> Ok, so I had a little problem with my mail servers clock that caused the
+> mail below to be timestamped a few years in the past, so I assume noone
+> saw it - thus, resending.
+>
+> --
+> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+> Plain text mails only, please.
+>
+>
+> ---------- Forwarded message ----------
+> Date: Sun, 9 Nov 2008 14:38:30 +0100 (CET)
+> From: Jesper Juhl <jj@chaosbits.net>
+> To: linux-acpi@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>
+> Subject: [PATCH] ACPI: Fix memory leak in acpi_bind_one()
+>
+> Memory is allocated with kzalloc() and assigned to
+> 'physical_node'. Then 'physical_node->node_id' is initialized with a
+> call to 'find_first_zero_bit()', if that results in a value greater
+> than ACPI_MAX_PHYSICAL_NODE we'll end up jumping to the 'err:' label
+> and there leave the function and let 'physical_node' go out of scope
+> and leak the memory we allocated.
+> This patch fixes the leak by simply freeing the unused/unneeded memory
+> pointed to by 'physical_node' just before we jump to 'err:'.
+>
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-# mount -o hot_track /dev/vdc /mnt/scratch
-# umount /mnt/scratch
+Looks good to me.
 
-hangs here on XFS:
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-#  echo w > /proc/sysrq-trigger 
-[   44.229252] SysRq : Show Blocked State
-[   44.230044]   task                        PC stack   pid father
-[   44.231187] umount          D ffff88021fd52dc0  3632  4107   4106 0x00000000
-[   44.231946]  ffff880212a91bd8 0000000000000086 ffff8802153da300 ffff880212a91fd8
-[   44.231946]  ffff880212a91fd8 ffff880212a91fd8 ffff880216cf6340 ffff8802153da300
-[   44.231946]  00000000ffffffff 7fffffffffffffff ffff880212a91d78 ffff880212a91d80
-[   44.231946] Call Trace:
-[   44.231946]  [<ffffffff81b6c1b9>] schedule+0x29/0x70
-[   44.231946]  [<ffffffff81b6a079>] schedule_timeout+0x159/0x220
-[   44.231946]  [<ffffffff8171a2f4>] ? do_raw_spin_lock+0x54/0x120
-[   44.231946]  [<ffffffff8171a45d>] ? do_raw_spin_unlock+0x5d/0xb0
-[   44.231946]  [<ffffffff81b6bfee>] wait_for_common+0xee/0x190
-[   44.231946]  [<ffffffff810b6a10>] ? try_to_wake_up+0x2f0/0x2f0
-[   44.231946]  [<ffffffff81b6c18d>] wait_for_completion+0x1d/0x20
-[   44.231946]  [<ffffffff8109efec>] flush_workqueue+0x14c/0x3f0
-[   44.231946]  [<ffffffff811aad89>] hot_track_exit+0x39/0x180
-[   44.231946]  [<ffffffff81454e83>] xfs_fs_put_super+0x23/0x70
-[   44.231946]  [<ffffffff8117a991>] generic_shutdown_super+0x61/0xf0
-[   44.231946]  [<ffffffff8117aa50>] kill_block_super+0x30/0x80
-[   44.231946]  [<ffffffff8117ae45>] deactivate_locked_super+0x45/0x70
-[   44.231946]  [<ffffffff8117ba0e>] deactivate_super+0x4e/0x70
-[   44.231946]  [<ffffffff81197541>] mntput_no_expire+0x101/0x160
-[   44.231946]  [<ffffffff811985b6>] sys_umount+0x76/0x3a0
-[   44.231946]  [<ffffffff81b755a9>] system_call_fastpath+0x16/0x1b
+Thanks,
+Yasuaki Ishimatsu
 
-because this is stuck:
+> ---
+>  drivers/acpi/glue.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/acpi/glue.c b/drivers/acpi/glue.c
+> index d1a2d74..0837308 100644
+> --- a/drivers/acpi/glue.c
+> +++ b/drivers/acpi/glue.c
+> @@ -159,6 +159,7 @@ static int acpi_bind_one(struct device *dev, acpi_handle handle)
+>  	if (physical_node->node_id >= ACPI_MAX_PHYSICAL_NODE) {
+>  		retval = -ENOSPC;
+>  		mutex_unlock(&acpi_dev->physical_node_lock);
+> +		kfree(physical_node);
+>  		goto err;
+>  	}
+>
+> --
+> 1.7.1
+>
+>
 
-[  200.064574] kworker/u:2     S ffff88021fc12dc0  5208   669      2 0x00000000
-[  200.064574]  ffff88021532fc60 0000000000000046 ffff88021532c7c0 ffff88021532ffd8
-[  200.064574]  ffff88021532ffd8 ffff88021532ffd8 ffffffff81fc3420 ffff88021532c7c0
-[  200.064574]  ffff88021532fc50 ffff88021532fc98 ffffffff8221e700 ffffffff8221e700
-[  200.064574] Call Trace:
-[  200.064574]  [<ffffffff81b6c1b9>] schedule+0x29/0x70
-[  200.064574]  [<ffffffff81b6a03b>] schedule_timeout+0x11b/0x220
-[  200.064574]  [<ffffffff810908d0>] ? usleep_range+0x50/0x50
-[  200.064574]  [<ffffffff811aa78a>] hot_temperature_update_work+0x16a/0x1c0
-[  200.064574]  [<ffffffff8171a2f4>] ? do_raw_spin_lock+0x54/0x120
-[  200.064574]  [<ffffffff81b6d3ce>] ? _raw_spin_unlock_irq+0xe/0x30
-[  200.064574]  [<ffffffff810b0b3c>] ? finish_task_switch+0x5c/0x100
-[  200.064574]  [<ffffffff8109d959>] process_one_work+0x139/0x500
-[  200.064574]  [<ffffffff811aa620>] ? hot_range_update+0x1f0/0x1f0
-[  200.064574]  [<ffffffff8109e63e>] worker_thread+0x15e/0x460
-[  200.064574]  [<ffffffff8109e4e0>] ? manage_workers+0x2f0/0x2f0
-[  200.064574]  [<ffffffff810a4b33>] kthread+0x93/0xa0
-[  200.064574]  [<ffffffff81b765c4>] kernel_thread_helper+0x4/0x10
-[  200.064574]  [<ffffffff810a4aa0>] ? __init_kthread_worker+0x40/0x40
-[  200.064574]  [<ffffffff81b765c0>] ? gs_change+0x13/0x13
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
