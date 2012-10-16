@@ -1,296 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752Ab2JPETp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 00:19:45 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:57537 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755730Ab2JPETn (ORCPT
+	id S1755781Ab2JPEUD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 00:20:03 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:60526 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755767Ab2JPEUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 00:19:43 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: vinod.koul@intel.com
-Cc: linux-kernel@vger.kernel.org, spear-devel@list.st.com,
-        andriy.shevchenko@linux.intel.com,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V3 3/3] ARM: SPEAr13xx: Pass DW DMAC platform data from DT
-Date: Tue, 16 Oct 2012 09:49:18 +0530
-Message-Id: <e0e3b6ad8a235405bfa93df62449ab1582d39519.1350360935.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <3100e691db3f94c22afd98b609a1568d7e70dfe7.1350360935.git.viresh.kumar@linaro.org>
-References: <3100e691db3f94c22afd98b609a1568d7e70dfe7.1350360935.git.viresh.kumar@linaro.org>
-In-Reply-To: <3100e691db3f94c22afd98b609a1568d7e70dfe7.1350360935.git.viresh.kumar@linaro.org>
-References: <3100e691db3f94c22afd98b609a1568d7e70dfe7.1350360935.git.viresh.kumar@linaro.org>
-X-OriginalArrivalTime: 16 Oct 2012 04:19:39.0335 (UTC) FILETIME=[755F1D70:01CDAB55]
-X-MC-Unique: 112101605194101401
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 16 Oct 2012 00:20:00 -0400
+X-AuditID: b753bd60-96850ba000002f78-2b-507ce06ecc93
+X-AuditID: b753bd60-96850ba000002f78-2b-507ce06ecc93
+Message-ID: <507CE06D.8050806@hitachi.com>
+Date: Tue, 16 Oct 2012 13:19:57 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Hyeoncheol Lee <hyc.lee@gmail.com>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH] perf probe: convert_name_to_addr() allocated the wrong
+ size buffer for a function name
+References: <1350351452-9737-1-git-send-email-hyc.lee@gmail.com>
+In-Reply-To: <1350351452-9737-1-git-send-email-hyc.lee@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q9G4Jwfl029503
 
-This patch adds dw_dmac's platform data to DT node. It also creates slave info
-node for SPEAr13xx, for the devices which were using dw_dmac.
+(2012/10/16 10:37), Hyeoncheol Lee wrote:
+> convert_name_to_addr() allocated sizeof(char *) * MAX_PROBE_ARGS
+> bytes for a function name
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
-V1->V3:
-------
-- renamed filter function
+Yeah, that one was from my laziness...
 
- arch/arm/boot/dts/spear1340.dtsi             | 19 ++++++++++
- arch/arm/boot/dts/spear13xx.dtsi             | 38 ++++++++++++++++++++
- arch/arm/mach-spear13xx/include/mach/spear.h |  2 --
- arch/arm/mach-spear13xx/spear1310.c          |  4 +--
- arch/arm/mach-spear13xx/spear1340.c          | 27 +++-----------
- arch/arm/mach-spear13xx/spear13xx.c          | 54 ++--------------------------
- 6 files changed, 65 insertions(+), 79 deletions(-)
+> 
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Signed-off-by: Hyeoncheol Lee <hyc.lee@gmail.com>
+> ---
+>  tools/perf/util/probe-event.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> index 49a256e..bb40ed4 100644
+> --- a/tools/perf/util/probe-event.c
+> +++ b/tools/perf/util/probe-event.c
+> @@ -2352,13 +2352,14 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
+>  		free(exec_copy);
+>  	}
+>  	free(pp->function);
+> -	pp->function = zalloc(sizeof(char *) * MAX_PROBE_ARGS);
+> +	pp->function = zalloc(sizeof(char) *
+> +			      (3 + sizeof(unsigned long long) * 2));
 
-diff --git a/arch/arm/boot/dts/spear1340.dtsi b/arch/arm/boot/dts/spear1340.dtsi
-index d71fe2a..8ea3f66 100644
---- a/arch/arm/boot/dts/spear1340.dtsi
-+++ b/arch/arm/boot/dts/spear1340.dtsi
-@@ -24,6 +24,25 @@
- 			status = "disabled";
- 		};
- 
-+		dma@ea800000 {
-+			slave_info {
-+				uart1_tx {
-+					bus_id = "uart1_tx";
-+					cfg_hi = <0x6000>;	/* 0xC << 11 */
-+					cfg_lo = <0>;
-+					src_master = <0>;
-+					dst_master = <1>;
-+				};
-+				uart1_tx {
-+					bus_id = "uart1_tx";
-+					cfg_hi = <0x680>;	/* 0xD << 7 */
-+					cfg_lo = <0>;
-+					src_master = <1>;
-+					dst_master = <0>;
-+				};
-+			};
-+		};
-+
- 		spi1: spi@5d400000 {
- 			compatible = "arm,pl022", "arm,primecell";
- 			reg = <0x5d400000 0x1000>;
-diff --git a/arch/arm/boot/dts/spear13xx.dtsi b/arch/arm/boot/dts/spear13xx.dtsi
-index f7b84ac..f06bb50 100644
---- a/arch/arm/boot/dts/spear13xx.dtsi
-+++ b/arch/arm/boot/dts/spear13xx.dtsi
-@@ -91,6 +91,37 @@
- 			reg = <0xea800000 0x1000>;
- 			interrupts = <0 19 0x4>;
- 			status = "disabled";
-+
-+			nr_channels = <8>;
-+			chan_allocation_order = <1>;
-+			chan_priority = <1>;
-+			block_size = <0xfff>;
-+			nr_masters = <2>;
-+			data_width = <3 3 0 0>;
-+
-+			slave_info {
-+				ssp0_tx {
-+					bus_id = "ssp0_tx";
-+					cfg_hi = <0x2000>;	/* 0x4 << 11 */
-+					cfg_lo = <0>;
-+					src_master = <0>;
-+					dst_master = <0>;
-+				};
-+				ssp0_rx {
-+					bus_id = "ssp0_rx";
-+					cfg_hi = <0x280>;	/* 0x5 << 7 */
-+					cfg_lo = <0>;
-+					src_master = <0>;
-+					dst_master = <0>;
-+				};
-+				cf {
-+					bus_id = "cf";
-+					cfg_hi = <0>;
-+					cfg_lo = <0>;
-+					src_master = <0>;
-+					dst_master = <0>;
-+				};
-+			};
- 		};
- 
- 		dma@eb000000 {
-@@ -98,6 +129,13 @@
- 			reg = <0xeb000000 0x1000>;
- 			interrupts = <0 59 0x4>;
- 			status = "disabled";
-+
-+			nr_channels = <8>;
-+			chan_allocation_order = <1>;
-+			chan_priority = <1>;
-+			block_size = <0xfff>;
-+			nr_masters = <2>;
-+			data_width = <3 3 0 0>;
- 		};
- 
- 		fsmc: flash@b0000000 {
-diff --git a/arch/arm/mach-spear13xx/include/mach/spear.h b/arch/arm/mach-spear13xx/include/mach/spear.h
-index 07d90ac..71bf5b6 100644
---- a/arch/arm/mach-spear13xx/include/mach/spear.h
-+++ b/arch/arm/mach-spear13xx/include/mach/spear.h
-@@ -43,8 +43,6 @@
- #define VA_L2CC_BASE				IOMEM(UL(0xFB000000))
- 
- /* others */
--#define DMAC0_BASE				UL(0xEA800000)
--#define DMAC1_BASE				UL(0xEB000000)
- #define MCIF_CF_BASE				UL(0xB2800000)
- 
- /* Devices present in SPEAr1310 */
-diff --git a/arch/arm/mach-spear13xx/spear1310.c b/arch/arm/mach-spear13xx/spear1310.c
-index 9fbbfc5..0e60195 100644
---- a/arch/arm/mach-spear13xx/spear1310.c
-+++ b/arch/arm/mach-spear13xx/spear1310.c
-@@ -36,9 +36,7 @@ static struct pl022_ssp_controller ssp1_plat_data = {
- 
- /* Add SPEAr1310 auxdata to pass platform data */
- static struct of_dev_auxdata spear1310_auxdata_lookup[] __initdata = {
--	OF_DEV_AUXDATA("arasan,cf-spear1340", MCIF_CF_BASE, NULL, &cf_dma_priv),
--	OF_DEV_AUXDATA("snps,dma-spear1340", DMAC0_BASE, NULL, &dmac_plat_data),
--	OF_DEV_AUXDATA("snps,dma-spear1340", DMAC1_BASE, NULL, &dmac_plat_data),
-+	OF_DEV_AUXDATA("arasan,cf-spear1340", MCIF_CF_BASE, NULL, "cf"),
- 	OF_DEV_AUXDATA("arm,pl022", SSP_BASE, NULL, &pl022_plat_data),
- 
- 	OF_DEV_AUXDATA("arm,pl022", SPEAR1310_SSP1_BASE, NULL, &ssp1_plat_data),
-diff --git a/arch/arm/mach-spear13xx/spear1340.c b/arch/arm/mach-spear13xx/spear1340.c
-index 081014f..7301f14 100644
---- a/arch/arm/mach-spear13xx/spear1340.c
-+++ b/arch/arm/mach-spear13xx/spear1340.c
-@@ -20,7 +20,6 @@
- #include <linux/of_platform.h>
- #include <asm/hardware/gic.h>
- #include <asm/mach/arch.h>
--#include <mach/dma.h>
- #include <mach/generic.h>
- #include <mach/spear.h>
- 
-@@ -78,26 +77,10 @@
- 			(SPEAR1340_MIPHY_OSC_BYPASS_EXT | \
- 			SPEAR1340_MIPHY_PLL_RATIO_TOP(25))
- 
--static struct dw_dma_slave uart1_dma_param[] = {
--	{
--		/* Tx */
--		.cfg_hi = DWC_CFGH_DST_PER(SPEAR1340_DMA_REQ_UART1_TX),
--		.cfg_lo = 0,
--		.src_master = DMA_MASTER_MEMORY,
--		.dst_master = SPEAR1340_DMA_MASTER_UART1,
--	}, {
--		/* Rx */
--		.cfg_hi = DWC_CFGH_SRC_PER(SPEAR1340_DMA_REQ_UART1_RX),
--		.cfg_lo = 0,
--		.src_master = SPEAR1340_DMA_MASTER_UART1,
--		.dst_master = DMA_MASTER_MEMORY,
--	}
--};
--
- static struct amba_pl011_data uart1_data = {
--	.dma_filter = dw_dma_filter,
--	.dma_tx_param = &uart1_dma_param[0],
--	.dma_rx_param = &uart1_dma_param[1],
-+	.dma_filter = dw_dma_generic_filter,
-+	.dma_tx_param = "uart1_tx",
-+	.dma_rx_param = "uart1_rx",
- };
- 
- /* SATA device registration */
-@@ -158,9 +141,7 @@ static struct ahci_platform_data sata_pdata = {
- 
- /* Add SPEAr1340 auxdata to pass platform data */
- static struct of_dev_auxdata spear1340_auxdata_lookup[] __initdata = {
--	OF_DEV_AUXDATA("arasan,cf-spear1340", MCIF_CF_BASE, NULL, &cf_dma_priv),
--	OF_DEV_AUXDATA("snps,dma-spear1340", DMAC0_BASE, NULL, &dmac_plat_data),
--	OF_DEV_AUXDATA("snps,dma-spear1340", DMAC1_BASE, NULL, &dmac_plat_data),
-+	OF_DEV_AUXDATA("arasan,cf-spear1340", MCIF_CF_BASE, NULL, "cf"),
- 	OF_DEV_AUXDATA("arm,pl022", SSP_BASE, NULL, &pl022_plat_data),
- 
- 	OF_DEV_AUXDATA("snps,spear-ahci", SPEAR1340_SATA_BASE, NULL,
-diff --git a/arch/arm/mach-spear13xx/spear13xx.c b/arch/arm/mach-spear13xx/spear13xx.c
-index 5633d69..0e166fa 100644
---- a/arch/arm/mach-spear13xx/spear13xx.c
-+++ b/arch/arm/mach-spear13xx/spear13xx.c
-@@ -22,67 +22,19 @@
- #include <asm/hardware/gic.h>
- #include <asm/mach/map.h>
- #include <asm/smp_twd.h>
--#include <mach/dma.h>
- #include <mach/generic.h>
- #include <mach/spear.h>
- 
--/* common dw_dma filter routine to be used by peripherals */
--bool dw_dma_filter(struct dma_chan *chan, void *slave)
--{
--	struct dw_dma_slave *dws = (struct dw_dma_slave *)slave;
--
--	if (chan->device->dev == dws->dma_dev) {
--		chan->private = slave;
--		return true;
--	} else {
--		return false;
--	}
--}
--
- /* ssp device registration */
--static struct dw_dma_slave ssp_dma_param[] = {
--	{
--		/* Tx */
--		.cfg_hi = DWC_CFGH_DST_PER(DMA_REQ_SSP0_TX),
--		.cfg_lo = 0,
--		.src_master = DMA_MASTER_MEMORY,
--		.dst_master = DMA_MASTER_SSP0,
--	}, {
--		/* Rx */
--		.cfg_hi = DWC_CFGH_SRC_PER(DMA_REQ_SSP0_RX),
--		.cfg_lo = 0,
--		.src_master = DMA_MASTER_SSP0,
--		.dst_master = DMA_MASTER_MEMORY,
--	}
--};
--
- struct pl022_ssp_controller pl022_plat_data = {
- 	.bus_id = 0,
- 	.enable_dma = 1,
--	.dma_filter = dw_dma_filter,
--	.dma_rx_param = &ssp_dma_param[1],
--	.dma_tx_param = &ssp_dma_param[0],
-+	.dma_filter = dw_dma_generic_filter,
-+	.dma_rx_param = "ssp0_rx",
-+	.dma_tx_param = "ssp0_tx",
- 	.num_chipselect = 3,
- };
- 
--/* CF device registration */
--struct dw_dma_slave cf_dma_priv = {
--	.cfg_hi = 0,
--	.cfg_lo = 0,
--	.src_master = 0,
--	.dst_master = 0,
--};
--
--/* dmac device registeration */
--struct dw_dma_platform_data dmac_plat_data = {
--	.nr_channels = 8,
--	.chan_allocation_order = CHAN_ALLOCATION_DESCENDING,
--	.chan_priority = CHAN_PRIORITY_DESCENDING,
--	.block_size = 4095U,
--	.nr_masters = 2,
--	.data_width = { 3, 3, 0, 0 },
--};
--
- void __init spear13xx_l2x0_init(void)
- {
- 	/*
+Could you comment that this is enough long here?
+
+>  	if (!pp->function) {
+>  		ret = -ENOMEM;
+>  		pr_warning("Failed to allocate memory by zalloc.\n");
+>  		goto out;
+>  	}
+> -	e_snprintf(pp->function, MAX_PROBE_ARGS, "0x%llx", vaddr);
+> +	sprintf(pp->function, "0x%llx", vaddr);
+
+And at least we should use snprintf instead of sprintf...
+(I think ret = e_snprintf(...) is better)
+
+>  	ret = 0;
+>  
+>  out:
+> 
+
+Thank you,
+
 -- 
-1.7.12.rc2.18.g61b472e
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
