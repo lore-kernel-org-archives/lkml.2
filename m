@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823Ab2JPKhT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 06:37:19 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53191 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752567Ab2JPKhR (ORCPT
+	id S1753889Ab2JPKlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 06:41:37 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:33996 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523Ab2JPKlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 06:37:17 -0400
-Date: Tue, 16 Oct 2012 11:37:02 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "inki.dae@samsung.com" <inki.dae@samsung.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [Linaro-mm-sig] [RFC 0/2] DMA-mapping & IOMMU - physically
-	contiguous allocations
-Message-ID: <20121016103702.GB21164@n2100.arm.linux.org.uk>
-References: <CAAQKjZMYFNMEnb2ue2aR+6AEbOixnQFyggbXrThBCW5VOznePg@mail.gmail.com> <20121016090434.7d5e088152a3e0b0606903c8@nvidia.com> <20121016085928.GV21164@n2100.arm.linux.org.uk> <20121016.132755.661591248175727826.hdoyu@nvidia.com>
+	Tue, 16 Oct 2012 06:41:35 -0400
+Message-ID: <507D39E5.5010301@gmail.com>
+Date: Tue, 16 Oct 2012 18:41:41 +0800
+From: Sha Zhengju <handai.szj@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121016.132755.661591248175727826.hdoyu@nvidia.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Ni zhan Chen <nizhan.chen@gmail.com>
+CC: linux-mm@kvack.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
+        mhocko@suse.cz, linux-kernel@vger.kernel.org,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH] oom, memcg: handle sysctl oom_kill_allocating_task while
+ memcg oom happening
+References: <1350382328-28977-1-git-send-email-handai.szj@taobao.com> <507D34E3.3040705@gmail.com>
+In-Reply-To: <507D34E3.3040705@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 12:27:55PM +0200, Hiroshi Doyu wrote:
-> Hi Russell,
-> 
-> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote @ Tue, 16 Oct 2012 10:59:28 +0200:
-> 
-> > On Tue, Oct 16, 2012 at 09:04:34AM +0300, Hiroshi Doyu wrote:
-> > > In addition to those contiguous/discontiguous page allocation, is
-> > > there any way to _import_ anonymous pages allocated by a process to be
-> > > used in dma-mapping API later?
-> > > 
-> > > I'm considering the following scenario, an user process allocates a
-> > > buffer by malloc() in advance, and then it asks some driver to convert
-> > > that buffer into IOMMU'able/DMA'able ones later. In this case, pages
-> > > are discouguous and even they may not be yet allocated at
-> > > malloc()/mmap().
-> > 
-> > That situation is covered.  It's the streaming API you're wanting for that.
-> > dma_map_sg() - but you may need additional cache handling via
-> > flush_dcache_page() to ensure that your code is safe for all CPU cache
-> > architectures.
-> >
-> > Remember that pages allocated into userspace will be cacheable, so a cache
-> > flush is required before they can be DMA'd.  Hence the streaming
-> > API.
-> 
-> Is the syscall "cacheflush()" supposed to be the knob for that?
-> 
-> Or is there any other ones to have more precise control, "clean",
-> "invalidate" and "flush", from userland in generic way?
+On 10/16/2012 06:20 PM, Ni zhan Chen wrote:
+> On 10/16/2012 06:12 PM, Sha Zhengju wrote:
+>> From: Sha Zhengju <handai.szj@taobao.com>
+>>
+>> Sysctl oom_kill_allocating_task enables or disables killing the 
+>> OOM-triggering
+>> task in out-of-memory situations, but it only works on overall 
+>> system-wide oom.
+>> But it's also a useful indication in memcg so we take it into 
+>> consideration
+>> while oom happening in memcg. Other sysctl such as panic_on_oom has 
+>> already
+>> been memcg-ware.
+>
+> Is it the resend one or new version, could you add changelog if it is 
+> the last case?
 
-No other syscalls are required - this sequence will do everything you
-need to perform DMA on pages mapped into userspace:
+Sorry, forget to mention that this patch is an updated one rebased on 
+mhocko mm tree, since-3.6 branch.
+The first one is on old kernel, please ignore it. :-)
 
-	get_user_pages()
-	convert array of struct page * to scatterlist
-	dma_map_sg()
-	perform DMA
-	dma_unmap_sg()
-	for each page in sg()
-		page_cache_release(page);
 
-If you get the list of pages some other way (eg, via shmem_read_mapping_page_gfp)
-then additional maintanence may be required (though that may be a bug in
-shmem - remember this stuff hasn't been well tested on ARM before.)
+Thanks,
+Sha
+
