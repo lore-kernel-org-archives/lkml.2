@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab2JPO7l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 10:59:41 -0400
-Received: from mga11.intel.com ([192.55.52.93]:2900 "EHLO mga11.intel.com"
+	id S1754854Ab2JPPC7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 11:02:59 -0400
+Received: from c60.cesmail.net ([216.154.195.49]:42439 "EHLO c60.cesmail.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754732Ab2JPO7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 10:59:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,593,1344236400"; 
-   d="scan'208";a="235797878"
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Mattia Dongili <malattia@linux.it>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        platform-driver-x86@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PATCH 4/5] sonypi: suspend/resume callbacks should be conditionally compiled on CONFIG_PM_SLEEP
-Date: Tue, 16 Oct 2012 22:59:04 +0800
-Message-Id: <1350399545-11179-4-git-send-email-yuanhan.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1350399545-11179-1-git-send-email-yuanhan.liu@linux.intel.com>
-References: <1350399545-11179-1-git-send-email-yuanhan.liu@linux.intel.com>
+	id S1754745Ab2JPPC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 11:02:58 -0400
+Date: Tue, 16 Oct 2012 11:02:54 -0400
+From: Pavel Roskin <proski@gnu.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Bisected regression in Linux 3.7.0-rc1, hang on login caused by
+ replace_fd()
+Message-ID: <20121016110254.2f2df195@mj>
+In-Reply-To: <20121015234853.GN2616@ZenIV.linux.org.uk>
+References: <20121015171437.32e9a4ac@mj>
+	<20121015215127.GK2616@ZenIV.linux.org.uk>
+	<20121015191105.2dac4cac@mj>
+	<20121015232705.GM2616@ZenIV.linux.org.uk>
+	<20121015194008.29e38086@mj>
+	<20121015234853.GN2616@ZenIV.linux.org.uk>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will fix warnings like following when CONFIG_PM_SLEEP is not set:
+On Tue, 16 Oct 2012 00:48:53 +0100
+Al Viro <viro@ZenIV.linux.org.uk> wrote:
 
-        warning: 'xxx_suspend' defined but not used [-Wunused-function]
-        warning: 'xxx_resume' defined but not used [-Wunused-function]
+> On Mon, Oct 15, 2012 at 07:40:08PM -0400, Pavel Roskin wrote:
+> > On Tue, 16 Oct 2012 00:27:05 +0100
+> > Al Viro <viro@ZenIV.linux.org.uk> wrote:
+> > 
+> > > 	I think I understand what's going on there.  Add
+> > > fput(files[0]) after that replace_fd(); we have a leak and while
+> > > that's not the right way to fix it, that'd verify if anything
+> > > else is going on there.
+> > 
+> > Yes, it's working now!  No more hang on login!
+> 
+> That should be closer to the final variant.
 
-Because
-	SET_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn)
+It works me, thank you!  I don't use SELinux, so I could not really
+test the second part.
 
-Only references the callbacks on CONFIG_PM_SLEEP (instead of CONFIG_PM).
-
-Cc: Mattia Dongili <malattia@linux.it>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: platform-driver-x86@vger.kernel.org
-Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- drivers/char/sonypi.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/char/sonypi.c b/drivers/char/sonypi.c
-index 320debb..9b4f011 100644
---- a/drivers/char/sonypi.c
-+++ b/drivers/char/sonypi.c
-@@ -1456,7 +1456,7 @@ static int __devexit sonypi_remove(struct platform_device *dev)
- 	return 0;
- }
- 
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- static int old_camera_power;
- 
- static int sonypi_suspend(struct device *dev)
 -- 
-1.7.7.6
-
+Regards,
+Pavel Roskin
