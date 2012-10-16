@@ -1,82 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab2JPS1H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 14:27:07 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:58364 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755758Ab2JPS1E (ORCPT
+	id S1755669Ab2JPS3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 14:29:22 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:15139 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755118Ab2JPS3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 14:27:04 -0400
+	Tue, 16 Oct 2012 14:29:21 -0400
+Date: Tue, 16 Oct 2012 18:29:20 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Pekka Enberg <penberg@kernel.org>
+cc: Avleen Vig <avleen@gmail.com>, linux-kernel@vger.kernel.org,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Reading /proc/slabinfo causes stalls
+In-Reply-To: <CAOJsxLF2VJRRu_i2aCARwiw6knyrwL1HpZ1zGOASP133fNxv8Q@mail.gmail.com>
+Message-ID: <0000013a6ad64c95-106bab18-5a15-4c85-bae9-5527aa52f661-000000@email.amazonses.com>
+References: <CAMjP1K=WV=AJ=paz7uBJ2X0FnOX6Cf-HipWsFjLxicXGbvL6Sw@mail.gmail.com> <CAOJsxLF2VJRRu_i2aCARwiw6knyrwL1HpZ1zGOASP133fNxv8Q@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <507DA245.9050709@am.sony.com>
-References: <CALF0-+XGn5=QSE0bpa4RTag9CAJ63MKz1kvaYbpw34qUhViaZA@mail.gmail.com>
-	<m27gqwtyu9.fsf@firstfloor.org>
-	<alpine.DEB.2.00.1210111558290.6409@chino.kir.corp.google.com>
-	<m2391ktxjj.fsf@firstfloor.org>
-	<CALF0-+WLZWtwYY4taYW9D7j-abCJeY90JzcTQ2hGK64ftWsdxw@mail.gmail.com>
-	<alpine.DEB.2.00.1210130252030.7462@chino.kir.corp.google.com>
-	<CALF0-+Xp_P_NjZpifzDSWxz=aBzy_fwaTB3poGLEJA8yBPQb_Q@mail.gmail.com>
-	<alpine.DEB.2.00.1210151745400.31712@chino.kir.corp.google.com>
-	<CALF0-+WgfnNOOZwj+WLB397cgGX7YhNuoPXAK5E0DZ5v_BxxEA@mail.gmail.com>
-	<1350392160.3954.986.camel@edumazet-glaptop>
-	<507DA245.9050709@am.sony.com>
-Date: Tue, 16 Oct 2012 15:27:04 -0300
-Message-ID: <CALF0-+VLVqy_uE63_jL83qh8MqBQAE3vYLRX1mRQURZ4a1M20g@mail.gmail.com>
-Subject: Re: [Q] Default SLAB allocator
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Tim Bird <tim.bird@am.sony.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "celinux-dev@lists.celinuxforum.org" 
-	<celinux-dev@lists.celinuxforum.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 3:07 PM, Tim Bird <tim.bird@am.sony.com> wrote:
-> On 10/16/2012 05:56 AM, Eric Dumazet wrote:
->> On Tue, 2012-10-16 at 09:35 -0300, Ezequiel Garcia wrote:
->>
->>> Now, returning to the fragmentation. The problem with SLAB is that
->>> its smaller cache available for kmalloced objects is 32 bytes;
->>> while SLUB allows 8, 16, 24 ...
->>>
->>> Perhaps adding smaller caches to SLAB might make sense?
->>> Is there any strong reason for NOT doing this?
->>
->> I would remove small kmalloc-XX caches, as sharing a cache line
->> is sometime dangerous for performance, because of false sharing.
->>
->> They make sense only for very small hosts.
+On Tue, 16 Oct 2012, Pekka Enberg wrote:
+
+> > Is this a known condition? Are there work arounds or other ways to get the
+> > slab allocation data which don't cause stalls?
 >
-> That's interesting...
->
-> It would be good to measure the performance/size tradeoff here.
-> I'm interested in very small systems, and it might be worth
-> the tradeoff, depending on how bad the performance is.  Maybe
-> a new config option would be useful (I can hear the groans now... :-)
->
-> Ezequiel - do you have any measurements of how much memory
-> is wasted by 32-byte kmalloc allocations for smaller objects,
-> in the tests you've been doing?
+> What kernel version are you using? What does your .config look like?
 
-Yes, we have some numbers:
+slabinfo access requires a mutex which will stall certain slab operations
+(shrinking caches, retuning caches, cleaning caches in SLAB).
 
-http://elinux.org/Kernel_dynamic_memory_analysis#Kmalloc_objects
+If the allocator is SLAB then I would think that this is a stall of
+slabinfo mutex vs. slab clean operations (gets more frequent the more
+processors are in the box).
 
-Are they too informal? I can add some details...
+If this is the case then using the SLUB allocator will fix the issue since
+SLUB does not need to perform cache cleaning.
 
-They've been measured on a **very** minimal setup, almost every option
-is stripped out, except from initramfs, sysfs, and trace.
-
-On this scenario, strings allocated for file names and directories
-created by sysfs
-are quite noticeable, being 4-16 bytes, and produce a lot of fragmentation from
-that 32 byte cache at SLAB.
-
-Is an option to enable small caches on SLUB and SLAB worth it?
-
-    Ezequiel
