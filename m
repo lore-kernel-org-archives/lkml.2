@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab2JPH6H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 03:58:07 -0400
-Received: from relay.parallels.com ([195.214.232.42]:44734 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919Ab2JPH6F convert rfc822-to-8bit (ORCPT
+	id S1755433Ab2JPH7I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 03:59:08 -0400
+Received: from tee.schottelius.org ([77.109.138.222]:34614 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753532Ab2JPH7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 03:58:05 -0400
-Message-ID: <507D1386.2050505@parallels.com>
-Date: Tue, 16 Oct 2012 11:57:58 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Tue, 16 Oct 2012 03:59:07 -0400
+X-Greylist: delayed 608 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Oct 2012 03:59:07 EDT
+Date: Tue, 16 Oct 2012 09:51:22 +0200
+From: Nico Schottelius <nico-kernel20121016@schottelius.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Very bad performance on Qemu/KVM
+Message-ID: <20121016075122.GA25824@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-kernel20121016@schottelius.org>,
+	LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [RFC PATCH] posix timers: allocate timer id per task
-References: <20121015161559.7806.72762.stgit@localhost.localdomain> <1350318883.3954.321.camel@edumazet-glaptop>
-In-Reply-To: <1350318883.3954.321.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: brief (Linux 3.5.6-1-ARCH x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-15.10.2012 20:34, Eric Dumazet пишет:
-> On Mon, 2012-10-15 at 20:17 +0400, Stanislav Kinsbursky wrote:
->> This patch is required CRIU project (www.criu.org).
->> To migrate processes with posix timers we have to make sure, that we can
->> restore posix timer with proper id.
->> Currently, this is not true, because timer ids are allocated globally.
->> So, this is precursor patch and it's purpose is make posix timer id to be
->> allocated per task.
->>
->> Patch replaces global idr with global hash table for posix timers and
->> makes timer ids unique not globally, but per task. Next free timer id is type
->> of integer and stored on signal struct (posix_timer_id). If free timer id
->> reaches negative value on timer creation, it will be dropped to zero and
->> -EAGAIN will be returned to user.
->> Hash table is size of page (4KB).
->> Key is constructed as follows:
->> key = hash_ptr(current->signal) ^ hash_32(posix_timer_id);
->>
->> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
->
->
-> Hmm, it seems you removed idr, rcu friendly, and reinstated a fixed size
-> hash table, protected by a _single_ spinlock ? Oh well.
->
-> Please take a look at commit 8af088710d1e, and make sure you fix your
-> problem and keep performance as good as before.
->
+Good morning LKML,
 
-Thanks, Eric.
-I'll update.
+I see extremely slow virtual machines
+running on qemu-kvm-0.12.1.2-2.295.el6_3.2.x86_64
+on Centos 6.3 with Linux 2.6.32-279.5.2.el6.x86_64 on a
+64 core machine using AMD Opteron(TM) Processor 6276 (dell r815).
 
->
->
+The guests are Centos 6.3, Linux 2.6.32-220.13.1.el6.x86_64.
+The disk images reside on local storage, ext4 filesystem.
 
+I checked that kvm is loaded and enabled. I changed
+-drive to use if=virtio, -net to use model=virtio.
+
+>From the processes running it seems that cpu performance is the
+bottleneck. I added -cpu host to skip the emulation, but this did
+not fix the issue.
+
+Comparing the performance to qemu running on a xenserver, performance is
+at most half of it.
+
+
+Does anyone of you have a good pointer how to debug this further or are
+there any known issues with the given setup? 
+
+I'm happy for every pointer I get, as there seems to be no easy to spot
+issue.
+
+Cheers,
+
+Nico
 
 -- 
-Best regards,
-Stanislav Kinsbursky
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
