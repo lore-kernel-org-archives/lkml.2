@@ -1,120 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab2JPQbx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 12:31:53 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:49666 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754975Ab2JPQbv (ORCPT
+	id S1755214Ab2JPQd6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 12:33:58 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:47889 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754848Ab2JPQdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 12:31:51 -0400
-Message-ID: <507D8BBD.3010306@linux.vnet.ibm.com>
-Date: Tue, 16 Oct 2012 22:00:53 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 16 Oct 2012 12:33:55 -0400
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH v9 05/12] x86, hotplug, suspend: Online CPU0 for suspend
- or hibernate
-References: <1350058189-6769-1-git-send-email-fenghua.yu@intel.com> <10020874.9eDCB3ZAkx@vostro.rjw.lan> <507CF216.3010507@linux.vnet.ibm.com> <1586487.pWfqEJ2K11@vostro.rjw.lan>
-In-Reply-To: <1586487.pWfqEJ2K11@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12101616-3864-0000-0000-00000517A30E
+In-Reply-To: <20121016124956.GC26075@linaro.org>
+References: <DA41BE1DDCA941489001C7FBD7A8820E3CB407A4@szxeml549-mbx.china.huawei.com>
+	<20603.47887.262025.941051@pilspetsen.it.uu.se>
+	<CAKw8HL154a=K9O7CzPFZ-EqtT+BxYU-uRHodtutdRfYmNpWVww@mail.gmail.com>
+	<20121016124956.GC26075@linaro.org>
+Date: Wed, 17 Oct 2012 00:33:54 +0800
+Message-ID: <CAKw8HL3shtbi0Kk-7ZWO9KhtBVU+Vj_Zunh52GDOGJTZSvt6Gg@mail.gmail.com>
+Subject: Re: [PATCH] Re: Hardcoded instruction causes certain features to fail
+ on ARM platfrom due to endianness
+From: Fei Yang <yangfei.kernel@gmail.com>
+To: Dave Martin <dave.martin@linaro.org>
+Cc: Mikael Pettersson <mikpe@it.uu.se>, linux@arm.linux.org.uk,
+        lethal@linux-sh.org, magnus.damm@gmail.com, kgene.kim@samsung.com,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-assembly@vger.kernel.org" <linux-assembly@vger.kernel.org>,
+        linux-hotplug@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Yangfei (Felix)" <felix.yang@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2012 09:47 PM, Rafael J. Wysocki wrote:
-> On Tuesday 16 of October 2012 11:05:18 Srivatsa S. Bhat wrote:
->> On 10/16/2012 02:20 AM, Rafael J. Wysocki wrote:
->>> On Friday 12 of October 2012 09:09:42 Fenghua Yu wrote:
->>>> From: Fenghua Yu <fenghua.yu@intel.com>
->>>>
->>>> +
->>>> +/*
->>>> + * When bsp_check() is called in hibernate and suspend, cpu hotplug
->>>> + * is disabled already. So it's unnessary to handle race condition between
->>>> + * cpumask query and cpu hotplug.
->>>> + */
->>>> +static int bsp_check(void)
->>>> +{
->>>> +	if (cpumask_first(cpu_online_mask) != 0) {
->>>> +		pr_warn("CPU0 is offline.\n");
->>>> +		return -ENODEV;
->>>> +	}
->>>> +
->>>> +	return 0;
->>>> +}
->>>> +
->>>> +static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
->>>> +			   void *ptr)
->>>> +{
->>>> +	int ret = 0;
->>>> +
->>>> +	switch (action) {
->>>> +	case PM_SUSPEND_PREPARE:
->>>> +	case PM_HIBERNATION_PREPARE:
->>>> +		ret = bsp_check();
->>>> +		break;
->>>> +	default:
->>>> +		break;
->>>> +	}
->>>> +	return notifier_from_errno(ret);
->>>> +}
->>>> +
->>>
->>> I wonder if there's anything preventing CPU0 from becoming offline after you've
->>> done this check and before user space is frozen?
->>>
+2012/10/16 Dave Martin <dave.martin@linaro.org>:
+> On Mon, Oct 15, 2012 at 11:33:08PM +0800, Fei Yang wrote:
+>> 2012/10/15 Mikael Pettersson <mikpe@it.uu.se>:
+>> > Yangfei (Felix) writes:
+>> >  > Hi all,
+>> >  >
+>> >  >     I found that hardcoded instruction in inline asm can cause certains certain features fail to work on ARM platform due to endianness.
+>> >  >     As an example, consider the following code snippet of platform_do_lowpower function from arch/arm/mach-realview/hotplug.c:
+>> >  >                 / *
+>> >  >                  * here's the WFI
+>> >  >                  */
+>> >  >                 asm(".word      0xe320f003\n"
+>> >  >                     :
+>> >  >                     :
+>> >  >                     : "memory", "cc");
+>> >  >
+>> >  >     The instruction generated from this inline asm will not work on big-endian ARM platform, such as ARM BE-8 format. Instead, an exception will be generated.
+>> >  >
+>> >  >     Here the code should be:
+>> >  >                 / *
+>> >  >                  * here's the WFI
+>> >  >                  */
+>> >  >                 asm("WFI\n"
+>> >  >                     :
+>> >  >                     :
+>> >  >                     : "memory", "cc");
+>> >  >
+>> >  >     Seems the kernel doesn't support ARM BE-8 well. I don't know why this problem happens.
+>> >  >     Can anyone tell me who owns this part? I can prepare a patch then.
+>> >  >     Thanks.
+>> >
+>> > Questions regarding the ARM kernel should go to the linux-arm-kernel mailing list
+>> > (see the MAINTAINERS file), with an optional cc: to the regular LKML.
+>> >
+>> > BE-8 is, if I recall correctly, ARMv7's broken format where code and data have
+>> > different endianess.  GAS supports an ".inst" directive which is like ".word"
+>> > except the data is assumed to be code.  This matters for disassembly, and may
+>> > also be required for BE-8.
+>> >
+>> > That is, just s/.word/.inst/g above and report back if that works or not.
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> > Please read the FAQ at  http://www.tux.org/lkml/
+>> >
+>> >
 >>
->> Hi Rafael,
+>> Hi Mikael,
 >>
->> bsp_pm_callback runs as a low priority notifier callback, specifically with lower
->> priority than the cpu_hotplug_pm_callback (as mentioned in the comment below).
->> And cpu_hotplug_pm_callback disables regular CPU hotplug (till the suspend/resume
->> sequence is complete).. So there is no chance for CPU0 to become offline after that.
+>> Thanks for the reply. I modified the code as suggested and rebuilt the
+>> kernel, cpu-hotplug feature now works on big-endian(BE-8) ARM
+>> platform.
+>> Since the ARM core can be configured by system software to work in
+>> big-endian mode, it's necessary to fix this problem. And here is a
+>> small patch :
 >>
->> Or, are you thinking of some other scenario where CPU0 can go offline?
-> 
-> No, that should be fine technically, but designs relying on notifier priority
-> for correctness are kind of fragile.
-> 
-
-Hmm.. I agree.
-
-> Would it be possible to make cpu_hotplug_pm_callback() do the BSP online check?
+>> diff -urN linux-3.6.2/arch/arm/mach-exynos/hotplug.c
+>> linux/arch/arm/mach-exynos/hotplug.c
+>> --- linux-3.6.2/arch/arm/mach-exynos/hotplug.c        2012-10-13
+>> 04:50:59.000000000 +0800
+>> +++ linux/arch/arm/mach-exynos/hotplug.c      2012-10-15 23:05:44.000000000 +0800
+>> @@ -72,7 +72,7 @@
+>>               /*
+>>                * here's the WFI
+>>                */
+>> -             asm(".word      0xe320f003\n"
+>> +             asm(".inst      0xe320f003\n"
 >
+> The cleanest fix would simply be to build these files with appropriate
+> modified CFLAGS (-march=armv6k or -march=armv7-a), and use the proper
+> "wfi" mnemonic.
+>
+> Failing that, you could use the facilities in <asm/opcodes.h> to
+> declare a wrapper macro for injecting this opcode (see
+> <asm/opcodes-virt.h> for an example).  However, putting custom
+> opcodes into the assembler should only be done if it's really
+> necessary.  Nowadays, I think we can consider tools which don't
+> understand the WFI mnemonic to be obsolete, at least for platforms
+> which only build for v7 and above.
+>
+> The relevant board maintainers would need to sign off on such a
+> change, so we don't end up breaking their builds.
+>
+> If any of these boards needs to build for v6K, the custom opcode might
+> be worth it -- some people might just possibly be relying on older tools
+> for such platforms.
+>
+> Cheers
+> ---Dave
+>
+>>                   :
+>>                   :
+>>                   : "memory", "cc");
+>> diff -urN linux-3.6.2/arch/arm/mach-realview/hotplug.c
+>> linux/arch/arm/mach-realview/hotplug.c
+>> --- linux-3.6.2/arch/arm/mach-realview/hotplug.c      2012-10-13
+>> 04:50:59.000000000 +0800
+>> +++ linux/arch/arm/mach-realview/hotplug.c    2012-10-15 23:05:00.000000000 +0800
+>> @@ -66,7 +66,7 @@
+>>               /*
+>>                * here's the WFI
+>>                */
+>> -             asm(".word      0xe320f003\n"
+>> +             asm(".inst      0xe320f003\n"
+>>                   :
+>>                   :
+>>                   : "memory", "cc");
+>> diff -urN linux-3.6.2/arch/arm/mach-shmobile/hotplug.c
+>> linux/arch/arm/mach-shmobile/hotplug.c
+>> --- linux-3.6.2/arch/arm/mach-shmobile/hotplug.c      2012-10-13
+>> 04:50:59.000000000 +0800
+>> +++ linux/arch/arm/mach-shmobile/hotplug.c    2012-10-15 23:05:25.000000000 +0800
+>> @@ -53,7 +53,7 @@
+>>               /*
+>>                * here's the WFI
+>>                */
+>> -             asm(".word      0xe320f003\n"
+>> +             asm(".inst      0xe320f003\n"
+>>                   :
+>>                   :
+>>                   : "memory", "cc");
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-Good idea! I think that could be done quite easily. And while doing that, it would
-be good to rethink what to do in patch 12/12 (Debug CPU0 hotplug) to fix the bug I
-pointed out in my other mail.
+Thanks for the suggestions. The ".inst" directive here may also bring
+us trouble if some older tools is used.
+In that situation, "wfi" mnemonic will not be recognized either. If we
+cannot suppose that newer tools is used, then how can we determine the
+endianness during the preprocessor/compile phase? Any ideas?
 
-Regards,
-Srivatsa S. Bhat
-
->>>> +static int __init bsp_pm_check_init(void)
->>>> +{
->>>> +	/*
->>>> +	 * Set this bsp_pm_callback as lower priority than
->>>> +	 * cpu_hotplug_pm_callback. So cpu_hotplug_pm_callback will be called
->>>> +	 * earlier to disable cpu hotplug before bsp online check.
->>>> +	 */
->>>> +	pm_notifier(bsp_pm_callback, -INT_MAX);
->>>> +	return 0;
->>>> +}
->>>> +
->>>> +core_initcall(bsp_pm_check_init);
-> 
-
+BTW: I found this bug on my ARM V7-A Cortex-A9 board and the processor
+is configured to work in big-endian mode at boot stage (word and
+halfword data is interpreted as big-endian, but instruction is still
+little-endian) . The kernel is ported from arch/arm/mach-realview. And
+I think these boards(mach-realview/mach-shmobile/mach-exynos) should
+have the similar problems. ARM arch is Bi-endian since versions 3 and
+above.
