@@ -1,95 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755668Ab2JPWdH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 18:33:07 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:61906 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754691Ab2JPWdF convert rfc822-to-8bit (ORCPT
+	id S1755817Ab2JPWdX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 18:33:23 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44925 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755358Ab2JPWdV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 18:33:05 -0400
+	Tue, 16 Oct 2012 18:33:21 -0400
+Message-ID: <507DE0AE.7090701@wwwdotorg.org>
+Date: Tue, 16 Oct 2012 16:33:18 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121016071101.GA5172@kroah.com>
-References: <EE928378561BF1449699C96571234A740FE67913@SHSMSX102.ccr.corp.intel.com>
-	<EE928378561BF1449699C96571234A740FE67A7D@SHSMSX102.ccr.corp.intel.com>
-	<20121015225252.GA14167@kroah.com>
-	<CAMP5Xgfo3u5QoKmkOpCyxHaEkCScWwKFDLnfQMH3mevcrF7aJQ@mail.gmail.com>
-	<20121015235836.GA3214@kroah.com>
-	<CAMP5Xgdh2=k+3qVEEHO81uxqHZSevJfG0jVyv936-zpB+P+0vg@mail.gmail.com>
-	<20121016071101.GA5172@kroah.com>
-Date: Tue, 16 Oct 2012 15:33:03 -0700
-Message-ID: <CAMP5XgeEKbAEj4RB4BRgPravPzPt4K=9kvNTsjR8Ets2dQjDrQ@mail.gmail.com>
-Subject: Re: Fix memory leak in binder--version2
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        "ccross@android.com" <ccross@android.com>,
-        "davej@redhat.com" <davej@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "Zhang, Di" <di.zhang@intel.com>, "Ma, Xindong" <xindong.ma@intel.com>,
-        "Zuo, Alex" <alex.zuo@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH 7/7] gpio/tegra: convert to use linear irqdomain
+References: <1350415413-3723-1-git-send-email-linus.walleij@linaro.org>
+In-Reply-To: <1350415413-3723-1-git-send-email-linus.walleij@linaro.org>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 12:11 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Mon, Oct 15, 2012 at 05:39:22PM -0700, Arve Hjønnevåg wrote:
->> On Mon, Oct 15, 2012 at 4:58 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> > On Mon, Oct 15, 2012 at 04:55:21PM -0700, Arve Hjønnevåg wrote:
->> >> On Mon, Oct 15, 2012 at 3:52 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> >> > On Mon, Oct 15, 2012 at 07:20:01AM +0000, Tu, Xiaobing wrote:
->> >> >> After enabling kmemleak and run monkey, following memleak is reported:
->> >> >> unreferenced object 0xeed27f80 (size 64):
->> >> >>   comm "Binder_8", pid 641, jiffies 4294946341 (age 2275.810s)
->> >> >>   hex dump (first 32 bytes):
->> >> >>     4f dd 00 00 84 7f d2 ee 84 7f d2 ee 01 00 00 00  O...............
->> >> >>     00 00 00 00 00 00 00 00 00 aa 4c d7 00 00 00 00  ..........L.....
->> >> >>   backtrace:
->> >> >>     [<c184fabc>] kmemleak_alloc+0x3c/0xa0
->> >> >>     [<c12f391e>] kmem_cache_alloc_trace+0x9e/0x180
->> >> >>     [<c1668bb5>] binder_thread_write+0xcf5/0x23a0
->> >> >>     [<c166b091>] binder_ioctl+0x1f1/0x530
->> >> >>     [<c130dcf6>] do_vfs_ioctl+0x86/0x5e0
->> >> >>     [<c130e282>] sys_ioctl+0x32/0x60
->> >> >>     [<c1872e01>] syscall_call+0x7/0xb
->> >> >>     [<ffffffff>] 0xffffffff
->> >> >>
->> >> >> The work item in async_todo list is not freed when binder released.
->> >> >> Also the async transaction should also be freed in binder_release_work.
->> >> >>
->> >> >> Signed-off-by: Leon Ma <xindong.ma@intel.com>
->> >> >> Signed-off-by: Di Zhang <di.zhang@intel.com>
->> >> >> ---
->> >> >>  drivers/staging/android/binder.c |    6 ++++++
->> >> >>  1 files changed, 6 insertions(+), 0 deletions(-)
->> >> >
->> >> > Nice fix, but next time can you at least use scripts/get_maintainer.pl
->> >> > to figure out who to send this to?  I'll queue it up soon, but it took
->> >> > akpm to point me at this for me to notice it.
->> >>
->> >> This patch was just pointer out to me as well. I have a similar fix
->> >> queued up at https://android-review.googlesource.com/#/c/43801/ that
->> >> is still being tested. It fixes this leak and a theoretical leak of
->> >> death notification objects.
->> >
->> > Ok, should I hold off applying this patch and wait for your patch
->> > instead?
->> >
->>
->> I just sent two patches, but they are not fully tested yet.
->
-> Ok, care to test them and after that, resend them with the changes I
-> noted in the changelog section of the patch?
->
+On 10/16/2012 01:23 PM, Linus Walleij wrote:
+> The MXS driver tries to do the work of irq_domain_add_linear()
+> by reserving a bunch of descriptors somewhere and keeping track
+> of the base offset, then calling irq_domain_add_legacy(). Let's
+> stop doing that and simply use the linear IRQ domain.
 
-All the new cleanup code has been tested now. I also included two
-older patches that are not in mainline.
+This /looks/ fine, but appears to break users of GPIOs from this module,
+and causes a backtrace when cat /sys/kernel/debug/gpio:
 
--- 
-Arve Hjønnevåg
+> root@localhost:/sys/kernel/debug# cat gpio
+> [   79.141308] Unable to handle kernel paging request at virtual address 5a5a5aaa
+> [   79.148701] pgd = eea70000
+> [   79.151401] [5a5a5aaa] *pgd=00000000
+> [   79.154979] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
+> [   79.160277] Modules linked in:
+> [   79.163329] CPU: 1    Not tainted  (3.7.0-rc1-next-20121016-00016-g0f3bc78 #17)
+> [   79.170639] PC is at gpiolib_seq_show+0x3c/0x1b0
+> [   79.175245] LR is at gpiolib_seq_show+0x30/0x1b0
+> [   79.179851] pc : [<c01fde7c>]    lr : [<c01fde70>]    psr: 20000013
+> [   79.179851] sp : ee54fee0  ip : 00000039  fp : 00008000
+> [   79.191303] r10: 000002e9  r9 : ee8140dc  r8 : ee54ff28
+> [   79.196513] r7 : ee8a9c40  r6 : ee8140dc  r5 : ee54ff80  r4 : ee8a9c40
+> [   79.203024] r3 : 5a5a5a5a  r2 : ee40e2e9  r1 : 00001000  r0 : 00000000
+> [   79.209535] Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+> [   79.216653] Control: 10c5387d  Table: aea7004a  DAC: 00000015
+> [   79.222383] Process cat (pid: 417, stack limit = 0xee54e238)
+> [   79.228029] Stack: (0xee54fee0 to 0xee550000)
+> [   79.232376] fee0: 5a5ab4b3 c05ca22c c00e6ac4 ee8a9c40 ee54ff80 ee48aef0 00000000 ee54ff28
+> [   79.240536] ff00: ee8140dc 000002e9 00008000 c00e6b34 00000000 00019000 ee8a9c68 00000000
+> [   79.248696] ff20: 00000000 00000000 00000001 00000000 00000000 00000000 00000000 ee48aef0
+> [   79.256857] ff40: 00008000 00019000 ee54ff80 ee54ff80 00008000 00019000 00000000 c00c8b10
+> [   79.265017] ff60: 00000000 00000000 00000000 00000000 ee48aef0 00000000 ee54ff80 c00c8be8
+> [   79.273176] ff80: 00000000 00000000 00008000 00019000 00000003 00000003 c000f044 ee54e000
+> [   79.281338] ffa0: 00000000 c000eec0 00008000 00019000 00000003 00019000 00008000 00019000
+> [   79.289497] ffc0: 00008000 00019000 00000003 00000003 00000000 00000000 b6fe5000 00000000
+> [   79.297658] ffe0: 00000000 beb645b4 0000b40d b6f621cc 40000010 00000003 00000000 00000000
+> [   79.305845] [<c01fde7c>] (gpiolib_seq_show+0x3c/0x1b0) from [<c00e6b34>] (seq_read+0x32c/0x4a0)
+> [   79.314533] [<c00e6b34>] (seq_read+0x32c/0x4a0) from [<c00c8b10>] (vfs_read+0xb0/0x144)
+> [   79.322523] [<c00c8b10>] (vfs_read+0xb0/0x144) from [<c00c8be8>] (sys_read+0x44/0x70)
+> [   79.330352] [<c00c8be8>] (sys_read+0x44/0x70) from [<c000eec0>] (ret_fast_syscall+0x0/0x30)
+> [   79.338688] Code: ebfba211 e5963004 e3530000 0a00000a (e5932050) 
+> [   79.344790] ---[ end trace 6fb7238d59ff2ea0 ]---
+
+Do you have any quick ideas? If not, I'll go investigate.
+
+I wonder if this has anything to do with drivers/pinctrl/pinctrl-tegra.c
+hard-coding the GPIO base in tegra_pinctrl_gpio_range.
+
+I've had fixing those in my mental TODO list for a while, but you got
+around to it first!
