@@ -1,105 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755722Ab2JPEVX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 00:21:23 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50086 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753355Ab2JPEVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 00:21:22 -0400
-Date: Tue, 16 Oct 2012 05:21:19 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: linux-next: build failure after merge of the final tree
-Message-ID: <20121016042119.GP2616@ZenIV.linux.org.uk>
-References: <20121016145029.d726d08c7f18668e3cd64a0a@canb.auug.org.au>
+	id S1755749Ab2JPE1R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 00:27:17 -0400
+Received: from mga01.intel.com ([192.55.52.88]:15632 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755631Ab2JPE1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 00:27:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,593,1344236400"; 
+   d="scan'208";a="235520155"
+Date: Tue, 16 Oct 2012 12:27:13 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: fix the wrong #ifdef for acpi_no_s4_hw_signature
+Message-ID: <20121016042713.GA21841@localhost>
+References: <1350360303-14883-1-git-send-email-yuanhan.liu@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121016145029.d726d08c7f18668e3cd64a0a@canb.auug.org.au>
+In-Reply-To: <1350360303-14883-1-git-send-email-yuanhan.liu@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 02:50:29PM +1100, Stephen Rothwell wrote:
-> Hi Al,
-> 
-> After merging the final tree, today's linux-next build (sparc64 defconfig)
-> failed like this:
-> 
-> arch/sparc/kernel/head_64.o: In function `sys64_execve':
-> (.text+0x1f58): relocation truncated to fit: R_SPARC_WDISP19 against symbol `sys_execve' defined in .text section in fs/built-in.o
-> arch/sparc/kernel/head_64.o: In function `sys32_execve':
-> (.text+0x1f64): relocation truncated to fit: R_SPARC_WDISP19 against symbol `compat_sys_execve' defined in .text section in fs/built-in.o
-> 
-> Probably caused by commit 3223f8aab885 ("sparc64: convert to generic
-> execve") and following from the signal tree.
-> 
-> I have added this patch you suggested on IRC:
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 16 Oct 2012 14:43:51 +1100
-> Subject: [PATCH] sparc: fixup for conversion to generic execve
-> 
-> Fixes these errors:
-> 
-> arch/sparc/kernel/head_64.o: In function `sys64_execve':
-> (.text+0x1f58): relocation truncated to fit: R_SPARC_WDISP19 against symbol `sys_execve' defined in .text section in fs/built-in.o
-> arch/sparc/kernel/head_64.o: In function `sys32_execve':
-> (.text+0x1f64): relocation truncated to fit: R_SPARC_WDISP19 against symbol `compat_sys_execve' defined in .text section in fs/built-in.o
-> 
-> Dictated-by: Al Viro <viro@zeniv.linux.org.uk>
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+The title could be made more descriptive:
+
+ACPI: move acpi_no_s4_hw_signature() declaration into #ifdef CONFIG_HIBERNATION
+
+On Tue, Oct 16, 2012 at 12:05:03PM +0800, Yuanhan Liu wrote:
+> acpi_no_s4_hw_signature is defined in #ifdef CONFIG_HIBERNATION block,
+> but the current code put the declare in #ifdef CONFIG_PM_SLEEP block.
+ 
+And it's better to always include the original build error/warning
+messages when fixing build problems.
+
+Otherwise looks good to me.
+
+Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
+
+> Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
 > ---
->  arch/sparc/kernel/syscalls.S |   12 ++++++++----
->  1 file changed, 8 insertions(+), 4 deletions(-)
+>  include/linux/acpi.h |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
 > 
-> diff --git a/arch/sparc/kernel/syscalls.S b/arch/sparc/kernel/syscalls.S
-> index 4bae096..f667cdf 100644
-> --- a/arch/sparc/kernel/syscalls.S
-> +++ b/arch/sparc/kernel/syscalls.S
-> @@ -2,15 +2,19 @@
->  	 * environment settings are the same as the calling processes.
->  	 */
->  sys64_execve:
-> -	ba,pt	%xcc,sys_execve
-> -	 flushw
-> +	flushw
-> +	mov	%o7, %l5
-> +	call	sys_execve
-> +	 mov	%l5, %o7
+> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+> index 90be989..a468429 100644
+> --- a/include/linux/acpi.h
+> +++ b/include/linux/acpi.h
+> @@ -257,8 +257,11 @@ int acpi_check_region(resource_size_t start, resource_size_t n,
 >  
->  #ifdef CONFIG_COMPAT
->  sunos_execv:
->  	mov	%g0, %o2
->  sys32_execve:
-> -	ba,pt	%xcc,compat_sys_execve
-> -	 flushw
-> +	flushw
-> +	mov	%o7, %l5
-> +	call	compat_sys_execve
-> +	 mov	%l5, %o7
->  #endif
-
-BTW, that's really quick and dirty; I'm not at all sure we need that
-flushw there, which could make things much simpler.  Namely, kill
-sys64_execve completely, making it equivalent to sys_execve(), do the
-same to sys32_execve() (== compat_sys_execve()) and as for sunos_execv(),
-I'd simply put it into sys_sparc32.c as
-SYSCALL_DEFINE2(sunos_execv,
-		char __user *, filename,
-		const char __user *const __user *, argv)
-{
-	return compat_sys_execve(filename, argv, NULL);
-}
-We definitely want flushw in fork and friends, but I'm not sure what we
-need it for in execve(2)...
-
-Anyway, the brute-force variant works.  I had been lucky to stay within the
-ba,pt target limit on the config I used (very heavily modular, so not much
-code in vmlinux in the first place, let alone before fs/exec.o), so I'd missed
-the problem until now.  I've booted that with fatter config that would blow the
-previous variant at link time and it works.
+>  int acpi_resources_are_enforced(void);
+>  
+> -#ifdef CONFIG_PM_SLEEP
+> +#ifdef CONFIG_HIBERNATION
+>  void __init acpi_no_s4_hw_signature(void);
+> +#endif
+> +
+> +#ifdef CONFIG_PM_SLEEP
+>  void __init acpi_old_suspend_ordering(void);
+>  void __init acpi_nvs_nosave(void);
+>  #endif /* CONFIG_PM_SLEEP */
+> -- 
+> 1.7.7.6
