@@ -1,129 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab2JPWk2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 18:40:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48353 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753939Ab2JPWk1 (ORCPT
+	id S1755577Ab2JPWoS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 18:44:18 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:47201 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754534Ab2JPWoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 18:40:27 -0400
-From: Julius Werner <jwerner@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: len.brown@intel.com, khilman@ti.com, rjw@sisk.pl,
-        deepthi@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        daniel.lezcano@linaro.org, g.trinabh@gmail.com, snanda@chromium.org,
-        Julius Werner <jwerner@chromium.org>
-Subject: [PATCH] cpuidle: reinitialize power_usage values when adding/removing C-states
-Date: Tue, 16 Oct 2012 15:39:44 -0700
-Message-Id: <1350427184-11684-1-git-send-email-jwerner@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Tue, 16 Oct 2012 18:44:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <507DBDFF.8030204@xenotime.net>
+References: <20121016145856.cfddc9c898c31b1c686804d7@canb.auug.org.au>
+	<507DBDFF.8030204@xenotime.net>
+Date: Tue, 16 Oct 2012 18:44:15 -0400
+Message-ID: <CADnq5_MbMF6OLTYZADVKjrA857JmtHBkJb0xX6WXac4WMyLrvw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Oct 16 (readeon_legacy)
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When cpuidle drivers do not supply explicit power_usage values,
-cpuidle/driver.c inserts dummy values instead. When a running processor
-dynamically gains new C-states (e.g. after ACPI events), the power_usage
-values of those states will stay uninitialized, and cpuidle governors
-will never choose to enter them.
+On Tue, Oct 16, 2012 at 4:05 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On 10/15/2012 08:58 PM, Stephen Rothwell wrote:
+>
+>> Hi all,
+>>
+>> The merge window has closed, feel free to add new stuff again.
+>>
+>> Changes since 201201015:
+>>
 
-This patch moves the dummy value initialization from
-cpuidle_register_driver to cpuidle_enable_device, which drivers such as
-acpi/processor_idle.c will call again when they add or remove C-states.
-Tested and verified on an Acer AC700 Chromebook, which supports the C3
-state only when it switches from AC to battery power.
+patch already sent to Dave:
+http://cgit.freedesktop.org/~airlied/linux/commit/?h=drm-fixes&id=cd23492af3d4401c02c48a4bebe5995c9498eac5
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
----
- drivers/cpuidle/cpuidle.c |   24 ++++++++++++++++++++++++
- drivers/cpuidle/driver.c  |   25 -------------------------
- 2 files changed, 24 insertions(+), 25 deletions(-)
+Alex
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 7f15b85..bef3a31 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -298,6 +298,28 @@ static void poll_idle_init(struct cpuidle_driver *drv)
- static void poll_idle_init(struct cpuidle_driver *drv) {}
- #endif /* CONFIG_ARCH_HAS_CPU_RELAX */
- 
-+static void set_power_states(struct cpuidle_driver *drv)
-+{
-+	int i;
-+
-+	/*
-+	 * cpuidle driver should set the drv->power_specified bit
-+	 * before registering if the driver provides
-+	 * power_usage numbers.
-+	 *
-+	 * If power_specified is not set,
-+	 * we fill in power_usage with decreasing values as the
-+	 * cpuidle code has an implicit assumption that state Cn
-+	 * uses less power than C(n-1).
-+	 *
-+	 * With CONFIG_ARCH_HAS_CPU_RELAX, C0 is already assigned
-+	 * an power value of -1.  So we use -2, -3, etc, for other
-+	 * c-states.
-+	 */
-+	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++)
-+		drv->states[i].power_usage = -1 - i;
-+}
-+
- /**
-  * cpuidle_enable_device - enables idle PM for a CPU
-  * @dev: the CPU
-@@ -330,6 +352,8 @@ int cpuidle_enable_device(struct cpuidle_device *dev)
- 		cpuidle_enter_tk : cpuidle_enter;
- 
- 	poll_idle_init(drv);
-+	if (!drv->power_specified)
-+		set_power_states(drv);
- 
- 	if ((ret = cpuidle_add_state_sysfs(dev)))
- 		return ret;
-diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
-index 87db387..caaed27 100644
---- a/drivers/cpuidle/driver.c
-+++ b/drivers/cpuidle/driver.c
-@@ -18,28 +18,6 @@ static struct cpuidle_driver *cpuidle_curr_driver;
- DEFINE_SPINLOCK(cpuidle_driver_lock);
- int cpuidle_driver_refcount;
- 
--static void set_power_states(struct cpuidle_driver *drv)
--{
--	int i;
--
--	/*
--	 * cpuidle driver should set the drv->power_specified bit
--	 * before registering if the driver provides
--	 * power_usage numbers.
--	 *
--	 * If power_specified is not set,
--	 * we fill in power_usage with decreasing values as the
--	 * cpuidle code has an implicit assumption that state Cn
--	 * uses less power than C(n-1).
--	 *
--	 * With CONFIG_ARCH_HAS_CPU_RELAX, C0 is already assigned
--	 * an power value of -1.  So we use -2, -3, etc, for other
--	 * c-states.
--	 */
--	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++)
--		drv->states[i].power_usage = -1 - i;
--}
--
- /**
-  * cpuidle_register_driver - registers a driver
-  * @drv: the driver
-@@ -58,9 +36,6 @@ int cpuidle_register_driver(struct cpuidle_driver *drv)
- 		return -EBUSY;
- 	}
- 
--	if (!drv->power_specified)
--		set_power_states(drv);
--
- 	cpuidle_curr_driver = drv;
- 
- 	spin_unlock(&cpuidle_driver_lock);
--- 
-1.7.8.6
-
+>
+>
+> on x86_64:
+>
+> drivers/built-in.o: In function `radeon_asic_init':
+> (.text+0xd3c71): undefined reference to `radeon_legacy_set_backlight_level'
+> drivers/built-in.o:(.data+0x20490): undefined reference to `radeon_legacy_set_backlight_level'
+> drivers/built-in.o:(.data+0x20498): undefined reference to `radeon_legacy_get_backlight_level'
+> drivers/built-in.o:(.data+0x20710): undefined reference to `radeon_legacy_set_backlight_level'
+> drivers/built-in.o:(.data+0x20718): undefined reference to `radeon_legacy_get_backlight_level'
+> drivers/built-in.o:(.data+0x20990): undefined reference to `radeon_legacy_set_backlight_level'
+> drivers/built-in.o:(.data+0x20998): undefined reference to `radeon_legacy_get_backlight_level'
+> drivers/built-in.o:(.data+0x20c10): undefined reference to `radeon_legacy_set_backlight_level'
+> drivers/built-in.o:(.data+0x20c18): undefined reference to `radeon_legacy_get_backlight_level'
+> drivers/built-in.o:(.data+0x21110): undefined reference to `radeon_legacy_set_backlight_level'
+> drivers/built-in.o:(.data+0x21118): undefined reference to `radeon_legacy_get_backlight_level'
+>
+>
+> Full randconfig file is attached.
+> CONFIG_BACKLIGHT_CLASS_DEVICE is not enabled.
+>
+> --
+> ~Randy
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>
