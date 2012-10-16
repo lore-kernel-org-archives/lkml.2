@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab2JPTNZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 15:13:25 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52709 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754212Ab2JPTNY (ORCPT
+	id S1755934Ab2JPTNd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 15:13:33 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:59494 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755914Ab2JPTNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 15:13:24 -0400
+	Tue, 16 Oct 2012 15:13:31 -0400
 From: Adil Mujeeb <mujeeb.adil@gmail.com>
 To: tytso@mit.edu, adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Adil Mujeeb <mujeeb.adil@gmail.com>
-Subject: [PATCH 01/10] ext4: balloc: Fixed coding style issue
-Date: Wed, 17 Oct 2012 00:42:56 +0530
-Message-Id: <1350414785-7848-1-git-send-email-mujeeb.adil@gmail.com>
+Subject: [PATCH 02/10] ext4: block_validity: Fixed coding style issue
+Date: Wed, 17 Oct 2012 00:42:57 +0530
+Message-Id: <1350414785-7848-2-git-send-email-mujeeb.adil@gmail.com>
 X-Mailer: git-send-email 1.7.6.msysgit.0
+In-Reply-To: <1350414785-7848-1-git-send-email-mujeeb.adil@gmail.com>
+References: <1350414785-7848-1-git-send-email-mujeeb.adil@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed checkpatch.pl reported ERRORs
+Fixed checkpatch.pl reported issue
 
 Signed-off-by: Adil Mujeeb <mujeeb.adil@gmail.com>
 ---
- linux-3.7-rc1/fs/ext4/balloc.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ linux-3.7-rc1/fs/ext4/block_validity.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/linux-3.7-rc1/fs/ext4/balloc.c b/linux-3.7-rc1/fs/ext4/balloc.c
-index 1b50890..395418d 100644
---- a/linux-3.7-rc1/fs/ext4/balloc.c
-+++ b/linux-3.7-rc1/fs/ext4/balloc.c
-@@ -246,7 +246,7 @@ unsigned ext4_free_clusters_after_init(struct super_block *sb,
-  * @bh:			pointer to the buffer head to store the block
-  *			group descriptor
-  */
--struct ext4_group_desc * ext4_get_group_desc(struct super_block *sb,
-+struct ext4_group_desc *ext4_get_group_desc(struct super_block *sb,
- 					     ext4_group_t block_group,
- 					     struct buffer_head **bh)
- {
-@@ -700,7 +700,7 @@ static unsigned long ext4_bg_num_gdb_nometa(struct super_block *sb,
- 	if (!ext4_bg_has_super(sb, group))
+diff --git a/linux-3.7-rc1/fs/ext4/block_validity.c b/linux-3.7-rc1/fs/ext4/block_validity.c
+index 3f11656..d04018a 100644
+--- a/linux-3.7-rc1/fs/ext4/block_validity.c
++++ b/linux-3.7-rc1/fs/ext4/block_validity.c
+@@ -154,7 +154,7 @@ int ext4_setup_system_zone(struct super_block *sb)
+ 	if (EXT4_SB(sb)->system_blks.rb_node)
  		return 0;
  
--	if (EXT4_HAS_INCOMPAT_FEATURE(sb,EXT4_FEATURE_INCOMPAT_META_BG))
-+	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_META_BG))
- 		return le32_to_cpu(EXT4_SB(sb)->s_es->s_first_meta_bg);
- 	else
- 		return EXT4_SB(sb)->s_gdb_count;
-@@ -721,11 +721,11 @@ unsigned long ext4_bg_num_gdb(struct super_block *sb, ext4_group_t group)
- 			le32_to_cpu(EXT4_SB(sb)->s_es->s_first_meta_bg);
- 	unsigned long metagroup = group / EXT4_DESC_PER_BLOCK(sb);
- 
--	if (!EXT4_HAS_INCOMPAT_FEATURE(sb,EXT4_FEATURE_INCOMPAT_META_BG) ||
-+	if (!EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_META_BG) ||
- 			metagroup < first_meta_bg)
- 		return ext4_bg_num_gdb_nometa(sb, group);
- 
--	return ext4_bg_num_gdb_meta(sb,group);
-+	return ext4_bg_num_gdb_meta(sb, group);
- 
- }
- 
+-	for (i=0; i < ngroups; i++) {
++	for (i = 0; i < ngroups; i++) {
+ 		if (ext4_bg_has_super(sb, i) &&
+ 		    ((i < 5) || ((i % flex_size) == 0)))
+ 			add_system_zone(sbi, ext4_group_first_block_no(sb, i),
 -- 
 1.7.7.3
 
