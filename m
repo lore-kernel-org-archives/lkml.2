@@ -1,287 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259Ab2JPLZn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 07:25:43 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:37413 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754054Ab2JPLZk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 07:25:40 -0400
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH v3] compat: Generic compat_sys_sched_rr_get_interval implementation
-Date: Tue, 16 Oct 2012 12:25:29 +0100
-Message-Id: <1350386729-10640-1-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.12.3
-X-OriginalArrivalTime: 16 Oct 2012 11:25:37.0351 (UTC) FILETIME=[F722DD70:01CDAB90]
-X-MC-Unique: 112101612253708901
-Content-Type: text/plain; charset=WINDOWS-1252
+	id S1754334Ab2JPL1s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 07:27:48 -0400
+Received: from shutemov.name ([176.9.204.213]:59951 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753527Ab2JPL1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 07:27:47 -0400
+Date: Tue, 16 Oct 2012 14:28:45 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Ni zhan Chen <nizhan.chen@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 00/10, REBASED] Introduce huge zero page
+Message-ID: <20121016112845.GA13540@shutemov.name>
+References: <1350280859-18801-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <507D2E83.4010702@gmail.com>
+ <20121016105456.GA13265@shutemov.name>
+ <507D4143.3020108@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <507D4143.3020108@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q9GBPowu030862
 
-This function is used by sparc, powerpc tile and arm64 for compat
-support. The patch adds a generic implementation with a wrapper for
-PowerPC to do the u32->int sign extension.
+On Tue, Oct 16, 2012 at 07:13:07PM +0800, Ni zhan Chen wrote:
+> On 10/16/2012 06:54 PM, Kirill A. Shutemov wrote:
+> >On Tue, Oct 16, 2012 at 05:53:07PM +0800, Ni zhan Chen wrote:
+> >>>By hpa request I've tried alternative approach for hzp implementation (see
+> >>>Virtual huge zero page patchset): pmd table with all entries set to zero
+> >>>page. This way should be more cache friendly, but it increases TLB
+> >>>pressure.
+> >>Thanks for your excellent works. But could you explain me why
+> >>current implementation not cache friendly and hpa's request cache
+> >>friendly? Thanks in advance.
+> >In workloads like microbenchmark1 you need N * size(zero page) cache
+> >space to get zero page fully cached, where N is cache associativity.
+> >If zero page is 2M, cache pressure is significant.
+> >
+> >On other hand with table of 4k zero pages (hpa's proposal) will increase
+> >pressure on TLB, since we have more pages for the same memory area. So we
+> >have to do more page translation in this case.
+> >
+> >On my test machine with simple memcmp() virtual huge zero page is faster.
+> >But it highly depends on TLB size, cache size, memory access and page
+> >translation costs.
+> >
+> >It looks like cache size in modern processors grows faster than TLB size.
+> 
+> Oh, I see, thanks for your quick response. Another one question below，
+> 
+> >
+> >>>The problem with virtual huge zero page: it requires per-arch enabling.
+> >>>We need a way to mark that pmd table has all ptes set to zero page.
+> >>>
+> >>>Some numbers to compare two implementations (on 4s Westmere-EX):
+> >>>
+> >>>Mirobenchmark1
+> >>>==============
+> >>>
+> >>>test:
+> >>>         posix_memalign((void **)&p, 2 * MB, 8 * GB);
+> >>>         for (i = 0; i < 100; i++) {
+> >>>                 assert(memcmp(p, p + 4*GB, 4*GB) == 0);
+> >>>                 asm volatile ("": : :"memory");
+> >>>         }
+> >>>
+> >>>hzp:
+> >>>  Performance counter stats for './test_memcmp' (5 runs):
+> >>>
+> >>>       32356.272845 task-clock                #    0.998 CPUs utilized            ( +-  0.13% )
+> >>>                 40 context-switches          #    0.001 K/sec                    ( +-  0.94% )
+> >>>                  0 CPU-migrations            #    0.000 K/sec
+> >>>              4,218 page-faults               #    0.130 K/sec                    ( +-  0.00% )
+> >>>     76,712,481,765 cycles                    #    2.371 GHz                      ( +-  0.13% ) [83.31%]
+> >>>     36,279,577,636 stalled-cycles-frontend   #   47.29% frontend cycles idle     ( +-  0.28% ) [83.35%]
+> >>>      1,684,049,110 stalled-cycles-backend    #    2.20% backend  cycles idle     ( +-  2.96% ) [66.67%]
+> >>>    134,355,715,816 instructions              #    1.75  insns per cycle
+> >>>                                              #    0.27  stalled cycles per insn  ( +-  0.10% ) [83.35%]
+> >>>     13,526,169,702 branches                  #  418.039 M/sec                    ( +-  0.10% ) [83.31%]
+> >>>          1,058,230 branch-misses             #    0.01% of all branches          ( +-  0.91% ) [83.36%]
+> >>>
+> >>>       32.413866442 seconds time elapsed                                          ( +-  0.13% )
+> >>>
+> >>>vhzp:
+> >>>  Performance counter stats for './test_memcmp' (5 runs):
+> >>>
+> >>>       30327.183829 task-clock                #    0.998 CPUs utilized            ( +-  0.13% )
+> >>>                 38 context-switches          #    0.001 K/sec                    ( +-  1.53% )
+> >>>                  0 CPU-migrations            #    0.000 K/sec
+> >>>              4,218 page-faults               #    0.139 K/sec                    ( +-  0.01% )
+> >>>     71,964,773,660 cycles                    #    2.373 GHz                      ( +-  0.13% ) [83.35%]
+> >>>     31,191,284,231 stalled-cycles-frontend   #   43.34% frontend cycles idle     ( +-  0.40% ) [83.32%]
+> >>>        773,484,474 stalled-cycles-backend    #    1.07% backend  cycles idle     ( +-  6.61% ) [66.67%]
+> >>>    134,982,215,437 instructions              #    1.88  insns per cycle
+> >>>                                              #    0.23  stalled cycles per insn  ( +-  0.11% ) [83.32%]
+> >>>     13,509,150,683 branches                  #  445.447 M/sec                    ( +-  0.11% ) [83.34%]
+> >>>          1,017,667 branch-misses             #    0.01% of all branches          ( +-  1.07% ) [83.32%]
+> >>>
+> >>>       30.381324695 seconds time elapsed                                          ( +-  0.13% )
+> >>Could you tell me which data I should care in this performance
+> >>counter. And what's the benefit of your current implementation
+> >>compare to hpa's request?
+> 
+> Sorry for my unintelligent. Could you tell me which data I should
+> care in this performance counter stats. The same question about the
+> second benchmark counter stats, thanks in adance. :-)
 
-The reason for a single patch covering powerpc, tile, sparc and arm64 is
-to keep it bisectable, otherwise kernel building may fail with
-mismatched function declarations.
+I've missed relevant counters in this run, you can see them in the second
+benchmark.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>  [for tile]
-Acked-by: David S. Miller <davem@davemloft.net>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
+Relevant counters:
+L1-dcache-*, LLC-*: shows cache related stats (hits/misses);
+dTLB-*: shows data TLB hits and misses.
 
-Andrew, please consider merging this patch. I updated it to 3.7-rc1 to
-fix the conflicts in the arm64 tree. Thanks.
+Indirect relevant counters:
+stalled-cycles-*: how long CPU pipeline has to wait for data.
 
- arch/arm64/include/asm/unistd.h   |  1 +
- arch/arm64/kernel/sys_compat.c    | 15 ---------------
- arch/powerpc/include/asm/systbl.h |  2 +-
- arch/powerpc/include/asm/unistd.h |  1 +
- arch/powerpc/kernel/sys_ppc32.c   | 17 ++++-------------
- arch/sparc/include/asm/unistd.h   |  1 +
- arch/sparc/kernel/sys_sparc32.c   | 14 --------------
- arch/tile/include/asm/compat.h    |  2 --
- arch/tile/include/asm/unistd.h    |  1 +
- arch/tile/kernel/compat.c         | 18 ------------------
- include/linux/compat.h            |  3 +++
- kernel/compat.c                   | 17 +++++++++++++++++
- 12 files changed, 29 insertions(+), 63 deletions(-)
+> >>>Mirobenchmark2
+> >>>==============
+> >>>
+> >>>test:
+> >>>         posix_memalign((void **)&p, 2 * MB, 8 * GB);
+> >>>         for (i = 0; i < 1000; i++) {
+> >>>                 char *_p = p;
+> >>>                 while (_p < p+4*GB) {
+> >>>                         assert(*_p == *(_p+4*GB));
+> >>>                         _p += 4096;
+> >>>                         asm volatile ("": : :"memory");
+> >>>                 }
+> >>>         }
+> >>>
+> >>>hzp:
+> >>>  Performance counter stats for 'taskset -c 0 ./test_memcmp2' (5 runs):
+> >>>
+> >>>        3505.727639 task-clock                #    0.998 CPUs utilized            ( +-  0.26% )
+> >>>                  9 context-switches          #    0.003 K/sec                    ( +-  4.97% )
+> >>>              4,384 page-faults               #    0.001 M/sec                    ( +-  0.00% )
+> >>>      8,318,482,466 cycles                    #    2.373 GHz                      ( +-  0.26% ) [33.31%]
+> >>>      5,134,318,786 stalled-cycles-frontend   #   61.72% frontend cycles idle     ( +-  0.42% ) [33.32%]
+> >>>      2,193,266,208 stalled-cycles-backend    #   26.37% backend  cycles idle     ( +-  5.51% ) [33.33%]
+> >>>      9,494,670,537 instructions              #    1.14  insns per cycle
+> >>>                                              #    0.54  stalled cycles per insn  ( +-  0.13% ) [41.68%]
+> >>>      2,108,522,738 branches                  #  601.451 M/sec                    ( +-  0.09% ) [41.68%]
+> >>>            158,746 branch-misses             #    0.01% of all branches          ( +-  1.60% ) [41.71%]
+> >>>      3,168,102,115 L1-dcache-loads
+> >>>           #  903.693 M/sec                    ( +-  0.11% ) [41.70%]
+> >>>      1,048,710,998 L1-dcache-misses
+> >>>          #   33.10% of all L1-dcache hits    ( +-  0.11% ) [41.72%]
+> >>>      1,047,699,685 LLC-load
+> >>>                  #  298.854 M/sec                    ( +-  0.03% ) [33.38%]
+> >>>              2,287 LLC-misses
+> >>>                #    0.00% of all LL-cache hits     ( +-  8.27% ) [33.37%]
+> >>>      3,166,187,367 dTLB-loads
+> >>>                #  903.147 M/sec                    ( +-  0.02% ) [33.35%]
+> >>>          4,266,538 dTLB-misses
+> >>>               #    0.13% of all dTLB cache hits   ( +-  0.03% ) [33.33%]
+> >>>
+> >>>        3.513339813 seconds time elapsed                                          ( +-  0.26% )
+> >>>
+> >>>vhzp:
+> >>>  Performance counter stats for 'taskset -c 0 ./test_memcmp2' (5 runs):
+> >>>
+> >>>       27313.891128 task-clock                #    0.998 CPUs utilized            ( +-  0.24% )
+> >>>                 62 context-switches          #    0.002 K/sec                    ( +-  0.61% )
+> >>>              4,384 page-faults               #    0.160 K/sec                    ( +-  0.01% )
+> >>>     64,747,374,606 cycles                    #    2.370 GHz                      ( +-  0.24% ) [33.33%]
+> >>>     61,341,580,278 stalled-cycles-frontend   #   94.74% frontend cycles idle     ( +-  0.26% ) [33.33%]
+> >>>     56,702,237,511 stalled-cycles-backend    #   87.57% backend  cycles idle     ( +-  0.07% ) [33.33%]
+> >>>     10,033,724,846 instructions              #    0.15  insns per cycle
+> >>>                                              #    6.11  stalled cycles per insn  ( +-  0.09% ) [41.65%]
+> >>>      2,190,424,932 branches                  #   80.195 M/sec                    ( +-  0.12% ) [41.66%]
+> >>>          1,028,630 branch-misses             #    0.05% of all branches          ( +-  1.50% ) [41.66%]
+> >>>      3,302,006,540 L1-dcache-loads
+> >>>           #  120.891 M/sec                    ( +-  0.11% ) [41.68%]
+> >>>        271,374,358 L1-dcache-misses
+> >>>          #    8.22% of all L1-dcache hits    ( +-  0.04% ) [41.66%]
+> >>>         20,385,476 LLC-load
+> >>>                  #    0.746 M/sec                    ( +-  1.64% ) [33.34%]
+> >>>             76,754 LLC-misses
+> >>>                #    0.38% of all LL-cache hits     ( +-  2.35% ) [33.34%]
+> >>>      3,309,927,290 dTLB-loads
+> >>>                #  121.181 M/sec                    ( +-  0.03% ) [33.34%]
+> >>>      2,098,967,427 dTLB-misses
+> >>>               #   63.41% of all dTLB cache hits   ( +-  0.03% ) [33.34%]
+> >>>
+> >>>       27.364448741 seconds time elapsed                                          ( +-  0.24% )
+> >>For this case, the same question as above, thanks in adance. :-)
+> 
 
-diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
-index 63f853f..0f13ca8 100644
---- a/arch/arm64/include/asm/unistd.h
-+++ b/arch/arm64/include/asm/unistd.h
-@@ -25,5 +25,6 @@
- #define __ARCH_WANT_SYS_SIGPROCMASK
- #define __ARCH_WANT_COMPAT_SYS_RT_SIGSUSPEND
- #define __ARCH_WANT_COMPAT_SYS_SENDFILE
-+#define __ARCH_WANT_COMPAT_SYS_SCHED_RR_GET_INTERVAL
- #endif
- #include <uapi/asm/unistd.h>
-diff --git a/arch/arm64/kernel/sys_compat.c b/arch/arm64/kernel/sys_compat.c
-index 906e3bd..fd8ae6e 100644
---- a/arch/arm64/kernel/sys_compat.c
-+++ b/arch/arm64/kernel/sys_compat.c
-@@ -67,21 +67,6 @@ out:
- 	return error;
- }
- 
--asmlinkage int compat_sys_sched_rr_get_interval(compat_pid_t pid,
--						struct compat_timespec __user *interval)
--{
--	struct timespec t;
--	int ret;
--	mm_segment_t old_fs = get_fs();
--
--	set_fs(KERNEL_DS);
--	ret = sys_sched_rr_get_interval(pid, (struct timespec __user *)&t);
--	set_fs(old_fs);
--	if (put_compat_timespec(&t, interval))
--		return -EFAULT;
--	return ret;
--}
--
- static inline void
- do_compat_cache_op(unsigned long start, unsigned long end, int flags)
- {
-diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
-index 8408387..cec8aae 100644
---- a/arch/powerpc/include/asm/systbl.h
-+++ b/arch/powerpc/include/asm/systbl.h
-@@ -164,7 +164,7 @@ COMPAT_SYS_SPU(sched_getscheduler)
- SYSCALL_SPU(sched_yield)
- COMPAT_SYS_SPU(sched_get_priority_max)
- COMPAT_SYS_SPU(sched_get_priority_min)
--COMPAT_SYS_SPU(sched_rr_get_interval)
-+SYSX_SPU(sys_sched_rr_get_interval,compat_sys_sched_rr_get_interval_wrapper,sys_sched_rr_get_interval)
- COMPAT_SYS_SPU(nanosleep)
- SYSCALL_SPU(mremap)
- SYSCALL_SPU(setresuid)
-diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
-index 921dce6..b4bf767 100644
---- a/arch/powerpc/include/asm/unistd.h
-+++ b/arch/powerpc/include/asm/unistd.h
-@@ -54,6 +54,7 @@
- #define __ARCH_WANT_COMPAT_SYS_RT_SIGSUSPEND
- #define __ARCH_WANT_SYS_NEWFSTATAT
- #define __ARCH_WANT_COMPAT_SYS_SENDFILE
-+#define __ARCH_WANT_COMPAT_SYS_SCHED_RR_GET_INTERVAL
- #endif
- #define __ARCH_WANT_SYS_EXECVE
- #define __ARCH_WANT_KERNEL_EXECVE
-diff --git a/arch/powerpc/kernel/sys_ppc32.c b/arch/powerpc/kernel/sys_ppc32.c
-index 9c2ed90..8a93778 100644
---- a/arch/powerpc/kernel/sys_ppc32.c
-+++ b/arch/powerpc/kernel/sys_ppc32.c
-@@ -175,19 +175,10 @@ asmlinkage long compat_sys_prctl(u32 option, u32 arg2, u32 arg3, u32 arg4, u32 a
-  * proper conversion (sign extension) between the register representation of a signed int (msr in 32-bit mode)
-  * and the register representation of a signed int (msr in 64-bit mode) is performed.
-  */
--asmlinkage long compat_sys_sched_rr_get_interval(u32 pid, struct compat_timespec __user *interval)
--{
--	struct timespec t;
--	int ret;
--	mm_segment_t old_fs = get_fs ();
--
--	/* The __user pointer cast is valid because of the set_fs() */
--	set_fs (KERNEL_DS);
--	ret = sys_sched_rr_get_interval((int)pid, (struct timespec __user *) &t);
--	set_fs (old_fs);
--	if (put_compat_timespec(&t, interval))
--		return -EFAULT;
--	return ret;
-+asmlinkage long compat_sys_sched_rr_get_interval_wrapper(u32 pid,
-+							 struct compat_timespec __user *interval)
-+{
-+	return compat_sys_sched_rr_get_interval((int)pid, interval);
- }
- 
- /* Note: it is necessary to treat mode as an unsigned int,
-diff --git a/arch/sparc/include/asm/unistd.h b/arch/sparc/include/asm/unistd.h
-index 0ecea6e..87ce24c 100644
---- a/arch/sparc/include/asm/unistd.h
-+++ b/arch/sparc/include/asm/unistd.h
-@@ -45,6 +45,7 @@
- #define __ARCH_WANT_COMPAT_SYS_TIME
- #define __ARCH_WANT_COMPAT_SYS_RT_SIGSUSPEND
- #define __ARCH_WANT_COMPAT_SYS_SENDFILE
-+#define __ARCH_WANT_COMPAT_SYS_SCHED_RR_GET_INTERVAL
- #endif
- 
- /*
-diff --git a/arch/sparc/kernel/sys_sparc32.c b/arch/sparc/kernel/sys_sparc32.c
-index c323981..b5873ba 100644
---- a/arch/sparc/kernel/sys_sparc32.c
-+++ b/arch/sparc/kernel/sys_sparc32.c
-@@ -211,20 +211,6 @@ asmlinkage long compat_sys_sysfs(int option, u32 arg1, u32 arg2)
- 	return sys_sysfs(option, arg1, arg2);
- }
- 
--asmlinkage long compat_sys_sched_rr_get_interval(compat_pid_t pid, struct compat_timespec __user *interval)
--{
--	struct timespec t;
--	int ret;
--	mm_segment_t old_fs = get_fs ();
--	
--	set_fs (KERNEL_DS);
--	ret = sys_sched_rr_get_interval(pid, (struct timespec __user *) &t);
--	set_fs (old_fs);
--	if (put_compat_timespec(&t, interval))
--		return -EFAULT;
--	return ret;
--}
--
- asmlinkage long compat_sys_rt_sigprocmask(int how,
- 					  compat_sigset_t __user *set,
- 					  compat_sigset_t __user *oset,
-diff --git a/arch/tile/include/asm/compat.h b/arch/tile/include/asm/compat.h
-index 3063e6f..06568a9 100644
---- a/arch/tile/include/asm/compat.h
-+++ b/arch/tile/include/asm/compat.h
-@@ -300,8 +300,6 @@ long compat_sys_sync_file_range2(int fd, unsigned int flags,
- long compat_sys_fallocate(int fd, int mode,
- 			  u32 offset_lo, u32 offset_hi,
- 			  u32 len_lo, u32 len_hi);
--long compat_sys_sched_rr_get_interval(compat_pid_t pid,
--				      struct compat_timespec __user *interval);
- 
- /* These are the intvec_64.S trampolines. */
- long _compat_sys_execve(const char __user *path,
-diff --git a/arch/tile/include/asm/unistd.h b/arch/tile/include/asm/unistd.h
-index 6e032a0..359b45b 100644
---- a/arch/tile/include/asm/unistd.h
-+++ b/arch/tile/include/asm/unistd.h
-@@ -14,6 +14,7 @@
- /* In compat mode, we use sys_llseek() for compat_sys_llseek(). */
- #ifdef CONFIG_COMPAT
- #define __ARCH_WANT_SYS_LLSEEK
-+#define __ARCH_WANT_COMPAT_SYS_SCHED_RR_GET_INTERVAL
- #endif
- #define __ARCH_WANT_SYS_NEWFSTATAT
- #include <uapi/asm/unistd.h>
-diff --git a/arch/tile/kernel/compat.c b/arch/tile/kernel/compat.c
-index d67459b..ef5ab9d 100644
---- a/arch/tile/kernel/compat.c
-+++ b/arch/tile/kernel/compat.c
-@@ -76,24 +76,6 @@ long compat_sys_fallocate(int fd, int mode,
- 			     ((loff_t)len_hi << 32) | len_lo);
- }
- 
--
--
--long compat_sys_sched_rr_get_interval(compat_pid_t pid,
--				      struct compat_timespec __user *interval)
--{
--	struct timespec t;
--	int ret;
--	mm_segment_t old_fs = get_fs();
--
--	set_fs(KERNEL_DS);
--	ret = sys_sched_rr_get_interval(pid,
--					(struct timespec __force __user *)&t);
--	set_fs(old_fs);
--	if (put_compat_timespec(&t, interval))
--		return -EFAULT;
--	return ret;
--}
--
- /* Provide the compat syscall number to call mapping. */
- #undef __SYSCALL
- #define __SYSCALL(nr, call) [nr] = (call),
-diff --git a/include/linux/compat.h b/include/linux/compat.h
-index d0ced10..30840c5 100644
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -592,6 +592,9 @@ asmlinkage ssize_t compat_sys_process_vm_writev(compat_pid_t pid,
- asmlinkage long compat_sys_sendfile(int out_fd, int in_fd,
- 				    compat_off_t __user *offset, compat_size_t count);
- 
-+asmlinkage long compat_sys_sched_rr_get_interval(compat_pid_t pid,
-+						 struct compat_timespec __user *interval);
-+
- #else
- 
- #define is_compat_task() (0)
-diff --git a/kernel/compat.c b/kernel/compat.c
-index c28a306..f6150e9 100644
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -1215,6 +1215,23 @@ compat_sys_sysinfo(struct compat_sysinfo __user *info)
- 	return 0;
- }
- 
-+#ifdef __ARCH_WANT_COMPAT_SYS_SCHED_RR_GET_INTERVAL
-+asmlinkage long compat_sys_sched_rr_get_interval(compat_pid_t pid,
-+						 struct compat_timespec __user *interval)
-+{
-+	struct timespec t;
-+	int ret;
-+	mm_segment_t old_fs = get_fs();
-+
-+	set_fs(KERNEL_DS);
-+	ret = sys_sched_rr_get_interval(pid, (struct timespec __user *)&t);
-+	set_fs(old_fs);
-+	if (put_compat_timespec(&t, interval))
-+		return -EFAULT;
-+	return ret;
-+}
-+#endif /* __ARCH_WANT_COMPAT_SYS_SCHED_RR_GET_INTERVAL */
-+
- /*
-  * Allocate user-space memory for the duration of a single system call,
-  * in order to marshall parameters inside a compat thunk.
-
+-- 
+ Kirill A. Shutemov
