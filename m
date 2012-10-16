@@ -1,124 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab2JPFgn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 01:36:43 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:58796 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079Ab2JPFgm (ORCPT
+	id S1753268Ab2JPFtz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 01:49:55 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61321 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab2JPFtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 01:36:42 -0400
-Message-ID: <507CF216.3010507@linux.vnet.ibm.com>
-Date: Tue, 16 Oct 2012 11:05:18 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 16 Oct 2012 01:49:53 -0400
+Date: Tue, 16 Oct 2012 14:49:46 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, Jiri Kosina <jiri.kosina@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [RFC PATCH 1/3] mm: teach mm by current context info to not do
+ I/O during memory allocation
+Message-ID: <20121016054946.GA3934@barrios>
+References: <1350278059-14904-1-git-send-email-ming.lei@canonical.com>
+ <1350278059-14904-2-git-send-email-ming.lei@canonical.com>
+ <20121015154724.GA2840@barrios>
+ <CACVXFVM09H=8ZuFSzkcN1NmOCR1pcPUsuUyT9tpR0doVam2BiQ@mail.gmail.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH v9 05/12] x86, hotplug, suspend: Online CPU0 for suspend
- or hibernate
-References: <1350058189-6769-1-git-send-email-fenghua.yu@intel.com> <1350058189-6769-6-git-send-email-fenghua.yu@intel.com> <10020874.9eDCB3ZAkx@vostro.rjw.lan>
-In-Reply-To: <10020874.9eDCB3ZAkx@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12101605-4790-0000-0000-00000516E6ED
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVM09H=8ZuFSzkcN1NmOCR1pcPUsuUyT9tpR0doVam2BiQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2012 02:20 AM, Rafael J. Wysocki wrote:
-> On Friday 12 of October 2012 09:09:42 Fenghua Yu wrote:
->> From: Fenghua Yu <fenghua.yu@intel.com>
->>
->> Because x86 BIOS requires CPU0 to resume from sleep, suspend or hibernate can't
->> be executed if CPU0 is detected offline. To make suspend or hibernate and
->> further resume succeed, CPU0 must be online.
->>
->> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
->> ---
->>  arch/x86/power/cpu.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
->>  1 files changed, 44 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
->> index 218cdb1..adde775 100644
->> --- a/arch/x86/power/cpu.c
->> +++ b/arch/x86/power/cpu.c
->> @@ -237,3 +237,47 @@ void restore_processor_state(void)
->>  #ifdef CONFIG_X86_32
->>  EXPORT_SYMBOL(restore_processor_state);
->>  #endif
->> +
->> +/*
->> + * When bsp_check() is called in hibernate and suspend, cpu hotplug
->> + * is disabled already. So it's unnessary to handle race condition between
->> + * cpumask query and cpu hotplug.
->> + */
->> +static int bsp_check(void)
->> +{
->> +	if (cpumask_first(cpu_online_mask) != 0) {
->> +		pr_warn("CPU0 is offline.\n");
->> +		return -ENODEV;
->> +	}
->> +
->> +	return 0;
->> +}
->> +
->> +static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
->> +			   void *ptr)
->> +{
->> +	int ret = 0;
->> +
->> +	switch (action) {
->> +	case PM_SUSPEND_PREPARE:
->> +	case PM_HIBERNATION_PREPARE:
->> +		ret = bsp_check();
->> +		break;
->> +	default:
->> +		break;
->> +	}
->> +	return notifier_from_errno(ret);
->> +}
->> +
+On Tue, Oct 16, 2012 at 09:56:48AM +0800, Ming Lei wrote:
+> On Mon, Oct 15, 2012 at 11:47 PM, Minchan Kim <minchan@kernel.org> wrote:
+> > On Mon, Oct 15, 2012 at 01:14:17PM +0800, Ming Lei wrote:
+> >> This patch introduces PF_MEMALLOC_NOIO on process flag('flags' field of
+> >> 'struct task_struct'), so that the flag can be set by one task
+> >> to avoid doing I/O inside memory allocation in the task's context.
+> >>
+> >> The patch trys to solve one deadlock problem caused by block device,
+> >> and the problem can be occured at least in the below situations:
+> >>
+> >> - during block device runtime resume situation, if memory allocation
+> >> with GFP_KERNEL is called inside runtime resume callback of any one
+> >> of its ancestors(or the block device itself), the deadlock may be
+> >> triggered inside the memory allocation since it might not complete
+> >> until the block device becomes active and the involed page I/O finishes.
+> >> The situation is pointed out first by Alan Stern. It is not a good
+> >> approach to convert all GFP_KERNEL in the path into GFP_NOIO because
+> >> several subsystems may be involved(for example, PCI, USB and SCSI may
+> >> be involved for usb mass stoarage device)
+> >
+> > Couldn't we expand pm_restrict_gfp_mask to cover resume path as well as
+> > suspend path?
 > 
-> I wonder if there's anything preventing CPU0 from becoming offline after you've
-> done this check and before user space is frozen?
+> IMO, we could, but it is not good and might trigger memory allocation problem.
 > 
+> pm_restrict_gfp_mask uses the global variable of gfp_allowed_mask to
+> avoid allocating page with GFP_IOFS in all contexts during system sleep,
+> when processes have been frozen.
+> 
+> But during runtime PM, the whole system is running and all processes are
+> runnable. Also runtime PM is per device and the whole system may have
+> lots of devices, so taking the global gfp_allowed_mask may keep page
+> allocation with ~GFP_IOFS for a considerable proportion of system
+> running time, then alloc_page() will return failure easier.
+> 
+> The above deadlock problem may be fixed by allocating memory with
+> ~GFP_IOFS only in the context of calling runtime_resume, and that is
+> idea of the patch.
 
-Hi Rafael,
-
-bsp_pm_callback runs as a low priority notifier callback, specifically with lower
-priority than the cpu_hotplug_pm_callback (as mentioned in the comment below).
-And cpu_hotplug_pm_callback disables regular CPU hotplug (till the suspend/resume
-sequence is complete).. So there is no chance for CPU0 to become offline after that.
-
-Or, are you thinking of some other scenario where CPU0 can go offline?
-
-Regards,
-Srivatsa S. Bhat
+Fair enough but it wouldn't be a good idea that add new unlikely branch
+in allocator's fast path. Please move the check into slow path which could
+be in __alloc_pages_slowpath.
 
 > 
+> >
+> >>
+> >> - during error handling situation of usb mass storage deivce, USB
+> >> bus reset will be put on the device, so there shouldn't have any
+> >> memory allocation with GFP_KERNEL during USB bus reset, otherwise
+> >> the deadlock similar with above may be triggered. Unfortunately, any
+> >> usb device may include one mass storage interface in theory, so it
+> >> requires all usb interface drivers to handle the situation. In fact,
+> >> most usb drivers don't know how to handle bus reset on the device
+> >> and don't provide .pre_set() and .post_reset() callback at all, so
+> >> USB core has to unbind and bind driver for these devices. So it
+> >> is still not practical to resort to GFP_NOIO for solving the problem.
+> >
+> > I hope this case could be handled by usb core like usb_restrict_gfp_mask
+> > rather than adding new branch on fast path.
 > 
->> +static int __init bsp_pm_check_init(void)
->> +{
->> +	/*
->> +	 * Set this bsp_pm_callback as lower priority than
->> +	 * cpu_hotplug_pm_callback. So cpu_hotplug_pm_callback will be called
->> +	 * earlier to disable cpu hotplug before bsp online check.
->> +	 */
->> +	pm_notifier(bsp_pm_callback, -INT_MAX);
->> +	return 0;
->> +}
->> +
->> +core_initcall(bsp_pm_check_init);
->>
+> See above, applying the global gfp_allowed_mask is not good.
+> 
+> 
+> Thanks,
+> --
+> Ming Lei
 
+-- 
+Kind Regards,
+Minchan Kim
