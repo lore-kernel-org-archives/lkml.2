@@ -1,132 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755115Ab2JPQ5T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 12:57:19 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38542 "EHLO mail.skyhub.de"
+	id S1754428Ab2JPQ7w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 12:59:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14847 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754776Ab2JPQ5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 12:57:17 -0400
-Date: Tue, 16 Oct 2012 18:57:16 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH v9 08/12] x86, hotplug: Wake up CPU0 via NMI instead of
- INIT, SIPI, SIPI
-Message-ID: <20121016165716.GB12694@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-	Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Asit K Mallick <asit.k.mallick@intel.com>,
-	Tony Luck <tony.luck@intel.com>,
-	Arjan Dan De Ven <arjan@linux.intel.com>,
-	Suresh B Siddha <suresh.b.siddha@intel.com>,
-	Len Brown <len.brown@intel.com>,
-	"Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	Chen Gong <gong.chen@linux.intel.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-References: <1350058189-6769-1-git-send-email-fenghua.yu@intel.com>
- <1350058189-6769-9-git-send-email-fenghua.yu@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1350058189-6769-9-git-send-email-fenghua.yu@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752701Ab2JPQ7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 12:59:51 -0400
+Message-ID: <1350406780.2112.254.camel@bling.home>
+Subject: Re: [PATCH v3] Prevent devices with RMRRs from being placed into SI
+ Domain during startup
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Tom Mingarelli <thomas.mingarelli@hp.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Shuah Khan <shuah.khan@hp.com>, Linda Knippers <linda.knippers@hp.com>,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Date: Tue, 16 Oct 2012 10:59:40 -0600
+In-Reply-To: <20121016164905.14478.21080.sendpatchset@RHEL63BL460c.osen.hp.com>
+References: <20121016164905.14478.21080.sendpatchset@RHEL63BL460c.osen.hp.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 09:09:45AM -0700, Fenghua Yu wrote:
-> From: Fenghua Yu <fenghua.yu@intel.com>
+On Tue, 2012-10-16 at 16:50 +0000, Tom Mingarelli wrote:
+> This patch is to prevent devices that have RMRRs associated with them 
+> from getting placed into the SI Domain during init. We don't put USB devices
+> into this category, however. This fixes the issue where the RMRR info
+> for devices being placed in and out of the SI Domain gets lost.
 > 
-> Instead of waiting for STARTUP after INITs, BSP will execute the BIOS boot-strap
-> code which is not a desired behavior for waking up BSP. To avoid the boot-strap
-> code, wake up CPU0 by NMI instead.
+> Signed-off-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
+> ----
+> PATCH v1: https://lkml.org/lkml/2012/6/15/204
+> PATCH v2: https://lkml.org/lkml/2012/9/18/354
 > 
-> This works to wake up soft offlined CPU0 only. If CPU0 is hard offlined (i.e.
-> physically hot removed and then hot added), NMI won't wake it up. We'll change
-> this code in the future to wake up hard offlined CPU0 if real platform and
-> request are available.
+> drivers/iommu/intel-iommu.c |   33 +++++++++++++++++++++++++++++++++
+> 1 files changed, 33 insertions(+), 0 deletions(-)
 > 
-> AP is still waken up as before by INIT, SIPI, SIPI sequence.
-> 
-> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-> ---
->  arch/x86/include/asm/cpu.h |    1 +
->  arch/x86/kernel/smpboot.c  |  112 +++++++++++++++++++++++++++++++++++++++++--
->  2 files changed, 107 insertions(+), 6 deletions(-)
-
-[ … ]
-
-> @@ -727,8 +745,47 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
->  	 */
->  	if (apic->wakeup_secondary_cpu)
->  		boot_error = apic->wakeup_secondary_cpu(apicid, start_ip);
-> -	else
-> -		boot_error = wakeup_secondary_cpu_via_init(apicid, start_ip);
-> +	else {
-> +		if (cpu)
-> +			/*
-> +			 * Wake up AP by INIT, INIT, STARTUP sequence.
-> +			 */
-> +			boot_error = wakeup_secondary_cpu_via_init(apicid,
-> +								   start_ip);
-> +		else {
-> +			/*
-> +			 * Instead of waiting for STARTUP after INITs, BSP will
-> +			 * execute the BIOS boot-strap code which is not a
-> +			 * desired behavior for waking up BSP. To avoid the
-> +			 * boot-strap code, wake up CPU0 by NMI instead.
-> +			 *
-> +			 * This works to wake up soft offlined CPU0 only. If
-> +			 * CPU0 is hard offlined (i.e. physically hot removed
-> +			 * and then hot added), NMI won't wake it up. We'll
-> +			 * change this code in the future to wake up hard
-> +			 * offlined CPU0 if real platform and request are
-> +			 * available.
-> +			 */
-> +			int id;
+> diff -up ./drivers/iommu/intel-iommu.c.ORIG ./drivers/iommu/intel-iommu.c
+> --- ./drivers/iommu/intel-iommu.c.ORIG	2012-10-16 09:34:23.148089944 -0500
+> +++ ./drivers/iommu/intel-iommu.c	2012-10-16 09:56:56.905932861 -0500
+> @@ -2320,8 +2320,41 @@ static int domain_add_dev_info(struct dm
+>  	return 0;
+>  }
+>  
+> +static bool device_has_rmrr(struct pci_dev *dev)
+> +{
+> +	struct dmar_rmrr_unit *rmrr;
+> +	int i;
 > +
-> +			enable_start_cpu0 = 1;
+> +	for_each_rmrr_units(rmrr) {
+> +		for (i = 0; i < rmrr->devices_cnt; i++) {
 > +			/*
-> +			 * Register a NMI handler to help wake up CPU0.
-> +			 */
-> +			boot_error = register_nmi_handler(NMI_LOCAL,
-> +					 wakeup_cpu0_nmi, 0, "wake_cpu0");
+> +			 * Here we are just concerned with checking each device
+> +			 * that has an RMRR associated with it and not allow it
+> +			 * to be placed into the SI Domain during startup.
+> +			*/
+> +			if (rmrr->devices[i] == dev)
+> +				return true;
+> +		}
+> +	}
+> +	return false;
+> +}
 > +
-> +			if (!boot_error) {
-> +				cpu0_nmi_registered = 1;
-> +				if (apic->dest_logical == APIC_DEST_LOGICAL)
-> +					id = cpu0_logical_apicid;
-> +				else
-> +					id = apicid;
-> +				boot_error = wakeup_secondary_cpu_via_nmi(id,
-> +								start_ip);
-> +			}
+>  static int iommu_should_identity_map(struct pci_dev *pdev, int startup)
+>  {
+> +
+> +	if (startup) {
+> +		/*
+> +		 * This is where we will refuse any device that has an
+> +		 * RMRR associated with it and is not a USB device and
+> +		 * NOT allow it to be placed into the SI Domain. We
+> +		 * only do this on startup.
 
-This whole else-part for cpu 0 could be carved out into a separate
-function so that you can save yourself the awkward code indentation and
-make this a lot more readable.
+Why only on startup?
 
-Thanks.
+>  We don't need a separate bit
+> +		 * for this because it could be ANY device.
+> +		*/
 
--- 
-Regards/Gruss,
-Boris.
+Note the white space here doesn't match existing comment blocks in
+intel-iommu.
+
+> +		if (device_has_rmrr(pdev) &&
+> +			(pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
+> +				return 0;
+> +	}
+> +
+>  	if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
+>  		return 1;
+>  
+
+Thanks,
+Alex
+
