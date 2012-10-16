@@ -1,103 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803Ab2JPPxq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 11:53:46 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:55779 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754329Ab2JPPxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 11:53:44 -0400
-Date: Tue, 16 Oct 2012 11:53:07 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        greg@kroah.com, w@1wt.eu, ewust@umich.edu, zakir@umich.edu,
-        mpm@selenic.com, nadiah@cs.ucsd.edu, jhalderm@umich.edu,
-        tglx@linutronix.de, davem@davemloft.net, mingo@kernel.org,
-        DJ Johnston <dj.johnston@intel.com>, stable@vger.kernel.org
-Subject: Re: [PATCH RFC] random: Account for entropy loss due to overwrites
-Message-ID: <20121016155307.GF17446@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	"H. Peter Anvin" <hpa@linux.intel.com>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	greg@kroah.com, w@1wt.eu, ewust@umich.edu, zakir@umich.edu,
-	mpm@selenic.com, nadiah@cs.ucsd.edu, jhalderm@umich.edu,
-	tglx@linutronix.de, davem@davemloft.net, mingo@kernel.org,
-	DJ Johnston <dj.johnston@intel.com>, stable@vger.kernel.org
-References: <1344878779-10700-1-git-send-email-hpa@linux.intel.com>
- <50675038.9000108@zytor.com>
- <20121016040848.GE17446@thunk.org>
- <507CE663.2060502@linux.intel.com>
+	id S1754851Ab2JPPzj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 11:55:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2418 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754605Ab2JPPzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 11:55:37 -0400
+Date: Tue, 16 Oct 2012 17:56:23 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] brw_mutex: big read-write mutex
+Message-ID: <20121016155623.GA4028@redhat.com>
+References: <20121015190958.GA4799@redhat.com> <20121015191018.GA4816@redhat.com> <20121015232814.GC3010@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <507CE663.2060502@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20121015232814.GC3010@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 09:45:23PM -0700, H. Peter Anvin wrote:
-> 
-> Or we could compute poolwords (and poolbits, and poolbytes) from it,
-> since shifts generally are cheap.  I don't strongly care, whatever your
-> preference is.
+Paul, thanks for looking!
 
-We are already calculating poolbits from poolwords:
+On 10/15, Paul E. McKenney wrote:
+>
+> > +void brw_start_read(struct brw_mutex *brw)
+> > +{
+> > +	for (;;) {
+> > +		bool done = false;
+> > +
+> > +		preempt_disable();
+> > +		if (likely(!atomic_read(&brw->write_ctr))) {
+> > +			__this_cpu_inc(*brw->read_ctr);
+> > +			done = true;
+> > +		}
+>
+> brw_start_read() is not recursive -- attempting to call it recursively
+> can result in deadlock if a writer has shown up in the meantime.
 
-#define POOLBITS	poolwords*32
-#define POOLBYTES	poolwords*4
+Yes, yes, it is not recursive. Like rw_semaphore.
 
-So you'd basically be suggesting that we define
+> Which is often OK, but not sure what you intended.
 
-#define POOLWORDS	(1 << (poolshift - 5))
-#define POOLBYTES	(1 << (poolshift - 3))
-#define POOLBITS	(1 << poolshift)
+I forgot to document this in the changelog.
 
-Yeah, that works; we don't use poolwords in that many places, and a
-data dependent shift is cheap at least on x86 and arm (so probably all
-modern platforms).
+> > +void brw_end_read(struct brw_mutex *brw)
+> > +{
+>
+> I believe that you need smp_mb() here.
 
-There was one aesthetic reason for using POOLWORDS, which was that
-first term of the generating polynomial was the same as poolwords,
-i.e:
+I don't understand why...
 
-	/* x^128 + x^103 + x^76 + x^51 +x^25 + x + 1 -- 105 */
-	{ 128,	103,	76,	51,	25,	1 },
-	/* x^32 + x^26 + x^20 + x^14 + x^7 + x + 1 -- 15 */
-	{ 32,	26,	20,	14,	7,	1 },
+> The wake_up_all()'s memory barriers
+> do not suffice because some other reader might have awakened the writer
+> between this_cpu_dec() and wake_up_all().
 
-If we change it to be:
+But __wake_up(q) takes q->lock? And the same lock is taken by
+prepare_to_wait(), so how can the writer miss the result of _dec?
 
-	/* x^128 + x^103 + x^76 + x^51 +x^25 + x + 1 -- 105 */
-	{ 12,	103,	76,	51,	25,	1 },
-	/* x^32 + x^26 + x^20 + x^14 + x^7 + x + 1 -- 15 */
-	{ 10,	26,	20,	14,	7,	1 },
+> > +	this_cpu_dec(*brw->read_ctr);
+> > +
+> > +	if (unlikely(atomic_read(&brw->write_ctr)))
+> > +		wake_up_all(&brw->write_waitq);
+> > +}
+>
+> Of course, it would be good to avoid smp_mb on the fast path.  Here is
+> one way to avoid it:
+>
+> void brw_end_read(struct brw_mutex *brw)
+> {
+> 	if (unlikely(atomic_read(&brw->write_ctr))) {
+> 		smp_mb();
+> 		this_cpu_dec(*brw->read_ctr);
+> 		wake_up_all(&brw->write_waitq);
 
-It's a wee bit less obvious where the "12" and "10" is coming form.  I
-don't see an easy way to fix this, though, other than perhaps making
-sure it's clear in the comments.  Unfortunately we can't count on gcc
-doing a built-in optimization for a log2 of a constant as far as I
-know.... or can we?
+Hmm... still can't understand.
 
-Hmm, this does get optimized correctly at least with gcc 4.7:
+It seems that this mb() is needed to ensure that brw_end_read() can't
+miss write_ctr != 0.
 
-#define shiftbits(words) ((int) __builtin_log2((double) (words)) + 5)
+But we do not care unless the writer already does wait_event(). And
+before it does wait_event() it calls synchronize_sched() after it sets
+write_ctr != 0. Doesn't this mean that after that any preempt-disabled
+section must see write_ctr != 0 ?
 
-... and it looks like include/linux/log2.h already has a definition
-for ilog2() which should definitely work for all versions of gcc, so
-we could do this instead:
+This code actually checks write_ctr after preempt_disable + enable,
+but I think this doesn't matter?
 
-#define shiftbits(w)	(ilog2((w)) + 5)
+Paul, most probably I misunderstood you. Could you spell please?
 
-	/* x^128 + x^103 + x^76 + x^51 +x^25 + x + 1 -- 105 */
-	{ shiftbits(128), 103,	76,	51,	25,	1 },
-	/* x^32 + x^26 + x^20 + x^14 + x^7 + x + 1 -- 15 */
-	{ shiftbits(32),  26,	20,	14,	7,	1 },
+> > +void brw_start_write(struct brw_mutex *brw)
+> > +{
+> > +	atomic_inc(&brw->write_ctr);
+> > +	synchronize_sched();
+> > +	/*
+> > +	 * Thereafter brw_*_read() must see write_ctr != 0,
+> > +	 * and we should see the result of __this_cpu_inc().
+> > +	 */
+> > +	wait_event(brw->write_waitq, brw_read_ctr(brw) == 0);
+>
+> This looks like it allows multiple writers to proceed concurrently.
+> They both increment, do a synchronize_sched(), do the wait_event(),
+> and then are both awakened by the last reader.
 
-						- Ted
+Yes. From the changelog:
+
+	Unlike rw_semaphore it allows multiple writers too,
+	just "read" and "write" are mutually exclusive.
+
+> Was that the intent?  (The implementation of brw_end_write() makes
+> it look like it is in fact the intent.)
+
+Please look at 2/2.
+
+Multiple uprobe_register() or uprobe_unregister() can run at the
+same time to install/remove the system-wide breakpoint, and
+brw_start_write() is used to block dup_mmap() to avoid the race.
+But they do not block each other.
+
+Thanks!
+
+Oleg.
 
