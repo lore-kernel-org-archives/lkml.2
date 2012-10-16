@@ -1,117 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab2JPBys (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 21:54:48 -0400
-Received: from noserose.net ([66.220.18.76]:51308 "HELO noserose.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752595Ab2JPByr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 21:54:47 -0400
-Date: Mon, 15 Oct 2012 18:54:44 -0700
-Message-Id: <bc12b74eb8ca1f63c33d64c8a09e1c969ed47948.1350331035.git.ecashin@coraid.com>
-In-Reply-To: <cover.1350331035.git.ecashin@coraid.com>
-References: <cover.1350331035.git.ecashin@coraid.com>
+	id S1755533Ab2JPBy5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 21:54:57 -0400
+Received: from server505d.appriver.com ([98.129.35.42]:56633 "EHLO
+	server505.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753825Ab2JPByx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 21:54:53 -0400
+X-Note-AR-ScanTimeLocal: 10/15/2012 8:54:52 PM
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: Too many policies to list
+X-Primary: ecashin@coraid.com
+X-Note: This Email was scanned by AppRiver SecureTide
+X-ALLOW: @coraid.com ALLOWED
+X-Virus-Scan: V-
+X-Note: Spam Tests Failed: 
+X-Country-Path: UNKNOWN->UNITED STATES->UNITED STATES
+X-Note-Sending-IP: 98.129.35.1
+X-Note-Reverse-DNS: 
+X-Note-Return-Path: ecashin@coraid.com
+X-Note: User Rule Hits: 
+X-Note: Global Rule Hits: G321 G322 G323 G324 G328 G329 G340 G436 
+X-Note: Encrypt Rule Hits: 
+X-Note: Mail Class: ALLOWEDSENDER
+X-Note: Headers Injected
 From: Ed Cashin <ecashin@coraid.com>
-Subject: [PATCH 8/9] aoe: whitespace cleanup
-To: akpm@linux-foundation.org
-Cc: ecashin@coraid.com, linux-kernel@vger.kernel.org
+To: Kent Overstreet <koverstreet@google.com>
+CC: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        "tj@kernel.org" <tj@kernel.org>, "axboe@kernel.dk" <axboe@kernel.dk>,
+        "neilb@suse.de" <neilb@suse.de>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>,
+        Nick Piggin <npiggin@kernel.dk>, Jiri Kosina <jkosina@suse.cz>,
+        Jim Paris <jim@jtan.com>, Geoff Levand <geoff@infradead.org>,
+        Alasdair Kergon <agk@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Date: Mon, 15 Oct 2012 20:54:50 -0500
+Subject: Re: [PATCH v4 05/24] block: Use bio_sectors() more consistently
+Thread-Topic: [PATCH v4 05/24] block: Use bio_sectors() more consistently
+Thread-Index: Ac2rQTsuf+lEV20iSUygN1G3DXNI2Q==
+Message-ID: <FCC1E3FC-FE23-4BC7-A437-04471143D8B9@coraid.com>
+References: <1350331769-14856-1-git-send-email-koverstreet@google.com>
+ <1350331769-14856-6-git-send-email-koverstreet@google.com>
+In-Reply-To: <1350331769-14856-6-git-send-email-koverstreet@google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Ed Cashin <ecashin@coraid.com>
----
- drivers/block/aoe/aoe.h     |    2 +-
- drivers/block/aoe/aoechr.c  |    2 +-
- drivers/block/aoe/aoecmd.c  |    6 +++---
- drivers/block/aoe/aoemain.c |    2 +-
- drivers/block/aoe/aoenet.c  |    4 ++--
- 5 files changed, 8 insertions(+), 8 deletions(-)
+The aoe changes look OK, thanks.
 
-diff --git a/drivers/block/aoe/aoe.h b/drivers/block/aoe/aoe.h
-index 52f75c0..8e8da1c 100644
---- a/drivers/block/aoe/aoe.h
-+++ b/drivers/block/aoe/aoe.h
-@@ -151,7 +151,7 @@ struct aoedev {
- 	struct work_struct work;/* disk create work struct */
- 	struct gendisk *gd;
- 	struct request_queue *blkq;
--	struct hd_geometry geo; 
-+	struct hd_geometry geo;
- 	sector_t ssize;
- 	struct timer_list timer;
- 	spinlock_t lock;
-diff --git a/drivers/block/aoe/aoechr.c b/drivers/block/aoe/aoechr.c
-index 2bf6273..42e67ad 100644
---- a/drivers/block/aoe/aoechr.c
-+++ b/drivers/block/aoe/aoechr.c
-@@ -287,7 +287,7 @@ aoechr_init(void)
- 	int n, i;
- 
- 	n = register_chrdev(AOE_MAJOR, "aoechr", &aoe_fops);
--	if (n < 0) { 
-+	if (n < 0) {
- 		printk(KERN_ERR "aoe: can't register char device\n");
- 		return n;
- 	}
-diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
-index 82e16c4..c491fba 100644
---- a/drivers/block/aoe/aoecmd.c
-+++ b/drivers/block/aoe/aoecmd.c
-@@ -978,7 +978,7 @@ ktiocomplete(struct frame *f)
- 		pr_err("aoe: ata error cmd=%2.2Xh stat=%2.2Xh from e%ld.%d\n",
- 			ahout->cmdstat, ahin->cmdstat,
- 			d->aoemajor, d->aoeminor);
--noskb:	if (buf)
-+noskb:		if (buf)
- 			clear_bit(BIO_UPTODATE, &buf->bio->bi_flags);
- 		goto badrsp;
- 	}
-@@ -1191,7 +1191,7 @@ aoecmd_cfg(ushort aoemajor, unsigned char aoeminor)
- 	aoecmd_cfg_pkts(aoemajor, aoeminor, &queue);
- 	aoenet_xmit(&queue);
- }
-- 
-+
- struct sk_buff *
- aoecmd_ata_id(struct aoedev *d)
- {
-@@ -1230,7 +1230,7 @@ aoecmd_ata_id(struct aoedev *d)
- 
- 	return skb_clone(skb, GFP_ATOMIC);
- }
-- 
-+
- static struct aoetgt *
- addtgt(struct aoedev *d, char *addr, ulong nframes)
- {
-diff --git a/drivers/block/aoe/aoemain.c b/drivers/block/aoe/aoemain.c
-index 04793c2..4b987c2 100644
---- a/drivers/block/aoe/aoemain.c
-+++ b/drivers/block/aoe/aoemain.c
-@@ -105,7 +105,7 @@ aoe_init(void)
- 	aoechr_exit();
-  chr_fail:
- 	aoedev_exit();
--	
-+
- 	printk(KERN_INFO "aoe: initialisation failure.\n");
- 	return ret;
- }
-diff --git a/drivers/block/aoe/aoenet.c b/drivers/block/aoe/aoenet.c
-index a1bb692..461b6c4 100644
---- a/drivers/block/aoe/aoenet.c
-+++ b/drivers/block/aoe/aoenet.c
-@@ -126,8 +126,8 @@ aoenet_xmit(struct sk_buff_head *queue)
- 	}
- }
- 
--/* 
-- * (1) len doesn't include the header by default.  I want this. 
-+/*
-+ * (1) len doesn't include the header by default.  I want this.
-  */
- static int
- aoenet_rcv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt, struct net_device *orig_dev)
 -- 
-1.7.1
+  Ed Cashin
+  ecashin@coraid.com
+
 
