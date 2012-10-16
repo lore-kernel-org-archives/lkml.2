@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab2JPJQr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 05:16:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44255 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab2JPJQp (ORCPT
+	id S1752710Ab2JPJRv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 05:17:51 -0400
+Received: from cassarossa.samfundet.no ([129.241.93.19]:55409 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382Ab2JPJRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 05:16:45 -0400
-Message-ID: <507D25F5.3030001@canonical.com>
-Date: Tue, 16 Oct 2012 17:16:37 +0800
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 16 Oct 2012 05:17:50 -0400
+Date: Tue, 16 Oct 2012 11:17:40 +0200
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Josh Wu <josh.wu@atmel.com>
+Cc: linux-kernel@vger.kernel.org, hskinnemoen@gmail.com,
+        linux-mtd@lists.infradead.org, dedekind1@gmail.com,
+        fengguang.wu@intel.com
+Subject: Re: [PATCH] avr32: fix build error in atstk1006_defconfig
+Message-ID: <20121016091740.GA6243@samfundet.no>
+References: <1350371967-8914-1-git-send-email-josh.wu@atmel.com>
 MIME-Version: 1.0
-To: Andy Whitcroft <apw@canonical.com>
-CC: Matthew Garrett <mjg@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] efivarfs: efivarfs_fill_super() ensure we clean up
- correctly on error
-References: <1349416496.810727.310563927016.1.gpush@pecola> <1349951541-20498-1-git-send-email-apw@canonical.com> <1349951541-20498-6-git-send-email-apw@canonical.com> <5076D1EC.1060100@canonical.com> <20121011160633.GA23494@dm>
-In-Reply-To: <20121011160633.GA23494@dm>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350371967-8914-1-git-send-email-josh.wu@atmel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+Around Tue 16 Oct 2012 15:19:27 +0800 or thereabout, Josh Wu wrote:
+> fixed the following compile error when use avr32 atstk1006_defconfig:
+>   drivers/mtd/nand/atmel_nand.c: In function 'pmecc_err_location':
+>   drivers/mtd/nand/atmel_nand.c:639: error: implicit declaration of function 'writel_relaxed'
+> 
+> which was introduced by commit 1c7b874d33b463 ("mtd: at91: atmel_nand: add Programmable Multibit ECC controller support").
+> The PMECC for nand flash code uses writel_relaxed(). But in avr32, there is no macro "writel_relaxed" defined. This patch add writex_relaxed macro definitions.
+> 
+> Signed-off-by: Josh Wu <josh.wu@atmel.com>
+> ---
+>  arch/avr32/include/asm/io.h |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/arch/avr32/include/asm/io.h b/arch/avr32/include/asm/io.h
+> index cf60d0a..fc6483f 100644
+> --- a/arch/avr32/include/asm/io.h
+> +++ b/arch/avr32/include/asm/io.h
+> @@ -165,6 +165,10 @@ BUILDIO_IOPORT(l, u32)
+>  #define readw_be			__raw_readw
+>  #define readl_be			__raw_readl
+>  
+> +#define writeb_relaxed			writeb
+> +#define writew_relaxed			writew
+> +#define writel_relaxed			writel
+> +
 
->> If we break out of the loop on the second (and onwards) iteration,
->> won't we still have the other inodes and dentries remaining
->> allocated?
->
-> As we calling this from the mount_single() wrapper:
->
->          return mount_single(fs_type, flags, data, efivarfs_fill_super);
->
->
-> which does this:
->
->      struct dentry *mount_single(struct file_system_type *fs_type,
-> 	    int flags, void *data,
-> 	    int (*fill_super)(struct super_block *, void *, int))
->      {
->      [...]
-> 		    error = fill_super(s, data, flags & MS_SILENT ? 1 : 0);
-> 		    if (error) {
-> 			    deactivate_locked_super(s);
-> 			    return ERR_PTR(error);
-> 		    }
->      [...]
->
-> I am expecting us to get called back via deactivate_locked_super(),
-> which calls sb->kill_sb() which is:
->
->      static void efivarfs_kill_sb(struct super_block *sb)
->      {
-> 	    kill_litter_super(sb);
-> 	    efivarfs_sb = NULL;
->      }
->
-> Which I believe will clean them up.
+I'm wondering if they should be something similar to SH arch:
 
-Awesome, thanks for that. Looks good to me.
+#define writeb_relaxed(v,c) ((void)__raw_writeb((__force u8)ioswabb(v),c))
 
-Acked-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+What is the intention behind the macro? Which restriction is relaxed?
 
-Cheers,
+>  #define writeb_be			__raw_writeb
+>  #define writew_be			__raw_writew
+>  #define writel_be			__raw_writel
 
-
-Jeremy Kerr
-
+-- 
+mvh
+Hans-Christian Egtvedt
