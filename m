@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672Ab2JPKbJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 06:31:09 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:45382 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752789Ab2JPKbI (ORCPT
+	id S1753868Ab2JPKb1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 06:31:27 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53178 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753558Ab2JPKb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 06:31:08 -0400
-Message-ID: <507D375A.3040200@atmel.com>
-Date: Tue, 16 Oct 2012 18:30:50 +0800
-From: Josh Wu <josh.wu@atmel.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 16 Oct 2012 06:31:26 -0400
+Date: Tue, 16 Oct 2012 11:31:09 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Inki Dae <inki.dae@samsung.com>
+Cc: Hiroshi Doyu <hdoyu@nvidia.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-tegra@vger.kernel.org
+Subject: Re: [Linaro-mm-sig] [RFC 0/2] DMA-mapping & IOMMU - physically
+	contiguous allocations
+Message-ID: <20121016103109.GA21164@n2100.arm.linux.org.uk>
+References: <1350309832-18461-1-git-send-email-m.szyprowski@samsung.com> <CAAQKjZMYFNMEnb2ue2aR+6AEbOixnQFyggbXrThBCW5VOznePg@mail.gmail.com> <20121016090434.7d5e088152a3e0b0606903c8@nvidia.com> <CAAQKjZNQFfxpr-7dFb4cgNB2Gkrxxrswds_fSrYgssxXaqRF7g@mail.gmail.com>
 MIME-Version: 1.0
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-CC: linux-kernel@vger.kernel.org, hskinnemoen@gmail.com,
-        linux-mtd@lists.infradead.org, dedekind1@gmail.com,
-        fengguang.wu@intel.com
-Subject: Re: [PATCH] avr32: fix build error in atstk1006_defconfig
-References: <1350371967-8914-1-git-send-email-josh.wu@atmel.com> <20121016091740.GA6243@samfundet.no>
-In-Reply-To: <20121016091740.GA6243@samfundet.no>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAQKjZNQFfxpr-7dFb4cgNB2Gkrxxrswds_fSrYgssxXaqRF7g@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2012 5:17 PM, Hans-Christian Egtvedt wrote:
-> Around Tue 16 Oct 2012 15:19:27 +0800 or thereabout, Josh Wu wrote:
->> fixed the following compile error when use avr32 atstk1006_defconfig:
->>    drivers/mtd/nand/atmel_nand.c: In function 'pmecc_err_location':
->>    drivers/mtd/nand/atmel_nand.c:639: error: implicit declaration of function 'writel_relaxed'
->>
->> which was introduced by commit 1c7b874d33b463 ("mtd: at91: atmel_nand: add Programmable Multibit ECC controller support").
->> The PMECC for nand flash code uses writel_relaxed(). But in avr32, there is no macro "writel_relaxed" defined. This patch add writex_relaxed macro definitions.
->>
->> Signed-off-by: Josh Wu <josh.wu@atmel.com>
->> ---
->>   arch/avr32/include/asm/io.h |    4 ++++
->>   1 file changed, 4 insertions(+)
->>
->> diff --git a/arch/avr32/include/asm/io.h b/arch/avr32/include/asm/io.h
->> index cf60d0a..fc6483f 100644
->> --- a/arch/avr32/include/asm/io.h
->> +++ b/arch/avr32/include/asm/io.h
->> @@ -165,6 +165,10 @@ BUILDIO_IOPORT(l, u32)
->>   #define readw_be			__raw_readw
->>   #define readl_be			__raw_readl
->>   
->> +#define writeb_relaxed			writeb
->> +#define writew_relaxed			writew
->> +#define writel_relaxed			writel
->> +
-> I'm wondering if they should be something similar to SH arch:
->
-> #define writeb_relaxed(v,c) ((void)__raw_writeb((__force u8)ioswabb(v),c))
->
-> What is the intention behind the macro? Which restriction is relaxed?
+On Tue, Oct 16, 2012 at 07:12:49PM +0900, Inki Dae wrote:
+> Hi Hiroshi,
+> 
+> I'm not sure I understand what you mean but we had already tried this
+> way and for this, you can refer to below link,
+>                http://www.mail-archive.com/dri-devel@lists.freedesktop.org/msg22555.html
+> 
+> but this way had been pointed out by drm guys because the pages could
+> be used through gem object after that pages had been freed by free()
+> anyway their pointing was reasonable and I'm trying another way, this
+> is the way that the pages to user space has same life time with dma
+> operation. in other word, if dma completed access to that pages then
+> also that pages will be freed. actually drm-based via driver of
+> mainline kernel is using same way
 
-According to my understanding, the xxx_relaxed() is that I/O function 
-without any memory barriers. for Multi-cpu, the execute order are less 
-limited.
-So the relaxed write function should be more effective than non-relaxed one.
+I don't know about Hiroshi, but the above "sentence" - and I mean the 7
+line sentence - is very difficult to understand and wears readers out.
 
-But for single cpu, relaxed function should work same as non-relaxed 
-function.
-Please correct me if I'm understand in a wrong way.
+If your GPU hardware has a MMU, then the problem of dealing with userspace
+pages is very easy.  Do it the same way that the i915 driver and the rest
+of DRM does.  Use shmem backed memory.
 
-Best Regards,
-Josh Wu
+I'm doing that for the Dove DRM driver and it works a real treat, and as
+the pages are backed by page cache pages, you can use all the normal
+page refcounting on them to prevent them being freed until your DMA has
+completed.  All my X pixmaps are shmem backed drm objects, except for
+the scanout buffers which are dumb drm objects (because they must be
+contiguous.)
 
->
->>   #define writeb_be			__raw_writeb
->>   #define writew_be			__raw_writew
->>   #define writel_be			__raw_writel
+In fact, get_user_pages() will take the reference for you before you pass
+them over to dma_map_sg().  On completion of DMA, you just need to use
+dma_unmap_sg() and release each page.
 
+If you don't want to use get_user_pages() (which other drivers don't) then
+you need to following the i915 example and get each page out of shmem
+individually.
+
+(My situation on the Dove hardware is a little different, because the
+kernel DRM driver isn't involved with the GPU - it merely provides the
+memory for pixmaps.  The GPU software stack, being a chunk of closed
+source userspace library with open source kernel driver, means that
+things are more complicated; the kernel side GPU driver uses
+get_user_pages() to pin them prior to building the GPU's MMU table.)
