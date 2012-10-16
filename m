@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab2JPT2K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 15:28:10 -0400
-Received: from mail.df.lth.se ([194.47.250.12]:44876 "EHLO mail.df.lth.se"
+	id S1755965Ab2JPT2J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 15:28:09 -0400
+Received: from mail.df.lth.se ([194.47.250.12]:44875 "EHLO mail.df.lth.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755919Ab2JPT2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755838Ab2JPT2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Oct 2012 15:28:07 -0400
+X-Greylist: delayed 360 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Oct 2012 15:28:07 EDT
 From: Linus Walleij <linus.walleij@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: Rob Herring <rob.herring@calxeda.com>,
         Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <damm@opensource.se>
-Subject: [PATCH 2/7] gpio/em: convert to linear IRQ domain
-Date: Tue, 16 Oct 2012 21:22:20 +0200
-Message-Id: <1350415340-2825-1-git-send-email-linus.walleij@linaro.org>
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 0/7] gpio: assorted irqdomain cleanups
+Date: Tue, 16 Oct 2012 21:21:55 +0200
+Message-Id: <1350415315-2451-1-git-send-email-linus.walleij@linaro.org>
 X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code in the em driver seems to want to try to do the job of
-the linear IRQ domain (allocate descriptors and grab a virtual
-range). So why not just use the linear IRQ domain?
+I have noted that some of the GPIO drivers have been copy-pasting
+and contaminating each other with bad examples, so I've tried in
+this series to mitigate this by correcting the most obvious
+examples.
 
-Also fixed the FIXME to remove the domain after use.
+I have no clue how to even compile-test some of these, so I rely
+on maintainers to test them and maybe refactor them up if they are
+sucky.
 
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Magnus Damm <damm@opensource.se>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/gpio/gpio-em.c | 22 +++-------------------
- 1 file changed, 3 insertions(+), 19 deletions(-)
+Remains: gpio-omap, gpio-pxa and gpio-twl4030.
 
-diff --git a/drivers/gpio/gpio-em.c b/drivers/gpio/gpio-em.c
-index efb4c2d..aac5c75 100644
---- a/drivers/gpio/gpio-em.c
-+++ b/drivers/gpio/gpio-em.c
-@@ -35,7 +35,6 @@
- struct em_gio_priv {
- 	void __iomem *base0;
- 	void __iomem *base1;
--	unsigned int irq_base;
- 	spinlock_t sense_lock;
- 	struct platform_device *pdev;
- 	struct gpio_chip gpio_chip;
-@@ -239,33 +238,18 @@ static int __devinit em_gio_irq_domain_init(struct em_gio_priv *p)
- 	struct platform_device *pdev = p->pdev;
- 	struct gpio_em_config *pdata = pdev->dev.platform_data;
- 
--	p->irq_base = irq_alloc_descs(pdata->irq_base, 0,
--				      pdata->number_of_pins, numa_node_id());
--	if (p->irq_base < 0) {
--		dev_err(&pdev->dev, "cannot get irq_desc\n");
--		return p->irq_base;
--	}
--	pr_debug("gio: hw base = %d, nr = %d, sw base = %d\n",
--		 pdata->gpio_base, pdata->number_of_pins, p->irq_base);
--
--	p->irq_domain = irq_domain_add_legacy(pdev->dev.of_node,
-+	p->irq_domain = irq_domain_add_linear(pdev->dev.of_node,
- 					      pdata->number_of_pins,
--					      p->irq_base, 0,
- 					      &em_gio_irq_domain_ops, p);
--	if (!p->irq_domain) {
--		irq_free_descs(p->irq_base, pdata->number_of_pins);
-+	if (!p->irq_domain)
- 		return -ENXIO;
--	}
- 
- 	return 0;
- }
- 
- static void em_gio_irq_domain_cleanup(struct em_gio_priv *p)
- {
--	struct gpio_em_config *pdata = p->pdev->dev.platform_data;
--
--	irq_free_descs(p->irq_base, pdata->number_of_pins);
--	/* FIXME: irq domain wants to be freed! */
-+	irq_domain_remove(p->irq_domain);
- }
- 
- static int __devinit em_gio_probe(struct platform_device *pdev)
+These three drivers do *REALLY* scary stuff, like creating domains
+and flat out ignoring to use them, keeping the irq_base after
+allocating descriptors around and abusing it etc. I would really
+like to see these fixed up to use irqdomains properly. The
+twl4030 looks really hairy with the IRQ handling centralized
+into the main MFD driver...
+
+Linus Walleij (7):
+  gpio/tc3589x: convert to use the simple irqdomain
+  gpio/em: convert to linear IRQ domain
+  gpio/mvebu: convert to use irq_domain_add_simple()
+  gpio/mxs: convert to use linear irqdomain
+  gpio/pcf857x: find the irq domain mapping
+  gpio/langwell: find the irq domain mapping
+  gpio/tegra: convert to use linear irqdomain
+
+ drivers/gpio/gpio-em.c       | 22 +++-------------------
+ drivers/gpio/gpio-langwell.c |  2 +-
+ drivers/gpio/gpio-mvebu.c    |  6 +++---
+ drivers/gpio/gpio-mxs.c      | 19 ++++++-------------
+ drivers/gpio/gpio-pcf857x.c  |  2 +-
+ drivers/gpio/gpio-tc3589x.c  | 14 +++-----------
+ drivers/gpio/gpio-tegra.c    | 12 ++++--------
+ 7 files changed, 21 insertions(+), 56 deletions(-)
+
 -- 
 1.7.11.7
 
