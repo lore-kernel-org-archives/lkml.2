@@ -1,35 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab2JPSza (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 14:55:30 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:44359 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755681Ab2JPSz3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 14:55:29 -0400
-Date: Tue, 16 Oct 2012 18:55:28 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: David Rientjes <rientjes@google.com>
-cc: Pekka Enberg <penberg@kernel.org>, Avleen Vig <avleen@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Reading /proc/slabinfo causes stalls
-In-Reply-To: <alpine.DEB.2.00.1210161147410.2910@chino.kir.corp.google.com>
-Message-ID: <0000013a6aee372f-add43c34-0cc1-4cdb-8ad1-730074b2b49b-000000@email.amazonses.com>
-References: <CAMjP1K=WV=AJ=paz7uBJ2X0FnOX6Cf-HipWsFjLxicXGbvL6Sw@mail.gmail.com> <CAOJsxLF2VJRRu_i2aCARwiw6knyrwL1HpZ1zGOASP133fNxv8Q@mail.gmail.com> <0000013a6ad64c95-106bab18-5a15-4c85-bae9-5527aa52f661-000000@email.amazonses.com>
- <alpine.DEB.2.00.1210161147410.2910@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755899Ab2JPSzv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 14:55:51 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:53568 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755681Ab2JPSzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 14:55:49 -0400
+Message-ID: <507DADA2.2040308@parallels.com>
+Date: Tue, 16 Oct 2012 22:55:30 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+To: Christoph Lameter <cl@linux.com>
+CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
+        <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v5 07/14] mm: Allocate kernel pages to the right memcg
+References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-8-git-send-email-glommer@parallels.com> <0000013a6a333867-52b0d904-5ca2-4095-8c46-5a4dfc021cde-000000@email.amazonses.com>
+In-Reply-To: <0000013a6a333867-52b0d904-5ca2-4095-8c46-5a4dfc021cde-000000@email.amazonses.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [46.39.244.6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Oct 2012, David Rientjes wrote:
+On 10/16/2012 07:31 PM, Christoph Lameter wrote:
+> On Tue, 16 Oct 2012, Glauber Costa wrote:
+> 
+>> To avoid adding markers to the page - and a kmem flag that would
+>> necessarily follow, as much as doing page_cgroup lookups for no reason,
+>> whoever is marking its allocations with __GFP_KMEMCG flag is responsible
+>> for telling the page allocator that this is such an allocation at
+>> free_pages() time. This is done by the invocation of
+>> __free_accounted_pages() and free_accounted_pages().
+> 
+> Hmmm... The code paths to free pages are often shared between multiple
+> subsystems. Are you sure that this is actually working and accurately
+> tracks the MEMCG pages?
+> 
 
-> Or convert slab_mutex to be a rwlock?
+As described above, only call sites that are switched to
+free_accounted_pages are affected. There are very few of them. The stack
+case is particularly easy to test: every time a process appears, usage
+is increased in 8k. Every time a process dies, usage decreases by 8k.
 
-The RT folks just converted it to a mutex.... ;-)
+In my other patchseries, I include the object allocators into this. So
+again: there are very few call sites actually being patched.
+
+
+>> +/*
+>> + * __free_accounted_pages and free_accounted_pages will free pages allocated
+>> + * with __GFP_KMEMCG.
+>> + *
+>> + * Those pages are accounted to a particular memcg, embedded in the
+>> + * corresponding page_cgroup. To avoid adding a hit in the allocator to search
+>> + * for that information only to find out that it is NULL for users who have no
+>> + * interest in that whatsoever, we provide these functions.
+>> + *
+>> + * The caller knows better which flags it relies on.
+>> + */
+>> +void __free_accounted_pages(struct page *page, unsigned int order)
+>> +{
+>> +	memcg_kmem_uncharge_page(page, order);
+>> +	__free_pages(page, order);
+>> +}
+> 
+> If we already are introducing such an API: Could it not be made more
+> general so that it can also be used in the future to communicate other
+> characteristics of a page on free?
+> 
+
+I guess so. Which other use case do you have in mind?
+In any case, I don't see this as a blocker to this patchset. There is no
+reason why it can't be done should the need arise.
 
