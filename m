@@ -1,85 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab2JPQtu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 12:49:50 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:33904 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755359Ab2JPQtr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 12:49:47 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+j5rOGQFVAtkXqmTx17+gu
-Date: Tue, 16 Oct 2012 09:49:36 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: linux@arm.linux.org.uk, b-cousson@ti.com, arnd@arndb.de, olof@lixom.net,
-        rdunlap@xenotime.net, balbi@ti.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] ARM: OMAP4: add _dev_attr_ to ocp2scp for
- representing usb_phy
-Message-ID: <20121016164936.GR15569@atomide.com>
-References: <1349675983-23803-1-git-send-email-kishon@ti.com>
- <1349675983-23803-3-git-send-email-kishon@ti.com>
- <20121011004413.GW12552@atomide.com>
+	id S1755468Ab2JPQuQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 12:50:16 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57262 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754881Ab2JPQuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 12:50:09 -0400
+Date: Tue, 16 Oct 2012 18:50:07 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH v9 06/12] x86-64, hotplug: Add start_cpu0() entry point
+ to head_64.S
+Message-ID: <20121016165007.GA12694@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
+	Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Asit K Mallick <asit.k.mallick@intel.com>,
+	Tony Luck <tony.luck@intel.com>,
+	Arjan Dan De Ven <arjan@linux.intel.com>,
+	Suresh B Siddha <suresh.b.siddha@intel.com>,
+	Len Brown <len.brown@intel.com>,
+	"Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+	Randy Dunlap <rdunlap@xenotime.net>,
+	Chen Gong <gong.chen@linux.intel.com>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+References: <1350058189-6769-1-git-send-email-fenghua.yu@intel.com>
+ <1350058189-6769-7-git-send-email-fenghua.yu@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20121011004413.GW12552@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1350058189-6769-7-git-send-email-fenghua.yu@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [121010 17:46]:
-> Hi,
+On Fri, Oct 12, 2012 at 09:09:43AM -0700, Fenghua Yu wrote:
+> From: Fenghua Yu <fenghua.yu@intel.com>
 > 
-> * Kishon Vijay Abraham I <kishon@ti.com> [121007 23:01]:
-> > In order to reflect devices(usb_phy) attached to ocp2scp bus, ocp2scp
-> > is assigned a device attribute to represent the attached devices.
-> ...
+> start_cpu0() is defined in head_64.S for 64-bit. The function sets up stack and
+> jumps to start_secondary() for CPU0 wake up.
 > 
-> > --- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> > +++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-> > @@ -21,6 +21,7 @@
-> >  #include <linux/io.h>
-> >  #include <linux/platform_data/gpio-omap.h>
-> >  #include <linux/power/smartreflex.h>
-> > +#include <linux/platform_data/omap_ocp2scp.h>
-> >  
-> >  #include <plat/omap_hwmod.h>
-> >  #include <plat/i2c.h>
-> > @@ -2681,6 +2682,32 @@ static struct omap_hwmod_class omap44xx_ocp2scp_hwmod_class = {
-> >  	.sysc	= &omap44xx_ocp2scp_sysc,
-> >  };
-> >  
-> > +/* ocp2scp dev_attr */
-> > +static struct resource omap44xx_usb_phy_and_pll_addrs[] = {
-> > +	{
-> > +		.name		= "usb_phy",
-> > +		.start		= 0x4a0ad080,
-> > +		.end		= 0x4a0ae000,
-> > +		.flags		= IORESOURCE_MEM,
-> > +	},
-> > +	{
-> > +		/* XXX: Remove this once control module driver is in place */
-> > +		.name		= "ctrl_dev",
-> > +		.start		= 0x4a002300,
-> > +		.end		= 0x4a002303,
-> > +		.flags		= IORESOURCE_MEM,
-> > +	},
-> > +	{ }
-> > +};
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> ---
+>  arch/x86/kernel/head_64.S |   15 +++++++++++++++
+>  1 files changed, 15 insertions(+), 0 deletions(-)
 > 
-> Why don't you set the CONTROL_DEV_CONF as a fixed regulator?
+> diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+> index 94bf9cc..3faac8a 100644
+> --- a/arch/x86/kernel/head_64.S
+> +++ b/arch/x86/kernel/head_64.S
+> @@ -252,6 +252,21 @@ ENTRY(secondary_startup_64)
+>  	pushq	%rax		# target address in negative space
+>  	lretq
+>  
+> +#ifdef CONFIG_HOTPLUG_CPU
+> +/*
+> + * Boot CPU0 entry point. It's called from play_dead(). Everything has been set
+> + * up already except stack. We just set up stack here. Then call
+> + * start_secondary().
+> + */
+> +ENTRY(start_cpu0)
+> +	movq stack_start(%rip),%rsp
+> +	movq	initial_code(%rip),%rax
+> +	pushq	$0		# fake return address to stop unwinder
+> +	pushq	$__KERNEL_CS	# set correct cs
+> +	pushq	%rax		# target address in negative space
+> +	lretq
 
-After some more investigating, we may be able to set it up as a
-regulator or clock later on. But as a regression fix, this seems
-OK for me.
+ENDPROC(start_cpu0) maybe?
 
-Benoit, is this OK for you?
+Ditto for head_32.S in the next patch.
 
-Regards,
+Thanks.
 
-Tony
+-- 
+Regards/Gruss,
+Boris.
