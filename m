@@ -1,38 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab2JPCfQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 22:35:16 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:40729 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094Ab2JPCfP (ORCPT
+	id S1755261Ab2JPCjm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 22:39:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53144 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751094Ab2JPCjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 22:35:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121008150949.GA15130@redhat.com>
-References: <20121008150949.GA15130@redhat.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Mon, 15 Oct 2012 22:34:53 -0400
-Message-ID: <CAHGf_=pr1AYeWZhaC2MKN-XjiWB7=hs92V0sH-zVw3i00X-e=A@mail.gmail.com>
-Subject: Re: mpol_to_str revisited.
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        bhutchings@solarflare.com, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 15 Oct 2012 22:39:41 -0400
+Date: Tue, 16 Oct 2012 10:40:14 +0800
+From: "Jianpeng Ma" <majianpeng@gmail.com>
+To: shli <shli@kernel.org>
+Cc: axboe <axboe@kernel.dk>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Re: [PATCH] block: Add blk_rq_pos(rq) to sort rq when plushing plug-list.
+References: <2012101520345871894911@gmail.com> <CANejiEWL5_tdSbfzMq3YAtOfVtEkTQFYqLZ8t39eDhTaHTBb4g@mail.gmail.com>, 
+	<CANejiEWWnrY_dKKuKLvjRms85crO+A7hi8P6nTkGMX9O2TL4kQ@mail.gmail.com>
+X-Priority: 3
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.91[en]
+Mime-Version: 1.0
+Message-ID: <201210161040097340482@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9G2dmEr029134
 
-On Mon, Oct 8, 2012 at 11:09 AM, Dave Jones <davej@redhat.com> wrote:
-> Last month I sent in 80de7c3138ee9fd86a98696fd2cf7ad89b995d0a to remove
-> a user triggerable BUG in mempolicy.
+On 2012-10-15 21:18 Shaohua Li <shli@kernel.org> Wrote:
+>2012/10/15 Shaohua Li <shli@fusionio.com>:
+>> 2012/10/15 Jianpeng Ma <majianpeng@gmail.com>:
+>>> My workload is a raid5 which had 16 disks. And used our filesystem to
+>>> write using direct-io mode.
+>>> I used the blktrace to find those message:
+>>>
+>>> 8,16   0     3570     1.083923979  2519  I   W 144323176 + 24 [md127_raid5]
+>>> 8,16   0        0     1.083926214     0  m   N cfq2519 insert_request
+>>> 8,16   0     3571     1.083926586  2519  I   W 144323072 + 104 [md127_raid5]
+>>> 8,16   0        0     1.083926952     0  m   N cfq2519 insert_request
+>>> 8,16   0     3572     1.083927180  2519  U   N [md127_raid5] 2
+>>> 8,16   0        0     1.083927870     0  m   N cfq2519 Not idling.st->count:1
+>>> 8,16   0        0     1.083928320     0  m   N cfq2519 dispatch_insert
+>>> 8,16   0        0     1.083928951     0  m   N cfq2519 dispatched a request
+>>> 8,16   0        0     1.083929443     0  m   N cfq2519 activate rq,drv=1
+>>> 8,16   0     3573     1.083929530  2519  D   W 144323176 + 24 [md127_raid5]
+>>> 8,16   0        0     1.083933883     0  m   N cfq2519 Not idling.st->count:1
+>>> 8,16   0        0     1.083934189     0  m   N cfq2519 dispatch_insert
+>>> 8,16   0        0     1.083934654     0  m   N cfq2519 dispatched a request
+>>> 8,16   0        0     1.083935014     0  m   N cfq2519 activate rq,drv=2
+>>> 8,16   0     3574     1.083935101  2519  D   W 144323072 + 104 [md127_raid5]
+>>> 8,16   0     3575     1.084196179     0  C   W 144323176 + 24 [0]
+>>> 8,16   0        0     1.084197979     0  m   N cfq2519 complete rqnoidle 0
+>>> 8,16   0     3576     1.084769073     0  C   W 144323072 + 104 [0]
+>>>   ......
+>>> 8,16   1     3596     1.091394357  2519  I   W 144322544 + 16 [md127_raid5]
+>>> 8,16   1        0     1.091396181     0  m   N cfq2519 insert_request
+>>> 8,16   1     3597     1.091396571  2519  I   W 144322520 + 24 [md127_raid5]
+>>> 8,16   1        0     1.091396934     0  m   N cfq2519 insert_request
+>>> 8,16   1     3598     1.091397165  2519  I   W 144322488 + 32 [md127_raid5]
+>>> 8,16   1        0     1.091397477     0  m   N cfq2519 insert_request
+>>> 8,16   1     3599     1.091397708  2519  I   W 144322432 + 56 [md127_raid5]
+>>> 8,16   1        0     1.091398023     0  m   N cfq2519 insert_request
+>>> 8,16   1     3600     1.091398284  2519  U   N [md127_raid5] 4
+>>> 8,16   1        0     1.091398986     0  m   N cfq2519 Not idling. st->count:1
+>>> 8,16   1        0     1.091399511     0  m   N cfq2519 dispatch_insert
+>>> 8,16   1        0     1.091400217     0  m   N cfq2519 dispatched a request
+>>> 8,16   1        0     1.091400688     0  m   N cfq2519 activate rq,drv=1
+>>> 8,16   1     3601     1.091400766  2519  D   W 144322544 + 16 [md127_raid5]
+>>> 8,16   1        0     1.091406151     0  m   N cfq2519 Not idling.st->count:1
+>>> 8,16   1        0     1.091406460     0  m   N cfq2519 dispatch_insert
+>>> 8,16   1        0     1.091406931     0  m   N cfq2519 dispatched a request
+>>> 8,16   1        0     1.091407291     0  m   N cfq2519 activate rq,drv=2
+>>> 8,16   1     3602     1.091407378  2519  D   W 144322520 + 24 [md127_raid5]
+>>> 8,16   1        0     1.091414006     0  m   N cfq2519 Not idling.st->count:1
+>>> 8,16   1        0     1.091414297     0  m   N cfq2519 dispatch_insert
+>>> 8,16   1        0     1.091414702     0  m   N cfq2519 dispatched a request
+>>> 8,16   1        0     1.091415047     0  m   N cfq2519 activate rq, drv=3
+>>> 8,16   1     3603     1.091415125  2519  D   W 144322488 + 32 [md127_raid5]
+>>> 8,16   1        0     1.091416469     0  m   N cfq2519 Not idling.st->count:1
+>>> 8,16   1        0     1.091416754     0  m   N cfq2519 dispatch_insert
+>>> 8,16   1        0     1.091417186     0  m   N cfq2519 dispatched a request
+>>> 8,16   1        0     1.091417535     0  m   N cfq2519 activate rq,drv=4
+>>> 8,16   1     3604     1.091417628  2519  D   W 144322432 + 56 [md127_raid5]
+>>> 8,16   1     3605     1.091857225  4393  C   W 144322544 + 16 [0]
+>>> 8,16   1        0     1.091858753     0  m   N cfq2519 complete rqnoidle 0
+>>> 8,16   1     3606     1.092068456  4393  C   W 144322520 + 24 [0]
+>>> 8,16   1        0     1.092069851     0  m   N cfq2519 complete rqnoidle 0
+>>> 8,16   1     3607     1.092350440  4393  C   W 144322488 + 32 [0]
+>>> 8,16   1        0     1.092351688     0  m   N cfq2519 complete rqnoidle 0
+>>> 8,16   1     3608     1.093629323     0  C   W 144322432 + 56 [0]
+>>> 8,16   1        0     1.093631151     0  m   N cfq2519 complete rqnoidle 0
+>>> 8,16   1        0     1.093631574     0  m   N cfq2519 will busy wait
+>>> 8,16   1        0     1.093631829     0  m   N cfq schedule dispatch
+>>>
+>>> Because in func "elv_attempt_insert_merge", it only to try to
+>>> backmerge.So the four request can't merge in theory.
+>>> I trace ten minutes and count those situation, it can count 25%.
+>>>
+>>> With the patch,i tested and not found situation like above.
+>>>
+>>> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+>>> ---
+>>>  block/blk-core.c |    3 ++-
+>>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/block/blk-core.c b/block/blk-core.c
+>>> index a33870b..3c95c4d 100644
+>>> --- a/block/blk-core.c
+>>> +++ b/block/blk-core.c
+>>> @@ -2868,7 +2868,8 @@ static int plug_rq_cmp(void *priv, struct list_head *a, struct list_head *b)
+>>>         struct request *rqa = container_of(a, struct request, queuelist);
+>>>         struct request *rqb = container_of(b, struct request, queuelist);
+>>>
+>>> -       return !(rqa->q <= rqb->q);
+>>> +       return !(rqa->q < rqb->q ||
+>>> +               (rqa->q == rqb->q && blk_rq_pos(rqa) < blk_rq_pos(rqb)));
+>>>  }
+>>
+>> Does this one help too?
+>> http://marc.info/?l=linux-kernel&m=132399972114668&w=2
+>>
+>> I thought the real problem is we don't do recursive request
+>> merge. I had no objection to the patch itself, but just hope we
+>> can make recursive merge work, which is more generic.
 >
-> Ben Hutchings pointed out to me that my change introduced a potential leak
-> of stack contents to userspace, because none of the callers check the return value.
->
-> This patch adds the missing return checking, and also clears the buffer beforehand.
-
-I don't think 80de7c3138ee9fd86a98696fd2cf7ad89b995d0a is right fix. we should
-close a race (or kill remain ref count leak) if we still have.
-Because of, this patch makes unstable /proc output and might lead to
-userland confusing.
+>Oh, wait, the 4 requests aren't merged completely in your case.
+>And the requests are from one thread and plug context.
+>Not the issue I mentioned. I'm wondering how this could happen.
+>they should be merged in attempt_plug_merge already.
+Yes, i ignore this. The real problem is why not merge in attempt_plug_mege?
+I'll do further study.
+Thanks!
+Jianpengÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
