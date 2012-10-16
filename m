@@ -1,100 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab2JPOtg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 10:49:36 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:45186 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754597Ab2JPOtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 10:49:35 -0400
-Date: Tue, 16 Oct 2012 16:49:32 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: linux-ide@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: ata4.00: failed to get Identify Device Data, Emask 0x1
-Message-ID: <20121016144932.GA24044@aftab.osrc.amd.com>
+	id S1754382Ab2JPOvX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 10:51:23 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:36697 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab2JPOvW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 10:51:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121016134129.2fcd7c8ebe1235065aea929e@canb.auug.org.au>
+References: <alpine.LFD.2.02.1210121434140.10531@tux.localdomain> <20121016134129.2fcd7c8ebe1235065aea929e@canb.auug.org.au>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 16 Oct 2012 07:50:52 -0700
+X-Google-Sender-Auth: mdM3V2w8W6MJDr4wT-1WD95P0pA
+Message-ID: <CA+55aFzz66Y1MtOoqEMrQCVzdL-2pgr43e1sXUa=eM5GXL9XSA@mail.gmail.com>
+Subject: Re: [GIT PULL] Linux KVM tool for v3.7-rc0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Mon, Oct 15, 2012 at 7:41 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git kvmtool/for-linus
+>
+> So you have not taken this in the v3.7 merge window.
+>
+> Will you ever merge this?
 
-a bunch of my boxes started showing this on 3.7-rc1 (and maybe earlier):
+I have yet to see a compelling argument for merging it. It's tons of
+code, it doesnt match the original "small simple" model, and I think
+it would be better off as a separate project.
 
-[    4.667077] ata4.00: failed to get Identify Device Data, Emask 0x1
-[    4.675071] ata4.00: failed to get Identify Device Data, Emask 0x1
-
-Another one:
-
-[    3.325371] ata4.00: failed to get Identify Device Data, Emask 0x1
-[    3.488602] ata4.00: failed to get Identify Device Data, Emask 0x1
-
-This last one is a laptop which suspends/resumes so this message happens
-each time the driver gets initialized.
-
-[    1.389734] ata1.00: failed to get Identify Device Data, Emask 0x1
-[    1.395031] ata1.00: failed to get Identify Device Data, Emask 0x1
-[16825.339587] ata1.00: failed to get Identify Device Data, Emask 0x1
-[16825.345835] ata1.00: failed to get Identify Device Data, Emask 0x1
-[16842.294983] ata1.00: failed to get Identify Device Data, Emask 0x1
-[16842.300513] ata1.00: failed to get Identify Device Data, Emask 0x1
-[23628.820487] ata1.00: failed to get Identify Device Data, Emask 0x1
-[23628.825556] ata1.00: failed to get Identify Device Data, Emask 0x1
-[23661.555111] ata1.00: failed to get Identify Device Data, Emask 0x1
-[23661.560745] ata1.00: failed to get Identify Device Data, Emask 0x1
-
-Grepping points to:
-
-		/* Obtain SATA Settings page from Identify Device Data Log,
-		 * which contains DevSlp timing variables etc.
-		 * Exclude old devices with ata_id_has_ncq()
-		 */
-		if (ata_id_has_ncq(dev->id)) {
-			err_mask = ata_read_log_page(dev,
-						     ATA_LOG_SATA_ID_DEV_DATA,
-						     ATA_LOG_SATA_SETTINGS,
-						     dev->sata_settings,
-						     1);
-			if (err_mask)
-				ata_dev_dbg(dev,
-					    "failed to get Identify Device Data, Emask 0x%x\n",
-					    err_mask);
-		}
-
-in ata_dev_configure().
-
-Judging by the logs, it must've came in during this merge window:
-
-Oct  4 11:08:13 kepek kernel: [    4.670357] ata4.00: failed to get Identify Device Data, Emask 0x1
-Oct  4 11:08:13 kepek kernel: [    4.678833] ata4.00: failed to get Identify Device Data, Emask 0x1
-Oct  4 11:29:23 kepek kernel: [    4.690456] ata4.00: failed to get Identify Device Data, Emask 0x1
-Oct  4 11:29:23 kepek kernel: [    4.698473] ata4.00: failed to get Identify Device Data, Emask 0x1
-Oct  4 11:54:20 kepek kernel: [    4.706777] ata4.00: failed to get Identify Device Data, Emask 0x1
-Oct  4 11:54:20 kepek kernel: [    4.715194] ata4.00: failed to get Identify Device Data, Emask 0x1
-Oct  4 14:30:17 kepek kernel: [    4.666199] ata4.00: failed to get Identify Device Data, Emask 0x1
-Oct  4 14:30:17 kepek kernel: [    4.674742] ata4.00: failed to get Identify Device Data, Emask 0x1
-Oct  4 15:30:17 kepek kernel: [    4.686204] ata4.00: failed to get Identify Device Data, Emask 0x1
-Oct  4 15:30:17 kepek kernel: [    4.694194] ata4.00: failed to get Identify Device Data, Emask 0x1
-Oct 10 13:09:40 kepek kernel: [    4.670245] ata4.00: failed to get Identify Device Data, Emask 0x1
-Oct 10 13:09:40 kepek kernel: [    4.678429] ata4.00: failed to get Identify Device Data, Emask 0x1
-Oct 10 15:28:56 kepek kernel: [    4.658456] ata4.00: failed to get Identify Device Data, Emask 0x1
-Oct 10 15:28:56 kepek kernel: [    4.666485] ata4.00: failed to get Identify Device Data, Emask 0x1
-Oct 12 10:38:17 kepek kernel: [    4.694542] ata4.00: failed to get Identify Device Data, Emask 0x1
-Oct 12 10:38:17 kepek kernel: [    4.702561] ata4.00: failed to get Identify Device Data, Emask 0x1
-Oct 16 14:30:26 kepek kernel: [    4.667077] ata4.00: failed to get Identify Device Data, Emask 0x1
-Oct 16 14:30:26 kepek kernel: [    4.675071] ata4.00: failed to get Identify Device Data, Emask 0x1
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+           Linus
