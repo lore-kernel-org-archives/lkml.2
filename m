@@ -1,102 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab2JPOO6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 10:14:58 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59389 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754495Ab2JPOO5 (ORCPT
+	id S1754627Ab2JPOZU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 10:25:20 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:62994 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754250Ab2JPOZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 10:14:57 -0400
-From: Felipe Balbi <balbi@ti.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH] Revert "serial: omap: fix software flow control"
-Date: Tue, 16 Oct 2012 17:09:22 +0300
-Message-ID: <1350396562-32579-1-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.8.0.rc0
+	Tue, 16 Oct 2012 10:25:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20121015150204.6f837a39.akpm@linux-foundation.org>
+References: <BD54883EA7DE8B41A61B7E723561C711139F75D348@sc-vexch3.marvell.com>
+	<CAE-am1NFB+opbid_f7RA_9EXUKjPCJssdOcZBrEQmQHG4EP9Gg@mail.gmail.com>
+	<20121015150204.6f837a39.akpm@linux-foundation.org>
+Date: Tue, 16 Oct 2012 22:25:16 +0800
+Message-ID: <CAE-am1MwtEj5=bxAD-GXM7801vqCouaxmepH-mC=kzeq=2jiwg@mail.gmail.com>
+Subject: Re: [PATCH] panic: fix incomplete panic log in panic()
+From: Qing Z <njumical@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: mingo@kernel.org, ben@decadent.org.uk, markivx@codeaurora.org,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, cxie4@marvell.com,
+        binw@marvell.com, wwang27@marvell.com, xjian@marvell.com,
+        zhangwm@marvell.com, Qing Zhu <qzhu@marvell.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 957ee7270d632245b43f6feb0e70d9a5e9ea6cf6
-(serial: omap: fix software flow control).
-
-As Russell has pointed out, that commit isn't fixing
-Software Flow Control at all, and it actually makes
-it even more broken.
-
-It was agreed to revert this commit and use Russell's
-latest UART patches instead.
-
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
-
-Hi Greg,
-
-you might prefer to do the revert yourself, in that case just
-revert commit 957ee7270d632245b43f6feb0e70d9a5e9ea6cf6.
-
-thanks
-
- arch/arm/plat-omap/include/plat/omap-serial.h |  4 ++--
- drivers/tty/serial/omap-serial.c              | 12 ++++++------
- 2 files changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/arch/arm/plat-omap/include/plat/omap-serial.h b/arch/arm/plat-omap/include/plat/omap-serial.h
-index f4a4cd0..1957a85 100644
---- a/arch/arm/plat-omap/include/plat/omap-serial.h
-+++ b/arch/arm/plat-omap/include/plat/omap-serial.h
-@@ -40,10 +40,10 @@
- #define OMAP_UART_WER_MOD_WKUP	0X7F
- 
- /* Enable XON/XOFF flow control on output */
--#define OMAP_UART_SW_TX		0x8
-+#define OMAP_UART_SW_TX		0x04
- 
- /* Enable XON/XOFF flow control on input */
--#define OMAP_UART_SW_RX		0x2
-+#define OMAP_UART_SW_RX		0x04
- 
- #define OMAP_UART_SYSC_RESET	0X07
- #define OMAP_UART_TCR_TRIG	0X0F
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index 6ede6fd..6d3d26a 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -671,19 +671,19 @@ serial_omap_configure_xonxoff
- 
- 	/*
- 	 * IXON Flag:
--	 * Flow control for OMAP.TX
--	 * OMAP.RX should listen for XON/XOFF
-+	 * Enable XON/XOFF flow control on output.
-+	 * Transmit XON1, XOFF1
- 	 */
- 	if (termios->c_iflag & IXON)
--		up->efr |= OMAP_UART_SW_RX;
-+		up->efr |= OMAP_UART_SW_TX;
- 
- 	/*
- 	 * IXOFF Flag:
--	 * Flow control for OMAP.RX
--	 * OMAP.TX should send XON/XOFF
-+	 * Enable XON/XOFF flow control on input.
-+	 * Receiver compares XON1, XOFF1.
- 	 */
- 	if (termios->c_iflag & IXOFF)
--		up->efr |= OMAP_UART_SW_TX;
-+		up->efr |= OMAP_UART_SW_RX;
- 
- 	serial_out(up, UART_EFR, up->efr | UART_EFR_ECB);
- 	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_A);
--- 
-1.8.0.rc0
-
+2012/10/16 Andrew Morton <akpm@linux-foundation.org>:
+> On Mon, 15 Oct 2012 19:38:46 +0800
+> Qing Z <njumical@gmail.com> wrote:
+>
+>> >>       atomic_notifier_call_chain(&panic_notifier_list, 0, buf);
+>> >>
+>> >> +     /*
+>> >> +      * Unlock the console anyway here, in case it's occupied by another
+>> >> +      * one which has no chance to unlock the console thus prevents the
+>> >> +      * panic log prints on the console.
+>> >> +      */
+>> >> +     console_unlock();
+>> >> +
+>> >>       bust_spinlocks(0);
+>> >>
+>> >>       if (!panic_blink)
+>> >
+>> > hm.  console_unlock() does a large amount of work, and it seems risky
+>> > to do all of that when the system is in a bad-and-getting-worse state.
+>> >
+>> > Is there some more modest thing we could do here, for example,
+>> >
+>> >         if (console_locked) {
+>> >                 up(&console_sem);
+>> >                 console_locked = 0;
+>> >         }
+>> >
+>> > or something along those lines?
+>> >
+>> > Also, perhaps this operation should be moved into bust_spinlocks().
+>> > What would have happened if your code had triggered an oops, rather
+>> > than called panic()?
+>> >
+>> >
+>> Hi Andrew,
+>>       Thanks for your reply!
+>>       For your question" What would have happened if your code had
+>> triggered an oops, rather than called panic()?", actually we found the
+>> issue when trigger an oops. When we call FBIOPAN_DISPLAY in
+>> ./drivers/video/fbmem.c, it will first lock console, if we trigger an
+>> oops before unlock console, the issue happen. It also exist when call
+>> panic() directly in the same case. It is a common issue for panic
+>> process.
+>>       I have two options for solution:
+>>       1. I agree with your suggestion that add some modest thing in
+>> bust_spinlocks(), bust_spinlocks() is supposed to clear spinlocks
+>> which prevent oops information from reaching the user. But it didn't
+>> clear console_sem. We can add codes that clear console_sem.
+>>       1) add up(&console_sem) in bust_spinlocks(0).
+>>               It will be risky in case that no printk after bust_spinlocks(0) in
+>> panic(), because no console_unlock() to print log out.
+>>       2) call console_unlock()in bust_spinlocks(0).
+>>               For bust_spinlocks(0), console_unblank() is used to flush oops to
+>> mtdoops console(commit: b61312d353da1871778711040464b10f5cd904df).
+>> Logically, if panic without the issue, console_unlock is called after
+>> couples of console_lock and console_unlock; if panic with the issue,
+>> will it be risky call console_unlock() in console_unblank() after
+>> console_lock()?
+>>       2. Moreover, there is another option. We can also add protect codes
+>> in vprintk(), vprintk() just cover the cases that two cores' log
+>> interleave when panic and printk recurse itself. We can add all cases'
+>> protection here. Actually the original vprintk() don___t have the issue,
+>> but after the patch(commit: fe21773d655c2c64641ec2cef499289ea175c817)
+>> which fix two cores' log interleave issue , the issue is not covered.
+>> I add a flag after panic_smp_self_stop() in panic(), and check the
+>> flag, if flag is set, vprintk will call zap_locks(), I have tested the
+>> option, the issue also disappear.
+>>       What do you think?
+>
+> The #1 priority is to get the oops message reliably delivered.
+>
+> That means we should avoid console_unlock() on the oops path: it's far
+> too complicated and risks deadlocks, re-oopses, recursion, etc.
+>
+> If there was text queued in the console layer and that text fails to be
+> emitted, well, that's sad, but it's more important that the oops
+> message be displayed.
+>
+> If the oops trace is occasionally interleaved with other text then
+> that's sad too, but at least the info we need is readable.  Oopses
+> inside console_lock() are rare.
+>
+>
+> So I'd suggest that the code in bust_spinlocks(1) should simply do
+> whatever needs to be done to make the forthcoming oops trace be
+> visible, and leave it at that - don't bother trying to flush out any
+> old text.
+>
+>
+> Also, we should be careful with things like up() on a semaphore which
+> hasn't been down()ed.  Because under some Kconfig combinations, such an
+> operation might trigger debugging traces and we could get into a big
+> mess.  (An up() on non-down()ed semaphore is actually an OK operation,
+> so this was a bad example.  But you see the problem).
+>
+Hi Andrew,
+         It is indeed risky that call console_unlock() directly in
+panic process, like deadlock that  core0 stop core1 but core1 is
+holding logbuf_lock.
+         As to old text, if we hold logbuf_lock when panic,we can keep
+panic log continuous and entire, old text will be before panic
+log.Frankly, I don't see any risk that old text impact or interleave
+panic log.
