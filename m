@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095Ab2JPR6K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 13:58:10 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:48470 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755016Ab2JPR6I (ORCPT
+	id S932136Ab2JPR6Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 13:58:24 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:46035 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932097Ab2JPR6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 13:58:08 -0400
-Date: Tue, 16 Oct 2012 09:32:11 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: peterz@infradead.org, acme@ghostprotocols.net, mingo@kernel.org,
-        tglx@linutronix.de, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH 2/2] perf, cpu hotplug: Use cached value of
- smp_processor_id()
-Message-ID: <20121016163211.GB2385@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20121016075809.3572.47848.stgit@srivatsabhat.in.ibm.com>
- <20121016075817.3572.76733.stgit@srivatsabhat.in.ibm.com>
+	Tue, 16 Oct 2012 13:58:20 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18rBIb37kRa9rvby8CTJxbG
+Date: Tue, 16 Oct 2012 10:58:17 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastien Guiriec <s-guiriec@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] OMAP4: devices: fixup OMAP4 DMIC platform device error
+ message
+Message-ID: <20121016175817.GY15569@atomide.com>
+References: <1350401440-9620-1-git-send-email-s-guiriec@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121016075817.3572.76733.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101617-5406-0000-0000-0000012BB623
+In-Reply-To: <1350401440-9620-1-git-send-email-s-guiriec@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 01:28:17PM +0530, Srivatsa S. Bhat wrote:
-> The perf_cpu_notifier() macro invokes smp_processor_id() multiple
-> times. Optimize it by using a local variable.
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+* Sebastien Guiriec <s-guiriec@ti.com> [121016 08:32]:
+> Correct DMIC hwmod lockup error message and replace printk() by
+> pr_err().
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Thanks applying into omap-for-v3.7-rc1/fixes-part2.
 
-> ---
-> 
->  include/linux/perf_event.h |    7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 0647805..6bfb2faa 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -803,15 +803,16 @@ static inline void perf_event_task_tick(void)				{ }
->  do {									\
->  	static struct notifier_block fn##_nb __cpuinitdata =		\
->  		{ .notifier_call = fn, .priority = CPU_PRI_PERF };	\
-> +	unsigned long cpu = smp_processor_id();				\
->  	unsigned long flags;						\
->  	fn(&fn##_nb, (unsigned long)CPU_UP_PREPARE,			\
-> -		(void *)(unsigned long)smp_processor_id());		\
-> +		(void *)(unsigned long)cpu);				\
->  	local_irq_save(flags);						\
->  	fn(&fn##_nb, (unsigned long)CPU_STARTING,			\
-> -		(void *)(unsigned long)smp_processor_id());		\
-> +		(void *)(unsigned long)cpu);				\
->  	local_irq_restore(flags);					\
->  	fn(&fn##_nb, (unsigned long)CPU_ONLINE,				\
-> -		(void *)(unsigned long)smp_processor_id());		\
-> +		(void *)(unsigned long)cpu);				\
->  	register_cpu_notifier(&fn##_nb);				\
->  } while (0)
-> 
-> 
+Regards,
 
+Tony
