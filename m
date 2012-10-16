@@ -1,134 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261Ab2JPCjm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 22:39:42 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53144 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094Ab2JPCjl (ORCPT
+	id S1755333Ab2JPCl5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 22:41:57 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:39603 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752148Ab2JPCl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 22:39:41 -0400
-Date: Tue, 16 Oct 2012 10:40:14 +0800
-From: "Jianpeng Ma" <majianpeng@gmail.com>
-To: shli <shli@kernel.org>
-Cc: axboe <axboe@kernel.dk>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Re: [PATCH] block: Add blk_rq_pos(rq) to sort rq when plushing plug-list.
-References: <2012101520345871894911@gmail.com> <CANejiEWL5_tdSbfzMq3YAtOfVtEkTQFYqLZ8t39eDhTaHTBb4g@mail.gmail.com>, 
-	<CANejiEWWnrY_dKKuKLvjRms85crO+A7hi8P6nTkGMX9O2TL4kQ@mail.gmail.com>
-X-Priority: 3
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.91[en]
+	Mon, 15 Oct 2012 22:41:56 -0400
+Date: Tue, 16 Oct 2012 13:41:29 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [GIT PULL] Linux KVM tool for v3.7-rc0
+Message-Id: <20121016134129.2fcd7c8ebe1235065aea929e@canb.auug.org.au>
+In-Reply-To: <alpine.LFD.2.02.1210121434140.10531@tux.localdomain>
+References: <alpine.LFD.2.02.1210121434140.10531@tux.localdomain>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Message-ID: <201210161040097340482@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__16_Oct_2012_13_41_29_+1100_Xetdj=4rn0ma2Ztr"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9G2dmEr029134
 
-On 2012-10-15 21:18 Shaohua Li <shli@kernel.org> Wrote:
->2012/10/15 Shaohua Li <shli@fusionio.com>:
->> 2012/10/15 Jianpeng Ma <majianpeng@gmail.com>:
->>> My workload is a raid5 which had 16 disks. And used our filesystem to
->>> write using direct-io mode.
->>> I used the blktrace to find those message:
->>>
->>> 8,16   0     3570     1.083923979  2519  I   W 144323176 + 24 [md127_raid5]
->>> 8,16   0        0     1.083926214     0  m   N cfq2519 insert_request
->>> 8,16   0     3571     1.083926586  2519  I   W 144323072 + 104 [md127_raid5]
->>> 8,16   0        0     1.083926952     0  m   N cfq2519 insert_request
->>> 8,16   0     3572     1.083927180  2519  U   N [md127_raid5] 2
->>> 8,16   0        0     1.083927870     0  m   N cfq2519 Not idling.st->count:1
->>> 8,16   0        0     1.083928320     0  m   N cfq2519 dispatch_insert
->>> 8,16   0        0     1.083928951     0  m   N cfq2519 dispatched a request
->>> 8,16   0        0     1.083929443     0  m   N cfq2519 activate rq,drv=1
->>> 8,16   0     3573     1.083929530  2519  D   W 144323176 + 24 [md127_raid5]
->>> 8,16   0        0     1.083933883     0  m   N cfq2519 Not idling.st->count:1
->>> 8,16   0        0     1.083934189     0  m   N cfq2519 dispatch_insert
->>> 8,16   0        0     1.083934654     0  m   N cfq2519 dispatched a request
->>> 8,16   0        0     1.083935014     0  m   N cfq2519 activate rq,drv=2
->>> 8,16   0     3574     1.083935101  2519  D   W 144323072 + 104 [md127_raid5]
->>> 8,16   0     3575     1.084196179     0  C   W 144323176 + 24 [0]
->>> 8,16   0        0     1.084197979     0  m   N cfq2519 complete rqnoidle 0
->>> 8,16   0     3576     1.084769073     0  C   W 144323072 + 104 [0]
->>>   ......
->>> 8,16   1     3596     1.091394357  2519  I   W 144322544 + 16 [md127_raid5]
->>> 8,16   1        0     1.091396181     0  m   N cfq2519 insert_request
->>> 8,16   1     3597     1.091396571  2519  I   W 144322520 + 24 [md127_raid5]
->>> 8,16   1        0     1.091396934     0  m   N cfq2519 insert_request
->>> 8,16   1     3598     1.091397165  2519  I   W 144322488 + 32 [md127_raid5]
->>> 8,16   1        0     1.091397477     0  m   N cfq2519 insert_request
->>> 8,16   1     3599     1.091397708  2519  I   W 144322432 + 56 [md127_raid5]
->>> 8,16   1        0     1.091398023     0  m   N cfq2519 insert_request
->>> 8,16   1     3600     1.091398284  2519  U   N [md127_raid5] 4
->>> 8,16   1        0     1.091398986     0  m   N cfq2519 Not idling. st->count:1
->>> 8,16   1        0     1.091399511     0  m   N cfq2519 dispatch_insert
->>> 8,16   1        0     1.091400217     0  m   N cfq2519 dispatched a request
->>> 8,16   1        0     1.091400688     0  m   N cfq2519 activate rq,drv=1
->>> 8,16   1     3601     1.091400766  2519  D   W 144322544 + 16 [md127_raid5]
->>> 8,16   1        0     1.091406151     0  m   N cfq2519 Not idling.st->count:1
->>> 8,16   1        0     1.091406460     0  m   N cfq2519 dispatch_insert
->>> 8,16   1        0     1.091406931     0  m   N cfq2519 dispatched a request
->>> 8,16   1        0     1.091407291     0  m   N cfq2519 activate rq,drv=2
->>> 8,16   1     3602     1.091407378  2519  D   W 144322520 + 24 [md127_raid5]
->>> 8,16   1        0     1.091414006     0  m   N cfq2519 Not idling.st->count:1
->>> 8,16   1        0     1.091414297     0  m   N cfq2519 dispatch_insert
->>> 8,16   1        0     1.091414702     0  m   N cfq2519 dispatched a request
->>> 8,16   1        0     1.091415047     0  m   N cfq2519 activate rq, drv=3
->>> 8,16   1     3603     1.091415125  2519  D   W 144322488 + 32 [md127_raid5]
->>> 8,16   1        0     1.091416469     0  m   N cfq2519 Not idling.st->count:1
->>> 8,16   1        0     1.091416754     0  m   N cfq2519 dispatch_insert
->>> 8,16   1        0     1.091417186     0  m   N cfq2519 dispatched a request
->>> 8,16   1        0     1.091417535     0  m   N cfq2519 activate rq,drv=4
->>> 8,16   1     3604     1.091417628  2519  D   W 144322432 + 56 [md127_raid5]
->>> 8,16   1     3605     1.091857225  4393  C   W 144322544 + 16 [0]
->>> 8,16   1        0     1.091858753     0  m   N cfq2519 complete rqnoidle 0
->>> 8,16   1     3606     1.092068456  4393  C   W 144322520 + 24 [0]
->>> 8,16   1        0     1.092069851     0  m   N cfq2519 complete rqnoidle 0
->>> 8,16   1     3607     1.092350440  4393  C   W 144322488 + 32 [0]
->>> 8,16   1        0     1.092351688     0  m   N cfq2519 complete rqnoidle 0
->>> 8,16   1     3608     1.093629323     0  C   W 144322432 + 56 [0]
->>> 8,16   1        0     1.093631151     0  m   N cfq2519 complete rqnoidle 0
->>> 8,16   1        0     1.093631574     0  m   N cfq2519 will busy wait
->>> 8,16   1        0     1.093631829     0  m   N cfq schedule dispatch
->>>
->>> Because in func "elv_attempt_insert_merge", it only to try to
->>> backmerge.So the four request can't merge in theory.
->>> I trace ten minutes and count those situation, it can count 25%.
->>>
->>> With the patch,i tested and not found situation like above.
->>>
->>> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
->>> ---
->>>  block/blk-core.c |    3 ++-
->>>  1 file changed, 2 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/block/blk-core.c b/block/blk-core.c
->>> index a33870b..3c95c4d 100644
->>> --- a/block/blk-core.c
->>> +++ b/block/blk-core.c
->>> @@ -2868,7 +2868,8 @@ static int plug_rq_cmp(void *priv, struct list_head *a, struct list_head *b)
->>>         struct request *rqa = container_of(a, struct request, queuelist);
->>>         struct request *rqb = container_of(b, struct request, queuelist);
->>>
->>> -       return !(rqa->q <= rqb->q);
->>> +       return !(rqa->q < rqb->q ||
->>> +               (rqa->q == rqb->q && blk_rq_pos(rqa) < blk_rq_pos(rqb)));
->>>  }
->>
->> Does this one help too?
->> http://marc.info/?l=linux-kernel&m=132399972114668&w=2
->>
->> I thought the real problem is we don't do recursive request
->> merge. I had no objection to the patch itself, but just hope we
->> can make recursive merge work, which is more generic.
+--Signature=_Tue__16_Oct_2012_13_41_29_+1100_Xetdj=4rn0ma2Ztr
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Linus,
+
+On Fri, 12 Oct 2012 14:34:33 +0300 (EEST) Pekka Enberg <penberg@kernel.org>=
+ wrote:
 >
->Oh, wait, the 4 requests aren't merged completely in your case.
->And the requests are from one thread and plug context.
->Not the issue I mentioned. I'm wondering how this could happen.
->they should be merged in attempt_plug_merge already.
-Yes, i ignore this. The real problem is why not merge in attempt_plug_mege?
-I'll do further study.
-Thanks!
-Jianpengÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Please consider pulling the latest LKVM tree from:
+>=20
+>   git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git kvmtool=
+/for-linus
+
+So you have not taken this in the v3.7 merge window.
+
+Will you ever merge this?   If not, it should be removed from linux-next
+(where it has been sitting since before v3.1) and turned into an
+independent (to the kernel) project.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__16_Oct_2012_13_41_29_+1100_Xetdj=4rn0ma2Ztr
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQfMlZAAoJEECxmPOUX5FETgwQAIJAKWXu0t7ivnst3jBTKm7x
+AwCyQtwhJ+F5JIBWTAX5ZagN23GxPRKS1oedUBPH19OvMym2a+Yubi1Y+2iQVZqc
+6XbODhtGXhnE9u1qMia8M0Q5Getw4CifGmHMl1sku2XAbN1gw6+vlB8iBhHMzieZ
+f5up2IQ8j16OVqRAH2sUYiWXDssQ5Qjm7BeGw2Jmueax8gL5NxYZxpQwvXyBqrK/
+R2f5n3W4c8MEX6MNOmrdcZTRcAsyYa59TR40+1/Zdn82F7iV8AcD3yonFiLrAIt5
+TImJQ9dEzyhzMPkP3AkvzD8qAc3Wuk7tqhH6usX/0SeUrzeSanSUaivIA5QqIIk0
+cFnrZydox/Ts0aozjKSbvphTtF4sLFohFyU7+gTQkhI/1VmoRg5l/tX4McTqOatv
+ZHi2gu+OQTlis25ft1ksw2HYrL+t98Jr4UMPZk5Dgbpi87ZBNIudypPsvDd9pSk1
+W9EXKuGZhAKDr0l3sqFkBbJ7dK6t4Dk8FpeRXO/KFZx2MOjBru3c2EHuOZFKpIfU
+qaLiayZNbHCup10/1CBxwKpBWkETIbjHaZxqw+uM+EoISNbCArXgk1KevxsNbVeR
+JKdS0dA3NRehbd5jzrARq9ZUgMshhtYNnZIwtqgBazebaySCJbWTXqDbmpqjSib5
+gKCdN02HU6c5K5tguqNY
+=dEF0
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__16_Oct_2012_13_41_29_+1100_Xetdj=4rn0ma2Ztr--
