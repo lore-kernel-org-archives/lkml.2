@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633Ab2JPDR0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 23:17:26 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:18171 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753855Ab2JPDRY (ORCPT
+	id S1755625Ab2JPDXf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 23:23:35 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60747 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab2JPDXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 23:17:24 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApslAKfQfFB5LDhi/2dsb2JhbABFuhuEbQKBBoEJgiABAQQBOhwjBQsIAxUDLhQNGAM0h3IDCQWrM4Z9DYlUFIpNZoFngTWCQWADlBaBVIskhQ2DAQ
-Date: Tue, 16 Oct 2012 14:17:10 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
-        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [RFC v3 11/13] vfs: add 3 new ioctl interfaces
-Message-ID: <20121016031710.GD2864@dastard>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
- <1349863655-29320-12-git-send-email-zwu.kernel@gmail.com>
+	Mon, 15 Oct 2012 23:23:33 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <507CD2FA.8000009@jp.fujitsu.com>
+Date: Tue, 16 Oct 2012 12:22:34 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349863655-29320-12-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Glauber Costa <glommer@parallels.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Greg Thelen <gthelen@google.com>, devel@openvz.org,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v4 02/14] memcg: Reclaim when more than one page needed.
+References: <1349690780-15988-1-git-send-email-glommer@parallels.com> <1349690780-15988-3-git-send-email-glommer@parallels.com>
+In-Reply-To: <1349690780-15988-3-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 06:07:33PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+(2012/10/08 19:06), Glauber Costa wrote:
+> From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
 > 
->   FS_IOC_GET_HEAT_INFO: return a struct containing the various
-> metrics collected in btrfs_freq_data structs, and also return a
-
-I think you mean hot_freq_data :P
-
-> calculated data temperature based on those metrics. Optionally, retrieve
-> the temperature from the hot data hash list instead of recalculating it.
-
-To get the heat info for a specific file you have to know what file
-you want to get that info for, right?  I can see the usefulness of
-asking for the heat data on a specific file, but how do you find the
-hot files in the first place? i.e. the big question the user
-interface needs to answer is "what files are hot?".
-
-Once userspace knows what the hottest files are, it can open them
-and query the data via the above ioctl, but expecting userspace to
-iterate millions of inodes in a filesystem to find hot files is very
-inefficient.
-
-FWIW, if you were to return file handles to the hottest files, then
-the application could open and query them without even needing to
-know the path name to them. This woul dbe exceedingly useful for
-defragmentation programs, especially as that is the way xfs_fsr
-already operates on candidate files.(*)
-
-IOWs, sometimes the pathname is irrelevant to the operations that
-applications want to perform - all they care about having an
-efficient method of finding the inode they want and getting a file
-descriptor that points to the file. Given the heat map info fits
-right in to the sort of operations defrag and data mover tools
-already do, it kind of makes sense to optimise the interface towards
-those uses....
-
-(*) i.e. finds them via bulkstat which returns handle information
-along with all the other inode data, then opens the file by handle
-to do the defrag work....
-
->   FS_IOC_GET_HEAT_OPTS: return an integer representing the current
-> state of hot data tracking and migration:
+> mem_cgroup_do_charge() was written before kmem accounting, and expects
+> three cases: being called for 1 page, being called for a stock of 32
+> pages, or being called for a hugepage.  If we call for 2 or 3 pages (and
+> both the stack and several slabs used in process creation are such, at
+> least with the debug options I had), it assumed it's being called for
+> stock and just retried without reclaiming.
 > 
-> 0 = do nothing
-> 1 = track frequency of access
+> Fix that by passing down a minsize argument in addition to the csize.
 > 
->   FS_IOC_SET_HEAT_OPTS: change the state of hot data tracking and
-> migration, as described above.
+> And what to do about that (csize == PAGE_SIZE && ret) retry?  If it's
+> needed at all (and presumably is since it's there, perhaps to handle
+> races), then it should be extended to more than PAGE_SIZE, yet how far?
+> And should there be a retry count limit, of what?  For now retry up to
+> COSTLY_ORDER (as page_alloc.c does) and make sure not to do it if
+> __GFP_NORETRY.
+> 
+> [v4: fixed nr pages calculation pointed out by Christoph Lameter ]
+> 
+> Signed-off-by: Suleiman Souhlal <suleiman@google.com>
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> Reviewed-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 
-I can't see how this is a manageable interface. It is not
-persistent, so after every filesystem mount you'd have to set the
-flag on all your inodes again. Hence, for the moment, I'd suggest
-that dropping per-inode tracking control until all the core issues
-are sorted out....
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Cheers,
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
