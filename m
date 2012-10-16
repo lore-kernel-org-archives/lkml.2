@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab2JPEiK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 00:38:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59890 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265Ab2JPEiI (ORCPT
+	id S1755742Ab2JPEnc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 00:43:32 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56750 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754434Ab2JPEna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 00:38:08 -0400
-Date: Mon, 15 Oct 2012 21:40:40 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH] make GFP_NOTRACK flag unconditional
-Message-Id: <20121015214040.4ef190eb.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1210152102220.5400@chino.kir.corp.google.com>
-References: <1348826194-21781-1-git-send-email-glommer@parallels.com>
-	<alpine.DEB.2.00.1210022156450.8723@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1210152102220.5400@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Tue, 16 Oct 2012 00:43:30 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Date: Tue, 16 Oct 2012 13:43:04 +0900 (JST)
+Message-Id: <20121016.134304.86248639.d.hatayama@jp.fujitsu.com>
+To: fenghua.yu@intel.com
+Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        asit.k.mallick@intel.com, tony.luck@intel.com, arjan@linux.intel.com,
+        suresh.b.siddha@intel.com, len.brown@intel.com,
+        srivatsa.bhat@linux.vnet.ibm.com, rdunlap@xenotime.net,
+        gong.chen@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH v9 08/12] x86, hotplug: Wake up CPU0 via NMI instead of
+ INIT, SIPI, SIPI
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+In-Reply-To: <1350058189-6769-9-git-send-email-fenghua.yu@intel.com>
+References: <1350058189-6769-1-git-send-email-fenghua.yu@intel.com>
+	<1350058189-6769-9-git-send-email-fenghua.yu@intel.com>
+X-Mailer: Mew version 6.3 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Oct 2012 21:02:45 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
+From: Fenghua Yu <fenghua.yu@intel.com>
+Subject: [PATCH v9 08/12] x86, hotplug: Wake up CPU0 via NMI instead of INIT, SIPI, SIPI
+Date: Fri, 12 Oct 2012 09:09:45 -0700
 
-> On Tue, 2 Oct 2012, David Rientjes wrote:
-> 
-> > > There was a general sentiment in a recent discussion (See
-> > > https://lkml.org/lkml/2012/9/18/258) that the __GFP flags should be
-> > > defined unconditionally. Currently, the only offender is GFP_NOTRACK,
-> > > which is conditional to KMEMCHECK.
-> > > 
-> > > This simple patch makes it unconditional.
-> > > 
-> > > Signed-off-by: Glauber Costa <glommer@parallels.com>
-> > > CC: Christoph Lameter <cl@linux.com>
-> > > CC: Mel Gorman <mgorman@suse.de>
-> > > CC: Andrew Morton <akpm@linux-foundation.org>
-> > 
-> > Acked-by: David Rientjes <rientjes@google.com>
-> > 
-> > I think it was done this way to show that if CONFIG_KMEMCHECK=n then the 
-> > bit could be reused for something else but I can't think of any reason why 
-> > that would be useful; what would need to add a gfp bit that would also 
-> > happen to depend on CONFIG_KMEMCHECK=n?  Nothing comes to mind to save a 
-> > bit.
-> > 
-> > There are other cases of this as well, like __GFP_OTHER_NODE which is only 
-> > useful for thp and it's defined unconditionally.  So this seems fine to 
-> > me.
-> > 
-> 
-> Still missing from linux-next as of this morning, I think this patch 
-> should be merged.
+<cut>
 
-It's in 3.7-rc1.
+> @@ -1037,6 +1101,8 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+>  	 */
+>  	setup_local_APIC();
+>  
+> +	cpu0_logical_apicid = GET_APIC_LOGICAL_ID(apic_read(APIC_LDR));
+> +
 
-commit 3e648ebe076390018c317881d7d926f24d7bac6b
-Author: Glauber Costa <glommer@parallels.com>
-Date:   Mon Oct 8 16:33:52 2012 -0700
+In x2apic mode, logical apicid occupies a whole 32-bit length of LDR,
+but GET_APIC_LOGICAL_ID returns high 31-24 bits only, and this is only
+for xapic mode.
 
-    make GFP_NOTRACK definition unconditional
+Thanks.
+HATAYAMA, Daisuke
 
