@@ -1,123 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab2JPJgA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 05:36:00 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:56803 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410Ab2JPJf6 (ORCPT
+	id S1753375Ab2JPJiB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 05:38:01 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:48693 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448Ab2JPJh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 05:35:58 -0400
+	Tue, 16 Oct 2012 05:37:59 -0400
+Message-ID: <507D2AEF.9060509@gmail.com>
+Date: Tue, 16 Oct 2012 17:37:51 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAOh2x=n-523nC=bM9X5WrWYv=o=aKK_s-+MsA+XVcVP1yy1zFg@mail.gmail.com>
-References: <1350377120-27657-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CAOh2x=n-523nC=bM9X5WrWYv=o=aKK_s-+MsA+XVcVP1yy1zFg@mail.gmail.com>
-Date: Tue, 16 Oct 2012 12:35:57 +0300
-Message-ID: <CAHp75Vc6aPAqG7gDobjOaiSRqw8MNAG7pS3o-ze6ejXXF7AFEg@mail.gmail.com>
-Subject: Re: [PATCH] dmatest: terminate all ongoing transfers before
- submitting new one
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: viresh kumar <viresh.kumar@linaro.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=UTF-8
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: Will Deacon <will.deacon@arm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        akpm@linux-foundation.org, mhocko@suse.cz,
+        Steve Capper <steve.capper@arm.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] mm: thp: Set the accessed flag for old pages on access
+ fault.
+References: <1349099505-5581-1-git-send-email-will.deacon@arm.com> <20121001145944.GA18051@redhat.com>
+In-Reply-To: <20121001145944.GA18051@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 11:56 AM, viresh kumar <viresh.kumar@linaro.org> wrote:
-> On Tue, Oct 16, 2012 at 2:15 PM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
->> The following error messages come if we have software LLP emulation enabled and
->> enough threads running.
->>
->> modprobe dmatest iterations=40
->> [  168.048601] dmatest: Started 1 threads using dma0chan0
->> [  168.054546] dmatest: Started 1 threads using dma0chan1
->> [  168.060441] dmatest: Started 1 threads using dma0chan2
->> [  168.066333] dmatest: Started 1 threads using dma0chan3
->> [  168.072250] dmatest: Started 1 threads using dma0chan4
->> [  168.078144] dmatest: Started 1 threads using dma0chan5
->> [  168.084057] dmatest: Started 1 threads using dma0chan6
->> [  168.089948] dmatest: Started 1 threads using dma0chan7
->> [  170.032962] dma0chan1-copy0: terminating after 40 tests, 0 failures (status 0)
->> [  170.041274] dma0chan0-copy0: terminating after 40 tests, 0 failures (status 0)
->> [  170.597559] dma0chan2-copy0: terminating after 40 tests, 0 failures (status 0)
->> [  171.085059] dma0chan7-copy0: #0: test timed out
->> [  171.839710] dma0chan3-copy0: terminating after 40 tests, 0 failures (status 0)
->> [  172.146071] dma0chan4-copy0: terminating after 40 tests, 0 failures (status 0)
->> [  172.220802] dma0chan7-copy0: #1: got completion callback, but status is 'in progress'
->> [  172.242049] dma0chan7-copy0: #2: got completion callback, but status is 'in progress'
->> [  172.281063] dma0chan7-copy0: #3: got completion callback, but status is 'in progress'
->> [  172.400866] dma0chan7-copy0: #4: got completion callback, but status is 'in progress'
->> [  172.471799] dma0chan7-copy0: #5: got completion callback, but status is 'in progress'
->> [  172.613996] dma0chan7-copy0: #6: got completion callback, but status is 'in progress'
->> [  172.670286] dma0chan7-copy0: #7: got completion callback, but status is 'in progress'
->> [  172.750763] dma0chan7-copy0: #8: got completion callback, but status is 'in progress'
->> [  172.777452] dma0chan5-copy0: terminating after 40 tests, 0 failures (status 0)
->> [  172.788740] dma0chan7-copy0: #9: got completion callback, but status is 'in progress'
->> [  172.845156] dma0chan7-copy0: #10: got completion callback, but status is 'in progress'
->> [  172.906593] dma0chan7-copy0: #11: got completion callback, but status is 'in progress'
->> [  173.181515] dma0chan6-copy0: terminating after 40 tests, 0 failures (status 0)
->> [  173.512838] dma0chan7-copy0: terminating after 40 tests, 12 failures (status 0)
->>
->> The patch fixes dmatest module to stop any ongoing transfer before submitting
->> new one. Perhaps there is a better solution and driver logic needs to be fixed
->> as well.
->>
->> After patch we will have
->>
->> modprobe dmatest iterations=50
->> [   84.027375] dmatest: Started 1 threads using dma0chan0
->> [   84.033282] dmatest: Started 1 threads using dma0chan1
->> [   84.039182] dmatest: Started 1 threads using dma0chan2
->> [   84.045089] dmatest: Started 1 threads using dma0chan3
->> [   84.051003] dmatest: Started 1 threads using dma0chan4
->> [   84.056916] dmatest: Started 1 threads using dma0chan5
->> [   84.062828] dmatest: Started 1 threads using dma0chan6
->> [   84.068714] dmatest: Started 1 threads using dma0chan7
->> [   86.538284] dma0chan0-copy0: terminating after 50 tests, 0 failures (status 0)
->> [   86.842221] dma0chan1-copy0: terminating after 50 tests, 0 failures (status 0)
->> [   87.060460] dma0chan6-copy0: #0: test timed out
->> [   87.065614] dma0chan7-copy0: #0: test timed out
->> [   87.220321] dma0chan2-copy0: terminating after 50 tests, 0 failures (status 0)
->> [   88.595061] dma0chan3-copy0: terminating after 50 tests, 0 failures (status 0)
->> [   89.152170] dma0chan4-copy0: terminating after 50 tests, 0 failures (status 0)
->> [   89.955059] dma0chan5-copy0: terminating after 50 tests, 0 failures (status 0)
->> [   90.697073] dma0chan6-copy0: terminating after 50 tests, 1 failures (status 0)
->> [   90.893422] dma0chan7-copy0: terminating after 50 tests, 1 failures (status 0)
+On 10/01/2012 10:59 PM, Andrea Arcangeli wrote:
+> Hi Will,
 >
-> You still have failures. :(
-Sure, the point is we have no 'in progress' issues
+> On Mon, Oct 01, 2012 at 02:51:45PM +0100, Will Deacon wrote:
+>> +void huge_pmd_set_accessed(struct mm_struct *mm, struct vm_area_struct *vma,
+>> +			   unsigned long address, pmd_t *pmd, pmd_t orig_pmd)
+>> +{
+>> +	pmd_t entry;
+>> +
+>> +	spin_lock(&mm->page_table_lock);
+>> +	entry = pmd_mkyoung(orig_pmd);
+>> +	if (pmdp_set_access_flags(vma, address & HPAGE_PMD_MASK, pmd, entry, 0))
+>> +		update_mmu_cache(vma, address, pmd);
+> If the pmd is being splitted, this may not be a trasnhuge pmd anymore
+> by the time you obtained the lock. (orig_pmd could be stale, and it
+> wasn't verified with pmd_same either)
 
-> Can you try with a large timeout value for the module.
-I tried and the failures were gone.
+Could you tell me when should call pmd_same in general?
 
-> We must get to the root cause of these failures. There may be something more
-> serious which is getting hidden due to this call to terminate().
-My understanding is that. The software LLP emulation runs several
-transactions per active descriptor. Because of a huge load of the
-CPU/DMA some transactions are not done within given timeout. The
-dmatest supplies next block to transfer without doing anything for
-previous one. Under some circumstances the new transfer is queued, and
-immediately after this the callback function is called for _previous_
-transfer. The check condition doesn't recognize which transfer called
-the callback function.
+>
+> The lock should be obtained through pmd_trans_huge_lock.
+>
+>    if (pmd_trans_huge_lock(orig_pmd, vma) == 1)
+>    {
+> 	set young bit
+> 	spin_unlock(&mm->page_table_lock);
+>    }
+>
+>
+> On x86:
+>
+> int pmdp_set_access_flags(struct vm_area_struct *vma,
+> 			  unsigned long address, pmd_t *pmdp,
+> 			  pmd_t entry, int dirty)
+> {
+> 	int changed = !pmd_same(*pmdp, entry);
+>
+> 	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
+>
+> 	if (changed && dirty) {
+> 		*pmdp = entry;
+>
+> with dirty == 0 it looks like it won't make any difference, but I
+> guess your arm pmdp_set_access_flag is different.
+>
+> However it seems "dirty" means write access and so the invocation
+> would better match the pte case:
+>
+> 	if (pmdp_set_access_flags(vma, address & HPAGE_PMD_MASK, pmd, entry,
+> 	    flags & FAULT_FLAG_WRITE))
+>
+>
+> But note, you still have to update it even when "dirty" == 0, or it'll
+> still infinite loop for read accesses.
+>
+>> +	spin_unlock(&mm->page_table_lock);
+>> +}
+>> +
+>>   int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>>   			unsigned long address, pmd_t *pmd, pmd_t orig_pmd)
+>>   {
+>> diff --git a/mm/memory.c b/mm/memory.c
+>> index 5736170..d5c007d 100644
+>> --- a/mm/memory.c
+>> +++ b/mm/memory.c
+>> @@ -3537,7 +3537,11 @@ retry:
+>>   				if (unlikely(ret & VM_FAULT_OOM))
+>>   					goto retry;
+>>   				return ret;
+>> +			} else {
+>> +				huge_pmd_set_accessed(mm, vma, address, pmd,
+>> +						      orig_pmd);
+>>   			}
+>> +
+>>   			return 0;
+> Thanks,
+> Andrea
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
-Rough solution is proposed by current patch. Another solution is to
-mark each transfer with id and check done flag and transfer id
-together.
-
-> Unless there is a issue with software emulation of LLP, the only difference with
-> s/w emulation is the transfers become slow.
-Yep.
-
-> Also, the proposed solution might hide some other important errors. We may need
-> to terminate transfers when we found that an error is there in  last transfers:
-I think it could be better than first solution, but what do you think
-about marking each transfer with corresponding id?
-
-
--- 
-With Best Regards,
-Andy Shevchenko
