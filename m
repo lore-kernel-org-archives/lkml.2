@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab2JPXW4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 19:22:56 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39813 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754243Ab2JPXWz (ORCPT
+	id S1755830Ab2JPX1M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 19:27:12 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60973 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755580Ab2JPX1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 19:22:55 -0400
+	Tue, 16 Oct 2012 19:27:11 -0400
+Date: Tue, 16 Oct 2012 16:27:06 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Robin Dong <robin.k.dong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Robin Dong <sanbai@taobao.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Tao Ma <boyu.mt@taobao.com>
+Subject: Re: [PATCH V3] block/throttle: Add IO throttled information in
+ blkio.throttle
+Message-ID: <20121016232706.GI16166@google.com>
+References: <1349765625-4020-1-git-send-email-robin.k.dong@gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [188.230.80.151]
-Date: Wed, 17 Oct 2012 02:22:48 +0300
-Message-ID: <CAEswnZjKo=JnGWTV1iS9JNy9kZf1LCQ2xVTNj6oJ0H0BbRA57Q@mail.gmail.com>
-Subject: The screen goes white on blanking in 3.7-rc1
-From: Yaroslav Fedevych <yaroslav@fedevych.name>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349765625-4020-1-git-send-email-robin.k.dong@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have tried to use the framebuffer text console with the latest (as
-of yesterday) kernel 3.7-rc1.
-I have a Thinkpad Edge 13, model 0197, with onboard Radeon HD3200. So
-far, so good, except
-that instead of actually blanking the screen and powering it down, the
-screen goes blank momentarily
-and then goes back on, but fully white. dmesg is totally silent on this subject.
+Hello, Robin.
 
-Under X, there's no problem. The screen goes black when power saving,
-not white, and is powered
-down properly.
+On Tue, Oct 09, 2012 at 02:53:45PM +0800, Robin Dong wrote:
+> Currently, if the IO is throttled by io-throttle, the SA has no idea of
+> the situation and can't report it to the real application user about
 
-When I close the laptop's lid, the screen is blanked and backlight
-turned off just as it is
-supposed to be.
+Please don't use "SA" in the commit message.  Just write it out as
+"system admin" or "userspace" or whatever.  It's only gonna confuse
+people trying to understand the commit later on.
 
-I'm pretty sure the problem wasn't there in 3.5 kernels, and can't really say
-about 3.6 series.
+> that he/she has to do something. So this patch adds a new interface
+> named blkio.throttle.io_queued which indicates how many IOs are
+> currently throttled.
+> 
+> The nr_queued[] of struct throtl_grp is of type "unsigned int" and updates
+> to it are atomic both at 32bit and 64bit platforms, so we could just
+> read tg->nr_queued only under blkcg->lock.
+> 
+> Changelog from v2:
+> 	Use nr-queued[] of struct throtl_grp for stats instaed of adding new blkg_rwstat.
 
-I'm wondering if that's kernel or my hands, but the kernel 3.2 worked
-fine (I'm on Debian Sid and they
-ship it).
+As I wrote last time, I would prefer exposing the total number queued
+to blk-throttle rather than exposing the number of bios being
+currently held and let userland calculate from the difference from
+throttle.io_serviced.  That is simpler and more inline with all other
+stats.
 
-I haven't tried to bisect this, either, given a few deadlines I'm facing.
+Thanks.
+
+-- 
+tejun
