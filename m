@@ -1,40 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab2JPT1e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 15:27:34 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:3078 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755838Ab2JPT1d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 15:27:33 -0400
-Date: Tue, 16 Oct 2012 19:27:31 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Avleen Vig <avleen@gmail.com>
-cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Reading /proc/slabinfo causes stalls
-In-Reply-To: <CAMjP1K=vWLNqOjgwnvq9NfWU2af-M7+CFMtp9naraFO+Xmod6A@mail.gmail.com>
-Message-ID: <0000013a6b0b92ae-fd5b1482-e870-4bbd-b5ac-de75b1b25177-000000@email.amazonses.com>
-References: <CAMjP1K=WV=AJ=paz7uBJ2X0FnOX6Cf-HipWsFjLxicXGbvL6Sw@mail.gmail.com> <CAOJsxLF2VJRRu_i2aCARwiw6knyrwL1HpZ1zGOASP133fNxv8Q@mail.gmail.com> <0000013a6ad64c95-106bab18-5a15-4c85-bae9-5527aa52f661-000000@email.amazonses.com>
- <alpine.DEB.2.00.1210161147410.2910@chino.kir.corp.google.com> <0000013a6aee372f-add43c34-0cc1-4cdb-8ad1-730074b2b49b-000000@email.amazonses.com> <CAMjP1K=vWLNqOjgwnvq9NfWU2af-M7+CFMtp9naraFO+Xmod6A@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+	id S1756008Ab2JPT2M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 15:28:12 -0400
+Received: from mail.df.lth.se ([194.47.250.12]:44877 "EHLO mail.df.lth.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755937Ab2JPT2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 15:28:07 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 1/7] gpio/tc3589x: convert to use the simple irqdomain
+Date: Tue, 16 Oct 2012 21:22:10 +0200
+Message-Id: <1350415330-2673-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Oct 2012, Avleen Vig wrote:
+The special checks for whether we have a base IRQ offset or not
+is surplus if we use the simple IRQ domain. The IRQ offset
+zero will be interpreted as a linear domain case.
 
-> There were some concerns that it doesn't perform as well as SLAB on
-> large hardware (we're almost always running >16G RAM, and regularly
-> >96G RAM on things like memcache servers).
-> If the performance pans out, SLUB would be great.
+Plus this makes sure we allocate descriptors where need be, or
+warn if they are preallocated with SPARSE_IRQ.
 
-We have been using SLUB here for years with servers up to 256G RAM and
-64 processors in both HPC and Enterprise environments.
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/gpio/gpio-tc3589x.c | 14 +++-----------
+ 1 file changed, 3 insertions(+), 11 deletions(-)
 
+diff --git a/drivers/gpio/gpio-tc3589x.c b/drivers/gpio/gpio-tc3589x.c
+index 1e48317..8e7290e 100644
+--- a/drivers/gpio/gpio-tc3589x.c
++++ b/drivers/gpio/gpio-tc3589x.c
+@@ -292,17 +292,9 @@ static int tc3589x_gpio_irq_init(struct tc3589x_gpio *tc3589x_gpio,
+ {
+ 	int base = tc3589x_gpio->irq_base;
+ 
+-	if (base) {
+-		tc3589x_gpio->domain = irq_domain_add_legacy(
+-			NULL, tc3589x_gpio->chip.ngpio, base,
+-			0, &tc3589x_irq_ops, tc3589x_gpio);
+-	}
+-	else {
+-		tc3589x_gpio->domain = irq_domain_add_linear(
+-			np, tc3589x_gpio->chip.ngpio,
+-			&tc3589x_irq_ops, tc3589x_gpio);
+-	}
+-
++	tc3589x_gpio->domain = irq_domain_add_simple(np,
++			tc3589x_gpio->chip.ngpio, base, &tc3589x_irq_ops,
++			tc3589x_gpio);
+ 	if (!tc3589x_gpio->domain) {
+ 		dev_err(tc3589x_gpio->dev, "Failed to create irqdomain\n");
+ 		return -ENOSYS;
+-- 
+1.7.11.7
 
