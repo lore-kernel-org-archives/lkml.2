@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab2JPTMH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 15:12:07 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49706 "EHLO
+	id S1755911Ab2JPTNZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 15:13:25 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52709 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491Ab2JPTMD (ORCPT
+	with ESMTP id S1754212Ab2JPTNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 15:12:03 -0400
-Date: Tue, 16 Oct 2012 12:11:58 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Joseph Glanville <joseph.glanville@orionvm.com.au>
-Cc: Jens Axboe <axboe@kernel.dk>, cgroups <cgroups@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] block: lift the initial queue bypass mode on
- blk_register_queue() instead of blk_init_allocated_queue()
-Message-ID: <20121016191158.GC16166@google.com>
-References: <20120919194231.GF31860@redhat.com>
- <20120920183153.GI28934@google.com>
- <20120920184219.GH4681@redhat.com>
- <20120920191716.GI4681@redhat.com>
- <20120920192038.GJ28934@google.com>
- <20120920195759.GK4681@redhat.com>
- <20120920201815.GB7264@google.com>
- <20120920210852.GC7264@google.com>
- <505C6AD4.6030206@kernel.dk>
- <CAOzFzEiCWazLEfjo=w8c+7qCce98Q6faW1uwGm-tRmCNPJUztw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOzFzEiCWazLEfjo=w8c+7qCce98Q6faW1uwGm-tRmCNPJUztw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 16 Oct 2012 15:13:24 -0400
+From: Adil Mujeeb <mujeeb.adil@gmail.com>
+To: tytso@mit.edu, adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Adil Mujeeb <mujeeb.adil@gmail.com>
+Subject: [PATCH 01/10] ext4: balloc: Fixed coding style issue
+Date: Wed, 17 Oct 2012 00:42:56 +0530
+Message-Id: <1350414785-7848-1-git-send-email-mujeeb.adil@gmail.com>
+X-Mailer: git-send-email 1.7.6.msysgit.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 09:00:30PM +1100, Joseph Glanville wrote:
-> Has this patch been marked for stable?
+Fixed checkpatch.pl reported ERRORs
 
-Yes, both have been marked.
+Signed-off-by: Adil Mujeeb <mujeeb.adil@gmail.com>
+---
+ linux-3.7-rc1/fs/ext4/balloc.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Thanks.
-
+diff --git a/linux-3.7-rc1/fs/ext4/balloc.c b/linux-3.7-rc1/fs/ext4/balloc.c
+index 1b50890..395418d 100644
+--- a/linux-3.7-rc1/fs/ext4/balloc.c
++++ b/linux-3.7-rc1/fs/ext4/balloc.c
+@@ -246,7 +246,7 @@ unsigned ext4_free_clusters_after_init(struct super_block *sb,
+  * @bh:			pointer to the buffer head to store the block
+  *			group descriptor
+  */
+-struct ext4_group_desc * ext4_get_group_desc(struct super_block *sb,
++struct ext4_group_desc *ext4_get_group_desc(struct super_block *sb,
+ 					     ext4_group_t block_group,
+ 					     struct buffer_head **bh)
+ {
+@@ -700,7 +700,7 @@ static unsigned long ext4_bg_num_gdb_nometa(struct super_block *sb,
+ 	if (!ext4_bg_has_super(sb, group))
+ 		return 0;
+ 
+-	if (EXT4_HAS_INCOMPAT_FEATURE(sb,EXT4_FEATURE_INCOMPAT_META_BG))
++	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_META_BG))
+ 		return le32_to_cpu(EXT4_SB(sb)->s_es->s_first_meta_bg);
+ 	else
+ 		return EXT4_SB(sb)->s_gdb_count;
+@@ -721,11 +721,11 @@ unsigned long ext4_bg_num_gdb(struct super_block *sb, ext4_group_t group)
+ 			le32_to_cpu(EXT4_SB(sb)->s_es->s_first_meta_bg);
+ 	unsigned long metagroup = group / EXT4_DESC_PER_BLOCK(sb);
+ 
+-	if (!EXT4_HAS_INCOMPAT_FEATURE(sb,EXT4_FEATURE_INCOMPAT_META_BG) ||
++	if (!EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_META_BG) ||
+ 			metagroup < first_meta_bg)
+ 		return ext4_bg_num_gdb_nometa(sb, group);
+ 
+-	return ext4_bg_num_gdb_meta(sb,group);
++	return ext4_bg_num_gdb_meta(sb, group);
+ 
+ }
+ 
 -- 
-tejun
+1.7.7.3
+
