@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab2JPTnT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 15:43:19 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:42120 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756016Ab2JPTnP (ORCPT
+	id S1755724Ab2JPTzm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 15:55:42 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36809 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754544Ab2JPTzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 15:43:15 -0400
+	Tue, 16 Oct 2012 15:55:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALCETrVKiO5t8AuEM=XxdPgZGr6crr6C-4174607_VLO787--g@mail.gmail.com>
-References: <CAAZUjxCvK0QnwnZP_FBiO2JM1rMoEA3HLjKAcYD14cxdGWyg4Q@mail.gmail.com>
-	<507DB47E.5090003@mit.edu>
-	<CAAZUjxAPAUD50asniJVNgD3X=vM_d=GPKJ5C2eVGo6r4HUKYLQ@mail.gmail.com>
-	<CALCETrVKiO5t8AuEM=XxdPgZGr6crr6C-4174607_VLO787--g@mail.gmail.com>
-Date: Tue, 16 Oct 2012 14:43:14 -0500
-Message-ID: <CAAZUjxD8-kA5325+OT0tANi0vUwcSRwT+VYaEd2LZ9cJrw0xUA@mail.gmail.com>
-Subject: Re: VDSO gettimeofday() x86_64 linux 3.2
-From: wilson self <wself00@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-kernel@vger.kernel.org
+From: Bryan Wu <cooloney@gmail.com>
+Date: Tue, 16 Oct 2012 12:55:19 -0700
+Message-ID: <CAK5ve-Kc9HmxQ6L88=jkhTQ3ou=F0a1AgFrGHKW_4mbgq3kTng@mail.gmail.com>
+Subject: [PATCH] MAINTAINERS: change email after moving for LED subsystem maintaining
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>, rpurdie@rpsys.net
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am just using gcc timetest.c -o timetest
+Signed-off-by: Bryan Wu <cooloney@gmail.com>
+---
+ MAINTAINERS |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Should be dynamically linked. glibc is 2.5, which is quite old, but I
-think this should still work with it, no?
+diff --git a/MAINTAINERS b/MAINTAINERS
+index e73060f..e39e9da 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4372,7 +4372,7 @@ F: Documentation/scsi/53c700.txt
+ F: drivers/scsi/53c700*
 
-On Tue, Oct 16, 2012 at 2:39 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Tue, Oct 16, 2012 at 12:33 PM, wilson self <wself00@gmail.com> wrote:
->> current_clocksource is tsc.
->>
->> the entire source of the test application:
->> ---
->> #include <stdio.h>
->> #include <stdlib.h>
->> #include <sys/time.h>
->> #include <time.h>
->>
->> int main() {
->>       struct timeval tim;
->>       gettimeofday(&tim, NULL);
->>       printf("%.6lf seconds\n", tim.tv_sec+tim.tv_usec/1000000.0);
->> }
->> ---
->> nothing fancy going on here.
->>
->> thanks for the help.
->
-> There's lots of hidden fanciness.  What glibc version are you using
-> and how are you linking to glibc?  All but the newest glibc versions
-> use the old vsyscall when statically linked.  The newest versions use
-> the syscall instead.  If you're dynamically linking, then gettimeofday
-> should be okay even with fairly old glibc versions.
->
-> (FWIW, glibc maintainership has changed since this was decided.  Feel
-> free to bug the new maintainers if you care about statically-linked
-> performance.  The only other runtime library I know of that uses the
-> vdso or vsyscalls is Go, and the newest versions do the right thing.)
->
-> --Andy
+ LED SUBSYSTEM
+-M: Bryan Wu <bryan.wu@canonical.com>
++M: Bryan Wu <cooloney@gmail.com>
+ M: Richard Purdie <rpurdie@rpsys.net>
+ L: linux-leds@vger.kernel.org
+ T: git git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
+--
+1.7.9.5
