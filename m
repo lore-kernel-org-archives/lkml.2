@@ -1,104 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab2JPMQC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 08:16:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56348 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751094Ab2JPMQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 08:16:00 -0400
-Date: Tue, 16 Oct 2012 14:15:58 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, kamezawa.hiroyu@jp.fujitsu.com,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, devel@openvz.org,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v5 05/14] Add a __GFP_KMEMCG flag
-Message-ID: <20121016121558.GF13991@dhcp22.suse.cz>
-References: <1350382611-20579-1-git-send-email-glommer@parallels.com>
- <1350382611-20579-6-git-send-email-glommer@parallels.com>
+	id S1753370Ab2JPMVl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 08:21:41 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:49523 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752388Ab2JPMVj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 08:21:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350382611-20579-6-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121016100809.GS8285@erda.amd.com>
+References: <20121012012839.GA15348@us.ibm.com>
+	<20121015155534.GR8285@erda.amd.com>
+	<20121016100809.GS8285@erda.amd.com>
+Date: Tue, 16 Oct 2012 14:21:38 +0200
+Message-ID: <CABPqkBRd2wfjd1ObCkM+TSSwt7C9WP65dEE9POSyDK1ccvNL8A@mail.gmail.com>
+Subject: Re: [RFC][PATCH] perf: Add a few generic stalled-cycles events
+From: Stephane Eranian <eranian@google.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Arun Sharma <asharma@fb.com>, Anton Blanchard <anton@au1.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, mpjohn@us.ibm.com,
+        linuxppc-dev@ozlabs.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 16-10-12 14:16:42, Glauber Costa wrote:
-> This flag is used to indicate to the callees that this allocation is a
-> kernel allocation in process context, and should be accounted to
-> current's memcg. It takes numerical place of the of the recently removed
-> __GFP_NO_KSWAPD.
-> 
-> [ v4: make flag unconditional, also declare it in trace code ]
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-> Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Suleiman Souhlal <suleiman@google.com>
-> CC: Tejun Heo <tj@kernel.org>
+On Tue, Oct 16, 2012 at 12:08 PM, Robert Richter <robert.richter@amd.com> wrote:
+> Sukadev,
+>
+> On 15.10.12 17:55:34, Robert Richter wrote:
+>> On 11.10.12 18:28:39, Sukadev Bhattiprolu wrote:
+>> > +  { .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_STALLED_CYCLES_FIXED_POINT },
+>> > +  { .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_STALLED_CYCLES_LOAD_STORE },
+>> > +  { .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_STALLED_CYCLES_INSTRUCTION_FETCH },
+>> > +  { .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_STALLED_CYCLES_BRANCH },
+>>
+>> Instead of adding new hardware event types I would prefer to use raw
+>> events in conjunction with sysfs, see e.g. the intel-uncore
+>> implementation. Something like:
+>>
+In general, I don't like generic events and especially stall events. I
+have not seen a clear definition of
+what they mean. Without it, there is no way to understand how to map
+them across architecture. If
+the definition is too precise, you may not be able to find an exact
+mapping. If the definition is to loose
+then it is unclear what you are measuring.
 
-I thought I have acked the patch already
+Also this opens another can of worms which is that on some processors,
+you may need more than
+one event to encapsulate what the generic event is supposed to
+measure. That means developing
+a lot of code in the kernel to express and manage that. And of course,
+you would not be able
+to sample on those events (you cannot sample on a difference, for
+instance). So all in all, I think
+this is not a very good idea. You have to put this into the tool or a
+library that auto-detects the
+host CPU and programs the right set of events.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+We've had that discussion many times. Just reiterating my personal
+opinion on this.
 
-> ---
->  include/linux/gfp.h             | 3 ++-
->  include/trace/events/gfpflags.h | 1 +
->  2 files changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-> index 02c1c97..9289d46 100644
-> --- a/include/linux/gfp.h
-> +++ b/include/linux/gfp.h
-> @@ -31,6 +31,7 @@ struct vm_area_struct;
->  #define ___GFP_THISNODE		0x40000u
->  #define ___GFP_RECLAIMABLE	0x80000u
->  #define ___GFP_NOTRACK		0x200000u
-> +#define ___GFP_KMEMCG		0x400000u
->  #define ___GFP_OTHER_NODE	0x800000u
->  #define ___GFP_WRITE		0x1000000u
->  
-> @@ -87,7 +88,7 @@ struct vm_area_struct;
->  
->  #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
->  #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
-> -
-> +#define __GFP_KMEMCG	((__force gfp_t)___GFP_KMEMCG) /* Allocation comes from a memcg-accounted resource */
->  /*
->   * This may seem redundant, but it's a way of annotating false positives vs.
->   * allocations that simply cannot be supported (e.g. page tables).
-> diff --git a/include/trace/events/gfpflags.h b/include/trace/events/gfpflags.h
-> index 9391706..730df12 100644
-> --- a/include/trace/events/gfpflags.h
-> +++ b/include/trace/events/gfpflags.h
-> @@ -36,6 +36,7 @@
->  	{(unsigned long)__GFP_RECLAIMABLE,	"GFP_RECLAIMABLE"},	\
->  	{(unsigned long)__GFP_MOVABLE,		"GFP_MOVABLE"},		\
->  	{(unsigned long)__GFP_NOTRACK,		"GFP_NOTRACK"},		\
-> +	{(unsigned long)__GFP_KMEMCG,		"GFP_KMEMCG"},		\
->  	{(unsigned long)__GFP_OTHER_NODE,	"GFP_OTHER_NODE"}	\
->  	) : "GFP_NOWAIT"
->  
-> -- 
-> 1.7.11.7
-> 
+>>  $ find /sys/bus/event_source/devices/cpu/events/
+>>  ...
+>>  /sys/bus/event_source/devices/cpu/events/stalled-cycles-fixed-point
+>>  /sys/bus/event_source/devices/cpu/events/stalled-cycles-load-store
+>>  /sys/bus/event_source/devices/cpu/events/stalled-cycles-instruction-fetch
+>>  /sys/bus/event_source/devices/cpu/events/stalled-cycles-branch
+>>  ...
+>>  $ cat /sys/bus/event_source/devices/cpu/events/stalled-cycles-fixed-point
+>>  event=0xff,umask=0x00
+>>
+>> Perf tool works then out-of-the-box with:
+>>
+>>  $ perf record -e cpu/stalled-cycles-fixed-point/ ...
+>
+> I refer here to arch/x86/kernel/cpu/perf_event_intel_uncore.c (should
+> be in v3.7-rc1 or tip:perf/core). See the INTEL_UNCORE_EVENT_DESC()
+> macro and 'if (type->event_descs) ...' in uncore_type_init(). The code
+> should be reworked to be non-architectural.
+>
+> PMU registration is implemented for a longer time already for all
+> architectures and pmu types:
+>
+>  /sys/bus/event_source/devices/*
+>
+> But
+>
+>  /sys/bus/event_source/devices/*/events/
+>
+> exists only for a small number of pmus. Perf tool support of this was
+> implemented with:
+>
+>  a6146d5 perf/tool: Add PMU event alias support
+>
+> -Robert
+>
 > --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Michal Hocko
-SUSE Labs
+> Advanced Micro Devices, Inc.
+> Operating System Research Center
+>
