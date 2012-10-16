@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083Ab2JPKRq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 06:17:46 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:39798 "EHLO relay.sw.ru"
+	id S1754025Ab2JPKRp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 06:17:45 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:36747 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751539Ab2JPKRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753361Ab2JPKRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Oct 2012 06:17:00 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
@@ -14,12 +14,10 @@ Cc: <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
         <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
         David Rientjes <rientjes@google.com>,
         Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
-        <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@parallels.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: [PATCH v5 11/14] memcg: allow a memcg with kmem charges to be destructed.
-Date: Tue, 16 Oct 2012 14:16:48 +0400
-Message-Id: <1350382611-20579-12-git-send-email-glommer@parallels.com>
+        <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v5 12/14] execute the whole memcg freeing in free_worker
+Date: Tue, 16 Oct 2012 14:16:49 +0400
+Message-Id: <1350382611-20579-13-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1350382611-20579-1-git-send-email-glommer@parallels.com>
 References: <1350382611-20579-1-git-send-email-glommer@parallels.com>
@@ -27,71 +25,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because the ultimate goal of the kmem tracking in memcg is to track slab
-pages as well, we can't guarantee that we'll always be able to point a
-page to a particular process, and migrate the charges along with it -
-since in the common case, a page will contain data belonging to multiple
-processes.
+A lot of the initialization we do in mem_cgroup_create() is done with
+softirqs enabled. This include grabbing a css id, which holds
+&ss->id_lock->rlock, and the per-zone trees, which holds
+rtpz->lock->rlock. All of those signal to the lockdep mechanism that
+those locks can be used in SOFTIRQ-ON-W context. This means that the
+freeing of memcg structure must happen in a compatible context,
+otherwise we'll get a deadlock, like the one bellow, caught by lockdep:
 
-Because of that, when we destroy a memcg, we only make sure the
-destruction will succeed by discounting the kmem charges from the user
-charges when we try to empty the cgroup.
+  [<ffffffff81103095>] free_accounted_pages+0x47/0x4c
+  [<ffffffff81047f90>] free_task+0x31/0x5c
+  [<ffffffff8104807d>] __put_task_struct+0xc2/0xdb
+  [<ffffffff8104dfc7>] put_task_struct+0x1e/0x22
+  [<ffffffff8104e144>] delayed_put_task_struct+0x7a/0x98
+  [<ffffffff810cf0e5>] __rcu_process_callbacks+0x269/0x3df
+  [<ffffffff810cf28c>] rcu_process_callbacks+0x31/0x5b
+  [<ffffffff8105266d>] __do_softirq+0x122/0x277
+
+This usage pattern could not be triggered before kmem came into play.
+With the introduction of kmem stack handling, it is possible that we
+call the last mem_cgroup_put() from the task destructor, which is run in
+an rcu callback. Such callbacks are run with softirqs disabled, leading
+to the offensive usage pattern.
+
+In general, we have little, if any, means to guarantee in which context
+the last memcg_put will happen. The best we can do is test it and try to
+make sure no invalid context releases are happening. But as we add more
+code to memcg, the possible interactions grow in number and expose more
+ways to get context conflicts. One thing to keep in mind, is that part
+of the freeing process is already deferred to a worker, such as vfree(),
+that can only be called from process context.
+
+For the moment, the only two functions we really need moved away are:
+
+  * free_css_id(), and
+  * mem_cgroup_remove_from_trees().
+
+But because the later accesses per-zone info,
+free_mem_cgroup_per_zone_info() needs to be moved as well. With that, we
+are left with the per_cpu stats only. Better move it all.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
+Tested-by: Greg Thelen <gthelen@google.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 CC: Johannes Weiner <hannes@cmpxchg.org>
-CC: Suleiman Souhlal <suleiman@google.com>
 CC: Tejun Heo <tj@kernel.org>
 ---
- mm/memcontrol.c | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ mm/memcontrol.c | 66 +++++++++++++++++++++++++++++----------------------------
+ 1 file changed, 34 insertions(+), 32 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 1dd31a1..9086cf2 100644
+index 9086cf2..f323c2a 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -544,6 +544,11 @@ static void disarm_kmem_keys(struct mem_cgroup *memcg)
- {
- 	if (memcg_kmem_is_active(memcg))
- 		static_key_slow_dec(&memcg_kmem_enabled_key);
-+	/*
-+	 * This check can't live in kmem destruction function,
-+	 * since the charges will outlive the cgroup
-+	 */
-+	WARN_ON(res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0);
+@@ -5203,16 +5203,29 @@ out_free:
  }
- #else
- static void disarm_kmem_keys(struct mem_cgroup *memcg)
-@@ -3993,6 +3998,7 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg, bool free_all)
- 	int node, zid, shrink;
- 	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
- 	struct cgroup *cgrp = memcg->css.cgroup;
-+	u64 usage;
  
- 	css_get(&memcg->css);
+ /*
+- * Helpers for freeing a kmalloc()ed/vzalloc()ed mem_cgroup by RCU,
+- * but in process context.  The work_freeing structure is overlaid
+- * on the rcu_freeing structure, which itself is overlaid on memsw.
++ * At destroying mem_cgroup, references from swap_cgroup can remain.
++ * (scanning all at force_empty is too costly...)
++ *
++ * Instead of clearing all references at force_empty, we remember
++ * the number of reference from swap_cgroup and free mem_cgroup when
++ * it goes down to 0.
++ *
++ * Removal of cgroup itself succeeds regardless of refs from swap.
+  */
+-static void free_work(struct work_struct *work)
++
++static void __mem_cgroup_free(struct mem_cgroup *memcg)
+ {
+-	struct mem_cgroup *memcg;
++	int node;
+ 	int size = sizeof(struct mem_cgroup);
  
-@@ -4026,8 +4032,17 @@ move_account:
- 		mem_cgroup_end_move(memcg);
- 		memcg_oom_recover(memcg);
- 		cond_resched();
-+		/*
-+		 * Kernel memory may not necessarily be trackable to a specific
-+		 * process. So they are not migrated, and therefore we can't
-+		 * expect their value to drop to 0 here.
-+		 *
-+		 * having res filled up with kmem only is enough
-+		 */
-+		usage = res_counter_read_u64(&memcg->res, RES_USAGE) -
-+			res_counter_read_u64(&memcg->kmem, RES_USAGE);
- 	/* "ret" should also be checked to ensure all lists are empty. */
--	} while (res_counter_read_u64(&memcg->res, RES_USAGE) > 0 || ret);
-+	} while (usage > 0 || ret);
- out:
- 	css_put(&memcg->css);
- 	return ret;
+-	memcg = container_of(work, struct mem_cgroup, work_freeing);
++	mem_cgroup_remove_from_trees(memcg);
++	free_css_id(&mem_cgroup_subsys, &memcg->css);
++
++	for_each_node(node)
++		free_mem_cgroup_per_zone_info(memcg, node);
++
++	free_percpu(memcg->stat);
++
+ 	/*
+ 	 * We need to make sure that (at least for now), the jump label
+ 	 * destruction code runs outside of the cgroup lock. This is because
+@@ -5231,38 +5244,27 @@ static void free_work(struct work_struct *work)
+ 		vfree(memcg);
+ }
+ 
+-static void free_rcu(struct rcu_head *rcu_head)
+-{
+-	struct mem_cgroup *memcg;
+-
+-	memcg = container_of(rcu_head, struct mem_cgroup, rcu_freeing);
+-	INIT_WORK(&memcg->work_freeing, free_work);
+-	schedule_work(&memcg->work_freeing);
+-}
+ 
+ /*
+- * At destroying mem_cgroup, references from swap_cgroup can remain.
+- * (scanning all at force_empty is too costly...)
+- *
+- * Instead of clearing all references at force_empty, we remember
+- * the number of reference from swap_cgroup and free mem_cgroup when
+- * it goes down to 0.
+- *
+- * Removal of cgroup itself succeeds regardless of refs from swap.
++ * Helpers for freeing a kmalloc()ed/vzalloc()ed mem_cgroup by RCU,
++ * but in process context.  The work_freeing structure is overlaid
++ * on the rcu_freeing structure, which itself is overlaid on memsw.
+  */
+-
+-static void __mem_cgroup_free(struct mem_cgroup *memcg)
++static void free_work(struct work_struct *work)
+ {
+-	int node;
++	struct mem_cgroup *memcg;
+ 
+-	mem_cgroup_remove_from_trees(memcg);
+-	free_css_id(&mem_cgroup_subsys, &memcg->css);
++	memcg = container_of(work, struct mem_cgroup, work_freeing);
++	__mem_cgroup_free(memcg);
++}
+ 
+-	for_each_node(node)
+-		free_mem_cgroup_per_zone_info(memcg, node);
++static void free_rcu(struct rcu_head *rcu_head)
++{
++	struct mem_cgroup *memcg;
+ 
+-	free_percpu(memcg->stat);
+-	call_rcu(&memcg->rcu_freeing, free_rcu);
++	memcg = container_of(rcu_head, struct mem_cgroup, rcu_freeing);
++	INIT_WORK(&memcg->work_freeing, free_work);
++	schedule_work(&memcg->work_freeing);
+ }
+ 
+ static void mem_cgroup_get(struct mem_cgroup *memcg)
+@@ -5274,7 +5276,7 @@ static void __mem_cgroup_put(struct mem_cgroup *memcg, int count)
+ {
+ 	if (atomic_sub_and_test(count, &memcg->refcnt)) {
+ 		struct mem_cgroup *parent = parent_mem_cgroup(memcg);
+-		__mem_cgroup_free(memcg);
++		call_rcu(&memcg->rcu_freeing, free_rcu);
+ 		if (parent)
+ 			mem_cgroup_put(parent);
+ 	}
 -- 
 1.7.11.7
 
