@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab2JPSEb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 14:04:31 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51438 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372Ab2JPSE3 (ORCPT
+	id S1755729Ab2JPSEq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 14:04:46 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:58716 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755570Ab2JPSEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 14:04:29 -0400
+	Tue, 16 Oct 2012 14:04:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAMjP1K=WV=AJ=paz7uBJ2X0FnOX6Cf-HipWsFjLxicXGbvL6Sw@mail.gmail.com>
-References: <CAMjP1K=WV=AJ=paz7uBJ2X0FnOX6Cf-HipWsFjLxicXGbvL6Sw@mail.gmail.com>
-Date: Tue, 16 Oct 2012 21:04:28 +0300
-X-Google-Sender-Auth: rwFW_2uY3GRJTk59wCo5sFz3x88
-Message-ID: <CAOJsxLF2VJRRu_i2aCARwiw6knyrwL1HpZ1zGOASP133fNxv8Q@mail.gmail.com>
-Subject: Re: Reading /proc/slabinfo causes stalls
-From: Pekka Enberg <penberg@kernel.org>
-To: Avleen Vig <avleen@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
+X-Originating-IP: [2620:0:1000:2602:baac:6fff:fe8c:a1a5]
+In-Reply-To: <1350371967-8914-1-git-send-email-josh.wu@atmel.com>
+References: <1350371967-8914-1-git-send-email-josh.wu@atmel.com>
+Date: Tue, 16 Oct 2012 11:04:44 -0700
+Message-ID: <CACiLriQ1fTbGs7eCK5eeF=99um=EQaj-vefjEnvDS0bwWa5m=w@mail.gmail.com>
+Subject: Re: [PATCH] avr32: fix build error in atstk1006_defconfig
+From: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <havard@skinnemoen.net>
+To: Josh Wu <josh.wu@atmel.com>
+Cc: linux-kernel@vger.kernel.org, hskinnemoen@gmail.com, egtvedt@samfundet.no,
+        linux-mtd@lists.infradead.org, dedekind1@gmail.com,
+        fengguang.wu@intel.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Avleen,
-
-On Tue, Oct 16, 2012 at 8:51 PM, Avleen Vig <avleen@gmail.com> wrote:
-> I *think* this is the right place to ask this, and apologies if it's not
-> (is there a better place?).
+On Tue, Oct 16, 2012 at 12:19 AM, Josh Wu <josh.wu@atmel.com> wrote:
+> fixed the following compile error when use avr32 atstk1006_defconfig:
+>   drivers/mtd/nand/atmel_nand.c: In function 'pmecc_err_location':
+>   drivers/mtd/nand/atmel_nand.c:639: error: implicit declaration of function 'writel_relaxed'
 >
-> We have checks which read /proc/slabinfo once a minute, and have noticed
-> that this causes the entire system to stall for a few milliseconds.
-> It's long enough that it causes noticeable delays in latency-sensitive
-> applications (between 10ms and 100ms).
+> which was introduced by commit 1c7b874d33b463 ("mtd: at91: atmel_nand: add Programmable Multibit ECC controller support").
+> The PMECC for nand flash code uses writel_relaxed(). But in avr32, there is no macro "writel_relaxed" defined. This patch add writex_relaxed macro definitions.
 >
-> Is this a known condition? Are there work arounds or other ways to get the
-> slab allocation data which don't cause stalls?
+> Signed-off-by: Josh Wu <josh.wu@atmel.com>
 
-What kernel version are you using? What does your .config look like?
+Acked-by: Havard Skinnemoen <havard@skinnemoen.net>
+
+I think it's OK to just forward to write[bwl] -- the relaxed variants
+merely provide fewer ordering guarantees than the non-relaxed
+variants. The worst that could happen is a small performance hit (and
+on AVR32, even that is highly unlikely).
+
+Havard
