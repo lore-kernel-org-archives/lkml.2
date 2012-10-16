@@ -1,51 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab2JPQLJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 12:11:09 -0400
-Received: from mga03.intel.com ([143.182.124.21]:15353 "EHLO mga03.intel.com"
+	id S1754889Ab2JPQOS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 12:14:18 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:49429 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754357Ab2JPQLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 12:11:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,593,1344236400"; 
-   d="scan'208";a="205134093"
-Message-ID: <507D8712.4050008@zytor.com>
-Date: Tue, 16 Oct 2012 09:10:58 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1754357Ab2JPQOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 12:14:16 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH v9 05/12] x86, hotplug, suspend: Online CPU0 for suspend or hibernate
+Date: Tue, 16 Oct 2012 18:17:58 +0200
+Message-ID: <1586487.pWfqEJ2K11@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <507CF216.3010507@linux.vnet.ibm.com>
+References: <1350058189-6769-1-git-send-email-fenghua.yu@intel.com> <10020874.9eDCB3ZAkx@vostro.rjw.lan> <507CF216.3010507@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        greg@kroah.com, w@1wt.eu, ewust@umich.edu, zakir@umich.edu,
-        mpm@selenic.com, nadiah@cs.ucsd.edu, jhalderm@umich.edu,
-        tglx@linutronix.de, davem@davemloft.net, mingo@kernel.org,
-        DJ Johnston <dj.johnston@intel.com>, stable@vger.kernel.org
-Subject: Re: [PATCH RFC] random: Account for entropy loss due to overwrites
-References: <1344878779-10700-1-git-send-email-hpa@linux.intel.com> <50675038.9000108@zytor.com> <20121016040848.GE17446@thunk.org> <507CE663.2060502@linux.intel.com> <20121016155307.GF17446@thunk.org>
-In-Reply-To: <20121016155307.GF17446@thunk.org>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2012 08:53 AM, Theodore Ts'o wrote:
+On Tuesday 16 of October 2012 11:05:18 Srivatsa S. Bhat wrote:
+> On 10/16/2012 02:20 AM, Rafael J. Wysocki wrote:
+> > On Friday 12 of October 2012 09:09:42 Fenghua Yu wrote:
+> >> From: Fenghua Yu <fenghua.yu@intel.com>
+> >>
+> >> Because x86 BIOS requires CPU0 to resume from sleep, suspend or hibernate can't
+> >> be executed if CPU0 is detected offline. To make suspend or hibernate and
+> >> further resume succeed, CPU0 must be online.
+> >>
+> >> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> >> ---
+> >>  arch/x86/power/cpu.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
+> >>  1 files changed, 44 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
+> >> index 218cdb1..adde775 100644
+> >> --- a/arch/x86/power/cpu.c
+> >> +++ b/arch/x86/power/cpu.c
+> >> @@ -237,3 +237,47 @@ void restore_processor_state(void)
+> >>  #ifdef CONFIG_X86_32
+> >>  EXPORT_SYMBOL(restore_processor_state);
+> >>  #endif
+> >> +
+> >> +/*
+> >> + * When bsp_check() is called in hibernate and suspend, cpu hotplug
+> >> + * is disabled already. So it's unnessary to handle race condition between
+> >> + * cpumask query and cpu hotplug.
+> >> + */
+> >> +static int bsp_check(void)
+> >> +{
+> >> +	if (cpumask_first(cpu_online_mask) != 0) {
+> >> +		pr_warn("CPU0 is offline.\n");
+> >> +		return -ENODEV;
+> >> +	}
+> >> +
+> >> +	return 0;
+> >> +}
+> >> +
+> >> +static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
+> >> +			   void *ptr)
+> >> +{
+> >> +	int ret = 0;
+> >> +
+> >> +	switch (action) {
+> >> +	case PM_SUSPEND_PREPARE:
+> >> +	case PM_HIBERNATION_PREPARE:
+> >> +		ret = bsp_check();
+> >> +		break;
+> >> +	default:
+> >> +		break;
+> >> +	}
+> >> +	return notifier_from_errno(ret);
+> >> +}
+> >> +
+> > 
+> > I wonder if there's anything preventing CPU0 from becoming offline after you've
+> > done this check and before user space is frozen?
+> > 
 > 
-> ... and it looks like include/linux/log2.h already has a definition
-> for ilog2() which should definitely work for all versions of gcc, so
-> we could do this instead:
+> Hi Rafael,
 > 
-> #define shiftbits(w)	(ilog2((w)) + 5)
+> bsp_pm_callback runs as a low priority notifier callback, specifically with lower
+> priority than the cpu_hotplug_pm_callback (as mentioned in the comment below).
+> And cpu_hotplug_pm_callback disables regular CPU hotplug (till the suspend/resume
+> sequence is complete).. So there is no chance for CPU0 to become offline after that.
 > 
-> 	/* x^128 + x^103 + x^76 + x^51 +x^25 + x + 1 -- 105 */
-> 	{ shiftbits(128), 103,	76,	51,	25,	1 },
-> 	/* x^32 + x^26 + x^20 + x^14 + x^7 + x + 1 -- 15 */
-> 	{ shiftbits(32),  26,	20,	14,	7,	1 },
-> 
+> Or, are you thinking of some other scenario where CPU0 can go offline?
 
-OK, works for me.  I'll rev the patch later this week.
+No, that should be fine technically, but designs relying on notifier priority
+for correctness are kind of fragile.
 
-	-hpa
+Would it be possible to make cpu_hotplug_pm_callback() do the BSP online check?
+
+> >> +static int __init bsp_pm_check_init(void)
+> >> +{
+> >> +	/*
+> >> +	 * Set this bsp_pm_callback as lower priority than
+> >> +	 * cpu_hotplug_pm_callback. So cpu_hotplug_pm_callback will be called
+> >> +	 * earlier to disable cpu hotplug before bsp online check.
+> >> +	 */
+> >> +	pm_notifier(bsp_pm_callback, -INT_MAX);
+> >> +	return 0;
+> >> +}
+> >> +
+> >> +core_initcall(bsp_pm_check_init);
+
+Thanks,
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
