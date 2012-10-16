@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab2JPDMx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 23:12:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51465 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752604Ab2JPDMw (ORCPT
+	id S1755633Ab2JPDR0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 23:17:26 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:18171 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753855Ab2JPDRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 23:12:52 -0400
-Date: Tue, 16 Oct 2012 12:12:42 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [RFC PATCH 1/5] irq_work: Move irq_work_raise()
- declaration/default definition to arch headers
-Message-ID: <20121016031240.GA4804@opensource.wolfsonmicro.com>
-References: <1350065376-23353-1-git-send-email-fweisbec@gmail.com>
- <CAFTL4hzLtYZsc_JCVCGW2gWbxp5APgq8P7F-D+76kVOyrTKvRA@mail.gmail.com>
- <1350333581.19292.10.camel@pippen.local.home>
- <201210152134.45672.arnd@arndb.de>
- <CAFTL4hzcJz1GgG8g0=CBy07UAQTYm-_YnWCJD_eEobs4LLLoGA@mail.gmail.com>
+	Mon, 15 Oct 2012 23:17:24 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApslAKfQfFB5LDhi/2dsb2JhbABFuhuEbQKBBoEJgiABAQQBOhwjBQsIAxUDLhQNGAM0h3IDCQWrM4Z9DYlUFIpNZoFngTWCQWADlBaBVIskhQ2DAQ
+Date: Tue, 16 Oct 2012 14:17:10 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
+        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [RFC v3 11/13] vfs: add 3 new ioctl interfaces
+Message-ID: <20121016031710.GD2864@dastard>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+ <1349863655-29320-12-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFTL4hzcJz1GgG8g0=CBy07UAQTYm-_YnWCJD_eEobs4LLLoGA@mail.gmail.com>
-X-Cookie: Is this really happening?
+In-Reply-To: <1349863655-29320-12-git-send-email-zwu.kernel@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 12:18:05AM +0200, Frederic Weisbecker wrote:
-> 2012/10/15 Arnd Bergmann <arnd@arndb.de>:
-> > On Monday 15 October 2012, Steven Rostedt wrote:
-> >> On Mon, 2012-10-15 at 22:23 +0200, Frederic Weisbecker wrote:
-> >> > 2012/10/15 Steven Rostedt <rostedt@goodmis.org>:
-> >> > > On Mon, 2012-10-15 at 17:11 +0100, Catalin Marinas wrote:
+On Wed, Oct 10, 2012 at 06:07:33PM +0800, zwu.kernel@gmail.com wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> 
+>   FS_IOC_GET_HEAT_INFO: return a struct containing the various
+> metrics collected in btrfs_freq_data structs, and also return a
 
-> >> > > BTW, is there any rational reason that the include path lookup doesn't
-> >> > > just check for the files in include/asm-generic after looking in
-> >> > > arch/*/include/asm?
+I think you mean hot_freq_data :P
 
-> >> > > Really, the best way would be just to add the default asm files into
-> >> > > include/asm-generic and be done with it. I hate the fact that we need to
-> >> > > touch every arch for every generic default file.
+> calculated data temperature based on those metrics. Optionally, retrieve
+> the temperature from the hot data hash list instead of recalculating it.
 
-> >> > Agreed. I'm including Arnd in the conversation.
+To get the heat info for a specific file you have to know what file
+you want to get that info for, right?  I can see the usefulness of
+asking for the heat data on a specific file, but how do you find the
+hot files in the first place? i.e. the big question the user
+interface needs to answer is "what files are hot?".
 
-> >> As David Howells is doing user space header work, I'll include him too.
-> >> Maybe someone can shed some light onto this.
+Once userspace knows what the hottest files are, it can open them
+and query the data via the above ioctl, but expecting userspace to
+iterate millions of inodes in a filesystem to find hot files is very
+inefficient.
 
-I'll just add my vote there, I've *no* idea why asm-generic isn't in the
-include path by default, I could never figure out what that was for.
+FWIW, if you were to return file handles to the hottest files, then
+the application could open and query them without even needing to
+know the path name to them. This woul dbe exceedingly useful for
+defragmentation programs, especially as that is the way xfs_fsr
+already operates on candidate files.(*)
 
-> > A number of people have expressed the wish to do this through Makefile magic, but
-> > so far nobody has been able to come up with the right incantation.
-> >
-> > I've spent a day trying to figure it out, and I think Mark Brown tried some of
-> > the same things. It's probably not all that hard for someone who is more familiar
-> > with the Kbuild internals.
+IOWs, sometimes the pathname is irrelevant to the operations that
+applications want to perform - all they care about having an
+efficient method of finding the inode they want and getting a file
+descriptor that points to the file. Given the heat map info fits
+right in to the sort of operations defrag and data mover tools
+already do, it kind of makes sense to optimise the interface towards
+those uses....
 
-I came up with stuff for it, though it needed prettyfying.
+(*) i.e. finds them via bulkstat which returns handle information
+along with all the other inode data, then opens the file by handle
+to do the defrag work....
 
-> This seems to do the trick:
+>   FS_IOC_GET_HEAT_OPTS: return an integer representing the current
+> state of hot data tracking and migration:
+> 
+> 0 = do nothing
+> 1 = track frequency of access
+> 
+>   FS_IOC_SET_HEAT_OPTS: change the state of hot data tracking and
+> migration, as described above.
 
-> (It's the diff result of ln -s asm-generic include/asm)
+I can't see how this is a manageable interface. It is not
+persistent, so after every filesystem mount you'd have to set the
+flag on all your inodes again. Hence, for the moment, I'd suggest
+that dropping per-inode tracking control until all the core issues
+are sorted out....
 
-That'd work, but I assume there is some reason why we've got this system
-of explicitly adding each file.  It's not like cpp can test for the
-presence of include files.  If we can't figure out why we're not doing
-this I'd propose we start.
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
