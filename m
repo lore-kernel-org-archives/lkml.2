@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755785Ab2JPT5V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 15:57:21 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:47759 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755218Ab2JPT5U (ORCPT
+	id S1755971Ab2JPUC7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 16:02:59 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:42686 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755795Ab2JPUC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 15:57:20 -0400
+	Tue, 16 Oct 2012 16:02:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <20121015191018.GA4816@redhat.com>
-References: <20121015190958.GA4799@redhat.com> <20121015191018.GA4816@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 16 Oct 2012 12:56:58 -0700
-X-Google-Sender-Auth: 1JTcenDbSkh4k_U9HZHLyhe62tw
-Message-ID: <CA+55aFwV-WOUx8MSr145f+HSrtmZ=nXHq0VLhtPyH=FNBFwmQg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] brw_mutex: big read-write mutex
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <6469.1350392031@warthog.procyon.org.uk>
+References: <1349998076-15495-1-git-send-email-dhsharp@google.com>
+ <1349998076-15495-2-git-send-email-dhsharp@google.com> <CAMuHMdVx5PU--fo+J1c04qcdG6r+B1DJwD6cxR8evFAyVpJBHQ@mail.gmail.com>
+ <CAJL_ektJgQayiTPAkxxaT3TZLuUCjo2UsFuhMuxCsp-DFVqjFQ@mail.gmail.com> <6469.1350392031@warthog.procyon.org.uk>
+From: David Sharp <dhsharp@google.com>
+Date: Tue, 16 Oct 2012 13:02:36 -0700
+Message-ID: <CAJL_ektjV5SxmHaa+=Rjdu6nVxhUviALq-oSLs5qitCqZJspMw@mail.gmail.com>
+Subject: Re: [PATCH v6 1/6] tracing,x86: Add a TSC trace_clock
+To: David Howells <dhowells@redhat.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 12:10 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> This patch adds the new sleeping lock, brw_mutex. Unlike rw_semaphore
-> it allows multiple writers too, just "read" and "write" are mutually
-> exclusive.
+On Tue, Oct 16, 2012 at 5:53 AM, David Howells <dhowells@redhat.com> wrote:
+> David Sharp <dhsharp@google.com> wrote:
+>
+>> > Please use the Kbuild infrastructure ("generic-y += ..." in
+>> > arch/*/include/asm/Kbuild)
+>> > instead of adding wrappers around the asm-generic version.
+>>
+>> mips apparently recencly got rid of arch/mips/include/asm/Kbuild.
+>
+> It didn't.  However, if you use patch to create your kernel tree, then patch
+> may have removed it.  If you're using GIT, it should still exist.  Try:
 
-So those semantics just don't sound sane. It's also not what any kind
-of normal "rw" lock ever does.
+Ah, right. It's not missing, just empty.
 
-So can you explain why these particular insane semantics are useful,
-and what for?
+>
+>         git log -- arch/mips/include/asm/Kbuild
+>
+>> What should I do for mips?
+>
+> Just create the file with a single "generic-y += ..." line in it.
 
-                  Linus
+Okay. Thanks.
+
+>
+> David
