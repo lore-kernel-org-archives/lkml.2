@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab2JPPT0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 11:19:26 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:57970 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754938Ab2JPPTY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 11:19:24 -0400
-Date: Tue, 16 Oct 2012 08:19:18 -0700
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Irina Tirdea <irina.tirdea@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: Re: [PATCH v4 2/6] perf tools: configure shell path at compile time
-Message-ID: <20121016151918.GC6807@ghostprotocols.net>
-References: <1350344020-8071-1-git-send-email-irina.tirdea@gmail.com>
- <1350344020-8071-3-git-send-email-irina.tirdea@gmail.com>
+	id S1755009Ab2JPPUj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 11:20:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46034 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754803Ab2JPPUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 11:20:37 -0400
+Date: Tue, 16 Oct 2012 11:20:23 -0400
+From: Dave Jones <davej@redhat.com>
+To: Michael Spang <spang@chromium.org>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, greno@verizon.net,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Subject: USB keyboard backlight powering down.
+Message-ID: <20121016152023.GA25506@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Michael Spang <spang@chromium.org>,
+	Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, greno@verizon.net,
+	Fedora Kernel Team <kernel-team@fedoraproject.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1350344020-8071-3-git-send-email-irina.tirdea@gmail.com>
-X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Oct 16, 2012 at 02:33:36AM +0300, Irina Tirdea escreveu:
-> @@ -838,7 +840,11 @@ $(OUTPUT)builtin-help.o: builtin-help.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFL
->  	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
->  		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
->  		'-DPERF_MAN_PATH="$(mandir_SQ)"' \
-> -		'-DPERF_INFO_PATH="$(infodir_SQ)"' $<
-> +		'-DPERF_INFO_PATH="$(infodir_SQ)"' \
-> +		'-DPERF_SHELL_PATH="$(PERF_SHELL_PATH)"' $<
-> +
-> +$(OUTPUT)builtin-script.o: builtin-script.c $(OUTPUT)PERF-CFLAGS
-> +	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_SHELL_PATH='"$(PERF_SHELL_PATH)"' $<
+Gerry (CC'd) reported a bug to us that since 3.6.1, his illuminated
+Logitech USB keyboard doesn't light up until he hits a key, and then
+it immediately powers back off, defeating the purpose of having an
+illumated keyboard.
 
-Same question as for TMP, why not make it available for all files?
+Looking over the 3.6.1 changelog, I see this change, which sounds
+like it might be responsible ?
 
-- Arnaldo
+commit ee537508bdc0c00b96ac497f3d82a68f820e6182
+Author: Michael Spang <spang@chromium.org>
+Date:   Fri Sep 14 13:05:49 2012 -0400
+
+    Increase XHCI suspend timeout to 16ms
+    
+    commit a6e097dfdfd189b6929af6efa1d289af61858386 upstream.
+    
+    The Intel XHCI specification says that after clearing the run/stop bit
+    the controller may take up to 16ms to halt. We've seen a device take
+    14ms, which with the current timeout of 10ms causes the kernel to
+    abort the suspend. Increasing the timeout to the recommended value
+    fixes the problem.
+    
+    This patch should be backported to kernels as old as 2.6.37, that
+    contain the commit 5535b1d5f8885695c6ded783c692e3c0d0eda8ca "USB: xHCI:
+    PCI power management implementation".
+    
+    Signed-off-by: Michael Spang <spang@chromium.org>
+    Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+
+Any thoughts on how we could prevent this generically, or is this
+something we're going to have to quirk around for specific devices we
+don't want to power down ?
+
+	Dave
+
