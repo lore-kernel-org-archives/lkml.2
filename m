@@ -1,65 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab2JPPbR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 11:31:17 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:56197 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755113Ab2JPPbP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 11:31:15 -0400
-Date: Tue, 16 Oct 2012 15:31:13 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-mm@kvack.org, cgroups@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, devel@openvz.org,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v5 07/14] mm: Allocate kernel pages to the right memcg
-In-Reply-To: <1350382611-20579-8-git-send-email-glommer@parallels.com>
-Message-ID: <0000013a6a333867-52b0d904-5ca2-4095-8c46-5a4dfc021cde-000000@email.amazonses.com>
-References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-8-git-send-email-glommer@parallels.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755141Ab2JPPdF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 11:33:05 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51719 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754728Ab2JPPdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 11:33:03 -0400
+Message-ID: <507D7E2B.4070202@ti.com>
+Date: Tue, 16 Oct 2012 11:32:59 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+To: Murali Karicheri <m-karicheri2@ti.com>
+CC: <alan@linux.intel.com>, <gregkh@linuxfoundation.org>,
+        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-keystone@list.ti.com>
+Subject: Re: [RESEND PATCH 1/2] of serial port driver - add clk_get_rate()
+ support
+References: <1350401051-8254-1-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1350401051-8254-1-git-send-email-m-karicheri2@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Oct 2012, Glauber Costa wrote:
+On 10/16/2012 11:24 AM, Murali Karicheri wrote:
+> Currently this driver expects the clock-frequency attribute. This
+> patch allows getting clock-frequency through clk driver API
+> clk_get_rate() if clock-frequency attribute is not defined.
+>
+> So in the device bindings for serial device, one can add clocks
+> phandle to refer to the clk device to get the rate.
+>
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>
+> diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
+> index 34e7187..6f64f02 100644
+> --- a/drivers/tty/serial/of_serial.c
+> +++ b/drivers/tty/serial/of_serial.c
+> @@ -21,8 +21,10 @@
+>   #include <linux/of_serial.h>
+>   #include <linux/of_platform.h>
+>   #include <linux/nwpserial.h>
+> +#include <linux/clk.h>
+>   
+>   struct of_serial_info {
+> +	struct clk *clk;
+>   	int type;
+>   	int line;
+>   };
+> @@ -51,7 +53,8 @@ EXPORT_SYMBOL_GPL(tegra_serial_handle_break);
+>    * Fill a struct uart_port for a given device node
+>    */
+>   static int __devinit of_platform_serial_setup(struct platform_device *ofdev,
+> -					int type, struct uart_port *port)
+> +			int type, struct uart_port *port,
+> +			struct of_serial_info *info)
+>   {
+>   	struct resource resource;
+>   	struct device_node *np = ofdev->dev.of_node;
+> @@ -60,8 +63,17 @@ static int __devinit of_platform_serial_setup(struct platform_device *ofdev,
+>   
+>   	memset(port, 0, sizeof *port);
+>   	if (of_property_read_u32(np, "clock-frequency", &clk)) {
+> -		dev_warn(&ofdev->dev, "no clock-frequency property set\n");
+> -		return -ENODEV;
+> +
+> +		/* Get clk rate through clk driver if present */
+> +		info->clk = clk_get(&ofdev->dev, NULL);
+> +		if (info->clk == NULL) {
+> +			dev_warn(&ofdev->dev,
+> +				"clk or clock-frequency not defined\n");
+> +			return -ENODEV;
+> +		}
+> +
+> +		clk_prepare_enable(info->clk);
+> +		clk = clk_get_rate(info->clk);
+>   	}
+>   	/* If current-speed was set, then try not to change it. */
+>   	if (of_property_read_u32(np, "current-speed", &spd) == 0)
+> @@ -70,7 +82,7 @@ static int __devinit of_platform_serial_setup(struct platform_device *ofdev,
+>   	ret = of_address_to_resource(np, 0, &resource);
+>   	if (ret) {
+>   		dev_warn(&ofdev->dev, "invalid address\n");
+> -		return ret;
+> +		goto out;
+>   	}
+>   
+>   	spin_lock_init(&port->lock);
+> @@ -97,7 +109,8 @@ static int __devinit of_platform_serial_setup(struct platform_device *ofdev,
+>   		default:
+>   			dev_warn(&ofdev->dev, "unsupported reg-io-width (%d)\n",
+>   				 prop);
+> -			return -EINVAL;
+> +			ret = -EINVAL;
+> +			goto out;
+>   		}
+>   	}
+>   
+> @@ -111,6 +124,10 @@ static int __devinit of_platform_serial_setup(struct platform_device *ofdev,
+>   		port->handle_break = tegra_serial_handle_break;
+>   
+>   	return 0;
+> +out:
+> +	if (info->clk)
+> +		clk_disable_unprepare(info->clk);
+> +	return ret;
+>   }
+>   
+>   /*
+> @@ -137,7 +154,7 @@ static int __devinit of_platform_serial_probe(struct platform_device *ofdev)
+>   		return -ENOMEM;
+>   
+>   	port_type = (unsigned long)match->data;
+> -	ret = of_platform_serial_setup(ofdev, port_type, &port);
+> +	ret = of_platform_serial_setup(ofdev, port_type, &port, info);
+>   	if (ret)
+>   		goto out;
+>   
+> @@ -193,6 +210,9 @@ static int of_platform_serial_remove(struct platform_device *ofdev)
+>   		/* need to add code for these */
+>   		break;
+>   	}
+> +
+> +	if (info->clk)
+> +		clk_disable_unprepare(info->clk);
+>   	kfree(info);
+>   	return 0;
+>   }
+For some reason, I can't see the two patches in this series at the 
+linux-serial server at http://marc.info/?l=linux-serial
 
-> To avoid adding markers to the page - and a kmem flag that would
-> necessarily follow, as much as doing page_cgroup lookups for no reason,
-> whoever is marking its allocations with __GFP_KMEMCG flag is responsible
-> for telling the page allocator that this is such an allocation at
-> free_pages() time. This is done by the invocation of
-> __free_accounted_pages() and free_accounted_pages().
+Can someone tell me what could be wrong? My email seems to reach.. So trying
+to reply and get this onto the mailing list.
 
-Hmmm... The code paths to free pages are often shared between multiple
-subsystems. Are you sure that this is actually working and accurately
-tracks the MEMCG pages?
-
-> +/*
-> + * __free_accounted_pages and free_accounted_pages will free pages allocated
-> + * with __GFP_KMEMCG.
-> + *
-> + * Those pages are accounted to a particular memcg, embedded in the
-> + * corresponding page_cgroup. To avoid adding a hit in the allocator to search
-> + * for that information only to find out that it is NULL for users who have no
-> + * interest in that whatsoever, we provide these functions.
-> + *
-> + * The caller knows better which flags it relies on.
-> + */
-> +void __free_accounted_pages(struct page *page, unsigned int order)
-> +{
-> +	memcg_kmem_uncharge_page(page, order);
-> +	__free_pages(page, order);
-> +}
-
-If we already are introducing such an API: Could it not be made more
-general so that it can also be used in the future to communicate other
-characteristics of a page on free?
+Murali
