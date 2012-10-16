@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab2JPK2M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 06:28:12 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5816 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193Ab2JPK2K convert rfc822-to-8bit (ORCPT
+	id S1753672Ab2JPKbJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 06:31:09 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:45382 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752789Ab2JPKbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 06:28:10 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 16 Oct 2012 03:28:02 -0700
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-CC: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "inki.dae@samsung.com" <inki.dae@samsung.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Tue, 16 Oct 2012 12:27:55 +0200
-Subject: Re: [Linaro-mm-sig] [RFC 0/2] DMA-mapping & IOMMU - physically
- contiguous allocations
-Thread-Topic: [Linaro-mm-sig] [RFC 0/2] DMA-mapping & IOMMU - physically
- contiguous allocations
-Thread-Index: Ac2riOooZrAc82VmQtCUqeE7OlPJLQ==
-Message-ID: <20121016.132755.661591248175727826.hdoyu@nvidia.com>
-References: <CAAQKjZMYFNMEnb2ue2aR+6AEbOixnQFyggbXrThBCW5VOznePg@mail.gmail.com><20121016090434.7d5e088152a3e0b0606903c8@nvidia.com><20121016085928.GV21164@n2100.arm.linux.org.uk>
-In-Reply-To: <20121016085928.GV21164@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Tue, 16 Oct 2012 06:31:08 -0400
+Message-ID: <507D375A.3040200@atmel.com>
+Date: Tue, 16 Oct 2012 18:30:50 +0800
+From: Josh Wu <josh.wu@atmel.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
+To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+CC: linux-kernel@vger.kernel.org, hskinnemoen@gmail.com,
+        linux-mtd@lists.infradead.org, dedekind1@gmail.com,
+        fengguang.wu@intel.com
+Subject: Re: [PATCH] avr32: fix build error in atstk1006_defconfig
+References: <1350371967-8914-1-git-send-email-josh.wu@atmel.com> <20121016091740.GA6243@samfundet.no>
+In-Reply-To: <20121016091740.GA6243@samfundet.no>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
-
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote @ Tue, 16 Oct 2012 10:59:28 +0200:
-
-> On Tue, Oct 16, 2012 at 09:04:34AM +0300, Hiroshi Doyu wrote:
-> > In addition to those contiguous/discontiguous page allocation, is
-> > there any way to _import_ anonymous pages allocated by a process to be
-> > used in dma-mapping API later?
-> > 
-> > I'm considering the following scenario, an user process allocates a
-> > buffer by malloc() in advance, and then it asks some driver to convert
-> > that buffer into IOMMU'able/DMA'able ones later. In this case, pages
-> > are discouguous and even they may not be yet allocated at
-> > malloc()/mmap().
-> 
-> That situation is covered.  It's the streaming API you're wanting for that.
-> dma_map_sg() - but you may need additional cache handling via
-> flush_dcache_page() to ensure that your code is safe for all CPU cache
-> architectures.
+On 10/16/2012 5:17 PM, Hans-Christian Egtvedt wrote:
+> Around Tue 16 Oct 2012 15:19:27 +0800 or thereabout, Josh Wu wrote:
+>> fixed the following compile error when use avr32 atstk1006_defconfig:
+>>    drivers/mtd/nand/atmel_nand.c: In function 'pmecc_err_location':
+>>    drivers/mtd/nand/atmel_nand.c:639: error: implicit declaration of function 'writel_relaxed'
+>>
+>> which was introduced by commit 1c7b874d33b463 ("mtd: at91: atmel_nand: add Programmable Multibit ECC controller support").
+>> The PMECC for nand flash code uses writel_relaxed(). But in avr32, there is no macro "writel_relaxed" defined. This patch add writex_relaxed macro definitions.
+>>
+>> Signed-off-by: Josh Wu <josh.wu@atmel.com>
+>> ---
+>>   arch/avr32/include/asm/io.h |    4 ++++
+>>   1 file changed, 4 insertions(+)
+>>
+>> diff --git a/arch/avr32/include/asm/io.h b/arch/avr32/include/asm/io.h
+>> index cf60d0a..fc6483f 100644
+>> --- a/arch/avr32/include/asm/io.h
+>> +++ b/arch/avr32/include/asm/io.h
+>> @@ -165,6 +165,10 @@ BUILDIO_IOPORT(l, u32)
+>>   #define readw_be			__raw_readw
+>>   #define readl_be			__raw_readl
+>>   
+>> +#define writeb_relaxed			writeb
+>> +#define writew_relaxed			writew
+>> +#define writel_relaxed			writel
+>> +
+> I'm wondering if they should be something similar to SH arch:
 >
-> Remember that pages allocated into userspace will be cacheable, so a cache
-> flush is required before they can be DMA'd.  Hence the streaming
-> API.
+> #define writeb_relaxed(v,c) ((void)__raw_writeb((__force u8)ioswabb(v),c))
+>
+> What is the intention behind the macro? Which restriction is relaxed?
 
-Is the syscall "cacheflush()" supposed to be the knob for that?
+According to my understanding, the xxx_relaxed() is that I/O function 
+without any memory barriers. for Multi-cpu, the execute order are less 
+limited.
+So the relaxed write function should be more effective than non-relaxed one.
 
-Or is there any other ones to have more precise control, "clean",
-"invalidate" and "flush", from userland in generic way?
+But for single cpu, relaxed function should work same as non-relaxed 
+function.
+Please correct me if I'm understand in a wrong way.
+
+Best Regards,
+Josh Wu
+
+>
+>>   #define writeb_be			__raw_writeb
+>>   #define writew_be			__raw_writew
+>>   #define writel_be			__raw_writel
+
