@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab2JPTkT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 15:40:19 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:52935 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754946Ab2JPTkR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 15:40:17 -0400
+	id S1756020Ab2JPTkt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 15:40:49 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53247 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754578Ab2JPTkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 15:40:47 -0400
+Date: Tue, 16 Oct 2012 21:40:44 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH v9 03/12] x86, topology: Don't offline CPU0 if any PIC
+ irq can not be migrated out of it
+Message-ID: <20121016194044.GB27090@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Yu, Fenghua" <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
+	Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	"Mallick, Asit K" <asit.k.mallick@intel.com>,
+	"Luck, Tony" <tony.luck@intel.com>,
+	Arjan Dan De Ven <arjan@linux.intel.com>,
+	"Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+	"Brown, Len" <len.brown@intel.com>,
+	"Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+	Randy Dunlap <rdunlap@xenotime.net>,
+	Chen Gong <gong.chen@linux.intel.com>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+References: <1350058189-6769-1-git-send-email-fenghua.yu@intel.com>
+ <1350058189-6769-4-git-send-email-fenghua.yu@intel.com>
+ <20121016170310.GC12694@x1.osrc.amd.com>
+ <3E5A0FA7E9CA944F9D5414FEC6C7122030B16447@ORSMSX105.amr.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <CAAZUjxAPAUD50asniJVNgD3X=vM_d=GPKJ5C2eVGo6r4HUKYLQ@mail.gmail.com>
-References: <CAAZUjxCvK0QnwnZP_FBiO2JM1rMoEA3HLjKAcYD14cxdGWyg4Q@mail.gmail.com>
- <507DB47E.5090003@mit.edu> <CAAZUjxAPAUD50asniJVNgD3X=vM_d=GPKJ5C2eVGo6r4HUKYLQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 16 Oct 2012 12:39:55 -0700
-Message-ID: <CALCETrVKiO5t8AuEM=XxdPgZGr6crr6C-4174607_VLO787--g@mail.gmail.com>
-Subject: Re: VDSO gettimeofday() x86_64 linux 3.2
-To: wilson self <wself00@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C7122030B16447@ORSMSX105.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 12:33 PM, wilson self <wself00@gmail.com> wrote:
-> current_clocksource is tsc.
->
-> the entire source of the test application:
-> ---
-> #include <stdio.h>
-> #include <stdlib.h>
-> #include <sys/time.h>
-> #include <time.h>
->
-> int main() {
->       struct timeval tim;
->       gettimeofday(&tim, NULL);
->       printf("%.6lf seconds\n", tim.tv_sec+tim.tv_usec/1000000.0);
-> }
-> ---
-> nothing fancy going on here.
->
-> thanks for the help.
+On Tue, Oct 16, 2012 at 06:43:36PM +0000, Yu, Fenghua wrote:
+> arch/x86/kernel/cpu/topology.c doesn't contain CPU hotplug hooks.
+> To place the BSP patchset in this file, other existing CPU hotplug
+> code should be moved to this file as well. Apparently that's not this
+> patchset's task.
 
-There's lots of hidden fanciness.  What glibc version are you using
-and how are you linking to glibc?  All but the newest glibc versions
-use the old vsyscall when statically linked.  The newest versions use
-the syscall instead.  If you're dynamically linking, then gettimeofday
-should be okay even with fairly old glibc versions.
+Right, ok.
 
-(FWIW, glibc maintainership has changed since this was decided.  Feel
-free to bug the new maintainers if you care about statically-linked
-performance.  The only other runtime library I know of that uses the
-vdso or vsyscalls is Go, and the newest versions do the right thing.)
+But looking at this a bit more, we (someone :)) should probably merge
+those two files together since both deal with the cpu aspect of
+topology...
 
---Andy
+Oh well.
+
+-- 
+Regards/Gruss,
+    Boris.
