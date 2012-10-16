@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab2JPHDH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 03:03:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42212 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754039Ab2JPHDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 03:03:06 -0400
-Date: Tue, 16 Oct 2012 09:03:02 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Sha Zhengju <handai.szj@gmail.com>
-Cc: David Rientjes <rientjes@google.com>, Sha Zhengju <handai.szj@taobao.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] oom, memcg: handle sysctl oom_kill_allocating_task while
- memcg oom happening
-Message-ID: <20121016070302.GA13991@dhcp22.suse.cz>
-References: <1350367837-27919-1-git-send-email-handai.szj@taobao.com>
- <alpine.DEB.2.00.1210152311460.9480@chino.kir.corp.google.com>
- <507CFF65.7050109@gmail.com>
+	id S1754496Ab2JPHIo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 03:08:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43716 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754222Ab2JPHIn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 03:08:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <507CFF65.7050109@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121016054946.GA3934@barrios>
+References: <1350278059-14904-1-git-send-email-ming.lei@canonical.com>
+	<1350278059-14904-2-git-send-email-ming.lei@canonical.com>
+	<20121015154724.GA2840@barrios>
+	<CACVXFVM09H=8ZuFSzkcN1NmOCR1pcPUsuUyT9tpR0doVam2BiQ@mail.gmail.com>
+	<20121016054946.GA3934@barrios>
+Date: Tue, 16 Oct 2012 15:08:41 +0800
+Message-ID: <CACVXFVOdohPprD7N69=Tz2keTbLG7b-s5324OUX-oY84Jszumg@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/3] mm: teach mm by current context info to not do
+ I/O during memory allocation
+From: Ming Lei <ming.lei@canonical.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, Jiri Kosina <jiri.kosina@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-mm <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 16-10-12 14:32:05, Sha Zhengju wrote:
-[...]
-> Thanks for reminding!  Yes, I cooked it on memcg-devel git repo but
-> a out-of-date
-> since-3.2 branch... But I notice the latest branch is since-3.5(not
-> seeing 3.6/3.7), does
-> it okay to working on this branch?
+On Tue, Oct 16, 2012 at 1:49 PM, Minchan Kim <minchan@kernel.org> wrote:
+>
+> Fair enough but it wouldn't be a good idea that add new unlikely branch
+> in allocator's fast path. Please move the check into slow path which could
+> be in __alloc_pages_slowpath.
 
-The tree has moved to
-http://git.kernel.org/?p=linux/kernel/git/mhocko/mm.git;a=summary.
-Please use that tree.
--- 
-Michal Hocko
-SUSE Labs
+Thanks for your comment.
+
+I have considered to add the branch into gfp_to_alloc_flags() before,
+but didn't do it because I see that get_page_from_freelist() may use
+the GFP_IO or GFP_FS flag at least in zone_reclaim() path.
+
+So could you make sure it is safe to move the branch into
+__alloc_pages_slowpath()?  If so, I will add the check into
+gfp_to_alloc_flags().
+
+
+Thanks,
+--
+Ming Lei
