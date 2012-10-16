@@ -1,83 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab2JPTDC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 15:03:02 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:60346 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755883Ab2JPTC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 15:02:59 -0400
-Message-ID: <507DAF56.9010403@parallels.com>
-Date: Tue, 16 Oct 2012 23:02:46 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1755921Ab2JPTFB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 15:05:01 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:47173 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755889Ab2JPTE7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 15:04:59 -0400
 MIME-Version: 1.0
+In-Reply-To: <0000013a6aee372f-add43c34-0cc1-4cdb-8ad1-730074b2b49b-000000@email.amazonses.com>
+References: <CAMjP1K=WV=AJ=paz7uBJ2X0FnOX6Cf-HipWsFjLxicXGbvL6Sw@mail.gmail.com>
+	<CAOJsxLF2VJRRu_i2aCARwiw6knyrwL1HpZ1zGOASP133fNxv8Q@mail.gmail.com>
+	<0000013a6ad64c95-106bab18-5a15-4c85-bae9-5527aa52f661-000000@email.amazonses.com>
+	<alpine.DEB.2.00.1210161147410.2910@chino.kir.corp.google.com>
+	<0000013a6aee372f-add43c34-0cc1-4cdb-8ad1-730074b2b49b-000000@email.amazonses.com>
+Date: Tue, 16 Oct 2012 14:04:58 -0500
+Message-ID: <CAMjP1K=vWLNqOjgwnvq9NfWU2af-M7+CFMtp9naraFO+Xmod6A@mail.gmail.com>
+Subject: Re: Reading /proc/slabinfo causes stalls
+From: Avleen Vig <avleen@gmail.com>
 To: Christoph Lameter <cl@linux.com>
-CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
-        <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v5 14/14] Add documentation about the kmem controller
-References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-15-git-send-email-glommer@parallels.com> <0000013a6ad26c73-d043cf97-c44a-45c1-9cae-0a962e93a005-000000@email.amazonses.com>
-In-Reply-To: <0000013a6ad26c73-d043cf97-c44a-45c1-9cae-0a962e93a005-000000@email.amazonses.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [46.39.244.6]
+Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2012 10:25 PM, Christoph Lameter wrote:
-> On Tue, 16 Oct 2012, Glauber Costa wrote:
-> 
->>
->> + memory.kmem.limit_in_bytes      # set/show hard limit for kernel memory
->> + memory.kmem.usage_in_bytes      # show current kernel memory allocation
->> + memory.kmem.failcnt             # show the number of kernel memory usage hits limits
->> + memory.kmem.max_usage_in_bytes  # show max kernel memory usage recorded
-> 
-> Does it actually make sense to limit kernel memory? 
+On Tue, Oct 16, 2012 at 1:55 PM, Christoph Lameter <cl@linux.com> wrote:
+> On Tue, 16 Oct 2012, David Rientjes wrote:
+>
+>> Or convert slab_mutex to be a rwlock?
+>
+> The RT folks just converted it to a mutex.... ;-)
 
-Yes.
+Damn :-)
 
-> The user generally has
-> no idea how much kernel memory a process is using and kernel changes can
-> change the memory footprint. Given the fuzzy accounting in the kernel a
-> large cache refill (if someone configures the slab batch count to be
-> really big f.e.) can account a lot of memory to the wrong cgroup. The
-> allocation could fail.
-> 
-
-It heavily depends on the type of the user. The user may not know how
-much kernel memory precisely will be used, but he/she usually knows
-quite well that it shouldn't be all cgroups together shouldn't use more
-than available in the system.
-
-IOW: It is usually safe to overcommit user memory, but not kernel
-memory. This is absolutely crucial in any high-density container host,
-and we've been doing this in OpenVZ for ages (in an uglier form than this)
-
-> Limiting the total memory use of a process (U+K) would make more sense I
-> guess. Only U is probably sufficient? In what way would a limitation on
-> kernel memory in use be good?
-> 
-
-The kmem counter is also fed into the u counter. If the limit value of
-"u" is equal or greater than "k", this is actually what you are doing.
-
-For a lot of application yes, only U is sufficient. This is the default,
-btw, since "k" is only even accounted if you set the limit.
-
-All those use cases are detailed a bit below in this file.
-
-A limitation of kernel memory use would be good, for example, to prevent
-abuse from non-trusted containers in a high density, shared, container
-environment.
-
-
-
+I'll play around with SLUB.
+There were some concerns that it doesn't perform as well as SLAB on
+large hardware (we're almost always running >16G RAM, and regularly
+>96G RAM on things like memcache servers).
+If the performance pans out, SLUB would be great.
