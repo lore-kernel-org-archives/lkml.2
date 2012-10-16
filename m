@@ -1,154 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab2JPGoL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 02:44:11 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:45322 "EHLO gir.skynet.ie"
+	id S1754278Ab2JPGvp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 02:51:45 -0400
+Received: from smtp2.goneo.de ([212.90.139.82]:38125 "EHLO smtp2.goneo.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754061Ab2JPGoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 02:44:09 -0400
-Date: Tue, 16 Oct 2012 07:44:06 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1210160738100.19767@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753995Ab2JPGvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 02:51:44 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -2.724
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v2 2/4] gpio: add viperboard gpio driver
+Date: Tue, 16 Oct 2012 08:51:33 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Lars Poeschel <larsi@wh2.tu-dresden.de>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, jic23@cam.ac.uk, khali@linux-fr.org,
+        ben-linux@fluff.org, w.sang@pengutronix.de, grant.likely@secretlab.ca
+References: <20120925085559.GL28670@sortiz-mobl> <1350052469-27802-2-git-send-email-larsi@wh2.tu-dresden.de> <CACRpkdadDJDU_UUmdFoKBUm49_1CPjBnibq_RsiSeu+y4zRTsw@mail.gmail.com>
+In-Reply-To: <CACRpkdadDJDU_UUmdFoKBUm49_1CPjBnibq_RsiSeu+y4zRTsw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1963980744-1350369846=:19767"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210160851.33324.poeschel@lemonage.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Monday 15 October 2012 at 15:00:12, Linus Walleij wrote:
 
---29444707-1963980744-1350369846=:19767
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+> > +#define VPRBRD_GPIOA_CLK_1             0           /* (1us   = 1MHz)  
+> > */ +#define VPRBRD_GPIOA_CLK_10            1           /* (10us  =
+> > 100kHz) */ +#define VPRBRD_GPIOA_CLK_100           2           /* (100us
+> > = 10kHz)  */ +#define VPRBRD_GPIOA_CLK_1000          3           /* (1ms
+> >   = 1kHz)   */ +#define VPRBRD_GPIOA_CLK_10000         4           /*
+> > (10ms  = 100Hz)  */ +#define VPRBRD_GPIOA_CLK_100000                5   
+> >        /* (100ms = 10Hz)   */
+> 
+> So instead of #defining something noone understands and
+> then writing in the comment what it actually means, why
+> don't you just:
+> 
+> #define VPRBRD_GPIOA_CLK_1MHZ           0
+> #define VPRBRD_GPIOA_CLK_100KHZ          1
+> 
+> or maybe:
+> 
+> #define VPRBRD_GPIOA_CLK_PERIOD_1US             0
+> #define VPRBRD_GPIOA_CLK_PERIOD_10US            1
+> 
+> or something else you will understand immediately when reading the
+> code?
 
+Yes, you are right. I was too involved with my hardware to see this. I will 
+change this.
+ 
+> > +struct __packed vprbrd_gpioa_msg {
+> 
+> __packed always goes *after* the struct does it not?
+> 
+> > +       u8 cmd;
+> > +       u8 clk;
+> > +       u8 offset;
+> > +       u8 t1;
+> > +       u8 t2;
+> > +       u8 invert;
+> > +       u8 pwmlevel;
+> > +       u8 outval;
+> > +       u8 risefall;
+> > +       u8 answer;
+> > +       u8 __fill;
+> > +};  <- i.e. here, before the semicolon.
 
-Hi Linus,
+GCC does allow both alternatives. See description of packed attribute under:
 
-fixes for i915, nouveau and radeon
+http://gcc.gnu.org/onlinedocs/gcc/Type-Attributes.html#Type-Attributes
 
-i915: haswell stability, modeset rework fallout, ums fix
-nouveau: misc fixes from code rework
-radeon: pll rework fixes, more 2 level PTE cleanups.
-core: warning fixes on 32-bit.
+But since most kernel code does it right before the semicolon, I will change 
+that too.
 
-Dave.
+> > +/* gpioa sampling clock module parameter */
+> > +static unsigned char gpioa_clk = 3;
+> 
+> Isn't this actually
+> 
+> static unsigned char gpioa_clk = VPRBRD_GPIOA_CLK_1000
+> 
+> > +module_param(gpioa_clk, byte, 0);
+> > +MODULE_PARM_DESC(gpioa_clk, "gpio a sampling clk (default is 3 for 1
+> > kHz)");
+> 
+> So if you're adding very magic module parameters maybe
+> this magic number isn't such a good idea. Oh well, there
+> are stranger things in the world so OK...
 
-The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
+Also I will change this to be more descriptive.
 
-  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
+> > +static int vprbrd_gpioa_get(struct gpio_chip *chip,
+> > +               unsigned offset)
+> > +{
+> > +       int ret, answer, error = 0;
+> > +       struct vprbrd_gpio *gpio =
+> > +                       container_of(chip, struct vprbrd_gpio, gpioa);
+> > +       struct vprbrd *vb = gpio->vb;
+> > +       struct vprbrd_gpioa_msg *gamsg = (struct vprbrd_gpioa_msg
+> > *)vb->buf; +
+> > +       /* if io is set to output, just return the saved value */
+> > +       if (gpio->gpioa_out & (1 << offset))
+> > +               return gpio->gpioa_val & (1 << offset);
+> 
+> That's not going to work if the hardware changes state
+> behind the back of the driver right? Oh well, maybe
+> it doesn't matter.
 
-are available in the git repository at:
+I thought about that and then did this "cache" only in case the gpio is a 
+output to save to usb ping-pong that is needed otherwise. I thought that 
+nothing can change to state of the output but the driver itself.
 
-  git://people.freedesktop.org/~airlied/linux.git drm-fixes
+> The rest does some clever USB marshalling that I trust
+> is doing what it should :-)
+> 
+> > +       ret = usb_control_msg(vb->usb_dev, usb_sndctrlpipe(vb->usb_dev,
+> > 0), +               0xed, 0x40, 0x0000, 0x0000, gamsg,
+> > +               sizeof(struct vprbrd_gpioa_msg), 100);
+> 
+> 0xed? 0x40? 100?
+> 
+> Can you #define the magic constants, or are they already available
+> in some existing header file?
+> 
+> (The zeros are OK.)
 
-for you to fetch changes up to 8a00b6af4cc547725f231c8367ddc7cb56b2cf76:
+No there are no constants in some existing file. I will introduce them.
 
-  nouveau: fix warning on 32-bit build. (2012-10-16 16:40:53 +1000)
+> > +       if (ret != sizeof(struct vprbrd_gpioa_msg))
+> > +               error = -EREMOTEIO;
+> > +
+> > +       ret = usb_control_msg(vb->usb_dev, usb_rcvctrlpipe(vb->usb_dev,
+> > 0), +               0xed, 0xc0, 0x0000, 0x0000, gamsg,
+> > +               sizeof(struct vprbrd_gpioa_msg), 100);
+> 
+> Dito...
+> 
+> Same comment for *set, *direction_input, *direction_output,
+> *setdir,
+> 
+> (...)
+> 
+> > +static int __devinit vprbrd_gpio_probe(struct platform_device *pdev)
+> > +{
+> > +       struct vprbrd *vb = dev_get_drvdata(pdev->dev.parent);
+> > +       struct vprbrd_gpio *vb_gpio;
+> > +       int ret;
+> > +
+> > +       vb_gpio = kzalloc(sizeof(*vb_gpio), GFP_KERNEL);
+> 
+> Can you use devm_kzalloc(&pdev->dev, ...)?
 
-----------------------------------------------------------------
-Alex Deucher (5):
-      drm/radeon: fix compilation with backlight disabled
-      drm/radeon: allocate PPLLs from low to high
-      drm/radeon: update comments to clarify VM setup (v2)
-      drm/radeon/cayman: set VM max pfn at MC init
-      drm/radeon: check if pcie gen 2 is already enabled (v2)
+Ofcourse. Thanks for the hint. I did not knew this function.
+ 
+> > +       if (vb_gpio == NULL)
+> > +               return -ENOMEM;
+> > +
+> > +       vb_gpio->vb = vb;
+> > +       /* registering gpio a */
+> > +       vb_gpio->gpioa.label = "viperboard gpio a";
+> > +       vb_gpio->gpioa.dev = &pdev->dev;
+> > +       vb_gpio->gpioa.owner = THIS_MODULE;
+> > +       vb_gpio->gpioa.base = -1;
+> > +       vb_gpio->gpioa.ngpio = 16;
+> > +       vb_gpio->gpioa.can_sleep = 1;
+> > +       vb_gpio->gpioa.set = vprbrd_gpioa_set;
+> > +       vb_gpio->gpioa.get = vprbrd_gpioa_get;
+> > +       vb_gpio->gpioa.direction_input = vprbrd_gpioa_direction_input;
+> > +       vb_gpio->gpioa.direction_output = vprbrd_gpioa_direction_output;
+> > +       ret = gpiochip_add(&vb_gpio->gpioa);
+> > +       if (ret < 0) {
+> > +               dev_err(vb_gpio->gpioa.dev, "could not add gpio a");
+> > +               goto err_gpioa;
+> > +       }
+> > +
+> > +       /* registering gpio b */
+> > +       vb_gpio->gpiob.label = "viperboard gpio b";
+> > +       vb_gpio->gpiob.dev = &pdev->dev;
+> > +       vb_gpio->gpiob.owner = THIS_MODULE;
+> > +       vb_gpio->gpiob.base = -1;
+> > +       vb_gpio->gpiob.ngpio = 16;
+> > +       vb_gpio->gpiob.can_sleep = 1;
+> > +       vb_gpio->gpiob.set = vprbrd_gpiob_set;
+> > +       vb_gpio->gpiob.get = vprbrd_gpiob_get;
+> > +       vb_gpio->gpiob.direction_input = vprbrd_gpiob_direction_input;
+> > +       vb_gpio->gpiob.direction_output = vprbrd_gpiob_direction_output;
+> > +       ret = gpiochip_add(&vb_gpio->gpiob);
+> > +       if (ret < 0) {
+> > +               dev_err(vb_gpio->gpiob.dev, "could not add gpio b");
+> > +               goto err_gpiob;
+> > +       }
+> > +
+> > +       platform_set_drvdata(pdev, vb_gpio);
+> > +
+> > +       return ret;
+> > +
+> > +err_gpiob:
+> > +       ret = gpiochip_remove(&vb_gpio->gpioa);
+> > +
+> > +err_gpioa:
+> > +       kfree(vb_gpio);
+> 
+> With devm_kzalloc you don't need this free.
+> 
+> (...)
+> 
+> > +static int __devexit vprbrd_gpio_remove(struct platform_device *pdev)
+> > +{
+> > +       struct vprbrd_gpio *vb_gpio = platform_get_drvdata(pdev);
+> > +       int ret;
+> > +
+> > +       ret = gpiochip_remove(&vb_gpio->gpiob);
+> > +       if (ret == 0)
+> > +               ret = gpiochip_remove(&vb_gpio->gpioa);
+> > +       if (ret == 0)
+> > +               kfree(vb_gpio);
+> 
+> Nor this.
+> 
+> Apart from this the driver is looking nice!
 
-Ben Skeggs (1):
-      drm/nouveau/bios: fix typo in error message
+Thank you for your feedback. I will wait some time for responses of the other 
+maintainers and then do a version 3 of the whole patchset.
 
-Chris Wilson (2):
-      drm/i915: Disallow preallocation of requests
-      drm/i915: fixup i915_gem_object_get_page inline helper
-
-Christian König (3):
-      drm/radeon: allocate page tables on demand v4
-      drm/radeon: don't add the IB pool to all VMs v2
-      drm/radeon: separate pt alloc from lru add
-
-Daniel Vetter (5):
-      drm/i915: paper over a pipe-enable vs pageflip race
-      drm/i915: disable wc gtt pte mappings on gen2
-      drm/i915: rip out the pipe A quirk for i855gm
-      drm/i915: fixup the plane->pipe fixup code
-      drm/i915/dvo-ch7xxx: fix get_hw_state
-
-Dave Airlie (5):
-      Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
-      Merge branch 'drm-fixes-3.7' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
-      drm: fix warning on 32-bit.
-      Merge branch 'drm-nouveau-fixes' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
-      nouveau: fix warning on 32-bit build.
-
-Egbert Eich (1):
-      drm/radeon: Don't destroy I2C Bus Rec in radeon_ext_tmds_enc_destroy().
-
-Jani Nikula (1):
-      drm/i915: fix non-DP-D eDP backlight cleanup and module reload
-
-Kenneth Graunke (1):
-      drm/i915: Set guardband clipping workaround bit in the right register.
-
-Luca Tettamanti (1):
-      drm/radeon: use %zu for formatting size_t
-
-Marcin Slusarz (1):
-      drm/nv50/fb: fix double free of vram mm
-
-Martin Peres (3):
-      drm/nouveau/hwmon: fix the initialization condition
-      drm/nouveau/pm: fix a typo related to the move to the therm subdev
-      drm/nouveau/pm: do not stop reclocking if failing to set the fan speed
-
-Max Filippov (1):
-      drm/nouveau: only call ttm_agp_tt_create when __OS_HAS_AGP
-
-Randy Dunlap (1):
-      drm: radeon: fix printk format warning
-
-Rodrigo Vivi (1):
-      drm/i915: HSW CRW stability magic
-
-Thomas Friebel (1):
-      drm/radeon: fix spelling typos in debugging output
-
-Willy Tarreau (1):
-      drm/i915: remove useless BUG_ON which caused a regression in 3.5.
-
- drivers/char/agp/intel-gtt.c                    |    2 +-
- drivers/gpu/drm/drm_info.c                      |    2 +-
- drivers/gpu/drm/i915/dvo_ch7xxx.c               |    6 +-
- drivers/gpu/drm/i915/i915_drv.h                 |    9 +-
- drivers/gpu/drm/i915/i915_gem.c                 |   19 +-
- drivers/gpu/drm/i915/i915_reg.h                 |    2 +-
- drivers/gpu/drm/i915/intel_display.c            |   47 ++-
- drivers/gpu/drm/i915/intel_dp.c                 |    3 +-
- drivers/gpu/drm/i915/intel_overlay.c            |   72 +----
- drivers/gpu/drm/i915/intel_pm.c                 |    4 +-
- drivers/gpu/drm/nouveau/core/subdev/bios/dcb.c  |    2 +-
- drivers/gpu/drm/nouveau/core/subdev/fb/nv50.c   |    1 -
- drivers/gpu/drm/nouveau/core/subdev/therm/fan.c |    2 +-
- drivers/gpu/drm/nouveau/nouveau_bo.c            |    2 +
- drivers/gpu/drm/nouveau/nouveau_pm.c            |    6 +-
- drivers/gpu/drm/radeon/atombios_crtc.c          |    8 +-
- drivers/gpu/drm/radeon/evergreen.c              |    7 +-
- drivers/gpu/drm/radeon/ni.c                     |   12 +-
- drivers/gpu/drm/radeon/r600.c                   |    6 +
- drivers/gpu/drm/radeon/radeon.h                 |   14 +-
- drivers/gpu/drm/radeon/radeon_acpi.c            |    6 +-
- drivers/gpu/drm/radeon/radeon_atpx_handler.c    |    2 +-
- drivers/gpu/drm/radeon/radeon_cs.c              |    1 +
- drivers/gpu/drm/radeon/radeon_device.c          |    4 +
- drivers/gpu/drm/radeon/radeon_gart.c            |  374 ++++++++++++++++-------
- drivers/gpu/drm/radeon/radeon_kms.c             |   22 +-
- drivers/gpu/drm/radeon/radeon_legacy_encoders.c |   48 ++-
- drivers/gpu/drm/radeon/radeon_ring.c            |    2 +-
- drivers/gpu/drm/radeon/si.c                     |    7 +-
- 29 files changed, 443 insertions(+), 249 deletions(-)
---29444707-1963980744-1350369846=:19767--
+Regards,
+Lars
