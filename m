@@ -1,108 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753268Ab2JPFtz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 01:49:55 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61321 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab2JPFtx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 01:49:53 -0400
-Date: Tue, 16 Oct 2012 14:49:46 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>, Jiri Kosina <jiri.kosina@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-mm <linux-mm@kvack.org>
-Subject: Re: [RFC PATCH 1/3] mm: teach mm by current context info to not do
- I/O during memory allocation
-Message-ID: <20121016054946.GA3934@barrios>
-References: <1350278059-14904-1-git-send-email-ming.lei@canonical.com>
- <1350278059-14904-2-git-send-email-ming.lei@canonical.com>
- <20121015154724.GA2840@barrios>
- <CACVXFVM09H=8ZuFSzkcN1NmOCR1pcPUsuUyT9tpR0doVam2BiQ@mail.gmail.com>
+	id S1753129Ab2JPFv5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 01:51:57 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53036 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751459Ab2JPFvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 01:51:55 -0400
+Message-ID: <507CF5D9.2050605@ti.com>
+Date: Tue, 16 Oct 2012 11:21:21 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVM09H=8ZuFSzkcN1NmOCR1pcPUsuUyT9tpR0doVam2BiQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hilman, Kevin" <khilman@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-keystone@list.ti.com - Linux developers for Keystone family of
+	devices (May contain non-TIers)" <linux-keystone@list.ti.com>,
+        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
+        "Chemparathy, Cyril" <cyril@ti.com>
+Subject: Re: [PATCH v2 09/13] ARM: davinci - update the dm644x soc code to
+ use common clk drivers
+References: <1348683037-9705-1-git-send-email-m-karicheri2@ti.com> <1348683037-9705-10-git-send-email-m-karicheri2@ti.com> <5076BAA2.6010404@ti.com> <3E54258959B69E4282D79E01AB1F32B7041FDB5B@DFLE12.ent.ti.com> <5077F466.6020707@ti.com> <3E54258959B69E4282D79E01AB1F32B704201DE5@DFLE12.ent.ti.com>
+In-Reply-To: <3E54258959B69E4282D79E01AB1F32B704201DE5@DFLE12.ent.ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 09:56:48AM +0800, Ming Lei wrote:
-> On Mon, Oct 15, 2012 at 11:47 PM, Minchan Kim <minchan@kernel.org> wrote:
-> > On Mon, Oct 15, 2012 at 01:14:17PM +0800, Ming Lei wrote:
-> >> This patch introduces PF_MEMALLOC_NOIO on process flag('flags' field of
-> >> 'struct task_struct'), so that the flag can be set by one task
-> >> to avoid doing I/O inside memory allocation in the task's context.
-> >>
-> >> The patch trys to solve one deadlock problem caused by block device,
-> >> and the problem can be occured at least in the below situations:
-> >>
-> >> - during block device runtime resume situation, if memory allocation
-> >> with GFP_KERNEL is called inside runtime resume callback of any one
-> >> of its ancestors(or the block device itself), the deadlock may be
-> >> triggered inside the memory allocation since it might not complete
-> >> until the block device becomes active and the involed page I/O finishes.
-> >> The situation is pointed out first by Alan Stern. It is not a good
-> >> approach to convert all GFP_KERNEL in the path into GFP_NOIO because
-> >> several subsystems may be involved(for example, PCI, USB and SCSI may
-> >> be involved for usb mass stoarage device)
-> >
-> > Couldn't we expand pm_restrict_gfp_mask to cover resume path as well as
-> > suspend path?
-> 
-> IMO, we could, but it is not good and might trigger memory allocation problem.
-> 
-> pm_restrict_gfp_mask uses the global variable of gfp_allowed_mask to
-> avoid allocating page with GFP_IOFS in all contexts during system sleep,
-> when processes have been frozen.
-> 
-> But during runtime PM, the whole system is running and all processes are
-> runnable. Also runtime PM is per device and the whole system may have
-> lots of devices, so taking the global gfp_allowed_mask may keep page
-> allocation with ~GFP_IOFS for a considerable proportion of system
-> running time, then alloc_page() will return failure easier.
-> 
-> The above deadlock problem may be fixed by allocating memory with
-> ~GFP_IOFS only in the context of calling runtime_resume, and that is
-> idea of the patch.
+Hi Murali,
 
-Fair enough but it wouldn't be a good idea that add new unlikely branch
-in allocator's fast path. Please move the check into slow path which could
-be in __alloc_pages_slowpath.
+On 10/15/2012 9:21 PM, Karicheri, Muralidharan wrote:
+> --Cut----
+> 
+>>> Subject: Re: [PATCH v2 09/13] ARM: davinci - update the dm644x soc code to use
+>>> common clk drivers
+>>>
+>>>>>> You have chosen to keep all clock related data in platform files
+>>>>>> while using the common clock framework to provide just the
+>>>>>> infrastructure. If you look at how mxs and spear have been migrated, they have
+>>> migrated the soc specific clock data to drivers/clk as well.
+>>>>>> See "drivers/clk/spear/spear3xx_clock.c" or
+>>>>>> "drivers/clk/mxs/clk-imx23.c
+>>>>
+>>>> I have to disagree on this one. I had investigated these code already
+>>>> and came up with a way that we can re-use code across all of the
+>>>> davinci platforms as well as other architectures that re-uses the clk hardware IPs.
+>>>
+>>> Which code you are talking about here? Even if you introduce clk-dm644x.c, clk-
+>>> keystone.c etc in drivers/clk/davinci/ you can reuse the code you introduce in patches 1-
+>>> 3. I cant see how that will be prevented.
+> 
+> I was talking about re-use of davinci_common_clk_init in drivers/clk/davinci/davinci-clock.c.
+> This is meant to be re-used across all of the DaVinci devices.
+> 
+>>>
+>>>> spear3xx_clock.c has initialization code for each of the platforms and
+>>>> so is the case with imx23.c.
+>>>
+>>> By each of the platforms, you mean they all cater to a family of devices? This depends on
+>>> how close together the family of devices are.
+>>> Otherwise, there would be a file per soc. DM644x also represents a family for that matter.
+>>>
+>>>> By using platform_data approach, we are able to define clks for each of the SoC and
+>>> then use davinci_common_clk_init() to do initialize the clk drivers based on platform
+>>> data.
+>>>
+>>> You need to define and register the clocks present on each SoC either which way. I don't
+>>> see why just the platform_data approach allows this.
+>>> And looking closely, you have defined platform data, but don't actually have a platform
+>>> device, making things more confusing.
+>>>
+> 
+> Ok. There are multiple ways to implement this software. We had discussed this
+> internally and picked the platform_data approach. The clk drivers are written not
+> following the platform driver model. But I don't see why we can't use platform data
+> to configure this drivers. Down below, you have made two interesting points, one is
+> ARM code reduction. This patch already does this by moving the API that initializes
+> the clk drivers (davinci_common_clk_init()) out of ARM to drivers/clk/davinci. So
+> this + removal of existing clk driver under arm/mach-davinci/clock.[ch], we have
+> achieved this goal. The second point is the moving of SoC specific clk data out of SoC
+> code to drive. Are you 100% sure this is the right thing to do for these drivers. If so,
+> I can start working on this change right away. As I am working on this as a background
+> activity, I want to be double or triple sure before doing the rework of these patches :).
+> So please confirm.
 
-> 
-> >
-> >>
-> >> - during error handling situation of usb mass storage deivce, USB
-> >> bus reset will be put on the device, so there shouldn't have any
-> >> memory allocation with GFP_KERNEL during USB bus reset, otherwise
-> >> the deadlock similar with above may be triggered. Unfortunately, any
-> >> usb device may include one mass storage interface in theory, so it
-> >> requires all usb interface drivers to handle the situation. In fact,
-> >> most usb drivers don't know how to handle bus reset on the device
-> >> and don't provide .pre_set() and .post_reset() callback at all, so
-> >> USB core has to unbind and bind driver for these devices. So it
-> >> is still not practical to resort to GFP_NOIO for solving the problem.
-> >
-> > I hope this case could be handled by usb core like usb_restrict_gfp_mask
-> > rather than adding new branch on fast path.
-> 
-> See above, applying the global gfp_allowed_mask is not good.
-> 
-> 
-> Thanks,
-> --
-> Ming Lei
+Yes, this is the right way to go. And I don't see it as something
+breaking new ground since there are already multiple SoCs in mainline
+which are following this same approach. May be to start with just
+convert one SoC and send for review.
 
--- 
-Kind Regards,
-Minchan Kim
+Thanks for taking this up and helping clean-up mach-davinci.
+
+Regards,
+Sekhar
