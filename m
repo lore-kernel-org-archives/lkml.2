@@ -1,153 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963Ab2JPUio (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 16:38:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47906 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896Ab2JPUin (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 16:38:43 -0400
-Message-ID: <1350419915.1958.39.camel@kjgkr>
-Subject: Re: [PATCH 11/16] f2fs: add inode operations for special inodes
-From: Jaegeuk Kim <jaegeuk.kim@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>,
-        "'Dave Chinner'" <david@fromorbit.com>,
-        "'Vyacheslav Dubeyko'" <slava@dubeyko.com>, viro@zeniv.linux.org.uk,
-        "'Theodore Ts'o'" <tytso@mit.edu>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, chur.lee@samsung.com,
-        cm224.lee@samsung.com, jooyoung.hwang@samsung.com
-Date: Wed, 17 Oct 2012 05:38:35 +0900
-In-Reply-To: <201210161138.35388.arnd@arndb.de>
-References: <001201cda2f1$633db960$29b92c20$%kim@samsung.com>
-	 <20121015223409.GE2739@dastard>
-	 <015901cdab42$06deac20$149c0460$%kim@samsung.com>
-	 <201210161138.35388.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1755178Ab2JPUkk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 16:40:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55211 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752333Ab2JPUkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 16:40:39 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: jejb@parisc-linux.org
+cc: dhowells@redhat.com, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Disintegrate UAPI for parisc [ver #3]
+Date: Tue, 16 Oct 2012 21:40:04 +0100
+Message-ID: <5423.1350420004@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-10-16 (화), 11:38 +0000, Arnd Bergmann:
-> On Tuesday 16 October 2012, Jaegeuk Kim wrote:
-> > On Monday 15 October 2012, Dave Chinner wrote:
-> > > On Sun, Oct 14, 2012 at 03:19:37PM +0000, Arnd Bergmann wrote:
-> > > > On Sunday 14 October 2012, Vyacheslav Dubeyko wrote:
-> > > > > On Oct 14, 2012, at 11:09 AM, Jaegeuk Kim wrote:
-> > > > > > 2012-10-14 (일), 02:21 +0400, Vyacheslav Dubeyko:
-> > > 
-> > > > The main reason I can see against extended attributes is that they are not stored
-> > > > very efficiently in f2fs, unless a lot of work is put into coming up with a good
-> > > > implementation. A single flags bit can trivially be added to the inode in
-> > > > comparison (if it's not there already).
-> > > 
-> > > That's a deficiency that should be corrected, then, because xattrs
-> > > are very common these days.
-> > 
-> > IMO, most file systems including f2fs have some inefficiency to store
-> > and retrieve xattrs, since they have to allocate an additional block.
-> > The only distinct problem in f2fs is that there is a cleaning overhead.
-> > So, that's the why xattr is not an efficient way in f2fs.
-> 
-> I would hope that there is a better way to encode extented attributes
-> if the current method is not efficient enough. Maybe Dave or someone
-> else who is experienced with this can make suggestions.
-> 
-> What is the "expected" size of the attributes normally? Does it
-> make sense to put attributes for multiple files into a single block?
->  
 
-IMHO, this is an issue on global vs. local management approaches.
-Yes, it is possible to manage xattrs globally, but my concern is how
-to efficiently store, retrieve, and search xattrs without lock
-contention, when users create and remove so many xattrs dynamically.
-It may need to adopt an additional index structure like b+tree.
+Hi James,
 
-Well, the important thing that I focus is that xattrs need additional
-blocks whatever they are compacted or not, resulting in cleaning
-overhead in f2fs.
+I've regenerated the parisc bits on top of your misc branch merged onto
+Linus's master branch.  Below is the revised pull request.
 
-> > OTOH, I think xattr itself is for users, not for communicating
-> > between file system and users.
-> 
-> No, you are mistaken in that point, as Dave explained.
+David
+---
+Can you merge the following branch into the parisc tree please?
 
-I meant the original use-cases of xattr like below.
-"Typical uses can be storing the author of a document, the character
-encoding of a plain-text document, a checksum, cryptographic hash or
-digital signature."
-from http://en.wikipedia.org/wiki/Extended_file_attributes
-Would you please give me some existing use-cases for the
-communicating purpose?
+This is to complete part of the UAPI disintegration for which the preparatory
+patches were pulled recently.
 
-> > Moreover, I'm not sure in the current android, but I saw ICS android
-> > did not call any xattr operations, even if mount option was enabled.
-> 
-> I realize that Android is currently your main target, but to get
-> the file system merged into Linux, it needs to fit in with the
-> overall strategy for file systems, which includes more than just
-> Android.
+Now that the fixups and the asm-generic chunk have been merged, I've
+regenerated the patches to get rid of those dependencies and to take account of
+any changes made so far in the merge window.  If you have already pulled the
+older version of the branch aimed at you, then please feel free to ignore this
+request.
 
-Definitely, yes.
-I just wanted to say that xattr is not common on all the platforms yet.
+The following changes since commit dd8e8c4a2c902d8350b702e7bc7c2799e5e7e331:
 
-> 
-> > > And given that stuff like access frequency tracking is being
-> > > implemented at the VFS level, access policy hints should also be VFS
-> > > functionality. A bad filesystem implementation should not dictate
-> > > the interface for generically useful functionality....
-> 
-> Agreed.
-> 
-> > > An xattr on the root inode that holds a list like this is something
-> > > that could be set at mkfs time, but then also updated easily by new
-> > > software packages that are installed...
-> 
-> Yes, good idea.
+  thermal, cpufreq: Fix build when CPU_FREQ_TABLE isn't configured (2012-10-15 14:00:07 -0700)
 
-Likewise many file systems, f2fs also supports xattr as a configurable
-Kconfig option.
-If user disables the xattr feature, how can we do this?
+are available in the git repository at:
 
-> 
-> > > > We should also take the kinds of access we have seen on a file into account.
-> > > 
-> > > Yes, but it should be done at the VFS level, not in the filesystem
-> > > itself. Integrated into the current hot inode/range tracking that is
-> > > being worked on right now, I'd suggest.
-> > > 
-> > > IOWs, these access policy issues are not unique to F2FS or it's use
-> > > case. Anything to do with access hints, policy, tracking, file
-> > > classification, etc that can influence data locality, reclaim,
-> > > migration, etc need to be dealt with at the VFS, independently of a
-> > > specific filesystem. Filesystems can make use of that information
-> > > how they please (whether in the kernel or via userspace tools), but
-> > > having filesystem specific interfaces and implementations of the
-> > > same functionality is extremely wasteful. Let's do it once, and do
-> > > it right the first time. ;)
-> > 
-> > I agree that VFS should support something, but before then, it needs
-> > to do something by the file system first.
-> > Because, we have to figure out what kind of information are really useful.
-> 
-> As mentioned before, such tuning can still be done after the file system
-> is merged, as long as the on-disk structure is flexible enough.
-> 
-> As you said yourself, imlpementing the hints by detecting access patterns
-> from the file system itself as I suggested would be a lot of work, and
-> if the VFS can give us that information for free in the future, we can
-> wait for that to happen (or help out on the implementation if necessary)
-> and then implement it based on those APIs.
-> 
+  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-parisc-20121016
 
-Ok, agreed.
+for you to fetch changes up to 70c1674f62026e455c0c821fb7f4baf24d2d1139:
 
-> 	Arnd
+  UAPI: (Scripted) Disintegrate arch/parisc/include/asm (2012-10-16 21:28:05 +0100)
 
--- 
-Jaegeuk Kim
-Samsung
+----------------------------------------------------------------
+UAPI Disintegration 2012-10-16
 
+----------------------------------------------------------------
+David Howells (2):
+      Merge branch 'misc' of git://git.kernel.org/.../jejb/parisc-2.6.git/
+      UAPI: (Scripted) Disintegrate arch/parisc/include/asm
+
+James Bottomley (1):
+      [PARISC] asm: redo generic includes
+
+ arch/parisc/include/asm/Kbuild                   |   9 +-
+ arch/parisc/include/asm/auxvec.h                 |   4 -
+ arch/parisc/include/asm/compat_signal.h          |   2 -
+ arch/parisc/include/asm/cputime.h                |   6 -
+ arch/parisc/include/asm/device.h                 |   7 -
+ arch/parisc/include/asm/div64.h                  |   1 -
+ arch/parisc/include/asm/emergency-restart.h      |   6 -
+ arch/parisc/include/asm/hw_irq.h                 |   8 -
+ arch/parisc/include/asm/irq_regs.h               |   1 -
+ arch/parisc/include/asm/kdebug.h                 |   1 -
+ arch/parisc/include/asm/kvm_para.h               |   1 -
+ arch/parisc/include/asm/local.h                  |   1 -
+ arch/parisc/include/asm/local64.h                |   1 -
+ arch/parisc/include/asm/mutex.h                  |   9 -
+ arch/parisc/include/asm/param.h                  |   1 -
+ arch/parisc/include/asm/pdc.h                    | 423 +-----------
+ arch/parisc/include/asm/percpu.h                 |   7 -
+ arch/parisc/include/asm/poll.h                   |   1 -
+ arch/parisc/include/asm/ptrace.h                 |  46 +-
+ arch/parisc/include/asm/real.h                   |   5 -
+ arch/parisc/include/asm/segment.h                |   6 -
+ arch/parisc/include/asm/signal.h                 | 113 +--
+ arch/parisc/include/asm/termios.h                |  41 +-
+ arch/parisc/include/asm/topology.h               |   6 -
+ arch/parisc/include/asm/unistd.h                 | 835 +---------------------
+ arch/parisc/include/asm/user.h                   |   5 -
+ arch/parisc/include/asm/vga.h                    |   6 -
+ arch/parisc/include/asm/xor.h                    |   1 -
+ arch/parisc/include/uapi/asm/Kbuild              |  28 +
+ arch/parisc/include/{ => uapi}/asm/bitsperlong.h |   0
+ arch/parisc/include/{ => uapi}/asm/byteorder.h   |   0
+ arch/parisc/include/{ => uapi}/asm/errno.h       |   0
+ arch/parisc/include/{ => uapi}/asm/fcntl.h       |   0
+ arch/parisc/include/{ => uapi}/asm/ioctl.h       |   0
+ arch/parisc/include/{ => uapi}/asm/ioctls.h      |   0
+ arch/parisc/include/{ => uapi}/asm/ipcbuf.h      |   0
+ arch/parisc/include/{ => uapi}/asm/mman.h        |   0
+ arch/parisc/include/{ => uapi}/asm/msgbuf.h      |   0
+ arch/parisc/include/uapi/asm/pdc.h               | 427 ++++++++++++
+ arch/parisc/include/{ => uapi}/asm/posix_types.h |   0
+ arch/parisc/include/uapi/asm/ptrace.h            |  47 ++
+ arch/parisc/include/{ => uapi}/asm/resource.h    |   0
+ arch/parisc/include/{ => uapi}/asm/sembuf.h      |   0
+ arch/parisc/include/{ => uapi}/asm/setup.h       |   0
+ arch/parisc/include/{ => uapi}/asm/shmbuf.h      |   0
+ arch/parisc/include/{ => uapi}/asm/sigcontext.h  |   0
+ arch/parisc/include/{ => uapi}/asm/siginfo.h     |   0
+ arch/parisc/include/uapi/asm/signal.h            | 118 ++++
+ arch/parisc/include/{ => uapi}/asm/socket.h      |   0
+ arch/parisc/include/{ => uapi}/asm/sockios.h     |   0
+ arch/parisc/include/{ => uapi}/asm/stat.h        |   0
+ arch/parisc/include/{ => uapi}/asm/statfs.h      |   0
+ arch/parisc/include/{ => uapi}/asm/swab.h        |   0
+ arch/parisc/include/{ => uapi}/asm/termbits.h    |   0
+ arch/parisc/include/uapi/asm/termios.h           |  43 ++
+ arch/parisc/include/{ => uapi}/asm/types.h       |   0
+ arch/parisc/include/uapi/asm/unistd.h            | 837 +++++++++++++++++++++++
+ 57 files changed, 1511 insertions(+), 1542 deletions(-)
+ delete mode 100644 arch/parisc/include/asm/auxvec.h
+ delete mode 100644 arch/parisc/include/asm/compat_signal.h
+ delete mode 100644 arch/parisc/include/asm/cputime.h
+ delete mode 100644 arch/parisc/include/asm/device.h
+ delete mode 100644 arch/parisc/include/asm/div64.h
+ delete mode 100644 arch/parisc/include/asm/emergency-restart.h
+ delete mode 100644 arch/parisc/include/asm/hw_irq.h
+ delete mode 100644 arch/parisc/include/asm/irq_regs.h
+ delete mode 100644 arch/parisc/include/asm/kdebug.h
+ delete mode 100644 arch/parisc/include/asm/kvm_para.h
+ delete mode 100644 arch/parisc/include/asm/local.h
+ delete mode 100644 arch/parisc/include/asm/local64.h
+ delete mode 100644 arch/parisc/include/asm/mutex.h
+ delete mode 100644 arch/parisc/include/asm/param.h
+ delete mode 100644 arch/parisc/include/asm/percpu.h
+ delete mode 100644 arch/parisc/include/asm/poll.h
+ delete mode 100644 arch/parisc/include/asm/real.h
+ delete mode 100644 arch/parisc/include/asm/segment.h
+ delete mode 100644 arch/parisc/include/asm/topology.h
+ delete mode 100644 arch/parisc/include/asm/user.h
+ delete mode 100644 arch/parisc/include/asm/vga.h
+ delete mode 100644 arch/parisc/include/asm/xor.h
+ rename arch/parisc/include/{ => uapi}/asm/bitsperlong.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/byteorder.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/errno.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/fcntl.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/ioctl.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/ioctls.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/ipcbuf.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/mman.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/msgbuf.h (100%)
+ create mode 100644 arch/parisc/include/uapi/asm/pdc.h
+ rename arch/parisc/include/{ => uapi}/asm/posix_types.h (100%)
+ create mode 100644 arch/parisc/include/uapi/asm/ptrace.h
+ rename arch/parisc/include/{ => uapi}/asm/resource.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/sembuf.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/setup.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/shmbuf.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/sigcontext.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/siginfo.h (100%)
+ create mode 100644 arch/parisc/include/uapi/asm/signal.h
+ rename arch/parisc/include/{ => uapi}/asm/socket.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/sockios.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/stat.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/statfs.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/swab.h (100%)
+ rename arch/parisc/include/{ => uapi}/asm/termbits.h (100%)
+ create mode 100644 arch/parisc/include/uapi/asm/termios.h
+ rename arch/parisc/include/{ => uapi}/asm/types.h (100%)
+ create mode 100644 arch/parisc/include/uapi/asm/unistd.h
