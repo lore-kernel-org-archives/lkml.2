@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443Ab2JPAqH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 20:46:07 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:47649 "EHLO
+	id S1752433Ab2JPArp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 20:47:45 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:36259 "EHLO
 	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753900Ab2JPAqF (ORCPT
+	with ESMTP id S1750918Ab2JPArn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 20:46:05 -0400
-Date: Mon, 15 Oct 2012 17:46:03 -0700 (PDT)
+	Mon, 15 Oct 2012 20:47:43 -0400
+Date: Mon, 15 Oct 2012 17:47:41 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ezequiel Garcia <elezegarcia@gmail.com>
-cc: Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Tim Bird <tim.bird@am.sony.com>,
-        celinux-dev@lists.celinuxforum.org
-Subject: Re: [Q] Default SLAB allocator
-In-Reply-To: <CALF0-+Xp_P_NjZpifzDSWxz=aBzy_fwaTB3poGLEJA8yBPQb_Q@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1210151745400.31712@chino.kir.corp.google.com>
-References: <CALF0-+XGn5=QSE0bpa4RTag9CAJ63MKz1kvaYbpw34qUhViaZA@mail.gmail.com> <m27gqwtyu9.fsf@firstfloor.org> <alpine.DEB.2.00.1210111558290.6409@chino.kir.corp.google.com> <m2391ktxjj.fsf@firstfloor.org> <CALF0-+WLZWtwYY4taYW9D7j-abCJeY90JzcTQ2hGK64ftWsdxw@mail.gmail.com>
- <alpine.DEB.2.00.1210130252030.7462@chino.kir.corp.google.com> <CALF0-+Xp_P_NjZpifzDSWxz=aBzy_fwaTB3poGLEJA8yBPQb_Q@mail.gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v4] slab: Ignore internal flags in cache creation
+In-Reply-To: <alpine.DEB.2.00.1210081424340.22552@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1210151747290.31712@chino.kir.corp.google.com>
+References: <1349434154-8000-1-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1210081424340.22552@chino.kir.corp.google.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -27,10 +25,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 13 Oct 2012, Ezequiel Garcia wrote:
+On Mon, 8 Oct 2012, David Rientjes wrote:
 
-> But SLAB suffers from a lot more internal fragmentation than SLUB,
-> which I guess is a known fact. So memory-constrained devices
-> would waste more memory by using SLAB.
+> > diff --git a/mm/slab.h b/mm/slab.h
+> > index 7deeb44..4c35c17 100644
+> > --- a/mm/slab.h
+> > +++ b/mm/slab.h
+> > @@ -45,6 +45,31 @@ static inline struct kmem_cache *__kmem_cache_alias(const char *name, size_t siz
+> >  #endif
+> >  
+> >  
+> > +/* Legal flag mask for kmem_cache_create(), for various configurations */
+> > +#define SLAB_CORE_FLAGS (SLAB_HWCACHE_ALIGN | SLAB_CACHE_DMA | SLAB_PANIC | \
+> > +			 SLAB_DESTROY_BY_RCU | SLAB_DEBUG_OBJECTS )
+> > +
+> > +#if defined(CONFIG_DEBUG_SLAB)
+> > +#define SLAB_DEBUG_FLAGS (SLAB_RED_ZONE | SLAB_POISON | SLAB_STORE_USER)
+> > +#elif defined(CONFIG_SLUB_DEBUG)
+> > +#define SLAB_DEBUG_FLAGS (SLAB_RED_ZONE | SLAB_POISON | SLAB_STORE_USER | \
+> > +			  SLAB_TRACE | SLAB_DEBUG_FREE)
+> > +#else
+> > +#define SLAB_DEBUG_FLAGS (0)
+> > +#endif
+> > +
+> > +#if defined(CONFIG_SLAB)
+> > +#define SLAB_CACHE_FLAGS (SLAB_MEMSPREAD | SLAB_NOLEAKTRACE | \
+> 
+> s/SLAB_MEMSPREAD/SLAB_MEM_SPREAD/
+> 
 
-Even with slub's per-cpu partial lists?
+Did you have a v5 of this patch with the above fix?
