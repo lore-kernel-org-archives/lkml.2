@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625Ab2JPDXf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 23:23:35 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60747 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab2JPDXd (ORCPT
+	id S1755639Ab2JPDjS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 23:39:18 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61743 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755282Ab2JPDjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 23:23:33 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <507CD2FA.8000009@jp.fujitsu.com>
-Date: Tue, 16 Oct 2012 12:22:34 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Mon, 15 Oct 2012 23:39:16 -0400
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Greg Thelen <gthelen@google.com>, devel@openvz.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v4 02/14] memcg: Reclaim when more than one page needed.
-References: <1349690780-15988-1-git-send-email-glommer@parallels.com> <1349690780-15988-3-git-send-email-glommer@parallels.com>
-In-Reply-To: <1349690780-15988-3-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5507518.Gae5ZRnSWO@vostro.rjw.lan>
+References: <51be8f865e4c80f91ac8e41e54cbd5905382ddb7.1349844049.git.viresh.kumar@linaro.org>
+	<5507518.Gae5ZRnSWO@vostro.rjw.lan>
+Date: Tue, 16 Oct 2012 09:09:15 +0530
+Message-ID: <CAKohpomJcN3aLefUOhJ+28PkqhjzKU9Qjk43xMTxhvvBNf8G+Q@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq:core: Fix printing of governor and driver name
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, Sudeep.KarkadaNagesha@arm.com,
+        Robin.Randhawa@arm.com, Arvind.Chauhan@arm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/10/08 19:06), Glauber Costa wrote:
-> From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
-> 
-> mem_cgroup_do_charge() was written before kmem accounting, and expects
-> three cases: being called for 1 page, being called for a stock of 32
-> pages, or being called for a hugepage.  If we call for 2 or 3 pages (and
-> both the stack and several slabs used in process creation are such, at
-> least with the debug options I had), it assumed it's being called for
-> stock and just retried without reclaiming.
-> 
-> Fix that by passing down a minsize argument in addition to the csize.
-> 
-> And what to do about that (csize == PAGE_SIZE && ret) retry?  If it's
-> needed at all (and presumably is since it's there, perhaps to handle
-> races), then it should be extended to more than PAGE_SIZE, yet how far?
-> And should there be a retry count limit, of what?  For now retry up to
-> COSTLY_ORDER (as page_alloc.c does) and make sure not to do it if
-> __GFP_NORETRY.
-> 
-> [v4: fixed nr pages calculation pointed out by Christoph Lameter ]
-> 
-> Signed-off-by: Suleiman Souhlal <suleiman@google.com>
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> Reviewed-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Acked-by: Michal Hocko <mhocko@suse.cz>
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+On 15 October 2012 23:21, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Wednesday 10 of October 2012 10:12:11 Viresh Kumar wrote:
+>> Arrays for governer and driver name are of size CPUFREQ_NAME_LEN or 16.
+>> i.e. 15 bytes for name and 1 for trailing '\0'.
+>>
+>> When cpufreq driver print these names (for sysfs), it includes '\n' or ' ' in
+>> the fmt string and still passes length as CPUFREQ_NAME_LEN. If the driver or
+>> governor names are using all 15 fields allocated to them, then the trailing '\n'
+>> or ' ' will never be printed. And so commands like:
+>>
+>> root@linaro-developer# cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_driver
+>>
+>> will print something like:
+>>
+>> cpufreq_foodrvroot@linaro-developer#
+>>
+>> Fix this by increasing print length by one character.
+>>
+>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+>
+> Thanks for the patch, I'll queue it up for v3.8.
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Hi Rafael,
 
+Thanks for accepting the patch.
+I thought both of my patches would go in 3.7-rc2 as they are bug
+fixes. Isn't that correct?
 
+--
+viresh
