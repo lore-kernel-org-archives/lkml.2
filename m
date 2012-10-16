@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab2JPKRZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 06:17:25 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:44319 "EHLO relay.sw.ru"
+	id S1754159Ab2JPKRr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 06:17:47 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:5914 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753590Ab2JPKRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 06:17:01 -0400
+	id S1753543Ab2JPKRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 06:17:00 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
 Cc: <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
@@ -15,12 +15,11 @@ Cc: <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
         David Rientjes <rientjes@google.com>,
         Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
         <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@parallels.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>,
         Suleiman Souhlal <suleiman@google.com>
-Subject: [PATCH v5 14/14] Add documentation about the kmem controller
-Date: Tue, 16 Oct 2012 14:16:51 +0400
-Message-Id: <1350382611-20579-15-git-send-email-glommer@parallels.com>
+Subject: [PATCH v5 10/14] memcg: use static branches when code not in use
+Date: Tue, 16 Oct 2012 14:16:47 +0400
+Message-Id: <1350382611-20579-11-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1350382611-20579-1-git-send-email-glommer@parallels.com>
 References: <1350382611-20579-1-git-send-email-glommer@parallels.com>
@@ -28,122 +27,207 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We can use static branches to patch the code in or out when not used.
+
+Because the _ACTIVE bit on kmem_accounted is only set after the
+increment is done, we guarantee that the root memcg will always be
+selected for kmem charges until all call sites are patched (see
+memcg_kmem_enabled).  This guarantees that no mischarges are applied.
+
+static branch decrement happens when the last reference count from the
+kmem accounting in memcg dies. This will only happen when the charges
+drop down to 0.
+
+When that happen, we need to disable the static branch only on those
+memcgs that enabled it. To achieve this, we would be forced to
+complicate the code by keeping track of which memcgs were the ones
+that actually enabled limits, and which ones got it from its parents.
+
+It is a lot simpler just to do static_key_slow_inc() on every child
+that is accounted.
+
+[ v4: adapted this patch to the changes in kmem_accounted ]
+
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Frederic Weisbecker <fweisbec@redhat.com>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Michal Hocko <mhocko@suse.cz>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 CC: Christoph Lameter <cl@linux.com>
 CC: Pekka Enberg <penberg@cs.helsinki.fi>
 CC: Johannes Weiner <hannes@cmpxchg.org>
 CC: Suleiman Souhlal <suleiman@google.com>
 CC: Tejun Heo <tj@kernel.org>
 ---
- Documentation/cgroups/memory.txt | 58 +++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 57 insertions(+), 1 deletion(-)
+ include/linux/memcontrol.h |  4 ++-
+ mm/memcontrol.c            | 79 +++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 78 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index c07f7b4..dd15be8 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -71,6 +71,11 @@ Brief summary of control files.
-  memory.oom_control		 # set/show oom controls.
-  memory.numa_stat		 # show the number of memory usage per numa node
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 303a456..34e96cf 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -22,6 +22,7 @@
+ #include <linux/cgroup.h>
+ #include <linux/vm_event_item.h>
+ #include <linux/hardirq.h>
++#include <linux/jump_label.h>
  
-+ memory.kmem.limit_in_bytes      # set/show hard limit for kernel memory
-+ memory.kmem.usage_in_bytes      # show current kernel memory allocation
-+ memory.kmem.failcnt             # show the number of kernel memory usage hits limits
-+ memory.kmem.max_usage_in_bytes  # show max kernel memory usage recorded
+ struct mem_cgroup;
+ struct page_cgroup;
+@@ -401,9 +402,10 @@ struct sock;
+ void sock_update_memcg(struct sock *sk);
+ void sock_release_memcg(struct sock *sk);
+ 
++extern struct static_key memcg_kmem_enabled_key;
+ static inline bool memcg_kmem_enabled(void)
+ {
+-	return true;
++	return static_key_false(&memcg_kmem_enabled_key);
+ }
+ 
+ bool __memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **memcg,
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index e24b388..1dd31a1 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -344,10 +344,13 @@ struct mem_cgroup {
+ /* internal only representation about the status of kmem accounting. */
+ enum {
+ 	KMEM_ACCOUNTED_ACTIVE = 0, /* accounted by this cgroup itself */
++	KMEM_ACCOUNTED_ACTIVATED, /* static key enabled. */
+ 	KMEM_ACCOUNTED_DEAD, /* dead memcg, pending kmem charges */
+ };
+ 
+-#define KMEM_ACCOUNTED_MASK (1 << KMEM_ACCOUNTED_ACTIVE)
++/* We account when limit is on, but only after call sites are patched */
++#define KMEM_ACCOUNTED_MASK \
++		((1 << KMEM_ACCOUNTED_ACTIVE) | (1 << KMEM_ACCOUNTED_ACTIVATED))
+ 
+ #ifdef CONFIG_MEMCG_KMEM
+ static void memcg_kmem_set_active(struct mem_cgroup *memcg)
+@@ -360,6 +363,11 @@ static bool memcg_kmem_is_active(struct mem_cgroup *memcg)
+ 	return test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_accounted);
+ }
+ 
++static void memcg_kmem_set_activated(struct mem_cgroup *memcg)
++{
++	set_bit(KMEM_ACCOUNTED_ACTIVATED, &memcg->kmem_accounted);
++}
 +
-  memory.kmem.tcp.limit_in_bytes  # set/show hard limit for tcp buf memory
-  memory.kmem.tcp.usage_in_bytes  # show current tcp buf memory allocation
-  memory.kmem.tcp.failcnt            # show the number of tcp buf memory usage hits limits
-@@ -268,20 +273,65 @@ the amount of kernel memory used by the system. Kernel memory is fundamentally
- different than user memory, since it can't be swapped out, which makes it
- possible to DoS the system by consuming too much of this precious resource.
+ static void memcg_kmem_mark_dead(struct mem_cgroup *memcg)
+ {
+ 	if (test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_accounted))
+@@ -529,6 +537,26 @@ static void disarm_sock_keys(struct mem_cgroup *memcg)
+ }
+ #endif
  
-+Kernel memory won't be accounted at all until limit on a group is set. This
-+allows for existing setups to continue working without disruption.  The limit
-+cannot be set if the cgroup have children, or if there are already tasks in the
-+cgroup. When use_hierarchy == 1 and a group is accounted, its children will
-+automatically be accounted regardless of their limit value.
++#ifdef CONFIG_MEMCG_KMEM
++struct static_key memcg_kmem_enabled_key;
 +
-+After a controller is first limited, it will be kept being accounted until it
-+is removed. The memory limitation itself, can of course be removed by writing
-+-1 to memory.kmem.limit_in_bytes. In this case, kmem will be accounted, but not
-+limited.
++static void disarm_kmem_keys(struct mem_cgroup *memcg)
++{
++	if (memcg_kmem_is_active(memcg))
++		static_key_slow_dec(&memcg_kmem_enabled_key);
++}
++#else
++static void disarm_kmem_keys(struct mem_cgroup *memcg)
++{
++}
++#endif /* CONFIG_MEMCG_KMEM */
 +
- Kernel memory limits are not imposed for the root cgroup. Usage for the root
--cgroup may or may not be accounted.
-+cgroup may or may not be accounted. The memory used is accumulated into
-+memory.kmem.usage_in_bytes, or in a separate counter when it makes sense.
-+(currently only for tcp).
-+The main "kmem" counter is fed into the main counter, so kmem charges will
-+also be visible from the user counter.
- 
- Currently no soft limit is implemented for kernel memory. It is future work
- to trigger slab reclaim when those limits are reached.
- 
- 2.7.1 Current Kernel Memory resources accounted
- 
-+* stack pages: every process consumes some stack pages. By accounting into
-+kernel memory, we prevent new processes from being created when the kernel
-+memory usage is too high.
++static void disarm_static_keys(struct mem_cgroup *memcg)
++{
++	disarm_sock_keys(memcg);
++	disarm_kmem_keys(memcg);
++}
 +
- * sockets memory pressure: some sockets protocols have memory pressure
- thresholds. The Memory Controller allows them to be controlled individually
- per cgroup, instead of globally.
+ static void drain_all_stock_async(struct mem_cgroup *memcg);
  
- * tcp memory pressure: sockets memory pressure for the tcp protocol.
+ static struct mem_cgroup_per_zone *
+@@ -4165,6 +4193,8 @@ static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
+ {
+ 	int ret = -EINVAL;
+ #ifdef CONFIG_MEMCG_KMEM
++	bool must_inc_static_branch = false;
++
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+ 	/*
+ 	 * For simplicity, we won't allow this to be disabled.  It also can't
+@@ -4195,7 +4225,15 @@ static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
+ 		ret = res_counter_set_limit(&memcg->kmem, val);
+ 		VM_BUG_ON(ret);
  
-+2.7.3 Common use cases
+-		memcg_kmem_set_active(memcg);
++		/*
++		 * After this point, kmem_accounted (that we test atomically in
++		 * the beginning of this conditional), is no longer 0. This
++		 * guarantees only one process will set the following boolean
++		 * to true. We don't need test_and_set because we're protected
++		 * by the set_limit_mutex anyway.
++		 */
++		memcg_kmem_set_activated(memcg);
++		must_inc_static_branch = true;
+ 		/*
+ 		 * kmem charges can outlive the cgroup. In the case of slab
+ 		 * pages, for instance, a page contain objects from various
+@@ -4208,6 +4246,27 @@ static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
+ out:
+ 	mutex_unlock(&set_limit_mutex);
+ 	cgroup_unlock();
 +
-+Because the "kmem" counter is fed to the main user counter, kernel memory can
-+never be limited completely independently of user memory. Say "U" is the user
-+limit, and "K" the kernel limit. There are three possible ways limits can be
-+set:
++	/*
++	 * We are by now familiar with the fact that we can't inc the static
++	 * branch inside cgroup_lock. See disarm functions for details. A
++	 * worker here is overkill, but also wrong: After the limit is set, we
++	 * must start accounting right away. Since this operation can't fail,
++	 * we can safely defer it to here - no rollback will be needed.
++	 *
++	 * The boolean used to control this is also safe, because
++	 * KMEM_ACCOUNTED_ACTIVATED guarantees that only one process will be
++	 * able to set it to true;
++	 */
++	if (must_inc_static_branch) {
++		static_key_slow_inc(&memcg_kmem_enabled_key);
++		/*
++		 * setting the active bit after the inc will guarantee no one
++		 * starts accounting before all call sites are patched
++		 */
++		memcg_kmem_set_active(memcg);
++	}
 +
-+    U != 0, K = unlimited:
-+    This is the standard memcg limitation mechanism already present before kmem
-+    accounting. Kernel memory is completely ignored.
-+
-+    U != 0, K < U:
-+    Kernel memory is a subset of the user memory. This setup is useful in
-+    deployments where the total amount of memory per-cgroup is overcommited.
-+    Overcommiting kernel memory limits is definitely not recommended, since the
-+    box can still run out of non-reclaimable memory.
-+    In this case, the admin could set up K so that the sum of all groups is
-+    never greater than the total memory, and freely set U at the cost of his
-+    QoS.
-+
-+    U != 0, K >= U:
-+    Since kmem charges will also be fed to the user counter and reclaim will be
-+    triggered for the cgroup for both kinds of memory. This setup gives the
-+    admin a unified view of memory, and it is also useful for people who just
-+    want to track kernel memory usage.
-+
- 3. User Interface
+ #endif
+ 	return ret;
+ }
+@@ -4217,8 +4276,20 @@ static void memcg_propagate_kmem(struct mem_cgroup *memcg,
+ {
+ 	memcg->kmem_accounted = parent->kmem_accounted;
+ #ifdef CONFIG_MEMCG_KMEM
+-	if (memcg_kmem_is_active(memcg))
++	/*
++	 * When that happen, we need to disable the static branch only on those
++	 * memcgs that enabled it. To achieve this, we would be forced to
++	 * complicate the code by keeping track of which memcgs were the ones
++	 * that actually enabled limits, and which ones got it from its
++	 * parents.
++	 *
++	 * It is a lot simpler just to do static_key_slow_inc() on every child
++	 * that is accounted.
++	 */
++	if (memcg_kmem_is_active(memcg)) {
+ 		mem_cgroup_get(memcg);
++		static_key_slow_inc(&memcg_kmem_enabled_key);
++	}
+ #endif
+ }
  
- 0. Configuration
-@@ -290,6 +340,7 @@ a. Enable CONFIG_CGROUPS
- b. Enable CONFIG_RESOURCE_COUNTERS
- c. Enable CONFIG_MEMCG
- d. Enable CONFIG_MEMCG_SWAP (to use swap extension)
-+d. Enable CONFIG_MEMCG_KMEM (to use kmem extension)
- 
- 1. Prepare the cgroups (see cgroups.txt, Why are cgroups needed?)
- # mount -t tmpfs none /sys/fs/cgroup
-@@ -406,6 +457,11 @@ About use_hierarchy, see Section 6.
-   Because rmdir() moves all pages to parent, some out-of-use page caches can be
-   moved to the parent. If you want to avoid that, force_empty will be useful.
- 
-+  Also, note that when memory.kmem.limit_in_bytes is set the charges due to
-+  kernel pages will still be seen. This is not considered a failure and the
-+  write will still return success. In this case, it is expected that
-+  memory.kmem.usage_in_bytes == memory.usage_in_bytes.
-+
-   About use_hierarchy, see Section 6.
- 
- 5.2 stat file
+@@ -5138,7 +5209,7 @@ static void free_work(struct work_struct *work)
+ 	 * to move this code around, and make sure it is outside
+ 	 * the cgroup_lock.
+ 	 */
+-	disarm_sock_keys(memcg);
++	disarm_static_keys(memcg);
+ 	if (size < PAGE_SIZE)
+ 		kfree(memcg);
+ 	else
 -- 
 1.7.11.7
 
