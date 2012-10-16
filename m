@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab2JPKS5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 06:18:57 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:46089 "EHLO relay.sw.ru"
+	id S1753740Ab2JPKTQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 06:19:16 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:29675 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753491Ab2JPKRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753528Ab2JPKRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Oct 2012 06:17:00 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
@@ -15,10 +15,10 @@ Cc: <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
         David Rientjes <rientjes@google.com>,
         Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
         <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@parallels.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v5 06/14] memcg: kmem controller infrastructure
-Date: Tue, 16 Oct 2012 14:16:43 +0400
-Message-Id: <1350382611-20579-7-git-send-email-glommer@parallels.com>
+        Suleiman Souhlal <suleiman@google.com>
+Subject: [PATCH v5 08/14] res_counter: return amount of charges after res_counter_uncharge
+Date: Tue, 16 Oct 2012 14:16:45 +0400
+Message-Id: <1350382611-20579-9-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1350382611-20579-1-git-send-email-glommer@parallels.com>
 References: <1350382611-20579-1-git-send-email-glommer@parallels.com>
@@ -26,356 +26,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces infrastructure for tracking kernel memory pages to
-a given memcg. This will happen whenever the caller includes the flag
-__GFP_KMEMCG flag, and the task belong to a memcg other than the root.
+It is useful to know how many charges are still left after a call to
+res_counter_uncharge. While it is possible to issue a res_counter_read
+after uncharge, this can be racy.
 
-In memcontrol.h those functions are wrapped in inline acessors.  The
-idea is to later on, patch those with static branches, so we don't incur
-any overhead when no mem cgroups with limited kmem are being used.
+If we need, for instance, to take some action when the counters drop
+down to 0, only one of the callers should see it. This is the same
+semantics as the atomic variables in the kernel.
 
-Users of this functionality shall interact with the memcg core code
-through the following functions:
-
-memcg_kmem_newpage_charge: will return true if the group can handle the
-                           allocation. At this point, struct page is not
-                           yet allocated.
-
-memcg_kmem_commit_charge: will either revert the charge, if struct page
-                          allocation failed, or embed memcg information
-                          into page_cgroup.
-
-memcg_kmem_uncharge_page: called at free time, will revert the charge.
-
-[ v2: improved comments and standardized function names ]
-[ v3: handle no longer opaque, functions not exported,
-  even more comments ]
-[ v4: reworked Used bit handling and surroundings for more clarity ]
-[ v5: simplified code for kmemcg compiled out and core functions in
-  memcontrol.c, moved kmem code to the middle to avoid forward decls ]
+Since the current return value is void, we don't need to worry about
+anything breaking due to this change: nobody relied on that, and only
+users appearing from now on will be checking this value.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 CC: Johannes Weiner <hannes@cmpxchg.org>
+CC: Suleiman Souhlal <suleiman@google.com>
 CC: Tejun Heo <tj@kernel.org>
 ---
- include/linux/memcontrol.h |  98 ++++++++++++++++++++++++++
- mm/memcontrol.c            | 169 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 267 insertions(+)
+ Documentation/cgroups/resource_counter.txt |  7 ++++---
+ include/linux/res_counter.h                | 12 +++++++-----
+ kernel/res_counter.c                       | 20 +++++++++++++-------
+ 3 files changed, 24 insertions(+), 15 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 8d9489f..303a456 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -21,6 +21,7 @@
- #define _LINUX_MEMCONTROL_H
- #include <linux/cgroup.h>
- #include <linux/vm_event_item.h>
-+#include <linux/hardirq.h>
+diff --git a/Documentation/cgroups/resource_counter.txt b/Documentation/cgroups/resource_counter.txt
+index 0c4a344..c4d99ed 100644
+--- a/Documentation/cgroups/resource_counter.txt
++++ b/Documentation/cgroups/resource_counter.txt
+@@ -83,16 +83,17 @@ to work with it.
+ 	res_counter->lock internally (it must be called with res_counter->lock
+ 	held). The force parameter indicates whether we can bypass the limit.
  
- struct mem_cgroup;
- struct page_cgroup;
-@@ -399,6 +400,88 @@ struct sock;
- #ifdef CONFIG_MEMCG_KMEM
- void sock_update_memcg(struct sock *sk);
- void sock_release_memcg(struct sock *sk);
-+
-+static inline bool memcg_kmem_enabled(void)
-+{
-+	return true;
-+}
-+
-+bool __memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **memcg,
-+					int order);
-+void __memcg_kmem_commit_charge(struct page *page,
-+				       struct mem_cgroup *memcg, int order);
-+void __memcg_kmem_uncharge_page(struct page *page, int order);
-+
-+/**
-+ * memcg_kmem_newpage_charge: verify if a new kmem allocation is allowed.
-+ * @gfp: the gfp allocation flags.
-+ * @memcg: a pointer to the memcg this was charged against.
-+ * @order: allocation order.
-+ *
-+ * returns true if the memcg where the current task belongs can hold this
-+ * allocation.
-+ *
-+ * We return true automatically if this allocation is not to be accounted to
-+ * any memcg.
-+ */
-+static __always_inline bool
-+memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **memcg, int order)
-+{
-+	if (!memcg_kmem_enabled())
-+		return true;
-+
-+	/*
-+	 * __GFP_NOFAIL allocations will move on even if charging is not
-+	 * possible. Therefore we don't even try, and have this allocation
-+	 * unaccounted. We could in theory charge it with
-+	 * res_counter_charge_nofail, but we hope those allocations are rare,
-+	 * and won't be worth the trouble.
-+	 */
-+	if (!(gfp & __GFP_KMEMCG) || (gfp & __GFP_NOFAIL))
-+		return true;
-+	if (in_interrupt() || (!current->mm) || (current->flags & PF_KTHREAD))
-+		return true;
-+
-+	/* If the test is dying, just let it go. */
-+        if (unlikely(test_thread_flag(TIF_MEMDIE)
-+                     || fatal_signal_pending(current)))
-+		return true;
-+
-+	return __memcg_kmem_newpage_charge(gfp, memcg, order);
-+}
-+
-+/**
-+ * memcg_kmem_uncharge_page: uncharge pages from memcg
-+ * @page: pointer to struct page being freed
-+ * @order: allocation order.
-+ *
-+ * there is no need to specify memcg here, since it is embedded in page_cgroup
-+ */
-+static __always_inline void
-+memcg_kmem_uncharge_page(struct page *page, int order)
-+{
-+	if (memcg_kmem_enabled())
-+		__memcg_kmem_uncharge_page(page, order);
-+}
-+
-+/**
-+ * memcg_kmem_commit_charge: embeds correct memcg in a page
-+ * @page: pointer to struct page recently allocated
-+ * @memcg: the memcg structure we charged against
-+ * @order: allocation order.
-+ *
-+ * Needs to be called after memcg_kmem_newpage_charge, regardless of success or
-+ * failure of the allocation. if @page is NULL, this function will revert the
-+ * charges. Otherwise, it will commit the memcg given by @memcg to the
-+ * corresponding page_cgroup.
-+ */
-+static __always_inline void
-+memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg, int order)
-+{
-+	if (memcg_kmem_enabled() && memcg)
-+		__memcg_kmem_commit_charge(page, memcg, order);
-+}
-+
- #else
- static inline void sock_update_memcg(struct sock *sk)
- {
-@@ -406,6 +489,21 @@ static inline void sock_update_memcg(struct sock *sk)
- static inline void sock_release_memcg(struct sock *sk)
- {
- }
-+
-+static inline bool
-+memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **memcg, int order)
-+{
-+	return true;
-+}
-+
-+static inline void  memcg_kmem_uncharge_page(struct page *page, int order)
-+{
-+}
-+
-+static inline void
-+memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg, int order)
-+{
-+}
- #endif /* CONFIG_MEMCG_KMEM */
- #endif /* _LINUX_MEMCONTROL_H */
+- e. void res_counter_uncharge[_locked]
++ e. u64 res_counter_uncharge[_locked]
+ 			(struct res_counter *rc, unsigned long val)
  
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 30eafeb..1182188 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -10,6 +10,10 @@
-  * Copyright (C) 2009 Nokia Corporation
-  * Author: Kirill A. Shutemov
+ 	When a resource is released (freed) it should be de-accounted
+ 	from the resource counter it was accounted to.  This is called
+-	"uncharging".
++	"uncharging". The return value of this function indicate the amount
++	of charges still present in the counter.
+ 
+ 	The _locked routines imply that the res_counter->lock is taken.
+ 
+- f. void res_counter_uncharge_until
++ f. u64 res_counter_uncharge_until
+ 		(struct res_counter *rc, struct res_counter *top,
+ 		 unsinged long val)
+ 
+diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+index 7d7fbe2..4b173b6 100644
+--- a/include/linux/res_counter.h
++++ b/include/linux/res_counter.h
+@@ -130,14 +130,16 @@ int res_counter_charge_nofail(struct res_counter *counter,
   *
-+ * Kernel Memory Controller
-+ * Copyright (C) 2012 Parallels Inc. and Google Inc.
-+ * Authors: Glauber Costa and Suleiman Souhlal
+  * these calls check for usage underflow and show a warning on the console
+  * _locked call expects the counter->lock to be taken
 + *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-  * the Free Software Foundation; either version 2 of the License, or
-@@ -2630,6 +2634,171 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
- 	memcg_check_events(memcg, page);
++ * returns the total charges still present in @counter.
+  */
+ 
+-void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val);
+-void res_counter_uncharge(struct res_counter *counter, unsigned long val);
++u64 res_counter_uncharge_locked(struct res_counter *counter, unsigned long val);
++u64 res_counter_uncharge(struct res_counter *counter, unsigned long val);
+ 
+-void res_counter_uncharge_until(struct res_counter *counter,
+-				struct res_counter *top,
+-				unsigned long val);
++u64 res_counter_uncharge_until(struct res_counter *counter,
++			       struct res_counter *top,
++			       unsigned long val);
+ /**
+  * res_counter_margin - calculate chargeable space of a counter
+  * @cnt: the counter
+diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+index ad581aa..7b3d6dc 100644
+--- a/kernel/res_counter.c
++++ b/kernel/res_counter.c
+@@ -86,33 +86,39 @@ int res_counter_charge_nofail(struct res_counter *counter, unsigned long val,
+ 	return __res_counter_charge(counter, val, limit_fail_at, true);
  }
  
-+#ifdef CONFIG_MEMCG_KMEM
-+static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
-+{
-+	return !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
-+		(memcg->kmem_accounted & KMEM_ACCOUNTED_MASK);
-+}
-+
-+static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
-+{
-+	struct res_counter *fail_res;
-+	struct mem_cgroup *_memcg;
-+	int ret = 0;
-+	bool may_oom;
-+
-+	ret = res_counter_charge(&memcg->kmem, size, &fail_res);
-+	if (ret)
-+		return ret;
-+
-+	/*
-+	 * Conditions under which we can wait for the oom_killer.
-+	 * We have to be able to wait, but also, if we can't retry,
-+	 * we obviously shouldn't go mess with oom.
-+	 */
-+	may_oom = (gfp & __GFP_WAIT) && !(gfp & __GFP_NORETRY);
-+
-+	_memcg = memcg;
-+	ret = __mem_cgroup_try_charge(NULL, gfp, size >> PAGE_SHIFT,
-+				      &_memcg, may_oom);
-+
-+	if (ret == -EINTR)  {
-+		/*
-+		 * __mem_cgroup_try_charge() chosed to bypass to root due to
-+		 * OOM kill or fatal signal.  Since our only options are to
-+		 * either fail the allocation or charge it to this cgroup, do
-+		 * it as a temporary condition. But we can't fail. From a
-+		 * kmem/slab perspective, the cache has already been selected,
-+		 * by mem_cgroup_get_kmem_cache(), so it is too late to change
-+		 * our minds. This condition will only trigger if the task
-+		 * entered memcg_charge_kmem in a sane state, but was
-+		 * OOM-killed.  during __mem_cgroup_try_charge. Tasks that are
-+		 * already dying when the allocation triggers should have been
-+		 * already directed to the root cgroup.
-+		 */
-+		res_counter_charge_nofail(&memcg->res, size, &fail_res);
-+		if (do_swap_account)
-+			res_counter_charge_nofail(&memcg->memsw, size,
-+						  &fail_res);
-+		ret = 0;
-+	} else if (ret)
-+		res_counter_uncharge(&memcg->kmem, size);
-+
-+	return ret;
-+}
-+
-+static void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
-+{
-+	res_counter_uncharge(&memcg->kmem, size);
-+	res_counter_uncharge(&memcg->res, size);
-+	if (do_swap_account)
-+		res_counter_uncharge(&memcg->memsw, size);
-+}
-+
-+/*
-+ * We need to verify if the allocation against current->mm->owner's memcg is
-+ * possible for the given order. But the page is not allocated yet, so we'll
-+ * need a further commit step to do the final arrangements.
-+ *
-+ * It is possible for the task to switch cgroups in this mean time, so at
-+ * commit time, we can't rely on task conversion any longer.  We'll then use
-+ * the handle argument to return to the caller which cgroup we should commit
-+ * against. We could also return the memcg directly and avoid the pointer
-+ * passing, but a boolean return value gives better semantics considering
-+ * the compiled-out case as well.
-+ *
-+ * Returning true means the allocation is possible.
-+ */
-+bool
-+__memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **_memcg, int order)
-+{
-+	struct mem_cgroup *memcg;
-+	int ret;
-+
-+	*_memcg = NULL;
-+	memcg = try_get_mem_cgroup_from_mm(current->mm);
-+
-+	/*
-+	 * very rare case described in mem_cgroup_from_task. Unfortunately there
-+	 * isn't much we can do without complicating this too much, and it would
-+	 * be gfp-dependent anyway. Just let it go
-+	 */
-+	if (unlikely(!memcg))
-+		return true;
-+
-+	if (!memcg_can_account_kmem(memcg)) {
-+		css_put(&memcg->css);
-+		return true;
-+	}
-+
-+	mem_cgroup_get(memcg);
-+
-+	ret = memcg_charge_kmem(memcg, gfp, PAGE_SIZE << order);
-+	if (!ret)
-+		*_memcg = memcg;
-+	else
-+		mem_cgroup_put(memcg);
-+
-+	css_put(&memcg->css);
-+	return (ret == 0);
-+}
-+
-+void __memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg,
-+			      int order)
-+{
-+	struct page_cgroup *pc;
-+
-+	VM_BUG_ON(mem_cgroup_is_root(memcg));
-+
-+	/* The page allocation failed. Revert */
-+	if (!page) {
-+		memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
-+		mem_cgroup_put(memcg);
-+		return;
-+	}
-+
-+	pc = lookup_page_cgroup(page);
-+	lock_page_cgroup(pc);
-+	pc->mem_cgroup = memcg;
-+	SetPageCgroupUsed(pc);
-+	unlock_page_cgroup(pc);
-+}
-+
-+void __memcg_kmem_uncharge_page(struct page *page, int order)
-+{
-+	struct mem_cgroup *memcg = NULL;
-+	struct page_cgroup *pc;
-+
-+
-+	pc = lookup_page_cgroup(page);
-+	/*
-+	 * Fast unlocked return. Theoretically might have changed, have to
-+	 * check again after locking.
-+	 */
-+	if (!PageCgroupUsed(pc))
-+		return;
-+
-+	lock_page_cgroup(pc);
-+	if (PageCgroupUsed(pc)) {
-+		memcg = pc->mem_cgroup;
-+		ClearPageCgroupUsed(pc);
-+	}
-+	unlock_page_cgroup(pc);
-+
-+	/*
-+	 * We trust that only if there is a memcg associated with the page, it
-+	 * is a valid allocation
-+	 */
-+	if (!memcg)
-+		return;
-+
-+	VM_BUG_ON(mem_cgroup_is_root(memcg));
-+	memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
-+	mem_cgroup_put(memcg);
-+}
-+#endif /* CONFIG_MEMCG_KMEM */
-+
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+-void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
++u64 res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
+ {
+ 	if (WARN_ON(counter->usage < val))
+ 		val = counter->usage;
  
- #define PCGF_NOCOPY_AT_SPLIT (1 << PCG_LOCK | 1 << PCG_MIGRATION)
+ 	counter->usage -= val;
++	return counter->usage;
+ }
+ 
+-void res_counter_uncharge_until(struct res_counter *counter,
+-				struct res_counter *top,
+-				unsigned long val)
++u64 res_counter_uncharge_until(struct res_counter *counter,
++			       struct res_counter *top,
++			       unsigned long val)
+ {
+ 	unsigned long flags;
+ 	struct res_counter *c;
++	u64 ret = 0;
+ 
+ 	local_irq_save(flags);
+ 	for (c = counter; c != top; c = c->parent) {
++		u64 r;
+ 		spin_lock(&c->lock);
+-		res_counter_uncharge_locked(c, val);
++		r = res_counter_uncharge_locked(c, val);
++		if (c == counter)
++			ret = r;
+ 		spin_unlock(&c->lock);
+ 	}
+ 	local_irq_restore(flags);
++	return ret;
+ }
+ 
+-void res_counter_uncharge(struct res_counter *counter, unsigned long val)
++u64 res_counter_uncharge(struct res_counter *counter, unsigned long val)
+ {
+-	res_counter_uncharge_until(counter, NULL, val);
++	return res_counter_uncharge_until(counter, NULL, val);
+ }
+ 
+ static inline unsigned long long *
 -- 
 1.7.11.7
 
