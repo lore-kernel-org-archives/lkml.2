@@ -1,130 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab2JPJD7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 05:03:59 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:35482 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751867Ab2JPJD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 05:03:57 -0400
-Date: Tue, 16 Oct 2012 11:03:53 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Laurent CARON <lcaron@unix-scripts.info>
-Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org
-Subject: Re: Strange crash on Dell R720xd
-Message-ID: <20121016090353.GB7428@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Laurent CARON <lcaron@unix-scripts.info>,
-	linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org
-References: <20121015213522.kaiyahro@trusted.unix-scripts.info>
+	id S1753272Ab2JPJQr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 05:16:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44255 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307Ab2JPJQp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 05:16:45 -0400
+Message-ID: <507D25F5.3030001@canonical.com>
+Date: Tue, 16 Oct 2012 17:16:37 +0800
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20121015213522.kaiyahro@trusted.unix-scripts.info>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andy Whitcroft <apw@canonical.com>
+CC: Matthew Garrett <mjg@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] efivarfs: efivarfs_fill_super() ensure we clean up
+ correctly on error
+References: <1349416496.810727.310563927016.1.gpush@pecola> <1349951541-20498-1-git-send-email-apw@canonical.com> <1349951541-20498-6-git-send-email-apw@canonical.com> <5076D1EC.1060100@canonical.com> <20121011160633.GA23494@dm>
+In-Reply-To: <20121011160633.GA23494@dm>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 09:42:58PM +0200, Laurent CARON wrote:
-> Hi,
-> 
-> I'm currently replacing an old system (HP DL 380 G5) by new dell R720xd.
-> On those new boxes I did configure the H310 controler as plain JBOD.
-> 
-> Those boxes appear to crash more often than not (from 5 mins to a couple
-> of hours).
-> I have the impression those crashes appear under heavy IO.
-> 
-> The setup consists of a few md RAID arrays serving as underlying devices
-> for either filesystem, or drbd (plus lvm on top).
-> 
-> I managed to catch a trace over netconsole:
-> ------------[ cut here ]------------
-> kernel BUG at crypto/async_tx/async_tx.c:174!
+Hi Andy,
 
-That's:
+>> If we break out of the loop on the second (and onwards) iteration,
+>> won't we still have the other inodes and dentries remaining
+>> allocated?
+>
+> As we calling this from the mount_single() wrapper:
+>
+>          return mount_single(fs_type, flags, data, efivarfs_fill_super);
+>
+>
+> which does this:
+>
+>      struct dentry *mount_single(struct file_system_type *fs_type,
+> 	    int flags, void *data,
+> 	    int (*fill_super)(struct super_block *, void *, int))
+>      {
+>      [...]
+> 		    error = fill_super(s, data, flags & MS_SILENT ? 1 : 0);
+> 		    if (error) {
+> 			    deactivate_locked_super(s);
+> 			    return ERR_PTR(error);
+> 		    }
+>      [...]
+>
+> I am expecting us to get called back via deactivate_locked_super(),
+> which calls sb->kill_sb() which is:
+>
+>      static void efivarfs_kill_sb(struct super_block *sb)
+>      {
+> 	    kill_litter_super(sb);
+> 	    efivarfs_sb = NULL;
+>      }
+>
+> Which I believe will clean them up.
 
-                BUG_ON(async_tx_test_ack(depend_tx) || txd_next(depend_tx) ||
-			txd_parent(tx));
+Awesome, thanks for that. Looks good to me.
 
-but probably the b0rkage happens up the stack. And this __raid_run_ops
-is probably starting the whole TX so maybe we should add
-linux-raid@vger.kernel.org to CC. Added.
+Acked-by: Jeremy Kerr <jeremy.kerr@canonical.com>
 
-> invalid opcode: 0000 [#1] SMP 
-> Modules linked in: drbd lru_cache netconsole iptable_filter ip_tables ocfs2_dlmfs ocfs2_stack_o2cb ocfs2_dlm ocfs2_nodemanager ocfs2_stackglue bonding ipv6 btrfs ioatdma lpc_ich sb_edac dca mfd_core
-> CPU 0 
-> Pid: 12580, comm: kworker/u:2 Not tainted 3.6.2-r510-r720xd #1 Dell Inc. PowerEdge R720xd
+Cheers,
 
-What is that "r510" thing in the kernel version? You have your patches
-ontop? If yes, please try reproducing this with a kernel.org kernel
-without anything else ontop.
 
-Also, it might be worth trying plain 3.6 to rule out a regression
-introduced in the stable 3.6 series.
+Jeremy Kerr
 
-(leaving in the rest for reference)
-
-> RIP: 0010:[<ffffffff8130f9ab>]  [<ffffffff8130f9ab>] async_tx_submit+0x29/0xab
-> RSP: 0018:ffff88100940fb30  EFLAGS: 00010202
-> RAX: ffff88100b30aeb0 RBX: ffff88080b5cf390 RCX: 0000000000000029
-> RDX: ffff88100940fd00 RSI: ffff88080b5cf390 RDI: ffff880809ad0818
-> RBP: ffff8808054a7d90 R08: ffff88080b5cf900 R09: 0000000000000001
-> R10: 0000000000001000 R11: 0000000000000001 R12: ffff88100940fd00
-> R13: 0000000000000002 R14: ffff880809ad0638 R15: ffff880809ad0818
-> FS:  0000000000000000(0000) GS:ffff88080fc00000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: ffffffffff600400 CR3: 0000000e4055f000 CR4: 00000000000407f0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process kworker/u:2 (pid: 12580, threadinfo ffff88100940e000, task ffff880804850630)
-> Stack:
->  ffff88100940fd00 ffff88100940fc40 0000000000000101 ffffffff8131044b
->  0000000000000001 0000000000000246 0000000000000201 ffffffffa0073a00
->  ffff8808054a7d90 ffff8808054a7690 ffff88100940fc40 ffff88080bf9e668
-> Call Trace:
->  [<ffffffff8131044b>] ? do_async_gen_syndrome+0x2f3/0x320
->  [<ffffffffa0073a00>] ? ioat2_tx_submit_unlock+0xac/0xb3 [ioatdma]
->  [<ffffffff815e6820>] ? ops_complete_compute+0x7b/0x7b
->  [<ffffffff81310540>] ? async_gen_syndrome+0xc8/0x1d6
->  [<ffffffff815e8b9a>] ? __raid_run_ops+0x9e7/0xb5a
->  [<ffffffff810848f0>] ? select_task_rq_fair+0x487/0x74b
->  [<ffffffff815e6820>] ? ops_complete_compute+0x7b/0x7b
->  [<ffffffff8107e40b>] ? __wake_up+0x35/0x46
->  [<ffffffff8107ca2a>] ? async_schedule+0x12/0x12
->  [<ffffffff815e8d3f>] ? async_run_ops+0x32/0x3e
->  [<ffffffff8107cace>] ? async_run_entry_fn+0xa4/0x17e
->  [<ffffffff8107ca2a>] ? async_schedule+0x12/0x12
->  [<ffffffff81071cf8>] ? process_one_work+0x259/0x381
->  [<ffffffff81072312>] ? worker_thread+0x2ad/0x3e3
->  [<ffffffff81082e50>] ? try_to_wake_up+0x1fc/0x20c
->  [<ffffffff81072065>] ? manage_workers+0x245/0x245
->  [<ffffffff81072065>] ? manage_workers+0x245/0x245
->  [<ffffffff8107746a>] ? kthread+0x81/0x89
->  [<ffffffff81791034>] ? kernel_thread_helper+0x4/0x10
->  [<ffffffff810773e9>] ? kthread_freezable_should_stop+0x4e/0x4e
->  [<ffffffff81791030>] ? gs_change+0xb/0xb
-> Code: 5b c3 41 54 49 89 d4 55 53 48 89 f3 48 8b 6a 08 48 8b 42 10 48 85 ed 48 89 46 20 48 8b 42 18 48 89 46 28 74 5c f6 45 04 02 74 72 <0f> 0b eb fe 48 8b 02 48 8b 48 28 80 e1 40 74 24 31 f6 48 89 d7 
-> RIP  [<ffffffff8130f9ab>] async_tx_submit+0x29/0xab
->  RSP <ffff88100940fb30>
-> ---[ end trace 64fb561d16a3b535 ]---
-> Kernel panic - not syncing: Fatal exception in interrupt
-> Rebooting in 5 seconds..
-> 
-> Do any of you guys have a clue about it ?
-> 
-> Thanks
-> 
-> Laurent
-> 
-> PS: The very same kernel doesn't cause any trouble on R510 hardware.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Regards/Gruss,
-    Boris.
