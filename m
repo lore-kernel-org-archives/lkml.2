@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686Ab2JPKUN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 06:20:13 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:38052 "EHLO relay.sw.ru"
+	id S1753957Ab2JPKUQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 06:20:16 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:16881 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752379Ab2JPKQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752789Ab2JPKQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Oct 2012 06:16:57 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
@@ -14,127 +14,272 @@ Cc: <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
         <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
         David Rientjes <rientjes@google.com>,
         Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v5 00/14] kmem controller for memcg.
-Date: Tue, 16 Oct 2012 14:16:37 +0400
-Message-Id: <1350382611-20579-1-git-send-email-glommer@parallels.com>
+        <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v5 04/14] kmem accounting basic infrastructure
+Date: Tue, 16 Oct 2012 14:16:41 +0400
+Message-Id: <1350382611-20579-5-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1350382611-20579-1-git-send-email-glommer@parallels.com>
+References: <1350382611-20579-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch adds the basic infrastructure for the accounting of kernel
+memory. To control that, the following files are created:
 
-This is the first part of the kernel memory controller for memcg. It has been
-discussed many times, and I consider this stable enough to be on tree. A follow
-up to this series are the patches to also track slab memory. They are not
-included here because I believe we could benefit from merging them separately
-for better testing coverage. If there are any issues preventing this to be
-merged, let me know. I'll be happy to address them.
+ * memory.kmem.usage_in_bytes
+ * memory.kmem.limit_in_bytes
+ * memory.kmem.failcnt
+ * memory.kmem.max_usage_in_bytes
 
-*v5:    - changed charged order, kmem charged first.
-        - minor nits and comments merged.
+They have the same meaning of their user memory counterparts. They
+reflect the state of the "kmem" res_counter.
 
-*v4:    - kmem_accounted can no longer become unlimited
-        - kmem_accounted can no longer become limited, if group has children.
-        - documentation moved to this patchset
-        - more style changes
-        - css_get in charge path to ensure task won't move during charge
-*v3:
-	- Changed function names to match memcg's
-	- avoid doing get/put in charge/uncharge path
-	- revert back to keeping the account enabled after it is first activated
+Per cgroup kmem memory accounting is not enabled until a limit is set
+for the group. Once the limit is set the accounting cannot be disabled
+for that group.  This means that after the patch is applied, no
+behavioral changes exists for whoever is still using memcg to control
+their memory usage, until memory.kmem.limit_in_bytes is set for the
+first time.
 
-Numbers can be found at https://lkml.org/lkml/2012/9/13/239
+We always account to both user and kernel resource_counters. This
+effectively means that an independent kernel limit is in place when the
+limit is set to a lower value than the user memory. A equal or higher
+value means that the user limit will always hit first, meaning that kmem
+is effectively unlimited.
 
-A (throwaway) git tree with them is placed at:
+People who want to track kernel memory but not limit it, can set this
+limit to a very high number (like RESOURCE_MAX - 1page - that no one
+will ever hit, or equal to the user memory)
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/glommer/memcg.git kmemcg-stack
+[ v4: make kmem files part of the main array;
+      do not allow limit to be set for non-empty cgroups ]
+[ v5: cosmetic changes ]
 
-A general explanation of what this is all about follows:
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Michal Hocko <mhocko@suse.cz>
+CC: Johannes Weiner <hannes@cmpxchg.org>
+CC: Tejun Heo <tj@kernel.org>
+---
+ mm/memcontrol.c | 116 +++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 115 insertions(+), 1 deletion(-)
 
-The kernel memory limitation mechanism for memcg concerns itself with
-disallowing potentially non-reclaimable allocations to happen in exaggerate
-quantities by a particular set of processes (cgroup). Those allocations could
-create pressure that affects the behavior of a different and unrelated set of
-processes.
-
-Its basic working mechanism is to annotate some allocations with the
-_GFP_KMEMCG flag. When this flag is set, the current process allocating will
-have its memcg identified and charged against. When reaching a specific limit,
-further allocations will be denied.
-
-One example of such problematic pressure that can be prevented by this work is
-a fork bomb conducted in a shell. We prevent it by noting that processes use a
-limited amount of stack pages. Seen this way, a fork bomb is just a special
-case of resource abuse. If the offender is unable to grab more pages for the
-stack, no new processes can be created.
-
-There are also other things the general mechanism protects against. For
-example, using too much of pinned dentry and inode cache, by touching files an
-leaving them in memory forever.
-
-In fact, a simple:
-
-while true; do mkdir x; cd x; done
-
-can halt your system easily because the file system limits are hard to reach
-(big disks), but the kernel memory is not. Those are examples, but the list
-certainly don't stop here.
-
-An important use case for all that, is concerned with people offering hosting
-services through containers. In a physical box we can put a limit to some
-resources, like total number of processes or threads. But in an environment
-where each independent user gets its own piece of the machine, we don't want a
-potentially malicious user to destroy good users' services.
-
-This might be true for systemd as well, that now groups services inside
-cgroups. They generally want to put forward a set of guarantees that limits the
-running service in a variety of ways, so that if they become badly behaved,
-they won't interfere with the rest of the system.
-
-There is, of course, a cost for that. To attempt to mitigate that, static
-branches are used to make sure that even if the feature is compiled in with
-potentially a lot of memory cgroups deployed this code will only be enabled
-after the first user of this service configures any limit. Limits lower than
-the user limit effectively means there is a separate kernel memory limit that
-may be reached independently than the user limit. Values equal or greater than
-the user limit implies only that kernel memory is tracked. This provides a
-unified vision of "maximum memory", be it kernel or user memory. Because this
-is all default-off, existing deployments will see no change in behavior.
-
-Glauber Costa (12):
-  memcg: change defines to an enum
-  kmem accounting basic infrastructure
-  Add a __GFP_KMEMCG flag
-  memcg: kmem controller infrastructure
-  mm: Allocate kernel pages to the right memcg
-  res_counter: return amount of charges after res_counter_uncharge
-  memcg: kmem accounting lifecycle management
-  memcg: use static branches when code not in use
-  memcg: allow a memcg with kmem charges to be destructed.
-  execute the whole memcg freeing in free_worker
-  protect architectures where THREAD_SIZE >= PAGE_SIZE against fork
-    bombs
-  Add documentation about the kmem controller
-
-Suleiman Souhlal (2):
-  memcg: Make it possible to use the stock for more than one page.
-  memcg: Reclaim when more than one page needed.
-
- Documentation/cgroups/memory.txt           |  58 ++-
- Documentation/cgroups/resource_counter.txt |   7 +-
- include/linux/gfp.h                        |   6 +-
- include/linux/memcontrol.h                 | 100 ++++++
- include/linux/res_counter.h                |  12 +-
- include/linux/thread_info.h                |   2 +
- include/trace/events/gfpflags.h            |   1 +
- kernel/fork.c                              |   4 +-
- kernel/res_counter.c                       |  20 +-
- mm/memcontrol.c                            | 553 +++++++++++++++++++++++++----
- mm/page_alloc.c                            |  35 ++
- 11 files changed, 717 insertions(+), 81 deletions(-)
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 71d259e..30eafeb 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -266,6 +266,10 @@ struct mem_cgroup {
+ 	};
+ 
+ 	/*
++	 * the counter to account for kernel memory usage.
++	 */
++	struct res_counter kmem;
++	/*
+ 	 * Per cgroup active and inactive list, similar to the
+ 	 * per zone LRU lists.
+ 	 */
+@@ -280,6 +284,7 @@ struct mem_cgroup {
+ 	 * Should the accounting and control be hierarchical, per subtree?
+ 	 */
+ 	bool use_hierarchy;
++	unsigned long kmem_accounted; /* See KMEM_ACCOUNTED_*, below */
+ 
+ 	bool		oom_lock;
+ 	atomic_t	under_oom;
+@@ -332,6 +337,20 @@ struct mem_cgroup {
+ #endif
+ };
+ 
++/* internal only representation about the status of kmem accounting. */
++enum {
++	KMEM_ACCOUNTED_ACTIVE = 0, /* accounted by this cgroup itself */
++};
++
++#define KMEM_ACCOUNTED_MASK (1 << KMEM_ACCOUNTED_ACTIVE)
++
++#ifdef CONFIG_MEMCG_KMEM
++static void memcg_kmem_set_active(struct mem_cgroup *memcg)
++{
++	set_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_accounted);
++}
++#endif
++
+ /* Stuffs for move charges at task migration. */
+ /*
+  * Types of charges to be moved. "move_charge_at_immitgrate" is treated as a
+@@ -390,6 +409,7 @@ enum res_type {
+ 	_MEM,
+ 	_MEMSWAP,
+ 	_OOM_TYPE,
++	_KMEM,
+ };
+ 
+ #define MEMFILE_PRIVATE(x, val)	((x) << 16 | (val))
+@@ -1433,6 +1453,10 @@ done:
+ 		res_counter_read_u64(&memcg->memsw, RES_USAGE) >> 10,
+ 		res_counter_read_u64(&memcg->memsw, RES_LIMIT) >> 10,
+ 		res_counter_read_u64(&memcg->memsw, RES_FAILCNT));
++	printk(KERN_INFO "kmem: usage %llukB, limit %llukB, failcnt %llu\n",
++		res_counter_read_u64(&memcg->kmem, RES_USAGE) >> 10,
++		res_counter_read_u64(&memcg->kmem, RES_LIMIT) >> 10,
++		res_counter_read_u64(&memcg->kmem, RES_FAILCNT));
+ }
+ 
+ /*
+@@ -3940,6 +3964,9 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
+ 		else
+ 			val = res_counter_read_u64(&memcg->memsw, name);
+ 		break;
++	case _KMEM:
++		val = res_counter_read_u64(&memcg->kmem, name);
++		break;
+ 	default:
+ 		BUG();
+ 	}
+@@ -3947,6 +3974,57 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
+ 	len = scnprintf(str, sizeof(str), "%llu\n", (unsigned long long)val);
+ 	return simple_read_from_buffer(buf, nbytes, ppos, str, len);
+ }
++
++static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
++{
++	int ret = -EINVAL;
++#ifdef CONFIG_MEMCG_KMEM
++	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
++	/*
++	 * For simplicity, we won't allow this to be disabled.  It also can't
++	 * be changed if the cgroup has children already, or if tasks had
++	 * already joined.
++	 *
++	 * If tasks join before we set the limit, a person looking at
++	 * kmem.usage_in_bytes will have no way to determine when it took
++	 * place, which makes the value quite meaningless.
++	 *
++	 * After it first became limited, changes in the value of the limit are
++	 * of course permitted.
++	 *
++	 * Taking the cgroup_lock is really offensive, but it is so far the only
++	 * way to guarantee that no children will appear. There are plenty of
++	 * other offenders, and they should all go away. Fine grained locking
++	 * is probably the way to go here. When we are fully hierarchical, we
++	 * can also get rid of the use_hierarchy check.
++	 */
++	cgroup_lock();
++	mutex_lock(&set_limit_mutex);
++	if (!memcg->kmem_accounted && val != RESOURCE_MAX) {
++		if (cgroup_task_count(cont) || (memcg->use_hierarchy &&
++						!list_empty(&cont->children))) {
++			ret = -EBUSY;
++			goto out;
++		}
++		ret = res_counter_set_limit(&memcg->kmem, val);
++		VM_BUG_ON(ret);
++
++		memcg_kmem_set_active(memcg);
++	} else
++		ret = res_counter_set_limit(&memcg->kmem, val);
++out:
++	mutex_unlock(&set_limit_mutex);
++	cgroup_unlock();
++#endif
++	return ret;
++}
++
++static void memcg_propagate_kmem(struct mem_cgroup *memcg,
++				 struct mem_cgroup *parent)
++{
++	memcg->kmem_accounted = parent->kmem_accounted;
++}
++
+ /*
+  * The user of this function is...
+  * RES_LIMIT.
+@@ -3978,8 +4056,12 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
+ 			break;
+ 		if (type == _MEM)
+ 			ret = mem_cgroup_resize_limit(memcg, val);
+-		else
++		else if (type == _MEMSWAP)
+ 			ret = mem_cgroup_resize_memsw_limit(memcg, val);
++		else if (type == _KMEM)
++			ret = memcg_update_kmem_limit(cont, val);
++		else
++			return -EINVAL;
+ 		break;
+ 	case RES_SOFT_LIMIT:
+ 		ret = res_counter_memparse_write_strategy(buffer, &val);
+@@ -4045,12 +4127,16 @@ static int mem_cgroup_reset(struct cgroup *cont, unsigned int event)
+ 	case RES_MAX_USAGE:
+ 		if (type == _MEM)
+ 			res_counter_reset_max(&memcg->res);
++		else if (type == _KMEM)
++			res_counter_reset_max(&memcg->kmem);
+ 		else
+ 			res_counter_reset_max(&memcg->memsw);
+ 		break;
+ 	case RES_FAILCNT:
+ 		if (type == _MEM)
+ 			res_counter_reset_failcnt(&memcg->res);
++		else if (type == _KMEM)
++			res_counter_reset_failcnt(&memcg->kmem);
+ 		else
+ 			res_counter_reset_failcnt(&memcg->memsw);
+ 		break;
+@@ -4728,6 +4814,31 @@ static struct cftype mem_cgroup_files[] = {
+ 		.read = mem_cgroup_read,
+ 	},
+ #endif
++#ifdef CONFIG_MEMCG_KMEM
++	{
++		.name = "kmem.limit_in_bytes",
++		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
++		.write_string = mem_cgroup_write,
++		.read = mem_cgroup_read,
++	},
++	{
++		.name = "kmem.usage_in_bytes",
++		.private = MEMFILE_PRIVATE(_KMEM, RES_USAGE),
++		.read = mem_cgroup_read,
++	},
++	{
++		.name = "kmem.failcnt",
++		.private = MEMFILE_PRIVATE(_KMEM, RES_FAILCNT),
++		.trigger = mem_cgroup_reset,
++		.read = mem_cgroup_read,
++	},
++	{
++		.name = "kmem.max_usage_in_bytes",
++		.private = MEMFILE_PRIVATE(_KMEM, RES_MAX_USAGE),
++		.trigger = mem_cgroup_reset,
++		.read = mem_cgroup_read,
++	},
++#endif
+ 	{ },	/* terminate */
+ };
+ 
+@@ -4973,6 +5084,7 @@ mem_cgroup_create(struct cgroup *cont)
+ 	if (parent && parent->use_hierarchy) {
+ 		res_counter_init(&memcg->res, &parent->res);
+ 		res_counter_init(&memcg->memsw, &parent->memsw);
++		res_counter_init(&memcg->kmem, &parent->kmem);
+ 		/*
+ 		 * We increment refcnt of the parent to ensure that we can
+ 		 * safely access it on res_counter_charge/uncharge.
+@@ -4980,9 +5092,11 @@ mem_cgroup_create(struct cgroup *cont)
+ 		 * mem_cgroup(see mem_cgroup_put).
+ 		 */
+ 		mem_cgroup_get(parent);
++		memcg_propagate_kmem(memcg, parent);
+ 	} else {
+ 		res_counter_init(&memcg->res, NULL);
+ 		res_counter_init(&memcg->memsw, NULL);
++		res_counter_init(&memcg->kmem, NULL);
+ 		/*
+ 		 * Deeper hierachy with use_hierarchy == false doesn't make
+ 		 * much sense so let cgroup subsystem know about this
 -- 
 1.7.11.7
 
