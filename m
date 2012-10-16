@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130Ab2JPUJu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 16:09:50 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43859 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755936Ab2JPUJs (ORCPT
+	id S1755961Ab2JPUMd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 16:12:33 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:45974 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755860Ab2JPUMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 16:09:48 -0400
+	Tue, 16 Oct 2012 16:12:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1210162037380.2811@ionos>
-References: <alpine.LFD.2.02.1210162037380.2811@ionos>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Tue, 16 Oct 2012 16:09:16 -0400
-X-Google-Sender-Auth: sb2M1KpGiRqrF48ujekHA0shv8I
-Message-ID: <CAP=VYLoHhtth2+BwQAsd7uyW8N+rJj6zznP9sNjczTj_0Uqk9w@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.6.1-rt2
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
+In-Reply-To: <20121015165218.GA10239@redhat.com>
+References: <1350242593-17761-1-git-send-email-rabin@rab.in>
+ <1350242593-17761-3-git-send-email-rabin@rab.in> <20121015165218.GA10239@redhat.com>
+From: Rabin Vincent <rabin@rab.in>
+Date: Tue, 16 Oct 2012 22:11:50 +0200
+X-Google-Sender-Auth: kjML7oQqE-gksY1mABptxTKxBfY
+Message-ID: <CAH+eYFBHXAWTinnVO8vEnEhFDQLibwo+BtxYJJYdPcG9__n5OQ@mail.gmail.com>
+Subject: Re: [PATCH 3/9] uprobes: allow ignoring of probe hits
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 2:41 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Dear RT Folks,
+2012/10/15 Oleg Nesterov <oleg@redhat.com>:
+> On 10/14, Rabin Vincent wrote:
+>> Allow arches to decided to ignore a probe hit.  ARM will use this to
+>> only call handlers if the conditions to execute a conditionally executed
+>> instruction are satisfied.
 >
-> I'm pleased to announce the 3.6.1-rt2 release.
->
-> Changes since 3.6.1-rt1:
->
->         * Picked up Pauls git friendly quilt queue
+> Not sure I understand why we shouldn't call handlers in this case,
+> but OK, I know nothing about arm.
 
-Which is a "linux-stable" like queue of patches stored in git.
-So you can see what patches change, how the series file
-changes and so on.  Like this for the latest rt2:
+This old discussion about kprobes should be useful:
 
-       new file:   crypto-make-core-static-and-init-scru-early.patch
-       modified:   fix-rt-int3-x86_32-3.2-rt.patch
-       modified:   futex-requeue-pi-fix.patch
-       renamed:
-hrtimer-add-missing-debug_activate-aid-was-re-announce-3-0-6-rt17.patch
--> hrtimer-add-missing-debug_activate-aid.patch
-       modified:   latency-hist.patch
-       modified:   oleg-signal-rt-fix.patch
-       modified:   panic-disable-random-on-rt.patch
-       modified:   ping-sysrq.patch
-       new file:   rcu-tiny-solve-rt-mistery.patch
-       modified:   series
-       renamed:    softirq-preempt-fix-3-re.txt ->
-softirq-preempt-fix-3-re.patch
-       new file:   timer.c-fix-build-fail-for-RT_FULL.patch
+http://lists.infradead.org/pipermail/linux-arm-kernel/2011-March/045755.html
+http://lists.infradead.org/pipermail/linux-arm-kernel/2011-March/046544.html
 
-http://git.kernel.org/?p=linux/kernel/git/paulg/3.6-rt-patches.git;a=summary
+> This conflicts with other changes in
+>
+>         git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
+>
+> Could you re-diff?
 
-Paul.
---
-
->
->         * Compile fix for !RT_FULL (Paul Gortemaker)
->
->         * Crypto init order fix
->
->         * Tiny RCU fix which affects UP and is a long standing bug
->           affecting 3.2 and 3.4-rt as well.
->
-> The delta patch against 3.6.1-rt1 is appended below and can be found here
->
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/incr/patch-3.6.1-rt1-rt2.patch.xz
->
-> The RT patch against 3.6.1 can be found here:
->
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.1-rt2.patch.xz
->
-> The split quilt queue is available at:
->
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patches-3.6.1-rt2.tar.xz
->
-> Enjoy,
->
->         tglx
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+OK, I will rebase them.
