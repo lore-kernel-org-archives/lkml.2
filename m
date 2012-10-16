@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab2JPGZO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 02:25:14 -0400
-Received: from mga11.intel.com ([192.55.52.93]:38958 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752794Ab2JPGZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 02:25:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,593,1344236400"; 
-   d="scan'208";a="235566181"
-Date: Tue, 16 Oct 2012 14:24:53 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ACPI: move acpi_no_s4_hw_signature() declaration into
- #ifdef CONFIG_HIBERNATION
-Message-ID: <20121016062453.GA1505@localhost>
-References: <1350365052-27304-1-git-send-email-yuanhan.liu@linux.intel.com>
+	id S1754140Ab2JPGZp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 02:25:45 -0400
+Received: from gateway.alibaba-inc.com ([121.0.29.147]:22436 "EHLO
+	CNHZ-ExGW-02.ali.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753671Ab2JPGZn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 02:25:43 -0400
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Oct 2012 02:25:42 EDT
+X-AuditID: 0a14034d-b7c51ae000000ab9-a5-507cfa5ef4ff
+From: Sha Zhengju <handai.szj@taobao.com>
+To: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <akpm@linux-foundation.org>,
+        <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, Sha Zhengju <handai.szj@taobao.com>
+Subject: [PATCH] oom, memcg: handle sysctl oom_kill_allocating_task while memcg oom happening
+Date: Tue, 16 Oct 2012 14:10:37 +0800
+Message-ID: <1350367837-27919-1-git-send-email-handai.szj@taobao.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1350365052-27304-1-git-send-email-yuanhan.liu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.20.8.3]
+Content-Transfer-Encoding: 8BIT
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 01:24:12PM +0800, Yuanhan Liu wrote:
-> acpi_no_s4_hw_signature is defined in #ifdef CONFIG_HIBERNATION block,
-> but the current code put the declaration in #ifdef CONFIG_PM_SLEEP block.
-> 
-> I happened to meet this issue when I turned off PM_SLEEP config manually:
-> arch/x86/kernel/acpi/sleep.c:100:4: error: implicit declaration of function â€˜acpi_no_s4_hw_signatureâ€™ [-Werror=implicit-function-declaration]
+From: Sha Zhengju <handai.szj@taobao.com>
 
-This should be more clear:
+Sysctl oom_kill_allocating_task enables or disables killing the OOM-triggering
+task in out-of-memory situations, but it only works on overall system-wide oom.
+But it's also a useful indication in memcg so we take it into consideration
+while oom happening in memcg. Other sysctl such as panic_on_oom has already
+been memcg-ware.
 
-Fix build error on !CONFIG_PM_SLEEP:
 
-arch/x86/kernel/acpi/sleep.c:100:4: error: implicit declaration of function â€˜acpi_no_s4_hw_signatureâ€™
+Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+---
+ mm/oom_kill.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-The root cause is, acpi_no_s4_hw_signature() is defined in
-#ifdef CONFIG_HIBERNATION block, but the current code put the
-declaration in #ifdef CONFIG_PM_SLEEP block.
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 38129e3..2a176af 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -574,6 +574,18 @@ void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask)
+        check_panic_on_oom(CONSTRAINT_MEMCG, gfp_mask, 0, NULL);
+        limit = mem_cgroup_get_limit(memcg) >> PAGE_SHIFT;
+        read_lock(&tasklist_lock);
++       if (sysctl_oom_kill_allocating_task &&
++           !oom_unkillable_task(current, memcg, NULL) &&
++           current->mm) {
++               /*
++                * oom_kill_process() needs tasklist_lock held.  If it returns
++                * non-zero, current could not be killed so we must fallback to
++                * the tasklist scan.
++                */
++               if (!oom_kill_process(current, gfp_mask, 0, 0, limit, memcg, NULL,
++                               "Memory cgroup out of memory (oom_kill_allocating_task)"))
++                       goto out;
++       }
+ retry:
+        p = select_bad_process(&points, limit, memcg, NULL);
+        if (!p || PTR_ERR(p) == -1UL)
+--
+1.7.6.1
 
-Thanks,
-Fengguang
 
-> v2: take better title and add build error message suggested by Fengguang
-> 
-> Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-> Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
-> ---
->  include/linux/acpi.h |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-> index 90be989..a468429 100644
-> --- a/include/linux/acpi.h
-> +++ b/include/linux/acpi.h
-> @@ -257,8 +257,11 @@ int acpi_check_region(resource_size_t start, resource_size_t n,
->  
->  int acpi_resources_are_enforced(void);
->  
-> -#ifdef CONFIG_PM_SLEEP
-> +#ifdef CONFIG_HIBERNATION
->  void __init acpi_no_s4_hw_signature(void);
-> +#endif
-> +
-> +#ifdef CONFIG_PM_SLEEP
->  void __init acpi_old_suspend_ordering(void);
->  void __init acpi_nvs_nosave(void);
->  #endif /* CONFIG_PM_SLEEP */
-> -- 
-> 1.7.7.6
+________________________________
+
+This email (including any attachments) is confidential and may be legally privileged. If you received this email in error, please delete it immediately and do not copy it or use it for any purpose or disclose its contents to any other person. Thank you.
+
+±¾µçÓÊ(°üÀ¨ÈÎºÎ¸½¼þ)¿ÉÄÜº¬ÓÐ»úÃÜ×ÊÁÏ²¢ÊÜ·¨ÂÉ±£»¤¡£ÈçÄú²»ÊÇÕýÈ·µÄÊÕ¼þÈË£¬ÇëÄúÁ¢¼´É¾³ý±¾ÓÊ¼þ¡£Çë²»Òª½«±¾µçÓÊ½øÐÐ¸´ÖÆ²¢ÓÃ×÷ÈÎºÎÆäËûÓÃÍ¾¡¢»òÍ¸Â¶±¾ÓÊ¼þÖ®ÄÚÈÝ¡£Ð»Ð»¡£
