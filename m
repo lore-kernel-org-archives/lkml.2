@@ -1,204 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab2JPRZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 13:25:21 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55969 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755250Ab2JPRZS (ORCPT
+	id S1755382Ab2JPR0H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 13:26:07 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:12066 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754869Ab2JPR0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 13:25:18 -0400
-Date: Tue, 16 Oct 2012 18:25:15 +0100
-From: Dave Martin <dave.martin@linaro.org>
-To: Fei Yang <yangfei.kernel@gmail.com>
-Cc: Mikael Pettersson <mikpe@it.uu.se>, linux@arm.linux.org.uk,
-        lethal@linux-sh.org, magnus.damm@gmail.com, kgene.kim@samsung.com,
-        linux-arm-kernel@lists.infradead.org,
-        "linux-assembly@vger.kernel.org" <linux-assembly@vger.kernel.org>,
-        linux-hotplug@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Yangfei (Felix)" <felix.yang@huawei.com>
-Subject: Re: [PATCH] Re: Hardcoded instruction causes certain features to
- fail on ARM platfrom due to endianness
-Message-ID: <20121016172515.GD26075@linaro.org>
-References: <DA41BE1DDCA941489001C7FBD7A8820E3CB407A4@szxeml549-mbx.china.huawei.com>
- <20603.47887.262025.941051@pilspetsen.it.uu.se>
- <CAKw8HL154a=K9O7CzPFZ-EqtT+BxYU-uRHodtutdRfYmNpWVww@mail.gmail.com>
- <20121016124956.GC26075@linaro.org>
- <CAKw8HL3shtbi0Kk-7ZWO9KhtBVU+Vj_Zunh52GDOGJTZSvt6Gg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKw8HL3shtbi0Kk-7ZWO9KhtBVU+Vj_Zunh52GDOGJTZSvt6Gg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 16 Oct 2012 13:26:06 -0400
+Message-ID: <1350408360.2785.26.camel@lorien2>
+Subject: Re: [PATCH v3] Prevent devices with RMRRs from being placed into SI
+ Domain during startup
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Tom Mingarelli <thomas.mingarelli@hp.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Linda Knippers <linda.knippers@hp.com>,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        shuahkhan@gmail.com
+Date: Tue, 16 Oct 2012 11:26:00 -0600
+In-Reply-To: <20121016164905.14478.21080.sendpatchset@RHEL63BL460c.osen.hp.com>
+References: <20121016164905.14478.21080.sendpatchset@RHEL63BL460c.osen.hp.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 12:33:54AM +0800, Fei Yang wrote:
-> 2012/10/16 Dave Martin <dave.martin@linaro.org>:
-> > On Mon, Oct 15, 2012 at 11:33:08PM +0800, Fei Yang wrote:
-> >> 2012/10/15 Mikael Pettersson <mikpe@it.uu.se>:
-> >> > Yangfei (Felix) writes:
-> >> >  > Hi all,
-> >> >  >
-> >> >  >     I found that hardcoded instruction in inline asm can cause certains certain features fail to work on ARM platform due to endianness.
-> >> >  >     As an example, consider the following code snippet of platform_do_lowpower function from arch/arm/mach-realview/hotplug.c:
-> >> >  >                 / *
-> >> >  >                  * here's the WFI
-> >> >  >                  */
-> >> >  >                 asm(".word      0xe320f003\n"
-> >> >  >                     :
-> >> >  >                     :
-> >> >  >                     : "memory", "cc");
-> >> >  >
-> >> >  >     The instruction generated from this inline asm will not work on big-endian ARM platform, such as ARM BE-8 format. Instead, an exception will be generated.
-> >> >  >
-> >> >  >     Here the code should be:
-> >> >  >                 / *
-> >> >  >                  * here's the WFI
-> >> >  >                  */
-> >> >  >                 asm("WFI\n"
-> >> >  >                     :
-> >> >  >                     :
-> >> >  >                     : "memory", "cc");
-> >> >  >
-> >> >  >     Seems the kernel doesn't support ARM BE-8 well. I don't know why this problem happens.
-> >> >  >     Can anyone tell me who owns this part? I can prepare a patch then.
-> >> >  >     Thanks.
-> >> >
-> >> > Questions regarding the ARM kernel should go to the linux-arm-kernel mailing list
-> >> > (see the MAINTAINERS file), with an optional cc: to the regular LKML.
-> >> >
-> >> > BE-8 is, if I recall correctly, ARMv7's broken format where code and data have
-> >> > different endianess.  GAS supports an ".inst" directive which is like ".word"
-> >> > except the data is assumed to be code.  This matters for disassembly, and may
-> >> > also be required for BE-8.
-> >> >
-> >> > That is, just s/.word/.inst/g above and report back if that works or not.
-> >> > --
-> >> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> > the body of a message to majordomo@vger.kernel.org
-> >> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> > Please read the FAQ at  http://www.tux.org/lkml/
-> >> >
-> >> >
-> >>
-> >> Hi Mikael,
-> >>
-> >> Thanks for the reply. I modified the code as suggested and rebuilt the
-> >> kernel, cpu-hotplug feature now works on big-endian(BE-8) ARM
-> >> platform.
-> >> Since the ARM core can be configured by system software to work in
-> >> big-endian mode, it's necessary to fix this problem. And here is a
-> >> small patch :
-> >>
-> >> diff -urN linux-3.6.2/arch/arm/mach-exynos/hotplug.c
-> >> linux/arch/arm/mach-exynos/hotplug.c
-> >> --- linux-3.6.2/arch/arm/mach-exynos/hotplug.c        2012-10-13
-> >> 04:50:59.000000000 +0800
-> >> +++ linux/arch/arm/mach-exynos/hotplug.c      2012-10-15 23:05:44.000000000 +0800
-> >> @@ -72,7 +72,7 @@
-> >>               /*
-> >>                * here's the WFI
-> >>                */
-> >> -             asm(".word      0xe320f003\n"
-> >> +             asm(".inst      0xe320f003\n"
-> >
-> > The cleanest fix would simply be to build these files with appropriate
-> > modified CFLAGS (-march=armv6k or -march=armv7-a), and use the proper
-> > "wfi" mnemonic.
-> >
-> > Failing that, you could use the facilities in <asm/opcodes.h> to
-> > declare a wrapper macro for injecting this opcode (see
-> > <asm/opcodes-virt.h> for an example).  However, putting custom
-> > opcodes into the assembler should only be done if it's really
-> > necessary.  Nowadays, I think we can consider tools which don't
-> > understand the WFI mnemonic to be obsolete, at least for platforms
-> > which only build for v7 and above.
-> >
-> > The relevant board maintainers would need to sign off on such a
-> > change, so we don't end up breaking their builds.
-> >
-> > If any of these boards needs to build for v6K, the custom opcode might
-> > be worth it -- some people might just possibly be relying on older tools
-> > for such platforms.
-> >
-> > Cheers
-> > ---Dave
-> >
-> >>                   :
-> >>                   :
-> >>                   : "memory", "cc");
-> >> diff -urN linux-3.6.2/arch/arm/mach-realview/hotplug.c
-> >> linux/arch/arm/mach-realview/hotplug.c
-> >> --- linux-3.6.2/arch/arm/mach-realview/hotplug.c      2012-10-13
-> >> 04:50:59.000000000 +0800
-> >> +++ linux/arch/arm/mach-realview/hotplug.c    2012-10-15 23:05:00.000000000 +0800
-> >> @@ -66,7 +66,7 @@
-> >>               /*
-> >>                * here's the WFI
-> >>                */
-> >> -             asm(".word      0xe320f003\n"
-> >> +             asm(".inst      0xe320f003\n"
-> >>                   :
-> >>                   :
-> >>                   : "memory", "cc");
-> >> diff -urN linux-3.6.2/arch/arm/mach-shmobile/hotplug.c
-> >> linux/arch/arm/mach-shmobile/hotplug.c
-> >> --- linux-3.6.2/arch/arm/mach-shmobile/hotplug.c      2012-10-13
-> >> 04:50:59.000000000 +0800
-> >> +++ linux/arch/arm/mach-shmobile/hotplug.c    2012-10-15 23:05:25.000000000 +0800
-> >> @@ -53,7 +53,7 @@
-> >>               /*
-> >>                * here's the WFI
-> >>                */
-> >> -             asm(".word      0xe320f003\n"
-> >> +             asm(".inst      0xe320f003\n"
-> >>                   :
-> >>                   :
-> >>                   : "memory", "cc");
-> >>
-> >> _______________________________________________
-> >> linux-arm-kernel mailing list
-> >> linux-arm-kernel@lists.infradead.org
-> >> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+On Tue, 2012-10-16 at 16:50 +0000, Tom Mingarelli wrote:
+> This patch is to prevent devices that have RMRRs associated with them 
+> from getting placed into the SI Domain during init. We don't put USB devices
+> into this category, however. This fixes the issue where the RMRR info
+> for devices being placed in and out of the SI Domain gets lost.
 > 
-> Thanks for the suggestions. The ".inst" directive here may also bring
-> us trouble if some older tools is used.
-> In that situation, "wfi" mnemonic will not be recognized either. If we
-> cannot suppose that newer tools is used, then how can we determine the
-> endianness during the preprocessor/compile phase? Any ideas?
+> Signed-off-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
+> ----
+> PATCH v1: https://lkml.org/lkml/2012/6/15/204
+> PATCH v2: https://lkml.org/lkml/2012/9/18/354
+> 
+> drivers/iommu/intel-iommu.c |   33 +++++++++++++++++++++++++++++++++
+> 1 files changed, 33 insertions(+), 0 deletions(-)
+> 
+> diff -up ./drivers/iommu/intel-iommu.c.ORIG ./drivers/iommu/intel-iommu.c
+> --- ./drivers/iommu/intel-iommu.c.ORIG	2012-10-16 09:34:23.148089944 -0500
+> +++ ./drivers/iommu/intel-iommu.c	2012-10-16 09:56:56.905932861 -0500
+> @@ -2320,8 +2320,41 @@ static int domain_add_dev_info(struct dm
+>  	return 0;
+>  }
+>  
+> +static bool device_has_rmrr(struct pci_dev *dev)
+> +{
+> +	struct dmar_rmrr_unit *rmrr;
+> +	int i;
+> +
+> +	for_each_rmrr_units(rmrr) {
+> +		for (i = 0; i < rmrr->devices_cnt; i++) {
+> +			/*
+> +			 * Here we are just concerned with checking each device
+> +			 * that has an RMRR associated with it and not allow it
+> +			 * to be placed into the SI Domain during startup.
+> +			*/
+> +			if (rmrr->devices[i] == dev)
+> +				return true;
+> +		}
+> +	}
+> +	return false;
+> +}
+> +
 
-The endianness is controlled by the build-time configuration of the
-kernel.  A single kernel image cannot be bi-endian.
+Will you use the same routine to deny device assignment request for
+devices with RMRR? Is that going to be another patch?
 
-The __inst_*() macros in <asm/opcodes.h> take care of this based on which
-CONFIG_CPU_ENDIAN_* option is selected by the board in the kernel config.
-For compatibility with old tools, this is done instead of using the
-".inst" directive.
+>  static int iommu_should_identity_map(struct pci_dev *pdev, int startup)
+>  {
+> +
+> +	if (startup) {
+> +		/*
+> +		 * This is where we will refuse any device that has an
+> +		 * RMRR associated with it and is not a USB device and
+> +		 * NOT allow it to be placed into the SI Domain. We
+> +		 * only do this on startup. We don't need a separate bit
+> +		 * for this because it could be ANY device.
+> +		*/
+> +		if (device_has_rmrr(pdev) &&
+> +			(pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
+> +				return 0;
+> +	}
+> +
 
-> BTW: I found this bug on my ARM V7-A Cortex-A9 board and the processor
-> is configured to work in big-endian mode at boot stage (word and
-> halfword data is interpreted as big-endian, but instruction is still
-> little-endian) . The kernel is ported from arch/arm/mach-realview. And
-> I think these boards(mach-realview/mach-shmobile/mach-exynos) should
-> have the similar problems. ARM arch is Bi-endian since versions 3 and
-> above.
+Is there a reason to not group this with the other pci device checks
+below. Don't you need this done whenever iommu_should_identity_map() get
+called as opposed just at startup?
 
-I believe that shmobile and exynos are v7-only, so it may be better to
-just use "wfi" and override the CFLAGS for those files.  As you can
-see, those were just created by copy-pasting the code from mach-realview.
+>  	if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
+>  		return 1;
+>  
 
-realview itself can be used with ARMv6 based core-tiles, so there may be
-an argument for a custom opcode in this case:
 
-#include <asm/opcodes.h>
-#define __WFI __inst_arm_thumb16(0xE320F003, 0xBF30)
-
-Not handling the Thumb case is a definite bug for any file which may
-run on v7, since the kernel could be built in Thumb for that case.
-For example, the existing code is mach-realview/hotplug.c is broken
-when building an SMP Thumb-2 kernel for the Realview PBX-A9.
-
-Cheers
----Dave
