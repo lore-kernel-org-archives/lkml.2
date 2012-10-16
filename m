@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab2JPPdq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 11:33:46 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:51764 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755033Ab2JPPdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 11:33:44 -0400
-Message-ID: <507D7E54.3050101@ti.com>
-Date: Tue, 16 Oct 2012 11:33:40 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1755224Ab2JPPhu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 11:37:50 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:37087 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754934Ab2JPPhs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 11:37:48 -0400
 MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>
-CC: <alan@linux.intel.com>, <gregkh@linuxfoundation.org>,
-        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-keystone@list.ti.com>
-Subject: Re: [RESEND PATCH 2/2] Documentation: of-serial.txt - update for
- clocks phandle for clk
-References: <1350401051-8254-1-git-send-email-m-karicheri2@ti.com> <1350401051-8254-2-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1350401051-8254-2-git-send-email-m-karicheri2@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <157393863283F442885425D2C45428562A50158C@nasanexd02f.na.qualcomm.com>
+References: <1349400892-25315-1-git-send-email-xiong@qca.qualcomm.com>
+ <CAB=NE6VotAu-cugsn4==3TPX0OGPEFtdn1J+5+Rd_YfLcg9YDQ@mail.gmail.com> <157393863283F442885425D2C45428562A50158C@nasanexd02f.na.qualcomm.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Tue, 16 Oct 2012 08:37:26 -0700
+X-Google-Sender-Auth: iaHVTRpHrhekTtgiLrpLusiUvzo
+Message-ID: <CAB=NE6UoJBuLboW0=CVc5o3yj_SZOKehCc8QWP5e+zfEJBF2ug@mail.gmail.com>
+Subject: Re: [PATCH] compat-drivers: update ethernet driver alx in crap dir
+To: "Huang, Xiong" <xiong@qca.qualcomm.com>
+Cc: "mcgrof@kernel.org" <mcgrof@kernel.org>,
+        "backports@vger.kernel.org" <backports@vger.kernel.org>,
+        nic-devel <nic-devel@qualcomm.com>,
+        "Ren, Cloud" <cjren@qca.qualcomm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        qca_vkondrat <qca_vkondrat@qca.qualcomm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2012 11:24 AM, Murali Karicheri wrote:
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+On Mon, Oct 8, 2012 at 6:24 PM, Huang, Xiong <xiong@qca.qualcomm.com> wrote:
+> Hi Luis
 >
-> diff --git a/Documentation/devicetree/bindings/tty/serial/of-serial.txt b/Documentation/devicetree/bindings/tty/serial/of-serial.txt
-> index 0847fde..423b7ff 100644
-> --- a/Documentation/devicetree/bindings/tty/serial/of-serial.txt
-> +++ b/Documentation/devicetree/bindings/tty/serial/of-serial.txt
-> @@ -14,7 +14,10 @@ Required properties:
->   	- "serial" if the port type is unknown.
->   - reg : offset and length of the register set for the device.
->   - interrupts : should contain uart interrupt.
-> -- clock-frequency : the input clock frequency for the UART.
-> +- clock-frequency : the input clock frequency for the UART
-> +	 or
-> +  clocks phandle to refer to the clk used as per Documentation/devicetree
-> +  /bindings/clock/clock-bindings.txt
->   
->   Optional properties:
->   - current-speed : the current active speed of the UART.
+>     I'm refining the code, I try my best to make it upstream ASAP. Thanks !
 
+Ok great thanks, in that case I'm going to make it policy moving
+forward to simply not take in full drivers at all into compat-drivers
+regardless of the situation. If  a driver is desired to be made
+available, whatever the situation may be, it must now go upstream
+directly onto drivers/staging or drivers/ proper somewhere.
+
+Xiong, Vlad, I'm going to then nuke the current drivers there from the
+v3.7-rc1 release, if you want those drivers to be part of the
+compat-drivers-3.7 releases you will have to submit your driver
+upstream into proper or staging.
+
+The additional patches then will be for components already upstream.
+
+  Luis
