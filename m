@@ -1,96 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab2JPGij (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 02:38:39 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57247 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074Ab2JPGii (ORCPT
+	id S1754299Ab2JPGix (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 02:38:53 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:50093 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754059Ab2JPGiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 02:38:38 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Date: Tue, 16 Oct 2012 15:38:17 +0900 (JST)
-Message-Id: <20121016.153817.42643171.d.hatayama@jp.fujitsu.com>
-To: fenghua.yu@intel.com
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org, x86@kernel.org,
-        mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, len.brown@intel.com,
-        vgoyal@redhat.com, ebiederm@xmission.com, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com
-Subject: Re: [PATCH v1 0/2] x86, apic: Disable BSP if boot cpu is AP
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C7122030B0DD91@ORSMSX105.amr.corp.intel.com>
-References: <3E5A0FA7E9CA944F9D5414FEC6C7122030B0DD68@ORSMSX105.amr.corp.intel.com>
-	<20121016.140313.279437418.d.hatayama@jp.fujitsu.com>
-	<3E5A0FA7E9CA944F9D5414FEC6C7122030B0DD91@ORSMSX105.amr.corp.intel.com>
-X-Mailer: Mew version 6.3 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 16 Oct 2012 02:38:51 -0400
+Message-ID: <507D0109.1010103@snapgear.com>
+Date: Tue, 16 Oct 2012 16:39:05 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Philippe De Muyter <phdm@macqel.be>
+CC: uClinux development list <uclinux-dev@uclinux.org>,
+        <stany.marcel@novasys-ingenierie.com>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <netdev@vger.kernel.org>,
+        <linux-m68k@vger.kernel.org>
+Subject: Re: [m68k,powerpc,dma,ethernet,freescale RFA] Coldfire m54xx FEC
+ ethernet driver
+References: <1348473919-30257-1-git-send-email-phdm@macqel.be> <1348473919-30257-4-git-send-email-phdm@macqel.be> <506D3323.4000205@snapgear.com> <20121004073448.GA4339@frolo.macqel> <506D902C.30902@snapgear.com> <20121004145601.GA15358@frolo.macqel> <20121004150329.GB15358@frolo.macqel> <5073C05C.2080809@snapgear.com> <20121009090758.GA14142@frolo.macqel>
+In-Reply-To: <20121009090758.GA14142@frolo.macqel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-NAI-Spam-Flag: NO
+X-NAI-Spam-Level: 
+X-NAI-Spam-Threshold: 5
+X-NAI-Spam-Score: 0.3
+X-NAI-Spam-Version: 2.2.0.9309 : core <4372> : streams <839261> : uri
+ <1244208>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-Subject: RE: [PATCH v1 0/2] x86, apic: Disable BSP if boot cpu is AP
-Date: Tue, 16 Oct 2012 05:14:46 +0000
+Hi Philippe,
 
->> >> My motivation is to use multiple CPUs in order to quickly generate
->> >> crash dump on the machine with huge amount of memory. I assume such
->> >> machine tends to also have a lot of CPUs. So disabling one CPU would
->> >> be no problem.
->> >
->> > Luckily you don't need to disable any CPU to archive your goal with
->> > the BSP hotplug pachest:)
->> >
->> > On a dual core/single thread machine, this means you get 100%
->> performance
->> > boost with BSP's help.
->> >
->> > Plus crash dump kernel code is better structured by not treating BSP
->> > specially.
->> >
->> 
->> Hello Fenghua.
->> 
->> I've of course noticed your patch set and locally tested, but I saw
->> NMI to BSP failed in the 2nd kernel. I'll send a log to you later.
->> 
->> BTW, I tested with your previous v8 patch set. Did you change
->> something during v8 to v9 relevant to this issue?
-> 
-> In the patch 0/12 in v9, I describe what change is in v9 on the top of v8:
-> 
-> v9: Add Intel vendor check to support the feature on Intel platforms only.
-> 
-> Did you see the BSP wake up failure on the latest tip tree?
-> 
-> There is a rcu regression issue which prevents BSP from waking up in 3.6.0.
-> The issue has been fixed on 10/12. The commit is a4fbe35a. Please make sure
-> your tip tree has this commit.
-> 
+On 09/10/12 19:07, Philippe De Muyter wrote:
+> [CCing lkml, linux-ppc, netdev, linux-m68k]
+>
+> Hello kernel sources architects
+>
+> I have a working driver for the m54xx FEC ethernet driver that I
+> would like to integrate in the kernel tree.  Problems are that
+> - this driver needs an associated DMA driver (provided by FreeScale)
+> wich is not dma-engine enabled
+> - they're are already many fec drivers in the kernel tree, and
+> at least one, fec_mpc52xx.c, seems to be very similar (information
+> below), to the one for the mcf54xx, except it uses a differently
+> named associated DMA driver (BestComm/SmartDma/SDMA) which is also
+> not dma-engine enabled, and even kept hidden in /arch/powerpc where
+> it is inaccessible when compiling for m68k.  The underlying DMA part
+> from Freescale however seems similar to the one used in the
+> m54xx. (again, see information below)
+>
+> So, now I am lost, what should I do ?
+>
+> The current state of my patches
+> [http://mailman.uclinux.org/pipermail/uclinux-dev/2012-September/052147.html]
+> is pushing the freescale provided MCD_DMA dma driver to /drivers/dma,
+> without adding the dma-engine compatibility layer, and adding the specific
+> fec_m54xx ethernet driver to /drivers/net/ethernet/freescale
 
-Thanks for pointing out this. And I've recalled my investigation in
-the past now. So I want to stop retrying your patch v9 now. This NMI
-method is definitely not applicable to 2nd kernel without any change.
+Do you get any responses?
+I didn't see any...
 
-Your NMI method assumes BSP thread is halting in play dead loop. But
-on the 2nd kernel, BSP is halting in the 1st kernel (or possibly in a
-fatail system error). Even if throwing NMI to BSP, it goes back to the
-1st kernel soon again. I at least confirmed NMI handler is executed in
-this case.
+Regards
+Greg
 
-Also, throwing NMI changes stack in the 1st kernel, which is
-unpermissible from kdump's perspective. But x86_64 uses Interrupt
-Stack Table (IST), in which stack switching is not performed. So 2nd
-kernel's stack is used at least on x86_64.
 
-To sum up, to apply NMI method in the 2nd kernel, I think it necessary
-to modify contexts pushed on the stack so execution goes to the 2nd
-kernel's start_secondary() while initializing its state
-appropreately.
 
-Also I think it necessary to discuss whether this NMI method is
-reliable enough for kdump use.
+> On Tue, Oct 09, 2012 at 04:12:44PM +1000, Greg Ungerer wrote:
+>> Hi Philippe,
+>>
+>> On 05/10/12 01:03, Philippe De Muyter wrote:
+>>> On Thu, Oct 04, 2012 at 04:56:01PM +0200, Philippe De Muyter wrote:
+>>>> On Thu, Oct 04, 2012 at 11:33:32PM +1000, Greg Ungerer wrote:
+>>>>>
+>>>>> My biggest concern is the amount of MCD/DMA support code. And it is
+>>>>> all done quite differently to everything else in the kernel. We may
+>>>>> get a bit of push back from kernel folk who look after DMA.
+>>>>
+>>>> Actually, there is already a similar code in arch/powerpc/sysdev/bestcomm
+>>>> (also from freescale, maybe an identical part, but I did not find any
+>>>> usable doc), but the powerpc folks kept that hidden in the arch/powerpc
+>>>> tree, instead of installing it in drivers/dma.
+>>>
+>>> The MCD DMA or DMA FEC code from freescale has a comment implying that
+>>> this
+>>> was first used in the MPC8220 part.  And Montavista has a MPC8220 port,
+>>> but
+>>> I did not find it, so I do not know where they installed the MCD DMA
+>>> driver.
+>>
+>> Ok, looks like there is a bit a variance in all this.
+>
+> I also began to read the mpc5200 user's guide parts about the fec and
+> BestComm/SmartDma/SDMA (not sure which one is the official FreeScale name)
+> and they look very similar, but not identical, to their m54xx counterparts.
+>
+> It seems possible to make the fec_mpc52xx.c driver work for the m54xx
+> but that needs at least:
+> - moving some files or part of them from /arch/powerpc/sysdev and
+>    /arch/powerpc/include/asm to /drivers/dma and /include/linux,
+> - renaming the fec_mpc52xx files to a more sensible name,
+> - providing out_be32 and in_be32 in /arch/m68k/include/asm/io.h,
+> - and then unifying the interface to BestComm/SmartDma/SDMA and MCD_DMA
+>    in mcf_52xx.c.
+>
+> An additional problem is that the freescale docs for powerpcs and for
+> coldfires do not use the same mnemonics for the same registers.
+>
+> e.g. FEC registers
+> 	offset	MPC5200		MCF5484
+> 	======	=======		=======
+> 	000	FEC_ID		n/a
+> 	004	IEVENT		EIR
+> 	008	IMASK		EIMR
+> 	010	R_DES_ACTIVE	n/a
+> 	014	X_DES_ACTIVE	n/a
+> 	024	ECNTRL		ECR
+> 	040	MII_DATA	MDATA
+> 	044	MII_SPEED	MSCR
+> 	064	MIB_CONTROL	MIBC
+> 	084	R_CNTRL		RCR
+> 	088	R_HASH		RHR
+> 	0C4	X_CNTRL		TCR
+> 	0E4	PADDR1		PALR
+> 	0E8	PADDR2		PAHR
+> 	0EC	OP_PAUSE	OPD
+> 	118	IADDR1		IAUR
+> 	11C	IADDR1		IALR
+> 	120	GADDR1		GAUR
+> 	124	GADDR2		GALR
+> 	144	X_WMRK		FECTFWR
+> 	184	RFIFO_DATA	FECRFDR
+> 	188	RFIFO_STATUS	FECRFSR
+> 	18C	RFIFO_CONTROL	FECRFCR
+> 	190	RFIFO_LRF_PTR	FECRLRFP
+> 	194	RFIFO_LWF_PTR	FECRLWFP
+> 	198	RFIFO_ALARM	FECRFAR
+> 	19C	RFIFO_RDPTR	FECRFRP
+> 	1A0	RFIFO_WRPTR	FECRFWP
+> 	1A4	TFIFO_DATA	FECTFDR
+> 	1A8	TFIFO_STATUS	FECTFSR
+> 	1AC	TFIFO_CONTROL	FECTFCR
+> 	1B0	TFIFO_LRF_PTR	FECTLRFP
+> 	1B4	TFIFO_LWF_PTR	FECTLWFP
+> 	1B8	TFIFO_ALARM	FECTFAR
+> 	1BC	TFIFO_RDPTR	FECTFRP
+> 	1C0	TFIFO_WRPTR	FECTFWP
+> 	1C4	RESET_CNTRL	FECFRST
+> 	1C8	XMIT_FSM	FECCTCWR
+>
+>> Probably the best thing to do is post the patches on the linux kernel
+>> mailing list then, asking for direction on a dma driver.
+>>
+>> I have no problem with it going into the arch/m68k area. So that is
+>> always an option.
+>
+> For the dma engines, the similarity is also obvious.  For example, find
+> below side by side mpc52xx and m54xx definitions for the
+> main DMA registers :
+>
+> from mpc52xx.h				from MCD_dma.h
+> /* SDMA */				/* MCD_DMA */
+> struct mpc52xx_sdma {			struct dmaRegs {
+>   u32 taskBar; /* 0x00 */		        u32 taskbar;
+>   u32 currentPointer; /* 0x04 */		        u32 currPtr;
+>   u32 endPointer; /* 0x08 */		        u32 endPtr;
+>   u32 variablePointer; /* 0x0c */	        u32 varTablePtr;
+>
+>   u8 IntVect1; /* 0x10 */		        u16 dma_rsvd0;
+>   u8 IntVect2; /* 0x11 */
+>   u16 PtdCntrl; /* 0x12 */		        u16 ptdControl;
+>
+>   u32 IntPend; /* 0x14 */		        u32 intPending;
+>   u32 IntMask; /* 0x18 */		        u32 intMask;
+>
+>   u16 tcr[16]; /* 0x1c .. 0x3a */	        u16 taskControl[16];
+>
+>   u8 ipr[32]; /* 0x3c .. 0x5b */		        u8  priority[32];
+>
+>   u32 cReqSelect; /* 0x5c */		        u32 initiatorMux;
+>   u32 task_size0; /* 0x60 */		        u32 taskSize0;
+>   u32 task_size1; /* 0x64 */		        u32 taskSize1;
+>   u32 MDEDebug; /* 0x68 */		        u32 dma_rsvd1;
+>   u32 ADSDebug; /* 0x6c */		        u32 dma_rsvd2;
+>   u32 Value1; /* 0x70 */			        u32 debugComp1;
+>   u32 Value2; /* 0x74 */			        u32 debugComp2;
+>   u32 Control; /* 0x78 */		        u32 debugControl;
+>   u32 Status; /* 0x7c */			        u32 debugStatus;
+>   u32 PTDDebug; /* 0x80 */		        u32 ptdDebug;
+> };					};
+>
+>
+>
+>
 
-Thanks.
-HATAYAMA, Daisuke
 
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
