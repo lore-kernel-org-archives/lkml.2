@@ -1,63 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097Ab2JPIw6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 04:52:58 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:33810 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750950Ab2JPIw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 04:52:56 -0400
-Message-ID: <507D2061.3030101@parallels.com>
-Date: Tue, 16 Oct 2012 12:52:49 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v4] slab: Ignore internal flags in cache creation
-References: <1349434154-8000-1-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1210081424340.22552@chino.kir.corp.google.com> <alpine.DEB.2.00.1210151747290.31712@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1210151747290.31712@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1752103Ab2JPIxy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 04:53:54 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40954 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950Ab2JPIxx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 04:53:53 -0400
+Date: Tue, 16 Oct 2012 09:58:22 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        xemul@parallels.com, jslaby@suse.cz
+Subject: Re: [patch 1/3] tty: pty - Move TIOCPKT handling into pty.c
+Message-ID: <20121016095822.6700a1ef@pyramind.ukuu.org.uk>
+In-Reply-To: <20121016083337.GA3512@moon>
+References: <20120927211032.576475929@openvz.org>
+	<20120927211121.651422569@openvz.org>
+	<20121016083337.GA3512@moon>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2012 04:47 AM, David Rientjes wrote:
-> On Mon, 8 Oct 2012, David Rientjes wrote:
-> 
->>> diff --git a/mm/slab.h b/mm/slab.h
->>> index 7deeb44..4c35c17 100644
->>> --- a/mm/slab.h
->>> +++ b/mm/slab.h
->>> @@ -45,6 +45,31 @@ static inline struct kmem_cache *__kmem_cache_alias(const char *name, size_t siz
->>>  #endif
->>>  
->>>  
->>> +/* Legal flag mask for kmem_cache_create(), for various configurations */
->>> +#define SLAB_CORE_FLAGS (SLAB_HWCACHE_ALIGN | SLAB_CACHE_DMA | SLAB_PANIC | \
->>> +			 SLAB_DESTROY_BY_RCU | SLAB_DEBUG_OBJECTS )
->>> +
->>> +#if defined(CONFIG_DEBUG_SLAB)
->>> +#define SLAB_DEBUG_FLAGS (SLAB_RED_ZONE | SLAB_POISON | SLAB_STORE_USER)
->>> +#elif defined(CONFIG_SLUB_DEBUG)
->>> +#define SLAB_DEBUG_FLAGS (SLAB_RED_ZONE | SLAB_POISON | SLAB_STORE_USER | \
->>> +			  SLAB_TRACE | SLAB_DEBUG_FREE)
->>> +#else
->>> +#define SLAB_DEBUG_FLAGS (0)
->>> +#endif
->>> +
->>> +#if defined(CONFIG_SLAB)
->>> +#define SLAB_CACHE_FLAGS (SLAB_MEMSPREAD | SLAB_NOLEAKTRACE | \
->>
->> s/SLAB_MEMSPREAD/SLAB_MEM_SPREAD/
->>
-> 
-> Did you have a v5 of this patch with the above fix?
-> 
-Yes, I sent it bundled in my kmemcg-slab series.
+> Greg, Alan, what about this series? Is there anything else I should do?
 
-I can send it separately as well, no problem. (Or we can merge the
-series!!! =p )
+Other than resending it now the merge window is closed - I can't think of
+anything.
 
+Alan
