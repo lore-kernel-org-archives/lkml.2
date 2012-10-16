@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab2JPHmf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 03:42:35 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34667 "EHLO comal.ext.ti.com"
+	id S1755390Ab2JPHme (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 03:42:34 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57653 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755000Ab2JPHm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 03:42:27 -0400
+	id S1754945Ab2JPHm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 03:42:26 -0400
 From: "Patil, Rachna" <rachna@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
         <linux-iio@vger.kernel.org>
@@ -13,63 +13,239 @@ CC: Samuel Ortiz <sameo@linux.intel.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Dmitry Torokhov <dtor@mail.ru>, Jonathan Cameron <jic23@cam.ac.uk>,
         "Patil, Rachna" <rachna@ti.com>
-Subject: [PATCH RESEND 0/8] TI Touchscreen driver updates and Support for TSC/ADC MFD driver
-Date: Tue, 16 Oct 2012 12:55:37 +0530
-Message-ID: <1350372345-27108-1-git-send-email-rachna@ti.com>
+Subject: [PATCH RESEND 1/8] input: TSC: ti_tscadc: Correct register usage
+Date: Tue, 16 Oct 2012 12:55:38 +0530
+Message-ID: <1350372345-27108-2-git-send-email-rachna@ti.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1350372345-27108-1-git-send-email-rachna@ti.com>
+References: <1350372345-27108-1-git-send-email-rachna@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set is a cumulative set of [1] and [2] sent earlier.
-I have merged the patch set so that the MFD patches apply without
-any issues.
+This patch cleans up the wrong register definitions
+and usage for touchscreen controller.
+Bit masks were not defined earlier.
 
-Also Note that there are no code changes in either of the patch set,
-only rebased on top of linux-next to make sure that all the patches
-apply without any conflicts.
+For ex: consider a register define as:
+write(xyz, ABC)
+ABC is expected to be written to register bits 0-11.
+Here we see that value written is as expected, but this write
+is also affecting all the remaining bits of xyz.
+The remaining bits hold the default value as 0 and the write
+also sets it to zero. Hence wrong usage were not causing user
+visible bugs.
+Due to these reasons it was difficult to follow when
+compared with TRM.
 
-This patch set has been tested on AM335x EVM.
+Unused definitions are also removed.
+Since there is change in some naming convention because of
+all the above mentioned reasons, the same has been
+updated throughout the code.
+Bit declarations are grouped to increase readability.
 
-[1] "[PATCH 0/4] input: TSC: ti_tscadc: TI Touchscreen driver updates"
-(http://www.spinics.net/lists/linux-input/msg22107.html)
+Signed-off-by: Patil, Rachna <rachna@ti.com>
+---
+ drivers/input/touchscreen/ti_tscadc.c |  128 +++++++++++++++++++++------------
+ 1 files changed, 82 insertions(+), 46 deletions(-)
 
-[2] "[PATCH v5 0/4] Support for TSC/ADC MFD driver"
-(http://www.spinics.net/lists/linux-input/msg22832.html)
-
-Patil, Rachna (8):
-  input: TSC: ti_tscadc: Correct register usage
-  input: TSC: ti_tscadc: Add Step configuration as platform data
-  input: TSC: ti_tscadc: set FIFO0 threshold Interrupt
-  input: TSC: ti_tscadc: Remove definition of End Of Interrupt register
-  input: TSC: ti_tscadc: Rename the existing touchscreen driver
-  MFD: ti_tscadc: Add support for TI's TSC/ADC MFDevice
-  input: TSC: ti_tsc: Convert TSC into a MFDevice
-  IIO : ADC: tiadc: Add support of TI's ADC driver
-
- drivers/iio/adc/Kconfig                     |    7 +
- drivers/iio/adc/Makefile                    |    1 +
- drivers/iio/adc/ti_am335x_adc.c             |  260 ++++++++++++++
- drivers/input/touchscreen/Kconfig           |    6 +-
- drivers/input/touchscreen/Makefile          |    2 +-
- drivers/input/touchscreen/ti_am335x_tsc.c   |  398 ++++++++++++++++++++++
- drivers/input/touchscreen/ti_tscadc.c       |  486 ---------------------------
- drivers/mfd/Kconfig                         |   11 +
- drivers/mfd/Makefile                        |    1 +
- drivers/mfd/ti_am335x_tscadc.c              |  277 +++++++++++++++
- include/linux/input/ti_am335x_tsc.h         |   23 ++
- include/linux/input/ti_tscadc.h             |   17 -
- include/linux/mfd/ti_am335x_tscadc.h        |  152 +++++++++
- include/linux/platform_data/ti_am335x_adc.h |   14 +
- 14 files changed, 1148 insertions(+), 507 deletions(-)
- create mode 100644 drivers/iio/adc/ti_am335x_adc.c
- create mode 100644 drivers/input/touchscreen/ti_am335x_tsc.c
- delete mode 100644 drivers/input/touchscreen/ti_tscadc.c
- create mode 100644 drivers/mfd/ti_am335x_tscadc.c
- create mode 100644 include/linux/input/ti_am335x_tsc.h
- delete mode 100644 include/linux/input/ti_tscadc.h
- create mode 100644 include/linux/mfd/ti_am335x_tscadc.h
- create mode 100644 include/linux/platform_data/ti_am335x_adc.h
+diff --git a/drivers/input/touchscreen/ti_tscadc.c b/drivers/input/touchscreen/ti_tscadc.c
+index d229c74..d198cab 100644
+--- a/drivers/input/touchscreen/ti_tscadc.c
++++ b/drivers/input/touchscreen/ti_tscadc.c
+@@ -52,43 +52,79 @@
+ 
+ /*	Register Bitfields	*/
+ #define IRQWKUP_ENB		BIT(0)
+-#define STPENB_STEPENB		0x7FFF
++
++/* Step Enable */
++#define STEPENB_MASK		(0x1FFFF << 0)
++#define STEPENB(val)		(val << 0)
++#define STPENB_STEPENB		STEPENB(0x7FFF)
++
++/* IRQ enable */
+ #define IRQENB_FIFO1THRES	BIT(5)
+ #define IRQENB_PENUP		BIT(9)
+-#define STEPCONFIG_MODE_HWSYNC	0x2
+-#define STEPCONFIG_SAMPLES_AVG	(1 << 4)
+-#define STEPCONFIG_XPP		(1 << 5)
+-#define STEPCONFIG_XNN		(1 << 6)
+-#define STEPCONFIG_YPP		(1 << 7)
+-#define STEPCONFIG_YNN		(1 << 8)
+-#define STEPCONFIG_XNP		(1 << 9)
+-#define STEPCONFIG_YPN		(1 << 10)
+-#define STEPCONFIG_INM		(1 << 18)
+-#define STEPCONFIG_INP		(1 << 20)
+-#define STEPCONFIG_INP_5	(1 << 21)
+-#define STEPCONFIG_FIFO1	(1 << 26)
+-#define STEPCONFIG_OPENDLY	0xff
+-#define STEPCONFIG_Z1		(3 << 19)
+-#define STEPIDLE_INP		(1 << 22)
+-#define STEPCHARGE_RFP		(1 << 12)
+-#define STEPCHARGE_INM		(1 << 15)
+-#define STEPCHARGE_INP		(1 << 19)
+-#define STEPCHARGE_RFM		(1 << 23)
+-#define STEPCHARGE_DELAY	0x1
+-#define CNTRLREG_TSCSSENB	(1 << 0)
+-#define CNTRLREG_STEPID		(1 << 1)
+-#define CNTRLREG_STEPCONFIGWRT	(1 << 2)
+-#define CNTRLREG_4WIRE		(1 << 5)
+-#define CNTRLREG_5WIRE		(1 << 6)
+-#define CNTRLREG_8WIRE		(3 << 5)
+-#define CNTRLREG_TSCENB		(1 << 7)
+-#define ADCFSM_STEPID		0x10
+ 
++/* Step Configuration */
++#define STEPCONFIG_MODE_MASK	(3 << 0)
++#define STEPCONFIG_MODE(val)	(val << 0)
++#define STEPCONFIG_MODE_HWSYNC	STEPCONFIG_MODE(2)
++#define STEPCONFIG_AVG_MASK	(7 << 2)
++#define STEPCONFIG_AVG(val)	(val << 2)
++#define STEPCONFIG_AVG_16	STEPCONFIG_AVG(4)
++#define STEPCONFIG_XPP		BIT(5)
++#define STEPCONFIG_XNN		BIT(6)
++#define STEPCONFIG_YPP		BIT(7)
++#define STEPCONFIG_YNN		BIT(8)
++#define STEPCONFIG_XNP		BIT(9)
++#define STEPCONFIG_YPN		BIT(10)
++#define STEPCONFIG_INM_MASK	(0xF << 15)
++#define STEPCONFIG_INM(val)	(val << 15)
++#define STEPCONFIG_INM_ADCREFM	STEPCONFIG_INM(8)
++#define STEPCONFIG_INP_MASK	(0xF << 19)
++#define STEPCONFIG_INP(val)	(val << 19)
++#define STEPCONFIG_INP_AN2	STEPCONFIG_INP(2)
++#define STEPCONFIG_INP_AN3	STEPCONFIG_INP(3)
++#define STEPCONFIG_INP_AN4	STEPCONFIG_INP(4)
++#define STEPCONFIG_INP_ADCREFM	STEPCONFIG_INP(8)
++#define STEPCONFIG_FIFO1	BIT(26)
++
++/* Delay register */
++#define STEPDELAY_OPEN_MASK	(0x3FFFF << 0)
++#define STEPDELAY_OPEN(val)	(val << 0)
++#define STEPCONFIG_OPENDLY	STEPDELAY_OPEN(0x098)
++
++/* Charge Config */
++#define STEPCHARGE_RFP_MASK	(7 << 12)
++#define STEPCHARGE_RFP(val)	(val << 12)
++#define STEPCHARGE_RFP_XPUL	STEPCHARGE_RFP(1)
++#define STEPCHARGE_INM_MASK	(0xF << 15)
++#define STEPCHARGE_INM(val)	(val << 15)
++#define STEPCHARGE_INM_AN1	STEPCHARGE_INM(1)
++#define STEPCHARGE_INP_MASK	(0xF << 19)
++#define STEPCHARGE_INP(val)	(val << 19)
++#define STEPCHARGE_INP_AN1	STEPCHARGE_INP(1)
++#define STEPCHARGE_RFM_MASK	(3 << 23)
++#define STEPCHARGE_RFM(val)	(val << 23)
++#define STEPCHARGE_RFM_XNUR	STEPCHARGE_RFM(1)
++
++/* Charge delay */
++#define CHARGEDLY_OPEN_MASK	(0x3FFFF << 0)
++#define CHARGEDLY_OPEN(val)	(val << 0)
++#define CHARGEDLY_OPENDLY	CHARGEDLY_OPEN(1)
++
++/* Control register */
++#define CNTRLREG_TSCSSENB	BIT(0)
++#define CNTRLREG_STEPID		BIT(1)
++#define CNTRLREG_STEPCONFIGWRT	BIT(2)
++#define CNTRLREG_AFE_CTRL_MASK	(3 << 5)
++#define CNTRLREG_AFE_CTRL(val)	(val << 5)
++#define CNTRLREG_4WIRE		CNTRLREG_AFE_CTRL(1)
++#define CNTRLREG_5WIRE		CNTRLREG_AFE_CTRL(2)
++#define CNTRLREG_8WIRE		CNTRLREG_AFE_CTRL(3)
++#define CNTRLREG_TSCENB		BIT(7)
++
++#define ADCFSM_STEPID		0x10
+ #define SEQ_SETTLE		275
+ #define ADC_CLK			3000000
+ #define MAX_12BIT		((1 << 12) - 1)
+-#define TSCADC_DELTA_X		15
+-#define TSCADC_DELTA_Y		15
+ 
+ struct tscadc {
+ 	struct input_dev	*input;
+@@ -119,18 +155,18 @@ static void tscadc_step_config(struct tscadc *ts_dev)
+ 	/* Configure the Step registers */
+ 
+ 	config = STEPCONFIG_MODE_HWSYNC |
+-			STEPCONFIG_SAMPLES_AVG | STEPCONFIG_XPP;
++			STEPCONFIG_AVG_16 | STEPCONFIG_XPP;
+ 	switch (ts_dev->wires) {
+ 	case 4:
+-		config |= STEPCONFIG_INP | STEPCONFIG_XNN;
++		config |= STEPCONFIG_INP_AN2 | STEPCONFIG_XNN;
+ 		break;
+ 	case 5:
+ 		config |= STEPCONFIG_YNN |
+-				STEPCONFIG_INP_5 | STEPCONFIG_XNN |
++				STEPCONFIG_INP_AN4 | STEPCONFIG_XNN |
+ 				STEPCONFIG_YPP;
+ 		break;
+ 	case 8:
+-		config |= STEPCONFIG_INP | STEPCONFIG_XNN;
++		config |= STEPCONFIG_INP_AN2 | STEPCONFIG_XNN;
+ 		break;
+ 	}
+ 
+@@ -141,14 +177,14 @@ static void tscadc_step_config(struct tscadc *ts_dev)
+ 
+ 	config = 0;
+ 	config = STEPCONFIG_MODE_HWSYNC |
+-			STEPCONFIG_SAMPLES_AVG | STEPCONFIG_YNN |
+-			STEPCONFIG_INM | STEPCONFIG_FIFO1;
++			STEPCONFIG_AVG_16 | STEPCONFIG_YNN |
++			STEPCONFIG_INM_ADCREFM | STEPCONFIG_FIFO1;
+ 	switch (ts_dev->wires) {
+ 	case 4:
+ 		config |= STEPCONFIG_YPP;
+ 		break;
+ 	case 5:
+-		config |= STEPCONFIG_XPP | STEPCONFIG_INP_5 |
++		config |= STEPCONFIG_XPP | STEPCONFIG_INP_AN4 |
+ 				STEPCONFIG_XNP | STEPCONFIG_YPN;
+ 		break;
+ 	case 8:
+@@ -164,21 +200,21 @@ static void tscadc_step_config(struct tscadc *ts_dev)
+ 	config = 0;
+ 	/* Charge step configuration */
+ 	config = STEPCONFIG_XPP | STEPCONFIG_YNN |
+-			STEPCHARGE_RFP | STEPCHARGE_RFM |
+-			STEPCHARGE_INM | STEPCHARGE_INP;
++			STEPCHARGE_RFP_XPUL | STEPCHARGE_RFM_XNUR |
++			STEPCHARGE_INM_AN1 | STEPCHARGE_INP_AN1;
+ 
+ 	tscadc_writel(ts_dev, REG_CHARGECONFIG, config);
+-	tscadc_writel(ts_dev, REG_CHARGEDELAY, STEPCHARGE_DELAY);
++	tscadc_writel(ts_dev, REG_CHARGEDELAY, CHARGEDLY_OPENDLY);
+ 
+ 	config = 0;
+ 	/* Configure to calculate pressure */
+ 	config = STEPCONFIG_MODE_HWSYNC |
+-			STEPCONFIG_SAMPLES_AVG | STEPCONFIG_YPP |
+-			STEPCONFIG_XNN | STEPCONFIG_INM;
++			STEPCONFIG_AVG_16 | STEPCONFIG_YPP |
++			STEPCONFIG_XNN | STEPCONFIG_INM_ADCREFM;
+ 	tscadc_writel(ts_dev, REG_STEPCONFIG13, config);
+ 	tscadc_writel(ts_dev, REG_STEPDELAY13, STEPCONFIG_OPENDLY);
+ 
+-	config |= STEPCONFIG_Z1 | STEPCONFIG_FIFO1;
++	config |= STEPCONFIG_INP_AN3 | STEPCONFIG_FIFO1;
+ 	tscadc_writel(ts_dev, REG_STEPCONFIG14, config);
+ 	tscadc_writel(ts_dev, REG_STEPDELAY14, STEPCONFIG_OPENDLY);
+ 
+@@ -190,8 +226,8 @@ static void tscadc_idle_config(struct tscadc *ts_config)
+ 	unsigned int idleconfig;
+ 
+ 	idleconfig = STEPCONFIG_YNN |
+-			STEPCONFIG_INM |
+-			STEPCONFIG_YPN | STEPIDLE_INP;
++			STEPCONFIG_INM_ADCREFM |
++			STEPCONFIG_YPN | STEPCONFIG_INP_ADCREFM;
+ 	tscadc_writel(ts_config, REG_IDLECONFIG, idleconfig);
+ }
+ 
+-- 
+1.7.0.4
 
