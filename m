@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab2JPU3y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 16:29:54 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:43726 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752251Ab2JPU3x (ORCPT
+	id S1755158Ab2JPUa1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 16:30:27 -0400
+Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:44399 "HELO
+	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752251Ab2JPUaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 16:29:53 -0400
+	Tue, 16 Oct 2012 16:30:24 -0400
+Message-ID: <507DC3DA.3030403@xenotime.net>
+Date: Tue, 16 Oct 2012 13:30:18 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <20121015165756.GA11737@redhat.com>
-References: <1350242593-17761-1-git-send-email-rabin@rab.in>
- <1350242593-17761-6-git-send-email-rabin@rab.in> <20121015165756.GA11737@redhat.com>
-From: Rabin Vincent <rabin@rab.in>
-Date: Tue, 16 Oct 2012 22:29:12 +0200
-X-Google-Sender-Auth: WhPhEOpYQE5jSmvTBTABnXgVPCs
-Message-ID: <CAH+eYFAv=UTZ1gQ5jXq8_ziNy1i3BL9y1bOUWMdTow=i3N0n+g@mail.gmail.com>
-Subject: Re: [PATCH 6/9] uprobes: flush cache after xol write
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH -next] regmap: fix regmap.c printk format warning
+References: <20121016145856.cfddc9c898c31b1c686804d7@canb.auug.org.au>
+In-Reply-To: <20121016145856.cfddc9c898c31b1c686804d7@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/15 Oleg Nesterov <oleg@redhat.com>:
-> On 10/14, Rabin Vincent wrote:
->> Flush the cache so that the instructions written to the XOL area are
->> visible.
->>
->> Signed-off-by: Rabin Vincent <rabin@rab.in>
->> ---
->>  kernel/events/uprobes.c |    1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
->> index ca000a9..8c52f93 100644
->> --- a/kernel/events/uprobes.c
->> +++ b/kernel/events/uprobes.c
->> @@ -1246,6 +1246,7 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe, unsigned long slot
->>       offset = current->utask->xol_vaddr & ~PAGE_MASK;
->>       vaddr = kmap_atomic(area->page);
->>       arch_uprobe_xol_copy(&uprobe->arch, vaddr + offset);
->> +     flush_dcache_page(area->page);
->>       kunmap_atomic(vaddr);
->
-> I agree... but why under kmap_atomic?
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-No real reason; I'll move it to after the unmap.
+Fix printk format warning (found on x86_64):
+
+drivers/base/regmap/regmap.c:861:4: warning: format '%d' expects type 'int', but argument 5 has type 'size_t'
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/regmap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- linux-next-20121016.orig/drivers/base/regmap/regmap.c
++++ linux-next-20121016/drivers/base/regmap/regmap.c
+@@ -858,7 +858,7 @@ static int _regmap_raw_write(struct regm
+ 
+ 		/* If the write goes beyond the end of the window split it */
+ 		while (val_num > win_residue) {
+-			dev_dbg(map->dev, "Writing window %d/%d\n",
++			dev_dbg(map->dev, "Writing window %d/%zu\n",
+ 				win_residue, val_len / map->format.val_bytes);
+ 			ret = _regmap_raw_write(map, reg, val, win_residue *
+ 						map->format.val_bytes);
