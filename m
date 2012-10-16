@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab2JPXaz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 19:30:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48660 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755696Ab2JPXay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 19:30:54 -0400
-Date: Tue, 16 Oct 2012 19:30:49 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: [PATCH] percpu-rwsem: use barrier in unlock path
-In-Reply-To: <Pine.LNX.4.64.1210151716310.10685@file.rdu.redhat.com>
-Message-ID: <Pine.LNX.4.64.1210161924350.20581@file.rdu.redhat.com>
-References: <Pine.LNX.4.64.1210151716310.10685@file.rdu.redhat.com>
+	id S932091Ab2JPXjv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 19:39:51 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:42845 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755824Ab2JPXju (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 19:39:50 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com>
+References: <20121008150949.GA15130@redhat.com> <CAHGf_=pr1AYeWZhaC2MKN-XjiWB7=hs92V0sH-zVw3i00X-e=A@mail.gmail.com>
+ <alpine.DEB.2.00.1210152055150.5400@chino.kir.corp.google.com>
+ <CAHGf_=rLjQbtWQLDcbsaq5=zcZgjdveaOVdGtBgBwZFt78py4Q@mail.gmail.com> <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Tue, 16 Oct 2012 19:39:29 -0400
+Message-ID: <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com>
+Subject: Re: mpol_to_str revisited.
+To: David Rientjes <rientjes@google.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        bhutchings@solarflare.com, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, Oct 16, 2012 at 2:10 AM, David Rientjes <rientjes@google.com> wrote:
+> On Tue, 16 Oct 2012, KOSAKI Motohiro wrote:
+>
+>> >> I don't think 80de7c3138ee9fd86a98696fd2cf7ad89b995d0a is right fix.
+>> >
+>> > It's certainly not a complete fix, but I think it's a much better result
+>> > of the race, i.e. we don't panic anymore, we simply fail the read()
+>> > instead.
+>>
+>> Even though 80de7c3138ee9fd86a98696fd2cf7ad89b995d0a itself is simple. It bring
+>> to caller complex. That's not good and have no worth.
+>>
+>
+> Before: the kernel panics, all workloads cease.
+> After: the file shows garbage, all workloads continue.
+>
+> This is better, in my opinion, but at best it's only a judgment call and
+> has no effect on anything.
 
-When I read my patch 62ac665ff9fc07497ca524bd20d6a96893d11071 again, it 
-turns out that it is missing a barrier in percpu_up_write. Please apply 
-this.
+Kernel panics help to find our serious mistake.
 
-Mikulas
 
----
+> I agree it would be better to respect the return value of mpol_to_str()
+> since there are other possible error conditions other than a freed
+> mempolicy, but let's not consider reverting 80de7c3138.  It is obviously
+> not a full solution to the problem, though, and we need to serialize with
+> task_lock().
 
-percpu-rwsem: use barrier in unlock path
+Sorry no. I will have to revert it. mempolicy have already a lot of
+meaningless complex and bring us a lot of problems. I haven't
+seen any reason adding more.
 
-Fix missing barrier in patch 62ac665ff9fc07497ca524bd20d6a96893d11071.
 
-The lock is considered unlocked when p->locked is set to false.
-Use barrier prevent reordering of operations around p->locked.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-
----
- include/linux/percpu-rwsem.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
-
-Index: linux-3.6.2-fast/include/linux/percpu-rwsem.h
-===================================================================
---- linux-3.6.2-fast.orig/include/linux/percpu-rwsem.h	2012-10-17 01:17:55.000000000 +0200
-+++ linux-3.6.2-fast/include/linux/percpu-rwsem.h	2012-10-17 01:21:46.000000000 +0200
-@@ -66,6 +66,15 @@ static inline void percpu_down_write(str
- 
- static inline void percpu_up_write(struct percpu_rw_semaphore *p)
- {
-+	/*
-+	 * The lock is considered unlocked when p->locked is set to false.
-+	 * Use barrier prevent reordering of operations around p->locked.
-+	 */
-+#if defined(CONFIG_X86) && (!defined(CONFIG_X86_PPRO_FENCE) && !defined(CONFIG_X86_OOSTORE))
-+	barrier();
-+#else
-+	smp_mb();
-+#endif
- 	p->locked = false;
- 	mutex_unlock(&p->mtx);
- }
-
+> Dave, are you interested in coming up with a patch?
