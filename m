@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab2JPLv3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 07:51:29 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51962 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558Ab2JPLv0 (ORCPT
+	id S1752706Ab2JPLz0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 07:55:26 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:55795 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948Ab2JPLzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 07:51:26 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        <linux-fbdev@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] OMAPDSS: Correct check for the callback pointer in dss_dsi_disable_pads()
-Date: Tue, 16 Oct 2012 13:51:21 +0200
-Message-ID: <1350388281-20397-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.12.3
+	Tue, 16 Oct 2012 07:55:25 -0400
+X-AuditID: b753bd60-8f6bfba0000047ca-6b-507d4b2b31cc
+X-AuditID: b753bd60-8f6bfba0000047ca-6b-507d4b2b31cc
+Message-ID: <507D4B2A.6080107@hitachi.com>
+Date: Tue, 16 Oct 2012 20:55:22 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Hyeoncheol Lee <hyc.lee@gmail.com>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH] uprobes tracer: Add stack/memory/retval access support
+References: <1350378135-18919-1-git-send-email-hyc.lee@gmail.com>
+In-Reply-To: <1350378135-18919-1-git-send-email-hyc.lee@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Appear to be a copy-paste bug: the code was checking board_data->dsi_enable_pads
-while calling board_data->dsi_disable_pads.
+(2012/10/16 18:02), Hyeoncheol Lee wrote:
+> Event arguments except @SYM are supported. They are @ADDR,
+> $stack, $stackN, $retval, and offs(arguments).
+> 
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Signed-off-by: Hyeoncheol Lee <hyc.lee@gmail.com>
+> ---
+
+[...]
+>  #define DEFINE_FETCH_stack(type)					\
+>  static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
+> -					  void *offset, void *dest)	\
+> +					  void *offset, void *dest,	\
+> +					  bool kprobe)			\
+>  {									\
+> -	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
+> +	if (kprobe)							\
+> +		*(type *)dest = (type)regs_get_kernel_stack_nth(regs,	\
+>  				(unsigned int)((unsigned long)offset));	\
+> +	else								\
+> +		*(type *)dest = (type)regs_get_user_stack_nth(regs,	\
+> +				(unsigned int)((unsigned long)offset)); \
+>  }
 
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
+Hmm, I don't think this is a good way to do that.
+If fetching user space objects is different from the kernel one,
+we'd better introduce new fetch handlers for it, instead of checking
+a bool flag every time, because it will be done on every events.
 
-Hi Tomi,
+Thank you,
 
-not sure if this need to be included to 3.7
 
-Regards,
-Peter
-
- drivers/video/omap2/dss/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/video/omap2/dss/core.c b/drivers/video/omap2/dss/core.c
-index b2af72d..7afaf61 100644
---- a/drivers/video/omap2/dss/core.c
-+++ b/drivers/video/omap2/dss/core.c
-@@ -122,7 +122,7 @@ void dss_dsi_disable_pads(int dsi_id, unsigned lane_mask)
- {
- 	struct omap_dss_board_info *board_data = core.pdev->dev.platform_data;
- 
--	if (!board_data->dsi_enable_pads)
-+	if (!board_data->dsi_disable_pads)
- 		return;
- 
- 	return board_data->dsi_disable_pads(dsi_id, lane_mask);
 -- 
-1.7.12.3
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
