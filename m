@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab2JPQtw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 12:49:52 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:34178 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755358Ab2JPQtq (ORCPT
+	id S1755407Ab2JPQtu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 12:49:50 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:33904 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755359Ab2JPQtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 12:49:46 -0400
-From: Sangho Yi <antiroot@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Sangho Yi <antiroot@gmail.com>
-Subject: [PATCH 2/2] staging: csr: Fixed macro definition style errors on csr_wifi_vif_utils.h
-Date: Wed, 17 Oct 2012 01:48:30 +0900
-Message-Id: <1350406110-2942-2-git-send-email-antiroot@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350406110-2942-1-git-send-email-antiroot@gmail.com>
-References: <n>
- <1350406110-2942-1-git-send-email-antiroot@gmail.com>
+	Tue, 16 Oct 2012 12:49:47 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+j5rOGQFVAtkXqmTx17+gu
+Date: Tue, 16 Oct 2012 09:49:36 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: linux@arm.linux.org.uk, b-cousson@ti.com, arnd@arndb.de, olof@lixom.net,
+        rdunlap@xenotime.net, balbi@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] ARM: OMAP4: add _dev_attr_ to ocp2scp for
+ representing usb_phy
+Message-ID: <20121016164936.GR15569@atomide.com>
+References: <1349675983-23803-1-git-send-email-kishon@ti.com>
+ <1349675983-23803-3-git-send-email-kishon@ti.com>
+ <20121011004413.GW12552@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121011004413.GW12552@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I fixed 3 lines of code where there were the coding style errors on
-defining the macros.
+* Tony Lindgren <tony@atomide.com> [121010 17:46]:
+> Hi,
+> 
+> * Kishon Vijay Abraham I <kishon@ti.com> [121007 23:01]:
+> > In order to reflect devices(usb_phy) attached to ocp2scp bus, ocp2scp
+> > is assigned a device attribute to represent the attached devices.
+> ...
+> 
+> > --- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> > +++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> > @@ -21,6 +21,7 @@
+> >  #include <linux/io.h>
+> >  #include <linux/platform_data/gpio-omap.h>
+> >  #include <linux/power/smartreflex.h>
+> > +#include <linux/platform_data/omap_ocp2scp.h>
+> >  
+> >  #include <plat/omap_hwmod.h>
+> >  #include <plat/i2c.h>
+> > @@ -2681,6 +2682,32 @@ static struct omap_hwmod_class omap44xx_ocp2scp_hwmod_class = {
+> >  	.sysc	= &omap44xx_ocp2scp_sysc,
+> >  };
+> >  
+> > +/* ocp2scp dev_attr */
+> > +static struct resource omap44xx_usb_phy_and_pll_addrs[] = {
+> > +	{
+> > +		.name		= "usb_phy",
+> > +		.start		= 0x4a0ad080,
+> > +		.end		= 0x4a0ae000,
+> > +		.flags		= IORESOURCE_MEM,
+> > +	},
+> > +	{
+> > +		/* XXX: Remove this once control module driver is in place */
+> > +		.name		= "ctrl_dev",
+> > +		.start		= 0x4a002300,
+> > +		.end		= 0x4a002303,
+> > +		.flags		= IORESOURCE_MEM,
+> > +	},
+> > +	{ }
+> > +};
+> 
+> Why don't you set the CONTROL_DEV_CONF as a fixed regulator?
 
-Signed-off-by: Sangho Yi <antiroot@gmail.com>
----
- drivers/staging/csr/csr_wifi_vif_utils.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+After some more investigating, we may be able to set it up as a
+regulator or clock later on. But as a regression fix, this seems
+OK for me.
 
-diff --git a/drivers/staging/csr/csr_wifi_vif_utils.h b/drivers/staging/csr/csr_wifi_vif_utils.h
-index c997398..f1374f2 100644
---- a/drivers/staging/csr/csr_wifi_vif_utils.h
-+++ b/drivers/staging/csr/csr_wifi_vif_utils.h
-@@ -25,8 +25,8 @@ extern "C" {
- 
- /* Common macros for NME and SME to be used temporarily until SoftMAC
-  * changes are made */
--#define CSR_WIFI_NUM_INTERFACES		(u8)0x1
--#define CSR_WIFI_INTERFACE_IN_USE	(u16)0x0
-+#define CSR_WIFI_NUM_INTERFACES		((u8)0x1)
-+#define CSR_WIFI_INTERFACE_IN_USE	((u16)0x0)
- 
- /* This is used at places where interface Id isn't available*/
- #define CSR_WIFI_INTERFACE_ZERO		0
-@@ -38,7 +38,7 @@ extern "C" {
- 
- /* Extract the Interface Id from the event */
- #define CsrWifiVifUtilsGetVifTagFromEvent(msg) \
--	((u16) * ((u16 *) ((u8 *) (msg) + sizeof(CsrWifiFsmEvent))))
-+	((u16) *((u16 *) ((u8 *) (msg) + sizeof(CsrWifiFsmEvent))))
- 
- /* The HPI Vif combines the type and the interface id */
- #define CsrWifiVifUtilsGetVifTagFromHipEvent(msg) \
--- 
-1.7.9.5
+Benoit, is this OK for you?
 
+Regards,
+
+Tony
