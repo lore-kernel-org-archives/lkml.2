@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab2JPWPW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 18:15:22 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53669 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753928Ab2JPWPU (ORCPT
+	id S1755404Ab2JPW2y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 18:28:54 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:63115 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754691Ab2JPW2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 18:15:20 -0400
-Date: Tue, 16 Oct 2012 23:15:02 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] genirq: provide means to retrigger parent
-Message-ID: <20121016221502.GY28061@n2100.arm.linux.org.uk>
-References: <1350425269-11489-1-git-send-email-khilman@deeprootsystems.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350425269-11489-1-git-send-email-khilman@deeprootsystems.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 16 Oct 2012 18:28:52 -0400
+From: Tejun Heo <tj@kernel.org>
+To: rjw@sisk.pl, oleg@redhat.com
+Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: [PATCHSET cgroup/for-3.8] cgroup_freezer: allow migration regardless of freezer state and update locking
+Date: Tue, 16 Oct 2012 15:28:39 -0700
+Message-Id: <1350426526-14254-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 03:07:49PM -0700, Kevin Hilman wrote:
-> From: Thomas Gleixner <tglx@linutronix.de>
-> 
-> Attempts to retrigger nested threaded IRQs currently fail because they
-> have no primary handler.  In order to support retrigger of nested
-> IRQs, the parent IRQ needs to be retriggered.
-> 
-> To fix, when an IRQ needs to be resent, if the interrupt has a parent
-> IRQ and runs in the context of the parent IRQ, then resend the parent.
-> 
-> Also, handle_nested_irq() needs to clear the replay flag like the
-> other handlers, otherwise check_irq_resend() will set it and it will
-> never be cleared.  Without clearing, it results in the first resend
-> working fine, but check_irq_resend() returning early on subsequent
-> resends because the replay flag is still set.
-> 
-> Problem discovered on ARM/OMAP platforms where a nested IRQ that's
-> also a wakeup IRQ happens late in suspend and needed to be retriggered
-> during the resume process.
-> 
-> Reported-by: Kevin Hilman <khilman@ti.com>
-> Tested-by: Kevin Hilman <khilman@ti.com>
-> [khilman@ti.com: changelog edits, clear IRQS_REPLAY in handle_nested_irq()]
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Hello,
 
-Umm, we also have the converse situation.  We have platforms where the
-resend has to be done from the child IRQ, and the parent must not be
-touched.  I hope that doesn't break those.
+This patchset updates cgroup_freezer so that
+
+* Unfreezable kernel tasks don't prevent a cgroup from transitioning
+  into FROZEN from FREEZING.  There's nothing userland can do with or
+  about such tasks.
+
+* Tasks can be moved in and out of a frozen cgroup.  Tasks are made to
+  conform to the state of the new cgroup during migration.  This
+  behavior makes a lot more sense and removes the use of
+  ->can_attach() which makes co-mounting difficult.
+
+* Remove use of cgroup_lock_live_group().  Grabbing cgroup_lock from
+  outside cgroup proper creates a painful locking dependency and is
+  being phased out.  With the above behavior change, removing
+  dependency on cgroup_lock is pretty easy.  IMHO, it was simply the
+  wrong behavior to implement which forced the wrong implementation.
+
+This patchset contains the following seven patches.
+
+ 0001-cgroup-cgroup_subsys-fork-should-be-called-after-the.patch
+ 0002-freezer-add-missing-mb-s-to-freezer_count-and-freeze.patch
+ 0003-cgroup_freezer-make-it-official-that-writes-to-freez.patch
+ 0004-cgroup_freezer-don-t-stall-transition-to-FROZEN-for-.patch
+ 0005-cgroup_freezer-allow-moving-tasks-in-and-out-of-a-fr.patch
+ 0006-cgroup_freezer-prepare-update_if_frozen-for-locking-.patch
+ 0007-cgroup_freezer-don-t-use-cgroup_lock_live_group.patch
+
+0001 is a fix for a rather embarrassing bug in cgroup core.  It does
+things in the wrong order leaving a window for racing during fork.
+
+0002 adds a missing mb() around freezing condition updates / checks.
+
+0003-0004 make cgroup_freezer ignore unfreezable kernel tasks and
+handle PF_FREEZER_SKIP correctly.
+
+0005 allows migrating tasks in and out of a frozen cgroup.
+
+0006-0007 remove the use of cgroup_lock_live_group().
+
+This patchset is on top of v3.7-rc1 and available in the following git
+branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup_freezer-locking
+
+ include/linux/cgroup.h  |    1 
+ include/linux/freezer.h |   50 +++++++++--
+ kernel/cgroup.c         |   62 ++++++--------
+ kernel/cgroup_freezer.c |  210 ++++++++++++++++--------------------------------
+ kernel/fork.c           |    9 --
+ 5 files changed, 147 insertions(+), 185 deletions(-)
+
+Thanks.
+
+--
+tejun
