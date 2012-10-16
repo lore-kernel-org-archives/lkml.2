@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160Ab2JPAEY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 20:04:24 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:28991 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754771Ab2JPAEW (ORCPT
+	id S1755088Ab2JPAHe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 20:07:34 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:36402 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753056Ab2JPAHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 20:04:22 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtEmAMWjfFB5LH33/2dsb2JhbABFuh+EbQKBBYEJgiABAQUnExwjEAgYMRQlAzSIA6tAkFMUjSyBNYJBYAOVa5AxgwE
-Date: Tue, 16 Oct 2012 11:04:05 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
-        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH] xfs: add hot tracking support.
-Message-ID: <20121016000405.GA2864@dastard>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+	Mon, 15 Oct 2012 20:07:33 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX186zs2+9cGOJbXfsPQx74IW
+Date: Mon, 15 Oct 2012 17:07:23 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: =?utf-8?B?UMOpdGVy?= Ujfalusi <peter.ujfalusi@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
+        linux-omap@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, Deepak Saxena <dsaxena@plexity.net>,
+        Chris Ball <cjb@laptop.org>, Matt Mackall <mpm@selenic.com>,
+        Venkatraman S <svenkatr@ti.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: OMAP: Trivial driver changes to remove
+ include plat/cpu.h
+Message-ID: <20121016000722.GH15569@atomide.com>
+References: <20121008173452.10603.53886.stgit@muffinssi>
+ <20121008173557.10603.18539.stgit@muffinssi>
+ <5073E84E.4090408@ti.com>
+ <20121010001943.GK12552@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121010001943.GK12552@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Tony Lindgren <tony@atomide.com> [121009 17:21]:
+> * Péter Ujfalusi <peter.ujfalusi@ti.com> [121009 02:03]:
+> > On 10/08/2012 07:35 PM, Tony Lindgren wrote:
+> > 
+> > > - omap-dma.c and omap-pcm.c can test the arch locally as
+> > >   omap1 and omap2 cannot be compiled together because of
+> > >   conflicting compiler flags
+> > 
+> > >  sound/soc/omap/omap-pcm.c         |    9 +++++++--
+> > 
+> > Tony: is this going to be included in 3.7?
+> 
+> Hmm I guess we could try to get this out of the way
+> to cut down the dependencies. Let's if maintainers
+> of the other affected drivers this is OK for the
+> -rc series.
 
-From: Dave Chinner <dchinner@redhat.com>
+It seems that nobody needs these until for v3.8, so I'll
+be applying this into omap-for-v3.8/cleanup-headers-prepare
+branch soon.
 
-Connect up the VFS hot tracking support so XFS filesystems can make
-use of it.
+Anybody else care to ack?
 
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
----
- fs/xfs/xfs_mount.h |    1 +
- fs/xfs/xfs_super.c |    9 +++++++++
- 2 files changed, 10 insertions(+)
+Regards,
 
-diff --git a/fs/xfs/xfs_mount.h b/fs/xfs/xfs_mount.h
-index a631ca3..d5e7277 100644
---- a/fs/xfs/xfs_mount.h
-+++ b/fs/xfs/xfs_mount.h
-@@ -215,6 +215,7 @@ typedef struct xfs_mount {
- #define XFS_MOUNT_WSYNC		(1ULL << 0)	/* for nfs - all metadata ops
- 						   must be synchronous except
- 						   for space allocations */
-+#define XFS_MOUNT_HOTTRACK	(1ULL << 1)	/* hot inode tracking */
- #define XFS_MOUNT_WAS_CLEAN	(1ULL << 3)
- #define XFS_MOUNT_FS_SHUTDOWN	(1ULL << 4)	/* atomic stop of all filesystem
- 						   operations, typically for
-diff --git a/fs/xfs/xfs_super.c b/fs/xfs/xfs_super.c
-index 56c2537..17786ff 100644
---- a/fs/xfs/xfs_super.c
-+++ b/fs/xfs/xfs_super.c
-@@ -61,6 +61,7 @@
- #include <linux/kthread.h>
- #include <linux/freezer.h>
- #include <linux/parser.h>
-+#include <linux/hot_tracking.h>
- 
- static const struct super_operations xfs_super_operations;
- static kmem_zone_t *xfs_ioend_zone;
-@@ -114,6 +115,7 @@ mempool_t *xfs_ioend_pool;
- #define MNTOPT_NODELAYLOG  "nodelaylog"	/* Delayed logging disabled */
- #define MNTOPT_DISCARD	   "discard"	/* Discard unused blocks */
- #define MNTOPT_NODISCARD   "nodiscard"	/* Do not discard unused blocks */
-+#define MNTOPT_HOTTRACK	"hot_track"	/* hot inode tracking */
- 
- /*
-  * Table driven mount option parser.
-@@ -371,6 +373,8 @@ xfs_parseargs(
- 			mp->m_flags |= XFS_MOUNT_DISCARD;
- 		} else if (!strcmp(this_char, MNTOPT_NODISCARD)) {
- 			mp->m_flags &= ~XFS_MOUNT_DISCARD;
-+		} else if (!strcmp(this_char, MNTOPT_HOTTRACK)) {
-+			mp->m_flags |= XFS_MOUNT_HOTTRACK;
- 		} else if (!strcmp(this_char, "ihashsize")) {
- 			xfs_warn(mp,
- 	"ihashsize no longer used, option is deprecated.");
-@@ -1040,6 +1044,9 @@ xfs_fs_put_super(
- {
- 	struct xfs_mount	*mp = XFS_M(sb);
- 
-+	if (mp->m_flags & XFS_MOUNT_HOTTRACK)
-+		hot_track_exit(sb);
-+
- 	xfs_filestream_unmount(mp);
- 	xfs_unmountfs(mp);
- 
-@@ -1470,6 +1477,8 @@ xfs_fs_fill_super(
- 		error = ENOMEM;
- 		goto out_unmount;
- 	}
-+	if (mp->m_flags & XFS_MOUNT_HOTTRACK)
-+		hot_track_init(sb);
- 
- 	return 0;
- 
+Tony
