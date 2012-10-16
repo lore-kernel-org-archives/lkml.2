@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab2JPKTd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 06:19:33 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:10462 "EHLO relay.sw.ru"
+	id S1753686Ab2JPKUN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 06:20:13 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:38052 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753509Ab2JPKQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 06:16:59 -0400
+	id S1752379Ab2JPKQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 06:16:57 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
 Cc: <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
@@ -14,129 +14,127 @@ Cc: <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
         <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
         David Rientjes <rientjes@google.com>,
         Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
-        <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@parallels.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: [PATCH v5 07/14] mm: Allocate kernel pages to the right memcg
-Date: Tue, 16 Oct 2012 14:16:44 +0400
-Message-Id: <1350382611-20579-8-git-send-email-glommer@parallels.com>
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v5 00/14] kmem controller for memcg.
+Date: Tue, 16 Oct 2012 14:16:37 +0400
+Message-Id: <1350382611-20579-1-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1350382611-20579-1-git-send-email-glommer@parallels.com>
-References: <1350382611-20579-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a process tries to allocate a page with the __GFP_KMEMCG flag, the
-page allocator will call the corresponding memcg functions to validate
-the allocation. Tasks in the root memcg can always proceed.
+Hi,
 
-To avoid adding markers to the page - and a kmem flag that would
-necessarily follow, as much as doing page_cgroup lookups for no reason,
-whoever is marking its allocations with __GFP_KMEMCG flag is responsible
-for telling the page allocator that this is such an allocation at
-free_pages() time. This is done by the invocation of
-__free_accounted_pages() and free_accounted_pages().
+This is the first part of the kernel memory controller for memcg. It has been
+discussed many times, and I consider this stable enough to be on tree. A follow
+up to this series are the patches to also track slab memory. They are not
+included here because I believe we could benefit from merging them separately
+for better testing coverage. If there are any issues preventing this to be
+merged, let me know. I'll be happy to address them.
 
-[ v2: inverted test order to avoid a memcg_get leak,
-  free_accounted_pages simplification ]
-[ v4: test for TIF_MEMDIE at newpage_charge ]
+*v5:    - changed charged order, kmem charged first.
+        - minor nits and comments merged.
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Johannes Weiner <hannes@cmpxchg.org>
-CC: Suleiman Souhlal <suleiman@google.com>
-CC: Tejun Heo <tj@kernel.org>
----
- include/linux/gfp.h |  3 +++
- mm/page_alloc.c     | 35 +++++++++++++++++++++++++++++++++++
- 2 files changed, 38 insertions(+)
+*v4:    - kmem_accounted can no longer become unlimited
+        - kmem_accounted can no longer become limited, if group has children.
+        - documentation moved to this patchset
+        - more style changes
+        - css_get in charge path to ensure task won't move during charge
+*v3:
+	- Changed function names to match memcg's
+	- avoid doing get/put in charge/uncharge path
+	- revert back to keeping the account enabled after it is first activated
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 9289d46..8f6fe34 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -362,6 +362,9 @@ extern void free_pages(unsigned long addr, unsigned int order);
- extern void free_hot_cold_page(struct page *page, int cold);
- extern void free_hot_cold_page_list(struct list_head *list, int cold);
- 
-+extern void __free_accounted_pages(struct page *page, unsigned int order);
-+extern void free_accounted_pages(unsigned long addr, unsigned int order);
-+
- #define __free_page(page) __free_pages((page), 0)
- #define free_page(addr) free_pages((addr), 0)
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index feddc7f..dcf33ad 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2595,6 +2595,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
- 	int migratetype = allocflags_to_migratetype(gfp_mask);
- 	unsigned int cpuset_mems_cookie;
- 	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET;
-+	struct mem_cgroup *memcg = NULL;
- 
- 	gfp_mask &= gfp_allowed_mask;
- 
-@@ -2613,6 +2614,13 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
- 	if (unlikely(!zonelist->_zonerefs->zone))
- 		return NULL;
- 
-+	/*
-+	 * Will only have any effect when __GFP_KMEMCG is set.  This is
-+	 * verified in the (always inline) callee
-+	 */
-+	if (!memcg_kmem_newpage_charge(gfp_mask, &memcg, order))
-+		return NULL;
-+
- retry_cpuset:
- 	cpuset_mems_cookie = get_mems_allowed();
- 
-@@ -2648,6 +2656,8 @@ out:
- 	if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
- 		goto retry_cpuset;
- 
-+	memcg_kmem_commit_charge(page, memcg, order);
-+
- 	return page;
- }
- EXPORT_SYMBOL(__alloc_pages_nodemask);
-@@ -2700,6 +2710,31 @@ void free_pages(unsigned long addr, unsigned int order)
- 
- EXPORT_SYMBOL(free_pages);
- 
-+/*
-+ * __free_accounted_pages and free_accounted_pages will free pages allocated
-+ * with __GFP_KMEMCG.
-+ *
-+ * Those pages are accounted to a particular memcg, embedded in the
-+ * corresponding page_cgroup. To avoid adding a hit in the allocator to search
-+ * for that information only to find out that it is NULL for users who have no
-+ * interest in that whatsoever, we provide these functions.
-+ *
-+ * The caller knows better which flags it relies on.
-+ */
-+void __free_accounted_pages(struct page *page, unsigned int order)
-+{
-+	memcg_kmem_uncharge_page(page, order);
-+	__free_pages(page, order);
-+}
-+
-+void free_accounted_pages(unsigned long addr, unsigned int order)
-+{
-+	if (addr != 0) {
-+		VM_BUG_ON(!virt_addr_valid((void *)addr));
-+		__free_accounted_pages(virt_to_page((void *)addr), order);
-+	}
-+}
-+
- static void *make_alloc_exact(unsigned long addr, unsigned order, size_t size)
- {
- 	if (addr) {
+Numbers can be found at https://lkml.org/lkml/2012/9/13/239
+
+A (throwaway) git tree with them is placed at:
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/glommer/memcg.git kmemcg-stack
+
+A general explanation of what this is all about follows:
+
+The kernel memory limitation mechanism for memcg concerns itself with
+disallowing potentially non-reclaimable allocations to happen in exaggerate
+quantities by a particular set of processes (cgroup). Those allocations could
+create pressure that affects the behavior of a different and unrelated set of
+processes.
+
+Its basic working mechanism is to annotate some allocations with the
+_GFP_KMEMCG flag. When this flag is set, the current process allocating will
+have its memcg identified and charged against. When reaching a specific limit,
+further allocations will be denied.
+
+One example of such problematic pressure that can be prevented by this work is
+a fork bomb conducted in a shell. We prevent it by noting that processes use a
+limited amount of stack pages. Seen this way, a fork bomb is just a special
+case of resource abuse. If the offender is unable to grab more pages for the
+stack, no new processes can be created.
+
+There are also other things the general mechanism protects against. For
+example, using too much of pinned dentry and inode cache, by touching files an
+leaving them in memory forever.
+
+In fact, a simple:
+
+while true; do mkdir x; cd x; done
+
+can halt your system easily because the file system limits are hard to reach
+(big disks), but the kernel memory is not. Those are examples, but the list
+certainly don't stop here.
+
+An important use case for all that, is concerned with people offering hosting
+services through containers. In a physical box we can put a limit to some
+resources, like total number of processes or threads. But in an environment
+where each independent user gets its own piece of the machine, we don't want a
+potentially malicious user to destroy good users' services.
+
+This might be true for systemd as well, that now groups services inside
+cgroups. They generally want to put forward a set of guarantees that limits the
+running service in a variety of ways, so that if they become badly behaved,
+they won't interfere with the rest of the system.
+
+There is, of course, a cost for that. To attempt to mitigate that, static
+branches are used to make sure that even if the feature is compiled in with
+potentially a lot of memory cgroups deployed this code will only be enabled
+after the first user of this service configures any limit. Limits lower than
+the user limit effectively means there is a separate kernel memory limit that
+may be reached independently than the user limit. Values equal or greater than
+the user limit implies only that kernel memory is tracked. This provides a
+unified vision of "maximum memory", be it kernel or user memory. Because this
+is all default-off, existing deployments will see no change in behavior.
+
+Glauber Costa (12):
+  memcg: change defines to an enum
+  kmem accounting basic infrastructure
+  Add a __GFP_KMEMCG flag
+  memcg: kmem controller infrastructure
+  mm: Allocate kernel pages to the right memcg
+  res_counter: return amount of charges after res_counter_uncharge
+  memcg: kmem accounting lifecycle management
+  memcg: use static branches when code not in use
+  memcg: allow a memcg with kmem charges to be destructed.
+  execute the whole memcg freeing in free_worker
+  protect architectures where THREAD_SIZE >= PAGE_SIZE against fork
+    bombs
+  Add documentation about the kmem controller
+
+Suleiman Souhlal (2):
+  memcg: Make it possible to use the stock for more than one page.
+  memcg: Reclaim when more than one page needed.
+
+ Documentation/cgroups/memory.txt           |  58 ++-
+ Documentation/cgroups/resource_counter.txt |   7 +-
+ include/linux/gfp.h                        |   6 +-
+ include/linux/memcontrol.h                 | 100 ++++++
+ include/linux/res_counter.h                |  12 +-
+ include/linux/thread_info.h                |   2 +
+ include/trace/events/gfpflags.h            |   1 +
+ kernel/fork.c                              |   4 +-
+ kernel/res_counter.c                       |  20 +-
+ mm/memcontrol.c                            | 553 +++++++++++++++++++++++++----
+ mm/page_alloc.c                            |  35 ++
+ 11 files changed, 717 insertions(+), 81 deletions(-)
+
 -- 
 1.7.11.7
 
