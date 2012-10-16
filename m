@@ -1,56 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab2JPEJo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 00:09:44 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:55686 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753250Ab2JPEJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 00:09:42 -0400
-Date: Tue, 16 Oct 2012 00:08:48 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        greg@kroah.com, w@1wt.eu, ewust@umich.edu, zakir@umich.edu,
-        mpm@selenic.com, nadiah@cs.ucsd.edu, jhalderm@umich.edu,
-        tglx@linutronix.de, davem@davemloft.net, mingo@kernel.org,
-        DJ Johnston <dj.johnston@intel.com>, stable@vger.kernel.org
-Subject: Re: [PATCH RFC] random: Account for entropy loss due to overwrites
-Message-ID: <20121016040848.GE17446@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	"H. Peter Anvin" <hpa@linux.intel.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	greg@kroah.com, w@1wt.eu, ewust@umich.edu, zakir@umich.edu,
-	mpm@selenic.com, nadiah@cs.ucsd.edu, jhalderm@umich.edu,
-	tglx@linutronix.de, davem@davemloft.net, mingo@kernel.org,
-	DJ Johnston <dj.johnston@intel.com>, stable@vger.kernel.org
-References: <1344878779-10700-1-git-send-email-hpa@linux.intel.com>
- <50675038.9000108@zytor.com>
+	id S1755619Ab2JPEMh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 00:12:37 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:19726 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754265Ab2JPEMg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 00:12:36 -0400
+X-Spam-Score: -100.8
+Message-ID: <507CDEF2.2060809@asianux.com>
+Date: Tue, 16 Oct 2012 12:13:38 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50675038.9000108@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: Jeff Layton <jlayton@redhat.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Bug fix] nfs-client: fix nfs_inode_attrs_need_update for async
+ read_done comes during truncating to smaller size
+References: <507B70F1.7040903@asianux.com>   <4FA345DA4F4AE44899BD2B03EEEC2FA909236BB5@SACEXCMBX04-PRD.hq.netapp.com>   <507B968A.9090104@asianux.com>  <4FA345DA4F4AE44899BD2B03EEEC2FA90923F1C4@SACEXCMBX04-PRD.hq.netapp.com>  <507CBA3F.6000204@asianux.com> <4FA345DA4F4AE44899BD2B03EEEC2FA909253103@SACEXCMBX04-PRD.hq.netapp.com>
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA909253103@SACEXCMBX04-PRD.hq.netapp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 29, 2012 at 12:47:04PM -0700, H. Peter Anvin wrote:
-> >-static struct poolinfo {
-> >+static const struct poolinfo {
-> >+	int poolshift;		/* log2(POOLBITS) */
-> >  	int poolwords;
-> >  	int tap1, tap2, tap3, tap4, tap5;
+于 2012年10月16日 10:51, Myklebust, Trond 写道:
 
-Poolshift is duplicated information; it's just log2(poolwords) + 5
-(since POOLBITS is poolwords*32).
+>>
+>> 1) is it means: nfs_inode_attrs_need_update need not consider async
+>> read_done situation ?
+> 
+> I don't understand what you mean. This is mainly about the asynchronous
+> write situation...
 
-Granted you don't want to recalculate it every single time you need to
-use it, but perhaps it would be better to add poolshift to struct
-entropy_store, and set it in init_std_data()?
+for async read done, it will call nfs_readpage_result -> nfs_read_done
+-> nfs_refresh_inode -> nfs_refresh_inode_locked ->
+nfs_inode_attrs_need_update -> nfs_size_need_update.
 
-				- Ted
+we need consider the situation that "async read_done also call
+nfs_size_need_update with an old useless larger file size".
+
+you means, it need not consider async read (only consider async write is
+enough), is it correct ?
+
+> 
+> No... If I did, I would have changed this 15 years ago when I was
+> writing that code. Nothing here is new... 2.6.27-rc9 has the exact same
+> heuristics.
+
+1) I have read the relative source code of 2.6.27-rc9, it is truly no
+nfs_size_need_update function.
+
+2) I have test the 2.6.27-rc9, it truly pass the LTP test of udp+nfsv2.
+
+3) I got the 2.6.27-rc9 source code by this way (please check)
+   A) get source code from (git clone)
+git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+   B) git archive v2.6.27-rc9 | tar -xf - -C ../2.6.27-rc9/
+
+
+> It boils down to the rule that if you want to ensure that data is not
+> _lost_, then you have to ensure that the cached file size is not less
+> than the true file size.
+> 
+
+1) you means: in some condition, the cached file size can be bigger than
+the true file size ?  can you give some example (which no negative
+effect for correctness) ?
+
+2) What I feel:
+   A) I am not quite familiar with nfs (so truly need your information);
+   B) I think it is truly a bug, but maybe nfs_size_need_update is not
+the root cause (so need nfs maintainers' audit)
+   C) if nfs_size_need_update is truly not the root cause, I shall
+continue analysing it, after get enough information from nfs maintainers.
+
+
+>>   B) the test tools which I use is from the LTP (Linux Test Project),
+>> they use both udp and tcp to test both the nfsv2 and nfsv3.
+> 
+> So what combinations are failing?
+
+for udp + nfsv2 failing (I am not test udp + nfsv3)
+
+> 
+>>   C) truly LTP has its limitations: "for stress test, LTP let nfs client
+>> and server under the same machine, which will cause kernel stable
+>> issue", but for net test, LTP use different machine (I got our issue
+>> from LTP net test).
+> 
+> Running the client and server on the same machine is likely to deadlock
+> due to memory pressure issues. The client needs to be able to _increase_
+> memory pressure on the server in order to reduce its own pressure. That
+> doesn't work well when client == server.
+> 
+
+truly got confirmation from Jeff Layton, 1-2 months ago;
+also thank you for giving confirmation too.
+
+-- 
+Chen Gang
+
+Asianux Corporation
