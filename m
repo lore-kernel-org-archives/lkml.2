@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab2JPMxs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 08:53:48 -0400
-Received: from antcom.de ([188.40.178.216]:52826 "EHLO chuck.antcom.de"
+	id S1754585Ab2JPMyJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 08:54:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59471 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753464Ab2JPMxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 08:53:47 -0400
-Message-ID: <507D58D9.2040607@antcom.de>
-Date: Tue, 16 Oct 2012 14:53:45 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        w.sang@pengutronix.de, jbe@pengutronix.de, plagnioj@jcrosoft.com,
-        highguy@gmail.com, broonie@opensource.wolfsonmicro.com,
-        daniel-gl@gmx.net, rmallon@gmail.com
-Subject: Re: [PATCH RFC 02/11 v4] gpio: Add sysfs support to block GPIO API
-References: <1350343887-7344-1-git-send-email-stigge@antcom.de> <1350343887-7344-3-git-send-email-stigge@antcom.de> <20121015235720.GA3132@kroah.com>
-In-Reply-To: <20121015235720.GA3132@kroah.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754151Ab2JPMyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 08:54:08 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAJL_ektJgQayiTPAkxxaT3TZLuUCjo2UsFuhMuxCsp-DFVqjFQ@mail.gmail.com>
+References: <CAJL_ektJgQayiTPAkxxaT3TZLuUCjo2UsFuhMuxCsp-DFVqjFQ@mail.gmail.com> <1349998076-15495-1-git-send-email-dhsharp@google.com> <1349998076-15495-2-git-send-email-dhsharp@google.com> <CAMuHMdVx5PU--fo+J1c04qcdG6r+B1DJwD6cxR8evFAyVpJBHQ@mail.gmail.com>
+To: David Sharp <dhsharp@google.com>
+Cc: dhowells@redhat.com, Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH v6 1/6] tracing,x86: Add a TSC trace_clock
+Date: Tue, 16 Oct 2012 13:53:51 +0100
+Message-ID: <6469.1350392031@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2012 01:57 AM, Greg KH wrote:
-> On Tue, Oct 16, 2012 at 01:31:18AM +0200, Roland Stigge wrote:
->> +int gpio_block_export(struct gpio_block *block)
->> +{
->> +	int		status;
->> +	struct device	*dev;
->> +
->> +	/* can't export until sysfs is available ... */
->> +	if (!gpio_class.p) {
->> +		pr_debug("%s: called too early!\n", __func__);
->> +		return -ENOENT;
->> +	}
->> +
->> +	mutex_lock(&sysfs_lock);
->> +	dev = device_create(&gpio_class, NULL, MKDEV(0, 0), block,
->> +			    block->name);
->> +	if (!IS_ERR(dev))
->> +		status = sysfs_create_group(&dev->kobj, &gpio_block_attr_group);
->> +	else
->> +		status = PTR_ERR(dev);
->> +	mutex_unlock(&sysfs_lock);
+David Sharp <dhsharp@google.com> wrote:
+
+> > Please use the Kbuild infrastructure ("generic-y += ..." in
+> > arch/*/include/asm/Kbuild)
+> > instead of adding wrappers around the asm-generic version.
 > 
-> You just raced with userspace telling it that the device was present,
-> yet the attributes are not there.  Don't do that, use the default class
-> attributes for the class and then the driver core will create them
-> automagically without needing to this "by hand" at all.
+> mips apparently recencly got rid of arch/mips/include/asm/Kbuild.
 
-I guess you mean class attributes like gpio_class_attrs[] of gpio_class?
-Aren't class attributes specific to a class only (i.e. only one
-attribute at the root for all devices)? What I needed above are
-attributes for the block itself (of which there can be several). So we
-need device attributes for each block, not class attributes here.
+It didn't.  However, if you use patch to create your kernel tree, then patch
+may have removed it.  If you're using GIT, it should still exist.  Try:
 
-Maybe there's some other kind of locking/atomicity available for this task?
+	git log -- arch/mips/include/asm/Kbuild 
 
-Further, current gpio and gpiochip devices are also doing this way:
-creating the device and subsequently their attrs, even though there may
-be a better way but I'm still wondering how this would be.
+> What should I do for mips?
 
-Any hint appreciated.
+Just create the file with a single "generic-y += ..." line in it.
 
-Thanks in advance,
-
-Roland
+David
