@@ -1,122 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab2JPAiw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 20:38:52 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:43214 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754759Ab2JPAhz (ORCPT
+	id S1755402Ab2JPAjZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 20:39:25 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:33091 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596Ab2JPAjX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 20:37:55 -0400
-X-Greylist: delayed 359 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Oct 2012 20:37:55 EDT
-Subject: [PATCH 0/6] VSOCK for Linux upstreaming
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        georgezhang@vmware.com, virtualization@lists.linux-foundation.org
-From: George Zhang <georgezhang@vmware.com>
-Cc: pv-drivers@vmware.com, vm-crosstalk@vmware.com, davem@davemloft.net,
-        gregkh@linuxfoundation.org
-Date: Mon, 15 Oct 2012 17:31:56 -0700
-Message-ID: <20121016003033.27018.90426.stgit@promb-2n-dhcp175.eng.vmware.com>
-User-Agent: StGit/0.15
+	Mon, 15 Oct 2012 20:39:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20121015235836.GA3214@kroah.com>
+References: <EE928378561BF1449699C96571234A740FE67913@SHSMSX102.ccr.corp.intel.com>
+	<EE928378561BF1449699C96571234A740FE67A7D@SHSMSX102.ccr.corp.intel.com>
+	<20121015225252.GA14167@kroah.com>
+	<CAMP5Xgfo3u5QoKmkOpCyxHaEkCScWwKFDLnfQMH3mevcrF7aJQ@mail.gmail.com>
+	<20121015235836.GA3214@kroah.com>
+Date: Mon, 15 Oct 2012 17:39:22 -0700
+Message-ID: <CAMP5Xgdh2=k+3qVEEHO81uxqHZSevJfG0jVyv936-zpB+P+0vg@mail.gmail.com>
+Subject: Re: Fix memory leak in binder--version2
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "Tu, Xiaobing" <xiaobing.tu@intel.com>,
+        "ccross@android.com" <ccross@android.com>,
+        "davej@redhat.com" <davej@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "Zhang, Di" <di.zhang@intel.com>, "Ma, Xindong" <xindong.ma@intel.com>,
+        "Zuo, Alex" <alex.zuo@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 15, 2012 at 4:58 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Mon, Oct 15, 2012 at 04:55:21PM -0700, Arve Hjønnevåg wrote:
+>> On Mon, Oct 15, 2012 at 3:52 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> > On Mon, Oct 15, 2012 at 07:20:01AM +0000, Tu, Xiaobing wrote:
+>> >> After enabling kmemleak and run monkey, following memleak is reported:
+>> >> unreferenced object 0xeed27f80 (size 64):
+>> >>   comm "Binder_8", pid 641, jiffies 4294946341 (age 2275.810s)
+>> >>   hex dump (first 32 bytes):
+>> >>     4f dd 00 00 84 7f d2 ee 84 7f d2 ee 01 00 00 00  O...............
+>> >>     00 00 00 00 00 00 00 00 00 aa 4c d7 00 00 00 00  ..........L.....
+>> >>   backtrace:
+>> >>     [<c184fabc>] kmemleak_alloc+0x3c/0xa0
+>> >>     [<c12f391e>] kmem_cache_alloc_trace+0x9e/0x180
+>> >>     [<c1668bb5>] binder_thread_write+0xcf5/0x23a0
+>> >>     [<c166b091>] binder_ioctl+0x1f1/0x530
+>> >>     [<c130dcf6>] do_vfs_ioctl+0x86/0x5e0
+>> >>     [<c130e282>] sys_ioctl+0x32/0x60
+>> >>     [<c1872e01>] syscall_call+0x7/0xb
+>> >>     [<ffffffff>] 0xffffffff
+>> >>
+>> >> The work item in async_todo list is not freed when binder released.
+>> >> Also the async transaction should also be freed in binder_release_work.
+>> >>
+>> >> Signed-off-by: Leon Ma <xindong.ma@intel.com>
+>> >> Signed-off-by: Di Zhang <di.zhang@intel.com>
+>> >> ---
+>> >>  drivers/staging/android/binder.c |    6 ++++++
+>> >>  1 files changed, 6 insertions(+), 0 deletions(-)
+>> >
+>> > Nice fix, but next time can you at least use scripts/get_maintainer.pl
+>> > to figure out who to send this to?  I'll queue it up soon, but it took
+>> > akpm to point me at this for me to notice it.
+>>
+>> This patch was just pointer out to me as well. I have a similar fix
+>> queued up at https://android-review.googlesource.com/#/c/43801/ that
+>> is still being tested. It fixes this leak and a theoretical leak of
+>> death notification objects.
+>
+> Ok, should I hold off applying this patch and wait for your patch
+> instead?
+>
 
-* * *
-
-In an effort to improve the out-of-the-box experience with Linux
-kernels for VMware users, VMware is working on readying the Virtual
-Machine Communication Interface (vmw_vmci) and VMCI Sockets (VSOCK)
-(vmw_vsock) kernel modules for inclusion in the Linux kernel. The
-purpose of this post is to acquire feedback on the vmw_vsock kernel
-module. The vmw_vmci kernel module has been presented in an early post.
-
-
-* * *
-
-VMCI Sockets allows virtual machines to communicate with host kernel
-modules and the VMware hypervisors. VMCI Sockets kernel module has
-dependency on VMCI kernel module. User level applications both in
-a virtual machine and on the host can use vmw_vmci through VMCI
-Sockets API which facilitates fast and efficient communication
-between guest virtual machines and their host. A socket
-address family designed to be compatible with UDP and TCP at the
-interface level. Today, VMCI and VMCI Sockets are used by the VMware
-shared folders (HGFS) and various VMware Tools components inside the
-guest for zero-config, network-less access to VMware host services. In
-addition to this, VMware's users are using VMCI Sockets for various
-applications, where network access of the virtual machine is
-restricted or non-existent. Examples of this are VMs communicating
-with device proxies for proprietary hardware running as host
-applications and automated testing of applications running within
-virtual machines.
-
-The VMware VMCI Sockets are similar to other socket types, like
-Berkeley UNIX socket interface. The VMCI sockets module supports
-both connection-oriented stream sockets like TCP, and connectionless
-datagram sockets like UDP. The VSOCK protocol family is defined as
-"AF_VSOCK" and the socket operations split for SOCK_DGRAM and
-SOCK_STREAM.
-
-For additional information about the use of VMCI and in particular
-VMCI Sockets, please refer to the VMCI Socket Programming Guide
-available at https://www.vmware.com/support/developer/vmci-sdk/.
-
-
-
----
-
-George Zhang (6):
-      VSOCK: vsock protocol implementation.
-      VSOCK: vsock address implementaion.
-      VSOCK: notification implementation.
-      VSOCK: statistics implementation.
-      VSOCK: utility functions.
-      VSOCK: header and config files.
-
-
- net/Kconfig                         |    1 
- net/Makefile                        |    1 
- net/vmw_vsock/Kconfig               |   14 
- net/vmw_vsock/Makefile              |    8 
- net/vmw_vsock/af_vsock.c            | 4259 +++++++++++++++++++++++++++++++++++
- net/vmw_vsock/af_vsock.h            |  179 +
- net/vmw_vsock/notify.c              | 1041 +++++++++
- net/vmw_vsock/notify.h              |  130 +
- net/vmw_vsock/notify_qstate.c       |  670 ++++++
- net/vmw_vsock/stats.c               |   37 
- net/vmw_vsock/stats.h               |  222 ++
- net/vmw_vsock/util.c                |  694 ++++++
- net/vmw_vsock/util.h                |  331 +++
- net/vmw_vsock/vmci_sockets.h        |  517 ++++
- net/vmw_vsock/vmci_sockets_packet.h |  107 +
- net/vmw_vsock/vsock_addr.c          |  264 ++
- net/vmw_vsock/vsock_addr.h          |   40 
- net/vmw_vsock/vsock_common.h        |  130 +
- net/vmw_vsock/vsock_packet.h        |  131 +
- net/vmw_vsock/vsock_version.h       |   29 
- 20 files changed, 8805 insertions(+), 0 deletions(-)
- create mode 100644 net/vmw_vsock/Kconfig
- create mode 100644 net/vmw_vsock/Makefile
- create mode 100644 net/vmw_vsock/af_vsock.c
- create mode 100644 net/vmw_vsock/af_vsock.h
- create mode 100644 net/vmw_vsock/notify.c
- create mode 100644 net/vmw_vsock/notify.h
- create mode 100644 net/vmw_vsock/notify_qstate.c
- create mode 100644 net/vmw_vsock/stats.c
- create mode 100644 net/vmw_vsock/stats.h
- create mode 100644 net/vmw_vsock/util.c
- create mode 100644 net/vmw_vsock/util.h
- create mode 100644 net/vmw_vsock/vmci_sockets.h
- create mode 100644 net/vmw_vsock/vmci_sockets_packet.h
- create mode 100644 net/vmw_vsock/vsock_addr.c
- create mode 100644 net/vmw_vsock/vsock_addr.h
- create mode 100644 net/vmw_vsock/vsock_common.h
- create mode 100644 net/vmw_vsock/vsock_packet.h
- create mode 100644 net/vmw_vsock/vsock_version.h
+I just sent two patches, but they are not fully tested yet.
 
 -- 
-Signature
+Arve Hjønnevåg
