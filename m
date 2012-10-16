@@ -1,245 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab2JPFxR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 01:53:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51693 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750893Ab2JPFxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 01:53:15 -0400
-X-IronPort-AV: E=Sophos;i="4.80,594,1344182400"; 
-   d="scan'208";a="6004360"
-Message-ID: <507CF789.6050307@cn.fujitsu.com>
-Date: Tue, 16 Oct 2012 13:58:33 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>,
+	id S1753125Ab2JPGFG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 02:05:06 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:5359 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab2JPGFE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 02:05:04 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 15 Oct 2012 23:04:37 -0700
+Date: Tue, 16 Oct 2012 09:04:34 +0300
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Inki Dae <inki.dae@samsung.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Jiang Liu <liuj97@gmail.com>, mhocko@suse.cz, bsingharora@gmail.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        paul.gortmaker@windriver.com
-Subject: Re: [PATCH] memory cgroup: update root memory cgroup when node is
- onlined
-References: <505187D4.7070404@cn.fujitsu.com> <20120913205935.GK1560@cmpxchg.org> <alpine.LSU.2.00.1209131816070.1908@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1209131816070.1908@eggly.anvils>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/16 13:52:36,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/16 13:52:37,
-	Serialize complete at 2012/10/16 13:52:37
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: Re: [Linaro-mm-sig] [RFC 0/2] DMA-mapping & IOMMU - physically
+ contiguous allocations
+Message-ID: <20121016090434.7d5e088152a3e0b0606903c8@nvidia.com>
+In-Reply-To: <CAAQKjZMYFNMEnb2ue2aR+6AEbOixnQFyggbXrThBCW5VOznePg@mail.gmail.com>
+References: <1350309832-18461-1-git-send-email-m.szyprowski@samsung.com>
+	<CAAQKjZMYFNMEnb2ue2aR+6AEbOixnQFyggbXrThBCW5VOznePg@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 09/14/2012 09:36 AM, Hugh Dickins Wrote:
-> On Thu, 13 Sep 2012, Johannes Weiner wrote:
->> On Thu, Sep 13, 2012 at 03:14:28PM +0800, Wen Congyang wrote:
->>> root_mem_cgroup->info.nodeinfo is initialized when the system boots.
->>> But NODE_DATA(nid) is null if the node is not onlined, so
->>> root_mem_cgroup->info.nodeinfo[nid]->zoneinfo[zone].lruvec.zone contains
->>> an invalid pointer. If we use numactl to bind a program to the node
->>> after onlining the node and its memory, it will cause the kernel
->>> panicked:
->>
->> Is there any chance we could get rid of the zone backpointer in lruvec
->> again instead?
-> 
-> It could be done, but it would make me sad :(
-> 
->> Adding new nodes is a rare event and so updating every
->> single memcg in the system might be just borderline crazy.
-> 
-> Not horribly crazy, but rather ugly, yes.
-> 
->> But can't
->> we just go back to passing the zone along with the lruvec down
->> vmscan.c paths?  I agree it's ugly to pass both, given their
->> relationship.  But I don't think the backpointer is any cleaner but in
->> addition less robust.
-> 
-> It's like how we use vma->mm: we could change everywhere to pass mm with
-> vma, but it looks cleaner and cuts down on long arglists to have mm in vma.
->>From past experience, one of the things I worried about was adding extra
-> args to the reclaim stack.
-> 
->>
->> That being said, the crashing code in particular makes me wonder:
->>
->> static __always_inline void add_page_to_lru_list(struct page *page,
->> 				struct lruvec *lruvec, enum lru_list lru)
->> {
->> 	int nr_pages = hpage_nr_pages(page);
->> 	mem_cgroup_update_lru_size(lruvec, lru, nr_pages);
->> 	list_add(&page->lru, &lruvec->lists[lru]);
->> 	__mod_zone_page_state(lruvec_zone(lruvec), NR_LRU_BASE + lru, nr_pages);
->> }
->>
->> Why did we ever pass zone in here and then felt the need to replace it
->> with lruvec->zone in fa9add6 "mm/memcg: apply add/del_page to lruvec"?
->> A page does not roam between zones, its zone is a static property that
->> can be retrieved with page_zone().
-> 
-> Just as in vmscan.c, we have the lruvec to hand, and that's what we
-> mainly want to operate upon, but there is also some need for zone.
-> 
-> (Both Konstantin and I were looking towards the day when we move the
-> lru_lock into the lruvec, removing more dependence on "zone".  Pretty
-> much the only reason that hasn't happened yet, is that we have not found
-> time to make a performance case convincingly - but that's another topic.)
-> 
-> Yes, page_zone(page) is a static property of the page, but it's not
-> necessarily cheap to evaluate: depends on how complex the memory model
-> and the spare page flags space, doesn't it?  We both preferred to
-> derive zone from lruvec where convenient.
-> 
-> How do you feel about this patch, and does it work for you guys?
-> 
-> You'd be right if you guessed that I started out without the
-> mem_cgroup_zone_lruvec part of it, but oops in get_scan_count
-> told me that's needed too.
-> 
-> Description to be filled in later: would it be needed for -stable,
-> or is onlining already broken in other ways that you're now fixing up?
-> 
-> Reported-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Signed-off-by: Hugh Dickins <hughd@google.com>
+Hi Inki/Marek,
 
-Hi, all:
+On Tue, 16 Oct 2012 02:50:16 +0200
+Inki Dae <inki.dae@samsung.com> wrote:
 
-What about the status of this patch?
-
-Thanks
-Wen Congyang
-
-> ---
+> 2012/10/15 Marek Szyprowski <m.szyprowski@samsung.com>:
+> > Hello,
+> >
+> > Some devices, which have IOMMU, for some use cases might require to
+> > allocate a buffers for DMA which is contiguous in physical memory. Such
+> > use cases appears for example in DRM subsystem when one wants to improve
+> > performance or use secure buffer protection.
+> >
+> > I would like to ask if adding a new attribute, as proposed in this RFC
+> > is a good idea? I feel that it might be an attribute just for a single
+> > driver, but I would like to know your opinion. Should we look for other
+> > solution?
+> >
 > 
->  include/linux/mmzone.h |    2 -
->  mm/memcontrol.c        |   40 ++++++++++++++++++++++++++++++++-------
->  mm/mmzone.c            |    6 -----
->  mm/page_alloc.c        |    2 -
->  4 files changed, 36 insertions(+), 14 deletions(-)
-> 
-> --- 3.6-rc5/include/linux/mmzone.h	2012-08-03 08:31:26.892842267 -0700
-> +++ linux/include/linux/mmzone.h	2012-09-13 17:07:51.893772372 -0700
-> @@ -744,7 +744,7 @@ extern int init_currently_empty_zone(str
->  				     unsigned long size,
->  				     enum memmap_context context);
->  
-> -extern void lruvec_init(struct lruvec *lruvec, struct zone *zone);
-> +extern void lruvec_init(struct lruvec *lruvec);
->  
->  static inline struct zone *lruvec_zone(struct lruvec *lruvec)
->  {
-> --- 3.6-rc5/mm/memcontrol.c	2012-08-03 08:31:27.060842270 -0700
-> +++ linux/mm/memcontrol.c	2012-09-13 17:46:36.870804625 -0700
-> @@ -1061,12 +1061,25 @@ struct lruvec *mem_cgroup_zone_lruvec(st
->  				      struct mem_cgroup *memcg)
->  {
->  	struct mem_cgroup_per_zone *mz;
-> +	struct lruvec *lruvec;
->  
-> -	if (mem_cgroup_disabled())
-> -		return &zone->lruvec;
-> +	if (mem_cgroup_disabled()) {
-> +		lruvec = &zone->lruvec;
-> +		goto out;
-> +	}
->  
->  	mz = mem_cgroup_zoneinfo(memcg, zone_to_nid(zone), zone_idx(zone));
-> -	return &mz->lruvec;
-> +	lruvec = &mz->lruvec;
-> +out:
-> +	/*
-> +	 * Since a node can be onlined after the mem_cgroup was created,
-> +	 * we have to be prepared to initialize lruvec->zone here.
-> +	 */
-> +	if (unlikely(lruvec->zone != zone)) {
-> +		VM_BUG_ON(lruvec->zone);
-> +		lruvec->zone = zone;
-> +	}
-> +	return lruvec;
->  }
->  
->  /*
-> @@ -1093,9 +1106,12 @@ struct lruvec *mem_cgroup_page_lruvec(st
->  	struct mem_cgroup_per_zone *mz;
->  	struct mem_cgroup *memcg;
->  	struct page_cgroup *pc;
-> +	struct lruvec *lruvec;
->  
-> -	if (mem_cgroup_disabled())
-> -		return &zone->lruvec;
-> +	if (mem_cgroup_disabled()) {
-> +		lruvec = &zone->lruvec;
-> +		goto out;
-> +	}
->  
->  	pc = lookup_page_cgroup(page);
->  	memcg = pc->mem_cgroup;
-> @@ -1113,7 +1129,17 @@ struct lruvec *mem_cgroup_page_lruvec(st
->  		pc->mem_cgroup = memcg = root_mem_cgroup;
->  
->  	mz = page_cgroup_zoneinfo(memcg, page);
-> -	return &mz->lruvec;
-> +	lruvec = &mz->lruvec;
-> +out:
-> +	/*
-> +	 * Since a node can be onlined after the mem_cgroup was created,
-> +	 * we have to be prepared to initialize lruvec->zone here.
-> +	 */
-> +	if (unlikely(lruvec->zone != zone)) {
-> +		VM_BUG_ON(lruvec->zone);
-> +		lruvec->zone = zone;
-> +	}
-> +	return lruvec;
->  }
->  
->  /**
-> @@ -4742,7 +4768,7 @@ static int alloc_mem_cgroup_per_zone_inf
->  
->  	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
->  		mz = &pn->zoneinfo[zone];
-> -		lruvec_init(&mz->lruvec, &NODE_DATA(node)->node_zones[zone]);
-> +		lruvec_init(&mz->lruvec);
->  		mz->usage_in_excess = 0;
->  		mz->on_tree = false;
->  		mz->memcg = memcg;
-> --- 3.6-rc5/mm/mmzone.c	2012-08-03 08:31:27.064842271 -0700
-> +++ linux/mm/mmzone.c	2012-09-13 17:06:28.921766001 -0700
-> @@ -87,7 +87,7 @@ int memmap_valid_within(unsigned long pf
->  }
->  #endif /* CONFIG_ARCH_HAS_HOLES_MEMORYMODEL */
->  
-> -void lruvec_init(struct lruvec *lruvec, struct zone *zone)
-> +void lruvec_init(struct lruvec *lruvec)
->  {
->  	enum lru_list lru;
->  
-> @@ -95,8 +95,4 @@ void lruvec_init(struct lruvec *lruvec,
->  
->  	for_each_lru(lru)
->  		INIT_LIST_HEAD(&lruvec->lists[lru]);
-> -
-> -#ifdef CONFIG_MEMCG
-> -	lruvec->zone = zone;
-> -#endif
->  }
-> --- 3.6-rc5/mm/page_alloc.c	2012-08-22 14:25:39.508279046 -0700
-> +++ linux/mm/page_alloc.c	2012-09-13 17:06:08.265763526 -0700
-> @@ -4456,7 +4456,7 @@ static void __paginginit free_area_init_
->  		zone->zone_pgdat = pgdat;
->  
->  		zone_pcp_init(zone);
-> -		lruvec_init(&zone->lruvec, zone);
-> +		lruvec_init(&zone->lruvec);
->  		if (!size)
->  			continue;
->  
-> 
+> In addition, currently we have worked dma-mapping-based iommu support
+> for exynos drm driver with this patch set so this patch set has been
+> tested with iommu enabled exynos drm driver and worked fine. actually,
+> this feature is needed for secure mode such as TrustZone. in case of
+> Exynos SoC, memory region for secure mode should be physically
+> contiguous and also maybe OMAP but now dma-mapping framework doesn't
+> guarantee physically continuous memory allocation so this patch set
+> would make it possible.
 
+Agree that the contigous memory allocation is necessary for us too.
+
+In addition to those contiguous/discontiguous page allocation, is
+there any way to _import_ anonymous pages allocated by a process to be
+used in dma-mapping API later?
+
+I'm considering the following scenario, an user process allocates a
+buffer by malloc() in advance, and then it asks some driver to convert
+that buffer into IOMMU'able/DMA'able ones later. In this case, pages
+are discouguous and even they may not be yet allocated at
+malloc()/mmap().
