@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab2JPBks (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 21:40:48 -0400
-Received: from noserose.net ([66.220.18.76]:40289 "HELO noserose.net"
+	id S1755582Ab2JPBms (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 21:42:48 -0400
+Received: from noserose.net ([66.220.18.76]:44518 "HELO noserose.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755452Ab2JPBkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 21:40:46 -0400
-Date: Mon, 15 Oct 2012 18:40:43 -0700
-Message-Id: <bee64f03a543aff4fa2869b4591b24dccc473f1b.1350331035.git.ecashin@coraid.com>
+	id S1755509Ab2JPBmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 21:42:47 -0400
+Date: Mon, 15 Oct 2012 18:42:43 -0700
+Message-Id: <8691a45b39d4f93743f93360c467789a75e25fb7.1350331035.git.ecashin@coraid.com>
 In-Reply-To: <cover.1350331035.git.ecashin@coraid.com>
 References: <cover.1350331035.git.ecashin@coraid.com>
 From: Ed Cashin <ecashin@coraid.com>
-Subject: [PATCH 1/9] aoe: describe the behavior of the "err" character device
+Subject: [PATCH 2/9] aoe: print warning regarding a common reason for dropped transmits
 To: akpm@linux-foundation.org
 Cc: ecashin@coraid.com, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dropped transmits are not common, but when they do occur, increasing
+the transmit queue length often helps.
+
 Signed-off-by: Ed Cashin <ecashin@coraid.com>
 ---
- drivers/block/aoe/aoechr.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ drivers/block/aoe/aoenet.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/block/aoe/aoechr.c b/drivers/block/aoe/aoechr.c
-index ed57a89..2bf6273 100644
---- a/drivers/block/aoe/aoechr.c
-+++ b/drivers/block/aoe/aoechr.c
-@@ -39,6 +39,11 @@ struct ErrMsg {
- };
+diff --git a/drivers/block/aoe/aoenet.c b/drivers/block/aoe/aoenet.c
+index 162c647..a1bb692 100644
+--- a/drivers/block/aoe/aoenet.c
++++ b/drivers/block/aoe/aoenet.c
+@@ -50,7 +50,11 @@ __setup("aoe_iflist=", aoe_iflist_setup);
+ static spinlock_t txlock;
+ static struct sk_buff_head skbtxq;
  
- static DEFINE_MUTEX(aoechr_mutex);
-+
-+/* A ring buffer of error messages, to be read through
-+ * "/dev/etherd/err".  When no messages are present,
-+ * readers will block waiting for messages to appear.
+-/* enters with txlock held */
++/* enters with txlock held
++ *
++ * Use __must_hold(&txlock) for sparse when upcoming patch adds it to
++ * compiler.h.
 + */
- static struct ErrMsg emsgs[NMSG];
- static int emsgs_head_idx, emsgs_tail_idx;
- static struct completion emsgs_comp;
+ static int
+ tx(void)
+ {
+@@ -58,7 +62,10 @@ tx(void)
+ 
+ 	while ((skb = skb_dequeue(&skbtxq))) {
+ 		spin_unlock_irq(&txlock);
+-		dev_queue_xmit(skb);
++		if (dev_queue_xmit(skb) == NET_XMIT_DROP && net_ratelimit())
++			pr_warn("aoe: packet could not be sent on %s.  %s\n",
++				skb->dev ? skb->dev->name : "netif",
++				"consider increasing tx_queue_len");
+ 		spin_lock_irq(&txlock);
+ 	}
+ 	return 0;
 -- 
 1.7.1
 
