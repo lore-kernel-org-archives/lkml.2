@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab2JPVIZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 17:08:25 -0400
-Received: from mga11.intel.com ([192.55.52.93]:34284 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753935Ab2JPVIX convert rfc822-to-8bit (ORCPT
+	id S1755458Ab2JPVIx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 17:08:53 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:44625 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896Ab2JPVIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 17:08:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,595,1344236400"; 
-   d="scan'208";a="235983273"
-From: "Keller, Jacob E" <jacob.e.keller@intel.com>
-To: David Miller <davem@davemloft.net>,
-        "bhutchings@solarflare.com" <bhutchings@solarflare.com>
-CC: "richardcochran@gmail.com" <richardcochran@gmail.com>,
-        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "tshimizu818@gmail.com" <tshimizu818@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "haicheng.lee@gmail.com" <haicheng.lee@gmail.com>
-Subject: RE: [PATCH 1/2] Fix build error caused by broken PCH_PTP module
- dependency.
-Thread-Topic: [PATCH 1/2] Fix build error caused by broken PCH_PTP module
- dependency.
-Thread-Index: AQHNmrQfHjagKXbftEK+cknyb+YM0ZefOYcAgACPDoCAAAFLgIAAAycAgAeO0wCAAUTPAIAAMdoAgBQhtoCAAAI1gP//mD3Q
-Date: Tue, 16 Oct 2012 21:08:20 +0000
-Message-ID: <02874ECE860811409154E81DA85FBB5830C157F1@ORSMSX105.amr.corp.intel.com>
-References: <1349300710.2763.8.camel@bwh-desktop.uk.solarflarecom.com>
-	<20121003.204336.1981040659629176119.davem@davemloft.net>
-	<1350418167.2649.47.camel@bwh-desktop.uk.solarflarecom.com>
- <20121016.161721.460693104731176775.davem@davemloft.net>
-In-Reply-To: <20121016.161721.460693104731176775.davem@davemloft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 16 Oct 2012 17:08:52 -0400
 MIME-Version: 1.0
+In-Reply-To: <20121016174038.GA17982@kroah.com>
+References: <1350343887-7344-1-git-send-email-stigge@antcom.de>
+	<1350343887-7344-3-git-send-email-stigge@antcom.de>
+	<20121015235720.GA3132@kroah.com>
+	<507D58D9.2040607@antcom.de>
+	<20121016164326.GA4858@kroah.com>
+	<CACRpkdYaaSt9uLN2_=KXYDK2b5D5paopsYxgYKqezKCx8cy=vQ@mail.gmail.com>
+	<20121016174038.GA17982@kroah.com>
+Date: Tue, 16 Oct 2012 23:08:51 +0200
+Message-ID: <CACRpkdb+hu1Q=P8wBWts1RsMFQYuDMuszS74Z5mmkfwcXdpEpw@mail.gmail.com>
+Subject: Re: [PATCH RFC 02/11 v4] gpio: Add sysfs support to block GPIO API
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Roland Stigge <stigge@antcom.de>, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        w.sang@pengutronix.de, jbe@pengutronix.de, plagnioj@jcrosoft.com,
+        highguy@gmail.com, broonie@opensource.wolfsonmicro.com,
+        daniel-gl@gmx.net, rmallon@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org]
-> On Behalf Of David Miller
-> Sent: Tuesday, October 16, 2012 1:17 PM
-> To: bhutchings@solarflare.com
-> Cc: richardcochran@gmail.com; haicheng.li@linux.intel.com;
-> netdev@vger.kernel.org; tshimizu818@gmail.com; linux-
-> kernel@vger.kernel.org; haicheng.lee@gmail.com
-> Subject: Re: [PATCH 1/2] Fix build error caused by broken PCH_PTP module
-> dependency.
-> 
-> From: Ben Hutchings <bhutchings@solarflare.com>
-> Date: Tue, 16 Oct 2012 21:09:27 +0100
-> 
-> > I think the various kconfig options should be changed as follows:
-> >
-> > 1. Only PTP_1588_CLOCK selects PPS.
-> > 2. Nothing depends on EXPERIMENTAL.  (This stuff has been in for 18
-> >    months and it's even being backported to RHEL 6 now.)
-> > 3. Either:
-> >    (a) The per-driver PHC options select nothing, and the driver options
-> >        do e.g.:
-> > 	select PTP_1588_CLOCK if IGB_PTP
-> >    (b) The per-driver PHC options are removed and the driver options do:
-> > 	select PTP_1588_CLOCK
-> >        (i.e. PHC support is unconditional)
-> >
-> > Any objections to this, or preference for (a) vs (b)?
-> 
-> No objections, prefer (b).
+On Tue, Oct 16, 2012 at 7:40 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Tue, Oct 16, 2012 at 07:27:15PM +0200, Linus Walleij wrote:
+>> The thing is, as I've tried to explain but maybe didn't get across,
+>> that these devices don't *have* a parent, and are not part of any
+>> tree.
+>
+> You are passing in a parent device to the device_create() call, where
+> did that pointer come from?
 
-No objections here, I also prefer (b). The feature shouldn't have much impact unless enabled via hwtstamp_ioctl, and it drastically reduces requirement on end-user needing to enable PHC support.
+You mean this:
 
-- Jake
+dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
+                        desc, ioname ? ioname : "gpio%u", gpio);
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+desc->chip->dev is an *optional* pointer to a parent device of
+the GPIO chip (not the GPIO chip itself). It is usually NULL.
+
+>> They are parentless mock devices, created on-the-fly just to get
+>> sysfs entries.
+>
+> That's fine, well, not the "parentless" part, but that should be trivial
+> to fix, just pass in the correct pointer and you should be fine.
+
+Hm, yeah well, they are orphans mostly.
+
+>> What is needed it to get the device model right in the first
+>> place.
+>
+> I thought it was in the device model already?
+
+GPIO chips are not devices. :-(
+
+Yours,
+Linus Walleij
