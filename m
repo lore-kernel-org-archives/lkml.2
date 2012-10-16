@@ -1,193 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab2JPLh4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 07:37:56 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35172 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752217Ab2JPLhz (ORCPT
+	id S1754579Ab2JPLip (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 07:38:45 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:63449 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754499Ab2JPLin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 07:37:55 -0400
-Message-ID: <507D470B.7050807@gmail.com>
-Date: Tue, 16 Oct 2012 19:37:47 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Tue, 16 Oct 2012 07:38:43 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Subject: Re: [PATCH 11/16] f2fs: add inode operations for special inodes
+Date: Tue, 16 Oct 2012 11:38:35 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: "'Dave Chinner'" <david@fromorbit.com>,
+        "'Vyacheslav Dubeyko'" <slava@dubeyko.com>,
+        "'Jaegeuk Kim'" <jaegeuk.kim@gmail.com>, viro@zeniv.linux.org.uk,
+        "'Theodore Ts'o'" <tytso@mit.edu>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, chur.lee@samsung.com,
+        cm224.lee@samsung.com, jooyoung.hwang@samsung.com
+References: <001201cda2f1$633db960$29b92c20$%kim@samsung.com> <20121015223409.GE2739@dastard> <015901cdab42$06deac20$149c0460$%kim@samsung.com>
+In-Reply-To: <015901cdab42$06deac20$149c0460$%kim@samsung.com>
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 00/10, REBASED] Introduce huge zero page
-References: <1350280859-18801-1-git-send-email-kirill.shutemov@linux.intel.com> <507D2E83.4010702@gmail.com> <20121016105456.GA13265@shutemov.name> <507D4143.3020108@gmail.com> <20121016112845.GA13540@shutemov.name>
-In-Reply-To: <20121016112845.GA13540@shutemov.name>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8bit
+Message-Id: <201210161138.35388.arnd@arndb.de>
+X-Provags-ID: V02:K0:NqL6+ltfIq29/bJN/w81eK0c7zarQ/U7gXxJOBUGL7Z
+ 2PxeVC2NyMnYdHXo6a1rGQAyLe2MP/qmOrsmw8z7bHQn+KezJK
+ LKoKLC2+zpyirRB39A29n2NQXAmXvnsfkuOBLB3+SpGDMp/gDM
+ 4yNmEJ2OTuxsFKMA8p4YpwotiLSCu+HLLRVyLWWMI4FfkCj40T
+ ijmjzv6EfZIyimJT4N5VqnrRxb+exuypqLCG3ub+lr8Z9/c7zV
+ OFIF0OLgUDYLMP+1E9CPjnZi43tl8ZLtcPgcU6thUqH/ynA885
+ O2KdNZbbPJPXp26feDxbhBTgckdF9+T+EtxV5wk+r/Pq9/JqTP
+ b2rMoxxPVoFbAycBusaA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2012 07:28 PM, Kirill A. Shutemov wrote:
-> On Tue, Oct 16, 2012 at 07:13:07PM +0800, Ni zhan Chen wrote:
->> On 10/16/2012 06:54 PM, Kirill A. Shutemov wrote:
->>> On Tue, Oct 16, 2012 at 05:53:07PM +0800, Ni zhan Chen wrote:
->>>>> By hpa request I've tried alternative approach for hzp implementation (see
->>>>> Virtual huge zero page patchset): pmd table with all entries set to zero
->>>>> page. This way should be more cache friendly, but it increases TLB
->>>>> pressure.
->>>> Thanks for your excellent works. But could you explain me why
->>>> current implementation not cache friendly and hpa's request cache
->>>> friendly? Thanks in advance.
->>> In workloads like microbenchmark1 you need N * size(zero page) cache
->>> space to get zero page fully cached, where N is cache associativity.
->>> If zero page is 2M, cache pressure is significant.
->>>
->>> On other hand with table of 4k zero pages (hpa's proposal) will increase
->>> pressure on TLB, since we have more pages for the same memory area. So we
->>> have to do more page translation in this case.
->>>
->>> On my test machine with simple memcmp() virtual huge zero page is faster.
->>> But it highly depends on TLB size, cache size, memory access and page
->>> translation costs.
->>>
->>> It looks like cache size in modern processors grows faster than TLB size.
->> Oh, I see, thanks for your quick response. Another one question below，
->>
->>>>> The problem with virtual huge zero page: it requires per-arch enabling.
->>>>> We need a way to mark that pmd table has all ptes set to zero page.
->>>>>
->>>>> Some numbers to compare two implementations (on 4s Westmere-EX):
->>>>>
->>>>> Mirobenchmark1
->>>>> ==============
->>>>>
->>>>> test:
->>>>>          posix_memalign((void **)&p, 2 * MB, 8 * GB);
->>>>>          for (i = 0; i < 100; i++) {
->>>>>                  assert(memcmp(p, p + 4*GB, 4*GB) == 0);
->>>>>                  asm volatile ("": : :"memory");
->>>>>          }
->>>>>
->>>>> hzp:
->>>>>   Performance counter stats for './test_memcmp' (5 runs):
->>>>>
->>>>>        32356.272845 task-clock                #    0.998 CPUs utilized            ( +-  0.13% )
->>>>>                  40 context-switches          #    0.001 K/sec                    ( +-  0.94% )
->>>>>                   0 CPU-migrations            #    0.000 K/sec
->>>>>               4,218 page-faults               #    0.130 K/sec                    ( +-  0.00% )
->>>>>      76,712,481,765 cycles                    #    2.371 GHz                      ( +-  0.13% ) [83.31%]
->>>>>      36,279,577,636 stalled-cycles-frontend   #   47.29% frontend cycles idle     ( +-  0.28% ) [83.35%]
->>>>>       1,684,049,110 stalled-cycles-backend    #    2.20% backend  cycles idle     ( +-  2.96% ) [66.67%]
->>>>>     134,355,715,816 instructions              #    1.75  insns per cycle
->>>>>                                               #    0.27  stalled cycles per insn  ( +-  0.10% ) [83.35%]
->>>>>      13,526,169,702 branches                  #  418.039 M/sec                    ( +-  0.10% ) [83.31%]
->>>>>           1,058,230 branch-misses             #    0.01% of all branches          ( +-  0.91% ) [83.36%]
->>>>>
->>>>>        32.413866442 seconds time elapsed                                          ( +-  0.13% )
->>>>>
->>>>> vhzp:
->>>>>   Performance counter stats for './test_memcmp' (5 runs):
->>>>>
->>>>>        30327.183829 task-clock                #    0.998 CPUs utilized            ( +-  0.13% )
->>>>>                  38 context-switches          #    0.001 K/sec                    ( +-  1.53% )
->>>>>                   0 CPU-migrations            #    0.000 K/sec
->>>>>               4,218 page-faults               #    0.139 K/sec                    ( +-  0.01% )
->>>>>      71,964,773,660 cycles                    #    2.373 GHz                      ( +-  0.13% ) [83.35%]
->>>>>      31,191,284,231 stalled-cycles-frontend   #   43.34% frontend cycles idle     ( +-  0.40% ) [83.32%]
->>>>>         773,484,474 stalled-cycles-backend    #    1.07% backend  cycles idle     ( +-  6.61% ) [66.67%]
->>>>>     134,982,215,437 instructions              #    1.88  insns per cycle
->>>>>                                               #    0.23  stalled cycles per insn  ( +-  0.11% ) [83.32%]
->>>>>      13,509,150,683 branches                  #  445.447 M/sec                    ( +-  0.11% ) [83.34%]
->>>>>           1,017,667 branch-misses             #    0.01% of all branches          ( +-  1.07% ) [83.32%]
->>>>>
->>>>>        30.381324695 seconds time elapsed                                          ( +-  0.13% )
->>>> Could you tell me which data I should care in this performance
->>>> counter. And what's the benefit of your current implementation
->>>> compare to hpa's request?
->> Sorry for my unintelligent. Could you tell me which data I should
->> care in this performance counter stats. The same question about the
->> second benchmark counter stats, thanks in adance. :-)
-> I've missed relevant counters in this run, you can see them in the second
-> benchmark.
->
-> Relevant counters:
-> L1-dcache-*, LLC-*: shows cache related stats (hits/misses);
-> dTLB-*: shows data TLB hits and misses.
->
-> Indirect relevant counters:
-> stalled-cycles-*: how long CPU pipeline has to wait for data.
+On Tuesday 16 October 2012, Jaegeuk Kim wrote:
+> On Monday 15 October 2012, Dave Chinner wrote:
+> > On Sun, Oct 14, 2012 at 03:19:37PM +0000, Arnd Bergmann wrote:
+> > > On Sunday 14 October 2012, Vyacheslav Dubeyko wrote:
+> > > > On Oct 14, 2012, at 11:09 AM, Jaegeuk Kim wrote:
+> > > > > 2012-10-14 (일), 02:21 +0400, Vyacheslav Dubeyko:
+> > 
+> > > The main reason I can see against extended attributes is that they are not stored
+> > > very efficiently in f2fs, unless a lot of work is put into coming up with a good
+> > > implementation. A single flags bit can trivially be added to the inode in
+> > > comparison (if it's not there already).
+> > 
+> > That's a deficiency that should be corrected, then, because xattrs
+> > are very common these days.
+> 
+> IMO, most file systems including f2fs have some inefficiency to store
+> and retrieve xattrs, since they have to allocate an additional block.
+> The only distinct problem in f2fs is that there is a cleaning overhead.
+> So, that's the why xattr is not an efficient way in f2fs.
 
-Oh, I see, thanks for your patient. :-)
+I would hope that there is a better way to encode extented attributes
+if the current method is not efficient enough. Maybe Dave or someone
+else who is experienced with this can make suggestions.
 
->
->>>>> Mirobenchmark2
->>>>> ==============
->>>>>
->>>>> test:
->>>>>          posix_memalign((void **)&p, 2 * MB, 8 * GB);
->>>>>          for (i = 0; i < 1000; i++) {
->>>>>                  char *_p = p;
->>>>>                  while (_p < p+4*GB) {
->>>>>                          assert(*_p == *(_p+4*GB));
->>>>>                          _p += 4096;
->>>>>                          asm volatile ("": : :"memory");
->>>>>                  }
->>>>>          }
->>>>>
->>>>> hzp:
->>>>>   Performance counter stats for 'taskset -c 0 ./test_memcmp2' (5 runs):
->>>>>
->>>>>         3505.727639 task-clock                #    0.998 CPUs utilized            ( +-  0.26% )
->>>>>                   9 context-switches          #    0.003 K/sec                    ( +-  4.97% )
->>>>>               4,384 page-faults               #    0.001 M/sec                    ( +-  0.00% )
->>>>>       8,318,482,466 cycles                    #    2.373 GHz                      ( +-  0.26% ) [33.31%]
->>>>>       5,134,318,786 stalled-cycles-frontend   #   61.72% frontend cycles idle     ( +-  0.42% ) [33.32%]
->>>>>       2,193,266,208 stalled-cycles-backend    #   26.37% backend  cycles idle     ( +-  5.51% ) [33.33%]
->>>>>       9,494,670,537 instructions              #    1.14  insns per cycle
->>>>>                                               #    0.54  stalled cycles per insn  ( +-  0.13% ) [41.68%]
->>>>>       2,108,522,738 branches                  #  601.451 M/sec                    ( +-  0.09% ) [41.68%]
->>>>>             158,746 branch-misses             #    0.01% of all branches          ( +-  1.60% ) [41.71%]
->>>>>       3,168,102,115 L1-dcache-loads
->>>>>            #  903.693 M/sec                    ( +-  0.11% ) [41.70%]
->>>>>       1,048,710,998 L1-dcache-misses
->>>>>           #   33.10% of all L1-dcache hits    ( +-  0.11% ) [41.72%]
->>>>>       1,047,699,685 LLC-load
->>>>>                   #  298.854 M/sec                    ( +-  0.03% ) [33.38%]
->>>>>               2,287 LLC-misses
->>>>>                 #    0.00% of all LL-cache hits     ( +-  8.27% ) [33.37%]
->>>>>       3,166,187,367 dTLB-loads
->>>>>                 #  903.147 M/sec                    ( +-  0.02% ) [33.35%]
->>>>>           4,266,538 dTLB-misses
->>>>>                #    0.13% of all dTLB cache hits   ( +-  0.03% ) [33.33%]
->>>>>
->>>>>         3.513339813 seconds time elapsed                                          ( +-  0.26% )
->>>>>
->>>>> vhzp:
->>>>>   Performance counter stats for 'taskset -c 0 ./test_memcmp2' (5 runs):
->>>>>
->>>>>        27313.891128 task-clock                #    0.998 CPUs utilized            ( +-  0.24% )
->>>>>                  62 context-switches          #    0.002 K/sec                    ( +-  0.61% )
->>>>>               4,384 page-faults               #    0.160 K/sec                    ( +-  0.01% )
->>>>>      64,747,374,606 cycles                    #    2.370 GHz                      ( +-  0.24% ) [33.33%]
->>>>>      61,341,580,278 stalled-cycles-frontend   #   94.74% frontend cycles idle     ( +-  0.26% ) [33.33%]
->>>>>      56,702,237,511 stalled-cycles-backend    #   87.57% backend  cycles idle     ( +-  0.07% ) [33.33%]
->>>>>      10,033,724,846 instructions              #    0.15  insns per cycle
->>>>>                                               #    6.11  stalled cycles per insn  ( +-  0.09% ) [41.65%]
->>>>>       2,190,424,932 branches                  #   80.195 M/sec                    ( +-  0.12% ) [41.66%]
->>>>>           1,028,630 branch-misses             #    0.05% of all branches          ( +-  1.50% ) [41.66%]
->>>>>       3,302,006,540 L1-dcache-loads
->>>>>            #  120.891 M/sec                    ( +-  0.11% ) [41.68%]
->>>>>         271,374,358 L1-dcache-misses
->>>>>           #    8.22% of all L1-dcache hits    ( +-  0.04% ) [41.66%]
->>>>>          20,385,476 LLC-load
->>>>>                   #    0.746 M/sec                    ( +-  1.64% ) [33.34%]
->>>>>              76,754 LLC-misses
->>>>>                 #    0.38% of all LL-cache hits     ( +-  2.35% ) [33.34%]
->>>>>       3,309,927,290 dTLB-loads
->>>>>                 #  121.181 M/sec                    ( +-  0.03% ) [33.34%]
->>>>>       2,098,967,427 dTLB-misses
->>>>>                #   63.41% of all dTLB cache hits   ( +-  0.03% ) [33.34%]
->>>>>
->>>>>        27.364448741 seconds time elapsed                                          ( +-  0.24% )
->>>> For this case, the same question as above, thanks in adance. :-)
+What is the "expected" size of the attributes normally? Does it
+make sense to put attributes for multiple files into a single block?
+ 
+> OTOH, I think xattr itself is for users, not for communicating
+> between file system and users.
 
+No, you are mistaken in that point, as Dave explained.
+
+> Moreover, I'm not sure in the current android, but I saw ICS android
+> did not call any xattr operations, even if mount option was enabled.
+
+I realize that Android is currently your main target, but to get
+the file system merged into Linux, it needs to fit in with the
+overall strategy for file systems, which includes more than just
+Android.
+
+> > And given that stuff like access frequency tracking is being
+> > implemented at the VFS level, access policy hints should also be VFS
+> > functionality. A bad filesystem implementation should not dictate
+> > the interface for generically useful functionality....
+
+Agreed.
+
+> > An xattr on the root inode that holds a list like this is something
+> > that could be set at mkfs time, but then also updated easily by new
+> > software packages that are installed...
+
+Yes, good idea.
+
+> > > We should also take the kinds of access we have seen on a file into account.
+> > 
+> > Yes, but it should be done at the VFS level, not in the filesystem
+> > itself. Integrated into the current hot inode/range tracking that is
+> > being worked on right now, I'd suggest.
+> > 
+> > IOWs, these access policy issues are not unique to F2FS or it's use
+> > case. Anything to do with access hints, policy, tracking, file
+> > classification, etc that can influence data locality, reclaim,
+> > migration, etc need to be dealt with at the VFS, independently of a
+> > specific filesystem. Filesystems can make use of that information
+> > how they please (whether in the kernel or via userspace tools), but
+> > having filesystem specific interfaces and implementations of the
+> > same functionality is extremely wasteful. Let's do it once, and do
+> > it right the first time. ;)
+> 
+> I agree that VFS should support something, but before then, it needs
+> to do something by the file system first.
+> Because, we have to figure out what kind of information are really useful.
+
+As mentioned before, such tuning can still be done after the file system
+is merged, as long as the on-disk structure is flexible enough.
+
+As you said yourself, imlpementing the hints by detecting access patterns
+from the file system itself as I suggested would be a lot of work, and
+if the VFS can give us that information for free in the future, we can
+wait for that to happen (or help out on the implementation if necessary)
+and then implement it based on those APIs.
+
+	Arnd
