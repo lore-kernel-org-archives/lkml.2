@@ -1,66 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710Ab2JPJRv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 05:17:51 -0400
-Received: from cassarossa.samfundet.no ([129.241.93.19]:55409 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382Ab2JPJRu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 05:17:50 -0400
-Date: Tue, 16 Oct 2012 11:17:40 +0200
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Josh Wu <josh.wu@atmel.com>
-Cc: linux-kernel@vger.kernel.org, hskinnemoen@gmail.com,
-        linux-mtd@lists.infradead.org, dedekind1@gmail.com,
-        fengguang.wu@intel.com
-Subject: Re: [PATCH] avr32: fix build error in atstk1006_defconfig
-Message-ID: <20121016091740.GA6243@samfundet.no>
-References: <1350371967-8914-1-git-send-email-josh.wu@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350371967-8914-1-git-send-email-josh.wu@atmel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752006Ab2JPJV4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 05:21:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12612 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751088Ab2JPJVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 05:21:54 -0400
+From: Lukas Czerner <lczerner@redhat.com>
+To: axboe@kernel.dk
+Cc: dchinner@redhat.com, jmoyer@redhat.com, linux-kernel@vger.kernel.org,
+        Lukas Czerner <lczerner@redhat.com>
+Subject: [PATCH v2] loop: Limit the number of requests in the bio list
+Date: Tue, 16 Oct 2012 11:21:45 +0200
+Message-Id: <1350379305-13858-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Tue 16 Oct 2012 15:19:27 +0800 or thereabout, Josh Wu wrote:
-> fixed the following compile error when use avr32 atstk1006_defconfig:
->   drivers/mtd/nand/atmel_nand.c: In function 'pmecc_err_location':
->   drivers/mtd/nand/atmel_nand.c:639: error: implicit declaration of function 'writel_relaxed'
-> 
-> which was introduced by commit 1c7b874d33b463 ("mtd: at91: atmel_nand: add Programmable Multibit ECC controller support").
-> The PMECC for nand flash code uses writel_relaxed(). But in avr32, there is no macro "writel_relaxed" defined. This patch add writex_relaxed macro definitions.
-> 
-> Signed-off-by: Josh Wu <josh.wu@atmel.com>
-> ---
->  arch/avr32/include/asm/io.h |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/arch/avr32/include/asm/io.h b/arch/avr32/include/asm/io.h
-> index cf60d0a..fc6483f 100644
-> --- a/arch/avr32/include/asm/io.h
-> +++ b/arch/avr32/include/asm/io.h
-> @@ -165,6 +165,10 @@ BUILDIO_IOPORT(l, u32)
->  #define readw_be			__raw_readw
->  #define readl_be			__raw_readl
->  
-> +#define writeb_relaxed			writeb
-> +#define writew_relaxed			writew
-> +#define writel_relaxed			writel
-> +
+Currently there is not limitation of number of requests in the loop bio
+list. This can lead into some nasty situations when the caller spawns
+tons of bio requests taking huge amount of memory. This is even more
+obvious with discard where blkdev_issue_discard() will submit all bios
+for the range and wait for them to finish afterwards. On really big loop
+devices and slow backing file system this can lead to OOM situation as
+reported by Dave Chinner.
 
-I'm wondering if they should be something similar to SH arch:
+With this patch we will wait in loop_make_request() if the number of
+bios in the loop bio list would exceed 'nr_requests' number of requests.
+We'll wake up the process as we process the bios form the list. Some
+threshold hysteresis is in place to avoid high frequency oscillation.
 
-#define writeb_relaxed(v,c) ((void)__raw_writeb((__force u8)ioswabb(v),c))
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Reported-by: Dave Chinner <dchinner@redhat.com>
+---
+v2: add threshold hysteresis
 
-What is the intention behind the macro? Which restriction is relaxed?
+ drivers/block/loop.c |   16 ++++++++++++++++
+ include/linux/loop.h |    3 +++
+ 2 files changed, 19 insertions(+), 0 deletions(-)
 
->  #define writeb_be			__raw_writeb
->  #define writew_be			__raw_writew
->  #define writel_be			__raw_writel
-
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index e9d594f..0589976 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -463,6 +463,7 @@ out:
+  */
+ static void loop_add_bio(struct loop_device *lo, struct bio *bio)
+ {
++	lo->lo_bio_count++;
+ 	bio_list_add(&lo->lo_bio_list, bio);
+ }
+ 
+@@ -471,6 +472,7 @@ static void loop_add_bio(struct loop_device *lo, struct bio *bio)
+  */
+ static struct bio *loop_get_bio(struct loop_device *lo)
+ {
++	lo->lo_bio_count--;
+ 	return bio_list_pop(&lo->lo_bio_list);
+ }
+ 
+@@ -489,6 +491,14 @@ static void loop_make_request(struct request_queue *q, struct bio *old_bio)
+ 		goto out;
+ 	if (unlikely(rw == WRITE && (lo->lo_flags & LO_FLAGS_READ_ONLY)))
+ 		goto out;
++	if (lo->lo_bio_count >= lo->lo_queue->nr_requests) {
++		unsigned int nr;
++		spin_unlock_irq(&lo->lo_lock);
++		nr = lo->lo_queue->nr_requests - (lo->lo_queue->nr_requests/8);
++		wait_event_interruptible(lo->lo_req_wait,
++					 lo->lo_bio_count < nr);
++		spin_lock_irq(&lo->lo_lock);
++	}
+ 	loop_add_bio(lo, old_bio);
+ 	wake_up(&lo->lo_event);
+ 	spin_unlock_irq(&lo->lo_lock);
+@@ -532,6 +542,7 @@ static inline void loop_handle_bio(struct loop_device *lo, struct bio *bio)
+ static int loop_thread(void *data)
+ {
+ 	struct loop_device *lo = data;
++	unsigned int nr;
+ 	struct bio *bio;
+ 
+ 	set_user_nice(current, -20);
+@@ -546,6 +557,9 @@ static int loop_thread(void *data)
+ 			continue;
+ 		spin_lock_irq(&lo->lo_lock);
+ 		bio = loop_get_bio(lo);
++		nr = lo->lo_queue->nr_requests - (lo->lo_queue->nr_requests/8);
++		if (lo->lo_bio_count < nr)
++			wake_up(&lo->lo_req_wait);
+ 		spin_unlock_irq(&lo->lo_lock);
+ 
+ 		BUG_ON(!bio);
+@@ -873,6 +887,7 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
+ 	lo->transfer = transfer_none;
+ 	lo->ioctl = NULL;
+ 	lo->lo_sizelimit = 0;
++	lo->lo_bio_count = 0;
+ 	lo->old_gfp_mask = mapping_gfp_mask(mapping);
+ 	mapping_set_gfp_mask(mapping, lo->old_gfp_mask & ~(__GFP_IO|__GFP_FS));
+ 
+@@ -1660,6 +1675,7 @@ static int loop_add(struct loop_device **l, int i)
+ 	lo->lo_number		= i;
+ 	lo->lo_thread		= NULL;
+ 	init_waitqueue_head(&lo->lo_event);
++	init_waitqueue_head(&lo->lo_req_wait);
+ 	spin_lock_init(&lo->lo_lock);
+ 	disk->major		= LOOP_MAJOR;
+ 	disk->first_minor	= i << part_shift;
+diff --git a/include/linux/loop.h b/include/linux/loop.h
+index 9635116..4ba4789 100644
+--- a/include/linux/loop.h
++++ b/include/linux/loop.h
+@@ -57,10 +57,13 @@ struct loop_device {
+ 
+ 	spinlock_t		lo_lock;
+ 	struct bio_list		lo_bio_list;
++	unsigned int		lo_bio_count;
+ 	int			lo_state;
+ 	struct mutex		lo_ctl_mutex;
+ 	struct task_struct	*lo_thread;
+ 	wait_queue_head_t	lo_event;
++	/* wait queue for incoming requests */
++	wait_queue_head_t	lo_req_wait;
+ 
+ 	struct request_queue	*lo_queue;
+ 	struct gendisk		*lo_disk;
 -- 
-mvh
-Hans-Christian Egtvedt
+1.7.7.6
+
