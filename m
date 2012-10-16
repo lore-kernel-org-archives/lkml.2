@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab2JPIR6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 04:17:58 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:47739 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754171Ab2JPIRy (ORCPT
+	id S1754257Ab2JPIVY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 04:21:24 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37196 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752356Ab2JPIVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 04:17:54 -0400
-Message-ID: <507D182E.9010902@suse.cz>
-Date: Tue, 16 Oct 2012 10:17:50 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 16 Oct 2012 04:21:21 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <507D18D2.5020707@jp.fujitsu.com>
+Date: Tue, 16 Oct 2012 17:20:34 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, fabien.andre@gmail.com,
-        scott.liu@emc.com.tw, Jean Delvare <khali@linux-fr.org>,
-        JJ Ding <jj_ding@emc.com.tw>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        linux-i2c@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] i2c-hid: introduce HID over i2c specification implementation
-References: <1350333533-13366-1-git-send-email-benjamin.tissoires@gmail.com>
-In-Reply-To: <1350333533-13366-1-git-send-email-benjamin.tissoires@gmail.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-2
+To: Glauber Costa <glommer@parallels.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Greg Thelen <gthelen@google.com>, devel@openvz.org,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v4 08/14] res_counter: return amount of charges after
+ res_counter_uncharge
+References: <1349690780-15988-1-git-send-email-glommer@parallels.com> <1349690780-15988-9-git-send-email-glommer@parallels.com>
+In-Reply-To: <1349690780-15988-9-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2012 10:38 PM, Benjamin Tissoires wrote:
-> Notes:
-> {1}: I don't have all the informations in the beginning of the probe function to
-> get the real size I need to allocate. So the behavior is to allocate first a
-> buffer by using HID_MIN_BUFFER_SIZE and once I got the information, I can
-> reallocate the buffer to the right size (in i2c_hid_start).
+(2012/10/08 19:06), Glauber Costa wrote:
+> It is useful to know how many charges are still left after a call to
+> res_counter_uncharge. While it is possible to issue a res_counter_read
+> after uncharge, this can be racy.
+> 
+> If we need, for instance, to take some action when the counters drop
+> down to 0, only one of the callers should see it. This is the same
+> semantics as the atomic variables in the kernel.
+> 
+> Since the current return value is void, we don't need to worry about
+> anything breaking due to this change: nobody relied on that, and only
+> users appearing from now on will be checking this value.
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Suleiman Souhlal <suleiman@google.com>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>   Documentation/cgroups/resource_counter.txt |  7 ++++---
+>   include/linux/res_counter.h                | 12 +++++++-----
+>   kernel/res_counter.c                       | 20 +++++++++++++-------
+>   3 files changed, 24 insertions(+), 15 deletions(-)
 
-And there is a bug in this. See below.
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-> --- /dev/null
-> +++ b/drivers/hid/i2c-hid/i2c-hid.c
-...
-> +static int i2c_hid_alloc_buffers(struct i2c_hid *ihid)
-> +{
-> +	/* the worst case is computed from the set_report command with a
-> +	 * reportID > 15 and the maximum report length */
-> +	int args_len = sizeof(__u8) + /* optional ReportID byte */
-> +		       sizeof(__u16) + /* data register */
-> +		       sizeof(__u16) + /* size of the report */
-> +		       ihid->bufsize; /* report */
-> +
-> +	ihid->inbuf = kzalloc(ihid->bufsize, GFP_KERNEL);
-> +
-> +	if (!ihid->inbuf)
-> +		return -ENOMEM;
-> +
-> +	ihid->argsbuf = kzalloc(args_len, GFP_KERNEL);
-> +
-> +	if (!ihid->argsbuf) {
-> +		kfree(ihid->inbuf);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	ihid->cmdbuf = kzalloc(sizeof(union command) + args_len, GFP_KERNEL);
-> +
-> +	if (!ihid->cmdbuf) {
-> +		kfree(ihid->inbuf);
-> +		kfree(ihid->argsbuf);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	return 0;
 
-If this is called from hid_start and some of the latter allocation fails
-here, you free the buffers appropriately. However if another start
-occurs (e.g. by loading another module for that particular device), it
-will crash, as the buffers will remain unallocated because at this point
-ihid->bufsize == old_bufsize. You should set ihid->bufsize back to
-old_bufsize if i2c_hid_alloc_buffers fails and also set the pointers to
-NULL here.
 
-regards,
--- 
-js
-suse labs
