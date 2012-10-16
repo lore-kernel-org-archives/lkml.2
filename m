@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab2JPVIx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 17:08:53 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:44625 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896Ab2JPVIw (ORCPT
+	id S1755192Ab2JPVMY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 17:12:24 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45774 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753935Ab2JPVMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 17:08:52 -0400
+	Tue, 16 Oct 2012 17:12:23 -0400
+Date: Tue, 16 Oct 2012 23:12:15 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Javier Sanz <jsanza@gmail.com>
+cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.6.1-rt2
+In-Reply-To: <CAOLSsAyV3XdJvNvFF_6d_oLnApyQVs4UoAJ0rPpABxkaGGxX1A@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1210162311490.2811@ionos>
+References: <alpine.LFD.2.02.1210162037380.2811@ionos> <CAP=VYLoHhtth2+BwQAsd7uyW8N+rJj6zznP9sNjczTj_0Uqk9w@mail.gmail.com> <CAOLSsAyV3XdJvNvFF_6d_oLnApyQVs4UoAJ0rPpABxkaGGxX1A@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20121016174038.GA17982@kroah.com>
-References: <1350343887-7344-1-git-send-email-stigge@antcom.de>
-	<1350343887-7344-3-git-send-email-stigge@antcom.de>
-	<20121015235720.GA3132@kroah.com>
-	<507D58D9.2040607@antcom.de>
-	<20121016164326.GA4858@kroah.com>
-	<CACRpkdYaaSt9uLN2_=KXYDK2b5D5paopsYxgYKqezKCx8cy=vQ@mail.gmail.com>
-	<20121016174038.GA17982@kroah.com>
-Date: Tue, 16 Oct 2012 23:08:51 +0200
-Message-ID: <CACRpkdb+hu1Q=P8wBWts1RsMFQYuDMuszS74Z5mmkfwcXdpEpw@mail.gmail.com>
-Subject: Re: [PATCH RFC 02/11 v4] gpio: Add sysfs support to block GPIO API
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Roland Stigge <stigge@antcom.de>, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        w.sang@pengutronix.de, jbe@pengutronix.de, plagnioj@jcrosoft.com,
-        highguy@gmail.com, broonie@opensource.wolfsonmicro.com,
-        daniel-gl@gmx.net, rmallon@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 7:40 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Tue, Oct 16, 2012 at 07:27:15PM +0200, Linus Walleij wrote:
->> The thing is, as I've tried to explain but maybe didn't get across,
->> that these devices don't *have* a parent, and are not part of any
->> tree.
->
-> You are passing in a parent device to the device_create() call, where
-> did that pointer come from?
+On Tue, 16 Oct 2012, Javier Sanz wrote:
 
-You mean this:
+> Hello,
+> 
+> Testing, and FYI
+> 
+> $uname -a
+> Linux darkstar 3.6.1-rt2 #1 SMP PREEMPT RT Tue Oct 16 22:47:06 CEST 2012
+> i686 i686 i386 GNU/Linux
+> 
+> >>shows all time  ...
+> 
+> [   30.543233] fuse init (API version 7.20)
+> [   33.262077] Crap, ksoftirqd/0 looping forever in softirq
+> [   33.344865] Crap, ksoftirqd/2 looping forever in softirq
+> [   33.401736] Crap, ksoftirqd/0 looping forever in softirq
+> [   33.409743] Crap, ksoftirqd/0 looping forever in softirq
+> [   33.421658] Crap, ksoftirqd/0 looping forever in softirq
+> [   33.428628] Crap, ksoftirqd/0 looping forever in softirq
+> [   33.496468] Crap, ksoftirqd/2 looping forever in softirq
 
-dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
-                        desc, ioname ? ioname : "gpio%u", gpio);
+Grrr. Forgot to remove that printk. Will do in the next spin.
 
-desc->chip->dev is an *optional* pointer to a parent device of
-the GPIO chip (not the GPIO chip itself). It is usually NULL.
-
->> They are parentless mock devices, created on-the-fly just to get
->> sysfs entries.
->
-> That's fine, well, not the "parentless" part, but that should be trivial
-> to fix, just pass in the correct pointer and you should be fine.
-
-Hm, yeah well, they are orphans mostly.
-
->> What is needed it to get the device model right in the first
->> place.
->
-> I thought it was in the device model already?
-
-GPIO chips are not devices. :-(
-
-Yours,
-Linus Walleij
