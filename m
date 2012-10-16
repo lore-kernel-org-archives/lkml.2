@@ -1,91 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884Ab2JPUJh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 16:09:37 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:61138 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752333Ab2JPUJg (ORCPT
+	id S932130Ab2JPUJu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 16:09:50 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43859 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755936Ab2JPUJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 16:09:36 -0400
-Message-ID: <1350418167.2649.47.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH 1/2] Fix build error caused by broken PCH_PTP module
- dependency.
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: David Miller <davem@davemloft.net>,
-        Richard Cochran <richardcochran@gmail.com>
-CC: <haicheng.li@linux.intel.com>, <netdev@vger.kernel.org>,
-        <tshimizu818@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <haicheng.lee@gmail.com>
-Date: Tue, 16 Oct 2012 21:09:27 +0100
-In-Reply-To: <20121003.204336.1981040659629176119.davem@davemloft.net>
-References: <50654A62.5090003@linux.intel.com>
-	 <20121002.222238.1580734803370802133.davem@davemloft.net>
-	 <1349300710.2763.8.camel@bwh-desktop.uk.solarflarecom.com>
-	 <20121003.204336.1981040659629176119.davem@davemloft.net>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Oct 2012 16:09:48 -0400
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+In-Reply-To: <alpine.LFD.2.02.1210162037380.2811@ionos>
+References: <alpine.LFD.2.02.1210162037380.2811@ionos>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Tue, 16 Oct 2012 16:09:16 -0400
+X-Google-Sender-Auth: sb2M1KpGiRqrF48ujekHA0shv8I
+Message-ID: <CAP=VYLoHhtth2+BwQAsd7uyW8N+rJj6zznP9sNjczTj_0Uqk9w@mail.gmail.com>
+Subject: Re: [ANNOUNCE] 3.6.1-rt2
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-03 at 20:43 -0400, David Miller wrote:
-> From: Ben Hutchings <bhutchings@solarflare.com>
-> Date: Wed, 3 Oct 2012 22:45:10 +0100
-> 
-> > I thought of it as being a peripheral feature (which most Solarflare
-> > hardware doesn't implement) so it made sense for SFC_PTP to be optional
-> > like SFC_MTD and so on.  But I'm quite happy to use a select instead, if
-> > you want that to be the convention for all drivers implementing PHC.
-> 
-> I think that consistency might trump those conerns you mentioned, at
-> least in this case.
+On Tue, Oct 16, 2012 at 2:41 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Dear RT Folks,
+>
+> I'm pleased to announce the 3.6.1-rt2 release.
+>
+> Changes since 3.6.1-rt1:
+>
+>         * Picked up Pauls git friendly quilt queue
 
-Currently such kconfig options look like, for example:
+Which is a "linux-stable" like queue of patches stored in git.
+So you can see what patches change, how the series file
+changes and so on.  Like this for the latest rt2:
 
-config IGB_PTP
-        bool "PTP Hardware Clock (PHC)"
-        default n
-        depends on IGB && EXPERIMENTAL
-        select PPS
-        select PTP_1588_CLOCK
-        ---help---
-          Say Y here if you want to use PTP Hardware Clock (PHC) in the
-          driver.  Only the basic clock operations have been implemented.
+       new file:   crypto-make-core-static-and-init-scru-early.patch
+       modified:   fix-rt-int3-x86_32-3.2-rt.patch
+       modified:   futex-requeue-pi-fix.patch
+       renamed:
+hrtimer-add-missing-debug_activate-aid-was-re-announce-3-0-6-rt17.patch
+-> hrtimer-add-missing-debug_activate-aid.patch
+       modified:   latency-hist.patch
+       modified:   oleg-signal-rt-fix.patch
+       modified:   panic-disable-random-on-rt.patch
+       modified:   ping-sysrq.patch
+       new file:   rcu-tiny-solve-rt-mistery.patch
+       modified:   series
+       renamed:    softirq-preempt-fix-3-re.txt ->
+softirq-preempt-fix-3-re.patch
+       new file:   timer.c-fix-build-fail-for-RT_FULL.patch
 
-          Every timestamp and clock read operations must consult the
-          overflow counter to form a correct time value.
+http://git.kernel.org/?p=linux/kernel/git/paulg/3.6-rt-patches.git;a=summary
 
-There are a number of problems with this:
+Paul.
+--
 
-1. PTP_1588_CLOCK depends on PPS, so this has to select it as well.
-2. PPS and PTP_1588_CLOCK depend on EXPERIMENTAL, so this has to as
-   well.
-3. It's a boolean, so whatever it selects is built-in, even though the
-   driver it relates to may be a module.
-
-I think the various kconfig options should be changed as follows:
-
-1. Only PTP_1588_CLOCK selects PPS.
-2. Nothing depends on EXPERIMENTAL.  (This stuff has been in for 18
-   months and it's even being backported to RHEL 6 now.)
-3. Either:
-   (a) The per-driver PHC options select nothing, and the driver options
-       do e.g.:
-	select PTP_1588_CLOCK if IGB_PTP
-   (b) The per-driver PHC options are removed and the driver options do:
-	select PTP_1588_CLOCK
-       (i.e. PHC support is unconditional)
-
-Any objections to this, or preference for (a) vs (b)?
-
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+>
+>         * Compile fix for !RT_FULL (Paul Gortemaker)
+>
+>         * Crypto init order fix
+>
+>         * Tiny RCU fix which affects UP and is a long standing bug
+>           affecting 3.2 and 3.4-rt as well.
+>
+> The delta patch against 3.6.1-rt1 is appended below and can be found here
+>
+>   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/incr/patch-3.6.1-rt1-rt2.patch.xz
+>
+> The RT patch against 3.6.1 can be found here:
+>
+>   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.1-rt2.patch.xz
+>
+> The split quilt queue is available at:
+>
+>   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patches-3.6.1-rt2.tar.xz
+>
+> Enjoy,
+>
+>         tglx
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
