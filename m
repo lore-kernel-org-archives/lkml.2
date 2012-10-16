@@ -1,54 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678Ab2JPDnf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 23:43:35 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:55667 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755662Ab2JPDnd convert rfc822-to-8bit (ORCPT
+	id S1755665Ab2JPDun (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 23:50:43 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41679 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755285Ab2JPDul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 23:43:33 -0400
-Date: Mon, 15 Oct 2012 23:43:31 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RESEND] [PATCH 2/2] random: fix debug format strings
-Message-ID: <20121016034331.GD17446@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <alpine.LNX.2.00.1210081637170.28357@pobox.suse.cz>
- <alpine.LNX.2.00.1210081639340.28357@pobox.suse.cz>
- <alpine.LNX.2.00.1210152343050.14002@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1210152343050.14002@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	Mon, 15 Oct 2012 23:50:41 -0400
+Date: Tue, 16 Oct 2012 14:50:29 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: linux-next: build failure after merge of the final tree
+Message-Id: <20121016145029.d726d08c7f18668e3cd64a0a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__16_Oct_2012_14_50_29_+1100_KAK1i2DfbLN6Dd_A"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 11:43:29PM +0200, Jiri Kosina wrote:
-> Fix the following warnings in formatting debug output:
-> 
-> drivers/char/random.c: In function ‘xfer_secondary_pool’:
-> drivers/char/random.c:827: warning: format ‘%d’ expects type ‘int’, but argument 7 has type ‘size_t’
-> drivers/char/random.c: In function ‘account’:
-> drivers/char/random.c:859: warning: format ‘%d’ expects type ‘int’, but argument 5 has type ‘size_t’
-> drivers/char/random.c:881: warning: format ‘%d’ expects type ‘int’, but argument 5 has type ‘size_t’
-> drivers/char/random.c: In function ‘random_read’:
-> drivers/char/random.c:1141: warning: format ‘%d’ expects type ‘int’, but argument 5 has type ‘ssize_t’
-> drivers/char/random.c:1145: warning: format ‘%d’ expects type ‘int’, but argument 5 has type ‘ssize_t’
-> drivers/char/random.c:1145: warning: format ‘%d’ expects type ‘int’, but argument 6 has type ‘long unsigned int’
-> 
-> by using '%zd' instead of '%d' to properly denote ssize_t/size_t conversion.
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+--Signature=_Tue__16_Oct_2012_14_50_29_+1100_KAK1i2DfbLN6Dd_A
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Applied to the random tree, thanks.
+Hi Al,
 
-						- Ted
+After merging the final tree, today's linux-next build (sparc64 defconfig)
+failed like this:
+
+arch/sparc/kernel/head_64.o: In function `sys64_execve':
+(.text+0x1f58): relocation truncated to fit: R_SPARC_WDISP19 against symbol=
+ `sys_execve' defined in .text section in fs/built-in.o
+arch/sparc/kernel/head_64.o: In function `sys32_execve':
+(.text+0x1f64): relocation truncated to fit: R_SPARC_WDISP19 against symbol=
+ `compat_sys_execve' defined in .text section in fs/built-in.o
+
+Probably caused by commit 3223f8aab885 ("sparc64: convert to generic
+execve") and following from the signal tree.
+
+I have added this patch you suggested on IRC:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 16 Oct 2012 14:43:51 +1100
+Subject: [PATCH] sparc: fixup for conversion to generic execve
+
+Fixes these errors:
+
+arch/sparc/kernel/head_64.o: In function `sys64_execve':
+(.text+0x1f58): relocation truncated to fit: R_SPARC_WDISP19 against symbol=
+ `sys_execve' defined in .text section in fs/built-in.o
+arch/sparc/kernel/head_64.o: In function `sys32_execve':
+(.text+0x1f64): relocation truncated to fit: R_SPARC_WDISP19 against symbol=
+ `compat_sys_execve' defined in .text section in fs/built-in.o
+
+Dictated-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ arch/sparc/kernel/syscalls.S |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/arch/sparc/kernel/syscalls.S b/arch/sparc/kernel/syscalls.S
+index 4bae096..f667cdf 100644
+--- a/arch/sparc/kernel/syscalls.S
++++ b/arch/sparc/kernel/syscalls.S
+@@ -2,15 +2,19 @@
+ 	 * environment settings are the same as the calling processes.
+ 	 */
+ sys64_execve:
+-	ba,pt	%xcc,sys_execve
+-	 flushw
++	flushw
++	mov	%o7, %l5
++	call	sys_execve
++	 mov	%l5, %o7
+=20
+ #ifdef CONFIG_COMPAT
+ sunos_execv:
+ 	mov	%g0, %o2
+ sys32_execve:
+-	ba,pt	%xcc,compat_sys_execve
+-	 flushw
++	flushw
++	mov	%o7, %l5
++	call	compat_sys_execve
++	 mov	%l5, %o7
+ #endif
+=20
+ 	.align	32
+--=20
+1.7.10.280.gaa39
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__16_Oct_2012_14_50_29_+1100_KAK1i2DfbLN6Dd_A
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQfNmFAAoJEECxmPOUX5FE2QMP/1tCLAxrzHwVA+u4g1JXcaTP
+giYKwSP1ZGxUD+ieY1+VPhIAO+lxNN1QiYPmaiDVSf4Kd+MP10VDOA5/Kqzw6ECf
+JNbpIBmS8VQ+5r0DcoO8d5ZBHzhk/MV6RZQ60lpJ4GsUTbYIdqinXj8QTHqVaDM6
+r3+GTt3hznsfx9pZWV2MTvLVKCwxWFlck4f+Ckp+gjJLTYyr7UalUmTGMhfSEGUy
+DH2KSkX7ke5G7CsI65IRU5g5oQqPO3ma+whcsKx8pP7q9xQmaQ3GRAu+Dv2qnWCy
+5IeWJq9C9+IXIjKW3he9DXGg6oCqVkk2kRDRs/Np0Ymf6aY0Sa5YC1PI4DyCqHUE
+VyWOyS+27f9GoYo9PD7xDj+1sfeBEN/QqJO9Z0ps4jVo3gpIxNpVbCSR3jcNxnup
++dLOHNg3fJmOcUy6wmjM5um98EJ/6op2Z+ICP4MwwcWzs5+Uap2miB6H8uCyYIpp
+HLmkQnj2sbRULNM+O7Y/q/2/iidI6pwy/Sb4jz+2gZ5R/5IheT3q8KH1yXNde75b
+jNW2V42O5JItv2723jIlBTUFSnWaXx5u0LVXU4Ic8kLCbQwJY73L66rtsbqMSnpl
+a8/xrth1gTk5njpv8p/SXAnOXHuCqd/9/952WnxzBPCDDYoaJ/XTUw3EVSJm0DKT
+y3Yrjl1SZGa4thzjHTHe
+=v0FS
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__16_Oct_2012_14_50_29_+1100_KAK1i2DfbLN6Dd_A--
