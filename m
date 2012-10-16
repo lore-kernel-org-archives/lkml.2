@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab2JPMyJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 08:54:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59471 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754151Ab2JPMyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 08:54:08 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAJL_ektJgQayiTPAkxxaT3TZLuUCjo2UsFuhMuxCsp-DFVqjFQ@mail.gmail.com>
-References: <CAJL_ektJgQayiTPAkxxaT3TZLuUCjo2UsFuhMuxCsp-DFVqjFQ@mail.gmail.com> <1349998076-15495-1-git-send-email-dhsharp@google.com> <1349998076-15495-2-git-send-email-dhsharp@google.com> <CAMuHMdVx5PU--fo+J1c04qcdG6r+B1DJwD6cxR8evFAyVpJBHQ@mail.gmail.com>
-To: David Sharp <dhsharp@google.com>
-Cc: dhowells@redhat.com, Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH v6 1/6] tracing,x86: Add a TSC trace_clock
-Date: Tue, 16 Oct 2012 13:53:51 +0100
-Message-ID: <6469.1350392031@warthog.procyon.org.uk>
+	id S1754472Ab2JPM4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 08:56:07 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40286 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173Ab2JPM4F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 08:56:05 -0400
+Subject: Re: [Q] Default SLAB allocator
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ezequiel Garcia <elezegarcia@gmail.com>
+Cc: David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Tim Bird <tim.bird@am.sony.com>,
+        celinux-dev@lists.celinuxforum.org
+In-Reply-To: <CALF0-+WgfnNOOZwj+WLB397cgGX7YhNuoPXAK5E0DZ5v_BxxEA@mail.gmail.com>
+References: <CALF0-+XGn5=QSE0bpa4RTag9CAJ63MKz1kvaYbpw34qUhViaZA@mail.gmail.com>
+	 <m27gqwtyu9.fsf@firstfloor.org>
+	 <alpine.DEB.2.00.1210111558290.6409@chino.kir.corp.google.com>
+	 <m2391ktxjj.fsf@firstfloor.org>
+	 <CALF0-+WLZWtwYY4taYW9D7j-abCJeY90JzcTQ2hGK64ftWsdxw@mail.gmail.com>
+	 <alpine.DEB.2.00.1210130252030.7462@chino.kir.corp.google.com>
+	 <CALF0-+Xp_P_NjZpifzDSWxz=aBzy_fwaTB3poGLEJA8yBPQb_Q@mail.gmail.com>
+	 <alpine.DEB.2.00.1210151745400.31712@chino.kir.corp.google.com>
+	 <CALF0-+WgfnNOOZwj+WLB397cgGX7YhNuoPXAK5E0DZ5v_BxxEA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Oct 2012 14:56:00 +0200
+Message-ID: <1350392160.3954.986.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Sharp <dhsharp@google.com> wrote:
+On Tue, 2012-10-16 at 09:35 -0300, Ezequiel Garcia wrote:
 
-> > Please use the Kbuild infrastructure ("generic-y += ..." in
-> > arch/*/include/asm/Kbuild)
-> > instead of adding wrappers around the asm-generic version.
+> Now, returning to the fragmentation. The problem with SLAB is that
+> its smaller cache available for kmalloced objects is 32 bytes;
+> while SLUB allows 8, 16, 24 ...
 > 
-> mips apparently recencly got rid of arch/mips/include/asm/Kbuild.
+> Perhaps adding smaller caches to SLAB might make sense?
+> Is there any strong reason for NOT doing this?
 
-It didn't.  However, if you use patch to create your kernel tree, then patch
-may have removed it.  If you're using GIT, it should still exist.  Try:
+I would remove small kmalloc-XX caches, as sharing a cache line
+is sometime dangerous for performance, because of false sharing.
 
-	git log -- arch/mips/include/asm/Kbuild 
+They make sense only for very small hosts.
 
-> What should I do for mips?
 
-Just create the file with a single "generic-y += ..." line in it.
 
-David
