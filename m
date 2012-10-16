@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab2JPGWL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 02:22:11 -0400
-Received: from shiva.jussieu.fr ([134.157.0.129]:55214 "EHLO shiva.jussieu.fr"
+	id S1754040Ab2JPGZO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 02:25:14 -0400
+Received: from mga11.intel.com ([192.55.52.93]:38958 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751459Ab2JPGWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 02:22:10 -0400
-X-Ids: 165
-From: Juliusz Chroboczek <jch@pps.jussieu.fr>
-To: Jochen Striepe <jochen@tolot.escape.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Write is not atomic?
-References: <7i391fto34.fsf@lanthane.pps.jussieu.fr>
-	<20121015234006.GK2842@pompeji.miese-zwerge.org>
-Date: Tue, 16 Oct 2012 08:21:35 +0200
-In-Reply-To: <20121015234006.GK2842@pompeji.miese-zwerge.org> (Jochen
-	Striepe's message of "Tue, 16 Oct 2012 01:40:06 +0200")
-Message-ID: <7ia9vn3pjk.fsf@lanthane.pps.jussieu.fr>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752794Ab2JPGZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 02:25:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,593,1344236400"; 
+   d="scan'208";a="235566181"
+Date: Tue, 16 Oct 2012 14:24:53 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ACPI: move acpi_no_s4_hw_signature() declaration into
+ #ifdef CONFIG_HIBERNATION
+Message-ID: <20121016062453.GA1505@localhost>
+References: <1350365052-27304-1-git-send-email-yuanhan.liu@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Miltered: at jchkmail.jussieu.fr with ID 507CFCF0.004 by Joe's j-chkmail (http : // j-chkmail dot ensmp dot fr)!
-X-j-chkmail-Enveloppe: 507CFCF0.004/134.157.168.1/hydrogene.pps.jussieu.fr/hydrogene.pps.jussieu.fr/<jch@pps.jussieu.fr>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1350365052-27304-1-git-send-email-yuanhan.liu@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This seems out of context.
+On Tue, Oct 16, 2012 at 01:24:12PM +0800, Yuanhan Liu wrote:
+> acpi_no_s4_hw_signature is defined in #ifdef CONFIG_HIBERNATION block,
+> but the current code put the declaration in #ifdef CONFIG_PM_SLEEP block.
+> 
+> I happened to meet this issue when I turned off PM_SLEEP config manually:
+> arch/x86/kernel/acpi/sleep.c:100:4: error: implicit declaration of function ‘acpi_no_s4_hw_signature’ [-Werror=implicit-function-declaration]
 
->       If the file was open(2)ed with O_APPEND, the file offset is first
->       set to the end of the file before writing.  The adjustment of the
->       file offset and the write operation are performed as an atomic
->       step.
+This should be more clear:
 
-> Sounds different, doesn't it?
+Fix build error on !CONFIG_PM_SLEEP:
 
-Yes, it does -- thanks for the clarification.  (And thanks to Dave for
-the interesting tests.)
+arch/x86/kernel/acpi/sleep.c:100:4: error: implicit declaration of function ‘acpi_no_s4_hw_signature’
 
-Sorry for the confusion,
+The root cause is, acpi_no_s4_hw_signature() is defined in
+#ifdef CONFIG_HIBERNATION block, but the current code put the
+declaration in #ifdef CONFIG_PM_SLEEP block.
 
--- Juliusz
+Thanks,
+Fengguang
+
+> v2: take better title and add build error message suggested by Fengguang
+> 
+> Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+> Reviewed-by: Fengguang Wu <fengguang.wu@intel.com>
+> ---
+>  include/linux/acpi.h |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+> index 90be989..a468429 100644
+> --- a/include/linux/acpi.h
+> +++ b/include/linux/acpi.h
+> @@ -257,8 +257,11 @@ int acpi_check_region(resource_size_t start, resource_size_t n,
+>  
+>  int acpi_resources_are_enforced(void);
+>  
+> -#ifdef CONFIG_PM_SLEEP
+> +#ifdef CONFIG_HIBERNATION
+>  void __init acpi_no_s4_hw_signature(void);
+> +#endif
+> +
+> +#ifdef CONFIG_PM_SLEEP
+>  void __init acpi_old_suspend_ordering(void);
+>  void __init acpi_nvs_nosave(void);
+>  #endif /* CONFIG_PM_SLEEP */
+> -- 
+> 1.7.7.6
