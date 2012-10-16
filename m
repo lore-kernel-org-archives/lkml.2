@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab2JPW25 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 18:28:57 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63115 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755327Ab2JPW2y (ORCPT
+	id S1755768Ab2JPW3H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 18:29:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59929 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755683Ab2JPW3C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 18:28:54 -0400
+	Tue, 16 Oct 2012 18:29:02 -0400
 From: Tejun Heo <tj@kernel.org>
 To: rjw@sisk.pl, oleg@redhat.com
 Cc: linux-kernel@vger.kernel.org, lizefan@huawei.com,
         containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, stable@vger.kernel.org
-Subject: [PATCH 1/7] cgroup: cgroup_subsys->fork() should be called after the task is added to css_set
-Date: Tue, 16 Oct 2012 15:28:40 -0700
-Message-Id: <1350426526-14254-2-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 5/7] cgroup_freezer: allow moving tasks in and out of a frozen cgroup
+Date: Tue, 16 Oct 2012 15:28:44 -0700
+Message-Id: <1350426526-14254-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1350426526-14254-1-git-send-email-tj@kernel.org>
 References: <1350426526-14254-1-git-send-email-tj@kernel.org>
@@ -22,213 +22,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup core has a bug which violates a basic rule about event
-notifications - when a new entity needs to be added, you add that to
-the notification list first and then make the new entity conform to
-the current state.  If done in the reverse order, an event happening
-inbetween will be lost.
+cgroup_freezer is one of the few users of cgroup_subsys->can_attach()
+and uses it to prevent tasks from being migrated into or out of a
+frozen cgroup.  This makes cgroup_freezer cumbersome to use especially
+when co-mounted with other controllers.
 
-cgroup_subsys->fork() is invoked way before the new task is added to
-the css_set.  Currently, cgroup_freezer is the only user of ->fork()
-and uses it to make new tasks conform to the current state of the
-freezer.  If FROZEN state is requested while fork is in progress
-between cgroup_fork_callbacks() and cgroup_post_fork(), the child
-could escape freezing - the cgroup isn't frozen when ->fork() is
-called and the freezer couldn't see the new task on the css_set.
+->can_attach() is problematic in general as it can make co-mounting
+multiple cgroups difficult - migrating tasks may fail for reasons
+completely irrelevant for other controllers.  freezer_can_attach() in
+particular is more problematic because it messes with cgroup internal
+locking to ensure that the state verification performed at
+freezer_can_attach() stays valid until migration is complete.
 
-This patch moves cgroup_subsys->fork() invocation to
-cgroup_post_fork() after the new task is added to the css_set.
-cgroup_fork_callbacks() is removed.
+This patch replaces freezer_can_attach() with freezer_attach() so that
+tasks are always allowed to migrate - they are nudged into the
+conforming state from freezer_attach().  This means that there can be
+tasks which are being migrated which don't conform to the current
+cgroup_freezer state until freezer_attach() is complete.  Under the
+current locking scheme, the only such place is freezer_fork() which is
+updated to handle such window.
 
-Because now a task may be migrated during cgroup_subsys->fork(),
-freezer_fork() is updated so that it adheres to the usual RCU locking
-and the rather pointless comment on why locking can be different there
-is removed (if it doesn't make anything simpler, why even bother?).
+While this patch doesn't remove the use of internal cgroup locking
+from freezer_read/write() paths, it removes the requirement to keep
+the freezer state constant while migrating and enables such change.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: stable@vger.kernel.org
+Cc: Li Zefan <lizefan@huawei.com>
 ---
- include/linux/cgroup.h  |    1 -
- kernel/cgroup.c         |   62 ++++++++++++++++++++++------------------------
- kernel/cgroup_freezer.c |   13 +++-------
- kernel/fork.c           |    9 +------
- 4 files changed, 35 insertions(+), 50 deletions(-)
+ kernel/cgroup_freezer.c |   51 ++++++++++++++++++++++++++++------------------
+ 1 files changed, 31 insertions(+), 20 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index f8a030c..4cd1d0f 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -34,7 +34,6 @@ extern int cgroup_lock_is_held(void);
- extern bool cgroup_lock_live_group(struct cgroup *cgrp);
- extern void cgroup_unlock(void);
- extern void cgroup_fork(struct task_struct *p);
--extern void cgroup_fork_callbacks(struct task_struct *p);
- extern void cgroup_post_fork(struct task_struct *p);
- extern void cgroup_exit(struct task_struct *p, int run_callbacks);
- extern int cgroupstats_build(struct cgroupstats *stats,
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 13774b3..b7a0171 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4844,44 +4844,19 @@ void cgroup_fork(struct task_struct *child)
- }
- 
- /**
-- * cgroup_fork_callbacks - run fork callbacks
-- * @child: the new task
-- *
-- * Called on a new task very soon before adding it to the
-- * tasklist. No need to take any locks since no-one can
-- * be operating on this task.
-- */
--void cgroup_fork_callbacks(struct task_struct *child)
--{
--	if (need_forkexit_callback) {
--		int i;
--		for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
--			struct cgroup_subsys *ss = subsys[i];
--
--			/*
--			 * forkexit callbacks are only supported for
--			 * builtin subsystems.
--			 */
--			if (!ss || ss->module)
--				continue;
--
--			if (ss->fork)
--				ss->fork(child);
--		}
--	}
--}
--
--/**
-  * cgroup_post_fork - called on a new task after adding it to the task list
-  * @child: the task in question
-  *
-- * Adds the task to the list running through its css_set if necessary.
-- * Has to be after the task is visible on the task list in case we race
-- * with the first call to cgroup_iter_start() - to guarantee that the
-- * new task ends up on its list.
-+ * Adds the task to the list running through its css_set if necessary and
-+ * call the subsystem fork() callbacks.  Has to be after the task is
-+ * visible on the task list in case we race with the first call to
-+ * cgroup_iter_start() - to guarantee that the new task ends up on its
-+ * list.
-  */
- void cgroup_post_fork(struct task_struct *child)
- {
-+	int i;
-+
- 	/*
- 	 * use_task_css_set_links is set to 1 before we walk the tasklist
- 	 * under the tasklist_lock and we read it here after we added the child
-@@ -4910,7 +4885,30 @@ void cgroup_post_fork(struct task_struct *child)
- 		}
- 		write_unlock(&css_set_lock);
- 	}
-+
-+	/*
-+	 * Call ss->fork().  This must happen after @child is linked on
-+	 * css_set; otherwise, @child might change state between ->fork()
-+	 * and addition to css_set.
-+	 */
-+	if (need_forkexit_callback) {
-+		for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
-+			struct cgroup_subsys *ss = subsys[i];
-+
-+			/*
-+			 * fork/exit callbacks are supported only for
-+			 * builtin subsystems and we don't need further
-+			 * synchronization as they never go away.
-+			 */
-+			if (!ss || ss->module)
-+				continue;
-+
-+			if (ss->fork)
-+				ss->fork(child);
-+		}
-+	}
- }
-+
- /**
-  * cgroup_exit - detach cgroup from exiting task
-  * @tsk: pointer to task_struct of exiting process
 diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index b1724ce..12bfedb 100644
+index 557f367..0b0e105 100644
 --- a/kernel/cgroup_freezer.c
 +++ b/kernel/cgroup_freezer.c
-@@ -186,23 +186,15 @@ static void freezer_fork(struct task_struct *task)
- {
- 	struct freezer *freezer;
- 
--	/*
--	 * No lock is needed, since the task isn't on tasklist yet,
--	 * so it can't be moved to another cgroup, which means the
--	 * freezer won't be removed and will be valid during this
--	 * function call.  Nevertheless, apply RCU read-side critical
--	 * section to suppress RCU lockdep false positives.
--	 */
- 	rcu_read_lock();
- 	freezer = task_freezer(task);
--	rcu_read_unlock();
- 
- 	/*
- 	 * The root cgroup is non-freezable, so we can skip the
- 	 * following check.
- 	 */
- 	if (!freezer->css.cgroup->parent)
--		return;
-+		goto out;
- 
- 	spin_lock_irq(&freezer->lock);
- 	BUG_ON(freezer->state == CGROUP_FROZEN);
-@@ -210,7 +202,10 @@ static void freezer_fork(struct task_struct *task)
- 	/* Locking avoids race with FREEZING -> THAWED transitions. */
- 	if (freezer->state == CGROUP_FREEZING)
- 		freeze_task(task);
-+
- 	spin_unlock_irq(&freezer->lock);
-+out:
-+	rcu_read_unlock();
- }
+@@ -152,27 +152,38 @@ static void freezer_destroy(struct cgroup *cgroup)
  
  /*
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 8b20ab7..acc4cb6 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1135,7 +1135,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+  * The call to cgroup_lock() in the freezer.state write method prevents
+- * a write to that file racing against an attach, and hence the
+- * can_attach() result will remain valid until the attach completes.
++ * a write to that file racing against an attach, and hence we don't need
++ * to worry about racing against migration.
+  */
+-static int freezer_can_attach(struct cgroup *new_cgroup,
+-			      struct cgroup_taskset *tset)
++static void freezer_attach(struct cgroup *new_cgrp, struct cgroup_taskset *tset)
  {
- 	int retval;
- 	struct task_struct *p;
--	int cgroup_callbacks_done = 0;
+-	struct freezer *freezer;
++	struct freezer *freezer = cgroup_freezer(new_cgrp);
+ 	struct task_struct *task;
  
- 	if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
- 		return ERR_PTR(-EINVAL);
-@@ -1393,12 +1392,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	INIT_LIST_HEAD(&p->thread_group);
- 	p->task_works = NULL;
- 
--	/* Now that the task is set up, run cgroup callbacks if
--	 * necessary. We need to run them before the task is visible
--	 * on the tasklist. */
--	cgroup_fork_callbacks(p);
--	cgroup_callbacks_done = 1;
++	spin_lock_irq(&freezer->lock);
++
+ 	/*
+-	 * Anything frozen can't move or be moved to/from.
++	 * Make the new tasks conform to the current state of @new_cgrp.
++	 * For simplicity, when migrating any task to a FROZEN cgroup, we
++	 * revert it to FREEZING and let update_if_frozen() determine the
++	 * correct state later.
++	 *
++	 * Tasks in @tset are on @new_cgrp but may not conform to its
++	 * current state before executing the following - !frozen tasks may
++	 * be visible in a FROZEN cgroup and frozen tasks in a THAWED one.
++	 * This means that, to determine whether to freeze, one should test
++	 * whether the state equals THAWED.
+ 	 */
+-	cgroup_taskset_for_each(task, new_cgroup, tset)
+-		if (cgroup_freezing(task))
+-			return -EBUSY;
 -
- 	/* Need tasklist lock for parent etc handling! */
- 	write_lock_irq(&tasklist_lock);
+-	freezer = cgroup_freezer(new_cgroup);
+-	if (freezer->state != CGROUP_THAWED)
+-		return -EBUSY;
++	cgroup_taskset_for_each(task, new_cgrp, tset) {
++		if (freezer->state == CGROUP_THAWED) {
++			__thaw_task(task);
++		} else {
++			freeze_task(task);
++			freezer->state = CGROUP_FREEZING;
++		}
++	}
  
-@@ -1503,7 +1496,7 @@ bad_fork_cleanup_cgroup:
- #endif
- 	if (clone_flags & CLONE_THREAD)
- 		threadgroup_change_end(current);
--	cgroup_exit(p, cgroup_callbacks_done);
-+	cgroup_exit(p, 0);
- 	delayacct_tsk_free(p);
- 	module_put(task_thread_info(p)->exec_domain->module);
- bad_fork_cleanup_count:
+-	return 0;
++	spin_unlock_irq(&freezer->lock);
+ }
+ 
+ static void freezer_fork(struct task_struct *task)
+@@ -190,12 +201,12 @@ static void freezer_fork(struct task_struct *task)
+ 		goto out;
+ 
+ 	spin_lock_irq(&freezer->lock);
+-	BUG_ON(freezer->state == CGROUP_FROZEN);
+-
+-	/* Locking avoids race with FREEZING -> THAWED transitions. */
+-	if (freezer->state == CGROUP_FREEZING)
++	/*
++	 * @task might have been just migrated into a FROZEN cgroup.  Test
++	 * equality with THAWED.  Read the comment in freezer_attach().
++	 */
++	if (freezer->state != CGROUP_THAWED)
+ 		freeze_task(task);
+-
+ 	spin_unlock_irq(&freezer->lock);
+ out:
+ 	rcu_read_unlock();
+@@ -352,7 +363,7 @@ struct cgroup_subsys freezer_subsys = {
+ 	.create		= freezer_create,
+ 	.destroy	= freezer_destroy,
+ 	.subsys_id	= freezer_subsys_id,
+-	.can_attach	= freezer_can_attach,
++	.attach		= freezer_attach,
+ 	.fork		= freezer_fork,
+ 	.base_cftypes	= files,
+ 
 -- 
 1.7.7.3
 
