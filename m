@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab2JPSSG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 14:18:06 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51325 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755193Ab2JPSSE (ORCPT
+	id S1755760Ab2JPSZK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 14:25:10 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:8925 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755573Ab2JPSZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 14:18:04 -0400
-Date: Tue, 16 Oct 2012 19:17:42 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [PATCH] ARM: kexec: fix segment memory addresses check
-Message-ID: <20121016181742.GO23979@mudshark.cambridge.arm.com>
-References: <1350410244-12240-1-git-send-email-aaro.koskinen@iki.fi>
+	Tue, 16 Oct 2012 14:25:08 -0400
+Date: Tue, 16 Oct 2012 18:25:06 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-mm@kvack.org, cgroups@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, devel@openvz.org,
+        linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v5 14/14] Add documentation about the kmem controller
+In-Reply-To: <1350382611-20579-15-git-send-email-glommer@parallels.com>
+Message-ID: <0000013a6ad26c73-d043cf97-c44a-45c1-9cae-0a962e93a005-000000@email.amazonses.com>
+References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-15-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350410244-12240-1-git-send-email-aaro.koskinen@iki.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 06:57:24PM +0100, Aaro Koskinen wrote:
-> Commit c564df4db85aac8d1d65a56176a0a25f46138064 (ARM: 7540/1: kexec:
-> Check segment memory addresses) added a safety check with accidentally
-> reversed condition, and broke kexec functionality on ARM. Fix this.
-> 
-> Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-> ---
->  arch/arm/kernel/machine_kexec.c |    7 +++----
->  1 files changed, 3 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/arm/kernel/machine_kexec.c b/arch/arm/kernel/machine_kexec.c
-> index e29c333..8ef8c93 100644
-> --- a/arch/arm/kernel/machine_kexec.c
-> +++ b/arch/arm/kernel/machine_kexec.c
-> @@ -45,10 +45,9 @@ int machine_kexec_prepare(struct kimage *image)
->  	for (i = 0; i < image->nr_segments; i++) {
->  		current_segment = &image->segment[i];
->  
-> -		err = memblock_is_region_memory(current_segment->mem,
-> -						current_segment->memsz);
-> -		if (err)
-> -			return - EINVAL;
-> +		if (!memblock_is_region_memory(current_segment->mem,
-> +					       current_segment->memsz))
-> +			return -EINVAL;
->  
->  		err = get_user(header, (__be32*)current_segment->buf);
->  		if (err)
-> -- 
-> 1.7.2.5
+On Tue, 16 Oct 2012, Glauber Costa wrote:
 
-Thanks for this Aaro:
+>
+> + memory.kmem.limit_in_bytes      # set/show hard limit for kernel memory
+> + memory.kmem.usage_in_bytes      # show current kernel memory allocation
+> + memory.kmem.failcnt             # show the number of kernel memory usage hits limits
+> + memory.kmem.max_usage_in_bytes  # show max kernel memory usage recorded
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+Does it actually make sense to limit kernel memory? The user generally has
+no idea how much kernel memory a process is using and kernel changes can
+change the memory footprint. Given the fuzzy accounting in the kernel a
+large cache refill (if someone configures the slab batch count to be
+really big f.e.) can account a lot of memory to the wrong cgroup. The
+allocation could fail.
 
-Please stick it in the patch system.
+Limiting the total memory use of a process (U+K) would make more sense I
+guess. Only U is probably sufficient? In what way would a limitation on
+kernel memory in use be good?
 
-Will
