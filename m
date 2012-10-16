@@ -1,91 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793Ab2JPEhh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 00:37:37 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:56759 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755655Ab2JPEhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 00:37:36 -0400
-Date: Tue, 16 Oct 2012 10:09:16 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Hyeoncheol Lee <hyc.lee@gmail.com>, acme@ghostprotocols.net,
-        LKML <linux-kernel@vger.kernel.org>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH] perf probe: convert_name_to_addr() allocated the wrong
- size buffer for a function name
-Message-ID: <20121016043916.GB28828@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1350351452-9737-1-git-send-email-hyc.lee@gmail.com>
- <507CE06D.8050806@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <507CE06D.8050806@hitachi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101604-5930-0000-0000-00000D1B6368
+	id S1755747Ab2JPEiK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 00:38:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59890 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754265Ab2JPEiI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 00:38:08 -0400
+Date: Mon, 15 Oct 2012 21:40:40 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH] make GFP_NOTRACK flag unconditional
+Message-Id: <20121015214040.4ef190eb.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1210152102220.5400@chino.kir.corp.google.com>
+References: <1348826194-21781-1-git-send-email-glommer@parallels.com>
+	<alpine.DEB.2.00.1210022156450.8723@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1210152102220.5400@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> [2012-10-16 13:19:57]:
+On Mon, 15 Oct 2012 21:02:45 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
 
-> (2012/10/16 10:37), Hyeoncheol Lee wrote:
-> > convert_name_to_addr() allocated sizeof(char *) * MAX_PROBE_ARGS
-> > bytes for a function name
+> On Tue, 2 Oct 2012, David Rientjes wrote:
 > 
-> Yeah, that one was from my laziness...
-> 
-
-Guess not your fault, but mine.
-
+> > > There was a general sentiment in a recent discussion (See
+> > > https://lkml.org/lkml/2012/9/18/258) that the __GFP flags should be
+> > > defined unconditionally. Currently, the only offender is GFP_NOTRACK,
+> > > which is conditional to KMEMCHECK.
+> > > 
+> > > This simple patch makes it unconditional.
+> > > 
+> > > Signed-off-by: Glauber Costa <glommer@parallels.com>
+> > > CC: Christoph Lameter <cl@linux.com>
+> > > CC: Mel Gorman <mgorman@suse.de>
+> > > CC: Andrew Morton <akpm@linux-foundation.org>
 > > 
-> > Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> > Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> > Signed-off-by: Hyeoncheol Lee <hyc.lee@gmail.com>
-> > ---
-> >  tools/perf/util/probe-event.c |    5 +++--
-> >  1 file changed, 3 insertions(+), 2 deletions(-)
+> > Acked-by: David Rientjes <rientjes@google.com>
 > > 
-> > diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> > index 49a256e..bb40ed4 100644
-> > --- a/tools/perf/util/probe-event.c
-> > +++ b/tools/perf/util/probe-event.c
-> > @@ -2352,13 +2352,14 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
-> >  		free(exec_copy);
-> >  	}
-> >  	free(pp->function);
-> > -	pp->function = zalloc(sizeof(char *) * MAX_PROBE_ARGS);
-> > +	pp->function = zalloc(sizeof(char) *
-> > +			      (3 + sizeof(unsigned long long) * 2));
-> 
-> Could you comment that this is enough long here?
-
-Also can we move the arith into a macro?
-
-> 
-> >  	if (!pp->function) {
-> >  		ret = -ENOMEM;
-> >  		pr_warning("Failed to allocate memory by zalloc.\n");
-> >  		goto out;
-> >  	}
-> > -	e_snprintf(pp->function, MAX_PROBE_ARGS, "0x%llx", vaddr);
-> > +	sprintf(pp->function, "0x%llx", vaddr);
-> 
-> And at least we should use snprintf instead of sprintf...
-> (I think ret = e_snprintf(...) is better)
-> 
-
-Agree.
-
-> >  	ret = 0;
-> >  
-> >  out:
+> > I think it was done this way to show that if CONFIG_KMEMCHECK=n then the 
+> > bit could be reused for something else but I can't think of any reason why 
+> > that would be useful; what would need to add a gfp bit that would also 
+> > happen to depend on CONFIG_KMEMCHECK=n?  Nothing comes to mind to save a 
+> > bit.
+> > 
+> > There are other cases of this as well, like __GFP_OTHER_NODE which is only 
+> > useful for thp and it's defined unconditionally.  So this seems fine to 
+> > me.
 > > 
 > 
+> Still missing from linux-next as of this morning, I think this patch 
+> should be merged.
 
--- 
-Thanks and Regards
-Srikar
+It's in 3.7-rc1.
+
+commit 3e648ebe076390018c317881d7d926f24d7bac6b
+Author: Glauber Costa <glommer@parallels.com>
+Date:   Mon Oct 8 16:33:52 2012 -0700
+
+    make GFP_NOTRACK definition unconditional
 
