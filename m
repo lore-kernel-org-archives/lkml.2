@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab2JPNep (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 09:34:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59742 "EHLO mx2.suse.de"
+	id S1754149Ab2JPNij (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 09:38:39 -0400
+Received: from smtp2.goneo.de ([212.90.139.82]:29039 "EHLO smtp2.goneo.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753679Ab2JPNen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 09:34:43 -0400
-Date: Tue, 16 Oct 2012 15:34:39 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Sha Zhengju <handai.szj@gmail.com>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] oom, memcg: handle sysctl oom_kill_allocating_task while
- memcg oom happening
-Message-ID: <20121016133439.GI13991@dhcp22.suse.cz>
-References: <1350382328-28977-1-git-send-email-handai.szj@taobao.com>
+	id S1753841Ab2JPNii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 09:38:38 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -1.766
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v2 2/4] gpio: add viperboard gpio driver
+Date: Tue, 16 Oct 2012 15:38:29 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Lars Poeschel <larsi@wh2.tu-dresden.de>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, jic23@cam.ac.uk, khali@linux-fr.org,
+        ben-linux@fluff.org, w.sang@pengutronix.de, grant.likely@secretlab.ca
+References: <20120925085559.GL28670@sortiz-mobl> <201210160851.33324.poeschel@lemonage.de> <CACRpkda+UufHGEekzRxG7U3CG-_nvx1d0ophqwUUWmjkvaBTmg@mail.gmail.com>
+In-Reply-To: <CACRpkda+UufHGEekzRxG7U3CG-_nvx1d0ophqwUUWmjkvaBTmg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350382328-28977-1-git-send-email-handai.szj@taobao.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210161538.29571.poeschel@lemonage.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 16-10-12 18:12:08, Sha Zhengju wrote:
-> From: Sha Zhengju <handai.szj@taobao.com>
+On Tuesday 16 October 2012 at 12:00:13, Linus Walleij wrote:
+> On Tue, Oct 16, 2012 at 8:51 AM, Lars Poeschel <poeschel@lemonage.de> wrote:
+> > On Monday 15 October 2012 at 15:00:12, Linus Walleij wrote:
+> >> > +       /* if io is set to output, just return the saved value */
+> >> > +       if (gpio->gpioa_out & (1 << offset))
+> >> > +               return gpio->gpioa_val & (1 << offset);
+> >> 
+> >> That's not going to work if the hardware changes state
+> >> behind the back of the driver right? Oh well, maybe
+> >> it doesn't matter.
+> > 
+> > I thought about that and then did this "cache" only in case the gpio is a
+> > output to save to usb ping-pong that is needed otherwise. I thought that
+> > nothing can change to state of the output but the driver itself.
 > 
-> Sysctl oom_kill_allocating_task enables or disables killing the OOM-triggering
-> task in out-of-memory situations, but it only works on overall system-wide oom.
-> But it's also a useful indication in memcg so we take it into consideration
-> while oom happening in memcg. Other sysctl such as panic_on_oom has already
-> been memcg-ware.
+> On a second note there is already a standard mechanism for caching
+> registers in the kernel, and that is regmap. Sadly it's a bit
+> undocumented but there are several examples and the code
+> lives in drivers/base/regmap and include/linux/regmap.h
 
-Could you be more specific about the motivation for this patch? Is it
-"let's be consistent with the global oom" or you have a real use case
-for this knob.
+I had a look at regmap. This is interesting. But there is no regmap_bus 
+implementation for usb. Are you pointing me in this direction ? ;-) I don't 
+think you want me as a kernel newbie write this code.
+And another thing: I don't think this can be implemented in such a general way 
+as it is done already for i2c or mmio. As you see in the example of my 
+(viperboard-)adapter, there is a bunch bytes sent, just to set the direction 
+bit in a register. And it is not guaranteed, that this "address" and "value" 
+are at the same position for other usb adapters. And this is getting even 
+worse, if I think of reading values out of the viperboard...
+I would stay at the "cache" implementation I presented in the patch - this is 
+too special.
 
-The primary motivation for oom_kill_allocating_task AFAIU was to reduce
-search over huge tasklists and reduce task_lock holding times. I am not
-sure whether the original concern is still valid since 6b0c81b (mm,
-oom: reduce dependency on tasklist_lock) as the tasklist_lock usage has
-been reduced conciderably in favor of RCU read locks is taken but maybe
-even that can be too disruptive?
-David?
-
-Moreover memcg oom killer doesn't iterate over tasklist (it uses
-cgroup_iter*) so this shouldn't cause the performance problem like
-for the global case.
-On the other hand we are taking css_set_lock for reading for the whole
-iteration which might cause some issues as well but those should better
-be described in the changelog.
-
-> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
-> ---
->  mm/memcontrol.c |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index e4e9b18..c329940 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1486,6 +1486,15 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  
->  	check_panic_on_oom(CONSTRAINT_MEMCG, gfp_mask, order, NULL);
->  	totalpages = mem_cgroup_get_limit(memcg) >> PAGE_SHIFT ? : 1;
-> +	if (sysctl_oom_kill_allocating_task && current->mm &&
-> +	    !oom_unkillable_task(current, memcg, NULL) &&
-> +	    current->signal->oom_score_adj != OOM_SCORE_ADJ_MIN) {
-> +		get_task_struct(current);
-> +		oom_kill_process(current, gfp_mask, order, 0, totalpages, memcg, NULL,
-> +				 "Memory cgroup out of memory (oom_kill_allocating_task)");
-> +		return;
-> +	}
-> +
->  	for_each_mem_cgroup_tree(iter, memcg) {
->  		struct cgroup *cgroup = iter->css.cgroup;
->  		struct cgroup_iter it;
-> -- 
-> 1.7.6.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-Michal Hocko
-SUSE Labs
+Lars
