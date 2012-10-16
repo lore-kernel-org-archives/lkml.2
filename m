@@ -1,98 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab2JPKMw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 06:12:52 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:37250 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab2JPKMu (ORCPT
+	id S1753463Ab2JPKNp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 06:13:45 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:62431 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088Ab2JPKNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 06:12:50 -0400
+	Tue, 16 Oct 2012 06:13:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <20121016090434.7d5e088152a3e0b0606903c8@nvidia.com>
-References: <1350309832-18461-1-git-send-email-m.szyprowski@samsung.com>
-	<CAAQKjZMYFNMEnb2ue2aR+6AEbOixnQFyggbXrThBCW5VOznePg@mail.gmail.com>
-	<20121016090434.7d5e088152a3e0b0606903c8@nvidia.com>
-Date: Tue, 16 Oct 2012 19:12:49 +0900
-X-Google-Sender-Auth: LHiIV7Cru84AQQ_MN5L6qWXOd0o
-Message-ID: <CAAQKjZNQFfxpr-7dFb4cgNB2Gkrxxrswds_fSrYgssxXaqRF7g@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [RFC 0/2] DMA-mapping & IOMMU - physically
- contiguous allocations
-From: Inki Dae <inki.dae@samsung.com>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-tegra@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Tue, 16 Oct 2012 12:13:41 +0200
+Message-ID: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>
+Subject: [RFC] perf: need to expose sched_clock to correlate user samples with
+ kernel samples
+From: Stephane Eranian <eranian@google.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        Will Deacon <will.deacon@arm.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Robert Richter <robert.richter@amd.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hiroshi,
+Hi,
 
-2012/10/16 Hiroshi Doyu <hdoyu@nvidia.com>:
-> Hi Inki/Marek,
->
-> On Tue, 16 Oct 2012 02:50:16 +0200
-> Inki Dae <inki.dae@samsung.com> wrote:
->
->> 2012/10/15 Marek Szyprowski <m.szyprowski@samsung.com>:
->> > Hello,
->> >
->> > Some devices, which have IOMMU, for some use cases might require to
->> > allocate a buffers for DMA which is contiguous in physical memory. Such
->> > use cases appears for example in DRM subsystem when one wants to improve
->> > performance or use secure buffer protection.
->> >
->> > I would like to ask if adding a new attribute, as proposed in this RFC
->> > is a good idea? I feel that it might be an attribute just for a single
->> > driver, but I would like to know your opinion. Should we look for other
->> > solution?
->> >
->>
->> In addition, currently we have worked dma-mapping-based iommu support
->> for exynos drm driver with this patch set so this patch set has been
->> tested with iommu enabled exynos drm driver and worked fine. actually,
->> this feature is needed for secure mode such as TrustZone. in case of
->> Exynos SoC, memory region for secure mode should be physically
->> contiguous and also maybe OMAP but now dma-mapping framework doesn't
->> guarantee physically continuous memory allocation so this patch set
->> would make it possible.
->
-> Agree that the contigous memory allocation is necessary for us too.
->
-> In addition to those contiguous/discontiguous page allocation, is
-> there any way to _import_ anonymous pages allocated by a process to be
-> used in dma-mapping API later?
->
-> I'm considering the following scenario, an user process allocates a
-> buffer by malloc() in advance, and then it asks some driver to convert
-> that buffer into IOMMU'able/DMA'able ones later. In this case, pages
-> are discouguous and even they may not be yet allocated at
-> malloc()/mmap().
->
+There are many situations where we want to correlate events happening at
+the user level with samples recorded in the perf_event kernel sampling buffer.
+For instance, we might want to correlate the call to a function or creation of
+a file with samples. Similarly, when we want to monitor a JVM with jitted code,
+we need to be able to correlate jitted code mappings with perf event samples
+for symbolization.
 
-I'm not sure I understand what you mean but we had already tried this
-way and for this, you can refer to below link,
-               http://www.mail-archive.com/dri-devel@lists.freedesktop.org/msg22555.html
+Perf_events allows timestamping of samples with PERF_SAMPLE_TIME.
+That causes each PERF_RECORD_SAMPLE to include a timestamp
+generated by calling the local_clock() -> sched_clock_cpu() function.
 
-but this way had been pointed out by drm guys because the pages could
-be used through gem object after that pages had been freed by free()
-anyway their pointing was reasonable and I'm trying another way, this
-is the way that the pages to user space has same life time with dma
-operation. in other word, if dma completed access to that pages then
-also that pages will be freed. actually drm-based via driver of
-mainline kernel is using same way
+To make correlating user vs. kernel samples easy, we would need to
+access that sched_clock() functionality. However, none of the existing
+clock calls permit this at this point. They all return timestamps which are
+not using the same source and/or offset as sched_clock.
 
+I believe a similar issue exists with the ftrace subsystem.
 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+The problem needs to be adressed in a portable manner. Solutions
+based on reading TSC for the user level to reconstruct sched_clock()
+don't seem appropriate to me.
+
+One possibility to address this limitation would be to extend clock_gettime()
+with a new clock time, e.g., CLOCK_PERF.
+
+However, I understand that sched_clock_cpu() provides ordering guarantees only
+when invoked on the same CPU repeatedly, i.e., it's not globally synchronized.
+But we already have to deal with this problem when merging samples obtained
+from different CPU sampling buffer in per-thread mode. So this is not
+necessarily
+a showstopper.
+
+Alternatives could be to use uprobes but that's less practical to setup.
+
+Anyone with better ideas?
