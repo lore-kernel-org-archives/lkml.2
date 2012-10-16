@@ -1,41 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab2JPNYR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 09:24:17 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:51370 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751266Ab2JPNYQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 09:24:16 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: maxime.ripard@free-electrons.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH] gpio-74x164: Fix buffer allocation size
-Date: Tue, 16 Oct 2012 15:24:01 +0200
-Message-Id: <1350393841-29698-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	id S1753839Ab2JPN13 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 09:27:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54998 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752207Ab2JPN12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 09:27:28 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Mauro Chehab <mchehab@redhat.com>,
+        linux-edac@vger.kernel.org
+Subject: [PATCH RESEND] i7core_edac, Fix panic when accessing sysfs files
+Date: Tue, 16 Oct 2012 09:27:20 -0400
+Message-Id: <1350394040-11277-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new registers handling in the gpio-74x164 driver allocates chip->registers
-* 8 bytes where only one byte per register is necessary. This patch fixes this.
+The i7core_edac addrmatch_dev and chancounts_dev have sysfs files
+associated with them.  The sysfs files, however, are coded so that the
+parent device is is the mci device.  This is incorrect and the mci struct
+should be obtained through the addrmatch_dev and chancounts_dev device's
+private data field which is populated in i7core_create_sysfs_devices().
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Mauro Chehab <mchehab@redhat.com>
+Cc: linux-edac@vger.kernel.org
 ---
- drivers/gpio/gpio-74x164.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/edac/i7core_edac.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- linux-2.6.orig/drivers/gpio/gpio-74x164.c
-+++ linux-2.6/drivers/gpio/gpio-74x164.c
-@@ -153,7 +153,7 @@ static int __devinit gen_74x164_probe(st
- 	}
- 
- 	chip->gpio_chip.ngpio = GEN_74X164_NUMBER_GPIOS * chip->registers;
--	chip->buffer = devm_kzalloc(&spi->dev, chip->gpio_chip.ngpio, GFP_KERNEL);
-+	chip->buffer = devm_kzalloc(&spi->dev, chip->registers, GFP_KERNEL);
- 	if (!chip->buffer) {
- 		ret = -ENOMEM;
- 		goto exit_destroy;
+diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
+index 3672101..10c8c00 100644
+--- a/drivers/edac/i7core_edac.c
++++ b/drivers/edac/i7core_edac.c
+@@ -816,7 +816,7 @@ static ssize_t i7core_inject_store_##param(			\
+ 	struct device_attribute *mattr,				\
+ 	const char *data, size_t count)				\
+ {								\
+-	struct mem_ctl_info *mci = to_mci(dev);			\
++	struct mem_ctl_info *mci = dev_get_drvdata(dev);	\
+ 	struct i7core_pvt *pvt;					\
+ 	long value;						\
+ 	int rc;							\
+@@ -845,7 +845,7 @@ static ssize_t i7core_inject_show_##param(			\
+ 	struct device_attribute *mattr,				\
+ 	char *data)						\
+ {								\
+-	struct mem_ctl_info *mci = to_mci(dev);			\
++	struct mem_ctl_info *mci = dev_get_drvdata(dev);	\
+ 	struct i7core_pvt *pvt;					\
+ 								\
+ 	pvt = mci->pvt_info;					\
+@@ -1052,7 +1052,7 @@ static ssize_t i7core_show_counter_##param(			\
+ 	struct device_attribute *mattr,				\
+ 	char *data)						\
+ {								\
+-	struct mem_ctl_info *mci = to_mci(dev);			\
++	struct mem_ctl_info *mci = dev_get_drvdata(dev);	\
+ 	struct i7core_pvt *pvt = mci->pvt_info;			\
+ 								\
+ 	edac_dbg(1, "\n");					\
+-- 
+1.7.12.1
+
