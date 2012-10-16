@@ -1,108 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129Ab2JPFv5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 01:51:57 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53036 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751459Ab2JPFvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 01:51:55 -0400
-Message-ID: <507CF5D9.2050605@ti.com>
-Date: Tue, 16 Oct 2012 11:21:21 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1753150Ab2JPFxR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 01:53:17 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:51693 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750893Ab2JPFxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 01:53:15 -0400
+X-IronPort-AV: E=Sophos;i="4.80,594,1344182400"; 
+   d="scan'208";a="6004360"
+Message-ID: <507CF789.6050307@cn.fujitsu.com>
+Date: Tue, 16 Oct 2012 13:58:33 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
-CC: "mturquette@linaro.org" <mturquette@linaro.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+To: Hugh Dickins <hughd@google.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hilman, Kevin" <khilman@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-keystone@list.ti.com - Linux developers for Keystone family of
-	devices (May contain non-TIers)" <linux-keystone@list.ti.com>,
-        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
-        "Chemparathy, Cyril" <cyril@ti.com>
-Subject: Re: [PATCH v2 09/13] ARM: davinci - update the dm644x soc code to
- use common clk drivers
-References: <1348683037-9705-1-git-send-email-m-karicheri2@ti.com> <1348683037-9705-10-git-send-email-m-karicheri2@ti.com> <5076BAA2.6010404@ti.com> <3E54258959B69E4282D79E01AB1F32B7041FDB5B@DFLE12.ent.ti.com> <5077F466.6020707@ti.com> <3E54258959B69E4282D79E01AB1F32B704201DE5@DFLE12.ent.ti.com>
-In-Reply-To: <3E54258959B69E4282D79E01AB1F32B704201DE5@DFLE12.ent.ti.com>
-Content-Type: text/plain; charset="UTF-8"
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Jiang Liu <liuj97@gmail.com>, mhocko@suse.cz, bsingharora@gmail.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        paul.gortmaker@windriver.com
+Subject: Re: [PATCH] memory cgroup: update root memory cgroup when node is
+ onlined
+References: <505187D4.7070404@cn.fujitsu.com> <20120913205935.GK1560@cmpxchg.org> <alpine.LSU.2.00.1209131816070.1908@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1209131816070.1908@eggly.anvils>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/16 13:52:36,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/16 13:52:37,
+	Serialize complete at 2012/10/16 13:52:37
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Murali,
-
-On 10/15/2012 9:21 PM, Karicheri, Muralidharan wrote:
-> --Cut----
+At 09/14/2012 09:36 AM, Hugh Dickins Wrote:
+> On Thu, 13 Sep 2012, Johannes Weiner wrote:
+>> On Thu, Sep 13, 2012 at 03:14:28PM +0800, Wen Congyang wrote:
+>>> root_mem_cgroup->info.nodeinfo is initialized when the system boots.
+>>> But NODE_DATA(nid) is null if the node is not onlined, so
+>>> root_mem_cgroup->info.nodeinfo[nid]->zoneinfo[zone].lruvec.zone contains
+>>> an invalid pointer. If we use numactl to bind a program to the node
+>>> after onlining the node and its memory, it will cause the kernel
+>>> panicked:
+>>
+>> Is there any chance we could get rid of the zone backpointer in lruvec
+>> again instead?
 > 
->>> Subject: Re: [PATCH v2 09/13] ARM: davinci - update the dm644x soc code to use
->>> common clk drivers
->>>
->>>>>> You have chosen to keep all clock related data in platform files
->>>>>> while using the common clock framework to provide just the
->>>>>> infrastructure. If you look at how mxs and spear have been migrated, they have
->>> migrated the soc specific clock data to drivers/clk as well.
->>>>>> See "drivers/clk/spear/spear3xx_clock.c" or
->>>>>> "drivers/clk/mxs/clk-imx23.c
->>>>
->>>> I have to disagree on this one. I had investigated these code already
->>>> and came up with a way that we can re-use code across all of the
->>>> davinci platforms as well as other architectures that re-uses the clk hardware IPs.
->>>
->>> Which code you are talking about here? Even if you introduce clk-dm644x.c, clk-
->>> keystone.c etc in drivers/clk/davinci/ you can reuse the code you introduce in patches 1-
->>> 3. I cant see how that will be prevented.
+> It could be done, but it would make me sad :(
 > 
-> I was talking about re-use of davinci_common_clk_init in drivers/clk/davinci/davinci-clock.c.
-> This is meant to be re-used across all of the DaVinci devices.
+>> Adding new nodes is a rare event and so updating every
+>> single memcg in the system might be just borderline crazy.
 > 
->>>
->>>> spear3xx_clock.c has initialization code for each of the platforms and
->>>> so is the case with imx23.c.
->>>
->>> By each of the platforms, you mean they all cater to a family of devices? This depends on
->>> how close together the family of devices are.
->>> Otherwise, there would be a file per soc. DM644x also represents a family for that matter.
->>>
->>>> By using platform_data approach, we are able to define clks for each of the SoC and
->>> then use davinci_common_clk_init() to do initialize the clk drivers based on platform
->>> data.
->>>
->>> You need to define and register the clocks present on each SoC either which way. I don't
->>> see why just the platform_data approach allows this.
->>> And looking closely, you have defined platform data, but don't actually have a platform
->>> device, making things more confusing.
->>>
+> Not horribly crazy, but rather ugly, yes.
 > 
-> Ok. There are multiple ways to implement this software. We had discussed this
-> internally and picked the platform_data approach. The clk drivers are written not
-> following the platform driver model. But I don't see why we can't use platform data
-> to configure this drivers. Down below, you have made two interesting points, one is
-> ARM code reduction. This patch already does this by moving the API that initializes
-> the clk drivers (davinci_common_clk_init()) out of ARM to drivers/clk/davinci. So
-> this + removal of existing clk driver under arm/mach-davinci/clock.[ch], we have
-> achieved this goal. The second point is the moving of SoC specific clk data out of SoC
-> code to drive. Are you 100% sure this is the right thing to do for these drivers. If so,
-> I can start working on this change right away. As I am working on this as a background
-> activity, I want to be double or triple sure before doing the rework of these patches :).
-> So please confirm.
+>> But can't
+>> we just go back to passing the zone along with the lruvec down
+>> vmscan.c paths?  I agree it's ugly to pass both, given their
+>> relationship.  But I don't think the backpointer is any cleaner but in
+>> addition less robust.
+> 
+> It's like how we use vma->mm: we could change everywhere to pass mm with
+> vma, but it looks cleaner and cuts down on long arglists to have mm in vma.
+>>From past experience, one of the things I worried about was adding extra
+> args to the reclaim stack.
+> 
+>>
+>> That being said, the crashing code in particular makes me wonder:
+>>
+>> static __always_inline void add_page_to_lru_list(struct page *page,
+>> 				struct lruvec *lruvec, enum lru_list lru)
+>> {
+>> 	int nr_pages = hpage_nr_pages(page);
+>> 	mem_cgroup_update_lru_size(lruvec, lru, nr_pages);
+>> 	list_add(&page->lru, &lruvec->lists[lru]);
+>> 	__mod_zone_page_state(lruvec_zone(lruvec), NR_LRU_BASE + lru, nr_pages);
+>> }
+>>
+>> Why did we ever pass zone in here and then felt the need to replace it
+>> with lruvec->zone in fa9add6 "mm/memcg: apply add/del_page to lruvec"?
+>> A page does not roam between zones, its zone is a static property that
+>> can be retrieved with page_zone().
+> 
+> Just as in vmscan.c, we have the lruvec to hand, and that's what we
+> mainly want to operate upon, but there is also some need for zone.
+> 
+> (Both Konstantin and I were looking towards the day when we move the
+> lru_lock into the lruvec, removing more dependence on "zone".  Pretty
+> much the only reason that hasn't happened yet, is that we have not found
+> time to make a performance case convincingly - but that's another topic.)
+> 
+> Yes, page_zone(page) is a static property of the page, but it's not
+> necessarily cheap to evaluate: depends on how complex the memory model
+> and the spare page flags space, doesn't it?  We both preferred to
+> derive zone from lruvec where convenient.
+> 
+> How do you feel about this patch, and does it work for you guys?
+> 
+> You'd be right if you guessed that I started out without the
+> mem_cgroup_zone_lruvec part of it, but oops in get_scan_count
+> told me that's needed too.
+> 
+> Description to be filled in later: would it be needed for -stable,
+> or is onlining already broken in other ways that you're now fixing up?
+> 
+> Reported-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Signed-off-by: Hugh Dickins <hughd@google.com>
 
-Yes, this is the right way to go. And I don't see it as something
-breaking new ground since there are already multiple SoCs in mainline
-which are following this same approach. May be to start with just
-convert one SoC and send for review.
+Hi, all:
 
-Thanks for taking this up and helping clean-up mach-davinci.
+What about the status of this patch?
 
-Regards,
-Sekhar
+Thanks
+Wen Congyang
+
+> ---
+> 
+>  include/linux/mmzone.h |    2 -
+>  mm/memcontrol.c        |   40 ++++++++++++++++++++++++++++++++-------
+>  mm/mmzone.c            |    6 -----
+>  mm/page_alloc.c        |    2 -
+>  4 files changed, 36 insertions(+), 14 deletions(-)
+> 
+> --- 3.6-rc5/include/linux/mmzone.h	2012-08-03 08:31:26.892842267 -0700
+> +++ linux/include/linux/mmzone.h	2012-09-13 17:07:51.893772372 -0700
+> @@ -744,7 +744,7 @@ extern int init_currently_empty_zone(str
+>  				     unsigned long size,
+>  				     enum memmap_context context);
+>  
+> -extern void lruvec_init(struct lruvec *lruvec, struct zone *zone);
+> +extern void lruvec_init(struct lruvec *lruvec);
+>  
+>  static inline struct zone *lruvec_zone(struct lruvec *lruvec)
+>  {
+> --- 3.6-rc5/mm/memcontrol.c	2012-08-03 08:31:27.060842270 -0700
+> +++ linux/mm/memcontrol.c	2012-09-13 17:46:36.870804625 -0700
+> @@ -1061,12 +1061,25 @@ struct lruvec *mem_cgroup_zone_lruvec(st
+>  				      struct mem_cgroup *memcg)
+>  {
+>  	struct mem_cgroup_per_zone *mz;
+> +	struct lruvec *lruvec;
+>  
+> -	if (mem_cgroup_disabled())
+> -		return &zone->lruvec;
+> +	if (mem_cgroup_disabled()) {
+> +		lruvec = &zone->lruvec;
+> +		goto out;
+> +	}
+>  
+>  	mz = mem_cgroup_zoneinfo(memcg, zone_to_nid(zone), zone_idx(zone));
+> -	return &mz->lruvec;
+> +	lruvec = &mz->lruvec;
+> +out:
+> +	/*
+> +	 * Since a node can be onlined after the mem_cgroup was created,
+> +	 * we have to be prepared to initialize lruvec->zone here.
+> +	 */
+> +	if (unlikely(lruvec->zone != zone)) {
+> +		VM_BUG_ON(lruvec->zone);
+> +		lruvec->zone = zone;
+> +	}
+> +	return lruvec;
+>  }
+>  
+>  /*
+> @@ -1093,9 +1106,12 @@ struct lruvec *mem_cgroup_page_lruvec(st
+>  	struct mem_cgroup_per_zone *mz;
+>  	struct mem_cgroup *memcg;
+>  	struct page_cgroup *pc;
+> +	struct lruvec *lruvec;
+>  
+> -	if (mem_cgroup_disabled())
+> -		return &zone->lruvec;
+> +	if (mem_cgroup_disabled()) {
+> +		lruvec = &zone->lruvec;
+> +		goto out;
+> +	}
+>  
+>  	pc = lookup_page_cgroup(page);
+>  	memcg = pc->mem_cgroup;
+> @@ -1113,7 +1129,17 @@ struct lruvec *mem_cgroup_page_lruvec(st
+>  		pc->mem_cgroup = memcg = root_mem_cgroup;
+>  
+>  	mz = page_cgroup_zoneinfo(memcg, page);
+> -	return &mz->lruvec;
+> +	lruvec = &mz->lruvec;
+> +out:
+> +	/*
+> +	 * Since a node can be onlined after the mem_cgroup was created,
+> +	 * we have to be prepared to initialize lruvec->zone here.
+> +	 */
+> +	if (unlikely(lruvec->zone != zone)) {
+> +		VM_BUG_ON(lruvec->zone);
+> +		lruvec->zone = zone;
+> +	}
+> +	return lruvec;
+>  }
+>  
+>  /**
+> @@ -4742,7 +4768,7 @@ static int alloc_mem_cgroup_per_zone_inf
+>  
+>  	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
+>  		mz = &pn->zoneinfo[zone];
+> -		lruvec_init(&mz->lruvec, &NODE_DATA(node)->node_zones[zone]);
+> +		lruvec_init(&mz->lruvec);
+>  		mz->usage_in_excess = 0;
+>  		mz->on_tree = false;
+>  		mz->memcg = memcg;
+> --- 3.6-rc5/mm/mmzone.c	2012-08-03 08:31:27.064842271 -0700
+> +++ linux/mm/mmzone.c	2012-09-13 17:06:28.921766001 -0700
+> @@ -87,7 +87,7 @@ int memmap_valid_within(unsigned long pf
+>  }
+>  #endif /* CONFIG_ARCH_HAS_HOLES_MEMORYMODEL */
+>  
+> -void lruvec_init(struct lruvec *lruvec, struct zone *zone)
+> +void lruvec_init(struct lruvec *lruvec)
+>  {
+>  	enum lru_list lru;
+>  
+> @@ -95,8 +95,4 @@ void lruvec_init(struct lruvec *lruvec,
+>  
+>  	for_each_lru(lru)
+>  		INIT_LIST_HEAD(&lruvec->lists[lru]);
+> -
+> -#ifdef CONFIG_MEMCG
+> -	lruvec->zone = zone;
+> -#endif
+>  }
+> --- 3.6-rc5/mm/page_alloc.c	2012-08-22 14:25:39.508279046 -0700
+> +++ linux/mm/page_alloc.c	2012-09-13 17:06:08.265763526 -0700
+> @@ -4456,7 +4456,7 @@ static void __paginginit free_area_init_
+>  		zone->zone_pgdat = pgdat;
+>  
+>  		zone_pcp_init(zone);
+> -		lruvec_init(&zone->lruvec, zone);
+> +		lruvec_init(&zone->lruvec);
+>  		if (!size)
+>  			continue;
+>  
+> 
+
