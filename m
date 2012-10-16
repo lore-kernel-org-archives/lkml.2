@@ -1,107 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab2JPMVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 08:21:41 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:49523 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752388Ab2JPMVj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 08:21:39 -0400
+	id S1753775Ab2JPMX1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 08:23:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56660 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752388Ab2JPMX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 08:23:26 -0400
+Date: Tue, 16 Oct 2012 14:23:24 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, kamezawa.hiroyu@jp.fujitsu.com,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, devel@openvz.org,
+        linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v5 14/14] Add documentation about the kmem controller
+Message-ID: <20121016122324.GG13991@dhcp22.suse.cz>
+References: <1350382611-20579-1-git-send-email-glommer@parallels.com>
+ <1350382611-20579-15-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <20121016100809.GS8285@erda.amd.com>
-References: <20121012012839.GA15348@us.ibm.com>
-	<20121015155534.GR8285@erda.amd.com>
-	<20121016100809.GS8285@erda.amd.com>
-Date: Tue, 16 Oct 2012 14:21:38 +0200
-Message-ID: <CABPqkBRd2wfjd1ObCkM+TSSwt7C9WP65dEE9POSyDK1ccvNL8A@mail.gmail.com>
-Subject: Re: [RFC][PATCH] perf: Add a few generic stalled-cycles events
-From: Stephane Eranian <eranian@google.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arun Sharma <asharma@fb.com>, Anton Blanchard <anton@au1.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, mpjohn@us.ibm.com,
-        linuxppc-dev@ozlabs.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350382611-20579-15-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 12:08 PM, Robert Richter <robert.richter@amd.com> wrote:
-> Sukadev,
->
-> On 15.10.12 17:55:34, Robert Richter wrote:
->> On 11.10.12 18:28:39, Sukadev Bhattiprolu wrote:
->> > +  { .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_STALLED_CYCLES_FIXED_POINT },
->> > +  { .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_STALLED_CYCLES_LOAD_STORE },
->> > +  { .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_STALLED_CYCLES_INSTRUCTION_FETCH },
->> > +  { .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_STALLED_CYCLES_BRANCH },
->>
->> Instead of adding new hardware event types I would prefer to use raw
->> events in conjunction with sysfs, see e.g. the intel-uncore
->> implementation. Something like:
->>
-In general, I don't like generic events and especially stall events. I
-have not seen a clear definition of
-what they mean. Without it, there is no way to understand how to map
-them across architecture. If
-the definition is too precise, you may not be able to find an exact
-mapping. If the definition is to loose
-then it is unclear what you are measuring.
+On Tue 16-10-12 14:16:51, Glauber Costa wrote:
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Frederic Weisbecker <fweisbec@redhat.com>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Suleiman Souhlal <suleiman@google.com>
+> CC: Tejun Heo <tj@kernel.org>
 
-Also this opens another can of worms which is that on some processors,
-you may need more than
-one event to encapsulate what the generic event is supposed to
-measure. That means developing
-a lot of code in the kernel to express and manage that. And of course,
-you would not be able
-to sample on those events (you cannot sample on a difference, for
-instance). So all in all, I think
-this is not a very good idea. You have to put this into the tool or a
-library that auto-detects the
-host CPU and programs the right set of events.
+Acked-by: Michal Hocko <mhocko@suse.cz
 
-We've had that discussion many times. Just reiterating my personal
-opinion on this.
+Just a nit..
+> ---
+>  Documentation/cgroups/memory.txt | 58 +++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 57 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> index c07f7b4..dd15be8 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+[...]
+> @@ -268,20 +273,65 @@ the amount of kernel memory used by the system. Kernel memory is fundamentally
+>  different than user memory, since it can't be swapped out, which makes it
+>  possible to DoS the system by consuming too much of this precious resource.
+>  
+> +Kernel memory won't be accounted at all until limit on a group is set. This
+> +allows for existing setups to continue working without disruption.  The limit
+> +cannot be set if the cgroup have children, or if there are already tasks in the
+> +cgroup. When use_hierarchy == 1 and a group is accounted, its children will
+> +automatically be accounted regardless of their limit value.
+> +
+> +After a controller is first limited, it will be kept being accounted until it
 
->>  $ find /sys/bus/event_source/devices/cpu/events/
->>  ...
->>  /sys/bus/event_source/devices/cpu/events/stalled-cycles-fixed-point
->>  /sys/bus/event_source/devices/cpu/events/stalled-cycles-load-store
->>  /sys/bus/event_source/devices/cpu/events/stalled-cycles-instruction-fetch
->>  /sys/bus/event_source/devices/cpu/events/stalled-cycles-branch
->>  ...
->>  $ cat /sys/bus/event_source/devices/cpu/events/stalled-cycles-fixed-point
->>  event=0xff,umask=0x00
->>
->> Perf tool works then out-of-the-box with:
->>
->>  $ perf record -e cpu/stalled-cycles-fixed-point/ ...
->
-> I refer here to arch/x86/kernel/cpu/perf_event_intel_uncore.c (should
-> be in v3.7-rc1 or tip:perf/core). See the INTEL_UNCORE_EVENT_DESC()
-> macro and 'if (type->event_descs) ...' in uncore_type_init(). The code
-> should be reworked to be non-architectural.
->
-> PMU registration is implemented for a longer time already for all
-> architectures and pmu types:
->
->  /sys/bus/event_source/devices/*
->
-> But
->
->  /sys/bus/event_source/devices/*/events/
->
-> exists only for a small number of pmus. Perf tool support of this was
-> implemented with:
->
->  a6146d5 perf/tool: Add PMU event alias support
->
-> -Robert
->
-> --
-> Advanced Micro Devices, Inc.
-> Operating System Research Center
->
+s/controller/group/
+
+> +is removed. The memory limitation itself, can of course be removed by writing
+> +-1 to memory.kmem.limit_in_bytes. In this case, kmem will be accounted, but not
+> +limited.
+> +
+
+-- 
+Michal Hocko
+SUSE Labs
