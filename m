@@ -1,40 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932136Ab2JPR6Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 13:58:24 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:46035 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932097Ab2JPR6U (ORCPT
+	id S932159Ab2JPR62 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 13:58:28 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:46070 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932097Ab2JPR60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 13:58:20 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18rBIb37kRa9rvby8CTJxbG
-Date: Tue, 16 Oct 2012 10:58:17 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastien Guiriec <s-guiriec@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] OMAP4: devices: fixup OMAP4 DMIC platform device error
- message
-Message-ID: <20121016175817.GY15569@atomide.com>
-References: <1350401440-9620-1-git-send-email-s-guiriec@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350401440-9620-1-git-send-email-s-guiriec@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 16 Oct 2012 13:58:26 -0400
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        will.deacon@arm.com, rmk+kernel@arm.linux.org.uk
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: [PATCH] ARM: kexec: fix segment memory addresses check
+Date: Tue, 16 Oct 2012 20:57:24 +0300
+Message-Id: <1350410244-12240-1-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastien Guiriec <s-guiriec@ti.com> [121016 08:32]:
-> Correct DMIC hwmod lockup error message and replace printk() by
-> pr_err().
+Commit c564df4db85aac8d1d65a56176a0a25f46138064 (ARM: 7540/1: kexec:
+Check segment memory addresses) added a safety check with accidentally
+reversed condition, and broke kexec functionality on ARM. Fix this.
 
-Thanks applying into omap-for-v3.7-rc1/fixes-part2.
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+---
+ arch/arm/kernel/machine_kexec.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-Regards,
+diff --git a/arch/arm/kernel/machine_kexec.c b/arch/arm/kernel/machine_kexec.c
+index e29c333..8ef8c93 100644
+--- a/arch/arm/kernel/machine_kexec.c
++++ b/arch/arm/kernel/machine_kexec.c
+@@ -45,10 +45,9 @@ int machine_kexec_prepare(struct kimage *image)
+ 	for (i = 0; i < image->nr_segments; i++) {
+ 		current_segment = &image->segment[i];
+ 
+-		err = memblock_is_region_memory(current_segment->mem,
+-						current_segment->memsz);
+-		if (err)
+-			return - EINVAL;
++		if (!memblock_is_region_memory(current_segment->mem,
++					       current_segment->memsz))
++			return -EINVAL;
+ 
+ 		err = get_user(header, (__be32*)current_segment->buf);
+ 		if (err)
+-- 
+1.7.2.5
 
-Tony
