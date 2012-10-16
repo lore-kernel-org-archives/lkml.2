@@ -1,80 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab2JPQuf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 12:50:35 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:40284 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755076Ab2JPQub (ORCPT
+	id S1755493Ab2JPQuw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 12:50:52 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:35839 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755148Ab2JPQuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 12:50:31 -0400
-From: Tom Mingarelli <thomas.mingarelli@hp.com>
-To: Alex Williamson <alex.williamson@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>
-Cc: Shuah Khan <shuah.khan@hp.com>, Tom Mingarelli <thomas.mingarelli@hp.com>,
-        Linda Knippers <linda.knippers@hp.com>,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Message-Id: <20121016164905.14478.21080.sendpatchset@RHEL63BL460c.osen.hp.com>
-Subject: [PATCH v3] Prevent devices with RMRRs from being placed into SI Domain during startup
-Date: Tue, 16 Oct 2012 16:50:29 +0000 (UTC)
+	Tue, 16 Oct 2012 12:50:50 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+ivWtGw13oIKC+0bOdFLd2
+Date: Tue, 16 Oct 2012 09:50:43 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: linux@arm.linux.org.uk, b-cousson@ti.com, arnd@arndb.de, olof@lixom.net,
+        rdunlap@xenotime.net, balbi@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] drivers: bus: ocp2scp: add pdata support
+Message-ID: <20121016165043.GS15569@atomide.com>
+References: <1349675983-23803-1-git-send-email-kishon@ti.com>
+ <1349675983-23803-2-git-send-email-kishon@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349675983-23803-2-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is to prevent devices that have RMRRs associated with them 
-from getting placed into the SI Domain during init. We don't put USB devices
-into this category, however. This fixes the issue where the RMRR info
-for devices being placed in and out of the SI Domain gets lost.
+* Kishon Vijay Abraham I <kishon@ti.com> [121007 23:01]:
+> ocp2scp was not having pdata support which makes *musb* fail for non-dt
+> boot in OMAP platform. The pdata will have information about the devices
+> that is connected to ocp2scp. ocp2scp driver will now make use of this
+> information to create the devices that is attached to ocp2scp.
+> 
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 
-Signed-off-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
-----
-PATCH v1: https://lkml.org/lkml/2012/6/15/204
-PATCH v2: https://lkml.org/lkml/2012/9/18/354
+This fixes the regression on my panda es for musb port:
 
-drivers/iommu/intel-iommu.c |   33 +++++++++++++++++++++++++++++++++
-1 files changed, 33 insertions(+), 0 deletions(-)
-
-diff -up ./drivers/iommu/intel-iommu.c.ORIG ./drivers/iommu/intel-iommu.c
---- ./drivers/iommu/intel-iommu.c.ORIG	2012-10-16 09:34:23.148089944 -0500
-+++ ./drivers/iommu/intel-iommu.c	2012-10-16 09:56:56.905932861 -0500
-@@ -2320,8 +2320,41 @@ static int domain_add_dev_info(struct dm
- 	return 0;
- }
- 
-+static bool device_has_rmrr(struct pci_dev *dev)
-+{
-+	struct dmar_rmrr_unit *rmrr;
-+	int i;
-+
-+	for_each_rmrr_units(rmrr) {
-+		for (i = 0; i < rmrr->devices_cnt; i++) {
-+			/*
-+			 * Here we are just concerned with checking each device
-+			 * that has an RMRR associated with it and not allow it
-+			 * to be placed into the SI Domain during startup.
-+			*/
-+			if (rmrr->devices[i] == dev)
-+				return true;
-+		}
-+	}
-+	return false;
-+}
-+
- static int iommu_should_identity_map(struct pci_dev *pdev, int startup)
- {
-+
-+	if (startup) {
-+		/*
-+		 * This is where we will refuse any device that has an
-+		 * RMRR associated with it and is not a USB device and
-+		 * NOT allow it to be placed into the SI Domain. We
-+		 * only do this on startup. We don't need a separate bit
-+		 * for this because it could be ANY device.
-+		*/
-+		if (device_has_rmrr(pdev) &&
-+			(pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
-+				return 0;
-+	}
-+
- 	if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
- 		return 1;
- 
+Acked-by: Tony Lindgren <tony@atomide.com>
