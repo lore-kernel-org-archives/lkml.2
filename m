@@ -1,85 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab2JPADy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 20:03:54 -0400
-Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:24517 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655Ab2JPADx (ORCPT
+	id S1755160Ab2JPAEY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 20:04:24 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:28991 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754771Ab2JPAEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 20:03:53 -0400
-Date: Tue, 16 Oct 2012 02:03:51 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Ezequiel Garcia <elezegarcia@gmail.com>
-cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [media] stk1160: Check return value of stk1160_read_reg()
- in stk1160_i2c_read_reg()
-In-Reply-To: <CALF0-+UuB0y_8+SLE05Sn997HDcP5u=AJsoGvjmfSUBB__DkhQ@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1210160131240.1682@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.0811091803320.23782@swampdragon.chaosbits.net> <CALF0-+Vtmwu9rCc9BYiDx2O2GQWezK40BYR2LP_ve2YjCt=Afg@mail.gmail.com> <alpine.LNX.2.00.1210152025300.1038@swampdragon.chaosbits.net> <alpine.LNX.2.00.1210160051100.1682@swampdragon.chaosbits.net>
- <CALF0-+UuB0y_8+SLE05Sn997HDcP5u=AJsoGvjmfSUBB__DkhQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 15 Oct 2012 20:04:22 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtEmAMWjfFB5LH33/2dsb2JhbABFuh+EbQKBBYEJgiABAQUnExwjEAgYMRQlAzSIA6tAkFMUjSyBNYJBYAOVa5AxgwE
+Date: Tue, 16 Oct 2012 11:04:05 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
+        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [PATCH] xfs: add hot tracking support.
+Message-ID: <20121016000405.GA2864@dastard>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Oct 2012, Ezequiel Garcia wrote:
 
-> On Mon, Oct 15, 2012 at 7:52 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> > On Mon, 15 Oct 2012, Jesper Juhl wrote:
-> >
-> >> On Sat, 13 Oct 2012, Ezequiel Garcia wrote:
-> >>
-[...]
-> > Currently there are two checks for 'rc' being less than zero with no
-> > change to 'rc' between the two, so the second is just dead code.
-> > The intention seems to have been to assign the return value of
-> > 'stk1160_read_reg()' to 'rc' before the (currently dead) second check
-> > and then test /that/. This patch does that.
-> >
-> 
-> This is an overly complicated explanation for such a small patch.
-> Can you try to simplify it?
-> 
-How's this?
+From: Dave Chinner <dchinner@redhat.com>
 
+Connect up the VFS hot tracking support so XFS filesystems can make
+use of it.
 
-From: Jesper Juhl <jj@chaosbits.net>
-Date: Sat, 13 Oct 2012 00:16:37 +0200
-Subject: [PATCH] [media] stk1160: Check return value of stk1160_read_reg() in stk1160_i2c_read_reg()
-
-Remember to collect the exit status from 'stk1160_read_reg()' in 'rc' 
-before testing it for less than zero.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- drivers/media/usb/stk1160/stk1160-i2c.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ fs/xfs/xfs_mount.h |    1 +
+ fs/xfs/xfs_super.c |    9 +++++++++
+ 2 files changed, 10 insertions(+)
 
-diff --git a/drivers/media/usb/stk1160/stk1160-i2c.c b/drivers/media/usb/stk1160/stk1160-i2c.c
-index 176ac93..a2370e4 100644
---- a/drivers/media/usb/stk1160/stk1160-i2c.c
-+++ b/drivers/media/usb/stk1160/stk1160-i2c.c
-@@ -116,10 +116,9 @@ static int stk1160_i2c_read_reg(struct stk1160 *dev, u8 addr,
- 	if (rc < 0)
- 		return rc;
+diff --git a/fs/xfs/xfs_mount.h b/fs/xfs/xfs_mount.h
+index a631ca3..d5e7277 100644
+--- a/fs/xfs/xfs_mount.h
++++ b/fs/xfs/xfs_mount.h
+@@ -215,6 +215,7 @@ typedef struct xfs_mount {
+ #define XFS_MOUNT_WSYNC		(1ULL << 0)	/* for nfs - all metadata ops
+ 						   must be synchronous except
+ 						   for space allocations */
++#define XFS_MOUNT_HOTTRACK	(1ULL << 1)	/* hot inode tracking */
+ #define XFS_MOUNT_WAS_CLEAN	(1ULL << 3)
+ #define XFS_MOUNT_FS_SHUTDOWN	(1ULL << 4)	/* atomic stop of all filesystem
+ 						   operations, typically for
+diff --git a/fs/xfs/xfs_super.c b/fs/xfs/xfs_super.c
+index 56c2537..17786ff 100644
+--- a/fs/xfs/xfs_super.c
++++ b/fs/xfs/xfs_super.c
+@@ -61,6 +61,7 @@
+ #include <linux/kthread.h>
+ #include <linux/freezer.h>
+ #include <linux/parser.h>
++#include <linux/hot_tracking.h>
  
--	stk1160_read_reg(dev, STK1160_SBUSR_RD, value);
-+	rc = stk1160_read_reg(dev, STK1160_SBUSR_RD, value);
- 	if (rc < 0)
- 		return rc;
--
+ static const struct super_operations xfs_super_operations;
+ static kmem_zone_t *xfs_ioend_zone;
+@@ -114,6 +115,7 @@ mempool_t *xfs_ioend_pool;
+ #define MNTOPT_NODELAYLOG  "nodelaylog"	/* Delayed logging disabled */
+ #define MNTOPT_DISCARD	   "discard"	/* Discard unused blocks */
+ #define MNTOPT_NODISCARD   "nodiscard"	/* Do not discard unused blocks */
++#define MNTOPT_HOTTRACK	"hot_track"	/* hot inode tracking */
+ 
+ /*
+  * Table driven mount option parser.
+@@ -371,6 +373,8 @@ xfs_parseargs(
+ 			mp->m_flags |= XFS_MOUNT_DISCARD;
+ 		} else if (!strcmp(this_char, MNTOPT_NODISCARD)) {
+ 			mp->m_flags &= ~XFS_MOUNT_DISCARD;
++		} else if (!strcmp(this_char, MNTOPT_HOTTRACK)) {
++			mp->m_flags |= XFS_MOUNT_HOTTRACK;
+ 		} else if (!strcmp(this_char, "ihashsize")) {
+ 			xfs_warn(mp,
+ 	"ihashsize no longer used, option is deprecated.");
+@@ -1040,6 +1044,9 @@ xfs_fs_put_super(
+ {
+ 	struct xfs_mount	*mp = XFS_M(sb);
+ 
++	if (mp->m_flags & XFS_MOUNT_HOTTRACK)
++		hot_track_exit(sb);
++
+ 	xfs_filestream_unmount(mp);
+ 	xfs_unmountfs(mp);
+ 
+@@ -1470,6 +1477,8 @@ xfs_fs_fill_super(
+ 		error = ENOMEM;
+ 		goto out_unmount;
+ 	}
++	if (mp->m_flags & XFS_MOUNT_HOTTRACK)
++		hot_track_init(sb);
+ 
  	return 0;
- }
  
--- 
-1.7.1
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
