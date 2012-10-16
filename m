@@ -1,121 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab2JPMIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 08:08:51 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:37477 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752450Ab2JPMIt (ORCPT
+	id S1753567Ab2JPMJo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 08:09:44 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:42795 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752148Ab2JPMJm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 08:08:49 -0400
-Message-ID: <507D4E4B.6050509@linux.vnet.ibm.com>
-Date: Tue, 16 Oct 2012 20:08:43 +0800
+	Tue, 16 Oct 2012 08:09:42 -0400
+Message-ID: <507D4E80.8000203@linux.vnet.ibm.com>
+Date: Tue, 16 Oct 2012 20:09:36 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v5 3/6] KVM: MMU: cleanup FNAME(page_fault)
+Subject: [PATCH v5 4/6] KVM: MMU: move prefetch_invalid_gpte out of pagaing_tmp.h
 References: <507D4DE7.5080708@linux.vnet.ibm.com>
 In-Reply-To: <507D4DE7.5080708@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12101612-5490-0000-0000-0000024B9A27
+x-cbid: 12101612-1396-0000-0000-00000200D7F1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let it return emulate state instead of spte like __direct_map
+The function does not depend on guest mmu mode, move it out from
+paging_tmpl.h
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/paging_tmpl.h |   32 +++++++++++++-------------------
- 1 files changed, 13 insertions(+), 19 deletions(-)
+ arch/x86/kvm/mmu.c         |   36 ++++++++++++++++++++++++++++--------
+ arch/x86/kvm/paging_tmpl.h |   26 +++-----------------------
+ 2 files changed, 31 insertions(+), 31 deletions(-)
 
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 045d31a..c555532 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -427,21 +427,21 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
-
- /*
-  * Fetch a shadow pte for a specific level in the paging hierarchy.
-+ * If the guest tries to write a write-protected page, we need to
-+ * emulate this operation, return 1 to indicate this case.
-  */
--static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
-+static int FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
- 			 struct guest_walker *gw,
- 			 int user_fault, int write_fault, int hlevel,
--			 int *emulate, pfn_t pfn, bool map_writable,
--			 bool prefault)
-+			 pfn_t pfn, bool map_writable, bool prefault)
- {
--	unsigned access = gw->pt_access;
- 	struct kvm_mmu_page *sp = NULL;
--	int top_level;
--	unsigned direct_access;
- 	struct kvm_shadow_walk_iterator it;
-+	unsigned direct_access, access = gw->pt_access;
-+	int top_level, emulate = 0;
-
- 	if (!is_present_gpte(gw->ptes[gw->level - 1]))
--		return NULL;
-+		return 0;
-
- 	direct_access = gw->pte_access;
-
-@@ -505,17 +505,17 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
-
- 	clear_sp_write_flooding_count(it.sptep);
- 	mmu_set_spte(vcpu, it.sptep, access, gw->pte_access,
--		     user_fault, write_fault, emulate, it.level,
-+		     user_fault, write_fault, &emulate, it.level,
- 		     gw->gfn, pfn, prefault, map_writable);
- 	FNAME(pte_prefetch)(vcpu, gw, it.sptep);
-
--	return it.sptep;
-+	return emulate;
-
- out_gpte_changed:
- 	if (sp)
- 		kvm_mmu_put_page(sp, it.sptep);
- 	kvm_release_pfn_clean(pfn);
--	return NULL;
-+	return 0;
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index b8d13d7..56c0e39 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2505,6 +2505,14 @@ static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
+ 	mmu_free_roots(vcpu);
  }
 
- /*
-@@ -538,8 +538,6 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
- 	int write_fault = error_code & PFERR_WRITE_MASK;
- 	int user_fault = error_code & PFERR_USER_MASK;
- 	struct guest_walker walker;
--	u64 *sptep;
--	int emulate = 0;
- 	int r;
- 	pfn_t pfn;
- 	int level = PT_PAGE_TABLE_LEVEL;
-@@ -601,17 +599,13 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
- 	kvm_mmu_free_some_pages(vcpu);
- 	if (!force_pt_level)
- 		transparent_hugepage_adjust(vcpu, &walker.gfn, &pfn, &level);
--	sptep = FNAME(fetch)(vcpu, addr, &walker, user_fault, write_fault,
--			     level, &emulate, pfn, map_writable, prefault);
--	(void)sptep;
--	pgprintk("%s: shadow pte %p %llx emulate %d\n", __func__,
--		 sptep, *sptep, emulate);
++static bool is_rsvd_bits_set(struct kvm_mmu *mmu, u64 gpte, int level)
++{
++	int bit7;
++
++	bit7 = (gpte >> 7) & 1;
++	return (gpte & mmu->rsvd_bits_mask[bit7][level-1]) != 0;
++}
++
+ static pfn_t pte_prefetch_gfn_to_pfn(struct kvm_vcpu *vcpu, gfn_t gfn,
+ 				     bool no_dirty_log)
+ {
+@@ -2517,6 +2525,26 @@ static pfn_t pte_prefetch_gfn_to_pfn(struct kvm_vcpu *vcpu, gfn_t gfn,
+ 	return gfn_to_pfn_memslot_atomic(slot, gfn);
+ }
+
++static bool prefetch_invalid_gpte(struct kvm_vcpu *vcpu,
++				  struct kvm_mmu_page *sp, u64 *spte,
++				  u64 gpte)
++{
++	if (is_rsvd_bits_set(&vcpu->arch.mmu, gpte, PT_PAGE_TABLE_LEVEL))
++		goto no_present;
++
++	if (!is_present_gpte(gpte))
++		goto no_present;
++
++	if (!(gpte & PT_ACCESSED_MASK))
++		goto no_present;
++
++	return false;
++
++no_present:
++	drop_spte(vcpu->kvm, spte);
++	return true;
++}
++
+ static int direct_pte_prefetch_many(struct kvm_vcpu *vcpu,
+ 				    struct kvm_mmu_page *sp,
+ 				    u64 *start, u64 *end)
+@@ -3394,14 +3422,6 @@ static void paging_free(struct kvm_vcpu *vcpu)
+ 	nonpaging_free(vcpu);
+ }
+
+-static bool is_rsvd_bits_set(struct kvm_mmu *mmu, u64 gpte, int level)
+-{
+-	int bit7;
 -
-+	r = FNAME(fetch)(vcpu, addr, &walker, user_fault, write_fault,
-+			 level, pfn, map_writable, prefault);
- 	++vcpu->stat.pf_fixed;
- 	kvm_mmu_audit(vcpu, AUDIT_POST_PAGE_FAULT);
- 	spin_unlock(&vcpu->kvm->mmu_lock);
+-	bit7 = (gpte >> 7) & 1;
+-	return (gpte & mmu->rsvd_bits_mask[bit7][level-1]) != 0;
+-}
+-
+ static inline void protect_clean_gpte(unsigned *access, unsigned gpte)
+ {
+ 	unsigned mask;
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index c555532..36a80ed 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -305,26 +305,6 @@ static int FNAME(walk_addr_nested)(struct guest_walker *walker,
+ 					addr, access);
+ }
 
--	return emulate;
-+	return r;
+-static bool FNAME(prefetch_invalid_gpte)(struct kvm_vcpu *vcpu,
+-				    struct kvm_mmu_page *sp, u64 *spte,
+-				    pt_element_t gpte)
+-{
+-	if (is_rsvd_bits_set(&vcpu->arch.mmu, gpte, PT_PAGE_TABLE_LEVEL))
+-		goto no_present;
+-
+-	if (!is_present_gpte(gpte))
+-		goto no_present;
+-
+-	if (!(gpte & PT_ACCESSED_MASK))
+-		goto no_present;
+-
+-	return false;
+-
+-no_present:
+-	drop_spte(vcpu->kvm, spte);
+-	return true;
+-}
+-
+ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+ 			      u64 *spte, const void *pte)
+ {
+@@ -333,7 +313,7 @@ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+ 	pfn_t pfn;
 
- out_unlock:
- 	spin_unlock(&vcpu->kvm->mmu_lock);
+ 	gpte = *(const pt_element_t *)pte;
+-	if (FNAME(prefetch_invalid_gpte)(vcpu, sp, spte, gpte))
++	if (prefetch_invalid_gpte(vcpu, sp, spte, gpte))
+ 		return;
+
+ 	pgprintk("%s: gpte %llx spte %p\n", __func__, (u64)gpte, spte);
+@@ -408,7 +388,7 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
+
+ 		gpte = gptep[i];
+
+-		if (FNAME(prefetch_invalid_gpte)(vcpu, sp, spte, gpte))
++		if (prefetch_invalid_gpte(vcpu, sp, spte, gpte))
+ 			continue;
+
+ 		pte_access = sp->role.access & gpte_access(vcpu, gpte);
+@@ -751,7 +731,7 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+ 					  sizeof(pt_element_t)))
+ 			return -EINVAL;
+
+-		if (FNAME(prefetch_invalid_gpte)(vcpu, sp, &sp->spt[i], gpte)) {
++		if (prefetch_invalid_gpte(vcpu, sp, &sp->spt[i], gpte)) {
+ 			vcpu->kvm->tlbs_dirty++;
+ 			continue;
+ 		}
 -- 
 1.7.7.6
 
