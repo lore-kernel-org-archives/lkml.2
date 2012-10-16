@@ -1,127 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab2JPKd5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 06:33:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60928 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752193Ab2JPKd4 convert rfc822-to-8bit (ORCPT
+	id S1753823Ab2JPKhT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 06:37:19 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53191 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752567Ab2JPKhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 06:33:56 -0400
-Date: Tue, 16 Oct 2012 06:33:48 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Bug fix] nfs-client: fix nfs_inode_attrs_need_update for async
- read_done comes during truncating to smaller size
-Message-ID: <20121016063348.7b225bfb@tlielax.poochiereds.net>
-In-Reply-To: <507CDEF2.2060809@asianux.com>
-References: <507B70F1.7040903@asianux.com>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA909236BB5@SACEXCMBX04-PRD.hq.netapp.com>
-	<507B968A.9090104@asianux.com>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA90923F1C4@SACEXCMBX04-PRD.hq.netapp.com>
-	<507CBA3F.6000204@asianux.com>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA909253103@SACEXCMBX04-PRD.hq.netapp.com>
-	<507CDEF2.2060809@asianux.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 16 Oct 2012 06:37:17 -0400
+Date: Tue, 16 Oct 2012 11:37:02 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+Cc: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "inki.dae@samsung.com" <inki.dae@samsung.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [Linaro-mm-sig] [RFC 0/2] DMA-mapping & IOMMU - physically
+	contiguous allocations
+Message-ID: <20121016103702.GB21164@n2100.arm.linux.org.uk>
+References: <CAAQKjZMYFNMEnb2ue2aR+6AEbOixnQFyggbXrThBCW5VOznePg@mail.gmail.com> <20121016090434.7d5e088152a3e0b0606903c8@nvidia.com> <20121016085928.GV21164@n2100.arm.linux.org.uk> <20121016.132755.661591248175727826.hdoyu@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121016.132755.661591248175727826.hdoyu@nvidia.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Oct 2012 12:13:38 +0800
-Chen Gang <gang.chen@asianux.com> wrote:
-
-> 于 2012年10月16日 10:51, Myklebust, Trond 写道:
+On Tue, Oct 16, 2012 at 12:27:55PM +0200, Hiroshi Doyu wrote:
+> Hi Russell,
 > 
-> >>
-> >> 1) is it means: nfs_inode_attrs_need_update need not consider async
-> >> read_done situation ?
+> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote @ Tue, 16 Oct 2012 10:59:28 +0200:
+> 
+> > On Tue, Oct 16, 2012 at 09:04:34AM +0300, Hiroshi Doyu wrote:
+> > > In addition to those contiguous/discontiguous page allocation, is
+> > > there any way to _import_ anonymous pages allocated by a process to be
+> > > used in dma-mapping API later?
+> > > 
+> > > I'm considering the following scenario, an user process allocates a
+> > > buffer by malloc() in advance, and then it asks some driver to convert
+> > > that buffer into IOMMU'able/DMA'able ones later. In this case, pages
+> > > are discouguous and even they may not be yet allocated at
+> > > malloc()/mmap().
 > > 
-> > I don't understand what you mean. This is mainly about the asynchronous
-> > write situation...
+> > That situation is covered.  It's the streaming API you're wanting for that.
+> > dma_map_sg() - but you may need additional cache handling via
+> > flush_dcache_page() to ensure that your code is safe for all CPU cache
+> > architectures.
+> >
+> > Remember that pages allocated into userspace will be cacheable, so a cache
+> > flush is required before they can be DMA'd.  Hence the streaming
+> > API.
 > 
-> for async read done, it will call nfs_readpage_result -> nfs_read_done
-> -> nfs_refresh_inode -> nfs_refresh_inode_locked ->
-> nfs_inode_attrs_need_update -> nfs_size_need_update.
+> Is the syscall "cacheflush()" supposed to be the knob for that?
 > 
-> we need consider the situation that "async read_done also call
-> nfs_size_need_update with an old useless larger file size".
-> 
-> you means, it need not consider async read (only consider async write is
-> enough), is it correct ?
-> 
-> > 
-> > No... If I did, I would have changed this 15 years ago when I was
-> > writing that code. Nothing here is new... 2.6.27-rc9 has the exact same
-> > heuristics.
-> 
-> 1) I have read the relative source code of 2.6.27-rc9, it is truly no
-> nfs_size_need_update function.
-> 
-> 2) I have test the 2.6.27-rc9, it truly pass the LTP test of udp+nfsv2.
-> 
-> 3) I got the 2.6.27-rc9 source code by this way (please check)
->    A) get source code from (git clone)
-> git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
->    B) git archive v2.6.27-rc9 | tar -xf - -C ../2.6.27-rc9/
-> 
-> 
-> > It boils down to the rule that if you want to ensure that data is not
-> > _lost_, then you have to ensure that the cached file size is not less
-> > than the true file size.
-> > 
-> 
-> 1) you means: in some condition, the cached file size can be bigger than
-> the true file size ?  can you give some example (which no negative
-> effect for correctness) ?
-> 
-> 2) What I feel:
->    A) I am not quite familiar with nfs (so truly need your information);
->    B) I think it is truly a bug, but maybe nfs_size_need_update is not
-> the root cause (so need nfs maintainers' audit)
->    C) if nfs_size_need_update is truly not the root cause, I shall
-> continue analysing it, after get enough information from nfs maintainers.
-> 
-> 
-> >>   B) the test tools which I use is from the LTP (Linux Test Project),
-> >> they use both udp and tcp to test both the nfsv2 and nfsv3.
-> > 
-> > So what combinations are failing?
-> 
-> for udp + nfsv2 failing (I am not test udp + nfsv3)
-> 
+> Or is there any other ones to have more precise control, "clean",
+> "invalidate" and "flush", from userland in generic way?
 
+No other syscalls are required - this sequence will do everything you
+need to perform DMA on pages mapped into userspace:
 
-The problem is a little more fundamental than that. The attr cache
-handling logic is some of the trickiest code to deal with in the NFS
-client.
+	get_user_pages()
+	convert array of struct page * to scatterlist
+	dma_map_sg()
+	perform DMA
+	dma_unmap_sg()
+	for each page in sg()
+		page_cache_release(page);
 
-In any situation where we get back attributes, we have to decide
-whether they are valid or stale. It's always possible for replies or
-their handling to be reordered such that an older set of attributes
-is processed after a newer set.
-
-Unfortunately, the v2/v3 protocols do not have great support for
-helping the client detect this situation, so we do the best we can with
-what we do have. Unfortunately when things are changing very quickly we
-can still get it wrong, especially with v2/3. [1]
-
-In any case, the logic to determine this is in
-nfs_inode_attrs_need_update(). Looking at the size is sort of the "last
-resort" after we look at the timestamps and gencount.
-
-The problem with doing what you suggest is that if we get it wrong, the
-consequences are worse than the file appearing to be bigger than it is.
-It means that written data may be silently lost.
-
-======
-
-[1]: v4 has a change attribute so it's slightly simpler there when the
-server supports it. Unrelated Q for Trond: should we be checking the v4
-change_attr in nfs_inode_attrs_need_update too? 
-
--- 
-Jeff Layton <jlayton@redhat.com>
+If you get the list of pages some other way (eg, via shmem_read_mapping_page_gfp)
+then additional maintanence may be required (though that may be a bug in
+shmem - remember this stuff hasn't been well tested on ARM before.)
