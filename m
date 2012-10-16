@@ -1,52 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab2JPI7s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 04:59:48 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53070 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950Ab2JPI7q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 04:59:46 -0400
-Date: Tue, 16 Oct 2012 09:59:28 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Inki Dae <inki.dae@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-tegra@vger.kernel.org
-Subject: Re: [Linaro-mm-sig] [RFC 0/2] DMA-mapping & IOMMU - physically
-	contiguous allocations
-Message-ID: <20121016085928.GV21164@n2100.arm.linux.org.uk>
-References: <1350309832-18461-1-git-send-email-m.szyprowski@samsung.com> <CAAQKjZMYFNMEnb2ue2aR+6AEbOixnQFyggbXrThBCW5VOznePg@mail.gmail.com> <20121016090434.7d5e088152a3e0b0606903c8@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121016090434.7d5e088152a3e0b0606903c8@nvidia.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1752983Ab2JPJCU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 05:02:20 -0400
+Received: from smtp.getmail.no ([84.208.15.66]:51589 "EHLO smtp.getmail.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750950Ab2JPJCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 05:02:19 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
+To: linux-kernel@vger.kernel.org
+Date: Tue, 16 Oct 2012 09:03:15 +0200
+Subject: Low-jitter kernel benchmark.
+From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
+Message-id: <op.wl9e7pcf6426ze@millennium.getinternet.no>
+User-Agent: Opera Mail/12.02 (Win32)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 09:04:34AM +0300, Hiroshi Doyu wrote:
-> In addition to those contiguous/discontiguous page allocation, is
-> there any way to _import_ anonymous pages allocated by a process to be
-> used in dma-mapping API later?
-> 
-> I'm considering the following scenario, an user process allocates a
-> buffer by malloc() in advance, and then it asks some driver to convert
-> that buffer into IOMMU'able/DMA'able ones later. In this case, pages
-> are discouguous and even they may not be yet allocated at
-> malloc()/mmap().
+http://www.phoronix.com/scan.php?page=news_item&px=MTIwNzM
 
-That situation is covered.  It's the streaming API you're wanting for that.
-dma_map_sg() - but you may need additional cache handling via
-flush_dcache_page() to ensure that your code is safe for all CPU cache
-architectures.
+While Phoronix usually miss the point of these configs, these benchmarks  
+still show that low-jitter on the desktop, does not affect desktop  
+performance negatively.
 
-Remember that pages allocated into userspace will be cacheable, so a cache
-flush is required before they can be DMA'd.  Hence the streaming API.
+Only if you are running Apache, on a server, you`d want a different  
+config. And then not even X, so this is not related to "desktop".
+
+So this should weigh heavily with any sane desktop-distro maker, for his  
+config.
+
+Ubuntu configgers have no valid argument about throughput anymore, for  
+instance.
+
+Peace Be With You.
