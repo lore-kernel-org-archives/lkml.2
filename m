@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab2JPT2J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 15:28:09 -0400
-Received: from mail.df.lth.se ([194.47.250.12]:44875 "EHLO mail.df.lth.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755838Ab2JPT2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 15:28:07 -0400
-X-Greylist: delayed 360 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Oct 2012 15:28:07 EDT
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 0/7] gpio: assorted irqdomain cleanups
-Date: Tue, 16 Oct 2012 21:21:55 +0200
-Message-Id: <1350415315-2451-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.7.2.5
+	id S1755986Ab2JPTa0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 15:30:26 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:5163 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755617Ab2JPTaZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 15:30:25 -0400
+Date: Tue, 16 Oct 2012 19:30:23 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-mm@kvack.org, cgroups@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, devel@openvz.org,
+        linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v5 14/14] Add documentation about the kmem controller
+In-Reply-To: <507DAF56.9010403@parallels.com>
+Message-ID: <0000013a6b0e332a-81258f37-814f-4b7e-8b95-193ecb9d7b9d-000000@email.amazonses.com>
+References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-15-git-send-email-glommer@parallels.com> <0000013a6ad26c73-d043cf97-c44a-45c1-9cae-0a962e93a005-000000@email.amazonses.com> <507DAF56.9010403@parallels.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have noted that some of the GPIO drivers have been copy-pasting
-and contaminating each other with bad examples, so I've tried in
-this series to mitigate this by correcting the most obvious
-examples.
+On Tue, 16 Oct 2012, Glauber Costa wrote:
 
-I have no clue how to even compile-test some of these, so I rely
-on maintainers to test them and maybe refactor them up if they are
-sucky.
+> A limitation of kernel memory use would be good, for example, to prevent
+> abuse from non-trusted containers in a high density, shared, container
+> environment.
 
-Remains: gpio-omap, gpio-pxa and gpio-twl4030.
-
-These three drivers do *REALLY* scary stuff, like creating domains
-and flat out ignoring to use them, keeping the irq_base after
-allocating descriptors around and abusing it etc. I would really
-like to see these fixed up to use irqdomains properly. The
-twl4030 looks really hairy with the IRQ handling centralized
-into the main MFD driver...
-
-Linus Walleij (7):
-  gpio/tc3589x: convert to use the simple irqdomain
-  gpio/em: convert to linear IRQ domain
-  gpio/mvebu: convert to use irq_domain_add_simple()
-  gpio/mxs: convert to use linear irqdomain
-  gpio/pcf857x: find the irq domain mapping
-  gpio/langwell: find the irq domain mapping
-  gpio/tegra: convert to use linear irqdomain
-
- drivers/gpio/gpio-em.c       | 22 +++-------------------
- drivers/gpio/gpio-langwell.c |  2 +-
- drivers/gpio/gpio-mvebu.c    |  6 +++---
- drivers/gpio/gpio-mxs.c      | 19 ++++++-------------
- drivers/gpio/gpio-pcf857x.c  |  2 +-
- drivers/gpio/gpio-tc3589x.c  | 14 +++-----------
- drivers/gpio/gpio-tegra.c    | 12 ++++--------
- 7 files changed, 21 insertions(+), 56 deletions(-)
-
--- 
-1.7.11.7
+But that would be against intentional abuse by someone who has code that
+causes the kernel to use a lot of memory on its behalf. We already need
+protection from that without memcg.
 
