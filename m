@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab2JPH27 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 03:28:59 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:33663 "EHLO
+	id S1754956Ab2JPH3a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 03:29:30 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:33751 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754744Ab2JPH26 (ORCPT
+	with ESMTP id S1754764Ab2JPH32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 03:28:58 -0400
-X-AuditID: cbfee61a-b7f976d000001eb9-5d-507d0cb8adb4
+	Tue, 16 Oct 2012 03:29:28 -0400
+X-AuditID: cbfee61b-b7fd46d0000046e0-30-507d0cd71d93
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>,
         "'LKML'" <linux-kernel@vger.kernel.org>
@@ -15,32 +15,32 @@ Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <007101cdab6f$6c8bc030$45a34090$%han@samsung.com>
 In-reply-to: <007101cdab6f$6c8bc030$45a34090$%han@samsung.com>
-Subject: [PATCH 06/17] backlight: hp680_bl: fix checkpatch error and warning
-Date: Tue, 16 Oct 2012 16:28:56 +0900
-Message-id: <007701cdab6f$e6f926a0$b4eb73e0$%han@samsung.com>
+Subject: [PATCH 07/17] backlight: ili9320: fix checkpatch error and warning
+Date: Tue, 16 Oct 2012 16:29:27 +0900
+Message-id: <007801cdab6f$f92b5aa0$eb820fe0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2rb2x3b+BtYCwlRU+aka06gjxy+QAAGRlQ
+Thread-index: Ac2rb2x3b+BtYCwlRU+aka06gjxy+QAAHf+Q
 Content-language: ko
-x-cr-hashedpuzzle: CASD DaeK Dmb6 FioV GmFO Jxtn QR8S R/LU T3KP Y2VL eU1C fHBL
- fp7p kUWX mBVg
- nt4W;4;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAcgBwAHUAcgBkAGkAZQBAAHIAcABzAHkAcwAuAG4AZQB0AA==;Sosha1_v1;7;{4E2B2D60-5B86-47C9-89CA-28E5922591E4};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Tue,
- 16 Oct 2012 07:28:50
- GMT;WwBQAEEAVABDAEgAIAAwADYALwAxADcAXQAgAGIAYQBjAGsAbABpAGcAaAB0ADoAIABoAHAANgA4ADAAXwBiAGwAOgAgAGYAaQB4ACAAYwBoAGUAYwBrAHAAYQB0AGMAaAAgAGUAcgByAG8AcgAgAGEAbgBkACAAdwBhAHIAbgBpAG4AZwA=
-x-cr-puzzleid: {4E2B2D60-5B86-47C9-89CA-28E5922591E4}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9jAd2dPLUBBpd7mSwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAldG995XzAW7OSsebDzE1sD4n72LkZNDQsBE4sDa/ywQtpjEhXvr
-	2UBsIYFFjBI3ptd3MXIB2bOZJJYsfcYEkmATUJP48uUwWLOIQIRE84xZzF2MHBzMAj4Sm2dp
-	QvTaSqye8RashFPATmLj64Ng84WBSjpmvAMbwyKgKvHkcBcjiM0LVP9r11ZmCFtQ4sfke2D1
-	zAJaEut3HmeCsOUlNq95C7ZKQkBd4tFfXYgLjCQOPrnIClEiIrHvxTtGkJMlBBawSmyc2McG
-	8ZepxPUVa9gmMIrMQrJiFpIVs5CsmIVk1gJGllWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsY
-	wWH/TGoH48oGi0OMAhyMSjy8Gc41AUKsiWXFlbmHGCU4mJVEeD0mAoV4UxIrq1KL8uOLSnNS
-	iw8xSnOwKInzNnukBAgJpCeWpGanphakFsFkmTg4pRoYl8460fbi/jyJ0mlxV+z+HmJr2zHr
-	sLNB2sayiyv9n4iWTn3fY5QsUuH6u1b0uNzuc4I/a72U/0ofTWHLeTB5T6G3C4d8Ga9Mh9Au
-	xu6HS57s+aw9XUlyftikDHO7j7s+y5zOCNqX/2glw6QPN9ZwnEqWTDu/aPLECM8nkp79nB8b
-	j0pfOWBwU4mlOCPRUIu5qDgRALpT6jl3AgAA
+x-cr-hashedpuzzle: Hzlt IDB4 KUdv Kjux K2mO NZ/G Nv0H OzQW QT/7 Vlo9 YZnJ b8/z
+ iU2e kwxE p6+6
+ tR0j;4;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAcgBwAHUAcgBkAGkAZQBAAHIAcABzAHkAcwAuAG4AZQB0AA==;Sosha1_v1;7;{C9D54427-B94D-4113-8817-CA86F4585727};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Tue,
+ 16 Oct 2012 07:29:20
+ GMT;WwBQAEEAVABDAEgAIAAwADcALwAxADcAXQAgAGIAYQBjAGsAbABpAGcAaAB0ADoAIABpAGwAaQA5ADMAMgAwADoAIABmAGkAeAAgAGMAaABlAGMAawBwAGEAdABjAGgAIABlAHIAcgBvAHIAIABhAG4AZAAgAHcAYQByAG4AaQBuAGcA
+x-cr-puzzleid: {C9D54427-B94D-4113-8817-CA86F4585727}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t9jAd3rPLUBBhcPK1lc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6M2Sd3sRQcEKmYe6GbrYHxg0AXIyeHhICJRMOBuSwQtpjEhXvr
+	2boYuTiEBBYxSsxYsIoFwpnNJLHowh0mkCo2ATWJL18Os4PYIgIREs0zZjF3MXJwMAv4SGye
+	pQkSFhKwlVg94y1YCaeAncTG1wdZQEqEBbwl9lz0BwmzCKhKtPyeywhi8wKVP3w2gxXCFpT4
+	Mfke2D3MAloS63ceZ4Kw5SU2r3kLtklCQF3i0V9diAOMJA5ff8MOUSIise/FO0aIV+awSjyY
+	nQJRbipxbqnvBEaRWUgWzEKyYBaSBbOQTFrAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cT
+	Izjkn0nvYFzVYHGIUYCDUYmHN8O5JkCINbGsuDL3EKMEB7OSCK/HRKAQb0piZVVqUX58UWlO
+	avEhRmkOFiVx3maPlAAhgfTEktTs1NSC1CKYLBMHp1QDY2h9z1QF5T+9xntf7cjOnNl2+rxn
+	8OTQpeE7n4S1ftX3Mq/smXD01AyfwCb1ColneefCzh7+aCC24/9qkZ7TQvxr3YO2XNeY3Xd5
+	Rtk/izC/ENuPD/1Np6adnXviH1PDT1GuPb18d/+L6l5bIl+3fBnL36kLvq3c96v7eXmqNU+3
+	aHz81/c+L5RYijMSDbWYi4oTAY79F511AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -49,37 +49,91 @@ This patch fixes the checkpatch error and warning as below:
 
 WARNING: please, no space before tabs
 WARNING: please, no spaces at the start of a line
-ERROR: do not initialise statics to 0 or NULL
+WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
+WARNING: braces {} are not necessary for single statement blocks
 ERROR: code indent should use tabs where possible
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 Cc: Richard Purdie <rpurdie@rpsys.net>
 ---
- drivers/video/backlight/hp680_bl.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/video/backlight/ili9320.c |   12 ++----------
+ 1 files changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/video/backlight/hp680_bl.c b/drivers/video/backlight/hp680_bl.c
-index 38aa002..191fbed 100644
---- a/drivers/video/backlight/hp680_bl.c
-+++ b/drivers/video/backlight/hp680_bl.c
-@@ -26,7 +26,7 @@
- #define HP680_DEFAULT_INTENSITY 10
+diff --git a/drivers/video/backlight/ili9320.c b/drivers/video/backlight/ili9320.c
+index 9327cd1..a66cfd1 100644
+--- a/drivers/video/backlight/ili9320.c
++++ b/drivers/video/backlight/ili9320.c
+@@ -45,7 +45,7 @@ static inline int ili9320_write_spi(struct ili9320 *ili,
+ 	/* second message is the data to transfer */
  
- static int hp680bl_suspended;
--static int current_intensity = 0;
-+static int current_intensity;
- static DEFINE_SPINLOCK(bl_lock);
+ 	data[0] = spi->id | ILI9320_SPI_DATA  | ILI9320_SPI_WRITE;
+- 	data[1] = value >> 8;
++	data[1] = value >> 8;
+ 	data[2] = value;
  
- static void hp680bl_send_intensity(struct backlight_device *bd)
-@@ -168,7 +168,7 @@ static int __init hp680bl_init(void)
- static void __exit hp680bl_exit(void)
- {
- 	platform_device_unregister(hp680bl_device);
-- 	platform_driver_unregister(&hp680bl_driver);
-+	platform_driver_unregister(&hp680bl_driver);
+ 	return spi_sync(spi->dev, &spi->message);
+@@ -56,7 +56,6 @@ int ili9320_write(struct ili9320 *ili, unsigned int reg, unsigned int value)
+ 	dev_dbg(ili->dev, "write: reg=%02x, val=%04x\n", reg, value);
+ 	return ili->write(ili, reg, value);
  }
+-
+ EXPORT_SYMBOL_GPL(ili9320_write);
  
- module_init(hp680bl_init);
+ int ili9320_write_regs(struct ili9320 *ili,
+@@ -74,7 +73,6 @@ int ili9320_write_regs(struct ili9320 *ili,
+ 
+ 	return 0;
+ }
+-
+ EXPORT_SYMBOL_GPL(ili9320_write_regs);
+ 
+ static void ili9320_reset(struct ili9320 *lcd)
+@@ -260,7 +258,6 @@ int __devinit ili9320_probe_spi(struct spi_device *spi,
+ 
+ 	return ret;
+ }
+-
+ EXPORT_SYMBOL_GPL(ili9320_probe_spi);
+ 
+ int ili9320_remove(struct ili9320 *ili)
+@@ -271,7 +268,6 @@ int ili9320_remove(struct ili9320 *ili)
+ 
+ 	return 0;
+ }
+-
+ EXPORT_SYMBOL_GPL(ili9320_remove);
+ 
+ #ifdef CONFIG_PM
+@@ -296,20 +292,17 @@ int ili9320_suspend(struct ili9320 *lcd, pm_message_t state)
+ 
+ 	return 0;
+ }
+-
+ EXPORT_SYMBOL_GPL(ili9320_suspend);
+ 
+ int ili9320_resume(struct ili9320 *lcd)
+ {
+ 	dev_info(lcd->dev, "resuming from power state %d\n", lcd->power);
+ 
+-	if (lcd->platdata->suspend == ILI9320_SUSPEND_DEEP) {
++	if (lcd->platdata->suspend == ILI9320_SUSPEND_DEEP)
+ 		ili9320_write(lcd, ILI9320_POWER1, 0x00);
+-	}
+ 
+ 	return ili9320_power(lcd, FB_BLANK_UNBLANK);
+ }
+-
+ EXPORT_SYMBOL_GPL(ili9320_resume);
+ #endif
+ 
+@@ -318,7 +311,6 @@ void ili9320_shutdown(struct ili9320 *lcd)
+ {
+ 	ili9320_power(lcd, FB_BLANK_POWERDOWN);
+ }
+-
+ EXPORT_SYMBOL_GPL(ili9320_shutdown);
+ 
+ MODULE_AUTHOR("Ben Dooks <ben-linux@fluff.org>");
 -- 
 1.7.1
 
