@@ -1,91 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab2JPKAe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 06:00:34 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:61899 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753164Ab2JPKAb (ORCPT
+	id S1753164Ab2JPKEv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 06:04:51 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:62747 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab2JPKEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 06:00:31 -0400
+	Tue, 16 Oct 2012 06:04:50 -0400
 MIME-Version: 1.0
-X-Originating-IP: [59.167.234.130]
-In-Reply-To: <505C6AD4.6030206@kernel.dk>
-References: <CAOzFzEhf2LfT0BCNPAgPgxZ3=pj2KvJ4Z6kP7XF8nnxag1dfvg@mail.gmail.com>
-	<CAOzFzEiC4313K4H9393ffzNyBo398BPYSxTk7ZEmuH4GfW5qtw@mail.gmail.com>
-	<CAOzFzEhWk_7oQFOyW6Ri_9Cvsshj2s3pa=Oo-p8uL6r340MoTw@mail.gmail.com>
-	<20120919194231.GF31860@redhat.com>
-	<20120920183153.GI28934@google.com>
-	<20120920184219.GH4681@redhat.com>
-	<20120920191716.GI4681@redhat.com>
-	<20120920192038.GJ28934@google.com>
-	<20120920195759.GK4681@redhat.com>
-	<20120920201815.GB7264@google.com>
-	<20120920210852.GC7264@google.com>
-	<505C6AD4.6030206@kernel.dk>
-Date: Tue, 16 Oct 2012 21:00:30 +1100
-Message-ID: <CAOzFzEiCWazLEfjo=w8c+7qCce98Q6faW1uwGm-tRmCNPJUztw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] block: lift the initial queue bypass mode on
- blk_register_queue() instead of blk_init_allocated_queue()
-From: Joseph Glanville <joseph.glanville@orionvm.com.au>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Tejun Heo <tj@kernel.org>, cgroups <cgroups@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20121016085928.GV21164@n2100.arm.linux.org.uk>
+References: <1350309832-18461-1-git-send-email-m.szyprowski@samsung.com>
+ <CAAQKjZMYFNMEnb2ue2aR+6AEbOixnQFyggbXrThBCW5VOznePg@mail.gmail.com>
+ <20121016090434.7d5e088152a3e0b0606903c8@nvidia.com> <20121016085928.GV21164@n2100.arm.linux.org.uk>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Tue, 16 Oct 2012 11:04:29 +0100
+X-Google-Sender-Auth: 4E9h2qlm6DNiUDBmNMFLe81rnrI
+Message-ID: <CAHkRjk52DH9_QPQwGF0HUcjsH3+WTRCF41uDKJW7LyxD65pJdw@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [RFC 0/2] DMA-mapping & IOMMU - physically
+ contiguous allocations
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Hiroshi Doyu <hdoyu@nvidia.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Inki Dae <inki.dae@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-tegra@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 September 2012 23:25, Jens Axboe <axboe@kernel.dk> wrote:
-> On 09/20/2012 11:08 PM, Tejun Heo wrote:
->> b82d4b197c ("blkcg: make request_queue bypassing on allocation") made
->> request_queues bypassed on allocation to avoid switching on and off
->> bypass mode on a queue being initialized.  Some drivers allocate and
->> then destroy a lot of queues without fully initializing them and
->> incurring bypass latency overhead on each of them could add upto
->> significant overhead.
+On 16 October 2012 09:59, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Tue, Oct 16, 2012 at 09:04:34AM +0300, Hiroshi Doyu wrote:
+>> In addition to those contiguous/discontiguous page allocation, is
+>> there any way to _import_ anonymous pages allocated by a process to be
+>> used in dma-mapping API later?
 >>
->> Unfortunately, blk_init_allocated_queue() is never used by queues of
->> bio-based drivers, which means that all bio-based driver queues are in
->> bypass mode even after initialization and registration complete
->> successfully.
->>
->> Due to the limited way request_queues are used by bio drivers, this
->> problem is hidden pretty well but it shows up when blk-throttle is
->> used in combination with a bio-based driver.  Trying to configure
->> (echoing to cgroupfs file) blk-throttle for a bio-based driver hangs
->> indefinitely in blkg_conf_prep() waiting for bypass mode to end.
->>
->> This patch moves the initial blk_queue_bypass_end() call from
->> blk_init_allocated_queue() to blk_register_queue() which is called for
->> any userland-visible queues regardless of its type.
->>
->> I believe this is correct because I don't think there is any block
->> driver which needs or wants working elevator and blk-cgroup on a queue
->> which isn't visible to userland.  If there are such users, we need a
->> different solution.
->>
->> Signed-off-by: Tejun Heo <tj@kernel.org>
->> Reported-by: Joseph Glanville <joseph.glanville@orionvm.com.au>
->> Cc: Vivek Goyal <vgoyal@redhat.com>
->> Cc: stable@vger.kernel.org
->> ---
->> Jens, while these are fixes, I think it isn't extremely urgent and
->> routing these through 3.7-rc1 should be enough.
+>> I'm considering the following scenario, an user process allocates a
+>> buffer by malloc() in advance, and then it asks some driver to convert
+>> that buffer into IOMMU'able/DMA'able ones later. In this case, pages
+>> are discouguous and even they may not be yet allocated at
+>> malloc()/mmap().
 >
-> Agree, I'll shove them into for-3.7/core
->
-> --
-> Jens Axboe
->
+> That situation is covered.  It's the streaming API you're wanting for that.
+> dma_map_sg() - but you may need additional cache handling via
+> flush_dcache_page() to ensure that your code is safe for all CPU cache
+> architectures.
 
-Hi,
-
-Has this patch been marked for stable?
-This is still currently broken on 3.6.2 (and I would assume other
-stable kernels since 3.5)
-
-Joseph.
+For user-allocated pages you first need get_user_pages() to make sure
+they are in memory (and will stay there). This function also calls
+flush_dcache_page(). Then you can build the sg list for dma_map_sg().
 
 -- 
-CTO | Orion Virtualisation Solutions | www.orionvm.com.au
-Phone: 1300 56 99 52 | Mobile: 0428 754 846
+Catalin
