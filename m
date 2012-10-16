@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab2JPMnI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 08:43:08 -0400
-Received: from 1wt.eu ([62.212.114.60]:32899 "EHLO 1wt.eu"
+	id S1754230Ab2JPMoi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 08:44:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11340 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752679Ab2JPMnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 08:43:06 -0400
-Date: Tue, 16 Oct 2012 14:43:00 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: "Gabor Z. Papp" <gzp@papp.hu>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: Linux 2.6.32.xx build breaks with gcc 4.7
-Message-ID: <20121016124300.GD31152@1wt.eu>
-References: <20121012120829.GD14734@1wt.eu> <x6vcecp44c@gzp> <20121015102505.GE24159@1wt.eu> <x6a9voowqv@gzp> <20121015105710.GF24159@1wt.eu> <x61uh0oun5@gzp> <20121015114528.GJ24159@1wt.eu> <x6y5j7392k@gzp> <20121015191705.GO24159@1wt.eu> <x6r4oyzxbm@gzp>
-Mime-Version: 1.0
+	id S1752679Ab2JPMog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 08:44:36 -0400
+Date: Tue, 16 Oct 2012 14:43:48 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: dri-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org, Ben Skeggs <bskeggs@redhat.com>
+Subject: [BUG 3.7-rc1] nouveau cli->mutex possible recursive locking detected
+Message-ID: <20121016124348.GB2274@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <x6r4oyzxbm@gzp>
-User-Agent: Mutt/1.4.2.3i
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 09:32:29AM +0200, Gabor Z. Papp wrote:
-> lo lo,
-> 
-> I'm trying to compile 2.6.32.60 with gcc 4.7.2, and getting the
-> following error:
-> 
->   CC      arch/x86/kernel/ptrace.o
-> arch/x86/kernel/ptrace.c:1472:17: error: conflicting types for 'syscall_trace_enter'
-> In file included from /usr/src/linux-2.6.32.60-gzpLinux/arch/x86/include/asm/vm86.h:130:0,
->                  from /usr/src/linux-2.6.32.60-gzpLinux/arch/x86/include/asm/processor.h:10,
->                  from /usr/src/linux-2.6.32.60-gzpLinux/arch/x86/include/asm/thread_info.h:22,
->                  from include/linux/thread_info.h:56,
->                  from include/linux/preempt.h:9,
->                  from include/linux/spinlock.h:50,
->                  from include/linux/seqlock.h:29,
->                  from include/linux/time.h:8,
->                  from include/linux/timex.h:56,
->                  from include/linux/sched.h:56,
->                  from arch/x86/kernel/ptrace.c:11:
-> /usr/src/linux-2.6.32.60-gzpLinux/arch/x86/include/asm/ptrace.h:145:13: note: previous declaration of 'syscall_trace_enter' was here
-> arch/x86/kernel/ptrace.c:1517:17: error: conflicting types for 'syscall_trace_leave'
-> In file included from /usr/src/linux-2.6.32.60-gzpLinux/arch/x86/include/asm/vm86.h:130:0,
->                  from /usr/src/linux-2.6.32.60-gzpLinux/arch/x86/include/asm/processor.h:10,
->                  from /usr/src/linux-2.6.32.60-gzpLinux/arch/x86/include/asm/thread_info.h:22,
->                  from include/linux/thread_info.h:56,
->                  from include/linux/preempt.h:9,
->                  from include/linux/spinlock.h:50,
->                  from include/linux/seqlock.h:29,
->                  from include/linux/time.h:8,
->                  from include/linux/timex.h:56,
->                  from include/linux/sched.h:56,
->                  from arch/x86/kernel/ptrace.c:11:
-> /usr/src/linux-2.6.32.60-gzpLinux/arch/x86/include/asm/ptrace.h:146:13: note: previous declaration of 'syscall_trace_leave' was here
-> make[2]: *** [arch/x86/kernel/ptrace.o] Error 1
-> make[1]: *** [arch/x86/kernel] Error 2
-> make: *** [arch/x86] Error 2
-> 
-> My environment looks like:
-> 
-> Linux 3.2.30, glibc 2.16, gcc 4.7.2
-> 
-> If I comment out the ancient line, kernel compiles fine.
-> 
-> Willy says:
-> 
-> | The affected entry is only used there :
-> 
-> | arch/x86/include/asm/ptrace.h:extern void syscall_trace_leave(struct pt_regs *);
-> | arch/x86/include/asm/thread_info.h:/* work to do in syscall_trace_leave() */
-> | arch/x86/kernel/entry_32.S:     ENABLE_INTERRUPTS(CLBR_ANY)     # could let syscall_trace_leave() call
-> | arch/x86/kernel/entry_32.S:     call syscall_trace_leave
-> | arch/x86/kernel/entry_64.S:     call syscall_trace_leave
-> | arch/x86/kernel/ptrace.c:asmregparm void syscall_trace_leave(struct pt_regs *regs)
-> 
-> | So if the two calls above don't need the include then maybe we can
-> | safely remove it.
+I have this lockdep warning on wireless-testing tree based
+on 3.7-rc1 (no other patches except wireless bits).
 
-If someone knows this area well enough to judge whether we can 
-  - either remove the asmregparm (I don't think so judging by recent commits
-    saying it was possible to remove it after other main changes)
-  - or remove the declaration because noone else needs it,
+=============================================
+Restarting tasks ... done.
+[ INFO: possible recursive locking detected ]
+3.7.0-rc1-wl+ #2 Not tainted
+---------------------------------------------
+Xorg/2269 is trying to acquire lock:
+ (&cli->mutex){+.+.+.}, at: [<ffffffffa012a27f>] nouveau_bo_move_m2mf+0x5f/0x170 [nouveau]
 
-Then I'd happily apply the fix. From what I understood, Paul would probably
-need the same fix for 2.6.34.
+but task is already holding lock:
+ (&cli->mutex){+.+.+.}, at: [<ffffffffa012f3c4>] nouveau_abi16_get+0x34/0x100 [nouveau]
 
-Thanks,
-Willy
+other info that might help us debug this:
+ Possible unsafe locking scenario:
 
+       CPU0
+       ----
+  lock(&cli->mutex);
+  lock(&cli->mutex);
+
+ *** DEADLOCK ***
+
+ May be due to missing lock nesting notation
+
+1 lock held by Xorg/2269:
+ #0:  (&cli->mutex){+.+.+.}, at: [<ffffffffa012f3c4>] nouveau_abi16_get+0x34/0x100 [nouveau]
+
+stack backtrace:
+Pid: 2269, comm: Xorg Not tainted 3.7.0-rc1-wl+ #2
+Call Trace:
+ [<ffffffff810bbc24>] print_deadlock_bug+0xf4/0x100
+ [<ffffffff810bdba9>] validate_chain+0x549/0x7e0
+ [<ffffffff810be1a7>] __lock_acquire+0x367/0x580
+ [<ffffffffa012a27f>] ? nouveau_bo_move_m2mf+0x5f/0x170 [nouveau]
+ [<ffffffff810be464>] lock_acquire+0xa4/0x120
+ [<ffffffffa012a27f>] ? nouveau_bo_move_m2mf+0x5f/0x170 [nouveau]
+ [<ffffffff8156c860>] ? _raw_spin_unlock_irqrestore+0x40/0x80
+ [<ffffffff81569217>] __mutex_lock_common+0x47/0x3f0
+ [<ffffffffa012a27f>] ? nouveau_bo_move_m2mf+0x5f/0x170 [nouveau]
+ [<ffffffffa011dd61>] ? nv84_graph_tlb_flush+0x291/0x2b0 [nouveau]
+ [<ffffffffa00b4be6>] ? _nouveau_gpuobj_wr32+0x26/0x30 [nouveau]
+ [<ffffffffa012a27f>] ? nouveau_bo_move_m2mf+0x5f/0x170 [nouveau]
+ [<ffffffff815696e7>] mutex_lock_nested+0x37/0x50
+ [<ffffffffa012a27f>] nouveau_bo_move_m2mf+0x5f/0x170 [nouveau]
+ [<ffffffffa012a783>] nouveau_bo_move+0xe3/0x330 [nouveau]
+ [<ffffffffa009619d>] ttm_bo_handle_move_mem+0x2bd/0x670 [ttm]
+ [<ffffffffa0098a1e>] ttm_bo_move_buffer+0x12e/0x150 [ttm]
+ [<ffffffffa0098ad9>] ttm_bo_validate+0x99/0x130 [ttm]
+ [<ffffffffa012add3>] nouveau_bo_validate+0x23/0x30 [nouveau]
+ [<ffffffffa012cd8e>] validate_list+0xae/0x2c0 [nouveau]
+ [<ffffffffa012dec2>] nouveau_gem_pushbuf_validate+0xa2/0x1e0 [nouveau]
+ [<ffffffffa012e22c>] nouveau_gem_ioctl_pushbuf+0x22c/0x8a0 [nouveau]
+ [<ffffffffa002c465>] drm_ioctl+0x355/0x570 [drm]
+ [<ffffffff8119349a>] ? do_sync_read+0xaa/0xf0
+ [<ffffffffa012e000>] ? nouveau_gem_pushbuf_validate+0x1e0/0x1e0 [nouveau]
+ [<ffffffff811a579c>] do_vfs_ioctl+0x8c/0x350
+ [<ffffffff81575745>] ? sysret_check+0x22/0x5d
+ [<ffffffff811a5b01>] sys_ioctl+0xa1/0xb0
+ [<ffffffff81291eee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff81575719>] system_call_fastpath+0x16/0x1b
