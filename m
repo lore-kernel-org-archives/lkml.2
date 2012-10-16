@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755781Ab2JPEUD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 00:20:03 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:60526 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755767Ab2JPEUA (ORCPT
+	id S1755702Ab2JPETl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 00:19:41 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:57469 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753355Ab2JPETk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 00:20:00 -0400
-X-AuditID: b753bd60-96850ba000002f78-2b-507ce06ecc93
-X-AuditID: b753bd60-96850ba000002f78-2b-507ce06ecc93
-Message-ID: <507CE06D.8050806@hitachi.com>
-Date: Tue, 16 Oct 2012 13:19:57 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Hyeoncheol Lee <hyc.lee@gmail.com>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH] perf probe: convert_name_to_addr() allocated the wrong
- size buffer for a function name
-References: <1350351452-9737-1-git-send-email-hyc.lee@gmail.com>
-In-Reply-To: <1350351452-9737-1-git-send-email-hyc.lee@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 16 Oct 2012 00:19:40 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: vinod.koul@intel.com
+Cc: linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        andriy.shevchenko@linux.intel.com,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V3 1/3] dmaengine: dw_dmac: Update documentation style comments for dw_dma_platform_data
+Date: Tue, 16 Oct 2012 09:49:16 +0530
+Message-Id: <3100e691db3f94c22afd98b609a1568d7e70dfe7.1350360935.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+X-OriginalArrivalTime: 16 Oct 2012 04:19:36.0022 (UTC) FILETIME=[73659760:01CDAB55]
+X-MC-Unique: 112101605193800501
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q9G4KeWp029511
 
-(2012/10/16 10:37), Hyeoncheol Lee wrote:
-> convert_name_to_addr() allocated sizeof(char *) * MAX_PROBE_ARGS
-> bytes for a function name
+Documentation style comments were missing for few fields in struct
+dw_dma_platform_data. Add these.
 
-Yeah, that one was from my laziness...
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ include/linux/dw_dmac.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-> 
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Signed-off-by: Hyeoncheol Lee <hyc.lee@gmail.com>
-> ---
->  tools/perf/util/probe-event.c |    5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> index 49a256e..bb40ed4 100644
-> --- a/tools/perf/util/probe-event.c
-> +++ b/tools/perf/util/probe-event.c
-> @@ -2352,13 +2352,14 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
->  		free(exec_copy);
->  	}
->  	free(pp->function);
-> -	pp->function = zalloc(sizeof(char *) * MAX_PROBE_ARGS);
-> +	pp->function = zalloc(sizeof(char) *
-> +			      (3 + sizeof(unsigned long long) * 2));
-
-Could you comment that this is enough long here?
-
->  	if (!pp->function) {
->  		ret = -ENOMEM;
->  		pr_warning("Failed to allocate memory by zalloc.\n");
->  		goto out;
->  	}
-> -	e_snprintf(pp->function, MAX_PROBE_ARGS, "0x%llx", vaddr);
-> +	sprintf(pp->function, "0x%llx", vaddr);
-
-And at least we should use snprintf instead of sprintf...
-(I think ret = e_snprintf(...) is better)
-
->  	ret = 0;
->  
->  out:
-> 
-
-Thank you,
-
+diff --git a/include/linux/dw_dmac.h b/include/linux/dw_dmac.h
+index e1c8c9e..62a6190 100644
+--- a/include/linux/dw_dmac.h
++++ b/include/linux/dw_dmac.h
+@@ -19,6 +19,8 @@
+  * @nr_channels: Number of channels supported by hardware (max 8)
+  * @is_private: The device channels should be marked as private and not for
+  *	by the general purpose DMA channel allocator.
++ * @chan_allocation_order: Allocate channels starting from 0 or 7
++ * @chan_priority: Set channel priority increasing from 0 to 7 or 7 to 0.
+  * @block_size: Maximum block size supported by the controller
+  * @nr_masters: Number of AHB masters supported by the controller
+  * @data_width: Maximum data width supported by hardware per AHB master
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+1.7.12.rc2.18.g61b472e
 
 
