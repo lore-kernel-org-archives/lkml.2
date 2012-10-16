@@ -1,70 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088Ab2JPAHe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 20:07:34 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:36402 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753056Ab2JPAHd (ORCPT
+	id S1754951Ab2JPALq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 20:11:46 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:64016 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751558Ab2JPALo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 20:07:33 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX186zs2+9cGOJbXfsPQx74IW
-Date: Mon, 15 Oct 2012 17:07:23 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: =?utf-8?B?UMOpdGVy?= Ujfalusi <peter.ujfalusi@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-omap@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, Deepak Saxena <dsaxena@plexity.net>,
-        Chris Ball <cjb@laptop.org>, Matt Mackall <mpm@selenic.com>,
-        Venkatraman S <svenkatr@ti.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH 1/2] ARM: OMAP: Trivial driver changes to remove
- include plat/cpu.h
-Message-ID: <20121016000722.GH15569@atomide.com>
-References: <20121008173452.10603.53886.stgit@muffinssi>
- <20121008173557.10603.18539.stgit@muffinssi>
- <5073E84E.4090408@ti.com>
- <20121010001943.GK12552@atomide.com>
+	Mon, 15 Oct 2012 20:11:44 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtImAMukfFB5LH33/2dsb2JhbABFuh+EbQKBBYEJgiABAQU6HCMQCAMVAy4UDRgDNIdyAw6rL4ZyDYlUFIpfZoFng3ZgA5QXgVSLJIUNgwE
+Date: Tue, 16 Oct 2012 11:11:41 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
+        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [RFC v3 00/13] vfs: hot data tracking
+Message-ID: <20121016001140.GB2864@dastard>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121010001943.GK12552@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [121009 17:21]:
-> * Péter Ujfalusi <peter.ujfalusi@ti.com> [121009 02:03]:
-> > On 10/08/2012 07:35 PM, Tony Lindgren wrote:
-> > 
-> > > - omap-dma.c and omap-pcm.c can test the arch locally as
-> > >   omap1 and omap2 cannot be compiled together because of
-> > >   conflicting compiler flags
-> > 
-> > >  sound/soc/omap/omap-pcm.c         |    9 +++++++--
-> > 
-> > Tony: is this going to be included in 3.7?
+On Wed, Oct 10, 2012 at 06:07:22PM +0800, zwu.kernel@gmail.com wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 > 
-> Hmm I guess we could try to get this out of the way
-> to cut down the dependencies. Let's if maintainers
-> of the other affected drivers this is OK for the
-> -rc series.
+> NOTE:
+> 
+>   The patchset is currently post out mainly to make sure
+> it is going in the correct direction and hope to get some
+> helpful comments from other guys.
+>   For more infomation, please check hot_tracking.txt in Documentation
+> 
 
-It seems that nobody needs these until for v3.8, so I'll
-be applying this into omap-for-v3.8/cleanup-headers-prepare
-branch soon.
+# mount -o hot_track /dev/vdc /mnt/scratch
+# umount /mnt/scratch
 
-Anybody else care to ack?
+hangs here on XFS:
 
-Regards,
+#  echo w > /proc/sysrq-trigger 
+[   44.229252] SysRq : Show Blocked State
+[   44.230044]   task                        PC stack   pid father
+[   44.231187] umount          D ffff88021fd52dc0  3632  4107   4106 0x00000000
+[   44.231946]  ffff880212a91bd8 0000000000000086 ffff8802153da300 ffff880212a91fd8
+[   44.231946]  ffff880212a91fd8 ffff880212a91fd8 ffff880216cf6340 ffff8802153da300
+[   44.231946]  00000000ffffffff 7fffffffffffffff ffff880212a91d78 ffff880212a91d80
+[   44.231946] Call Trace:
+[   44.231946]  [<ffffffff81b6c1b9>] schedule+0x29/0x70
+[   44.231946]  [<ffffffff81b6a079>] schedule_timeout+0x159/0x220
+[   44.231946]  [<ffffffff8171a2f4>] ? do_raw_spin_lock+0x54/0x120
+[   44.231946]  [<ffffffff8171a45d>] ? do_raw_spin_unlock+0x5d/0xb0
+[   44.231946]  [<ffffffff81b6bfee>] wait_for_common+0xee/0x190
+[   44.231946]  [<ffffffff810b6a10>] ? try_to_wake_up+0x2f0/0x2f0
+[   44.231946]  [<ffffffff81b6c18d>] wait_for_completion+0x1d/0x20
+[   44.231946]  [<ffffffff8109efec>] flush_workqueue+0x14c/0x3f0
+[   44.231946]  [<ffffffff811aad89>] hot_track_exit+0x39/0x180
+[   44.231946]  [<ffffffff81454e83>] xfs_fs_put_super+0x23/0x70
+[   44.231946]  [<ffffffff8117a991>] generic_shutdown_super+0x61/0xf0
+[   44.231946]  [<ffffffff8117aa50>] kill_block_super+0x30/0x80
+[   44.231946]  [<ffffffff8117ae45>] deactivate_locked_super+0x45/0x70
+[   44.231946]  [<ffffffff8117ba0e>] deactivate_super+0x4e/0x70
+[   44.231946]  [<ffffffff81197541>] mntput_no_expire+0x101/0x160
+[   44.231946]  [<ffffffff811985b6>] sys_umount+0x76/0x3a0
+[   44.231946]  [<ffffffff81b755a9>] system_call_fastpath+0x16/0x1b
 
-Tony
+because this is stuck:
+
+[  200.064574] kworker/u:2     S ffff88021fc12dc0  5208   669      2 0x00000000
+[  200.064574]  ffff88021532fc60 0000000000000046 ffff88021532c7c0 ffff88021532ffd8
+[  200.064574]  ffff88021532ffd8 ffff88021532ffd8 ffffffff81fc3420 ffff88021532c7c0
+[  200.064574]  ffff88021532fc50 ffff88021532fc98 ffffffff8221e700 ffffffff8221e700
+[  200.064574] Call Trace:
+[  200.064574]  [<ffffffff81b6c1b9>] schedule+0x29/0x70
+[  200.064574]  [<ffffffff81b6a03b>] schedule_timeout+0x11b/0x220
+[  200.064574]  [<ffffffff810908d0>] ? usleep_range+0x50/0x50
+[  200.064574]  [<ffffffff811aa78a>] hot_temperature_update_work+0x16a/0x1c0
+[  200.064574]  [<ffffffff8171a2f4>] ? do_raw_spin_lock+0x54/0x120
+[  200.064574]  [<ffffffff81b6d3ce>] ? _raw_spin_unlock_irq+0xe/0x30
+[  200.064574]  [<ffffffff810b0b3c>] ? finish_task_switch+0x5c/0x100
+[  200.064574]  [<ffffffff8109d959>] process_one_work+0x139/0x500
+[  200.064574]  [<ffffffff811aa620>] ? hot_range_update+0x1f0/0x1f0
+[  200.064574]  [<ffffffff8109e63e>] worker_thread+0x15e/0x460
+[  200.064574]  [<ffffffff8109e4e0>] ? manage_workers+0x2f0/0x2f0
+[  200.064574]  [<ffffffff810a4b33>] kthread+0x93/0xa0
+[  200.064574]  [<ffffffff81b765c4>] kernel_thread_helper+0x4/0x10
+[  200.064574]  [<ffffffff810a4aa0>] ? __init_kthread_worker+0x40/0x40
+[  200.064574]  [<ffffffff81b765c0>] ? gs_change+0x13/0x13
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
