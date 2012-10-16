@@ -1,160 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499Ab2JPMuF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 08:50:05 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:49008 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754351Ab2JPMuB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 08:50:01 -0400
-Date: Tue, 16 Oct 2012 13:49:56 +0100
-From: Dave Martin <dave.martin@linaro.org>
-To: Fei Yang <yangfei.kernel@gmail.com>
-Cc: Mikael Pettersson <mikpe@it.uu.se>, linux@arm.linux.org.uk,
-        lethal@linux-sh.org, magnus.damm@gmail.com, kgene.kim@samsung.com,
-        linux-arm-kernel@lists.infradead.org,
-        "linux-assembly@vger.kernel.org" <linux-assembly@vger.kernel.org>,
-        linux-hotplug@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Yangfei (Felix)" <felix.yang@huawei.com>
-Subject: Re: [PATCH] Re: Hardcoded instruction causes certain features to
- fail on ARM platfrom due to endianness
-Message-ID: <20121016124956.GC26075@linaro.org>
-References: <DA41BE1DDCA941489001C7FBD7A8820E3CB407A4@szxeml549-mbx.china.huawei.com>
- <20603.47887.262025.941051@pilspetsen.it.uu.se>
- <CAKw8HL154a=K9O7CzPFZ-EqtT+BxYU-uRHodtutdRfYmNpWVww@mail.gmail.com>
+	id S1754531Ab2JPMu1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 08:50:27 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:47841 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753464Ab2JPMuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 08:50:24 -0400
+Date: Tue, 16 Oct 2012 07:50:21 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Joerg Roedel <joerg.roedel@amd.com>, Yinghai Lu <yinghai@kernel.org>,
+        Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: check for valid irq_cfg pointer in
+ smp_irq_move_cleanup_interrupt
+Message-ID: <20121016125021.GA22935@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKw8HL154a=K9O7CzPFZ-EqtT+BxYU-uRHodtutdRfYmNpWVww@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 11:33:08PM +0800, Fei Yang wrote:
-> 2012/10/15 Mikael Pettersson <mikpe@it.uu.se>:
-> > Yangfei (Felix) writes:
-> >  > Hi all,
-> >  >
-> >  >     I found that hardcoded instruction in inline asm can cause certains certain features fail to work on ARM platform due to endianness.
-> >  >     As an example, consider the following code snippet of platform_do_lowpower function from arch/arm/mach-realview/hotplug.c:
-> >  >                 / *
-> >  >                  * here's the WFI
-> >  >                  */
-> >  >                 asm(".word      0xe320f003\n"
-> >  >                     :
-> >  >                     :
-> >  >                     : "memory", "cc");
-> >  >
-> >  >     The instruction generated from this inline asm will not work on big-endian ARM platform, such as ARM BE-8 format. Instead, an exception will be generated.
-> >  >
-> >  >     Here the code should be:
-> >  >                 / *
-> >  >                  * here's the WFI
-> >  >                  */
-> >  >                 asm("WFI\n"
-> >  >                     :
-> >  >                     :
-> >  >                     : "memory", "cc");
-> >  >
-> >  >     Seems the kernel doesn't support ARM BE-8 well. I don't know why this problem happens.
-> >  >     Can anyone tell me who owns this part? I can prepare a patch then.
-> >  >     Thanks.
-> >
-> > Questions regarding the ARM kernel should go to the linux-arm-kernel mailing list
-> > (see the MAINTAINERS file), with an optional cc: to the regular LKML.
-> >
-> > BE-8 is, if I recall correctly, ARMv7's broken format where code and data have
-> > different endianess.  GAS supports an ".inst" directive which is like ".word"
-> > except the data is assumed to be code.  This matters for disassembly, and may
-> > also be required for BE-8.
-> >
-> > That is, just s/.word/.inst/g above and report back if that works or not.
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
-> >
-> 
-> Hi Mikael,
-> 
-> Thanks for the reply. I modified the code as suggested and rebuilt the
-> kernel, cpu-hotplug feature now works on big-endian(BE-8) ARM
-> platform.
-> Since the ARM core can be configured by system software to work in
-> big-endian mode, it's necessary to fix this problem. And here is a
-> small patch :
-> 
-> diff -urN linux-3.6.2/arch/arm/mach-exynos/hotplug.c
-> linux/arch/arm/mach-exynos/hotplug.c
-> --- linux-3.6.2/arch/arm/mach-exynos/hotplug.c	2012-10-13
-> 04:50:59.000000000 +0800
-> +++ linux/arch/arm/mach-exynos/hotplug.c	2012-10-15 23:05:44.000000000 +0800
-> @@ -72,7 +72,7 @@
->  		/*
->  		 * here's the WFI
->  		 */
-> -		asm(".word	0xe320f003\n"
-> +		asm(".inst	0xe320f003\n"
+Posting this patch to fix an issue concerning sparse irq's that I raised
+a while back.  There was discussion about adding refcounting to sparse
+irqs (to fix other potential race conditions), but that does not appear to
+have been addressed yet.  This covers the only issue of this type that I've
+encountered in this area.
 
-The cleanest fix would simply be to build these files with appropriate
-modified CFLAGS (-march=armv6k or -march=armv7-a), and use the proper
-"wfi" mnemonic.
 
-Failing that, you could use the facilities in <asm/opcodes.h> to
-declare a wrapper macro for injecting this opcode (see
-<asm/opcodes-virt.h> for an example).  However, putting custom
-opcodes into the assembler should only be done if it's really
-necessary.  Nowadays, I think we can consider tools which don't
-understand the WFI mnemonic to be obsolete, at least for platforms
-which only build for v7 and above.
 
-The relevant board maintainers would need to sign off on such a
-change, so we don't end up breaking their builds.
 
-If any of these boards needs to build for v6K, the custom opcode might
-be worth it -- some people might just possibly be relying on older tools
-for such platforms.
+A NULL pointer dereference can occur in smp_irq_move_cleanup_interrupt() if
+we haven't yet setup the irq_cfg pointer in the irq_desc.irq_data.chip_data.
 
-Cheers
----Dave
+In create_irq_nr() there is a window where we have set vector_irq in
+__assign_irq_vector(), but not yet called irq_set_chip_data() to set the
+irq_cfg pointer.
 
->  		    :
->  		    :
->  		    : "memory", "cc");
-> diff -urN linux-3.6.2/arch/arm/mach-realview/hotplug.c
-> linux/arch/arm/mach-realview/hotplug.c
-> --- linux-3.6.2/arch/arm/mach-realview/hotplug.c	2012-10-13
-> 04:50:59.000000000 +0800
-> +++ linux/arch/arm/mach-realview/hotplug.c	2012-10-15 23:05:00.000000000 +0800
-> @@ -66,7 +66,7 @@
->  		/*
->  		 * here's the WFI
->  		 */
-> -		asm(".word	0xe320f003\n"
-> +		asm(".inst	0xe320f003\n"
->  		    :
->  		    :
->  		    : "memory", "cc");
-> diff -urN linux-3.6.2/arch/arm/mach-shmobile/hotplug.c
-> linux/arch/arm/mach-shmobile/hotplug.c
-> --- linux-3.6.2/arch/arm/mach-shmobile/hotplug.c	2012-10-13
-> 04:50:59.000000000 +0800
-> +++ linux/arch/arm/mach-shmobile/hotplug.c	2012-10-15 23:05:25.000000000 +0800
-> @@ -53,7 +53,7 @@
->  		/*
->  		 * here's the WFI
->  		 */
-> -		asm(".word	0xe320f003\n"
-> +		asm(".inst	0xe320f003\n"
->  		    :
->  		    :
->  		    : "memory", "cc");
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Should an IRQ_MOVE_CLEANUP_VECTOR hit the cpu in question during this time,
+smp_irq_move_cleanup_interrupt() will attempt to process the aforementioned
+irq, but panic when accessing irq_cfg.
+
+Only continue processing the irq if irq_cfg is non-NULL.
+
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+---
+ arch/x86/kernel/apic/io_apic.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+Index: linux/arch/x86/kernel/apic/io_apic.c
+===================================================================
+--- linux.orig/arch/x86/kernel/apic/io_apic.c
++++ linux/arch/x86/kernel/apic/io_apic.c
+@@ -2257,6 +2257,9 @@ asmlinkage void smp_irq_move_cleanup_int
+ 			continue;
+ 
+ 		cfg = irq_cfg(irq);
++		if (!cfg)
++			continue;
++
+ 		raw_spin_lock(&desc->lock);
+ 
+ 		/*
