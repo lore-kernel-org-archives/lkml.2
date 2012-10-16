@@ -1,100 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab2JPERq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 00:17:46 -0400
-Received: from spam1.hanyang.ac.kr ([166.104.177.29]:35077 "EHLO
-	spam1.hanyang.ac.kr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754476Ab2JPERp (ORCPT
+	id S1755708Ab2JPESM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 00:18:12 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62848 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839Ab2JPESJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 00:17:45 -0400
-X-Greylist: delayed 637 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Oct 2012 00:17:44 EDT
-Date: Tue, 16 Oct 2012 13:07:03 +0900 (GMT)
-From: Sooman Jeong <77smart@hanyang.ac.kr>
-To: linux-kernel@vger.kernel.org
-Cc: 77smart@hanyang.ac.kr
-Message-ID: <1350360423154.2800.144.00.1.77smart@hanyang.ac.kr>
-Subject: Initial report on F2FS filesystem performance
+	Tue, 16 Oct 2012 00:18:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Priority: 3
-X-Mailer: Postian WebMail Ver.5.30.1406
-X-IP: 166.104.177.101
-X-FROM-DOMAIN: hanyang.ac.kr
-X-FROM-EMAIL: 77smart@hanyang.ac.kr
+In-Reply-To: <20121016031710.GD2864@dastard>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+	<1349863655-29320-12-git-send-email-zwu.kernel@gmail.com>
+	<20121016031710.GD2864@dastard>
+Date: Tue, 16 Oct 2012 12:18:07 +0800
+Message-ID: <CAEH94Ljyxghk-M8_qtzyDNFAn6CbPbWY5UP3+9M4CdyPkKX_Kg@mail.gmail.com>
+Subject: Re: [RFC v3 11/13] vfs: add 3 new ioctl interfaces
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
+        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from BASE64 to 8bit by mail.home.local id q9G4Hq30029490
+
+On Tue, Oct 16, 2012 at 11:17 AM, Dave Chinner <david@fromorbit.com> wrote:
+> On Wed, Oct 10, 2012 at 06:07:33PM +0800, zwu.kernel@gmail.com wrote:
+>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>>
+>>   FS_IOC_GET_HEAT_INFO: return a struct containing the various
+>> metrics collected in btrfs_freq_data structs, and also return a
+>
+> I think you mean hot_freq_data :P
+Yeah, sorry.
+>
+>> calculated data temperature based on those metrics. Optionally, retrieve
+>> the temperature from the hot data hash list instead of recalculating it.
+>
+> To get the heat info for a specific file you have to know what file
+> you want to get that info for, right?  I can see the usefulness of
+Yes.
+> asking for the heat data on a specific file, but how do you find the
+> hot files in the first place? i.e. the big question the user
+> interface needs to answer is "what files are hot?".
+We only tell the user what the files' temperatures are, not what files are hot.
+Their temperatures are in the output of debugfs.
+>
+> Once userspace knows what the hottest files are, it can open them
+If the user need to know this type of info, it is easy for us to
+provide it. But i don't know what way the user hope to get it via.
+> and query the data via the above ioctl, but expecting userspace to
+> iterate millions of inodes in a filesystem to find hot files is very
+> inefficient.
+>
+> FWIW, if you were to return file handles to the hottest files, then
+> the application could open and query them without even needing to
+> know the path name to them. This woul dbe exceedingly useful for
+> defragmentation programs, especially as that is the way xfs_fsr
+> already operates on candidate files.(*)
+ah.
+>
+> IOWs, sometimes the pathname is irrelevant to the operations that
+> applications want to perform - all they care about having an
+> efficient method of finding the inode they want and getting a file
+> descriptor that points to the file. Given the heat map info fits
+> right in to the sort of operations defrag and data mover tools
+> already do, it kind of makes sense to optimise the interface towards
+> those uses....
+>
+> (*) i.e. finds them via bulkstat which returns handle information
+> along with all the other inode data, then opens the file by handle
+> to do the defrag work....
+OK.
+>
+>>   FS_IOC_GET_HEAT_OPTS: return an integer representing the current
+>> state of hot data tracking and migration:
+>>
+>> 0 = do nothing
+>> 1 = track frequency of access
+>>
+>>   FS_IOC_SET_HEAT_OPTS: change the state of hot data tracking and
+>> migration, as described above.
+>
+> I can't see how this is a manageable interface. It is not
+> persistent, so after every filesystem mount you'd have to set the
+> flag on all your inodes again. Hence, for the moment, I'd suggest
+> that dropping per-inode tracking control until all the core issues
+> are sorted out....
+OK.
+>
+> Cheers,
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
-This is a brief summary of our initial filesystem performance study of f2fs against existing two filesystems in linux: EXT4, NILFS2, and f2fs.
 
+-- 
+Regards,
 
-* test platform
-„ÄÄi) Desktop PC : Linux 3.6.1 (f2fs patched), Intel i5-2500 @3.3GHz quad-core, 8GB RAM, Transcend 16GB class 10 micro SD card
-„ÄÄii) Galaxy-S3 : Linux 3.0.15 (f2fs ported), Android 4.0.4, DVFS turned off, Transcend 16GB class 10 micro SD card
-
-
-* experiment 1: buffered write(sequential and random, 4KByte write)
-===================================================================
-
-F2FS surpasses other two filesystems in both random and sequential. In desktop and Galaxy S3, f2fs exhibits 2.5 and 1.6 times better performance in random write against EXT4, respectively. EXT4 is standard Android filesystem.
-
-buffered write (1GB file)
-+-------+---------------------------------+----------------------------------+
-|       |           Desktop PC            |            Galaxy-S3             |
-|       +-----------------+---------------+------------------+---------------+
-|       |sequential (MB/s)| random (IOPS) |sequential (MB/s) | random (IOPS) |
-+-------+-----------------+---------------+------------------+---------------+
-| EXT4  |        7.1      |     1073      |        6.7       |     1073      |
-+-------+-----------------+---------------+------------------+---------------+
-| NILFS2|        6.8      |     1462      |        4.0       |     1272      |
-+-------+-----------------+---------------+------------------+---------------+
-| F2FS  |       10.6      |     2675      |        6.9       |     1682      |
-+-------+-----------------+---------------+------------------+---------------+
-
-
-* experiment 2: write + fsync(sequential and random)
-====================================================
-
-F2FS surpasses other two filesystems in both random and sequential workload. In desktop and Galaxy S3, f2fs exhibits 2 and 1.5 times better performance in write+fsync random write against EXT4, respectively.
-
-write + fsync (100MB file)
-+-------+---------------------------------+----------------------------------+
-|       |           Desktop PC            |            Galaxy-S3             |
-|       +-----------------+---------------+------------------+---------------+
-|       |sequential (KB/s)| random (IOPS) |sequential (KB/s) | random (IOPS) |
-+-------+-----------------+---------------+------------------+---------------+
-| EXT4  |       511.8     |      125      |       383.4      |      119      |
-+-------+-----------------+---------------+------------------+---------------+
-| NILFS2|       545.2     |      112      |       356.7      |       72      |
-+-------+-----------------+---------------+------------------+---------------+
-| F2FS  |      1057.9     |      240      |       772.3      |      184      |
-+-------+-----------------+---------------+------------------+---------------+
-
-write() with fsync is to test the filesystem performance under Android SQLite operation.
-
-
-* experiment 3: mounting time
-===============================
-
-To measure the mount time, we used two different scenarios. First, we mounted file system after formatting without rebooting system. Second, we mounted file system after rebooting in order to ensure any data cached in memory is flushed. Overall, EXT4 shows fastest mount time, and F2FS shows second best performance; however, we observed that F2FS takes longest time to mount right after formatting.
-
-mounting time with Transcend 16GB micro-SD
-+-------+-----------------------------------+-----------------------------------+
-|       |           Desktop PC              |            Galaxy-S3              |
-|       +-----------------+-----------------+-----------------+-----------------+
-|       |1st mount after  | after rebooting |1st mount after  | after rebooting |
-|       |format (msec)    | (msec)          |format (msec)    | (msec)          |
-+-------+-----------------+-----------------+-----------------+-----------------+
-| EXT4  |         11      |         20      |         20      |         40      |
-+-------+-----------------+-----------------+-----------------+-----------------+
-| NILFS2|        920      |       1013      |       1680      |       1630      |
-+-------+-----------------+-----------------+-----------------+-----------------+
-| F2FS  |       1486      |        161      |       2280      |       1570      |
-+-------+-----------------+-----------------+-----------------+-----------------+
-
-
-Sooman Jeong  ESOS Lab. Hanyang University.
-<77smart@hanyang.ac.kr>ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Zhi Yong Wu
