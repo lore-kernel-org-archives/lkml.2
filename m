@@ -1,90 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab2JPLsd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 07:48:33 -0400
-Received: from mga11.intel.com ([192.55.52.93]:39185 "EHLO mga11.intel.com"
+	id S1754764Ab2JPLtO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 07:49:14 -0400
+Received: from mga01.intel.com ([192.55.52.88]:42631 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754665Ab2JPLs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 07:48:28 -0400
+	id S1754739Ab2JPLsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 07:48:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,593,1344236400"; 
-   d="scan'208";a="235689589"
+   d="scan'208";a="234474126"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
         Joe Perches <joe@perches.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        YAMANE Toshiaki <yamanetoshi@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCHv3 3/6] staging: rts_pstor: reuse kbasename()
-Date: Tue, 16 Oct 2012 14:48:11 +0300
-Message-Id: <1350388094-18805-5-git-send-email-andriy.shevchenko@linux.intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv3 0/6] lib/string: introduce kbasename helper
+Date: Tue, 16 Oct 2012 14:48:07 +0300
+Message-Id: <1350388094-18805-1-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1350388094-18805-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1350388094-18805-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The custom filename function mostly repeats the kernel's kbasename. This patch
-simplifies it. The updated filename() will not check for the '\' in the
-filenames. It seems redundant in Linux. The __FILE__ macro always defined if
-we compile an existing file. Thus, NULL check is not needed there as well.
+There are several places in kernel that duplicate code to get last part of the
+pathname. This patchset introduces a helper and few fixes.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: YAMANE Toshiaki <yamanetoshi@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
+Since v2:
+- fixed Cc list in the patch 6/6 ("trace: ...")
+- update patch 3/6 ("rts_pstor: ...") to not hide const qualifier
+- send patch 1/1 to all people involved to the series
+- rebase against recent linux-next
+Since v1:
+- fix changelog of the patch 1 - we are doing basename(3) alike helper
+- usb related patch temporary excluded from series (under discussion with Greg)
+
+Andy Shevchenko (6):
+  lib/string: introduce helper to get base file name from given path
+  lib: dynamic_debug: reuse kbasename()
+  staging: rts_pstor: reuse kbasename()
+  mm: reuse kbasename() functionality
+  procfs: reuse kbasename() functionality
+  trace: reuse kbasename() functionality
+
  drivers/staging/rts_pstor/trace.h |   24 ++++--------------------
- 1 file changed, 4 insertions(+), 20 deletions(-)
+ fs/proc/proc_devtree.c            |    7 ++-----
+ include/linux/string.h            |   11 +++++++++++
+ kernel/trace/trace_uprobe.c       |    8 ++++----
+ lib/dynamic_debug.c               |    9 +--------
+ mm/memory.c                       |    8 +++-----
+ 6 files changed, 25 insertions(+), 42 deletions(-)
 
-diff --git a/drivers/staging/rts_pstor/trace.h b/drivers/staging/rts_pstor/trace.h
-index cf60a1b..bff99bf 100644
---- a/drivers/staging/rts_pstor/trace.h
-+++ b/drivers/staging/rts_pstor/trace.h
-@@ -24,31 +24,15 @@
- #ifndef __REALTEK_RTSX_TRACE_H
- #define __REALTEK_RTSX_TRACE_H
- 
-+#include <linux/string.h>
-+
- #define _MSG_TRACE
- 
- #ifdef _MSG_TRACE
--static inline char *filename(char *path)
--{
--	char *ptr;
--
--	if (path == NULL)
--		return NULL;
--
--	ptr = path;
--
--	while (*ptr != '\0') {
--		if ((*ptr == '\\') || (*ptr == '/'))
--			path = ptr + 1;
--		
--		ptr++;
--	}
--
--	return path;
--}
- 
- #define TRACE_RET(chip, ret)   										\
- do {													\
--	char *_file = filename(__FILE__);								\
-+	const char *_file = kbasename(__FILE__);								\
- 	RTSX_DEBUGP("[%s][%s]:[%d]\n", _file, __func__, __LINE__);					\
- 	(chip)->trace_msg[(chip)->msg_idx].line = (u16)(__LINE__);					\
- 	strncpy((chip)->trace_msg[(chip)->msg_idx].func, __func__, MSG_FUNC_LEN-1);			\
-@@ -64,7 +48,7 @@ do {													\
- 
- #define TRACE_GOTO(chip, label)   									\
- do {													\
--	char *_file = filename(__FILE__);								\
-+	const char *_file = kbasename(__FILE__);								\
- 	RTSX_DEBUGP("[%s][%s]:[%d]\n", _file, __func__, __LINE__);					\
- 	(chip)->trace_msg[(chip)->msg_idx].line = (u16)(__LINE__);					\
- 	strncpy((chip)->trace_msg[(chip)->msg_idx].func, __func__, MSG_FUNC_LEN-1);			\
 -- 
 1.7.10.4
 
