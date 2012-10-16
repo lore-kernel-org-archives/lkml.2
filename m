@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab2JPTkt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 15:40:49 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53247 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754578Ab2JPTkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 15:40:47 -0400
-Date: Tue, 16 Oct 2012 21:40:44 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH v9 03/12] x86, topology: Don't offline CPU0 if any PIC
- irq can not be migrated out of it
-Message-ID: <20121016194044.GB27090@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Yu, Fenghua" <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-	Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	"Mallick, Asit K" <asit.k.mallick@intel.com>,
-	"Luck, Tony" <tony.luck@intel.com>,
-	Arjan Dan De Ven <arjan@linux.intel.com>,
-	"Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-	"Brown, Len" <len.brown@intel.com>,
-	"Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	Chen Gong <gong.chen@linux.intel.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-References: <1350058189-6769-1-git-send-email-fenghua.yu@intel.com>
- <1350058189-6769-4-git-send-email-fenghua.yu@intel.com>
- <20121016170310.GC12694@x1.osrc.amd.com>
- <3E5A0FA7E9CA944F9D5414FEC6C7122030B16447@ORSMSX105.amr.corp.intel.com>
+	id S1756009Ab2JPTnM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 15:43:12 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:21825 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755970Ab2JPTnL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 15:43:11 -0400
+X-IronPort-AV: E=Sophos;i="4.80,595,1344211200"; 
+   d="scan'208";a="15211572"
+Message-ID: <1350416588.28188.0.camel@dagon.hellion.org.uk>
+Subject: Re: [Xen-devel] [PATCH V2 3/7]: PVH:  mmu related changes.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+CC: "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Tue, 16 Oct 2012 20:43:08 +0100
+In-Reply-To: <20121016104657.4b2478a8@mantra.us.oracle.com>
+References: <20121011145817.0d744c99@mantra.us.oracle.com>
+	 <1350032276.14806.53.camel@zakaz.uk.xensource.com>
+	 <1350404821.2460.3.camel@zakaz.uk.xensource.com>
+	 <20121016104657.4b2478a8@mantra.us.oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C7122030B16447@ORSMSX105.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 06:43:36PM +0000, Yu, Fenghua wrote:
-> arch/x86/kernel/cpu/topology.c doesn't contain CPU hotplug hooks.
-> To place the BSP patchset in this file, other existing CPU hotplug
-> code should be moved to this file as well. Apparently that's not this
-> patchset's task.
+On Tue, 2012-10-16 at 10:46 -0700, Mukesh Rathor wrote:
+> On Tue, 16 Oct 2012 17:27:01 +0100
+> Ian Campbell <Ian.Campbell@citrix.com> wrote:
+> 
+> > On Fri, 2012-10-12 at 09:57 +0100, Ian Campbell wrote:
+> > > > +int xen_unmap_domain_mfn_range(struct vm_area_struct *vma)
+> > > > +{
+> > > > +       int numpgs = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+> > > > +       struct page **pages = vma ? vma->vm_private_data : NULL;
+> > > 
+> > > I thought we agreed to keep uses of vm_private_data in the privcmd
+> > > driver?
+> > > 
+> > > I think you should just add pages and nr as direct parameters to
+> > > this function, which is symmetric with the map call.
+> > 
+> > I had to look at this while rebasing my arm patches, turned out to be
+> > fairly simple. Feel free to either fold in or badger me for a proper
+> > commit message.
+> 
+> 
+> I made similar change in my tree, except I am not passing vma as its
+> not needed. I guess you just wanna be consistend with remap, or future
+> use?
 
-Right, ok.
+Consistency mostly.
 
-But looking at this a bit more, we (someone :)) should probably merge
-those two files together since both deal with the cpu aspect of
-topology...
 
-Oh well.
-
--- 
-Regards/Gruss,
-    Boris.
