@@ -1,101 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779Ab2JPIIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 04:08:21 -0400
-Received: from relay.parallels.com ([195.214.232.42]:47333 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755696Ab2JPIIR convert rfc822-to-8bit (ORCPT
+	id S1754295Ab2JPINt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 04:13:49 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:41470 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754079Ab2JPINr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 04:08:17 -0400
-Message-ID: <507D15EE.3020305@parallels.com>
-Date: Tue, 16 Oct 2012 12:08:14 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Tue, 16 Oct 2012 04:13:47 -0400
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [RFC PATCH] posix timers: allocate timer id per task
-References: <20121015161559.7806.72762.stgit@localhost.localdomain> <alpine.LFD.2.02.1210152105090.5541@ionos>
-In-Reply-To: <alpine.LFD.2.02.1210152105090.5541@ionos>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <507CE06D.8050806@hitachi.com>
+References: <1350351452-9737-1-git-send-email-hyc.lee@gmail.com>
+	<507CE06D.8050806@hitachi.com>
+Date: Tue, 16 Oct 2012 17:13:46 +0900
+Message-ID: <CANFS6baFhCSvFhKPDVam3hGxSrhdX9-6dXROJSMM9KdrK-AK8A@mail.gmail.com>
+Subject: Re: [PATCH] perf probe: convert_name_to_addr() allocated the wrong
+ size buffer for a function name
+From: Hyeoncheol Lee <hyc.lee@gmail.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-15.10.2012 23:08, Thomas Gleixner пишет:
-> On Mon, 15 Oct 2012, Stanislav Kinsbursky wrote:
->
->> This patch is required CRIU project (www.criu.org).
->> To migrate processes with posix timers we have to make sure, that we can
->> restore posix timer with proper id.
->> Currently, this is not true, because timer ids are allocated globally.
->> So, this is precursor patch and it's purpose is make posix timer id to be
->> allocated per task.
->
-> You can't allocate them per task. posix timers are process wide.
->
+Hi,
 
-This is probably a misunderstanding.
-I meant process process.
-
-> What's the reason why you did not make the posix timer ids per name
-> space instead of going down to the per process level ?
+2012/10/16 Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>:
+> (2012/10/16 10:37), Hyeoncheol Lee wrote:
+>> convert_name_to_addr() allocated sizeof(char *) * MAX_PROBE_ARGS
+>> bytes for a function name
 >
-
-The reason is that CRIU have to support single processes regardless to namespaces.
-
->> Patch replaces global idr with global hash table for posix timers and
->> makes timer ids unique not globally, but per task. Next free timer id is type
->> of integer and stored on signal struct (posix_timer_id). If free timer id
->> reaches negative value on timer creation, it will be dropped to zero and
->> -EAGAIN will be returned to user.
+> Yeah, that one was from my laziness...
 >
-> So you want to allow 2^31 posix timers created for a single process?
+>>
+>> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+>> Signed-off-by: Hyeoncheol Lee <hyc.lee@gmail.com>
+>> ---
+>>  tools/perf/util/probe-event.c |    5 +++--
+>>  1 file changed, 3 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+>> index 49a256e..bb40ed4 100644
+>> --- a/tools/perf/util/probe-event.c
+>> +++ b/tools/perf/util/probe-event.c
+>> @@ -2352,13 +2352,14 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
+>>               free(exec_copy);
+>>       }
+>>       free(pp->function);
+>> -     pp->function = zalloc(sizeof(char *) * MAX_PROBE_ARGS);
+>> +     pp->function = zalloc(sizeof(char) *
+>> +                           (3 + sizeof(unsigned long long) * 2));
 >
-
-I don't really want it.
-I just tried to preserve existent logic. I.e. currently one process can create 
-2^31 posix timers (if no other processes tried to do the same).
-But the amount can  be decreased, of course.
-
->> +static struct k_itimer *__posix_timers_find(struct hlist_head *head, struct signal_struct *sig, timer_t id)
->> +{
->> +	struct hlist_node *node;
->> +	struct k_itimer *timer;
->> +
->> +	hlist_for_each_entry(timer, node, head, t_hash) {
->> +		if ((timer->it_signal == sig) && (timer->it_id == id))
->> +			return timer;
->> +	}
->> +	return NULL;
->> +}
->> +
->> +static struct k_itimer *posix_timer_find(timer_t id, unsigned long *flags)
->> +{
->> +	struct k_itimer *timer;
->> +	struct signal_struct *sig = current->signal;
->> +	struct hlist_head *head = &posix_timers_hashtable[hash(sig, id)];
->> +
->> +	spin_lock_irqsave(&hash_lock, *flags);
->
-> This is not going to fly. You just reintroduced a massive scalability
-> problem. See commit 8af08871
+> Could you comment that this is enough long here?
 >
 
-Yep, Eric already pointed to it.
-I'll try to fix this problem, if the idea with hash table suits in general.
-Thanks.
+Because a hexadecimal address that starts with "0x"
+will be stored in pp->function. sizeof(unsigned long long) * 2 is
+maximum length of hexadecimal number of  variable "vaddr"
+and 3 bytes are for "0x" and null character.
 
-> Thanks,
+>>       if (!pp->function) {
+>>               ret = -ENOMEM;
+>>               pr_warning("Failed to allocate memory by zalloc.\n");
+>>               goto out;
+>>       }
+>> -     e_snprintf(pp->function, MAX_PROBE_ARGS, "0x%llx", vaddr);
+>> +     sprintf(pp->function, "0x%llx", vaddr);
 >
-> 	tglx
+> And at least we should use snprintf instead of sprintf...
+> (I think ret = e_snprintf(...) is better)
 >
 
+You are right, but I didn't want to write down the length of
+"pp->function" again.
 
--- 
-Best regards,
-Stanislav Kinsbursky
+>>       ret = 0;
+>>
+>>  out:
+>>
+>
+> Thank you,
+>
+> --
+> Masami HIRAMATSU
+> IT Management Research Dept. Linux Technology Center
+> Hitachi, Ltd., Yokohama Research Laboratory
+> E-mail: masami.hiramatsu.pt@hitachi.com
+>
+>
+
+Thank you very much!
