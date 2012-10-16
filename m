@@ -1,55 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab2JPIAO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 04:00:14 -0400
-Received: from relay.parallels.com ([195.214.232.42]:45421 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755147Ab2JPIAJ convert rfc822-to-8bit (ORCPT
+	id S1755632Ab2JPIBA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 04:01:00 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47166 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755269Ab2JPIA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 04:00:09 -0400
-Message-ID: <507D1406.50307@parallels.com>
-Date: Tue, 16 Oct 2012 12:00:06 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Tue, 16 Oct 2012 04:00:58 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <507D1403.2070205@jp.fujitsu.com>
+Date: Tue, 16 Oct 2012 17:00:03 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [RFC PATCH] posix timers: allocate timer id per task
-References: <20121015161559.7806.72762.stgit@localhost.localdomain> <1350320645.2336.38.camel@laptop>
-In-Reply-To: <1350320645.2336.38.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+To: Glauber Costa <glommer@parallels.com>
+CC: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        devel@openvz.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v4 06/14] memcg: kmem controller infrastructure
+References: <1349690780-15988-1-git-send-email-glommer@parallels.com> <1349690780-15988-7-git-send-email-glommer@parallels.com> <20121011124212.GC29295@dhcp22.suse.cz> <5077CAAA.3090709@parallels.com> <20121012083944.GD10110@dhcp22.suse.cz> <5077D889.2040100@parallels.com> <20121012085740.GG10110@dhcp22.suse.cz> <5077DF20.7020200@parallels.com>
+In-Reply-To: <5077DF20.7020200@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-15.10.2012 21:04, Peter Zijlstra пишет:
-> On Mon, 2012-10-15 at 20:17 +0400, Stanislav Kinsbursky wrote:
->> This patch is required CRIU project (www.criu.org).
->> To migrate processes with posix timers we have to make sure, that we can
->> restore posix timer with proper id.
->> Currently, this is not true, because timer ids are allocated globally.
->> So, this is precursor patch and it's purpose is make posix timer id to be
->> allocated per task.
+(2012/10/12 18:13), Glauber Costa wrote:
+> On 10/12/2012 12:57 PM, Michal Hocko wrote:
+>> On Fri 12-10-12 12:44:57, Glauber Costa wrote:
+>>> On 10/12/2012 12:39 PM, Michal Hocko wrote:
+>>>> On Fri 12-10-12 11:45:46, Glauber Costa wrote:
+>>>>> On 10/11/2012 04:42 PM, Michal Hocko wrote:
+>>>>>> On Mon 08-10-12 14:06:12, Glauber Costa wrote:
+>>>> [...]
+>>>>>>> +	/*
+>>>>>>> +	 * Conditions under which we can wait for the oom_killer.
+>>>>>>> +	 * __GFP_NORETRY should be masked by __mem_cgroup_try_charge,
+>>>>>>> +	 * but there is no harm in being explicit here
+>>>>>>> +	 */
+>>>>>>> +	may_oom = (gfp & __GFP_WAIT) && !(gfp & __GFP_NORETRY);
+>>>>>>
+>>>>>> Well we _have to_ check __GFP_NORETRY here because if we don't then we
+>>>>>> can end up in OOM. mem_cgroup_do_charge returns CHARGE_NOMEM for
+>>>>>> __GFP_NORETRY (without doing any reclaim) and of oom==true we decrement
+>>>>>> oom retries counter and eventually hit OOM killer. So the comment is
+>>>>>> misleading.
+>>>>>
+>>>>> I will update. What i understood from your last message is that we don't
+>>>>> really need to, because try_charge will do it.
+>>>>
+>>>> IIRC I just said it couldn't happen before because migration doesn't go
+>>>> through charge and thp disable oom by default.
+>>>>
+>>>
+>>> I had it changed to:
+>>>
+>>>          /*
+>>>           * Conditions under which we can wait for the oom_killer.
+>>>           * We have to be able to wait, but also, if we can't retry,
+>>>           * we obviously shouldn't go mess with oom.
+>>>           */
+>>>          may_oom = (gfp & __GFP_WAIT) && !(gfp & __GFP_NORETRY);
 >>
->> Patch replaces global idr with global hash table for posix timers and
->> makes timer ids unique not globally, but per task. Next free timer id is type
->> of integer and stored on signal struct (posix_timer_id). If free timer id
->> reaches negative value on timer creation, it will be dropped to zero and
->> -EAGAIN will be returned to user.
->> Hash table is size of page (4KB).
->> Key is constructed as follows:
->> key = hash_ptr(current->signal) ^ hash_32(posix_timer_id);
+>> OK
+>>
+>>>
+>>>>>>> +
+>>>>>>> +	_memcg = memcg;
+>>>>>>> +	ret = __mem_cgroup_try_charge(NULL, gfp, size >> PAGE_SHIFT,
+>>>>>>> +				      &_memcg, may_oom);
+>>>>>>> +
+>>>>>>> +	if (!ret) {
+>>>>>>> +		ret = res_counter_charge(&memcg->kmem, size, &fail_res);
+>>>>>>
+>>>>>> Now that I'm thinking about the charging ordering we should charge the
+>>>>>> kmem first because we would like to hit kmem limit before we hit u+k
+>>>>>> limit, don't we.
+>>>>>> Say that you have kmem limit 10M and the total limit 50M. Current `u'
+>>>>>> would be 40M and this charge would cause kmem to hit the `k' limit. I
+>>>>>> think we should fail to charge kmem before we go to u+k and potentially
+>>>>>> reclaim/oom.
+>>>>>> Or has this been alredy discussed and I just do not remember?
+>>>>>>
+>>>>> This has never been discussed as far as I remember. We charged u first
+>>>>> since day0, and you are so far the first one to raise it...
+>>>>>
+>>>>> One of the things in favor of charging 'u' first is that
+>>>>> mem_cgroup_try_charge is already equipped to make a lot of decisions,
+>>>>> like when to allow reclaim, when to bypass charges, and it would be good
+>>>>> if we can reuse all that.
+>>>>
+>>>> Hmm, I think that we should prevent from those decisions if kmem charge
+>>>> would fail anyway (especially now when we do not have targeted slab
+>>>> reclaim).
+>>>>
+>>>
+>>> Let's revisit this discussion when we do have targeted reclaim. For now,
+>>> I'll agree that charging kmem first would be acceptable.
+>>>
+>>> This will only make a difference when K < U anyway.
+>>
+>> Yes and it should work as advertised (aka hit the k limit first).
+>>
+> Just so we don't ping-pong in another submission:
 >
-> but but but.. isn't this what namespaces were invented for to solve? Why
-> not use the regular namespace infrastructure?
+> I changed memcontrol.h's memcg_kmem_newpage_charge to include:
 >
+>          /* If the test is dying, just let it go. */
+>          if (unlikely(test_thread_flag(TIF_MEMDIE)
+>                       || fatal_signal_pending(current)))
+>                  return true;
+>
+>
+> I'm also attaching the proposed code in memcontrol.c
+>
+> +static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
+> +{
+> +	struct res_counter *fail_res;
+> +	struct mem_cgroup *_memcg;
+> +	int ret = 0;
+> +	bool may_oom;
+> +
+> +	ret = res_counter_charge(&memcg->kmem, size, &fail_res);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/*
+> +	 * Conditions under which we can wait for the oom_killer.
+> +	 * We have to be able to wait, but also, if we can't retry,
+> +	 * we obviously shouldn't go mess with oom.
+> +	 */
+> +	may_oom = (gfp & __GFP_WAIT) && !(gfp & __GFP_NORETRY);
+> +
+> +	_memcg = memcg;
+> +	ret = __mem_cgroup_try_charge(NULL, gfp, size >> PAGE_SHIFT,
+> +				      &_memcg, may_oom);
+> +
+> +	if (ret == -EINTR)  {
+> +		/*
+> +		 * __mem_cgroup_try_charge() chosed to bypass to root due to
+> +		 * OOM kill or fatal signal.  Since our only options are to
+> +		 * either fail the allocation or charge it to this cgroup, do
+> +		 * it as a temporary condition. But we can't fail. From a
+> +		 * kmem/slab perspective, the cache has already been selected,
+> +		 * by mem_cgroup_get_kmem_cache(), so it is too late to change
+> +		 * our minds. This condition will only trigger if the task
+> +		 * entered memcg_charge_kmem in a sane state, but was
+> +		 * OOM-killed.  during __mem_cgroup_try_charge. Tasks that are
+> +		 * already dying when the allocation triggers should have been
+> +		 * already directed to the root cgroup.
+> +		 */
+> +		res_counter_charge_nofail(&memcg->res, size, &fail_res);
+> +		if (do_swap_account)
+> +			res_counter_charge_nofail(&memcg->memsw, size,
+> +						  &fail_res);
+> +		ret = 0;
+> +	} else if (ret)
+> +		res_counter_uncharge(&memcg->kmem, size);
+> +
+> +	return ret;
+> +}
 
-The reason is that CRIU have to support single processes within existent namespaces.
+seems ok to me. but we'll need a patch to hide the usage > limit situation from
+users.
 
--- 
-Best regards,
-Stanislav Kinsbursky
+Thanks,
+-Kame
+
+
