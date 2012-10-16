@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab2JPH1S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 03:27:18 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:15733 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754244Ab2JPH1Q (ORCPT
+	id S1754886Ab2JPH1w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 03:27:52 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:24779 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754244Ab2JPH1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 03:27:16 -0400
-X-AuditID: cbfee61b-b7fd46d0000046e0-5c-507d0c539ab2
+	Tue, 16 Oct 2012 03:27:51 -0400
+X-AuditID: cbfee61a-b7f976d000001eb9-ea-507d0c75597d
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>,
         "'LKML'" <linux-kernel@vger.kernel.org>
@@ -15,90 +15,68 @@ Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <007101cdab6f$6c8bc030$45a34090$%han@samsung.com>
 In-reply-to: <007101cdab6f$6c8bc030$45a34090$%han@samsung.com>
-Subject: [PATCH 03/17] backlight: corgi_lcd: fix checkpatch error and warning
-Date: Tue, 16 Oct 2012 16:27:15 +0900
-Message-id: <007401cdab6f$aaa93d70$fffbb850$%han@samsung.com>
+Subject: [PATCH 04/17] backlight: da903x_bl: fix checkpatch warning
+Date: Tue, 16 Oct 2012 16:27:49 +0900
+Message-id: <007501cdab6f$bedb1200$3c913600$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2rb2x3b+BtYCwlRU+aka06gjxy+QAACFRg
+Thread-index: Ac2rb2x3b+BtYCwlRU+aka06gjxy+QAAD9+w
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsVy+t9jQd1gntoAg3sfTCwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfG09b3rAXdghWPDz9ib2C8w9vFyMEhIWAi8eaUVhcjJ5ApJnHh
-	3nq2LkYuDiGB6YwSu26dZYZwZjNJLHq8mBmkik1ATeLLl8PsILaIQIRE84xZzCCDmAV8JDbP
-	0gQJCwnYSqye8RashFPATmLj64MsICXCAr4S/btiQcIsAqoSNx89YwUJ8wKVdy5PAgnzCghK
-	/Jh8jwXEZhbQkli/8zgThC0vsXnNW2aIi9UlHv3VhdhvJHH7yTU2iBIRiX0v3jFOYBSahWTS
-	LCSTZiGZNAtJywJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwQH8THoH46oGi0OMAhyM
-	Sjy8Gc41AUKsiWXFlbmHGCU4mJVEeD0mAoV4UxIrq1KL8uOLSnNSiw8xSnOwKInzNnukBAgJ
-	pCeWpGanphakFsFkmTg4pRoY1xmtrpRTWR91TeaLD+/SoznSHEs2f3S9OzV66qW7/Sd2yVo7
-	NX1insX7TC7z4M6AoGvqT29d85zZoKDxomnJ/vsnF00qf6EocvKu0p2G8zqJ7OUstSJiqRWz
-	/n1O+Fp4LuzM9+ILKvdsT9ooMhbGmEQ+fOzQ0yostm4Z1y45z+T6/Q7dzM4GSizFGYmGWsxF
-	xYkAM+FwkVwCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t9jQd1SntoAg5YuXYvLu+awOTB6fN4k
+	F8AYxWWTkpqTWZZapG+XwJWxcn1iQT9Pxd6mDWwNjPO4uhg5OSQETCRezZnCBGGLSVy4t56t
+	i5GLQ0hgOqNE59sPrBDObCaJcxNusIJUsQmoSXz5cpgdxBYRiJBonjGLuYuRg4NZwEdi8yxN
+	kLCQgK3E6hlvwUo4BewkNr4+yAJiCws4S1zvecAIYrMIqEpMO7WLGcTmBaqf0bMcyhaU+DH5
+	Hlg9s4CWxPqdx5kgbHmJzWvegq2SEFCXePRXF+ICI4mVvTPZIEpEJPa9eMc4gVFoFpJJs5BM
+	moVk0iwkLQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBAfxM6kdjCsbLA4xCnAwKvHw
+	ZjjXBAixJpYVV+YeYpTgYFYS4fWYCBTiTUmsrEotyo8vKs1JLT7EKM3BoiTO2+yREiAkkJ5Y
+	kpqdmlqQWgSTZeLglGpgXHhNUL5PZfKVDrNNX+eFH76l9WOt0c/6PnX79qdPnWNfWQsJZuzx
+	vG9+THtLpeirf1d5f8adC54l75kUGvT249X+Jf0yFWvO3Wq8vvqQS4/an0m7WqfO2iYYP3uh
+	1Wz3Z7dCNPkb3n7v+Nuq+4b97ezfGzb3zNpuqpWn9kx9sWKkXfzkuvfvbiuxFGckGmoxFxUn
+	AgDtChfHXgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the checkpatch error and warning as below:
+This patch fixes the checkpatch warning as below:
 
 WARNING: please, no space before tabs
 WARNING: quoted string split across lines
-ERROR: space required before the open parenthesis '('
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 Cc: Richard Purdie <rpurdie@rpsys.net>
 ---
- drivers/video/backlight/corgi_lcd.c |   16 +++++++++-------
- 1 files changed, 9 insertions(+), 7 deletions(-)
+ drivers/video/backlight/da903x_bl.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/video/backlight/corgi_lcd.c b/drivers/video/backlight/corgi_lcd.c
-index c781768..7171815 100644
---- a/drivers/video/backlight/corgi_lcd.c
-+++ b/drivers/video/backlight/corgi_lcd.c
-@@ -6,8 +6,8 @@
-  *  Based on Sharp's 2.4 Backlight Driver
+diff --git a/drivers/video/backlight/da903x_bl.c b/drivers/video/backlight/da903x_bl.c
+index 573c7ec..f02e95c 100644
+--- a/drivers/video/backlight/da903x_bl.c
++++ b/drivers/video/backlight/da903x_bl.c
+@@ -2,10 +2,10 @@
+  * Backlight driver for Dialog Semiconductor DA9030/DA9034
   *
-  *  Copyright (c) 2008 Marvell International Ltd.
-- *  	Converted to SPI device based LCD/Backlight device driver
-- *  	by Eric Miao <eric.miao@marvell.com>
-+ *	Converted to SPI device based LCD/Backlight device driver
-+ *	by Eric Miao <eric.miao@marvell.com>
+  * Copyright (C) 2008 Compulab, Ltd.
+- * 	Mike Rapoport <mike@compulab.co.il>
++ *	Mike Rapoport <mike@compulab.co.il>
   *
-  *  This program is free software; you can redistribute it and/or modify
-  *  it under the terms of the GNU General Public License version 2 as
-@@ -192,7 +192,7 @@ static void lcdtg_set_phadadj(struct corgi_lcd *lcd, int mode)
- {
- 	int adj;
+  * Copyright (C) 2006-2008 Marvell International Ltd.
+- * 	Eric Miao <eric.miao@marvell.com>
++ *	Eric Miao <eric.miao@marvell.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -199,7 +199,7 @@ static struct platform_driver da903x_backlight_driver = {
+ module_platform_driver(da903x_backlight_driver);
  
--	switch(mode) {
-+	switch (mode) {
- 	case CORGI_LCD_MODE_VGA:
- 		/* Setting for VGA */
- 		adj = sharpsl_param.phadadj;
-@@ -495,8 +495,9 @@ static int setup_gpio_backlight(struct corgi_lcd *lcd,
- 		err = devm_gpio_request(&spi->dev, pdata->gpio_backlight_on,
- 					"BL_ON");
- 		if (err) {
--			dev_err(&spi->dev, "failed to request GPIO%d for "
--				"backlight_on\n", pdata->gpio_backlight_on);
-+			dev_err(&spi->dev,
-+				"failed to request GPIO%d for backlight_on\n",
-+				pdata->gpio_backlight_on);
- 			return err;
- 		}
- 
-@@ -508,8 +509,9 @@ static int setup_gpio_backlight(struct corgi_lcd *lcd,
- 		err = devm_gpio_request(&spi->dev, pdata->gpio_backlight_cont,
- 					"BL_CONT");
- 		if (err) {
--			dev_err(&spi->dev, "failed to request GPIO%d for "
--				"backlight_cont\n", pdata->gpio_backlight_cont);
-+			dev_err(&spi->dev,
-+				"failed to request GPIO%d for backlight_cont\n",
-+				pdata->gpio_backlight_cont);
- 			return err;
- 		}
- 
+ MODULE_DESCRIPTION("Backlight Driver for Dialog Semiconductor DA9030/DA9034");
+-MODULE_AUTHOR("Eric Miao <eric.miao@marvell.com>"
+-	      "Mike Rapoport <mike@compulab.co.il>");
++MODULE_AUTHOR("Eric Miao <eric.miao@marvell.com>");
++MODULE_AUTHOR("Mike Rapoport <mike@compulab.co.il>");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:da903x-backlight");
 -- 
 1.7.1
 
