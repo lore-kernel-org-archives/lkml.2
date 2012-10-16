@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab2JPA3U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 20:29:20 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:39461 "EHLO
+	id S1755326Ab2JPA3u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 20:29:50 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:39477 "EHLO
 	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754940Ab2JPA3N (ORCPT
+	by vger.kernel.org with ESMTP id S1754721Ab2JPA3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 20:29:13 -0400
-Subject: [PATCH 06/10] VMCI: handle array implementation.
+	Mon, 15 Oct 2012 20:29:48 -0400
+Subject: [PATCH 09/10] VMCI: routing implementation.
 To: linux-kernel@vger.kernel.org, georgezhang@vmware.com,
         virtualization@lists.linux-foundation.org
 From: George Zhang <georgezhang@vmware.com>
 Cc: pv-drivers@vmware.com, vm-crosstalk@vmware.com, gregkh@linuxfoundation.org
-Date: Mon, 15 Oct 2012 17:29:13 -0700
-Message-ID: <20121016002904.26205.35108.stgit@promb-2n-dhcp175.eng.vmware.com>
+Date: Mon, 15 Oct 2012 17:29:48 -0700
+Message-ID: <20121016002942.26205.72888.stgit@promb-2n-dhcp175.eng.vmware.com>
 In-Reply-To: <20121016002550.26205.67037.stgit@promb-2n-dhcp175.eng.vmware.com>
 References: <20121016002550.26205.67037.stgit@promb-2n-dhcp175.eng.vmware.com>
 User-Agent: StGit/0.15
@@ -24,23 +24,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VMCI handle code adds support for dynamic arrays that will grow if they need to.
+VMCI routing code is responsible for routing between various hosts/guests
+as well as routing in nested scenarios.
 
 
 Signed-off-by: George Zhang <georgezhang@vmware.com>
 ---
- drivers/misc/vmw_vmci/vmci_handle_array.c |  162 +++++++++++++++++++++++++++++
- drivers/misc/vmw_vmci/vmci_handle_array.h |   46 ++++++++
- 2 files changed, 208 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/vmw_vmci/vmci_handle_array.c
- create mode 100644 drivers/misc/vmw_vmci/vmci_handle_array.h
+ drivers/misc/vmw_vmci/vmci_route.c |  237 ++++++++++++++++++++++++++++++++++++
+ drivers/misc/vmw_vmci/vmci_route.h |   30 +++++
+ 2 files changed, 267 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/vmw_vmci/vmci_route.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_route.h
 
-diff --git a/drivers/misc/vmw_vmci/vmci_handle_array.c b/drivers/misc/vmw_vmci/vmci_handle_array.c
+diff --git a/drivers/misc/vmw_vmci/vmci_route.c b/drivers/misc/vmw_vmci/vmci_route.c
 new file mode 100644
-index 0000000..c7db831
+index 0000000..8aa43ee
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_handle_array.c
-@@ -0,0 +1,162 @@
++++ b/drivers/misc/vmw_vmci/vmci_route.c
+@@ -0,0 +1,237 @@
 +/*
 + * VMware VMCI Driver
 + *
@@ -56,159 +57,234 @@ index 0000000..c7db831
 + * for more details.
 + */
 +
-+#include <linux/slab.h>
-+#include "vmci_handle_array.h"
++#include <linux/vmw_vmci_defs.h>
++#include <linux/vmw_vmci_api.h>
 +
-+static size_t handle_arr_calc_size(size_t capacity)
-+{
-+	return sizeof(struct vmci_handle_arr) +
-+	    capacity * sizeof(struct vmci_handle);
-+}
-+
-+struct vmci_handle_arr *vmci_handle_arr_create(size_t capacity)
-+{
-+	struct vmci_handle_arr *array;
-+
-+	if (capacity == 0)
-+		capacity = VMCI_HANDLE_ARRAY_DEFAULT_SIZE;
-+
-+	array = kmalloc(handle_arr_calc_size(capacity), GFP_ATOMIC);
-+	if (!array)
-+		return NULL;
-+
-+	array->capacity = capacity;
-+	array->size = 0;
-+
-+	return array;
-+}
-+
-+void vmci_handle_arr_destroy(struct vmci_handle_arr *array)
-+{
-+	kfree(array);
-+}
-+
-+void vmci_handle_arr_append_entry(struct vmci_handle_arr **array_ptr,
-+				  struct vmci_handle handle)
-+{
-+	struct vmci_handle_arr *array;
-+
-+	BUG_ON(!array_ptr || !*array_ptr);
-+	array = *array_ptr;
-+
-+	if (unlikely(array->size >= array->capacity)) {
-+		/* reallocate. */
-+		struct vmci_handle_arr *new_array;
-+		size_t new_capacity = array->capacity * VMCI_ARR_CAP_MULT;
-+		size_t new_size = handle_arr_calc_size(new_capacity);
-+
-+		new_array = krealloc(array, new_size, GFP_ATOMIC);
-+		if (!new_array)
-+			return;
-+
-+		new_array->capacity = new_capacity;
-+		*array_ptr = array = new_array;
-+	}
-+
-+	array->entries[array->size] = handle;
-+	array->size++;
-+}
++#include "vmci_common_int.h"
++#include "vmci_context.h"
++#include "vmci_driver.h"
++#include "vmci_route.h"
 +
 +/*
-+ * Handle that was removed, VMCI_INVALID_HANDLE if entry not found.
++ * Make a routing decision for the given source and destination handles.
++ * This will try to determine the route using the handles and the available
++ * devices.  Will set the source context if it is invalid.
 + */
-+struct vmci_handle vmci_handle_arr_remove_entry(struct vmci_handle_arr *array,
-+						struct vmci_handle entry_handle)
++int vmci_route(struct vmci_handle *src,
++	       const struct vmci_handle *dst,
++	       bool from_guest,
++	       enum vmci_route *route)
 +{
-+	struct vmci_handle handle = VMCI_INVALID_HANDLE;
-+	size_t i;
++	bool has_host_device = vmci_host_code_active();
++	bool has_guest_device = vmci_guest_code_active();
 +
-+	BUG_ON(!array);
++	ASSERT(src);
++	ASSERT(dst);
++	ASSERT(route);
 +
-+	for (i = 0; i < array->size; i++) {
-+		if (VMCI_HANDLE_EQUAL(array->entries[i], entry_handle)) {
-+			handle = array->entries[i];
-+			array->size--;
-+			array->entries[i] = array->entries[array->size];
-+			array->entries[array->size] = VMCI_INVALID_HANDLE;
-+			break;
++	*route = VMCI_ROUTE_NONE;
++
++	/*
++	 * "from_guest" is only ever set to true by
++	 * IOCTL_VMCI_DATAGRAM_SEND (or by the vmkernel equivalent),
++	 * which comes from the VMX, so we know it is coming from a
++	 * guest.
++	 *
++	 * To avoid inconsistencies, test these once.  We will test
++	 * them again when we do the actual send to ensure that we do
++	 * not touch a non-existent device.
++	 */
++
++	/* Must have a valid destination context. */
++	if (VMCI_INVALID_ID == dst->context)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	/* Anywhere to hypervisor. */
++	if (VMCI_HYPERVISOR_CONTEXT_ID == dst->context) {
++
++		/*
++		 * If this message already came from a guest then we
++		 * cannot send it to the hypervisor.  It must come
++		 * from a local client.
++		 */
++		if (from_guest)
++			return VMCI_ERROR_DST_UNREACHABLE;
++
++		/*
++		 * We must be acting as a guest in order to send to
++		 * the hypervisor.
++		 */
++		if (!has_guest_device)
++			return VMCI_ERROR_DEVICE_NOT_FOUND;
++
++		/* And we cannot send if the source is the host context. */
++		if (VMCI_HOST_CONTEXT_ID == src->context)
++			return VMCI_ERROR_INVALID_ARGS;
++
++		/*
++		 * If the client passed the ANON source handle then
++		 * respect it (both context and resource are invalid).
++		 * However, if they passed only an invalid context,
++		 * then they probably mean ANY, in which case we
++		 * should set the real context here before passing it
++		 * down.
++		 */
++		if (VMCI_INVALID_ID == src->context &&
++		    VMCI_INVALID_ID != src->resource)
++			src->context = vmci_get_context_id();
++
++		/* Send from local client down to the hypervisor. */
++		*route = VMCI_ROUTE_AS_GUEST;
++		return VMCI_SUCCESS;
++	}
++
++	/* Anywhere to local client on host. */
++	if (VMCI_HOST_CONTEXT_ID == dst->context) {
++		/*
++		 * If it is not from a guest but we are acting as a
++		 * guest, then we need to send it down to the host.
++		 * Note that if we are also acting as a host then this
++		 * will prevent us from sending from local client to
++		 * local client, but we accept that restriction as a
++		 * way to remove any ambiguity from the host context.
++		 */
++		if (src->context == VMCI_HYPERVISOR_CONTEXT_ID) {
++			/*
++			 * If the hypervisor is the source, this is
++			 * host local communication. The hypervisor
++			 * may send vmci event datagrams to the host
++			 * itself, but it will never send datagrams to
++			 * an "outer host" through the guest device.
++			 */
++
++			if (has_host_device) {
++				*route = VMCI_ROUTE_AS_HOST;
++				return VMCI_SUCCESS;
++			} else {
++				return VMCI_ERROR_DEVICE_NOT_FOUND;
++			}
++		}
++
++		if (!from_guest && has_guest_device) {
++			/* If no source context then use the current. */
++			if (VMCI_INVALID_ID == src->context)
++				src->context = vmci_get_context_id();
++
++			/* Send it from local client down to the host. */
++			*route = VMCI_ROUTE_AS_GUEST;
++			return VMCI_SUCCESS;
++		}
++
++		/*
++		 * Otherwise we already received it from a guest and
++		 * it is destined for a local client on this host, or
++		 * it is from another local client on this host.  We
++		 * must be acting as a host to service it.
++		 */
++		if (!has_host_device)
++			return VMCI_ERROR_DEVICE_NOT_FOUND;
++
++		if (VMCI_INVALID_ID == src->context) {
++			/*
++			 * If it came from a guest then it must have a
++			 * valid context.  Otherwise we can use the
++			 * host context.
++			 */
++			if (from_guest)
++				return VMCI_ERROR_INVALID_ARGS;
++
++			src->context = VMCI_HOST_CONTEXT_ID;
++		}
++
++		/* Route to local client. */
++		*route = VMCI_ROUTE_AS_HOST;
++		return VMCI_SUCCESS;
++	}
++
++	/*
++	 * If we are acting as a host then this might be destined for
++	 * a guest.
++	 */
++	if (has_host_device) {
++		/* It will have a context if it is meant for a guest. */
++		if (vmci_ctx_exists(dst->context)) {
++			if (VMCI_INVALID_ID == src->context) {
++				/*
++				 * If it came from a guest then it
++				 * must have a valid context.
++				 * Otherwise we can use the host
++				 * context.
++				 */
++
++				if (from_guest)
++					return VMCI_ERROR_INVALID_ARGS;
++
++				src->context = VMCI_HOST_CONTEXT_ID;
++			} else if (VMCI_CONTEXT_IS_VM(src->context) &&
++				   src->context != dst->context) {
++				/*
++				 * VM to VM communication is not
++				 * allowed. Since we catch all
++				 * communication destined for the host
++				 * above, this must be destined for a
++				 * VM since there is a valid context.
++				 */
++
++				ASSERT(VMCI_CONTEXT_IS_VM(dst->context));
++
++				return VMCI_ERROR_DST_UNREACHABLE;
++			}
++
++			/* Pass it up to the guest. */
++			*route = VMCI_ROUTE_AS_HOST;
++			return VMCI_SUCCESS;
++		} else if (!has_guest_device) {
++			/*
++			 * The host is attempting to reach a CID
++			 * without an active context, and we can't
++			 * send it down, since we have no guest
++			 * device.
++			 */
++
++			return VMCI_ERROR_DST_UNREACHABLE;
 +		}
 +	}
 +
-+	return handle;
-+}
++	/*
++	 * We must be a guest trying to send to another guest, which means
++	 * we need to send it down to the host. We do not filter out VM to
++	 * VM communication here, since we want to be able to use the guest
++	 * driver on older versions that do support VM to VM communication.
++	 */
++	if (!has_guest_device) {
++		/*
++		 * Ending up here means we have neither guest nor host
++		 * device. That shouldn't happen, since any VMCI
++		 * client in the kernel should have done a successful
++		 * VMCI_DeviceGet.
++		 */
 +
-+/*
-+ * Handle that was removed, VMCI_INVALID_HANDLE if array was empty.
-+ */
-+struct vmci_handle vmci_handle_arr_remove_tail(struct vmci_handle_arr *array)
-+{
-+	struct vmci_handle handle = VMCI_INVALID_HANDLE;
-+
-+	BUG_ON(!array);
-+
-+	if (array->size) {
-+		array->size--;
-+		handle = array->entries[array->size];
-+		array->entries[array->size] = VMCI_INVALID_HANDLE;
++		ASSERT(false);
++		return VMCI_ERROR_DEVICE_NOT_FOUND;
 +	}
 +
-+	return handle;
++	/* If no source context then use the current context. */
++	if (VMCI_INVALID_ID == src->context)
++		src->context = vmci_get_context_id();
++
++	/*
++	 * Send it from local client down to the host, which will
++	 * route it to the other guest for us.
++	 */
++	*route = VMCI_ROUTE_AS_GUEST;
++	return VMCI_SUCCESS;
 +}
-+
-+/*
-+ * Handle at given index, VMCI_INVALID_HANDLE if invalid index.
-+ */
-+struct vmci_handle
-+vmci_handle_arr_get_entry(const struct vmci_handle_arr *array, size_t index)
-+{
-+	BUG_ON(!array);
-+
-+	if (unlikely(index >= array->size))
-+		return VMCI_INVALID_HANDLE;
-+
-+	return array->entries[index];
-+}
-+
-+size_t vmci_handle_arr_get_size(const struct vmci_handle_arr *array)
-+{
-+	BUG_ON(!array);
-+
-+	return array->size;
-+}
-+
-+bool vmci_handle_arr_has_entry(const struct vmci_handle_arr *array,
-+			       struct vmci_handle entry_handle)
-+{
-+	size_t i;
-+
-+	BUG_ON(!array);
-+
-+	for (i = 0; i < array->size; i++)
-+		if (VMCI_HANDLE_EQUAL(array->entries[i], entry_handle))
-+			return true;
-+
-+	return false;
-+}
-+
-+/*
-+ * NULL if the array is empty. Otherwise, a pointer to the array
-+ * of VMCI handles in the handle array.
-+ */
-+struct vmci_handle *vmci_handle_arr_get_handles(struct vmci_handle_arr *array)
-+{
-+	BUG_ON(!array);
-+
-+	if (array->size)
-+		return array->entries;
-+
-+	return NULL;
-+}
-diff --git a/drivers/misc/vmw_vmci/vmci_handle_array.h b/drivers/misc/vmw_vmci/vmci_handle_array.h
+diff --git a/drivers/misc/vmw_vmci/vmci_route.h b/drivers/misc/vmw_vmci/vmci_route.h
 new file mode 100644
-index 0000000..37d1214
+index 0000000..3b30e82
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_handle_array.h
-@@ -0,0 +1,46 @@
++++ b/drivers/misc/vmw_vmci/vmci_route.h
+@@ -0,0 +1,30 @@
 +/*
 + * VMware VMCI Driver
 + *
@@ -224,35 +300,19 @@ index 0000000..37d1214
 + * for more details.
 + */
 +
-+#ifndef _VMCI_HANDLE_ARRAY_H_
-+#define _VMCI_HANDLE_ARRAY_H_
++#ifndef _VMCI_ROUTE_H_
++#define _VMCI_ROUTE_H_
 +
 +#include <linux/vmw_vmci_defs.h>
-+#include <linux/types.h>
 +
-+#define VMCI_HANDLE_ARRAY_DEFAULT_SIZE 4
-+#define VMCI_ARR_CAP_MULT 2	/* Array capacity multiplier */
-+
-+struct vmci_handle_arr {
-+	size_t capacity;
-+	size_t size;
-+	struct vmci_handle entries[];
++enum vmci_route {
++	VMCI_ROUTE_NONE,
++	VMCI_ROUTE_AS_HOST,
++	VMCI_ROUTE_AS_GUEST,
 +};
 +
-+struct vmci_handle_arr *vmci_handle_arr_create(size_t capacity);
-+void vmci_handle_arr_destroy(struct vmci_handle_arr *array);
-+void vmci_handle_arr_append_entry(struct vmci_handle_arr **array_ptr,
-+				  struct vmci_handle handle);
-+struct vmci_handle vmci_handle_arr_remove_entry(struct vmci_handle_arr *array,
-+						struct vmci_handle
-+						entry_handle);
-+struct vmci_handle vmci_handle_arr_remove_tail(struct vmci_handle_arr *array);
-+struct vmci_handle
-+vmci_handle_arr_get_entry(const struct vmci_handle_arr *array, size_t index);
-+size_t vmci_handle_arr_get_size(const struct vmci_handle_arr *array);
-+bool vmci_handle_arr_has_entry(const struct vmci_handle_arr *array,
-+			       struct vmci_handle entry_handle);
-+struct vmci_handle *vmci_handle_arr_get_handles(struct vmci_handle_arr *array);
++int vmci_route(struct vmci_handle *src, const struct vmci_handle *dst,
++	       bool from_guest, enum vmci_route *route);
 +
-+#endif /* _VMCI_HANDLE_ARRAY_H_ */
++#endif /* _VMCI_ROUTE_H_ */
 
