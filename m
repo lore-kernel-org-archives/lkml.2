@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab2JPTOM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 15:14:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49753 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755823Ab2JPTOI (ORCPT
+	id S1756030Ab2JPTOV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 15:14:21 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:59494 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755823Ab2JPTOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 15:14:08 -0400
+	Tue, 16 Oct 2012 15:14:16 -0400
 From: Adil Mujeeb <mujeeb.adil@gmail.com>
 To: tytso@mit.edu, adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Adil Mujeeb <mujeeb.adil@gmail.com>
-Subject: [PATCH 07/10] ext4: inode: Fixed coding style issue
-Date: Wed, 17 Oct 2012 00:43:02 +0530
-Message-Id: <1350414785-7848-7-git-send-email-mujeeb.adil@gmail.com>
+Subject: [PATCH 08/10] ext4: ioctl: Fixed coding style issue
+Date: Wed, 17 Oct 2012 00:43:03 +0530
+Message-Id: <1350414785-7848-8-git-send-email-mujeeb.adil@gmail.com>
 X-Mailer: git-send-email 1.7.6.msysgit.0
 In-Reply-To: <1350414785-7848-1-git-send-email-mujeeb.adil@gmail.com>
 References: <1350414785-7848-1-git-send-email-mujeeb.adil@gmail.com>
@@ -21,38 +21,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style issue reported by checkpatch.pl
+Fixed checkpatch.pl reported issue
 
 Signed-off-by: Adil Mujeeb <mujeeb.adil@gmail.com>
 ---
- linux-3.7-rc1/fs/ext4/inode.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ linux-3.7-rc1/fs/ext4/ioctl.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/linux-3.7-rc1/fs/ext4/inode.c b/linux-3.7-rc1/fs/ext4/inode.c
-index b3c243b..a174620 100644
---- a/linux-3.7-rc1/fs/ext4/inode.c
-+++ b/linux-3.7-rc1/fs/ext4/inode.c
-@@ -2880,7 +2880,7 @@ static void ext4_end_io_dio(struct kiocb *iocb, loff_t offset,
- 			    bool is_async)
- {
- 	struct inode *inode = iocb->ki_filp->f_path.dentry->d_inode;
--        ext4_io_end_t *io_end = iocb->private;
-+	ext4_io_end_t *io_end = iocb->private;
+diff --git a/linux-3.7-rc1/fs/ext4/ioctl.c b/linux-3.7-rc1/fs/ext4/ioctl.c
+index 5747f52..a534615 100644
+--- a/linux-3.7-rc1/fs/ext4/ioctl.c
++++ b/linux-3.7-rc1/fs/ext4/ioctl.c
+@@ -194,7 +194,7 @@ setversion_out:
+ 	}
+ 	case EXT4_IOC_GROUP_EXTEND: {
+ 		ext4_fsblk_t n_blocks_count;
+-		int err, err2=0;
++		int err, err2 = 0;
  
- 	/* if not async direct IO or dio with 0 bytes write, just return */
- 	if (!io_end || !size)
-@@ -3435,9 +3435,9 @@ static int ext4_discard_partial_page_buffers_no_lock(handle_t *handle,
- 		zero_user(page, pos, range_to_discard);
+ 		err = ext4_resize_begin(sb);
+ 		if (err)
+@@ -280,7 +280,7 @@ mext_out:
  
- 		err = 0;
--		if (ext4_should_journal_data(inode)) {
-+		if (ext4_should_journal_data(inode))
- 			err = ext4_handle_dirty_metadata(handle, inode, bh);
--		} else
-+		else
- 			mark_buffer_dirty(bh);
+ 	case EXT4_IOC_GROUP_ADD: {
+ 		struct ext4_new_group_data input;
+-		int err, err2=0;
++		int err, err2 = 0;
  
- 		BUFFER_TRACE(bh, "Partial buffer zeroed");
+ 		err = ext4_resize_begin(sb);
+ 		if (err)
 -- 
 1.7.7.3
 
