@@ -1,67 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab2JPQym (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 12:54:42 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49069 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754974Ab2JPQyk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 12:54:40 -0400
-Date: Tue, 16 Oct 2012 09:54:36 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Michael Spang <spang@google.com>, linux-usb@vger.kernel.org
-Cc: Dave Jones <davej@redhat.com>, Michael Spang <spang@chromium.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, greno@verizon.net,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
-Subject: Re: USB keyboard backlight powering down.
-Message-ID: <20121016165436.GA5140@kroah.com>
-References: <20121016152023.GA25506@redhat.com>
- <CAC5F_1=tiGUtWOsOQ17vEYqVxuoVuoEH_nmEZ3BoL0dsgXJn3w@mail.gmail.com>
+	id S1755115Ab2JPQ5T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 12:57:19 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:38542 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754776Ab2JPQ5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 12:57:17 -0400
+Date: Tue, 16 Oct 2012 18:57:16 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH v9 08/12] x86, hotplug: Wake up CPU0 via NMI instead of
+ INIT, SIPI, SIPI
+Message-ID: <20121016165716.GB12694@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
+	Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Asit K Mallick <asit.k.mallick@intel.com>,
+	Tony Luck <tony.luck@intel.com>,
+	Arjan Dan De Ven <arjan@linux.intel.com>,
+	Suresh B Siddha <suresh.b.siddha@intel.com>,
+	Len Brown <len.brown@intel.com>,
+	"Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+	Randy Dunlap <rdunlap@xenotime.net>,
+	Chen Gong <gong.chen@linux.intel.com>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+References: <1350058189-6769-1-git-send-email-fenghua.yu@intel.com>
+ <1350058189-6769-9-git-send-email-fenghua.yu@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAC5F_1=tiGUtWOsOQ17vEYqVxuoVuoEH_nmEZ3BoL0dsgXJn3w@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1350058189-6769-9-git-send-email-fenghua.yu@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 12:45:56PM -0400, Michael Spang wrote:
-> On Tue, Oct 16, 2012 at 11:20 AM, Dave Jones <davej@redhat.com> wrote:
-> > Gerry (CC'd) reported a bug to us that since 3.6.1, his illuminated
-> > Logitech USB keyboard doesn't light up until he hits a key, and then
-> > it immediately powers back off, defeating the purpose of having an
-> > illumated keyboard.
-> >
-> > Looking over the 3.6.1 changelog, I see this change, which sounds
-> > like it might be responsible ?
-> >
-> > commit ee537508bdc0c00b96ac497f3d82a68f820e6182
-> > Author: Michael Spang <spang@chromium.org>
-> > Date:   Fri Sep 14 13:05:49 2012 -0400
-> >
-> >     Increase XHCI suspend timeout to 16ms
+On Fri, Oct 12, 2012 at 09:09:45AM -0700, Fenghua Yu wrote:
+> From: Fenghua Yu <fenghua.yu@intel.com>
 > 
-> I don't think this is related to your problem, as this patch is in
-> suspend/resume code. It just allows the controller more time to halt.
-
-Yeah, that looks odd.
-
-But, (adding linux-usb@vger), I think we enabled some "put the device to
-sleep if it is idle" logic for all devices, which is what is looking
-like is happening here.  The keyboard is being told to go to sleep in
-order to save power.
-
-We are saving more power, but it looks like the user wants to disable
-it, which makes sense for this device.
-
-So, do we do this from within the kernel with a blacklist, or rely on
-the user knowing how to poke the proper sysfs file to turn the keyboard
-back on?
-
-greg k-h
-
+> Instead of waiting for STARTUP after INITs, BSP will execute the BIOS boot-strap
+> code which is not a desired behavior for waking up BSP. To avoid the boot-strap
+> code, wake up CPU0 by NMI instead.
 > 
-> Thanks,
-> Michael
+> This works to wake up soft offlined CPU0 only. If CPU0 is hard offlined (i.e.
+> physically hot removed and then hot added), NMI won't wake it up. We'll change
+> this code in the future to wake up hard offlined CPU0 if real platform and
+> request are available.
+> 
+> AP is still waken up as before by INIT, SIPI, SIPI sequence.
+> 
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> ---
+>  arch/x86/include/asm/cpu.h |    1 +
+>  arch/x86/kernel/smpboot.c  |  112 +++++++++++++++++++++++++++++++++++++++++--
+>  2 files changed, 107 insertions(+), 6 deletions(-)
+
+[ … ]
+
+> @@ -727,8 +745,47 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+>  	 */
+>  	if (apic->wakeup_secondary_cpu)
+>  		boot_error = apic->wakeup_secondary_cpu(apicid, start_ip);
+> -	else
+> -		boot_error = wakeup_secondary_cpu_via_init(apicid, start_ip);
+> +	else {
+> +		if (cpu)
+> +			/*
+> +			 * Wake up AP by INIT, INIT, STARTUP sequence.
+> +			 */
+> +			boot_error = wakeup_secondary_cpu_via_init(apicid,
+> +								   start_ip);
+> +		else {
+> +			/*
+> +			 * Instead of waiting for STARTUP after INITs, BSP will
+> +			 * execute the BIOS boot-strap code which is not a
+> +			 * desired behavior for waking up BSP. To avoid the
+> +			 * boot-strap code, wake up CPU0 by NMI instead.
+> +			 *
+> +			 * This works to wake up soft offlined CPU0 only. If
+> +			 * CPU0 is hard offlined (i.e. physically hot removed
+> +			 * and then hot added), NMI won't wake it up. We'll
+> +			 * change this code in the future to wake up hard
+> +			 * offlined CPU0 if real platform and request are
+> +			 * available.
+> +			 */
+> +			int id;
+> +
+> +			enable_start_cpu0 = 1;
+> +			/*
+> +			 * Register a NMI handler to help wake up CPU0.
+> +			 */
+> +			boot_error = register_nmi_handler(NMI_LOCAL,
+> +					 wakeup_cpu0_nmi, 0, "wake_cpu0");
+> +
+> +			if (!boot_error) {
+> +				cpu0_nmi_registered = 1;
+> +				if (apic->dest_logical == APIC_DEST_LOGICAL)
+> +					id = cpu0_logical_apicid;
+> +				else
+> +					id = apicid;
+> +				boot_error = wakeup_secondary_cpu_via_nmi(id,
+> +								start_ip);
+> +			}
+
+This whole else-part for cpu 0 could be carved out into a separate
+function so that you can save yourself the awkward code indentation and
+make this a lot more readable.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
