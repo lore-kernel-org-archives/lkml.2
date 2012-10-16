@@ -1,52 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310Ab2JPMtv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 08:49:51 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:15859
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752862Ab2JPMtt (ORCPT
+	id S1754499Ab2JPMuF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 08:50:05 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:49008 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754351Ab2JPMuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 08:49:49 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zz98dI1454I1432Izz1202h1d1ah1d2ahzz8275bh15d4Iz2dh668h839h944hd25he5bhf0ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1441h14afh1155h)
-X-WSS-ID: 0MBZKYV-01-GH1-02
-X-M-MSG: 
-Date: Tue, 16 Oct 2012 14:49:48 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] iommu: tegra: remove include of <mach/iomap.h>
-Message-ID: <20121016124948.GC10997@amd.com>
-References: <1349216149-858-1-git-send-email-swarren@wwwdotorg.org>
- <507C4B14.4070809@wwwdotorg.org>
+	Tue, 16 Oct 2012 08:50:01 -0400
+Date: Tue, 16 Oct 2012 13:49:56 +0100
+From: Dave Martin <dave.martin@linaro.org>
+To: Fei Yang <yangfei.kernel@gmail.com>
+Cc: Mikael Pettersson <mikpe@it.uu.se>, linux@arm.linux.org.uk,
+        lethal@linux-sh.org, magnus.damm@gmail.com, kgene.kim@samsung.com,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-assembly@vger.kernel.org" <linux-assembly@vger.kernel.org>,
+        linux-hotplug@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Yangfei (Felix)" <felix.yang@huawei.com>
+Subject: Re: [PATCH] Re: Hardcoded instruction causes certain features to
+ fail on ARM platfrom due to endianness
+Message-ID: <20121016124956.GC26075@linaro.org>
+References: <DA41BE1DDCA941489001C7FBD7A8820E3CB407A4@szxeml549-mbx.china.huawei.com>
+ <20603.47887.262025.941051@pilspetsen.it.uu.se>
+ <CAKw8HL154a=K9O7CzPFZ-EqtT+BxYU-uRHodtutdRfYmNpWVww@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <507C4B14.4070809@wwwdotorg.org>
+In-Reply-To: <CAKw8HL154a=K9O7CzPFZ-EqtT+BxYU-uRHodtutdRfYmNpWVww@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 11:42:44AM -0600, Stephen Warren wrote:
-
-> Joerg, given 3.7-rc1 is now out, I'd like to take this through the Tegra
-> tree due to other patches depending on it.
+On Mon, Oct 15, 2012 at 11:33:08PM +0800, Fei Yang wrote:
+> 2012/10/15 Mikael Pettersson <mikpe@it.uu.se>:
+> > Yangfei (Felix) writes:
+> >  > Hi all,
+> >  >
+> >  >     I found that hardcoded instruction in inline asm can cause certains certain features fail to work on ARM platform due to endianness.
+> >  >     As an example, consider the following code snippet of platform_do_lowpower function from arch/arm/mach-realview/hotplug.c:
+> >  >                 / *
+> >  >                  * here's the WFI
+> >  >                  */
+> >  >                 asm(".word      0xe320f003\n"
+> >  >                     :
+> >  >                     :
+> >  >                     : "memory", "cc");
+> >  >
+> >  >     The instruction generated from this inline asm will not work on big-endian ARM platform, such as ARM BE-8 format. Instead, an exception will be generated.
+> >  >
+> >  >     Here the code should be:
+> >  >                 / *
+> >  >                  * here's the WFI
+> >  >                  */
+> >  >                 asm("WFI\n"
+> >  >                     :
+> >  >                     :
+> >  >                     : "memory", "cc");
+> >  >
+> >  >     Seems the kernel doesn't support ARM BE-8 well. I don't know why this problem happens.
+> >  >     Can anyone tell me who owns this part? I can prepare a patch then.
+> >  >     Thanks.
+> >
+> > Questions regarding the ARM kernel should go to the linux-arm-kernel mailing list
+> > (see the MAINTAINERS file), with an optional cc: to the regular LKML.
+> >
+> > BE-8 is, if I recall correctly, ARMv7's broken format where code and data have
+> > different endianess.  GAS supports an ".inst" directive which is like ".word"
+> > except the data is assumed to be code.  This matters for disassembly, and may
+> > also be required for BE-8.
+> >
+> > That is, just s/.word/.inst/g above and report back if that works or not.
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> >
+> >
 > 
-> Given the patch is so trivial, I'll probably just apply it anyway soon -
-> this is more of a heads-up to avoid it being taken through the IOMMU tree.
+> Hi Mikael,
+> 
+> Thanks for the reply. I modified the code as suggested and rebuilt the
+> kernel, cpu-hotplug feature now works on big-endian(BE-8) ARM
+> platform.
+> Since the ARM core can be configured by system software to work in
+> big-endian mode, it's necessary to fix this problem. And here is a
+> small patch :
+> 
+> diff -urN linux-3.6.2/arch/arm/mach-exynos/hotplug.c
+> linux/arch/arm/mach-exynos/hotplug.c
+> --- linux-3.6.2/arch/arm/mach-exynos/hotplug.c	2012-10-13
+> 04:50:59.000000000 +0800
+> +++ linux/arch/arm/mach-exynos/hotplug.c	2012-10-15 23:05:44.000000000 +0800
+> @@ -72,7 +72,7 @@
+>  		/*
+>  		 * here's the WFI
+>  		 */
+> -		asm(".word	0xe320f003\n"
+> +		asm(".inst	0xe320f003\n"
 
-Ignore my other mail. Feel free to take this through the Tegra tree.
+The cleanest fix would simply be to build these files with appropriate
+modified CFLAGS (-march=armv6k or -march=armv7-a), and use the proper
+"wfi" mnemonic.
 
-Acked-by: Joerg Roedel <joerg.roedel@amd.com>
+Failing that, you could use the facilities in <asm/opcodes.h> to
+declare a wrapper macro for injecting this opcode (see
+<asm/opcodes-virt.h> for an example).  However, putting custom
+opcodes into the assembler should only be done if it's really
+necessary.  Nowadays, I think we can consider tools which don't
+understand the WFI mnemonic to be obsolete, at least for platforms
+which only build for v7 and above.
 
--- 
-AMD Operating System Research Center
+The relevant board maintainers would need to sign off on such a
+change, so we don't end up breaking their builds.
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+If any of these boards needs to build for v6K, the custom opcode might
+be worth it -- some people might just possibly be relying on older tools
+for such platforms.
 
+Cheers
+---Dave
+
+>  		    :
+>  		    :
+>  		    : "memory", "cc");
+> diff -urN linux-3.6.2/arch/arm/mach-realview/hotplug.c
+> linux/arch/arm/mach-realview/hotplug.c
+> --- linux-3.6.2/arch/arm/mach-realview/hotplug.c	2012-10-13
+> 04:50:59.000000000 +0800
+> +++ linux/arch/arm/mach-realview/hotplug.c	2012-10-15 23:05:00.000000000 +0800
+> @@ -66,7 +66,7 @@
+>  		/*
+>  		 * here's the WFI
+>  		 */
+> -		asm(".word	0xe320f003\n"
+> +		asm(".inst	0xe320f003\n"
+>  		    :
+>  		    :
+>  		    : "memory", "cc");
+> diff -urN linux-3.6.2/arch/arm/mach-shmobile/hotplug.c
+> linux/arch/arm/mach-shmobile/hotplug.c
+> --- linux-3.6.2/arch/arm/mach-shmobile/hotplug.c	2012-10-13
+> 04:50:59.000000000 +0800
+> +++ linux/arch/arm/mach-shmobile/hotplug.c	2012-10-15 23:05:25.000000000 +0800
+> @@ -53,7 +53,7 @@
+>  		/*
+>  		 * here's the WFI
+>  		 */
+> -		asm(".word	0xe320f003\n"
+> +		asm(".inst	0xe320f003\n"
+>  		    :
+>  		    :
+>  		    : "memory", "cc");
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
