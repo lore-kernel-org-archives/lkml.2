@@ -1,110 +1,395 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab2JPESM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 00:18:12 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62848 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754839Ab2JPESJ (ORCPT
+	id S1755735Ab2JPETm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 00:19:42 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:57487 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839Ab2JPETk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 00:18:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121016031710.GD2864@dastard>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
-	<1349863655-29320-12-git-send-email-zwu.kernel@gmail.com>
-	<20121016031710.GD2864@dastard>
-Date: Tue, 16 Oct 2012 12:18:07 +0800
-Message-ID: <CAEH94Ljyxghk-M8_qtzyDNFAn6CbPbWY5UP3+9M4CdyPkKX_Kg@mail.gmail.com>
-Subject: Re: [RFC v3 11/13] vfs: add 3 new ioctl interfaces
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
-        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 16 Oct 2012 00:19:40 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: vinod.koul@intel.com
+Cc: linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        andriy.shevchenko@linux.intel.com,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V3 2/3] dmaengine: dw_dmac: Enhance device tree support
+Date: Tue, 16 Oct 2012 09:49:17 +0530
+Message-Id: <169edae67b9a051ca7448e5b62c3cd2c5c1db470.1350360935.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <3100e691db3f94c22afd98b609a1568d7e70dfe7.1350360935.git.viresh.kumar@linaro.org>
+References: <3100e691db3f94c22afd98b609a1568d7e70dfe7.1350360935.git.viresh.kumar@linaro.org>
+In-Reply-To: <3100e691db3f94c22afd98b609a1568d7e70dfe7.1350360935.git.viresh.kumar@linaro.org>
+References: <3100e691db3f94c22afd98b609a1568d7e70dfe7.1350360935.git.viresh.kumar@linaro.org>
+X-OriginalArrivalTime: 16 Oct 2012 04:19:37.0679 (UTC) FILETIME=[74626DF0:01CDAB55]
+X-MC-Unique: 112101605193804101
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q9G4Jmdv029499
 
-On Tue, Oct 16, 2012 at 11:17 AM, Dave Chinner <david@fromorbit.com> wrote:
-> On Wed, Oct 10, 2012 at 06:07:33PM +0800, zwu.kernel@gmail.com wrote:
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>
->>   FS_IOC_GET_HEAT_INFO: return a struct containing the various
->> metrics collected in btrfs_freq_data structs, and also return a
->
-> I think you mean hot_freq_data :P
-Yeah, sorry.
->
->> calculated data temperature based on those metrics. Optionally, retrieve
->> the temperature from the hot data hash list instead of recalculating it.
->
-> To get the heat info for a specific file you have to know what file
-> you want to get that info for, right?  I can see the usefulness of
-Yes.
-> asking for the heat data on a specific file, but how do you find the
-> hot files in the first place? i.e. the big question the user
-> interface needs to answer is "what files are hot?".
-We only tell the user what the files' temperatures are, not what files are hot.
-Their temperatures are in the output of debugfs.
->
-> Once userspace knows what the hottest files are, it can open them
-If the user need to know this type of info, it is easy for us to
-provide it. But i don't know what way the user hope to get it via.
-> and query the data via the above ioctl, but expecting userspace to
-> iterate millions of inodes in a filesystem to find hot files is very
-> inefficient.
->
-> FWIW, if you were to return file handles to the hottest files, then
-> the application could open and query them without even needing to
-> know the path name to them. This woul dbe exceedingly useful for
-> defragmentation programs, especially as that is the way xfs_fsr
-> already operates on candidate files.(*)
-ah.
->
-> IOWs, sometimes the pathname is irrelevant to the operations that
-> applications want to perform - all they care about having an
-> efficient method of finding the inode they want and getting a file
-> descriptor that points to the file. Given the heat map info fits
-> right in to the sort of operations defrag and data mover tools
-> already do, it kind of makes sense to optimise the interface towards
-> those uses....
->
-> (*) i.e. finds them via bulkstat which returns handle information
-> along with all the other inode data, then opens the file by handle
-> to do the defrag work....
-OK.
->
->>   FS_IOC_GET_HEAT_OPTS: return an integer representing the current
->> state of hot data tracking and migration:
->>
->> 0 = do nothing
->> 1 = track frequency of access
->>
->>   FS_IOC_SET_HEAT_OPTS: change the state of hot data tracking and
->> migration, as described above.
->
-> I can't see how this is a manageable interface. It is not
-> persistent, so after every filesystem mount you'd have to set the
-> flag on all your inodes again. Hence, for the moment, I'd suggest
-> that dropping per-inode tracking control until all the core issues
-> are sorted out....
-OK.
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+dw_dmac driver already supports device tree but it used to have its platform
+data passed the non-DT way.
 
+This patch does following changes:
+- pass platform data via DT, non-DT way still takes precedence if both are used.
+- create generic filter routine
+- Earlier slave information was made available by slave specific filter routines
+  in chan->private field. Now, this information would be passed from within dmac
+  DT node. Slave drivers would now be required to pass bus_id (a string) as
+  parameter to this generic filter(), which would be compared against the slave
+  data passed from DT, by the generic filter routine.
+- Update binding document
 
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+V2->V3:
+------
+- Simplified an equation in filter routine
+- renamed variable 'val' as 'tmp' in DT parsing routine
 
+V1->V2:
+------
+- Optimized filter & DT parsing routine
+- Removed unnecessary casts from changes
+- renamed filter function
+- Fixed function prototype and return value of DT parsing routine for !CONFIG_OF
+  case
+- use of_get_child_count()
+
+ Documentation/devicetree/bindings/dma/snps-dma.txt |  44 +++++++
+ drivers/dma/dw_dmac.c                              | 134 +++++++++++++++++++++
+ drivers/dma/dw_dmac_regs.h                         |   4 +
+ include/linux/dw_dmac.h                            |  43 ++++---
+ 4 files changed, 208 insertions(+), 17 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/dma/snps-dma.txt b/Documentation/devicetree/bindings/dma/snps-dma.txt
+index c0d85db..5bb3dfb 100644
+--- a/Documentation/devicetree/bindings/dma/snps-dma.txt
++++ b/Documentation/devicetree/bindings/dma/snps-dma.txt
+@@ -6,6 +6,26 @@ Required properties:
+ - interrupt-parent: Should be the phandle for the interrupt controller
+   that services interrupts for this device
+ - interrupt: Should contain the DMAC interrupt number
++- nr_channels: Number of channels supported by hardware
++- is_private: The device channels should be marked as private and not for by the
++  general purpose DMA channel allocator. False if not passed.
++- chan_allocation_order: order of allocation of channel, 0 (default): ascending,
++  1: descending
++- chan_priority: priority of channels. 0 (default): increase from chan 0->n, 1:
++  increase from chan n->0
++- block_size: Maximum block size supported by the controller
++- nr_masters: Number of AHB masters supported by the controller
++- data_width: Maximum data width supported by hardware per AHB master
++  (0 - 8bits, 1 - 16bits, ..., 5 - 256bits)
++- slave_info:
++	- bus_id: name of this device channel, not just a device name since
++	  devices may have more than one channel e.g. "foo_tx". For using the
++	  dw_generic_filter(), slave drivers must pass exactly this string as
++	  param to filter function.
++	- cfg_hi: Platform-specific initializer for the CFG_HI register
++	- cfg_lo: Platform-specific initializer for the CFG_LO register
++	- src_master: src master for transfers on allocated channel.
++	- dst_master: dest master for transfers on allocated channel.
+ 
+ Example:
+ 
+@@ -14,4 +34,28 @@ Example:
+ 		reg = <0xfc000000 0x1000>;
+ 		interrupt-parent = <&vic1>;
+ 		interrupts = <12>;
++
++		nr_channels = <8>;
++		chan_allocation_order = <1>;
++		chan_priority = <1>;
++		block_size = <0xfff>;
++		nr_masters = <2>;
++		data_width = <3 3 0 0>;
++
++		slave_info {
++			uart0-tx {
++				bus_id = "uart0-tx";
++				cfg_hi = <0x4000>;	/* 0x8 << 11 */
++				cfg_lo = <0>;
++				src_master = <0>;
++				dst_master = <1>;
++			};
++			spi0-tx {
++				bus_id = "spi0-tx";
++				cfg_hi = <0x2000>;	/* 0x4 << 11 */
++				cfg_lo = <0>;
++				src_master = <0>;
++				dst_master = <0>;
++			};
++		};
+ 	};
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index c4b0eb3..98f33a7 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -1179,6 +1179,50 @@ static void dwc_free_chan_resources(struct dma_chan *chan)
+ 	dev_vdbg(chan2dev(chan), "%s: done\n", __func__);
+ }
+ 
++bool dw_dma_generic_filter(struct dma_chan *chan, void *param)
++{
++	struct dw_dma *dw = to_dw_dma(chan->device);
++	static struct dw_dma *last_dw;
++	static char *last_bus_id;
++	int i = -1;
++
++	/*
++	 * dmaengine framework calls this routine for all channels of all dma
++	 * controller, until true is returned. If 'param' bus_id is not
++	 * registered with a dma controller (dw), then there is no need of
++	 * running below function for all channels of dw.
++	 *
++	 * This block of code does this by saving the parameters of last
++	 * failure. If dw and param are same, i.e. trying on same dw with
++	 * different channel, return false.
++	 */
++	if ((last_dw == dw) && (last_bus_id == param))
++		return false;
++	/*
++	 * Return true:
++	 * - If dw_dma's platform data is not filled with slave info, then all
++	 *   dma controllers are fine for transfer.
++	 * - Or if param is NULL
++	 */
++	if (!dw->sd || !param)
++		return true;
++
++	while (++i < dw->sd_count) {
++		if (!strcmp(dw->sd[i].bus_id, param)) {
++			chan->private = &dw->sd[i];
++			last_dw = NULL;
++			last_bus_id = NULL;
++
++			return true;
++		}
++	}
++
++	last_dw = dw;
++	last_bus_id = param;
++	return false;
++}
++EXPORT_SYMBOL(dw_dma_generic_filter);
++
+ /* --------------------- Cyclic DMA API extensions -------------------- */
+ 
+ /**
+@@ -1462,6 +1506,91 @@ static void dw_dma_off(struct dw_dma *dw)
+ 		dw->chan[i].initialized = false;
+ }
+ 
++#ifdef CONFIG_OF
++static struct dw_dma_platform_data *
++__devinit dw_dma_parse_dt(struct platform_device *pdev)
++{
++	struct device_node *sn, *cn, *np = pdev->dev.of_node;
++	struct dw_dma_platform_data *pdata;
++	struct dw_dma_slave *sd;
++	u32 tmp, arr[4];
++
++	if (!np) {
++		dev_err(&pdev->dev, "Missing DT data\n");
++		return NULL;
++	}
++
++	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return NULL;
++
++	if (of_property_read_u32(np, "nr_channels", &pdata->nr_channels))
++		return NULL;
++
++	if (of_property_read_bool(np, "is_private"))
++		pdata->is_private = true;
++
++	if (!of_property_read_u32(np, "chan_allocation_order", &tmp))
++		pdata->chan_allocation_order = (unsigned char)tmp;
++
++	if (!of_property_read_u32(np, "chan_priority", &tmp))
++		pdata->chan_priority = tmp;
++
++	if (!of_property_read_u32(np, "block_size", &tmp))
++		pdata->block_size = tmp;
++
++	if (!of_property_read_u32(np, "nr_masters", &tmp)) {
++		if (tmp > 4)
++			return NULL;
++
++		pdata->nr_masters = tmp;
++	}
++
++	if (!of_property_read_u32_array(np, "data_width", arr,
++				pdata->nr_masters))
++		for (tmp = 0; tmp < pdata->nr_masters; tmp++)
++			pdata->data_width[tmp] = arr[tmp];
++
++	/* parse slave data */
++	sn = of_find_node_by_name(np, "slave_info");
++	if (!sn)
++		return pdata;
++
++	/* calculate number of slaves */
++	tmp = of_get_child_count(sn);
++	if (!tmp)
++		return NULL;
++
++	sd = devm_kzalloc(&pdev->dev, sizeof(*sd) * tmp, GFP_KERNEL);
++	if (!sd)
++		return NULL;
++
++	pdata->sd = sd;
++	pdata->sd_count = tmp;
++
++	for_each_child_of_node(sn, cn) {
++		sd->dma_dev = &pdev->dev;
++		of_property_read_string(cn, "bus_id", &sd->bus_id);
++		of_property_read_u32(cn, "cfg_hi", &sd->cfg_hi);
++		of_property_read_u32(cn, "cfg_lo", &sd->cfg_lo);
++		if (!of_property_read_u32(cn, "src_master", &tmp))
++			sd->src_master = tmp;
++
++		if (!of_property_read_u32(cn, "dst_master", &tmp))
++			sd->dst_master = tmp;
++		sd++;
++	}
++
++	return pdata;
++}
++#else
++static inline struct dw_dma_platform_data *
++dw_dma_parse_dt(struct platform_device *pdev)
++{
++	return NULL;
++}
++#endif
++
+ static int __devinit dw_probe(struct platform_device *pdev)
+ {
+ 	struct dw_dma_platform_data *pdata;
+@@ -1478,6 +1607,9 @@ static int __devinit dw_probe(struct platform_device *pdev)
+ 	int			i;
+ 
+ 	pdata = dev_get_platdata(&pdev->dev);
++	if (!pdata)
++		pdata = dw_dma_parse_dt(pdev);
++
+ 	if (!pdata || pdata->nr_channels > DW_DMA_MAX_NR_CHANNELS)
+ 		return -EINVAL;
+ 
+@@ -1512,6 +1644,8 @@ static int __devinit dw_probe(struct platform_device *pdev)
+ 	clk_prepare_enable(dw->clk);
+ 
+ 	dw->regs = regs;
++	dw->sd = pdata->sd;
++	dw->sd_count = pdata->sd_count;
+ 
+ 	/* get hardware configuration parameters */
+ 	if (autocfg) {
+diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
+index ff39fa6..5cc61ba 100644
+--- a/drivers/dma/dw_dmac_regs.h
++++ b/drivers/dma/dw_dmac_regs.h
+@@ -231,6 +231,10 @@ struct dw_dma {
+ 	struct tasklet_struct	tasklet;
+ 	struct clk		*clk;
+ 
++	/* slave information */
++	struct dw_dma_slave	*sd;
++	unsigned int		sd_count;
++
+ 	u8			all_chan_mask;
+ 
+ 	/* hardware configuration */
+diff --git a/include/linux/dw_dmac.h b/include/linux/dw_dmac.h
+index 62a6190..41766de 100644
+--- a/include/linux/dw_dmac.h
++++ b/include/linux/dw_dmac.h
+@@ -15,6 +15,26 @@
+ #include <linux/dmaengine.h>
+ 
+ /**
++ * struct dw_dma_slave - Controller-specific information about a slave
++ *
++ * @dma_dev: required DMA master device. Depricated.
++ * @bus_id: name of this device channel, not just a device name since
++ *          devices may have more than one channel e.g. "foo_tx"
++ * @cfg_hi: Platform-specific initializer for the CFG_HI register
++ * @cfg_lo: Platform-specific initializer for the CFG_LO register
++ * @src_master: src master for transfers on allocated channel.
++ * @dst_master: dest master for transfers on allocated channel.
++ */
++struct dw_dma_slave {
++	struct device		*dma_dev;
++	const char		*bus_id;
++	u32			cfg_hi;
++	u32			cfg_lo;
++	u8			src_master;
++	u8			dst_master;
++};
++
++/**
+  * struct dw_dma_platform_data - Controller configuration parameters
+  * @nr_channels: Number of channels supported by hardware (max 8)
+  * @is_private: The device channels should be marked as private and not for
+@@ -25,6 +45,8 @@
+  * @nr_masters: Number of AHB masters supported by the controller
+  * @data_width: Maximum data width supported by hardware per AHB master
+  *		(0 - 8bits, 1 - 16bits, ..., 5 - 256bits)
++ * @sd: slave specific data. Used for configuring channels
++ * @sd_count: count of slave data structures passed.
+  */
+ struct dw_dma_platform_data {
+ 	unsigned int	nr_channels;
+@@ -38,6 +60,9 @@ struct dw_dma_platform_data {
+ 	unsigned short	block_size;
+ 	unsigned char	nr_masters;
+ 	unsigned char	data_width[4];
++
++	struct dw_dma_slave *sd;
++	unsigned int sd_count;
+ };
+ 
+ /* bursts size */
+@@ -52,23 +77,6 @@ enum dw_dma_msize {
+ 	DW_DMA_MSIZE_256,
+ };
+ 
+-/**
+- * struct dw_dma_slave - Controller-specific information about a slave
+- *
+- * @dma_dev: required DMA master device
+- * @cfg_hi: Platform-specific initializer for the CFG_HI register
+- * @cfg_lo: Platform-specific initializer for the CFG_LO register
+- * @src_master: src master for transfers on allocated channel.
+- * @dst_master: dest master for transfers on allocated channel.
+- */
+-struct dw_dma_slave {
+-	struct device		*dma_dev;
+-	u32			cfg_hi;
+-	u32			cfg_lo;
+-	u8			src_master;
+-	u8			dst_master;
+-};
+-
+ /* Platform-configurable bits in CFG_HI */
+ #define DWC_CFGH_FCMODE		(1 << 0)
+ #define DWC_CFGH_FIFO_MODE	(1 << 1)
+@@ -106,5 +114,6 @@ void dw_dma_cyclic_stop(struct dma_chan *chan);
+ dma_addr_t dw_dma_get_src_addr(struct dma_chan *chan);
+ 
+ dma_addr_t dw_dma_get_dst_addr(struct dma_chan *chan);
++bool dw_dma_generic_filter(struct dma_chan *chan, void *param);
+ 
+ #endif /* DW_DMAC_H */
 -- 
-Regards,
+1.7.12.rc2.18.g61b472e
 
-Zhi Yong Wu
+
