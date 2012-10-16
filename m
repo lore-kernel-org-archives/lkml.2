@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755161Ab2JPVyO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 17:54:14 -0400
-Received: from vms173013pub.verizon.net ([206.46.173.13]:39996 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753935Ab2JPVyM (ORCPT
+	id S1755423Ab2JPVyV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 17:54:21 -0400
+Received: from vms173021pub.verizon.net ([206.46.173.21]:44581 "EHLO
+	vms173021pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755218Ab2JPVyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 17:54:12 -0400
-X-Greylist: delayed 3600 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Oct 2012 17:54:12 EDT
+	Tue, 16 Oct 2012 17:54:19 -0400
+X-Greylist: delayed 3600 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Oct 2012 17:54:19 EDT
 From: minyard@acm.org
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
         OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>,
-        Corey Minyard <cminyard@mvista.com>,
-        Steven Hsieh <sshsieh@broadcom.com>
-Subject: [PATCH 5/5] IPMI: Detect register spacing on PCI interfaces
-Date: Tue, 16 Oct 2012 15:53:40 -0500
-Message-id: <1350420820-7156-6-git-send-email-minyard@acm.org>
+        Matthew Garrett <mjg@redhat.com>, Corey Minyard <cminyard@mvista.com>
+Subject: [PATCH 3/5] IPMI: Change link order
+Date: Tue, 16 Oct 2012 15:53:38 -0500
+Message-id: <1350420820-7156-4-git-send-email-minyard@acm.org>
 X-Mailer: git-send-email 1.7.4.1
 In-reply-to: <1350420820-7156-1-git-send-email-minyard@acm.org>
 References: <1350420820-7156-1-git-send-email-minyard@acm.org>
@@ -24,71 +23,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Corey Minyard <cminyard@mvista.com>
+From: Matthew Garrett <mjg@redhat.com>
 
-The IPMI spec defines a way to detect register spacing for PCI interfaces,
-so implement it.
+IPMI must be initialised before ACPI in order to ensure that any IPMI
+services are available before ACPI driver initialisation attempts to use
+any IPMI operation regions.
 
-Signed-off-by: Steven Hsieh <sshsieh@broadcom.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Corey Minyard <cminyard@mvista.com>
 ---
- drivers/char/ipmi/ipmi_si_intf.c |   36 ++++++++++++++++++++++++++++++++++--
- 1 files changed, 34 insertions(+), 2 deletions(-)
+ drivers/Makefile      |    4 ++++
+ drivers/char/Makefile |    1 -
+ 2 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-index 83f85cf..32a6c7e 100644
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -2424,6 +2424,38 @@ static void ipmi_pci_cleanup(struct smi_info *info)
- 	pci_disable_device(pdev);
- }
- 
-+static int __devinit ipmi_pci_probe_regspacing(struct smi_info *info)
-+{
-+	if (info->si_type == SI_KCS) {
-+		unsigned char	status;
-+		int		regspacing;
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 03da5b6..a16a8d0 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -17,6 +17,10 @@ obj-$(CONFIG_PARISC)		+= parisc/
+ obj-$(CONFIG_RAPIDIO)		+= rapidio/
+ obj-y				+= video/
+ obj-y				+= idle/
 +
-+		info->io.regsize = DEFAULT_REGSIZE;
-+		info->io.regshift = 0;
-+		info->io_size = 2;
-+		info->handlers = &kcs_smi_handlers;
++# IPMI must come before ACPI in order to provide IPMI opregion support
++obj-$(CONFIG_IPMI_HANDLER)	+= char/ipmi/
 +
-+		/* detect 1, 4, 16byte spacing */
-+		for (regspacing = DEFAULT_REGSPACING; regspacing <= 16;) {
-+			info->io.regspacing = regspacing;
-+			if (info->io_setup(info)) {
-+				dev_err(info->dev,
-+					"Could not setup I/O space\n");
-+				return DEFAULT_REGSPACING;
-+			}
-+			/* write invalid cmd */
-+			info->io.outputb(&info->io, 1, 0x10);
-+			/* read status back */
-+			status = info->io.inputb(&info->io, 1);
-+			info->io_cleanup(info);
-+			if (status)
-+				return regspacing;
-+			regspacing *= 4;
-+		}
-+	}
-+	return DEFAULT_REGSPACING;
-+}
-+
- static int __devinit ipmi_pci_probe(struct pci_dev *pdev,
- 				    const struct pci_device_id *ent)
- {
-@@ -2476,8 +2508,8 @@ static int __devinit ipmi_pci_probe(struct pci_dev *pdev,
- 	}
- 	info->io.addr_data = pci_resource_start(pdev, 0);
+ obj-$(CONFIG_ACPI)		+= acpi/
+ obj-$(CONFIG_SFI)		+= sfi/
+ # PnP must come after ACPI since it will eventually need to check if acpi
+diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+index d0b27a3..7ff1d0d 100644
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -52,7 +52,6 @@ obj-$(CONFIG_TELCLOCK)		+= tlclk.o
+ obj-$(CONFIG_MWAVE)		+= mwave/
+ obj-$(CONFIG_AGP)		+= agp/
+ obj-$(CONFIG_PCMCIA)		+= pcmcia/
+-obj-$(CONFIG_IPMI_HANDLER)	+= ipmi/
  
--	info->io.regspacing = DEFAULT_REGSPACING;
--	info->io.regsize = DEFAULT_REGSPACING;
-+	info->io.regspacing = ipmi_pci_probe_regspacing(info);
-+	info->io.regsize = DEFAULT_REGSIZE;
- 	info->io.regshift = 0;
- 
- 	info->irq = pdev->irq;
+ obj-$(CONFIG_HANGCHECK_TIMER)	+= hangcheck-timer.o
+ obj-$(CONFIG_TCG_TPM)		+= tpm/
 -- 
 1.7.4.1
 
