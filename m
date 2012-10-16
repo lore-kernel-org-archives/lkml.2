@@ -1,174 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab2JPKt0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 06:49:26 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:64003 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753580Ab2JPKtY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 06:49:24 -0400
+	id S1753989Ab2JPKx5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 06:53:57 -0400
+Received: from shutemov.name ([176.9.204.213]:59945 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753570Ab2JPKxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 06:53:55 -0400
+Date: Tue, 16 Oct 2012 13:54:56 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Ni zhan Chen <nizhan.chen@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 00/10, REBASED] Introduce huge zero page
+Message-ID: <20121016105456.GA13265@shutemov.name>
+References: <1350280859-18801-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <507D2E83.4010702@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1350376988-27477-1-git-send-email-james.hogan@imgtec.com>
-References: <1350376988-27477-1-git-send-email-james.hogan@imgtec.com>
-Date: Tue, 16 Oct 2012 16:19:23 +0530
-Message-ID: <CAJuYYwTB-Y8LwnxN-wX=XSSk9tuXHhUCOvwNDmHgRH+uZcyVNQ@mail.gmail.com>
-Subject: Re: [PATCH] dw_mmc: fix multiple drv_data NULL dereferences
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Chris Ball <cjb@laptop.org>, Will Newton <will.newton@imgtec.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <507D2E83.4010702@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 October 2012 14:13, James Hogan <james.hogan@imgtec.com> wrote:
-> Commit 800d78bfccb3d38116abfda2a5b9c8afdbd5ea21 ("mmc: dw_mmc: add
-> support for implementation specific callbacks") merged in v3.7-rc1.
->
-> The above commit introduced multiple NULL pointer dereferences when
-> the default dw_mci_pltfm_probe() is used, as it sets host->drv_data to
-> NULL, and that's only checked against NULL in 1 out of the 7 cases where
-> it is dereferenced.
->
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> ---
->  drivers/mmc/host/dw_mmc-pltfm.c |    4 ++--
->  drivers/mmc/host/dw_mmc.c       |   29 +++++++++++++++++------------
->  2 files changed, 19 insertions(+), 14 deletions(-)
->
-> diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
-> index c960ca7..e595721 100644
-> --- a/drivers/mmc/host/dw_mmc-pltfm.c
-> +++ b/drivers/mmc/host/dw_mmc-pltfm.c
-> @@ -50,8 +50,8 @@ int dw_mci_pltfm_register(struct platform_device *pdev,
->         if (!host->regs)
->                 return -ENOMEM;
->
-> -       if (host->drv_data->init) {
-> -               ret = host->drv_data->init(host);
-> +       if (drv_data && drv_data->init) {
-> +               ret = drv_data->init(host);
->                 if (ret)
->                         return ret;
->         }
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index c2828f3..0dc6e33 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -232,6 +232,7 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
->  {
->         struct mmc_data *data;
->         struct dw_mci_slot *slot = mmc_priv(mmc);
-> +       struct dw_mci_drv_data *drv_data = slot->host->drv_data;
->         u32 cmdr;
->         cmd->error = -EINPROGRESS;
->
-> @@ -261,8 +262,8 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
->                         cmdr |= SDMMC_CMD_DAT_WR;
->         }
->
-> -       if (slot->host->drv_data->prepare_command)
-> -               slot->host->drv_data->prepare_command(slot->host, &cmdr);
-> +       if (drv_data && drv_data->prepare_command)
-> +               drv_data->prepare_command(slot->host, &cmdr);
->
->         return cmdr;
->  }
-> @@ -772,6 +773,7 @@ static void dw_mci_request(struct mmc_host *mmc, struct mmc_request *mrq)
->  static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
->  {
->         struct dw_mci_slot *slot = mmc_priv(mmc);
-> +       struct dw_mci_drv_data *drv_data = slot->host->drv_data;
->         u32 regs;
->
->         /* set default 1 bit mode */
-> @@ -807,8 +809,8 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
->                 slot->clock = ios->clock;
->         }
->
-> -       if (slot->host->drv_data->set_ios)
-> -               slot->host->drv_data->set_ios(slot->host, ios);
-> +       if (drv_data && drv_data->set_ios)
-> +               drv_data->set_ios(slot->host, ios);
->
->         switch (ios->power_mode) {
->         case MMC_POWER_UP:
-> @@ -1815,6 +1817,7 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
->  {
->         struct mmc_host *mmc;
->         struct dw_mci_slot *slot;
-> +       struct dw_mci_drv_data *drv_data = host->drv_data;
->         int ctrl_id, ret;
->         u8 bus_width;
->
-> @@ -1854,8 +1857,8 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
->         } else {
->                 ctrl_id = to_platform_device(host->dev)->id;
->         }
-> -       if (host->drv_data && host->drv_data->caps)
-> -               mmc->caps |= host->drv_data->caps[ctrl_id];
-> +       if (drv_data && drv_data->caps)
-> +               mmc->caps |= drv_data->caps[ctrl_id];
->
->         if (host->pdata->caps2)
->                 mmc->caps2 = host->pdata->caps2;
-> @@ -1867,10 +1870,10 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
->         else
->                 bus_width = 1;
->
-> -       if (host->drv_data->setup_bus) {
-> +       if (drv_data && drv_data->setup_bus) {
->                 struct device_node *slot_np;
->                 slot_np = dw_mci_of_find_slot_node(host->dev, slot->id);
-> -               ret = host->drv_data->setup_bus(host, slot_np, bus_width);
-> +               ret = drv_data->setup_bus(host, slot_np, bus_width);
->                 if (ret)
->                         goto err_setup_bus;
->         }
-> @@ -2035,6 +2038,7 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
->         struct dw_mci_board *pdata;
->         struct device *dev = host->dev;
->         struct device_node *np = dev->of_node;
-> +       struct dw_mci_drv_data *drv_data = host->drv_data;
->         int idx, ret;
->
->         pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-> @@ -2062,8 +2066,8 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
->
->         of_property_read_u32(np, "card-detect-delay", &pdata->detect_delay_ms);
->
-> -       if (host->drv_data->parse_dt) {
-> -               ret = host->drv_data->parse_dt(host);
-> +       if (drv_data && drv_data->parse_dt) {
-> +               ret = drv_data->parse_dt(host);
->                 if (ret)
->                         return ERR_PTR(ret);
->         }
-> @@ -2080,6 +2084,7 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
->
->  int dw_mci_probe(struct dw_mci *host)
->  {
-> +       struct dw_mci_drv_data *drv_data = host->drv_data;
->         int width, i, ret = 0;
->         u32 fifo_size;
->         int init_slots = 0;
-> @@ -2127,8 +2132,8 @@ int dw_mci_probe(struct dw_mci *host)
->         else
->                 host->bus_hz = clk_get_rate(host->ciu_clk);
->
-> -       if (host->drv_data->setup_clock) {
-> -               ret = host->drv_data->setup_clock(host);
-> +       if (drv_data && drv_data->setup_clock) {
-> +               ret = drv_data->setup_clock(host);
->                 if (ret) {
->                         dev_err(host->dev,
->                                 "implementation specific clock setup failed\n");
-> --
-> 1.7.7.6
->
->
+On Tue, Oct 16, 2012 at 05:53:07PM +0800, Ni zhan Chen wrote:
+> >By hpa request I've tried alternative approach for hzp implementation (see
+> >Virtual huge zero page patchset): pmd table with all entries set to zero
+> >page. This way should be more cache friendly, but it increases TLB
+> >pressure.
+> 
+> Thanks for your excellent works. But could you explain me why
+> current implementation not cache friendly and hpa's request cache
+> friendly? Thanks in advance.
 
-Acked-by: Thomas Abraham <thomas.abraham@linaro.org>
+In workloads like microbenchmark1 you need N * size(zero page) cache
+space to get zero page fully cached, where N is cache associativity.
+If zero page is 2M, cache pressure is significant.
+
+On other hand with table of 4k zero pages (hpa's proposal) will increase
+pressure on TLB, since we have more pages for the same memory area. So we
+have to do more page translation in this case.
+
+On my test machine with simple memcmp() virtual huge zero page is faster.
+But it highly depends on TLB size, cache size, memory access and page
+translation costs.
+
+It looks like cache size in modern processors grows faster than TLB size.
+
+> >The problem with virtual huge zero page: it requires per-arch enabling.
+> >We need a way to mark that pmd table has all ptes set to zero page.
+> >
+> >Some numbers to compare two implementations (on 4s Westmere-EX):
+> >
+> >Mirobenchmark1
+> >==============
+> >
+> >test:
+> >         posix_memalign((void **)&p, 2 * MB, 8 * GB);
+> >         for (i = 0; i < 100; i++) {
+> >                 assert(memcmp(p, p + 4*GB, 4*GB) == 0);
+> >                 asm volatile ("": : :"memory");
+> >         }
+> >
+> >hzp:
+> >  Performance counter stats for './test_memcmp' (5 runs):
+> >
+> >       32356.272845 task-clock                #    0.998 CPUs utilized            ( +-  0.13% )
+> >                 40 context-switches          #    0.001 K/sec                    ( +-  0.94% )
+> >                  0 CPU-migrations            #    0.000 K/sec
+> >              4,218 page-faults               #    0.130 K/sec                    ( +-  0.00% )
+> >     76,712,481,765 cycles                    #    2.371 GHz                      ( +-  0.13% ) [83.31%]
+> >     36,279,577,636 stalled-cycles-frontend   #   47.29% frontend cycles idle     ( +-  0.28% ) [83.35%]
+> >      1,684,049,110 stalled-cycles-backend    #    2.20% backend  cycles idle     ( +-  2.96% ) [66.67%]
+> >    134,355,715,816 instructions              #    1.75  insns per cycle
+> >                                              #    0.27  stalled cycles per insn  ( +-  0.10% ) [83.35%]
+> >     13,526,169,702 branches                  #  418.039 M/sec                    ( +-  0.10% ) [83.31%]
+> >          1,058,230 branch-misses             #    0.01% of all branches          ( +-  0.91% ) [83.36%]
+> >
+> >       32.413866442 seconds time elapsed                                          ( +-  0.13% )
+> >
+> >vhzp:
+> >  Performance counter stats for './test_memcmp' (5 runs):
+> >
+> >       30327.183829 task-clock                #    0.998 CPUs utilized            ( +-  0.13% )
+> >                 38 context-switches          #    0.001 K/sec                    ( +-  1.53% )
+> >                  0 CPU-migrations            #    0.000 K/sec
+> >              4,218 page-faults               #    0.139 K/sec                    ( +-  0.01% )
+> >     71,964,773,660 cycles                    #    2.373 GHz                      ( +-  0.13% ) [83.35%]
+> >     31,191,284,231 stalled-cycles-frontend   #   43.34% frontend cycles idle     ( +-  0.40% ) [83.32%]
+> >        773,484,474 stalled-cycles-backend    #    1.07% backend  cycles idle     ( +-  6.61% ) [66.67%]
+> >    134,982,215,437 instructions              #    1.88  insns per cycle
+> >                                              #    0.23  stalled cycles per insn  ( +-  0.11% ) [83.32%]
+> >     13,509,150,683 branches                  #  445.447 M/sec                    ( +-  0.11% ) [83.34%]
+> >          1,017,667 branch-misses             #    0.01% of all branches          ( +-  1.07% ) [83.32%]
+> >
+> >       30.381324695 seconds time elapsed                                          ( +-  0.13% )
+> 
+> Could you tell me which data I should care in this performance
+> counter. And what's the benefit of your current implementation
+> compare to hpa's request?
+> 
+> >
+> >Mirobenchmark2
+> >==============
+> >
+> >test:
+> >         posix_memalign((void **)&p, 2 * MB, 8 * GB);
+> >         for (i = 0; i < 1000; i++) {
+> >                 char *_p = p;
+> >                 while (_p < p+4*GB) {
+> >                         assert(*_p == *(_p+4*GB));
+> >                         _p += 4096;
+> >                         asm volatile ("": : :"memory");
+> >                 }
+> >         }
+> >
+> >hzp:
+> >  Performance counter stats for 'taskset -c 0 ./test_memcmp2' (5 runs):
+> >
+> >        3505.727639 task-clock                #    0.998 CPUs utilized            ( +-  0.26% )
+> >                  9 context-switches          #    0.003 K/sec                    ( +-  4.97% )
+> >              4,384 page-faults               #    0.001 M/sec                    ( +-  0.00% )
+> >      8,318,482,466 cycles                    #    2.373 GHz                      ( +-  0.26% ) [33.31%]
+> >      5,134,318,786 stalled-cycles-frontend   #   61.72% frontend cycles idle     ( +-  0.42% ) [33.32%]
+> >      2,193,266,208 stalled-cycles-backend    #   26.37% backend  cycles idle     ( +-  5.51% ) [33.33%]
+> >      9,494,670,537 instructions              #    1.14  insns per cycle
+> >                                              #    0.54  stalled cycles per insn  ( +-  0.13% ) [41.68%]
+> >      2,108,522,738 branches                  #  601.451 M/sec                    ( +-  0.09% ) [41.68%]
+> >            158,746 branch-misses             #    0.01% of all branches          ( +-  1.60% ) [41.71%]
+> >      3,168,102,115 L1-dcache-loads
+> >           #  903.693 M/sec                    ( +-  0.11% ) [41.70%]
+> >      1,048,710,998 L1-dcache-misses
+> >          #   33.10% of all L1-dcache hits    ( +-  0.11% ) [41.72%]
+> >      1,047,699,685 LLC-load
+> >                  #  298.854 M/sec                    ( +-  0.03% ) [33.38%]
+> >              2,287 LLC-misses
+> >                #    0.00% of all LL-cache hits     ( +-  8.27% ) [33.37%]
+> >      3,166,187,367 dTLB-loads
+> >                #  903.147 M/sec                    ( +-  0.02% ) [33.35%]
+> >          4,266,538 dTLB-misses
+> >               #    0.13% of all dTLB cache hits   ( +-  0.03% ) [33.33%]
+> >
+> >        3.513339813 seconds time elapsed                                          ( +-  0.26% )
+> >
+> >vhzp:
+> >  Performance counter stats for 'taskset -c 0 ./test_memcmp2' (5 runs):
+> >
+> >       27313.891128 task-clock                #    0.998 CPUs utilized            ( +-  0.24% )
+> >                 62 context-switches          #    0.002 K/sec                    ( +-  0.61% )
+> >              4,384 page-faults               #    0.160 K/sec                    ( +-  0.01% )
+> >     64,747,374,606 cycles                    #    2.370 GHz                      ( +-  0.24% ) [33.33%]
+> >     61,341,580,278 stalled-cycles-frontend   #   94.74% frontend cycles idle     ( +-  0.26% ) [33.33%]
+> >     56,702,237,511 stalled-cycles-backend    #   87.57% backend  cycles idle     ( +-  0.07% ) [33.33%]
+> >     10,033,724,846 instructions              #    0.15  insns per cycle
+> >                                              #    6.11  stalled cycles per insn  ( +-  0.09% ) [41.65%]
+> >      2,190,424,932 branches                  #   80.195 M/sec                    ( +-  0.12% ) [41.66%]
+> >          1,028,630 branch-misses             #    0.05% of all branches          ( +-  1.50% ) [41.66%]
+> >      3,302,006,540 L1-dcache-loads
+> >           #  120.891 M/sec                    ( +-  0.11% ) [41.68%]
+> >        271,374,358 L1-dcache-misses
+> >          #    8.22% of all L1-dcache hits    ( +-  0.04% ) [41.66%]
+> >         20,385,476 LLC-load
+> >                  #    0.746 M/sec                    ( +-  1.64% ) [33.34%]
+> >             76,754 LLC-misses
+> >                #    0.38% of all LL-cache hits     ( +-  2.35% ) [33.34%]
+> >      3,309,927,290 dTLB-loads
+> >                #  121.181 M/sec                    ( +-  0.03% ) [33.34%]
+> >      2,098,967,427 dTLB-misses
+> >               #   63.41% of all dTLB cache hits   ( +-  0.03% ) [33.34%]
+> >
+> >       27.364448741 seconds time elapsed                                          ( +-  0.24% )
+> 
+> For this case, the same question as above, thanks in adance. :-)
+
+-- 
+ Kirill A. Shutemov
