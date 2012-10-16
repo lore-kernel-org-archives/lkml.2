@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab2JPTdJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 15:33:09 -0400
-Received: from mail.df.lth.se ([194.47.250.12]:44917 "EHLO mail.df.lth.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755925Ab2JPTdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 15:33:08 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>
-Subject: [PATCH 3/7] gpio/mvebu: convert to use irq_domain_add_simple()
-Date: Tue, 16 Oct 2012 21:22:27 +0200
-Message-Id: <1350415347-2857-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.7.2.5
+	id S1755991Ab2JPTkT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 15:40:19 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:52935 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754946Ab2JPTkR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 15:40:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAAZUjxAPAUD50asniJVNgD3X=vM_d=GPKJ5C2eVGo6r4HUKYLQ@mail.gmail.com>
+References: <CAAZUjxCvK0QnwnZP_FBiO2JM1rMoEA3HLjKAcYD14cxdGWyg4Q@mail.gmail.com>
+ <507DB47E.5090003@mit.edu> <CAAZUjxAPAUD50asniJVNgD3X=vM_d=GPKJ5C2eVGo6r4HUKYLQ@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 16 Oct 2012 12:39:55 -0700
+Message-ID: <CALCETrVKiO5t8AuEM=XxdPgZGr6crr6C-4174607_VLO787--g@mail.gmail.com>
+Subject: Re: VDSO gettimeofday() x86_64 linux 3.2
+To: wilson self <wself00@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MVEBU driver probably just wants a few IRQs. Using the simple
-domain has the upside of allocating IRQ descriptors if need be,
-especially in a SPARSE_IRQ environment.
+On Tue, Oct 16, 2012 at 12:33 PM, wilson self <wself00@gmail.com> wrote:
+> current_clocksource is tsc.
+>
+> the entire source of the test application:
+> ---
+> #include <stdio.h>
+> #include <stdlib.h>
+> #include <sys/time.h>
+> #include <time.h>
+>
+> int main() {
+>       struct timeval tim;
+>       gettimeofday(&tim, NULL);
+>       printf("%.6lf seconds\n", tim.tv_sec+tim.tv_usec/1000000.0);
+> }
+> ---
+> nothing fancy going on here.
+>
+> thanks for the help.
 
-Also replace one instance of irq_create_mapping() with
-irq_find_mapping(), the domain is registered in probe() so
-the irq is sure there to be found, no reason to ask for
-on-the-fly remappings here.
+There's lots of hidden fanciness.  What glibc version are you using
+and how are you linking to glibc?  All but the newest glibc versions
+use the old vsyscall when statically linked.  The newest versions use
+the syscall instead.  If you're dynamically linking, then gettimeofday
+should be okay even with fairly old glibc versions.
 
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/gpio/gpio-mvebu.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+(FWIW, glibc maintainership has changed since this was decided.  Feel
+free to bug the new maintainers if you care about statically-linked
+performance.  The only other runtime library I know of that uses the
+vdso or vsyscalls is Go, and the newest versions do the right thing.)
 
-diff --git a/drivers/gpio/gpio-mvebu.c b/drivers/gpio/gpio-mvebu.c
-index 902af43..8fdeed2 100644
---- a/drivers/gpio/gpio-mvebu.c
-+++ b/drivers/gpio/gpio-mvebu.c
-@@ -257,7 +257,7 @@ static int mvebu_gpio_to_irq(struct gpio_chip *chip, unsigned pin)
- {
- 	struct mvebu_gpio_chip *mvchip =
- 		container_of(chip, struct mvebu_gpio_chip, chip);
--	return irq_create_mapping(mvchip->domain, pin);
-+	return irq_find_mapping(mvchip->domain, pin);
- }
- 
- /*
-@@ -645,8 +645,8 @@ static int __devinit mvebu_gpio_probe(struct platform_device *pdev)
- 			       IRQ_NOREQUEST, IRQ_LEVEL | IRQ_NOPROBE);
- 
- 	/* Setup irq domain on top of the generic chip. */
--	mvchip->domain = irq_domain_add_legacy(np, mvchip->chip.ngpio,
--					       mvchip->irqbase, 0,
-+	mvchip->domain = irq_domain_add_simple(np, mvchip->chip.ngpio,
-+					       mvchip->irqbase,
- 					       &irq_domain_simple_ops,
- 					       mvchip);
- 	if (!mvchip->domain) {
--- 
-1.7.11.7
-
+--Andy
