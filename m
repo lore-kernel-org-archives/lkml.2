@@ -1,37 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273Ab2JPPsQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 11:48:16 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55327 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984Ab2JPPsP (ORCPT
+	id S1754767Ab2JPPwg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 11:52:36 -0400
+Received: from alvesta.synopsys.com ([198.182.60.77]:63618 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754336Ab2JPPwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 11:48:15 -0400
-Message-ID: <507D81BB.4020006@wwwdotorg.org>
-Date: Tue, 16 Oct 2012 09:48:11 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linus.walleij@stericsson.com, arnd@arndb.de
-Subject: Re: [PATCH 1/1] Documentation: Describe Device Tree bindings for
- GPIO Regulator driver
-References: <1350374553-12678-1-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1350374553-12678-1-git-send-email-lee.jones@linaro.org>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Oct 2012 11:52:35 -0400
+X-Greylist: delayed 419 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Oct 2012 11:52:35 EDT
+From: Mischa Jonker <mischa.jonker@synopsys.com>
+To: dmitry.torokhov@gmail.com, m.d.s.x.jonker@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Mischa Jonker <mischa.jonker@synopsys.com>
+Subject: [PATCH] RFC: ARC PS/2 driver
+Date: Tue, 16 Oct 2012 17:44:57 +0200
+Message-Id: <1350402298-12890-1-git-send-email-mischa.jonker@synopsys.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2012 02:02 AM, Lee Jones wrote:
-> Here we specify all non-standard bindings which can be used when
-> requesting the use of an GPIO controlled regulator from Device Tree.
+This patch adds support for the ARC PS/2 block which is used in various
+ARC FPGA platforms. It has been tested on the ARC Angel 4 platform and the
+nSIM OSCI virtual model.
 
-FWIW since I commented on this before and accidentally noticed the
-repost, the binding looks fine to me now. So, this patch,
+Mischa Jonker (1):
+  Input: serio - Add ARC PS/2 driver
 
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
+ drivers/input/serio/Kconfig   |    9 ++
+ drivers/input/serio/Makefile  |    1 +
+ drivers/input/serio/arc_ps2.c |  287 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 297 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/serio/arc_ps2.c
+
