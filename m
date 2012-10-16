@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab2JPB2l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 21:28:41 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:49291 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755452Ab2JPB2k (ORCPT
+	id S1755564Ab2JPBgB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 21:36:01 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:3980 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755488Ab2JPBgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 21:28:40 -0400
+	Mon, 15 Oct 2012 21:36:00 -0400
+X-Spam-Score: -100.8
+Message-ID: <507CBA3F.6000204@asianux.com>
+Date: Tue, 16 Oct 2012 09:37:03 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <1350141021.21172.14949.camel@edumazet-glaptop>
-References: <CALF0-+XGn5=QSE0bpa4RTag9CAJ63MKz1kvaYbpw34qUhViaZA@mail.gmail.com>
-	<m27gqwtyu9.fsf@firstfloor.org>
-	<alpine.DEB.2.00.1210111558290.6409@chino.kir.corp.google.com>
-	<m2391ktxjj.fsf@firstfloor.org>
-	<alpine.DEB.2.00.1210130249070.7462@chino.kir.corp.google.com>
-	<1350141021.21172.14949.camel@edumazet-glaptop>
-Date: Tue, 16 Oct 2012 10:28:39 +0900
-Message-ID: <CAAmzW4M8drwRPy_qWxnkG3-GKGPq+m24me+pGOWNtPzA15iVfg@mail.gmail.com>
-Subject: Re: [Q] Default SLAB allocator
-From: JoonSoo Kim <js1304@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Ezequiel Garcia <elezegarcia@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Tim Bird <tim.bird@am.sony.com>,
-        celinux-dev@lists.celinuxforum.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: Jeff Layton <jlayton@redhat.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Bug fix] nfs-client: fix nfs_inode_attrs_need_update for async
+ read_done comes during truncating to smaller size
+References: <507B70F1.7040903@asianux.com>  <4FA345DA4F4AE44899BD2B03EEEC2FA909236BB5@SACEXCMBX04-PRD.hq.netapp.com>  <507B968A.9090104@asianux.com> <4FA345DA4F4AE44899BD2B03EEEC2FA90923F1C4@SACEXCMBX04-PRD.hq.netapp.com>
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA90923F1C4@SACEXCMBX04-PRD.hq.netapp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Eric.
+于 2012年10月15日 20:32, Myklebust, Trond 写道:
+> RPC is not ordered. The fact that we get one RPC reply before another
+> does not mean that the server sent them in that order.
+> 
+> This is doubly true when you use UDP as the transport protocol.
 
-2012/10/14 Eric Dumazet <eric.dumazet@gmail.com>:
-> SLUB was really bad in the common workload you describe (allocations
-> done by one cpu, freeing done by other cpus), because all kfree() hit
-> the slow path and cpus contend in __slab_free() in the loop guarded by
-> cmpxchg_double_slab(). SLAB has a cache for this, while SLUB directly
-> hit the main "struct page" to add the freed object to freelist.
+1) is it means: nfs_inode_attrs_need_update need not consider async
+read_done situation ?
 
-Could you elaborate more on how 'netperf RR' makes kernel "allocations
-done by one cpu, freeling done by other cpus", please?
-I don't have enough background network subsystem, so I'm just curious.
+2) for correctness, I do not think "nfs_size_to_loff_t(fattr->size) >
+i_size_read(inode)" in nfs_size_need_update is enough. (at least need
+use "!=" instead of '>'), do you think so ?
 
-> I played some months ago adding a percpu associative cache to SLUB, then
-> just moved on other strategy.
->
-> (Idea for this per cpu cache was to build a temporary free list of
-> objects to batch accesses to struct page)
 
-Is this implemented and submitted?
-If it is, could you tell me the link for the patches?
+3) another reference:
 
-Thanks!
+  A) for an old kernel version (such as 2.6.27-rc9), no such issue
+(because it did not have nfs_size_need_update).
+
+  B) the test tools which I use is from the LTP (Linux Test Project),
+they use both udp and tcp to test both the nfsv2 and nfsv3.
+
+  C) truly LTP has its limitations: "for stress test, LTP let nfs client
+and server under the same machine, which will cause kernel stable
+issue", but for net test, LTP use different machine (I got our issue
+from LTP net test).
+
+
+-- 
+Chen Gang
+
+Asianux Corporation
