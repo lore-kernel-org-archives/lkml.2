@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262Ab2JPQqT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 12:46:19 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:39624 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755161Ab2JPQqR (ORCPT
+	id S1755259Ab2JPQrg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 12:47:36 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:33165 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754728Ab2JPQrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 12:46:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121016152023.GA25506@redhat.com>
-References: <20121016152023.GA25506@redhat.com>
-From: Michael Spang <spang@google.com>
-Date: Tue, 16 Oct 2012 12:45:56 -0400
-Message-ID: <CAC5F_1=tiGUtWOsOQ17vEYqVxuoVuoEH_nmEZ3BoL0dsgXJn3w@mail.gmail.com>
-Subject: Re: USB keyboard backlight powering down.
-To: Dave Jones <davej@redhat.com>, Michael Spang <spang@chromium.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, greno@verizon.net,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Tue, 16 Oct 2012 12:47:35 -0400
+Message-ID: <1350406050.2785.18.camel@lorien2>
+Subject: Re: [PATCH 1/1] x86, e820: Remove direct mapping of reserved space
+ for HT hole around 1TB
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>, shuahkhan@gmail.com
+Date: Tue, 16 Oct 2012 10:47:30 -0600
+In-Reply-To: <1318370975-10817-1-git-send-email-jacob.shin@amd.com>
+References: <1318370975-10817-1-git-send-email-jacob.shin@amd.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 11:20 AM, Dave Jones <davej@redhat.com> wrote:
-> Gerry (CC'd) reported a bug to us that since 3.6.1, his illuminated
-> Logitech USB keyboard doesn't light up until he hits a key, and then
-> it immediately powers back off, defeating the purpose of having an
-> illumated keyboard.
->
-> Looking over the 3.6.1 changelog, I see this change, which sounds
-> like it might be responsible ?
->
-> commit ee537508bdc0c00b96ac497f3d82a68f820e6182
-> Author: Michael Spang <spang@chromium.org>
-> Date:   Fri Sep 14 13:05:49 2012 -0400
->
->     Increase XHCI suspend timeout to 16ms
+Jacob,
 
-I don't think this is related to your problem, as this patch is in
-suspend/resume code. It just allows the controller more time to halt.
+On Tue, 2011-10-11 at 17:09 -0500, Jacob Shin wrote:
+> The entire HT hole and also the unused address range before that hole
+> need to be excluded from direct mapping. Otherwise speculative
+> accesses to that reserved region can happen which cause machine
+> checks.
 
-Thanks,
-Michael
+Has the HT support even been added? I have a system with HT memory
+histing feature and I am unable to boot with 1TB. Has this work been
+redone as discussed in this thread?
+
+-- Shuah
+
+
