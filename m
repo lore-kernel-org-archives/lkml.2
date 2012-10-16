@@ -1,103 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550Ab2JPLvC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 07:51:02 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36801 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab2JPLvA (ORCPT
+	id S1752821Ab2JPLv3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 07:51:29 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:51962 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558Ab2JPLv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 07:51:00 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <507D48EE.9010800@jp.fujitsu.com>
-Date: Tue, 16 Oct 2012 20:45:50 +0900
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 16 Oct 2012 07:51:26 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        <linux-fbdev@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] OMAPDSS: Correct check for the callback pointer in dss_dsi_disable_pads()
+Date: Tue, 16 Oct 2012 13:51:21 +0200
+Message-ID: <1350388281-20397-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.12.3
 MIME-Version: 1.0
-To: khalid@gonehiking.org
-CC: linux-pci@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        martin.wilck@ts.fujitsu.com, kexec@lists.infradead.org,
-        hbabu@us.ibm.com, andi@firstfloor.org, ddutile@redhat.com,
-        ishii.hironobu@jp.fujitsu.com, hpa@zytor.com, bhelgaas@google.com,
-        tglx@linutronix.de, mingo@redhat.com, vgoyal@redhat.com
-Subject: Re: [PATCH v4 1/2] x86, pci: Reset PCIe devices at boot time
-References: <20121015065516.2832.42378.sendpatchset@indoh>  <20121015065526.2832.90867.sendpatchset@indoh> <1350321429.7065.97.camel@rhapsody>
-In-Reply-To: <1350321429.7065.97.camel@rhapsody>
-Content-Type: text/plain; charset=Shift_JIS
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/10/16 2:17), Khalid Aziz wrote:
-> On Mon, 2012-10-15 at 16:00 +0900, Takao Indoh wrote:
->> This patch resets PCIe devices at boot time by hot reset when
->> "reset_devices" is specified.
->>
->> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
->> ---
->>   arch/x86/include/asm/pci-direct.h |    1
->>   arch/x86/kernel/setup.c           |    3
->>   arch/x86/pci/early.c              |  344 ++++++++++++++++++++++++++++
->>   include/linux/pci.h               |    2
->>   init/main.c                       |    4
->>   5 files changed, 352 insertions(+), 2 deletions(-)
->>
->
->
-> Looks good.
->
-> Reviewed-by: Khalid Aziz <khalid@gonehiking.org>
->
+Appear to be a copy-paste bug: the code was checking board_data->dsi_enable_pads
+while calling board_data->dsi_disable_pads.
 
-Thanks! But unfortunately I found a bug, so I'll post v5 patch soon.
 
-A bug I found is that configuration register is accessed without
-delay after reset.
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
 
-This is an algorithm to reset devices.
+Hi Tomi,
 
-  for (each device) {  <===== (A)
-    if (does not have downstream devices)
-      continue
-    for (each downstream device) {
-      save config registers
-    }
-    do_bus_reset <==== (B)
-  }
-  wait 500 ms
-  ...
+not sure if this need to be included to 3.7
 
-Let's say my system has the following devices.
+Regards,
+Peter
 
-00:01.0 (root port)
-|
-+- 01:00.0 (device)
+ drivers/video/omap2/dss/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-In this case,
-1) At first, 00:01.0 is found at (A). And its downstream devcice 01:00.0
-   is reset at (B).
-2) Next, 01:00.0 is found at (A). Then config register of 01:00.0 is
-   accessed. This is PCIe spec violation because the config register of
-   01:00.0 is accessed without delay after reset. PCIe spec requires
-   at least 100ms waiting time before sending a config request.
-
-Therefore I'll update patches like this so that devices could be reset
-after saving phase is done:
-
-  for (each device) {
-    if (does not have downstream devices)
-      continue
-    for_each (its downstream devices) {
-      save config registers
-    }
--   do_bus_reset
-  }
-+ for (each device) {
-+   do_bus_reset
-+ }
-  wait 500 ms
-  ...
-
-Thanks,
-Takao Indoh
+diff --git a/drivers/video/omap2/dss/core.c b/drivers/video/omap2/dss/core.c
+index b2af72d..7afaf61 100644
+--- a/drivers/video/omap2/dss/core.c
++++ b/drivers/video/omap2/dss/core.c
+@@ -122,7 +122,7 @@ void dss_dsi_disable_pads(int dsi_id, unsigned lane_mask)
+ {
+ 	struct omap_dss_board_info *board_data = core.pdev->dev.platform_data;
+ 
+-	if (!board_data->dsi_enable_pads)
++	if (!board_data->dsi_disable_pads)
+ 		return;
+ 
+ 	return board_data->dsi_disable_pads(dsi_id, lane_mask);
+-- 
+1.7.12.3
 
