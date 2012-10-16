@@ -1,49 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab2JPKOz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 06:14:55 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:61050 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088Ab2JPKOx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 06:14:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKohponnT=q5bEgzdSSdPNQnskPMM0BbDdDPR3Cc+Gq5NeK-xg@mail.gmail.com>
-References: <1350377120-27657-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<CAOh2x=n-523nC=bM9X5WrWYv=o=aKK_s-+MsA+XVcVP1yy1zFg@mail.gmail.com>
-	<CAHp75Vc6aPAqG7gDobjOaiSRqw8MNAG7pS3o-ze6ejXXF7AFEg@mail.gmail.com>
-	<CAKohponnT=q5bEgzdSSdPNQnskPMM0BbDdDPR3Cc+Gq5NeK-xg@mail.gmail.com>
-Date: Tue, 16 Oct 2012 13:14:52 +0300
-Message-ID: <CAHp75VdVLh7JN10YEiA1P=iV-T3enpL639_ZKSsj1ubzvNihNg@mail.gmail.com>
-Subject: Re: [PATCH] dmatest: terminate all ongoing transfers before
- submitting new one
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753778Ab2JPKRE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 06:17:04 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:23560 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752761Ab2JPKQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 06:16:57 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-mm@kvack.org>
+Cc: <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
+        <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v5 03/14] memcg: change defines to an enum
+Date: Tue, 16 Oct 2012 14:16:40 +0400
+Message-Id: <1350382611-20579-4-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1350382611-20579-1-git-send-email-glommer@parallels.com>
+References: <1350382611-20579-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 12:52 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>> Also, the proposed solution might hide some other important errors. We may need
->>> to terminate transfers when we found that an error is there in  last transfers:
->> I think it could be better than first solution, but what do you think
->> about marking each transfer with corresponding id?
->
-> But dma_test expects the transfer to finish within timeout. If it
-> doesn't, then that's
-> an error.
->
-> So, for testing your s/w emulation, you must pass higher timeout. And
-> terminating
-> transfers for error case would be better, to make them timeout safe.
+This is just a cleanup patch for clarity of expression.  In earlier
+submissions, people asked it to be in a separate patch, so here it is.
 
-Yeah, seems the patch is not necessary.
-In case of software emulation we just have a test passed much slow...
+[ v2: use named enum as type throughout the file as well ]
 
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+CC: Tejun Heo <tj@kernel.org>
+---
+ mm/memcontrol.c | 26 ++++++++++++++++----------
+ 1 file changed, 16 insertions(+), 10 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 7a9652a..71d259e 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -386,9 +386,12 @@ enum charge_type {
+ };
+ 
+ /* for encoding cft->private value on file */
+-#define _MEM			(0)
+-#define _MEMSWAP		(1)
+-#define _OOM_TYPE		(2)
++enum res_type {
++	_MEM,
++	_MEMSWAP,
++	_OOM_TYPE,
++};
++
+ #define MEMFILE_PRIVATE(x, val)	((x) << 16 | (val))
+ #define MEMFILE_TYPE(val)	((val) >> 16 & 0xffff)
+ #define MEMFILE_ATTR(val)	((val) & 0xffff)
+@@ -3915,7 +3918,8 @@ static ssize_t mem_cgroup_read(struct cgroup *cont, struct cftype *cft,
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+ 	char str[64];
+ 	u64 val;
+-	int type, name, len;
++	int name, len;
++	enum res_type type;
+ 
+ 	type = MEMFILE_TYPE(cft->private);
+ 	name = MEMFILE_ATTR(cft->private);
+@@ -3951,7 +3955,8 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
+ 			    const char *buffer)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+-	int type, name;
++	enum res_type type;
++	int name;
+ 	unsigned long long val;
+ 	int ret;
+ 
+@@ -4027,7 +4032,8 @@ out:
+ static int mem_cgroup_reset(struct cgroup *cont, unsigned int event)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+-	int type, name;
++	int name;
++	enum res_type type;
+ 
+ 	type = MEMFILE_TYPE(event);
+ 	name = MEMFILE_ATTR(event);
+@@ -4363,7 +4369,7 @@ static int mem_cgroup_usage_register_event(struct cgroup *cgrp,
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
+ 	struct mem_cgroup_thresholds *thresholds;
+ 	struct mem_cgroup_threshold_ary *new;
+-	int type = MEMFILE_TYPE(cft->private);
++	enum res_type type = MEMFILE_TYPE(cft->private);
+ 	u64 threshold, usage;
+ 	int i, size, ret;
+ 
+@@ -4446,7 +4452,7 @@ static void mem_cgroup_usage_unregister_event(struct cgroup *cgrp,
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
+ 	struct mem_cgroup_thresholds *thresholds;
+ 	struct mem_cgroup_threshold_ary *new;
+-	int type = MEMFILE_TYPE(cft->private);
++	enum res_type type = MEMFILE_TYPE(cft->private);
+ 	u64 usage;
+ 	int i, j, size;
+ 
+@@ -4524,7 +4530,7 @@ static int mem_cgroup_oom_register_event(struct cgroup *cgrp,
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
+ 	struct mem_cgroup_eventfd_list *event;
+-	int type = MEMFILE_TYPE(cft->private);
++	enum res_type type = MEMFILE_TYPE(cft->private);
+ 
+ 	BUG_ON(type != _OOM_TYPE);
+ 	event = kmalloc(sizeof(*event),	GFP_KERNEL);
+@@ -4549,7 +4555,7 @@ static void mem_cgroup_oom_unregister_event(struct cgroup *cgrp,
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
+ 	struct mem_cgroup_eventfd_list *ev, *tmp;
+-	int type = MEMFILE_TYPE(cft->private);
++	enum res_type type = MEMFILE_TYPE(cft->private);
+ 
+ 	BUG_ON(type != _OOM_TYPE);
+ 
 -- 
-With Best Regards,
-Andy Shevchenko
+1.7.11.7
+
