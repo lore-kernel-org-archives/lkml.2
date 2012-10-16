@@ -1,104 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108Ab2JPIpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 04:45:30 -0400
-Received: from mga03.intel.com ([143.182.124.21]:22356 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752550Ab2JPIp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 04:45:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,593,1344236400"; 
-   d="scan'208";a="204964497"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>, Viresh Kumar <viresh.linux@gmail.com>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH] dmatest: terminate all ongoing transfers before submitting new one
-Date: Tue, 16 Oct 2012 11:45:20 +0300
-Message-Id: <1350377120-27657-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753195Ab2JPIqK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 04:46:10 -0400
+Received: from 5.mo4.mail-out.ovh.net ([188.165.44.50]:54060 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752567Ab2JPIqH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 04:46:07 -0400
+Date: Tue, 16 Oct 2012 10:43:27 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Daniel =?iso-8859-1?Q?Gl=F6ckner?= <daniel-gl@gmx.net>,
+        Roland Stigge <stigge@antcom.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, highguy@gmail.com,
+        broonie@opensource.wolfsonmicro.com
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: [PATCH RFC 2/6 v3] gpio: Add sysfs support to block GPIO API
+Message-ID: <20121016084327.GC12801@game.jcrosoft.org>
+References: <1350069085-13283-1-git-send-email-stigge@antcom.de>
+ <1350069085-13283-3-git-send-email-stigge@antcom.de>
+ <20121015180702.GA12801@game.jcrosoft.org>
+ <20121015181928.GB27923@kroah.com>
+ <CACRpkdZmg4+7Zjm2UJktt1uKvytUW3uaYtKz0nJvLeM2MMSV-Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdZmg4+7Zjm2UJktt1uKvytUW3uaYtKz0nJvLeM2MMSV-Q@mail.gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 2213237742585228253
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehuddrvdejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtugfgjggfsehtkefttddtredu
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehuddrvdejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtugfgjggfsehtkefttddtredu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following error messages come if we have software LLP emulation enabled and
-enough threads running.
+On 22:30 Mon 15 Oct     , Linus Walleij wrote:
+> I really request Grant to comment on this...too.
+> 
+> On Mon, Oct 15, 2012 at 8:19 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Mon, Oct 15, 2012 at 08:07:02PM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> >> On 21:11 Fri 12 Oct     , Roland Stigge wrote:
+> >> > This patch adds sysfs support to the block GPIO API.
+> >> >
+> >> > Signed-off-by: Roland Stigge <stigge@antcom.de>
+> >> >
+> >> > ---
+> >> >  Documentation/ABI/testing/sysfs-gpio |    6
+> >> >  drivers/gpio/gpiolib.c               |  226 ++++++++++++++++++++++++++++++++++-
+> >> >  include/asm-generic/gpio.h           |   11 +
+> >> >  include/linux/gpio.h                 |   13 ++
+> >> >  4 files changed, 254 insertions(+), 2 deletions(-)
+> >> I really don't like this sysfs we need to add a specific device with ioctl
+> >
+> > Why?
+> 
+> I don't like it either, basically because the GPIO sysfs is not
+> entirely sound.
+> 
+> Another patch that is circulating concerns edge triggers and similar,
+> and it appear that some parts of the GPIO sysfs is for example
+> redefining and exporting IRQchip properties like trigger edge
+> in sysfs, while the settings of the irqchip actually used by the driver
+> is not reflected in the other direction. So you can *set* these things
+> by writing in the GPIO sysfs, but never trust what you *read* from
+> there. And you can set what edges an IRQ will trigger on a certain
+> GPIO, and the way to handle the IRQs from usespace is to poll
+> on a value. This is not really documented but well ...
+> 
+> Part of me just want to delete that, but I can't because it's now
+> an ABI.
+> 
+> The "devices" that the sysfs files are tied to are not real devices,
+> instead the code look like this: whenever a gpio is exported to
+> sysfs, the code calls (drivers/gpio/gpiolib.c):
+> 
+>     dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
+>                     desc, ioname ? ioname : "gpio%u", gpio);
+> 
+> Mock device just to get a sysfs opening. And once device for
+> every GPIO with no hierarchical correspondence to anything
+> in the system.
+> 
+> The thing is that struct gpio_chip is not a device at all, it's something
+> else.
+> 
+> This inconsistency in the GPIO sysfs implementation make me
+> fear adding new stuff to it. The other problems need fixing first.
+> 
+> The reason an ioctl() IMO is better suited to do the job is that
+> it can properly represent a multiple-value operation on several
+> GPIOs at the same time in a struct, and it can conversely inform
+> userspace about which GPIOs may be a block of signals that
+> can be fired simultaneously instead of going to string parsing
+> and binary values in sysfs which look like worse hacks to me.
+> 
+> The last thing I'm a bit softer on though. Mainly I fear of this
+> sysfs ABI growing into a beast.
+> 
+> It was all merged prior to Grant becoming maintainer and
+> me becoming co-maintainer of it, so this is legacy business.
+> 
+> Sadly the main creator of this ABI is David Brownell who is
+> not able to respond nor maintain it from where he is now. But
+> we need to think hard about what we shall do with this particular
+> piece of legacy. Some of the stuff was added by Daniel
+> Glöckner so requesting advice from him.
+> 
+> Daniel: are you interested in helping us fixing the GPIOlib
+> sysfs ABI and kernel internals? I'm a bit afraid of it.
+My 0.02$ too
 
-modprobe dmatest iterations=40
-[  168.048601] dmatest: Started 1 threads using dma0chan0
-[  168.054546] dmatest: Started 1 threads using dma0chan1
-[  168.060441] dmatest: Started 1 threads using dma0chan2
-[  168.066333] dmatest: Started 1 threads using dma0chan3
-[  168.072250] dmatest: Started 1 threads using dma0chan4
-[  168.078144] dmatest: Started 1 threads using dma0chan5
-[  168.084057] dmatest: Started 1 threads using dma0chan6
-[  168.089948] dmatest: Started 1 threads using dma0chan7
-[  170.032962] dma0chan1-copy0: terminating after 40 tests, 0 failures (status 0)
-[  170.041274] dma0chan0-copy0: terminating after 40 tests, 0 failures (status 0)
-[  170.597559] dma0chan2-copy0: terminating after 40 tests, 0 failures (status 0)
-[  171.085059] dma0chan7-copy0: #0: test timed out
-[  171.839710] dma0chan3-copy0: terminating after 40 tests, 0 failures (status 0)
-[  172.146071] dma0chan4-copy0: terminating after 40 tests, 0 failures (status 0)
-[  172.220802] dma0chan7-copy0: #1: got completion callback, but status is 'in progress'
-[  172.242049] dma0chan7-copy0: #2: got completion callback, but status is 'in progress'
-[  172.281063] dma0chan7-copy0: #3: got completion callback, but status is 'in progress'
-[  172.400866] dma0chan7-copy0: #4: got completion callback, but status is 'in progress'
-[  172.471799] dma0chan7-copy0: #5: got completion callback, but status is 'in progress'
-[  172.613996] dma0chan7-copy0: #6: got completion callback, but status is 'in progress'
-[  172.670286] dma0chan7-copy0: #7: got completion callback, but status is 'in progress'
-[  172.750763] dma0chan7-copy0: #8: got completion callback, but status is 'in progress'
-[  172.777452] dma0chan5-copy0: terminating after 40 tests, 0 failures (status 0)
-[  172.788740] dma0chan7-copy0: #9: got completion callback, but status is 'in progress'
-[  172.845156] dma0chan7-copy0: #10: got completion callback, but status is 'in progress'
-[  172.906593] dma0chan7-copy0: #11: got completion callback, but status is 'in progress'
-[  173.181515] dma0chan6-copy0: terminating after 40 tests, 0 failures (status 0)
-[  173.512838] dma0chan7-copy0: terminating after 40 tests, 12 failures (status 0)
-
-The patch fixes dmatest module to stop any ongoing transfer before submitting
-new one. Perhaps there is a better solution and driver logic needs to be fixed
-as well.
-
-After patch we will have
-
-modprobe dmatest iterations=50
-[   84.027375] dmatest: Started 1 threads using dma0chan0
-[   84.033282] dmatest: Started 1 threads using dma0chan1
-[   84.039182] dmatest: Started 1 threads using dma0chan2
-[   84.045089] dmatest: Started 1 threads using dma0chan3
-[   84.051003] dmatest: Started 1 threads using dma0chan4
-[   84.056916] dmatest: Started 1 threads using dma0chan5
-[   84.062828] dmatest: Started 1 threads using dma0chan6
-[   84.068714] dmatest: Started 1 threads using dma0chan7
-[   86.538284] dma0chan0-copy0: terminating after 50 tests, 0 failures (status 0)
-[   86.842221] dma0chan1-copy0: terminating after 50 tests, 0 failures (status 0)
-[   87.060460] dma0chan6-copy0: #0: test timed out
-[   87.065614] dma0chan7-copy0: #0: test timed out
-[   87.220321] dma0chan2-copy0: terminating after 50 tests, 0 failures (status 0)
-[   88.595061] dma0chan3-copy0: terminating after 50 tests, 0 failures (status 0)
-[   89.152170] dma0chan4-copy0: terminating after 50 tests, 0 failures (status 0)
-[   89.955059] dma0chan5-copy0: terminating after 50 tests, 0 failures (status 0)
-[   90.697073] dma0chan6-copy0: terminating after 50 tests, 1 failures (status 0)
-[   90.893422] dma0chan7-copy0: terminating after 50 tests, 1 failures (status 0)
-
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/dma/dmatest.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
-index 24225f0..583f882 100644
---- a/drivers/dma/dmatest.c
-+++ b/drivers/dma/dmatest.c
-@@ -399,6 +399,9 @@ static int dmatest_func(void *data)
- 			continue;
- 		}
- 
-+		/* Stop any ongoing transfers here */
-+		chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
-+
- 		done.done = false;
- 		tx->callback = dmatest_callback;
- 		tx->callback_param = &done;
--- 
-1.7.10.4
-
+Best Regards,
+J.
