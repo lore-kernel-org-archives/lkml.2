@@ -1,95 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab2JPQiQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 12:38:16 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:56957 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754190Ab2JPQiO (ORCPT
+	id S1755388Ab2JPQi4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 12:38:56 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:54281 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754742Ab2JPQiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 12:38:14 -0400
-From: Sangho Yi <antiroot@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Sangho Yi <antiroot@gmail.com>
-Subject: [PATCH 3/4] staging: csr: removed single line { } braces from for and if statements.
-Date: Wed, 17 Oct 2012 01:36:47 +0900
-Message-Id: <1350405408-2702-3-git-send-email-antiroot@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350405408-2702-1-git-send-email-antiroot@gmail.com>
-References: <n>
- <1350405408-2702-1-git-send-email-antiroot@gmail.com>
+	Tue, 16 Oct 2012 12:38:11 -0400
+Message-ID: <507D8D3B.5000506@linux.vnet.ibm.com>
+Date: Tue, 16 Oct 2012 22:07:15 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: peterz@infradead.org, acme@ghostprotocols.net, mingo@kernel.org,
+        tglx@linutronix.de, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH 1/2] perf, cpu hotplug: Run CPU_STARTING notifiers
+ with irqs disabled
+References: <20121016075809.3572.47848.stgit@srivatsabhat.in.ibm.com> <20121016163140.GA2385@linux.vnet.ibm.com>
+In-Reply-To: <20121016163140.GA2385@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12101616-8256-0000-0000-0000049B1178
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, just removed the single line covering braces from the for() and
-if(), and the corresponding else statements on mlme.c.
+On 10/16/2012 10:01 PM, Paul E. McKenney wrote:
+> On Tue, Oct 16, 2012 at 01:28:10PM +0530, Srivatsa S. Bhat wrote:
+>> The CPU_STARTING notifiers are supposed to be run with irqs disabled. But the
+>> perf_cpu_notifier() macro invokes them without doing that. Fix it.
+> 
+> Color me confused...
 
-Signed-off-by: Sangho Yi <antiroot@gmail.com>
----
- drivers/staging/csr/mlme.c |   20 +++++++-------------
- 1 file changed, 7 insertions(+), 13 deletions(-)
+Hehe, I believe the context provided by diff tricked you ;-)
+The function I am referring to is perf_cpu_notifier(), not
+perf_event_task_tick() :-)
 
-diff --git a/drivers/staging/csr/mlme.c b/drivers/staging/csr/mlme.c
-index dba12b2..e4ecdd8 100644
---- a/drivers/staging/csr/mlme.c
-+++ b/drivers/staging/csr/mlme.c
-@@ -89,11 +89,10 @@ unifi_mlme_wait_for_reply(unifi_priv_t *priv, ul_client_t *pcli,
- 		} else {
- 			/* Get the sequence number of the signal
- 			 * that we previously set. */
--			if (pcli->seq_no != 0) {
-+			if (pcli->seq_no != 0)
- 				sent_seq_no = pcli->seq_no - 1;
--			} else {
-+			else
- 				sent_seq_no = 0x0F;
--			}
- 
- 			unifi_trace(priv, UDBG5,
- 				"Received 0x%.4X, seq: (r:%d, s:%d)\n",
-@@ -193,9 +192,8 @@ unifi_mlme_blocking_request(unifi_priv_t *priv, ul_client_t *pcli,
- 	 * if the signal has been successfully set.
- 	 */
- 	pcli->seq_no++;
--	if (pcli->seq_no > 0x0F) {
-+	if (pcli->seq_no > 0x0F)
- 		pcli->seq_no = 0;
--	}
- 
- 	r = unifi_mlme_wait_for_reply(priv, pcli,
- 		(sig->SignalPrimitiveHeader.SignalId + 1), timeout);
-@@ -287,14 +285,12 @@ uf_abort_mlme(unifi_priv_t *priv)
- 	priv->io_aborted = 1;
- 
- 	ul_cli = priv->netdev_client;
--	if (ul_cli) {
-+	if (ul_cli)
- 		wake_up_interruptible(&ul_cli->udi_wq);
--	}
- 
- 	ul_cli = priv->wext_client;
--	if (ul_cli) {
-+	if (ul_cli)
- 		wake_up_interruptible(&ul_cli->udi_wq);
--	}
- 
- 	return 0;
- } /* uf_abort_mlme() */
-@@ -391,11 +387,9 @@ static const struct mlme_code Reason_codes[] = {
- static const char *
- lookup_something(const struct mlme_code *n, int id)
- {
--	for (; n->name; n++) {
--		if (n->id == id) {
-+	for (; n->name; n++)
-+		if (n->id == id)
- 			return n->name;
--		}
--	}
- 
- 	/* not found */
- 	return NULL;
--- 
-1.7.9.5
+Regards,
+Srivatsa S. Bhat
+
+>  Isn't perf_event_task_tick() invoked only
+> from scheduler_tick(), which always has interrupts disabled?
+> 
+> Or are you needing to invoke it from somewhere else?
+> 
+> 							Thanx, Paul
+> 
+>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>> ---
+>>
+>>  include/linux/perf_event.h |    3 +++
+>>  1 file changed, 3 insertions(+)
+>>
+>> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+>> index 2e90235..0647805 100644
+>> --- a/include/linux/perf_event.h
+>> +++ b/include/linux/perf_event.h
+>> @@ -803,10 +803,13 @@ static inline void perf_event_task_tick(void)				{ }
+>>  do {									\
+>>  	static struct notifier_block fn##_nb __cpuinitdata =		\
+>>  		{ .notifier_call = fn, .priority = CPU_PRI_PERF };	\
+>> +	unsigned long flags;						\
+>>  	fn(&fn##_nb, (unsigned long)CPU_UP_PREPARE,			\
+>>  		(void *)(unsigned long)smp_processor_id());		\
+>> +	local_irq_save(flags);						\
+>>  	fn(&fn##_nb, (unsigned long)CPU_STARTING,			\
+>>  		(void *)(unsigned long)smp_processor_id());		\
+>> +	local_irq_restore(flags);					\
+>>  	fn(&fn##_nb, (unsigned long)CPU_ONLINE,				\
+>>  		(void *)(unsigned long)smp_processor_id());		\
+>>  	register_cpu_notifier(&fn##_nb);				\
+>>
 
