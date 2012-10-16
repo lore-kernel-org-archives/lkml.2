@@ -1,64 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab2JPMfn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 08:35:43 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:54851 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809Ab2JPMfl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 08:35:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1210151745400.31712@chino.kir.corp.google.com>
-References: <CALF0-+XGn5=QSE0bpa4RTag9CAJ63MKz1kvaYbpw34qUhViaZA@mail.gmail.com>
-	<m27gqwtyu9.fsf@firstfloor.org>
-	<alpine.DEB.2.00.1210111558290.6409@chino.kir.corp.google.com>
-	<m2391ktxjj.fsf@firstfloor.org>
-	<CALF0-+WLZWtwYY4taYW9D7j-abCJeY90JzcTQ2hGK64ftWsdxw@mail.gmail.com>
-	<alpine.DEB.2.00.1210130252030.7462@chino.kir.corp.google.com>
-	<CALF0-+Xp_P_NjZpifzDSWxz=aBzy_fwaTB3poGLEJA8yBPQb_Q@mail.gmail.com>
-	<alpine.DEB.2.00.1210151745400.31712@chino.kir.corp.google.com>
-Date: Tue, 16 Oct 2012 09:35:41 -0300
-Message-ID: <CALF0-+WgfnNOOZwj+WLB397cgGX7YhNuoPXAK5E0DZ5v_BxxEA@mail.gmail.com>
-Subject: Re: [Q] Default SLAB allocator
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Tim Bird <tim.bird@am.sony.com>,
-        celinux-dev@lists.celinuxforum.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754213Ab2JPMnI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 08:43:08 -0400
+Received: from 1wt.eu ([62.212.114.60]:32899 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752679Ab2JPMnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 08:43:06 -0400
+Date: Tue, 16 Oct 2012 14:43:00 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: "Gabor Z. Papp" <gzp@papp.hu>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: Linux 2.6.32.xx build breaks with gcc 4.7
+Message-ID: <20121016124300.GD31152@1wt.eu>
+References: <20121012120829.GD14734@1wt.eu> <x6vcecp44c@gzp> <20121015102505.GE24159@1wt.eu> <x6a9voowqv@gzp> <20121015105710.GF24159@1wt.eu> <x61uh0oun5@gzp> <20121015114528.GJ24159@1wt.eu> <x6y5j7392k@gzp> <20121015191705.GO24159@1wt.eu> <x6r4oyzxbm@gzp>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x6r4oyzxbm@gzp>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
+On Tue, Oct 16, 2012 at 09:32:29AM +0200, Gabor Z. Papp wrote:
+> lo lo,
+> 
+> I'm trying to compile 2.6.32.60 with gcc 4.7.2, and getting the
+> following error:
+> 
+>   CC      arch/x86/kernel/ptrace.o
+> arch/x86/kernel/ptrace.c:1472:17: error: conflicting types for 'syscall_trace_enter'
+> In file included from /usr/src/linux-2.6.32.60-gzpLinux/arch/x86/include/asm/vm86.h:130:0,
+>                  from /usr/src/linux-2.6.32.60-gzpLinux/arch/x86/include/asm/processor.h:10,
+>                  from /usr/src/linux-2.6.32.60-gzpLinux/arch/x86/include/asm/thread_info.h:22,
+>                  from include/linux/thread_info.h:56,
+>                  from include/linux/preempt.h:9,
+>                  from include/linux/spinlock.h:50,
+>                  from include/linux/seqlock.h:29,
+>                  from include/linux/time.h:8,
+>                  from include/linux/timex.h:56,
+>                  from include/linux/sched.h:56,
+>                  from arch/x86/kernel/ptrace.c:11:
+> /usr/src/linux-2.6.32.60-gzpLinux/arch/x86/include/asm/ptrace.h:145:13: note: previous declaration of 'syscall_trace_enter' was here
+> arch/x86/kernel/ptrace.c:1517:17: error: conflicting types for 'syscall_trace_leave'
+> In file included from /usr/src/linux-2.6.32.60-gzpLinux/arch/x86/include/asm/vm86.h:130:0,
+>                  from /usr/src/linux-2.6.32.60-gzpLinux/arch/x86/include/asm/processor.h:10,
+>                  from /usr/src/linux-2.6.32.60-gzpLinux/arch/x86/include/asm/thread_info.h:22,
+>                  from include/linux/thread_info.h:56,
+>                  from include/linux/preempt.h:9,
+>                  from include/linux/spinlock.h:50,
+>                  from include/linux/seqlock.h:29,
+>                  from include/linux/time.h:8,
+>                  from include/linux/timex.h:56,
+>                  from include/linux/sched.h:56,
+>                  from arch/x86/kernel/ptrace.c:11:
+> /usr/src/linux-2.6.32.60-gzpLinux/arch/x86/include/asm/ptrace.h:146:13: note: previous declaration of 'syscall_trace_leave' was here
+> make[2]: *** [arch/x86/kernel/ptrace.o] Error 1
+> make[1]: *** [arch/x86/kernel] Error 2
+> make: *** [arch/x86] Error 2
+> 
+> My environment looks like:
+> 
+> Linux 3.2.30, glibc 2.16, gcc 4.7.2
+> 
+> If I comment out the ancient line, kernel compiles fine.
+> 
+> Willy says:
+> 
+> | The affected entry is only used there :
+> 
+> | arch/x86/include/asm/ptrace.h:extern void syscall_trace_leave(struct pt_regs *);
+> | arch/x86/include/asm/thread_info.h:/* work to do in syscall_trace_leave() */
+> | arch/x86/kernel/entry_32.S:     ENABLE_INTERRUPTS(CLBR_ANY)     # could let syscall_trace_leave() call
+> | arch/x86/kernel/entry_32.S:     call syscall_trace_leave
+> | arch/x86/kernel/entry_64.S:     call syscall_trace_leave
+> | arch/x86/kernel/ptrace.c:asmregparm void syscall_trace_leave(struct pt_regs *regs)
+> 
+> | So if the two calls above don't need the include then maybe we can
+> | safely remove it.
 
-On Mon, Oct 15, 2012 at 9:46 PM, David Rientjes <rientjes@google.com> wrote:
-> On Sat, 13 Oct 2012, Ezequiel Garcia wrote:
->
->> But SLAB suffers from a lot more internal fragmentation than SLUB,
->> which I guess is a known fact. So memory-constrained devices
->> would waste more memory by using SLAB.
->
-> Even with slub's per-cpu partial lists?
+If someone knows this area well enough to judge whether we can 
+  - either remove the asmregparm (I don't think so judging by recent commits
+    saying it was possible to remove it after other main changes)
+  - or remove the declaration because noone else needs it,
 
-I'm not considering that, but rather plain fragmentation: the difference
-between requested and allocated, per object.
-Admittedly, perhaps this is a naive analysis.
-
-However, devices where this matters would have only one cpu, right?
-So the overhead imposed by per-cpu data shouldn't impact so much.
-
-Study the difference in overhead imposed by allocators is
-something that's still on my TODO.
-
-Now, returning to the fragmentation. The problem with SLAB is that
-its smaller cache available for kmalloced objects is 32 bytes;
-while SLUB allows 8, 16, 24 ...
-
-Perhaps adding smaller caches to SLAB might make sense?
-Is there any strong reason for NOT doing this?
+Then I'd happily apply the fix. From what I understood, Paul would probably
+need the same fix for 2.6.34.
 
 Thanks,
+Willy
 
-    Ezequiel
