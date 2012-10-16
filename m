@@ -1,77 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab2JPRYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 13:24:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58041 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755135Ab2JPRYc (ORCPT
+	id S1755361Ab2JPRZV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 13:25:21 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55969 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755250Ab2JPRZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 13:24:32 -0400
-Subject: Re: [RFC] perf: need to expose sched_clock to correlate user
- samples with kernel samples
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Will Deacon <will.deacon@arm.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Robert Richter <robert.richter@amd.com>, tglx <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-In-Reply-To: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>
-References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Oct 2012 19:23:52 +0200
-Message-ID: <1350408232.2336.42.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Oct 2012 13:25:18 -0400
+Date: Tue, 16 Oct 2012 18:25:15 +0100
+From: Dave Martin <dave.martin@linaro.org>
+To: Fei Yang <yangfei.kernel@gmail.com>
+Cc: Mikael Pettersson <mikpe@it.uu.se>, linux@arm.linux.org.uk,
+        lethal@linux-sh.org, magnus.damm@gmail.com, kgene.kim@samsung.com,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-assembly@vger.kernel.org" <linux-assembly@vger.kernel.org>,
+        linux-hotplug@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Yangfei (Felix)" <felix.yang@huawei.com>
+Subject: Re: [PATCH] Re: Hardcoded instruction causes certain features to
+ fail on ARM platfrom due to endianness
+Message-ID: <20121016172515.GD26075@linaro.org>
+References: <DA41BE1DDCA941489001C7FBD7A8820E3CB407A4@szxeml549-mbx.china.huawei.com>
+ <20603.47887.262025.941051@pilspetsen.it.uu.se>
+ <CAKw8HL154a=K9O7CzPFZ-EqtT+BxYU-uRHodtutdRfYmNpWVww@mail.gmail.com>
+ <20121016124956.GC26075@linaro.org>
+ <CAKw8HL3shtbi0Kk-7ZWO9KhtBVU+Vj_Zunh52GDOGJTZSvt6Gg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKw8HL3shtbi0Kk-7ZWO9KhtBVU+Vj_Zunh52GDOGJTZSvt6Gg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-16 at 12:13 +0200, Stephane Eranian wrote:
-> Hi,
+On Wed, Oct 17, 2012 at 12:33:54AM +0800, Fei Yang wrote:
+> 2012/10/16 Dave Martin <dave.martin@linaro.org>:
+> > On Mon, Oct 15, 2012 at 11:33:08PM +0800, Fei Yang wrote:
+> >> 2012/10/15 Mikael Pettersson <mikpe@it.uu.se>:
+> >> > Yangfei (Felix) writes:
+> >> >  > Hi all,
+> >> >  >
+> >> >  >     I found that hardcoded instruction in inline asm can cause certains certain features fail to work on ARM platform due to endianness.
+> >> >  >     As an example, consider the following code snippet of platform_do_lowpower function from arch/arm/mach-realview/hotplug.c:
+> >> >  >                 / *
+> >> >  >                  * here's the WFI
+> >> >  >                  */
+> >> >  >                 asm(".word      0xe320f003\n"
+> >> >  >                     :
+> >> >  >                     :
+> >> >  >                     : "memory", "cc");
+> >> >  >
+> >> >  >     The instruction generated from this inline asm will not work on big-endian ARM platform, such as ARM BE-8 format. Instead, an exception will be generated.
+> >> >  >
+> >> >  >     Here the code should be:
+> >> >  >                 / *
+> >> >  >                  * here's the WFI
+> >> >  >                  */
+> >> >  >                 asm("WFI\n"
+> >> >  >                     :
+> >> >  >                     :
+> >> >  >                     : "memory", "cc");
+> >> >  >
+> >> >  >     Seems the kernel doesn't support ARM BE-8 well. I don't know why this problem happens.
+> >> >  >     Can anyone tell me who owns this part? I can prepare a patch then.
+> >> >  >     Thanks.
+> >> >
+> >> > Questions regarding the ARM kernel should go to the linux-arm-kernel mailing list
+> >> > (see the MAINTAINERS file), with an optional cc: to the regular LKML.
+> >> >
+> >> > BE-8 is, if I recall correctly, ARMv7's broken format where code and data have
+> >> > different endianess.  GAS supports an ".inst" directive which is like ".word"
+> >> > except the data is assumed to be code.  This matters for disassembly, and may
+> >> > also be required for BE-8.
+> >> >
+> >> > That is, just s/.word/.inst/g above and report back if that works or not.
+> >> > --
+> >> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> > the body of a message to majordomo@vger.kernel.org
+> >> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> > Please read the FAQ at  http://www.tux.org/lkml/
+> >> >
+> >> >
+> >>
+> >> Hi Mikael,
+> >>
+> >> Thanks for the reply. I modified the code as suggested and rebuilt the
+> >> kernel, cpu-hotplug feature now works on big-endian(BE-8) ARM
+> >> platform.
+> >> Since the ARM core can be configured by system software to work in
+> >> big-endian mode, it's necessary to fix this problem. And here is a
+> >> small patch :
+> >>
+> >> diff -urN linux-3.6.2/arch/arm/mach-exynos/hotplug.c
+> >> linux/arch/arm/mach-exynos/hotplug.c
+> >> --- linux-3.6.2/arch/arm/mach-exynos/hotplug.c        2012-10-13
+> >> 04:50:59.000000000 +0800
+> >> +++ linux/arch/arm/mach-exynos/hotplug.c      2012-10-15 23:05:44.000000000 +0800
+> >> @@ -72,7 +72,7 @@
+> >>               /*
+> >>                * here's the WFI
+> >>                */
+> >> -             asm(".word      0xe320f003\n"
+> >> +             asm(".inst      0xe320f003\n"
+> >
+> > The cleanest fix would simply be to build these files with appropriate
+> > modified CFLAGS (-march=armv6k or -march=armv7-a), and use the proper
+> > "wfi" mnemonic.
+> >
+> > Failing that, you could use the facilities in <asm/opcodes.h> to
+> > declare a wrapper macro for injecting this opcode (see
+> > <asm/opcodes-virt.h> for an example).  However, putting custom
+> > opcodes into the assembler should only be done if it's really
+> > necessary.  Nowadays, I think we can consider tools which don't
+> > understand the WFI mnemonic to be obsolete, at least for platforms
+> > which only build for v7 and above.
+> >
+> > The relevant board maintainers would need to sign off on such a
+> > change, so we don't end up breaking their builds.
+> >
+> > If any of these boards needs to build for v6K, the custom opcode might
+> > be worth it -- some people might just possibly be relying on older tools
+> > for such platforms.
+> >
+> > Cheers
+> > ---Dave
+> >
+> >>                   :
+> >>                   :
+> >>                   : "memory", "cc");
+> >> diff -urN linux-3.6.2/arch/arm/mach-realview/hotplug.c
+> >> linux/arch/arm/mach-realview/hotplug.c
+> >> --- linux-3.6.2/arch/arm/mach-realview/hotplug.c      2012-10-13
+> >> 04:50:59.000000000 +0800
+> >> +++ linux/arch/arm/mach-realview/hotplug.c    2012-10-15 23:05:00.000000000 +0800
+> >> @@ -66,7 +66,7 @@
+> >>               /*
+> >>                * here's the WFI
+> >>                */
+> >> -             asm(".word      0xe320f003\n"
+> >> +             asm(".inst      0xe320f003\n"
+> >>                   :
+> >>                   :
+> >>                   : "memory", "cc");
+> >> diff -urN linux-3.6.2/arch/arm/mach-shmobile/hotplug.c
+> >> linux/arch/arm/mach-shmobile/hotplug.c
+> >> --- linux-3.6.2/arch/arm/mach-shmobile/hotplug.c      2012-10-13
+> >> 04:50:59.000000000 +0800
+> >> +++ linux/arch/arm/mach-shmobile/hotplug.c    2012-10-15 23:05:25.000000000 +0800
+> >> @@ -53,7 +53,7 @@
+> >>               /*
+> >>                * here's the WFI
+> >>                */
+> >> -             asm(".word      0xe320f003\n"
+> >> +             asm(".inst      0xe320f003\n"
+> >>                   :
+> >>                   :
+> >>                   : "memory", "cc");
+> >>
+> >> _______________________________________________
+> >> linux-arm-kernel mailing list
+> >> linux-arm-kernel@lists.infradead.org
+> >> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 > 
-> There are many situations where we want to correlate events happening at
-> the user level with samples recorded in the perf_event kernel sampling buffer.
-> For instance, we might want to correlate the call to a function or creation of
-> a file with samples. Similarly, when we want to monitor a JVM with jitted code,
-> we need to be able to correlate jitted code mappings with perf event samples
-> for symbolization.
-> 
-> Perf_events allows timestamping of samples with PERF_SAMPLE_TIME.
-> That causes each PERF_RECORD_SAMPLE to include a timestamp
-> generated by calling the local_clock() -> sched_clock_cpu() function.
-> 
-> To make correlating user vs. kernel samples easy, we would need to
-> access that sched_clock() functionality. However, none of the existing
-> clock calls permit this at this point. They all return timestamps which are
-> not using the same source and/or offset as sched_clock.
-> 
-> I believe a similar issue exists with the ftrace subsystem.
-> 
-> The problem needs to be adressed in a portable manner. Solutions
-> based on reading TSC for the user level to reconstruct sched_clock()
-> don't seem appropriate to me.
-> 
-> One possibility to address this limitation would be to extend clock_gettime()
-> with a new clock time, e.g., CLOCK_PERF.
-> 
-> However, I understand that sched_clock_cpu() provides ordering guarantees only
-> when invoked on the same CPU repeatedly, i.e., it's not globally synchronized.
-> But we already have to deal with this problem when merging samples obtained
-> from different CPU sampling buffer in per-thread mode. So this is not
-> necessarily
-> a showstopper.
-> 
-> Alternatives could be to use uprobes but that's less practical to setup.
-> 
-> Anyone with better ideas?
+> Thanks for the suggestions. The ".inst" directive here may also bring
+> us trouble if some older tools is used.
+> In that situation, "wfi" mnemonic will not be recognized either. If we
+> cannot suppose that newer tools is used, then how can we determine the
+> endianness during the preprocessor/compile phase? Any ideas?
 
-You forgot to CC the time people ;-)
+The endianness is controlled by the build-time configuration of the
+kernel.  A single kernel image cannot be bi-endian.
 
-I've no problem with adding CLOCK_PERF (or another/better name).
+The __inst_*() macros in <asm/opcodes.h> take care of this based on which
+CONFIG_CPU_ENDIAN_* option is selected by the board in the kernel config.
+For compatibility with old tools, this is done instead of using the
+".inst" directive.
 
-Thomas, John?
+> BTW: I found this bug on my ARM V7-A Cortex-A9 board and the processor
+> is configured to work in big-endian mode at boot stage (word and
+> halfword data is interpreted as big-endian, but instruction is still
+> little-endian) . The kernel is ported from arch/arm/mach-realview. And
+> I think these boards(mach-realview/mach-shmobile/mach-exynos) should
+> have the similar problems. ARM arch is Bi-endian since versions 3 and
+> above.
 
+I believe that shmobile and exynos are v7-only, so it may be better to
+just use "wfi" and override the CFLAGS for those files.  As you can
+see, those were just created by copy-pasting the code from mach-realview.
+
+realview itself can be used with ARMv6 based core-tiles, so there may be
+an argument for a custom opcode in this case:
+
+#include <asm/opcodes.h>
+#define __WFI __inst_arm_thumb16(0xE320F003, 0xBF30)
+
+Not handling the Thumb case is a definite bug for any file which may
+run on v7, since the kernel could be built in Thumb for that case.
+For example, the existing code is mach-realview/hotplug.c is broken
+when building an SMP Thumb-2 kernel for the Realview PBX-A9.
+
+Cheers
+---Dave
