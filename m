@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab2JPRCs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 13:02:48 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60616 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753912Ab2JPRCp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 13:02:45 -0400
+	id S1755398Ab2JPRDQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 13:03:16 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36294 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755325Ab2JPRDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 13:03:13 -0400
+Date: Tue, 16 Oct 2012 19:03:11 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        "Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH v9 03/12] x86, topology: Don't offline CPU0 if any PIC
+ irq can not be migrated out of it
+Message-ID: <20121016170310.GC12694@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
+	Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Asit K Mallick <asit.k.mallick@intel.com>,
+	Tony Luck <tony.luck@intel.com>,
+	Arjan Dan De Ven <arjan@linux.intel.com>,
+	Suresh B Siddha <suresh.b.siddha@intel.com>,
+	Len Brown <len.brown@intel.com>,
+	"Srivatssa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+	Randy Dunlap <rdunlap@xenotime.net>,
+	Chen Gong <gong.chen@linux.intel.com>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+References: <1350058189-6769-1-git-send-email-fenghua.yu@intel.com>
+ <1350058189-6769-4-git-send-email-fenghua.yu@intel.com>
 MIME-Version: 1.0
-Date: Tue, 16 Oct 2012 19:02:43 +0200
-Message-ID: <CACRpkdb_=aUDx0TcV5OrEjS9OAtjLp2jo-9=QL7cTfo=gqSy0w@mail.gmail.com>
-Subject: [GIT PULL] pinctrl fixes for v3.7
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Tobias Klauser <tklauser@distanz.ch>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1350058189-6769-4-git-send-email-fenghua.yu@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Oct 12, 2012 at 09:09:40AM -0700, Fenghua Yu wrote:
+> From: Fenghua Yu <fenghua.yu@intel.com>
+> 
+> If CONFIG_BOOTPARAM_HOTPLUG_CPU is turned on, CPU0 hotplug feature is enabled
+> by default.
+> 
+> If CONFIG_BOOTPARAM_HOTPLUG_CPU is not turned on, CPU0 hotplug feature is not
+> enabled by default. The kernel parameter cpu0_hotplug can enable CPU0 hotplug
+> feature at boot.
+> 
+> Currently the feature is supported on Intel platforms only.
+> 
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> ---
+>  arch/x86/kernel/topology.c |   50 +++++++++++++++++++++++++++++++++++++------
 
-here is a first round of post-mergewindow fixes for the pinctrl subsystem,
-described in the tag.
+It is just me or is this whole change better suited for
 
-Please pull them in!
+arch/x86/kernel/cpu/topology.c
 
-Yours,
-Linus Walleij
+where cpu-specific stuff lives anyway?
 
-The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
+Thanks.
 
-  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
-tags/pinctrl-fixes-v3.7-rc2
-
-for you to fetch changes up to 51f58c68a364363b29c07668c90af19c9b8a8c85:
-
-  pinctrl/nomadik: always use the simple irqdomain (2012-10-15 09:09:27 +0200)
-
-----------------------------------------------------------------
-A number of pinctrl fixes for the v3.7 series:
-- duplicate includes, section markup, code mishaps
-- erroneous return value in errorpath on the bcm2835 driver
-- remove an unused sirf function that was causing build errors
-- multiple-platform compilation stubs and a missed code review
-  comment fixup on the nomadik pin controller
-
-----------------------------------------------------------------
-Arnd Bergmann (2):
-      pinctrl: samsung: use __devinit section for init code
-      pinctrl: sirf: remove sirfsoc_gpio_set_pull function
-
-Linus Walleij (2):
-      pinctrl/nomadik: provide stubs for legacy Nomadik
-      pinctrl/nomadik: always use the simple irqdomain
-
-Tobias Klauser (1):
-      pinctrl: bcm2835: Use existing pointer to struct device
-
-Wei Yongjun (3):
-      pinctrl: remove duplicated include from pinctrl-bcm2835.c
-      pinctrl: fix return value in bcm2835_pinctrl_probe()
-      pinctrl: remove duplicated include from pinctrl-xway.c
-
- arch/arm/mach-prima2/include/mach/gpio.h | 13 ------------
- drivers/pinctrl/pinctrl-bcm2835.c        |  5 ++---
- drivers/pinctrl/pinctrl-nomadik.c        | 26 +++++++++++++++---------
- drivers/pinctrl/pinctrl-samsung.c        | 10 ++++-----
- drivers/pinctrl/pinctrl-sirf.c           | 35 --------------------------------
- drivers/pinctrl/pinctrl-xway.c           |  2 --
- 6 files changed, 23 insertions(+), 68 deletions(-)
- delete mode 100644 arch/arm/mach-prima2/include/mach/gpio.h
+-- 
+Regards/Gruss,
+Boris.
