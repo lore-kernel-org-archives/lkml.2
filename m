@@ -1,40 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab2JPOvX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 10:51:23 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:36697 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750896Ab2JPOvW (ORCPT
+	id S1754725Ab2JPOwM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 10:52:12 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:49339 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754597Ab2JPOwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 10:51:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121016134129.2fcd7c8ebe1235065aea929e@canb.auug.org.au>
-References: <alpine.LFD.2.02.1210121434140.10531@tux.localdomain> <20121016134129.2fcd7c8ebe1235065aea929e@canb.auug.org.au>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 16 Oct 2012 07:50:52 -0700
-X-Google-Sender-Auth: mdM3V2w8W6MJDr4wT-1WD95P0pA
-Message-ID: <CA+55aFzz66Y1MtOoqEMrQCVzdL-2pgr43e1sXUa=eM5GXL9XSA@mail.gmail.com>
-Subject: Re: [GIT PULL] Linux KVM tool for v3.7-rc0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Avi Kivity <avi@redhat.com>,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 16 Oct 2012 10:52:10 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: a.zummo@towertech.it, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, s.hauer@pengutronix.de
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH 2/2] rtc-imxdi: Add devicetree support
+Date: Tue, 16 Oct 2012 16:51:35 +0200
+Message-Id: <1350399095-2955-2-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1350399095-2955-1-git-send-email-stigge@antcom.de>
+References: <1350399095-2955-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 7:41 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>
->>   git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git kvmtool/for-linus
->
-> So you have not taken this in the v3.7 merge window.
->
-> Will you ever merge this?
+This patch adds device tree support to the rtc-imxdi driver.
 
-I have yet to see a compelling argument for merging it. It's tons of
-code, it doesnt match the original "small simple" model, and I think
-it would be better off as a separate project.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+---
+ Documentation/devicetree/bindings/rtc/imxdi-rtc.txt |   17 +++++++++++++++++
+ drivers/rtc/rtc-imxdi.c                             |   11 +++++++++++
+ 2 files changed, 28 insertions(+)
 
-           Linus
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/rtc/imxdi-rtc.txt
+@@ -0,0 +1,17 @@
++* i.MX25 Real Time Clock controller
++
++This binding supports the following chips: i.MX25, i.MX53
++
++Required properties:
++- compatible: should be: "fsl,imx25-rtc"
++- reg: physical base address of the controller and length of memory mapped
++  region.
++- interrupts: rtc alarm interrupt
++
++Example:
++
++rtc@80056000 {
++	compatible = "fsl,imx53-rtc", "fsl,imx25-rtc";
++	reg = <0x80056000 2000>;
++	interrupts = <29>;
++};
+--- linux-2.6.orig/drivers/rtc/rtc-imxdi.c
++++ linux-2.6/drivers/rtc/rtc-imxdi.c
+@@ -37,6 +37,7 @@
+ #include <linux/rtc.h>
+ #include <linux/sched.h>
+ #include <linux/workqueue.h>
++#include <linux/of.h>
+ #include <mach/hardware.h>
+ 
+ /* DryIce Register Definitions */
+@@ -500,10 +501,20 @@ static int __devexit dryice_rtc_remove(s
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id dryice_dt_ids[] = {
++	{ .compatible = "fsl,imx25-rtc" },
++	{ /* sentinel */ }
++};
++
++MODULE_DEVICE_TABLE(of, dryice_dt_ids);
++#endif
++
+ static struct platform_driver dryice_rtc_driver = {
+ 	.driver = {
+ 		   .name = "imxdi_rtc",
+ 		   .owner = THIS_MODULE,
++		   .of_match_table = of_match_ptr(dryice_dt_ids),
+ 		   },
+ 	.remove = __devexit_p(dryice_rtc_remove),
+ };
