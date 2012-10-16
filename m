@@ -1,131 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006Ab2JPJV4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 05:21:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12612 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751088Ab2JPJVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 05:21:54 -0400
-From: Lukas Czerner <lczerner@redhat.com>
-To: axboe@kernel.dk
-Cc: dchinner@redhat.com, jmoyer@redhat.com, linux-kernel@vger.kernel.org,
-        Lukas Czerner <lczerner@redhat.com>
-Subject: [PATCH v2] loop: Limit the number of requests in the bio list
-Date: Tue, 16 Oct 2012 11:21:45 +0200
-Message-Id: <1350379305-13858-1-git-send-email-lczerner@redhat.com>
+	id S1752296Ab2JPJZi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 05:25:38 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:60203 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382Ab2JPJZh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 05:25:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [RFC PATCH 1/5] irq_work: Move irq_work_raise() declaration/default definition to arch headers
+Date: Tue, 16 Oct 2012 09:25:11 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>
+References: <1350065376-23353-1-git-send-email-fweisbec@gmail.com> <CAFTL4hzcJz1GgG8g0=CBy07UAQTYm-_YnWCJD_eEobs4LLLoGA@mail.gmail.com> <20121016031240.GA4804@opensource.wolfsonmicro.com>
+In-Reply-To: <20121016031240.GA4804@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210160925.11891.arnd@arndb.de>
+X-Provags-ID: V02:K0:Rfg65/+kL+a1gRJFokV3lQpDoyGUfyJxfoFOj+HkEBH
+ Rc7/2sV2ihe5KZ+xNbEk4oLFZVW6zOuFsGvREEWZlAMVazXxtV
+ E0fGHLfbn5FOvnE1IKsQGXltykQlzer72jeWPcI7YuqsDHnOJh
+ lX+oZ0M3ebZt4Ww9gOXmurjjCg6L6RxLk/7E2pd4bWla4rv8lB
+ tjLVxYVioVxRWbUvf0xZCoJwPh7KBeU0X8WrCC+Sh083Wic/bB
+ oQS7rrvPMLt6Wg2/Nrp1pSvJY/qoY4qm0aIwKET9RlMaDN86LS
+ Acj5qLoRl+2Wi6xCT6ITEbZxAvXC7OctJQgnt3MLhz+SnP0DFb
+ /DbuZmP1m3qk68nCb6ro=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently there is not limitation of number of requests in the loop bio
-list. This can lead into some nasty situations when the caller spawns
-tons of bio requests taking huge amount of memory. This is even more
-obvious with discard where blkdev_issue_discard() will submit all bios
-for the range and wait for them to finish afterwards. On really big loop
-devices and slow backing file system this can lead to OOM situation as
-reported by Dave Chinner.
+On Tuesday 16 October 2012, Mark Brown wrote:
+> On Tue, Oct 16, 2012 at 12:18:05AM +0200, Frederic Weisbecker wrote:
+> 
+> I came up with stuff for it, though it needed prettyfying.
+> 
+> > This seems to do the trick:
+> 
+> > (It's the diff result of ln -s asm-generic include/asm)
 
-With this patch we will wait in loop_make_request() if the number of
-bios in the loop bio list would exceed 'nr_requests' number of requests.
-We'll wake up the process as we process the bios form the list. Some
-threshold hysteresis is in place to avoid high frequency oscillation.
+Unfortunately, this is not enough, it breaks "make headers_install",
+which now needs to decide whether to install a header that is present
+in the architecture directory, or to copy one from the asm-generic
+directory otherwise.
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Reported-by: Dave Chinner <dchinner@redhat.com>
----
-v2: add threshold hysteresis
+On the plus side, the symlink breaks checking into CVS and cross-building
+from operating systems that don't support posix file systems, so we
+might want to do this anyway. ;-)
 
- drivers/block/loop.c |   16 ++++++++++++++++
- include/linux/loop.h |    3 +++
- 2 files changed, 19 insertions(+), 0 deletions(-)
+> That'd work, but I assume there is some reason why we've got this system
+> of explicitly adding each file.  It's not like cpp can test for the
+> presence of include files.  If we can't figure out why we're not doing
+> this I'd propose we start.
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index e9d594f..0589976 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -463,6 +463,7 @@ out:
-  */
- static void loop_add_bio(struct loop_device *lo, struct bio *bio)
- {
-+	lo->lo_bio_count++;
- 	bio_list_add(&lo->lo_bio_list, bio);
- }
- 
-@@ -471,6 +472,7 @@ static void loop_add_bio(struct loop_device *lo, struct bio *bio)
-  */
- static struct bio *loop_get_bio(struct loop_device *lo)
- {
-+	lo->lo_bio_count--;
- 	return bio_list_pop(&lo->lo_bio_list);
- }
- 
-@@ -489,6 +491,14 @@ static void loop_make_request(struct request_queue *q, struct bio *old_bio)
- 		goto out;
- 	if (unlikely(rw == WRITE && (lo->lo_flags & LO_FLAGS_READ_ONLY)))
- 		goto out;
-+	if (lo->lo_bio_count >= lo->lo_queue->nr_requests) {
-+		unsigned int nr;
-+		spin_unlock_irq(&lo->lo_lock);
-+		nr = lo->lo_queue->nr_requests - (lo->lo_queue->nr_requests/8);
-+		wait_event_interruptible(lo->lo_req_wait,
-+					 lo->lo_bio_count < nr);
-+		spin_lock_irq(&lo->lo_lock);
-+	}
- 	loop_add_bio(lo, old_bio);
- 	wake_up(&lo->lo_event);
- 	spin_unlock_irq(&lo->lo_lock);
-@@ -532,6 +542,7 @@ static inline void loop_handle_bio(struct loop_device *lo, struct bio *bio)
- static int loop_thread(void *data)
- {
- 	struct loop_device *lo = data;
-+	unsigned int nr;
- 	struct bio *bio;
- 
- 	set_user_nice(current, -20);
-@@ -546,6 +557,9 @@ static int loop_thread(void *data)
- 			continue;
- 		spin_lock_irq(&lo->lo_lock);
- 		bio = loop_get_bio(lo);
-+		nr = lo->lo_queue->nr_requests - (lo->lo_queue->nr_requests/8);
-+		if (lo->lo_bio_count < nr)
-+			wake_up(&lo->lo_req_wait);
- 		spin_unlock_irq(&lo->lo_lock);
- 
- 		BUG_ON(!bio);
-@@ -873,6 +887,7 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
- 	lo->transfer = transfer_none;
- 	lo->ioctl = NULL;
- 	lo->lo_sizelimit = 0;
-+	lo->lo_bio_count = 0;
- 	lo->old_gfp_mask = mapping_gfp_mask(mapping);
- 	mapping_set_gfp_mask(mapping, lo->old_gfp_mask & ~(__GFP_IO|__GFP_FS));
- 
-@@ -1660,6 +1675,7 @@ static int loop_add(struct loop_device **l, int i)
- 	lo->lo_number		= i;
- 	lo->lo_thread		= NULL;
- 	init_waitqueue_head(&lo->lo_event);
-+	init_waitqueue_head(&lo->lo_req_wait);
- 	spin_lock_init(&lo->lo_lock);
- 	disk->major		= LOOP_MAJOR;
- 	disk->first_minor	= i << part_shift;
-diff --git a/include/linux/loop.h b/include/linux/loop.h
-index 9635116..4ba4789 100644
---- a/include/linux/loop.h
-+++ b/include/linux/loop.h
-@@ -57,10 +57,13 @@ struct loop_device {
- 
- 	spinlock_t		lo_lock;
- 	struct bio_list		lo_bio_list;
-+	unsigned int		lo_bio_count;
- 	int			lo_state;
- 	struct mutex		lo_ctl_mutex;
- 	struct task_struct	*lo_thread;
- 	wait_queue_head_t	lo_event;
-+	/* wait queue for incoming requests */
-+	wait_queue_head_t	lo_req_wait;
- 
- 	struct request_queue	*lo_queue;
- 	struct gendisk		*lo_disk;
--- 
-1.7.7.6
+We discussed renaming asm-generic to asm before, but some people objected
+to the use of #include_next. There is a smaller problem with opening the
+asm/*.h namespace to header files that are not relevant for architctures,
+so I'd prefer to have a well-defined list of headers that are implicitly
+shared, but it's not a technical argument.
 
+	Arnd
