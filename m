@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639Ab2JPDjS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Oct 2012 23:39:18 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:61743 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755282Ab2JPDjQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Oct 2012 23:39:16 -0400
+	id S1755649Ab2JPDnU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Oct 2012 23:43:20 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:55663 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752962Ab2JPDnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Oct 2012 23:43:19 -0400
+Date: Mon, 15 Oct 2012 23:43:15 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RESEND] [PATCH 1/2] random: make it possible to enable
+ debugging without rebuild
+Message-ID: <20121016034315.GC17446@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+	Andrew Morton <akpm@linux-foundation.org>
+References: <alpine.LNX.2.00.1210081637170.28357@pobox.suse.cz>
+ <alpine.LNX.2.00.1210152340390.14002@pobox.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <5507518.Gae5ZRnSWO@vostro.rjw.lan>
-References: <51be8f865e4c80f91ac8e41e54cbd5905382ddb7.1349844049.git.viresh.kumar@linaro.org>
-	<5507518.Gae5ZRnSWO@vostro.rjw.lan>
-Date: Tue, 16 Oct 2012 09:09:15 +0530
-Message-ID: <CAKohpomJcN3aLefUOhJ+28PkqhjzKU9Qjk43xMTxhvvBNf8G+Q@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq:core: Fix printing of governor and driver name
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, Sudeep.KarkadaNagesha@arm.com,
-        Robin.Randhawa@arm.com, Arvind.Chauhan@arm.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1210152340390.14002@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 October 2012 23:21, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Wednesday 10 of October 2012 10:12:11 Viresh Kumar wrote:
->> Arrays for governer and driver name are of size CPUFREQ_NAME_LEN or 16.
->> i.e. 15 bytes for name and 1 for trailing '\0'.
->>
->> When cpufreq driver print these names (for sysfs), it includes '\n' or ' ' in
->> the fmt string and still passes length as CPUFREQ_NAME_LEN. If the driver or
->> governor names are using all 15 fields allocated to them, then the trailing '\n'
->> or ' ' will never be printed. And so commands like:
->>
->> root@linaro-developer# cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_driver
->>
->> will print something like:
->>
->> cpufreq_foodrvroot@linaro-developer#
->>
->> Fix this by increasing print length by one character.
->>
->> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
->
-> Thanks for the patch, I'll queue it up for v3.8.
+On Mon, Oct 15, 2012 at 11:42:55PM +0200, Jiri Kosina wrote:
+> The module parameter that turns debugging mode (which basically means 
+> printing a few extra lines during runtime) is in '#if 0' block. Forcing 
+> everyone who would like to see how entropy is behaving on his system to 
+> rebuild seems to be a little bit too harsh.
+> 
+> If we were concerned about speed, we could potentially turn 'debug' into a 
+> static key, but I don't think it's necessary.
+> 
+> Drop the '#if 0' block to allow using the 'debug' parameter without rebuilding.
+> 
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 
-Hi Rafael,
+Applied to the random tree, thanks.
 
-Thanks for accepting the patch.
-I thought both of my patches would go in 3.7-rc2 as they are bug
-fixes. Isn't that correct?
-
---
-viresh
+						- Ted
