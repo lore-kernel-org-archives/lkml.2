@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab2JPJvM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 05:51:12 -0400
-Received: from plane.gmane.org ([80.91.229.3]:51046 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752100Ab2JPJvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 05:51:10 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Akemi Yagi <amyagi@gmail.com>
-Subject: Re: Kernel panic on CentOS
-Date: Tue, 16 Oct 2012 09:50:57 +0000 (UTC)
-Message-ID: <k5jam0$mrd$1@ger.gmane.org>
-References: <507C66E0.6070802@gmail.com>
-	<20121016001007.35aa5bbb@pyramind.ukuu.org.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: 99-30-176-128.lightspeed.sndgca.sbcglobal.net
-User-Agent: Pan/0.136 (I'm far too busy being delicious; GIT 926a150
-	git://git.gnome.org/pan2)
+	id S1752619Ab2JPJw1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 05:52:27 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:64627 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab2JPJw0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 05:52:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAHp75Vc6aPAqG7gDobjOaiSRqw8MNAG7pS3o-ze6ejXXF7AFEg@mail.gmail.com>
+References: <1350377120-27657-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<CAOh2x=n-523nC=bM9X5WrWYv=o=aKK_s-+MsA+XVcVP1yy1zFg@mail.gmail.com>
+	<CAHp75Vc6aPAqG7gDobjOaiSRqw8MNAG7pS3o-ze6ejXXF7AFEg@mail.gmail.com>
+Date: Tue, 16 Oct 2012 15:22:26 +0530
+Message-ID: <CAKohponnT=q5bEgzdSSdPNQnskPMM0BbDdDPR3Cc+Gq5NeK-xg@mail.gmail.com>
+Subject: Re: [PATCH] dmatest: terminate all ongoing transfers before
+ submitting new one
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Oct 2012 00:10:07 +0100, Alan Cox wrote:
+Hi Andy,
 
-> On Mon, 15 Oct 2012 21:41:20 +0200 "Mikko C." <mikko.cal@gmail.com>
-> wrote:
-> 
->> Hi,
->> we keep getting kernel panics on our CentOS 6.3 server, running about
->> 40 KVM virtual machines.
->> 
->> Here's the screenshot of the trace: http://i.imgur.com/yaRyF.png
->> 
->> # uname -a Linux srv010 2.6.32-71.el6.x86_64 #1 SMP Fri May 20 03:51:51
->> BST 2011 x86_64 x86_64 x86_64 GNU/Linux
+Adding blank lines before and after your replies makes it more readable.
 
-> You are in the wrong place - the Red Hat enterprise kernels deviate a
-> lot from upstream and are very old. Really you need to go back to the
-> Centos community with it.
-> 
-> Alan
+On 16 October 2012 15:05, Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
+> On Tue, Oct 16, 2012 at 11:56 AM, viresh kumar <viresh.kumar@linaro.org> wrote:
+>> Can you try with a large timeout value for the module.
+> I tried and the failures were gone.
 
-This is more like general info/tip: anyone wishing to test the latest 
-mainline/stable kernels from kernel.org on RHEL systems can do so by 
-installing kernel-ml [1] from the ELRepo Project. As of today, 3.6.2 and 
-3.0.46 are available for RHEL-6.
+Ok. So there is no problem with s/w emulation. Good. :)
 
-Akemi
+>> We must get to the root cause of these failures. There may be something more
+>> serious which is getting hidden due to this call to terminate().
+> My understanding is that. The software LLP emulation runs several
+> transactions per active descriptor. Because of a huge load of the
+> CPU/DMA some transactions are not done within given timeout. The
+> dmatest supplies next block to transfer without doing anything for
+> previous one. Under some circumstances the new transfer is queued, and
+> immediately after this the callback function is called for _previous_
+> transfer. The check condition doesn't recognize which transfer called
+> the callback function.
+>
+> Rough solution is proposed by current patch. Another solution is to
+> mark each transfer with id and check done flag and transfer id
+> together.
 
-[1] http://elrepo.org/tiki/kernel-ml
+>> Also, the proposed solution might hide some other important errors. We may need
+>> to terminate transfers when we found that an error is there in  last transfers:
+> I think it could be better than first solution, but what do you think
+> about marking each transfer with corresponding id?
 
+But dma_test expects the transfer to finish within timeout. If it
+doesn't, then that's
+an error.
+
+So, for testing your s/w emulation, you must pass higher timeout. And
+terminating
+transfers for error case would be better, to make them timeout safe.
+
+--
+viresh
