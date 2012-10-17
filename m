@@ -1,103 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685Ab2JQVxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 17:53:48 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:56930 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438Ab2JQVxr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 17:53:47 -0400
-X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com AB49E82FAB
-Date: Wed, 17 Oct 2012 23:53:38 +0200
-From: Andrea Righi <andrea@betterlinux.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: mm/mmu_notifier: inconsistent lock state in mmu_notifier_register()
-Message-ID: <20121017215338.GA3577@thinkpad>
+	id S1751864Ab2JQWBV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 18:01:21 -0400
+Received: from inx.pm.waw.pl ([195.116.170.130]:58818 "EHLO inx.pm.waw.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751747Ab2JQWBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 18:01:20 -0400
+From: Krzysztof Halasa <khc@pm.waw.pl>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org,
+        lkml <linux-kernel@vger.kernel.org>, arm@kernel.org
+Subject: Re: [PULL REQ] IXP4xx changes for Linux 3.7
+References: <m3bog6m5iz.fsf@intrepid.localdomain>
+	<201210142002.55841.arnd@arndb.de>
+Date: Thu, 18 Oct 2012 00:01:17 +0200
+In-Reply-To: <201210142002.55841.arnd@arndb.de> (Arnd Bergmann's message of
+	"Sun, 14 Oct 2012 20:02:55 +0000")
+Message-ID: <m3a9vkahci.fsf@intrepid.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just got this on 3.7.0-rc1 (last git commit 1867353):
+Hi,
 
-[49048.262912] =================================
-[49048.262913] [ INFO: inconsistent lock state ]
-[49048.262916] 3.7.0-rc1+ #518 Not tainted
-[49048.262918] ---------------------------------
-[49048.262919] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-[49048.262922] kswapd0/35 [HC0[0]:SC0[0]:HE1:SE1] takes:
-[49048.262924]  (&mapping->i_mmap_mutex){+.+.?.}, at: [<ffffffff81192fbc>] page_referenced+0x9c/0x2e0
-[49048.262933] {RECLAIM_FS-ON-W} state was registered at:
-[49048.262935]   [<ffffffff810ed5d6>] mark_held_locks+0x86/0x150
-[49048.262938]   [<ffffffff810edce7>] lockdep_trace_alloc+0x67/0xc0
-[49048.262942]   [<ffffffff811a9323>] kmem_cache_alloc_trace+0x33/0x230
-[49048.262945]   [<ffffffff811a1a27>] do_mmu_notifier_register+0x87/0x180
-[49048.262948]   [<ffffffff811a1b53>] mmu_notifier_register+0x13/0x20
-[49048.262951]   [<ffffffff81006738>] kvm_dev_ioctl+0x428/0x510
-[49048.262955]   [<ffffffff811c7ce8>] do_vfs_ioctl+0x98/0x570
-[49048.262959]   [<ffffffff811c8251>] sys_ioctl+0x91/0xb0
-[49048.262962]   [<ffffffff815df302>] system_call_fastpath+0x16/0x1b
-[49048.262966] irq event stamp: 825
-[49048.262968] hardirqs last  enabled at (825): [<ffffffff815d6fa0>] _raw_spin_unlock_irq+0x30/0x60
-[49048.262971] hardirqs last disabled at (824): [<ffffffff815d6659>] _raw_spin_lock_irq+0x19/0x80
-[49048.262975] softirqs last  enabled at (0): [<ffffffff81082170>] copy_process+0x630/0x17c0
-[49048.262979] softirqs last disabled at (0): [<          (null)>]           (null)
-[49048.262981] 
-[49048.262981] other info that might help us debug this:
-[49048.262983]  Possible unsafe locking scenario:
-[49048.262983] 
-[49048.262984]        CPU0
-[49048.262986]        ----
-[49048.262987]   lock(&mapping->i_mmap_mutex);
-[49048.262989]   <Interrupt>
-[49048.262991]     lock(&mapping->i_mmap_mutex);
-[49048.262993] 
-[49048.262993]  *** DEADLOCK ***
-[49048.262993] 
-[49048.262995] no locks held by kswapd0/35.
-[49048.262996] 
-[49048.262996] stack backtrace:
-[49048.262999] Pid: 35, comm: kswapd0 Not tainted 3.7.0-rc1+ #518
-[49048.263000] Call Trace:
-[49048.263005]  [<ffffffff815cd988>] print_usage_bug+0x1f5/0x206
-[49048.263008]  [<ffffffff8105a21f>] ? save_stack_trace+0x2f/0x50
-[49048.263011]  [<ffffffff810ea865>] mark_lock+0x295/0x2f0
-[49048.263014]  [<ffffffff810e9c70>] ? print_irq_inversion_bug.part.42+0x1f0/0x1f0
-[49048.263017]  [<ffffffff810eae5d>] __lock_acquire+0x59d/0x1c20
-[49048.263020]  [<ffffffff815cf163>] ? put_cpu_partial+0x65/0xbd
-[49048.263024]  [<ffffffff81052d06>] ? native_sched_clock+0x26/0x90
-[49048.263028]  [<ffffffff810c5555>] ? sched_clock_cpu+0xc5/0x120
-[49048.263031]  [<ffffffff810ecbe0>] lock_acquire+0x90/0x210
-[49048.263034]  [<ffffffff81192fbc>] ? page_referenced+0x9c/0x2e0
-[49048.263038]  [<ffffffff815d2ea3>] mutex_lock_nested+0x73/0x3d0
-[49048.263041]  [<ffffffff81192fbc>] ? page_referenced+0x9c/0x2e0
-[49048.263044]  [<ffffffff81192fbc>] ? page_referenced+0x9c/0x2e0
-[49048.263047]  [<ffffffff810e764e>] ? put_lock_stats.isra.26+0xe/0x40
-[49048.263051]  [<ffffffff810e7a84>] ? lock_release_holdtime.part.27+0xd4/0x150
-[49048.263055]  [<ffffffff8116edab>] ? __remove_mapping+0xab/0x120
-[49048.263058]  [<ffffffff81192fbc>] page_referenced+0x9c/0x2e0
-[49048.263061]  [<ffffffff81171b94>] shrink_page_list+0x3e4/0xa20
-[49048.263064]  [<ffffffff81052d06>] ? native_sched_clock+0x26/0x90
-[49048.263068]  [<ffffffff811726f5>] ? shrink_inactive_list+0x165/0x4b0
-[49048.263071]  [<ffffffff815d6fa0>] ? _raw_spin_unlock_irq+0x30/0x60
-[49048.263075]  [<ffffffff81172787>] shrink_inactive_list+0x1f7/0x4b0
-[49048.263079]  [<ffffffff81172e8d>] shrink_lruvec+0x44d/0x550
-[49048.263082]  [<ffffffff81173693>] kswapd+0x703/0xdf0
-[49048.263086]  [<ffffffff810af470>] ? __init_waitqueue_head+0x60/0x60
-[49048.263090]  [<ffffffff81172f90>] ? shrink_lruvec+0x550/0x550
-[49048.263093]  [<ffffffff810ae98d>] kthread+0xed/0x100
-[49048.263097]  [<ffffffff810ae8a0>] ? flush_kthread_worker+0x190/0x190
-[49048.263100]  [<ffffffff815df25c>] ret_from_fork+0x7c/0xb0
-[49048.263103]  [<ffffffff810ae8a0>] ? flush_kthread_worker+0x190/0x190
+Arnd Bergmann <arnd@arndb.de> writes:
 
-Should we use a GFP_NOFS allocation in mmu_notifier_register() or is
-there a better way to fix/avoid this?
+> as mentioned before, all arch/arm/mach-* patches should go through the
+> arm-soc tree or get an Ack from the arm-soc maintainers. The same thing
+> is true for the char-misc and the crypto trees.
 
-Thanks,
--Andrea
+You've seen the changes. They were trivial fixes, touched only
+IXP4xx-related areas, there was nothing related to char or crypto
+subsystems there, except file location (well, IXP4xx drivers have to be
+located somewhere).
+
+The patches have been posted to linux-arm-kernel and you knew about
+them. That they were obviously correct and clean is probably not
+that important.
+
+Nobody bothered to comment the patches.
+
+> Also, never rebase your tree immediately before sending a pull
+> request.
+
+I did not, of course. My mail stated:
+"Build-tested for now. This is based on your current tree tip because it
+depends on commits following 3.6 release."
+
+Normally I wouldn't rebase, but had to (as you well knew) - because you
+commited a conflicting patch to this very IXP4xx arch. Using your logic,
+you were supposed to get an Ack from me (or from Imre) for this patch.
+
+Actually it wasn't a problem for me, I simply had to rebase.
+
+> Finally when sending bug fixes, please annotate any patches with
+> 'Cc: stable@vger.kernel.org' if they address bugs that are already
+> present in older kernels, so that the stable and longterm maintainers
+> can easily backport the fixes.
+
+I do that when I think it makes sense. In this case (two patches for
+Goramo MultiLink platform) practically all such devices use kernels
+prepared by me, and I think Greg (and others) have more efficient ways
+to spend their time than handling almost unused patches. Also, I have
+much more efficient ways to spend time. Anyway, if I can't have my
+patches upstream, why should they end up in stable?
+
+> Almost all of the platform patches in your tree seem to be bug fixes,
+> so they are still good for inclusion in v3.7 if you submit them to
+> arm-soc soon, but please make sure you separate bug fixes from other
+> changes so we can group them appropriately when forwarding them to
+> Linus.
+
+Unfortunately, as I already explained to you in
+https://lkml.org/lkml/2012/9/29/37, my resources for IXP4xx are very
+limited (and this isn't a paid job) and I'm in no way able to do what
+you require. This, coupled with my inability to make the patches end up
+upstream any other way, will make me post relevant MAINTAINERS changes
+shortly.
+
+Don't get me wrong. If I had time for this it could be different.
+Unfortunately IXP4xx is a legacy arch, and for me it's simply a hobby at
+this point. Given the raised barriers to participate, probably aimed at
+paid maintainers, I have to quit doing this.
+
+BTW since Imre has probably even much less time, it would be a good time
+to find someone to maintain IXP4xx code. I will be publishing (from time
+to time) my tree (I'm using the hw myself), so even simple
+cherry-picking would probably make some sense.
+-- 
+Krzysztof Halasa
