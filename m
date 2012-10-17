@@ -1,116 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494Ab2JQTPz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 15:15:55 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:56233 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756635Ab2JQTPx (ORCPT
+	id S932524Ab2JQTQP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 15:16:15 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40073 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932475Ab2JQTQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 15:15:53 -0400
-Date: Wed, 17 Oct 2012 12:15:49 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Arun MURTHY <arun.murthy@stericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCHv5 1/4] modem_shm: Add Modem Access Framework
-Message-ID: <20121017191549.GA18374@kroah.com>
-References: <1350278920-25510-1-git-send-email-arun.murthy@stericsson.com>
- <1350278920-25510-2-git-send-email-arun.murthy@stericsson.com>
- <20121015212943.GA12540@kroah.com>
- <F45880696056844FA6A73F415B568C695B9C5CECE3@EXDCVYMBSTM006.EQ1STM.local>
+	Wed, 17 Oct 2012 15:16:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F45880696056844FA6A73F415B568C695B9C5CECE3@EXDCVYMBSTM006.EQ1STM.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1350488704-3711-3-git-send-email-will.deacon@arm.com>
+References: <1350488704-3711-1-git-send-email-will.deacon@arm.com>
+	<1350488704-3711-3-git-send-email-will.deacon@arm.com>
+Date: Wed, 17 Oct 2012 21:16:10 +0200
+X-Google-Sender-Auth: M7_rdqBrACR452gBdK5H-C2prUk
+Message-ID: <CAMuHMdXcQjDyen+o5aH=1zUOkNX-cfT3aXBOgCpyop=V67jk7w@mail.gmail.com>
+Subject: Re: [RESEND PATCH 2/4] asm-generic: io: don't perform swab during
+ {in,out} string functions
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 10:00:10AM +0200, Arun MURTHY wrote:
-> > On Mon, Oct 15, 2012 at 10:58:37AM +0530, Arun Murthy wrote:
-> > 
-> > I'm going to ignore your .c logic, as there are things in it that I don't think is
-> > correct.  But it all comes down to your data structures, if you fix them, then
-> > the .c logic will become correct:
+On Wed, Oct 17, 2012 at 5:45 PM, Will Deacon <will.deacon@arm.com> wrote:
+> The {in,out}s{b,w,l} functions are designed to operate on a stream of
+> bytes and therefore should not perform any byte-swapping, regardless of
+> the CPU byte order.
 
-You still aren't understanding what I am trying to say here.
+Euh?
 
-So, one final try...
+They transfer a stream of bytes between memory and PCI/ISA I/O space by
+reading from/writing to a single I/O port of width 8, 16, or 32 bits.
+On big endian machines, I/O port accesses may need to be swapped.
 
-> > > +
-> > > +#include <linux/device.h>
-> > > +
-> > > +struct clients {
-> > > +	struct device *dev;
-> > 
-> > Why is this a pointer?  It should be embedded in the structure.
-> 
-> This is the pointer to the clients's device structure. There will be a
-> single entity for a modem but multiple clients. Hence this struct is 
-> specific for each client.
+> This patch fixes the generic IO header so that {in,out}s{b,w,l} call
+> the __raw_{read,write} functions directly rather than going via the
+> endian-correcting accessors.
 
-But each "client" should be a device, so embed it in the structure.
+Furthermore __raw_*() has different semantics besides endianness, like
+ordering barriers. So you can't just change one for the other.
 
-> > > +	atomic_t cnt;
-> > 
-> > Why is this needed at all?  And if it's needed, why is it an atomic?
-> > (hint, your use of atomic_t really isn't correct at all in this patch, it's not doing
-> > what you think it is doing...)
-> 
-> Basically the operation done by this, i.e modem access/release has a lot of
-> affect on the clients. Since we are accesing some modem registers without
-> this modem request it might lead to system freeze. Hence such cross over
-> scenarios are considered and the counter is increased/decreased after the
-> operation(modem access/release). And reading of these variable are done
-> especially during system suspend, where decision is taken based on the value
-> of the counter read, hence any modification done should preside over read.
-> Moreover since there are multiple clients, using atomic for a simple locking
-> mechanism.
+> Cc: Mike Frysinger <vapier@gentoo.org>
+> Cc: Ben Herrenschmidt <benh@kernel.crashing.org>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> ---
+>  include/asm-generic/io.h |   12 ++++++------
+>  1 files changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+> index 3607921..403b861 100644
+> --- a/include/asm-generic/io.h
+> +++ b/include/asm-generic/io.h
+> @@ -148,7 +148,7 @@ static inline void insb(unsigned long addr, void *buffer, int count)
 
-Hint, if you _ever_ say, "I'll use an atomic_t as a simple lock", you
-are usually wrong.  But sometimes it can be done right.  So I went and
-re-read your implementation.
+The "addr" parameter is actually a misnomer. Probably it should be "port".
+Oops, inb() and friends also use "addr".
 
-You got it wrong.
+Gr{oetje,eeting}s,
 
-So don't do this.
+                        Geert
 
-Seriously, an atomic value is not a lock, and, as you used it, it
-doesn't even work properly.  So don't try to roll your own lock, either
-use a lock, or use the built-in-reference-counting of the driver core,
-which is what I keep saying here.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-I'll say it again, don't do this.  Use the build-in reference count of
-the struct device, that the kernel can manage for you, to handle this.
-It will do it correctly, simply, and make your life a whole lot easier,
-and better yet, will allow me to accept this code.
-
-As it is, it is broken and wrong and quite buggy.
-
-Please use the driver core properly.  I know it can be difficult, and
-isn't the best documented body of code.  But it works, and works well,
-and when people try to work around it thinking they don't need it, or
-will just roll their own logic instead, they get it wrong and it causes
-problems.  Just like this implementation shows.
-
-So please, go back, consult with others on your team about how to do
-this right.
-
-If you have specific questions about the driver core that I can answer,
-after you have read a few users of it (look at the bus code from
-something "simple" for how to do this, don't look at USB) I will be glad
-to help out.  But I feel that the previous review comments I have made
-in this area, have been totally ignored, so I'm loath to try to do the
-design work for you here.  You need to work it out so you feel
-comfortable with it, not me.
-
-good luck,
-
-greg k-h
-
-p.s. I'm sure your company/team/coworkers can help review your patches,
-right?  Please run them by someone else first, that would have caught
-the locking/atomic_t issue immediately.
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
