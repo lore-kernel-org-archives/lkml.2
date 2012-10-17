@@ -1,101 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751095Ab2JQEFR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 00:05:17 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:38675 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750715Ab2JQEFO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 00:05:14 -0400
-From: Yong Ding <yongd@marvell.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: Chris Ball <cjb@laptop.org>, Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, Daniel Drake <dsd@laptop.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Wilson Callan <wilson.callan@savantsystems.com>,
-        Ben Dooks <ben-linux@fluff.org>, Zhangfei Gao <zgao6@marvell.com>,
-        Kevin Liu <kliu5@marvell.com>, Jialing Fu <jlfu@marvell.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 16 Oct 2012 21:01:40 -0700
-Subject: RE: [PATCH 1/3] mmc: esdhc: enable polling to detect card by itself
-Thread-Topic: [PATCH 1/3] mmc: esdhc: enable polling to detect card by itself
-Thread-Index: Ac2klQFug+5LbyYjQF+LpMIdHAyeJgHhYrS6
-Message-ID: <89813612683626448B837EE5A0B6A7CB30388601C9@SC-VEXCH4.marvell.com>
-References: <1348828113-19668-1-git-send-email-yongd@marvell.com>
- <1348828113-19668-2-git-send-email-yongd@marvell.com>,<20121007140648.GA10148@S2101-09.ap.freescale.net>
-In-Reply-To: <20121007140648.GA10148@S2101-09.ap.freescale.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751501Ab2JQEFu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 00:05:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33420 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750798Ab2JQEFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 00:05:48 -0400
+Date: Wed, 17 Oct 2012 00:05:15 -0400
+From: Dave Jones <davej@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, bhutchings@solarflare.com,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch for-3.7] mm, mempolicy: fix printing stack contents in
+ numa_maps
+Message-ID: <20121017040515.GA13505@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	David Rientjes <rientjes@google.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+	bhutchings@solarflare.com,
+	Konstantin Khlebnikov <khlebnikov@openvz.org>,
+	Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+	Hugh Dickins <hughd@google.com>,
+	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	linux-kernel@vger.kernel.org, linux-mm@kvack.org
+References: <20121008150949.GA15130@redhat.com>
+ <CAHGf_=pr1AYeWZhaC2MKN-XjiWB7=hs92V0sH-zVw3i00X-e=A@mail.gmail.com>
+ <alpine.DEB.2.00.1210152055150.5400@chino.kir.corp.google.com>
+ <CAHGf_=rLjQbtWQLDcbsaq5=zcZgjdveaOVdGtBgBwZFt78py4Q@mail.gmail.com>
+ <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com>
+ <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com>
+ <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shawn,
-Thanks for your comment. And sorry for my so late due to illness:-)
-SDHCI_QUIRK_BROKEN_CARD_DETECTION is used for notifying we don't use the host internal card detection method so that we don't need enable/disable those relevant interrupt bits of host(sdhci_set_card_detection in sdhci.c). 
-And as I double-checked the latest kernel code, actually sdhci-esdhc-imx sets this flag by default, and then will clear it only when the detection type is ESDHC_CD_CONTROLLER. So this aligns with my understanding. 
-What I want to do is that 1st we shall set MMC_CAP_NEEDS_POLL by our host driver itself and 2nd remove the improper logic in sdhci_add_host() . How do u think? Thanks.
+On Tue, Oct 16, 2012 at 05:31:23PM -0700, David Rientjes wrote:
 
-________________________________________
-From: Shawn Guo [shawn.guo@linaro.org]
-Sent: Sunday, October 07, 2012 22:06
-To: Yong Ding
-Cc: Chris Ball; Anton Vorontsov; Marek Szyprowski; Wolfram Sang; Daniel Drake; Sascha Hauer; Wilson Callan; Ben Dooks; Zhangfei Gao; Kevin Liu; Jialing Fu; linux-mmc@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] mmc: esdhc: enable polling to detect card by itself
+ > -	pol = get_vma_policy(proc_priv->task, vma, vma->vm_start);
+ > +	task_lock(task);
+ > +	pol = get_vma_policy(task, vma, vma->vm_start);
+ >  	mpol_to_str(buffer, sizeof(buffer), pol, 0);
+ >  	mpol_cond_put(pol);
+ > +	task_unlock(task);
 
-On Fri, Sep 28, 2012 at 06:28:31PM +0800, yongd wrote:
-> In the current code logic, sdhci_add_host() will enable the polling
-> method (set MMC_CAP_NEEDS_POLL) for a removable card (MMC_CAP_
-> NONREMOVABLE is not set) whose host's internal card detection method
-> is disabled for some reason (SDHCI_QUIRK_BROKEN_CARD_DETECTION is set).
->
-> However, this is improper since we can have some other card detection
-> methods besides host internal card detection and polling method. For
-> example, if the card detection type is ESDHC_CD_GPIO (external gpio pin
-> for CD), we will keep SDHCI_QUIRK_BROKEN_CARD_DETECTION set. This is right.
-> But, just as above said, sdhci_add_host() will also enable polling for such
-> a card. This is redundant.
->
-At least for sdhci-esdhc-imx, SDHCI_QUIRK_BROKEN_CARD_DETECTION will
-be set only when neither ESDHC_CD_GPIO nor ESDHC_CD_CONTROLLER works.
+This seems to cause some fallout for me..
 
-Shawn
+BUG: sleeping function called from invalid context at kernel/mutex.c:269
+in_atomic(): 1, irqs_disabled(): 0, pid: 8558, name: trinity-child2
+3 locks on stack by trinity-child2/8558:
+ #0: held:     (&p->lock){+.+.+.}, instance: ffff88010c9a00b0, at: [<ffffffff8120cd1f>] seq_lseek+0x3f/0x120
+ #1: held:     (&mm->mmap_sem){++++++}, instance: ffff88013956f7c8, at: [<ffffffff81254437>] m_start+0xa7/0x190
+ #2: held:     (&(&p->alloc_lock)->rlock){+.+...}, instance: ffff88011fc64f30, at: [<ffffffff81254f8f>] show_numa_map+0x14f/0x610
+Pid: 8558, comm: trinity-child2 Not tainted 3.7.0-rc1+ #32
+Call Trace:
+ [<ffffffff810ae4ec>] __might_sleep+0x14c/0x200
+ [<ffffffff816bdf4e>] mutex_lock_nested+0x2e/0x50
+ [<ffffffff811c43a3>] mpol_shared_policy_lookup+0x33/0x90
+ [<ffffffff8118d5c3>] shmem_get_policy+0x33/0x40
+ [<ffffffff811c31fa>] get_vma_policy+0x3a/0x90
+ [<ffffffff81254fa3>] show_numa_map+0x163/0x610
+ [<ffffffff81255b10>] ? pid_maps_open+0x20/0x20
+ [<ffffffff81255980>] ? pagemap_hugetlb_range+0xf0/0xf0
+ [<ffffffff81255483>] show_pid_numa_map+0x13/0x20
+ [<ffffffff8120c902>] traverse+0xf2/0x230
+ [<ffffffff8120cd8b>] seq_lseek+0xab/0x120
+ [<ffffffff811e6c0b>] sys_lseek+0x7b/0xb0
+ [<ffffffff816ca088>] tracesys+0xe1/0xe6
 
-> On the other hand, for the card with ESDHC_CD_NONE detection type(no CD, neither
-> controller nor gpio, so use polling), we currently rely on sdhci_add_host() to
-> enable polling for us.
->
-> Here proposed a solution for such an embarrassing case. 1st, this patch will
-> de-couple polling enabling with sdhci_add_host() by doing this in host driver
-> itself, just as some other vendors. 2nd, one more patch will remove such improper
-> MMC_CAP_NEEDS_POLL enabling in sdhci_add_host().
->
-> Change-Id: Ia7525009d8fd188e3f0169f225e4a76ff9e94b47
-> Signed-off-by: yongd <yongd@marvell.com>
-> ---
->  drivers/mmc/host/sdhci-esdhc-imx.c |    1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
-> index e23f813..f70079c 100644
-> --- a/drivers/mmc/host/sdhci-esdhc-imx.c
-> +++ b/drivers/mmc/host/sdhci-esdhc-imx.c
-> @@ -569,6 +569,7 @@ static int __devinit sdhci_esdhc_imx_probe(struct platform_device *pdev)
->               break;
->
->       case ESDHC_CD_NONE:
-> +             host->mmc->caps = MMC_CAP_NEEDS_POLL;
->               break;
->       }
->
-> --
-> 1.7.9.5
->
+
+same problem, different syscall..
+
+
+BUG: sleeping function called from invalid context at kernel/mutex.c:269
+in_atomic(): 1, irqs_disabled(): 0, pid: 21996, name: trinity-child3
+3 locks on stack by trinity-child3/21996:
+ #0: held:     (&p->lock){+.+.+.}, instance: ffff88008d712c08, at: [<ffffffff8120ce3d>] seq_read+0x3d/0x3e0
+ #1: held:     (&mm->mmap_sem){++++++}, instance: ffff88013956f7c8, at: [<ffffffff81254437>] m_start+0xa7/0x190
+ #2: held:     (&(&p->alloc_lock)->rlock){+.+...}, instance: ffff88011fc64f30, at: [<ffffffff81254f8f>] show_numa_map+0x14f/0x610
+Pid: 21996, comm: trinity-child3 Not tainted 3.7.0-rc1+ #32
+Call Trace:
+ [<ffffffff810ae4ec>] __might_sleep+0x14c/0x200
+ [<ffffffff816bdf4e>] mutex_lock_nested+0x2e/0x50
+ [<ffffffff811c43a3>] mpol_shared_policy_lookup+0x33/0x90
+ [<ffffffff8118d5c3>] shmem_get_policy+0x33/0x40
+ [<ffffffff811c31fa>] get_vma_policy+0x3a/0x90
+ [<ffffffff81254fa3>] show_numa_map+0x163/0x610
+ [<ffffffff81255b10>] ? pid_maps_open+0x20/0x20
+ [<ffffffff81255980>] ? pagemap_hugetlb_range+0xf0/0xf0
+ [<ffffffff81255483>] show_pid_numa_map+0x13/0x20
+ [<ffffffff8120c902>] traverse+0xf2/0x230
+ [<ffffffff8120d14b>] seq_read+0x34b/0x3e0
+ [<ffffffff8120ce00>] ? seq_lseek+0x120/0x120
+ [<ffffffff811e751a>] do_loop_readv_writev+0x5a/0x90
+ [<ffffffff811e7851>] do_readv_writev+0x1c1/0x1e0
+ [<ffffffff810b0de1>] ? get_parent_ip+0x11/0x50
+ [<ffffffff811e7905>] vfs_readv+0x35/0x60
+ [<ffffffff811e7b72>] sys_preadv+0xc2/0xe0
+ [<ffffffff816ca088>] tracesys+0xe1/0xe6
+
+
