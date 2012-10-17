@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab2JQKNx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 06:13:53 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61738 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756539Ab2JQKNu (ORCPT
+	id S932107Ab2JQKOE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 06:14:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46813 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756591Ab2JQKN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 06:13:50 -0400
+	Wed, 17 Oct 2012 06:13:59 -0400
 From: Sangho Yi <antiroot@gmail.com>
 To: devel@driverdev.osuosl.org
 Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         Sangho Yi <antiroot@gmail.com>
-Subject: [PATCH 4/7] staging: csr: csr_wifi_sme_serialize.h: fixed over 80 char lines
-Date: Wed, 17 Oct 2012 19:11:04 +0900
-Message-Id: <1350468667-2406-4-git-send-email-antiroot@gmail.com>
+Subject: [PATCH 7/7] staging: csr: csr_wifi_sme_sef.h: Fixed lines over 80 chars per line
+Date: Wed, 17 Oct 2012 19:11:07 +0900
+Message-Id: <1350468667-2406-7-git-send-email-antiroot@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1350468667-2406-1-git-send-email-antiroot@gmail.com>
 References: <n>
@@ -22,57 +22,198 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Appropriately modified the lines over 80 characters.
+Fixed lines over 80 characters per line.
 
 Signed-off-by: Sangho Yi <antiroot@gmail.com>
 ---
- drivers/staging/csr/csr_wifi_sme_serialize.h |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/staging/csr/csr_wifi_sme_sef.h |  150 +++++++++++++++++++++-----------
+ 1 file changed, 100 insertions(+), 50 deletions(-)
 
-diff --git a/drivers/staging/csr/csr_wifi_sme_serialize.h b/drivers/staging/csr/csr_wifi_sme_serialize.h
-index 75acefa..553bc16 100644
---- a/drivers/staging/csr/csr_wifi_sme_serialize.h
-+++ b/drivers/staging/csr/csr_wifi_sme_serialize.h
-@@ -477,7 +477,8 @@ extern void *CsrWifiSmePacketFilterSetCfmDes(u8 *buffer, size_t len);
- extern size_t CsrWifiSmePacketFilterSetCfmSizeof(void *msg);
- #define CsrWifiSmePacketFilterSetCfmSerFree CsrWifiSmePfree
+diff --git a/drivers/staging/csr/csr_wifi_sme_sef.h b/drivers/staging/csr/csr_wifi_sme_sef.h
+index 3598bb8..4456fb3 100644
+--- a/drivers/staging/csr/csr_wifi_sme_sef.h
++++ b/drivers/staging/csr/csr_wifi_sme_sef.h
+@@ -19,80 +19,130 @@ extern "C" {
  
--extern u8 *CsrWifiSmePermanentMacAddressGetCfmSer(u8 *ptr, size_t *len, void *msg);
-+extern u8 *CsrWifiSmePermanentMacAddressGetCfmSer(u8 *ptr, size_t *len,
-+	void *msg);
- extern void *CsrWifiSmePermanentMacAddressGetCfmDes(u8 *buffer, size_t len);
- extern size_t CsrWifiSmePermanentMacAddressGetCfmSizeof(void *msg);
- #define CsrWifiSmePermanentMacAddressGetCfmSerFree CsrWifiSmePfree
-@@ -502,7 +503,8 @@ extern size_t CsrWifiSmePowerConfigGetCfmSizeof(void *msg);
- #define CsrWifiSmePowerConfigSetCfmSizeof CsrWifiEventCsrUint16Sizeof
- #define CsrWifiSmePowerConfigSetCfmSerFree CsrWifiSmePfree
+ typedef void (*CsrWifiSmeStateHandlerType)(void *drvpriv, CsrWifiFsmEvent *msg);
  
--extern u8 *CsrWifiSmeRegulatoryDomainInfoGetCfmSer(u8 *ptr, size_t *len, void *msg);
-+extern u8 *CsrWifiSmeRegulatoryDomainInfoGetCfmSer(u8 *ptr, size_t *len,
-+	void *msg);
- extern void *CsrWifiSmeRegulatoryDomainInfoGetCfmDes(u8 *buffer, size_t len);
- extern size_t CsrWifiSmeRegulatoryDomainInfoGetCfmSizeof(void *msg);
- #define CsrWifiSmeRegulatoryDomainInfoGetCfmSerFree CsrWifiSmePfree
-@@ -567,7 +569,8 @@ extern void *CsrWifiSmeSmeStaConfigSetCfmDes(u8 *buffer, size_t len);
- extern size_t CsrWifiSmeSmeStaConfigSetCfmSizeof(void *msg);
- #define CsrWifiSmeSmeStaConfigSetCfmSerFree CsrWifiSmePfree
+-extern const CsrWifiSmeStateHandlerType CsrWifiSmeUpstreamStateHandlers[CSR_WIFI_SME_PRIM_UPSTREAM_COUNT];
++extern const CsrWifiSmeStateHandlerType
++	CsrWifiSmeUpstreamStateHandlers[CSR_WIFI_SME_PRIM_UPSTREAM_COUNT];
  
--extern u8 *CsrWifiSmeStationMacAddressGetCfmSer(u8 *ptr, size_t *len, void *msg);
-+extern u8 *CsrWifiSmeStationMacAddressGetCfmSer(u8 *ptr, size_t *len,
-+	void *msg);
- extern void *CsrWifiSmeStationMacAddressGetCfmDes(u8 *buffer, size_t len);
- extern size_t CsrWifiSmeStationMacAddressGetCfmSizeof(void *msg);
- #define CsrWifiSmeStationMacAddressGetCfmSerFree CsrWifiSmePfree
-@@ -632,7 +635,8 @@ extern size_t CsrWifiSmeSmeCommonConfigGetCfmSizeof(void *msg);
- #define CsrWifiSmeSmeCommonConfigSetCfmSizeof CsrWifiEventCsrUint16Sizeof
- #define CsrWifiSmeSmeCommonConfigSetCfmSerFree CsrWifiSmePfree
  
--extern u8 *CsrWifiSmeInterfaceCapabilityGetCfmSer(u8 *ptr, size_t *len, void *msg);
-+extern u8 *CsrWifiSmeInterfaceCapabilityGetCfmSer(u8 *ptr, size_t *len,
-+	void *msg);
- extern void *CsrWifiSmeInterfaceCapabilityGetCfmDes(u8 *buffer, size_t len);
- extern size_t CsrWifiSmeInterfaceCapabilityGetCfmSizeof(void *msg);
- #define CsrWifiSmeInterfaceCapabilityGetCfmSerFree CsrWifiSmePfree
+ extern void CsrWifiSmeActivateCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeAdhocConfigGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeAdhocConfigSetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeAssociationCompleteIndHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeAssociationStartIndHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeBlacklistCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeCalibrationDataGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeCalibrationDataSetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeCcxConfigGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeCcxConfigSetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeCoexConfigGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeCoexConfigSetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeCoexInfoGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeAdhocConfigGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeAdhocConfigSetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeAssociationCompleteIndHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeAssociationStartIndHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeBlacklistCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeCalibrationDataGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeCalibrationDataSetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeCcxConfigGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeCcxConfigSetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeCoexConfigGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeCoexConfigSetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeCoexInfoGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeConnectCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeConnectionConfigGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeConnectionInfoGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeConnectionQualityIndHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeConnectionStatsGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeConnectionConfigGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeConnectionInfoGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeConnectionQualityIndHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeConnectionStatsGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeDeactivateCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeDisconnectCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeEventMaskSetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeHostConfigGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeHostConfigSetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeIbssStationIndHandler(void *drvpriv, CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeEventMaskSetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeHostConfigGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeHostConfigSetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeIbssStationIndHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeKeyCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeLinkQualityGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeMediaStatusIndHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeMibConfigGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeMibConfigSetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeLinkQualityGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeMediaStatusIndHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeMibConfigGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeMibConfigSetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeMibGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeMibGetNextCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeMibSetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeMicFailureIndHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeMulticastAddressCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmePacketFilterSetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmePermanentMacAddressGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmePmkidCandidateListIndHandler(void *drvpriv, CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeMulticastAddressCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmePacketFilterSetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmePermanentMacAddressGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmePmkidCandidateListIndHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmePmkidCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmePowerConfigGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmePowerConfigSetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeRegulatoryDomainInfoGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeRoamCompleteIndHandler(void *drvpriv, CsrWifiFsmEvent *msg);
++extern void CsrWifiSmePowerConfigGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmePowerConfigSetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeRegulatoryDomainInfoGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeRoamCompleteIndHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeRoamStartIndHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeRoamingConfigGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeRoamingConfigSetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeScanConfigGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeScanConfigSetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeRoamingConfigGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeRoamingConfigSetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeScanConfigGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeScanConfigSetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeScanFullCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeScanResultIndHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeScanResultsFlushCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeScanResultsGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeSmeStaConfigGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeSmeStaConfigSetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeStationMacAddressGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeScanResultsFlushCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeScanResultsGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeSmeStaConfigGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeSmeStaConfigSetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeStationMacAddressGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeTspecIndHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeTspecCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeVersionsGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeWifiFlightmodeCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeVersionsGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeWifiFlightmodeCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeWifiOffIndHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeWifiOffCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeWifiOnCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeCloakedSsidsSetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeCloakedSsidsGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeCloakedSsidsSetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeCloakedSsidsGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeWifiOnIndHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeSmeCommonConfigGetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeSmeCommonConfigSetCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeGetInterfaceCapabilityCfmHandler(void *drvpriv, CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeSmeCommonConfigGetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeSmeCommonConfigSetCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeGetInterfaceCapabilityCfmHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeErrorIndHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeInfoIndHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+ extern void CsrWifiSmeCoreDumpIndHandler(void *drvpriv, CsrWifiFsmEvent *msg);
+-extern void CsrWifiSmeAmpStatusChangeIndHandler(void *drvpriv, CsrWifiFsmEvent *msg);
++extern void CsrWifiSmeAmpStatusChangeIndHandler(void *drvpriv,
++	CsrWifiFsmEvent *msg);
+ 
+ #ifdef __cplusplus
+ }
 -- 
 1.7.9.5
 
