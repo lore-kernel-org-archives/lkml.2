@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab2JQB0s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 21:26:48 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40849 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755856Ab2JQB0r (ORCPT
+	id S1755938Ab2JQBeQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 21:34:16 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:47718 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755895Ab2JQBeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 21:26:47 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <507E0942.1080708@jp.fujitsu.com>
-Date: Wed, 17 Oct 2012 10:26:26 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 16 Oct 2012 21:34:15 -0400
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <linux-acpi@vger.kernel.org>, <lenb@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <rjw@sisk.pl>, <liuj97@gmail.com>
-Subject: Re: [PATCH 2/2] ACPI: Remove unused lockable in acpi_device_flags
-References: <1350318870-5700-1-git-send-email-toshi.kani@hp.com> <1350318870-5700-2-git-send-email-toshi.kani@hp.com>
-In-Reply-To: <1350318870-5700-2-git-send-email-toshi.kani@hp.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com>
+References: <20121008150949.GA15130@redhat.com> <CAHGf_=pr1AYeWZhaC2MKN-XjiWB7=hs92V0sH-zVw3i00X-e=A@mail.gmail.com>
+ <alpine.DEB.2.00.1210152055150.5400@chino.kir.corp.google.com>
+ <CAHGf_=rLjQbtWQLDcbsaq5=zcZgjdveaOVdGtBgBwZFt78py4Q@mail.gmail.com>
+ <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com>
+ <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com> <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Tue, 16 Oct 2012 21:33:55 -0400
+Message-ID: <CAHGf_=oWV7dhw4jV6tvAAgjofOBOG_K1dnYHWa2=-mMsAO7-mA@mail.gmail.com>
+Subject: Re: mpol_to_str revisited.
+To: David Rientjes <rientjes@google.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        bhutchings@solarflare.com, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/16 1:34, Toshi Kani wrote:
-> Removed lockable in struct acpi_device_flags since it is no
-> longer used by any code. acpi_bus_hot_remove_device() cannot
-> use this flag because acpi_bus_trim() frees up its acpi_device
-> object. Furthermore, the dock driver calls _LCK method without
-> using this lockable flag.
-> 
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+On Tue, Oct 16, 2012 at 8:12 PM, David Rientjes <rientjes@google.com> wrote:
+> On Tue, 16 Oct 2012, KOSAKI Motohiro wrote:
+>
+>> >> Even though 80de7c3138ee9fd86a98696fd2cf7ad89b995d0a itself is simple. It bring
+>> >> to caller complex. That's not good and have no worth.
+>> >>
+>> >
+>> > Before: the kernel panics, all workloads cease.
+>> > After: the file shows garbage, all workloads continue.
+>> >
+>> > This is better, in my opinion, but at best it's only a judgment call and
+>> > has no effect on anything.
+>>
+>> Kernel panics help to find our serious mistake.
+>
+> Kernel panics are not your little debugging tool to let users suffer
+> through for non-fatal issues.
 
-Looks good to me.
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+use after free is fatal, no doubt.
 
-> ---
->   drivers/acpi/scan.c     | 5 -----
->   include/acpi/acpi_bus.h | 3 +--
->   2 files changed, 1 insertion(+), 7 deletions(-)
-> 
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index ed87f43..19d3d4a 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -1017,11 +1017,6 @@ static int acpi_bus_get_flags(struct acpi_device *device)
->   			device->flags.ejectable = 1;
->   	}
->   
-> -	/* Presence of _LCK indicates 'lockable' */
-> -	status = acpi_get_handle(device->handle, "_LCK", &temp);
-> -	if (ACPI_SUCCESS(status))
-> -		device->flags.lockable = 1;
-> -
->   	/* Power resources cannot be power manageable. */
->   	if (device->device_type == ACPI_BUS_TYPE_POWER)
->   		return 0;
-> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> index 0daa0fb..e8b2877 100644
-> --- a/include/acpi/acpi_bus.h
-> +++ b/include/acpi/acpi_bus.h
-> @@ -144,12 +144,11 @@ struct acpi_device_flags {
->   	u32 bus_address:1;
->   	u32 removable:1;
->   	u32 ejectable:1;
-> -	u32 lockable:1;
->   	u32 suprise_removal_ok:1;
->   	u32 power_manageable:1;
->   	u32 performance_manageable:1;
->   	u32 eject_pending:1;
-> -	u32 reserved:23;
-> +	u32 reserved:24;
->   };
->   
->   /* File System */
-> 
+>
+>> > I agree it would be better to respect the return value of mpol_to_str()
+>> > since there are other possible error conditions other than a freed
+>> > mempolicy, but let's not consider reverting 80de7c3138.  It is obviously
+>> > not a full solution to the problem, though, and we need to serialize with
+>> > task_lock().
+>>
+>> Sorry no. I will have to revert it.
+>
+> Feel free to revert anything you wish in your own tree, I couldn't care
+> less.  If you try to propose it upstream, Andrew will surely ask you to
+> justify the BUG(), good luck on that.
+
+Yeah.
+I'm ok just remove both BUG() and EINVAL, but current situation (i.e. ignoring
+EINVAL by caller) is surely bad. So, just revert is best IMHO.
 
 
+>
+> I'll reply to this message with the fix that I think is best.
