@@ -1,95 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab2JQMER (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 08:04:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:33626 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754638Ab2JQMDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 08:03:20 -0400
-X-IronPort-AV: E=Sophos;i="4.80,600,1344182400"; 
-   d="scan'208";a="6017131"
-From: wency@cn.fujitsu.com
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, minchan.kim@gmail.com,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, Wen Congyang <wency@cn.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: [PATCH v2 2/5] memory-hotplug: update mce_bad_pages when removing the memory
-Date: Wed, 17 Oct 2012 20:08:52 +0800
-Message-Id: <1350475735-26136-3-git-send-email-wency@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1350475735-26136-1-git-send-email-wency@cn.fujitsu.com>
-References: <1350475735-26136-1-git-send-email-wency@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/17 20:02:55,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/17 20:02:57,
-	Serialize complete at 2012/10/17 20:02:57
+	id S1756708Ab2JQMFf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 08:05:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10356 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751132Ab2JQMFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 08:05:34 -0400
+Date: Wed, 17 Oct 2012 14:05:25 +0200 (CEST)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-1-104.brq.redhat.com
+To: Adil Mujeeb <mujeeb.adil@gmail.com>
+cc: tytso@mit.edu, adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/10] ext4: balloc: Fixed coding style issue
+In-Reply-To: <1350414785-7848-1-git-send-email-mujeeb.adil@gmail.com>
+Message-ID: <alpine.LFD.2.00.1210171359270.30534@dhcp-1-104.brq.redhat.com>
+References: <1350414785-7848-1-git-send-email-mujeeb.adil@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wen Congyang <wency@cn.fujitsu.com>
+On Wed, 17 Oct 2012, Adil Mujeeb wrote:
 
-When we hotremove a memory device, we will free the memory to store
-struct page. If the page is hwpoisoned page, we should decrease
-mce_bad_pages.
+> Date: Wed, 17 Oct 2012 00:42:56 +0530
+> From: Adil Mujeeb <mujeeb.adil@gmail.com>
+> To: tytso@mit.edu, adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+>     linux-kernel@vger.kernel.org
+> Cc: Adil Mujeeb <mujeeb.adil@gmail.com>
+> Subject: [PATCH 01/10] ext4: balloc: Fixed coding style issue
+> 
+> Fixed checkpatch.pl reported ERRORs
 
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- mm/sparse.c |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
+Hi Adil,
 
-diff --git a/mm/sparse.c b/mm/sparse.c
-index fac95f2..24072e4 100644
---- a/mm/sparse.c
-+++ b/mm/sparse.c
-@@ -773,6 +773,23 @@ out:
- 	return ret;
- }
- 
-+#ifdef CONFIG_MEMORY_FAILURE
-+static void clear_hwpoisoned_pages(struct page *memmap, int nr_pages)
-+{
-+	int i;
-+
-+	if (!memmap)
-+		return;
-+
-+	for (i = 0; i < PAGES_PER_SECTION; i++) {
-+		if (PageHWPoison(&memmap[i])) {
-+			atomic_long_sub(1, &mce_bad_pages);
-+			ClearPageHWPoison(&memmap[i]);
-+		}
-+	}
-+}
-+#endif
-+
- void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
- {
- 	struct page *memmap = NULL;
-@@ -786,6 +803,10 @@ void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
- 		ms->pageblock_flags = NULL;
- 	}
- 
-+#ifdef CONFIG_MEMORY_FAILURE
-+	clear_hwpoisoned_pages(memmap, PAGES_PER_SECTION);
-+#endif
-+
- 	free_section_usemap(memmap, usemap);
- }
- #endif
--- 
-1.7.1
+let me ask you something. How useful do you think those changes are ?
+Have you learned anything by creating those patches ?
 
+Just to clarify why I am asking such weird questions. It's not one of
+those sneer questions, I would really like to know.
+
+Thanks!
+-Lukas
+
+> 
+> Signed-off-by: Adil Mujeeb <mujeeb.adil@gmail.com>
+> ---
+>  linux-3.7-rc1/fs/ext4/balloc.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/linux-3.7-rc1/fs/ext4/balloc.c b/linux-3.7-rc1/fs/ext4/balloc.c
+> index 1b50890..395418d 100644
+> --- a/linux-3.7-rc1/fs/ext4/balloc.c
+> +++ b/linux-3.7-rc1/fs/ext4/balloc.c
+> @@ -246,7 +246,7 @@ unsigned ext4_free_clusters_after_init(struct super_block *sb,
+>   * @bh:			pointer to the buffer head to store the block
+>   *			group descriptor
+>   */
+> -struct ext4_group_desc * ext4_get_group_desc(struct super_block *sb,
+> +struct ext4_group_desc *ext4_get_group_desc(struct super_block *sb,
+>  					     ext4_group_t block_group,
+>  					     struct buffer_head **bh)
+>  {
+> @@ -700,7 +700,7 @@ static unsigned long ext4_bg_num_gdb_nometa(struct super_block *sb,
+>  	if (!ext4_bg_has_super(sb, group))
+>  		return 0;
+>  
+> -	if (EXT4_HAS_INCOMPAT_FEATURE(sb,EXT4_FEATURE_INCOMPAT_META_BG))
+> +	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_META_BG))
+>  		return le32_to_cpu(EXT4_SB(sb)->s_es->s_first_meta_bg);
+>  	else
+>  		return EXT4_SB(sb)->s_gdb_count;
+> @@ -721,11 +721,11 @@ unsigned long ext4_bg_num_gdb(struct super_block *sb, ext4_group_t group)
+>  			le32_to_cpu(EXT4_SB(sb)->s_es->s_first_meta_bg);
+>  	unsigned long metagroup = group / EXT4_DESC_PER_BLOCK(sb);
+>  
+> -	if (!EXT4_HAS_INCOMPAT_FEATURE(sb,EXT4_FEATURE_INCOMPAT_META_BG) ||
+> +	if (!EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_META_BG) ||
+>  			metagroup < first_meta_bg)
+>  		return ext4_bg_num_gdb_nometa(sb, group);
+>  
+> -	return ext4_bg_num_gdb_meta(sb,group);
+> +	return ext4_bg_num_gdb_meta(sb, group);
+>  
+>  }
+>  
+> 
