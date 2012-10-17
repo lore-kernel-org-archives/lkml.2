@@ -1,714 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756301Ab2JQGK3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 02:10:29 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:45676 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756239Ab2JQGKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 02:10:22 -0400
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Cc: Kay Sievers <kay@vrfy.org>
-Subject: [PATCH 23/23] printk: Move kmsg_dump functions to separate file
-Date: Tue, 16 Oct 2012 23:06:27 -0700
-Message-Id: <a1c257a62f6015b7a19b06adb3cd4ed22c67a19d.1350449852.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
-In-Reply-To: <cover.1350449851.git.joe@perches.com>
-References: <cover.1350449851.git.joe@perches.com>
+	id S1756256Ab2JQGL1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 02:11:27 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44370 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756228Ab2JQGLZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 02:11:25 -0400
+From: "Patil, Rachna" <rachna@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: RE: [PATCH RESEND 0/8] TI Touchscreen driver updates and Support
+ for TSC/ADC MFD driver
+Thread-Topic: [PATCH RESEND 0/8] TI Touchscreen driver updates and Support
+ for TSC/ADC MFD driver
+Thread-Index: AQHNq3HBvcHo13jSVku2BGv0P3D9i5e72AiAgAEruEA=
+Date: Wed, 17 Oct 2012 06:11:13 +0000
+Message-ID: <4CE347531D4CA947960AF71FF095B9323E960D9B@DBDE01.ent.ti.com>
+References: <1350372345-27108-1-git-send-email-rachna@ti.com>
+ <20121016174207.GA1833@core.coreip.homeip.net>
+In-Reply-To: <20121016174207.GA1833@core.coreip.homeip.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generic restructuring.
+Hi Samuel,
 
-Create kmsg_dump.c, add to Makefile and remove from printk.c
+I have got an ACK from Jonathan and Dmitry on this patch series.
+Can you please pull in if there are no further review comments.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- kernel/printk/Makefile    |    1 +
- kernel/printk/kmsg_dump.c |  328 +++++++++++++++++++++++++++++++++++++++++++++
- kernel/printk/printk.c    |  318 -------------------------------------------
- 3 files changed, 329 insertions(+), 318 deletions(-)
- create mode 100644 kernel/printk/kmsg_dump.c
+Regards,
+Rachna.
 
-diff --git a/kernel/printk/Makefile b/kernel/printk/Makefile
-index 7947661..b0072b0 100644
---- a/kernel/printk/Makefile
-+++ b/kernel/printk/Makefile
-@@ -2,4 +2,5 @@ obj-y	= printk.o
- obj-y	+= printk_log.o
- obj-y	+= devkmsg.o
- obj-y	+= printk_syslog.o
-+obj-y	+= kmsg_dump.o
- obj-$(CONFIG_A11Y_BRAILLE_CONSOLE)	+= braille.o
-diff --git a/kernel/printk/kmsg_dump.c b/kernel/printk/kmsg_dump.c
-new file mode 100644
-index 0000000..7962172
---- /dev/null
-+++ b/kernel/printk/kmsg_dump.c
-@@ -0,0 +1,328 @@
-+#include <linux/kernel.h>
-+#include <linux/mm.h>
-+#include <linux/kexec.h>
-+#include <linux/moduleparam.h>
-+#include <linux/export.h>
-+#include <linux/kmsg_dump.h>
-+#include <linux/rculist.h>
-+#include <linux/stat.h>
-+
-+#include "printk_log.h"
-+
-+static DEFINE_SPINLOCK(dump_list_lock);
-+static LIST_HEAD(dump_list);
-+
-+/**
-+ * kmsg_dump_register - register a kernel log dumper.
-+ * @dumper: pointer to the kmsg_dumper structure
-+ *
-+ * Adds a kernel log dumper to the system. The dump callback in the
-+ * structure will be called when the kernel oopses or panics and must be
-+ * set. Returns zero on success and %-EINVAL or %-EBUSY otherwise.
-+ */
-+int kmsg_dump_register(struct kmsg_dumper *dumper)
-+{
-+	unsigned long flags;
-+	int err = -EBUSY;
-+
-+	/* The dump callback needs to be set */
-+	if (!dumper->dump)
-+		return -EINVAL;
-+
-+	spin_lock_irqsave(&dump_list_lock, flags);
-+	/* Don't allow registering multiple times */
-+	if (!dumper->registered) {
-+		dumper->registered = 1;
-+		list_add_tail_rcu(&dumper->list, &dump_list);
-+		err = 0;
-+	}
-+	spin_unlock_irqrestore(&dump_list_lock, flags);
-+
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(kmsg_dump_register);
-+
-+/**
-+ * kmsg_dump_unregister - unregister a kmsg dumper.
-+ * @dumper: pointer to the kmsg_dumper structure
-+ *
-+ * Removes a dump device from the system. Returns zero on success and
-+ * %-EINVAL otherwise.
-+ */
-+int kmsg_dump_unregister(struct kmsg_dumper *dumper)
-+{
-+	unsigned long flags;
-+	int err = -EINVAL;
-+
-+	spin_lock_irqsave(&dump_list_lock, flags);
-+	if (dumper->registered) {
-+		dumper->registered = 0;
-+		list_del_rcu(&dumper->list);
-+		err = 0;
-+	}
-+	spin_unlock_irqrestore(&dump_list_lock, flags);
-+	synchronize_rcu();
-+
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(kmsg_dump_unregister);
-+
-+static bool always_kmsg_dump;
-+module_param_named(always_kmsg_dump, always_kmsg_dump, bool, S_IRUGO | S_IWUSR);
-+
-+/**
-+ * kmsg_dump - dump kernel log to kernel message dumpers.
-+ * @reason: the reason (oops, panic etc) for dumping
-+ *
-+ * Call each of the registered dumper's dump() callback, which can
-+ * retrieve the kmsg records with kmsg_dump_get_line() or
-+ * kmsg_dump_get_buffer().
-+ */
-+void kmsg_dump(enum kmsg_dump_reason reason)
-+{
-+	struct kmsg_dumper *dumper;
-+	unsigned long flags;
-+
-+	if ((reason > KMSG_DUMP_OOPS) && !always_kmsg_dump)
-+		return;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(dumper, &dump_list, list) {
-+		if (dumper->max_reason && reason > dumper->max_reason)
-+			continue;
-+
-+		/* initialize iterator with data about the stored records */
-+		dumper->active = true;
-+
-+		raw_spin_lock_irqsave(&printk_logbuf_lock, flags);
-+		dumper->cur_seq = printk_log_clear_seq;
-+		dumper->cur_idx = printk_log_clear_idx;
-+		dumper->next_seq = printk_log_next_seq;
-+		dumper->next_idx = printk_log_next_idx;
-+		raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
-+
-+		/* invoke dumper which will iterate over records */
-+		dumper->dump(dumper, reason);
-+
-+		/* reset iterator */
-+		dumper->active = false;
-+	}
-+	rcu_read_unlock();
-+}
-+
-+/**
-+ * kmsg_dump_get_line_nolock - retrieve one kmsg log line (unlocked version)
-+ * @dumper: registered kmsg dumper
-+ * @syslog: include the "<4>" prefixes
-+ * @line: buffer to copy the line to
-+ * @size: maximum size of the buffer
-+ * @len: length of line placed into buffer
-+ *
-+ * Start at the beginning of the kmsg buffer, with the oldest kmsg
-+ * record, and copy one record into the provided buffer.
-+ *
-+ * Consecutive calls will return the next available record moving
-+ * towards the end of the buffer with the youngest messages.
-+ *
-+ * A return value of FALSE indicates that there are no more records to
-+ * read.
-+ *
-+ * The function is similar to kmsg_dump_get_line(), but grabs no locks.
-+ */
-+bool kmsg_dump_get_line_nolock(struct kmsg_dumper *dumper, bool syslog,
-+			       char *line, size_t size, size_t *len)
-+{
-+	struct printk_log *msg;
-+	size_t l = 0;
-+	bool ret = false;
-+
-+	if (!dumper->active)
-+		goto out;
-+
-+	if (dumper->cur_seq < printk_log_first_seq) {
-+		/* messages are gone, move to first available one */
-+		dumper->cur_seq = printk_log_first_seq;
-+		dumper->cur_idx = printk_log_first_idx;
-+	}
-+
-+	/* last entry */
-+	if (dumper->cur_seq >= printk_log_next_seq)
-+		goto out;
-+
-+	msg = printk_log_from_idx(dumper->cur_idx);
-+	l = printk_msg_print_text(msg, 0, syslog, line, size);
-+
-+	dumper->cur_idx = printk_log_next(dumper->cur_idx);
-+	dumper->cur_seq++;
-+	ret = true;
-+out:
-+	if (len)
-+		*len = l;
-+	return ret;
-+}
-+
-+/**
-+ * kmsg_dump_get_line - retrieve one kmsg log line
-+ * @dumper: registered kmsg dumper
-+ * @syslog: include the "<4>" prefixes
-+ * @line: buffer to copy the line to
-+ * @size: maximum size of the buffer
-+ * @len: length of line placed into buffer
-+ *
-+ * Start at the beginning of the kmsg buffer, with the oldest kmsg
-+ * record, and copy one record into the provided buffer.
-+ *
-+ * Consecutive calls will return the next available record moving
-+ * towards the end of the buffer with the youngest messages.
-+ *
-+ * A return value of FALSE indicates that there are no more records to
-+ * read.
-+ */
-+bool kmsg_dump_get_line(struct kmsg_dumper *dumper, bool syslog,
-+			char *line, size_t size, size_t *len)
-+{
-+	unsigned long flags;
-+	bool ret;
-+
-+	raw_spin_lock_irqsave(&printk_logbuf_lock, flags);
-+	ret = kmsg_dump_get_line_nolock(dumper, syslog, line, size, len);
-+	raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(kmsg_dump_get_line);
-+
-+/**
-+ * kmsg_dump_get_buffer - copy kmsg log lines
-+ * @dumper: registered kmsg dumper
-+ * @syslog: include the "<4>" prefixes
-+ * @buf: buffer to copy the line to
-+ * @size: maximum size of the buffer
-+ * @len: length of line placed into buffer
-+ *
-+ * Start at the end of the kmsg buffer and fill the provided buffer
-+ * with as many of the the *youngest* kmsg records that fit into it.
-+ * If the buffer is large enough, all available kmsg records will be
-+ * copied with a single call.
-+ *
-+ * Consecutive calls will fill the buffer with the next block of
-+ * available older records, not including the earlier retrieved ones.
-+ *
-+ * A return value of FALSE indicates that there are no more records to
-+ * read.
-+ */
-+bool kmsg_dump_get_buffer(struct kmsg_dumper *dumper, bool syslog,
-+			  char *buf, size_t size, size_t *len)
-+{
-+	unsigned long flags;
-+	u64 seq;
-+	u32 idx;
-+	u64 next_seq;
-+	u32 next_idx;
-+	enum printk_log_flags prev;
-+	size_t l = 0;
-+	bool ret = false;
-+
-+	if (!dumper->active)
-+		goto out;
-+
-+	raw_spin_lock_irqsave(&printk_logbuf_lock, flags);
-+	if (dumper->cur_seq < printk_log_first_seq) {
-+		/* messages are gone, move to first available one */
-+		dumper->cur_seq = printk_log_first_seq;
-+		dumper->cur_idx = printk_log_first_idx;
-+	}
-+
-+	/* last entry */
-+	if (dumper->cur_seq >= dumper->next_seq) {
-+		raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
-+		goto out;
-+	}
-+
-+	/* calculate length of entire buffer */
-+	seq = dumper->cur_seq;
-+	idx = dumper->cur_idx;
-+	prev = 0;
-+	while (seq < dumper->next_seq) {
-+		struct printk_log *msg = printk_log_from_idx(idx);
-+
-+		l += printk_msg_print_text(msg, prev, true, NULL, 0);
-+		idx = printk_log_next(idx);
-+		seq++;
-+		prev = msg->flags;
-+	}
-+
-+	/* move first record forward until length fits into the buffer */
-+	seq = dumper->cur_seq;
-+	idx = dumper->cur_idx;
-+	prev = 0;
-+	while (l > size && seq < dumper->next_seq) {
-+		struct printk_log *msg = printk_log_from_idx(idx);
-+
-+		l -= printk_msg_print_text(msg, prev, true, NULL, 0);
-+		idx = printk_log_next(idx);
-+		seq++;
-+		prev = msg->flags;
-+	}
-+
-+	/* last message in next interation */
-+	next_seq = seq;
-+	next_idx = idx;
-+
-+	l = 0;
-+	prev = 0;
-+	while (seq < dumper->next_seq) {
-+		struct printk_log *msg = printk_log_from_idx(idx);
-+
-+		l += printk_msg_print_text(msg, prev, syslog, buf + l, size - l);
-+		idx = printk_log_next(idx);
-+		seq++;
-+		prev = msg->flags;
-+	}
-+
-+	dumper->next_seq = next_seq;
-+	dumper->next_idx = next_idx;
-+	ret = true;
-+	raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
-+out:
-+	if (len)
-+		*len = l;
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(kmsg_dump_get_buffer);
-+
-+/**
-+ * kmsg_dump_rewind_nolock - reset the interator (unlocked version)
-+ * @dumper: registered kmsg dumper
-+ *
-+ * Reset the dumper's iterator so that kmsg_dump_get_line() and
-+ * kmsg_dump_get_buffer() can be called again and used multiple
-+ * times within the same dumper.dump() callback.
-+ *
-+ * The function is similar to kmsg_dump_rewind(), but grabs no locks.
-+ */
-+void kmsg_dump_rewind_nolock(struct kmsg_dumper *dumper)
-+{
-+	dumper->cur_seq = printk_log_clear_seq;
-+	dumper->cur_idx = printk_log_clear_idx;
-+	dumper->next_seq = printk_log_next_seq;
-+	dumper->next_idx = printk_log_next_idx;
-+}
-+
-+/**
-+ * kmsg_dump_rewind - reset the interator
-+ * @dumper: registered kmsg dumper
-+ *
-+ * Reset the dumper's iterator so that kmsg_dump_get_line() and
-+ * kmsg_dump_get_buffer() can be called again and used multiple
-+ * times within the same dumper.dump() callback.
-+ */
-+void kmsg_dump_rewind(struct kmsg_dumper *dumper)
-+{
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&printk_logbuf_lock, flags);
-+	kmsg_dump_rewind_nolock(dumper);
-+	raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
-+}
-+EXPORT_SYMBOL_GPL(kmsg_dump_rewind);
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index cba438e..b4187f3 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -33,7 +33,6 @@
- #include <linux/kexec.h>
- #include <linux/kdb.h>
- #include <linux/ratelimit.h>
--#include <linux/kmsg_dump.h>
- #include <linux/cpu.h>
- #include <linux/notifier.h>
- #include <linux/rculist.h>
-@@ -1513,321 +1512,4 @@ bool printk_timed_ratelimit(unsigned long *caller_jiffies,
- }
- EXPORT_SYMBOL(printk_timed_ratelimit);
- 
--static DEFINE_SPINLOCK(dump_list_lock);
--static LIST_HEAD(dump_list);
--
--/**
-- * kmsg_dump_register - register a kernel log dumper.
-- * @dumper: pointer to the kmsg_dumper structure
-- *
-- * Adds a kernel log dumper to the system. The dump callback in the
-- * structure will be called when the kernel oopses or panics and must be
-- * set. Returns zero on success and %-EINVAL or %-EBUSY otherwise.
-- */
--int kmsg_dump_register(struct kmsg_dumper *dumper)
--{
--	unsigned long flags;
--	int err = -EBUSY;
--
--	/* The dump callback needs to be set */
--	if (!dumper->dump)
--		return -EINVAL;
--
--	spin_lock_irqsave(&dump_list_lock, flags);
--	/* Don't allow registering multiple times */
--	if (!dumper->registered) {
--		dumper->registered = 1;
--		list_add_tail_rcu(&dumper->list, &dump_list);
--		err = 0;
--	}
--	spin_unlock_irqrestore(&dump_list_lock, flags);
--
--	return err;
--}
--EXPORT_SYMBOL_GPL(kmsg_dump_register);
--
--/**
-- * kmsg_dump_unregister - unregister a kmsg dumper.
-- * @dumper: pointer to the kmsg_dumper structure
-- *
-- * Removes a dump device from the system. Returns zero on success and
-- * %-EINVAL otherwise.
-- */
--int kmsg_dump_unregister(struct kmsg_dumper *dumper)
--{
--	unsigned long flags;
--	int err = -EINVAL;
--
--	spin_lock_irqsave(&dump_list_lock, flags);
--	if (dumper->registered) {
--		dumper->registered = 0;
--		list_del_rcu(&dumper->list);
--		err = 0;
--	}
--	spin_unlock_irqrestore(&dump_list_lock, flags);
--	synchronize_rcu();
--
--	return err;
--}
--EXPORT_SYMBOL_GPL(kmsg_dump_unregister);
--
--static bool always_kmsg_dump;
--module_param_named(always_kmsg_dump, always_kmsg_dump, bool, S_IRUGO | S_IWUSR);
--
--/**
-- * kmsg_dump - dump kernel log to kernel message dumpers.
-- * @reason: the reason (oops, panic etc) for dumping
-- *
-- * Call each of the registered dumper's dump() callback, which can
-- * retrieve the kmsg records with kmsg_dump_get_line() or
-- * kmsg_dump_get_buffer().
-- */
--void kmsg_dump(enum kmsg_dump_reason reason)
--{
--	struct kmsg_dumper *dumper;
--	unsigned long flags;
--
--	if ((reason > KMSG_DUMP_OOPS) && !always_kmsg_dump)
--		return;
--
--	rcu_read_lock();
--	list_for_each_entry_rcu(dumper, &dump_list, list) {
--		if (dumper->max_reason && reason > dumper->max_reason)
--			continue;
--
--		/* initialize iterator with data about the stored records */
--		dumper->active = true;
--
--		raw_spin_lock_irqsave(&printk_logbuf_lock, flags);
--		dumper->cur_seq = printk_log_clear_seq;
--		dumper->cur_idx = printk_log_clear_idx;
--		dumper->next_seq = printk_log_next_seq;
--		dumper->next_idx = printk_log_next_idx;
--		raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
--
--		/* invoke dumper which will iterate over records */
--		dumper->dump(dumper, reason);
--
--		/* reset iterator */
--		dumper->active = false;
--	}
--	rcu_read_unlock();
--}
--
--/**
-- * kmsg_dump_get_line_nolock - retrieve one kmsg log line (unlocked version)
-- * @dumper: registered kmsg dumper
-- * @syslog: include the "<4>" prefixes
-- * @line: buffer to copy the line to
-- * @size: maximum size of the buffer
-- * @len: length of line placed into buffer
-- *
-- * Start at the beginning of the kmsg buffer, with the oldest kmsg
-- * record, and copy one record into the provided buffer.
-- *
-- * Consecutive calls will return the next available record moving
-- * towards the end of the buffer with the youngest messages.
-- *
-- * A return value of FALSE indicates that there are no more records to
-- * read.
-- *
-- * The function is similar to kmsg_dump_get_line(), but grabs no locks.
-- */
--bool kmsg_dump_get_line_nolock(struct kmsg_dumper *dumper, bool syslog,
--			       char *line, size_t size, size_t *len)
--{
--	struct printk_log *msg;
--	size_t l = 0;
--	bool ret = false;
--
--	if (!dumper->active)
--		goto out;
--
--	if (dumper->cur_seq < printk_log_first_seq) {
--		/* messages are gone, move to first available one */
--		dumper->cur_seq = printk_log_first_seq;
--		dumper->cur_idx = printk_log_first_idx;
--	}
--
--	/* last entry */
--	if (dumper->cur_seq >= printk_log_next_seq)
--		goto out;
--
--	msg = printk_log_from_idx(dumper->cur_idx);
--	l = printk_msg_print_text(msg, 0, syslog, line, size);
--
--	dumper->cur_idx = printk_log_next(dumper->cur_idx);
--	dumper->cur_seq++;
--	ret = true;
--out:
--	if (len)
--		*len = l;
--	return ret;
--}
--
--/**
-- * kmsg_dump_get_line - retrieve one kmsg log line
-- * @dumper: registered kmsg dumper
-- * @syslog: include the "<4>" prefixes
-- * @line: buffer to copy the line to
-- * @size: maximum size of the buffer
-- * @len: length of line placed into buffer
-- *
-- * Start at the beginning of the kmsg buffer, with the oldest kmsg
-- * record, and copy one record into the provided buffer.
-- *
-- * Consecutive calls will return the next available record moving
-- * towards the end of the buffer with the youngest messages.
-- *
-- * A return value of FALSE indicates that there are no more records to
-- * read.
-- */
--bool kmsg_dump_get_line(struct kmsg_dumper *dumper, bool syslog,
--			char *line, size_t size, size_t *len)
--{
--	unsigned long flags;
--	bool ret;
--
--	raw_spin_lock_irqsave(&printk_logbuf_lock, flags);
--	ret = kmsg_dump_get_line_nolock(dumper, syslog, line, size, len);
--	raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
--
--	return ret;
--}
--EXPORT_SYMBOL_GPL(kmsg_dump_get_line);
--
--/**
-- * kmsg_dump_get_buffer - copy kmsg log lines
-- * @dumper: registered kmsg dumper
-- * @syslog: include the "<4>" prefixes
-- * @buf: buffer to copy the line to
-- * @size: maximum size of the buffer
-- * @len: length of line placed into buffer
-- *
-- * Start at the end of the kmsg buffer and fill the provided buffer
-- * with as many of the the *youngest* kmsg records that fit into it.
-- * If the buffer is large enough, all available kmsg records will be
-- * copied with a single call.
-- *
-- * Consecutive calls will fill the buffer with the next block of
-- * available older records, not including the earlier retrieved ones.
-- *
-- * A return value of FALSE indicates that there are no more records to
-- * read.
-- */
--bool kmsg_dump_get_buffer(struct kmsg_dumper *dumper, bool syslog,
--			  char *buf, size_t size, size_t *len)
--{
--	unsigned long flags;
--	u64 seq;
--	u32 idx;
--	u64 next_seq;
--	u32 next_idx;
--	enum printk_log_flags prev;
--	size_t l = 0;
--	bool ret = false;
--
--	if (!dumper->active)
--		goto out;
--
--	raw_spin_lock_irqsave(&printk_logbuf_lock, flags);
--	if (dumper->cur_seq < printk_log_first_seq) {
--		/* messages are gone, move to first available one */
--		dumper->cur_seq = printk_log_first_seq;
--		dumper->cur_idx = printk_log_first_idx;
--	}
--
--	/* last entry */
--	if (dumper->cur_seq >= dumper->next_seq) {
--		raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
--		goto out;
--	}
--
--	/* calculate length of entire buffer */
--	seq = dumper->cur_seq;
--	idx = dumper->cur_idx;
--	prev = 0;
--	while (seq < dumper->next_seq) {
--		struct printk_log *msg = printk_log_from_idx(idx);
--
--		l += printk_msg_print_text(msg, prev, true, NULL, 0);
--		idx = printk_log_next(idx);
--		seq++;
--		prev = msg->flags;
--	}
--
--	/* move first record forward until length fits into the buffer */
--	seq = dumper->cur_seq;
--	idx = dumper->cur_idx;
--	prev = 0;
--	while (l > size && seq < dumper->next_seq) {
--		struct printk_log *msg = printk_log_from_idx(idx);
--
--		l -= printk_msg_print_text(msg, prev, true, NULL, 0);
--		idx = printk_log_next(idx);
--		seq++;
--		prev = msg->flags;
--	}
--
--	/* last message in next interation */
--	next_seq = seq;
--	next_idx = idx;
--
--	l = 0;
--	prev = 0;
--	while (seq < dumper->next_seq) {
--		struct printk_log *msg = printk_log_from_idx(idx);
--
--		l += printk_msg_print_text(msg, prev, syslog, buf + l, size - l);
--		idx = printk_log_next(idx);
--		seq++;
--		prev = msg->flags;
--	}
--
--	dumper->next_seq = next_seq;
--	dumper->next_idx = next_idx;
--	ret = true;
--	raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
--out:
--	if (len)
--		*len = l;
--	return ret;
--}
--EXPORT_SYMBOL_GPL(kmsg_dump_get_buffer);
--
--/**
-- * kmsg_dump_rewind_nolock - reset the interator (unlocked version)
-- * @dumper: registered kmsg dumper
-- *
-- * Reset the dumper's iterator so that kmsg_dump_get_line() and
-- * kmsg_dump_get_buffer() can be called again and used multiple
-- * times within the same dumper.dump() callback.
-- *
-- * The function is similar to kmsg_dump_rewind(), but grabs no locks.
-- */
--void kmsg_dump_rewind_nolock(struct kmsg_dumper *dumper)
--{
--	dumper->cur_seq = printk_log_clear_seq;
--	dumper->cur_idx = printk_log_clear_idx;
--	dumper->next_seq = printk_log_next_seq;
--	dumper->next_idx = printk_log_next_idx;
--}
--
--/**
-- * kmsg_dump_rewind - reset the interator
-- * @dumper: registered kmsg dumper
-- *
-- * Reset the dumper's iterator so that kmsg_dump_get_line() and
-- * kmsg_dump_get_buffer() can be called again and used multiple
-- * times within the same dumper.dump() callback.
-- */
--void kmsg_dump_rewind(struct kmsg_dumper *dumper)
--{
--	unsigned long flags;
--
--	raw_spin_lock_irqsave(&printk_logbuf_lock, flags);
--	kmsg_dump_rewind_nolock(dumper);
--	raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
--}
--EXPORT_SYMBOL_GPL(kmsg_dump_rewind);
- #endif
--- 
-1.7.10.4
+On Tue, Oct 16, 2012 at 23:12:07, Dmitry Torokhov wrote:
+> Hi Rachna,
+> 
+> On Tue, Oct 16, 2012 at 12:55:37PM +0530, Patil, Rachna wrote:
+> > This patch set is a cumulative set of [1] and [2] sent earlier.
+> > I have merged the patch set so that the MFD patches apply without any 
+> > issues.
+> > 
+> > Also Note that there are no code changes in either of the patch set, 
+> > only rebased on top of linux-next to make sure that all the patches 
+> > apply without any conflicts.
+> > 
+> > This patch set has been tested on AM335x EVM.
+> > 
+> > [1] "[PATCH 0/4] input: TSC: ti_tscadc: TI Touchscreen driver updates"
+> > (http://www.spinics.net/lists/linux-input/msg22107.html)
+> > 
+> > [2] "[PATCH v5 0/4] Support for TSC/ADC MFD driver"
+> > (http://www.spinics.net/lists/linux-input/msg22832.html)
+> > 
+> > Patil, Rachna (8):
+> >   input: TSC: ti_tscadc: Correct register usage
+> >   input: TSC: ti_tscadc: Add Step configuration as platform data
+> >   input: TSC: ti_tscadc: set FIFO0 threshold Interrupt
+> >   input: TSC: ti_tscadc: Remove definition of End Of Interrupt register
+> >   input: TSC: ti_tscadc: Rename the existing touchscreen driver
+> >   MFD: ti_tscadc: Add support for TI's TSC/ADC MFDevice
+> >   input: TSC: ti_tsc: Convert TSC into a MFDevice
+> >   IIO : ADC: tiadc: Add support of TI's ADC driver
+> 
+> I am fine with input portion of the patch series, please merge through MFD tree.
+> 
+> Thanks.
+> 
+> --
+> Dmitry
+> 
 
