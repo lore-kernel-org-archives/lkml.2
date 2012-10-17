@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757363Ab2JQQHW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 12:07:22 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55851 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753267Ab2JQQHV (ORCPT
+	id S1757378Ab2JQQRr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 12:17:47 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40720 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752985Ab2JQQRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 12:07:21 -0400
-Date: Wed, 17 Oct 2012 17:07:03 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Jonas Bonn <jonas@southpole.se>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Lennox Wu <lennox.wu@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Mundt <lethal@linux-sh.org>, Chris Zankel <chris@zankel.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>
-Subject: Re: new execve/kernel_thread design
-Message-ID: <20121017160702.GY2616@ZenIV.linux.org.uk>
-References: <20121016223508.GR2616@ZenIV.linux.org.uk>
- <CACM3HyEpypULRWUc5ZnLnZ=uOWf3_j=9PXZiJrT_BXyGcQe9yg@mail.gmail.com>
- <CAHTX3dKDsOiUwtXxAUj-F4Y4rO+UZZDR4ufx_nxf+vuhmz46WA@mail.gmail.com>
+	Wed, 17 Oct 2012 12:17:46 -0400
+Date: Wed, 17 Oct 2012 17:17:38 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Marc Zyngier <Marc.Zyngier@arm.com>
+Subject: Re: [PATCH] virtio: 9p: correctly pass physical address to userspace
+ for high pages
+Message-ID: <20121017161738.GK5973@mudshark.cambridge.arm.com>
+References: <1350468877-7677-1-git-send-email-will.deacon@arm.com>
+ <CA+1xoqcjomrD05vxdgx4FG2wR8DTmV58Xk5=BeVD3JGVfWrssA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHTX3dKDsOiUwtXxAUj-F4Y4rO+UZZDR4ufx_nxf+vuhmz46WA@mail.gmail.com>
+In-Reply-To: <CA+1xoqcjomrD05vxdgx4FG2wR8DTmV58Xk5=BeVD3JGVfWrssA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 04:27:06PM +0200, Michal Simek wrote:
+On Wed, Oct 17, 2012 at 05:05:00PM +0100, Sasha Levin wrote:
+> On Wed, Oct 17, 2012 at 6:14 AM, Will Deacon <will.deacon@arm.com> wrote:
+> > When using a virtio transport, the 9p net device allocates pages to back
+> > the descriptors inserted into the virtqueue. These allocations may be
+> > performed from atomic context (under the channel lock) and can therefore
+> > return high mappings which aren't suitable for virt_to_phys.
+> >
+> > This patch ensures that virtual addresses for virtio queue descriptors
+> > are converted to physical addresses using kmap_to_page, which handles
+> > high memory correctly.
+> >
+> > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > Cc: Sasha Levin <levinsasha928@gmail.com>
+> > Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+> > Signed-off-by: Will Deacon <will.deacon@arm.com>
+> > ---
+> 
+> One of the things I was seeing when fuzzing within lkvm were random
+> crashes resulting
+> from "odd" addresses used by virtio-9p queue descriptions. I
+> attributed that to memory
+> corruption as a result of something else failing the fuzz tests
+> before, but this patch
+> explains what might have gone wrong.
 
-> In the patch above there is directly used current_pt_regs() function
-> which works good for newly created threads
-> when pt_regs are exactly in current_pt_regs() position but not for
-> pt_regs which are saved on the stack
-> which is the init task case.
+This is *exactly* what I have observed. More specifically, I hacked kvmtool
+to support memory banks above 0x0 (I'll send some patches soon) so my
+PHYS_OFFSET was 0x80000000. virtio-9p then gave me physical addresses at
+0x7fe02000, which if linearly mapped would be 0xffe02000 -- the pkmap!
 
-init_task does *not* do kernel_execve().  It's PID 0, not PID 1.
-init is spawned by it.
+> I'll plug it in and run tests on it.
 
-> My question is how should /init be called? Because I need to save
-> pt_regs to current_pt_regs() position where
-> generic kernel_execve expects it.
+The kernel-janitors list pointed out to me that we need to EXPORT_SYMBOL on
+kmap_to_page, so if you're building the virtio ring as a module you'll need
+to do that.
 
-What happens during boot is this:
-	* init_task (not to be confused with init) is used as current during
-infrastructure initializations.  Once everything needed for scheduler and
-for working fork is set, we spawn two threads - future init and future
-kthreadd.  The last thing we do with init_task is telling init that kthreadd
-has been spawned.  After that init_task turns itself into an idle thread.
-	* future init waits for kthreadd to be spawned (it would be more
-natural to fork them in opposite order, but we want init to have PID 1 -
-too much stuff in userland depends on that).  Then it does the rest of
-initialization, including setting up initramfs contents.  And does
-kernel_execve() on /init.  Note that this is a task that had been created
-by kernel_thread() and is currently in function called from
-ret_from_kernel_thread().  Its kernel stack has been set up by copy_thread().
-That's where pt_regs need to be set up; note that they'll be passed to
-start_thread() before you return to userland.  If there are any magic bits
-in pt_regs needed by return-from-syscall code, set them in kthread case of
-copy_thread().
+Cheers,
+
+Will
