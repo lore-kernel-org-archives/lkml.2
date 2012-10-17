@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab2JQD1K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 23:27:10 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:58882 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755690Ab2JQD1I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 23:27:08 -0400
-Message-ID: <1350444418.4562.1.camel@phoenix>
-Subject: [PATCH RFT] regulator: vexpress: Add missing n_voltages setting
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Pawel Moll <pawel.moll@arm.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 17 Oct 2012 11:26:58 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1756151Ab2JQD13 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 23:27:29 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:26378 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755690Ab2JQD1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 23:27:25 -0400
+X-IronPort-AV: E=Sophos;i="4.80,597,1344182400"; 
+   d="scan'208";a="6012251"
+Message-ID: <507E255A.4070201@cn.fujitsu.com>
+Date: Wed, 17 Oct 2012 11:26:18 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: bhelgaas@google.com, lenb@kernel.org, yinghai@kernel.org,
+        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Fix a hard coding style when determining if a device
+ is a container.
+References: <1350045098-7232-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1350045098-7232-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/17 11:27:03,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/17 11:27:04,
+	Serialize complete at 2012/10/17 11:27:04
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-Hi Pawel,
-I don't have a chance to compile test this patch because I could not
-find VEXPRESS_CONFIG in current tree.
-Can you help testing this patch?
+Hi,
 
-Thanks,
-Axel
- drivers/regulator/vexpress.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+Would anyone help to review this patch, and give some comments, please ?
 
-diff --git a/drivers/regulator/vexpress.c b/drivers/regulator/vexpress.c
-index 1702945..94a8cb9 100644
---- a/drivers/regulator/vexpress.c
-+++ b/drivers/regulator/vexpress.c
-@@ -86,10 +86,14 @@ static int vexpress_regulator_probe(struct platform_device *pdev)
- 	}
- 
- 	init_data->constraints.apply_uV = 0;
--	if (init_data->constraints.min_uV && init_data->constraints.max_uV)
-+	if (init_data->constraints.min_uV && init_data->constraints.max_uV) {
- 		reg->desc.ops = &vexpress_regulator_ops;
--	else
-+		reg->desc.n_voltages = init_data->constraints.max_uV -
-+				       init_data->constraints.min_uV + 1;
-+	} else {
- 		reg->desc.ops = &vexpress_regulator_ops_ro;
-+		reg->desc.n_voltages = 1;
-+	}
- 
- 	config.dev = &pdev->dev;
- 	config.init_data = init_data;
--- 
-1.7.9.5
+Thanks. :)
 
-
+On 10/12/2012 08:31 PM, Tang Chen wrote:
+> "ACPI0004","PNP0A05" and "PNP0A06" are all defined in array
+> container_device_ids[], so use it, but not the hard coding style.
+>
+> Also, introduce a new api is_container_device() to determine if a
+> device is a container device.
+>
+> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
+> ---
+>   drivers/acpi/container.c |   17 ++++++++++++++---
+>   1 files changed, 14 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
+> index 1f9f7d7..ffd76ee 100644
+> --- a/drivers/acpi/container.c
+> +++ b/drivers/acpi/container.c
+> @@ -92,6 +92,19 @@ static int is_device_present(acpi_handle handle)
+>   	return ((sta&  ACPI_STA_DEVICE_PRESENT) == ACPI_STA_DEVICE_PRESENT);
+>   }
+>
+> +static int is_container_device(const char *hid)
+> +{
+> +	const struct acpi_device_id *container_id;
+> +
+> +	for (container_id = container_device_ids;
+> +	     container_id->id[0]; container_id++) {
+> +		if (!strcmp((char *)container_id->id, hid))
+> +			return 1;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>   /*******************************************************************/
+>   static int acpi_container_add(struct acpi_device *device)
+>   {
+> @@ -232,10 +245,8 @@ container_walk_namespace_cb(acpi_handle handle,
+>   		goto end;
+>   	}
+>
+> -	if (strcmp(hid, "ACPI0004")&&  strcmp(hid, "PNP0A05")&&
+> -	    strcmp(hid, "PNP0A06")) {
+> +	if (!is_container_device(hid))
+>   		goto end;
+> -	}
+>
+>   	switch (*action) {
+>   	case INSTALL_NOTIFY_HANDLER:
 
