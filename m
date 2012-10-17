@@ -1,70 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938Ab2JQBeQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 21:34:16 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:47718 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755895Ab2JQBeP (ORCPT
+	id S932100Ab2JQBgu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 21:36:50 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:45672 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755923Ab2JQBgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 21:34:15 -0400
+	Tue, 16 Oct 2012 21:36:49 -0400
+X-Spam-Score: -100.3
+Message-ID: <507E0BF0.7050207@asianux.com>
+Date: Wed, 17 Oct 2012 09:37:52 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com>
-References: <20121008150949.GA15130@redhat.com> <CAHGf_=pr1AYeWZhaC2MKN-XjiWB7=hs92V0sH-zVw3i00X-e=A@mail.gmail.com>
- <alpine.DEB.2.00.1210152055150.5400@chino.kir.corp.google.com>
- <CAHGf_=rLjQbtWQLDcbsaq5=zcZgjdveaOVdGtBgBwZFt78py4Q@mail.gmail.com>
- <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com>
- <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com> <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Tue, 16 Oct 2012 21:33:55 -0400
-Message-ID: <CAHGf_=oWV7dhw4jV6tvAAgjofOBOG_K1dnYHWa2=-mMsAO7-mA@mail.gmail.com>
-Subject: Re: mpol_to_str revisited.
-To: David Rientjes <rientjes@google.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        bhutchings@solarflare.com, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jeff Layton <jlayton@redhat.com>
+CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Bug fix] nfs-client: fix nfs_inode_attrs_need_update for async
+ read_done comes during truncating to smaller size
+References: <507B70F1.7040903@asianux.com> <4FA345DA4F4AE44899BD2B03EEEC2FA909236BB5@SACEXCMBX04-PRD.hq.netapp.com> <507B968A.9090104@asianux.com> <4FA345DA4F4AE44899BD2B03EEEC2FA90923F1C4@SACEXCMBX04-PRD.hq.netapp.com> <507CBA3F.6000204@asianux.com> <4FA345DA4F4AE44899BD2B03EEEC2FA909253103@SACEXCMBX04-PRD.hq.netapp.com> <507CDEF2.2060809@asianux.com> <20121016063348.7b225bfb@tlielax.poochiereds.net> <507D48A6.3070601@asianux.com> <20121016081320.74fccc5b@tlielax.poochiereds.net>
+In-Reply-To: <20121016081320.74fccc5b@tlielax.poochiereds.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 8:12 PM, David Rientjes <rientjes@google.com> wrote:
-> On Tue, 16 Oct 2012, KOSAKI Motohiro wrote:
->
->> >> Even though 80de7c3138ee9fd86a98696fd2cf7ad89b995d0a itself is simple. It bring
->> >> to caller complex. That's not good and have no worth.
->> >>
->> >
->> > Before: the kernel panics, all workloads cease.
->> > After: the file shows garbage, all workloads continue.
->> >
->> > This is better, in my opinion, but at best it's only a judgment call and
->> > has no effect on anything.
+于 2012年10月16日 20:13, Jeff Layton 写道:
 >>
->> Kernel panics help to find our serious mistake.
->
-> Kernel panics are not your little debugging tool to let users suffer
-> through for non-fatal issues.
-
-use after free is fatal, no doubt.
-
->
->> > I agree it would be better to respect the return value of mpol_to_str()
->> > since there are other possible error conditions other than a freed
->> > mempolicy, but let's not consider reverting 80de7c3138.  It is obviously
->> > not a full solution to the problem, though, and we need to serialize with
->> > task_lock().
+>> 2) but, are we truly no ways to solve this issue ?  (I do not think so).
 >>
->> Sorry no. I will have to revert it.
+> 
+> Not that I see, but don't let me stop you from trying to find one. ;)
+> 
+
+we can divide the issue to 2 separate parts:
+
+1) the inconsistent attribute by time delay between client and server:
+
+   A) it is the nfs v2/v3 design issue, the "user" can understand (not
+implementation mistake)
+   B) we need make the time delay as shorter as we can. (this is the
+reason why I call it "performance", although this "word" is still not
+quit suitable)
+   C) "user" can understand, not mean can bear (such as skipping writing
+operation attribute changes)
+
+2) the inconsistent attribute by a client itself:
+
+   A) it is implementation issue, the "user" can not understand (it is
+an implementation mistake)
+   B) we need solve it (so I call it "correctness" issue).
+   C) "user" can not understand, not mean can not bear (such as current
+issue which I report)
+
+at last, for maintainer:
+   A) for "performance", we need try our best to do;
+   B) for "correctness", we need fix it completely;
+
+>> 3) I think an executable way (but maybe not a good way) is :
+>>
+>>    A) for each client, check each task id of the client its own (such as
+>> rpc task xid), so can know the order of tasks of the client its own.
+>>
+> 
+> We do something like this already. That's what the gencount thing is
+> all about. It's still possible though to fool that check if two calls
+> are scheduled closely enough.
 >
-> Feel free to revert anything you wish in your own tree, I couldn't care
-> less.  If you try to propose it upstream, Andrew will surely ask you to
-> justify the BUG(), good luck on that.
 
-Yeah.
-I'm ok just remove both BUG() and EINVAL, but current situation (i.e. ignoring
-EINVAL by caller) is surely bad. So, just revert is best IMHO.
+1) I think gencount is not equal to sequence number, the sequence number
+can mark all relative tasks of one client in order.
+
+2) I also think, it is not quite complex to make a client itself in
+consistency. (it is implementation issue, not design issue)
 
 
->
-> I'll reply to this message with the fix that I think is best.
+> Also note that it's not just the reordering of replies that you have to
+> concern yourself with. The requests themselves can be reordered on the
+> network. The server is also under no obligation to execute calls in the
+> order received.
+> 
+
+1) I agree with you, in nfs_inode_attrs_need_update(), it need consider
+this situation (the tasks from server return is not in order).
+
+2) I do not think it can not be accomplished if the tasks of client
+itself have sequence number.  (maybe, it would be enough to only judge
+which task is later between the 2 tasks by sequence number).
+
+
+>>    B) maybe also need another some synchronization code, but I think it
+>> does not have much negative effect with performance.
+>>
+> 
+> Yeah, serializing things to fix this is probably a non-starter. NFSv2
+> and UDP transports are basically legacy code at this point, so there's
+> not a lot of incentive to do anything drastic here.
+> 
+
+1) I agree with what you said above, but maybe you misunderstand of what
+I said for the "item B)"
+
+2) the "item B)" is for the completion of "item A)". when we fix this
+issue, maybe have to add additional synchronization code which maybe can
+cause negative effect with performance, but I think it is not much
+("user" can bear).
+
+At last, I suggest we need think of how to fix this implementation bug
+in nfs-client region.
+
+-- 
+Chen Gang
+
+Asianux Corporation
