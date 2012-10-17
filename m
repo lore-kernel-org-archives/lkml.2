@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932492Ab2JQSAE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 14:00:04 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:61184 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932357Ab2JQSAC (ORCPT
+	id S932508Ab2JQSAd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 14:00:33 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:33828 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932397Ab2JQSAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 14:00:02 -0400
+	Wed, 17 Oct 2012 14:00:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120718173913.GA1298@fieldses.org>
-References: <1342476086-21638-1-git-send-email-levinsasha928@gmail.com> <20120718173913.GA1298@fieldses.org>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Wed, 17 Oct 2012 13:59:39 -0400
-Message-ID: <CA+1xoqcgWTP8pAY3Ok2R0JM-ZXSkGroEvAFcqP0KaK=dABiTXA@mail.gmail.com>
-Subject: Re: [PATCH] SUNRPC: Prevent kernel stack corruption on long values of flush
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Trond.Myklebust@netapp.com, davem@davemloft.net, davej@redhat.com,
-        linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20121017174317.GA25443@phenom.dumpdata.com>
+References: <1350481786-4969-1-git-send-email-konrad.wilk@oracle.com>
+	<CAOvdn6WBj_-=3Z=ZrD670Zup4H=pvjXknvHGgjs55k3LWJyDxQ@mail.gmail.com>
+	<20121017174317.GA25443@phenom.dumpdata.com>
+Date: Wed, 17 Oct 2012 14:00:29 -0400
+X-Google-Sender-Auth: NX0kViSPm9KAJNLIvontvkQ_ovU
+Message-ID: <CAOvdn6Uubr8J0a5+nhDKrtMYebKkBTX6+-0v0J1BGMnU-ZkVRA@mail.gmail.com>
+Subject: Re: [RFC] ACPI S3 and Xen (suprisingly small\!).
+From: Ben Guthro <ben@guthro.net>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        lenb@kernel.org, linux-acpi@vger.kernel.org, hpa@zytor.com,
+        x86@kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 18, 2012 at 1:39 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> On Tue, Jul 17, 2012 at 12:01:26AM +0200, Sasha Levin wrote:
->> The buffer size in read_flush() is too small for the longest possible values
->> for it. This can lead to a kernel stack corruption:
+I'm not sure it matters, but I'm testing against a changeset about a week old:
+http://xenbits.xen.org/gitweb/?p=xen.git;a=commit;h=1c4a5b37b55c56e49135e65728137f54288d1fe6
+
+Plus patches specific to XenClient Enterprise.
+
+
+On Wed, Oct 17, 2012 at 1:43 PM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> On Wed, Oct 17, 2012 at 01:46:09PM -0400, Ben Guthro wrote:
+>> On Wed, Oct 17, 2012 at 9:49 AM, Konrad Rzeszutek Wilk
+>> <konrad.wilk@oracle.com> wrote:
+>> [...]
+>>
+>> > The end result is this is a nice set of patches where there is only
+>> > _one_ change in the x86 code (and it is just more of dealing with
+>> > error case) - and the rest are all done in Xen side.
+>>
+>> I'm sorry to report that this series doesn't seem to work in my setup
+>> against xen-unstable.
+>>
+>> To verify that it was, in fact this patch series, and not another Xen
+>> regression - I swapped out the kernel with this patch series, with an
+>> identical one, replacing only this series with your acpi-s3.v9 branch
+>> - and everything worked fine.
 >
-> Thanks!
-
-I've just stumbled on this crash again, and noticed that this patch
-never made it in.
-
-Was it just a mixup, or is something still missing?
-
-
-Thanks,
-Sasha
+> Thanks for testing it!
+>
+> I had tested it with Xen 4.1.3, which could be doing something different.
+> Will see what is up.
