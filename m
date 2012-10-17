@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757689Ab2JQTCn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 15:02:43 -0400
-Received: from fieldses.org ([174.143.236.118]:45227 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757670Ab2JQTCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 15:02:42 -0400
-Date: Wed, 17 Oct 2012 15:02:33 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Trond.Myklebust@netapp.com, davem@davemloft.net, davej@redhat.com,
-        linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] SUNRPC: Prevent kernel stack corruption on long values
- of flush
-Message-ID: <20121017190233.GA8630@fieldses.org>
-References: <1342476086-21638-1-git-send-email-levinsasha928@gmail.com>
- <20120718173913.GA1298@fieldses.org>
- <CA+1xoqcgWTP8pAY3Ok2R0JM-ZXSkGroEvAFcqP0KaK=dABiTXA@mail.gmail.com>
+	id S1757727Ab2JQTDE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 15:03:04 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:53232 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757696Ab2JQTDC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 15:03:02 -0400
+X-Sasl-enc: nnpyiDh30Mg5QipYAkt4DTjLwmst4S2hoB0Jm5d1Xrpk 1350500581
+Date: Wed, 17 Oct 2012 12:03:00 -0700
+From: Greg Kroah-Hartman <greg@kroah.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Tony Luck <tony.luck@intel.com>,
+        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH 1/5] drivers/base: Add a DEVICE_BOOL_ATTR macro
+Message-ID: <20121017190300.GB25996@kroah.com>
+References: <1350472435-29307-1-git-send-email-bp@amd64.org>
+ <1350472435-29307-2-git-send-email-bp@amd64.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+1xoqcgWTP8pAY3Ok2R0JM-ZXSkGroEvAFcqP0KaK=dABiTXA@mail.gmail.com>
+In-Reply-To: <1350472435-29307-2-git-send-email-bp@amd64.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 01:59:39PM -0400, Sasha Levin wrote:
-> On Wed, Jul 18, 2012 at 1:39 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> > On Tue, Jul 17, 2012 at 12:01:26AM +0200, Sasha Levin wrote:
-> >> The buffer size in read_flush() is too small for the longest possible values
-> >> for it. This can lead to a kernel stack corruption:
-> >
-> > Thanks!
-> 
-> I've just stumbled on this crash again, and noticed that this patch
-> never made it in.
-> 
-> Was it just a mixup, or is something still missing?
+On Wed, Oct 17, 2012 at 01:13:51PM +0200, Borislav Petkov wrote:
+> +ssize_t device_store_bool(struct device *dev, struct device_attribute *attr,
+> +			  const char *buf, size_t size)
+> +{
+> +	struct dev_ext_attribute *ea = to_ext_attr(attr);
+> +	u8 bval;
+> +
+> +	if (kstrtou8(buf, 10, &bval) < 0)
+> +		return -EINVAL;
+> +
+> +	*(bool *)ea->var = !!bval;
+> +
+> +	return size;
+> +}
+> +EXPORT_SYMBOL_GPL(device_store_bool);
 
-Oh, man, I guess I got distracted by the subsequent base10len()
-discussion.
+Wouldn't it be nice to be able to accept 'y' 'Y' 'n' 'N' '0' and '1'
+like the module bool parameter code does?  That would make things a bit
+more consistent, and possibly allow you to use this function for the
+module sysfs file handling as well.
 
-Added to my for-3.7 branch, I'll push that out after some tests and
-hopefully send in a pull request tomorrow.
-
-Thanks for noticing the ommission.
-
---b.
+greg k-h
