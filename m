@@ -1,45 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757469Ab2JQRQH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 13:16:07 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:45350 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755751Ab2JQRQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 13:16:04 -0400
-Date: Wed, 17 Oct 2012 22:47:03 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Rabin Vincent <rabin@rab.in>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Peter Zijlstra <peterz@infradead.org>, oleg@redhat.com
-Subject: Re: [PATCH 4/9] uprobes: allow arch access to xol slot
-Message-ID: <20121017171703.GH11096@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1350242593-17761-1-git-send-email-rabin@rab.in>
- <1350242593-17761-4-git-send-email-rabin@rab.in>
+	id S1757491Ab2JQRUA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 13:20:00 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:50899 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755431Ab2JQRT7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 13:19:59 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/3] pinctrl/coh901: use irqdomain, allocate irqdescs
+Date: Wed, 17 Oct 2012 19:19:38 +0200
+Message-ID: <1350494378-16023-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1350242593-17761-4-git-send-email-rabin@rab.in>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101717-3534-0000-0000-00000DE56BA5
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Rabin Vincent <rabin@rab.in> [2012-10-14 21:23:08]:
+From: Linus Walleij <linus.walleij@linaro.org>
 
-> Allow arches to customize how the instruction is filled into the xol
-> slot.  ARM will use this to insert an undefined instruction after the
-> real instruction in order to simulate a single step of the instruction
-> without hardware support.
-> 
-> Signed-off-by: Rabin Vincent <rabin@rab.in>
-> ---
+This switches the COH 901 pinctrl driver to allocate its GPIO
+IRQs dynamically, and start to use a linear irqdomain to map
+from the hardware IRQs.
 
-The rest of the patches 4,5,6,7 look good. 
+This way we can cut away the complex allocation of IRQ numbers
+from the <mach/irqs.h> file.
 
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ arch/arm/mach-u300/core.c                    |  1 -
+ arch/arm/mach-u300/include/mach/irqs.h       | 10 -----
+ drivers/pinctrl/pinctrl-coh901.c             | 60 +++++++++++++++++++++-------
+ include/linux/platform_data/pinctrl-coh901.h |  2 -
+ 4 files changed, 46 insertions(+), 27 deletions(-)
+
+diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
+index 603c08e..ce2de0d 100644
+--- a/arch/arm/mach-u300/core.c
++++ b/arch/arm/mach-u300/core.c
+@@ -1445,7 +1445,6 @@ static struct platform_device pinctrl_device = {
+ static struct u300_gpio_platform u300_gpio_plat = {
+ 	.ports = 7,
+ 	.gpio_base = 0,
+-	.gpio_irq_base = IRQ_U300_GPIO_BASE,
+ 	.pinctrl_device = &pinctrl_device,
+ };
+ 
+diff --git a/arch/arm/mach-u300/include/mach/irqs.h b/arch/arm/mach-u300/include/mach/irqs.h
+index e85ec38..21d5e76 100644
+--- a/arch/arm/mach-u300/include/mach/irqs.h
++++ b/arch/arm/mach-u300/include/mach/irqs.h
+@@ -77,14 +77,4 @@
+ #define IRQ_U300_GPIO_PORT6		87
+ #define U300_VIC_IRQS_END		88
+ 
+-/* Maximum 8*7 GPIO lines */
+-#ifdef CONFIG_PINCTRL_COH901
+-#define IRQ_U300_GPIO_BASE		(U300_VIC_IRQS_END)
+-#define IRQ_U300_GPIO_END		(IRQ_U300_GPIO_BASE + 56)
+-#else
+-#define IRQ_U300_GPIO_END		(U300_VIC_IRQS_END)
+-#endif
+-
+-#define NR_IRQS_U300			(IRQ_U300_GPIO_END - IRQ_U300_INTCON0_START)
+-
+ #endif
+diff --git a/drivers/pinctrl/pinctrl-coh901.c b/drivers/pinctrl/pinctrl-coh901.c
+index b446c96..152efae 100644
+--- a/drivers/pinctrl/pinctrl-coh901.c
++++ b/drivers/pinctrl/pinctrl-coh901.c
+@@ -13,6 +13,7 @@
+ #include <linux/delay.h>
+ #include <linux/errno.h>
+ #include <linux/io.h>
++#include <linux/irqdomain.h>
+ #include <linux/clk.h>
+ #include <linux/err.h>
+ #include <linux/platform_device.h>
+@@ -67,7 +68,6 @@ struct u300_gpio {
+ 	struct resource *memres;
+ 	void __iomem *base;
+ 	struct device *dev;
+-	int irq_base;
+ 	u32 stride;
+ 	/* Register offsets */
+ 	u32 pcr;
+@@ -83,6 +83,7 @@ struct u300_gpio_port {
+ 	struct list_head node;
+ 	struct u300_gpio *gpio;
+ 	char name[8];
++	struct irq_domain *domain;
+ 	int irq;
+ 	int number;
+ 	u8 toggle_edge_mode;
+@@ -314,10 +315,30 @@ static int u300_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
+ static int u300_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
+ {
+ 	struct u300_gpio *gpio = to_u300_gpio(chip);
+-	int retirq = gpio->irq_base + offset;
++	int portno = offset >> 3;
++	struct u300_gpio_port *port = NULL;
++	struct list_head *p;
++	int retirq;
+ 
+-	dev_dbg(gpio->dev, "request IRQ for GPIO %d, return %d\n", offset,
+-		retirq);
++	list_for_each(p, &gpio->port_list) {
++		port = list_entry(p, struct u300_gpio_port, node);
++		if (port->number == portno)
++			break;
++	}
++	if (port == NULL) {
++		dev_err(gpio->dev, "could not locate port for GPIO %d IRQ\n",
++			offset);
++		return -EINVAL;
++	}
++
++	/*
++	 * The local hwirqs on the port are the lower three bits, there
++	 * are exactly 8 IRQs per port since they are 8-bit
++	 */
++	retirq = irq_find_mapping(port->domain, (offset & 0x7));
++
++	dev_dbg(gpio->dev, "request IRQ for GPIO %d, return %d from port %d\n",
++		offset, retirq, port->number);
+ 	return retirq;
+ }
+ 
+@@ -467,7 +488,7 @@ static int u300_gpio_irq_type(struct irq_data *d, unsigned trigger)
+ {
+ 	struct u300_gpio_port *port = irq_data_get_irq_chip_data(d);
+ 	struct u300_gpio *gpio = port->gpio;
+-	int offset = d->irq - gpio->irq_base;
++	int offset = (port->number << 3) + d->hwirq;
+ 	u32 val;
+ 
+ 	if ((trigger & IRQF_TRIGGER_RISING) &&
+@@ -503,10 +524,12 @@ static void u300_gpio_irq_enable(struct irq_data *d)
+ {
+ 	struct u300_gpio_port *port = irq_data_get_irq_chip_data(d);
+ 	struct u300_gpio *gpio = port->gpio;
+-	int offset = d->irq - gpio->irq_base;
++	int offset = (port->number << 3) + d->hwirq;
+ 	u32 val;
+ 	unsigned long flags;
+ 
++	dev_dbg(gpio->dev, "enable IRQ for hwirq %lu on port %s, offset %d\n",
++		 d->hwirq, port->name, offset);
+ 	local_irq_save(flags);
+ 	val = readl(U300_PIN_REG(offset, ien));
+ 	writel(val | U300_PIN_BIT(offset), U300_PIN_REG(offset, ien));
+@@ -517,7 +540,7 @@ static void u300_gpio_irq_disable(struct irq_data *d)
+ {
+ 	struct u300_gpio_port *port = irq_data_get_irq_chip_data(d);
+ 	struct u300_gpio *gpio = port->gpio;
+-	int offset = d->irq - gpio->irq_base;
++	int offset = (port->number << 3) + d->hwirq;
+ 	u32 val;
+ 	unsigned long flags;
+ 
+@@ -555,8 +578,7 @@ static void u300_gpio_irq_handler(unsigned irq, struct irq_desc *desc)
+ 		int irqoffset;
+ 
+ 		for_each_set_bit(irqoffset, &val, U300_GPIO_PINS_PER_PORT) {
+-			int pin_irq = gpio->irq_base + (port->number << 3)
+-				+ irqoffset;
++			int pin_irq = irq_find_mapping(port->domain, irqoffset);
+ 			int offset = pinoffset + irqoffset;
+ 
+ 			dev_dbg(gpio->dev, "GPIO IRQ %d on pin %d\n",
+@@ -631,6 +653,8 @@ static inline void u300_gpio_free_ports(struct u300_gpio *gpio)
+ 	list_for_each_safe(p, n, &gpio->port_list) {
+ 		port = list_entry(p, struct u300_gpio_port, node);
+ 		list_del(&port->node);
++		if (port->domain)
++			irq_domain_remove(port->domain);
+ 		kfree(port);
+ 	}
+ }
+@@ -653,7 +677,6 @@ static int __init u300_gpio_probe(struct platform_device *pdev)
+ 
+ 	gpio->chip = u300_gpio_chip;
+ 	gpio->chip.ngpio = plat->ports * U300_GPIO_PINS_PER_PORT;
+-	gpio->irq_base = plat->gpio_irq_base;
+ 	gpio->chip.dev = &pdev->dev;
+ 	gpio->chip.base = plat->gpio_base;
+ 	gpio->dev = &pdev->dev;
+@@ -732,18 +755,26 @@ static int __init u300_gpio_probe(struct platform_device *pdev)
+ 		port->irq = platform_get_irq_byname(pdev,
+ 						    port->name);
+ 
+-		dev_dbg(gpio->dev, "register IRQ %d for %s\n", port->irq,
++		dev_dbg(gpio->dev, "register IRQ %d for port %s\n", port->irq,
+ 			port->name);
+ 
++		port->domain = irq_domain_add_linear(pdev->dev.of_node,
++						     U300_GPIO_PINS_PER_PORT,
++						     &irq_domain_simple_ops,
++						     port);
++		if (!port->domain)
++			goto err_no_domain;
++
+ 		irq_set_chained_handler(port->irq, u300_gpio_irq_handler);
+ 		irq_set_handler_data(port->irq, port);
+ 
+ 		/* For each GPIO pin set the unique IRQ handler */
+ 		for (i = 0; i < U300_GPIO_PINS_PER_PORT; i++) {
+-			int irqno = gpio->irq_base + (portno << 3) + i;
++			int irqno = irq_create_mapping(port->domain, i);
+ 
+-			dev_dbg(gpio->dev, "handler for IRQ %d on %s\n",
+-				irqno, port->name);
++			dev_dbg(gpio->dev, "GPIO%d on port %s gets IRQ %d\n",
++				gpio->chip.base + (port->number << 3) + i,
++				port->name, irqno);
+ 			irq_set_chip_and_handler(irqno, &u300_gpio_irqchip,
+ 						 handle_simple_irq);
+ 			set_irq_flags(irqno, IRQF_VALID);
+@@ -776,6 +807,7 @@ static int __init u300_gpio_probe(struct platform_device *pdev)
+ err_no_pinctrl:
+ 	err = gpiochip_remove(&gpio->chip);
+ err_no_chip:
++err_no_domain:
+ err_no_port:
+ 	u300_gpio_free_ports(gpio);
+ 	iounmap(gpio->base);
+diff --git a/include/linux/platform_data/pinctrl-coh901.h b/include/linux/platform_data/pinctrl-coh901.h
+index 30dea25..27a23b3 100644
+--- a/include/linux/platform_data/pinctrl-coh901.h
++++ b/include/linux/platform_data/pinctrl-coh901.h
+@@ -13,13 +13,11 @@
+  * struct u300_gpio_platform - U300 GPIO platform data
+  * @ports: number of GPIO block ports
+  * @gpio_base: first GPIO number for this block (use a free range)
+- * @gpio_irq_base: first GPIO IRQ number for this block (use a free range)
+  * @pinctrl_device: pin control device to spawn as child
+  */
+ struct u300_gpio_platform {
+ 	u8 ports;
+ 	int gpio_base;
+-	int gpio_irq_base;
+ 	struct platform_device *pinctrl_device;
+ };
+ 
 -- 
-Thanks and Regards
-Srikar
+1.7.11.3
 
