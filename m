@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab2JQJ6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 05:58:09 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:46676 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755050Ab2JQJ6H convert rfc822-to-8bit (ORCPT
+	id S1756519Ab2JQKKi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 06:10:38 -0400
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:39953 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755862Ab2JQKKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 05:58:07 -0400
-Message-ID: <507E812C.2030507@arm.com>
-Date: Wed, 17 Oct 2012 10:58:04 +0100
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        PDSW-power-team <PDSW-power-team@arm.com>
-Subject: Re: [PATCH 1/2] cpufreq: Improve debug prints
-References: <3b38cb8ab136e5af3a70fceb7d77ad9fc889eb3f.1350451100.git.viresh.kumar@linaro.org> <507E797C.1010204@arm.com> <CAKohpom0Jk+DqAKXz_KWJhpdVAmmXWA2Tr97OpK6=Ke8+KrW8g@mail.gmail.com>
-In-Reply-To: <CAKohpom0Jk+DqAKXz_KWJhpdVAmmXWA2Tr97OpK6=Ke8+KrW8g@mail.gmail.com>
-X-OriginalArrivalTime: 17 Oct 2012 09:58:04.0929 (UTC) FILETIME=[E6DC9F10:01CDAC4D]
-X-MC-Unique: 112101710580509701
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Wed, 17 Oct 2012 06:10:36 -0400
+From: Mischa Jonker <mischa.jonker@synopsys.com>
+To: dmitry.torokhov@gmail.com, m.d.s.x.jonker@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arc-linux-dev@synopsys.com
+Cc: Mischa Jonker <mischa.jonker@synopsys.com>
+Subject: [PATCH v2 0/1] ARC PS/2 driver
+Date: Wed, 17 Oct 2012 12:10:18 +0200
+Message-Id: <1350468619-4813-1-git-send-email-mischa.jonker@synopsys.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/10/12 10:39, Viresh Kumar wrote:
-> On 17 October 2012 14:55, Sudeep KarkadaNagesha
-> <Sudeep.KarkadaNagesha@arm.com> wrote:
->> With CONFIG_DYNAMIC_DEBUG, you can control(enable/disable) debug
->> prints at different levels (file, module, line, function)
->
-> Quickly went through this :)
-> http://www.kernel.org/doc/ols/2009/ols2009-pages-39-46.pdf
->
-May be kernel/Documentation/dynamic-debug-howto.txt is more up-to-date.
+Processed review comments, thanks for the quick feed back!
 
-> My usecase is a bit different. I want to see all bootprints with
-> cpufreq pr_debug
-> prints. So, this prefixing will help there.
->
-> Also, i am not sure if dynamic debug will help in boot prints too?
-The document covers "Debug messages during Boot Process" even though I 
-have never tried :)
+Main changes are:
+* dev_* instead of pr_*
+* ioread32/iowrite32 instead of inl/outl
+* use module_platform_driver macro
+* disabling interrupt twice was unnecessary
 
-Regards,
-Sudeep
+New patch has been tested on our own architecture (ARC) and
+builds cleanly on x86-64.
+
+Mischa Jonker (1):
+  Input: serio - Add ARC PS/2 driver
+
+ drivers/input/serio/Kconfig   |    9 ++
+ drivers/input/serio/Makefile  |    1 +
+ drivers/input/serio/arc_ps2.c |  275 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 285 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/serio/arc_ps2.c
 
