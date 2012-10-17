@@ -1,115 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501Ab2JQEFu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 00:05:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33420 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750798Ab2JQEFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 00:05:48 -0400
-Date: Wed, 17 Oct 2012 00:05:15 -0400
-From: Dave Jones <davej@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, bhutchings@solarflare.com,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch for-3.7] mm, mempolicy: fix printing stack contents in
- numa_maps
-Message-ID: <20121017040515.GA13505@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	David Rientjes <rientjes@google.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-	bhutchings@solarflare.com,
-	Konstantin Khlebnikov <khlebnikov@openvz.org>,
-	Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-	Hugh Dickins <hughd@google.com>,
-	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-	linux-kernel@vger.kernel.org, linux-mm@kvack.org
-References: <20121008150949.GA15130@redhat.com>
- <CAHGf_=pr1AYeWZhaC2MKN-XjiWB7=hs92V0sH-zVw3i00X-e=A@mail.gmail.com>
- <alpine.DEB.2.00.1210152055150.5400@chino.kir.corp.google.com>
- <CAHGf_=rLjQbtWQLDcbsaq5=zcZgjdveaOVdGtBgBwZFt78py4Q@mail.gmail.com>
- <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com>
- <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com>
- <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751321Ab2JQEMj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 00:12:39 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45544 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750775Ab2JQEMi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 00:12:38 -0400
+From: Inderpal Singh <inderpal.singh@linaro.org>
+To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: jassisinghbrar@gmail.com, vinod.koul@intel.com, boojin.kim@samsung.com,
+        kgene.kim@samsung.com, patches@linaro.org
+Subject: [PATCH] DMA: PL330: Add runtime pm support
+Date: Wed, 17 Oct 2012 09:42:31 +0530
+Message-Id: <1350447151-16737-1-git-send-email-inderpal.singh@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 05:31:23PM -0700, David Rientjes wrote:
+At the pl330's probe point the device is already in runtime resume state.
+Hence to manage the device with runtime, the probe should do pm_runtime_put
+and remove should do pm_runtime_get to balance with probe.
 
- > -	pol = get_vma_policy(proc_priv->task, vma, vma->vm_start);
- > +	task_lock(task);
- > +	pol = get_vma_policy(task, vma, vma->vm_start);
- >  	mpol_to_str(buffer, sizeof(buffer), pol, 0);
- >  	mpol_cond_put(pol);
- > +	task_unlock(task);
+And in between, the device is being get/put at alloc_chan_resources and
+free_chan_resources.
 
-This seems to cause some fallout for me..
+Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
+---
+This patch is based on slave-dma's next branch and on top
+of the clean up patches at [1].
 
-BUG: sleeping function called from invalid context at kernel/mutex.c:269
-in_atomic(): 1, irqs_disabled(): 0, pid: 8558, name: trinity-child2
-3 locks on stack by trinity-child2/8558:
- #0: held:     (&p->lock){+.+.+.}, instance: ffff88010c9a00b0, at: [<ffffffff8120cd1f>] seq_lseek+0x3f/0x120
- #1: held:     (&mm->mmap_sem){++++++}, instance: ffff88013956f7c8, at: [<ffffffff81254437>] m_start+0xa7/0x190
- #2: held:     (&(&p->alloc_lock)->rlock){+.+...}, instance: ffff88011fc64f30, at: [<ffffffff81254f8f>] show_numa_map+0x14f/0x610
-Pid: 8558, comm: trinity-child2 Not tainted 3.7.0-rc1+ #32
-Call Trace:
- [<ffffffff810ae4ec>] __might_sleep+0x14c/0x200
- [<ffffffff816bdf4e>] mutex_lock_nested+0x2e/0x50
- [<ffffffff811c43a3>] mpol_shared_policy_lookup+0x33/0x90
- [<ffffffff8118d5c3>] shmem_get_policy+0x33/0x40
- [<ffffffff811c31fa>] get_vma_policy+0x3a/0x90
- [<ffffffff81254fa3>] show_numa_map+0x163/0x610
- [<ffffffff81255b10>] ? pid_maps_open+0x20/0x20
- [<ffffffff81255980>] ? pagemap_hugetlb_range+0xf0/0xf0
- [<ffffffff81255483>] show_pid_numa_map+0x13/0x20
- [<ffffffff8120c902>] traverse+0xf2/0x230
- [<ffffffff8120cd8b>] seq_lseek+0xab/0x120
- [<ffffffff811e6c0b>] sys_lseek+0x7b/0xb0
- [<ffffffff816ca088>] tracesys+0xe1/0xe6
+[1] https://lkml.org/lkml/2012/10/5/169
 
+ drivers/dma/pl330.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-same problem, different syscall..
-
-
-BUG: sleeping function called from invalid context at kernel/mutex.c:269
-in_atomic(): 1, irqs_disabled(): 0, pid: 21996, name: trinity-child3
-3 locks on stack by trinity-child3/21996:
- #0: held:     (&p->lock){+.+.+.}, instance: ffff88008d712c08, at: [<ffffffff8120ce3d>] seq_read+0x3d/0x3e0
- #1: held:     (&mm->mmap_sem){++++++}, instance: ffff88013956f7c8, at: [<ffffffff81254437>] m_start+0xa7/0x190
- #2: held:     (&(&p->alloc_lock)->rlock){+.+...}, instance: ffff88011fc64f30, at: [<ffffffff81254f8f>] show_numa_map+0x14f/0x610
-Pid: 21996, comm: trinity-child3 Not tainted 3.7.0-rc1+ #32
-Call Trace:
- [<ffffffff810ae4ec>] __might_sleep+0x14c/0x200
- [<ffffffff816bdf4e>] mutex_lock_nested+0x2e/0x50
- [<ffffffff811c43a3>] mpol_shared_policy_lookup+0x33/0x90
- [<ffffffff8118d5c3>] shmem_get_policy+0x33/0x40
- [<ffffffff811c31fa>] get_vma_policy+0x3a/0x90
- [<ffffffff81254fa3>] show_numa_map+0x163/0x610
- [<ffffffff81255b10>] ? pid_maps_open+0x20/0x20
- [<ffffffff81255980>] ? pagemap_hugetlb_range+0xf0/0xf0
- [<ffffffff81255483>] show_pid_numa_map+0x13/0x20
- [<ffffffff8120c902>] traverse+0xf2/0x230
- [<ffffffff8120d14b>] seq_read+0x34b/0x3e0
- [<ffffffff8120ce00>] ? seq_lseek+0x120/0x120
- [<ffffffff811e751a>] do_loop_readv_writev+0x5a/0x90
- [<ffffffff811e7851>] do_readv_writev+0x1c1/0x1e0
- [<ffffffff810b0de1>] ? get_parent_ip+0x11/0x50
- [<ffffffff811e7905>] vfs_readv+0x35/0x60
- [<ffffffff811e7b72>] sys_preadv+0xc2/0xe0
- [<ffffffff816ca088>] tracesys+0xe1/0xe6
-
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index 2ee1538..5ae19ea 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -25,6 +25,7 @@
+ #include <linux/amba/pl330.h>
+ #include <linux/scatterlist.h>
+ #include <linux/of.h>
++#include <linux/pm_runtime.h>
+ 
+ #include "dmaengine.h"
+ #define PL330_MAX_CHAN		8
+@@ -2384,6 +2385,8 @@ static int pl330_alloc_chan_resources(struct dma_chan *chan)
+ 	struct dma_pl330_dmac *pdmac = pch->dmac;
+ 	unsigned long flags;
+ 
++	pm_runtime_get_sync(pdmac->ddma.dev);
++
+ 	spin_lock_irqsave(&pch->lock, flags);
+ 
+ 	dma_cookie_init(chan);
+@@ -2392,6 +2395,7 @@ static int pl330_alloc_chan_resources(struct dma_chan *chan)
+ 	pch->pl330_chid = pl330_request_channel(&pdmac->pif);
+ 	if (!pch->pl330_chid) {
+ 		spin_unlock_irqrestore(&pch->lock, flags);
++		pm_runtime_put(pdmac->ddma.dev);
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -2470,6 +2474,8 @@ static void pl330_free_chan_resources(struct dma_chan *chan)
+ 		list_splice_tail_init(&pch->work_list, &pch->dmac->desc_pool);
+ 
+ 	spin_unlock_irqrestore(&pch->lock, flags);
++
++	pm_runtime_put(pch->dmac->ddma.dev);
+ }
+ 
+ static enum dma_status
+@@ -2974,6 +2980,8 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+ 		pi->pcfg.data_bus_width / 8, pi->pcfg.num_chan,
+ 		pi->pcfg.num_peri, pi->pcfg.num_events);
+ 
++	pm_runtime_put(pd->dev);
++
+ 	return 0;
+ 
+ probe_err5:
+@@ -3017,6 +3025,8 @@ static int __devexit pl330_remove(struct amba_device *adev)
+ 			return -EBUSY;
+ 	}
+ 
++	pm_runtime_get(pdmac->ddma.dev);
++
+ 	dma_async_device_unregister(&pdmac->ddma);
+ 
+ 	amba_set_drvdata(adev, NULL);
+-- 
+1.7.9.5
 
