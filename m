@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757133Ab2JQOCi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 10:02:38 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:33957 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757068Ab2JQOCg (ORCPT
+	id S1757153Ab2JQODJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 10:03:09 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:16749 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757066Ab2JQODH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 10:02:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121015013009.GB2616@ZenIV.linux.org.uk>
-References: <20121001213809.GA31155@ZenIV.linux.org.uk> <20121015013009.GB2616@ZenIV.linux.org.uk>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Wed, 17 Oct 2012 15:02:15 +0100
-X-Google-Sender-Auth: _4scvxeI9q3JPsRCDiVqsNaevGQ
-Message-ID: <CAHkRjk7QbybMx1Kc9dP-Mz_ujMmHf5htLViviNok=HKjac0G+A@mail.gmail.com>
-Subject: Re: [RFC][CFT][CFReview] execve and kernel_thread unification work
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arch@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 17 Oct 2012 10:03:07 -0400
+Message-ID: <1350482142.28185.0.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 1/2] ACPI: Fix stale pointer access to flags.lockable
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
+        rjw@sisk.pl, liuj97@gmail.com
+Date: Wed, 17 Oct 2012 07:55:42 -0600
+In-Reply-To: <507E090C.2070607@jp.fujitsu.com>
+References: <1350318870-5700-1-git-send-email-toshi.kani@hp.com>
+	 <507E090C.2070607@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al,
+On Wed, 2012-10-17 at 10:25 +0900, Yasuaki Ishimatsu wrote:
+> 2012/10/16 1:34, Toshi Kani wrote:
+> > During hot-remove, acpi_bus_hot_remove_device() calls ACPI _LCK
+> > method when device->flags.lockable is set. However, this device
+> > pointer is stale since the target acpi_device object has been
+> > already kfree'd by acpi_bus_trim().
+> > 
+> > The flags.lockable indicates whether or not this ACPI object
+> > implements _LCK method. Fix the stable pointer access by replacing
+> > it with acpi_get_handle() to check if _LCK is implemented.
+> > 
+> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> 
+> Looks good to me.
+> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-On 15 October 2012 02:30, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> arch-arm64 - patches from maintainer with minor followup folded
-
-Thanks for updating the arm64 branch. I've adapted the changes, tested
-and folded them into the branch below (the AArch64 instruction set
-does not have conditional instructions):
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git
-execve
-
-Top commit: 6a872777ffff6184f4ac10bd71d926d5e6f2491e (arm64: Use
-generic sys_execve() implementation)
-
-The diff between your branch and mine (including one cosmetic change
-as the ARM64 Kconfig selects are alphabetically sorted):
-
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 31e3b5e..75b212d 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -6,8 +6,8 @@ config ARM64
- 	select GENERIC_IOMAP
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_IRQ_SHOW
--	select GENERIC_KERNEL_THREAD
- 	select GENERIC_KERNEL_EXECVE
-+	select GENERIC_KERNEL_THREAD
- 	select GENERIC_SMP_IDLE_THREAD
- 	select GENERIC_TIME_VSYSCALL
- 	select HARDIRQS_SW_RESEND
-diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-index c3d650a..6165318 100644
---- a/arch/arm64/kernel/entry.S
-+++ b/arch/arm64/kernel/entry.S
-@@ -611,10 +611,10 @@ ENDPROC(ret_to_user)
-  */
- ENTRY(ret_from_fork)
- 	bl	schedule_tail
--	cmp	x19, #0
--	movne	x0, x20
--	blne	x19
--	get_thread_info tsk
-+	cbz	x19, 1f				// not a kernel thread
-+	mov	x0, x20
-+	blr	x19
-+1:	get_thread_info tsk
- 	b	ret_to_user
- ENDPROC(ret_from_fork)
+Thanks Yasuaki for reviewing!
+-Toshi
 
 
--- 
-Catalin
+> > ---
+> >   drivers/acpi/scan.c | 6 +++++-
+> >   1 file changed, 5 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> > index 1fcb867..ed87f43 100644
+> > --- a/drivers/acpi/scan.c
+> > +++ b/drivers/acpi/scan.c
+> > @@ -97,6 +97,7 @@ void acpi_bus_hot_remove_device(void *context)
+> >   	struct acpi_eject_event *ej_event = (struct acpi_eject_event *) context;
+> >   	struct acpi_device *device;
+> >   	acpi_handle handle = ej_event->handle;
+> > +	acpi_handle temp;
+> >   	struct acpi_object_list arg_list;
+> >   	union acpi_object arg;
+> >   	acpi_status status = AE_OK;
+> > @@ -117,13 +118,16 @@ void acpi_bus_hot_remove_device(void *context)
+> >   		goto err_out;
+> >   	}
+> >   
+> > +	/* device has been freed */
+> > +	device = NULL;
+> > +
+> >   	/* power off device */
+> >   	status = acpi_evaluate_object(handle, "_PS3", NULL, NULL);
+> >   	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND)
+> >   		printk(KERN_WARNING PREFIX
+> >   				"Power-off device failed\n");
+> >   
+> > -	if (device->flags.lockable) {
+> > +	if (ACPI_SUCCESS(acpi_get_handle(handle, "_LCK", &temp))) {
+> >   		arg_list.count = 1;
+> >   		arg_list.pointer = &arg;
+> >   		arg.type = ACPI_TYPE_INTEGER;
+> > 
+> 
+> 
+
+
