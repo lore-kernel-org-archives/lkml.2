@@ -1,68 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981Ab2JQNVY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 09:21:24 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39696 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754689Ab2JQNVX (ORCPT
+	id S932175Ab2JQNXB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 09:23:01 -0400
+Received: from forward1.mail.yandex.net ([77.88.46.6]:37417 "EHLO
+	forward1.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756859Ab2JQNXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 09:21:23 -0400
-Date: Wed, 17 Oct 2012 22:21:17 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: lrg@ti.com, sameo@linux.intel.com, vbyravarasu@nvidia.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 0/4] regulator: tps65090: fix regulator registration
- and add external control support
-Message-ID: <20121017132115.GR14199@opensource.wolfsonmicro.com>
-References: <1349776142-6409-1-git-send-email-ldewangan@nvidia.com>
+	Wed, 17 Oct 2012 09:23:00 -0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Michal Marek <mmarek@suse.cz>, Tkhai Kirill <tkhai@yandex.ru>
+Subject: Add magic for declarations of popular kernel type
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QxN5xOWGsmh5a4wb"
-Content-Disposition: inline
-In-Reply-To: <1349776142-6409-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: You will be run over by a beer truck.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <410461350480175@web15d.yandex.ru>
+Date: Wed, 17 Oct 2012 17:22:55 +0400
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add magic for declarations of variables of popular kernel type
+like spinlock_t, list_head, wait_queue_head_t and others.
 
---QxN5xOWGsmh5a4wb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Kirill V Tkhai <tkhai@yandex.ru>
 
-On Tue, Oct 09, 2012 at 03:18:58PM +0530, Laxman Dewangan wrote:
-> This patch series fixes the regulator registration issue and add support
-> for external control.
-> Patch 1: It renames the driver name and regulators to more appropriate.
-> Patch 2: Fix the issue with regulator registration.
-> Patch 3: Add LDO support.
-> Patch 4: Add voltage output level information.
-> Patch 5: Add support for extenal control for DCDC.
-
-Applied all four patches, thanks.
-
---QxN5xOWGsmh5a4wb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQfrDCAAoJELSic+t+oim9ax8P/Rvyc5nxfNw4SouMs+marAzP
-46h7lRbJSlklcz4ePsD1dQHcSsJoVfAXFqqOVUbSfyP+fljUv4p5TvL9vSeHncpY
-qcVp8mbwWtvSNwyLXNgctzGfZyVkmJTYOe9QfpzQ65HABdghrA5jorBzZ1+qhESD
-a5AbLS3YQ3oiByasYfnjiQ6tgxh3sJJ7JMHgroKO3LjLuLn3FNvm1DIK1AcVPm5t
-e4xCxePfhHggzfHRTT9GKFDDz225U9cVMI3p23x8B6OxfHuOMA5j+YnLC9q81FKS
-r2WkGn6gaS+SRGj6MuEbl5QDcTjdHfUYSKQLI/sGUwiIVzd8h8Il7vWQz9WXlcUc
-gQXkaUU4w1v1fnD/ee1GnSr996xbx07RLf2DEBKvrHakguKuXwcN5uuw9eUM29Tf
-ngefb0V8tSnwbRADTHEEL4cEN0cEsEZRxNJCvx2LlSBQD5zGTuZlS0rdbkI4Kwmx
-CUuPTD7lgafZB+n+/gklFPfUPXlBtsbqdGxXZ6gEt3bML4QVIryW4DnApENXvPl4
-T+30ZOehmZ/RPPECHMFyspCDM4T6i6F0EO2N9ktet0eh2N2wPxYDfFXo464y1NSI
-jqvlGNof5+AIVC2d7OFlAYMQoa3bN0NRVg2KeJ5OnwM7OIuEzYyvpk9a/wqylj5c
-vqADVmMTxkSTsYqg4dNg
-=2RDo
------END PGP SIGNATURE-----
-
---QxN5xOWGsmh5a4wb--
+---
+ scripts/tags.sh |   39 ++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 34 insertions(+), 5 deletions(-)
+ mode change 100755 => 100644 scripts/tags.sh
+diff --git a/scripts/tags.sh b/scripts/tags.sh
+old mode 100755
+new mode 100644
+index cff8faa..9d0eea5
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -122,12 +122,17 @@ dogtags()
+ exuberant()
+ {
+ 	all_sources | xargs $1 -a                               \
+-	-I __initdata,__exitdata,__acquires,__releases          \
+-	-I __read_mostly,____cacheline_aligned                  \
++	-I __initdata,__exitdata,__initconst,__devinitdata	\
++	-I __devinitconst,__cpuinitdata,__initdata_memblock	\
++	-I __refdata,__attribute				\
++	-I __acquires,__releases,__deprecated			\
++	-I __read_mostly,__aligned,____cacheline_aligned        \
+ 	-I ____cacheline_aligned_in_smp                         \
+ 	-I ____cacheline_internodealigned_in_smp                \
++	-I __used,__packed,__packed2__,__must_check,__must_hold	\
+ 	-I EXPORT_SYMBOL,EXPORT_SYMBOL_GPL                      \
+ 	-I DEFINE_TRACE,EXPORT_TRACEPOINT_SYMBOL,EXPORT_TRACEPOINT_SYMBOL_GPL \
++	-I static,const						\
+ 	--extra=+f --c-kinds=+px                                \
+ 	--regex-asm='/^(ENTRY|_GLOBAL)\(([^)]*)\).*/\2/'        \
+ 	--regex-c='/^SYSCALL_DEFINE[[:digit:]]?\(([^,)]*).*/sys_\1/' \
+@@ -152,9 +157,21 @@ exuberant()
+ 	--regex-c++='/SETPAGEFLAG_NOOP\(([^,)]*).*/SetPage\1/'		\
+ 	--regex-c++='/CLEARPAGEFLAG_NOOP\(([^,)]*).*/ClearPage\1/'	\
+ 	--regex-c++='/__CLEARPAGEFLAG_NOOP\(([^,)]*).*/__ClearPage\1/'	\
+-	--regex-c++='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
++	--regex-c++='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/'	\
+ 	--regex-c++='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/' \
+-	--regex-c++='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'
++	--regex-c++='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'		\
++	--regex-c='/PCI_OP_READ\(([a-z]*[a-z]).*[1-4]\)/pci_bus_read_config_\1/' \
++	--regex-c='/PCI_OP_WRITE\(([a-z]*[a-z]).*[1-4]\)/pci_bus_write_config_\1/' \
++	--regex-c='/DEFINE_(MUTEX|SEMAPHORE|SPINLOCK)\((\w*)/\2/v/'	\
++	--regex-c='/DEFINE_(RAW_SPINLOCK|RWLOCK|SEQLOCK)\((\w*)/\2/v/'	\
++	--regex-c='/DECLARE_(RWSEM|COMPLETION)\((\w*)/\2/v/'		\
++	--regex-c='/DECLARE_BITMAP\((\w*)/\1/v/'			\
++	--regex-c='/(^|\s)(|L|H)LIST_HEAD\((\w*)/\3/v/'			\
++	--regex-c='/(^|\s)RADIX_TREE\((\w*)/\2/v/'			\
++	--regex-c='/DEFINE_PER_CPU(|_SHARED_ALIGNED)\(([^,]*,\s*)(\w*).*\)/\3/v/' \
++	--regex-c='/DECLARE_WAIT_QUEUE_HEAD\((\w*)/\1/v/'		\
++	--regex-c='/DECLARE_(TASKLET|WORK|DELAYED_WORK)\((\w*)/\2/v/'	\
++	--regex-c='/DEFINE_PCI_DEVICE_TABLE\((\w*)/\1/v/'
+ 
+ 	all_kconfigs | xargs $1 -a                              \
+ 	--langdef=kconfig --language-force=kconfig              \
+@@ -197,7 +214,19 @@ emacs()
+ 	--regex='/__CLEARPAGEFLAG_NOOP\(([^,)]*).*/__ClearPage\1/' \
+ 	--regex='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
+ 	--regex='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/' \
+-	--regex='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'
++	--regex='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'		\
++	--regex='/PCI_OP_READ\(([a-z]*[a-z]).*[1-4]\)/pci_bus_read_config_\1/' \
++	--regex='/PCI_OP_WRITE\(([a-z]*[a-z]).*[1-4]\)/pci_bus_write_config_\1/' \
++	--regex='/DEFINE_(MUTEX|SEMAPHORE|SPINLOCK)\((\w*)/\2/v/'	\
++	--regex='/DEFINE_(RAW_SPINLOCK|RWLOCK|SEQLOCK)\((\w*)/\2/v/'	\
++	--regex='/DECLARE_(RWSEM|COMPLETION)\((\w*)/\2/v/'		\
++	--regex='/DECLARE_BITMAP\((\w*)/\1/v/'				\
++	--regex='/(^|\s)(|L|H)LIST_HEAD\((\w*)/\3/v/'			\
++	--regex='/(^|\s)RADIX_TREE\((\w*)/\2/v/'			\
++	--regex='/DEFINE_PER_CPU(|_SHARED_ALIGNED)\(([^,]*,\s*)(\w*).*\)/\3/v/' \
++	--regex='/DECLARE_WAIT_QUEUE_HEAD\((\w*)/\1/v/'			\
++	--regex='/DECLARE_(TASKLET|WORK|DELAYED_WORK)\((\w*)/\2/v/'	\
++	--regex='/DEFINE_PCI_DEVICE_TABLE\((\w*)/\1/v/'
+ 
+ 	all_kconfigs | xargs $1 -a                              \
+ 	--regex='/^[ \t]*\(\(menu\)*config\)[ \t]+\([a-zA-Z0-9_]+\)/\3/'
