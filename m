@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306Ab2JQQDY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 12:03:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60764 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751908Ab2JQQDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 12:03:22 -0400
-Message-ID: <507ED6C0.4020503@zytor.com>
-Date: Wed, 17 Oct 2012 09:03:12 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1756396Ab2JQQFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 12:05:23 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:58152 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908Ab2JQQFW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 12:05:22 -0400
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        lenb@kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org
-Subject: Re: [RFC] ACPI S3 and Xen (suprisingly small\!).
-References: <1350481786-4969-1-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1350481786-4969-1-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1350468877-7677-1-git-send-email-will.deacon@arm.com>
+References: <1350468877-7677-1-git-send-email-will.deacon@arm.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Wed, 17 Oct 2012 12:05:00 -0400
+Message-ID: <CA+1xoqcjomrD05vxdgx4FG2wR8DTmV58Xk5=BeVD3JGVfWrssA@mail.gmail.com>
+Subject: Re: [PATCH] virtio: 9p: correctly pass physical address to userspace
+ for high pages
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2012 06:49 AM, Konrad Rzeszutek Wilk wrote:
+On Wed, Oct 17, 2012 at 6:14 AM, Will Deacon <will.deacon@arm.com> wrote:
+> When using a virtio transport, the 9p net device allocates pages to back
+> the descriptors inserted into the virtqueue. These allocations may be
+> performed from atomic context (under the channel lock) and can therefore
+> return high mappings which aren't suitable for virt_to_phys.
 >
-> Note: These are the other patches that went in 3.7-rc1:
-> xen/bootup: allow {read|write}_cr8 pvops call [https://lkml.org/lkml/2012/10/10/339]
-> xen/bootup: allow read_tscp call for Xen PV guests. [https://lkml.org/lkml/2012/10/10/340]
+> This patch ensures that virtual addresses for virtio queue descriptors
+> are converted to physical addresses using kmap_to_page, which handles
+> high memory correctly.
 >
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Sasha Levin <levinsasha928@gmail.com>
+> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> ---
 
-So WTF do we have a read_tscp PV call?  Again, if there isn't a user we 
-should just axe it...
+One of the things I was seeing when fuzzing within lkvm were random
+crashes resulting
+from "odd" addresses used by virtio-9p queue descriptions. I
+attributed that to memory
+corruption as a result of something else failing the fuzz tests
+before, but this patch
+explains what might have gone wrong.
 
-	-hpa
+I'll plug it in and run tests on it.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
 
+Thanks,
+Sasha
