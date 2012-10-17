@@ -1,149 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756432Ab2JQJMc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 05:12:32 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:18112 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756388Ab2JQJMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 05:12:30 -0400
-X-IronPort-AV: E=Sophos;i="4.80,599,1344182400"; 
-   d="scan'208";a="6016317"
-Message-ID: <507E77D1.3030709@cn.fujitsu.com>
-Date: Wed, 17 Oct 2012 17:18:09 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1756449Ab2JQJOr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 05:14:47 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:48156 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753532Ab2JQJOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 05:14:44 -0400
+Message-ID: <507EE77D.6010906@parallels.com>
+Date: Wed, 17 Oct 2012 21:14:37 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/4] acpi,memory-hotplug : add memory offline code to
- acpi_memory_device_remove()
-References: <506C0AE8.40702@jp.fujitsu.com> <506C0C53.60205@jp.fujitsu.com> <CAHGf_=p7PaQs-kpnyB8uC1MntHQfL-CXhhq4QQP54mYiqOswqQ@mail.gmail.com> <50727984.20401@cn.fujitsu.com> <CAHGf_=pCrx8AkL9eiSYVgwvT1v0SW2__P_DW-1Wwj_zskqcLXw@mail.gmail.com>
-In-Reply-To: <CAHGf_=pCrx8AkL9eiSYVgwvT1v0SW2__P_DW-1Wwj_zskqcLXw@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/17 17:12:07,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/17 17:12:08,
-	Serialize complete at 2012/10/17 17:12:08
+To: Michael Wolf <mjw@linux.vnet.ibm.com>
+CC: <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
+        <peterz@infradead.org>, <mtosatti@redhat.com>, <mingo@redhat.com>,
+        <avi@redhat.com>, <anthony@codemonkey.ws>
+Subject: Re: [PATCH RFC V2 0/5] Separate consigned (expected steal) from steal
+ time.
+References: <20121017022249.16949.2775.stgit@lambeau>
+In-Reply-To: <20121017022249.16949.2775.stgit@lambeau>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 10/13/2012 03:10 AM, KOSAKI Motohiro Wrote:
->>>> -static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
->>>> +static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
->>>>  {
->>>>         int result;
->>>>         struct acpi_memory_info *info, *n;
->>>>
->>>> +       list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
->>>
->>> Which lock protect this loop?
->>
->> There is no any lock to protect it now...
+On 10/17/2012 06:23 AM, Michael Wolf wrote:
+> In the case of where you have a system that is running in a
+> capped or overcommitted environment the user may see steal time
+> being reported in accounting tools such as top or vmstat.  This can
+> cause confusion for the end user.  To ease the confusion this patch set
+> adds the idea of consigned (expected steal) time.  The host will separate
+> the consigned time from the steal time.  The consignment limit passed to the
+> host will be the amount of steal time expected within a fixed period of
+> time.  Any other steal time accruing during that period will show as the
+> traditional steal time.
 > 
-> When iterate an item removal list, you should use lock for protecting from
-> memory corruption.
+> TODO:
+> * Change native_clock to take params and not return a value
+> * Change update_rq_clock_task
 > 
-> 
-> 
-> 
->>>> +static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
->>>> +{
->>>> +       int result;
->>>>
->>>>         /*
->>>>          * Ask the VM to offline this memory range.
->>>>          * Note: Assume that this function returns zero on success
->>>>          */
->>>
->>> Write function comment instead of this silly comment.
->>>
->>>> -       list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
->>>> -               if (info->enabled) {
->>>> -                       result = remove_memory(info->start_addr, info->length);
->>>> -                       if (result)
->>>> -                               return result;
->>>> -               }
->>>> -               kfree(info);
->>>> -       }
->>>> +       result = acpi_memory_remove_memory(mem_device);
->>>> +       if (result)
->>>> +               return result;
->>>>
->>>>         /* Power-off and eject the device */
->>>>         result = acpi_memory_powerdown_device(mem_device);
->>>
->>> This patch move acpi_memory_powerdown_device() from ACPI_NOTIFY_EJECT_REQUEST
->>> to release callback, but don't explain why.
->>
->> Hmm, it doesn't move the code. It just reuse the code in acpi_memory_powerdown_device().
-> 
-> Even if reuse or not reuse, you changed the behavior. If any changes
-> has no good rational, you cannot get an ack.
-> 
-> 
-> 
-> 
->>>> @@ -473,12 +486,23 @@ static int acpi_memory_device_add(struct
->>>>  static int acpi_memory_device_remove(struct acpi_device *device, int type)
->>>>  {
->>>>         struct acpi_memory_device *mem_device = NULL;
->>>> -
->>>> +       int result;
->>>>
->>>>         if (!device || !acpi_driver_data(device))
->>>>                 return -EINVAL;
->>>>
->>>>         mem_device = acpi_driver_data(device);
->>>> +
->>>> +       if (type == ACPI_BUS_REMOVAL_EJECT) {
->>>> +               /*
->>>> +                * offline and remove memory only when the memory device is
->>>> +                * ejected.
->>>> +                */
->>>
->>> This comment explain nothing. A comment should describe _why_ should we do.
->>> e.g. Why REMOVAL_NORMAL and REMOVEL_EJECT should be ignored. Why
->>> we need remove memory here instead of ACPI_NOTIFY_EJECT_REQUEST.
->>
->> Hmm, we have 2 ways to remove a memory:
->> 1. SCI
->> 2. echo 1 >/sys/bus/acpi/devices/PNP0C80:XX/eject
->>
->> In the 2nd case, there is no ACPI_NOTIFY_EJECT_REQUEST. We should offline
->> the memory and remove it from kernel in the release callback. We will poweroff
->> the memory device in acpi_bus_hot_remove_device(), so we must offline
->> and remove it if the type is ACPI_BUS_REMOVAL_EJECT.
->>
->> I guess we should not poweroff the memory device when we fail to offline it.
->> But device_release_driver() doesn't returns any error...
-> 
-> 1) I think /sys/bus/acpi/devices/PNP0C80:XX/eject should emulate acpi
-> eject. Can't
-> you make a pseudo acpi eject event and detach device by acpi regular path?
-
-It is another issue. And we only can implement it here with current acpi
-implemention. Some other acpi devices(for example: cpu) do it like this.
-
-> 
-> 2) Your explanation didn't explain why we should ignore REMOVAL_NORMAL
-> and REMOVEL_EJECT. As far as reviewers can't track your intention, we
-> can't maintain
-> the code and can't ack them.
+> Changes from V1:
+> * Removed the steal time allowed percentage from the guest
+> * Moved the separation of consigned (expected steal) and steal time to the
+>   host.
+> * No longer include a sysctl interface.
 > 
 
-REMOVAL_NORMAL means the user want to unbind the memory device from this driver.
-It is no need to eject the device, and we can still use this device after unbinding.
-So it can be ignored.
+You are showing this in the guest somewhere, but tools like top will
+still not show it. So for quite a while, it achieves nothing.
 
-REMOVAL_EJECT means the user want to eject and remove the device, and we should
-not use the device. So we should offline and remove the memory here.
+Of course this is a barrier that any new statistic has to go through. So
+while annoying, this is per-se ultimately not a blocker.
 
-Thanks
-Wen Congyang
+What I still fail to see, is how this is useful information to be shown
+in the guest. Honestly, if I'm in a guest VM or container, any time
+during which I am not running is time I lost. It doesn't matter if this
+was expected or not. This still seems to me as a host-side problem, to
+be solved entirely by tooling.
+
