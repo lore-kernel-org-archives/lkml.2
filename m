@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232Ab2JQOP4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 10:15:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8990 "EHLO mx1.redhat.com"
+	id S932270Ab2JQOQM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 10:16:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30241 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757280Ab2JQOPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 10:15:46 -0400
+	id S932181Ab2JQOQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 10:16:06 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 03/10] UAPI: Remove empty conditionals from
- include/linux/Kbuild
+Subject: [PATCH 05/10] UAPI: Place comments in empty arch Kbuilds to make them
+ non-empty
 To: torvalds@osdl.org
 Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Date: Wed, 17 Oct 2012 15:15:43 +0100
-Message-ID: <20121017141543.29084.79155.stgit@warthog.procyon.org.uk>
+        David Howells <dhowells@redhat.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Date: Wed, 17 Oct 2012 15:15:58 +0100
+Message-ID: <20121017141558.29084.64892.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20121017141521.29084.36722.stgit@warthog.procyon.org.uk>
 References: <20121017141521.29084.36722.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -28,31 +30,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove empty conditionals from include/linux/Kbuild as the contents, with new
-conditionals, have moved to include/uapi/linux/Kbuild.
+Place comments in:
+
+	arch/mips/include/asm/Kbuild
+	arch/tile/include/arch/Kbuild
+
+to make them non-empty so that the patch program doesn't remove them when it
+reduces them to nothing.
+
+Possibly they should be just deleted, but it's possible that they'll acquire
+generic-y or genhdr-y lines in future, so I'm keeping them around for the
+moment.
+
+Note that MIPS will compile happily if the file is deleted instead.  I haven't
+tested TILE, but I suspect it will be the same there.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Ralf Baechle <ralf@linux-mips.org>
+cc: Chris Metcalf <cmetcalf@tilera.com>
 ---
 
- include/linux/Kbuild |   10 ----------
- 1 file changed, 10 deletions(-)
+ arch/mips/include/asm/Kbuild  |    1 +
+ arch/tile/include/arch/Kbuild |    1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/include/linux/Kbuild b/include/linux/Kbuild
-index 5b57367..7729c58 100644
---- a/include/linux/Kbuild
-+++ b/include/linux/Kbuild
-@@ -19,13 +19,3 @@ header-y += netfilter_ipv4/
- header-y += netfilter_ipv6/
- header-y += usb/
- header-y += wimax/
--
--ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h \
--		  $(srctree)/arch/$(SRCARCH)/include/uapi/asm/a.out.h),)
--endif
--ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm.h \
--		  $(srctree)/arch/$(SRCARCH)/include/uapi/asm/kvm.h),)
--endif
--ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm_para.h \
--		  $(srctree)/arch/$(SRCARCH)/include/uapi/asm/kvm_para.h),)
--endif
+diff --git a/arch/mips/include/asm/Kbuild b/arch/mips/include/asm/Kbuild
+index e69de29..533053d 100644
+--- a/arch/mips/include/asm/Kbuild
++++ b/arch/mips/include/asm/Kbuild
+@@ -0,0 +1 @@
++# MIPS headers
+diff --git a/arch/tile/include/arch/Kbuild b/arch/tile/include/arch/Kbuild
+index e69de29..3751c9f 100644
+--- a/arch/tile/include/arch/Kbuild
++++ b/arch/tile/include/arch/Kbuild
+@@ -0,0 +1 @@
++# Tile arch headers
 
