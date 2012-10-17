@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757931Ab2JQVRE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 17:17:04 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:42569 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757881Ab2JQVRD (ORCPT
+	id S1757941Ab2JQVSt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 17:18:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53228 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756703Ab2JQVSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 17:17:03 -0400
-From: Tom Mingarelli <thomas.mingarelli@hp.com>
-To: Alex Williamson <alex.williamson@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>
-Cc: Shuah Khan <shuah.khan@hp.com>, Tom Mingarelli <thomas.mingarelli@hp.com>,
-        Linda Knippers <linda.knippers@hp.com>,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Message-Id: <20121018021735.23962.51639.sendpatchset@RHEL63BL460c>
-Subject: [PATCH v3] Prevent devices with RMRRs from being placed into SI Domain
-Date: Wed, 17 Oct 2012 21:17:00 +0000 (UTC)
+	Wed, 17 Oct 2012 17:18:48 -0400
+Message-ID: <507F20AC.6000308@canonical.com>
+Date: Wed, 17 Oct 2012 23:18:36 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Lennart Poettering <lennart@poettering.net>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sched: allow unsetting SCHED_RESET_ON_FORK when new policy
+ is not realtime
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is to prevent devices that have RMRRs associated with them to
-not be placed into the SI Domain during init. We don't put USB devices
-into this category, however. This fixes the issue where the RMRR info
-for devices being placed in and out of the SI Domain gets lost.
+When implementing SIGXCPU handling for a thread boosted with rtkit to realtime
+priority, I noticed that sched_setscheduler(somepid, SCHED_OTHER) would return
+-EPERM because the thread was previously SCHED_RR | SCHED_RESET_ON_FORK,
+and looking from the code that flag cannot be reset without sufficient rights.
 
-Signed-off-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
-Tested-by: Shuah Khan <shuah.khan@hp.com>
-----
-PATCH v1: https://lkml.org/lkml/2012/6/15/204
-PATCH v2: https://lkml.org/lkml/2012/9/18/354
+sched_setscheduler(somepid, SCHED_OTHER | SCHED_RESET_ON_FORK) which worked,
+and seems to be the only way to remove realtime priority set by rtkit on all
+kernels since the patch was introduced.
 
+This patch allows SCHED_RESET_ON_FORK to be removed when the user sets a new
+policy on itself without realtime.
 
-drivers/iommu/intel-iommu.c |   30 ++++++++++++++++++++++++++++++
- 1 files changed, 30 insertions(+), 0 deletions(-)
+Cc: Stable <stable@vger.kernel.org> [v2.6.32+]
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 
-diff -up ./drivers/iommu/intel-iommu.c.ORIG ./drivers/iommu/intel-iommu.c
---- ./drivers/iommu/intel-iommu.c.ORIG	2012-10-16 09:34:23.148089944 -0500
-+++ ./drivers/iommu/intel-iommu.c	2012-10-17 20:41:40.509642356 -0500
-@@ -2320,8 +2320,38 @@ static int domain_add_dev_info(struct dm
- 	return 0;
- }
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2d8927f..4c0712a 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3757,6 +3757,12 @@ recheck:
+ 			if (param->sched_priority > p->rt_priority &&
+ 			    param->sched_priority > rlim_rtprio)
+ 				return -EPERM;
++
++			/* Normal users shall not reset the
++			 * sched_reset_on_fork flag
++			 */
++			if (p->sched_reset_on_fork && !reset_on_fork)
++				return -EPERM;
+ 		}
  
-+static bool device_has_rmrr(struct pci_dev *dev)
-+{
-+	struct dmar_rmrr_unit *rmrr;
-+	int i;
-+
-+	for_each_rmrr_units(rmrr) {
-+		for (i = 0; i < rmrr->devices_cnt; i++) {
-+			/*
-+			 * Here we are just concerned with checking each device
-+			 * that has an RMRR associated with it and not allow it
-+			 * to be placed into the SI Domain during startup.
-+			*/
-+			if (rmrr->devices[i] == dev)
-+				return true;
-+		}
-+	}
-+	return false;
-+}
-+
- static int iommu_should_identity_map(struct pci_dev *pdev, int startup)
- {
-+
-+	/*
-+	 * This is where we will refuse any device that has an
-+	 * RMRR associated with it and is not a USB device and
-+	 * NOT allow it to be placed into the SI Domain. We don't
-+	 * need a separate bit for this because it could be ANY device.
-+	 */
-+	if (device_has_rmrr(pdev) &&
-+		(pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
-+			return 0;
-+
- 	if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
- 		return 1;
+ 		/*
+@@ -3771,10 +3777,6 @@ recheck:
+ 		/* can't change other user's priorities */
+ 		if (!check_same_owner(p))
+ 			return -EPERM;
+-
+-		/* Normal users shall not reset the sched_reset_on_fork flag */
+-		if (p->sched_reset_on_fork && !reset_on_fork)
+-			return -EPERM;
+ 	}
  
+ 	if (user) {
+
