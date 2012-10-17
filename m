@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab2JQDgR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 23:36:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3600 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755690Ab2JQDgP convert rfc822-to-8bit (ORCPT
+	id S1756118Ab2JQDhF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 23:37:05 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:48899 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755690Ab2JQDhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 23:36:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,597,1344236400"; 
-   d="scan'208";a="228514178"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] x86/ioapic: fix the irq_2_pin mem leak when destroy_irq
-Thread-Topic: [PATCH] x86/ioapic: fix the irq_2_pin mem leak when destroy_irq
-Thread-Index: AQHNrAuC4qnOuCFjlUW0E781HzncsZe8164A
-Date: Wed, 17 Oct 2012 03:36:12 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A1A18B9@SHSMSX101.ccr.corp.intel.com>
-References: <1350468706.15558.26.camel@cliu38-desktop-build>
- <CAE9FiQXFvuWS3HPBefUDS+a8VT_2=xtbjFowoPqZcwJSoKt_Hg@mail.gmail.com>
-In-Reply-To: <CAE9FiQXFvuWS3HPBefUDS+a8VT_2=xtbjFowoPqZcwJSoKt_Hg@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 16 Oct 2012 23:37:03 -0400
 MIME-Version: 1.0
+In-Reply-To: <CA+55aFy1c1Pn_czRoyybCGCsT89Rc7-kHfNCnH9xvc=p=1jrkQ@mail.gmail.com>
+References: <20121015161401.17133.8590.stgit@warthog.procyon.org.uk>
+	<CA+55aFy1c1Pn_czRoyybCGCsT89Rc7-kHfNCnH9xvc=p=1jrkQ@mail.gmail.com>
+Date: Wed, 17 Oct 2012 09:07:03 +0530
+X-Google-Sender-Auth: 5ySnPmwZKTKpZUpPs5FSTojdw5M
+Message-ID: <CAOh2x=m=6fpzPVAS2wx9J-0rKpXVJar1sXnEsn7pA0g3KsmRgA@mail.gmail.com>
+Subject: Re: [PATCH] Make uapi/linux/irqnr.h non-empty
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Alessandro Suardi <alessandro.suardi@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: yhlu.kernel@gmail.com [mailto:yhlu.kernel@gmail.com] On Behalf Of
-> Yinghai Lu
-> Sent: Wednesday, October 17, 2012 10:03 AM
-> To: Liu, Chuansheng
-> Cc: tglx@linutronix.de; mingo@redhat.com; Siddha, Suresh B;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] x86/ioapic: fix the irq_2_pin mem leak when destroy_irq
-> 
-> On Wed, Oct 17, 2012 at 3:11 AM, Chuansheng Liu
-> <chuansheng.liu@intel.com> wrote:
-> >
-> > When destroying the irq, before free cfg, need to check
-> > cfg->irq_2_pin and free it when it is not NULL.
-> >
-> > Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> > ---
-> 
-> i had that in another patch...
-> 
-> https://lkml.org/lkml/2012/2/23/574
-Sorry to not know that.
-> 
-> ----
-> Subject	[PATCH 01/13] x86, irq: Convert irq_2_pin list to generic list
-> Date	Thu, 23 Feb 2012 19:48:47 -0800
-> 
-> So we can use generic list helper function.
-Does it really need the generic list with both prev and next pointers?
-For irq_2_pin list, the next pointer seems be enough.
+On Wed, Oct 17, 2012 at 7:33 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 
-> 
-> Also make free_irq_cfg() free irq_2_pin list.
-> ----
-> 
-> http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;
-> h=4010f4dbd1b172e3080d3e6c459a58c4b575f081
-> 
-> Yinghai
+> Some of the empty files seem pointless. The
+>
+>   arch/arm/mach-spear13xx/include/mach/spear1310_misc_regs.h
+>
+> file, for example, has always been empty, and does not seem to be actually used.
+>
+> Hmm? I added a few more people to the cc list.
+
+Shocked :)
+I never realized these files were added by my commit and it never got caught in
+reviews :(
+
+Probably because git log --stat or git show (stat part) doesn't show
+files with zero
+changes. Probably need to fix that too?
+
+@Arnd: Can you please apply following patch to fix SPEAr's issues
+point out by Linus?
+
+------------------------x-------------------x------------------------
+
+From: Viresh Kumar <viresh.kumar@linaro.org>
+Date: Wed, 17 Oct 2012 08:58:08 +0530
+Subject: [PATCH] ARM: SPEAr: Remove unused empty files
+
+Few empty files (spear1310_misc_regs.h and spear1340_misc_regs.h) are created by
+commit:
+
+commit b31e23726bb9d6cd8848fc539b23330769830110
+Author: Viresh Kumar <viresh.kumar@st.com>
+Date:   Thu Apr 19 22:23:13 2012 +0530
+
+    SPEAr13xx: Add header files
+
+Don't know how they got added, obviously my fault :)
+But nobody could even catch them in reviews.
+
+Remove them.
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ 0 files changed
+ delete mode 100644 arch/arm/mach-spear13xx/include/mach/spear1310_misc_regs.h
+ delete mode 100644 arch/arm/mach-spear13xx/include/mach/spear1340_misc_regs.h
+
+diff --git a/arch/arm/mach-spear13xx/include/mach/spear1310_misc_regs.h
+b/arch/arm/mach-spear13xx/include/mach/spear1310_misc_regs.h
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/arch/arm/mach-spear13xx/include/mach/spear1340_misc_regs.h
+b/arch/arm/mach-spear13xx/include/mach/spear1340_misc_regs.h
+deleted file mode 100644
+index e69de29..0000000
