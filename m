@@ -1,243 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab2JQCcc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 22:32:32 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33942 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755949Ab2JQCca (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 22:32:30 -0400
-Message-ID: <507E18AD.3070000@gmail.com>
-Date: Wed, 17 Oct 2012 10:32:13 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 00/10] Introduce huge zero page
-References: <1349191172-28855-1-git-send-email-kirill.shutemov@linux.intel.com> <20121002153148.1ae1020a.akpm@linux-foundation.org> <20121003000402.GA31141@shutemov.name>
-In-Reply-To: <20121003000402.GA31141@shutemov.name>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756049Ab2JQClS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 22:41:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12447 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755690Ab2JQClQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 22:41:16 -0400
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Arvind R ." <arvino55@gmail.com>
+Subject: [PATCH EDAC 0/3] Fix i82975x_edac driver
+Date: Tue, 16 Oct 2012 23:41:07 -0300
+Message-Id: <cover.1350440633.git.mchehab@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2012 08:04 AM, Kirill A. Shutemov wrote:
-> On Tue, Oct 02, 2012 at 03:31:48PM -0700, Andrew Morton wrote:
->> On Tue,  2 Oct 2012 18:19:22 +0300
->> "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
->>
->>> During testing I noticed big (up to 2.5 times) memory consumption overhead
->>> on some workloads (e.g. ft.A from NPB) if THP is enabled.
->>>
->>> The main reason for that big difference is lacking zero page in THP case.
->>> We have to allocate a real page on read page fault.
->>>
->>> A program to demonstrate the issue:
->>> #include <assert.h>
->>> #include <stdlib.h>
->>> #include <unistd.h>
->>>
->>> #define MB 1024*1024
->>>
->>> int main(int argc, char **argv)
->>> {
->>>          char *p;
->>>          int i;
->>>
->>>          posix_memalign((void **)&p, 2 * MB, 200 * MB);
->>>          for (i = 0; i < 200 * MB; i+= 4096)
->>>                  assert(p[i] == 0);
->>>          pause();
->>>          return 0;
->>> }
->>>
->>> With thp-never RSS is about 400k, but with thp-always it's 200M.
->>> After the patcheset thp-always RSS is 400k too.
->> I'd like to see a full description of the design, please.
-> Okay. Design overview.
->
-> Huge zero page (hzp) is a non-movable huge page (2M on x86-64) filled with
-> zeros.  The way how we allocate it changes in the patchset:
->
-> - [01/10] simplest way: hzp allocated on boot time in hugepage_init();
-> - [09/10] lazy allocation on first use;
-> - [10/10] lockless refcounting + shrinker-reclaimable hzp;
->
-> We setup it in do_huge_pmd_anonymous_page() if area around fault address
-> is suitable for THP and we've got read page fault.
-> If we fail to setup hzp (ENOMEM) we fallback to handle_pte_fault() as we
-> normally do in THP.
->
-> On wp fault to hzp we allocate real memory for the huge page and clear it.
-> If ENOMEM, graceful fallback: we create a new pmd table and set pte around
-> fault address to newly allocated normal (4k) page. All other ptes in the
-> pmd set to normal zero page.
->
-> We cannot split hzp (and it's bug if we try), but we can split the pmd
-> which points to it. On splitting the pmd we create a table with all ptes
-> set to normal zero page.
->
-> Patchset organized in bisect-friendly way:
->   Patches 01-07: prepare all code paths for hzp
->   Patch 08: all code paths are covered: safe to setup hzp
->   Patch 09: lazy allocation
->   Patch 10: lockless refcounting for hzp
->
-> --------------------------------------------------------------------------
->
-> By hpa request I've tried alternative approach for hzp implementation (see
-> Virtual huge zero page patchset): pmd table with all entries set to zero
-> page. This way should be more cache friendly, but it increases TLB
-> pressure.
->
-> The problem with virtual huge zero page: it requires per-arch enabling.
-> We need a way to mark that pmd table has all ptes set to zero page.
->
-> Some numbers to compare two implementations (on 4s Westmere-EX):
->
-> Mirobenchmark1
-> ==============
->
-> test:
->          posix_memalign((void **)&p, 2 * MB, 8 * GB);
->          for (i = 0; i < 100; i++) {
->                  assert(memcmp(p, p + 4*GB, 4*GB) == 0);
->                  asm volatile ("": : :"memory");
->          }
->
-> hzp:
->   Performance counter stats for './test_memcmp' (5 runs):
->
->        32356.272845 task-clock                #    0.998 CPUs utilized            ( +-  0.13% )
->                  40 context-switches          #    0.001 K/sec                    ( +-  0.94% )
->                   0 CPU-migrations            #    0.000 K/sec
->               4,218 page-faults               #    0.130 K/sec                    ( +-  0.00% )
->      76,712,481,765 cycles                    #    2.371 GHz                      ( +-  0.13% ) [83.31%]
->      36,279,577,636 stalled-cycles-frontend   #   47.29% frontend cycles idle     ( +-  0.28% ) [83.35%]
->       1,684,049,110 stalled-cycles-backend    #    2.20% backend  cycles idle     ( +-  2.96% ) [66.67%]
->     134,355,715,816 instructions              #    1.75  insns per cycle
->                                               #    0.27  stalled cycles per insn  ( +-  0.10% ) [83.35%]
->      13,526,169,702 branches                  #  418.039 M/sec                    ( +-  0.10% ) [83.31%]
->           1,058,230 branch-misses             #    0.01% of all branches          ( +-  0.91% ) [83.36%]
->
->        32.413866442 seconds time elapsed                                          ( +-  0.13% )
->
-> vhzp:
->   Performance counter stats for './test_memcmp' (5 runs):
->
->        30327.183829 task-clock                #    0.998 CPUs utilized            ( +-  0.13% )
->                  38 context-switches          #    0.001 K/sec                    ( +-  1.53% )
->                   0 CPU-migrations            #    0.000 K/sec
->               4,218 page-faults               #    0.139 K/sec                    ( +-  0.01% )
->      71,964,773,660 cycles                    #    2.373 GHz                      ( +-  0.13% ) [83.35%]
->      31,191,284,231 stalled-cycles-frontend   #   43.34% frontend cycles idle     ( +-  0.40% ) [83.32%]
->         773,484,474 stalled-cycles-backend    #    1.07% backend  cycles idle     ( +-  6.61% ) [66.67%]
->     134,982,215,437 instructions              #    1.88  insns per cycle
->                                               #    0.23  stalled cycles per insn  ( +-  0.11% ) [83.32%]
->      13,509,150,683 branches                  #  445.447 M/sec                    ( +-  0.11% ) [83.34%]
->           1,017,667 branch-misses             #    0.01% of all branches          ( +-  1.07% ) [83.32%]
->
->        30.381324695 seconds time elapsed                                          ( +-  0.13% )
->
-> Mirobenchmark2
-> ==============
->
-> test:
->          posix_memalign((void **)&p, 2 * MB, 8 * GB);
->          for (i = 0; i < 1000; i++) {
->                  char *_p = p;
->                  while (_p < p+4*GB) {
->                          assert(*_p == *(_p+4*GB));
->                          _p += 4096;
->                          asm volatile ("": : :"memory");
->                  }
->          }
->
-> hzp:
->   Performance counter stats for 'taskset -c 0 ./test_memcmp2' (5 runs):
->
->         3505.727639 task-clock                #    0.998 CPUs utilized            ( +-  0.26% )
->                   9 context-switches          #    0.003 K/sec                    ( +-  4.97% )
->               4,384 page-faults               #    0.001 M/sec                    ( +-  0.00% )
->       8,318,482,466 cycles                    #    2.373 GHz                      ( +-  0.26% ) [33.31%]
->       5,134,318,786 stalled-cycles-frontend   #   61.72% frontend cycles idle     ( +-  0.42% ) [33.32%]
->       2,193,266,208 stalled-cycles-backend    #   26.37% backend  cycles idle     ( +-  5.51% ) [33.33%]
->       9,494,670,537 instructions              #    1.14  insns per cycle
->                                               #    0.54  stalled cycles per insn  ( +-  0.13% ) [41.68%]
->       2,108,522,738 branches                  #  601.451 M/sec                    ( +-  0.09% ) [41.68%]
->             158,746 branch-misses             #    0.01% of all branches          ( +-  1.60% ) [41.71%]
->       3,168,102,115 L1-dcache-loads
->            #  903.693 M/sec                    ( +-  0.11% ) [41.70%]
->       1,048,710,998 L1-dcache-misses
->           #   33.10% of all L1-dcache hits    ( +-  0.11% ) [41.72%]
->       1,047,699,685 LLC-load
->                   #  298.854 M/sec                    ( +-  0.03% ) [33.38%]
->               2,287 LLC-misses
->                 #    0.00% of all LL-cache hits     ( +-  8.27% ) [33.37%]
->       3,166,187,367 dTLB-loads
->                 #  903.147 M/sec                    ( +-  0.02% ) [33.35%]
->           4,266,538 dTLB-misses
->                #    0.13% of all dTLB cache hits   ( +-  0.03% ) [33.33%]
->
->         3.513339813 seconds time elapsed                                          ( +-  0.26% )
->
-> vhzp:
->   Performance counter stats for 'taskset -c 0 ./test_memcmp2' (5 runs):
->
->        27313.891128 task-clock                #    0.998 CPUs utilized            ( +-  0.24% )
->                  62 context-switches          #    0.002 K/sec                    ( +-  0.61% )
->               4,384 page-faults               #    0.160 K/sec                    ( +-  0.01% )
->      64,747,374,606 cycles                    #    2.370 GHz                      ( +-  0.24% ) [33.33%]
->      61,341,580,278 stalled-cycles-frontend   #   94.74% frontend cycles idle     ( +-  0.26% ) [33.33%]
->      56,702,237,511 stalled-cycles-backend    #   87.57% backend  cycles idle     ( +-  0.07% ) [33.33%]
->      10,033,724,846 instructions              #    0.15  insns per cycle
->                                               #    6.11  stalled cycles per insn  ( +-  0.09% ) [41.65%]
->       2,190,424,932 branches                  #   80.195 M/sec                    ( +-  0.12% ) [41.66%]
->           1,028,630 branch-misses             #    0.05% of all branches          ( +-  1.50% ) [41.66%]
->       3,302,006,540 L1-dcache-loads
->            #  120.891 M/sec                    ( +-  0.11% ) [41.68%]
->         271,374,358 L1-dcache-misses
->           #    8.22% of all L1-dcache hits    ( +-  0.04% ) [41.66%]
->          20,385,476 LLC-load
->                   #    0.746 M/sec                    ( +-  1.64% ) [33.34%]
->              76,754 LLC-misses
->                 #    0.38% of all LL-cache hits     ( +-  2.35% ) [33.34%]
->       3,309,927,290 dTLB-loads
->                 #  121.181 M/sec                    ( +-  0.03% ) [33.34%]
->       2,098,967,427 dTLB-misses
->                #   63.41% of all dTLB cache hits   ( +-  0.03% ) [33.34%]
->
->        27.364448741 seconds time elapsed                                          ( +-  0.24% )
->
-> --------------------------------------------------------------------------
+The i82975x_edac driver is completely broken. I got a bug report
+related to an OOPS caused by the recent changes there
 
-Hi Kirill A. Shutemov,
+After fixing it, I noticed weird behaviours at the driver on my
+test machine, especially after enabling the EDAC debug logic.
 
-I see in the kernel doc which describes the benefit of thp, "the TLB 
-miss will run faster" (especially with virtualization using nested 
-pagetables but almost always also on bare metal without virtualization).
+In the end, the entire logic there that fills memory data were
+broken, and also, the error report logic.
 
-Could you explain me why TLB miss run faster? I think it only reduce TLB 
-miss ratio.
+The worse bug there, IMHO, is that, during Corrected Errors,
+it will only report the right DIMM in 50% of the cases, on
+the more standard memory configuration (Dual channel, interleaved).
 
-Thanks,
-Chen
+That happens because the logic were checking for bit 1, instead of
+bit 6, in order to decide if the error belongs to channel A or to
+channel B.
 
->
-> I personally prefer implementation present in this patchset. It doesn't
-> touch arch-specific code.
->
->
-> Is the overview complete enough? Have I answered all you questions here?
->
->> It's not an appropriate time to be merging new features - please plan
->> on preparing this patchset against 3.7-rc1.
-> Sure.
->
+The patches on this series are:
+
+	- patch 1: fixes the reported OOPS - it is a good candidate
+for Kernel 3.7 and -stable;
+
+	- patch 2: convert the already existing debug code
+to use the standard way for debug (instead of requiring someone
+to edit the source code to uncomment the debug macro);
+So, the third patch on this series;
+
+	- patch 3: rewrite the entire fill/report logic.
+
+Patches got tested on a Dell Precision N390 and worked as expected.
+
+Regards,
+Mauro
+
+Mauro Carvalho Chehab (3):
+  i82975x_edac: Fix dimm label initialization
+  i82975x_edac: Use the edac standard debug macro
+  i82975x_edac: rewrite the entire fill/report logic
+
+ drivers/edac/i82975x_edac.c | 457 ++++++++++++++++++++++++++------------------
+ 1 file changed, 272 insertions(+), 185 deletions(-)
+
+-- 
+1.7.11.7
 
