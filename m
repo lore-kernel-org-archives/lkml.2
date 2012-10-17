@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840Ab2JQMuW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 08:50:22 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:50031 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755981Ab2JQMuU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 08:50:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jaegeuk Kim <jaegeuk.kim@gmail.com>
-Subject: Re: [PATCH 11/16] f2fs: add inode operations for special inodes
-Date: Wed, 17 Oct 2012 12:50:11 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Dave Chinner <david@fromorbit.com>, Jaegeuk Kim <jaegeuk.kim@samsung.com>,
-        "'Vyacheslav Dubeyko'" <slava@dubeyko.com>, viro@zeniv.linux.org.uk,
-        "'Theodore Ts'o'" <tytso@mit.edu>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, chur.lee@samsung.com,
-        cm224.lee@samsung.com, jooyoung.hwang@samsung.com
-References: <001201cda2f1$633db960$29b92c20$%kim@samsung.com> <20121016204412.GF2864@dastard> <1350426621.1958.119.camel@kjgkr>
-In-Reply-To: <1350426621.1958.119.camel@kjgkr>
+	id S1756855Ab2JQM4B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 08:56:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35616 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755561Ab2JQMz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 08:55:59 -0400
+Date: Wed, 17 Oct 2012 08:55:39 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michael Spang <spang@google.com>, linux-usb@vger.kernel.org,
+        Dave Jones <davej@redhat.com>, Michael Spang <spang@chromium.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, greno@verizon.net,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Subject: Re: USB keyboard backlight powering down.
+Message-ID: <20121017125538.GA2934@hansolo.jdub.homelinux.org>
+References: <20121016152023.GA25506@redhat.com>
+ <CAC5F_1=tiGUtWOsOQ17vEYqVxuoVuoEH_nmEZ3BoL0dsgXJn3w@mail.gmail.com>
+ <20121016165436.GA5140@kroah.com>
+ <20121016173524.GG5378@xanatos>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210171250.12130.arnd@arndb.de>
-X-Provags-ID: V02:K0:ZMUANUnUr5peuh3rpqRfbLgMSb/qwQIhoOWKvtcb1jt
- baYSEiMo6HAhftBnu/cJaqd8S6AqUE1Ow4XrtH2BVuuM0/bvKa
- /ToqcezXtD7QXhrq4sm/MH73QmfGhpdiv413Rl5BIrkQD7Gf98
- TJorDM/2nY/p1X1KyqTTaQf+fNdlRhJ9ODZt+2Kw8231As97hJ
- kVMV1Dxt/zmSqybGz2/d5/aH7nFWBwVBAqwOV8sle8mqU9mAbQ
- 1sBePm0Cn9Hy219T97ZoutEfyhU3O8aEe2yiNxHiaAVsj43Xvs
- 76UoIRKnVWMZfJFgm4975M83m5sLbpvdQHS/BuiddW9N1WA3I1
- ZrgDakT5Yx+7eKdF0AXY=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121016173524.GG5378@xanatos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 16 October 2012, Jaegeuk Kim wrote:
-> > IIRC, fs2fs uses 4k inodes, so IMO per-inode xattr tress with
-> > internal storage before spilling to an external block is probably
-> > the best approach to take...
+On Tue, Oct 16, 2012 at 10:35:24AM -0700, Sarah Sharp wrote:
+> On Tue, Oct 16, 2012 at 09:54:36AM -0700, Greg Kroah-Hartman wrote:
+> > On Tue, Oct 16, 2012 at 12:45:56PM -0400, Michael Spang wrote:
+> > > On Tue, Oct 16, 2012 at 11:20 AM, Dave Jones <davej@redhat.com> wrote:
+> > > > Gerry (CC'd) reported a bug to us that since 3.6.1, his illuminated
+> > > > Logitech USB keyboard doesn't light up until he hits a key, and then
+> > > > it immediately powers back off, defeating the purpose of having an
+> > > > illumated keyboard.
+> > > >
+> > > > Looking over the 3.6.1 changelog, I see this change, which sounds
+> > > > like it might be responsible ?
+> > > >
+> > > > commit ee537508bdc0c00b96ac497f3d82a68f820e6182
+> > > > Author: Michael Spang <spang@chromium.org>
+> > > > Date:   Fri Sep 14 13:05:49 2012 -0400
+> > > >
+> > > >     Increase XHCI suspend timeout to 16ms
+> > > 
+> > > I don't think this is related to your problem, as this patch is in
+> > > suspend/resume code. It just allows the controller more time to halt.
+> > 
+> > Yeah, that looks odd.
+> > 
+> > But, (adding linux-usb@vger), I think we enabled some "put the device to
+> > sleep if it is idle" logic for all devices, which is what is looking
+> > like is happening here.  The keyboard is being told to go to sleep in
+> > order to save power.
+> > 
+> > We are saving more power, but it looks like the user wants to disable
+> > it, which makes sense for this device.
+> > 
+> > So, do we do this from within the kernel with a blacklist, or rely on
+> > the user knowing how to poke the proper sysfs file to turn the keyboard
+> > back on?
 > 
-> Yes, indeed this is the best approach to f2fs's xattr.
-> Apart from giving fs hints, it is worth enough to optimize later.
+> This was the udev bug I was referring to, which I think is causing the
+> keyboard to have auto-suspend enabled:
+> 
+> https://bugzilla.redhat.com/show_bug.cgi?id=825284
+> 
+> udev shouldn't be enabling auto-suspend of USB hids by default, since
+> many of them don't send a wakeup to come out of suspend when they
+> should.  For example, most USB mice only send a wakeup even when they
+> are clicked, not when they are moved.  That causes the user to sit
+> there, frustrated, as they move their mouse and wonder why their screen
+> doesn't unblank.  Other keyboards also lose keystrokes, which means if
+> you pause to compose your thoughts, the first couple letters you type
+> gets dropped.
 
-I've thought a bit more about how this could be represented efficiently
-in 4KB nodes. This would require a significant change of the way you
-represent inodes, but can improve a number of things at the same time.
+I know we fixed that bug for F17, F18, and rawhide.  I did it myself.
+I don't think this is udev related, but we'll double check the version.
 
-The idea is to replace the fixed area in the inode that contains block
-pointers with an extensible TLV (type/length/value) list that can contain
-multiple variable-length fields, like this. All TLVs together with the
-fixed-length inode data can fill a 4KB block.
+Gerry, are you using udev-182-3.fc17 or newer on your F17 install?
 
-The obvious types would be:
-
-* Direct file contents if the file is less than a block
-* List of block pointers, as before, minimum 1, maximum until the end
-  of the block
-* List of indirect pointers, now also a variable length, similar to the
-  list of block pointers
-* List of double-indirect block pointers
-* direct xattr: zero-terminated attribute name followed by contents
-* indirect xattr: zero-terminated attribute name followed by up to
-  16 block pointers to store a maximum of 64KB sized xattrs
-
-This could be extended later to cover additional types, e.g. a list
-of erase block pointers, triple-indirect blocks or extents.
-
-As a variation of this, it would also be nice to turn around the order
-in which the pointers are walked, to optimize for space and for growing
-files, rather than for reading the beginning of a file. With this, you
-can represent a 9 KB file using a list of two block pointers, and 1KB
-of direct data, all in the inode. When the user adds another byte, you
-only need to rewrite the inode. Similarly, a 5 MB file would have a
-single indirect node (covering block pointers for 4 MB), plus 256
-separate block pointers (covering the last megabyte), and a 5 GB file
-can be represented using 1 double-indirect node and 256 indirect nodes,
-and each of them can still be followed by direct "tail" data and
-extended attributes.
-
-	Arnd
+josh
