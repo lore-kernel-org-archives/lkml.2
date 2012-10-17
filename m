@@ -1,90 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756456Ab2JQJP2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 05:15:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11387 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753532Ab2JQJP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 05:15:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,599,1344236400"; 
-   d="scan'208";a="228621566"
-Date: Wed, 17 Oct 2012 17:15:24 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [3.5.0 BUG] vmx_handle_exit: unexpected, valid vectoring info
- (0x80000b0e)
-Message-ID: <20121017091524.GA23447@localhost>
-References: <20120912044037.GA23094@localhost>
- <505044AC.80205@redhat.com>
- <5052C732.7060508@linux.vnet.ibm.com>
- <507E4F8E.7000103@linux.vnet.ibm.com>
- <20121017064319.GA17754@localhost>
- <507E5891.9060009@linux.vnet.ibm.com>
+	id S1756486Ab2JQJTO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 05:19:14 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:53112 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756454Ab2JQJTM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 05:19:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <507E5891.9060009@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <507E75AA.2000605@cn.fujitsu.com>
+References: <506C0AE8.40702@jp.fujitsu.com> <506C0C53.60205@jp.fujitsu.com>
+ <CAHGf_=p7PaQs-kpnyB8uC1MntHQfL-CXhhq4QQP54mYiqOswqQ@mail.gmail.com>
+ <50727984.20401@cn.fujitsu.com> <CAHGf_=pCrx8AkL9eiSYVgwvT1v0SW2__P_DW-1Wwj_zskqcLXw@mail.gmail.com>
+ <507E54AA.2080806@cn.fujitsu.com> <CAHGf_=o_Wu1kr56C=7XTjYRzL4egSyGJYd4+2RecVWzpeM427Q@mail.gmail.com>
+ <507E75AA.2000605@cn.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Wed, 17 Oct 2012 05:18:51 -0400
+X-Google-Sender-Auth: xPFFFX1TLUKM8j8wP-UnfcN2tbI
+Message-ID: <CAHGf_=oNufcAQhxWtvq56qwF==+14+Cm7r9eiTGdY=B=ENwPQg@mail.gmail.com>
+Subject: Re: [PATCH 1/4] acpi,memory-hotplug : add memory offline code to acpi_memory_device_remove()
+To: Wen Congyang <wency@cn.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 03:04:49PM +0800, Xiao Guangrong wrote:
-> On 10/17/2012 02:43 PM, Fengguang Wu wrote:
-> > On Wed, Oct 17, 2012 at 02:26:22PM +0800, Xiao Guangrong wrote:
-> >> On 09/14/2012 01:57 PM, Xiao Guangrong wrote:
-> >>> On 09/12/2012 04:15 PM, Avi Kivity wrote:
-> >>>> On 09/12/2012 07:40 AM, Fengguang Wu wrote:
-> >>>>> Hi,
-> >>>>>
-> >>>>> 3 of my test boxes running v3.5 kernel become unaccessible and I find
-> >>>>> two of them kept emitting this dmesg:
-> >>>>>
-> >>>>> vmx_handle_exit: unexpected, valid vectoring info (0x80000b0e) and exit reason is 0x31
-> >>>>>
-> >>>>> The other one has froze and the above lines are the last dmesg.
-> >>>>> Any ideas?
-> >>>>
-> >>>> First, that printk should be rate-limited.
-> >>>>
-> >>>> Second, we should add EXIT_REASON_EPT_MISCONFIG (0x31) to 
-> >>>>
-> >>>> 	if ((vectoring_info & VECTORING_INFO_VALID_MASK) &&
-> >>>> 			(exit_reason != EXIT_REASON_EXCEPTION_NMI &&
-> >>>> 			exit_reason != EXIT_REASON_EPT_VIOLATION &&
-> >>>> 			exit_reason != EXIT_REASON_TASK_SWITCH))
-> >>>> 		printk(KERN_WARNING "%s: unexpected, valid vectoring info "
-> >>>> 		       "(0x%x) and exit reason is 0x%x\n",
-> >>>> 		       __func__, vectoring_info, exit_reason);
-> >>>>
-> >>>> since it's easily caused by the guest.
-> >>>
-> >>> Yes, i will do these.
-> >>>
-> >>>>
-> >>>> Third, it's really unexpected.  It seems the guest was attempting to deliver a page fault exception (0x0e) but encountered an mmio page during delivery (in the IDT, TSS, stack, or page tables).  Is this reproducible?  If so it's easy to patch kvm to halt in that case and allow examining the guest via qemu.
-> >>>>
-> >>>
-> >>> Have no idea yet why the box was frozen under this case, will try to write a test case,
-> >>> hope it can help me to find the reason out.
-> >>>
-> >>
-> >> Still did not know why linux kernel triggered it. I have posted
-> >> a patchset to report an internal error for this case, hoping
-> >> Fengguang can reproduce it after the patchset and Qemu's dump
-> >> can help us to find the reason out.
-> >>
-> >> I will keep working on it.
-> > 
-> > Thanks! Shall I run some patched kernel, or just 3.6.0?
-> 
-> The patchset is under review. Can be found at:
-> https://lkml.org/lkml/2012/10/17/31
+>>>>> Hmm, it doesn't move the code. It just reuse the code in acpi_memory_powerdown_device().
+>>>>
+>>>> Even if reuse or not reuse, you changed the behavior. If any changes
+>>>> has no good rational, you cannot get an ack.
+>>>
+>>> I don't understand this? IIRC, the behavior isn't changed.
+>>
+>> Heh, please explain why do you think so.
+>
+> We just introduce a function, and move codes from acpi_memory_disable_device() to the new
+> function. We call the new function in acpi_memory_disable_device(), so the function
+> acpi_memory_disable_device()'s behavior isn't changed.
+>
+> Maybe I don't understand what do you want to say.
 
-Thanks, I'll try it.
-
-Thanks,
-Fengguang
+Ok, now you agreed you moved the code, yes? So then, you should explain why
+your code moving makes zero impact other acpi_memory_disable_device() caller.
