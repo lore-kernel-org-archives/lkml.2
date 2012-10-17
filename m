@@ -1,88 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070Ab2JQHFK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 03:05:10 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:35350 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab2JQHFJ (ORCPT
+	id S1754787Ab2JQHIi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 03:08:38 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:32871 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057Ab2JQHIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 03:05:09 -0400
-Message-ID: <507E5891.9060009@linux.vnet.ibm.com>
-Date: Wed, 17 Oct 2012 15:04:49 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Avi Kivity <avi@redhat.com>, "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [3.5.0 BUG] vmx_handle_exit: unexpected, valid vectoring info
- (0x80000b0e)
-References: <20120912044037.GA23094@localhost> <505044AC.80205@redhat.com> <5052C732.7060508@linux.vnet.ibm.com> <507E4F8E.7000103@linux.vnet.ibm.com> <20121017064319.GA17754@localhost>
-In-Reply-To: <20121017064319.GA17754@localhost>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12101707-9574-0000-0000-000004E5CF08
+	Wed, 17 Oct 2012 03:08:36 -0400
+X-AuditID: cbfee60f-b7f656d000001a3b-ad-507e59720bbe
+Date: Wed, 17 Oct 2012 07:08:34 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: RE: [PATCH] extcon : callback function to read cable property
+To: "Tc, Jenny" <jenny.tc@intel.com>,
+        =?euc-kr?Q?=C3=D6=C2=F9=BF=EC?= <cw00.choi@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        anish kumar <anish198519851985@gmail.com>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20121017064404433@myungjoo.ham
+Msgkey: 20121017064404433@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20121017064404433@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <18312556.138071350457714044.JavaMail.weblogic@epml24>
+DLP-Filter: Pass
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKKsWRmVeSWpSXmKPExsVy+t8zHd2iyLoAg1dLDC0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGrMff2AqWyVS8vv+CuYHxiHQXIyeHkIC6xKIlJ9lAbAkBE4lF
+	i3rZIWwxiQv31gPFuYBqljFKbLg9nRGm6ObfFlaIxHxGiVtrVoB1sAioSqycs4+li5GDg01A
+	T2Lm52SQsLCAl8TRrm+sILaIQKLE+U9bmUFsZoECiaOffrNAHKEksWbfKzCbV0BQ4uTMJywQ
+	u1Ql9l9+xQ4RV5O4c20jE0RcQmLW9AusEDavxIz2p1D1chLTvq5hhrClJc7P2sAI88zi74+h
+	4vwSx27vYAI5E6T3yf1gmDG7N3+BhoOAxNQzB6FatSS6ezZBreWTWLPwLQvMmF2nljPD9N7f
+	MpcJ4i1FiSndD9khbC2JLz/2saF7i1fASeLl0g6mCYzKs5CkZiFpn4WkHVnNAkaWVYyiqQXJ
+	BcVJ6ammesWJucWleel6yfm5mxghaYF/B+OiBotDjAIcjEo8vAFLawOEWBPLiitzDzFKcDAr
+	ifCaNwKFeFMSK6tSi/Lji0pzUosPMfoA428is5Rocj4wZeWVxBsaGxgbGloamplamhrgEFYS
+	5y3zSAkQEkhPLEnNTk0tSC2CGcfEwSnVwChoxBusfCK3yODHlPrmDebLtukKZ654MImroF2V
+	YUNZjVixxarX9602mjD6uFXmCFy802Cw+d0z7juTzcze/Vz37NnXZ3w53j7Xkh3m+VZwPj3V
+	7d5/Ru6dyPSP/C8C0/vPFrb+C+y4Vcqx+n1CgoWzfPDp+pCEFcLdXyYxZE7qYS7l2PmsVYml
+	OCPRUIu5qDgRAO9u/KU4AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFKsWRmVeSWpSXmKPExsVy+t/tmbpFkXUBBu9361pc3jWHzYHR4/Mm
+	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
+	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz0Tg1grQwMDI1OgqoSM
+	jFmPv7EVLJOpeH3/BXMD4xHpLkZODiEBdYlFS06ygdgSAiYSN/+2sELYYhIX7q0HinMB1cxn
+	lLi1ZgU7SIJFQFVi5Zx9LF2MHBxsAnoSMz8ng4SFBbwkjnZ9A+sVEUiUOP9pKzOIzSxQIHH0
+	028WiF1KEmv2vQKzeQUEJU7OfMICsUtVYv/lV+wQcTWJO9c2MkHEJSRmTb8AdQ+vxIz2p1D1
+	chLTvq5hhrClJc7P2sAIc/Pi74+h4vwSx27vYAI5E6T3yf1gmDG7N3+BeldAYuqZg1CtWhLd
+	PZug1vJJrFn4lgVmzK5Ty5lheu9vmcsE8ZaixJTuh+wQtpbElx/72NC9xSvgJPFyaQfTBEa5
+	WUhSs5C0z0LSjqxmASPLKkbR1ILkguKk9FRTveLE3OLSvHS95PzcTYzgBPWMfwfjogaLQ4wC
+	HIxKPLwBS2sDhFgTy4orcw8xSnAwK4nwmjcChXhTEiurUovy44tKc1KLDzH6AONvIrOUaHI+
+	MHnmlcQbGhsYGxpamhuYGhpZ4BBWEuct80gJEBJITyxJzU5NLUgtghnHxMEp1cD4sP907KYv
+	bF8/s3K/LDU6c2utpo2h/rUTDysXXlU5pGl7yj5AMWnJ7e1XGITnTrzdf+mJ1xzPzdtEcvKu
+	S5ndL03qay37LDzrquqTqgqH1Ux7JGNfML4vy7gfdyL5ydOs6XLT5K6UvLveP/uI9M9lc7qb
+	TF3llBXfMOUnyfjpq0gs+heSsSdXiaU4I9FQi7moOBEAMWgVLH0DAAA=
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9H78i8x002509
 
-On 10/17/2012 02:43 PM, Fengguang Wu wrote:
-> On Wed, Oct 17, 2012 at 02:26:22PM +0800, Xiao Guangrong wrote:
->> On 09/14/2012 01:57 PM, Xiao Guangrong wrote:
->>> On 09/12/2012 04:15 PM, Avi Kivity wrote:
->>>> On 09/12/2012 07:40 AM, Fengguang Wu wrote:
->>>>> Hi,
->>>>>
->>>>> 3 of my test boxes running v3.5 kernel become unaccessible and I find
->>>>> two of them kept emitting this dmesg:
->>>>>
->>>>> vmx_handle_exit: unexpected, valid vectoring info (0x80000b0e) and exit reason is 0x31
->>>>>
->>>>> The other one has froze and the above lines are the last dmesg.
->>>>> Any ideas?
->>>>
->>>> First, that printk should be rate-limited.
->>>>
->>>> Second, we should add EXIT_REASON_EPT_MISCONFIG (0x31) to 
->>>>
->>>> 	if ((vectoring_info & VECTORING_INFO_VALID_MASK) &&
->>>> 			(exit_reason != EXIT_REASON_EXCEPTION_NMI &&
->>>> 			exit_reason != EXIT_REASON_EPT_VIOLATION &&
->>>> 			exit_reason != EXIT_REASON_TASK_SWITCH))
->>>> 		printk(KERN_WARNING "%s: unexpected, valid vectoring info "
->>>> 		       "(0x%x) and exit reason is 0x%x\n",
->>>> 		       __func__, vectoring_info, exit_reason);
->>>>
->>>> since it's easily caused by the guest.
->>>
->>> Yes, i will do these.
->>>
->>>>
->>>> Third, it's really unexpected.  It seems the guest was attempting to deliver a page fault exception (0x0e) but encountered an mmio page during delivery (in the IDT, TSS, stack, or page tables).  Is this reproducible?  If so it's easy to patch kvm to halt in that case and allow examining the guest via qemu.
->>>>
->>>
->>> Have no idea yet why the box was frozen under this case, will try to write a test case,
->>> hope it can help me to find the reason out.
->>>
->>
->> Still did not know why linux kernel triggered it. I have posted
->> a patchset to report an internal error for this case, hoping
->> Fengguang can reproduce it after the patchset and Qemu's dump
->> can help us to find the reason out.
->>
->> I will keep working on it.
+> Myunjoo/Chanwoo
 > 
-> Thanks! Shall I run some patched kernel, or just 3.6.0?
-
-The patchset is under review. Can be found at:
-https://lkml.org/lkml/2012/10/17/31
-
+> Ping...
+> Could you please review this patch?
 > 
-> Another problem I sometimes run into is, dmesg no longer works in the
-> test boxes that run lots of KVMs. It aborts with an error message:
+> -jtc
 > 
-> dmesg: klogctl failed: Bad address
+> > > > Subject: Re: [PATCH] extcon : callback function to read cable
+> > > > property
+> > > >
+> > > > I think the reason why we have extcon is in first place is to only
+> > > > notify the clients of cable connection and disconnection and it is
+> > > > up to the client to decide what else to do with the cable such as
+> > > > finding which state it is in and other details.
+> > > > So I feel this should not be handled in the extcon.
+> > > >
+> > > > However it is up to the maintainer to decide.
+> > >
+> > > Once the consumer gets the notification, it needs to take some action.
+> > > One of the action is to read the cable properties. This can be done by
+> > > proprietary calls which is known both to the consumer and the provider.
+> > > My intention is to avoid this proprietary calls. Since both the
+> > > provider and consumer are communicating with the extcon subsystem , I
+> > > feel having a callback function of this kind would help to avoid the
+> > > use of proprietary calls. Also I agree that extcon notifier chains are
+> > > used to notify the cable state (attach/detach). But if a cable has
+> > > more than two states (like the charger cable) how do we support it without
+> > having a callback function like this?
+> > > Let the maintainer take the final decision.
+> > Well this use case will keep on growing if we start factor in this kind of
+> > changes and that is why I am opposed to adding any other state.
+> > Maintainer?
+> > >
+> > >
+> > 
 
-Interesting, will fight for it. :)
+Hello,
 
 
+I don't think it's appropriate to declare the charger specific
+properties in extcon.h. The status of a charger should be and can be
+represented by an instance of regulator, power-supply-class,
+or charger-manager.
+
+Thus, we may (I'm still not sure) need to let extcon to relay
+the instance (struct device? or char *devname?) with some callback
+similar with get_cable_device().  However, allowing (and encouraging)
+to pass void pointer of cable_props to extcon users from extcon device
+appears not adequete. If the both parties can use their own "private"
+data structure, why they cannot simply pass their own data witht the
+"private" data channel?
+ 
+
+Recap:
+- The later part of patch: NACK
+- The first part of patch (callback): need to reconsider the data type.
+We may get device pointer or device name that is correspondant to the
+cable, which in turn, guides us to the corresponding data structure
+(charger-manager, regulator, or something) However, I'm still not sure
+which should be appropriate for this.
+
+
+Cheers!
+MyungJoo
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
