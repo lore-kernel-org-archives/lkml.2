@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932380Ab2JQQZQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 12:25:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47958 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756407Ab2JQQZO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 12:25:14 -0400
-Date: Wed, 17 Oct 2012 17:25:07 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michal Marek <mmarek@suse.cz>, Andi Kleen <andi@firstfloor.org>
-Message-ID: <20121017162507.GX13292@decadent.org.uk>
-References: <20121014143533.742627615@decadent.org.uk>
- <20121014143543.836365515@decadent.org.uk>
- <20121017162210.GC2954@herton-Z68MA-D2H-B3>
+	id S932389Ab2JQQ03 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 12:26:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10532 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756419Ab2JQQ01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 12:26:27 -0400
+Date: Wed, 17 Oct 2012 12:26:23 -0400
+From: Dave Jones <davej@redhat.com>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: suspicious RCU usage in cgroup
+Message-ID: <20121017162623.GA30345@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Aristeu Rozanski <aris@redhat.com>, linux-kernel@vger.kernel.org,
+	Andrew Morton <akpm@linux-foundation.org>
+References: <20121005215926.GA2406@redhat.com>
+ <20121005220612.GB29956@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121017162210.GC2954@herton-Z68MA-D2H-B3>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [ 074/147] kbuild: Do not package /boot and /lib in make
- tar-pkg
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+In-Reply-To: <20121005220612.GB29956@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 01:22:11PM -0300, Herton Ronaldo Krzesinski wrote:
-> On Sun, Oct 14, 2012 at 03:36:47PM +0100, Ben Hutchings wrote:
-> > 3.2-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Michal Marek <mmarek@suse.cz>
-> > 
-> > commit fe04ddf7c2910362f3817c8156e41cbd6c0ee35d upstream.
-> > 
-> > There were reports of users destroying their Fedora installs by a kernel
-> > tarball that replaces the /lib -> /usr/lib symlink. Let's remove the
-> > toplevel directories from the tarball to prevent this from happening.
-> > 
-> > Reported-by: Andi Kleen <andi@firstfloor.org>
-> > Suggested-by: Ben Hutchings <ben@decadent.org.uk>
-> > Signed-off-by: Michal Marek <mmarek@suse.cz>
-> > [bwh: Backported to 3.2: drop redundant changes]
-> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> > ---
-> >  scripts/Makefile.fwinst  |    4 ++--
-> >  scripts/package/buildtar |    2 +-
-> >  3 files changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/scripts/Makefile.fwinst b/scripts/Makefile.fwinst
-> > index 4d908d1..c3f69ae 100644
-> > --- a/scripts/Makefile.fwinst
-> > +++ b/scripts/Makefile.fwinst
-> > @@ -42,7 +42,7 @@ quiet_cmd_install = INSTALL $(subst $(srctree)/,,$@)
-> >  $(installed-fw-dirs):
-> >  	$(call cmd,mkdir)
-> >  
-> > -$(installed-fw): $(INSTALL_FW_PATH)/%: $(obj)/% | $(INSTALL_FW_PATH)/$$(dir %)
-> > +$(installed-fw): $(INSTALL_FW_PATH)/%: $(obj)/% | $$(dir $(INSTALL_FW_PATH)/%)
-> >  	$(call cmd,install)
-> 
-> Pulling Linus tree today, I noticed commit
-> 3ce9e53e788881da0d5f3912f80e0dd6b501f304 ("kbuild: Fix accidental revert
-> in commit fe04ddf"). This change to Makefile.fwinst is unrelated and
-> shouldn't be applied. This hunk was suspicious, could be dropped if not
-> too late. Otherwise, just picking 3ce9e53e7 later would be fine as well.
- 
-I saw that on the list and folded it into the version that went into
-in 3.2.32.  (Which is tagged in my own repo, but Greg hasn't yet
-pulled and released it.)
+On Fri, Oct 05, 2012 at 06:06:12PM -0400, Aristeu Rozanski wrote:
+ > Hi Dave,
+ > On Fri, Oct 05, 2012 at 05:59:29PM -0400, Dave Jones wrote:
+ > > On boot in Linus' current tree..
+ > > 
+ > > ===============================
+ > > [ INFO: suspicious RCU usage. ]
+ > > 3.6.0+ #22 Not tainted
+ > > -------------------------------
+ > > include/linux/cgroup.h:566 suspicious rcu_dereference_check() usage!
+ > > 
+ > > other info that might help us debug this:
+ > > 
+ > > rcu_scheduler_active = 1, debug_locks = 1
+ > > 2 locks on stack by kdevtmpfs/59:
+ > >  #0: blocked:  (sb_writers){.+.+.+}, instance: ffff88014595a9a0, at: [<ffffffff81207bc4>] mnt_want_write+0x24/0x50
+ > >  #1: held:     (&sb->s_type->i_mutex_key#3/1){+.+.+.}, instance: ffff880145b1f5c8, at: [<ffffffff811f26d4>] kern_path_create+0x84/0x170
+ > > 
+ > > stack backtrace:
+ > > Pid: 59, comm: kdevtmpfs Not tainted 3.6.0+ #22
+ > > Call Trace:
+ > >  [<ffffffff810df1f2>] lockdep_rcu_suspicious+0xe2/0x130
+ > >  [<ffffffff81317cad>] devcgroup_inode_mknod+0x19d/0x240
+ > >  [<ffffffff812f54d8>] ? security_capable+0x18/0x20
+ > >  [<ffffffff8107e214>] ? ns_capable+0x44/0x80
+ > >  [<ffffffff811f3b0e>] vfs_mknod+0x7e/0x140
+ > >  [<ffffffff81452967>] handle_create.isra.2+0x77/0x210
+ > >  [<ffffffff810ddd6c>] ? lock_release_holdtime.part.26+0xcc/0x140
+ > >  [<ffffffff810afbf1>] ? get_parent_ip+0x11/0x50
+ > >  [<ffffffff816bacd9>] ? sub_preempt_count+0x79/0xd0
+ > >  [<ffffffff81452c47>] devtmpfsd+0x147/0x170
+ > >  [<ffffffff81452b00>] ? handle_create.isra.2+0x210/0x210
+ > >  [<ffffffff8109bf8d>] kthread+0xed/0x100
+ > >  [<ffffffff816bacd9>] ? sub_preempt_count+0x79/0xd0
+ > >  [<ffffffff816c04a4>] kernel_thread_helper+0x4/0x10
+ > >  [<ffffffff810a9fdc>] ? finish_task_switch+0x7c/0x120
+ > >  [<ffffffff816b62db>] ? _raw_spin_unlock_irq+0x4b/0x80
+ > >  [<ffffffff816b6d37>] ? retint_restore_args+0x13/0x13
+ > >  [<ffffffff8109bea0>] ? kthread_create_on_node+0x160/0x160
+ > >  [<ffffffff816c04a0>] ? gs_change+0x13/0x13
+ > 
+ > "[PATCH] cgroup: fix invalid rcu dereference" which is being routed thru
+ > akpm's tree should fix this.
+ > 
+ > see https://patchwork.kernel.org/patch/1456571/
 
-Ben.
+What's happening with this ?
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+	Dave
+
