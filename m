@@ -1,91 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254Ab2JQFrM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 01:47:12 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:59966 "EHLO
+	id S1753376Ab2JQFsX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 01:48:23 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:60292 "EHLO
 	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752596Ab2JQFrK (ORCPT
+	with ESMTP id S1752540Ab2JQFsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 01:47:10 -0400
-Message-ID: <507E464C.3010108@linux.vnet.ibm.com>
-Date: Wed, 17 Oct 2012 13:46:52 +0800
+	Wed, 17 Oct 2012 01:48:21 -0400
+Message-ID: <507E4696.7020007@linux.vnet.ibm.com>
+Date: Wed, 17 Oct 2012 13:48:06 +0800
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH 1/2] KVM: VMX: report internal error for the unhandleable
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH 2/2] KVM: VMX: report internal error for MMIO #PF due to delivery
  event
+References: <507E464C.3010108@linux.vnet.ibm.com>
+In-Reply-To: <507E464C.3010108@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12101705-9574-0000-0000-000004E57E10
+x-cbid: 12101705-9574-0000-0000-000004E57EFB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VM exits during Event Delivery is really unexpected if it is not caused
-by Exceptions/EPT-VIOLATION/TASK_SWITCH, we'd better to report an internal
-and freeze the guest, the VMM has the chance to check the guest
+The #PF with PFEC.RSV = 1 indicates that the guest is accessing MMIO, we
+can not fix it if it is caused by delivery event. Reporting internal error
+for this case
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/vmx.c  |   19 +++++++++++++++----
- include/linux/kvm.h |    8 ++++++--
- 2 files changed, 21 insertions(+), 6 deletions(-)
+ arch/x86/kvm/vmx.c |   26 ++++++++++++++++----------
+ 1 files changed, 16 insertions(+), 10 deletions(-)
 
 diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index ad6b1dd..b8a0841 100644
+index b8a0841..6599e45 100644
 --- a/arch/x86/kvm/vmx.c
 +++ b/arch/x86/kvm/vmx.c
-@@ -5979,13 +5979,24 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
- 		return 0;
- 	}
+@@ -4287,16 +4287,6 @@ static int handle_exception(struct kvm_vcpu *vcpu)
+ 	if (is_machine_check(intr_info))
+ 		return handle_machine_check(vcpu);
 
+-	if ((vect_info & VECTORING_INFO_VALID_MASK) &&
+-	    !is_page_fault(intr_info)) {
+-		vcpu->run->exit_reason = KVM_EXIT_INTERNAL_ERROR;
+-		vcpu->run->internal.suberror = KVM_INTERNAL_ERROR_SIMUL_EX;
+-		vcpu->run->internal.ndata = 2;
+-		vcpu->run->internal.data[0] = vect_info;
+-		vcpu->run->internal.data[1] = intr_info;
+-		return 0;
+-	}
+-
+ 	if ((intr_info & INTR_INFO_INTR_TYPE_MASK) == INTR_TYPE_NMI_INTR)
+ 		return 1;  /* already handled by vmx_vcpu_run() */
+
+@@ -4315,6 +4305,22 @@ static int handle_exception(struct kvm_vcpu *vcpu)
+ 	error_code = 0;
+ 	if (intr_info & INTR_INFO_DELIVER_CODE_MASK)
+ 		error_code = vmcs_read32(VM_EXIT_INTR_ERROR_CODE);
++
 +	/*
-+	 * Note:
-+	 * Do not try to fix EXIT_REASON_EPT_MISCONFIG if it caused by
-+	 * delivery event since it indicates guest is accessing MMIO.
-+	 * The vm-exit can be triggered again after return to guest that
-+	 * will cause infinite loop.
++	 * The #PF with PFEC.RSVD = 1 indicates the guest is accessing
++	 * MMIO, it is better to report an internal error.
++	 * See the comments in vmx_handle_exit.
 +	 */
- 	if ((vectoring_info & VECTORING_INFO_VALID_MASK) &&
- 			(exit_reason != EXIT_REASON_EXCEPTION_NMI &&
- 			exit_reason != EXIT_REASON_EPT_VIOLATION &&
--			exit_reason != EXIT_REASON_TASK_SWITCH))
--		printk(KERN_WARNING "%s: unexpected, valid vectoring info "
--		       "(0x%x) and exit reason is 0x%x\n",
--		       __func__, vectoring_info, exit_reason);
-+			exit_reason != EXIT_REASON_TASK_SWITCH)) {
++	if ((vect_info & VECTORING_INFO_VALID_MASK) &&
++	    !(is_page_fault(intr_info) && !(error_code & PFERR_RSVD_MASK))) {
 +		vcpu->run->exit_reason = KVM_EXIT_INTERNAL_ERROR;
-+		vcpu->run->internal.suberror = KVM_INTERNAL_ERROR_DELIVERY_EV;
++		vcpu->run->internal.suberror = KVM_INTERNAL_ERROR_SIMUL_EX;
 +		vcpu->run->internal.ndata = 2;
-+		vcpu->run->internal.data[0] = vectoring_info;
-+		vcpu->run->internal.data[1] = exit_reason;
++		vcpu->run->internal.data[0] = vect_info;
++		vcpu->run->internal.data[1] = intr_info;
 +		return 0;
 +	}
-
- 	if (unlikely(!cpu_has_virtual_nmis() && vmx->soft_vnmi_blocked &&
- 	    !(is_guest_mode(vcpu) && nested_cpu_has_virtual_nmis(
-diff --git a/include/linux/kvm.h b/include/linux/kvm.h
-index 65ad5c6..494a84c 100644
---- a/include/linux/kvm.h
-+++ b/include/linux/kvm.h
-@@ -170,8 +170,12 @@ struct kvm_pit_config {
- #define KVM_EXIT_WATCHDOG         21
-
- /* For KVM_EXIT_INTERNAL_ERROR */
--#define KVM_INTERNAL_ERROR_EMULATION 1
--#define KVM_INTERNAL_ERROR_SIMUL_EX 2
-+/* Emulate instruction failed. */
-+#define KVM_INTERNAL_ERROR_EMULATION	1
-+/* Encounter unexpected simultaneous exceptions. */
-+#define KVM_INTERNAL_ERROR_SIMUL_EX	2
-+/* Encounter unexpected vm-exit due to delivery event. */
-+#define KVM_INTERNAL_ERROR_DELIVERY_EV	3
-
- /* for KVM_RUN, returned by mmap(vcpu_fd, offset=0) */
- struct kvm_run {
++
+ 	if (is_page_fault(intr_info)) {
+ 		/* EPT won't cause page fault directly */
+ 		BUG_ON(enable_ept);
 -- 
 1.7.7.6
 
