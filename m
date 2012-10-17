@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757391Ab2JQP0l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 11:26:41 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40312 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757377Ab2JQP0j (ORCPT
+	id S932215Ab2JQPa6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 11:30:58 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:6068 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756321Ab2JQPa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 11:26:39 -0400
-Message-ID: <507ECE16.7030107@gmail.com>
-Date: Wed, 17 Oct 2012 23:26:14 +0800
-From: Wen Congyang <wencongyang@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: wency@cn.fujitsu.com
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
-        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH v2 3/5] memory-hotplug: auto offline page_cgroup when
- onlining memory block failed
-References: <1350475735-26136-1-git-send-email-wency@cn.fujitsu.com> <1350475735-26136-4-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1350475735-26136-4-git-send-email-wency@cn.fujitsu.com>
-Content-Type: text/plain; charset=GB2312
+	Wed, 17 Oct 2012 11:30:57 -0400
+Message-ID: <1350487852.2741.13.camel@lorien2>
+Subject: Re: [PATCH 1/1] x86, e820: Remove direct mapping of reserved space
+ for HT hole around 1TB
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jacob Shin <jacob.shin@amd.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        andreas.herrmann3@amd.com, borislav.petkov@amd.com,
+        shuahkhan@gmail.com
+Date: Wed, 17 Oct 2012 09:30:52 -0600
+In-Reply-To: <507DAF3C.90903@zytor.com>
+References: <6ec48b96-afab-4c8b-ab74-2c640c2a161b@blur>
+	 <8630fe28-0c1c-4f3a-90e1-df2d1b6615a6@blur>
+	 <1350409738.2785.30.camel@lorien2> <20121016182621.GA10857@jshin-Toonie>
+	 <507DAF3C.90903@zytor.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 2012/10/17 20:08, wency@cn.fujitsu.com Wrote:
-> From: Wen Congyang<wency@cn.fujitsu.com>
+On Tue, 2012-10-16 at 12:02 -0700, H. Peter Anvin wrote:
+> On 10/16/2012 11:26 AM, Jacob Shin wrote:
+> > 
+> > HPA, it would be great if we can first get this patch upstream, and also
+> > into the stable trees .. and after that, we can work on getting Yinghai's
+> > mm refactoring in ..
+> > 
 > 
-> When a memory block is onlined, we will try allocate memory on that node
-> to store page_cgroup. If onlining the memory block failed, we don't
-> offline the page cgroup, and we have no chance to offline this page cgroup
-> unless the memory block is onlined successfully again. It will cause
-> that we can't hot-remove the memory device on that node, because some
-> memory is used to store page cgroup. If onlining the memory block
-> is failed, there is no need to stort page cgroup for this memory. So
-> auto offline page_cgroup when onlining memory block failed.
-> 
-> CC: David Rientjes<rientjes@google.com>
-> CC: Jiang Liu<liuj97@gmail.com>
-> CC: Len Brown<len.brown@intel.com>
-> CC: Benjamin Herrenschmidt<benh@kernel.crashing.org>
-> CC: Paul Mackerras<paulus@samba.org>
-> CC: Christoph Lameter<cl@linux.com>
-> Cc: Minchan Kim<minchan.kim@gmail.com>
-> CC: Andrew Morton<akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
-> CC: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
-> Signed-off-by: Wen Congyang<wency@cn.fujitsu.com>
+> I'll be back from travels tomorrow, I'll look at it then.
 
-This patch has been acked by kosaki.
-I forgot to add "Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>"
+For what its worth, I applied this patch to RHEL 6.3 based on 2.6.32.
+kernel and my test system came with 1 terabyte memory.
+
+https://lkml.org/lkml/2011/10/20/323
+
+Thanks,
+-- Shuah
 
 
-> ---
->   mm/page_cgroup.c |    3 +++
->   1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-> index 5ddad0c..44db00e 100644
-> --- a/mm/page_cgroup.c
-> +++ b/mm/page_cgroup.c
-> @@ -251,6 +251,9 @@ static int __meminit page_cgroup_callback(struct notifier_block *self,
->   				mn->nr_pages, mn->status_change_nid);
->   		break;
->   	case MEM_CANCEL_ONLINE:
-> +		offline_page_cgroup(mn->start_pfn,
-> +				mn->nr_pages, mn->status_change_nid);
-> +		break;
->   	case MEM_GOING_OFFLINE:
->   		break;
->   	case MEM_ONLINE:
+
