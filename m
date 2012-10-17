@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab2JQGIm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 02:08:42 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:47246 "EHLO
+	id S1756206Ab2JQGIq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 02:08:46 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:47485 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755778Ab2JQGIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 02:08:38 -0400
+	id S1755997Ab2JQGIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 02:08:43 -0400
 From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 Cc: Kay Sievers <kay@vrfy.org>
-Subject: [PATCH 10/23] printk: Rename log_wait to printk_log_wait
-Date: Tue, 16 Oct 2012 23:06:14 -0700
-Message-Id: <3676b8cbd02c4841d10150228da72f1cb4703c67.1350449852.git.joe@perches.com>
+Subject: [PATCH 13/23] printk: Remove static from printk_ variables
+Date: Tue, 16 Oct 2012 23:06:17 -0700
+Message-Id: <366e54fbf5e6459f4c409d16438a1a404f4906ee.1350449852.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 In-Reply-To: <cover.1350449851.git.joe@perches.com>
 References: <cover.1350449851.git.joe@perches.com>
@@ -19,98 +19,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make this generic variable more specific to the printk
-subsystem to allow this variable to be used without
-a specific extern.
-
-Also update fs/proc/kmsg.c as it uses log_wait.
+Allow a separation of functions and variables into
+multiple files.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/proc/kmsg.c         |    4 ++--
- kernel/printk/printk.c |   12 ++++++------
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ kernel/printk/printk.c |   46 +++++++++++++++++++++++-----------------------
+ 1 file changed, 23 insertions(+), 23 deletions(-)
 
-diff --git a/fs/proc/kmsg.c b/fs/proc/kmsg.c
-index bd4b5a7..16f2c85 100644
---- a/fs/proc/kmsg.c
-+++ b/fs/proc/kmsg.c
-@@ -17,7 +17,7 @@
- #include <asm/uaccess.h>
- #include <asm/io.h>
- 
--extern wait_queue_head_t log_wait;
-+extern wait_queue_head_t printk_log_wait;
- 
- static int kmsg_open(struct inode * inode, struct file * file)
- {
-@@ -41,7 +41,7 @@ static ssize_t kmsg_read(struct file *file, char __user *buf,
- 
- static unsigned int kmsg_poll(struct file *file, poll_table *wait)
- {
--	poll_wait(file, &log_wait, wait);
-+	poll_wait(file, &printk_log_wait, wait);
- 	if (do_syslog(SYSLOG_ACTION_SIZE_UNREAD, NULL, 0, SYSLOG_FROM_FILE))
- 		return POLLIN | POLLRDNORM;
- 	return 0;
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 341f2d9..c87472b 100644
+index 3785ac4..0134b2e 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
-@@ -63,7 +63,7 @@ void asmlinkage __attribute__((weak)) early_printk(const char *fmt, ...)
- #define MINIMUM_CONSOLE_LOGLEVEL 1 /* Minimum loglevel we let people use */
- #define DEFAULT_CONSOLE_LOGLEVEL 7 /* anything MORE serious than KERN_DEBUG */
+@@ -208,7 +208,7 @@ struct printk_log {
+  * The printk_logbuf_lock protects kmsg buffer, indices, counters. It is also
+  * used in interesting ways to provide interlocking in console_unlock();
+  */
+-static DEFINE_RAW_SPINLOCK(printk_logbuf_lock);
++DEFINE_RAW_SPINLOCK(printk_logbuf_lock);
  
--DECLARE_WAIT_QUEUE_HEAD(log_wait);
-+DECLARE_WAIT_QUEUE_HEAD(printk_log_wait);
+ #ifdef CONFIG_PRINTK
+ /* the next printk record to read by syslog(READ) or /proc/kmsg */
+@@ -218,12 +218,12 @@ static enum printk_log_flags syslog_prev;
+ static size_t syslog_partial;
  
- int console_printk[4] = {
- 	DEFAULT_CONSOLE_LOGLEVEL,	/* console_loglevel */
-@@ -447,7 +447,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
- 		}
+ /* index and sequence number of the first record stored in the buffer */
+-static u64 printk_log_first_seq;
+-static u32 printk_log_first_idx;
++u64 printk_log_first_seq;
++u32 printk_log_first_idx;
  
- 		raw_spin_unlock_irq(&logbuf_lock);
--		ret = wait_event_interruptible(log_wait,
-+		ret = wait_event_interruptible(printk_log_wait,
- 					       user->seq != printk_log_next_seq);
- 		if (ret)
- 			goto out;
-@@ -589,7 +589,7 @@ static unsigned int devkmsg_poll(struct file *file, poll_table *wait)
- 	if (!user)
- 		return POLLERR|POLLNVAL;
+ /* index and sequence number of the next record to store in the buffer */
+-static u64 printk_log_next_seq;
+-static u32 printk_log_next_idx;
++u64 printk_log_next_seq;
++u32 printk_log_next_idx;
  
--	poll_wait(file, &log_wait, wait);
-+	poll_wait(file, &printk_log_wait, wait);
+ /* the next printk record to write to the console */
+ static u64 console_seq;
+@@ -231,8 +231,8 @@ static u32 console_idx;
+ static enum printk_log_flags console_prev;
  
- 	raw_spin_lock_irq(&logbuf_lock);
- 	if (user->seq < printk_log_next_seq) {
-@@ -1122,7 +1122,7 @@ int do_syslog(int type, char __user *buf, int len, bool from_file)
- 			error = -EFAULT;
- 			goto out;
- 		}
--		error = wait_event_interruptible(log_wait,
-+		error = wait_event_interruptible(printk_log_wait,
- 						 syslog_seq != printk_log_next_seq);
- 		if (error)
- 			goto out;
-@@ -1948,7 +1948,7 @@ void printk_tick(void)
- 			printk(KERN_WARNING "[sched_delayed] %s", buf);
- 		}
- 		if (pending & PRINTK_PENDING_WAKEUP)
--			wake_up_interruptible(&log_wait);
-+			wake_up_interruptible(&printk_log_wait);
- 	}
- }
+ /* the next printk record to read after the last 'clear' command */
+-static u64 printk_log_clear_seq;
+-static u32 printk_log_clear_idx;
++u64 printk_log_clear_seq;
++u32 printk_log_clear_idx;
  
-@@ -1961,7 +1961,7 @@ int printk_needs_cpu(int cpu)
+ #define PREFIX_MAX		32
+ #define LOG_LINE_MAX		1024 - PREFIX_MAX
+@@ -244,27 +244,27 @@ static u32 printk_log_clear_idx;
+ #define LOG_ALIGN __alignof__(struct printk_log)
+ #endif
+ #define __PRINTK_LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
+-static char __printk_log_buf[__PRINTK_LOG_BUF_LEN] __aligned(LOG_ALIGN);
+-static char *printk_log_buf = __printk_log_buf;
+-static u32 printk_log_buf_len = __PRINTK_LOG_BUF_LEN;
++char __printk_log_buf[__PRINTK_LOG_BUF_LEN] __aligned(LOG_ALIGN);
++char *printk_log_buf = __printk_log_buf;
++u32 printk_log_buf_len = __PRINTK_LOG_BUF_LEN;
  
- void wake_up_klogd(void)
+ /* cpu currently holding printk_logbuf_lock */
+ static volatile unsigned int logbuf_cpu = UINT_MAX;
+ 
+ /* human readable text of the record */
+-static char *printk_log_text(const struct printk_log *msg)
++char *printk_log_text(const struct printk_log *msg)
  {
--	if (waitqueue_active(&log_wait))
-+	if (waitqueue_active(&printk_log_wait))
- 		this_cpu_or(printk_pending, PRINTK_PENDING_WAKEUP);
+ 	return (char *)msg + sizeof(struct printk_log);
  }
  
+ /* optional key/value pair dictionary attached to the record */
+-static char *printk_log_dict(const struct printk_log *msg)
++char *printk_log_dict(const struct printk_log *msg)
+ {
+ 	return (char *)msg + sizeof(struct printk_log) + msg->text_len;
+ }
+ 
+ /* get record by index; idx must point to valid msg */
+-static struct printk_log *printk_log_from_idx(u32 idx)
++struct printk_log *printk_log_from_idx(u32 idx)
+ {
+ 	struct printk_log *msg = (struct printk_log *)(printk_log_buf + idx);
+ 
+@@ -278,7 +278,7 @@ static struct printk_log *printk_log_from_idx(u32 idx)
+ }
+ 
+ /* get next record; idx must point to valid msg */
+-static u32 printk_log_next(u32 idx)
++u32 printk_log_next(u32 idx)
+ {
+ 	struct printk_log *msg = (struct printk_log *)(printk_log_buf + idx);
+ 
+@@ -296,10 +296,10 @@ static u32 printk_log_next(u32 idx)
+ }
+ 
+ /* insert record into the buffer, discard old ones, update heads */
+-static void printk_log_store(int facility, int level,
+-			     enum printk_log_flags flags, u64 ts_nsec,
+-			     const char *dict, u16 dict_len,
+-			     const char *text, u16 text_len)
++void printk_log_store(int facility, int level,
++		      enum printk_log_flags flags, u64 ts_nsec,
++		      const char *dict, u16 dict_len,
++		      const char *text, u16 text_len)
+ {
+ 	struct printk_log *msg;
+ 	u32 size, pad_len;
+@@ -1690,9 +1690,9 @@ static u32 syslog_idx;
+ static u64 console_seq;
+ static u32 console_idx;
+ static enum printk_log_flags syslog_prev;
+-static u64 printk_log_first_seq;
+-static u32 printk_log_first_idx;
+-static u64 printk_log_next_seq;
++u64 printk_log_first_seq;
++u32 printk_log_first_idx;
++u64 printk_log_next_seq;
+ static enum printk_log_flags console_prev;
+ static struct cont {
+ 	size_t len;
+@@ -1700,8 +1700,8 @@ static struct cont {
+ 	u8 level;
+ 	bool flushed:1;
+ } cont;
+-static struct printk_log *printk_log_from_idx(u32 idx) { return NULL; }
+-static u32 printk_log_next(u32 idx) { return 0; }
++struct printk_log *printk_log_from_idx(u32 idx) { return NULL; }
++u32 printk_log_next(u32 idx) { return 0; }
+ static void call_console_drivers(int level, const char *text, size_t len) {}
+ static size_t msg_print_text(const struct printk_log *msg,
+ 			     enum printk_log_flags prev,
 -- 
 1.7.10.4
 
