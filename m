@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932449Ab2JQRZb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 13:25:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38799 "EHLO mx1.redhat.com"
+	id S932455Ab2JQR2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 13:28:13 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22326 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932378Ab2JQRZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 13:25:30 -0400
-Date: Wed, 17 Oct 2012 19:02:11 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 2/9] uprobes: check for single step support
-Message-ID: <20121017170211.GA10864@redhat.com>
-References: <1350242593-17761-1-git-send-email-rabin@rab.in> <1350242593-17761-2-git-send-email-rabin@rab.in> <20121017164059.GF11096@linux.vnet.ibm.com>
+	id S932397Ab2JQR2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 13:28:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,602,1344236400"; 
+   d="scan'208";a="207268255"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@alien8.de>,
+        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+CC: "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
+        "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "masbock@linux.vnet.ibm.com" <masbock@linux.vnet.ibm.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bp@amd64.org" <bp@amd64.org>, "lcm@us.ibm.com" <lcm@us.ibm.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>
+Subject: RE: [PATCH v3] x86/mce: Honour bios-set CMCI threshold
+Thread-Topic: [PATCH v3] x86/mce: Honour bios-set CMCI threshold
+Thread-Index: AQHNkOH9ZFER3S2mLUqZGgg8EveT/JeVLvsAgCjRnACAAAfHAIAAHIQAgAAsK4CAAA6oAP//leQQ
+Date: Wed, 17 Oct 2012 17:28:11 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D517FF@ORSMSX108.amr.corp.intel.com>
+References: <CA+8MBbKVa0=qUpG-rjV5ieKkponZo77mzk_y_dF4qA2gVG++6A@mail.gmail.com>
+ <20120912122516.3825.87838.stgit@localhost.localdomain>
+ <505C51D8.6070402@linux.vnet.ibm.com>
+ <20121017105940.GA14590@x1.osrc.amd.com>
+ <507E9622.6090606@linux.vnet.ibm.com>
+ <20121017130934.GB14590@x1.osrc.amd.com>
+ <507ED31B.7010402@linux.vnet.ibm.com>
+ <20121017164006.GA14596@x1.osrc.amd.com>
+In-Reply-To: <20121017164006.GA14596@x1.osrc.amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121017164059.GF11096@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9HHSIKx006207
 
-On 10/17, Srikar Dronamraju wrote:
->
-> * Rabin Vincent <rabin@rab.in> [2012-10-14 21:23:06]:
->
-> >  void __weak arch_uprobe_enable_step(struct arch_uprobe *arch)
-> >  {
-> > -	user_enable_single_step(current);
-> > +	if (arch_has_single_step())
-> > +		user_enable_single_step(current);
-> >  }
-> >
-> >  void __weak arch_uprobe_disable_step(struct arch_uprobe *arch)
->
-> This change is fine. But I am wondering if should have a dummy
-> arch_uprobe_enable_step / arch_uprobe_disable_step in uprobes ARM.
+> What's wrong with userspace tools parsing /proc/cmdline and seeing that
+> mce_bios_cmci_threshold has been set since this is the only way to set
+> it anyway?
 
-Or, better, we can kill it. We wertr going to do this anyway, we were
-waiting for powerpc port.
+The argument might be on the command line, but may have been rejected
+because the BIOS didn't set the thresholds? So then you'd have to look at
+the command line, *and* check /var/log/messages to make sure we hadn't
+printed the message saying the BIOS was unsupportive.
 
-Just I do not know how this change should be routed, it should update
-both x86/powerpc.
+BUT ... I don't think that knowing this is sufficient. A userspace tool would
+want to know what value had been set for each bank. So if it really wants to
+do something interesting, just knowing that "bios set some thresholds" doesn't
+sound like enough information.
 
-Or do you think arch_uprobe_enable_step() still makes any sense?
+BUT (squared) do you even really need to know that thresholds were set? You
+could look at bits {52:38} in the MCi_STATUS information for the bank to see
+how many corrected errors had been logged.
 
-Oleg.
-
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
