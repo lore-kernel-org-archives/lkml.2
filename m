@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab2JQCr5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 22:47:57 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:32839 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755690Ab2JQCr4 (ORCPT
+	id S932109Ab2JQC40 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 22:56:26 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:33012 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755690Ab2JQC4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 22:47:56 -0400
-X-AuditID: b753bd60-96850ba000002f78-39-507e1c59abc9
-X-AuditID: b753bd60-96850ba000002f78-39-507e1c59abc9
-Message-ID: <507E1C49.1030002@hitachi.com>
-Date: Wed, 17 Oct 2012 11:47:37 +0900
+	Tue, 16 Oct 2012 22:56:25 -0400
+X-AuditID: b753bd60-96850ba000002f78-ca-507e1e56d5cc
+X-AuditID: b753bd60-96850ba000002f78-ca-507e1e56d5cc
 From: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
-User-Agent: Thunderbird 2.0.0.5 (Windows/20070716)
+Subject: [PATCH v2 -tip 0/4] tracing: make a snapshot feature available from
+ userspace
+To: rostedt@goodmis.org
+Cc: yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org
+Date: Wed, 17 Oct 2012 11:56:08 +0900
+Message-ID: <20121017025608.2627.87497.stgit@falsita>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH -tip 2/4] tracing: add a resize function for making one
- buffer equivalent to the other buffer
-References: <20121002081309.8661.37629.stgit@falsita>	 <20121002082715.9807.90791.stgit@falsita> <1349456348.6755.59.camel@gandalf.local.home>
-In-Reply-To: <1349456348.6755.59.camel@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven,
+Hi, Steven,
 
-I'm sorry for my late reply.
-(I was outside the office for business trip.)
+Thank you for your review.
+I changed the function name "resize_buffer_even" to 
+"resize_buffer_duplicate_size".
 
-(2012/10/06 1:59), Steven Rostedt wrote:
- >> +/* resize @tr's buffer to the size of @size_tr's entries */
- >> +static int resize_buffer_even(struct trace_array *tr,
- >
- > I don't mind this patch, but I just hate the name "resize_buffer_even".
- > What about "resize_buffer_duplicate_size"?
- >
+(v1: https://lkml.org/lkml/2012/10/2/67)
 
-O.K.
-I'll send modified version of this patch later.
+---
 
-Regards,
-Hiraku Toyooka
+Hiraku Toyooka (4):
+      tracing: add description of snapshot to Documentation/trace/ftrace.txt
+      tracing: make a snapshot feature available from userspace
+      tracing: add a resize function for making one buffer equivalent to the other buffer
+      tracing: change tracer's integer flags to bool
+
+
+ Documentation/trace/ftrace.txt    |   97 ++++++++++++++
+ include/linux/ftrace_event.h      |    3 
+ kernel/trace/Kconfig              |   11 ++
+ kernel/trace/trace.c              |  248 +++++++++++++++++++++++++++++++------
+ kernel/trace/trace.h              |    5 -
+ kernel/trace/trace_irqsoff.c      |   12 +-
+ kernel/trace/trace_sched_wakeup.c |    8 +
+ 7 files changed, 333 insertions(+), 51 deletions(-)
+
+-- 
+Hiraku TOYOOKA
+Linux Technology Center
+Yokohama Research Laboratory
+Hitachi Ltd.
