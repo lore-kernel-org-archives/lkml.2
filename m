@@ -1,58 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756812Ab2JQL4N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 07:56:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33645 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756736Ab2JQL4J (ORCPT
+	id S1756743Ab2JQMA4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 08:00:56 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:53226 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756169Ab2JQMAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 07:56:09 -0400
-From: Vinayak Holikatti <vinholikatti@gmail.com>
-To: James.Bottomley@hansenpartnership.com
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linux-samsung-soc@vger.kernel.org, arnd@linaro.org,
-        girish.shivananjappa@linaro.org, saugata.das@linaro.org,
-        vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
-        dsaxena@linaro.org, ilho215.lee@samsung.com, nala.la@samsung.com,
-        sreekumar.c@samsung.com, Vinayak Holikatti <vinholikatti@gmail.com>,
-        Santosh Yaraganavi <santoshsy@gmail.com>
-Subject: [PATCH V4 4/4] [SCSI] ufs: Correct the expected data transfer size
-Date: Wed, 17 Oct 2012 17:23:42 +0530
-Message-Id: <1350474822-7315-5-git-send-email-vinholikatti@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1350474822-7315-1-git-send-email-vinholikatti@gmail.com>
-References: <1350474822-7315-1-git-send-email-vinholikatti@gmail.com>
+	Wed, 17 Oct 2012 08:00:52 -0400
+MIME-Version: 1.0
+Date: Wed, 17 Oct 2012 20:00:51 +0800
+Message-ID: <CAKw8HL3+=4JXTQ+nphM5XjN_yaVUy55fzytGX=83P+P2n=qvnw@mail.gmail.com>
+Subject: Re: [RFC PATCH v2] Hardcoded instruction causes cpu-hotplug fail on
+ be8 big-endian ARM platfrom
+From: Fei Yang <yangfei.kernel@gmail.com>
+To: Dave Martin <dave.martin@linaro.org>, linux@arm.linux.org.uk,
+        lethal@linux-sh.org, magnus.damm@gmail.com, kgene.kim@samsung.com,
+        linux-arm-kernel@lists.infradead.org
+Cc: Mikael Pettersson <mikpe@it.uu.se>,
+        "linux-assembly@vger.kernel.org" <linux-assembly@vger.kernel.org>,
+        linux-hotplug@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Yangfei (Felix)" <felix.yang@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch corrects the expected data transfer size of the
-command UPIU. The current implementation of cmd->transfersize
-is wrong as it probably equal to sector size. With this
-implementation the transfer size is updated correctly
+<cut>
 
-Reported-by: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
-Signed-off-by: Santosh Yaraganavi <santoshsy@gmail.com>
-Signed-off-by: Vinayak Holikatti <vinholikatti@gmail.com>
----
- drivers/scsi/ufs/ufshcd.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Not handling the Thumb case is a definite bug for any file which may
+> run on v7, since the kernel could be built in Thumb for that case.
+> For example, the existing code is mach-realview/hotplug.c is broken
+> when building an SMP Thumb-2 kernel for the Realview PBX-A9.
+>
+> Cheers
+> ---Dave
 
-diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
-index 5d7bd47..57c16ec 100644
---- a/drivers/scsi/ufs/ufshcd.c
-+++ b/drivers/scsi/ufs/ufshcd.c
-@@ -478,7 +478,7 @@ static void ufshcd_compose_upiu(struct ufshcd_lrb *lrbp)
- 		ucd_cmd_ptr->header.dword_2 = 0;
- 
- 		ucd_cmd_ptr->exp_data_transfer_len =
--			cpu_to_be32(lrbp->cmd->transfersize);
-+			cpu_to_be32(lrbp->cmd->sdb.length);
- 
- 		memcpy(ucd_cmd_ptr->cdb,
- 		       lrbp->cmd->cmnd,
--- 
-1.7.5.4
+Thanks for pointing this out. I think we just cannot make any
+assumption about the versions of the tools used. Based on this, I have
+made a v2 of the patch against linux-3.7-rc1. I am not touching the
+CFLAGS in the patch as I am not familiar with the three ARM boards
+here.
+Can the respective board maintainers
+(mach-exynos/mach-realveiw/mach-shmobile) give any comments about v2
+of the patch?
 
+Thanks.
+---Fei
+
+v2: Define opcode of the ARM "WFI" instruction in the right way.
+
+Signed-off-by: Fei Yang<yangfei.kernel@gmail.com>
+
+diff -urN linux-3.7-rc1/arch/arm/mach-exynos/hotplug.c
+linux/arch/arm/mach-exynos/hotplug.c
+--- linux-3.7-rc1/arch/arm/mach-exynos/hotplug.c	2012-10-15
+05:41:04.000000000 +0800
++++ linux/arch/arm/mach-exynos/hotplug.c	2012-10-17 19:25:49.000000000 +0800
+@@ -18,11 +18,17 @@
+ #include <asm/cacheflush.h>
+ #include <asm/cp15.h>
+ #include <asm/smp_plat.h>
++#include <asm/opcodes.h>
+
+ #include <mach/regs-pmu.h>
+
+ #include "common.h"
+
++/*
++ * Define opcode of the WFI instruction.
++ */
++#define __WFI __inst_arm_thumb16(0xe320f003, 0xbf30)
++
+ static inline void cpu_enter_lowpower(void)
+ {
+ 	unsigned int v;
+@@ -72,7 +78,7 @@
+ 		/*
+ 		 * here's the WFI
+ 		 */
+-		asm(".word	0xe320f003\n"
++		asm(__WFI
+ 		    :
+ 		    :
+ 		    : "memory", "cc");
+diff -urN linux-3.7-rc1/arch/arm/mach-realview/hotplug.c
+linux/arch/arm/mach-realview/hotplug.c
+--- linux-3.7-rc1/arch/arm/mach-realview/hotplug.c	2012-10-15
+05:41:04.000000000 +0800
++++ linux/arch/arm/mach-realview/hotplug.c	2012-10-17 19:25:20.000000000 +0800
+@@ -15,6 +15,12 @@
+ #include <asm/cacheflush.h>
+ #include <asm/cp15.h>
+ #include <asm/smp_plat.h>
++#include <asm/opcodes.h>
++
++/*
++ * Define opcode of the WFI instruction.
++ */
++#define __WFI __inst_arm_thumb16(0xe320f003, 0xbf30)
+
+ static inline void cpu_enter_lowpower(void)
+ {
+@@ -64,7 +70,7 @@
+ 		/*
+ 		 * here's the WFI
+ 		 */
+-		asm(".word	0xe320f003\n"
++		asm(__WFI
+ 		    :
+ 		    :
+ 		    : "memory", "cc");
+diff -urN linux-3.7-rc1/arch/arm/mach-shmobile/hotplug.c
+linux/arch/arm/mach-shmobile/hotplug.c
+--- linux-3.7-rc1/arch/arm/mach-shmobile/hotplug.c	2012-10-15
+05:41:04.000000000 +0800
++++ linux/arch/arm/mach-shmobile/hotplug.c	2012-10-17 19:25:34.000000000 +0800
+@@ -20,6 +20,12 @@
+ #include <mach/emev2.h>
+ #include <asm/cacheflush.h>
+ #include <asm/mach-types.h>
++#include <asm/opcodes.h>
++
++/*
++ * Define opcode of the WFI instruction.
++ */
++#define __WFI __inst_arm_thumb16(0xe320f003, 0xbf30)
+
+ static cpumask_t dead_cpus;
+
+@@ -39,7 +45,7 @@
+ 		/*
+ 		 * here's the WFI
+ 		 */
+-		asm(".word	0xe320f003\n"
++		asm(__WFI
+ 		    :
+ 		    :
+ 		    : "memory", "cc");
