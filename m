@@ -1,76 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab2JQWov (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 18:44:51 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:48026 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433Ab2JQWou (ORCPT
+	id S1752350Ab2JQXGg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 19:06:36 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:13684 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953Ab2JQXGe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 18:44:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <3179.1350512382@warthog.procyon.org.uk>
-References: <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com>
- <3179.1350512382@warthog.procyon.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 17 Oct 2012 15:44:28 -0700
-X-Google-Sender-Auth: OqkuJ1DRcCDPqOVGOXUtSJLHPAQ
-Message-ID: <CA+55aFzEH1jguw8NB90si2uxvyO63FuKPOc8wiEPRCYwruSzRg@mail.gmail.com>
-Subject: Re: RFC: sign the modules at install time
-To: David Howells <dhowells@redhat.com>
-Cc: David Miller <davem@davemloft.net>, Rusty Russell <rusty@rustcorp.com.au>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jwboyer@redhat.com, pjones@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 17 Oct 2012 19:06:34 -0400
+X-AuditID: cbfee61a-b7f976d000001eb9-1d-507f39f9529a
+From: Changman Lee <cm224.lee@samsung.com>
+To: "'Namjae Jeon'" <linkinjeon@gmail.com>,
+        "'Changman Lee'" <cm224.lee@gmail.com>
+Cc: "'Jaegeuk Kim'" <jaegeuk.kim@samsung.com>,
+        "'Vyacheslav Dubeyko'" <slava@dubeyko.com>,
+        "'Marco Stornelli'" <marco.stornelli@gmail.com>,
+        "'Jaegeuk Kim'" <jaegeuk.kim@gmail.com>,
+        "'Al Viro'" <viro@zeniv.linux.org.uk>, tytso@mit.edu,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        chur.lee@samsung.com, jooyoung.hwang@samsung.com,
+        linux-fsdevel@vger.kernel.org
+References: <415E76CC-A53D-4643-88AB-3D7D7DC56F98@dubeyko.com>
+ <9DE65D03-D4EA-4B32-9C1D-1516EAE50E23@dubeyko.com>
+ <1349553966.12699.132.camel@kjgkr> <50712AAA.5030807@gmail.com>
+ <002201cda46e$88b84d30$9a28e790$%kim@samsung.com>
+ <F7EA5AF7-8A1C-4C98-90AF-9D47E39731AB@dubeyko.com>
+ <004101cda52e$72210e20$56632a60$%kim@samsung.com>
+ <55A93BD0-CBCB-4707-A970-EB823EC54B2D@dubeyko.com>
+ <006f01cda5ec$e63e9b60$b2bbd220$%kim@samsung.com>
+ <1349855868.1889.87.camel@slavad-ubuntu>
+ <009f01cda6cb$b8cb1020$2a613060$%kim@samsung.com>
+ <CAKYAXd_6MheUVRm7HVofXVp-HWStZNVw2GCqXNfKukxbJ5rG5g@mail.gmail.com>
+ <CAN863PuyMkSZtZCvqX+kwei9v=rnbBYVYr3TqBXF_6uxwJe2_Q@mail.gmail.com>
+ <CAKYAXd9+fEVUhe7kRcv_CnWhH3z_e4NqPstSWoCQ6xqrSt4AyQ@mail.gmail.com>
+In-reply-to: <CAKYAXd9+fEVUhe7kRcv_CnWhH3z_e4NqPstSWoCQ6xqrSt4AyQ@mail.gmail.com>
+Subject: RE: [PATCH 00/16] f2fs: introduce flash-friendly file system
+Date: Thu, 18 Oct 2012 08:06:32 +0900
+Message-id: <000001cdacbc$0ca68080$25f38180$%lee@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2sWIOvEJLpWExaSKuidsCI/S9VsQAX7Zmw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jQd2flvUBBgtahS327D3JYnF51xw2
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDI+Xn/IXPBatGLmhi2MDYynBbsYOTkkBEwkVt89xQJh
+	i0lcuLeerYuRi0NIYDqjxNf+n1DOX0aJ3V+7GEGq2AS0JNpPrwXrEBHwk5j7YS0rSBGzwBcm
+	iT3N0xghOt6zSszZ1MoKUsUpECxx9egLdhBbWMBVov1PO9gkFgFViVtb/zCD2LwCthIn33Wx
+	Q9iCEj8m3wPawAE0VV1iypRckDCzgLbEk3cXWEHCEkDhR391IW4wknj0ZT0jRImIxL4X7xgn
+	MArNQjJoFsKgWUgGzULSsYCRZRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcEg/k9rBuLLB
+	4hCjAAejEg/vh9m1AUKsiWXFlbmHGCU4mJVEeG+z1wcI8aYkVlalFuXHF5XmpBYfYpTmYFES
+	5232SAkQEkhPLEnNTk0tSC2CyTJxcEo1MK5pqVe9pz6/RPwAy9Vp33K1Xvyb0ZhYlvXmprew
+	2eXgK4H8FV0pcar/z8QEPFv1leXzeglvvxUdE9uuzEh6fnS6r7TQWtNngodUE+9r9y/bJHCX
+	Y/pmG7u3LHrftznsvH2UNXLZ9T2Tz/anX1c6PqFn5+q7krMfFxhLKckYds67eOa253Rvs4VK
+	LMUZiYZazEXFiQBaFQPYZQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 3:19 PM, David Howells <dhowells@redhat.com> wrote:
->
-> It's probably even better to just get rid of all the automatic module signing
-> stuff completely and leave the sign-file script for the builder to use
-> manually.  The module verification code will still be present.
 
-That's just disgusting crazy talk.
 
-Christ, David, get a grip on yourself. You seem to dismiss the "people
-want to build their own kernel" people entirely.
+> -----Original Message-----
+> From: Namjae Jeon [mailto:linkinjeon@gmail.com]
+> Sent: Wednesday, October 17, 2012 8:14 PM
+> To: Changman Lee
+> Cc: Jaegeuk Kim; Vyacheslav Dubeyko; Marco Stornelli; Jaegeuk Kim; Al Viro;
+> tytso@mit.edu; gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> chur.lee@samsung.com; cm224.lee@samsung.com; jooyoung.hwang@samsung.com;
+> linux-fsdevel@vger.kernel.org
+> Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
+> 
+> 2012/10/11, Changman Lee <cm224.lee@gmail.com>:
+> > 2012년 10월 11일 목요일에 Namjae Jeon<linkinjeon@gmail.com>님이 작성:
+> >> 2012/10/10 Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+> >>
+> >>>>
+> >>>> I mean that every volume is placed inside any partition (MTD or GPT).
+> > Every partition begins from any
+> >>>> physical sector. So, as I can understand, f2fs volume can begin from
+> > physical sector that is laid
+> >>>> inside physical erase block. Thereby, in such case of formating the
+> > f2fs's operation units will be
+> >>>> unaligned in relation of physical erase blocks, from my point of view.
+> > Maybe, I misunderstand
+> >>>> something but it can lead to additional FTL operations and performance
+> > degradation, from my point of
+> >>>> view.
+> >>>
+> >>> I think mkfs already calculates the offset to align that.
+> >> I think this answer is not what he want.
+> >> If you don't use partition table such as dos partition table or gpt, I
+> >> think that it is possible to align using mkfs.
+> >> But If we should consider partition table space in storage, I don't
+> >> understand how it  could be align using mkfs.
+> >>
+> >> Thanks.
+> >
+> > We can know the physical starting sector address of any partitions from
+> > hdio geometry information got by ioctl.
+> If so, first block and end block of partition are useless ?
+> 
+> Thanks.
 
-One of the main sane use-cases for module signing is:
+For example.
+If we try to align a start point of F2FS in 2MB but start sector of any partition is not aligned in 2MB,
+and of course F2FS will have some unused blocks. Instead, F2FS could reduce gc cost of ftl.
+I don't know my answer is what you want.
 
- - CONFIG_CHECK_SIGNATURE=y
- - randomly generated one-time key
- - "make modules_install; make install"
- - "make clean" to get rid of the keys.
- - reboot.
+> >
+> >>> Thanks,
+> >>>
+> >>> --
+> >>> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel"
+> > in
+> >>> the body of a message to majordomo@vger.kernel.org
+> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> >> in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> Please read the FAQ at  http://www.tux.org/lkml/
+> >>
+> >
 
-and now you have a custom kernel that has the convenience of modules,
-yet is basically as safe as a non-modular build. The above makes it
-much harder for any kind of root-kit module to be loaded, and
-basically entirely avoids one fundamental security scare of modules.
-
-Everything else is garbage and should largely be ignored. Distro
-people who want to use magic distro keys can do whatever the hell they
-want with their modules, they'll have a separate packaging phase
-anyway for their secret keys - and they'll have to do it separately
-anyway just to keep their private key safe.
-
-And the UEFI "we only boot kernels signed by microsoft keys" case is
-just BS, and while it might be useful for some people, it's more
-likely to be a pain.
-
-In contrast, the case I outlined above is about true *security*, not
-some "vendor control" bullshit. And THAT is the case that kernel
-developers should encourage: using cryptography to secure individual
-users, instead of controlling things for others.
-
-Quite frankly, your "get rid of all the automatic module signing stuff
-completely" answer makes me think that your agenda is fundamentally
-flawed. Module signing is *not* about some magic redhat or microsoft
-key, and anybody who thinks it *should* be about that should seriously
-rethink their position.
-
-In fact, if I believed this was about redhat or microsoft keys, I
-would never have merged the code at all.
-
-              Linus
