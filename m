@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243Ab2JQPdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 11:33:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61881 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756321Ab2JQPdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 11:33:23 -0400
-Date: Wed, 17 Oct 2012 11:33:14 -0400
-From: Dave Jones <davej@redhat.com>
+	id S932267Ab2JQPeW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 11:34:22 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:48099 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753394Ab2JQPeV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 11:34:21 -0400
+Date: Wed, 17 Oct 2012 11:35:06 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
 To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, Fedora Kernel Team <kernel-team@fedoraproject.org>
-Subject: Re: 3.6.0: WARNING: at arch/x86/kernel/apic/ipi.c:109
- default_send_IPI_mask_logical+0x97/0xc7()
-Message-ID: <20121017153314.GA22138@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	linux-kernel@vger.kernel.org, x86@kernel.org,
-	Fedora Kernel Team <kernel-team@fedoraproject.org>
-References: <20121002112631.GB15862@charite.de>
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, eranian@gmail.com,
+        "Meadows, Lawrence F" <lawrence.f.meadows@intel.com>
+Subject: perf: p6 PMU working by accident, should we fix it and KNC?
+Message-ID: <alpine.DEB.2.02.1210171125040.23371@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121002112631.GB15862@charite.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 02, 2012 at 01:26:31PM +0200, Ralf Hildebrandt wrote:
+Hello
 
- > WARNING: at arch/x86/kernel/apic/ipi.c:109 default_send_IPI_mask_logical+0x97/0xc7()
- > Hardware name: ProLiant DL360 G4
- > empty IPI mask
- > Modules linked in: nfnetlink_log nfnetlink ipv6 tg3 microcode rng_core psmouse hpwdt container thermal button processor i6300esb
- > Pid: 22582, comm: clamd Not tainted 3.6.0 #1
- > Call Trace:
- >  [<c1027f94>] warn_slowpath_common+0x67/0x8e
- >  [<c101beef>] ? default_send_IPI_mask_logical+0x97/0xc7
- >  [<c101beef>] ? default_send_IPI_mask_logical+0x97/0xc7
- >  [<c1028037>] warn_slowpath_fmt+0x2e/0x30
- >  [<c101beef>] default_send_IPI_mask_logical+0x97/0xc7
- >  [<c101aac4>] native_send_call_func_ipi+0x42/0x54
- >  [<c105c56a>] smp_call_function_many+0x160/0x1dd
- >  [<c1024fe7>] native_flush_tlb_others+0x26/0x28
- >  [<c1025218>] flush_tlb_page+0x49/0x73
- >  [<c109c420>] ptep_clear_flush+0x18/0x20
- >  [<c108fe26>] do_wp_page+0x1f4/0x72f
- >  [<c104ab0c>] ? __enqueue_entity+0x6b/0x73
- >  [<c10917c4>] handle_pte_fault+0x47a/0x8d8
- >  [<c105c7eb>] ? generic_smp_call_function_interrupt+0x6c/0x150
- >  [<c105c842>] ? generic_smp_call_function_interrupt+0xc3/0x150
- >  [<c10928e1>] handle_mm_fault+0x19c/0x211
- >  [<c1020fe5>] ? vmalloc_sync_all+0x5/0x5
- >  [<c10210d8>] do_page_fault+0xf3/0x3ab
- >  [<c105c842>] ? generic_smp_call_function_interrupt+0xc3/0x150
- >  [<c116a593>] ? radix_tree_lookup_slot+0xd/0xf
- >  [<c10793fd>] ? find_get_page+0x1b/0x70
- >  [<c1020fe5>] ? vmalloc_sync_all+0x5/0x5
- >  [<c129f7a3>] error_code+0x67/0x6c
- >  [<c107914e>] ? file_read_actor+0x25/0xb8
- >  [<c1088e4b>] shmem_file_aio_read+0xf1/0x2bb
- >  [<c10abb31>] do_sync_read+0x8f/0xbf
- >  [<c10abaa2>] ? do_sync_write+0xbf/0xbf
- >  [<c10ac450>] vfs_read+0x80/0x13e
- >  [<c10abaa2>] ? do_sync_write+0xbf/0xbf
- >  [<c10ac636>] sys_pread64+0x4e/0x7c
- >  [<c129fa17>] sysenter_do_call+0x12/0x26
+quick summary: the p6 code looks to be buggy and is only currently
+   working by luck.  I'm trying to work out how to best fix the KNC
+   code which is based on the p6 PMU driver.
 
-We've had a lot of reports of this bug this last two weeks since we pushed out a 3.6 update.
+While working on the KNC PMU we ran into the following problem.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=862560
-https://bugzilla.redhat.com/show_bug.cgi?id=867174
+Between 2.6.33 and 2.6.34 the kernel was changed to have a much
+more elaborate PMU initialization routine.
 
-All of them are on i686.
+The new x86_pmu_enable() routine starts with cpuc->enabled set to 0.
+  It then calls x86_pmu_start(event)
+  Which then calls x86_pmu.enable(event)
 
-We had one report of something similar a while ago too..
-https://bugzilla.redhat.com/show_bug.cgi?id=797687
-against 3.2.6, so it's possibly an old bug that somehow
-became even easier to trigger.
+On both p6 and KNC, x86_pmu.enable(event) is conditioned not to do
+anything unless cpuc->enabled is set to 1 (the generic x86 enable does not 
+have this limitation).
 
-	Dave
+Only at the end of x86_pmu_enable() is cpuc->enabled set to 1.
 
+On KNC this means that the counter setup does not happen properly.
+
+This should also be the case on P6, but mysteriously things *do* work, as 
+I just verified by brining my poor PII machine out of retirement.
+
+This is by accident; it looks like the code does 
+   val |= ARCH_PERFMON_EVENTSEL_ENABLE;
+in p6_pmu_disable_event() so that events are never truly disabled
+(is this a bug?  should it be &=~ instead?).  
+This doesn't cause problems because P6_NOP_EVENT
+is used in the disabled case so no spurious counts are generated.
+
+So I have two questions:
+  1.  Is it worth fixing the p6 code?
+  2.  Is it OK to drop the cpuc->enabled test in KNC for event 
+      enable/disable?  The driver works fine with that dropped, and
+      the regular intel x86 driver doesn't have those tests.
+
+Thanks,
+
+Vince
