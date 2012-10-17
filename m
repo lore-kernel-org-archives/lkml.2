@@ -1,120 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab2JQGRK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 02:17:10 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:60581 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979Ab2JQGRH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 02:17:07 -0400
+	id S1755637Ab2JQGSe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 02:18:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:47559 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754314Ab2JQGSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 02:18:33 -0400
+X-IronPort-AV: E=Sophos;i="4.80,598,1344182400"; 
+   d="scan'208";a="6013990"
+Message-ID: <507E4F0C.9040506@cn.fujitsu.com>
+Date: Wed, 17 Oct 2012 14:24:12 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1350453876.3072.23.camel@joe-AO722>
-References: <3b38cb8ab136e5af3a70fceb7d77ad9fc889eb3f.1350451100.git.viresh.kumar@linaro.org>
-	<1350452374.3072.19.camel@joe-AO722>
-	<CAKohpo=LL+wPcb97KNQvHbX0fzhnRBZjPsHXTj1PdYObuVVTgw@mail.gmail.com>
-	<1350453876.3072.23.camel@joe-AO722>
-Date: Wed, 17 Oct 2012 11:47:06 +0530
-Message-ID: <CAKohpom6xHUmu2uYijdNVJHj6sFwJhYUYvXy+dN1a+WqzqTjZA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cpufreq: Improve debug prints
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl, Joe Perches <joe@perches.com>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, pdsw-power-team@arm.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 2/2]suppress "Device nodeX does not have a release() function"
+ warning
+References: <507656D1.5020703@jp.fujitsu.com> <50765896.4000300@jp.fujitsu.com> <CAHGf_=rvdU+TymYZSXvx1bz4xdp43bqnyjRMGEoiBizC5rP0sQ@mail.gmail.com>
+In-Reply-To: <CAHGf_=rvdU+TymYZSXvx1bz4xdp43bqnyjRMGEoiBizC5rP0sQ@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/17 14:18:11,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/17 14:18:12,
+	Serialize complete at 2012/10/17 14:18:12
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 October 2012 11:34, Joe Perches <joe@perches.com> wrote:
-> I believe you are quoting KBUILD_MODNAME
+At 10/12/2012 06:33 AM, KOSAKI Motohiro Wrote:
+> On Thu, Oct 11, 2012 at 1:26 AM, Yasuaki Ishimatsu
+> <isimatu.yasuaki@jp.fujitsu.com> wrote:
+>> When calling unregister_node(), the function shows following message at
+>> device_release().
+>>
+>> "Device 'node2' does not have a release() function, it is broken and must
+>> be fixed."
+>>
+>> The reason is node's device struct does not have a release() function.
+>>
+>> So the patch registers node_device_release() to the device's release()
+>> function for suppressing the warning message. Additionally, the patch adds
+>> memset() to initialize a node struct into register_node(). Because the node
+>> struct is part of node_devices[] array and it cannot be freed by
+>> node_device_release(). So if system reuses the node struct, it has a garbage.
+>>
+>> CC: David Rientjes <rientjes@google.com>
+>> CC: Jiang Liu <liuj97@gmail.com>
+>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>> CC: Andrew Morton <akpm@linux-foundation.org>
+>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>> ---
+>>  drivers/base/node.c |   11 +++++++++++
+>>  1 file changed, 11 insertions(+)
+>>
+>> Index: linux-3.6/drivers/base/node.c
+>> ===================================================================
+>> --- linux-3.6.orig/drivers/base/node.c  2012-10-11 10:04:02.149758748 +0900
+>> +++ linux-3.6/drivers/base/node.c       2012-10-11 10:20:34.111806931 +0900
+>> @@ -252,6 +252,14 @@ static inline void hugetlb_register_node
+>>  static inline void hugetlb_unregister_node(struct node *node) {}
+>>  #endif
+>>
+>> +static void node_device_release(struct device *dev)
+>> +{
+>> +#if defined(CONFIG_MEMORY_HOTPLUG_SPARSE) && defined(CONFIG_HUGETLBFS)
+>> +       struct node *node_dev = to_node(dev);
+>> +
+>> +       flush_work(&node_dev->node_work);
+>> +#endif
+>> +}
+> 
+> The patch description don't explain why this flush_work() is needed.
 
-Yes. :(
-Far better output with this. Thanks.
+If the node is onlined after it is offlined, we will clear the memory,
+so we should flush_work() before node_dev is set to 0.
 
-@Rafael: Please consider below patch instead:
+Thanks
+Wen Congyang
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
-Date: Wed, 17 Oct 2012 10:38:31 +0530
-Subject: [PATCH] cpufreq: Improve debug prints
+> 
+> 
+>>  /*
+>>   * register_node - Setup a sysfs device for a node.
+>> @@ -263,8 +271,11 @@ int register_node(struct node *node, int
+>>  {
+>>         int error;
+>>
+>> +       memset(node, 0, sizeof(*node));
+>> +
+> 
+> You should add a comment why we need initialize a node here. A lot
+> of developers don't have hotplug knowledge.
+> 
 
-With debug options on, it is difficult to locate cpufreq core's debug prints.
-Fix this by prefixing debug prints with KBUILD_MODNAME.
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq.c             | 2 ++
- drivers/cpufreq/cpufreq_performance.c | 2 ++
- drivers/cpufreq/cpufreq_powersave.c   | 2 ++
- drivers/cpufreq/cpufreq_userspace.c   | 2 ++
- drivers/cpufreq/freq_table.c          | 2 ++
- 5 files changed, 10 insertions(+)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index db6e337..0504b8b 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -15,6 +15,8 @@
-  *
-  */
-
-+#define pr_fmt(fmt) KBUILD_MODNAME": " fmt
-+
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/init.h>
-diff --git a/drivers/cpufreq/cpufreq_performance.c
-b/drivers/cpufreq/cpufreq_performance.c
-index f13a8a9..57951dc 100644
---- a/drivers/cpufreq/cpufreq_performance.c
-+++ b/drivers/cpufreq/cpufreq_performance.c
-@@ -10,6 +10,8 @@
-  *
-  */
-
-+#define pr_fmt(fmt) KBUILD_MODNAME": " fmt
-+
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/cpufreq.h>
-diff --git a/drivers/cpufreq/cpufreq_powersave.c
-b/drivers/cpufreq/cpufreq_powersave.c
-index 4c2eb51..c4540cf 100644
---- a/drivers/cpufreq/cpufreq_powersave.c
-+++ b/drivers/cpufreq/cpufreq_powersave.c
-@@ -10,6 +10,8 @@
-  *
-  */
-
-+#define pr_fmt(fmt) KBUILD_MODNAME": " fmt
-+
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/cpufreq.h>
-diff --git a/drivers/cpufreq/cpufreq_userspace.c
-b/drivers/cpufreq/cpufreq_userspace.c
-index bedac1a..c0eb546 100644
---- a/drivers/cpufreq/cpufreq_userspace.c
-+++ b/drivers/cpufreq/cpufreq_userspace.c
-@@ -11,6 +11,8 @@
-  *
-  */
-
-+#define pr_fmt(fmt) KBUILD_MODNAME": " fmt
-+
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/smp.h>
-diff --git a/drivers/cpufreq/freq_table.c b/drivers/cpufreq/freq_table.c
-index 90431cb..8bcc930 100644
---- a/drivers/cpufreq/freq_table.c
-+++ b/drivers/cpufreq/freq_table.c
-@@ -9,6 +9,8 @@
-  *
-  */
-
-+#define pr_fmt(fmt) KBUILD_MODNAME": " fmt
-+
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/init.h>
