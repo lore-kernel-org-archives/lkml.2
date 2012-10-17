@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932389Ab2JQQ03 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 12:26:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10532 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756419Ab2JQQ01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 12:26:27 -0400
-Date: Wed, 17 Oct 2012 12:26:23 -0400
-From: Dave Jones <davej@redhat.com>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: suspicious RCU usage in cgroup
-Message-ID: <20121017162623.GA30345@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Aristeu Rozanski <aris@redhat.com>, linux-kernel@vger.kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <20121005215926.GA2406@redhat.com>
- <20121005220612.GB29956@redhat.com>
+	id S932409Ab2JQQ2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 12:28:13 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64591 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932325Ab2JQQ2L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 12:28:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121005220612.GB29956@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <507E60C2.6010104@cn.fujitsu.com>
+References: <1350444308-27102-1-git-send-email-tangchen@cn.fujitsu.com>
+	<CAE9FiQVFc9VVfWZpEfjPeGvo5pby3BQNzDei3VTXdoR048_SPg@mail.gmail.com>
+	<507E60C2.6010104@cn.fujitsu.com>
+Date: Wed, 17 Oct 2012 09:28:09 -0700
+X-Google-Sender-Auth: g-0yTC4c-Csf_nThCrdvkN5Mr1Y
+Message-ID: <CAE9FiQX60dOE7odBx4OC0kawesZW3w9yLHEhmLoOvASaZ7q8dw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Update acpi_root_bridge_list in container hotplug path.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: jiang.liu@huawei.com, bhelgaas@google.com, lenb@kernel.org,
+        izumi.taku@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 05, 2012 at 06:06:12PM -0400, Aristeu Rozanski wrote:
- > Hi Dave,
- > On Fri, Oct 05, 2012 at 05:59:29PM -0400, Dave Jones wrote:
- > > On boot in Linus' current tree..
- > > 
- > > ===============================
- > > [ INFO: suspicious RCU usage. ]
- > > 3.6.0+ #22 Not tainted
- > > -------------------------------
- > > include/linux/cgroup.h:566 suspicious rcu_dereference_check() usage!
- > > 
- > > other info that might help us debug this:
- > > 
- > > rcu_scheduler_active = 1, debug_locks = 1
- > > 2 locks on stack by kdevtmpfs/59:
- > >  #0: blocked:  (sb_writers){.+.+.+}, instance: ffff88014595a9a0, at: [<ffffffff81207bc4>] mnt_want_write+0x24/0x50
- > >  #1: held:     (&sb->s_type->i_mutex_key#3/1){+.+.+.}, instance: ffff880145b1f5c8, at: [<ffffffff811f26d4>] kern_path_create+0x84/0x170
- > > 
- > > stack backtrace:
- > > Pid: 59, comm: kdevtmpfs Not tainted 3.6.0+ #22
- > > Call Trace:
- > >  [<ffffffff810df1f2>] lockdep_rcu_suspicious+0xe2/0x130
- > >  [<ffffffff81317cad>] devcgroup_inode_mknod+0x19d/0x240
- > >  [<ffffffff812f54d8>] ? security_capable+0x18/0x20
- > >  [<ffffffff8107e214>] ? ns_capable+0x44/0x80
- > >  [<ffffffff811f3b0e>] vfs_mknod+0x7e/0x140
- > >  [<ffffffff81452967>] handle_create.isra.2+0x77/0x210
- > >  [<ffffffff810ddd6c>] ? lock_release_holdtime.part.26+0xcc/0x140
- > >  [<ffffffff810afbf1>] ? get_parent_ip+0x11/0x50
- > >  [<ffffffff816bacd9>] ? sub_preempt_count+0x79/0xd0
- > >  [<ffffffff81452c47>] devtmpfsd+0x147/0x170
- > >  [<ffffffff81452b00>] ? handle_create.isra.2+0x210/0x210
- > >  [<ffffffff8109bf8d>] kthread+0xed/0x100
- > >  [<ffffffff816bacd9>] ? sub_preempt_count+0x79/0xd0
- > >  [<ffffffff816c04a4>] kernel_thread_helper+0x4/0x10
- > >  [<ffffffff810a9fdc>] ? finish_task_switch+0x7c/0x120
- > >  [<ffffffff816b62db>] ? _raw_spin_unlock_irq+0x4b/0x80
- > >  [<ffffffff816b6d37>] ? retint_restore_args+0x13/0x13
- > >  [<ffffffff8109bea0>] ? kthread_create_on_node+0x160/0x160
- > >  [<ffffffff816c04a0>] ? gs_change+0x13/0x13
- > 
- > "[PATCH] cgroup: fix invalid rcu dereference" which is being routed thru
- > akpm's tree should fix this.
- > 
- > see https://patchwork.kernel.org/patch/1456571/
+On Wed, Oct 17, 2012 at 12:39 AM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
+> On 10/17/2012 01:18 PM, Yinghai Lu wrote:
+>
+> And also, I have another 2 questions, maybe you can help me.
+> 1) Do we need to put PNP0A08 into acpi_pci_roots ?
 
-What's happening with this ?
+looks like we need to unify those two ids.
 
-	Dave
+> 2) In container_notify_cb(), when it got a ACPI_NOTIFY_EJECT_REQUEST
+>    event, it doesn't do the hot-remove things.
+>    I use your sci emulator patch to test it. I did the following thing:
+>         echo echo "\_SB_.LSB1" > /sys/kernel/debug/acpi/sci_notify
+>    where \_SB_.LSB1 is a container, it just did nothing.
+>    Do we need to support this operation ?
 
+yes, looks like need to add container_device_remove and call it under
+ container_notify_cb/ACPI_NOTIFY_EJECT_REQUEST
+
+and should look like handle_root_bridge_removal to call acpi_bus_trim two times.
+
+Thanks
+
+Yinghai
