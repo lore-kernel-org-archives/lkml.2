@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932524Ab2JQTQP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 15:16:15 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40073 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932475Ab2JQTQM (ORCPT
+	id S1757650Ab2JQTRa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 15:17:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36541 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756511Ab2JQTR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 15:16:12 -0400
+	Wed, 17 Oct 2012 15:17:29 -0400
+Date: Wed, 17 Oct 2012 12:17:16 -0700
+From: tip-bot for Jacob Shin <jacob.shin@amd.com>
+Message-ID: <tip-1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jacob.shin@amd.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jacob.shin@amd.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1319145326-13902-1-git-send-email-jacob.shin@amd.com>
+References: <1319145326-13902-1-git-send-email-jacob.shin@amd.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86:
+  Exclude E820_RESERVED regions and memory holes above 4 GB from direct mapping
+ .
+Git-Commit-ID: 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1350488704-3711-3-git-send-email-will.deacon@arm.com>
-References: <1350488704-3711-1-git-send-email-will.deacon@arm.com>
-	<1350488704-3711-3-git-send-email-will.deacon@arm.com>
-Date: Wed, 17 Oct 2012 21:16:10 +0200
-X-Google-Sender-Auth: M7_rdqBrACR452gBdK5H-C2prUk
-Message-ID: <CAMuHMdXcQjDyen+o5aH=1zUOkNX-cfT3aXBOgCpyop=V67jk7w@mail.gmail.com>
-Subject: Re: [RESEND PATCH 2/4] asm-generic: io: don't perform swab during
- {in,out} string functions
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 17 Oct 2012 12:17:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 5:45 PM, Will Deacon <will.deacon@arm.com> wrote:
-> The {in,out}s{b,w,l} functions are designed to operate on a stream of
-> bytes and therefore should not perform any byte-swapping, regardless of
-> the CPU byte order.
+Commit-ID:  1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a
+Gitweb:     http://git.kernel.org/tip/1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a
+Author:     Jacob Shin <jacob.shin@amd.com>
+AuthorDate: Thu, 20 Oct 2011 16:15:26 -0500
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 17 Oct 2012 10:59:39 -0700
 
-Euh?
+x86: Exclude E820_RESERVED regions and memory holes above 4 GB from direct mapping.
 
-They transfer a stream of bytes between memory and PCI/ISA I/O space by
-reading from/writing to a single I/O port of width 8, 16, or 32 bits.
-On big endian machines, I/O port accesses may need to be swapped.
+On systems with very large memory (1 TB in our case), BIOS may report a
+reserved region or a hole in the E820 map, even above the 4 GB range. Exclude
+these from the direct mapping.
 
-> This patch fixes the generic IO header so that {in,out}s{b,w,l} call
-> the __raw_{read,write} functions directly rather than going via the
-> endian-correcting accessors.
+[ hpa: this should be done not just for > 4 GB but for everything above the legacy
+  region (1 MB), at the very least.  That, however, turns out to require significant
+  restructuring.  That work is well underway, but is not suitable for rc/stable. ]
 
-Furthermore __raw_*() has different semantics besides endianness, like
-ordering barriers. So you can't just change one for the other.
+Cc: stable@kernel.org   # > 2.6.32
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+Link: http://lkml.kernel.org/r/1319145326-13902-1-git-send-email-jacob.shin@amd.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/setup.c |   17 +++++++++++++++--
+ 1 files changed, 15 insertions(+), 2 deletions(-)
 
-> Cc: Mike Frysinger <vapier@gentoo.org>
-> Cc: Ben Herrenschmidt <benh@kernel.crashing.org>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> ---
->  include/asm-generic/io.h |   12 ++++++------
->  1 files changed, 6 insertions(+), 6 deletions(-)
->
-> diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-> index 3607921..403b861 100644
-> --- a/include/asm-generic/io.h
-> +++ b/include/asm-generic/io.h
-> @@ -148,7 +148,7 @@ static inline void insb(unsigned long addr, void *buffer, int count)
-
-The "addr" parameter is actually a misnomer. Probably it should be "port".
-Oops, inb() and friends also use "addr".
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f4b9b80..198e774 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -919,8 +919,21 @@ void __init setup_arch(char **cmdline_p)
+ 
+ #ifdef CONFIG_X86_64
+ 	if (max_pfn > max_low_pfn) {
+-		max_pfn_mapped = init_memory_mapping(1UL<<32,
+-						     max_pfn<<PAGE_SHIFT);
++		int i;
++		for (i = 0; i < e820.nr_map; i++) {
++			struct e820entry *ei = &e820.map[i];
++
++			if (ei->addr + ei->size <= 1UL << 32)
++				continue;
++
++			if (ei->type == E820_RESERVED)
++				continue;
++
++			max_pfn_mapped = init_memory_mapping(
++				ei->addr < 1UL << 32 ? 1UL << 32 : ei->addr,
++				ei->addr + ei->size);
++		}
++
+ 		/* can we preseve max_low_pfn ?*/
+ 		max_low_pfn = max_pfn;
+ 	}
