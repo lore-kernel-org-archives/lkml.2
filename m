@@ -1,169 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558Ab2JQKog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 06:44:36 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40158 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752773Ab2JQKoe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 06:44:34 -0400
+	id S1756363Ab2JQKrv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 06:47:51 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:12958 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752773Ab2JQKrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 06:47:49 -0400
+X-IronPort-AV: E=Sophos;i="4.80,599,1344182400"; 
+   d="scan'208";a="6016820"
+Message-ID: <507E7FC2.8@cn.fujitsu.com>
+Date: Wed, 17 Oct 2012 17:52:02 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20121015150204.6f837a39.akpm@linux-foundation.org>
-References: <BD54883EA7DE8B41A61B7E723561C711139F75D348@sc-vexch3.marvell.com>
-	<CAE-am1NFB+opbid_f7RA_9EXUKjPCJssdOcZBrEQmQHG4EP9Gg@mail.gmail.com>
-	<20121015150204.6f837a39.akpm@linux-foundation.org>
-Date: Wed, 17 Oct 2012 18:44:32 +0800
-Message-ID: <CAE-am1OY8Tjv6a004-NfhEe1DXTGcFC6ogVAmtVdESW8sZ_R4w@mail.gmail.com>
-Subject: Re: [PATCH] panic: fix incomplete panic log in panic()
-From: Qing Z <njumical@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: mingo@kernel.org, ben@decadent.org.uk, markivx@codeaurora.org,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, cxie4@marvell.com,
-        binw@marvell.com, wwang27@marvell.com, xjian@marvell.com,
-        zhangwm@marvell.com, Qing Zhu <qzhu@marvell.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/4] acpi,memory-hotplug : add memory offline code to
+ acpi_memory_device_remove()
+References: <506C0AE8.40702@jp.fujitsu.com> <506C0C53.60205@jp.fujitsu.com> <CAHGf_=p7PaQs-kpnyB8uC1MntHQfL-CXhhq4QQP54mYiqOswqQ@mail.gmail.com> <50727984.20401@cn.fujitsu.com> <CAHGf_=pCrx8AkL9eiSYVgwvT1v0SW2__P_DW-1Wwj_zskqcLXw@mail.gmail.com> <507E54AA.2080806@cn.fujitsu.com> <CAHGf_=o_Wu1kr56C=7XTjYRzL4egSyGJYd4+2RecVWzpeM427Q@mail.gmail.com> <507E75AA.2000605@cn.fujitsu.com> <CAHGf_=oNufcAQhxWtvq56qwF==+14+Cm7r9eiTGdY=B=ENwPQg@mail.gmail.com>
+In-Reply-To: <CAHGf_=oNufcAQhxWtvq56qwF==+14+Cm7r9eiTGdY=B=ENwPQg@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/17 17:46:01,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/17 17:46:11,
+	Serialize complete at 2012/10/17 17:46:11
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/16 Andrew Morton <akpm@linux-foundation.org>:
-> On Mon, 15 Oct 2012 19:38:46 +0800
-> Qing Z <njumical@gmail.com> wrote:
->
->> >>       atomic_notifier_call_chain(&panic_notifier_list, 0, buf);
->> >>
->> >> +     /*
->> >> +      * Unlock the console anyway here, in case it's occupied by another
->> >> +      * one which has no chance to unlock the console thus prevents the
->> >> +      * panic log prints on the console.
->> >> +      */
->> >> +     console_unlock();
->> >> +
->> >>       bust_spinlocks(0);
->> >>
->> >>       if (!panic_blink)
->> >
->> > hm.  console_unlock() does a large amount of work, and it seems risky
->> > to do all of that when the system is in a bad-and-getting-worse state.
->> >
->> > Is there some more modest thing we could do here, for example,
->> >
->> >         if (console_locked) {
->> >                 up(&console_sem);
->> >                 console_locked = 0;
->> >         }
->> >
->> > or something along those lines?
->> >
->> > Also, perhaps this operation should be moved into bust_spinlocks().
->> > What would have happened if your code had triggered an oops, rather
->> > than called panic()?
->> >
->> >
->> Hi Andrew,
->>       Thanks for your reply!
->>       For your question" What would have happened if your code had
->> triggered an oops, rather than called panic()?", actually we found the
->> issue when trigger an oops. When we call FBIOPAN_DISPLAY in
->> ./drivers/video/fbmem.c, it will first lock console, if we trigger an
->> oops before unlock console, the issue happen. It also exist when call
->> panic() directly in the same case. It is a common issue for panic
->> process.
->>       I have two options for solution:
->>       1. I agree with your suggestion that add some modest thing in
->> bust_spinlocks(), bust_spinlocks() is supposed to clear spinlocks
->> which prevent oops information from reaching the user. But it didn't
->> clear console_sem. We can add codes that clear console_sem.
->>       1) add up(&console_sem) in bust_spinlocks(0).
->>               It will be risky in case that no printk after bust_spinlocks(0) in
->> panic(), because no console_unlock() to print log out.
->>       2) call console_unlock()in bust_spinlocks(0).
->>               For bust_spinlocks(0), console_unblank() is used to flush oops to
->> mtdoops console(commit: b61312d353da1871778711040464b10f5cd904df).
->> Logically, if panic without the issue, console_unlock is called after
->> couples of console_lock and console_unlock; if panic with the issue,
->> will it be risky call console_unlock() in console_unblank() after
->> console_lock()?
->>       2. Moreover, there is another option. We can also add protect codes
->> in vprintk(), vprintk() just cover the cases that two cores' log
->> interleave when panic and printk recurse itself. We can add all cases'
->> protection here. Actually the original vprintk() don___t have the issue,
->> but after the patch(commit: fe21773d655c2c64641ec2cef499289ea175c817)
->> which fix two cores' log interleave issue , the issue is not covered.
->> I add a flag after panic_smp_self_stop() in panic(), and check the
->> flag, if flag is set, vprintk will call zap_locks(), I have tested the
->> option, the issue also disappear.
->>       What do you think?
->
-> The #1 priority is to get the oops message reliably delivered.
->
-> That means we should avoid console_unlock() on the oops path: it's far
-> too complicated and risks deadlocks, re-oopses, recursion, etc.
->
-> If there was text queued in the console layer and that text fails to be
-> emitted, well, that's sad, but it's more important that the oops
-> message be displayed.
->
-> If the oops trace is occasionally interleaved with other text then
-> that's sad too, but at least the info we need is readable.  Oopses
-> inside console_lock() are rare.
->
->
-> So I'd suggest that the code in bust_spinlocks(1) should simply do
-> whatever needs to be done to make the forthcoming oops trace be
-> visible, and leave it at that - don't bother trying to flush out any
-> old text.
->
->
-> Also, we should be careful with things like up() on a semaphore which
-> hasn't been down()ed.  Because under some Kconfig combinations, such an
-> operation might trigger debugging traces and we could get into a big
-> mess.  (An up() on non-down()ed semaphore is actually an OK operation,
-> so this was a bad example.  But you see the problem).
->
-Hi Andrew,
-        Thanks for your suggestions.
-         I am e newbie, may not state the issue clearly. Let me state it again:
-         In ./drivers/video/fbmem.c, codes below cause issues:
-	
-                            case FBIOPAN_DISPLAY:
-			...
-			console_lock();
-			ret = fb_pan_display(info, &var);
-			console_unlock();
-			...
-			break;
+At 10/17/2012 05:18 PM, KOSAKI Motohiro Wrote:
+>>>>>> Hmm, it doesn't move the code. It just reuse the code in acpi_memory_powerdown_device().
+>>>>>
+>>>>> Even if reuse or not reuse, you changed the behavior. If any changes
+>>>>> has no good rational, you cannot get an ack.
+>>>>
+>>>> I don't understand this? IIRC, the behavior isn't changed.
+>>>
+>>> Heh, please explain why do you think so.
+>>
+>> We just introduce a function, and move codes from acpi_memory_disable_device() to the new
+>> function. We call the new function in acpi_memory_disable_device(), so the function
+>> acpi_memory_disable_device()'s behavior isn't changed.
+>>
+>> Maybe I don't understand what do you want to say.
+> 
+> Ok, now you agreed you moved the code, yes? So then, you should explain why
+> your code moving makes zero impact other acpi_memory_disable_device() caller.
 
-issue case 1:
-1. core 0 call console_lock();
-2. panic;
-...
-4. panic process done.
-Result: all panic log won't be printed.
+We just move the code, and don't change the acpi_memory_disable_device()'s behavior.
 
-issue case 2:
-1. core 0 panic;
-2. core 1 call console_lock();
-3. core 0 call smp_send_stop(), core1 stop;
-4. core 0 panic process done.
-Result: only little top part of panic log will be printed.
+I look it the change again, and found some diffs:
+1. we treat !info->enabled as error, while it isn't a error without this patch
+2. we remove memory info from the list, it is a bug fix because we free the memory
+   that stores memory info.(I have sent a patch to fix this bug, and it is in akpm's tree now)
 
-My soluiton according to your suggestions:
+I guess you mean 1 will change the behavior. In the last version, I don't do it.
+Ishimatsu changes this and I don't notify this.
 
-As you said, the first priority is to get oops message reliably
-delivered. I think we needn't care about console_sem when panic, just
-make sure we print the log imediately, so add
-sema_init(&console_sem,1) in bust_spinlocks(0), just like zap_locks()
-do.  It is safer than console_unlock() or up().
+To Ishimatsu:
 
-We can't add sema_init(..) in bust_spinlocks(1) due to issue case2,
-although the condition is rare. About issue case 2: should we avoid
-call console_lock() when panic?
+Why do you change this?
 
-If we init console_sem in panic, old text may be flushed too, but
-should be before panic oops message. Also we can fix it by updating
-con_start("con_start = log_end") once panic happen, only log after
-panic will be printed.
+Thanks
+Wen Congyang
 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-What do you think? Thanks!
