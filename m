@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751645Ab2JQEw3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 00:52:29 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:53456 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196Ab2JQEw1 (ORCPT
+	id S1751758Ab2JQE5E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 00:57:04 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:64047 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368Ab2JQE5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 00:52:27 -0400
-X-AuditID: cbfee61b-b7fd46d0000046e0-79-507e398a46ba
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Ben Dooks'" <ben-linux@fluff.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] backlight: ili9320: add missing SPI dependency
-Date: Wed, 17 Oct 2012 13:52:26 +0900
-Message-id: <002f01cdac23$342623c0$9c726b40$%han@samsung.com>
+	Wed, 17 Oct 2012 00:57:01 -0400
+X-AuditID: cbfee612-b7f776d000001e97-ca-507e3a9cb1ce
+Date: Wed, 17 Oct 2012 04:57:00 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH] PM / devfreq: kernel-doc typo corrections
+To: Nishanth Menon <nm@ti.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
+        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-to: myungjoo.ham@samsung.com
 MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2sIzQGwZikTWlAT6yrWuU5OLTHbQ==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t9jAd0uy7oAg+YGGYvLu+awOTB6fN4k
-	F8AYxWWTkpqTWZZapG+XwJVx7Np69oIp7BVHLv1nbGB8xdrFyMkhIWAicf/xOUYIW0ziwr31
-	bF2MXBxCAosYJRYd2MIK4cxmkmhftIkJpIpNQE3iy5fD7CC2iECERPOMWcwgNrNAocSd349Z
-	QGxhAXuJRd/egE1lEVCVmPr4Adg2XgFbidufb7BB2IISPybfY4Ho1ZLYvK2JFcKWl9i85i3Q
-	TA6gi9QlHv3VBTFFBPQkNu8QgagQkdj34h3jBEaBWUgGzUIyaBaSQbOQtCxgZFnFKJpakFxQ
-	nJSea6RXnJhbXJqXrpecn7uJERyWz6R3MK5qsDjEKMDBqMTDG7C0NkCINbGsuDL3EKMEB7OS
-	CK95I1CINyWxsiq1KD++qDQntfgQozQHi5I4b7NHSoCQQHpiSWp2ampBahFMlomDU6qB0TYv
-	9PoplYr58tbl7yeFaLe+Pb6vvlTmvkC/Y5xY2OO5U3bGlkz1/btU4cyPnhvHliW7eL6zeSkR
-	zcmcovFYNibb76TViSwhnj92s+UXvOhnXXx+8vSpa/cufCLPffFwb9XlY//T5vzy/m7FY+gQ
-	vVo943O03QrLiRZvSg/1cB5y/Xh0kuOaiUosxRmJhlrMRcWJAAJGH1FHAgAA
+X-MTR: 20121017045619761@myungjoo.ham
+Msgkey: 20121017045619761@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20121017045619761@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <1099175.131741350449818558.JavaMail.weblogic@epml24>
+DLP-Filter: Pass
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKKsWRmVeSWpSXmKPExsVy+t8zPd05VnUBBquumlhc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MJavWMxW8YK14suMTWwPjBdYuRk4OIQF1iUVLTrKB2BICJhIX
+	PzxnhbDFJC7cWw8U5wKqWcYocXzKHKAEB1jRnRYBiPh8Romfty8zgjSwCKhKTPn+gwWkhk1A
+	T2Lm52SQsLCAncTeyXvBSkQEIiWab+xkBullFjjFKPFy92NGiCOUJNbse8UCYvMKCEqcnPmE
+	BeIIVYkNJ3cwQsTVJL6dnskOEZeQmDX9AtShvBIz2p9C1ctJTPu6hhnClpY4P2sDI8wzi78/
+	horzSxy7vYMJ4hdeiSf3g2HG7N78BRoOAhJTzxyEatWS+LbhJJTNJ7Fm4VsWmDG7Ti1nhum9
+	v2UuE4jNLKAoMaX7ITuErSXx5cc+NnRv8Qo4SrSdP8Q0gVF5FpLULCTts5C0I6tZwMiyilE0
+	tSC5oDgpPdVCrzgxt7g0L10vOT93EyMkLQjtYFzWYHGIUYCDUYmHd+Kk2gAh1sSy4srcQ4wS
+	HMxKIrzmjUAh3pTEyqrUovz4otKc1OJDjD7ACJzILCWanA9MWXkl8YbGBsaGhpaGZqaWpgY4
+	hJXEeSs8UgKEBNITS1KzU1MLUotgxjFxcEo1MOZ7n+GL/bRWtrj6+8xzOepVR+92d5vP7/O+
+	9ObW86luTHMTW6ZM04mterapfZWMTv3s7txvGmd8lZPuLXgrZnbNbbmA9X+g6aJqE3kelvlP
+	3qDl+2PdBkn+794FHewXlOI6GGLmbV10ME6+8czN8x/d9aYVcPt9EdF/eFtAXPt8t1J1Zaqr
+	EktxRqKhFnNRcSIAjJjA0jgDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFKsWRmVeSWpSXmKPExsVy+t/tGbpzrOoCDDbMNrS4vGsOmwOjx+dN
+	cgGMURk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
+	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StFGBsZ6RqYmekbGBnomBrFWhgYGRqZAVQkZ
+	GUtWrWcqeMFa8WTHJ7YGxgusXYycHEIC6hKLlpxk62Lk4JAQMJG40yIAEpYQEJO4cG89UJgL
+	qGQ+o8TP25cZQRIsAqoSU77/YAGpZxPQk5j5ORkkLCxgJ7F38l6wEhGBSInmGzuZQXqZBU4x
+	Srzc/ZgRYpeSxJp9r1hAbF4BQYmTM5+wQCxTldhwcgcjRFxN4tvpmewQcQmJWdMh7pQQ4JWY
+	0f4Uql5OYtrXNcwQtrTE+VkbGGGOXvz9MVScX+LY7R1MEH/xSjy5HwwzZvfmL2wQtoDE1DMH
+	oVq1JL5tOAll80msWfiWBWbMrlPLmWF672+ZywRiMwsoSkzpfsgOYWtJfPmxjw3dW7wCjhJt
+	5w8xTWCUm4UkNQtJ+ywk7chqFjCyrGIUTS1ILihOSk+10CtOzC0uzUvXS87P3cQITlDPhHYw
+	LmuwOMQowMGoxMM7cVJtgBBrYllxZe4hRgkOZiURXvNGoBBvSmJlVWpRfnxRaU5q8SFGH2AE
+	TmSWEk3OBybPvJJ4Q2MDY0NDS3MDU0MjCxzCSuK8FR4pAUIC6YklqdmpqQWpRTDjmDg4pRoY
+	Kz8w7r49Zc6erwsl3s2+9nfV19TdC+dYRU2VfHri1PbDc404YhU3rLXMXPa4/b6uqt3Gs9La
+	zNPPVqS1hDw1jPoabVhR/kJt8pOiqqLbP50yargc1rKfM4hLSnFKmfFp388ZOVOy1JVf+7B8
+	nvg48TTvGf1lNl4fU7vecbGszEpplTPbJ7TmrRJLcUaioRZzUXEiAHu8soR9AwAA
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9H4vAA4002007
 
-This patch adds this missing SPI dependency and prevents
-the driver from buiding without SPI, because funtion of
-spi driver is used in this driver.
+> Parameter documentation needs a ':' for scripts/kernel-doc
+> to parse properly.
+> 
+> Minor fixes for ones warned by:
+> ./scripts/kernel-doc -text drivers/devfreq/devfreq.c>/dev/null
+> 
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: Kevin Hilman <khilman@ti.com>
+> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-pm@vger.kernel.org
+> 
+> Signed-off-by: Nishanth Menon <nm@ti.com>
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Cc: Ben Dooks <ben-linux@fluff.org>
----
- drivers/video/backlight/Kconfig |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
-index c101697..765a945 100644
---- a/drivers/video/backlight/Kconfig
-+++ b/drivers/video/backlight/Kconfig
-@@ -60,7 +60,8 @@ config LCD_LTV350QV
- 	  The LTV350QV panel is present on all ATSTK1000 boards.
- 
- config LCD_ILI9320
--	tristate
-+	tristate "ILI Technology ILI9320 controller support"
-+	depends on SPI
- 	help
- 	  If you have a panel based on the ILI9320 controller chip
- 	  then say y to include a power driver for it.
--- 
-1.7.1
-
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
