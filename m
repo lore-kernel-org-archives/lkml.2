@@ -1,45 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab2JQFnk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 01:43:40 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53004 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751974Ab2JQFni (ORCPT
+	id S1753254Ab2JQFrM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 01:47:12 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:59966 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752596Ab2JQFrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 01:43:38 -0400
-Date: Wed, 17 Oct 2012 06:43:37 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: new execve/kernel_thread design
-Message-ID: <20121017054337.GX2616@ZenIV.linux.org.uk>
-References: <20121016223508.GR2616@ZenIV.linux.org.uk>
- <CAMo8BfLdm1OvJTU2y-YQtoPffYsP=UzRco_q2GHWTo-bYQO4ug@mail.gmail.com>
+	Wed, 17 Oct 2012 01:47:10 -0400
+Message-ID: <507E464C.3010108@linux.vnet.ibm.com>
+Date: Wed, 17 Oct 2012 13:46:52 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMo8BfLdm1OvJTU2y-YQtoPffYsP=UzRco_q2GHWTo-bYQO4ug@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 1/2] KVM: VMX: report internal error for the unhandleable
+ event
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12101705-9574-0000-0000-000004E57E10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 09:32:34AM +0400, Max Filippov wrote:
-> On Wed, Oct 17, 2012 at 2:35 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > [apologies for enormous Cc; I've talked to some of you in private mail
-> > and after being politely asked to explain WTF was all that thing for
-> > and how was it supposed to work, well...]
-> 
-> [...]
-> 
-> > Not even a tentative patchset: hexagon, openrisc, tile, xtensa.
-> 
-> I'm doing xtensa part.
+VM exits during Event Delivery is really unexpected if it is not caused
+by Exceptions/EPT-VIOLATION/TASK_SWITCH, we'd better to report an internal
+and freeze the guest, the VMM has the chance to check the guest
 
-Thanks; I hope this variant is going to be less painful than messing with
-ret_from_kernel_execve()...
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/vmx.c  |   19 +++++++++++++++----
+ include/linux/kvm.h |    8 ++++++--
+ 2 files changed, 21 insertions(+), 6 deletions(-)
 
-> BTW, what linus-arch ML might be for?
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index ad6b1dd..b8a0841 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -5979,13 +5979,24 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
+ 		return 0;
+ 	}
 
-A typo, noticed only when I got a bounce ;-)
-My apologies...
++	/*
++	 * Note:
++	 * Do not try to fix EXIT_REASON_EPT_MISCONFIG if it caused by
++	 * delivery event since it indicates guest is accessing MMIO.
++	 * The vm-exit can be triggered again after return to guest that
++	 * will cause infinite loop.
++	 */
+ 	if ((vectoring_info & VECTORING_INFO_VALID_MASK) &&
+ 			(exit_reason != EXIT_REASON_EXCEPTION_NMI &&
+ 			exit_reason != EXIT_REASON_EPT_VIOLATION &&
+-			exit_reason != EXIT_REASON_TASK_SWITCH))
+-		printk(KERN_WARNING "%s: unexpected, valid vectoring info "
+-		       "(0x%x) and exit reason is 0x%x\n",
+-		       __func__, vectoring_info, exit_reason);
++			exit_reason != EXIT_REASON_TASK_SWITCH)) {
++		vcpu->run->exit_reason = KVM_EXIT_INTERNAL_ERROR;
++		vcpu->run->internal.suberror = KVM_INTERNAL_ERROR_DELIVERY_EV;
++		vcpu->run->internal.ndata = 2;
++		vcpu->run->internal.data[0] = vectoring_info;
++		vcpu->run->internal.data[1] = exit_reason;
++		return 0;
++	}
+
+ 	if (unlikely(!cpu_has_virtual_nmis() && vmx->soft_vnmi_blocked &&
+ 	    !(is_guest_mode(vcpu) && nested_cpu_has_virtual_nmis(
+diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+index 65ad5c6..494a84c 100644
+--- a/include/linux/kvm.h
++++ b/include/linux/kvm.h
+@@ -170,8 +170,12 @@ struct kvm_pit_config {
+ #define KVM_EXIT_WATCHDOG         21
+
+ /* For KVM_EXIT_INTERNAL_ERROR */
+-#define KVM_INTERNAL_ERROR_EMULATION 1
+-#define KVM_INTERNAL_ERROR_SIMUL_EX 2
++/* Emulate instruction failed. */
++#define KVM_INTERNAL_ERROR_EMULATION	1
++/* Encounter unexpected simultaneous exceptions. */
++#define KVM_INTERNAL_ERROR_SIMUL_EX	2
++/* Encounter unexpected vm-exit due to delivery event. */
++#define KVM_INTERNAL_ERROR_DELIVERY_EV	3
+
+ /* for KVM_RUN, returned by mmap(vcpu_fd, offset=0) */
+ struct kvm_run {
+-- 
+1.7.7.6
+
