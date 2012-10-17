@@ -1,35 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757075Ab2JQN7y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 09:59:54 -0400
-Received: from edge-1.nki.nl ([194.171.7.92]:52231 "EHLO edge.nki.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756217Ab2JQN7x convert rfc822-to-8bit (ORCPT
+	id S1757084Ab2JQOB3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 10:01:29 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41911 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756874Ab2JQOB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 09:59:53 -0400
-X-Greylist: delayed 325 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Oct 2012 09:59:53 EDT
-From: <w.akhtar@nki.nl>
-Date: Wed, 17 Oct 2012 15:54:26 +0200
-Subject: =?iso-8859-1?Q?Den_=DCberblick_=FCber_Ihre_Benutzung?=
-Thread-Topic: =?iso-8859-1?Q?Den_=DCberblick_=FCber_Ihre_Benutzung?=
-Thread-Index: AQHNrG7rXTaKskz4rU+1KVdER/bcCA==
-Message-ID: <08A540728FDEF84691C6E65C055502E925269C0638@mstr-1.nki.nl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-To: Undisclosed recipients:;
+	Wed, 17 Oct 2012 10:01:28 -0400
+Subject: Re: [PATCH] rcu: restore correct batch limiting
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAJd=RBD1LKiQecdrK67w+Wn=P1mMfRv6JERWUjxpAthm_p+LzA@mail.gmail.com>
+References: <1350458052.26103.31.camel@edumazet-glaptop>
+	 <CAJd=RBD1LKiQecdrK67w+Wn=P1mMfRv6JERWUjxpAthm_p+LzA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Oct 2012 16:01:22 +0200
+Message-ID: <1350482482.26103.495.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sie haben das Limit Ihrer Mailbox von unseren IT Service übertroffen, und jetzt kannst du nicht empfangen alle eingehenden E-Mails und auch einige von Ihren ausgehenden E-Mails werden nicht zugestellt werden und schließlich, Ihr Konto wird "de-aktiviert" innerhalb von 24 Stunden ab jetzt. Um zu verhindern, sollten Sie auf den Link unten, um Ihr Konto zurückzusetzen klicken. Failure zu tun, wird nur begrenzten Zugang zu Ihrem Postfach führen, während Ihr Konto bleibt IN-ACTIVE innerhalb der nächsten 24 Stunden. klicken Sie auf den folgenden Link:
-https://docs.google.com/a/sau.edu/spreadsheet/viewform?formkey=dHdxLW9WYzhBNWQzQUZiVnFDNlNXblE6MQ
-Vielen Dank, dass Sie uns Sie besser bedienen!
-Regards,
-Management.
-Upgrade Abteilung
+On Wed, 2012-10-17 at 21:18 +0800, Hillf Danton wrote:
+
+> >                                         /* did other CPU force QS recently? */
+> > -       long            blimit;         /* Upper limit on a processed batch */
+> > +       int             blimit;         /* Upper limit on a processed batch */
+> >
+> >         /* 3) dynticks interface. */
+> > +       int             dynticks_snap;  /* Per-GP tracking for dynticks. */
+> >         struct rcu_dynticks *dynticks;  /* Shared per-CPU dynticks state. */
+> > -       int dynticks_snap;              /* Per-GP tracking for dynticks. */
+> 
+> Hm, no words in change log for shuffling dynticks_snap...
+
+I dont like adding two 32bit holes on a structure ;)
+
+This kind of trivial things dont need a changelog, especially when
+fixing a critical bug.
+
+I let Paul add this if he really wants.
+
+
