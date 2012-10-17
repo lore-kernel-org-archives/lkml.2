@@ -1,49 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757246Ab2JQO3E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 10:29:04 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47365 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757038Ab2JQO3C (ORCPT
+	id S1757267Ab2JQOep (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 10:34:45 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:36711 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756179Ab2JQOeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 10:29:02 -0400
-From: Sangho Yi <antiroot@gmail.com>
-To: broonie@opensource.wolfsonmicro.com, myungjoo.ham@samsung.com,
-        cw00.choi@samsung.com
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Sangho Yi <antiroot@gmail.com>
-Subject: [PATCH] extcon: extcon-arizona.c: fixed a line exceeding 80 chars
-Date: Wed, 17 Oct 2012 23:27:09 +0900
-Message-Id: <1350484030-3331-1-git-send-email-antiroot@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <n>
-References: <n>
+	Wed, 17 Oct 2012 10:34:44 -0400
+MIME-Version: 1.0
+X-Originating-IP: [89.162.225.122]
+In-Reply-To: <CAEswnZjKo=JnGWTV1iS9JNy9kZf1LCQ2xVTNj6oJ0H0BbRA57Q@mail.gmail.com>
+References: <CAEswnZjKo=JnGWTV1iS9JNy9kZf1LCQ2xVTNj6oJ0H0BbRA57Q@mail.gmail.com>
+Date: Wed, 17 Oct 2012 17:34:43 +0300
+Message-ID: <CAEswnZjcUaxM1oGVuUUm9Lsx_j6tTyyx2gM+iAE7TywQy_v+6w@mail.gmail.com>
+Subject: Re: The screen goes white on blanking in 3.7-rc1
+From: Yaroslav Fedevych <yaroslav@fedevych.name>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a line exceeding 80 characters
+I have bisected the code and git tells me the first faulty commit is
+f3728734ba78310525bf4a361c7787c7c6fa5d40.
+Apparently
 
-Signed-off-by: Sangho Yi <antiroot@gmail.com>
----
- drivers/extcon/extcon-arizona.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+(http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=f3728734ba78310525bf4a361c7787c7c6fa5d40)
 
-diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index cdab9e5..806c300 100644
---- a/drivers/extcon/extcon-arizona.c
-+++ b/drivers/extcon/extcon-arizona.c
-@@ -248,8 +248,8 @@ static irqreturn_t arizona_micdet(int irq, void *data)
- 			for (i = 0; i < ARIZONA_NUM_BUTTONS; i++)
- 				if (lvl & arizona_lvl_to_key[i].status)
- 					input_report_key(info->input,
--							 arizona_lvl_to_key[i].report,
--							 1);
-+						arizona_lvl_to_key[i].report,
-+						1);
- 			input_sync(info->input);
- 
- 		} else if (info->detecting) {
--- 
-1.7.9.5
-
+Apparently, my machine has Atom BIOS but still needs legacy backlighting.
