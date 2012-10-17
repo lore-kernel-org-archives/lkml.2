@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab2JQKbd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 06:31:33 -0400
-Received: from mga03.intel.com ([143.182.124.21]:39773 "EHLO mga03.intel.com"
+	id S1756648Ab2JQKcD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 06:32:03 -0400
+Received: from mga02.intel.com ([134.134.136.20]:19434 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756597Ab2JQKba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 06:31:30 -0400
+	id S1756586Ab2JQKb3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 06:31:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,599,1344236400"; 
-   d="scan'208";a="157178673"
+   d="scan'208";a="228646447"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
         linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
         balbi@ti.com
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv2 3/4] dw_dmac: change {dev_}printk() to corresponding macros
-Date: Wed, 17 Oct 2012 13:31:17 +0300
-Message-Id: <1350469879-16018-4-git-send-email-andriy.shevchenko@linux.intel.com>
+Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv2 2/4] dmaengine: dw_dmac: amend description and indentation
+Date: Wed, 17 Oct 2012 13:31:16 +0300
+Message-Id: <1350469879-16018-3-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1350469879-16018-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1350469879-16018-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -24,50 +25,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+
+The driver will be used as a core part for various implementations of the
+DesignWare DMA device. The patch adjusts description on the top and corrects
+paragraph indentation in few places across the code.
+
+Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/dma/dw_dmac.c |   15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
+ drivers/dma/dw_dmac.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index c27c125..60b172a 100644
+index c4b0eb3..c27c125 100644
 --- a/drivers/dma/dw_dmac.c
 +++ b/drivers/dma/dw_dmac.c
-@@ -456,9 +456,8 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 
- static inline void dwc_dump_lli(struct dw_dma_chan *dwc, struct dw_lli *lli)
- {
--	dev_printk(KERN_CRIT, chan2dev(&dwc->chan),
--			"  desc: s0x%x d0x%x l0x%x c0x%x:%x\n",
--			lli->sar, lli->dar, lli->llp, lli->ctlhi, lli->ctllo);
-+	dev_crit(chan2dev(&dwc->chan), "  desc: s0x%x d0x%x l0x%x c0x%x:%x\n",
-+		 lli->sar, lli->dar, lli->llp, lli->ctlhi, lli->ctllo);
+@@ -1,6 +1,5 @@
+ /*
+- * Driver for the Synopsys DesignWare DMA Controller (aka DMACA on
+- * AVR32 systems.)
++ * Core driver for the Synopsys DesignWare DMA Controller
+  *
+  * Copyright (C) 2007-2008 Atmel Corporation
+  * Copyright (C) 2010-2011 ST Microelectronics
+@@ -9,6 +8,7 @@
+  * it under the terms of the GNU General Public License version 2 as
+  * published by the Free Software Foundation.
+  */
++
+ #include <linux/bitops.h>
+ #include <linux/clk.h>
+ #include <linux/delay.h>
+@@ -222,7 +222,6 @@ static inline void dwc_dump_chan_regs(struct dw_dma_chan *dwc)
+ 		channel_readl(dwc, CTL_LO));
  }
  
- static void dwc_handle_error(struct dw_dma *dw, struct dw_dma_chan *dwc)
-@@ -492,10 +491,8 @@ static void dwc_handle_error(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 	 * controller flagged an error instead of scribbling over
- 	 * random memory locations.
- 	 */
--	dev_printk(KERN_CRIT, chan2dev(&dwc->chan),
--			"Bad descriptor submitted for DMA!\n");
--	dev_printk(KERN_CRIT, chan2dev(&dwc->chan),
--			"  cookie: %d\n", bad_desc->txd.cookie);
-+	dev_crit(chan2dev(&dwc->chan), "Bad descriptor submitted for DMA!\n");
-+	dev_crit(chan2dev(&dwc->chan), "  cookie: %d\n", bad_desc->txd.cookie);
- 	dwc_dump_lli(dwc, &bad_desc->lli);
- 	list_for_each_entry(child, &bad_desc->tx_list, desc_node)
- 		dwc_dump_lli(dwc, &child->lli);
-@@ -1625,8 +1622,8 @@ static int __devinit dw_probe(struct platform_device *pdev)
+-
+ static inline void dwc_chan_disable(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ {
+ 	channel_clear_bit(dw, CH_EN, dwc->mask);
+@@ -1679,6 +1678,7 @@ static int dw_resume_noirq(struct device *dev)
  
+ 	clk_prepare_enable(dw->clk);
  	dma_writel(dw, CFG, DW_CFG_DMA_EN);
- 
--	printk(KERN_INFO "%s: DesignWare DMA Controller, %d channels\n",
--			dev_name(&pdev->dev), nr_channels);
-+	pr_info("%s: DesignWare DMA Controller, %d channels\n",
-+		dev_name(&pdev->dev), nr_channels);
- 
- 	dma_async_device_register(&dw->dma);
++
+ 	return 0;
+ }
  
 -- 
 1.7.10.4
