@@ -1,115 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756931Ab2JQNQE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 09:16:04 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:50541 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756056Ab2JQNQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 09:16:01 -0400
-Date: Wed, 17 Oct 2012 15:15:59 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: Tony Luck <tony.luck@intel.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] x86, MCA: Convert dont_log_ce, banks and tolerant
-Message-ID: <20121017131559.GE25507@aftab.osrc.amd.com>
-References: <1350472435-29307-1-git-send-email-bp@amd64.org>
- <1350472435-29307-3-git-send-email-bp@amd64.org>
- <507E9F9A.4090706@linux.vnet.ibm.com>
+	id S1756916Ab2JQNQp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 09:16:45 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39664 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753285Ab2JQNQo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 09:16:44 -0400
+Date: Wed, 17 Oct 2012 22:16:38 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Yadwinder Singh Brar <yadi.brar@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Chiwoong Byun <woong.byun@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>
+Subject: Re: [PATCH v2 1/2] regulator: max77686: Use already set opmode while
+ re-enabling regulators.
+Message-ID: <20121017131637.GP14199@opensource.wolfsonmicro.com>
+References: <1350388459-28975-1-git-send-email-yadi.brar@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LiQwW4YX+w4axhAx"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <507E9F9A.4090706@linux.vnet.ibm.com>
+In-Reply-To: <1350388459-28975-1-git-send-email-yadi.brar@samsung.com>
+X-Cookie: You will be run over by a beer truck.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 05:37:54PM +0530, Naveen N. Rao wrote:
-> Nit: no need for the above? Only 2 references below and I think we
-> can simply continue to use mca_cfg for uniformity. Ditto for the use
-> of cfg further below.
-> 
-> >
-> >-	mce_banks = kzalloc(banks * sizeof(struct mce_bank), GFP_KERNEL);
-> >+	mce_banks = kzalloc(num_banks * sizeof(struct mce_bank), GFP_KERNEL);
-> >  	if (!mce_banks)
-> >  		return -ENOMEM;
 
-For the simple reason that this line violates the 80 columns and I
-didn't want to bring any uglification to the code by breaking the line
-in two.
+--LiQwW4YX+w4axhAx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-For the generated asm it doesn't matter - it is simply done for keeping
-the code as readable as possible.
+On Tue, Oct 16, 2012 at 05:24:18PM +0530, Yadwinder Singh Brar wrote:
+> This patch adds basic support to take care of opmode(if any) which can be set by
+> set_suspend_[disable/mode] callbacks.
 
-> >-	for (i = 0; i < banks; i++) {
-> >+
-> >+	for (i = 0; i < num_banks; i++) {
-> >  		struct mce_bank *b = &mce_banks[i];
-> >
-> >  		b->ctl = -1ULL;
-> >@@ -1401,7 +1405,7 @@ static int __cpuinit __mcheck_cpu_cap_init(void)
-> >  	rdmsrl(MSR_IA32_MCG_CAP, cap);
-> >
-> >  	b = cap & MCG_BANKCNT_MASK;
-> >-	if (!banks)
-> >+	if (!mca_cfg.banks)
-> >  		pr_info("CPU supports %d MCE banks\n", b);
-> >
-> >  	if (b > MAX_NR_BANKS) {
-> >@@ -1411,8 +1415,9 @@ static int __cpuinit __mcheck_cpu_cap_init(void)
-> >  	}
-> >
-> >  	/* Don't support asymmetric configurations today */
-> >-	WARN_ON(banks != 0 && b != banks);
-> >-	banks = b;
-> >+	WARN_ON(mca_cfg.banks != 0 && b != mca_cfg.banks);
-> >+	mca_cfg.banks = b;
-> >+
-> >  	if (!mce_banks) {
-> >  		int err = __mcheck_cpu_mce_banks_init();
-> >
-> >@@ -1448,7 +1453,7 @@ static void __mcheck_cpu_init_generic(void)
-> >  	if (cap & MCG_CTL_P)
-> >  		wrmsr(MSR_IA32_MCG_CTL, 0xffffffff, 0xffffffff);
-> >
-> >-	for (i = 0; i < banks; i++) {
-> >+	for (i = 0; i < mca_cfg.banks; i++) {
-> >  		struct mce_bank *b = &mce_banks[i];
-> >
-> >  		if (!b->init)
-> >@@ -1489,6 +1494,8 @@ static void quirk_sandybridge_ifu(int bank, struct mce *m, struct pt_regs *regs)
-> >  /* Add per CPU specific workarounds here */
-> >  static int __cpuinit __mcheck_cpu_apply_quirks(struct cpuinfo_x86 *c)
-> >  {
-> >+	struct mca_config *cfg = &mca_cfg;
-> >+
-> 
-> Same as above. We could probably continue using mca_cfg for uniformity.
+Applied both, thanks.
 
-There are 13 mca_cfg references total in that function so having it
-shorter with a declaration at the beginning of the function of what cfg
-is, is better IMO.
+--LiQwW4YX+w4axhAx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-[ … ]
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> > __init mcheck_enable(char *str)
-> >  {
-> >+	struct mca_config *cfg = &mca_cfg;
-> >+
-> 
-> Same as above.
+iQIcBAEBAgAGBQJQfq+uAAoJELSic+t+oim9nZ4P/j9qaQo6q4TzSAzpQggDtHKo
+ifyADpGtsjrzaXyBoU5urmut5bApdQXPIKcZPrAff1LOAFyIFku2/GooWThNKM3I
+FdQ3Ngg0eBYk6V4Lr1rUva8zf+S+PKTUyXaPMw8s9eu2C1eJLhdvzg/IXPrCXQiA
+05dlLoPh4CK2GWnNzTNEaorNHEZctxNiqi75STM00vlTNalNOiy0u8pXF4v/I7lI
+KcvkJPRuEQZeF6B/aSNsMqBiB7srTtRC1qI7iLFBvbiNhBYvhCkIxfB3kuS0Dtt5
+rv/OO7LpJQ6H8EzczgBMy+RR1I1AotUcyJbwyn1HfJSu41HqXAtQI/lGBaIoUx0+
+yF0ulgGCzFfjeOoqejLws4T7W0IcNPRZx8qvY2/pkW+MJTAsv0u9xqEpPGZzK3f4
+BKIaA/2oZbrFiJK+hOVy5ZiHeEmbiPq2dH/MuIzHMggquBA7P9SCKJVBrMyQMtTy
+Zh0OUGj/RHHgwfiSgzwInT7y7MO+pbp2DIzf/+93tx1veoir5HdqkNupXLNSjIHA
+QZkgbitg6BitBMU8K7yA3qCDHYmOSr5UXFjyPn8SS3NWsmHPgTpviQnxd+eyHs1i
+YP2UekK8FMCyudtNxYeCNtdSLNjR52vJDy8XxBGsKC41VaBGhfHIUWzS/wQP6NN1
+xE8nYVhSoclBR1t2S1O+
+=IZ3Q
+-----END PGP SIGNATURE-----
 
-Ditto, 8 refs here.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+--LiQwW4YX+w4axhAx--
