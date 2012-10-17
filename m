@@ -1,89 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab2JQO0R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 10:26:17 -0400
-Received: from relay.parallels.com ([195.214.232.42]:41580 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757069Ab2JQO0Q convert rfc822-to-8bit (ORCPT
+	id S932230Ab2JQO1K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 10:27:10 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:38750 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757191Ab2JQO1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 10:26:16 -0400
-Message-ID: <507EC005.5070301@parallels.com>
-Date: Wed, 17 Oct 2012 18:26:13 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Wed, 17 Oct 2012 10:27:07 -0400
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [RFC PATCH v2] posix timers: allocate timer id per task
-References: <20121017131732.8781.75295.stgit@localhost.localdomain> <1350482246.26103.487.camel@edumazet-glaptop>
-In-Reply-To: <1350482246.26103.487.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CACM3HyEpypULRWUc5ZnLnZ=uOWf3_j=9PXZiJrT_BXyGcQe9yg@mail.gmail.com>
+References: <20121016223508.GR2616@ZenIV.linux.org.uk>
+	<CACM3HyEpypULRWUc5ZnLnZ=uOWf3_j=9PXZiJrT_BXyGcQe9yg@mail.gmail.com>
+Date: Wed, 17 Oct 2012 16:27:06 +0200
+Message-ID: <CAHTX3dKDsOiUwtXxAUj-F4Y4rO+UZZDR4ufx_nxf+vuhmz46WA@mail.gmail.com>
+Subject: Re: new execve/kernel_thread design
+From: Michal Simek <monstr@monstr.eu>
+To: Jonas Bonn <jonas@southpole.se>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Richard Kuo <rkuo@codeaurora.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Lennox Wu <lennox.wu@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Mundt <lethal@linux-sh.org>, Chris Zankel <chris@zankel.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-17.10.2012 17:57, Eric Dumazet пишет:
-> On Wed, 2012-10-17 at 17:18 +0400, Stanislav Kinsbursky wrote:
+2012/10/17 Jonas Bonn <jonas@southpole.se>:
+> On 17 October 2012 00:35, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>>
+>> Not even a tentative patchset: hexagon, openrisc, tile, xtensa.
+>>
 >
->> +static int posix_timer_add(struct k_itimer *timer)
->> +{
->> +	struct signal_struct *sig = current->signal;
->> +	int next_free_id = sig->posix_timer_id;
->> +	struct hlist_head *head;
->> +	int ret = -ENOENT;
->> +
->> +	do {
->> +		spin_lock(&hash_lock);
->> +		head = &posix_timers_hashtable[hash(sig, sig->posix_timer_id)];
->> +		if (__posix_timers_find(head, sig, sig->posix_timer_id) == NULL) {
->> +			hlist_add_head_rcu(&timer->t_hash, head);
->
-> Hmm...
->
->> +			ret = sig->posix_timer_id++;
->> +		} else {
->> +			if (++sig->posix_timer_id < 0)
->> +				sig->posix_timer_id = 0;
->> +			if (sig->posix_timer_id == next_free_id)
->> +				ret = -EAGAIN;
->> +		}
->> +		spin_unlock(&hash_lock);
->> +	} while (ret == -ENOENT);
->> +	return ret;
->> +}
->> +
->
-> You probably need to add a rcu_assign_pointer() or smp_wmb() before
-> the :
->
-> new_timer->it_signal = current->signal;
->
-> in the following block :
->
->          spin_lock_irq(&current->sighand->siglock);
->          new_timer->it_signal = current->signal;
->          list_add(&new_timer->list, &current->signal->posix_timers);
->          spin_unlock_irq(&current->sighand->siglock);
->
-> Or else another thread can read outdated informations...
->
->
->          spin_lock_irq(&current->sighand->siglock);
->          list_add(&new_timer->list, &current->signal->posix_timers);
->          spin_unlock_irq(&current->sighand->siglock);
-> 	smp_wmb();
->          new_timer->it_signal = current->signal;
->
->
+> I did most of the OpenRISC conversion last weekend... the
+> kernel_thread bits work fine but I end up with the init thread dying
+> with what I've got now for kernel_execve.  Once I've got that sorted
+> out, I'll pass this along to you.
 
-Sorry, but I don't understand what races you are talking about.
-Could you specify, please?
+I am testing the Microblaze conversion and I see the similar problem
+with GENERIC_KERNEL_EXECVE
+(commit: http://git.kernel.org/?p=linux/kernel/git/viro/signal.git;a=commit;h=6aa044199aed5b541eba7fe7f25efdfb3a655a58)
+
+I have look at the patch and I have found this.
+(From description above: a kernel thread can become a userland
+process.  The primitive is kernel_execve())
+
+In  init/main.c:795/run_init_process() kernel_execve is called.
+In old style, kernel_execve is called which runs microblaze
+kernel_execve which calls __NR_execve as syscall.
+In entry.S user exception detects that jump comes from kernel space
+and save pt_regs on the current stack
+and calls sys_execve and then microblaze_execve with 4th argument
+which is pointer to pt_regs, etc.
+
+In the patch above there is directly used current_pt_regs() function
+which works good for newly created threads
+when pt_regs are exactly in current_pt_regs() position but not for
+pt_regs which are saved on the stack
+which is the init task case.
+
+Also this is the reason why microblaze has implementation for calling
+_user_exception from the kernel space.
+I believe that it is called just once for /init.
+
+My question is how should /init be called? Because I need to save
+pt_regs to current_pt_regs() position where
+generic kernel_execve expects it.
+
+Thanks,
+Michal
 
 -- 
-Best regards,
-Stanislav Kinsbursky
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
