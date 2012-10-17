@@ -1,183 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757939Ab2JQVP3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 17:15:29 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:34320 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757853Ab2JQVP1 (ORCPT
+	id S1757931Ab2JQVRE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 17:17:04 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:42569 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757881Ab2JQVRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 17:15:27 -0400
-From: Mark Einon <mark.einon@gmail.com>
-To: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 2/2] staging: et131x: Fix 64bit tx dma address handling
-Date: Wed, 17 Oct 2012 22:15:12 +0100
-Message-Id: <1350508512-15562-2-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350508512-15562-1-git-send-email-mark.einon@gmail.com>
-References: <1350508512-15562-1-git-send-email-mark.einon@gmail.com>
+	Wed, 17 Oct 2012 17:17:03 -0400
+From: Tom Mingarelli <thomas.mingarelli@hp.com>
+To: Alex Williamson <alex.williamson@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>
+Cc: Shuah Khan <shuah.khan@hp.com>, Tom Mingarelli <thomas.mingarelli@hp.com>,
+        Linda Knippers <linda.knippers@hp.com>,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Message-Id: <20121018021735.23962.51639.sendpatchset@RHEL63BL460c>
+Subject: [PATCH v3] Prevent devices with RMRRs from being placed into SI Domain
+Date: Wed, 17 Oct 2012 21:17:00 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver checks that the device can handle 64bit DMA addressing in
-et131x_pci_setup(), but then assumes that the top dword of a tx dma
-address is always zero when creating a dma mapping in nic_send_packet().
-Fix the mapping to use the higher dword of the dma_addr_t returned by
-dma_map_single() and skb_frag_dma_map().
+This patch is to prevent devices that have RMRRs associated with them to
+not be placed into the SI Domain during init. We don't put USB devices
+into this category, however. This fixes the issue where the RMRR info
+for devices being placed in and out of the SI Domain gets lost.
 
-Also remove incorrect comments stating that dma_map_single() only returns
-a 32 bit address.
+Signed-off-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
+Tested-by: Shuah Khan <shuah.khan@hp.com>
+----
+PATCH v1: https://lkml.org/lkml/2012/6/15/204
+PATCH v2: https://lkml.org/lkml/2012/9/18/354
 
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
----
- drivers/staging/et131x/et131x.c |  102 +++++++++++++++------------------------
- 1 file changed, 39 insertions(+), 63 deletions(-)
 
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index f0fe4bd..83643be 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -3285,6 +3285,7 @@ static int nic_send_packet(struct et131x_adapter *adapter, struct tcb *tcb)
- 	struct skb_frag_struct *frags = &skb_shinfo(skb)->frags[0];
- 	unsigned long flags;
- 	struct phy_device *phydev = adapter->phydev;
-+	dma_addr_t dma_addr;
+drivers/iommu/intel-iommu.c |   30 ++++++++++++++++++++++++++++++
+ 1 files changed, 30 insertions(+), 0 deletions(-)
+
+diff -up ./drivers/iommu/intel-iommu.c.ORIG ./drivers/iommu/intel-iommu.c
+--- ./drivers/iommu/intel-iommu.c.ORIG	2012-10-16 09:34:23.148089944 -0500
++++ ./drivers/iommu/intel-iommu.c	2012-10-17 20:41:40.509642356 -0500
+@@ -2320,8 +2320,38 @@ static int domain_add_dev_info(struct dm
+ 	return 0;
+ }
  
- 	/* Part of the optimizations of this send routine restrict us to
- 	 * sending 24 fragments at a pass.  In practice we should never see
-@@ -3314,77 +3315,46 @@ static int nic_send_packet(struct et131x_adapter *adapter, struct tcb *tcb)
- 			 * doesn't seem to like large fragments.
- 			 */
- 			if (skb_headlen(skb) <= 1514) {
--				desc[frag].addr_hi = 0;
- 				/* Low 16bits are length, high is vlan and
- 				   unused currently so zero */
- 				desc[frag].len_vlan = skb_headlen(skb);
--
--				/* NOTE: Here, the dma_addr_t returned from
--				 * dma_map_single() is implicitly cast as a
--				 * u32. Although dma_addr_t can be
--				 * 64-bit, the address returned by
--				 * dma_map_single() is always 32-bit
--				 * addressable (as defined by the pci/dma
--				 * subsystem)
--				 */
--				desc[frag++].addr_lo =
--				    dma_map_single(&adapter->pdev->dev,
--						   skb->data,
--						   skb_headlen(skb),
--						   DMA_TO_DEVICE);
-+				dma_addr = dma_map_single(&adapter->pdev->dev,
-+							  skb->data,
-+							  skb_headlen(skb),
-+							  DMA_TO_DEVICE);
-+				desc[frag].addr_lo = dma_addr & 0xFFFFFFFF;
-+				desc[frag].addr_hi = dma_addr >> 32;
-+				frag++;
- 			} else {
--				desc[frag].addr_hi = 0;
- 				desc[frag].len_vlan = skb_headlen(skb) / 2;
--
--				/* NOTE: Here, the dma_addr_t returned from
--				 * dma_map_single() is implicitly cast as a
--				 * u32. Although dma_addr_t can be
--				 * 64-bit, the address returned by
--				 * dma_map_single() is always 32-bit
--				 * addressable (as defined by the pci/dma
--				 * subsystem)
--				 */
--				desc[frag++].addr_lo =
--				    dma_map_single(&adapter->pdev->dev,
--						   skb->data,
--						   (skb_headlen(skb) / 2),
--						   DMA_TO_DEVICE);
--				desc[frag].addr_hi = 0;
-+				dma_addr = dma_map_single(&adapter->pdev->dev,
-+							  skb->data,
-+							  (skb_headlen(skb) / 2),
-+							  DMA_TO_DEVICE);
-+				desc[frag].addr_lo = dma_addr & 0xFFFFFFFF;
-+				desc[frag].addr_hi = dma_addr >> 32;
-+				frag++;
- 
- 				desc[frag].len_vlan = skb_headlen(skb) / 2;
--
--				/* NOTE: Here, the dma_addr_t returned from
--				 * dma_map_single() is implicitly cast as a
--				 * u32. Although dma_addr_t can be
--				 * 64-bit, the address returned by
--				 * dma_map_single() is always 32-bit
--				 * addressable (as defined by the pci/dma
--				 * subsystem)
--				 */
--				desc[frag++].addr_lo =
--				    dma_map_single(&adapter->pdev->dev,
--						   skb->data +
--							 (skb_headlen(skb) / 2),
--						   (skb_headlen(skb) / 2),
--						   DMA_TO_DEVICE);
-+				dma_addr = dma_map_single(&adapter->pdev->dev,
-+							  skb->data +
-+							  (skb_headlen(skb) / 2),
-+							  (skb_headlen(skb) / 2),
-+							  DMA_TO_DEVICE);
-+				desc[frag].addr_lo = dma_addr & 0xFFFFFFFF;
-+				desc[frag].addr_hi = dma_addr >> 32;
-+				frag++;
- 			}
- 		} else {
--			desc[frag].addr_hi = 0;
--			desc[frag].len_vlan =
--					frags[i - 1].size;
--
--			/* NOTE: Here, the dma_addr_t returned from
--			 * dma_map_page() is implicitly cast as a u32.
--			 * Although dma_addr_t can be 64-bit, the address
--			 * returned by dma_map_page() is always 32-bit
--			 * addressable (as defined by the pci/dma subsystem)
--			 */
--			desc[frag++].addr_lo = skb_frag_dma_map(
--							&adapter->pdev->dev,
--							&frags[i - 1],
--							0,
--							frags[i - 1].size,
--							DMA_TO_DEVICE);
-+			desc[frag].len_vlan = frags[i - 1].size;
-+			dma_addr = skb_frag_dma_map(&adapter->pdev->dev,
-+						    &frags[i - 1],
-+						    0,
-+						    frags[i - 1].size,
-+						    DMA_TO_DEVICE);
-+			desc[frag].addr_lo = dma_addr & 0xFFFFFFFF;
-+			desc[frag].addr_hi = dma_addr >> 32;
-+			frag++;
- 		}
- 	}
- 
-@@ -3611,6 +3581,7 @@ static inline void free_send_packet(struct et131x_adapter *adapter,
- 	unsigned long flags;
- 	struct tx_desc *desc = NULL;
- 	struct net_device_stats *stats = &adapter->net_stats;
-+	dma_addr_t dma_addr;
- 
- 	if (tcb->flags & fMP_DEST_BROAD)
- 		atomic_inc(&adapter->stats.broadcast_pkts_xmtd);
-@@ -3631,8 +3602,13 @@ static inline void free_send_packet(struct et131x_adapter *adapter,
- 				    (adapter->tx_ring.tx_desc_ring +
- 						INDEX10(tcb->index_start));
- 
-+			dma_addr = desc->addr_lo;
++static bool device_has_rmrr(struct pci_dev *dev)
++{
++	struct dmar_rmrr_unit *rmrr;
++	int i;
 +
-+			if (sizeof(dma_addr_t) == sizeof(u64))
-+				dma_addr += ((dma_addr_t)desc->addr_hi) << 32;
++	for_each_rmrr_units(rmrr) {
++		for (i = 0; i < rmrr->devices_cnt; i++) {
++			/*
++			 * Here we are just concerned with checking each device
++			 * that has an RMRR associated with it and not allow it
++			 * to be placed into the SI Domain during startup.
++			*/
++			if (rmrr->devices[i] == dev)
++				return true;
++		}
++	}
++	return false;
++}
 +
- 			dma_unmap_single(&adapter->pdev->dev,
--					 desc->addr_lo,
-+					 dma_addr,
- 					 desc->len_vlan, DMA_TO_DEVICE);
+ static int iommu_should_identity_map(struct pci_dev *pdev, int startup)
+ {
++
++	/*
++	 * This is where we will refuse any device that has an
++	 * RMRR associated with it and is not a USB device and
++	 * NOT allow it to be placed into the SI Domain. We don't
++	 * need a separate bit for this because it could be ANY device.
++	 */
++	if (device_has_rmrr(pdev) &&
++		(pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
++			return 0;
++
+ 	if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
+ 		return 1;
  
- 			add_10bit(&tcb->index_start, 1);
--- 
-1.7.9.5
-
