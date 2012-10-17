@@ -1,103 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932175Ab2JQNXB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 09:23:01 -0400
-Received: from forward1.mail.yandex.net ([77.88.46.6]:37417 "EHLO
-	forward1.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756859Ab2JQNXA (ORCPT
+	id S1756948Ab2JQN1t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 09:27:49 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41700 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755666Ab2JQN1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 09:23:00 -0400
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Michal Marek <mmarek@suse.cz>, Tkhai Kirill <tkhai@yandex.ru>
-Subject: Add magic for declarations of popular kernel type
+	Wed, 17 Oct 2012 09:27:48 -0400
+Date: Wed, 17 Oct 2012 22:27:41 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com
+Subject: Re: [PATCH 1/1] Documentation: Describe Device Tree bindings for
+ GPIO Regulator driver
+Message-ID: <20121017132740.GS14199@opensource.wolfsonmicro.com>
+References: <1350374553-12678-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Message-Id: <410461350480175@web15d.yandex.ru>
-Date: Wed, 17 Oct 2012 17:22:55 +0400
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fLj60tP2PZ34xyqD"
+Content-Disposition: inline
+In-Reply-To: <1350374553-12678-1-git-send-email-lee.jones@linaro.org>
+X-Cookie: You will be run over by a beer truck.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add magic for declarations of variables of popular kernel type
-like spinlock_t, list_head, wait_queue_head_t and others.
 
-Signed-off-by: Kirill V Tkhai <tkhai@yandex.ru>
+--fLj60tP2PZ34xyqD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
----
- scripts/tags.sh |   39 ++++++++++++++++++++++++++++++++++-----
- 1 files changed, 34 insertions(+), 5 deletions(-)
- mode change 100755 => 100644 scripts/tags.sh
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-old mode 100755
-new mode 100644
-index cff8faa..9d0eea5
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -122,12 +122,17 @@ dogtags()
- exuberant()
- {
- 	all_sources | xargs $1 -a                               \
--	-I __initdata,__exitdata,__acquires,__releases          \
--	-I __read_mostly,____cacheline_aligned                  \
-+	-I __initdata,__exitdata,__initconst,__devinitdata	\
-+	-I __devinitconst,__cpuinitdata,__initdata_memblock	\
-+	-I __refdata,__attribute				\
-+	-I __acquires,__releases,__deprecated			\
-+	-I __read_mostly,__aligned,____cacheline_aligned        \
- 	-I ____cacheline_aligned_in_smp                         \
- 	-I ____cacheline_internodealigned_in_smp                \
-+	-I __used,__packed,__packed2__,__must_check,__must_hold	\
- 	-I EXPORT_SYMBOL,EXPORT_SYMBOL_GPL                      \
- 	-I DEFINE_TRACE,EXPORT_TRACEPOINT_SYMBOL,EXPORT_TRACEPOINT_SYMBOL_GPL \
-+	-I static,const						\
- 	--extra=+f --c-kinds=+px                                \
- 	--regex-asm='/^(ENTRY|_GLOBAL)\(([^)]*)\).*/\2/'        \
- 	--regex-c='/^SYSCALL_DEFINE[[:digit:]]?\(([^,)]*).*/sys_\1/' \
-@@ -152,9 +157,21 @@ exuberant()
- 	--regex-c++='/SETPAGEFLAG_NOOP\(([^,)]*).*/SetPage\1/'		\
- 	--regex-c++='/CLEARPAGEFLAG_NOOP\(([^,)]*).*/ClearPage\1/'	\
- 	--regex-c++='/__CLEARPAGEFLAG_NOOP\(([^,)]*).*/__ClearPage\1/'	\
--	--regex-c++='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
-+	--regex-c++='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/'	\
- 	--regex-c++='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/' \
--	--regex-c++='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'
-+	--regex-c++='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'		\
-+	--regex-c='/PCI_OP_READ\(([a-z]*[a-z]).*[1-4]\)/pci_bus_read_config_\1/' \
-+	--regex-c='/PCI_OP_WRITE\(([a-z]*[a-z]).*[1-4]\)/pci_bus_write_config_\1/' \
-+	--regex-c='/DEFINE_(MUTEX|SEMAPHORE|SPINLOCK)\((\w*)/\2/v/'	\
-+	--regex-c='/DEFINE_(RAW_SPINLOCK|RWLOCK|SEQLOCK)\((\w*)/\2/v/'	\
-+	--regex-c='/DECLARE_(RWSEM|COMPLETION)\((\w*)/\2/v/'		\
-+	--regex-c='/DECLARE_BITMAP\((\w*)/\1/v/'			\
-+	--regex-c='/(^|\s)(|L|H)LIST_HEAD\((\w*)/\3/v/'			\
-+	--regex-c='/(^|\s)RADIX_TREE\((\w*)/\2/v/'			\
-+	--regex-c='/DEFINE_PER_CPU(|_SHARED_ALIGNED)\(([^,]*,\s*)(\w*).*\)/\3/v/' \
-+	--regex-c='/DECLARE_WAIT_QUEUE_HEAD\((\w*)/\1/v/'		\
-+	--regex-c='/DECLARE_(TASKLET|WORK|DELAYED_WORK)\((\w*)/\2/v/'	\
-+	--regex-c='/DEFINE_PCI_DEVICE_TABLE\((\w*)/\1/v/'
- 
- 	all_kconfigs | xargs $1 -a                              \
- 	--langdef=kconfig --language-force=kconfig              \
-@@ -197,7 +214,19 @@ emacs()
- 	--regex='/__CLEARPAGEFLAG_NOOP\(([^,)]*).*/__ClearPage\1/' \
- 	--regex='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
- 	--regex='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/' \
--	--regex='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'
-+	--regex='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'		\
-+	--regex='/PCI_OP_READ\(([a-z]*[a-z]).*[1-4]\)/pci_bus_read_config_\1/' \
-+	--regex='/PCI_OP_WRITE\(([a-z]*[a-z]).*[1-4]\)/pci_bus_write_config_\1/' \
-+	--regex='/DEFINE_(MUTEX|SEMAPHORE|SPINLOCK)\((\w*)/\2/v/'	\
-+	--regex='/DEFINE_(RAW_SPINLOCK|RWLOCK|SEQLOCK)\((\w*)/\2/v/'	\
-+	--regex='/DECLARE_(RWSEM|COMPLETION)\((\w*)/\2/v/'		\
-+	--regex='/DECLARE_BITMAP\((\w*)/\1/v/'				\
-+	--regex='/(^|\s)(|L|H)LIST_HEAD\((\w*)/\3/v/'			\
-+	--regex='/(^|\s)RADIX_TREE\((\w*)/\2/v/'			\
-+	--regex='/DEFINE_PER_CPU(|_SHARED_ALIGNED)\(([^,]*,\s*)(\w*).*\)/\3/v/' \
-+	--regex='/DECLARE_WAIT_QUEUE_HEAD\((\w*)/\1/v/'			\
-+	--regex='/DECLARE_(TASKLET|WORK|DELAYED_WORK)\((\w*)/\2/v/'	\
-+	--regex='/DEFINE_PCI_DEVICE_TABLE\((\w*)/\1/v/'
- 
- 	all_kconfigs | xargs $1 -a                              \
- 	--regex='/^[ \t]*\(\(menu\)*config\)[ \t]+\([a-zA-Z0-9_]+\)/\3/'
+On Tue, Oct 16, 2012 at 09:02:33AM +0100, Lee Jones wrote:
+> Here we specify all non-standard bindings which can be used when
+> requesting the use of an GPIO controlled regulator from Device Tree.
+
+Applied both patches squashed together, thanks.  Please don't split
+documentation from the code like this where the code is just a single
+change - it's sensible where the code is a big series but for single
+patch it's not helpful.
+
+Given the subject line I'd be extremely likely to delete this patch
+unread, Documentation: says "this isn't relevant".
+
+--fLj60tP2PZ34xyqD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQfrI2AAoJELSic+t+oim98LkP/3Q7R15BwAaUnHrXFZAPCiZ/
+3qwYqw73weKnEbZjWarKtva1VuDHKZh0LAyVwFH3Fk85PM8xOF2r5kiOv108B07I
+VZH07VBPGNfCv1TMkaDbB5hg/jtMt24bHK/Q0FhdjHLIfWFjYYCeyYvzDm5h6H6H
+i+UPyjLrECmtN2aDlmE/uTjcMdc1juhYSddTquT8bIxF7AvIV+lGGKujJUNsiclI
+/i40oxIO0jY8laB1O+64VRMaYe/jd7MrAVJJjqomJM6klUjxJhak8Crk/1U7d0oo
+74bvkbt750Z5anl3K8/1gavlmpam2Rx/12xZkvWD2xvOYFvt8BqZ1Np9rg2H1RqC
+Gdlt6RSaoNh200+XrUwSyjUshTrg/5ZTXWgpcV5KpBQsm5n22IRi4KolrGYDWxl2
+7/h8RNM6xIw0xxBqy6sMT5YicR2Ki1mMSxVjh84VwT1Sx/zG72rmdBWllTlHr1bJ
+wdJBQj9bw/8kmUtIMzUY9ooLyDZC8Q+BlqeUkvE/Rdunq5YI3bqapWqmDkOtw7SW
+cR8Ew9wTa+Y9uLE06ZXs/MGP0dNHeC68R5z8VOge7KIK5kn5pyAB9Mtj69DFggtW
+5bryyW6TJnOM3ZE6hG0CbiMMVLZzQPhULFv/4XVMVQdN7HzE/f25MSGaEezDwpq/
+krnT4COKmSlZ03djrIwc
+=D5PK
+-----END PGP SIGNATURE-----
+
+--fLj60tP2PZ34xyqD--
