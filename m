@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757290Ab2JQOfq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 10:35:46 -0400
-Received: from mail-in-02.arcor-online.net ([151.189.21.42]:53991 "EHLO
-	mail-in-02.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756179Ab2JQOfo (ORCPT
+	id S1757261Ab2JQOgO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 10:36:14 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:55080 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756179Ab2JQOgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 10:35:44 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-09.arcor-online.net 59AD81976BB
-Subject: [PATCH] HID: roccat: Made tcu sysfs attr rw to allow readout of
- koneplus sensor register data
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
-Reply-To: erazor_de@users.sourceforge.net
-To: Rob Landley <rob@landley.net>, Jiri Kosina <jkosina@suse.cz>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Oct 2012 16:35:42 +0200
-Message-ID: <1350484542.12102.2.camel@neuromancer.tessier-ashpool>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Oct 2012 10:36:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <1350387889-15324-5-git-send-email-hongbo.zhang@linaro.com>
+References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
+	<1350387889-15324-5-git-send-email-hongbo.zhang@linaro.com>
+Date: Wed, 17 Oct 2012 20:06:11 +0530
+Message-ID: <CAKohpokQjjrc91yJJfG-f-A44070k5AN4Q2jCnPxAtCeJRdmww@mail.gmail.com>
+Subject: Re: [PATCH 4/5] Thermal: make sure cpufreq cooling register after
+ cpufreq driver
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "hongbo.zhang" <hongbo.zhang@linaro.org>
+Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        kernel@igloocommunity.org, linaro-kernel@lists.linaro.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tcu sysfs attr was used to only control calibration process so far. Reverse
-engineering the firmware revealed direct sensor register access. Allowing
-readout of tcu permits usage of this feature.
+On 16 October 2012 17:14, hongbo.zhang <hongbo.zhang@linaro.org> wrote:
+> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
+>
+> The cpufreq works as a cooling device, so the cooling layer should
+> check and wait until the cpufreq driver is initialized.
 
-Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
----
- .../ABI/testing/sysfs-driver-hid-roccat-koneplus   |    6 +++---
- drivers/hid/hid-roccat-koneplus.c                  |   11 ++++++++++-
- 2 files changed, 13 insertions(+), 4 deletions(-)
+Idea is good.
 
-diff --git a/Documentation/ABI/testing/sysfs-driver-hid-roccat-koneplus b/Documentation/ABI/testing/sysfs-driver-hid-roccat-koneplus
-index 65e6e5d..f9e2a61 100644
---- a/Documentation/ABI/testing/sysfs-driver-hid-roccat-koneplus
-+++ b/Documentation/ABI/testing/sysfs-driver-hid-roccat-koneplus
-@@ -104,9 +104,9 @@ What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-
- Date:		October 2010
- Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
- Description:	When written a calibration process for the tracking control unit
--		can be initiated/cancelled.
--		The data has to be 3 bytes long.
--		This file is writeonly.
-+		can be initiated/cancelled. Also lets one read/write sensor
-+		registers.
-+		The data has to be 4 bytes long.
- Users:		http://roccat.sourceforge.net
- 
- What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/koneplus/roccatkoneplus<minor>/tcu_image
-diff --git a/drivers/hid/hid-roccat-koneplus.c b/drivers/hid/hid-roccat-koneplus.c
-index f5602fe..c47540a 100644
---- a/drivers/hid/hid-roccat-koneplus.c
-+++ b/drivers/hid/hid-roccat-koneplus.c
-@@ -222,6 +222,14 @@ static ssize_t koneplus_sysfs_write_tcu(struct file *fp,
- 			sizeof(struct koneplus_tcu), KONEPLUS_COMMAND_TCU);
- }
- 
-+static ssize_t koneplus_sysfs_read_tcu(struct file *fp,
-+		struct kobject *kobj, struct bin_attribute *attr, char *buf,
-+		loff_t off, size_t count)
-+{
-+	return koneplus_sysfs_read(fp, kobj, buf, off, count,
-+			sizeof(struct koneplus_tcu), KONEPLUS_COMMAND_TCU);
-+}
-+
- static ssize_t koneplus_sysfs_read_tcu_image(struct file *fp,
- 		struct kobject *kobj, struct bin_attribute *attr, char *buf,
- 		loff_t off, size_t count)
-@@ -426,8 +434,9 @@ static struct bin_attribute koneplus_bin_attributes[] = {
- 		.write = koneplus_sysfs_write_sensor
- 	},
- 	{
--		.attr = { .name = "tcu", .mode = 0220 },
-+		.attr = { .name = "tcu", .mode = 0660 },
- 		.size = sizeof(struct koneplus_tcu),
-+		.read = koneplus_sysfs_read_tcu,
- 		.write = koneplus_sysfs_write_tcu
- 	},
- 	{
--- 
-1.7.3.4
+> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
+> ---
+>  drivers/thermal/cpu_cooling.c | 12 +++++++++++-
+>  1 file changed, 11 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+> index d196230..01aba58 100644
+> --- a/drivers/thermal/cpu_cooling.c
+> +++ b/drivers/thermal/cpu_cooling.c
+> @@ -29,6 +29,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/cpu.h>
+>  #include <linux/cpu_cooling.h>
+> +#include <linux/delay.h>
 
+Would be better if we add them alphabetically. That makes there maintenance
+easier. I know the list is already mismanaged. :)
 
+If you can add another patch here to fix that, would be good.
 
+>  /**
+>   * struct cpufreq_cooling_device
+> @@ -352,9 +353,18 @@ struct thermal_cooling_device *cpufreq_cooling_register(
+>         struct cpufreq_cooling_device *cpufreq_dev = NULL;
+>         unsigned int cpufreq_dev_count = 0, min = 0, max = 0;
+>         char dev_name[THERMAL_NAME_LENGTH];
+> -       int ret = 0, i;
+> +       int ret = 0, to = 1000, i;
+>         struct cpufreq_policy policy;
+>
+> +       /* make sure cpufreq driver is initialized */
+> +       while (!cpufreq_frequency_get_table(0) && --to)
+> +               mdelay(10);
+> +
+> +       if (!to) {
+> +               pr_err("No cpufreq driver act as cooling device.\n");
+> +               return ERR_PTR(-ENOSYS);
+> +       }
+
+I understand that you want cpufreq to be there before this thing, but
+i didn't like the idea here. There should be something else like
+returning -EPROBE_DEFER, so that driver can be pinged again.
+
+--
+viresh
