@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911Ab2JQWJM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 18:09:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42819 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab2JQWJK (ORCPT
+	id S1752001Ab2JQWJd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 18:09:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57013 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750Ab2JQWJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 18:09:10 -0400
-Date: Wed, 17 Oct 2012 15:09:04 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-mm@kvack.org, cgroups@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>, devel@openvz.org,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v5 05/14] Add a __GFP_KMEMCG flag
-In-Reply-To: <1350382611-20579-6-git-send-email-glommer@parallels.com>
-Message-ID: <alpine.DEB.2.00.1210171508530.20712@chino.kir.corp.google.com>
-References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-6-git-send-email-glommer@parallels.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 17 Oct 2012 18:09:32 -0400
+Date: Wed, 17 Oct 2012 15:09:30 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ed Cashin <ecashin@coraid.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] aoe: print warning regarding a common reason for
+ dropped transmits
+Message-Id: <20121017150930.aae0cf0b.akpm@linux-foundation.org>
+In-Reply-To: <8691a45b39d4f93743f93360c467789a75e25fb7.1350331035.git.ecashin@coraid.com>
+References: <cover.1350331035.git.ecashin@coraid.com>
+	<8691a45b39d4f93743f93360c467789a75e25fb7.1350331035.git.ecashin@coraid.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Oct 2012, Glauber Costa wrote:
+On Mon, 15 Oct 2012 18:42:43 -0700
+Ed Cashin <ecashin@coraid.com> wrote:
 
-> This flag is used to indicate to the callees that this allocation is a
-> kernel allocation in process context, and should be accounted to
-> current's memcg. It takes numerical place of the of the recently removed
-> __GFP_NO_KSWAPD.
-> 
-> [ v4: make flag unconditional, also declare it in trace code ]
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-> Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Suleiman Souhlal <suleiman@google.com>
-> CC: Tejun Heo <tj@kernel.org>
+> Dropped transmits are not common, but when they do occur, increasing
+> the transmit queue length often helps.
+>
+> ...
+>
+> +/* enters with txlock held
+> + *
+> + * Use __must_hold(&txlock) for sparse when upcoming patch adds it to
+> + * compiler.h.
+> + */
 
-Acked-by: David Rientjes <rientjes@google.com>
+Let's just make that change now and I'll take care of getting
+linux-compilerh-add-__must_hold-macro-for-functions-called-with-a-lock-held.patch
+merged ahead of this one.
+
