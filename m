@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab2JQPFj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 11:05:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36322 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757272Ab2JQPFh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 11:05:37 -0400
+	id S1757354Ab2JQPHz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 11:07:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40242 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755544Ab2JQPHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 11:07:53 -0400
+Date: Wed, 17 Oct 2012 11:07:21 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH] percpu-rwsem: use barrier in unlock path
+In-Reply-To: <507E48ED.8060809@cn.fujitsu.com>
+Message-ID: <Pine.LNX.4.64.1210171046130.26481@file.rdu.redhat.com>
+References: <Pine.LNX.4.64.1210151716310.10685@file.rdu.redhat.com>
+ <Pine.LNX.4.64.1210161924350.20581@file.rdu.redhat.com>
+ <CA+55aFyZ9uq_yfHn9PwpmM77X3xVd+xseEbjJmeCCqbFddtjWA@mail.gmail.com>
+ <507E48ED.8060809@cn.fujitsu.com>
 MIME-Version: 1.0
-Date: Wed, 17 Oct 2012 11:05:37 -0400
-Message-ID: <CAPhKKr-c8ATOswuvxe+vBoLh6B-7VZSSiOkS5vbvzBCX7RLewA@mail.gmail.com>
-Subject: [PATCH] RCU documentation: Correct the name of a reference
-From: Dhaval Giani <dhaval.giani@gmail.com>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: multipart/mixed; boundary=047d7b2ed82569f10104cc429a41
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b2ed82569f10104cc429a41
-Content-Type: text/plain; charset=ISO-8859-1
+Hi
 
-[Attaching the patch as gmail breaks the patches]
 
-Trying to go through the history of RCU (not for the weak
-minded) led me to search for a non-existent paper.
+On Wed, 17 Oct 2012, Lai Jiangshan wrote:
 
-Correct it to the actual reference
+> On 10/17/2012 10:23 AM, Linus Torvalds wrote:
+> > [ Architecture people, note the potential new SMP barrier! ]
+> > 
+> > On Tue, Oct 16, 2012 at 4:30 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+> >> +       /*
+> >> +        * The lock is considered unlocked when p->locked is set to false.
+> >> +        * Use barrier prevent reordering of operations around p->locked.
+> >> +        */
+> >> +#if defined(CONFIG_X86) && (!defined(CONFIG_X86_PPRO_FENCE) && !defined(CONFIG_X86_OOSTORE))
+> >> +       barrier();
+> >> +#else
+> >> +       smp_mb();
+> >> +#endif
+> >>         p->locked = false;
+> > 
+> > Ugh. The #if is too ugly to live.
+> 
+> Even the previous patch is applied, percpu_down_read() still
+> needs mb() to pair with it.
 
-Signed-off-by: Dhaval Giani <dhaval.giani@gmail.com>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+percpu_down_read uses rcu_read_lock which should guarantee that memory 
+accesses don't escape in front of a rcu-protected section.
 
-Index: linux/Documentation/RCU/RTFP.txt
-===================================================================
---- linux.orig/Documentation/RCU/RTFP.txt
-+++ linux/Documentation/RCU/RTFP.txt
-@@ -186,7 +186,7 @@ Bibtex Entries
+If rcu_read_unlock has only an unlock barrier and not a full barrier, 
+memory accesses could be moved in front of rcu_read_unlock and reordered 
+with this_cpu_inc(*p->counters), but it doesn't matter because 
+percpu_down_write does synchronize_rcu(), so it never sees these accesses 
+halfway through.
 
- @article{Kung80
- ,author="H. T. Kung and Q. Lehman"
--,title="Concurrent Maintenance of Binary Search Trees"
-+,title="Concurrent Manipulation of Binary Search Trees"
- ,Year="1980"
- ,Month="September"
- ,journal="ACM Transactions on Database Systems"
+> > This is a classic case of "people who write their own serialization
+> > primitives invariably get them wrong". And this fix is just horrible,
+> > and code like this should not be allowed.
+> 
+> One of the most major problems of 62ac665ff9fc07497ca524bd20d6a96893d11071 is that
+> it is merged without Ackeds or Revieweds from Paul or Peter or someone else
+> who are expert at synchronization/arch memory models.
+> 
+> I suggest any new synchronization should stay in -tip for 2 or more cycles
+> before merged to mainline.
 
---047d7b2ed82569f10104cc429a41
-Content-Type: application/octet-stream; name="rcu-doc-fix.patch"
-Content-Disposition: attachment; filename="rcu-doc-fix.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h8eknzrc0
+But the bug that this synchronization is fixing is quite serious (it 
+causes random crashes when block size is being changed, the crash happens 
+regularly at multiple important business sites) so it must be fixed soon 
+and not wait half a year.
 
-UkNVIGRvY3VtZW50YXRpb246IENvcnJlY3QgdGhlIG5hbWUgb2YgYSByZWZlcmVuY2UKClRyeWlu
-ZyB0byBnbyB0aHJvdWdoIHRoZSBoaXN0b3J5IG9mIFJDVSAobm90IGZvciB0aGUgd2VhawptaW5k
-ZWQpIGxlZCBtZSB0byBzZWFyY2ggZm9yIGEgbm9uLWV4aXN0ZW50IHBhcGVyLgoKQ29ycmVjdCBp
-dCB0byB0aGUgYWN0dWFsIHJlZmVyZW5jZQoKU2lnbmVkLW9mZi1ieTogRGhhdmFsIEdpYW5pIDxk
-aGF2YWwuZ2lhbmlAZ21haWwuY29tPgpDYzogUGF1bCBNY0tlbm5leSA8cGF1bG1ja0BsaW51eC52
-bmV0LmlibS5jb20+CkNjOiBQZXRlciBaaWpsc3RyYSA8YS5wLnppamxzdHJhQGNoZWxsby5ubD4K
-CkluZGV4OiBsaW51eC9Eb2N1bWVudGF0aW9uL1JDVS9SVEZQLnR4dAo9PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBs
-aW51eC5vcmlnL0RvY3VtZW50YXRpb24vUkNVL1JURlAudHh0CisrKyBsaW51eC9Eb2N1bWVudGF0
-aW9uL1JDVS9SVEZQLnR4dApAQCAtMTg2LDcgKzE4Niw3IEBAIEJpYnRleCBFbnRyaWVzCiAKIEBh
-cnRpY2xle0t1bmc4MAogLGF1dGhvcj0iSC4gVC4gS3VuZyBhbmQgUS4gTGVobWFuIgotLHRpdGxl
-PSJDb25jdXJyZW50IE1haW50ZW5hbmNlIG9mIEJpbmFyeSBTZWFyY2ggVHJlZXMiCissdGl0bGU9
-IkNvbmN1cnJlbnQgTWFuaXB1bGF0aW9uIG9mIEJpbmFyeSBTZWFyY2ggVHJlZXMiCiAsWWVhcj0i
-MTk4MCIKICxNb250aD0iU2VwdGVtYmVyIgogLGpvdXJuYWw9IkFDTSBUcmFuc2FjdGlvbnMgb24g
-RGF0YWJhc2UgU3lzdGVtcyIK
---047d7b2ed82569f10104cc429a41--
+> Thanks,
+> Lai
+
+Mikulas
