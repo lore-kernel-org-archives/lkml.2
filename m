@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751482Ab2JQVqK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 17:46:10 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33768 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751270Ab2JQVqI (ORCPT
+	id S1751533Ab2JQVqs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 17:46:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65082 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab2JQVqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 17:46:08 -0400
-X-Sasl-enc: 3YwEl60aekPkjjUdgW4PUCGRX903O+7WwnSndv1QDa6n 1350510367
-Date: Wed, 17 Oct 2012 14:46:06 -0700
-From: Greg KH <greg@kroah.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Romain Francoise <romain@orebokech.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: Linux 2.6.32.60
-Message-ID: <20121017214606.GD7083@kroah.com>
-References: <20121009094453.GA4289@1wt.eu>
- <87y5jeqv6b.fsf@silenus.orebokech.com>
- <20121011062916.GG8938@1wt.eu>
- <20121011105804.GB28546@kroah.com>
- <20121011113106.GR8938@1wt.eu>
- <50775210.4060007@zytor.com>
- <20121012063848.GD12041@1wt.eu>
+	Wed, 17 Oct 2012 17:46:47 -0400
+Date: Wed, 17 Oct 2012 14:46:44 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-mm@kvack.org, cgroups@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>, devel@openvz.org,
+        linux-kernel@vger.kernel.org, Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v5 02/14] memcg: Reclaim when more than one page
+ needed.
+In-Reply-To: <1350382611-20579-3-git-send-email-glommer@parallels.com>
+Message-ID: <alpine.DEB.2.00.1210171445010.20712@chino.kir.corp.google.com>
+References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-3-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121012063848.GD12041@1wt.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 08:38:48AM +0200, Willy Tarreau wrote:
-> On Fri, Oct 12, 2012 at 07:11:12AM +0800, H. Peter Anvin wrote:
-> > On 10/11/2012 07:31 PM, Willy Tarreau wrote:
-> > > On Thu, Oct 11, 2012 at 07:58:04PM +0900, Greg KH wrote:
-> > >> On Thu, Oct 11, 2012 at 08:29:16AM +0200, Willy Tarreau wrote:
-> > >>> If you think these patches constitute a regression, I can revert them.
-> > >>> However I'd like convincing arguments since they're here to help address
-> > >>> a real issue.
-> > >>
-> > >> If I missed these when doing the random number generation backport for
-> > >> 3.0, and I should add them there as well, please let me know.
-> > > 
-> > > At least I think they should not be in 2.6.32 without being in 3.0.
-> > > Probably that Peter's opinion will help us decide whether they should
-> > > go into 3.0 or 2.6.32 should revert them.
-> > > 
-> > 
-> > I would strongly argue for at least one of the RDRAND-enabling versions
-> > being in all supported kernels; the second (with Ted Ts'o's changes) is
-> > better, but touches a *lot* of subsystems; the plain one is
-> > self-contained but only helps RDRAND-enabled hardware.
-> > 
-> > Without these patches the random subsystem has a critical security flaw,
-> > which puts it into the scope for stable.
+On Tue, 16 Oct 2012, Glauber Costa wrote:
+
+> From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
 > 
-> That's clearly what I understood, thanks Peter for confirming ! So I won't
-> revert the patches unless a regression is reported in which case we'll
-> prefer to fix it.
+> mem_cgroup_do_charge() was written before kmem accounting, and expects
+> three cases: being called for 1 page, being called for a stock of 32
+> pages, or being called for a hugepage.  If we call for 2 or 3 pages (and
+> both the stack and several slabs used in process creation are such, at
+> least with the debug options I had), it assumed it's being called for
+> stock and just retried without reclaiming.
 > 
-> Greg, I think it would be better to get them into 3.0 too. The ones I used
-> were (prefixed with 'X' if they are already in 3.0) :
->    24da9c26 x86, cpu: Add CPU flags for F16C and RDRND
+> Fix that by passing down a minsize argument in addition to the csize.
+> 
+> And what to do about that (csize == PAGE_SIZE && ret) retry?  If it's
 
-This showed up in 2.6.36
+I think you're referring to the (nr_pages == 1 && ret) retry, csize is 
+only used for interfacing with res_counter.
 
->    7ccafc5f x86, cpufeature: Update CPU feature RDRND to RDRAND
+> needed at all (and presumably is since it's there, perhaps to handle
+> races), then it should be extended to more than PAGE_SIZE, yet how far?
+> And should there be a retry count limit, of what?  For now retry up to
+> COSTLY_ORDER (as page_alloc.c does) and make sure not to do it if
+> __GFP_NORETRY.
+> 
+> [v4: fixed nr pages calculation pointed out by Christoph Lameter ]
+> 
+> Signed-off-by: Suleiman Souhlal <suleiman@google.com>
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Tejun Heo <tj@kernel.org>
 
-This showed up in 3.0
-
->  X 63d77173 random: Add support for architectural random hooks
->  X bd29e568 fix typo/thinko in get_random_bytes()
->    628c6246 x86, random: Architectural inlines to get random integers with RDRAND
->    49d859d7 x86, random: Verify RDRAND functionality and allow it to be disabled
-
-I've now queued up these two as they were relevant here.
-
-thanks,
-
-greg k-h
+Acked-by: David Rientjes <rientjes@google.com>
