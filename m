@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584Ab2JQVrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 17:47:09 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:44080 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab2JQVrH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 17:47:07 -0400
-Date: Wed, 17 Oct 2012 23:47:00 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, eranian@gmail.com,
-        "Meadows, Lawrence F" <lawrence.f.meadows@intel.com>
-Subject: Re: [PATCH 0/3] perf_event: enable overflow interrupts on KNC
-Message-ID: <20121017214700.GA9851@gmail.com>
-References: <alpine.DEB.2.02.1210171256550.23243@vincent-weaver-1.um.maine.edu>
- <20121017180753.GA7291@gmail.com>
- <alpine.DEB.2.02.1210171614060.23685@vincent-weaver-1.um.maine.edu>
+	id S1751625Ab2JQVro (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 17:47:44 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:52100 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751378Ab2JQVrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 17:47:43 -0400
+Date: Wed, 17 Oct 2012 14:47:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dhaval Giani <dhaval.giani@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] RCU documentation: Correct the name of a reference
+Message-ID: <20121017214736.GQ2385@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAPhKKr-c8ATOswuvxe+vBoLh6B-7VZSSiOkS5vbvzBCX7RLewA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1210171614060.23685@vincent-weaver-1.um.maine.edu>
+In-Reply-To: <CAPhKKr-c8ATOswuvxe+vBoLh6B-7VZSSiOkS5vbvzBCX7RLewA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101721-8974-0000-0000-00000FB7372A
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000196; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00183356; UDB=6.00041534; UTC=2012-10-17
+ 21:47:41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Vince Weaver <vincent.weaver@maine.edu> wrote:
-
-> On Wed, 17 Oct 2012, Ingo Molnar wrote:
+On Wed, Oct 17, 2012 at 11:05:37AM -0400, Dhaval Giani wrote:
+> [Attaching the patch as gmail breaks the patches]
 > 
-> > How well tested is this on real hardware and how robust is the 
-> > hardware with this? Since it's a new PMU driver for v3.7, and if 
-> > these are reasonably well tested, then we could send these to 
-> > Linus via perf/urgent, so that they don't miss and have to wait 
-> > all the way to v3.8.
+> Trying to go through the history of RCU (not for the weak
+> minded) led me to search for a non-existent paper.
 > 
-> You probably won't like this answer.
-> 
-> The patches have been tested against the 2.6.34 kernel that 
-> Intel provides for KNC (found here 
-> http://software.intel.com/en-us/forums/topic/278102 )
-> 
-> perf stat, perf record, and PAPI have all been tested and 
-> work.
->
-> The patches I've sent are the 2.6.34 ones forward ported to 
-> the 3.7-rc1 kernel.  I haven't been able to run a 3.7-rc 
-> kernel on the KNC board, because there are other patches to 
-> mainline needed to get KNC running and they'd all have to be 
-> forward-ported from 2.6.34.
-> 
-> Since the knc pmu driver closely models the p6 one, it was 
-> straightforward to use it as a basis for the forward port.  
-> Everything _should_ work but I've only compile tested.
+> Correct it to the actual reference
 
-Ok. As long as it's all identical I'd still be inclined to 
-include it in v3.7, to reduce version skew. If the v3.7-rc1 
-kernel won't even boot it's not like we'll be able to further 
-regress it.
+Queued, thank you!
 
-Thanks,
+						Thanx, Paul
 
-	Ingo
+> Signed-off-by: Dhaval Giani <dhaval.giani@gmail.com>
+> Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> 
+> Index: linux/Documentation/RCU/RTFP.txt
+> ===================================================================
+> --- linux.orig/Documentation/RCU/RTFP.txt
+> +++ linux/Documentation/RCU/RTFP.txt
+> @@ -186,7 +186,7 @@ Bibtex Entries
+> 
+>  @article{Kung80
+>  ,author="H. T. Kung and Q. Lehman"
+> -,title="Concurrent Maintenance of Binary Search Trees"
+> +,title="Concurrent Manipulation of Binary Search Trees"
+>  ,Year="1980"
+>  ,Month="September"
+>  ,journal="ACM Transactions on Database Systems"
+
+
