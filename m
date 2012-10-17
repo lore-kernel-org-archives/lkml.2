@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756363Ab2JQKrv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 06:47:51 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:12958 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752773Ab2JQKrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 06:47:49 -0400
-X-IronPort-AV: E=Sophos;i="4.80,599,1344182400"; 
-   d="scan'208";a="6016820"
-Message-ID: <507E7FC2.8@cn.fujitsu.com>
-Date: Wed, 17 Oct 2012 17:52:02 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1756292Ab2JQK4S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 06:56:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50373 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132Ab2JQK4Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 06:56:16 -0400
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/4] acpi,memory-hotplug : add memory offline code to
- acpi_memory_device_remove()
-References: <506C0AE8.40702@jp.fujitsu.com> <506C0C53.60205@jp.fujitsu.com> <CAHGf_=p7PaQs-kpnyB8uC1MntHQfL-CXhhq4QQP54mYiqOswqQ@mail.gmail.com> <50727984.20401@cn.fujitsu.com> <CAHGf_=pCrx8AkL9eiSYVgwvT1v0SW2__P_DW-1Wwj_zskqcLXw@mail.gmail.com> <507E54AA.2080806@cn.fujitsu.com> <CAHGf_=o_Wu1kr56C=7XTjYRzL4egSyGJYd4+2RecVWzpeM427Q@mail.gmail.com> <507E75AA.2000605@cn.fujitsu.com> <CAHGf_=oNufcAQhxWtvq56qwF==+14+Cm7r9eiTGdY=B=ENwPQg@mail.gmail.com>
-In-Reply-To: <CAHGf_=oNufcAQhxWtvq56qwF==+14+Cm7r9eiTGdY=B=ENwPQg@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/17 17:46:01,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/17 17:46:11,
-	Serialize complete at 2012/10/17 17:46:11
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <507E3EA6.5080809@jp.fujitsu.com>
+References: <1350403183-12650-1-git-send-email-ming.lei@canonical.com>
+	<1350403183-12650-2-git-send-email-ming.lei@canonical.com>
+	<507E3EA6.5080809@jp.fujitsu.com>
+Date: Wed, 17 Oct 2012 18:56:14 +0800
+Message-ID: <CACVXFVN_NNE-ETo6Pno3k0255tKrVJSpvebQf6Ebu4WaMmKc_g@mail.gmail.com>
+Subject: Re: [RFC PATCH v1 1/3] mm: teach mm by current context info to not do
+ I/O during memory allocation
+From: Ming Lei <ming.lei@canonical.com>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
+        Jiri Kosina <jiri.kosina@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-mm <linux-mm@kvack.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 10/17/2012 05:18 PM, KOSAKI Motohiro Wrote:
->>>>>> Hmm, it doesn't move the code. It just reuse the code in acpi_memory_powerdown_device().
->>>>>
->>>>> Even if reuse or not reuse, you changed the behavior. If any changes
->>>>> has no good rational, you cannot get an ack.
->>>>
->>>> I don't understand this? IIRC, the behavior isn't changed.
->>>
->>> Heh, please explain why do you think so.
->>
->> We just introduce a function, and move codes from acpi_memory_disable_device() to the new
->> function. We call the new function in acpi_memory_disable_device(), so the function
->> acpi_memory_disable_device()'s behavior isn't changed.
->>
->> Maybe I don't understand what do you want to say.
-> 
-> Ok, now you agreed you moved the code, yes? So then, you should explain why
-> your code moving makes zero impact other acpi_memory_disable_device() caller.
+On Wed, Oct 17, 2012 at 1:14 PM, Kamezawa Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>
+> I think the idea is reasonable. I have a request.
 
-We just move the code, and don't change the acpi_memory_disable_device()'s behavior.
+Thanks for your comment.
 
-I look it the change again, and found some diffs:
-1. we treat !info->enabled as error, while it isn't a error without this patch
-2. we remove memory info from the list, it is a bug fix because we free the memory
-   that stores memory info.(I have sent a patch to fix this bug, and it is in akpm's tree now)
+>
+> In current implemententation of vmscan.c, it seems sc.may_writepage, sc.may_swap
+> are handled independent from gfp_mask.
+>
+> So, could you drop changes from this patch and handle these flags in another patch
+> if these flags should be unset if ~GFP_IOFS ?
 
-I guess you mean 1 will change the behavior. In the last version, I don't do it.
-Ishimatsu changes this and I don't notify this.
+OK, I agree. In theory,  mm should make sure no I/O is involved if
+memory allocation
+users passes ~GFP_IOFS.
 
-To Ishimatsu:
+>
+> I think try_to_free_page() path's sc.may_xxxx should be handled in the same way.
 
-Why do you change this?
+Yes, alloc_page_buffers() and dma_alloc_from_contiguous may drop into
+the path, so gfp flag should be changed in try_to_free_page() too.
 
-Thanks
-Wen Congyang
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+Thanks,
+--
+Ming Lei
