@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab2JQMWk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 08:22:40 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:37784 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755134Ab2JQMWj (ORCPT
+	id S1756689Ab2JQMZI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 08:25:08 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:54667 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751785Ab2JQMZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 08:22:39 -0400
-Message-ID: <507EA308.9090106@gmail.com>
-Date: Wed, 17 Oct 2012 20:22:32 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Wed, 17 Oct 2012 08:25:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jaegeuk Kim <jaegeuk.kim@gmail.com>
+Subject: Re: [PATCH 11/16] f2fs: add inode operations for special inodes
+Date: Wed, 17 Oct 2012 12:25:01 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        "'Dave Chinner'" <david@fromorbit.com>,
+        "'Vyacheslav Dubeyko'" <slava@dubeyko.com>, viro@zeniv.linux.org.uk,
+        "'Theodore Ts'o'" <tytso@mit.edu>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, chur.lee@samsung.com,
+        cm224.lee@samsung.com, jooyoung.hwang@samsung.com
+References: <001201cda2f1$633db960$29b92c20$%kim@samsung.com> <201210161138.35388.arnd@arndb.de> <1350419915.1958.39.camel@kjgkr>
+In-Reply-To: <1350419915.1958.39.camel@kjgkr>
 MIME-Version: 1.0
-To: wency@cn.fujitsu.com
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
-        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com
-Subject: Re: [PATCH v2 0/5] bugfix for memory hotplug
-References: <1350475735-26136-1-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1350475735-26136-1-git-send-email-wency@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201210171225.01511.arnd@arndb.de>
+X-Provags-ID: V02:K0:KkbTPRRC0MSBgIthX2RqUDW2sybDXkDAOsDgRZdHE2c
+ aNn3gnesUd9gNRwFzo2AxGMqwOqrdYCcjlc6PHVxkV9GY8xYsf
+ usdMpHHtpgHA+FmyYhpUXpXzPoDW3LgGn5s2JMbHTdogvlBi96
+ 3kQtrVx878KvSw8LA+bPx6re9DB1Nr9vUQV+i8jTY1K9Onlw3z
+ I98y9t/Cm0RsbrtpeaGbfCcpulUuum1vmax/wLApFAVRxjr2gQ
+ SbgXnwB7Luoqxm3S70PLoustgLPP6dn88TozTMoiDnriGMSC6e
+ EhVNit/z1IeDQZ69FIi6k19SD+6Ra7kwIP+Cc65n2F/DWRH6gg
+ tTQa+tJq7j3ok6ccP9To=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2012 08:08 PM, wency@cn.fujitsu.com wrote:
-> From: Wen Congyang <wency@cn.fujitsu.com>
->
-> Wen Congyang (5):
->    memory-hotplug: skip HWPoisoned page when offlining pages
->    memory-hotplug: update mce_bad_pages when removing the memory
->    memory-hotplug: auto offline page_cgroup when onlining memory block
->      failed
->    memory-hotplug: fix NR_FREE_PAGES mismatch
->    memory-hotplug: allocate zone's pcp before onlining pages
+On Tuesday 16 October 2012, Jaegeuk Kim wrote:
+> > 
+> > > > An xattr on the root inode that holds a list like this is something
+> > > > that could be set at mkfs time, but then also updated easily by new
+> > > > software packages that are installed...
+> > 
+> > Yes, good idea.
+> 
+> Likewise many file systems, f2fs also supports xattr as a configurable
+> Kconfig option.
+> If user disables the xattr feature, how can we do this?
 
-Oops, why you don't write changelog?
+I can see three options here:
 
->
->   include/linux/page-isolation.h |   10 ++++++----
->   mm/memory-failure.c            |    2 +-
->   mm/memory_hotplug.c            |   14 ++++++++------
->   mm/page_alloc.c                |   37 ++++++++++++++++++++++++++++---------
->   mm/page_cgroup.c               |    3 +++
->   mm/page_isolation.c            |   27 ++++++++++++++++++++-------
->   mm/sparse.c                    |   21 +++++++++++++++++++++
->   7 files changed, 87 insertions(+), 27 deletions(-)
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+* make the extension list feature dependent on xattr, and treat all files
+  the same if it's disabled.
 
+* put the list into the superblock instead. 
+
+* fall back on a hardcoded list of extensions when the extended attribute
+  is not present or the feature is disabled.
+
+	Arnd
