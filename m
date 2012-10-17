@@ -1,91 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036Ab2JQCLS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 22:11:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42279 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755935Ab2JQCLQ (ORCPT
+	id S1756079Ab2JQCXh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 22:23:37 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:46337 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756012Ab2JQCXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 22:11:16 -0400
-Message-ID: <1350435527.26833.63.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 038/147] block: fix request_queue->flags initialization
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>
-Date: Wed, 17 Oct 2012 01:58:47 +0100
-In-Reply-To: <20121016225948.GA3027@herton-Z68MA-D2H-B3>
-References: <20121014143533.742627615@decadent.org.uk>
-	 <20121014143538.966779793@decadent.org.uk>
-	 <20121016225948.GA3027@herton-Z68MA-D2H-B3>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-9uKuO6ivUrQaSaD0fqSH"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 16 Oct 2012 22:23:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.64.1210161924350.20581@file.rdu.redhat.com>
+References: <Pine.LNX.4.64.1210151716310.10685@file.rdu.redhat.com> <Pine.LNX.4.64.1210161924350.20581@file.rdu.redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 16 Oct 2012 19:23:07 -0700
+X-Google-Sender-Auth: Qk8pAZVZdvRyr7AXy1q1x0N5m2M
+Message-ID: <CA+55aFyZ9uq_yfHn9PwpmM77X3xVd+xseEbjJmeCCqbFddtjWA@mail.gmail.com>
+Subject: Re: [PATCH] percpu-rwsem: use barrier in unlock path
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[ Architecture people, note the potential new SMP barrier! ]
 
---=-9uKuO6ivUrQaSaD0fqSH
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 16, 2012 at 4:30 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+> +       /*
+> +        * The lock is considered unlocked when p->locked is set to false.
+> +        * Use barrier prevent reordering of operations around p->locked.
+> +        */
+> +#if defined(CONFIG_X86) && (!defined(CONFIG_X86_PPRO_FENCE) && !defined(CONFIG_X86_OOSTORE))
+> +       barrier();
+> +#else
+> +       smp_mb();
+> +#endif
+>         p->locked = false;
 
-On Tue, 2012-10-16 at 19:59 -0300, Herton Ronaldo Krzesinski wrote:
-> On Sun, Oct 14, 2012 at 03:36:11PM +0100, Ben Hutchings wrote:
-> > 3.2-stable review patch.  If anyone has any objections, please let me k=
-now.
-> >=20
-> > ------------------
-> >=20
-> > From: Tejun Heo <tj@kernel.org>
-> >=20
-> > commit 60ea8226cbd5c8301f9a39edc574ddabcb8150e0 upstream.
-> >=20
-> > A queue newly allocated with blk_alloc_queue_node() has only
-> > QUEUE_FLAG_BYPASS set.  For request-based drivers,
-> > blk_init_allocated_queue() is called and q->queue_flags is overwritten
-> > with QUEUE_FLAG_DEFAULT which doesn't include BYPASS even though the
-> > initial bypass is still in effect.
->=20
-> Since QUEUE_FLAG_BYPASS doesn't exist and nothing in
-> blk_alloc_queue_node is set on 3.2, this change is uneeded then,
-> but the patch should be harmless anyway.
-[...]
+Ugh. The #if is too ugly to live.
 
-Thanks, I'll drop it.
+This is a classic case of "people who write their own serialization
+primitives invariably get them wrong". And this fix is just horrible,
+and code like this should not be allowed.
 
-Ben.
+I suspect we could make the above x86-specific optimization be valid
+by introducing a new barrier, called "smp_release_before_store()" or
+something like that, which on x86 just happens to be a no-op (but
+still a compiler barrier). That's because earlier reads will not pass
+a later stores, and stores are viewed in program order, so all x86
+stores have "release consistency" modulo the theoretical PPro bugs
+(that I don't think we actually ever saw in practice).
 
---=20
-Ben Hutchings
-No political challenge can be met by shopping. - George Monbiot
+But it is possible that that is true on other architectures too, so
+your hand-crafted x86-specific #if is not just ugly, it's liable to
+get worse.
 
---=-9uKuO6ivUrQaSaD0fqSH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+The alternative is to just say that we should use "smp_mb()"
+unconditionally, depending on how critical this code actually ends up
+being.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Added linux-arch in case architecture-maintainers have comments on
+"smp_release_before_store()" thing. It would be kind of similar to the
+odd "smp_read_barrier_depends()", except it would normally be a full
+memory barrier, except on architectures where a weaker barrier might
+be sufficient.
 
-iQIUAwUAUH4Cx+e/yOyVhhEJAQoX2g/496Uy0j1saSu2rjSOIxYFZVYkoI0dZi+d
-1O8p0c1nDpC6GBWWvzQBdAcRJHaR+GfXj5SVw/QNVwkb2jJp3u2oAoEBRUihES6z
-B1AHO27YcSwZ3eXEs2FXPEN1udJw7+zXzuLFTCyPeZUJuzFtcwKm+j5iDFDZwju0
-BRv0pOfxV5P/nrZlubjjf8CB1qdWXOYh7Bblp61ezkkKLzgepEnzUVflvn5Vfd7r
-pIM4JrG7f53WJsJ3P1W8IBfDEnsRKJSc3cD9AOnvglXoWVdnbXWZPW4oUiSBSo1H
-ZmJ5MjHXj6dTz86QFLTbh3jPZ5iZJbyjfpo9tjT/E/LpDS24kuEzs4Z7O4lG8lJm
-OjvZea+6eR01q7wp5QZ1laLkAuMaCDMTEkhaVysNt1uxTGERMx67zZJ9h3YbnZgL
-UvDSHvvI1yLAcaJMboKecuxHF6GwO08oW+XXZLQn8x8UaG/VOtfqTJWXsrTXmByV
-D9holnXk1CWJX9yPyJCLDW29v27WuN2M9FRv2E5teLRmxClMh6kODYW3hF4uevTY
-Chp7SG9HcJWrNPDNM9a+9kO4ZjnkWMTPS0rX/9K/x5HKRIiueIyCS+Zn1ROeZEEz
-6r4YJTUDN4iNCuiyh88w5ZO3rYWAW877i+F76g2vx+yUU6jCzJ1tUK0lXoS6AqqN
-mEzgFXSgRg==
-=W5zk
------END PGP SIGNATURE-----
+I suspect there may be many architectures where a "smp_wmb()" is
+sufficient for this case, for the simple reason that no sane
+microarchitecture would *ever* move earlier reads down past a later
+write, so release consistency really only needs the local writes to be
+ordered, not the full memory ordering.
 
---=-9uKuO6ivUrQaSaD0fqSH--
+Arch people?
+
+The more optimal solution may be to mark the store *itself* to be
+"store with release consistency", which on x86 would be a regular
+store (with the compiler barrier), but on other architectures may be a
+special memory operation. On architectures with
+release/aqcuire-consistency, there's not a separate barrier before the
+store, the store instruction itself is done with special semantics. So
+maybe the right thing to do is
+
+   #define smp_release_consistency_store(val, ptr) ...
+
+where on x86, the implementation would be a simple
+
+   do { barrier(); *(ptr)=(val); } while (0)
+
+but on other architectures it might be a inline asm with the required
+magic store-with-release instruction.
+
+How important is this code sequence? Is the "percpu_up_write()"
+function really so critical that we can't have an extra memory
+barrier? Or do people perhaps see *other* places where
+release-consistency-stores might be worth doing?
+
+But in no event do I want to see that butt-ugly #if statement.
+
+                Linus
