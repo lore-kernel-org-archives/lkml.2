@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755808Ab2JQAC5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 20:02:57 -0400
-Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:41396 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755476Ab2JQAC4 (ORCPT
+	id S1755860Ab2JQAGQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 20:06:16 -0400
+Received: from mga11.intel.com ([192.55.52.93]:37013 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755692Ab2JQAGO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 20:02:56 -0400
-Message-ID: <507DF58E.8060804@ce.jp.nec.com>
-Date: Wed, 17 Oct 2012 09:02:22 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 16 Oct 2012 20:06:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,595,1344236400"; 
+   d="scan'208";a="234788718"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: RE: [PATCH v9 12/12] x86, topology: Debug CPU00 hotplug
+Thread-Topic: [PATCH v9 12/12] x86, topology: Debug CPU00 hotplug
+Thread-Index: AQHNqJmgIQc5pNFEs0GDL/Fd3/WvSJe8GfWAgACJoVA=
+Date: Wed, 17 Oct 2012 00:06:12 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C7122030B196BC@ORSMSX105.amr.corp.intel.com>
+References: <1350058189-6769-1-git-send-email-fenghua.yu@intel.com>
+ <1350058189-6769-13-git-send-email-fenghua.yu@intel.com>
+ <507D1F2F.1010006@linux.vnet.ibm.com>
+In-Reply-To: <507D1F2F.1010006@linux.vnet.ibm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Vivek Goyal <vgoyal@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Fix use-after-free of q->root_blkg and q->root_rl.blkg
-References: <50750367.2070508@ce.jp.nec.com> <20121010155929.GA18733@redhat.com> <50762182.5090806@ce.jp.nec.com> <20121016232040.GH16166@google.com>
-In-Reply-To: <20121016232040.GH16166@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/12 08:20, Tejun Heo wrote:
->>>> -	if (ent == &q->root_blkg->q_node)
->>>> +	if (q->root_blkg && ent == &q->root_blkg->q_node)
->>>
->>> Can we fix it little differently. Little earlier in the code, we check for
->>> if q->blkg_list is empty, then all the groups are gone, and there are
->>> no more request lists hence and return NULL.
->>>
->>> Current code:
->>>         if (rl == &q->root_rl) {
->>>                 ent = &q->blkg_list;
->>>
->>> Modified code:
->>>         if (rl == &q->root_rl) {
->>>                 ent = &q->blkg_list;
->>> 		/* There are no more block groups, hence no request lists */
->>> 		if (list_empty(ent))
->>> 			return NULL;
->>> 	}
+> > +#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
+ > +	case PM_RESTORE_PREPARE:
+> > +		/*
+> > +		 * When system resumes from hibernation, online CPU0
+> because
+> > +		 * 1. it's required for resume and
+> > +		 * 2. the CPU was online before hibernation
+> > +		 */
+> > +		if (!cpu_online(0))
+> > +			_debug_hotplug_cpu(0, 1);
 > 
-> Do we need this at all?  q->root_blkg being NULL is completely fine
-> there and the comparison would work as expected, no?
+> This won't work. CPU hotplug is disabled by cpu_hotplug_pm_callback()
+> during
+> PM_HIBERNATION_PREPARE and is enabled back only during
+> PM_POST_HIBERNATION.
+> 
+> So calls to cpu_up() or cpu_down() will fail in the meantime.
 
-Hmm?
+The code works just fine.
 
-If list_empty(ent) and q->root_blkg == NULL,
+You are talking about hibernation/suspend phase. This piece of
+code is all about restore phase. Of course you can call cpu_up()
+and cpu_down() during restore phase.
 
->         /* walk to the next list_head, skip root blkcg */
->         ent = ent->next;
+So there is no problem here.
 
-ent is &q->blkg_list again.
+Thanks.
 
->         if (ent == &q->root_blkg->q_node)
-
-So ent is not &q->root_blkg->q_node.
-
->                 ent = ent->next;
->         if (ent == &q->blkg_list)
->                 return NULL;
-
-And we return NULL here.
-
-Ah, yes. You are correct.
-We can do without the above hunk.
-
--- 
-Jun'ichi Nomura, NEC Corporation
+-Fenghua
 
