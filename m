@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198Ab2JQG04 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 02:26:56 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:35604 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756120Ab2JQG0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 02:26:53 -0400
-Message-ID: <1350455212.3072.27.camel@joe-AO722>
-Subject: Re: [PATCH 1/2] cpufreq: Improve debug prints
-From: Joe Perches <joe@perches.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, pdsw-power-team@arm.com
-Date: Tue, 16 Oct 2012 23:26:52 -0700
-In-Reply-To: <CAKohpom6xHUmu2uYijdNVJHj6sFwJhYUYvXy+dN1a+WqzqTjZA@mail.gmail.com>
-References: <3b38cb8ab136e5af3a70fceb7d77ad9fc889eb3f.1350451100.git.viresh.kumar@linaro.org>
-	 <1350452374.3072.19.camel@joe-AO722>
-	 <CAKohpo=LL+wPcb97KNQvHbX0fzhnRBZjPsHXTj1PdYObuVVTgw@mail.gmail.com>
-	 <1350453876.3072.23.camel@joe-AO722>
-	 <CAKohpom6xHUmu2uYijdNVJHj6sFwJhYUYvXy+dN1a+WqzqTjZA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754906Ab2JQGcP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 02:32:15 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:31351 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752438Ab2JQGcN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 02:32:13 -0400
+Message-ID: <507E50E5.5040201@oracle.com>
+Date: Wed, 17 Oct 2012 14:32:05 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+MIME-Version: 1.0
+To: Ron Mercer <ron.mercer@qlogic.com>,
+        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
+        linux-driver@qlogic.com
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Marsden <greg.marsden@oracle.com>
+Subject: [PATCH] qla3xxx: Ensure req_q_phy_addr writes to the register
+Content-Type: multipart/mixed;
+ boundary="------------000705040308040202030600"
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-17 at 11:47 +0530, Viresh Kumar wrote:
-> On 17 October 2012 11:34, Joe Perches <joe@perches.com> wrote:
-> > I believe you are quoting KBUILD_MODNAME
-> 
-> Yes. :(
-> Far better output with this. Thanks.
+This is a multi-part message in MIME format.
+--------------000705040308040202030600
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-Oh good, but please use a space between KBUILD_MODNAME
-and the quoted ": ".
+Make sure req_q_phy_addr write to the register.
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+Signed-off-by: Joe Jin <joe.jin@oracle.com>
+Cc: Ron Mercer <ron.mercer@qlogic.com>
+Cc: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
+---
+ drivers/net/ethernet/qlogic/qla3xxx.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-look at:
-$ git grep -E -h "pr_fmt.*KBUILD_MODNAME" *|sort|uniq -c|sort -rn
+diff --git a/drivers/net/ethernet/qlogic/qla3xxx.c b/drivers/net/ethernet/qlogic/qla3xxx.c
+index df09b1c..78b4cba 100644
+--- a/drivers/net/ethernet/qlogic/qla3xxx.c
++++ b/drivers/net/ethernet/qlogic/qla3xxx.c
+@@ -2525,6 +2525,12 @@ static int ql_alloc_net_req_rsp_queues(struct ql3_adapter *qdev)
+ 	qdev->req_q_size =
+ 	    (u32) (NUM_REQ_Q_ENTRIES * sizeof(struct ob_mac_iocb_req));
+ 
++	/*
++	 * The barrier is required to ensure that req_q_phy_addr writes to
++	 * the memory.
++	 */
++	wmb();
++
+ 	qdev->req_q_virt_addr =
+ 	    pci_alloc_consistent(qdev->pdev,
+ 				 (size_t) qdev->req_q_size,
+-- 
+1.7.11.7
 
 
+--------------000705040308040202030600
+Content-Type: text/plain; charset=us-ascii;
+ name="Attached Message Part"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="Attached Message Part"
+
+
+--------------000705040308040202030600--
