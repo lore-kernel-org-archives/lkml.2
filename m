@@ -1,107 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390Ab2JQWoi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 18:44:38 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:33618 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752174Ab2JQWog (ORCPT
+	id S1752508Ab2JQWov (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 18:44:51 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:48026 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752433Ab2JQWou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 18:44:36 -0400
-Date: Wed, 17 Oct 2012 15:44:30 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] brw_mutex: big read-write mutex
-Message-ID: <20121017224430.GC2518@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20121015190958.GA4799@redhat.com>
- <20121015191018.GA4816@redhat.com>
- <CA+55aFwV-WOUx8MSr145f+HSrtmZ=nXHq0VLhtPyH=FNBFwmQg@mail.gmail.com>
- <20121017165902.GB9872@redhat.com>
+	Wed, 17 Oct 2012 18:44:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121017165902.GB9872@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101722-2876-0000-0000-0000012095A5
+In-Reply-To: <3179.1350512382@warthog.procyon.org.uk>
+References: <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com>
+ <3179.1350512382@warthog.procyon.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 17 Oct 2012 15:44:28 -0700
+X-Google-Sender-Auth: OqkuJ1DRcCDPqOVGOXUtSJLHPAQ
+Message-ID: <CA+55aFzEH1jguw8NB90si2uxvyO63FuKPOc8wiEPRCYwruSzRg@mail.gmail.com>
+Subject: Re: RFC: sign the modules at install time
+To: David Howells <dhowells@redhat.com>
+Cc: David Miller <davem@davemloft.net>, Rusty Russell <rusty@rustcorp.com.au>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jwboyer@redhat.com, pjones@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 06:59:02PM +0200, Oleg Nesterov wrote:
-> On 10/16, Linus Torvalds wrote:
-> >
-> > On Mon, Oct 15, 2012 at 12:10 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > > This patch adds the new sleeping lock, brw_mutex. Unlike rw_semaphore
-> > > it allows multiple writers too, just "read" and "write" are mutually
-> > > exclusive.
-> >
-> > So those semantics just don't sound sane. It's also not what any kind
-> > of normal "rw" lock ever does.
-> 
-> Yes, this is not usual.
-> 
-> And initially I made brw_sem which allows only 1 writer, but then
-> I changed this patch.
-> 
-> > So can you explain why these particular insane semantics are useful,
-> > and what for?
-> 
-> To allow multiple uprobe_register/unregister at the same time. Mostly
-> to not add the "regression", currently this is possible.
-> 
-> It is not that I think this is terribly important, but still. And
-> personally I think that "multiple writers" is not necessarily insane
-> in general. Suppose you have the complex object/subsystem, the readers
-> can use a single brw_mutex to access it "lockless", start_read() is
-> very cheap.
-> 
-> But start_write() is slow. Multiple writes can use the fine-grained
-> inside the start_write/end_write section and do not block each other.
+On Wed, Oct 17, 2012 at 3:19 PM, David Howells <dhowells@redhat.com> wrote:
+>
+> It's probably even better to just get rid of all the automatic module signing
+> stuff completely and leave the sign-file script for the builder to use
+> manually.  The module verification code will still be present.
 
-Strangely enough, the old VAXCluster locking primitives allowed this
-sort of thing.  The brw_start_read() would be a "protected read", and
-brw_start_write() would be a "concurrent write".  Even more interesting,
-they gave the same advice you give -- concurrent writes should use
-fine-grained locking to protect the actual accesses.
+That's just disgusting crazy talk.
 
-It seems like it should be possible to come up with better names,
-but I cannot think of any at the moment.
+Christ, David, get a grip on yourself. You seem to dismiss the "people
+want to build their own kernel" people entirely.
 
-							Thanx, Paul
+One of the main sane use-cases for module signing is:
 
-PS.  For the sufficiently masochistic, here is the exclusion table
-     for the six VAXCluster locking modes:
+ - CONFIG_CHECK_SIGNATURE=y
+ - randomly generated one-time key
+ - "make modules_install; make install"
+ - "make clean" to get rid of the keys.
+ - reboot.
 
-		NL	CR	CW	PR	PW	EX
-	NL
-	CR						X
-	CW				X	X	X
-	PR			X		X	X
-	PW			X	X	X	X
-	EX		X	X	X	X	X
+and now you have a custom kernel that has the convenience of modules,
+yet is basically as safe as a non-modular build. The above makes it
+much harder for any kind of root-kit module to be loaded, and
+basically entirely avoids one fundamental security scare of modules.
 
-	"X" means that the pair of modes exclude each other,
-	otherwise the lock may be held in both of the modes
-	simultaneously.
+Everything else is garbage and should largely be ignored. Distro
+people who want to use magic distro keys can do whatever the hell they
+want with their modules, they'll have a separate packaging phase
+anyway for their secret keys - and they'll have to do it separately
+anyway just to keep their private key safe.
 
+And the UEFI "we only boot kernels signed by microsoft keys" case is
+just BS, and while it might be useful for some people, it's more
+likely to be a pain.
 
-Modes:
+In contrast, the case I outlined above is about true *security*, not
+some "vendor control" bullshit. And THAT is the case that kernel
+developers should encourage: using cryptography to secure individual
+users, instead of controlling things for others.
 
-NL:	Null, or "not held".
-CR:	Concurrent read.
-CW:	Concurrent write.
-PR:	Protected read.
-PW:	Protected write.
-EX:	Exclusive.
+Quite frankly, your "get rid of all the automatic module signing stuff
+completely" answer makes me think that your agenda is fundamentally
+flawed. Module signing is *not* about some magic redhat or microsoft
+key, and anybody who thinks it *should* be about that should seriously
+rethink their position.
 
+In fact, if I believed this was about redhat or microsoft keys, I
+would never have merged the code at all.
 
-A reader-writer lock could use protected read for readers and either of
-protected write or exclusive for writers, the difference between protected
-write and exclusive being irrelevant in the absence of concurrent readers.
-
+              Linus
