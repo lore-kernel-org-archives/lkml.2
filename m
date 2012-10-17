@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757731Ab2JQTGi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 15:06:38 -0400
-Received: from mga09.intel.com ([134.134.136.24]:44400 "EHLO mga09.intel.com"
+	id S932517Ab2JQTJO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 15:09:14 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56440 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757676Ab2JQTGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 15:06:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,602,1344236400"; 
-   d="scan'208";a="228867647"
-From: Andi Kleen <andi@firstfloor.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Tony Luck <tony.luck@intel.com>, X86-ML <x86@kernel.org>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH -v2 3/6] x86, RAS: Convert mce-inject module to debugfs
-References: <1350399175-14477-1-git-send-email-bp@amd64.org>
-	<1350399175-14477-4-git-send-email-bp@amd64.org>
-Date: Wed, 17 Oct 2012 12:06:35 -0700
-In-Reply-To: <1350399175-14477-4-git-send-email-bp@amd64.org> (Borislav
-	Petkov's message of "Tue, 16 Oct 2012 16:52:52 +0200")
-Message-ID: <m2fw5csytg.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1757592Ab2JQTJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 15:09:13 -0400
+Message-ID: <507F0258.8030503@ti.com>
+Date: Wed, 17 Oct 2012 14:09:12 -0500
+From: "Alexis R. Cortes" <alexis.cortes@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: <sarah.a.sharp@linux.intel.com>, <gregkh@linuxfoundation.org>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <brian.quach@ti.com>, <jorge.llamas@ti.com>
+Subject: [PATCH] usb: host: xhci: New system added for Compliance Mode Patch
+ on SN65LVPE502CP
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav Petkov <bp@amd64.org> writes:
+This minor change adds a new system to which the "Fix Compliance Mode
+on SN65LVPE502CP Hardware" patch has to be applied also.
 
-> From: Borislav Petkov <borislav.petkov@amd.com>
->
-> This is a module which is used for debugging MCE decoding paths so its
-> userspace interface should go to debugfs, where it belongs conceptually.
->
-> While at it, add a warning to the Kconfig text that this interface is
-> unstable and no userspace scripts should rely all too much on it.
+System added:
+Vendor: Hewlett-Packard. System Model: Z1
 
-Nack. You broke mce-test/mce-inject, aka existing userland which is not 
-allowed in Linux.
+Signed-off-by: Alexis R. Cortes <alexis.cortes@ti.com>
+---
+ drivers/usb/host/xhci.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
--Andi
-
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 8d7fcbb..7d462bf 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -479,7 +479,8 @@ static bool compliance_mode_recovery_timer_quirk_check(void)
+ 
+ 	if (strstr(dmi_product_name, "Z420") ||
+ 			strstr(dmi_product_name, "Z620") ||
+-			strstr(dmi_product_name, "Z820"))
++			strstr(dmi_product_name, "Z820") ||
++			strstr(dmi_product_name, "Z1"))
+ 		return true;
+ 
+ 	return false;
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.7.1
+
