@@ -1,154 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542Ab2JQRuB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 13:50:01 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:43318 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756518Ab2JQRuA (ORCPT
+	id S932416Ab2JQRuQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 13:50:16 -0400
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:22012 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756518Ab2JQRuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 13:50:00 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 2/3] pinctrl/coh901: convert to use managed resources
-Date: Wed, 17 Oct 2012 19:19:45 +0200
-Message-ID: <1350494385-16058-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Wed, 17 Oct 2012 13:50:13 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgcFADDvflBthdl2/2dsb2JhbABFvGiDPoEIgiABAQV4ARALDQsJFg8JAwIBAgFFBg0BBwEBiAS7cYtYhkIDm00iijCCcQ
+Message-ID: <507EEEE6.9040008@computer.org>
+Date: Wed, 17 Oct 2012 19:46:14 +0200
+From: Jan Ceuleers <jan.ceuleers@computer.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Dmitry Fleytman <dmitry@daynix.com>
+CC: linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        Chris Webb <chris.webb@elastichosts.com>,
+        Richard Davies <richard.davies@elastichosts.com>
+Subject: Re: [PATCH] e1000 driver RX race condition fixed
+References: <1350235151-11146-1-git-send-email-dmitry@daynix.com>
+In-Reply-To: <1350235151-11146-1-git-send-email-dmitry@daynix.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On 10/14/2012 07:19 PM, Dmitry Fleytman wrote:
+> There is a race condition in e1000 driver.
+> It enables HW receive before RX rings initalization.
+> In case of specific timing this may lead to host memory corruption
+> due to DMA write to arbitrary memory location.
+> Following patch fixes this issue by reordering initialization steps.
+> 
+> Other Intel network drivers does not seem to have this issue.
+> 
+> Dmitry Fleytman (1):
+>   RX initialization sequence fixed - enable RX after corresponding ring
+>     initialization only
+> 
+>  drivers/net/ethernet/intel/e1000/e1000_ethtool.c |    9 +++++----
+>  drivers/net/ethernet/intel/e1000/e1000_main.c    |   18 ++++++++++++++++--
+>  2 files changed, 21 insertions(+), 6 deletions(-)
+> 
 
-This switches the COH 901 pin controller to use managed
-resources (devm_*) for memory remaps, clocks, etc.
-
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/pinctrl-coh901.c | 62 ++++++++++++----------------------------
- 1 file changed, 19 insertions(+), 43 deletions(-)
-
-diff --git a/drivers/pinctrl/pinctrl-coh901.c b/drivers/pinctrl/pinctrl-coh901.c
-index 152efae..5c7daf9 100644
---- a/drivers/pinctrl/pinctrl-coh901.c
-+++ b/drivers/pinctrl/pinctrl-coh901.c
-@@ -65,7 +65,6 @@ struct u300_gpio {
- 	struct gpio_chip chip;
- 	struct list_head port_list;
- 	struct clk *clk;
--	struct resource *memres;
- 	void __iomem *base;
- 	struct device *dev;
- 	u32 stride;
-@@ -663,17 +662,16 @@ static int __init u300_gpio_probe(struct platform_device *pdev)
- {
- 	struct u300_gpio_platform *plat = dev_get_platdata(&pdev->dev);
- 	struct u300_gpio *gpio;
-+	struct resource *memres;
- 	int err = 0;
- 	int portno;
- 	u32 val;
- 	u32 ifr;
- 	int i;
- 
--	gpio = kzalloc(sizeof(struct u300_gpio), GFP_KERNEL);
--	if (gpio == NULL) {
--		dev_err(&pdev->dev, "failed to allocate memory\n");
-+	gpio = devm_kzalloc(&pdev->dev, sizeof(struct u300_gpio), GFP_KERNEL);
-+	if (gpio == NULL)
- 		return -ENOMEM;
--	}
- 
- 	gpio->chip = u300_gpio_chip;
- 	gpio->chip.ngpio = plat->ports * U300_GPIO_PINS_PER_PORT;
-@@ -681,37 +679,29 @@ static int __init u300_gpio_probe(struct platform_device *pdev)
- 	gpio->chip.base = plat->gpio_base;
- 	gpio->dev = &pdev->dev;
- 
--	/* Get GPIO clock */
--	gpio->clk = clk_get(gpio->dev, NULL);
-+	memres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!memres) {
-+		dev_err(gpio->dev, "could not get GPIO memory resource\n");
-+		return -ENODEV;
-+	}
-+
-+	gpio->base = devm_request_and_ioremap(&pdev->dev, memres);
-+	if (!gpio->base) {
-+		dev_err(gpio->dev, "could not get remap memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	gpio->clk = devm_clk_get(gpio->dev, NULL);
- 	if (IS_ERR(gpio->clk)) {
- 		err = PTR_ERR(gpio->clk);
- 		dev_err(gpio->dev, "could not get GPIO clock\n");
--		goto err_no_clk;
-+		return err;
- 	}
-+
- 	err = clk_prepare_enable(gpio->clk);
- 	if (err) {
- 		dev_err(gpio->dev, "could not enable GPIO clock\n");
--		goto err_no_clk_enable;
--	}
--
--	gpio->memres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!gpio->memres) {
--		dev_err(gpio->dev, "could not get GPIO memory resource\n");
--		err = -ENODEV;
--		goto err_no_resource;
--	}
--
--	if (!request_mem_region(gpio->memres->start,
--				resource_size(gpio->memres),
--				"GPIO Controller")) {
--		err = -ENODEV;
--		goto err_no_ioregion;
--	}
--
--	gpio->base = ioremap(gpio->memres->start, resource_size(gpio->memres));
--	if (!gpio->base) {
--		err = -ENOMEM;
--		goto err_no_ioremap;
-+		return err;
- 	}
- 
- 	dev_info(gpio->dev,
-@@ -810,16 +800,7 @@ err_no_chip:
- err_no_domain:
- err_no_port:
- 	u300_gpio_free_ports(gpio);
--	iounmap(gpio->base);
--err_no_ioremap:
--	release_mem_region(gpio->memres->start, resource_size(gpio->memres));
--err_no_ioregion:
--err_no_resource:
- 	clk_disable_unprepare(gpio->clk);
--err_no_clk_enable:
--	clk_put(gpio->clk);
--err_no_clk:
--	kfree(gpio);
- 	dev_info(&pdev->dev, "module ERROR:%d\n", err);
- 	return err;
- }
-@@ -838,13 +819,8 @@ static int __exit u300_gpio_remove(struct platform_device *pdev)
- 		return err;
- 	}
- 	u300_gpio_free_ports(gpio);
--	iounmap(gpio->base);
--	release_mem_region(gpio->memres->start,
--			   resource_size(gpio->memres));
- 	clk_disable_unprepare(gpio->clk);
--	clk_put(gpio->clk);
- 	platform_set_drvdata(pdev, NULL);
--	kfree(gpio);
- 	return 0;
- }
- 
--- 
-1.7.11.3
-
+Would it be at all possible to copy netdev on networking-related
+discussions?
