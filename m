@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803Ab2JQMdd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 08:33:33 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:59678 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377Ab2JQMdc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 08:33:32 -0400
-Subject: Re: [PATCH] regmap: default Y if REGMAP_MMIO is selected
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-In-Reply-To: <20121017123226.GM14199@opensource.wolfsonmicro.com>
-References: <1350477076-27875-1-git-send-email-p.zabel@pengutronix.de>
-	 <20121017123226.GM14199@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Oct 2012 14:33:31 +0200
-Message-ID: <1350477211.2603.49.camel@pizza.hi.pengutronix.de>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1756814Ab2JQMhZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 08:37:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44626 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753285Ab2JQMhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 08:37:24 -0400
+Date: Wed, 17 Oct 2012 14:37:15 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Wei Yang <weiyang@linux.vnet.ibm.com>
+Cc: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] remove untouched code in kfifo_in
+In-Reply-To: <1350463837-30244-1-git-send-email-weiyang@linux.vnet.ibm.com>
+Message-ID: <alpine.LNX.2.00.1210171434360.17129@pobox.suse.cz>
+References: <1350463837-30244-1-git-send-email-weiyang@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 17.10.2012, 21:32 +0900 schrieb Mark Brown:
-> On Wed, Oct 17, 2012 at 02:31:16PM +0200, Philipp Zabel wrote:
-> > The syscon mfd driver selects REGMAP_MMIO and uses struct regmap_config,
-> > which is only defined if CONFIG_REGMAP is enabled.
+On Wed, 17 Oct 2012, Wei Yang wrote:
+
+> In kfifo_in marco, one piece of code is arounded by if(0).
 > 
-> Already fixed by someone else, can't remember who now.  Will send to
-> Linus soon.
+> This patch just remove this code.
+> ---
+>  include/linux/kfifo.h |    4 ----
+>  1 files changed, 0 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/kfifo.h b/include/linux/kfifo.h
+> index 10308c6..e7015bb 100644
+> --- a/include/linux/kfifo.h
+> +++ b/include/linux/kfifo.h
+> @@ -512,10 +512,6 @@ __kfifo_uint_must_check_helper( \
+>  	unsigned long __n = (n); \
+>  	const size_t __recsize = sizeof(*__tmp->rectype); \
+>  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> -	if (0) { \
+> -		typeof(__tmp->ptr_const) __dummy __attribute__ ((unused)); \
+> -		__dummy = (typeof(__buf))NULL; \
+> -	} \
+>  	(__recsize) ?\
+>  	__kfifo_in_r(__kfifo, __buf, __n, __recsize) : \
+>  	__kfifo_in(__kfifo, __buf, __n); \
 
-Great, thanks.
+Frankly, I'd first like to understand what was the rationale for adding it 
+at the first place. Adding Stefani and lkml to CC.
 
-regrads
-Philipp
-
+-- 
+Jiri Kosina
+SUSE Labs
