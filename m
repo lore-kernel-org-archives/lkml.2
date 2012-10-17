@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757879Ab2JQUkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 16:40:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40060 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757853Ab2JQUki (ORCPT
+	id S1757875Ab2JQUo3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 16:44:29 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:52279 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755420Ab2JQUo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 16:40:38 -0400
-Date: Wed, 17 Oct 2012 13:40:34 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jean-Christian de Rivaz <jc@eclis.ch>
-Cc: Oliver Neukum <oneukum@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH] Add CDC-ACM support for the CX93010-2x UCMxx USB Modem
-Message-ID: <20121017204034.GA4879@kroah.com>
-References: <1348841764-26873-1-git-send-email-jc@eclis.ch>
- <16666667.izGXgx19Gh@linux-lqwf.site>
- <20121010222906.GA12493@cube>
- <20121017203239.GD30907@kroah.com>
+	Wed, 17 Oct 2012 16:44:28 -0400
+X-Sasl-enc: HzOZLALMOm82OTpLexgTZkPLeLivuBx9Bixd8BKiO8HP 1350506667
+Date: Wed, 17 Oct 2012 13:44:26 -0700
+From: Greg Kroah-Hartman <greg@kroah.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Tony Luck <tony.luck@intel.com>,
+        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH 1/5] drivers/base: Add a DEVICE_BOOL_ATTR macro
+Message-ID: <20121017204426.GA22994@kroah.com>
+References: <1350472435-29307-1-git-send-email-bp@amd64.org>
+ <1350472435-29307-2-git-send-email-bp@amd64.org>
+ <20121017190300.GB25996@kroah.com>
+ <20121017201018.GC32230@aftab.osrc.amd.com>
+ <20121017202900.GA30907@kroah.com>
+ <20121017203612.GE32230@aftab.osrc.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121017203239.GD30907@kroah.com>
+In-Reply-To: <20121017203612.GE32230@aftab.osrc.amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 01:32:39PM -0700, Greg Kroah-Hartman wrote:
-> On Thu, Oct 11, 2012 at 12:29:06AM +0200, Jean-Christian de Rivaz wrote:
-> > On Wed, Oct 10, 2012 at 09:42:32PM +0200, Oliver Neukum wrote:
-> > > On Friday 28 September 2012 16:16:04 jc@eclis.ch wrote:
-> > > > From: Jean-Christian de Rivaz <jc@eclis.ch>
-> > > > 
-> > > > This USB V.92/V.32bis Controllered Modem have the USB vendor ID 0x0572
-> > > > and device ID 0x1340. It need the NO_UNION_NORMAL quirk to be recognized.
-> > > > 
-> > > > Reference:
-> > > > http://www.conexant.com/servlets/DownloadServlet/DSH-201723-005.pdf?docid=1725&revid=5
-> > > > 
-> > > > Signed-off-by: Jean-Christian de Rivaz <jc@eclis.ch>
-> > > Acked-by: Oliver Neukum <oneukum@SUSE.DE>
-> > > 
-> > > However, this went to the wrong list. Please repost to
-> > > 
-> > > davem@davemloft.net
-> > > netdev@vger.kernel.org
-> > > 
-> > > 	Regards
-> > > 		Oliver
-> > > 
-> > 
-> > Sorry for the wrong list, I used the scripts/get_maintainer.pl to get the
-> > destinations, as recommanded in Documentation/SubmittingPatches. Is there
-> > something to be fixed there or should I use an other procedure to get the
-> > right destinations?
-> > 
-> > I will rebase and repost the patch.
+On Wed, Oct 17, 2012 at 10:36:12PM +0200, Borislav Petkov wrote:
+> On Wed, Oct 17, 2012 at 01:29:00PM -0700, Greg Kroah-Hartman wrote:
+> > Take the function already from the module code, it should be reusable,
+> > if not, it would be a good idea to make it so.
 > 
-> No need, you did this correctly.
+> Function from module code? Do you mean param_get_bool/param_set_bool in
+> kernel/params.c?
 
-Well, nevermind, David took this already :)
+Yes, that's what I was thinking of, but I guess it just comes down to a
+call to strtobool(), which is what you need here.
 
 greg k-h
