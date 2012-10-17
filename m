@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905Ab2JQBMa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 21:12:30 -0400
-Received: from mga01.intel.com ([192.55.52.88]:56855 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755824Ab2JQBM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 21:12:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,597,1344236400"; 
-   d="scan'208";a="234806125"
-Subject: [PATCH] x86/ioapic: fix the irq_2_pin mem leak when destroy_irq
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: tglx@linutronix.de, mingo@redhat.com, suresh.b.siddha@intel.com,
-        yinghai@kernel.org
-Cc: linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Oct 2012 18:11:46 +0800
-Message-ID: <1350468706.15558.26.camel@cliu38-desktop-build>
+	id S1755909Ab2JQBU7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 21:20:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50958 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755824Ab2JQBU6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 21:20:58 -0400
+Date: Wed, 17 Oct 2012 09:21:33 +0800
+From: "Jianpeng Ma" <majianpeng@gmail.com>
+To: axboe <axboe@kernel.dk>
+Cc: shli <shli@kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH V1] block: Add blk_rq_pos(rq) to sort rq when plushing plug-list.
+X-Priority: 3
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.91[en]
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Message-ID: <201210170921302655262@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9H1L6Fe001330
 
+My workload is a raid5 which had 16 disks. And used our filesystem to
+write using direct-io mode.
+I used the blktrace to find those message:
+8,16   0     6647     2.453665504  2579  M   W 7493152 + 8 [md0_raid5]
+8,16   0     6648     2.453672411  2579  Q   W 7493160 + 8 [md0_raid5]
+8,16   0     6649     2.453672606  2579  M   W 7493160 + 8 [md0_raid5]
+8,16   0     6650     2.453679255  2579  Q   W 7493168 + 8 [md0_raid5]
+8,16   0     6651     2.453679441  2579  M   W 7493168 + 8 [md0_raid5]
+8,16   0     6652     2.453685948  2579  Q   W 7493176 + 8 [md0_raid5]
+8,16   0     6653     2.453686149  2579  M   W 7493176 + 8 [md0_raid5]
+8,16   0     6654     2.453693074  2579  Q   W 7493184 + 8 [md0_raid5]
+8,16   0     6655     2.453693254  2579  M   W 7493184 + 8 [md0_raid5]
+8,16   0     6656     2.453704290  2579  Q   W 7493192 + 8 [md0_raid5]
+8,16   0     6657     2.453704482  2579  M   W 7493192 + 8 [md0_raid5]
+8,16   0     6658     2.453715016  2579  Q   W 7493200 + 8 [md0_raid5]
+8,16   0     6659     2.453715247  2579  M   W 7493200 + 8 [md0_raid5]
+8,16   0     6660     2.453721730  2579  Q   W 7493208 + 8 [md0_raid5]
+8,16   0     6661     2.453721974  2579  M   W 7493208 + 8 [md0_raid5]
+8,16   0     6662     2.453728202  2579  Q   W 7493216 + 8 [md0_raid5]
+8,16   0     6663     2.453728436  2579  M   W 7493216 + 8 [md0_raid5]
+8,16   0     6664     2.453734782  2579  Q   W 7493224 + 8 [md0_raid5]
+8,16   0     6665     2.453735019  2579  M   W 7493224 + 8 [md0_raid5]
+8,16   0     6666     2.453741401  2579  Q   W 7493232 + 8 [md0_raid5]
+8,16   0     6667     2.453741632  2579  M   W 7493232 + 8 [md0_raid5]
+8,16   0     6668     2.453748148  2579  Q   W 7493240 + 8 [md0_raid5]
+8,16   0     6669     2.453748386  2579  M   W 7493240 + 8 [md0_raid5]
+8,16   0     6670     2.453851843  2579  I   W 7493144 + 104 [md0_raid5]
+8,16   0        0     2.453853661     0  m   N cfq2579 insert_request
+8,16   0     6671     2.453854064  2579  I   W 7493120 + 24 [md0_raid5]
+8,16   0        0     2.453854439     0  m   N cfq2579 insert_request
+8,16   0     6672     2.453854793  2579  U   N [md0_raid5] 2
+8,16   0        0     2.453855513     0  m   N cfq2579 Not idling.st->count:1
+8,16   0        0     2.453855927     0  m   N cfq2579 dispatch_insert
+8,16   0        0     2.453861771     0  m   N cfq2579 dispatched a request
+8,16   0        0     2.453862248     0  m   N cfq2579 activate rq,drv=1
+8,16   0     6673     2.453862332  2579  D   W 7493120 + 24 [md0_raid5]
+8,16   0        0     2.453865957     0  m   N cfq2579 Not idling.st->count:1
+8,16   0        0     2.453866269     0  m   N cfq2579 dispatch_insert
+8,16   0        0     2.453866707     0  m   N cfq2579 dispatched a request
+8,16   0        0     2.453867061     0  m   N cfq2579 activate rq,drv=2
+8,16   0     6674     2.453867145  2579  D   W 7493144 + 104 [md0_raid5]
+8,16   0     6675     2.454147608     0  C   W 7493120 + 24 [0]
+8,16   0        0     2.454149357     0  m   N cfq2579 complete rqnoidle 0
+8,16   0     6676     2.454791505     0  C   W 7493144 + 104 [0]
+8,16   0        0     2.454794803     0  m   N cfq2579 complete rqnoidle 0
+8,16   0        0     2.454795160     0  m   N cfq schedule dispatch
 
-When destroying the irq, before free cfg, need to check
-cfg->irq_2_pin and free it when it is not NULL.
+>From above messages,we can find rq[W 7493144 + 104] and rq[W
+7493120 + 24] do not merge.
+Because the bio order is:
+  8,16   0     6638     2.453619407  2579  Q   W 7493144 + 8 [md0_raid5]
+  8,16   0     6639     2.453620460  2579  G   W 7493144 + 8 [md0_raid5]
+  8,16   0     6640     2.453639311  2579  Q   W 7493120 + 8 [md0_raid5]
+  8,16   0     6641     2.453639842  2579  G   W 7493120 + 8 [md0_raid5]
+The bio(7493144) first and bio(7493120) later.So the subsequent
+bios will be divided into two parts.
+When flushing plug-list,because elv_attempt_insert_merge only support
+backmerge,not supporting frontmerge.
+So rq[7493120 + 24] can't merge with rq[7493144 + 104].
 
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+>From my test,i found those situation can count 25% in our system.
+Using this patch, there is no this situation.
+
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+CC:Shaohua Li <shli@kernel.org>
 ---
- arch/x86/kernel/apic/io_apic.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ block/blk-core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index c265593..a976ee3 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -201,6 +201,15 @@ static struct irq_pin_list *alloc_irq_pin_list(int node)
- 	return kzalloc_node(sizeof(struct irq_pin_list), GFP_KERNEL, node);
+diff --git a/block/blk-core.c b/block/blk-core.c
+index a33870b..3c95c4d 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2868,7 +2868,8 @@ static int plug_rq_cmp(void *priv, struct list_head *a, struct list_head *b)
+ 	struct request *rqa = container_of(a, struct request, queuelist);
+ 	struct request *rqb = container_of(b, struct request, queuelist);
+ 
+-	return !(rqa->q <= rqb->q);
++	return !(rqa->q < rqb->q ||
++		(rqa->q == rqb->q && blk_rq_pos(rqa) < blk_rq_pos(rqb)));
  }
  
-+static void free_irq_pin_list(struct irq_cfg *cfg)
-+{
-+	struct irq_pin_list *entry, *next;
-+
-+	for (entry = cfg->irq_2_pin; entry; entry = next) {
-+		next = entry->next;
-+		kfree(entry);
-+	}
-+}
- 
- /* irq_cfg is indexed by the sum of all RTEs in all I/O APICs. */
- static struct irq_cfg irq_cfgx[NR_IRQS_LEGACY];
-@@ -276,6 +285,7 @@ static void free_irq_cfg(unsigned int at, struct irq_cfg *cfg)
- 	irq_set_chip_data(at, NULL);
- 	free_cpumask_var(cfg->domain);
- 	free_cpumask_var(cfg->old_domain);
-+	free_irq_pin_list(cfg);
- 	kfree(cfg);
- }
- 
+ /*
 -- 
-1.7.0.4
-
-
-
+1.7.9.5
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
