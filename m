@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756632Ab2JQKbf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 06:31:35 -0400
+	id S1756618Ab2JQKbd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 06:31:33 -0400
 Received: from mga03.intel.com ([143.182.124.21]:39773 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756022Ab2JQKbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 06:31:31 -0400
+	id S1756597Ab2JQKba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 06:31:30 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,599,1344236400"; 
-   d="scan'208";a="157178678"
+   d="scan'208";a="157178673"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
         linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
         balbi@ti.com
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv2 4/4] dw_dmac: don't call platform_get_drvdata twice
-Date: Wed, 17 Oct 2012 13:31:18 +0300
-Message-Id: <1350469879-16018-5-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv2 3/4] dw_dmac: change {dev_}printk() to corresponding macros
+Date: Wed, 17 Oct 2012 13:31:17 +0300
+Message-Id: <1350469879-16018-4-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1350469879-16018-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1350469879-16018-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -26,31 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- drivers/dma/dw_dmac.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/dma/dw_dmac.c |   15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 60b172a..7d2b438 100644
+index c27c125..60b172a 100644
 --- a/drivers/dma/dw_dmac.c
 +++ b/drivers/dma/dw_dmac.c
-@@ -1653,7 +1653,7 @@ static void dw_shutdown(struct platform_device *pdev)
- {
- 	struct dw_dma	*dw = platform_get_drvdata(pdev);
+@@ -456,9 +456,8 @@ static void dwc_scan_descriptors(struct dw_dma *dw, struct dw_dma_chan *dwc)
  
--	dw_dma_off(platform_get_drvdata(pdev));
-+	dw_dma_off(dw);
- 	clk_disable_unprepare(dw->clk);
+ static inline void dwc_dump_lli(struct dw_dma_chan *dwc, struct dw_lli *lli)
+ {
+-	dev_printk(KERN_CRIT, chan2dev(&dwc->chan),
+-			"  desc: s0x%x d0x%x l0x%x c0x%x:%x\n",
+-			lli->sar, lli->dar, lli->llp, lli->ctlhi, lli->ctllo);
++	dev_crit(chan2dev(&dwc->chan), "  desc: s0x%x d0x%x l0x%x c0x%x:%x\n",
++		 lli->sar, lli->dar, lli->llp, lli->ctlhi, lli->ctllo);
  }
  
-@@ -1662,7 +1662,7 @@ static int dw_suspend_noirq(struct device *dev)
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct dw_dma	*dw = platform_get_drvdata(pdev);
+ static void dwc_handle_error(struct dw_dma *dw, struct dw_dma_chan *dwc)
+@@ -492,10 +491,8 @@ static void dwc_handle_error(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ 	 * controller flagged an error instead of scribbling over
+ 	 * random memory locations.
+ 	 */
+-	dev_printk(KERN_CRIT, chan2dev(&dwc->chan),
+-			"Bad descriptor submitted for DMA!\n");
+-	dev_printk(KERN_CRIT, chan2dev(&dwc->chan),
+-			"  cookie: %d\n", bad_desc->txd.cookie);
++	dev_crit(chan2dev(&dwc->chan), "Bad descriptor submitted for DMA!\n");
++	dev_crit(chan2dev(&dwc->chan), "  cookie: %d\n", bad_desc->txd.cookie);
+ 	dwc_dump_lli(dwc, &bad_desc->lli);
+ 	list_for_each_entry(child, &bad_desc->tx_list, desc_node)
+ 		dwc_dump_lli(dwc, &child->lli);
+@@ -1625,8 +1622,8 @@ static int __devinit dw_probe(struct platform_device *pdev)
  
--	dw_dma_off(platform_get_drvdata(pdev));
-+	dw_dma_off(dw);
- 	clk_disable_unprepare(dw->clk);
+ 	dma_writel(dw, CFG, DW_CFG_DMA_EN);
  
- 	return 0;
+-	printk(KERN_INFO "%s: DesignWare DMA Controller, %d channels\n",
+-			dev_name(&pdev->dev), nr_channels);
++	pr_info("%s: DesignWare DMA Controller, %d channels\n",
++		dev_name(&pdev->dev), nr_channels);
+ 
+ 	dma_async_device_register(&dw->dma);
+ 
 -- 
 1.7.10.4
 
