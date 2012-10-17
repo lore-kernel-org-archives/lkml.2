@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab2JQHnk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 03:43:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:4672 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751854Ab2JQHni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 03:43:38 -0400
-X-IronPort-AV: E=Sophos;i="4.80,599,1344182400"; 
-   d="scan'208";a="6015397"
-Message-ID: <507E6167.6060506@cn.fujitsu.com>
-Date: Wed, 17 Oct 2012 15:42:31 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756271Ab2JQHob (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 03:44:31 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:50699 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756177Ab2JQHoa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 03:44:30 -0400
+X-Auth-Info: 2HXiH63AxNJzhV2VP7xCAbNfpzDhfYuBwKimfgwzFAM=
+From: Marek Vasut <marex@denx.de>
+To: Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH 1/2] backlight: lms283gf05: use devm_gpio_request_one
+Date: Wed, 17 Oct 2012 09:01:13 +0200
+User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.4; x86_64; ; )
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>
+References: <003801cdac2b$3c1012f0$b43038d0$%han@samsung.com>
+In-Reply-To: <003801cdac2b$3c1012f0$b43038d0$%han@samsung.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: jiang.liu@huawei.com, bhelgaas@google.com, lenb@kernel.org,
-        izumi.taku@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Update acpi_root_bridge_list in container hotplug
- path.
-References: <1350444308-27102-1-git-send-email-tangchen@cn.fujitsu.com> <CAE9FiQVFc9VVfWZpEfjPeGvo5pby3BQNzDei3VTXdoR048_SPg@mail.gmail.com> <507E60C2.6010104@cn.fujitsu.com>
-In-Reply-To: <507E60C2.6010104@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/17 15:43:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/17 15:43:17,
-	Serialize complete at 2012/10/17 15:43:17
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Message-Id: <201210170901.13149.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2012 03:39 PM, Tang Chen wrote:
-> On 10/17/2012 01:18 PM, Yinghai Lu wrote:
->>
->> no, we don't need that.
->>
->> after closely looking, it seems we can dump acpi_root_bridge.
->>
->> please check if attached patch could work with container path.
->
-> Hi Yinghai,
->
-> Your patch seems working well.
->
-> BTW, I actually found that the two lists, acpi_root_bridge and
-> acpi_pci_roots in drivers/acpi/pci_root.c were similar, except
-> your acpi_root_bridge included PNP0A08.
->
-> In the beginning, I thought you would use it in some other situations,
-> and now it is clear that it can be removed.
-> Thanks. :)
->
-> And also, I have another 2 questions, maybe you can help me.
-> 1) Do we need to put PNP0A08 into acpi_pci_roots ?
-> 2) In container_notify_cb(), when it got a ACPI_NOTIFY_EJECT_REQUEST
-> event, it doesn't do the hot-remove things.
-> I use your sci emulator patch to test it. I did the following thing:
-> echo echo "\_SB_.LSB1" > /sys/kernel/debug/acpi/sci_notify
-	==> echo "\_SB_.LSB1 3" > /sys/kernel/debug/acpi/sci_notify
+Dear Jingoo Han,
 
-> where \_SB_.LSB1 is a container, it just did nothing.
-> Do we need to support this operation ?
->
-> Thanks. :)
->
->>
->> Thanks
->>
->> Yinghai
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at http://www.tux.org/lkml/
->
+> By using devm_gpio_request_one it is possible to set the direction
+> and initial value in one shot. Thus, using devm_gpio_request_one
+> can make the code simpler.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> Cc: Richard Purdie <rpurdie@rpsys.net>
+> Cc: Marek Vasut <marek.vasut@gmail.com>
 
+Acked-by: Marek Vasut <marex@denx.de>
+
+> ---
+>  drivers/video/backlight/lms283gf05.c |   10 +++-------
+>  1 files changed, 3 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/video/backlight/lms283gf05.c
+> b/drivers/video/backlight/lms283gf05.c index ea43f22..c452210 100644
+> --- a/drivers/video/backlight/lms283gf05.c
+> +++ b/drivers/video/backlight/lms283gf05.c
+> @@ -158,13 +158,9 @@ static int __devinit lms283gf05_probe(struct
+> spi_device *spi) int ret = 0;
+> 
+>  	if (pdata != NULL) {
+> -		ret = devm_gpio_request(&spi->dev, pdata->reset_gpio,
+> -					"LMS285GF05 RESET");
+> -		if (ret)
+> -			return ret;
+> -
+> -		ret = gpio_direction_output(pdata->reset_gpio,
+> -						!pdata->reset_inverted);
+> +		ret = devm_gpio_request_one(&spi->dev, pdata->reset_gpio,
+> +				GPIOF_DIR_OUT | !pdata->reset_inverted,
+> +				"LMS285GF05 RESET");
+>  		if (ret)
+>  			return ret;
+>  	}
+
+Best regards,
+Marek Vasut
