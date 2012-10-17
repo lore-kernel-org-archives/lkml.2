@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757547Ab2JQRUI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 13:20:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46048 "EHLO
+	id S932407Ab2JQRUR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 13:20:17 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46077 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757504Ab2JQRUD (ORCPT
+	with ESMTP id S1757504Ab2JQRUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 13:20:03 -0400
+	Wed, 17 Oct 2012 13:20:09 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Avi Kivity <avi@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 02/11] perf: Require exclude_guest to use PEBS - kernel side enforcement
-Date: Wed, 17 Oct 2012 14:19:38 -0300
-Message-Id: <1350494387-10987-3-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 11/11] perf hists browser: Add back callchain folding symbol
+Date: Wed, 17 Oct 2012 14:19:47 -0300
+Message-Id: <1350494387-10987-12-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1350494387-10987-1-git-send-email-acme@infradead.org>
 References: <1350494387-10987-1-git-send-email-acme@infradead.org>
@@ -27,54 +29,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Intel PEBS in VT-x context uses the DS address as a guest linear
-address, even though its programmed by the host as a host linear
-address. This either results in guest memory corruption and or the
-hardware faulting and 'crashing' the virtual machine.  Therefore we have
-to disable PEBS on VT-x enter and re-enable on VT-x exit, enforcing a
-strict exclude_guest.
+The commit 5395a04841fc ("perf hists: Separate overhead and baseline
+columns") makes the "Overhead" column no more the first one, this
+caused the test that checks if it is time to show if a histogram
+entry has callchains never hits.
 
-This patch enforces exclude_guest kernel side.
+Fix it by checking if the 'i' variable is equal to PERF_HPP__OVERHEAD
+instead of 0.
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Avi Kivity <avi@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Robert Richter <robert.richter@amd.com>
-Link: http://lkml.kernel.org/r/1347569955-54626-3-git-send-email-dsahern@gmail.com
-Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-w3lcbx0fx1fnh3l2cbq40q2e@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/x86/kernel/cpu/perf_event.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ tools/perf/ui/browsers/hists.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 915b876..3373f84 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -338,6 +338,9 @@ int x86_setup_perfctr(struct perf_event *event)
- 		/* BTS is currently only allowed for user-mode. */
- 		if (!attr->exclude_kernel)
- 			return -EOPNOTSUPP;
-+
-+		if (!attr->exclude_guest)
-+			return -EOPNOTSUPP;
- 	}
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index fe4430a..ef2f93c 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -647,7 +647,7 @@ static int hist_browser__show_entry(struct hist_browser *browser,
  
- 	hwc->config |= config;
-@@ -380,6 +383,9 @@ int x86_pmu_hw_config(struct perf_event *event)
- 	if (event->attr.precise_ip) {
- 		int precise = 0;
+ 				ui_browser__set_percent_color(&browser->b, percent, current_entry);
  
-+		if (!event->attr.exclude_guest)
-+			return -EOPNOTSUPP;
-+
- 		/* Support for constant skid */
- 		if (x86_pmu.pebs_active && !x86_pmu.pebs_broken) {
- 			precise++;
+-				if (i == 0 && symbol_conf.use_callchain) {
++				if (i == PERF_HPP__OVERHEAD && symbol_conf.use_callchain) {
+ 					slsmg_printf("%c ", folded_sign);
+ 					width -= 2;
+ 				}
 -- 
 1.7.1
 
