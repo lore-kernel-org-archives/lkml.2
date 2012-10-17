@@ -1,86 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757153Ab2JQODJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 10:03:09 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:16749 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757066Ab2JQODH (ORCPT
+	id S932285Ab2JQODv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 10:03:51 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:18224 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932228Ab2JQODt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 10:03:07 -0400
-Message-ID: <1350482142.28185.0.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 1/2] ACPI: Fix stale pointer access to flags.lockable
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
-        rjw@sisk.pl, liuj97@gmail.com
-Date: Wed, 17 Oct 2012 07:55:42 -0600
-In-Reply-To: <507E090C.2070607@jp.fujitsu.com>
-References: <1350318870-5700-1-git-send-email-toshi.kani@hp.com>
-	 <507E090C.2070607@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Oct 2012 10:03:49 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        lenb@kernel.org, linux-acpi@vger.kernel.org, hpa@zytor.com,
+        x86@kernel.org
+Subject: [RFC] ACPI S3 and Xen (suprisingly small\!).
+Date: Wed, 17 Oct 2012 09:49:42 -0400
+Message-Id: <1350481786-4969-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.6
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-17 at 10:25 +0900, Yasuaki Ishimatsu wrote:
-> 2012/10/16 1:34, Toshi Kani wrote:
-> > During hot-remove, acpi_bus_hot_remove_device() calls ACPI _LCK
-> > method when device->flags.lockable is set. However, this device
-> > pointer is stale since the target acpi_device object has been
-> > already kfree'd by acpi_bus_trim().
-> > 
-> > The flags.lockable indicates whether or not this ACPI object
-> > implements _LCK method. Fix the stable pointer access by replacing
-> > it with acpi_get_handle() to check if _LCK is implemented.
-> > 
-> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> 
-> Looks good to me.
-> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>From Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> # This line is ignored.
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [RFC] ACPI S3 and Xen (surprisingly small\!).
+In-Reply-To: 
 
-Thanks Yasuaki for reviewing!
--Toshi
+Hey,
 
+Way back at the LinuxPlumbers 2012 I chatted with Len about the issue
+with Xen and Linux not working very well when suspending. We did a bit
+of brainstorming and armed with these ideas I started looking at this.
 
-> > ---
-> >   drivers/acpi/scan.c | 6 +++++-
-> >   1 file changed, 5 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> > index 1fcb867..ed87f43 100644
-> > --- a/drivers/acpi/scan.c
-> > +++ b/drivers/acpi/scan.c
-> > @@ -97,6 +97,7 @@ void acpi_bus_hot_remove_device(void *context)
-> >   	struct acpi_eject_event *ej_event = (struct acpi_eject_event *) context;
-> >   	struct acpi_device *device;
-> >   	acpi_handle handle = ej_event->handle;
-> > +	acpi_handle temp;
-> >   	struct acpi_object_list arg_list;
-> >   	union acpi_object arg;
-> >   	acpi_status status = AE_OK;
-> > @@ -117,13 +118,16 @@ void acpi_bus_hot_remove_device(void *context)
-> >   		goto err_out;
-> >   	}
-> >   
-> > +	/* device has been freed */
-> > +	device = NULL;
-> > +
-> >   	/* power off device */
-> >   	status = acpi_evaluate_object(handle, "_PS3", NULL, NULL);
-> >   	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND)
-> >   		printk(KERN_WARNING PREFIX
-> >   				"Power-off device failed\n");
-> >   
-> > -	if (device->flags.lockable) {
-> > +	if (ACPI_SUCCESS(acpi_get_handle(handle, "_LCK", &temp))) {
-> >   		arg_list.count = 1;
-> >   		arg_list.pointer = &arg;
-> >   		arg.type = ACPI_TYPE_INTEGER;
-> > 
-> 
-> 
+The end result is this is a nice set of patches where there is only
+_one_ change in the x86 code (and it is just more of dealing with
+error case) - and the rest are all done in Xen side.
 
+The change is to check whether there is a TSS GDT descriptor before
+trying to set it. On 64-bit Xen there is no TSS and we ignore any
+calls to set such field.
 
+The bulk of the Xen code is filling out some of the pvops calls
+(some of them are already in v3.7-rc1), and one to "prep" the cr3
+value so that the hypervisor is fine with it.
+
+Note: These are the other patches that went in 3.7-rc1:
+xen/bootup: allow {read|write}_cr8 pvops call [https://lkml.org/lkml/2012/10/10/339]
+xen/bootup: allow read_tscp call for Xen PV guests. [https://lkml.org/lkml/2012/10/10/340]
+
+Anyhow, with these patches ACPI S3 suspend/resume of Linux works great!
+
+ arch/x86/power/cpu.c     |    7 +++++--
+ arch/x86/xen/enlighten.c |   24 ++++++++++++++++++++++--
+ drivers/xen/acpi.c       |   25 +++++++++++++++++++++++++
+ 3 files changed, 52 insertions(+), 4 deletions(-)
