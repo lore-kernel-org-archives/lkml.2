@@ -1,54 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab2JQMhZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 08:37:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44626 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753285Ab2JQMhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 08:37:24 -0400
-Date: Wed, 17 Oct 2012 14:37:15 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-Cc: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] remove untouched code in kfifo_in
-In-Reply-To: <1350463837-30244-1-git-send-email-weiyang@linux.vnet.ibm.com>
-Message-ID: <alpine.LNX.2.00.1210171434360.17129@pobox.suse.cz>
-References: <1350463837-30244-1-git-send-email-weiyang@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756843Ab2JQMhk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 08:37:40 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:37786 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755587Ab2JQMhi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 08:37:38 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
+        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
+        rmallon@gmail.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RFC 00/15 v5] gpio: Add block GPIO
+Date: Wed, 17 Oct 2012 14:31:32 +0200
+Message-Id: <1350477107-26512-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Oct 2012, Wei Yang wrote:
+This set of patches adds:
 
-> In kfifo_in marco, one piece of code is arounded by if(0).
-> 
-> This patch just remove this code.
-> ---
->  include/linux/kfifo.h |    4 ----
->  1 files changed, 0 insertions(+), 4 deletions(-)
-> 
-> diff --git a/include/linux/kfifo.h b/include/linux/kfifo.h
-> index 10308c6..e7015bb 100644
-> --- a/include/linux/kfifo.h
-> +++ b/include/linux/kfifo.h
-> @@ -512,10 +512,6 @@ __kfifo_uint_must_check_helper( \
->  	unsigned long __n = (n); \
->  	const size_t __recsize = sizeof(*__tmp->rectype); \
->  	struct __kfifo *__kfifo = &__tmp->kfifo; \
-> -	if (0) { \
-> -		typeof(__tmp->ptr_const) __dummy __attribute__ ((unused)); \
-> -		__dummy = (typeof(__buf))NULL; \
-> -	} \
->  	(__recsize) ?\
->  	__kfifo_in_r(__kfifo, __buf, __n, __recsize) : \
->  	__kfifo_in(__kfifo, __buf, __n); \
+* Block GPIO API to gpiolib
+* Sysfs support for GPIO API, to provide userland access
+* Devicetree support to instantiate GPIO blocks via DT
+* Example implementations in several gpio drivers since they need
+  special accessor functions for block wise GPIO access
+* Fix for race condition in gpiolib on device creation
 
-Frankly, I'd first like to understand what was the rationale for adding it 
-at the first place. Adding Stefani and lkml to CC.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+--
 
--- 
-Jiri Kosina
-SUSE Labs
+Changes since v4:
+* Documented word width
+* Bugfix: export/unexport on register/unregister
+* Using default dev_attrs for gpio_block_class
+* Fix gpiolib: race condition on device creation
+* Added driver support for ucb14500, vt8500, xilinx
+
+Changes since v3:
+* Added driver support for pca953x, em, pl061, max732x, pcf857x
+* Coding style improvements
+* Fixed krealloc memory leak in error case
+* sysfs: values in hex
+* Register blocks in a list
+* Narrowing lock scope
+* Use S_IWUSR and S_IRUGO instead of direct octal values
+* Use for_each_set_bit()
+* Change from unsigned to unsigned long for masks and values
+
+Changes since v2:
+* Added sysfs support
+* Added devicetree support
+* Added support for lpc32xx, generic
+* Added functions for GPIO block registration
+* Added more error checking
+* Bit remapping bugfix
+
+Changes since v1:
+* API change to 32/64 bit word, bit masks
+
+Thanks to Ryan Mallon, Linus Walleij, Stijn Devriendt, Jean-Christophe
+Plagniol-Villard, Mark Brown and Greg Kroah-Hartman for reviewing!
+
+Roland Stigge (15):
+ gpio: Add a block GPIO API to gpiolib
+ gpio: Add sysfs support to block GPIO API
+ gpiolib: Fix default attributes for class
+ gpio: Add device tree support to block GPIO API
+ gpio-max730x: Add block GPIO API
+ gpio-lpc32xx: Add block GPIO API
+ gpio-generic: Add block GPIO API
+ gpio-pca953x: Add block GPIO API
+ gpio-em: Add block GPIO API
+ gpio-pl061: Add block GPIO API
+ gpio-max732x: Add block GPIO API
+ gpio-pcf857x: Add block GPIO API
+ gpio-xilinx: Add block GPIO API
+ gpio-vt8500: Add block GPIO API
+ gpio-ucb1400: Add block GPIO API
+
+ Documentation/ABI/testing/sysfs-gpio                  |    6 
+ Documentation/devicetree/bindings/gpio/gpio-block.txt |   36 +
+ Documentation/gpio.txt                                |   47 +
+ drivers/gpio/Makefile                                 |    1 
+ drivers/gpio/gpio-em.c                                |   23 
+ drivers/gpio/gpio-generic.c                           |   56 +
+ drivers/gpio/gpio-lpc32xx.c                           |   82 ++
+ drivers/gpio/gpio-max730x.c                           |   61 ++
+ drivers/gpio/gpio-max732x.c                           |   59 ++
+ drivers/gpio/gpio-pca953x.c                           |   64 ++
+ drivers/gpio/gpio-pcf857x.c                           |   24 
+ drivers/gpio/gpio-pl061.c                             |   17 
+ drivers/gpio/gpio-ucb1400.c                           |   23 
+ drivers/gpio/gpio-vt8500.c                            |   24 
+ drivers/gpio/gpio-xilinx.c                            |   44 +
+ drivers/gpio/gpioblock-of.c                           |   84 ++
+ drivers/gpio/gpiolib.c                                |  510 ++++++++++++++++--
+ include/asm-generic/gpio.h                            |   26 
+ include/linux/gpio.h                                  |   87 +++
+ 19 files changed, 1228 insertions(+), 46 deletions(-)
