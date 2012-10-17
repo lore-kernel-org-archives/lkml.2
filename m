@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab2JQOYD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 10:24:03 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:64753 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756274Ab2JQOYB (ORCPT
+	id S1757211Ab2JQOYy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 10:24:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43305 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756235Ab2JQOYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 10:24:01 -0400
+	Wed, 17 Oct 2012 10:24:53 -0400
+Message-ID: <507EBF6C.90506@kernel.dk>
+Date: Wed, 17 Oct 2012 16:23:40 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <1350387889-15324-4-git-send-email-hongbo.zhang@linaro.com>
-References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
-	<1350387889-15324-4-git-send-email-hongbo.zhang@linaro.com>
-Date: Wed, 17 Oct 2012 19:54:00 +0530
-Message-ID: <CAKohponhk=Hz1XTVOoNZWnaSQjguzY6djVPaQou9SX3f0bieyw@mail.gmail.com>
-Subject: Re: [PATCH 3/5] Thermal: fix empty list checking method.
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "hongbo.zhang" <hongbo.zhang@linaro.org>
-Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        kernel@igloocommunity.org, linaro-kernel@lists.linaro.org,
-        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Ben Hutchings <ben@decadent.org.uk>, Sasha Levin <levinsasha928@gmail.com>,
+        Jan Kara <jack@suse.cz>, Tejun Heo <tj@kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: blk: NULL ptr deref in blk_dequeue_request()
+References: <505E2108.2060108@gmail.com>  <CA+1xoqc1Bc1rPgH+9Xs9-BV7qp3N7mDpNLj1mPwZHdF=H4mHTg@mail.gmail.com>  <20121008172207.GB14767@quack.suse.cz>  <alpine.LNX.2.00.1210082340501.19980@pobox.suse.cz>  <507424F7.60801@gmail.com> <50742600.10606@gmail.com>  <1349884374.6336.67.camel@deadeye.wl.decadent.org.uk>  <CA+1xoqcGN1xYP5-N17eZQ=F_JTG-8gr43DAxREa-Wf+n8=P7Og@mail.gmail.com> <1350437371.26833.71.camel@deadeye.wl.decadent.org.uk> <alpine.LNX.2.00.1210171610220.17129@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1210171610220.17129@pobox.suse.cz>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 October 2012 17:14, hongbo.zhang <hongbo.zhang@linaro.org> wrote:
-> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
->
-> Is is not reliable to check the list entry pointer after
-> list_for_each_entry loop, list_empty should be used instead.
->
-> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
-> ---
->  drivers/thermal/cpu_cooling.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-> index b6b4c2a..d196230 100644
-> --- a/drivers/thermal/cpu_cooling.c
-> +++ b/drivers/thermal/cpu_cooling.c
-> @@ -247,12 +247,13 @@ static int cpufreq_get_max_state(struct thermal_cooling_device *cdev,
->         struct cpufreq_frequency_table *table;
->
->         mutex_lock(&cooling_cpufreq_lock);
-> +       if (list_empty(&cooling_cpufreq_list))
-> +               goto return_get_max_state;
-> +
->         list_for_each_entry(cpufreq_device, &cooling_cpufreq_list, node) {
->                 if (cpufreq_device && cpufreq_device->cool_dev == cdev)
->                         break;
->         }
-> -       if (cpufreq_device == NULL)
-> -               goto return_get_max_state;
+On 2012-10-17 16:11, Jiri Kosina wrote:
+> On Wed, 17 Oct 2012, Ben Hutchings wrote:
+> 
+>>>> 1. redo_fd_request() races with tear-down of the disks, but because
+>>>> set_next_request() checks disk->queue before doing anything this was
+>>>> usually harmless.  Now that do_floppy_init() doesn't clear disk->queue,
+>>>> the race condition is much easier to hit.  This may fix that problem in
+>>>> do_floppy_init(), though there appear to be worse bugs in tear-down
+>>>> order in floppy_module_exit():
+>> [...]
+>>>> 2. I made a big mistake in using the existing GENHD_FL_UP flag, as it is
+>>>> cleared by del_gendisk().  Incremental patch below, but it should be
+>>>> squashed into the previous patch if that branch is still rebase-able.
+>> [...]
+>>> I'm now seeing these instead:
+>> [...]
+>>
+>> Sorry, I'm not going to spend more time in the quagmire of the floppy
+>> driver.  Whoever has this commit in their tree, please revert or drop it
+>> as appropriate.
+> 
+> As far as I can tell, Jens has pulled it from me, but it hasn't made it 
+> into Linus' tree as of today.
+> 
+> I will do it in my tree and send a new pull request to Jens.
 
-I am surprised, why is it written like this in the first place :)
+I did not add the patch from Ben, as it was reported as not working. My
+driver pull is late this time due to travel, but it'll go out start of
+next week. So if you have pending floppy updates that are tested at that
+time, then please do send them my way.
 
-Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+-- 
+Jens Axboe
+
