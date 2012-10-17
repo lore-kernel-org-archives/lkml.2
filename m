@@ -1,69 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932448Ab2JQRVq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 13:21:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46089 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757570Ab2JQRUO (ORCPT
+	id S1757564Ab2JQRUM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 13:20:12 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:60200 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757549Ab2JQRUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 13:20:14 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Irina Tirdea <irina.tirdea@intel.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/11] perf tools: Remove warnings on JIT samples for srcline sort key
-Date: Wed, 17 Oct 2012 14:19:40 -0300
-Message-Id: <1350494387-10987-5-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1350494387-10987-1-git-send-email-acme@infradead.org>
-References: <1350494387-10987-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 17 Oct 2012 13:20:09 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3/3] pinctrl/u300: use managed resources
+Date: Wed, 17 Oct 2012 19:19:51 +0200
+Message-ID: <1350494391-16093-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-When using the srcline sort key with perf report, I see many lines of
-warning related to JIT samples like below:
+This converts the U300 pin controller to use managed resources
+(devm_*) for it's memory region.
 
-  addr2line: '/tmp/perf-1397.map': No such file
-
-Since it's not a ELF binary and doesn't provide such information, just
-use the raw ip address.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Irina Tirdea <irina.tirdea@intel.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1350272383-7016-2-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- tools/perf/util/sort.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/pinctrl/pinctrl-u300.c | 32 ++++----------------------------
+ 1 file changed, 4 insertions(+), 28 deletions(-)
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index dd68f11..cfd1c0f 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -263,6 +263,9 @@ static int hist_entry__srcline_snprintf(struct hist_entry *self, char *bf,
- 	if (!self->ms.map)
- 		goto out_ip;
+diff --git a/drivers/pinctrl/pinctrl-u300.c b/drivers/pinctrl/pinctrl-u300.c
+index 309f5b9..2e9825e 100644
+--- a/drivers/pinctrl/pinctrl-u300.c
++++ b/drivers/pinctrl/pinctrl-u300.c
+@@ -663,8 +663,6 @@ static const struct pinctrl_pin_desc u300_pads[] = {
+ struct u300_pmx {
+ 	struct device *dev;
+ 	struct pinctrl_dev *pctl;
+-	u32 phybase;
+-	u32 physize;
+ 	void __iomem *virtbase;
+ };
  
-+	if (!strncmp(self->ms.map->dso->long_name, "/tmp/perf-", 10))
-+		goto out_ip;
-+
- 	snprintf(cmd, sizeof(cmd), "addr2line -e %s %016" PRIx64,
- 		 self->ms.map->dso->long_name, self->ip);
- 	fp = popen(cmd, "r");
+@@ -1110,7 +1108,6 @@ static int __devinit u300_pmx_probe(struct platform_device *pdev)
+ 	struct u300_pmx *upmx;
+ 	struct resource *res;
+ 	struct gpio_chip *gpio_chip = dev_get_platdata(&pdev->dev);
+-	int ret;
+ 	int i;
+ 
+ 	/* Create state holders etc for this driver */
+@@ -1123,26 +1120,15 @@ static int __devinit u300_pmx_probe(struct platform_device *pdev)
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res)
+ 		return -ENOENT;
+-	upmx->phybase = res->start;
+-	upmx->physize = resource_size(res);
+-
+-	if (request_mem_region(upmx->phybase, upmx->physize,
+-			       DRIVER_NAME) == NULL) {
+-		ret = -ENOMEM;
+-		goto out_no_memregion;
+-	}
+ 
+-	upmx->virtbase = ioremap(upmx->phybase, upmx->physize);
+-	if (!upmx->virtbase) {
+-		ret = -ENOMEM;
+-		goto out_no_remap;
+-	}
++	upmx->virtbase = devm_request_and_ioremap(&pdev->dev, res);
++	if (!upmx->virtbase)
++		return -ENOMEM;
+ 
+ 	upmx->pctl = pinctrl_register(&u300_pmx_desc, &pdev->dev, upmx);
+ 	if (!upmx->pctl) {
+ 		dev_err(&pdev->dev, "could not register U300 pinmux driver\n");
+-		ret = -EINVAL;
+-		goto out_no_pmx;
++		return -EINVAL;
+ 	}
+ 
+ 	/* We will handle a range of GPIO pins */
+@@ -1156,14 +1142,6 @@ static int __devinit u300_pmx_probe(struct platform_device *pdev)
+ 	dev_info(&pdev->dev, "initialized U300 pin control driver\n");
+ 
+ 	return 0;
+-
+-out_no_pmx:
+-	iounmap(upmx->virtbase);
+-out_no_remap:
+-	platform_set_drvdata(pdev, NULL);
+-out_no_memregion:
+-	release_mem_region(upmx->phybase, upmx->physize);
+-	return ret;
+ }
+ 
+ static int __devexit u300_pmx_remove(struct platform_device *pdev)
+@@ -1171,8 +1149,6 @@ static int __devexit u300_pmx_remove(struct platform_device *pdev)
+ 	struct u300_pmx *upmx = platform_get_drvdata(pdev);
+ 
+ 	pinctrl_unregister(upmx->pctl);
+-	iounmap(upmx->virtbase);
+-	release_mem_region(upmx->phybase, upmx->physize);
+ 	platform_set_drvdata(pdev, NULL);
+ 
+ 	return 0;
 -- 
-1.7.1
+1.7.11.3
 
