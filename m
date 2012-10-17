@@ -1,63 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757167Ab2JQOFY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 10:05:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47641 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757049Ab2JQOFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 10:05:22 -0400
-Date: Wed, 17 Oct 2012 16:05:13 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Richard Yang <weiyang@linux.vnet.ibm.com>
-Cc: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] remove untouched code in kfifo_in
-In-Reply-To: <20121017140136.GA7913@richard.(null)>
-Message-ID: <alpine.LNX.2.00.1210171605030.17129@pobox.suse.cz>
-References: <1350463837-30244-1-git-send-email-weiyang@linux.vnet.ibm.com> <alpine.LNX.2.00.1210171434360.17129@pobox.suse.cz> <20121017140136.GA7913@richard.(null)>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757184Ab2JQOGM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 10:06:12 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:40797 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756988Ab2JQOGI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 10:06:08 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20121017131422.GE11394@arwen.pp.htv.fi>
+References: <1350469879-16018-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1350469879-16018-5-git-send-email-andriy.shevchenko@linux.intel.com>
+	<20121017131422.GE11394@arwen.pp.htv.fi>
+Date: Wed, 17 Oct 2012 19:36:08 +0530
+X-Google-Sender-Auth: U-ug5voTsPZmu6-IGD8joG6v0C0
+Message-ID: <CAOh2x==So5MRa7B=pKV7sw90OLUB8UFF00GVz0bg8J2-yOiwWQ@mail.gmail.com>
+Subject: Re: [PATCHv2 4/4] dw_dmac: don't call platform_get_drvdata twice
+From: viresh kumar <viresh.kumar@linaro.org>
+To: balbi@ti.com
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Oct 2012, Richard Yang wrote:
+On Wed, Oct 17, 2012 at 6:44 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Wed, Oct 17, 2012 at 01:31:18PM +0300, Andy Shevchenko wrote:
+>
+> I would suggest adding a commit log, but if maintainer is fine without,
+> I'm fine too :-p
 
-> >> This patch just remove this code.
-> >> ---
-> >>  include/linux/kfifo.h |    4 ----
-> >>  1 files changed, 0 insertions(+), 4 deletions(-)
-> >> 
-> >> diff --git a/include/linux/kfifo.h b/include/linux/kfifo.h
-> >> index 10308c6..e7015bb 100644
-> >> --- a/include/linux/kfifo.h
-> >> +++ b/include/linux/kfifo.h
-> >> @@ -512,10 +512,6 @@ __kfifo_uint_must_check_helper( \
-> >>  	unsigned long __n = (n); \
-> >>  	const size_t __recsize = sizeof(*__tmp->rectype); \
-> >>  	struct __kfifo *__kfifo = &__tmp->kfifo; \
-> >> -	if (0) { \
-> >> -		typeof(__tmp->ptr_const) __dummy __attribute__ ((unused)); \
-> >> -		__dummy = (typeof(__buf))NULL; \
-> >> -	} \
-> >>  	(__recsize) ?\
-> >>  	__kfifo_in_r(__kfifo, __buf, __n, __recsize) : \
-> >>  	__kfifo_in(__kfifo, __buf, __n); \
-> >
-> >Frankly, I'd first like to understand what was the rationale for adding it 
-> >at the first place. Adding Stefani and lkml to CC.
-> 
-> Agree.
-> 
-> BTW, by git blame, I just see commit 2e956fb3 which is checked in by Stefani. 
-> While looking in the diff, the kfifo_in() is already there. Looks like this
-> commit move the definition from one file to another file. 
-> 
-> So I am not sure the if(0) code is added by Stefani. Any other method to trace
-> the ealier history?
+Should be there. But i am bored of giving this review comment now :)
 
-git blame -- include/linux/kfifo-new.h 2e956fb3~1
-
--- 
-Jiri Kosina
-SUSE Labs
+--
+viresh
