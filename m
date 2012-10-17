@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab2JQQ6N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 12:58:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52815 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756469Ab2JQQ6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 12:58:11 -0400
-Date: Wed, 17 Oct 2012 18:59:02 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] brw_mutex: big read-write mutex
-Message-ID: <20121017165902.GB9872@redhat.com>
-References: <20121015190958.GA4799@redhat.com> <20121015191018.GA4816@redhat.com> <CA+55aFwV-WOUx8MSr145f+HSrtmZ=nXHq0VLhtPyH=FNBFwmQg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwV-WOUx8MSr145f+HSrtmZ=nXHq0VLhtPyH=FNBFwmQg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757496Ab2JQQ6h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 12:58:37 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:60052 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756469Ab2JQQ6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 12:58:34 -0400
+Message-ID: <1350493112.3072.49.camel@joe-AO722>
+Subject: Re: [PATCH 5/5] Thermal: Add ST-Ericsson db8500 thermal dirver.
+From: Joe Perches <joe@perches.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "hongbo.zhang" <hongbo.zhang@linaro.org>, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
+        linaro-kernel@lists.linaro.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
+Date: Wed, 17 Oct 2012 09:58:32 -0700
+In-Reply-To: <CAKohpo=Vfq=z8NK6w4_QpwwLniYiwcfGfzWZsoG_zBPYPXrcUw@mail.gmail.com>
+References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
+	 <1350387889-15324-6-git-send-email-hongbo.zhang@linaro.com>
+	 <CAKohpo=Vfq=z8NK6w4_QpwwLniYiwcfGfzWZsoG_zBPYPXrcUw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16, Linus Torvalds wrote:
->
-> On Mon, Oct 15, 2012 at 12:10 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > This patch adds the new sleeping lock, brw_mutex. Unlike rw_semaphore
-> > it allows multiple writers too, just "read" and "write" are mutually
-> > exclusive.
->
-> So those semantics just don't sound sane. It's also not what any kind
-> of normal "rw" lock ever does.
+On Wed, 2012-10-17 at 20:53 +0530, Viresh Kumar wrote:
+> On 16 October 2012 17:14, hongbo.zhang <hongbo.zhang@linaro.org> wrote:
+[]
+> > diff --git a/drivers/thermal/db8500_cpufreq_cooling.c b/drivers/thermal/db8500_cpufreq_cooling.c
+[]
+> > +#include <linux/slab.h>
+> > +#include <linux/module.h>
+> > +#include <linux/platform_device.h>
+> > +#include <linux/cpufreq.h>
+> > +#include <linux/cpu_cooling.h>
+> > +#include <linux/err.h>
+> 
+> should be in alphabetical order
 
-Yes, this is not usual.
+There's no agreed kernel convention here.
+Some prefer christmas tree (shortest to longest length)
 
-And initially I made brw_sem which allows only 1 writer, but then
-I changed this patch.
-
-> So can you explain why these particular insane semantics are useful,
-> and what for?
-
-To allow multiple uprobe_register/unregister at the same time. Mostly
-to not add the "regression", currently this is possible.
-
-It is not that I think this is terribly important, but still. And
-personally I think that "multiple writers" is not necessarily insane
-in general. Suppose you have the complex object/subsystem, the readers
-can use a single brw_mutex to access it "lockless", start_read() is
-very cheap.
-
-But start_write() is slow. Multiple writes can use the fine-grained
-inside the start_write/end_write section and do not block each other.
-
-Oleg.
 
