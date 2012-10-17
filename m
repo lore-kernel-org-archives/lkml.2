@@ -1,77 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754459Ab2JQI3F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 04:29:05 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64778 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751878Ab2JQI3D (ORCPT
+	id S1756258Ab2JQI3V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 04:29:21 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:6361 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754591Ab2JQI3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 04:29:03 -0400
-X-AuditID: 9c930179-b7ca6ae000000e33-03-507e6c4b3a90
-From: Hyeoncheol Lee <hyc.lee@gmail.com>
-To: acme@ghostprotocols.net
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: [PATCH] perf probe: convert_name_to_addr() allocated the wrong size buffers for names
-Date: Wed, 17 Oct 2012 17:28:16 +0900
-Message-Id: <1350462496-20035-1-git-send-email-hyc.lee@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 17 Oct 2012 04:29:15 -0400
+Message-ID: <507E6C4B.6000704@huawei.com>
+Date: Wed, 17 Oct 2012 16:28:59 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <rjw@sisk.pl>, <oleg@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH 1/7] cgroup: cgroup_subsys->fork() should be called after
+ the task is added to css_set
+References: <1350426526-14254-1-git-send-email-tj@kernel.org> <1350426526-14254-2-git-send-email-tj@kernel.org>
+In-Reply-To: <1350426526-14254-2-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function allocated wrong size buffers for names
+On 2012/10/17 6:28, Tejun Heo wrote:
+> cgroup core has a bug which violates a basic rule about event
+> notifications - when a new entity needs to be added, you add that to
+> the notification list first and then make the new entity conform to
+> the current state.  If done in the reverse order, an event happening
+> inbetween will be lost.
+> 
+> cgroup_subsys->fork() is invoked way before the new task is added to
+> the css_set.  Currently, cgroup_freezer is the only user of ->fork()
+> and uses it to make new tasks conform to the current state of the
+> freezer.  If FROZEN state is requested while fork is in progress
+> between cgroup_fork_callbacks() and cgroup_post_fork(), the child
+> could escape freezing - the cgroup isn't frozen when ->fork() is
+> called and the freezer couldn't see the new task on the css_set.
+> 
+> This patch moves cgroup_subsys->fork() invocation to
+> cgroup_post_fork() after the new task is added to the css_set.
+> cgroup_fork_callbacks() is removed.
+> 
+> Because now a task may be migrated during cgroup_subsys->fork(),
+> freezer_fork() is updated so that it adheres to the usual RCU locking
+> and the rather pointless comment on why locking can be different there
+> is removed (if it doesn't make anything simpler, why even bother?).
+> 
 
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Signed-off-by: Hyeoncheol Lee <hyc.lee@gmail.com>
----
- tools/perf/util/probe-event.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+I don't think rcu read section is sufficient. It guarantees the data you're
+accessing is valid, but the data can be new or can be old.
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 49a256e..5cd7c42 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -2273,6 +2273,8 @@ int show_available_funcs(const char *target, struct strfilter *_filter,
- 	return available_user_funcs(target);
- }
- 
-+#define MAX_ADDRNAME_LEN  (3 + sizeof(unsigned long long) * 2)
-+
- /*
-  * uprobe_events only accepts address:
-  * Convert function and any offset to address
-@@ -2332,7 +2334,7 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
- 	if (!pev->group) {
- 		char *ptr1, *ptr2, *exec_copy;
- 
--		pev->group = zalloc(sizeof(char *) * 64);
-+		pev->group = zalloc(sizeof(char) * 64);
- 		exec_copy = strdup(exec);
- 		if (!exec_copy) {
- 			ret = -ENOMEM;
-@@ -2352,14 +2354,15 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
- 		free(exec_copy);
- 	}
- 	free(pp->function);
--	pp->function = zalloc(sizeof(char *) * MAX_PROBE_ARGS);
-+	pp->function = zalloc(sizeof(char) * MAX_ADDRNAME_LEN);
- 	if (!pp->function) {
- 		ret = -ENOMEM;
- 		pr_warning("Failed to allocate memory by zalloc.\n");
- 		goto out;
- 	}
--	e_snprintf(pp->function, MAX_PROBE_ARGS, "0x%llx", vaddr);
--	ret = 0;
-+	ret = e_snprintf(pp->function, MAX_ADDRNAME_LEN, "0x%llx", vaddr);
-+	if (ret > 0)
-+		ret = 0;
- 
- out:
- 	if (map) {
--- 
-1.7.10.4
+So a case below is possible:
+
+in freezer_fork():
+rcu_read_lock();
+freezer = task_freezer(task);
+                                  move task from freezer to freezer2
+                                  which is in FREEZING/FROZEN state
+freezer is in THAWED state,
+nothing to do.
+rcu_read_unlock();
+
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: stable@vger.kernel.org
+> ---
+>  include/linux/cgroup.h  |    1 -
+>  kernel/cgroup.c         |   62 ++++++++++++++++++++++------------------------
+>  kernel/cgroup_freezer.c |   13 +++-------
+>  kernel/fork.c           |    9 +------
+>  4 files changed, 35 insertions(+), 50 deletions(-)
+> 
+> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+> index f8a030c..4cd1d0f 100644
+> --- a/include/linux/cgroup.h
+> +++ b/include/linux/cgroup.h
+> @@ -34,7 +34,6 @@ extern int cgroup_lock_is_held(void);
+>  extern bool cgroup_lock_live_group(struct cgroup *cgrp);
+>  extern void cgroup_unlock(void);
+>  extern void cgroup_fork(struct task_struct *p);
+> -extern void cgroup_fork_callbacks(struct task_struct *p);
+>  extern void cgroup_post_fork(struct task_struct *p);
+>  extern void cgroup_exit(struct task_struct *p, int run_callbacks);
+>  extern int cgroupstats_build(struct cgroupstats *stats,
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 13774b3..b7a0171 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -4844,44 +4844,19 @@ void cgroup_fork(struct task_struct *child)
+>  }
+>  
+>  /**
+> - * cgroup_fork_callbacks - run fork callbacks
+> - * @child: the new task
+> - *
+> - * Called on a new task very soon before adding it to the
+> - * tasklist. No need to take any locks since no-one can
+> - * be operating on this task.
+> - */
+> -void cgroup_fork_callbacks(struct task_struct *child)
+> -{
+> -	if (need_forkexit_callback) {
+> -		int i;
+> -		for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
+> -			struct cgroup_subsys *ss = subsys[i];
+> -
+> -			/*
+> -			 * forkexit callbacks are only supported for
+> -			 * builtin subsystems.
+> -			 */
+> -			if (!ss || ss->module)
+> -				continue;
+> -
+> -			if (ss->fork)
+> -				ss->fork(child);
+> -		}
+> -	}
+> -}
+> -
+> -/**
+>   * cgroup_post_fork - called on a new task after adding it to the task list
+>   * @child: the task in question
+>   *
+> - * Adds the task to the list running through its css_set if necessary.
+> - * Has to be after the task is visible on the task list in case we race
+> - * with the first call to cgroup_iter_start() - to guarantee that the
+> - * new task ends up on its list.
+> + * Adds the task to the list running through its css_set if necessary and
+> + * call the subsystem fork() callbacks.  Has to be after the task is
+> + * visible on the task list in case we race with the first call to
+> + * cgroup_iter_start() - to guarantee that the new task ends up on its
+> + * list.
+>   */
+>  void cgroup_post_fork(struct task_struct *child)
+>  {
+> +	int i;
+> +
+>  	/*
+>  	 * use_task_css_set_links is set to 1 before we walk the tasklist
+>  	 * under the tasklist_lock and we read it here after we added the child
+> @@ -4910,7 +4885,30 @@ void cgroup_post_fork(struct task_struct *child)
+>  		}
+>  		write_unlock(&css_set_lock);
+>  	}
+> +
+> +	/*
+> +	 * Call ss->fork().  This must happen after @child is linked on
+> +	 * css_set; otherwise, @child might change state between ->fork()
+> +	 * and addition to css_set.
+> +	 */
+> +	if (need_forkexit_callback) {
+> +		for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
+> +			struct cgroup_subsys *ss = subsys[i];
+> +
+> +			/*
+> +			 * fork/exit callbacks are supported only for
+> +			 * builtin subsystems and we don't need further
+> +			 * synchronization as they never go away.
+> +			 */
+> +			if (!ss || ss->module)
+> +				continue;
+> +
+> +			if (ss->fork)
+> +				ss->fork(child);
+> +		}
+> +	}
+>  }
+> +
+>  /**
+>   * cgroup_exit - detach cgroup from exiting task
+>   * @tsk: pointer to task_struct of exiting process
+> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+> index b1724ce..12bfedb 100644
+> --- a/kernel/cgroup_freezer.c
+> +++ b/kernel/cgroup_freezer.c
+> @@ -186,23 +186,15 @@ static void freezer_fork(struct task_struct *task)
+>  {
+>  	struct freezer *freezer;
+>  
+> -	/*
+> -	 * No lock is needed, since the task isn't on tasklist yet,
+> -	 * so it can't be moved to another cgroup, which means the
+> -	 * freezer won't be removed and will be valid during this
+> -	 * function call.  Nevertheless, apply RCU read-side critical
+> -	 * section to suppress RCU lockdep false positives.
+> -	 */
+>  	rcu_read_lock();
+>  	freezer = task_freezer(task);
+> -	rcu_read_unlock();
+>  
+>  	/*
+>  	 * The root cgroup is non-freezable, so we can skip the
+>  	 * following check.
+>  	 */
+>  	if (!freezer->css.cgroup->parent)
+> -		return;
+> +		goto out;
+>  
+>  	spin_lock_irq(&freezer->lock);
+>  	BUG_ON(freezer->state == CGROUP_FROZEN);
+> @@ -210,7 +202,10 @@ static void freezer_fork(struct task_struct *task)
+>  	/* Locking avoids race with FREEZING -> THAWED transitions. */
+>  	if (freezer->state == CGROUP_FREEZING)
+>  		freeze_task(task);
+> +
+>  	spin_unlock_irq(&freezer->lock);
+> +out:
+> +	rcu_read_unlock();
+>  }
+>  
+>  /*
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index 8b20ab7..acc4cb6 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -1135,7 +1135,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>  {
+>  	int retval;
+>  	struct task_struct *p;
+> -	int cgroup_callbacks_done = 0;
+>  
+>  	if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
+>  		return ERR_PTR(-EINVAL);
+> @@ -1393,12 +1392,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>  	INIT_LIST_HEAD(&p->thread_group);
+>  	p->task_works = NULL;
+>  
+> -	/* Now that the task is set up, run cgroup callbacks if
+> -	 * necessary. We need to run them before the task is visible
+> -	 * on the tasklist. */
+> -	cgroup_fork_callbacks(p);
+> -	cgroup_callbacks_done = 1;
+> -
+>  	/* Need tasklist lock for parent etc handling! */
+>  	write_lock_irq(&tasklist_lock);
+>  
+> @@ -1503,7 +1496,7 @@ bad_fork_cleanup_cgroup:
+>  #endif
+>  	if (clone_flags & CLONE_THREAD)
+>  		threadgroup_change_end(current);
+> -	cgroup_exit(p, cgroup_callbacks_done);
+> +	cgroup_exit(p, 0);
+>  	delayacct_tsk_free(p);
+>  	module_put(task_thread_info(p)->exec_domain->module);
+>  bad_fork_cleanup_count:
+> 
 
