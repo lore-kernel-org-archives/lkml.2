@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664Ab2JQLON (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 07:14:13 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:49971 "EHLO mail.x86-64.org"
+	id S1756683Ab2JQLOi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 07:14:38 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:49961 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754362Ab2JQLOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 07:14:01 -0400
+	id S1756261Ab2JQLOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 07:14:00 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: Tony Luck <tony.luck@intel.com>
 Cc: Greg Kroah-Hartman <greg@kroah.com>,
         "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 5/5] x86, MCA: Finish mca_config conversion
-Date: Wed, 17 Oct 2012 13:13:55 +0200
-Message-Id: <1350472435-29307-6-git-send-email-bp@amd64.org>
+Subject: [PATCH 4/5] x86, MCA: Convert the next three variables batch
+Date: Wed, 17 Oct 2012 13:13:54 +0200
+Message-Id: <1350472435-29307-5-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.8.0.rc2.4.g42e55a5
 In-Reply-To: <1350472435-29307-1-git-send-email-bp@amd64.org>
 References: <1350472435-29307-1-git-send-email-bp@amd64.org>
@@ -24,292 +24,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-mce_ser, mce_bios_cmci_threshold and mce_disabled are the last three
-bools which need conversion. Move them to the mca_config struct and
-adjust usage sites accordingly.
+Move them into the mca_config struct and adjust code touching them
+accordingly.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- arch/x86/include/asm/mce.h                |  5 ++--
- arch/x86/kernel/cpu/mcheck/mce-internal.h |  2 --
- arch/x86/kernel/cpu/mcheck/mce-severity.c |  4 ++--
- arch/x86/kernel/cpu/mcheck/mce.c          | 40 ++++++++++++++-----------------
- arch/x86/kernel/cpu/mcheck/mce_intel.c    |  6 ++---
- arch/x86/lguest/boot.c                    |  2 +-
- 6 files changed, 27 insertions(+), 32 deletions(-)
+ arch/x86/include/asm/mce.h             |  6 ++++--
+ arch/x86/kernel/cpu/mcheck/mce.c       | 35 ++++++++++++++++------------------
+ arch/x86/kernel/cpu/mcheck/mce_intel.c |  2 +-
+ 3 files changed, 21 insertions(+), 22 deletions(-)
 
 diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index a711e3f4fbc7..d90c2fccc30c 100644
+index 73ba1853951a..a711e3f4fbc7 100644
 --- a/arch/x86/include/asm/mce.h
 +++ b/arch/x86/include/asm/mce.h
-@@ -124,6 +124,9 @@ struct mca_config {
+@@ -122,13 +122,17 @@ struct mce_log {
+ 
+ struct mca_config {
  	bool dont_log_ce;
- 	bool cmci_disabled;
- 	bool ignore_ce;
-+	bool disabled;
-+	bool ser;
-+	bool bios_cmci_threshold;
++	bool cmci_disabled;
++	bool ignore_ce;
  	u8 banks;
  	s8 bootlog;
  	int tolerant;
-@@ -140,7 +143,6 @@ extern void mce_unregister_decode_chain(struct notifier_block *nb);
- #include <linux/init.h>
- #include <linux/atomic.h>
+ 	int monarch_timeout;
++	int panic_timeout;
+ 	u32 rip_msr;
+ };
  
--extern int mce_disabled;
- extern int mce_p5_enabled;
++extern struct mca_config mca_cfg;
+ extern void mce_register_decode_chain(struct notifier_block *nb);
+ extern void mce_unregister_decode_chain(struct notifier_block *nb);
  
- #ifdef CONFIG_X86_MCE
-@@ -173,7 +175,6 @@ DECLARE_PER_CPU(struct device *, mce_device);
+@@ -169,8 +173,6 @@ DECLARE_PER_CPU(struct device *, mce_device);
  #define MAX_NR_BANKS 32
  
  #ifdef CONFIG_X86_MCE_INTEL
--extern int mce_bios_cmci_threshold;
+-extern int mce_cmci_disabled;
+-extern int mce_ignore_ce;
+ extern int mce_bios_cmci_threshold;
  void mce_intel_feature_init(struct cpuinfo_x86 *c);
  void cmci_clear(void);
- void cmci_reenable(void);
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-internal.h b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-index 6a05c1d327a9..5b7d4fa5d3b7 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-internal.h
-+++ b/arch/x86/kernel/cpu/mcheck/mce-internal.h
-@@ -24,8 +24,6 @@ struct mce_bank {
- int mce_severity(struct mce *a, int tolerant, char **msg);
- struct dentry *mce_get_debugfs_dir(void);
- 
--extern int mce_ser;
--
- extern struct mce_bank *mce_banks;
- 
- #ifdef CONFIG_X86_MCE_INTEL
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-index 13017626f9a8..beb1f1689e52 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-@@ -193,9 +193,9 @@ int mce_severity(struct mce *m, int tolerant, char **msg)
- 			continue;
- 		if ((m->mcgstatus & s->mcgmask) != s->mcgres)
- 			continue;
--		if (s->ser == SER_REQUIRED && !mce_ser)
-+		if (s->ser == SER_REQUIRED && !mca_cfg.ser)
- 			continue;
--		if (s->ser == NO_SER && mce_ser)
-+		if (s->ser == NO_SER && mca_cfg.ser)
- 			continue;
- 		if (s->context && ctx != s->context)
- 			continue;
 diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index a66b1c2321d6..326f5b55c858 100644
+index 37695ac8b894..a66b1c2321d6 100644
 --- a/arch/x86/kernel/cpu/mcheck/mce.c
 +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -58,18 +58,13 @@ static DEFINE_MUTEX(mce_chrdev_read_mutex);
- #define CREATE_TRACE_POINTS
- #include <trace/events/mce.h>
- 
--int mce_disabled __read_mostly;
--
- #define SPINUNIT 100	/* 100ns */
- 
- atomic_t mce_entry;
+@@ -66,9 +66,6 @@ atomic_t mce_entry;
  
  DEFINE_PER_CPU(unsigned, mce_exception_count);
  
--int				mce_ser			__read_mostly;
--int				mce_bios_cmci_threshold	__read_mostly;
--
--struct mce_bank                *mce_banks		__read_mostly;
-+struct mce_bank *mce_banks __read_mostly;
+-static int			mce_panic_timeout	__read_mostly;
+-int				mce_cmci_disabled	__read_mostly;
+-int				mce_ignore_ce		__read_mostly;
+ int				mce_ser			__read_mostly;
+ int				mce_bios_cmci_threshold	__read_mostly;
  
- struct mca_config mca_cfg __read_mostly = {
- 	.bootlog  = -1,
-@@ -510,7 +505,7 @@ static int mce_ring_add(unsigned long pfn)
- 
- int mce_available(struct cpuinfo_x86 *c)
- {
--	if (mce_disabled)
-+	if (mca_cfg.disabled)
- 		return 0;
- 	return cpu_has(c, X86_FEATURE_MCE) && cpu_has(c, X86_FEATURE_MCA);
+@@ -302,7 +299,7 @@ static void wait_for_panic(void)
+ 	while (timeout-- > 0)
+ 		udelay(1);
+ 	if (panic_timeout == 0)
+-		panic_timeout = mce_panic_timeout;
++		panic_timeout = mca_cfg.panic_timeout;
+ 	panic("Panicing machine check CPU died");
  }
-@@ -562,7 +557,7 @@ static void mce_read_aux(struct mce *m, int i)
- 		/*
- 		 * Mask the reported address by the reported granularity.
- 		 */
--		if (mce_ser && (m->status & MCI_STATUS_MISCV)) {
-+		if (mca_cfg.ser && (m->status & MCI_STATUS_MISCV)) {
- 			u8 shift = MCI_MISC_ADDR_LSB(m->misc);
- 			m->addr >>= shift;
- 			m->addr <<= shift;
-@@ -617,7 +612,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
- 		 * TBD do the same check for MCI_STATUS_EN here?
- 		 */
- 		if (!(flags & MCP_UC) &&
--		    (m.status & (mce_ser ? MCI_STATUS_S : MCI_STATUS_UC)))
-+		    (m.status & (mca_cfg.ser ? MCI_STATUS_S : MCI_STATUS_UC)))
- 			continue;
  
- 		mce_read_aux(&m, i);
-@@ -1009,6 +1004,7 @@ static void mce_clear_info(struct mce_info *mi)
-  */
- void do_machine_check(struct pt_regs *regs, long error_code)
- {
-+	struct mca_config *cfg = &mca_cfg;
- 	struct mce m, *final;
- 	int i;
- 	int worst = 0;
-@@ -1036,7 +1032,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 
- 	this_cpu_inc(mce_exception_count);
- 
--	if (!mca_cfg.banks)
-+	if (!cfg->banks)
- 		goto out;
- 
- 	mce_gather_info(&m, regs);
-@@ -1063,7 +1059,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	 * because the first one to see it will clear it.
- 	 */
- 	order = mce_start(&no_way_out);
--	for (i = 0; i < mca_cfg.banks; i++) {
-+	for (i = 0; i < cfg->banks; i++) {
- 		__clear_bit(i, toclear);
- 		if (!test_bit(i, valid_banks))
- 			continue;
-@@ -1082,7 +1078,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 		 * Non uncorrected or non signaled errors are handled by
- 		 * machine_check_poll. Leave them alone, unless this panics.
- 		 */
--		if (!(m.status & (mce_ser ? MCI_STATUS_S : MCI_STATUS_UC)) &&
-+		if (!(m.status & (cfg->ser ? MCI_STATUS_S : MCI_STATUS_UC)) &&
- 			!no_way_out)
- 			continue;
- 
-@@ -1091,7 +1087,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 		 */
- 		add_taint(TAINT_MACHINE_CHECK);
- 
--		severity = mce_severity(&m, mca_cfg.tolerant, NULL);
-+		severity = mce_severity(&m, cfg->tolerant, NULL);
- 
- 		/*
- 		 * When machine check was for corrected handler don't touch,
-@@ -1147,7 +1143,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	 * issues we try to recover, or limit damage to the current
- 	 * process.
- 	 */
--	if (mca_cfg.tolerant < 3) {
-+	if (cfg->tolerant < 3) {
- 		if (no_way_out)
- 			mce_panic("Fatal machine check on current CPU", &m, msg);
- 		if (worst == MCE_AR_SEVERITY) {
-@@ -1426,7 +1422,7 @@ static int __cpuinit __mcheck_cpu_cap_init(void)
- 		mca_cfg.rip_msr = MSR_IA32_MCG_EIP;
- 
- 	if (cap & MCG_SER_P)
--		mce_ser = 1;
-+		mca_cfg.ser = true;
+@@ -360,7 +357,7 @@ static void mce_panic(char *msg, struct mce *final, char *exp)
+ 		pr_emerg(HW_ERR "Machine check: %s\n", exp);
+ 	if (!fake_panic) {
+ 		if (panic_timeout == 0)
+-			panic_timeout = mce_panic_timeout;
++			panic_timeout = mca_cfg.panic_timeout;
+ 		panic(msg);
+ 	} else
+ 		pr_emerg(HW_ERR "Fake kernel panic: %s\n", msg);
+@@ -1600,7 +1597,7 @@ static int __cpuinit __mcheck_cpu_apply_quirks(struct cpuinfo_x86 *c)
+ 	if (cfg->monarch_timeout < 0)
+ 		cfg->monarch_timeout = 0;
+ 	if (cfg->bootlog != 0)
+-		mce_panic_timeout = 30;
++		cfg->panic_timeout = 30;
  
  	return 0;
  }
-@@ -1675,7 +1671,7 @@ void (*machine_check_vector)(struct pt_regs *, long error_code) =
-  */
- void __cpuinit mcheck_cpu_init(struct cpuinfo_x86 *c)
- {
--	if (mce_disabled)
-+	if (mca_cfg.disabled)
+@@ -1645,7 +1642,7 @@ static void mce_start_timer(unsigned int cpu, struct timer_list *t)
+ 
+ 	__this_cpu_write(mce_next_interval, iv);
+ 
+-	if (mce_ignore_ce || !iv)
++	if (mca_cfg.ignore_ce || !iv)
  		return;
  
- 	if (__mcheck_cpu_ancient_init(c))
-@@ -1685,7 +1681,7 @@ void __cpuinit mcheck_cpu_init(struct cpuinfo_x86 *c)
- 		return;
- 
- 	if (__mcheck_cpu_cap_init() < 0 || __mcheck_cpu_apply_quirks(c) < 0) {
--		mce_disabled = 1;
-+		mca_cfg.disabled = true;
- 		return;
- 	}
- 
-@@ -1967,7 +1963,7 @@ static int __init mcheck_enable(char *str)
- 	if (*str == '=')
- 		str++;
+ 	t->expires = round_jiffies(jiffies + iv);
+@@ -1972,11 +1969,11 @@ static int __init mcheck_enable(char *str)
  	if (!strcmp(str, "off"))
--		mce_disabled = 1;
-+		cfg->disabled = true;
+ 		mce_disabled = 1;
  	else if (!strcmp(str, "no_cmci"))
- 		cfg->cmci_disabled = true;
+-		mce_cmci_disabled = 1;
++		cfg->cmci_disabled = true;
  	else if (!strcmp(str, "dont_log_ce"))
-@@ -1977,7 +1973,7 @@ static int __init mcheck_enable(char *str)
+ 		cfg->dont_log_ce = true;
+ 	else if (!strcmp(str, "ignore_ce"))
+-		mce_ignore_ce = 1;
++		cfg->ignore_ce = true;
  	else if (!strcmp(str, "bootlog") || !strcmp(str, "nobootlog"))
  		cfg->bootlog = (str[0] == 'b');
  	else if (!strcmp(str, "bios_cmci_threshold"))
--		mce_bios_cmci_threshold = 1;
-+		cfg->bios_cmci_threshold = true;
- 	else if (isdigit(str[0])) {
- 		get_option(&str, &(cfg->tolerant));
- 		if (*str == ',') {
-@@ -2219,8 +2215,8 @@ static struct dev_ext_attribute dev_attr_cmci_disabled = {
+@@ -2154,15 +2151,15 @@ static ssize_t set_ignore_ce(struct device *s,
+ 	if (strict_strtoull(buf, 0, &new) < 0)
+ 		return -EINVAL;
+ 
+-	if (mce_ignore_ce ^ !!new) {
++	if (mca_cfg.ignore_ce ^ !!new) {
+ 		if (new) {
+ 			/* disable ce features */
+ 			mce_timer_delete_all();
+ 			on_each_cpu(mce_disable_cmci, NULL, 1);
+-			mce_ignore_ce = 1;
++			mca_cfg.ignore_ce = true;
+ 		} else {
+ 			/* enable ce features */
+-			mce_ignore_ce = 0;
++			mca_cfg.ignore_ce = false;
+ 			on_each_cpu(mce_enable_ce, (void *)1, 1);
+ 		}
+ 	}
+@@ -2178,14 +2175,14 @@ static ssize_t set_cmci_disabled(struct device *s,
+ 	if (strict_strtoull(buf, 0, &new) < 0)
+ 		return -EINVAL;
+ 
+-	if (mce_cmci_disabled ^ !!new) {
++	if (mca_cfg.cmci_disabled ^ !!new) {
+ 		if (new) {
+ 			/* disable cmci */
+ 			on_each_cpu(mce_disable_cmci, NULL, 1);
+-			mce_cmci_disabled = 1;
++			mca_cfg.cmci_disabled = true;
+ 		} else {
+ 			/* enable cmci */
+-			mce_cmci_disabled = 0;
++			mca_cfg.cmci_disabled = false;
+ 			on_each_cpu(mce_enable_ce, NULL, 1);
+ 		}
+ 	}
+@@ -2212,13 +2209,13 @@ static struct dev_ext_attribute dev_attr_check_interval = {
+ };
+ 
+ static struct dev_ext_attribute dev_attr_ignore_ce = {
+-	__ATTR(ignore_ce, 0644, device_show_int, set_ignore_ce),
+-	&mce_ignore_ce
++	__ATTR(ignore_ce, 0644, device_show_bool, set_ignore_ce),
++	&mca_cfg.ignore_ce
+ };
+ 
+ static struct dev_ext_attribute dev_attr_cmci_disabled = {
+-	__ATTR(cmci_disabled, 0644, device_show_int, set_cmci_disabled),
+-	&mce_cmci_disabled
++	__ATTR(cmci_disabled, 0644, device_show_bool, set_cmci_disabled),
++	&mca_cfg.cmci_disabled
  };
  
  static struct dev_ext_attribute dev_attr_bios_cmci_threshold = {
--	__ATTR(bios_cmci_threshold, 0444, device_show_int, NULL),
--	&mce_bios_cmci_threshold
-+	__ATTR(bios_cmci_threshold, 0444, device_show_bool, NULL),
-+	&mca_cfg.bios_cmci_threshold
- };
- 
- static struct device_attribute *mce_device_attrs[] = {
-@@ -2441,7 +2437,7 @@ device_initcall_sync(mcheck_init_device);
-  */
- static int __init mcheck_disable(char *str)
- {
--	mce_disabled = 1;
-+	mca_cfg.disabled = true;
- 	return 1;
- }
- __setup("nomce", mcheck_disable);
 diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-index 1acd8ecba1c3..79b2b6b6e613 100644
+index 5f88abf07e9c..1acd8ecba1c3 100644
 --- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
 +++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-@@ -200,7 +200,7 @@ static void cmci_discover(int banks)
- 			continue;
- 		}
+@@ -53,7 +53,7 @@ static int cmci_supported(int *banks)
+ {
+ 	u64 cap;
  
--		if (!mce_bios_cmci_threshold) {
-+		if (!mca_cfg.bios_cmci_threshold) {
- 			val &= ~MCI_CTL2_CMCI_THRESHOLD_MASK;
- 			val |= CMCI_THRESHOLD;
- 		} else if (!(val & MCI_CTL2_CMCI_THRESHOLD_MASK)) {
-@@ -227,7 +227,7 @@ static void cmci_discover(int banks)
- 			 * set the thresholds properly or does not work with
- 			 * this boot option. Note down now and report later.
- 			 */
--			if (mce_bios_cmci_threshold && bios_zero_thresh &&
-+			if (mca_cfg.bios_cmci_threshold && bios_zero_thresh &&
- 					(val & MCI_CTL2_CMCI_THRESHOLD_MASK))
- 				bios_wrong_thresh = 1;
- 		} else {
-@@ -235,7 +235,7 @@ static void cmci_discover(int banks)
- 		}
- 	}
- 	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
--	if (mce_bios_cmci_threshold && bios_wrong_thresh) {
-+	if (mca_cfg.bios_cmci_threshold && bios_wrong_thresh) {
- 		pr_info_once(
- 			"bios_cmci_threshold: Some banks do not have valid thresholds set\n");
- 		pr_info_once(
-diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
-index 642d8805bc1b..df4176cdbb32 100644
---- a/arch/x86/lguest/boot.c
-+++ b/arch/x86/lguest/boot.c
-@@ -1412,7 +1412,7 @@ __init void lguest_init(void)
+-	if (mce_cmci_disabled || mce_ignore_ce)
++	if (mca_cfg.cmci_disabled || mca_cfg.ignore_ce)
+ 		return 0;
  
- 	/* We don't have features.  We have puppies!  Puppies! */
- #ifdef CONFIG_X86_MCE
--	mce_disabled = 1;
-+	mca_cfg.disabled = true;
- #endif
- #ifdef CONFIG_ACPI
- 	acpi_disabled = 1;
+ 	/*
 -- 
 1.8.0.rc2.4.g42e55a5
 
