@@ -1,177 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070Ab2JQFPU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 01:15:20 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45762 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558Ab2JQFPR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 01:15:17 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <507E3EA6.5080809@jp.fujitsu.com>
-Date: Wed, 17 Oct 2012 14:14:14 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1752132Ab2JQFPZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 01:15:25 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:50288 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751558Ab2JQFPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 01:15:22 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH v9 05/12] x86, hotplug, suspend: Online CPU0 for suspend or hibernate
+Date: Wed, 17 Oct 2012 07:18:59 +0200
+Message-ID: <35538834.Boc5416YXf@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C7122030B18671@ORSMSX105.amr.corp.intel.com>
+References: <1350058189-6769-1-git-send-email-fenghua.yu@intel.com> <507D8BBD.3010306@linux.vnet.ibm.com> <3E5A0FA7E9CA944F9D5414FEC6C7122030B18671@ORSMSX105.amr.corp.intel.com>
 MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>
-CC: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
-        Jiri Kosina <jiri.kosina@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-mm <linux-mm@kvack.org>
-Subject: Re: [RFC PATCH v1 1/3] mm: teach mm by current context info to not
- do I/O during memory allocation
-References: <1350403183-12650-1-git-send-email-ming.lei@canonical.com> <1350403183-12650-2-git-send-email-ming.lei@canonical.com>
-In-Reply-To: <1350403183-12650-2-git-send-email-ming.lei@canonical.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/10/17 0:59), Ming Lei wrote:
-> This patch introduces PF_MEMALLOC_NOIO on process flag('flags' field of
-> 'struct task_struct'), so that the flag can be set by one task
-> to avoid doing I/O inside memory allocation in the task's context.
+On Tuesday 16 of October 2012 22:12:27 Yu, Fenghua wrote:
+> > On 10/16/2012 09:47 PM, Rafael J. Wysocki wrote:
+> > > On Tuesday 16 of October 2012 11:05:18 Srivatsa S. Bhat wrote:
+> > >> On 10/16/2012 02:20 AM, Rafael J. Wysocki wrote:
+> > >>> On Friday 12 of October 2012 09:09:42 Fenghua Yu wrote:
+> > >>>> From: Fenghua Yu <fenghua.yu@intel.com>
+> > >>>>
+> > >>>> +
+> > >>>> +/*
+> > >>>> + * When bsp_check() is called in hibernate and suspend, cpu
+> > hotplug
+> > >>>> + * is disabled already. So it's unnessary to handle race
+> > condition between
+> > >>>> + * cpumask query and cpu hotplug.
+> > >>>> + */
+> > >>>> +static int bsp_check(void)
+> > >>>> +{
+> > >>>> +	if (cpumask_first(cpu_online_mask) != 0) {
+> > >>>> +		pr_warn("CPU0 is offline.\n");
+> > >>>> +		return -ENODEV;
+> > >>>> +	}
+> > >>>> +
+> > >>>> +	return 0;
+> > >>>> +}
+> > >>>> +
+> > >>>> +static int bsp_pm_callback(struct notifier_block *nb, unsigned
+> > long action,
+> > >>>> +			   void *ptr)
+> > >>>> +{
+> > >>>> +	int ret = 0;
+> > >>>> +
+> > >>>> +	switch (action) {
+> > >>>> +	case PM_SUSPEND_PREPARE:
+> > >>>> +	case PM_HIBERNATION_PREPARE:
+> > >>>> +		ret = bsp_check();
+> > >>>> +		break;
+> > >>>> +	default:
+> > >>>> +		break;
+> > >>>> +	}
+> > >>>> +	return notifier_from_errno(ret);
+> > >>>> +}
+> > >>>> +
+> > >>>
+> > >>> I wonder if there's anything preventing CPU0 from becoming offline
+> > after you've
+> > >>> done this check and before user space is frozen?
+> > >>>
+> > >>
+> > >> Hi Rafael,
+> > >>
+> > >> bsp_pm_callback runs as a low priority notifier callback,
+> > specifically with lower
+> > >> priority than the cpu_hotplug_pm_callback (as mentioned in the
+> > comment below).
+> > >> And cpu_hotplug_pm_callback disables regular CPU hotplug (till the
+> > suspend/resume
+> > >> sequence is complete).. So there is no chance for CPU0 to become
+> > offline after that.
+> > >>
+> > >> Or, are you thinking of some other scenario where CPU0 can go
+> > offline?
+> > >
+> > > No, that should be fine technically, but designs relying on notifier
+> > priority
+> > > for correctness are kind of fragile.
+> > >
+> > 
+> > Hmm.. I agree.
+> > 
+> > > Would it be possible to make cpu_hotplug_pm_callback() do the BSP
+> > online check?
+> > >
+> > 
+> > Good idea! I think that could be done quite easily. And while doing
+> > that, it would
+> > be good to rethink what to do in patch 12/12 (Debug CPU0 hotplug) to
+> > fix the bug I
+> > pointed out in my other mail.
 > 
-> The patch trys to solve one deadlock problem caused by block device,
-> and the problem may happen at least in the below situations:
-> 
-> - during block device runtime resume, if memory allocation with
-> GFP_KERNEL is called inside runtime resume callback of any one
-> of its ancestors(or the block device itself), the deadlock may be
-> triggered inside the memory allocation since it might not complete
-> until the block device becomes active and the involed page I/O finishes.
-> The situation is pointed out first by Alan Stern. It is not a good
-> approach to convert all GFP_KERNEL in the path into GFP_NOIO because
-> several subsystems may be involved(for example, PCI, USB and SCSI may
-> be involved for usb mass stoarage device)
-> 
-> - during error handling of usb mass storage deivce, USB bus reset
-> will be put on the device, so there shouldn't have any
-> memory allocation with GFP_KERNEL during USB bus reset, otherwise
-> the deadlock similar with above may be triggered. Unfortunately, any
-> usb device may include one mass storage interface in theory, so it
-> requires all usb interface drivers to handle the situation. In fact,
-> most usb drivers don't know how to handle bus reset on the device
-> and don't provide .pre_set() and .post_reset() callback at all, so
-> USB core has to unbind and bind driver for these devices. So it
-> is still not practical to resort to GFP_NOIO for solving the problem.
-> 
-> Also the introduced solution can be used by block subsystem or block
-> drivers too, for example, set the PF_MEMALLOC_NOIO flag before doing
-> actual I/O transfer.
-> 
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: Oliver Neukum <oneukum@suse.de>
-> Cc: Jiri Kosina <jiri.kosina@suse.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: linux-mm <linux-mm@kvack.org>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
-> ---
->   include/linux/sched.h |   11 +++++++++++
->   mm/page_alloc.c       |   10 +++++++++-
->   mm/vmscan.c           |   13 +++++++++++++
->   3 files changed, 33 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index f6961c9..c149ae7 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1811,6 +1811,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
->   #define PF_FROZEN	0x00010000	/* frozen for system suspend */
->   #define PF_FSTRANS	0x00020000	/* inside a filesystem transaction */
->   #define PF_KSWAPD	0x00040000	/* I am kswapd */
-> +#define PF_MEMALLOC_NOIO 0x00080000	/* Allocating memory without IO involved */
->   #define PF_LESS_THROTTLE 0x00100000	/* Throttle me less: I clean memory */
->   #define PF_KTHREAD	0x00200000	/* I am a kernel thread */
->   #define PF_RANDOMIZE	0x00400000	/* randomize virtual address space */
-> @@ -1848,6 +1849,16 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
->   #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
->   #define used_math() tsk_used_math(current)
->   
-> +#define memalloc_noio() (current->flags & PF_MEMALLOC_NOIO)
-> +#define memalloc_noio_save(noio_flag) do { \
-> +	(noio_flag) = current->flags & PF_MEMALLOC_NOIO; \
-> +	current->flags |= PF_MEMALLOC_NOIO; \
-> +} while (0)
-> +#define memalloc_noio_restore(noio_flag) do { \
-> +	if (!(noio_flag)) \
-> +		current->flags &= ~PF_MEMALLOC_NOIO; \
-> +} while (0)
-> +
->   /*
->    * task->jobctl flags
->    */
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 8e1be1c..e3746dd 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -2630,10 +2630,18 @@ retry_cpuset:
->   	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
->   			zonelist, high_zoneidx, alloc_flags,
->   			preferred_zone, migratetype);
-> -	if (unlikely(!page))
-> +	if (unlikely(!page)) {
-> +		/*
-> +		 * Resume, block IO and its error handling path
-> +		 * can deadlock because I/O on the device might not
-> +		 * complete.
-> +		 */
-> +		if (unlikely(memalloc_noio()))
-> +			gfp_mask &= ~GFP_IOFS;
->   		page = __alloc_pages_slowpath(gfp_mask, order,
->   				zonelist, high_zoneidx, nodemask,
->   				preferred_zone, migratetype);
-> +	}
->   
->   	trace_mm_page_alloc(page, order, gfp_mask, migratetype);
->   
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 1e9aa66..6647805 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -3298,6 +3298,19 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
->   	};
->   	unsigned long nr_slab_pages0, nr_slab_pages1;
->   
-> +	if (unlikely(memalloc_noio())) {
-> +		sc.gfp_mask &= ~GFP_IOFS;
-> +		shrink.gfp_mask = sc.gfp_mask;
-> +		/*
-> +		 * We allow to reclaim only clean pages.
-> +		 * It can affect RECLAIM_SWAP and RECLAIM_WRITE mode
-> +		 * but this is really rare event and allocator can
-> +		 * fallback to other zones.
-> +		 */
-> +		sc.may_writepage = 0;
-> +		sc.may_swap = 0;
+> Why is this design relying on notifier priority fragile? I don't get it.
 
-I think the idea is reasonable. I have a request.
+Because things like this are often overlooked by people trying to optimize
+stuff and the fact that you have to add a comment explaining that dependency
+only means that it is not exactly straightforward.
 
-In current implemententation of vmscan.c, it seems sc.may_writepage, sc.may_swap
-are handled independent from gfp_mask. 
+Moreover, you should also add a corresponding comment in the other notifier
+indicating that its priority should be higher than the priority of the
+new thing and explaining why.
 
-So, could you drop changes from this patch and handle these flags in another patch
-if these flags should be unset if ~GFP_IOFS ?
+> The priority in pm_notifier() is in a well designed API. This code just
+> follows the API to assign lower priority for bsp_pm_callback than
+> cpu_hotplug_pm_callback. Unless your justification is that the API of
+> pm_notifier() is fragile, I think this patch should be ok.
 
-I think try_to_free_page() path's sc.may_xxxx should be handled in the same way.
+I really think that notifiers are fragile in general and this particular
+one is no exception.
+
+> It's not a good idea to move bsp_pm_callback() into
+> cpu_hotplug_pm_callback(). There is no architecture specific hook to
+> call x86 bsp specific hotplug in cpu_hotplug_pm_callback(). Moving
+> bsp_pm_callback() into cpu_hotplug_pm_callback() is hacking while 
+> this patch follows well defined API and has better coding.
+
+I'm not sure it is better coding.  You really want one piece of code
+to always follow another piece of code and the best way to ensure
+that is to execute them both explicitly in sequence.
 
 Thanks,
--Kame
+Rafael
 
 
-
-
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
