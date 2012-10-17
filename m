@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab2JQL1m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 07:27:42 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:42149 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753009Ab2JQL1k (ORCPT
+	id S1754926Ab2JQLcB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 07:32:01 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:48416 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132Ab2JQLcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 07:27:40 -0400
-Message-ID: <507E9622.6090606@linux.vnet.ibm.com>
-Date: Wed, 17 Oct 2012 16:57:30 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121012 Thunderbird/16.0.1
+	Wed, 17 Oct 2012 07:32:00 -0400
+X-IronPort-AV: E=Sophos;i="4.80,600,1344211200"; 
+   d="scan'208";a="15223926"
+Message-ID: <1350473518.2460.58.camel@zakaz.uk.xensource.com>
+Subject: [PATCH V2 0/6] arm: implement ballooning and privcmd foreign
+ mappings based on x86 PVH
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@citrix.com>,
+        Mukesh Rathor <mukesh.rathor@oracle.com>,
+        xen-devel <xen-devel@lists.xen.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 17 Oct 2012 12:31:58 +0100
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, tony.luck@intel.com,
-        gong.chen@linux.intel.com, ananth@in.ibm.com,
-        masbock@linux.vnet.ibm.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, bp@amd64.org, lcm@us.ibm.com,
-        andi@firstfloor.org, hpa@zytor.com, tglx@linutronix.de,
-        mingo@redhat.com, gregkh@suse.de, linux-edac@vger.kernel.org
-Subject: Re: [PATCH v3] x86/mce: Honour bios-set CMCI threshold
-References: <CA+8MBbKVa0=qUpG-rjV5ieKkponZo77mzk_y_dF4qA2gVG++6A@mail.gmail.com> <20120912122516.3825.87838.stgit@localhost.localdomain> <505C51D8.6070402@linux.vnet.ibm.com> <20121017105940.GA14590@x1.osrc.amd.com>
-In-Reply-To: <20121017105940.GA14590@x1.osrc.amd.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12101711-2000-0000-0000-000009816A5D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2012 04:29 PM, Borislav Petkov wrote:
->>>
->>> +static struct dev_ext_attribute dev_attr_bios_cmci_threshold = {
->>> +	__ATTR(bios_cmci_threshold, 0444, device_show_int, NULL),
->>> +	&mce_bios_cmci_threshold
->
-> Ok, I just noticed this (we must've missed it during review) but why is
-> this read-only? If it has to be read-only, why do we have a node for
-> this in sysfs instead of simply issuing the printk statements below and
-> people who are interested in this, can grep dmesg?
+This series is much reduced after rebasing onto V2 of the X86 PVH
+patches, thanks Mukesh.
 
-This was added so that user-space tools could find out if we're using 
-thresholds for CMCI.
+The baseline is v3.7-rc1 + "xen: build fixes and interface
+tweaks" (posted this morning) and the PVH V2 patches from Mukesh.
 
-Regards,
-Naveen
+With this series I can build a guest on Xen ARM.
+
+The final patch requires that XENMEM_add_to_physmap_range be implemented
+for x86 on the hypervisor side. For inspiration the ARM version can be
+found at <1350314444-17148-1-git-send-email-ian.campbell@citrix.com>
+(and will likely be in xen-unstable soon).
+
+Ian.
 
