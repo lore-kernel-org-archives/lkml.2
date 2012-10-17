@@ -1,295 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932514Ab2JQSA6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 14:00:58 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:38804 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932397Ab2JQSA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 14:00:56 -0400
-Message-ID: <1350496855.3072.55.camel@joe-AO722>
-Subject: [PATCH] wm831x: Add and use a wm831x_irq_byname convenience function
-From: Joe Perches <joe@perches.com>
-To: Sangho Yi <antiroot@gmail.com>
-Cc: broonie@opensource.wolfsonmicro.com, cbow@mail.ru, dwmw2@inradead.org,
-        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Date: Wed, 17 Oct 2012 11:00:55 -0700
-In-Reply-To: <1350488383.3072.46.camel@joe-AO722>
-References: <n> <1350486076-3784-1-git-send-email-antiroot@gmail.com>
-	 <1350486076-3784-3-git-send-email-antiroot@gmail.com>
-	 <1350488383.3072.46.camel@joe-AO722>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757027Ab2JQSF1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 14:05:27 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:37870 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752112Ab2JQSF0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 14:05:26 -0400
+Date: Wed, 17 Oct 2012 14:05:24 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Martin Vysny <vysny@baka.sk>
+cc: Kernel development list <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>, <1062114@bugs.launchpad.net>
+Subject: Re: usb issue on Intel chipset: abrupt mouse movements, usb keyboard
+ loosing key events
+In-Reply-To: <507E6235.7040209@baka.sk>
+Message-ID: <Pine.LNX.4.44L0.1210171348380.1743-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add and use a convenience inline to get an irq by name.
+On Wed, 17 Oct 2012, Martin Vysny wrote:
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
-Perhaps this is a better alternative to code reflowing.
+> Good day,
+>    thank you for your mail. I was finally able to reproduce the issue. I 
+> am attaching a dmesg output of a correct boot (please note that there 
+> still are several unwanted IRQs), and a dmesg output of a reproduced error.
 
- include/linux/mfd/wm831x/core.h       |  8 ++++++++
- drivers/input/touchscreen/wm831x-ts.c |  7 ++-----
- drivers/power/wm831x_power.c          | 20 ++++++++------------
- drivers/regulator/wm831x-dcdc.c       | 23 +++++++++--------------
- drivers/regulator/wm831x-ldo.c        | 10 ++++------
- drivers/rtc/rtc-wm831x.c              |  2 +-
- 6 files changed, 32 insertions(+), 38 deletions(-)
+Did you boot with the "irqpoll" option?  Judging by the log, it looks 
+like you did.
 
-diff --git a/include/linux/mfd/wm831x/core.h b/include/linux/mfd/wm831x/core.h
-index 4a3b83a..96cd081 100644
---- a/include/linux/mfd/wm831x/core.h
-+++ b/include/linux/mfd/wm831x/core.h
-@@ -20,6 +20,7 @@
- #include <linux/irqdomain.h>
- #include <linux/list.h>
- #include <linux/regmap.h>
-+#include <linux/platform_device.h>
- 
- /*
-  * Register values.
-@@ -425,6 +426,13 @@ static inline int wm831x_irq(struct wm831x *wm831x, int irq)
- 	return irq_create_mapping(wm831x->irq_domain, irq);
- }
- 
-+static inline int wm831x_irq_byname(struct wm831x *wm831x,
-+				    struct platform_device *pdev,
-+				    const char *name)
-+{
-+	return wm831x_irq(wm831x, platform_get_irq_byname(pdev, name));
-+}
-+
- extern struct regmap_config wm831x_regmap_config;
- 
- #endif
-diff --git a/drivers/input/touchscreen/wm831x-ts.c b/drivers/input/touchscreen/wm831x-ts.c
-index 52abb98..82722b3 100644
---- a/drivers/input/touchscreen/wm831x-ts.c
-+++ b/drivers/input/touchscreen/wm831x-ts.c
-@@ -260,14 +260,11 @@ static __devinit int wm831x_ts_probe(struct platform_device *pdev)
- 	 * If we have a direct IRQ use it, otherwise use the interrupt
- 	 * from the WM831x IRQ controller.
- 	 */
--	wm831x_ts->data_irq = wm831x_irq(wm831x,
--					 platform_get_irq_byname(pdev,
--								 "TCHDATA"));
-+	wm831x_ts->data_irq = wm831x_irq_byname(wm831x, pdev, "TCHDATA");
- 	if (pdata && pdata->data_irq)
- 		wm831x_ts->data_irq = pdata->data_irq;
- 
--	wm831x_ts->pd_irq = wm831x_irq(wm831x,
--				       platform_get_irq_byname(pdev, "TCHPD"));
-+	wm831x_ts->pd_irq = wm831x_irq_byname(wm831x, pdev, "TCHPD");
- 	if (pdata && pdata->pd_irq)
- 		wm831x_ts->pd_irq = pdata->pd_irq;
- 
-diff --git a/drivers/power/wm831x_power.c b/drivers/power/wm831x_power.c
-index fc1ad95..39a6125 100644
---- a/drivers/power/wm831x_power.c
-+++ b/drivers/power/wm831x_power.c
-@@ -565,7 +565,7 @@ static __devinit int wm831x_power_probe(struct platform_device *pdev)
- 			    goto err_usb;
- 	}
- 
--	irq = wm831x_irq(wm831x, platform_get_irq_byname(pdev, "SYSLO"));
-+	irq = wm831x_irq_byname(wm831x, pdev, "SYSLO");
- 	ret = request_threaded_irq(irq, NULL, wm831x_syslo_irq,
- 				   IRQF_TRIGGER_RISING, "System power low",
- 				   power);
-@@ -575,7 +575,7 @@ static __devinit int wm831x_power_probe(struct platform_device *pdev)
- 		goto err_battery;
- 	}
- 
--	irq = wm831x_irq(wm831x, platform_get_irq_byname(pdev, "PWR SRC"));
-+	irq = wm831x_irq_byname(wm831x, pdev, "PWR SRC");
- 	ret = request_threaded_irq(irq, NULL, wm831x_pwr_src_irq,
- 				   IRQF_TRIGGER_RISING, "Power source",
- 				   power);
-@@ -586,9 +586,7 @@ static __devinit int wm831x_power_probe(struct platform_device *pdev)
- 	}
- 
- 	for (i = 0; i < ARRAY_SIZE(wm831x_bat_irqs); i++) {
--		irq = wm831x_irq(wm831x,
--				 platform_get_irq_byname(pdev,
--							 wm831x_bat_irqs[i]));
-+		irq = wm831x_irq_byname(wm831x, pdev, wm831x_bat_irqs[i]);
- 		ret = request_threaded_irq(irq, NULL, wm831x_bat_irq,
- 					   IRQF_TRIGGER_RISING,
- 					   wm831x_bat_irqs[i],
-@@ -608,10 +606,10 @@ err_bat_irq:
- 		irq = platform_get_irq_byname(pdev, wm831x_bat_irqs[i]);
- 		free_irq(irq, power);
- 	}
--	irq = wm831x_irq(wm831x, platform_get_irq_byname(pdev, "PWR SRC"));
-+	irq = wm831x_irq_byname(wm831x, pdev, "PWR SRC");
- 	free_irq(irq, power);
- err_syslo:
--	irq = wm831x_irq(wm831x, platform_get_irq_byname(pdev, "SYSLO"));
-+	irq = wm831x_irq_byname(wm831x, pdev, "SYSLO");
- 	free_irq(irq, power);
- err_battery:
- 	if (power->have_battery)
-@@ -632,16 +630,14 @@ static __devexit int wm831x_power_remove(struct platform_device *pdev)
- 	int irq, i;
- 
- 	for (i = 0; i < ARRAY_SIZE(wm831x_bat_irqs); i++) {
--		irq = wm831x_irq(wm831x, 
--				 platform_get_irq_byname(pdev,
--							 wm831x_bat_irqs[i]));
-+		irq = wm831x_irq_byname(wm831x, pdev, wm831x_bat_irqs[i]);
- 		free_irq(irq, wm831x_power);
- 	}
- 
--	irq = wm831x_irq(wm831x, platform_get_irq_byname(pdev, "PWR SRC"));
-+	irq = wm831x_irq_byname(wm831x, pdev, "PWR SRC");
- 	free_irq(irq, wm831x_power);
- 
--	irq = wm831x_irq(wm831x, platform_get_irq_byname(pdev, "SYSLO"));
-+	irq = wm831x_irq_byname(wm831x, pdev, "SYSLO");
- 	free_irq(irq, wm831x_power);
- 
- 	if (wm831x_power->have_battery)
-diff --git a/drivers/regulator/wm831x-dcdc.c b/drivers/regulator/wm831x-dcdc.c
-index 782c228..b6bd0be 100644
---- a/drivers/regulator/wm831x-dcdc.c
-+++ b/drivers/regulator/wm831x-dcdc.c
-@@ -529,7 +529,7 @@ static __devinit int wm831x_buckv_probe(struct platform_device *pdev)
- 		goto err;
- 	}
- 
--	irq = wm831x_irq(wm831x, platform_get_irq_byname(pdev, "UV"));
-+	irq = wm831x_irq_byname(wm831x, pdev, "UV");
- 	ret = request_threaded_irq(irq, NULL, wm831x_dcdc_uv_irq,
- 				   IRQF_TRIGGER_RISING, dcdc->name, dcdc);
- 	if (ret != 0) {
-@@ -538,7 +538,7 @@ static __devinit int wm831x_buckv_probe(struct platform_device *pdev)
- 		goto err_regulator;
- 	}
- 
--	irq = wm831x_irq(wm831x, platform_get_irq_byname(pdev, "HC"));
-+	irq = wm831x_irq_byname(wm831x, pdev, "HC");
- 	ret = request_threaded_irq(irq, NULL, wm831x_dcdc_oc_irq,
- 				   IRQF_TRIGGER_RISING, dcdc->name, dcdc);
- 	if (ret != 0) {
-@@ -552,8 +552,7 @@ static __devinit int wm831x_buckv_probe(struct platform_device *pdev)
- 	return 0;
- 
- err_uv:
--	free_irq(wm831x_irq(wm831x, platform_get_irq_byname(pdev, "UV")),
--		 dcdc);
-+	free_irq(wm831x_irq_byname(wm831x, pdev, "UV"), dcdc);
- err_regulator:
- 	regulator_unregister(dcdc->regulator);
- err:
-@@ -569,10 +568,8 @@ static __devexit int wm831x_buckv_remove(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, NULL);
- 
--	free_irq(wm831x_irq(wm831x, platform_get_irq_byname(pdev, "HC")),
--			    dcdc);
--	free_irq(wm831x_irq(wm831x, platform_get_irq_byname(pdev, "UV")),
--			    dcdc);
-+	free_irq(wm831x_irq_byname(wm831x, pdev, "HC"), dcdc);
-+	free_irq(wm831x_irq_byname(wm831x, pdev, "UV"), dcdc);
- 	regulator_unregister(dcdc->regulator);
- 	if (dcdc->dvs_gpio)
- 		gpio_free(dcdc->dvs_gpio);
-@@ -691,7 +688,7 @@ static __devinit int wm831x_buckp_probe(struct platform_device *pdev)
- 		goto err;
- 	}
- 
--	irq = wm831x_irq(wm831x, platform_get_irq_byname(pdev, "UV"));
-+	irq = wm831x_irq_byname(wm831x, pdev, "UV");
- 	ret = request_threaded_irq(irq, NULL, wm831x_dcdc_uv_irq,
- 				   IRQF_TRIGGER_RISING,	dcdc->name, dcdc);
- 	if (ret != 0) {
-@@ -716,8 +713,7 @@ static __devexit int wm831x_buckp_remove(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, NULL);
- 
--	free_irq(wm831x_irq(dcdc->wm831x, platform_get_irq_byname(pdev, "UV")),
--			    dcdc);
-+	free_irq(wm831x_irq_byname(dcdc->wm831x, pdev, "UV"), dcdc);
- 	regulator_unregister(dcdc->regulator);
- 
- 	return 0;
-@@ -825,7 +821,7 @@ static __devinit int wm831x_boostp_probe(struct platform_device *pdev)
- 		goto err;
- 	}
- 
--	irq = wm831x_irq(wm831x, platform_get_irq_byname(pdev, "UV"));
-+	irq = wm831x_irq_byname(wm831x, pdev, "UV");
- 	ret = request_threaded_irq(irq, NULL, wm831x_dcdc_uv_irq,
- 				   IRQF_TRIGGER_RISING, dcdc->name,
- 				   dcdc);
-@@ -851,8 +847,7 @@ static __devexit int wm831x_boostp_remove(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, NULL);
- 
--	free_irq(wm831x_irq(dcdc->wm831x, platform_get_irq_byname(pdev, "UV")),
--		 dcdc);
-+	free_irq(wm831x_irq_byname(dcdc->wm831x, pdev, "UV"), dcdc);
- 	regulator_unregister(dcdc->regulator);
- 
- 	return 0;
-diff --git a/drivers/regulator/wm831x-ldo.c b/drivers/regulator/wm831x-ldo.c
-index c2dc039..6cada4a 100644
---- a/drivers/regulator/wm831x-ldo.c
-+++ b/drivers/regulator/wm831x-ldo.c
-@@ -314,7 +314,7 @@ static __devinit int wm831x_gp_ldo_probe(struct platform_device *pdev)
- 		goto err;
- 	}
- 
--	irq = wm831x_irq(wm831x, platform_get_irq_byname(pdev, "UV"));
-+	irq = wm831x_irq_byname(wm831x, pdev, "UV");
- 	ret = request_threaded_irq(irq, NULL, wm831x_ldo_uv_irq,
- 				   IRQF_TRIGGER_RISING, ldo->name,
- 				   ldo);
-@@ -340,8 +340,7 @@ static __devexit int wm831x_gp_ldo_remove(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, NULL);
- 
--	free_irq(wm831x_irq(ldo->wm831x,
--			    platform_get_irq_byname(pdev, "UV")), ldo);
-+	free_irq(wm831x_irq_byname(ldo->wm831x, pdev, "UV"), ldo);
- 	regulator_unregister(ldo->regulator);
- 
- 	return 0;
-@@ -571,7 +570,7 @@ static __devinit int wm831x_aldo_probe(struct platform_device *pdev)
- 		goto err;
- 	}
- 
--	irq = wm831x_irq(wm831x, platform_get_irq_byname(pdev, "UV"));
-+	irq = wm831x_irq_byname(wm831x, pdev, "UV");
- 	ret = request_threaded_irq(irq, NULL, wm831x_ldo_uv_irq,
- 				   IRQF_TRIGGER_RISING, ldo->name, ldo);
- 	if (ret != 0) {
-@@ -594,8 +593,7 @@ static __devexit int wm831x_aldo_remove(struct platform_device *pdev)
- {
- 	struct wm831x_ldo *ldo = platform_get_drvdata(pdev);
- 
--	free_irq(wm831x_irq(ldo->wm831x, platform_get_irq_byname(pdev, "UV")),
--		 ldo);
-+	free_irq(wm831x_irq_byname(ldo->wm831x, pdev, "UV"), ldo);
- 	regulator_unregister(ldo->regulator);
- 
- 	return 0;
-diff --git a/drivers/rtc/rtc-wm831x.c b/drivers/rtc/rtc-wm831x.c
-index ea5c6f8..f111f38 100644
---- a/drivers/rtc/rtc-wm831x.c
-+++ b/drivers/rtc/rtc-wm831x.c
-@@ -416,7 +416,7 @@ static int wm831x_rtc_probe(struct platform_device *pdev)
- {
- 	struct wm831x *wm831x = dev_get_drvdata(pdev->dev.parent);
- 	struct wm831x_rtc *wm831x_rtc;
--	int alm_irq = wm831x_irq(wm831x, platform_get_irq_byname(pdev, "ALM"));
-+	int alm_irq = wm831x_irq_byname(wm831x, pdev, "ALM");
- 	int ret = 0;
- 
- 	wm831x_rtc = devm_kzalloc(&pdev->dev, sizeof(*wm831x_rtc), GFP_KERNEL);
+> [   67.512014] ehci_hcd 0000:00:1d.0: >Unwanted IRQ: c000 0
+> [   67.512021] ehci_hcd 0000:00:1d.0: >Unwanted IRQ: e000 0
+> [   67.512023] irq 17: nobody cared (try booting with the "irqpoll" option)
+> [   67.512026] Pid: 0, comm: swapper/0 Tainted: G           O 3.5.0-17-generic #28
+> [   67.512027] Call Trace:
+> [   67.512034]  [<c10c6ae9>] __report_bad_irq+0x29/0xd0
+> [   67.512037]  [<c10c6db5>] note_interrupt+0x175/0x1c0
+> [   67.512041]  [<c1326d63>] ? intel_idle+0xc3/0x120
+> [   67.512045]  [<c10c4bdf>] handle_irq_event_percpu+0x9f/0x1d0
+> [   67.512047]  [<c10c4d4b>] handle_irq_event+0x3b/0x60
+> [   67.512050]  [<c10c7710>] ? unmask_irq+0x30/0x30
+> [   67.512052]  [<c10c775e>] handle_fasteoi_irq+0x4e/0xd0
+> [   67.512053]  <IRQ>  [<c15d0692>] ? do_IRQ+0x42/0xc0
+> [   67.512062]  [<c10689fe>] ? enqueue_hrtimer+0x1e/0x70
+> [   67.512064]  [<c15d04f0>] ? common_interrupt+0x30/0x38
+> [   67.512069]  [<c10400e0>] ? in_gate_area+0x10/0x50
+> [   67.512071]  [<c1326d63>] ? intel_idle+0xc3/0x120
+> [   67.512076]  [<c149b7b5>] ? cpuidle_enter+0x15/0x20
+> [   67.512078]  [<c149bd18>] ? cpuidle_idle_call+0x88/0x220
+> [   67.512081]  [<c101870a>] ? cpu_idle+0xaa/0xe0
+> [   67.512086]  [<c159f715>] ? rest_init+0x5d/0x68
+> [   67.512090]  [<c18b49be>] ? start_kernel+0x35d/0x363
+> [   67.512092]  [<c18b44ed>] ? do_early_param+0x80/0x80
+> [   67.512094]  [<c18b4303>] ? i386_start_kernel+0xa6/0xad
+> [   67.512095] handlers:
+> [   67.512098] [<c142fe00>] usb_hcd_irq
+> [   67.512099] Disabling IRQ #17
+> [   69.507175] ehci_hcd 0000:00:1d.0: >Unwanted IRQ: c000 0
+> [   69.607118] ehci_hcd 0000:00:1d.0: >Unwanted IRQ: c000 0
 
+The debugging output show that the EHCI controller was not the source
+of the unwanted IRQs.  And /proc/interrupts shows that ehci-hcd is the
+only driver using IRQ #17, for the 0000:00:1d.0 device.
 
+The most likely explanation is that there an interrupt-routing error 
+and some other device is causing these problems.  I don't know of any 
+easy way to find out what the other device is, however.
+
+Alan Stern
 
