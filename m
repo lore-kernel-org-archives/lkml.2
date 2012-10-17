@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab2JQDjo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 23:39:44 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49399 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755690Ab2JQDjm (ORCPT
+	id S1756166Ab2JQDkR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 23:40:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48782 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755690Ab2JQDkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 23:39:42 -0400
+	Tue, 16 Oct 2012 23:40:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <1350399545-11179-1-git-send-email-yuanhan.liu@linux.intel.com>
-References: <1350399545-11179-1-git-send-email-yuanhan.liu@linux.intel.com>
-Date: Wed, 17 Oct 2012 09:09:42 +0530
-X-Google-Sender-Auth: 6fCSDhyRUNwzvea0ujKKyVRV1mo
-Message-ID: <CAOh2x=nDAJF7m6Xf1d9DdXsJTkAHLkhOrjo+W3+G2nGGpcpqhw@mail.gmail.com>
-Subject: Re: [PATCH 1/5] ata: suspend/resume callbacks should be conditionally
- compiled on CONFIG_PM_SLEEP
-From: viresh kumar <viresh.kumar@linaro.org>
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
-        linux-ide@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
-        linux-pm@vger.kernel.org, spear-devel <spear-devel@list.st.com>
+In-Reply-To: <20121016131933.c196457a.akpm@linux-foundation.org>
+References: <1350403183-12650-1-git-send-email-ming.lei@canonical.com>
+	<1350403183-12650-2-git-send-email-ming.lei@canonical.com>
+	<20121016131933.c196457a.akpm@linux-foundation.org>
+Date: Wed, 17 Oct 2012 11:40:12 +0800
+Message-ID: <CACVXFVPXp8bK+A8xTZBWP5n43+S9qHQUg1VhiFVj9q7q+JfX8g@mail.gmail.com>
+Subject: Re: [RFC PATCH v1 1/3] mm: teach mm by current context info to not do
+ I/O during memory allocation
+From: Ming Lei <ming.lei@canonical.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
+        Jiri Kosina <jiri.kosina@suse.com>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-mm <linux-mm@kvack.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 8:29 PM, Yuanhan Liu
-<yuanhan.liu@linux.intel.com> wrote:
-> This will fix warnings like following when CONFIG_PM_SLEEP is not set:
+On Wed, Oct 17, 2012 at 4:19 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
 >
->         warning: 'xxx_suspend' defined but not used [-Wunused-function]
->         warning: 'xxx_resume' defined but not used [-Wunused-function]
->
-> Because
->         SET_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn)
->
-> Only references the callbacks on CONFIG_PM_SLEEP (instead of CONFIG_PM).
->
-> Cc: Jeff Garzik <jgarzik@pobox.com>
-> Cc: Viresh Kumar <viresh.linux@gmail.com>
-> Cc: linux-ide@vger.kernel.org
-> Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-> ---
->  drivers/ata/ahci_platform.c  |    2 +-
->  drivers/ata/pata_arasan_cf.c |    2 +-
+> The patch seems reasonable to me.  I'd like to see some examples of
+> these resume-time callsite which are performing the GFP_KERNEL
+> allocations, please.  You have found some kernel bugs, so those should
+> be fully described.
 
-For pata_arasan:
+OK, there are two examples of GFP_KERNEL allocation in subsystem
+runtime resume path:
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+1), almost all devices in some pci platform
+acpi_os_allocate
+	<-acpi_ut_allocate
+		<-ACPI_ALLOCATE_ZEROED
+			<-acpi_evaluate_object
+				<-__acpi_bus_set_power
+					<-acpi_bus_set_power
+						<-acpi_pci_set_power_state
+							<-platform_pci_set_power_state
+								<-pci_platform_power_transition
+									<-__pci_complete_power_transition
+										<-pci_set_power_state
+											<-pci_restore_standard_config
+												<-pci_pm_runtime_resume
 
+2), all devices in usb subsystem
+usb_get_status
+	<-finish_port_resume
+		<-usb_port_resume
+			<-generic_resume
+				<-usb_resume_device
+					<-usb_resume_both
+						<-usb_runtime_resume	
+
+I also have many examples in which GFP_KERNEL allocation
+is involved in runtime resume path of individual drivers.
+
+The above two examples just show how difficult to solve the problem
+by traditional way, :-)
+
+Also as pointed by Oliver, network driver need memory allocation with
+no io in iSCSI runtime resume situation too.
+
+Thanks,
 --
-viresh
+Ming Lei
