@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757432Ab2JQQjW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 12:39:22 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:49188 "EHLO e9.ny.us.ibm.com"
+	id S1757473Ab2JQQkO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 12:40:14 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51470 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756455Ab2JQQjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 12:39:20 -0400
-Date: Wed, 17 Oct 2012 22:10:59 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Rabin Vincent <rabin@rab.in>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Peter Zijlstra <peterz@infradead.org>, oleg@redhat.com
-Subject: Re: [PATCH 2/9] uprobes: check for single step support
-Message-ID: <20121017164059.GF11096@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1350242593-17761-1-git-send-email-rabin@rab.in>
- <1350242593-17761-2-git-send-email-rabin@rab.in>
+	id S1757387Ab2JQQkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 12:40:08 -0400
+Date: Wed, 17 Oct 2012 18:40:06 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: tony.luck@intel.com, gong.chen@linux.intel.com, ananth@in.ibm.com,
+        masbock@linux.vnet.ibm.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, bp@amd64.org, lcm@us.ibm.com,
+        andi@firstfloor.org, hpa@zytor.com, tglx@linutronix.de,
+        mingo@redhat.com, gregkh@suse.de, linux-edac@vger.kernel.org
+Subject: Re: [PATCH v3] x86/mce: Honour bios-set CMCI threshold
+Message-ID: <20121017164006.GA14596@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+	tony.luck@intel.com, gong.chen@linux.intel.com, ananth@in.ibm.com,
+	masbock@linux.vnet.ibm.com, x86@kernel.org,
+	linux-kernel@vger.kernel.org, bp@amd64.org, lcm@us.ibm.com,
+	andi@firstfloor.org, hpa@zytor.com, tglx@linutronix.de,
+	mingo@redhat.com, gregkh@suse.de, linux-edac@vger.kernel.org
+References: <CA+8MBbKVa0=qUpG-rjV5ieKkponZo77mzk_y_dF4qA2gVG++6A@mail.gmail.com>
+ <20120912122516.3825.87838.stgit@localhost.localdomain>
+ <505C51D8.6070402@linux.vnet.ibm.com>
+ <20121017105940.GA14590@x1.osrc.amd.com>
+ <507E9622.6090606@linux.vnet.ibm.com>
+ <20121017130934.GB14590@x1.osrc.amd.com>
+ <507ED31B.7010402@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1350242593-17761-2-git-send-email-rabin@rab.in>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101716-7182-0000-0000-000002DC7F0C
+In-Reply-To: <507ED31B.7010402@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Rabin Vincent <rabin@rab.in> [2012-10-14 21:23:06]:
+On Wed, Oct 17, 2012 at 09:17:39PM +0530, Naveen N. Rao wrote:
+> Userspace tools need this sysfs attribute so they know how to react on
+> receipt of a corrected error event: whether this is the first event or
+> if such events have already been threshold-ed.
 
-> Check for single step support before calling user_enable_single_step(),
-> since user_enable_single_step() just BUG()s if support does not exist.
-> Needed by ARM.
-> 
-> Signed-off-by: Rabin Vincent <rabin@rab.in>
-> ---
->  kernel/events/uprobes.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 98256bc..db4e3ab 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -1450,7 +1450,8 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
-> 
->  void __weak arch_uprobe_enable_step(struct arch_uprobe *arch)
->  {
-> -	user_enable_single_step(current);
-> +	if (arch_has_single_step())
-> +		user_enable_single_step(current);
->  }
-> 
->  void __weak arch_uprobe_disable_step(struct arch_uprobe *arch)
+What's wrong with userspace tools parsing /proc/cmdline and seeing that
+mce_bios_cmci_threshold has been set since this is the only way to set
+it anyway?
 
-This change is fine. But I am wondering if should have a dummy
-arch_uprobe_enable_step / arch_uprobe_disable_step in uprobes ARM.
+I still don't see any reason for that read-only sysfs attribute.
 
-If arch_uprobe_enable_step() wasnt a weak function, then the fix you
-suggested would have been the only way to go.
-
-Again, I am not against this change. But I am hoping that we get
-feedback on which option is prefered, having this check or having a
-dummy function in archs like ARM.
+Thanks.
 
 -- 
-Thanks and Regards
-Srikar
-
+Regards/Gruss,
+Boris.
