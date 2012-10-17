@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755813Ab2JPX4Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 19:56:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60556 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755589Ab2JPX4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 19:56:23 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAB=NE6VMxhE8O4J+OaKVNUjJqdBEiNkocvueGFn8Wsa8-AG_bQ@mail.gmail.com>
-References: <CAB=NE6VMxhE8O4J+OaKVNUjJqdBEiNkocvueGFn8Wsa8-AG_bQ@mail.gmail.com> <1350085772-8755-1-git-send-email-mcgrof@do-not-panic.com> <3084988.3Xup6S3alX@avalon> <CAB=NE6UUL+zCSMwy4yzZq7+3pDLxZNsusSvXyJv4gi3_rz2ugg@mail.gmail.com> <5298100.2jQ2j2jhxN@avalon>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: dhowells@redhat.com, Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, backports@vger.kernel.org, rob@ti.com,
-        arnd@arndb.de, davej@redhat.com, airlied@linux.ie, bskeggs@redhat.com,
-        alan@lxorguk.ukuu.org.uk, tglx@linutronix.de, daniel.vetter@ffwll.ch,
-        jbarnes@virtuousgeek.org, alexander.deucher@amd.com,
-        paulmck@linux.vnet.ibm.com, gregkh@linuxfoundation.org
-Subject: Re: [PATCH 1/2] uapi: update includes for drm content when no kernel API exists
-Date: Wed, 17 Oct 2012 00:27:30 +0100
-Message-ID: <7756.1350430050@warthog.procyon.org.uk>
+	id S1755808Ab2JQAC5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 20:02:57 -0400
+Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:41396 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755476Ab2JQAC4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 20:02:56 -0400
+Message-ID: <507DF58E.8060804@ce.jp.nec.com>
+Date: Wed, 17 Oct 2012 09:02:22 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Vivek Goyal <vgoyal@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Fix use-after-free of q->root_blkg and q->root_rl.blkg
+References: <50750367.2070508@ce.jp.nec.com> <20121010155929.GA18733@redhat.com> <50762182.5090806@ce.jp.nec.com> <20121016232040.GH16166@google.com>
+In-Reply-To: <20121016232040.GH16166@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Luis R. Rodriguez <mcgrof@do-not-panic.com> wrote:
-
-> >> The include_next trick can work as well but that'd mean synching the UAPI
-> >> files regularly into compat. I'd much prefer to have code intact when
-> >> possible when backporting so the option I stuck with then was to patch
-> >> the code directly and then as part of compat-drivers to always copy
-> >> that day's linux-next UAPI headers into the current directory for
-> >> compilation. I see no other driver code using the uapi path explicitly
-> >> though, is that by design?
-> >
-> > As far as I understand that's by design, yes. Kernel code isn't expected to
-> > reference uapi/ headers directly.
+On 10/17/12 08:20, Tejun Heo wrote:
+>>>> -	if (ent == &q->root_blkg->q_node)
+>>>> +	if (q->root_blkg && ent == &q->root_blkg->q_node)
+>>>
+>>> Can we fix it little differently. Little earlier in the code, we check for
+>>> if q->blkg_list is empty, then all the groups are gone, and there are
+>>> no more request lists hence and return NULL.
+>>>
+>>> Current code:
+>>>         if (rl == &q->root_rl) {
+>>>                 ent = &q->blkg_list;
+>>>
+>>> Modified code:
+>>>         if (rl == &q->root_rl) {
+>>>                 ent = &q->blkg_list;
+>>> 		/* There are no more block groups, hence no request lists */
+>>> 		if (list_empty(ent))
+>>> 			return NULL;
+>>> 	}
 > 
-> Did the design consider the case where no respective kernel API header
-> file would ever exist?
+> Do we need this at all?  q->root_blkg being NULL is completely fine
+> there and the comparison would work as expected, no?
 
-I didn't particularly design it such that kernel .c files couldn't access uapi
-.h files directly.  I did, however, design it so that my scripts wouldn't have
-to touch any .c files where possible, and certainly I didn't want to have to
-double up all #includes that refer to KAPI/UAPI split headers.
+Hmm?
 
-Ideally, I'd've used #include_next in the KAPI file to refer to the UAPI file
-where both exist, but some people have strong objections to that, so I ended
-up having to do #include <uapi/...> instead.
+If list_empty(ent) and q->root_blkg == NULL,
 
-I also didn't want to rename the asm/, linux/, etc. prefixes as that would
-mandate changing pretty much every #include in the kernel.
+>         /* walk to the next list_head, skip root blkcg */
+>         ent = ent->next;
 
-For the case where no respective KAPI file exists, it was considered and it is
-handled.  This is done by adding extra -I flags, for example:
+ent is &q->blkg_list again.
 
-	-I include
-	-I include/uapi
+>         if (ent == &q->root_blkg->q_node)
 
-so looking for linux/foo.h, say, will look first for include/linux/foo.h and
-then for include/uapi/linux/foo.h.
+So ent is not &q->root_blkg->q_node.
 
-David
+>                 ent = ent->next;
+>         if (ent == &q->blkg_list)
+>                 return NULL;
+
+And we return NULL here.
+
+Ah, yes. You are correct.
+We can do without the above hunk.
+
+-- 
+Jun'ichi Nomura, NEC Corporation
+
