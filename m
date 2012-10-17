@@ -1,77 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917Ab2JQMjg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 08:39:36 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:54222 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755778Ab2JQMhq (ORCPT
+	id S1756951Ab2JQMjm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 08:39:42 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:62818 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755778Ab2JQMjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 08:37:46 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
-        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
-        rmallon@gmail.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RFC 09/15 v5] gpio-em: Add block GPIO API
-Date: Wed, 17 Oct 2012 14:31:41 +0200
-Message-Id: <1350477107-26512-10-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1350477107-26512-1-git-send-email-stigge@antcom.de>
-References: <1350477107-26512-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Wed, 17 Oct 2012 08:39:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1210162105050.6039@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.0811091803320.23782@swampdragon.chaosbits.net>
+	<CALF0-+Vtmwu9rCc9BYiDx2O2GQWezK40BYR2LP_ve2YjCt=Afg@mail.gmail.com>
+	<alpine.LNX.2.00.1210152025300.1038@swampdragon.chaosbits.net>
+	<alpine.LNX.2.00.1210160051100.1682@swampdragon.chaosbits.net>
+	<CALF0-+UuB0y_8+SLE05Sn997HDcP5u=AJsoGvjmfSUBB__DkhQ@mail.gmail.com>
+	<alpine.LNX.2.00.1210160131240.1682@swampdragon.chaosbits.net>
+	<CALF0-+UfoS1MBTeR6ZYNdPwACo+h2PR2E4WfC-aZca4g_Pmpjw@mail.gmail.com>
+	<alpine.LNX.2.00.1210162105050.6039@swampdragon.chaosbits.net>
+Date: Wed, 17 Oct 2012 09:39:38 -0300
+Message-ID: <CALF0-+WZAEye35J8b6iWn+Vuc6fGDdWL9seJVohBnnN0SJmceA@mail.gmail.com>
+Subject: Re: [PATCH] [media] stk1160: Check return value of stk1160_read_reg()
+ in stk1160_i2c_read_reg()
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds block GPIO API support to the gpio-em driver.
+On Tue, Oct 16, 2012 at 4:06 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> On Mon, 15 Oct 2012, Ezequiel Garcia wrote:
+>
+>> On Mon, Oct 15, 2012 at 9:03 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+>> > On Mon, 15 Oct 2012, Ezequiel Garcia wrote:
+>> >
+>> >> On Mon, Oct 15, 2012 at 7:52 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+>> >> > On Mon, 15 Oct 2012, Jesper Juhl wrote:
+>> >> >
+>> >> >> On Sat, 13 Oct 2012, Ezequiel Garcia wrote:
+>> >> >>
+>> > [...]
+>> >> > Currently there are two checks for 'rc' being less than zero with no
+>> >> > change to 'rc' between the two, so the second is just dead code.
+>> >> > The intention seems to have been to assign the return value of
+>> >> > 'stk1160_read_reg()' to 'rc' before the (currently dead) second check
+>> >> > and then test /that/. This patch does that.
+>> >> >
+>> >>
+>> >> This is an overly complicated explanation for such a small patch.
+>> >> Can you try to simplify it?
+>> >>
+>> > How's this?
+>> >
+>> >
+>> > From: Jesper Juhl <jj@chaosbits.net>
+>> > Date: Sat, 13 Oct 2012 00:16:37 +0200
+>> > Subject: [PATCH] [media] stk1160: Check return value of stk1160_read_reg() in stk1160_i2c_read_reg()
+>> >
+>> > Remember to collect the exit status from 'stk1160_read_reg()' in 'rc'
+>> > before testing it for less than zero.
+>> >
+>> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+>> > ---
+>> >  drivers/media/usb/stk1160/stk1160-i2c.c |    3 +--
+>> >  1 files changed, 1 insertions(+), 2 deletions(-)
+>> >
+>> > diff --git a/drivers/media/usb/stk1160/stk1160-i2c.c b/drivers/media/usb/stk1160/stk1160-i2c.c
+>> > index 176ac93..a2370e4 100644
+>> > --- a/drivers/media/usb/stk1160/stk1160-i2c.c
+>> > +++ b/drivers/media/usb/stk1160/stk1160-i2c.c
+>> > @@ -116,10 +116,9 @@ static int stk1160_i2c_read_reg(struct stk1160 *dev, u8 addr,
+>> >         if (rc < 0)
+>> >                 return rc;
+>> >
+>> > -       stk1160_read_reg(dev, STK1160_SBUSR_RD, value);
+>> > +       rc = stk1160_read_reg(dev, STK1160_SBUSR_RD, value);
+>> >         if (rc < 0)
+>> >                 return rc;
+>> > -
+>> ^^^^^^^^^^^^^^^^^^^^^^^^
+>> Sorry for the nitpick, but I'd like you to *not* remove this line.
+>>
+> No problem.
+> I hope the below is OK :-)
+>
+>
+> From: Jesper Juhl <jj@chaosbits.net>
+> Date: Sat, 13 Oct 2012 00:16:37 +0200
+> Subject: [PATCH] [media] stk1160: Check return value of stk1160_read_reg() in stk1160_i2c_read_reg()
+>
+> Remember to collect the exit status from 'stk1160_read_reg()' in 'rc'
+> before testing it for less than zero.
+>
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  drivers/media/usb/stk1160/stk1160-i2c.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/media/usb/stk1160/stk1160-i2c.c b/drivers/media/usb/stk1160/stk1160-i2c.c
+> index 176ac93..850cf28 100644
+> --- a/drivers/media/usb/stk1160/stk1160-i2c.c
+> +++ b/drivers/media/usb/stk1160/stk1160-i2c.c
+> @@ -116,7 +116,7 @@ static int stk1160_i2c_read_reg(struct stk1160 *dev, u8 addr,
+>         if (rc < 0)
+>                 return rc;
+>
+> -       stk1160_read_reg(dev, STK1160_SBUSR_RD, value);
+> +       rc = stk1160_read_reg(dev, STK1160_SBUSR_RD, value);
+>         if (rc < 0)
+>                 return rc;
+>
+> --
+> 1.7.1
+>
+>
+> --
+> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+> Plain text mails only, please.
+>
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-
----
- drivers/gpio/gpio-em.c |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
-
---- linux-2.6.orig/drivers/gpio/gpio-em.c
-+++ linux-2.6/drivers/gpio/gpio-em.c
-@@ -203,6 +203,27 @@ static void em_gio_set(struct gpio_chip
- 		__em_gio_set(chip, GIO_OH, offset - 16, value);
- }
- 
-+static unsigned long em_gio_get_block(struct gpio_chip *chip,
-+				      unsigned long mask)
-+{
-+	return (int)(em_gio_read(gpio_to_priv(chip), GIO_I) & mask);
-+}
-+
-+static void em_gio_set_block(struct gpio_chip *chip, unsigned long mask,
-+			     unsigned long values)
-+{
-+	unsigned long mask_ol = mask & 0xFFFF;
-+	unsigned long mask_oh = mask >> 16;
-+
-+	unsigned long values_ol = values & mask_ol;
-+	unsigned long values_oh = (values >> 16) & mask_oh;
-+
-+	em_gio_write(gpio_to_priv(chip), GIO_OL,
-+		     mask_ol << 16 | values_ol);
-+	em_gio_write(gpio_to_priv(chip), GIO_OH,
-+		     mask_oh << 16 | values_oh);
-+}
-+
- static int em_gio_direction_output(struct gpio_chip *chip, unsigned offset,
- 				   int value)
- {
-@@ -317,8 +338,10 @@ static int __devinit em_gio_probe(struct
- 	gpio_chip = &p->gpio_chip;
- 	gpio_chip->direction_input = em_gio_direction_input;
- 	gpio_chip->get = em_gio_get;
-+	gpio_chip->get_block = em_gio_get_block;
- 	gpio_chip->direction_output = em_gio_direction_output;
- 	gpio_chip->set = em_gio_set;
-+	gpio_chip->set_block = em_gio_set_block;
- 	gpio_chip->to_irq = em_gio_to_irq;
- 	gpio_chip->label = name;
- 	gpio_chip->owner = THIS_MODULE;
+Acked-by: Ezequiel Garcia <elezegarcia@gmail.com>
