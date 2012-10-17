@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab2JQRk2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 13:40:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8285 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755751Ab2JQRk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 13:40:26 -0400
-Date: Wed, 17 Oct 2012 13:40:17 -0400
-From: Aristeu Rozanski <aris@redhat.com>
-To: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: suspicious RCU usage in cgroup
-Message-ID: <20121017174017.GK29956@redhat.com>
-References: <20121005215926.GA2406@redhat.com>
- <20121005220612.GB29956@redhat.com>
- <20121017162623.GA30345@redhat.com>
+	id S1757519Ab2JQRpz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 13:45:55 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:23787
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755984Ab2JQRpx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 13:45:53 -0400
+X-Forefront-Antispam-Report: CIP:198.70.193.64;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub2.qlogic.com;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VPS-5(zcb8kz9371I1102I542M1432Izz1202h1d1ah1d2ahzz8275bhz2fh2a8h668h839h93fhd25hf0ah107ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1155h)
+From: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
+To: Joe Jin <joe.jin@oracle.com>, Ron Mercer <ron.mercer@qlogic.com>,
+        Dept-Eng Linux Driver <Linux-Driver@qlogic.com>
+CC: netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg Marsden <greg.marsden@oracle.com>
+Date: Wed, 17 Oct 2012 10:45:45 -0700
+Subject: RE: [PATCH] qla3xxx: Ensure req_q_phy_addr writes to the register
+Thread-Topic: [PATCH] qla3xxx: Ensure req_q_phy_addr writes to the register
+Thread-Index: Ac2sMSiiKE0FVPozTPyW26pMgfJ0KwAXMPYQ
+Message-ID: <5E4F49720D0BAD499EE1F01232234BA87744A93B8E@AVEXMB1.qlogic.org>
+References: <507E50E5.5040201@oracle.com>
+In-Reply-To: <507E50E5.5040201@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121017162623.GA30345@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9HHk1dA006283
 
-On Wed, Oct 17, 2012 at 12:26:23PM -0400, Dave Jones wrote:
-> On Fri, Oct 05, 2012 at 06:06:12PM -0400, Aristeu Rozanski wrote:
->  > Hi Dave,
->  > On Fri, Oct 05, 2012 at 05:59:29PM -0400, Dave Jones wrote:
->  > > On boot in Linus' current tree..
->  > > 
->  > > ===============================
->  > > [ INFO: suspicious RCU usage. ]
->  > > 3.6.0+ #22 Not tainted
->  > > -------------------------------
->  > > include/linux/cgroup.h:566 suspicious rcu_dereference_check() usage!
->  > > 
->  > > other info that might help us debug this:
->  > > 
->  > > rcu_scheduler_active = 1, debug_locks = 1
->  > > 2 locks on stack by kdevtmpfs/59:
->  > >  #0: blocked:  (sb_writers){.+.+.+}, instance: ffff88014595a9a0, at: [<ffffffff81207bc4>] mnt_want_write+0x24/0x50
->  > >  #1: held:     (&sb->s_type->i_mutex_key#3/1){+.+.+.}, instance: ffff880145b1f5c8, at: [<ffffffff811f26d4>] kern_path_create+0x84/0x170
->  > > 
->  > > stack backtrace:
->  > > Pid: 59, comm: kdevtmpfs Not tainted 3.6.0+ #22
->  > > Call Trace:
->  > >  [<ffffffff810df1f2>] lockdep_rcu_suspicious+0xe2/0x130
->  > >  [<ffffffff81317cad>] devcgroup_inode_mknod+0x19d/0x240
->  > >  [<ffffffff812f54d8>] ? security_capable+0x18/0x20
->  > >  [<ffffffff8107e214>] ? ns_capable+0x44/0x80
->  > >  [<ffffffff811f3b0e>] vfs_mknod+0x7e/0x140
->  > >  [<ffffffff81452967>] handle_create.isra.2+0x77/0x210
->  > >  [<ffffffff810ddd6c>] ? lock_release_holdtime.part.26+0xcc/0x140
->  > >  [<ffffffff810afbf1>] ? get_parent_ip+0x11/0x50
->  > >  [<ffffffff816bacd9>] ? sub_preempt_count+0x79/0xd0
->  > >  [<ffffffff81452c47>] devtmpfsd+0x147/0x170
->  > >  [<ffffffff81452b00>] ? handle_create.isra.2+0x210/0x210
->  > >  [<ffffffff8109bf8d>] kthread+0xed/0x100
->  > >  [<ffffffff816bacd9>] ? sub_preempt_count+0x79/0xd0
->  > >  [<ffffffff816c04a4>] kernel_thread_helper+0x4/0x10
->  > >  [<ffffffff810a9fdc>] ? finish_task_switch+0x7c/0x120
->  > >  [<ffffffff816b62db>] ? _raw_spin_unlock_irq+0x4b/0x80
->  > >  [<ffffffff816b6d37>] ? retint_restore_args+0x13/0x13
->  > >  [<ffffffff8109bea0>] ? kthread_create_on_node+0x160/0x160
->  > >  [<ffffffff816c04a0>] ? gs_change+0x13/0x13
->  > 
->  > "[PATCH] cgroup: fix invalid rcu dereference" which is being routed thru
->  > akpm's tree should fix this.
->  > 
->  > see https://patchwork.kernel.org/patch/1456571/
+
+
+>-----Original Message-----
+>From: Joe Jin [mailto:joe.jin@oracle.com] 
+>Sent: Tuesday, October 16, 2012 11:32 PM
+>To: Ron Mercer; Jitendra Kalsaria; Dept-Eng Linux Driver
+>Cc: netdev; linux-kernel; Greg Marsden
+>Subject: [PATCH] qla3xxx: Ensure req_q_phy_addr writes to the register
+>
+>Make sure req_q_phy_addr write to the register.
+>
+>Signed-off-by: Joe Jin <joe.jin@oracle.com>
+>Cc: Ron Mercer <ron.mercer@qlogic.com>
+>Cc: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
+>---
+> drivers/net/ethernet/qlogic/qla3xxx.c | 6 ++++++
+> 1 file changed, 6 insertions(+)
+>
+>diff --git a/drivers/net/ethernet/qlogic/qla3xxx.c b/drivers/net/ethernet/qlogic/qla3xxx.c
+>index df09b1c..78b4cba 100644
+>--- a/drivers/net/ethernet/qlogic/qla3xxx.c
+>+++ b/drivers/net/ethernet/qlogic/qla3xxx.c
+>@@ -2525,6 +2525,12 @@ static int ql_alloc_net_req_rsp_queues(struct ql3_adapter *qdev)
+> 	qdev->req_q_size =
+> 	    (u32) (NUM_REQ_Q_ENTRIES * sizeof(struct ob_mac_iocb_req));
 > 
-> What's happening with this ?
+>+	/*
+>+	 * The barrier is required to ensure that req_q_phy_addr writes to
+>+	 * the memory.
+>+	 */
+>+	wmb();
+>+
+> 	qdev->req_q_virt_addr =
+> 	    pci_alloc_consistent(qdev->pdev,
+> 				 (size_t) qdev->req_q_size,
 
-also found out that the device_cgroup patches that went in are v1, not
-the v2. I'm preparing the refreshed patches to apply on top and will
-submit along with the rcu fix to make sure they get in at the same time
+Your changes only take care of request queue but not response queue which also need barrier.
 
+	qdev->req_q_size =
+		(u32) (NUM_REQ_Q_ENTRIES * sizeof(struct ob_mac_iocb_req));
+
+	qdev->rsp_q_size = NUM_RSP_Q_ENTRIES * sizeof(struct net_rsp_iocb);
+
+	wmb();
+
+thanks,
+	Jiten
 -- 
-Aristeu
+1.7.11.7
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
