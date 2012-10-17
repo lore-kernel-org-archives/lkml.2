@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757424Ab2JQQe1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 12:34:27 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56011 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757410Ab2JQQeZ (ORCPT
+	id S1757428Ab2JQQfx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 12:35:53 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:42674 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756420Ab2JQQfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 12:34:25 -0400
-Date: Wed, 17 Oct 2012 17:34:24 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arch@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [RFC][CFT][CFReview] execve and kernel_thread unification work
-Message-ID: <20121017163424.GA2616@ZenIV.linux.org.uk>
-References: <20121001213809.GA31155@ZenIV.linux.org.uk>
- <20121015013009.GB2616@ZenIV.linux.org.uk>
- <CAHkRjk7QbybMx1Kc9dP-Mz_ujMmHf5htLViviNok=HKjac0G+A@mail.gmail.com>
+	Wed, 17 Oct 2012 12:35:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHkRjk7QbybMx1Kc9dP-Mz_ujMmHf5htLViviNok=HKjac0G+A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1350401000-9453-1-git-send-email-s-guiriec@ti.com>
+References: <1350401000-9453-1-git-send-email-s-guiriec@ti.com>
+Date: Wed, 17 Oct 2012 22:05:50 +0530
+Message-ID: <CAM=Q2cu2nA2R_LcMnjkSMJn6coxYQ_EHPSuG9ExbW7pa7fsu8A@mail.gmail.com>
+Subject: Re: [PATCH] i2c: omap: adopt pinctrl support
+From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
+To: Sebastien Guiriec <s-guiriec@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Jean Delvare <khali@linux-fr.org>,
+        Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        linux-omap@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Shubhrajyoti Datta <shubhrajyoti@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 03:02:15PM +0100, Catalin Marinas wrote:
-> Hi Al,
-> 
-> On 15 October 2012 02:30, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > arch-arm64 - patches from maintainer with minor followup folded
-> 
-> Thanks for updating the arm64 branch. I've adapted the changes, tested
-> and folded them into the branch below (the AArch64 instruction set
-> does not have conditional instructions):
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git
-> execve
+On Tue, Oct 16, 2012 at 8:53 PM, Sebastien Guiriec <s-guiriec@ti.com> wrote:
+> Some GPIO expanders need some early pin control muxing. Due to
+> legacy boards sometimes the driver uses subsys_initcall instead of
+> module_init. This patch takes advantage of defer probe feature
+> and pin control in order to wait until pin control probing before
+> GPIO driver probing. It has been tested on OMAP5 board with TCA6424
+> driver.
+>
+> log:
+>
+> [0.482299] omap_i2c i2c.15: could not find pctldev for node /ocp/pinmux@4a00
+> 2840/pinmux_i2c5_pins, deferring probe
+> [0.482330] platform i2c.15: Driver omap_i2c requests probe deferral
+> [0.484466] Advanced Linux Sound Architecture Driver Initialized.
+>
+> [4.746917] omap_i2c i2c.15: bus 4 rev2.4.0 at 100 kHz
+> [4.755279] gpiochip_find_base: found new base at 477
+> [4.761169] gpiochip_add: registered GPIOs 477 to 500 on device: tca6424a
+>
+Thanks,
 
-Fetched and merged, thanks.  I'll probably drop arch-arm64 branch, now
-that I have yours directly merged.  In any case, right now arch-arm64
-points to the current head or yours and for-next has
-
-commit 0cea479343cbfaec3a9b8accdeadae53322d98a8
-Merge: 43cc05a 6a87277
-Author: Al Viro <viro@zeniv.linux.org.uk>
-Date:   Wed Oct 17 12:29:32 2012 -0400
-
-    Merge branch 'execve' of git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch
-
-in it...
+Acked-by: Shubhrajyoti D <shubhrajyoti@ti.com>
