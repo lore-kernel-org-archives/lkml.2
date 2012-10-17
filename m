@@ -1,264 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756969Ab2JQNQx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 09:16:53 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:40796 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753285Ab2JQNQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 09:16:50 -0400
-Subject: [RFC PATCH v2] posix timers: allocate timer id per task
-To: peterz@infradead.org, mingo@redhat.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Wed, 17 Oct 2012 17:18:25 +0400
-Message-ID: <20121017131732.8781.75295.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1756894Ab2JQNSn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 09:18:43 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:33798 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756075Ab2JQNSm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 09:18:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1350458052.26103.31.camel@edumazet-glaptop>
+References: <1350458052.26103.31.camel@edumazet-glaptop>
+Date: Wed, 17 Oct 2012 21:18:41 +0800
+Message-ID: <CAJd=RBD1LKiQecdrK67w+Wn=P1mMfRv6JERWUjxpAthm_p+LzA@mail.gmail.com>
+Subject: Re: [PATCH] rcu: restore correct batch limiting
+From: Hillf Danton <dhillf@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2:
-1) Hash table become RCU-friendly. Hash table search now done under RCU lock
-protection.
-I've tested scalability on KVM with 4 CPU. The testing environment was build
-of 10 processes, each had 512 posix timers running (SIGSEV_NONE) and was
-calling timer_gettime() in loop. With all this stuff being running, I was
-measuring time of calling of syscall timer_gettime() 10000 times.
+Hi Eric,
 
-Without this patch: ~7ms
-With this patch   : ~7ms
+On Wed, Oct 17, 2012 at 3:14 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> From: Eric Dumazet <edumazet@google.com>
+>
+> Commit 29c00b4a1d9e27 (rcu: Add event-tracing for RCU callback
+> invocation) added a regression in rcu_do_batch()
+>
+> Under stress, RCU is supposed to allow to process all items in queue,
+> instead of a batch of 10 items (blimit), but an integer overflow makes
+> the effective limit being 1.
+>
+> So RCU cannot recover and machine eventually crash because of OOM.
+>
+> Using long instead of int is not really needed, convert everything
+> to integers.
+>
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
+> Google-Bug-Id: 7362491
 
-This patch is required CRIU project (www.criu.org).
-To migrate processes with posix timers we have to make sure, that we can
-restore posix timer with proper id.
-Currently, this is not true, because timer ids are allocated globally.
-So, this is precursor patch and it's purpose is make posix timer id to be
-allocated per task.
+That means over 7 million bugs accumulated?
 
-Patch replaces global idr with global hash table for posix timers and
-makes timer ids unique not globally, but per task. Next free timer id is type
-of integer and stored on signal struct (posix_timer_id). If free timer id
-reaches negative value on timer creation, it will be dropped to zero and
--EAGAIN will be returned to user.
-Hash table is size of page (4KB).
-Key is constructed as follows:
-key = hash_ptr(current->signal) ^ hash_32(posix_timer_id);
+> CC: stable@vger.kernel.org
+> ---
+>  kernel/rcutree.c       |    4 ++--
+>  kernel/rcutree.h       |    4 ++--
+>  kernel/rcutree_trace.c |    4 ++--
+>  3 files changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 74df86b..fc3ebae 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -1834,7 +1834,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+>         rdp->n_cbs_invoked += count;
+>
+>         /* Reinstate batch limit if we have worked down the excess. */
+> -       if (rdp->blimit == LONG_MAX && rdp->qlen <= qlowmark)
+> +       if (rdp->blimit == INT_MAX && rdp->qlen <= qlowmark)
+>                 rdp->blimit = blimit;
+>
+>         /* Reset ->qlen_last_fqs_check trigger if enough CBs have drained. */
+> @@ -2097,7 +2097,7 @@ static void __call_rcu_core(struct rcu_state *rsp, struct rcu_data *rdp,
+>                         rcu_start_gp(rsp, nestflag);  /* rlses rnp_root->lock */
+>                 } else {
+>                         /* Give the grace period a kick. */
+> -                       rdp->blimit = LONG_MAX;
+> +                       rdp->blimit = INT_MAX;
+>                         if (rsp->n_force_qs == rdp->n_force_qs_snap &&
+>                             *rdp->nxttail[RCU_DONE_TAIL] != head)
+>                                 force_quiescent_state(rsp);
+> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+> index a240f03..6421173 100644
+> --- a/kernel/rcutree.h
+> +++ b/kernel/rcutree.h
+> @@ -291,11 +291,11 @@ struct rcu_data {
+>         unsigned long   n_cbs_adopted;  /* RCU cbs adopted from dying CPU */
+>         unsigned long   n_force_qs_snap;
+>                                         /* did other CPU force QS recently? */
+> -       long            blimit;         /* Upper limit on a processed batch */
+> +       int             blimit;         /* Upper limit on a processed batch */
+>
+>         /* 3) dynticks interface. */
+> +       int             dynticks_snap;  /* Per-GP tracking for dynticks. */
+>         struct rcu_dynticks *dynticks;  /* Shared per-CPU dynticks state. */
+> -       int dynticks_snap;              /* Per-GP tracking for dynticks. */
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- include/linux/posix-timers.h |    1 
- include/linux/sched.h        |    4 +-
- kernel/posix-timers.c        |  112 ++++++++++++++++++++++++++++--------------
- 3 files changed, 78 insertions(+), 39 deletions(-)
+Hm, no words in change log for shuffling dynticks_snap...
 
-diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
-index 042058f..60bac69 100644
---- a/include/linux/posix-timers.h
-+++ b/include/linux/posix-timers.h
-@@ -55,6 +55,7 @@ struct cpu_timer_list {
- /* POSIX.1b interval timer structure. */
- struct k_itimer {
- 	struct list_head list;		/* free/ allocate list */
-+	struct hlist_node t_hash;
- 	spinlock_t it_lock;
- 	clockid_t it_clock;		/* which timer type */
- 	timer_t it_id;			/* timer id */
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 0dd42a0..dce1651 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -51,6 +51,7 @@ struct sched_param {
- #include <linux/cred.h>
- #include <linux/llist.h>
- #include <linux/uidgid.h>
-+#include <linux/idr.h>
- 
- #include <asm/processor.h>
- 
-@@ -536,7 +537,8 @@ struct signal_struct {
- 	unsigned int		has_child_subreaper:1;
- 
- 	/* POSIX.1b Interval Timers */
--	struct list_head posix_timers;
-+	int			posix_timer_id;
-+	struct list_head	posix_timers;
- 
- 	/* ITIMER_REAL timer for the process */
- 	struct hrtimer real_timer;
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index 69185ae..f43e2e6 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -47,31 +47,28 @@
- #include <linux/wait.h>
- #include <linux/workqueue.h>
- #include <linux/export.h>
-+#include <linux/hash.h>
- 
- /*
-- * Management arrays for POSIX timers.	 Timers are kept in slab memory
-- * Timer ids are allocated by an external routine that keeps track of the
-- * id and the timer.  The external interface is:
-- *
-- * void *idr_find(struct idr *idp, int id);           to find timer_id <id>
-- * int idr_get_new(struct idr *idp, void *ptr);       to get a new id and
-- *                                                    related it to <ptr>
-- * void idr_remove(struct idr *idp, int id);          to release <id>
-- * void idr_init(struct idr *idp);                    to initialize <idp>
-- *                                                    which we supply.
-- * The idr_get_new *may* call slab for more memory so it must not be
-- * called under a spin lock.  Likewise idr_remore may release memory
-- * (but it may be ok to do this under a lock...).
-- * idr_find is just a memory look up and is quite fast.  A -1 return
-- * indicates that the requested id does not exist.
-+ * Management arrays for POSIX timers. Timers are now kept in static PAGE-size
-+ * hash table.
-+ * Timer ids are allocated by local routine, which selects proper hash head by
-+ * key, constructed from current->signal address and per signal struct counter.
-+ * This keeps timer ids unique per task, but now they can intersect between
-+ * tasks.
-  */
- 
- /*
-  * Lets keep our timers in a slab cache :-)
-  */
- static struct kmem_cache *posix_timers_cache;
--static struct idr posix_timers_id;
--static DEFINE_SPINLOCK(idr_lock);
-+
-+#define POSIX_TIMERS_HASH_BITS		9
-+#define POSIX_TIMERS_HASH_SIZE		(1 << POSIX_TIMERS_HASH_BITS)
-+
-+/* Hash table is size of PAGE currently */
-+static struct hlist_head posix_timers_hashtable[POSIX_TIMERS_HASH_SIZE];
-+static DEFINE_SPINLOCK(hash_lock);
- 
- /*
-  * we assume that the new SIGEV_THREAD_ID shares no bits with the other
-@@ -152,6 +149,56 @@ static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags);
- 	__timr;								   \
- })
- 
-+static int hash(struct signal_struct *sig, unsigned int nr)
-+{
-+	int hash = hash_ptr(sig, POSIX_TIMERS_HASH_BITS);
-+	return hash ^ hash_32(nr, POSIX_TIMERS_HASH_BITS);
-+}
-+
-+static struct k_itimer *__posix_timers_find(struct hlist_head *head, struct signal_struct *sig, timer_t id)
-+{
-+	struct hlist_node *node;
-+	struct k_itimer *timer;
-+
-+	hlist_for_each_entry_rcu(timer, node, head, t_hash) {
-+		if ((timer->it_signal == sig) && (timer->it_id == id))
-+			return timer;
-+	}
-+	return NULL;
-+}
-+
-+static struct k_itimer *posix_timer_by_id(timer_t id)
-+{
-+	struct signal_struct *sig = current->signal;
-+	struct hlist_head *head = &posix_timers_hashtable[hash(sig, id)];
-+
-+	return __posix_timers_find(head, sig, id);
-+}
-+
-+static int posix_timer_add(struct k_itimer *timer)
-+{
-+	struct signal_struct *sig = current->signal;
-+	int next_free_id = sig->posix_timer_id;
-+	struct hlist_head *head;
-+	int ret = -ENOENT;
-+
-+	do {
-+		spin_lock(&hash_lock);
-+		head = &posix_timers_hashtable[hash(sig, sig->posix_timer_id)];
-+		if (__posix_timers_find(head, sig, sig->posix_timer_id) == NULL) {
-+			hlist_add_head_rcu(&timer->t_hash, head);
-+			ret = sig->posix_timer_id++;
-+		} else {
-+			if (++sig->posix_timer_id < 0)
-+				sig->posix_timer_id = 0;
-+			if (sig->posix_timer_id == next_free_id)
-+				ret = -EAGAIN;
-+		}
-+		spin_unlock(&hash_lock);
-+	} while (ret == -ENOENT);
-+	return ret;
-+}
-+
- static inline void unlock_timer(struct k_itimer *timr, unsigned long flags)
- {
- 	spin_unlock_irqrestore(&timr->it_lock, flags);
-@@ -271,6 +318,7 @@ static __init int init_posix_timers(void)
- 		.timer_get	= common_timer_get,
- 		.timer_del	= common_timer_del,
- 	};
-+	int i;
- 
- 	posix_timers_register_clock(CLOCK_REALTIME, &clock_realtime);
- 	posix_timers_register_clock(CLOCK_MONOTONIC, &clock_monotonic);
-@@ -282,7 +330,8 @@ static __init int init_posix_timers(void)
- 	posix_timers_cache = kmem_cache_create("posix_timers_cache",
- 					sizeof (struct k_itimer), 0, SLAB_PANIC,
- 					NULL);
--	idr_init(&posix_timers_id);
-+	for (i = 0; i < POSIX_TIMERS_HASH_SIZE; i++)
-+		INIT_HLIST_HEAD(&posix_timers_hashtable[i]);
- 	return 0;
- }
- 
-@@ -504,9 +553,9 @@ static void release_posix_timer(struct k_itimer *tmr, int it_id_set)
- {
- 	if (it_id_set) {
- 		unsigned long flags;
--		spin_lock_irqsave(&idr_lock, flags);
--		idr_remove(&posix_timers_id, tmr->it_id);
--		spin_unlock_irqrestore(&idr_lock, flags);
-+		spin_lock_irqsave(&hash_lock, flags);
-+		hlist_del_rcu(&tmr->t_hash);
-+		spin_unlock_irqrestore(&hash_lock, flags);
- 	}
- 	put_pid(tmr->it_pid);
- 	sigqueue_free(tmr->sigq);
-@@ -552,22 +601,9 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
- 		return -EAGAIN;
- 
- 	spin_lock_init(&new_timer->it_lock);
-- retry:
--	if (unlikely(!idr_pre_get(&posix_timers_id, GFP_KERNEL))) {
--		error = -EAGAIN;
--		goto out;
--	}
--	spin_lock_irq(&idr_lock);
--	error = idr_get_new(&posix_timers_id, new_timer, &new_timer_id);
--	spin_unlock_irq(&idr_lock);
--	if (error) {
--		if (error == -EAGAIN)
--			goto retry;
--		/*
--		 * Weird looking, but we return EAGAIN if the IDR is
--		 * full (proper POSIX return value for this)
--		 */
--		error = -EAGAIN;
-+	new_timer_id = posix_timer_add(new_timer);
-+	if (new_timer_id < 0) {
-+		error = new_timer_id;
- 		goto out;
- 	}
- 
-@@ -640,7 +676,7 @@ static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags)
- 	struct k_itimer *timr;
- 
- 	rcu_read_lock();
--	timr = idr_find(&posix_timers_id, (int)timer_id);
-+	timr = posix_timer_by_id(timer_id);
- 	if (timr) {
- 		spin_lock_irqsave(&timr->it_lock, *flags);
- 		if (timr->it_signal == current->signal) {
-
+Hillf
+>
+>         /* 4) reasons this CPU needed to be kicked by force_quiescent_state */
+>         unsigned long dynticks_fqs;     /* Kicked due to dynticks idle. */
+> diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
+> index 693513b..fde0541 100644
+> --- a/kernel/rcutree_trace.c
+> +++ b/kernel/rcutree_trace.c
+> @@ -113,7 +113,7 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
+>                                           rdp->cpu)),
+>                    per_cpu(rcu_cpu_kthread_loops, rdp->cpu) & 0xffff);
+>  #endif /* #ifdef CONFIG_RCU_BOOST */
+> -       seq_printf(m, " b=%ld", rdp->blimit);
+> +       seq_printf(m, " b=%d", rdp->blimit);
+>         seq_printf(m, " ci=%lu co=%lu ca=%lu\n",
+>                    rdp->n_cbs_invoked, rdp->n_cbs_orphaned, rdp->n_cbs_adopted);
+>  }
+> @@ -173,7 +173,7 @@ static void print_one_rcu_data_csv(struct seq_file *m, struct rcu_data *rdp)
+>                    convert_kthread_status(per_cpu(rcu_cpu_kthread_status,
+>                                           rdp->cpu)));
+>  #endif /* #ifdef CONFIG_RCU_BOOST */
+> -       seq_printf(m, ",%ld", rdp->blimit);
+> +       seq_printf(m, ",%d", rdp->blimit);
+>         seq_printf(m, ",%lu,%lu,%lu\n",
+>                    rdp->n_cbs_invoked, rdp->n_cbs_orphaned, rdp->n_cbs_adopted);
+>  }
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
