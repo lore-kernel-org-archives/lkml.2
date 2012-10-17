@@ -1,101 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626Ab2JQLOA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 07:14:00 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:49947 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754362Ab2JQLN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932161Ab2JQLPU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 07:15:20 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59753 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753010Ab2JQLN7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Oct 2012 07:13:59 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: Tony Luck <tony.luck@intel.com>
-Cc: Greg Kroah-Hartman <greg@kroah.com>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 0/5] Rework MCA configuration handling code
-Date: Wed, 17 Oct 2012 13:13:50 +0200
-Message-Id: <1350472435-29307-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.8.0.rc2.4.g42e55a5
+MIME-Version: 1.0
+In-Reply-To: <CAN863PuyMkSZtZCvqX+kwei9v=rnbBYVYr3TqBXF_6uxwJe2_Q@mail.gmail.com>
+References: <415E76CC-A53D-4643-88AB-3D7D7DC56F98@dubeyko.com>
+	<9DE65D03-D4EA-4B32-9C1D-1516EAE50E23@dubeyko.com>
+	<1349553966.12699.132.camel@kjgkr>
+	<50712AAA.5030807@gmail.com>
+	<002201cda46e$88b84d30$9a28e790$%kim@samsung.com>
+	<F7EA5AF7-8A1C-4C98-90AF-9D47E39731AB@dubeyko.com>
+	<004101cda52e$72210e20$56632a60$%kim@samsung.com>
+	<55A93BD0-CBCB-4707-A970-EB823EC54B2D@dubeyko.com>
+	<006f01cda5ec$e63e9b60$b2bbd220$%kim@samsung.com>
+	<1349855868.1889.87.camel@slavad-ubuntu>
+	<009f01cda6cb$b8cb1020$2a613060$%kim@samsung.com>
+	<CAKYAXd_6MheUVRm7HVofXVp-HWStZNVw2GCqXNfKukxbJ5rG5g@mail.gmail.com>
+	<CAN863PuyMkSZtZCvqX+kwei9v=rnbBYVYr3TqBXF_6uxwJe2_Q@mail.gmail.com>
+Date: Wed, 17 Oct 2012 20:13:57 +0900
+Message-ID: <CAKYAXd9+fEVUhe7kRcv_CnWhH3z_e4NqPstSWoCQ6xqrSt4AyQ@mail.gmail.com>
+Subject: Re: [PATCH 00/16] f2fs: introduce flash-friendly file system
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Changman Lee <cm224.lee@gmail.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        Vyacheslav Dubeyko <slava@dubeyko.com>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Jaegeuk Kim <jaegeuk.kim@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "tytso@mit.edu" <tytso@mit.edu>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "chur.lee@samsung.com" <chur.lee@samsung.com>,
+        "cm224.lee@samsung.com" <cm224.lee@samsung.com>,
+        "jooyoung.hwang@samsung.com" <jooyoung.hwang@samsung.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
-
-Ok,
-
-this is the first complete series implementing what we discussed
-previously. It now uses simple bools and collects everything in a struct
-mca_config which is nicely abstracted and collected in one place.
-
-Please take a look and complain :)
-
-Changelog:
-==========
-
-v0:
----
-
-Right,
-
-so I did give that a try and it turned out to be a bit more involved
-than I thought. Basically, I'm relying on the assumption that if I use a
-u64 bitfield and pass a pointer to it, accessing it through that pointer
-as a u64 value works. Actually, I have the u64 bitfield as the first
-member of a struct and if I cast a pointer to that struct to u64 *, I'm
-expecting to have the 64 bits of the same bitfield.
-
-Therefore, I can toggle the bits in the mce code with mca_cfg.<bitname>.
-When defining accessing them through the device attributes in sysfs, I
-use a new macro DEVICE_BIT_ATTR which gets the corresponding bit number
-of that same bit in the bitfield. This gives only one function which
-operates on a bitfield instead of a single function per bit in the
-bitfield.
-
-For example,
-
-mca_cfg {
-	u64 dont_log_ce : 1,
-
-is the first bit in the bitfield and I also have a MCA_CFG_DONT_LOG_CE
-define which is 0, i.e. the first bit, which I use to toggle the
-corresponding bit in the u64 in device_{show,store}_bit.
-
-So I converted mce_dont_log_ce and mce_disabled (renaming it into the
-more correct mca_disabled) and it seems to work.
-
-The asm looks sane too. One other advantage is that it makes the code
-much more cleaner and compact by collecting all those bool config values
-in a single struct, which was my original incentive to do that.
-
-So please take a look and let me know whether this is sane, especially
-the above assumption that I can access a u64 bitfield through a u64 *
-and the bits are where they're expected to be. gcc seems to do that...
-and I don't see anything in the C99 standard that would object to it but
-I could be overlooking something.
+2012/10/11, Changman Lee <cm224.lee@gmail.com>:
+> 2012년 10월 11일 목요일에 Namjae Jeon<linkinjeon@gmail.com>님이 작성:
+>> 2012/10/10 Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+>>
+>>>>
+>>>> I mean that every volume is placed inside any partition (MTD or GPT).
+> Every partition begins from any
+>>>> physical sector. So, as I can understand, f2fs volume can begin from
+> physical sector that is laid
+>>>> inside physical erase block. Thereby, in such case of formating the
+> f2fs's operation units will be
+>>>> unaligned in relation of physical erase blocks, from my point of view.
+> Maybe, I misunderstand
+>>>> something but it can lead to additional FTL operations and performance
+> degradation, from my point of
+>>>> view.
+>>>
+>>> I think mkfs already calculates the offset to align that.
+>> I think this answer is not what he want.
+>> If you don't use partition table such as dos partition table or gpt, I
+>> think that it is possible to align using mkfs.
+>> But If we should consider partition table space in storage, I don't
+>> understand how it  could be align using mkfs.
+>>
+>> Thanks.
+>
+> We can know the physical starting sector address of any partitions from
+> hdio geometry information got by ioctl.
+If so, first block and end block of partition are useless ?
 
 Thanks.
-
-
---
-
-Borislav Petkov (5):
-  drivers/base: Add a DEVICE_BOOL_ATTR macro
-  x86, MCA: Convert dont_log_ce, banks and tolerant
-  x86, MCA: Convert rip_msr, mce_bootlog, monarch_timeout
-  x86, MCA: Convert the next three variables batch
-  x86, MCA: Finish mca_config conversion
-
- arch/x86/include/asm/mce.h                |  21 ++-
- arch/x86/kernel/cpu/mcheck/mce-internal.h |   2 -
- arch/x86/kernel/cpu/mcheck/mce-severity.c |   4 +-
- arch/x86/kernel/cpu/mcheck/mce.c          | 213 +++++++++++++++---------------
- arch/x86/kernel/cpu/mcheck/mce_intel.c    |   8 +-
- arch/x86/lguest/boot.c                    |   2 +-
- drivers/base/core.c                       |  24 ++++
- include/linux/device.h                    |   7 +
- 8 files changed, 164 insertions(+), 117 deletions(-)
-
--- 
-1.8.0.rc0.18.gf84667d
-
+>
+>>> Thanks,
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel"
+> in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>> in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
