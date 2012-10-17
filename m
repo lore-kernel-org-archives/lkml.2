@@ -1,93 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757625Ab2JQTNm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 15:13:42 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:39525 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756511Ab2JQTNl (ORCPT
+	id S932494Ab2JQTPz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 15:15:55 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:56233 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756635Ab2JQTPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 15:13:41 -0400
-Subject: Re: [Q] Default SLAB allocator
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Tim Bird <tim.bird@am.sony.com>
-Cc: Ezequiel Garcia <elezegarcia@gmail.com>,
-        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "celinux-dev@lists.celinuxforum.org" 
-	<celinux-dev@lists.celinuxforum.org>
-In-Reply-To: <507EFCC3.1050304@am.sony.com>
-References: <CALF0-+XGn5=QSE0bpa4RTag9CAJ63MKz1kvaYbpw34qUhViaZA@mail.gmail.com>
-	 <m27gqwtyu9.fsf@firstfloor.org>
-	 <alpine.DEB.2.00.1210111558290.6409@chino.kir.corp.google.com>
-	 <m2391ktxjj.fsf@firstfloor.org>
-	 <CALF0-+WLZWtwYY4taYW9D7j-abCJeY90JzcTQ2hGK64ftWsdxw@mail.gmail.com>
-	 <alpine.DEB.2.00.1210130252030.7462@chino.kir.corp.google.com>
-	 <CALF0-+Xp_P_NjZpifzDSWxz=aBzy_fwaTB3poGLEJA8yBPQb_Q@mail.gmail.com>
-	 <alpine.DEB.2.00.1210151745400.31712@chino.kir.corp.google.com>
-	 <CALF0-+WgfnNOOZwj+WLB397cgGX7YhNuoPXAK5E0DZ5v_BxxEA@mail.gmail.com>
-	 <1350392160.3954.986.camel@edumazet-glaptop> <507DA245.9050709@am.sony.com>
-	 <CALF0-+VLVqy_uE63_jL83qh8MqBQAE3vYLRX1mRQURZ4a1M20g@mail.gmail.com>
-	 <1350414968.3954.1427.camel@edumazet-glaptop>
-	 <507EFCC3.1050304@am.sony.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Oct 2012 21:13:37 +0200
-Message-ID: <1350501217.26103.852.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Oct 2012 15:15:53 -0400
+Date: Wed, 17 Oct 2012 12:15:49 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Arun MURTHY <arun.murthy@stericsson.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCHv5 1/4] modem_shm: Add Modem Access Framework
+Message-ID: <20121017191549.GA18374@kroah.com>
+References: <1350278920-25510-1-git-send-email-arun.murthy@stericsson.com>
+ <1350278920-25510-2-git-send-email-arun.murthy@stericsson.com>
+ <20121015212943.GA12540@kroah.com>
+ <F45880696056844FA6A73F415B568C695B9C5CECE3@EXDCVYMBSTM006.EQ1STM.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F45880696056844FA6A73F415B568C695B9C5CECE3@EXDCVYMBSTM006.EQ1STM.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-17 at 11:45 -0700, Tim Bird wrote:
+On Wed, Oct 17, 2012 at 10:00:10AM +0200, Arun MURTHY wrote:
+> > On Mon, Oct 15, 2012 at 10:58:37AM +0530, Arun Murthy wrote:
+> > 
+> > I'm going to ignore your .c logic, as there are things in it that I don't think is
+> > correct.  But it all comes down to your data structures, if you fix them, then
+> > the .c logic will become correct:
 
-> 8G is a small web server?  The RAM budget for Linux on one of
-> Sony's cameras was 10M.  We're not merely not in the same ballpark -
-> you're in a ballpark and I'm trimming bonsai trees... :-)
+You still aren't understanding what I am trying to say here.
+
+So, one final try...
+
+> > > +
+> > > +#include <linux/device.h>
+> > > +
+> > > +struct clients {
+> > > +	struct device *dev;
+> > 
+> > Why is this a pointer?  It should be embedded in the structure.
 > 
+> This is the pointer to the clients's device structure. There will be a
+> single entity for a modem but multiple clients. Hence this struct is 
+> specific for each client.
 
-Even laptops in 2012 have +4GB of ram.
+But each "client" should be a device, so embed it in the structure.
 
-(Maybe not Sony laptops, I have to double check ?)
-
-Yes, servers do have more ram than laptops.
-
-(Maybe not Sony servers, I have to double check ?)
-
-> > # grep Slab /proc/meminfo
-> > Slab:             351592 kB
+> > > +	atomic_t cnt;
 > > 
-> > # egrep "kmalloc-32|kmalloc-16|kmalloc-8" /proc/slabinfo 
-> > kmalloc-32         11332  12544     32  128    1 : tunables    0    0    0 : slabdata     98     98      0
-> > kmalloc-16          5888   5888     16  256    1 : tunables    0    0    0 : slabdata     23     23      0
-> > kmalloc-8          76563  82432      8  512    1 : tunables    0    0    0 : slabdata    161    161      0
-> > 
-> > Really, some waste on these small objects is pure noise on SMP hosts.
-> In this example, it appears that if all kmalloc-8's were pushed into 32-byte slabs,
-> we'd lose about 1.8 meg due to pure slab overhead.  This would not be noise
-> on my system.
+> > Why is this needed at all?  And if it's needed, why is it an atomic?
+> > (hint, your use of atomic_t really isn't correct at all in this patch, it's not doing
+> > what you think it is doing...)
+> 
+> Basically the operation done by this, i.e modem access/release has a lot of
+> affect on the clients. Since we are accesing some modem registers without
+> this modem request it might lead to system freeze. Hence such cross over
+> scenarios are considered and the counter is increased/decreased after the
+> operation(modem access/release). And reading of these variable are done
+> especially during system suspend, where decision is taken based on the value
+> of the counter read, hence any modification done should preside over read.
+> Moreover since there are multiple clients, using atomic for a simple locking
+> mechanism.
 
+Hint, if you _ever_ say, "I'll use an atomic_t as a simple lock", you
+are usually wrong.  But sometimes it can be done right.  So I went and
+re-read your implementation.
 
-I said :
+You got it wrong.
 
-<quote>
-I would remove small kmalloc-XX caches, as sharing a cache line
-is sometime dangerous for performance, because of false sharing.
+So don't do this.
 
-They make sense only for very small hosts
-</quote>
+Seriously, an atomic value is not a lock, and, as you used it, it
+doesn't even work properly.  So don't try to roll your own lock, either
+use a lock, or use the built-in-reference-counting of the driver core,
+which is what I keep saying here.
 
-I think your 10M cameras are very tiny hosts.
+I'll say it again, don't do this.  Use the build-in reference count of
+the struct device, that the kernel can manage for you, to handle this.
+It will do it correctly, simply, and make your life a whole lot easier,
+and better yet, will allow me to accept this code.
 
-Using SLUB on them might not be the best choice.
+As it is, it is broken and wrong and quite buggy.
 
-First time I ran linux, years ago, it was on 486SX machines with 8M of
-memory (or maybe less, I dont remember exactly). But I no longer use
-this class of machines with recent kernels.
+Please use the driver core properly.  I know it can be difficult, and
+isn't the best documented body of code.  But it works, and works well,
+and when people try to work around it thinking they don't need it, or
+will just roll their own logic instead, they get it wrong and it causes
+problems.  Just like this implementation shows.
 
-# size vmlinux
-   text	   data	    bss	    dec	    hex	filename
-10290631	1278976	1896448	13466055	 cd79c7	vmlinux
+So please, go back, consult with others on your team about how to do
+this right.
 
+If you have specific questions about the driver core that I can answer,
+after you have read a few users of it (look at the bus code from
+something "simple" for how to do this, don't look at USB) I will be glad
+to help out.  But I feel that the previous review comments I have made
+in this area, have been totally ignored, so I'm loath to try to do the
+design work for you here.  You need to work it out so you feel
+comfortable with it, not me.
 
+good luck,
+
+greg k-h
+
+p.s. I'm sure your company/team/coworkers can help review your patches,
+right?  Please run them by someone else first, that would have caught
+the locking/atomic_t issue immediately.
