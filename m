@@ -1,110 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357Ab2JQIrO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 04:47:14 -0400
-Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:44602 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756310Ab2JQIrM (ORCPT
+	id S1756311Ab2JQItZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 04:49:25 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:60022 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751784Ab2JQItX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 04:47:12 -0400
-Message-ID: <507E7030.9070607@ce.jp.nec.com>
-Date: Wed, 17 Oct 2012 17:45:36 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Wed, 17 Oct 2012 04:49:23 -0400
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH] blkcg: Fix use-after-free of q->root_blkg and q->root_rl.blkg
-References: <50750367.2070508@ce.jp.nec.com> <20121010155929.GA18733@redhat.com> <50762182.5090806@ce.jp.nec.com> <20121016232040.GH16166@google.com> <507DF58E.8060804@ce.jp.nec.com>
-In-Reply-To: <507DF58E.8060804@ce.jp.nec.com>
+In-Reply-To: <507E4531.1070700@jp.fujitsu.com>
+References: <20121008150949.GA15130@redhat.com> <CAHGf_=pr1AYeWZhaC2MKN-XjiWB7=hs92V0sH-zVw3i00X-e=A@mail.gmail.com>
+ <alpine.DEB.2.00.1210152055150.5400@chino.kir.corp.google.com>
+ <CAHGf_=rLjQbtWQLDcbsaq5=zcZgjdveaOVdGtBgBwZFt78py4Q@mail.gmail.com>
+ <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com>
+ <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com>
+ <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com>
+ <20121017040515.GA13505@redhat.com> <alpine.DEB.2.00.1210162222100.26279@chino.kir.corp.google.com>
+ <507E4531.1070700@jp.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Wed, 17 Oct 2012 04:49:02 -0400
+Message-ID: <CAHGf_=rCbH7=6FX+PhhPUbixw-0TstdpTNzMEmXgQALbNAkGRg@mail.gmail.com>
+Subject: Re: [patch for-3.7] mm, mempolicy: fix printing stack contents in numa_maps
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        bhutchings@solarflare.com,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blk_put_rl() does not call blkg_put() for q->root_rl because we
-don't take request list reference on q->root_blkg.
-However, if root_blkg is once attached then detached (freed),
-blk_put_rl() is confused by the bogus pointer in q->root_blkg.
+On Wed, Oct 17, 2012 at 1:42 AM, Kamezawa Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> (2012/10/17 14:24), David Rientjes wrote:
+>>
+>> On Wed, 17 Oct 2012, Dave Jones wrote:
+>>
+>>> BUG: sleeping function called from invalid context at kernel/mutex.c:269
+>>> in_atomic(): 1, irqs_disabled(): 0, pid: 8558, name: trinity-child2
+>>> 3 locks on stack by trinity-child2/8558:
+>>>   #0: held:     (&p->lock){+.+.+.}, instance: ffff88010c9a00b0, at:
+>>> [<ffffffff8120cd1f>] seq_lseek+0x3f/0x120
+>>>   #1: held:     (&mm->mmap_sem){++++++}, instance: ffff88013956f7c8, at:
+>>> [<ffffffff81254437>] m_start+0xa7/0x190
+>>>   #2: held:     (&(&p->alloc_lock)->rlock){+.+...}, instance:
+>>> ffff88011fc64f30, at: [<ffffffff81254f8f>] show_numa_map+0x14f/0x610
+>>> Pid: 8558, comm: trinity-child2 Not tainted 3.7.0-rc1+ #32
+>>> Call Trace:
+>>>   [<ffffffff810ae4ec>] __might_sleep+0x14c/0x200
+>>>   [<ffffffff816bdf4e>] mutex_lock_nested+0x2e/0x50
+>>>   [<ffffffff811c43a3>] mpol_shared_policy_lookup+0x33/0x90
+>>>   [<ffffffff8118d5c3>] shmem_get_policy+0x33/0x40
+>>>   [<ffffffff811c31fa>] get_vma_policy+0x3a/0x90
+>>>   [<ffffffff81254fa3>] show_numa_map+0x163/0x610
+>>>   [<ffffffff81255b10>] ? pid_maps_open+0x20/0x20
+>>>   [<ffffffff81255980>] ? pagemap_hugetlb_range+0xf0/0xf0
+>>>   [<ffffffff81255483>] show_pid_numa_map+0x13/0x20
+>>>   [<ffffffff8120c902>] traverse+0xf2/0x230
+>>>   [<ffffffff8120cd8b>] seq_lseek+0xab/0x120
+>>>   [<ffffffff811e6c0b>] sys_lseek+0x7b/0xb0
+>>>   [<ffffffff816ca088>] tracesys+0xe1/0xe6
+>>>
+>>
+>> Hmm, looks like we need to change the refcount semantics entirely.  We'll
+>> need to make get_vma_policy() always take a reference and then drop it
+>> accordingly.  This work sif get_vma_policy() can grab a reference while
+>> holding task_lock() for the task policy fallback case.
+>>
+>> Comments on this approach?
+>
+>
+> I think this refcounting is better than using task_lock().
 
-For example, with !CONFIG_BLK_DEV_THROTTLING &&
-CONFIG_CFQ_GROUP_IOSCHED,
-switching IO scheduler from cfq to deadline will cause system stall
-after the following warning with 3.6:
-
-> WARNING: at /work/build/linux/block/blk-cgroup.h:250
-> blk_put_rl+0x4d/0x95()
-> Modules linked in: bridge stp llc sunrpc acpi_cpufreq freq_table mperf
-> ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4
-> Pid: 0, comm: swapper/0 Not tainted 3.6.0 #1
-> Call Trace:
->  <IRQ>  [<ffffffff810453bd>] warn_slowpath_common+0x85/0x9d
->  [<ffffffff810453ef>] warn_slowpath_null+0x1a/0x1c
->  [<ffffffff811d5f8d>] blk_put_rl+0x4d/0x95
->  [<ffffffff811d614a>] __blk_put_request+0xc3/0xcb
->  [<ffffffff811d71a3>] blk_finish_request+0x232/0x23f
->  [<ffffffff811d76c3>] ? blk_end_bidi_request+0x34/0x5d
->  [<ffffffff811d76d1>] blk_end_bidi_request+0x42/0x5d
->  [<ffffffff811d7728>] blk_end_request+0x10/0x12
->  [<ffffffff812cdf16>] scsi_io_completion+0x207/0x4d5
->  [<ffffffff812c6fcf>] scsi_finish_command+0xfa/0x103
->  [<ffffffff812ce2f8>] scsi_softirq_done+0xff/0x108
->  [<ffffffff811dcea5>] blk_done_softirq+0x8d/0xa1
->  [<ffffffff810915d5>] ?
->  generic_smp_call_function_single_interrupt+0x9f/0xd7
->  [<ffffffff8104cf5b>] __do_softirq+0x102/0x213
->  [<ffffffff8108a5ec>] ? lock_release_holdtime+0xb6/0xbb
->  [<ffffffff8104d2b4>] ? raise_softirq_irqoff+0x9/0x3d
->  [<ffffffff81424dfc>] call_softirq+0x1c/0x30
->  [<ffffffff81011beb>] do_softirq+0x4b/0xa3
->  [<ffffffff8104cdb0>] irq_exit+0x53/0xd5
->  [<ffffffff8102d865>] smp_call_function_single_interrupt+0x34/0x36
->  [<ffffffff8142486f>] call_function_single_interrupt+0x6f/0x80
->  <EOI>  [<ffffffff8101800b>] ? mwait_idle+0x94/0xcd
->  [<ffffffff81018002>] ? mwait_idle+0x8b/0xcd
->  [<ffffffff81017811>] cpu_idle+0xbb/0x114
->  [<ffffffff81401fbd>] rest_init+0xc1/0xc8
->  [<ffffffff81401efc>] ? csum_partial_copy_generic+0x16c/0x16c
->  [<ffffffff81cdbd3d>] start_kernel+0x3d4/0x3e1
->  [<ffffffff81cdb79e>] ? kernel_init+0x1f7/0x1f7
->  [<ffffffff81cdb2dd>] x86_64_start_reservations+0xb8/0xbd
->  [<ffffffff81cdb3e3>] x86_64_start_kernel+0x101/0x110
-
-This patch clears q->root_blkg and q->root_rl.blkg when root blkg
-is destroyed.
-
-Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>
----
-v3:
-  Removed a hunk for NULL-check q->root_blkg in __blk_queue_next_rl().
-  Current code can handle the case without the change.
-
-v2:
-  Added comments in code based on Vivek's suggestion.
-
- block/blk-cgroup.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
-
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index f3b44a6..54f35d1 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -285,6 +285,13 @@ static void blkg_destroy_all(struct request_queue *q)
- 		blkg_destroy(blkg);
- 		spin_unlock(&blkcg->lock);
- 	}
-+
-+	/*
-+	 * root blkg is destroyed.  Just clear the pointer since
-+	 * root_rl does not take reference on root blkg.
-+	 */
-+	q->root_blkg = NULL;
-+	q->root_rl.blkg = NULL;
- }
- 
- static void blkg_rcu_free(struct rcu_head *rcu_head)
+I don't think so. get_vma_policy() is used from fast path. In other
+words, number of
+atomic ops is sensible for allocation performance. Instead, I'd like
+to use spinlock
+for shared mempolicy instead of mutex.
