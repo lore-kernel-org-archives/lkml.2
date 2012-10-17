@@ -1,96 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345Ab2JQPMK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 11:12:10 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:46065 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794Ab2JQPMI (ORCPT
+	id S1757373Ab2JQPON (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 11:14:13 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:33618 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756285Ab2JQPOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 11:12:08 -0400
-Message-ID: <507ECA43.3070402@linux.vnet.ibm.com>
-Date: Wed, 17 Oct 2012 08:09:55 -0700
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: wency@cn.fujitsu.com
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
-        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH v2 2/5] memory-hotplug: update mce_bad_pages when removing
- the memory
-References: <1350475735-26136-1-git-send-email-wency@cn.fujitsu.com> <1350475735-26136-3-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1350475735-26136-3-git-send-email-wency@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 17 Oct 2012 11:14:11 -0400
+Message-ID: <1350486837.6414.3.camel@lambeau>
+Subject: Re: [PATCH RFC V2 0/5] Separate consigned (expected steal) from
+ steal time.
+From: Michael Wolf <mjw@linux.vnet.ibm.com>
+Reply-To: mjw@linux.vnet.ibm.com
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, peterz@infradead.org,
+        mtosatti@redhat.com, mingo@redhat.com, avi@redhat.com,
+        anthony@codemonkey.ws
+Date: Wed, 17 Oct 2012 10:13:57 -0500
+In-Reply-To: <507EE77D.6010906@parallels.com>
+References: <20121017022249.16949.2775.stgit@lambeau>
+	 <507EE77D.6010906@parallels.com>
+Organization: IBM
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101715-2876-0000-0000-0000011D3EB1
+Mime-Version: 1.0
+x-cbid: 12101715-9264-0000-0000-00000283281B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wen,
-
-> +#ifdef CONFIG_MEMORY_FAILURE
-> +static void clear_hwpoisoned_pages(struct page *memmap, int nr_pages)
-> +{
-> +	int i;
-> +
-> +	if (!memmap)
-> +		return;
-
-I guess free_section_usemap() does the same thing.
-
-> +	for (i = 0; i < PAGES_PER_SECTION; i++) {
-> +		if (PageHWPoison(&memmap[i])) {
-> +			atomic_long_sub(1, &mce_bad_pages);
-> +			ClearPageHWPoison(&memmap[i]);
-> +		}
-> +	}
-> +}
-> +#endif
-> +
->  void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
->  {
->  	struct page *memmap = NULL;
-> @@ -786,6 +803,10 @@ void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
->  		ms->pageblock_flags = NULL;
->  	}
+On Wed, 2012-10-17 at 21:14 +0400, Glauber Costa wrote:
+> On 10/17/2012 06:23 AM, Michael Wolf wrote:
+> > In the case of where you have a system that is running in a
+> > capped or overcommitted environment the user may see steal time
+> > being reported in accounting tools such as top or vmstat.  This can
+> > cause confusion for the end user.  To ease the confusion this patch set
+> > adds the idea of consigned (expected steal) time.  The host will separate
+> > the consigned time from the steal time.  The consignment limit passed to the
+> > host will be the amount of steal time expected within a fixed period of
+> > time.  Any other steal time accruing during that period will show as the
+> > traditional steal time.
+> > 
+> > TODO:
+> > * Change native_clock to take params and not return a value
+> > * Change update_rq_clock_task
+> > 
+> > Changes from V1:
+> > * Removed the steal time allowed percentage from the guest
+> > * Moved the separation of consigned (expected steal) and steal time to the
+> >   host.
+> > * No longer include a sysctl interface.
+> > 
 > 
-> +#ifdef CONFIG_MEMORY_FAILURE
-> +	clear_hwpoisoned_pages(memmap, PAGES_PER_SECTION);
-> +#endif
-> +
->  	free_section_usemap(memmap, usemap);
->  }
->  #endif
+> You are showing this in the guest somewhere, but tools like top will
+> still not show it. So for quite a while, it achieves nothing.
+> 
+> Of course this is a barrier that any new statistic has to go through. So
+> while annoying, this is per-se ultimately not a blocker.
+> 
+> What I still fail to see, is how this is useful information to be shown
+> in the guest. Honestly, if I'm in a guest VM or container, any time
+> during which I am not running is time I lost. It doesn't matter if this
+> was expected or not. This still seems to me as a host-side problem, to
+> be solved entirely by tooling.
+> 
 
-But why put the call outside the  "if (ms->section_mem_map)" block?  If
-you put it inside, then you don't have to check for !memmap in
-clear_hwpoisoned_pages().
-
-Also, we really frown on #ifdefs scattered throughout code.  I'd suggest
-either:
-
-+static void clear_hwpoisoned_pages(struct page *memmap, int nr_pages)
-+{
-+#ifdef CONFIG_MEMORY_FAILURE
-... existing code
-+#endif /* CONFIG_MEMORY_FAILURE */
-+}
-
-or
-
-+#ifdef CONFIG_MEMORY_FAILURE
-+static void clear_hwpoisoned_pages(struct page *memmap, int nr_pages)
-+{
-... existing code
-+}
-+#else
-+static void clear_hwpoisoned_pages(struct page *memmap, int nr_pages)
-+{}
-+#endif /* CONFIG_MEMORY_FAILURE */
-
-and keep the #ifdef out of sparse_remove_one_section().
+What tools like top and vmstat will show is altered.  When I put time in
+the consign bucket it does not show up in steal.  So now as long as the
+system is performing as expected the user will see 100% and 0% steal.  I
+added the consign field to /proc/stat so that all time accrued in the
+period is accounted for and also for debugging purposes.  The user wont
+care about consign and will not see it.  
 
