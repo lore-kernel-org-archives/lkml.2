@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab2JQLcT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 07:32:19 -0400
+	id S1756687Ab2JQLcR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 07:32:17 -0400
 Received: from smtp.citrix.com ([66.165.176.89]:52386 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752197Ab2JQLcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 07:32:14 -0400
+	id S1755175Ab2JQLcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 07:32:15 -0400
 X-IronPort-AV: E=Sophos;i="4.80,600,1344211200"; 
-   d="scan'208";a="41487900"
+   d="scan'208";a="41487901"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 CC: Stefano Stabellini <stefano.stabellini@citrix.com>,
         Mukesh Rathor <mukesh.rathor@oracle.com>, linux-kernel@vger.kernel.org,
         xen-devel@lists.xen.org, Ian Campbell <ian.campbell@citrix.com>
-Subject: [PATCH 2/6] xen: arm: enable balloon driver
-Date: Wed, 17 Oct 2012 12:32:08 +0100
-Message-ID: <1350473532-15863-2-git-send-email-ian.campbell@citrix.com>
+Subject: [PATCH 1/6] xen: balloon: allow PVMMU interfaces to be compiled out
+Date: Wed, 17 Oct 2012 12:32:07 +0100
+Message-ID: <1350473532-15863-1-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1350473518.2460.58.camel@zakaz.uk.xensource.com>
 References: <1350473518.2460.58.camel@zakaz.uk.xensource.com>
@@ -25,77 +25,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code is no in a state where can just enable it.
+The ARM platform has no concept of PVMMU and therefor no
+HYPERVISOR_update_va_mapping et al. Allow this code to be compiled out
+when not required.
 
-Drop the *_xenballloned_pages duplicates since these are now supplied
-by the balloon code.
+In some similar situations (e.g. P2M) we have defined dummy functions
+to avoid this, however I think we can/should draw the line at dummying
+out actual hypercalls.
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
 ---
- arch/arm/xen/enlighten.c |   23 +++++------------------
- drivers/xen/Makefile     |    4 ++--
- 2 files changed, 7 insertions(+), 20 deletions(-)
+ arch/x86/xen/Kconfig  |    1 +
+ drivers/xen/Kconfig   |    3 +++
+ drivers/xen/balloon.c |    4 ++++
+ 3 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index 59bcb96..ba5cc13 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -8,6 +8,7 @@
- #include <xen/features.h>
- #include <xen/platform_pci.h>
- #include <xen/xenbus.h>
-+#include <xen/page.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
- #include <linux/interrupt.h>
-@@ -29,6 +30,10 @@ struct shared_info *HYPERVISOR_shared_info = (void *)&xen_dummy_shared_info;
+diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
+index 9323b8c..6d101a1 100644
+--- a/arch/x86/xen/Kconfig
++++ b/arch/x86/xen/Kconfig
+@@ -6,6 +6,7 @@ config XEN
+ 	bool "Xen guest support"
+ 	select PARAVIRT
+ 	select PARAVIRT_CLOCK
++	select XEN_HAVE_PVMMU
+ 	depends on X86_64 || (X86_32 && X86_PAE && !X86_VISWS)
+ 	depends on X86_CMPXCHG && X86_TSC
+ 	help
+diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
+index d4dffcd..9c00652 100644
+--- a/drivers/xen/Kconfig
++++ b/drivers/xen/Kconfig
+@@ -204,4 +204,7 @@ config XEN_MCE_LOG
+ 	  Allow kernel fetching MCE error from Xen platform and
+ 	  converting it into Linux mcelog format for mcelog tools
  
- DEFINE_PER_CPU(struct vcpu_info *, xen_vcpu);
- 
-+/* These are unused until we support booting "pre-ballooned" */
-+unsigned long xen_released_pages;
-+struct xen_memory_region xen_extra_mem[XEN_EXTRA_MEM_MAX_REGIONS] __initdata;
++config XEN_HAVE_PVMMU
++       bool
 +
- /* TODO: to be removed */
- __read_mostly int xen_have_vector_callback;
- EXPORT_SYMBOL_GPL(xen_have_vector_callback);
-@@ -148,21 +153,3 @@ static int __init xen_init_events(void)
- 	return 0;
- }
- postcore_initcall(xen_init_events);
--
--/* XXX: only until balloon is properly working */
--int alloc_xenballooned_pages(int nr_pages, struct page **pages, bool highmem)
--{
--	*pages = alloc_pages(highmem ? GFP_HIGHUSER : GFP_KERNEL,
--			get_order(nr_pages));
--	if (*pages == NULL)
--		return -ENOMEM;
--	return 0;
--}
--EXPORT_SYMBOL_GPL(alloc_xenballooned_pages);
--
--void free_xenballooned_pages(int nr_pages, struct page **pages)
--{
--	kfree(*pages);
--	*pages = NULL;
--}
--EXPORT_SYMBOL_GPL(free_xenballooned_pages);
-diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-index 0e863703..909bb56 100644
---- a/drivers/xen/Makefile
-+++ b/drivers/xen/Makefile
-@@ -1,8 +1,8 @@
- ifneq ($(CONFIG_ARM),y)
--obj-y	+= manage.o balloon.o
-+obj-y	+= manage.o
- obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
- endif
--obj-y	+= grant-table.o features.o events.o
-+obj-y	+= grant-table.o features.o events.o balloon.o
- obj-y	+= xenbus/
+ endmenu
+diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+index db3aa34..92449a0 100644
+--- a/drivers/xen/balloon.c
++++ b/drivers/xen/balloon.c
+@@ -360,6 +360,7 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
+ 		if (!xen_feature(XENFEAT_auto_translated_physmap))
+ 			set_phys_to_machine(pfn, frame_list[i]);
  
- nostackp := $(call cc-option, -fno-stack-protector)
++#ifdef CONFIG_XEN_HAVE_PVMMU
+ 		/* Link back into the page tables if not highmem. */
+ 		if (xen_pv_domain() && !PageHighMem(page) &&
+ 		    !xen_feature(XENFEAT_auto_translated_physmap)) {
+@@ -371,6 +372,7 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
+ 				0);
+ 			BUG_ON(ret);
+ 		}
++#endif
+ 
+ 		/* Relinquish the page back to the allocator. */
+ 		ClearPageReserved(page);
+@@ -419,6 +421,7 @@ static enum bp_state decrease_reservation(unsigned long nr_pages, gfp_t gfp)
+ 
+ 		scrub_page(page);
+ 
++#ifdef CONFIG_XEN_HAVE_PVMMU
+ 		if (xen_pv_domain() && !PageHighMem(page)) {
+ 			if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+ 				ret = HYPERVISOR_update_va_mapping(
+@@ -427,6 +430,7 @@ static enum bp_state decrease_reservation(unsigned long nr_pages, gfp_t gfp)
+ 				BUG_ON(ret);
+ 			}
+ 		}
++#endif
+ 	}
+ 
+ 	/* Ensure that ballooned highmem pages don't have kmaps. */
 -- 
 1.7.2.5
 
