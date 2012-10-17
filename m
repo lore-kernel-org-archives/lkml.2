@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500Ab2JQScP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 14:32:15 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:36172 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932247Ab2JQScO (ORCPT
+	id S1757643Ab2JQSmO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 14:42:14 -0400
+Received: from smarthost1.sentex.ca ([64.7.153.18]:29910 "EHLO
+	smarthost1.sentex.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756533Ab2JQSmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 14:32:14 -0400
-Message-ID: <507EF9AB.9070603@wwwdotorg.org>
-Date: Wed, 17 Oct 2012 12:32:11 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Wed, 17 Oct 2012 14:42:12 -0400
+X-Qmail-Scanner-Mail-From: mghias@connecttech.com via vmail1.sentex.ca
+X-Qmail-Scanner: 1.25 (Clear:RC:1(127.0.0.1):. Processed in 0.053042 secs)
+From: "Muhammad Ghias" <mghias@connecttech.com>
+To: "'Marc Kleine-Budde'" <mkl@pengutronix.de>
+Cc: "'Wolfgang Grandegger'" <wg@grandegger.com>,
+        <linux-kernel@vger.kernel.org>, <linux-can@vger.kernel.org>
+References: <02ac01cdabe1$b5403e10$1fc0ba30$@connecttech.com> <507E84C5.2040600@pengutronix.de>
+In-Reply-To: <507E84C5.2040600@pengutronix.de>
+Subject: RE: [PATCH] CAN: sja1000: Add support for Connect Tech Inc's Canpro/104-Plus Opto CAN board
+Date: Wed, 17 Oct 2012 14:42:12 -0400
+Organization: Connect Tech Inc.
+Message-ID: <036301cdac97$1ee892d0$5cb9b870$@connecttech.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 7/7] gpio/tegra: convert to use linear irqdomain
-References: <1350415413-3723-1-git-send-email-linus.walleij@linaro.org> <507DE0AE.7090701@wwwdotorg.org>
-In-Reply-To: <507DE0AE.7090701@wwwdotorg.org>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQD9RveEPUHHP3XKLJ88t+1SPwN4QALa03EgmUfGIjA=
+Content-Language: en-ca
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2012 04:33 PM, Stephen Warren wrote:
-> On 10/16/2012 01:23 PM, Linus Walleij wrote:
->> The MXS driver tries to do the work of irq_domain_add_linear()
->> by reserving a bunch of descriptors somewhere and keeping track
->> of the base offset, then calling irq_domain_add_legacy(). Let's
->> stop doing that and simply use the linear IRQ domain.
+Hi Marc,
+
+I tested the patch v2 with kernel 3.6.1 and 3.7-rc1. Clean compile and works
+with hardware.
+
+Regards,
+Muhammad
+
+-----Original Message-----
+From: Marc Kleine-Budde [mailto:mkl@pengutronix.de] 
+Sent: October-17-12 6:13 AM
+To: Muhammad Ghias
+Cc: 'Wolfgang Grandegger'; linux-kernel@vger.kernel.org;
+linux-can@vger.kernel.org
+Subject: Re: [PATCH] CAN: sja1000: Add support for Connect Tech Inc's
+Canpro/104-Plus Opto CAN board
+
+On 10/16/2012 11:03 PM, Muhammad Ghias wrote:
+> Patch adds support for CANpro/104-Plus Opto CAN board. Board uses PLX9030
+> bridge and two NXP SJA1000 CAN controllers. Patch is generated and tested
+> with kernel 3.6.1.
 > 
-> This /looks/ fine, but appears to break users of GPIOs from this module,
-> and causes a backtrace when cat /sys/kernel/debug/gpio:
-...
+> If you have any questions or any feedback please let me know.
 
-The following additional diff makes it work:
+Thanks, the code looks good. Please try, if possible, to send your
+patches via git send-email, as outlooks messed up the patch. I've fixed
+all line wrapping problems by hand, applied the patch and send a v2,
+please test.
 
-> diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
-> index 0234162..c7c175a 100644
-> --- a/drivers/gpio/gpio-tegra.c
-> +++ b/drivers/gpio/gpio-tegra.c
-> @@ -460,7 +460,7 @@ static int __devinit tegra_gpio_probe(struct platform_device *pdev)
->         gpiochip_add(&tegra_gpio_chip);
->  
->         for (gpio = 0; gpio < tegra_gpio_chip.ngpio; gpio++) {
-> -               int irq = irq_find_mapping(irq_domain, gpio);
-> +               int irq = irq_create_mapping(irq_domain, gpio);
->                 /* No validity check; all Tegra GPIOs are valid IRQs */
->  
->                 bank = &tegra_gpio_banks[GPIO_BANK(gpio)];
+regards, Marc
 
-I wonder if perhaps the entirety of that loop and perhaps the one after
-it should be in the IRQ domain's map op - is that how all this is
-intended to work?
+P.S.: Please use the linux-can@vger.kernel.org mailing list for CAN
+related patches/topics.
+
+-- 
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
