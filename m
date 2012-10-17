@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab2JQLhX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 07:37:23 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11697 "EHLO
+	id S1756715Ab2JQLja (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 07:39:30 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11761 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755525Ab2JQLhW (ORCPT
+	with ESMTP id S1751132Ab2JQLj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 07:37:22 -0400
+	Wed, 17 Oct 2012 07:39:29 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 17 Oct 2012 04:37:15 -0700
+	by hqnvupgp08.nvidia.com on Wed, 17 Oct 2012 04:39:29 -0700
 From: Pritesh Raithatha <praithatha@nvidia.com>
-To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <swarren@nvidia.com>, <linus.walleij@linaro.org>,
-        <dong.aisheng@linaro.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+To: <linus.walleij@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <swarren@nvidia.com>
 CC: <praithatha@nvidia.com>
-Subject: [PATCH 1/2] dt: Document: correct tegra20/30 pinctrl slew-rate name
-Date: Wed, 17 Oct 2012 17:07:00 +0530
-Message-ID: <1350473820-25662-1-git-send-email-praithatha@nvidia.com>
+Subject: [PATCH 2/2] pinctrl: tegra: set low power mode bank width to 2
+Date: Wed, 17 Oct 2012 17:09:36 +0530
+Message-ID: <1350473976-25700-1-git-send-email-praithatha@nvidia.com>
 X-Mailer: git-send-email 1.7.1
 X-NVConfidentiality: public
 MIME-Version: 1.0
@@ -26,40 +24,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-change nvidia,slew_rate* to nvidia,slew-rate*
-
 Signed-off-by: Pritesh Raithatha <praithatha@nvidia.com>
 ---
- .../bindings/pinctrl/nvidia,tegra20-pinmux.txt     |    2 +-
- .../bindings/pinctrl/nvidia,tegra30-pinmux.txt     |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/pinctrl/pinctrl-tegra.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra20-pinmux.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra20-pinmux.txt
-index c8e5782..683fde9 100644
---- a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra20-pinmux.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra20-pinmux.txt
-@@ -93,7 +93,7 @@ Valid values for pin and group names are:
- 
-     With some exceptions, these support nvidia,high-speed-mode,
-     nvidia,schmitt, nvidia,low-power-mode, nvidia,pull-down-strength,
--    nvidia,pull-up-strength, nvidia,slew_rate-rising, nvidia,slew_rate-falling.
-+    nvidia,pull-up-strength, nvidia,slew-rate-rising, nvidia,slew-rate-falling.
- 
-     drive_ao1, drive_ao2, drive_at1, drive_at2, drive_cdev1, drive_cdev2,
-     drive_csus, drive_dap1, drive_dap2, drive_dap3, drive_dap4, drive_dbg,
-diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra30-pinmux.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra30-pinmux.txt
-index c275b70..6f426ed 100644
---- a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra30-pinmux.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra30-pinmux.txt
-@@ -83,7 +83,7 @@ Valid values for pin and group names are:
-   drive groups:
- 
-     These all support nvidia,pull-down-strength, nvidia,pull-up-strength,
--    nvidia,slew_rate-rising, nvidia,slew_rate-falling. Most but not all
-+    nvidia,slew-rate-rising, nvidia,slew-rate-falling. Most but not all
-     support nvidia,high-speed-mode, nvidia,schmitt, nvidia,low-power-mode.
- 
-     ao1, ao2, at1, at2, at3, at4, at5, cdev1, cdev2, cec, crt, csus, dap1,
+diff --git a/drivers/pinctrl/pinctrl-tegra.c b/drivers/pinctrl/pinctrl-tegra.c
+index ae52e4e..5a5f261 100644
+--- a/drivers/pinctrl/pinctrl-tegra.c
++++ b/drivers/pinctrl/pinctrl-tegra.c
+@@ -466,7 +466,7 @@ static int tegra_pinconf_reg(struct tegra_pmx *pmx,
+ 		*bank = g->drv_bank;
+ 		*reg = g->drv_reg;
+ 		*bit = g->lpmd_bit;
+-		*width = 1;
++		*width = 2;
+ 		break;
+ 	case TEGRA_PINCONF_PARAM_DRIVE_DOWN_STRENGTH:
+ 		*bank = g->drv_bank;
 -- 
 1.7.1
 
