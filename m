@@ -1,86 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756855Ab2JQM4B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 08:56:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35616 "EHLO mx1.redhat.com"
+	id S1756761Ab2JQNBL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 09:01:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:34979 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755561Ab2JQMz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 08:55:59 -0400
-Date: Wed, 17 Oct 2012 08:55:39 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michael Spang <spang@google.com>, linux-usb@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, Michael Spang <spang@chromium.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, greno@verizon.net,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
-Subject: Re: USB keyboard backlight powering down.
-Message-ID: <20121017125538.GA2934@hansolo.jdub.homelinux.org>
-References: <20121016152023.GA25506@redhat.com>
- <CAC5F_1=tiGUtWOsOQ17vEYqVxuoVuoEH_nmEZ3BoL0dsgXJn3w@mail.gmail.com>
- <20121016165436.GA5140@kroah.com>
- <20121016173524.GG5378@xanatos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121016173524.GG5378@xanatos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752100Ab2JQNBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 09:01:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,600,1344236400"; 
+   d="scan'208";a="235027523"
+From: ling.ma@intel.com
+To: mingo@elte.hu
+Cc: hpa@zytor.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        iant@google.com, Ma Ling <ling.ma@intel.com>
+Subject: [PATCH RFC V2 2/2] [x86] Optimize copy_page by re-arranging instruction sequence and saving register
+Date: Thu, 18 Oct 2012 03:53:06 +0800
+Message-Id: <1350503586-19198-1-git-send-email-ling.ma@intel.com>
+X-Mailer: git-send-email 1.6.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 10:35:24AM -0700, Sarah Sharp wrote:
-> On Tue, Oct 16, 2012 at 09:54:36AM -0700, Greg Kroah-Hartman wrote:
-> > On Tue, Oct 16, 2012 at 12:45:56PM -0400, Michael Spang wrote:
-> > > On Tue, Oct 16, 2012 at 11:20 AM, Dave Jones <davej@redhat.com> wrote:
-> > > > Gerry (CC'd) reported a bug to us that since 3.6.1, his illuminated
-> > > > Logitech USB keyboard doesn't light up until he hits a key, and then
-> > > > it immediately powers back off, defeating the purpose of having an
-> > > > illumated keyboard.
-> > > >
-> > > > Looking over the 3.6.1 changelog, I see this change, which sounds
-> > > > like it might be responsible ?
-> > > >
-> > > > commit ee537508bdc0c00b96ac497f3d82a68f820e6182
-> > > > Author: Michael Spang <spang@chromium.org>
-> > > > Date:   Fri Sep 14 13:05:49 2012 -0400
-> > > >
-> > > >     Increase XHCI suspend timeout to 16ms
-> > > 
-> > > I don't think this is related to your problem, as this patch is in
-> > > suspend/resume code. It just allows the controller more time to halt.
-> > 
-> > Yeah, that looks odd.
-> > 
-> > But, (adding linux-usb@vger), I think we enabled some "put the device to
-> > sleep if it is idle" logic for all devices, which is what is looking
-> > like is happening here.  The keyboard is being told to go to sleep in
-> > order to save power.
-> > 
-> > We are saving more power, but it looks like the user wants to disable
-> > it, which makes sense for this device.
-> > 
-> > So, do we do this from within the kernel with a blacklist, or rely on
-> > the user knowing how to poke the proper sysfs file to turn the keyboard
-> > back on?
-> 
-> This was the udev bug I was referring to, which I think is causing the
-> keyboard to have auto-suspend enabled:
-> 
-> https://bugzilla.redhat.com/show_bug.cgi?id=825284
-> 
-> udev shouldn't be enabling auto-suspend of USB hids by default, since
-> many of them don't send a wakeup to come out of suspend when they
-> should.  For example, most USB mice only send a wakeup even when they
-> are clicked, not when they are moved.  That causes the user to sit
-> there, frustrated, as they move their mouse and wonder why their screen
-> doesn't unblank.  Other keyboards also lose keystrokes, which means if
-> you pause to compose your thoughts, the first couple letters you type
-> gets dropped.
+From: Ma Ling <ling.ma@intel.com>
 
-I know we fixed that bug for F17, F18, and rawhide.  I did it myself.
-I don't think this is udev related, but we'll double check the version.
+Load and write operation occupy about 35% and 10% respectively
+for most industry benchmarks. Fetched 16-aligned bytes code include 
+about 4 instructions, implying 1.40(0.35 * 4) load, 0.4 write.  
+Modern CPU support 2 load and 1 write per cycle, throughput from write is
+bottleneck for memcpy or copy_page, and some slight CPU only support one mem
+operation per cycle. So it is enough to issue one read and write instruction
+per cycle, and we can save registers. 
 
-Gerry, are you using udev-182-3.fc17 or newer on your F17 install?
+In this patch we also re-arrange instruction sequence to improve performance
+The performance on atom is improved about 11%, 9% on hot/cold-cache case respectively.
 
-josh
+Signed-off-by: Ma Ling <ling.ma@intel.com>
+
+---
+In this version update comments.
+
+Thanks
+Ling
+
+ arch/x86/lib/copy_page_64.S |  103 +++++++++++++++++-------------------------
+ 1 files changed, 42 insertions(+), 61 deletions(-)
+
+diff --git a/arch/x86/lib/copy_page_64.S b/arch/x86/lib/copy_page_64.S
+index cda2e51..0d22f0a 100644
+--- a/arch/x86/lib/copy_page_64.S
++++ b/arch/x86/lib/copy_page_64.S
+@@ -20,75 +20,56 @@ ENDPROC(copy_page_rep)
+ 
+ ENTRY(copy_page)
+ 	CFI_STARTPROC
+-	subq	$2*8,	%rsp
+-	CFI_ADJUST_CFA_OFFSET 2*8
+-	movq	%rbx,	(%rsp)
+-	CFI_REL_OFFSET rbx, 0
+-	movq	%r12,	1*8(%rsp)
+-	CFI_REL_OFFSET r12, 1*8
+-
+ 	movl	$(4096/64)-5,	%ecx
+-	.p2align 4
+-.Loop64:
+-	dec	%rcx
+-	movq	0x8*0(%rsi), %rax
+-	movq	0x8*1(%rsi), %rbx
+-	movq	0x8*2(%rsi), %rdx
+-	movq	0x8*3(%rsi), %r8
+-	movq	0x8*4(%rsi), %r9
+-	movq	0x8*5(%rsi), %r10
+-	movq	0x8*6(%rsi), %r11
+-	movq	0x8*7(%rsi), %r12
+ 
++.Loop64:
+ 	prefetcht0 5*64(%rsi)
+-
+-	movq	%rax, 0x8*0(%rdi)
+-	movq	%rbx, 0x8*1(%rdi)
+-	movq	%rdx, 0x8*2(%rdi)
+-	movq	%r8,  0x8*3(%rdi)
+-	movq	%r9,  0x8*4(%rdi)
+-	movq	%r10, 0x8*5(%rdi)
+-	movq	%r11, 0x8*6(%rdi)
+-	movq	%r12, 0x8*7(%rdi)
+-
+-	leaq	64 (%rsi), %rsi
+-	leaq	64 (%rdi), %rdi
+-
++	decb	%cl
++	movq	0x8*0(%rsi), %r10
++	movq	0x8*1(%rsi), %rax
++	movq	0x8*2(%rsi), %r8
++	movq	0x8*3(%rsi), %r9
++	movq	%r10, 0x8*0(%rdi)
++	movq	%rax, 0x8*1(%rdi)
++	movq	%r8, 0x8*2(%rdi)
++	movq	%r9, 0x8*3(%rdi)
++
++	movq	0x8*4(%rsi), %r10
++	movq	0x8*5(%rsi), %rax
++	movq	0x8*6(%rsi), %r8
++	movq	0x8*7(%rsi), %r9
++	leaq	0x8*8(%rsi), %rsi
++	movq	%r10, 0x8*4(%rdi)
++	movq	%rax, 0x8*5(%rdi)
++	movq	%r8, 0x8*6(%rdi)
++	movq	%r9, 0x8*7(%rdi)
++	leaq	0x8*8(%rdi), %rdi
+ 	jnz	.Loop64
+ 
+-	movl	$5, %ecx
+-	.p2align 4
++	mov	$5, %dl
+ .Loop2:
+-	decl	%ecx
+-
+-	movq	0x8*0(%rsi), %rax
+-	movq	0x8*1(%rsi), %rbx
+-	movq	0x8*2(%rsi), %rdx
+-	movq	0x8*3(%rsi), %r8
+-	movq	0x8*4(%rsi), %r9
+-	movq	0x8*5(%rsi), %r10
+-	movq	0x8*6(%rsi), %r11
+-	movq	0x8*7(%rsi), %r12
+-
+-	movq	%rax, 0x8*0(%rdi)
+-	movq	%rbx, 0x8*1(%rdi)
+-	movq	%rdx, 0x8*2(%rdi)
+-	movq	%r8,  0x8*3(%rdi)
+-	movq	%r9,  0x8*4(%rdi)
+-	movq	%r10, 0x8*5(%rdi)
+-	movq	%r11, 0x8*6(%rdi)
+-	movq	%r12, 0x8*7(%rdi)
+-
+-	leaq	64(%rdi), %rdi
+-	leaq	64(%rsi), %rsi
++	decb	%dl
++	movq	0x8*0(%rsi), %r10
++	movq	0x8*1(%rsi), %rax
++	movq	0x8*2(%rsi), %r8
++	movq	0x8*3(%rsi), %r9
++	movq	%r10, 0x8*0(%rdi)
++	movq	%rax, 0x8*1(%rdi)
++	movq	%r8, 0x8*2(%rdi)
++	movq	%r9, 0x8*3(%rdi)
++
++	movq	0x8*4(%rsi), %r10
++	movq	0x8*5(%rsi), %rax
++	movq	0x8*6(%rsi), %r8
++	movq	0x8*7(%rsi), %r9
++ 	leaq	0x8*8(%rsi), %rsi
++	movq	%r10, 0x8*4(%rdi)
++	movq	%rax, 0x8*5(%rdi)
++	movq	%r8, 0x8*6(%rdi)
++	movq	%r9, 0x8*7(%rdi)
++	leaq	0x8*8(%rdi), %rdi
+ 	jnz	.Loop2
+ 
+-	movq	(%rsp), %rbx
+-	CFI_RESTORE rbx
+-	movq	1*8(%rsp), %r12
+-	CFI_RESTORE r12
+-	addq	$2*8, %rsp
+-	CFI_ADJUST_CFA_OFFSET -2*8
+ 	ret
+ .Lcopy_page_end:
+ 	CFI_ENDPROC
+-- 
+1.6.5.2
+
