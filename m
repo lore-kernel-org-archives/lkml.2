@@ -1,162 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757735Ab2JQTUi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 15:20:38 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50535 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756591Ab2JQTUg (ORCPT
+	id S932522Ab2JQTUz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 15:20:55 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:48893 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932098Ab2JQTUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 15:20:36 -0400
-Date: Wed, 17 Oct 2012 21:20:35 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: lockdep says circular locking since "tty: localise the lock"
-Message-ID: <20121017192035.GA31303@linutronix.de>
+	Wed, 17 Oct 2012 15:20:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1350501217.26103.852.camel@edumazet-glaptop>
+References: <CALF0-+XGn5=QSE0bpa4RTag9CAJ63MKz1kvaYbpw34qUhViaZA@mail.gmail.com>
+ <m27gqwtyu9.fsf@firstfloor.org> <alpine.DEB.2.00.1210111558290.6409@chino.kir.corp.google.com>
+ <m2391ktxjj.fsf@firstfloor.org> <CALF0-+WLZWtwYY4taYW9D7j-abCJeY90JzcTQ2hGK64ftWsdxw@mail.gmail.com>
+ <alpine.DEB.2.00.1210130252030.7462@chino.kir.corp.google.com>
+ <CALF0-+Xp_P_NjZpifzDSWxz=aBzy_fwaTB3poGLEJA8yBPQb_Q@mail.gmail.com>
+ <alpine.DEB.2.00.1210151745400.31712@chino.kir.corp.google.com>
+ <CALF0-+WgfnNOOZwj+WLB397cgGX7YhNuoPXAK5E0DZ5v_BxxEA@mail.gmail.com>
+ <1350392160.3954.986.camel@edumazet-glaptop> <507DA245.9050709@am.sony.com>
+ <CALF0-+VLVqy_uE63_jL83qh8MqBQAE3vYLRX1mRQURZ4a1M20g@mail.gmail.com>
+ <1350414968.3954.1427.camel@edumazet-glaptop> <507EFCC3.1050304@am.sony.com> <1350501217.26103.852.camel@edumazet-glaptop>
+From: Shentino <shentino@gmail.com>
+Date: Wed, 17 Oct 2012 12:20:12 -0700
+Message-ID: <CAGDaZ_qKg3x_ChdZck25P_XF78cJNeB_DJLg=ZtL3eZWSz3yXA@mail.gmail.com>
+Subject: Re: [Q] Default SLAB allocator
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Tim Bird <tim.bird@am.sony.com>, Ezequiel Garcia <elezegarcia@gmail.com>,
+        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "celinux-dev@lists.celinuxforum.org" 
+	<celinux-dev@lists.celinuxforum.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With dummy_hcd and g_nokia (that is CONFIG_USB_GADGET=m,
-CONFIG_USB_DUMMY_HCD=m, CONFIG_USB_G_NOKIA=m) I see a lockdep complaing
-about a "circular locking dependency" after executing
+On Wed, Oct 17, 2012 at 12:13 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Wed, 2012-10-17 at 11:45 -0700, Tim Bird wrote:
+>
+>> 8G is a small web server?  The RAM budget for Linux on one of
+>> Sony's cameras was 10M.  We're not merely not in the same ballpark -
+>> you're in a ballpark and I'm trimming bonsai trees... :-)
+>>
+>
+> Even laptops in 2012 have +4GB of ram.
+>
+> (Maybe not Sony laptops, I have to double check ?)
+>
+> Yes, servers do have more ram than laptops.
+>
+> (Maybe not Sony servers, I have to double check ?)
+>
+>> > # grep Slab /proc/meminfo
+>> > Slab:             351592 kB
+>> >
+>> > # egrep "kmalloc-32|kmalloc-16|kmalloc-8" /proc/slabinfo
+>> > kmalloc-32         11332  12544     32  128    1 : tunables    0    0    0 : slabdata     98     98      0
+>> > kmalloc-16          5888   5888     16  256    1 : tunables    0    0    0 : slabdata     23     23      0
+>> > kmalloc-8          76563  82432      8  512    1 : tunables    0    0    0 : slabdata    161    161      0
+>> >
+>> > Really, some waste on these small objects is pure noise on SMP hosts.
+>> In this example, it appears that if all kmalloc-8's were pushed into 32-byte slabs,
+>> we'd lose about 1.8 meg due to pure slab overhead.  This would not be noise
+>> on my system.
+>
+>
+> I said :
+>
+> <quote>
+> I would remove small kmalloc-XX caches, as sharing a cache line
+> is sometime dangerous for performance, because of false sharing.
+>
+> They make sense only for very small hosts
+> </quote>
+>
+> I think your 10M cameras are very tiny hosts.
+>
+> Using SLUB on them might not be the best choice.
+>
+> First time I ran linux, years ago, it was on 486SX machines with 8M of
+> memory (or maybe less, I dont remember exactly). But I no longer use
+> this class of machines with recent kernels.
+>
+> # size vmlinux
+>    text    data     bss     dec     hex filename
+> 10290631        1278976 1896448 13466055         cd79c7 vmlinux
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-|modprobe dummy_hcd
-|modprobe g_nokia
-|cat /dev/ttyACM0 &
-|sleep 1
-|echo basilimi > /dev/ttyGS2
+Potentially stupid question
 
-the first one goes well sometimes be the second one
+But is SLAB the one where all objects per cache have a fixed size and
+thus you don't have any bookkeeping overhead for the actual
+allocations?
 
-|cat /dev/ttyACM0 &
-|sleep 1
-|echo basilimi > /dev/ttyGS2
-
-triggers always the following output:
-
-|======================================================
-|[ INFO: possible circular locking dependency detected ]
-|3.7.0-rc1+ #87 Not tainted
-|-------------------------------------------------------
-|kworker/0:1/17 is trying to acquire lock:
-| (&tty->legacy_mutex){+.+.+.}, at: [<c1351956>] tty_lock_nested+0x36/0x80
-|
-|but task is already holding lock:
-| ((&tty->hangup_work)){+.+...}, at: [<c104f8cf>] process_one_work+0x11f/0x5d0
-|
-|which lock already depends on the new lock.
-|
-|
-|the existing dependency chain (in reverse order) is:
-|
-|-> #2 ((&tty->hangup_work)){+.+...}:
-|       [<c107f364>] lock_acquire+0x84/0x190
-|       [<c104da8d>] flush_work+0x3d/0x240
-|       [<c1249b06>] tty_ldisc_flush_works+0x16/0x30
-|       [<c124a9e1>] tty_ldisc_release+0x21/0x70
-|       [<c1243f7c>] tty_release+0x35c/0x470
-|       [<c1104fd8>] __fput+0xd8/0x270
-|       [<c110517d>] ____fput+0xd/0x10
-|       [<c1051fa9>] task_work_run+0xb9/0xf0
-|       [<c1002a51>] do_notify_resume+0x51/0x80
-|       [<c1351c7a>] work_notifysig+0x35/0x3b
-|
-|-> #1 (&tty->legacy_mutex/1){+.+...}:
-|       [<c107f364>] lock_acquire+0x84/0x190
-|       [<c134f18f>] mutex_lock_nested+0x5f/0x2d0
-|       [<c1351956>] tty_lock_nested+0x36/0x80
-|       [<c13519e9>] tty_lock_pair+0x29/0x70
-|       [<c1243d38>] tty_release+0x118/0x470
-|       [<c1104fd8>] __fput+0xd8/0x270
-|       [<c110517d>] ____fput+0xd/0x10
-|       [<c1051fa9>] task_work_run+0xb9/0xf0
-|       [<c1002a51>] do_notify_resume+0x51/0x80
-|       [<c1351c7a>] work_notifysig+0x35/0x3b
-|
-|-> #0 (&tty->legacy_mutex){+.+.+.}:
-|       [<c107ec16>] __lock_acquire+0x1476/0x1660
-|       [<c107f364>] lock_acquire+0x84/0x190
-|       [<c134f18f>] mutex_lock_nested+0x5f/0x2d0
-|       [<c1351956>] tty_lock_nested+0x36/0x80
-|       [<c13519af>] tty_lock+0xf/0x20
-|       [<c1242a44>] __tty_hangup+0x54/0x410
-|       [<c1242e12>] do_tty_hangup+0x12/0x20
-|       [<c104f94e>] process_one_work+0x19e/0x5d0
-|       [<c10500a9>] worker_thread+0x119/0x3a0
-|       [<c1055224>] kthread+0x94/0xa0
-|       [<c1359177>] ret_from_kernel_thread+0x1b/0x28
-|
-|other info that might help us debug this:
-|
-|Chain exists of:
-|  &tty->legacy_mutex --> &tty->legacy_mutex/1 --> (&tty->hangup_work)
-|
-| Possible unsafe locking scenario:
-|
-|       CPU0                    CPU1
-|       ----                    ----
-|  lock((&tty->hangup_work));
-|                               lock(&tty->legacy_mutex/1);
-|                               lock((&tty->hangup_work));
-|  lock(&tty->legacy_mutex);
-|
-| *** DEADLOCK ***
-|2 locks held by kworker/0:1/17:
-| #0:  (events){.+.+.+}, at: [<c104f8cf>] process_one_work+0x11f/0x5d0
-| #1:  ((&tty->hangup_work)){+.+...}, at: [<c104f8cf>] process_one_work+0x11f/0x5d0
-|
-|stack backtrace:
-|Pid: 17, comm: kworker/0:1 Not tainted 3.7.0-rc1+ #87
-|Call Trace:
-| [<c1349996>] print_circular_bug+0x1af/0x1b9
-| [<c107ec16>] __lock_acquire+0x1476/0x1660
-| [<c107f364>] lock_acquire+0x84/0x190
-| [<c1351956>] ? tty_lock_nested+0x36/0x80
-| [<c134f18f>] mutex_lock_nested+0x5f/0x2d0
-| [<c1351956>] ? tty_lock_nested+0x36/0x80
-| [<c11f966f>] ? do_raw_spin_lock+0x3f/0x100
-| [<c1351956>] tty_lock_nested+0x36/0x80
-| [<c11f97be>] ? do_raw_spin_unlock+0x4e/0x90
-| [<c13519af>] tty_lock+0xf/0x20
-| [<c1242a44>] __tty_hangup+0x54/0x410
-| [<c104f8cf>] ? process_one_work+0x11f/0x5d0
-| [<c1242e12>] do_tty_hangup+0x12/0x20
-| [<c104f94e>] process_one_work+0x19e/0x5d0
-| [<c104f8cf>] ? process_one_work+0x11f/0x5d0
-| [<c1242e00>] ? __tty_hangup+0x410/0x410
-| [<c10500a9>] worker_thread+0x119/0x3a0
-| [<c104ff90>] ? rescuer_thread+0x1d0/0x1d0
-| [<c1055224>] kthread+0x94/0xa0
-| [<c1359177>] ret_from_kernel_thread+0x1b/0x28
-| [<c1055190>] ? kthread_create_on_node+0xc0/0xc0
-
-This happens since
-
-|commit 89c8d91e31f267703e365593f6bfebb9f6d2ad01
-|Author: Alan Cox <alan@linux.intel.com>
-|Date:   Wed Aug 8 16:30:13 2012 +0100
-|
-|    tty: localise the lock
-|
-|    The termios and other changes mean the other protections needed on the driver
-|    tty arrays should be adequate. Turn it all back on.
-|
-|    This contains pieces folded in from the fixes made to the original patches
-|
-|    | From: Geert Uytterhoeven <geert@linux-m68k.org>   (fix m68k)
-|    | From: Paul Gortmaker <paul.gortmaker@windriver.com>       (fix cris)
-|    | From: Jiri Kosina <jkosina@suze.cz>                       (lockdep)
-|    | From: Eric Dumazet <eric.dumazet@gmail.com>               (lockdep)
-|
-|    Signed-off-by: Alan Cox <alan@linux.intel.com>
-|    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-Sebastian
+I remember something about one of the allocation mechanisms being
+designed for caches of fixed sized objects to minimize the need for
+bookkeeping.
