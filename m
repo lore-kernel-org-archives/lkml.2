@@ -1,155 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757843Ab2JQUhL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 16:37:11 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:55513 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756472Ab2JQUhK (ORCPT
+	id S1757879Ab2JQUkk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 16:40:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40060 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757853Ab2JQUki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 16:37:10 -0400
+	Wed, 17 Oct 2012 16:40:38 -0400
+Date: Wed, 17 Oct 2012 13:40:34 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jean-Christian de Rivaz <jc@eclis.ch>
+Cc: Oliver Neukum <oneukum@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net
+Subject: Re: [PATCH] Add CDC-ACM support for the CX93010-2x UCMxx USB Modem
+Message-ID: <20121017204034.GA4879@kroah.com>
+References: <1348841764-26873-1-git-send-email-jc@eclis.ch>
+ <16666667.izGXgx19Gh@linux-lqwf.site>
+ <20121010222906.GA12493@cube>
+ <20121017203239.GD30907@kroah.com>
 MIME-Version: 1.0
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 17 Oct 2012 13:36:49 -0700
-X-Google-Sender-Auth: kX8qpGryW62xc1JV1-ixhn42P_8
-Message-ID: <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com>
-Subject: RFC: sign the modules at install time
-To: David Miller <davem@davemloft.net>, Rusty Russell <rusty@rustcorp.com.au>,
-        David Howells <dhowells@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=e89a8fb2028215048f04cc473c1e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121017203239.GD30907@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e89a8fb2028215048f04cc473c1e
-Content-Type: text/plain; charset=ISO-8859-1
+On Wed, Oct 17, 2012 at 01:32:39PM -0700, Greg Kroah-Hartman wrote:
+> On Thu, Oct 11, 2012 at 12:29:06AM +0200, Jean-Christian de Rivaz wrote:
+> > On Wed, Oct 10, 2012 at 09:42:32PM +0200, Oliver Neukum wrote:
+> > > On Friday 28 September 2012 16:16:04 jc@eclis.ch wrote:
+> > > > From: Jean-Christian de Rivaz <jc@eclis.ch>
+> > > > 
+> > > > This USB V.92/V.32bis Controllered Modem have the USB vendor ID 0x0572
+> > > > and device ID 0x1340. It need the NO_UNION_NORMAL quirk to be recognized.
+> > > > 
+> > > > Reference:
+> > > > http://www.conexant.com/servlets/DownloadServlet/DSH-201723-005.pdf?docid=1725&revid=5
+> > > > 
+> > > > Signed-off-by: Jean-Christian de Rivaz <jc@eclis.ch>
+> > > Acked-by: Oliver Neukum <oneukum@SUSE.DE>
+> > > 
+> > > However, this went to the wrong list. Please repost to
+> > > 
+> > > davem@davemloft.net
+> > > netdev@vger.kernel.org
+> > > 
+> > > 	Regards
+> > > 		Oliver
+> > > 
+> > 
+> > Sorry for the wrong list, I used the scripts/get_maintainer.pl to get the
+> > destinations, as recommanded in Documentation/SubmittingPatches. Is there
+> > something to be fixed there or should I use an other procedure to get the
+> > right destinations?
+> > 
+> > I will rebase and repost the patch.
+> 
+> No need, you did this correctly.
 
-This was based on the complaint from Davem that the "make
-allmodconfig" build got way slower because module signing takes a
-while.
+Well, nevermind, David took this already :)
 
-And quite frankly, the whole "extra strip and sign" thing at modpost
-time was just nasty ugly code.
-
-Why don't we do something *much* simpler? We already have a
-conditional stripping of modules (that whole INSTALL_MOD_STRIP) logic,
-and it really simplifies everything if we just do something very
-similar for the signing of modules. At "make modules_install" time,
-exactly like the stripping is done.
-
-Sure, it means that if you want to load modules directly from your
-kernel build tree (without installing them), you'd better be running a
-kernel that doesn't need the signing (or you need to sign things
-explicitly). But seriously, nobody cares. If you are building a module
-after booting the kernel with the intention of loading that modified
-module, you aren't going to be doing that whole module signing thing
-*anyway*. Signed modules make sense when building the kernel and
-module together, so signing them as we install the kernel and module
-is just sensible.
-
-And it really is much simpler as shown by the diffstat: 13
-insertions(+), 78 deletions(-).
-
-It seems to work for me from my (very very limited) testing. Comments?
-
-           Linus
-
---e89a8fb2028215048f04cc473c1e
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h8ewiokb0
-
-IE1ha2VmaWxlICAgICAgICAgICAgICAgICB8IDEwICsrKysrKysKIHNjcmlwdHMvTWFrZWZpbGUu
-bW9kaW5zdCB8ICAyICstCiBzY3JpcHRzL01ha2VmaWxlLm1vZHBvc3QgfCA3NyArLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KIHNjcmlwdHMvc2lnbi1maWxl
-ICAgICAgICB8ICAyICstCiA0IGZpbGVzIGNoYW5nZWQsIDEzIGluc2VydGlvbnMoKyksIDc4IGRl
-bGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL01ha2VmaWxlIGIvTWFrZWZpbGUKaW5kZXggNWJlMmVl
-OGM5MGU0Li4zOWE3MTBkNmMzNzIgMTAwNjQ0Ci0tLSBhL01ha2VmaWxlCisrKyBiL01ha2VmaWxl
-CkBAIC03MTcsNiArNzE3LDE2IEBAIGVuZGlmICMgSU5TVEFMTF9NT0RfU1RSSVAKIGV4cG9ydCBt
-b2Rfc3RyaXBfY21kCiAKIAoraWZlcSAoJChDT05GSUdfTU9EVUxFX1NJRykseSkKK01PRFNFQ0tF
-WSA9IC4vc2lnbmluZ19rZXkucHJpdgorTU9EUFVCS0VZID0gLi9zaWduaW5nX2tleS54NTA5Citt
-b2Rfc2lnbl9jbWQgPSBzaCAkKHNyY3RyZWUpL3NjcmlwdHMvc2lnbi1maWxlICQoTU9EU0VDS0VZ
-KSAkKE1PRFBVQktFWSkKK2Vsc2UKK21vZF9zaWduX2NtZCA9IHRydWUKK2VuZGlmCitleHBvcnQg
-bW9kX3NpZ25fY21kCisKKwogaWZlcSAoJChLQlVJTERfRVhUTU9EKSwpCiBjb3JlLXkJCSs9IGtl
-cm5lbC8gbW0vIGZzLyBpcGMvIHNlY3VyaXR5LyBjcnlwdG8vIGJsb2NrLwogCmRpZmYgLS1naXQg
-YS9zY3JpcHRzL01ha2VmaWxlLm1vZGluc3QgYi9zY3JpcHRzL01ha2VmaWxlLm1vZGluc3QKaW5k
-ZXggM2QxM2QzYTNlZGZlLi5kZGE0YjJiNjE5MjcgMTAwNjQ0Ci0tLSBhL3NjcmlwdHMvTWFrZWZp
-bGUubW9kaW5zdAorKysgYi9zY3JpcHRzL01ha2VmaWxlLm1vZGluc3QKQEAgLTE3LDcgKzE3LDcg
-QEAgX19tb2RpbnN0OiAkKG1vZHVsZXMpCiAJQDoKIAogcXVpZXRfY21kX21vZHVsZXNfaW5zdGFs
-bCA9IElOU1RBTEwgJEAKLSAgICAgIGNtZF9tb2R1bGVzX2luc3RhbGwgPSBta2RpciAtcCAkKDIp
-OyBjcCAkQCAkKDIpIDsgJChtb2Rfc3RyaXBfY21kKSAkKDIpLyQobm90ZGlyICRAKQorICAgICAg
-Y21kX21vZHVsZXNfaW5zdGFsbCA9IG1rZGlyIC1wICQoMik7IGNwICRAICQoMikgOyAkKG1vZF9z
-dHJpcF9jbWQpICQoMikvJChub3RkaXIgJEApIDsgJChtb2Rfc2lnbl9jbWQpICQoMikvJChub3Rk
-aXIgJEApCiAKICMgTW9kdWxlcyBidWlsdCBvdXRzaWRlIHRoZSBrZXJuZWwgc291cmNlIHRyZWUg
-Z28gaW50byBleHRyYSBieSBkZWZhdWx0CiBJTlNUQUxMX01PRF9ESVIgPz0gZXh0cmEKZGlmZiAt
-LWdpdCBhL3NjcmlwdHMvTWFrZWZpbGUubW9kcG9zdCBiL3NjcmlwdHMvTWFrZWZpbGUubW9kcG9z
-dAppbmRleCAwMDIwODkxNDFkZjQuLmExY2IwMjIyZWJlNiAxMDA2NDQKLS0tIGEvc2NyaXB0cy9N
-YWtlZmlsZS5tb2Rwb3N0CisrKyBiL3NjcmlwdHMvTWFrZWZpbGUubW9kcG9zdApAQCAtMTQsOCAr
-MTQsNyBAQAogIyAzKSAgY3JlYXRlIG9uZSA8bW9kdWxlPi5tb2QuYyBmaWxlIHByLiBtb2R1bGUK
-ICMgNCkgIGNyZWF0ZSBvbmUgTW9kdWxlLnN5bXZlcnMgZmlsZSB3aXRoIENSQyBmb3IgYWxsIGV4
-cG9ydGVkIHN5bWJvbHMKICMgNSkgY29tcGlsZSBhbGwgPG1vZHVsZT4ubW9kLmMgZmlsZXMKLSMg
-NikgZmluYWwgbGluayBvZiB0aGUgbW9kdWxlIHRvIGEgPG1vZHVsZS5rbz4gKG9yIDxtb2R1bGUu
-dW5zaWduZWQ+KSBmaWxlCi0jIDcpIHNpZ25zIHRoZSBtb2R1bGVzIHRvIGEgPG1vZHVsZS5rbz4g
-ZmlsZQorIyA2KSBmaW5hbCBsaW5rIG9mIHRoZSBtb2R1bGUgdG8gYSA8bW9kdWxlLmtvPiBmaWxl
-CiAKICMgU3RlcCAzIGlzIHVzZWQgdG8gcGxhY2UgY2VydGFpbiBpbmZvcm1hdGlvbiBpbiB0aGUg
-bW9kdWxlJ3MgRUxGCiAjIHNlY3Rpb24sIGluY2x1ZGluZyBpbmZvcm1hdGlvbiBzdWNoIGFzOgpA
-QCAtMzMsOCArMzIsNiBAQAogIyBTdGVwIDQgaXMgc29sZWx5IHVzZWQgdG8gYWxsb3cgbW9kdWxl
-IHZlcnNpb25pbmcgaW4gZXh0ZXJuYWwgbW9kdWxlcywKICMgd2hlcmUgdGhlIENSQyBvZiBlYWNo
-IG1vZHVsZSBpcyByZXRyaWV2ZWQgZnJvbSB0aGUgTW9kdWxlLnN5bXZlcnMgZmlsZS4KIAotIyBT
-dGVwIDcgaXMgZGVwZW5kZW50IG9uIENPTkZJR19NT0RVTEVfU0lHIGJlaW5nIGVuYWJsZWQuCi0K
-ICMgS0JVSUxEX01PRFBPU1RfV0FSTiBjYW4gYmUgc2V0IHRvIGF2b2lkIGVycm9yIG91dCBpbiBj
-YXNlIG9mIHVuZGVmaW5lZAogIyBzeW1ib2xzIGluIHRoZSBmaW5hbCBtb2R1bGUgbGlua2luZyBz
-dGFnZQogIyBLQlVJTERfTU9EUE9TVF9OT0ZJTkFMIGNhbiBiZSBzZXQgdG8gc2tpcCB0aGUgZmlu
-YWwgbGluayBvZiBtb2R1bGVzLgpAQCAtMTE5LDcgKzExNiw2IEBAICQobW9kdWxlczoua289Lm1v
-ZC5vKTogJS5tb2QubzogJS5tb2QuYyBGT1JDRQogdGFyZ2V0cyArPSAkKG1vZHVsZXM6LmtvPS5t
-b2QubykKIAogIyBTdGVwIDYpLCBmaW5hbCBsaW5rIG9mIHRoZSBtb2R1bGVzCi1pZm5lcSAoJChD
-T05GSUdfTU9EVUxFX1NJRykseSkKIHF1aWV0X2NtZF9sZF9rb19vID0gTEQgW01dICAkQAogICAg
-ICAgY21kX2xkX2tvX28gPSAkKExEKSAtciAkKExERkxBR1MpICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgXAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAkKEtCVUlMRF9MREZM
-QUdTX01PRFVMRSkgJChMREZMQUdTX01PRFVMRSkgXApAQCAtMTI5LDc4ICsxMjUsNyBAQCAkKG1v
-ZHVsZXMpOiAlLmtvIDolLm8gJS5tb2QubyBGT1JDRQogCSQoY2FsbCBpZl9jaGFuZ2VkLGxkX2tv
-X28pCiAKIHRhcmdldHMgKz0gJChtb2R1bGVzKQotZWxzZQotcXVpZXRfY21kX2xkX2tvX3Vuc2ln
-bmVkX28gPSBMRCBbTV0gICRACi0gICAgICBjbWRfbGRfa29fdW5zaWduZWRfbyA9CQkJCQkJXAot
-CQkkKExEKSAtciAkKExERkxBR1MpCQkJCQlcCi0JCQkgJChLQlVJTERfTERGTEFHU19NT0RVTEUp
-ICQoTERGTEFHU19NT0RVTEUpCVwKLQkJCSAtbyAkQCAkKGZpbHRlci1vdXQgRk9SQ0UsJF4pCQkJ
-XAotCQkkKGlmICQoQUZURVJfTElOSyksOyAkKEFGVEVSX0xJTkspKQotCi0kKG1vZHVsZXM6Lmtv
-PS5rby51bnNpZ25lZCk6ICUua28udW5zaWduZWQgOiUubyAlLm1vZC5vIEZPUkNFCi0JJChjYWxs
-IGlmX2NoYW5nZWQsbGRfa29fdW5zaWduZWRfbykKLQotdGFyZ2V0cyArPSAkKG1vZHVsZXM6Lmtv
-PS5rby51bnNpZ25lZCkKLQotIyBTdGVwIDcpLCBzaWduIHRoZSBtb2R1bGVzCi1NT0RTRUNLRVkg
-PSAuL3NpZ25pbmdfa2V5LnByaXYKLU1PRFBVQktFWSA9IC4vc2lnbmluZ19rZXkueDUwOQotCi1p
-ZmVxICgkKHdpbGRjYXJkICQoTU9EU0VDS0VZKSkrJCh3aWxkY2FyZCAkKE1PRFBVQktFWSkpLCQo
-TU9EU0VDS0VZKSskKE1PRFBVQktFWSkpCi1pZmVxICgkKEtCVUlMRF9TUkMpLCkKLQkjIG5vIE89
-IGlzIGJlaW5nIHVzZWQKLQlTQ1JJUFRTX0RJUiA6PSBzY3JpcHRzCi1lbHNlCi0JU0NSSVBUU19E
-SVIgOj0gJChLQlVJTERfU1JDKS9zY3JpcHRzCi1lbmRpZgotU0lHTl9NT0RVTEVTIDo9IDEKLWVs
-c2UKLVNJR05fTU9EVUxFUyA6PSAwCi1lbmRpZgotCi0jIG9ubHkgc2lnbiBpZiBpdCdzIGFuIGlu
-LXRyZWUgbW9kdWxlCi1pZm5lcSAoJChLQlVJTERfRVhUTU9EKSwpCi1TSUdOX01PRFVMRVMgOj0g
-MAotZW5kaWYKIAotIyBXZSBzdHJpcCB0aGUgbW9kdWxlIGFzIGJlc3Qgd2UgY2FuIC0gbm90ZSB0
-aGF0IHVzaW5nIGJvdGggc3RyaXAgYW5kIGV1LXN0cmlwCi0jIHJlc3VsdHMgaW4gYSBzbWFsbGVy
-IG1vZHVsZSB0aGFuIHVzaW5nIGVpdGhlciBhbG9uZS4KLUVVX1NUUklQID0gJChzaGVsbCB3aGlj
-aCBldS1zdHJpcCB8fCBlY2hvIHRydWUpCi0KLXF1aWV0X2NtZF9zaWduX2tvX3N0cmlwcGVkX2tv
-X3Vuc2lnbmVkID0gU1RSSVAgW01dICRACi0gICAgICBjbWRfc2lnbl9rb19zdHJpcHBlZF9rb191
-bnNpZ25lZCA9IFwKLQkJY3AgJDwgJEAgJiYgXAotCQlzdHJpcCAteCAtZyAkQCAmJiBcCi0JCSQo
-RVVfU1RSSVApICRACi0KLWlmZXEgKCQoU0lHTl9NT0RVTEVTKSwxKQotCi1xdWlldF9jbWRfZ2Vu
-a2V5aWQgPSBHRU5LRVlJRCAkQAotICAgICAgY21kX2dlbmtleWlkID0gXAotCQlwZXJsICQoU0NS
-SVBUU19ESVIpL3g1MDlrZXlpZCAkPCAkPC5zaWduZXIgJDwua2V5aWQKLQotJS5zaWduZXIgJS5r
-ZXlpZDogJQotCSQoY2FsbCBpZl9jaGFuZ2VkLGdlbmtleWlkKQotCi1LRVlSSU5HX0RFUCA6PSAk
-KE1PRFNFQ0tFWSkgJChNT0RQVUJLRVkpICQoTU9EUFVCS0VZKS5zaWduZXIgJChNT0RQVUJLRVkp
-LmtleWlkCi1xdWlldF9jbWRfc2lnbl9rb19rb19zdHJpcHBlZCA9IFNJR04gW01dICRACi0gICAg
-ICBjbWRfc2lnbl9rb19rb19zdHJpcHBlZCA9IFwKLQkJc2ggJChTQ1JJUFRTX0RJUikvc2lnbi1m
-aWxlICQoTU9EU0VDS0VZKSAkKE1PRFBVQktFWSkgJDwgJEAKLWVsc2UKLUtFWVJJTkdfREVQIDo9
-Ci1xdWlldF9jbWRfc2lnbl9rb19rb191bnNpZ25lZCA9IE5PIFNJR04gW01dICRACi0gICAgICBj
-bWRfc2lnbl9rb19rb191bnNpZ25lZCA9IFwKLQkJY3AgJDwgJEAKLWVuZGlmCi0KLSQobW9kdWxl
-cyk6ICUua28gOiUua28uc3RyaXBwZWQgJChLRVlSSU5HX0RFUCkgRk9SQ0UKLQkkKGNhbGwgaWZf
-Y2hhbmdlZCxzaWduX2tvX2tvX3N0cmlwcGVkKQotCi0kKHBhdHN1YnN0ICUua28sJS5rby5zdHJp
-cHBlZCwkKG1vZHVsZXMpKTogJS5rby5zdHJpcHBlZCA6JS5rby51bnNpZ25lZCBGT1JDRQotCSQo
-Y2FsbCBpZl9jaGFuZ2VkLHNpZ25fa29fc3RyaXBwZWRfa29fdW5zaWduZWQpCi0KLXRhcmdldHMg
-Kz0gJChtb2R1bGVzKQotZW5kaWYKIAogIyBBZGQgRk9SQ0UgdG8gdGhlIHByZXF1aXNpdGVzIG9m
-IGEgdGFyZ2V0IHRvIGZvcmNlIGl0IHRvIGJlIGFsd2F5cyByZWJ1aWx0LgogIyAtLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0KZGlmZiAtLWdpdCBhL3NjcmlwdHMvc2lnbi1maWxlIGIvc2NyaXB0cy9zaWduLWZp
-bGUKaW5kZXggZTU4ZTM0ZTUwYWM1Li4zMDg0YmE0M2ExOWQgMTAwNjQ0Ci0tLSBhL3NjcmlwdHMv
-c2lnbi1maWxlCisrKyBiL3NjcmlwdHMvc2lnbi1maWxlCkBAIC0xNiw3ICsxNiw3IEBAIGZpCiBr
-ZXk9IiQxIgogeDUwOT0iJDIiCiBzcmM9IiQzIgotZHN0PSIkNCIKK2RzdD0iJHs0Oi0kM30iCiAK
-IGlmIFsgISAtciAiJGtleSIgXQogdGhlbgo=
---e89a8fb2028215048f04cc473c1e--
+greg k-h
