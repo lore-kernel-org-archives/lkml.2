@@ -1,117 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab2JQBgu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 21:36:50 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:45672 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755923Ab2JQBgt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 21:36:49 -0400
-X-Spam-Score: -100.3
-Message-ID: <507E0BF0.7050207@asianux.com>
-Date: Wed, 17 Oct 2012 09:37:52 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1756014Ab2JQBip (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 21:38:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:63265 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755928Ab2JQBio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Oct 2012 21:38:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,597,1344236400"; 
+   d="scan'208";a="206907212"
+Message-ID: <507E0C1A.1010705@intel.com>
+Date: Wed, 17 Oct 2012 09:38:34 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Bug fix] nfs-client: fix nfs_inode_attrs_need_update for async
- read_done comes during truncating to smaller size
-References: <507B70F1.7040903@asianux.com> <4FA345DA4F4AE44899BD2B03EEEC2FA909236BB5@SACEXCMBX04-PRD.hq.netapp.com> <507B968A.9090104@asianux.com> <4FA345DA4F4AE44899BD2B03EEEC2FA90923F1C4@SACEXCMBX04-PRD.hq.netapp.com> <507CBA3F.6000204@asianux.com> <4FA345DA4F4AE44899BD2B03EEEC2FA909253103@SACEXCMBX04-PRD.hq.netapp.com> <507CDEF2.2060809@asianux.com> <20121016063348.7b225bfb@tlielax.poochiereds.net> <507D48A6.3070601@asianux.com> <20121016081320.74fccc5b@tlielax.poochiereds.net>
-In-Reply-To: <20121016081320.74fccc5b@tlielax.poochiereds.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Borislav Petkov <bp@amd64.org>, Shane Huang <shane.huang@amd.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: ata4.00: failed to get Identify Device Data, Emask 0x1
+References: <20121016144932.GA24044@aftab.osrc.amd.com> <20121016155824.00d5b618@pyramind.ukuu.org.uk> <20121016151830.GB24044@aftab.osrc.amd.com>
+In-Reply-To: <20121016151830.GB24044@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年10月16日 20:13, Jeff Layton 写道:
->>
->> 2) but, are we truly no ways to solve this issue ?  (I do not think so).
->>
+On 10/16/2012 11:18 PM, Borislav Petkov wrote:
+> On Tue, Oct 16, 2012 at 03:58:24PM +0100, Alan Cox wrote:
+>> Can you check whether 3.6 works on them. I know 3.6 is horribly broken
+>> on several brands of AHCI controller (Jmicron for example). Dunno
+>> where Jeff is on fixing the regressions ?
 > 
-> Not that I see, but don't let me stop you from trying to find one. ;)
+> If by "works" you mean I don't see the message there, then yes, it does.
+> Logs say the message started appearing on Oct 4th after me building
+> Linus master after the merge window started.
 > 
+> Ok, let me test 3.6.2 just in case ...<tests>... yes, no error message
+> there.
 
-we can divide the issue to 2 separate parts:
+This is brought by commit: 65fe1f0f66a57380229a4ced844188103135f37b,
+ahci: implement aggressive SATA device sleep support.
 
-1) the inconsistent attribute by time delay between client and server:
+Shane, got time to take a look? This debug message made people
+uncomfortable :-)
 
-   A) it is the nfs v2/v3 design issue, the "user" can understand (not
-implementation mistake)
-   B) we need make the time delay as shorter as we can. (this is the
-reason why I call it "performance", although this "word" is still not
-quit suitable)
-   C) "user" can understand, not mean can bear (such as skipping writing
-operation attribute changes)
+Thanks,
+Aaron
 
-2) the inconsistent attribute by a client itself:
-
-   A) it is implementation issue, the "user" can not understand (it is
-an implementation mistake)
-   B) we need solve it (so I call it "correctness" issue).
-   C) "user" can not understand, not mean can not bear (such as current
-issue which I report)
-
-at last, for maintainer:
-   A) for "performance", we need try our best to do;
-   B) for "correctness", we need fix it completely;
-
->> 3) I think an executable way (but maybe not a good way) is :
->>
->>    A) for each client, check each task id of the client its own (such as
->> rpc task xid), so can know the order of tasks of the client its own.
->>
-> 
-> We do something like this already. That's what the gencount thing is
-> all about. It's still possible though to fool that check if two calls
-> are scheduled closely enough.
->
-
-1) I think gencount is not equal to sequence number, the sequence number
-can mark all relative tasks of one client in order.
-
-2) I also think, it is not quite complex to make a client itself in
-consistency. (it is implementation issue, not design issue)
-
-
-> Also note that it's not just the reordering of replies that you have to
-> concern yourself with. The requests themselves can be reordered on the
-> network. The server is also under no obligation to execute calls in the
-> order received.
-> 
-
-1) I agree with you, in nfs_inode_attrs_need_update(), it need consider
-this situation (the tasks from server return is not in order).
-
-2) I do not think it can not be accomplished if the tasks of client
-itself have sequence number.  (maybe, it would be enough to only judge
-which task is later between the 2 tasks by sequence number).
-
-
->>    B) maybe also need another some synchronization code, but I think it
->> does not have much negative effect with performance.
->>
-> 
-> Yeah, serializing things to fix this is probably a non-starter. NFSv2
-> and UDP transports are basically legacy code at this point, so there's
-> not a lot of incentive to do anything drastic here.
-> 
-
-1) I agree with what you said above, but maybe you misunderstand of what
-I said for the "item B)"
-
-2) the "item B)" is for the completion of "item A)". when we fix this
-issue, maybe have to add additional synchronization code which maybe can
-cause negative effect with performance, but I think it is not much
-("user" can bear).
-
-At last, I suggest we need think of how to fix this implementation bug
-in nfs-client region.
-
--- 
-Chen Gang
-
-Asianux Corporation
