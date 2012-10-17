@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207Ab2JQOPP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 10:15:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59306 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757124Ab2JQOPN (ORCPT
+	id S1757225Ab2JQOPU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 10:15:20 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60871 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757124Ab2JQOPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 10:15:13 -0400
+	Wed, 17 Oct 2012 10:15:17 -0400
 From: Sangho Yi <antiroot@gmail.com>
 To: prakity@marvell.com, aaron.lu@amd.com, linus.walleij@linaro.org,
         ulf.hansson@stericsson.com, cjb@laptop.org
 Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
         Sangho Yi <antiroot@gmail.com>
-Subject: [PATCH 1/3] drivers: mmc: core: sdio.c: fixed lines with > 80 chars
-Date: Wed, 17 Oct 2012 23:13:16 +0900
-Message-Id: <1350483199-3048-1-git-send-email-antiroot@gmail.com>
+Subject: [PATCH 2/3] drivers: mmc: core: sdio.c: fixed coding style error on for() statement
+Date: Wed, 17 Oct 2012 23:13:17 +0900
+Message-Id: <1350483199-3048-2-git-send-email-antiroot@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <n>
+In-Reply-To: <1350483199-3048-1-git-send-email-antiroot@gmail.com>
 References: <n>
+ <1350483199-3048-1-git-send-email-antiroot@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style warning cases for exceeding 80 chars per line on
-sdio.c.
+add a whitespace after ";" on for statement, to follow a coding style guideline.
 
 Signed-off-by: Sangho Yi <antiroot@gmail.com>
 ---
- drivers/mmc/core/sdio.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/mmc/core/sdio.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-index 2273ce6..14326e8 100644
+index 14326e8..df09b63 100644
 --- a/drivers/mmc/core/sdio.c
 +++ b/drivers/mmc/core/sdio.c
-@@ -47,7 +47,8 @@ static int sdio_read_fbr(struct sdio_func *func)
+@@ -819,7 +819,7 @@ static void mmc_sdio_remove(struct mmc_host *host)
+ 	BUG_ON(!host);
+ 	BUG_ON(!host->card);
  
- 	if (data == 0x0f) {
- 		ret = mmc_io_rw_direct(func->card, 0, 0,
--			SDIO_FBR_BASE(func->num) + SDIO_FBR_STD_IF_EXT, 0, &data);
-+			SDIO_FBR_BASE(func->num) + SDIO_FBR_STD_IF_EXT,
-+			0, &data);
- 		if (ret)
- 			goto out;
- 	}
-@@ -619,7 +620,8 @@ static int mmc_sdio_init_card(struct mmc_host *host, u32 ocr,
- 		card->type = MMC_TYPE_SD_COMBO;
- 
- 		if (oldcard && (oldcard->type != MMC_TYPE_SD_COMBO ||
--		    memcmp(card->raw_cid, oldcard->raw_cid, sizeof(card->raw_cid)) != 0)) {
-+			memcmp(card->raw_cid, oldcard->raw_cid,
-+			sizeof(card->raw_cid)) != 0)) {
- 			mmc_remove_card(card);
- 			return -ENOENT;
- 		}
+-	for (i = 0;i < host->card->sdio_funcs;i++) {
++	for (i = 0; i < host->card->sdio_funcs; i++) {
+ 		if (host->card->sdio_func[i]) {
+ 			sdio_remove_func(host->card->sdio_func[i]);
+ 			host->card->sdio_func[i] = NULL;
+@@ -1151,7 +1151,7 @@ int mmc_attach_sdio(struct mmc_host *host)
+ 	/*
+ 	 * ...then the SDIO functions.
+ 	 */
+-	for (i = 0;i < funcs;i++) {
++	for (i = 0; i < funcs; i++) {
+ 		err = sdio_add_func(host->card->sdio_func[i]);
+ 		if (err)
+ 			goto remove_added;
 -- 
 1.7.9.5
 
