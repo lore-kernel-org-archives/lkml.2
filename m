@@ -1,106 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757908Ab2JQUy1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 16:54:27 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:39051
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757894Ab2JQUy0 (ORCPT
+	id S1757898Ab2JQU4t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 16:56:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54697 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755839Ab2JQU4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 16:54:26 -0400
-X-Forefront-Antispam-Report: CIP:160.33.194.229;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail02v.am.sony.com;RD:mail02.sonyusa.com;EFVD:NLI
-X-SpamScore: -6
-X-BigFish: VPS-6(zzbb2dI98dI9371I936eI146fI1432Izz1202h1d1ah1d2ahzzz2fh2a8h668h839h93fhd25hf0ah107ah1288h12a5h12a9h12bdh137ah13b6h1441h1155h)
-Message-ID: <507F1BF4.6040209@am.sony.com>
-Date: Wed, 17 Oct 2012 13:58:28 -0700
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Wed, 17 Oct 2012 16:56:47 -0400
+Date: Wed, 17 Oct 2012 13:56:43 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Bill Pemberton <wfp5p@virginia.edu>, devel@driverdev.osuosl.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] staging: dgrp: Add missing #include
+ <linux/uaccess.h>
+Message-ID: <20121017205643.GA23462@kroah.com>
+References: <1348771106-14105-1-git-send-email-geert@linux-m68k.org>
+ <CAMuHMdXpAkyc+xDWTnmvNn-4WcHL7DE-NryAmFdwvCY_UbY9QQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Ezequiel Garcia <elezegarcia@gmail.com>,
-        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "celinux-dev@lists.celinuxforum.org" 
-	<celinux-dev@lists.celinuxforum.org>
-Subject: Re: [Q] Default SLAB allocator
-References: <CALF0-+XGn5=QSE0bpa4RTag9CAJ63MKz1kvaYbpw34qUhViaZA@mail.gmail.com>  <m27gqwtyu9.fsf@firstfloor.org>  <alpine.DEB.2.00.1210111558290.6409@chino.kir.corp.google.com>  <m2391ktxjj.fsf@firstfloor.org>  <CALF0-+WLZWtwYY4taYW9D7j-abCJeY90JzcTQ2hGK64ftWsdxw@mail.gmail.com>  <alpine.DEB.2.00.1210130252030.7462@chino.kir.corp.google.com>  <CALF0-+Xp_P_NjZpifzDSWxz=aBzy_fwaTB3poGLEJA8yBPQb_Q@mail.gmail.com>  <alpine.DEB.2.00.1210151745400.31712@chino.kir.corp.google.com>  <CALF0-+WgfnNOOZwj+WLB397cgGX7YhNuoPXAK5E0DZ5v_BxxEA@mail.gmail.com>  <1350392160.3954.986.camel@edumazet-glaptop> <507DA245.9050709@am.sony.com>  <CALF0-+VLVqy_uE63_jL83qh8MqBQAE3vYLRX1mRQURZ4a1M20g@mail.gmail.com>  <1350414968.3954.1427.camel@edumazet-glaptop>  <507EFCC3.1050304@am
-In-Reply-To: <1350501217.26103.852.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMuHMdXpAkyc+xDWTnmvNn-4WcHL7DE-NryAmFdwvCY_UbY9QQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2012 12:13 PM, Eric Dumazet wrote:
-> On Wed, 2012-10-17 at 11:45 -0700, Tim Bird wrote:
+On Thu, Oct 11, 2012 at 02:40:30PM +0200, Geert Uytterhoeven wrote:
+> On Thu, Sep 27, 2012 at 8:38 PM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+> > On m68k:
 > 
->> 8G is a small web server?  The RAM budget for Linux on one of
->> Sony's cameras was 10M.  We're not merely not in the same ballpark -
->> you're in a ballpark and I'm trimming bonsai trees... :-)
->>
+> Now also in mainline, cfr.
+> http://kisskb.ellerman.id.au/kisskb/buildresult/7344531/
 > 
-> Even laptops in 2012 have +4GB of ram.
-> 
-> (Maybe not Sony laptops, I have to double check ?)
-> 
-> Yes, servers do have more ram than laptops.
-> 
-> (Maybe not Sony servers, I have to double check ?)
+> > drivers/staging/dgrp/dgrp_mon_ops.c: In function ‘dgrp_mon_read’:
+> > drivers/staging/dgrp/dgrp_mon_ops.c:304: error: implicit declaration of function ‘copy_to_user’
+> > drivers/staging/dgrp/dgrp_specproc.c: In function ‘config_proc_write’:
+> > drivers/staging/dgrp/dgrp_specproc.c:470: error: implicit declaration of function ‘copy_from_user’
+> > drivers/staging/dgrp/dgrp_tty.c: In function ‘drp_wmove’:
+> > drivers/staging/dgrp/dgrp_tty.c:1284: error: implicit declaration of function ‘copy_from_user’
+> > drivers/staging/dgrp/dgrp_tty.c: In function ‘get_modem_info’:
+> > drivers/staging/dgrp/dgrp_tty.c:2267: error: implicit declaration of function ‘put_user’
+> > drivers/staging/dgrp/dgrp_tty.c: In function ‘set_modem_info’:
+> > drivers/staging/dgrp/dgrp_tty.c:2283: error: implicit declaration of function ‘access_ok’
+> > drivers/staging/dgrp/dgrp_tty.c:2283: error: ‘VERIFY_READ’ undeclared (first use in this function)
+> > drivers/staging/dgrp/dgrp_tty.c:2283: error: (Each undeclared identifier is reported only once
+> > drivers/staging/dgrp/dgrp_tty.c:2283: error: for each function it appears in.)
+> > drivers/staging/dgrp/dgrp_tty.c:2287: error: implicit declaration of function ‘get_user’
+> > drivers/staging/dgrp/dgrp_tty.c: In function ‘dgrp_tty_digigetedelay’:
+> > drivers/staging/dgrp/dgrp_tty.c:2474: error: implicit declaration of function ‘copy_to_user’
+> > drivers/staging/dgrp/dgrp_tty.c: In function ‘dgrp_tty_ioctl’:
+> > drivers/staging/dgrp/dgrp_tty.c:2618: error: ‘VERIFY_WRITE’ undeclared (first use in this function)
+> >
+> > Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-I wouldn't know.  I suspect they are running 4GB+
-like everyone else.
+Yes, now in my tree, will go to Linus this week.
 
->>> # grep Slab /proc/meminfo
->>> Slab:             351592 kB
->>>
->>> # egrep "kmalloc-32|kmalloc-16|kmalloc-8" /proc/slabinfo 
->>> kmalloc-32         11332  12544     32  128    1 : tunables    0    0    0 : slabdata     98     98      0
->>> kmalloc-16          5888   5888     16  256    1 : tunables    0    0    0 : slabdata     23     23      0
->>> kmalloc-8          76563  82432      8  512    1 : tunables    0    0    0 : slabdata    161    161      0
->>>
->>> Really, some waste on these small objects is pure noise on SMP hosts.
->> In this example, it appears that if all kmalloc-8's were pushed into 32-byte slabs,
->> we'd lose about 1.8 meg due to pure slab overhead.  This would not be noise
->> on my system.
-> I said :
-> 
-> <quote>
-> I would remove small kmalloc-XX caches, as sharing a cache line
-> is sometime dangerous for performance, because of false sharing.
-> 
-> They make sense only for very small hosts
-> </quote>
-> 
-> I think your 10M cameras are very tiny hosts.
+thanks,
 
-I agree.  Actually, I'm currently doing research for
-items with smaller memory footprints that this.  My current
-target is devices with 4M RAM and 8M NOR flash.
-Undoubtedly this is different than what a lot of other
-people are doing with Linux.
-
-> Using SLUB on them might not be the best choice.
-Indeed. :-)
-
-I'm still interested in the dynamics of the slab sizes
-and how it impacts performance, how much memory is wasted, etc.
-I think there are a few "power-of-two-and-a-half" kmalloc
-slabs (e.g. kmalloc-192).  Are these configurable anywhere?
-
-Anyway, I greatly appreciate the discussion.
-
-> First time I ran linux, years ago, it was on 486SX machines with 8M of
-> memory (or maybe less, I dont remember exactly). But I no longer use
-> this class of machines with recent kernels.
-
-I ran a web server on an 8M machine that had an uptime of over 2 years,
-but that was in the mid-90's.  Ahhh - those were the days...
- -- Tim
-
-=============================
-Tim Bird
-Architecture Group Chair, CE Workgroup of the Linux Foundation
-Senior Staff Engineer, Sony Network Entertainment
-=============================
-
+greg k-h
