@@ -1,95 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011Ab2JQFju (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 01:39:50 -0400
-Received: from mga14.intel.com ([143.182.124.37]:43918 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752106Ab2JQFjr convert rfc822-to-8bit (ORCPT
+	id S1752743Ab2JQFnb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 01:43:31 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46974 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751974Ab2JQFna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 01:39:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,597,1344236400"; 
-   d="scan'208";a="205426219"
-From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] power_supply: Added helper function to get the ps
- object from supplied_to list
-Thread-Topic: [PATCH v2] power_supply: Added helper function to get the ps
- object from supplied_to list
-Thread-Index: AQHNamBS/PY5TqiHtECZnzOtqcnLipe9fpRQ
-Date: Wed, 17 Oct 2012 05:39:37 +0000
-Message-ID: <D854C92F57B1B347B57E531E78D05EAD244F71B2@BGSMSX102.gar.corp.intel.com>
-References: <1343214037-15238-1-git-send-email-ramakrishna.pallala@intel.com>
-In-Reply-To: <1343214037-15238-1-git-send-email-ramakrishna.pallala@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 17 Oct 2012 01:43:30 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <507E4531.1070700@jp.fujitsu.com>
+Date: Wed, 17 Oct 2012 14:42:09 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, bhutchings@solarflare.com,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch for-3.7] mm, mempolicy: fix printing stack contents in
+ numa_maps
+References: <20121008150949.GA15130@redhat.com> <CAHGf_=pr1AYeWZhaC2MKN-XjiWB7=hs92V0sH-zVw3i00X-e=A@mail.gmail.com> <alpine.DEB.2.00.1210152055150.5400@chino.kir.corp.google.com> <CAHGf_=rLjQbtWQLDcbsaq5=zcZgjdveaOVdGtBgBwZFt78py4Q@mail.gmail.com> <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com> <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com> <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com> <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com> <20121017040515.GA13505@redhat.com> <alpine.DEB.2.00.1210162222100.26279@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1210162222100.26279@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton,
+(2012/10/17 14:24), David Rientjes wrote:
+> On Wed, 17 Oct 2012, Dave Jones wrote:
+>
+>> BUG: sleeping function called from invalid context at kernel/mutex.c:269
+>> in_atomic(): 1, irqs_disabled(): 0, pid: 8558, name: trinity-child2
+>> 3 locks on stack by trinity-child2/8558:
+>>   #0: held:     (&p->lock){+.+.+.}, instance: ffff88010c9a00b0, at: [<ffffffff8120cd1f>] seq_lseek+0x3f/0x120
+>>   #1: held:     (&mm->mmap_sem){++++++}, instance: ffff88013956f7c8, at: [<ffffffff81254437>] m_start+0xa7/0x190
+>>   #2: held:     (&(&p->alloc_lock)->rlock){+.+...}, instance: ffff88011fc64f30, at: [<ffffffff81254f8f>] show_numa_map+0x14f/0x610
+>> Pid: 8558, comm: trinity-child2 Not tainted 3.7.0-rc1+ #32
+>> Call Trace:
+>>   [<ffffffff810ae4ec>] __might_sleep+0x14c/0x200
+>>   [<ffffffff816bdf4e>] mutex_lock_nested+0x2e/0x50
+>>   [<ffffffff811c43a3>] mpol_shared_policy_lookup+0x33/0x90
+>>   [<ffffffff8118d5c3>] shmem_get_policy+0x33/0x40
+>>   [<ffffffff811c31fa>] get_vma_policy+0x3a/0x90
+>>   [<ffffffff81254fa3>] show_numa_map+0x163/0x610
+>>   [<ffffffff81255b10>] ? pid_maps_open+0x20/0x20
+>>   [<ffffffff81255980>] ? pagemap_hugetlb_range+0xf0/0xf0
+>>   [<ffffffff81255483>] show_pid_numa_map+0x13/0x20
+>>   [<ffffffff8120c902>] traverse+0xf2/0x230
+>>   [<ffffffff8120cd8b>] seq_lseek+0xab/0x120
+>>   [<ffffffff811e6c0b>] sys_lseek+0x7b/0xb0
+>>   [<ffffffff816ca088>] tracesys+0xe1/0xe6
+>>
+>
+> Hmm, looks like we need to change the refcount semantics entirely.  We'll
+> need to make get_vma_policy() always take a reference and then drop it
+> accordingly.  This work sif get_vma_policy() can grab a reference while
+> holding task_lock() for the task policy fallback case.
+>
+> Comments on this approach?
 
-Please ignore the following patch.
- 
-> This patch adds a helper function in the power supply core to get the power
-> supply object from supplied_to list based on power supply attribute.
-> 
-> Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-> ---
->  drivers/power/power_supply_core.c |   19 +++++++++++++++++++
->  include/linux/power_supply.h      |    3 +++
->  2 files changed, 22 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/power/power_supply_core.c
-> b/drivers/power/power_supply_core.c
-> index ff990d2..5845a76 100644
-> --- a/drivers/power/power_supply_core.c
-> +++ b/drivers/power/power_supply_core.c
-> @@ -158,6 +158,25 @@ struct power_supply
-> *power_supply_get_by_name(char *name)  }
-> EXPORT_SYMBOL_GPL(power_supply_get_by_name);
-> 
-> +struct power_supply *power_supply_get_by_suppliedto(struct power_supply
-> *psy,
-> +				enum power_supply_property psp, int intval) {
-> +	union power_supply_propval ret = {0,};
-> +	struct power_supply *pst;
-> +	int i;
-> +
-> +	for (i = 0; i < psy->num_supplicants; i++) {
-> +		pst = power_supply_get_by_name(psy->supplied_to[i]);
-> +		if (!pst || pst->get_property(pst, psp, &ret))
-> +			continue;
-> +		if (ret.intval == intval)
-> +			return pst;
-> +	}
-> +
-> +	return NULL;
-> +}
-> +EXPORT_SYMBOL_GPL(power_supply_get_by_suppliedto);
-> +
->  int power_supply_powers(struct power_supply *psy, struct device *dev)  {
->  	return sysfs_create_link(&psy->dev->kobj, &dev->kobj, "powers"); diff --
-> git a/include/linux/power_supply.h b/include/linux/power_supply.h index
-> 0bafbb1..3cfee0c 100644
-> --- a/include/linux/power_supply.h
-> +++ b/include/linux/power_supply.h
-> @@ -219,6 +219,9 @@ struct power_supply_info {  };
-> 
->  extern struct power_supply *power_supply_get_by_name(char *name);
-> +extern struct power_supply *power_supply_get_by_suppliedto(
-> +				struct power_supply *psy,
-> +				enum power_supply_property psp, int intval);
->  extern void power_supply_changed(struct power_supply *psy);  extern int
-> power_supply_am_i_supplied(struct power_supply *psy);  extern int
-> power_supply_set_battery_charged(struct power_supply *psy);
-> --
-> 1.7.0.4
+I think this refcounting is better than using task_lock().
+
+Thanks,
+-Kame
 
