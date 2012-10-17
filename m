@@ -1,139 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932468Ab2JQS3Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 14:29:16 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30821 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754716Ab2JQS3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 14:29:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,602,1344236400"; 
-   d="scan'208";a="207293471"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: RE: [PATCH v9 05/12] x86, hotplug, suspend: Online CPU0 for suspend
- or hibernate
-Thread-Topic: [PATCH v9 05/12] x86, hotplug, suspend: Online CPU0 for
- suspend or hibernate
-Thread-Index: AQHNqJme/Qw6Fjvfd02W7L5t8fGuVJe7UXUAgACSvQCAAfJfUA==
-Date: Wed, 17 Oct 2012 18:29:12 +0000
-Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C7122030B1A8DC@ORSMSX105.amr.corp.intel.com>
-References: <1350058189-6769-1-git-send-email-fenghua.yu@intel.com>
- <1350058189-6769-6-git-send-email-fenghua.yu@intel.com>
- <10020874.9eDCB3ZAkx@vostro.rjw.lan> <507CF216.3010507@linux.vnet.ibm.com>
-In-Reply-To: <507CF216.3010507@linux.vnet.ibm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="utf-8"
+	id S1757630Ab2JQSaH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 14:30:07 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:50327 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754716Ab2JQSaF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 14:30:05 -0400
+Message-ID: <507EF918.5030004@panasas.com>
+Date: Wed, 17 Oct 2012 11:29:44 -0700
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
+To: Jim Rees <rees@umich.edu>
+CC: Dave Jones <davej@redhat.com>, "J. Bruce Fields" <bfields@fieldses.org>,
+        Sasha Levin <levinsasha928@gmail.com>, <Trond.Myklebust@netapp.com>,
+        <davem@davemloft.net>, <linux-nfs@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] SUNRPC: Prevent kernel stack corruption on long values
+ of flush
+References: <1342476086-21638-1-git-send-email-levinsasha928@gmail.com> <20120718173913.GA1298@fieldses.org> <20120718200049.GA17964@umich.edu> <20120718203304.GA18540@redhat.com> <20120718205510.GA18374@umich.edu>
+In-Reply-To: <20120718205510.GA18374@umich.edu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9HITIEE006460
 
-> From: Srivatsa S. Bhat [mailto:srivatsa.bhat@linux.vnet.ibm.com]
-> On 10/16/2012 02:20 AM, Rafael J. Wysocki wrote:
-> > On Friday 12 of October 2012 09:09:42 Fenghua Yu wrote:
-> >> From: Fenghua Yu <fenghua.yu@intel.com>
-> >>
-> >> Because x86 BIOS requires CPU0 to resume from sleep, suspend or
-> hibernate can't
-> >> be executed if CPU0 is detected offline. To make suspend or
-> hibernate and
-> >> further resume succeed, CPU0 must be online.
-> >>
-> >> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-> >> ---
-> >>  arch/x86/power/cpu.c |   44
-> ++++++++++++++++++++++++++++++++++++++++++++
-> >>  1 files changed, 44 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
-> >> index 218cdb1..adde775 100644
-> >> --- a/arch/x86/power/cpu.c
-> >> +++ b/arch/x86/power/cpu.c
-> >> @@ -237,3 +237,47 @@ void restore_processor_state(void)
-> >>  #ifdef CONFIG_X86_32
-> >>  EXPORT_SYMBOL(restore_processor_state);
-> >>  #endif
-> >> +
-> >> +/*
-> >> + * When bsp_check() is called in hibernate and suspend, cpu hotplug
-> >> + * is disabled already. So it's unnessary to handle race condition
-> between
-> >> + * cpumask query and cpu hotplug.
-> >> + */
-> >> +static int bsp_check(void)
-> >> +{
-> >> +	if (cpumask_first(cpu_online_mask) != 0) {
-> >> +		pr_warn("CPU0 is offline.\n");
-> >> +		return -ENODEV;
-> >> +	}
-> >> +
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +static int bsp_pm_callback(struct notifier_block *nb, unsigned long
-> action,
-> >> +			   void *ptr)
-> >> +{
-> >> +	int ret = 0;
-> >> +
-> >> +	switch (action) {
-> >> +	case PM_SUSPEND_PREPARE:
-> >> +	case PM_HIBERNATION_PREPARE:
-> >> +		ret = bsp_check();
-> >> +		break;
-> >> +	default:
-> >> +		break;
-> >> +	}
-> >> +	return notifier_from_errno(ret);
-> >> +}
-> >> +
-> >
-> > I wonder if there's anything preventing CPU0 from becoming offline
-> after you've
-> > done this check and before user space is frozen?
-> >
+On 07/18/2012 01:55 PM, Jim Rees wrote:
+> Dave Jones wrote:
 > 
-> Hi Rafael,
+>   
+>   Unsigned long isn't necessarily 32 bits.
+>   On 64-bit systems %lu can be up to 18446744073709551615
 > 
-> bsp_pm_callback runs as a low priority notifier callback, specifically
-> with lower
-> priority than the cpu_hotplug_pm_callback (as mentioned in the comment
-> below).
-> And cpu_hotplug_pm_callback disables regular CPU hotplug (till the
-> suspend/resume
-> sequence is complete).. So there is no chance for CPU0 to become
-> offline after that.
+> Thanks.  You caught me thinking "Intel."  How embarrassing.
 
-Bhat is right here. There is no functionality issue here.
+What? why even on Intel-64 long is 64bit. long is always the
+same or bigger then a pointer (A pointer must always fit
+in a long)
 
-bsp_check() is protected by cpu_hotplug_disable which is set before
-bsp_pm_callback and cleared after it. There is no chance for CPU0
-to be offline after that.
+On the other hand int is 32bit in Intel-64 unlike some
+other CPUs where int(s) may get to be 64bit as well.
 
-Thanks.
-
--Fenghua
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Cheers
+Boaz
