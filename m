@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449Ab2JQJOr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 05:14:47 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:48156 "EHLO mx2.parallels.com"
+	id S1756456Ab2JQJP2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 05:15:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11387 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753532Ab2JQJOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 05:14:44 -0400
-Message-ID: <507EE77D.6010906@parallels.com>
-Date: Wed, 17 Oct 2012 21:14:37 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1753532Ab2JQJP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 05:15:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,599,1344236400"; 
+   d="scan'208";a="228621566"
+Date: Wed, 17 Oct 2012 17:15:24 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [3.5.0 BUG] vmx_handle_exit: unexpected, valid vectoring info
+ (0x80000b0e)
+Message-ID: <20121017091524.GA23447@localhost>
+References: <20120912044037.GA23094@localhost>
+ <505044AC.80205@redhat.com>
+ <5052C732.7060508@linux.vnet.ibm.com>
+ <507E4F8E.7000103@linux.vnet.ibm.com>
+ <20121017064319.GA17754@localhost>
+ <507E5891.9060009@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Michael Wolf <mjw@linux.vnet.ibm.com>
-CC: <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
-        <peterz@infradead.org>, <mtosatti@redhat.com>, <mingo@redhat.com>,
-        <avi@redhat.com>, <anthony@codemonkey.ws>
-Subject: Re: [PATCH RFC V2 0/5] Separate consigned (expected steal) from steal
- time.
-References: <20121017022249.16949.2775.stgit@lambeau>
-In-Reply-To: <20121017022249.16949.2775.stgit@lambeau>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <507E5891.9060009@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2012 06:23 AM, Michael Wolf wrote:
-> In the case of where you have a system that is running in a
-> capped or overcommitted environment the user may see steal time
-> being reported in accounting tools such as top or vmstat.  This can
-> cause confusion for the end user.  To ease the confusion this patch set
-> adds the idea of consigned (expected steal) time.  The host will separate
-> the consigned time from the steal time.  The consignment limit passed to the
-> host will be the amount of steal time expected within a fixed period of
-> time.  Any other steal time accruing during that period will show as the
-> traditional steal time.
+On Wed, Oct 17, 2012 at 03:04:49PM +0800, Xiao Guangrong wrote:
+> On 10/17/2012 02:43 PM, Fengguang Wu wrote:
+> > On Wed, Oct 17, 2012 at 02:26:22PM +0800, Xiao Guangrong wrote:
+> >> On 09/14/2012 01:57 PM, Xiao Guangrong wrote:
+> >>> On 09/12/2012 04:15 PM, Avi Kivity wrote:
+> >>>> On 09/12/2012 07:40 AM, Fengguang Wu wrote:
+> >>>>> Hi,
+> >>>>>
+> >>>>> 3 of my test boxes running v3.5 kernel become unaccessible and I find
+> >>>>> two of them kept emitting this dmesg:
+> >>>>>
+> >>>>> vmx_handle_exit: unexpected, valid vectoring info (0x80000b0e) and exit reason is 0x31
+> >>>>>
+> >>>>> The other one has froze and the above lines are the last dmesg.
+> >>>>> Any ideas?
+> >>>>
+> >>>> First, that printk should be rate-limited.
+> >>>>
+> >>>> Second, we should add EXIT_REASON_EPT_MISCONFIG (0x31) to 
+> >>>>
+> >>>> 	if ((vectoring_info & VECTORING_INFO_VALID_MASK) &&
+> >>>> 			(exit_reason != EXIT_REASON_EXCEPTION_NMI &&
+> >>>> 			exit_reason != EXIT_REASON_EPT_VIOLATION &&
+> >>>> 			exit_reason != EXIT_REASON_TASK_SWITCH))
+> >>>> 		printk(KERN_WARNING "%s: unexpected, valid vectoring info "
+> >>>> 		       "(0x%x) and exit reason is 0x%x\n",
+> >>>> 		       __func__, vectoring_info, exit_reason);
+> >>>>
+> >>>> since it's easily caused by the guest.
+> >>>
+> >>> Yes, i will do these.
+> >>>
+> >>>>
+> >>>> Third, it's really unexpected.  It seems the guest was attempting to deliver a page fault exception (0x0e) but encountered an mmio page during delivery (in the IDT, TSS, stack, or page tables).  Is this reproducible?  If so it's easy to patch kvm to halt in that case and allow examining the guest via qemu.
+> >>>>
+> >>>
+> >>> Have no idea yet why the box was frozen under this case, will try to write a test case,
+> >>> hope it can help me to find the reason out.
+> >>>
+> >>
+> >> Still did not know why linux kernel triggered it. I have posted
+> >> a patchset to report an internal error for this case, hoping
+> >> Fengguang can reproduce it after the patchset and Qemu's dump
+> >> can help us to find the reason out.
+> >>
+> >> I will keep working on it.
+> > 
+> > Thanks! Shall I run some patched kernel, or just 3.6.0?
 > 
-> TODO:
-> * Change native_clock to take params and not return a value
-> * Change update_rq_clock_task
-> 
-> Changes from V1:
-> * Removed the steal time allowed percentage from the guest
-> * Moved the separation of consigned (expected steal) and steal time to the
->   host.
-> * No longer include a sysctl interface.
-> 
+> The patchset is under review. Can be found at:
+> https://lkml.org/lkml/2012/10/17/31
 
-You are showing this in the guest somewhere, but tools like top will
-still not show it. So for quite a while, it achieves nothing.
+Thanks, I'll try it.
 
-Of course this is a barrier that any new statistic has to go through. So
-while annoying, this is per-se ultimately not a blocker.
-
-What I still fail to see, is how this is useful information to be shown
-in the guest. Honestly, if I'm in a guest VM or container, any time
-during which I am not running is time I lost. It doesn't matter if this
-was expected or not. This still seems to me as a host-side problem, to
-be solved entirely by tooling.
-
+Thanks,
+Fengguang
