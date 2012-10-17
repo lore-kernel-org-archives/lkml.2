@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab2JQRCk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 13:02:40 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:64547 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756485Ab2JQRCi (ORCPT
+	id S1757507Ab2JQRDt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 13:03:49 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:56980 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754150Ab2JQRDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 13:02:38 -0400
+	Wed, 17 Oct 2012 13:03:48 -0400
+Date: Wed, 17 Oct 2012 13:04:33 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: linux-kernel@vger.kernel.org
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, eranian@gmail.com,
+        "Meadows, Lawrence F" <lawrence.f.meadows@intel.com>
+Subject: [PATCH 2/3] perf_event: Remove cpuc->enable check on KNC event
+ enable/disable
+In-Reply-To: <alpine.DEB.2.02.1210171256550.23243@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.02.1210171303290.23243@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.02.1210171256550.23243@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1350493112.3072.49.camel@joe-AO722>
-References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
-	<1350387889-15324-6-git-send-email-hongbo.zhang@linaro.com>
-	<CAKohpo=Vfq=z8NK6w4_QpwwLniYiwcfGfzWZsoG_zBPYPXrcUw@mail.gmail.com>
-	<1350493112.3072.49.camel@joe-AO722>
-Date: Wed, 17 Oct 2012 22:32:37 +0530
-Message-ID: <CAKohponsXAKYiqeZTYE-5yv=C+BKmMRCUPVb56-nTRp=S8TU_Q@mail.gmail.com>
-Subject: Re: [PATCH 5/5] Thermal: Add ST-Ericsson db8500 thermal dirver.
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Joe Perches <joe@perches.com>
-Cc: "hongbo.zhang" <hongbo.zhang@linaro.org>, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
-        linaro-kernel@lists.linaro.org,
-        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 October 2012 22:28, Joe Perches <joe@perches.com> wrote:
->> > +#include <linux/slab.h>
->> > +#include <linux/module.h>
->> > +#include <linux/platform_device.h>
->> > +#include <linux/cpufreq.h>
->> > +#include <linux/cpu_cooling.h>
->> > +#include <linux/err.h>
->>
->> should be in alphabetical order
->
-> There's no agreed kernel convention here.
-> Some prefer christmas tree (shortest to longest length)
 
-:)
+x86_pmu.enable() is called from x86_pmu_enable() with cpuc->enabled
+set to 0.  This means we weren't re-enabling the counters after
+a context switch.
 
-I have seen a number of times this happening, because the list
-isn't in alphabetical order people aren't able to easily read if an
-#include ... is already there or not.
+This patch just removes the check, as it should't be necessary
+(and the equivelent x86_ generic code does not have the checks).
 
-And so one header file is included multiple times. Because git diff
-only shows few lines above and below a change, even people can't
-catch it in reviews. That's why they must always be in alphabetical order.
+The origin of this problem is the KNC driver being based on the P6 one.  
+The P6 driver also has this issue, but works anyway due to various 
+lucky accidents.
 
---
-viresh
+Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+
+diff -ur linux-3.7-rc1.orig/arch/x86/kernel/cpu/perf_event_knc.c linux-3.7-rc1/arch/x86/kernel/cpu/perf_event_knc.c
+--- linux-3.7-rc1.orig/arch/x86/kernel/cpu/perf_event_knc.c	2012-10-14 17:41:04.000000000 -0400
++++ linux-3.7-rc1/arch/x86/kernel/cpu/perf_event_knc.c	2012-10-17 11:48:22.952394235 -0400
+@@ -173,26 +173,22 @@
+ static inline void
+ knc_pmu_disable_event(struct perf_event *event)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	u64 val;
+ 
+ 	val = hwc->config;
+-	if (cpuc->enabled)
+-		val &= ~ARCH_PERFMON_EVENTSEL_ENABLE;
++	val &= ~ARCH_PERFMON_EVENTSEL_ENABLE;
+ 
+ 	(void)wrmsrl_safe(hwc->config_base + hwc->idx, val);
+ }
+ 
+ static void knc_pmu_enable_event(struct perf_event *event)
+ {
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	u64 val;
+ 
+ 	val = hwc->config;
+-	if (cpuc->enabled)
+-		val |= ARCH_PERFMON_EVENTSEL_ENABLE;
++	val |= ARCH_PERFMON_EVENTSEL_ENABLE;
+ 
+ 	(void)wrmsrl_safe(hwc->config_base + hwc->idx, val);
+ }
