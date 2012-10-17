@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107Ab2JQCLV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 22:11:21 -0400
+	id S1756091Ab2JQCLU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 22:11:20 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42279 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755939Ab2JQCLT (ORCPT
+	by vger.kernel.org with ESMTP id S1755973Ab2JQCLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 22:11:19 -0400
-Message-ID: <1350437371.26833.71.camel@deadeye.wl.decadent.org.uk>
+	Tue, 16 Oct 2012 22:11:18 -0400
+Message-ID: <1350437407.26833.72.camel@deadeye.wl.decadent.org.uk>
 Subject: Re: blk: NULL ptr deref in blk_dequeue_request()
 From: Ben Hutchings <ben@decadent.org.uk>
 To: Sasha Levin <levinsasha928@gmail.com>
@@ -15,7 +15,7 @@ Cc: Jiri Kosina <jkosina@suse.cz>, Jan Kara <jack@suse.cz>,
         Tejun Heo <tj@kernel.org>, axboe@kernel.dk,
         Dave Jones <davej@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 17 Oct 2012 02:29:31 +0100
+Date: Wed, 17 Oct 2012 02:30:07 +0100
 In-Reply-To: <CA+1xoqcGN1xYP5-N17eZQ=F_JTG-8gr43DAxREa-Wf+n8=P7Og@mail.gmail.com>
 References: <505E2108.2060108@gmail.com>
 	 <CA+1xoqc1Bc1rPgH+9Xs9-BV7qp3N7mDpNLj1mPwZHdF=H4mHTg@mail.gmail.com>
@@ -25,7 +25,7 @@ References: <505E2108.2060108@gmail.com>
 	 <1349884374.6336.67.camel@deadeye.wl.decadent.org.uk>
 	 <CA+1xoqcGN1xYP5-N17eZQ=F_JTG-8gr43DAxREa-Wf+n8=P7Og@mail.gmail.com>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-UCJ9sa8wxm9M+Xz+esGM"
+	protocol="application/pgp-signature"; boundary="=-5ByCAd5QYeEkLuoN8YtI"
 X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
@@ -36,7 +36,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-UCJ9sa8wxm9M+Xz+esGM
+--=-5ByCAd5QYeEkLuoN8YtI
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
@@ -102,26 +102,26 @@ Ben.
 Ben Hutchings
 No political challenge can be met by shopping. - George Monbiot
 
---=-UCJ9sa8wxm9M+Xz+esGM
+--=-5ByCAd5QYeEkLuoN8YtI
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAUH4J/Oe/yOyVhhEJAQpfRA//WAA7S+Q5X8DFmrfdUHEt/61mTlWZ29Mk
-tB7Iyu+RHry7GeRv0z/M7ekNAAmSPvf21SUL8bQSP9sUb1o88mamIjFt2GDOmYY9
-lC/o+1j4rKnnN4Q4VryknygHlodKplzS4PLini8hTR/81neJK60vO4DBKw5eRjc0
-Rkco6eggRkAD9VOpMvhgWMHlBn6MGUxtf9RMTlhyaSsZIKijl5/owwjxtzuM9jcP
-DIk+xtVxGTYVeIXSh6z3gdWp81Aj1JQTu0HAzsQU5/t/IlnuZbon63s7X704NeAW
-nDoKSB0n1u1sZsDLtg8zwGwYlQcMIBpP+zU5z5Ovqt97JYLxxIFBgp0x4lWKbYEZ
-bvauWDqXBeLndM8MWNWrKdHPfohp0bpVq2BiNrFWdg+KKW5mif2iRcIkYArQBsjQ
-F70c0c5jwIFIuZdRi7zwXz7cKUG8a7xyMF7LjTyXjgUTrI5u8BC6NRd54lf62sEE
-ds93Q4T9m3RyThbOPD4VEJj1H+GfdZdc1BCvWHhhxeRasMuYjGqkXE3ZVYtbTkzQ
-uWWJvWG2aksNjfLuPe6w2hgakkl5EmCHiaBMzckQPslNi4GcH7hF4bVlG61cFxGa
-hywuaYwINwrd78qBkqq50lh13JBNSl7OzI2oAHV8QBZKpmfiBdeOKcdhFptmWRiY
-sTlNajVzwcY=
-=HPSq
+iQIVAwUAUH4KH+e/yOyVhhEJAQofOBAAysk3YGoxGwrTJvNclHBGckpcRu/sqyKZ
+jC4eIklN3o4xseB7xvjAUJUeWxoQPHwfq4S5cPc/5Mf5qbdnZO6ExQTgL0S04Ml2
+5KeBFBtEgtjE4gJ2JLFLHn9eP44C3FoYicSPSB3zDZM+wctDHnPacG157cxR+7pj
+AYhONN95aLdCcX2j2OxB0aR9joGITOGmG3ps6/yehqoDO4cDTiRJX5IwI08/ZdN1
+7//AG5XYgBtNFD57E0tz8OZy/EbzSh+iIrnTF6Ok5eMc4RBpoxs1tpl7YzLWxnC6
+raFtuzM/x8hrQV/GkXZ9uTyAs7b/gZFsivAdqJrVqiPnS9d2a3mbEOOklznN1RWH
+IK9WNwTP8QhYVsfSUl+EGn6Mgb6bePF/2Obpneg9s4v7EXiIOENdJ16qW80vKJtR
+Qc723RL+JnpfMvN1/dxz1SloKKk+PI5BG1MMWQvm15OV68p5+8nFCqZqDEQbM31g
+0+9XauFkJWg3anAIj+mb40pSSckxmGH+B6SymQI8/SyNdfytilBztniDGO4wYhEN
+UE1BW9afjSAS1RxuhtatKT+MsgsTKj8v+5v0sS46s3oLVxaDkmZtYRErKmxrjYNW
+ne3E9fLUdCV4pjp3cOnS96W0NB6ZoUsWmIVl8Negv7B/ys/s0FrtTrbiLpfL43kN
+nSqODInGipo=
+=kNkh
 -----END PGP SIGNATURE-----
 
---=-UCJ9sa8wxm9M+Xz+esGM--
+--=-5ByCAd5QYeEkLuoN8YtI--
