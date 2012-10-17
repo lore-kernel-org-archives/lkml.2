@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757790Ab2JQUKV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 16:10:21 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:52685 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756303Ab2JQUKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 16:10:20 -0400
-Date: Wed, 17 Oct 2012 22:10:18 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Tony Luck <tony.luck@intel.com>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 1/5] drivers/base: Add a DEVICE_BOOL_ATTR macro
-Message-ID: <20121017201018.GC32230@aftab.osrc.amd.com>
-References: <1350472435-29307-1-git-send-email-bp@amd64.org>
- <1350472435-29307-2-git-send-email-bp@amd64.org>
- <20121017190300.GB25996@kroah.com>
+	id S1756042Ab2JQUXS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 16:23:18 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:58572 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753279Ab2JQUXR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 16:23:17 -0400
+Date: Wed, 17 Oct 2012 16:24:02 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Ingo Molnar <mingo@kernel.org>
+cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, eranian@gmail.com,
+        "Meadows, Lawrence F" <lawrence.f.meadows@intel.com>
+Subject: Re: [PATCH 0/3] perf_event: enable overflow interrupts on KNC
+In-Reply-To: <20121017180753.GA7291@gmail.com>
+Message-ID: <alpine.DEB.2.02.1210171614060.23685@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.02.1210171256550.23243@vincent-weaver-1.um.maine.edu> <20121017180753.GA7291@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121017190300.GB25996@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 12:03:00PM -0700, Greg Kroah-Hartman wrote:
-> On Wed, Oct 17, 2012 at 01:13:51PM +0200, Borislav Petkov wrote:
-> > +ssize_t device_store_bool(struct device *dev, struct device_attribute *attr,
-> > +			  const char *buf, size_t size)
-> > +{
-> > +	struct dev_ext_attribute *ea = to_ext_attr(attr);
-> > +	u8 bval;
-> > +
-> > +	if (kstrtou8(buf, 10, &bval) < 0)
-> > +		return -EINVAL;
-> > +
-> > +	*(bool *)ea->var = !!bval;
-> > +
-> > +	return size;
-> > +}
-> > +EXPORT_SYMBOL_GPL(device_store_bool);
-> 
-> Wouldn't it be nice to be able to accept 'y' 'Y' 'n' 'N' '0' and '1'
-> like the module bool parameter code does?  That would make things a bit
-> more consistent, and possibly allow you to use this function for the
-> module sysfs file handling as well.
+On Wed, 17 Oct 2012, Ingo Molnar wrote:
 
-That could be easily done, let me try it tomorrow. Any other letters you
-prefer? Maybe, 'G' 'r' 'e' 'g'... ?
+> How well tested is this on real hardware and how robust is the 
+> hardware with this? Since it's a new PMU driver for v3.7, and if 
+> these are reasonably well tested, then we could send these to 
+> Linus via perf/urgent, so that they don't miss and have to wait 
+> all the way to v3.8.
 
-:-)
+You probably won't like this answer.
 
--- 
-Regards/Gruss,
-Boris.
+The patches have been tested against the 2.6.34 kernel that Intel provides 
+for KNC (found here http://software.intel.com/en-us/forums/topic/278102 )
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+perf stat, perf record, and PAPI have all been tested and work.
+
+The patches I've sent are the 2.6.34 ones forward ported to the 3.7-rc1 
+kernel.  I haven't been able to run a 3.7-rc kernel on the KNC board, 
+because there are other patches to mainline needed to get KNC running and
+they'd all have to be forward-ported from 2.6.34.
+
+Since the knc pmu driver closely models the p6 one, it was straightforward
+to use it as a basis for the forward port.  Everything _should_ work but
+I've only compile tested.
+
+Vince
+vincent.weaver@maine.edu
