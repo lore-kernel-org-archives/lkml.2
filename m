@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359Ab2JQOQj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 10:16:39 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:51234 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932220Ab2JQOQg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 10:16:36 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: linux-kernel@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH] drivers: cma: Fix wrong CMA selected region size default value
-Date: Wed, 17 Oct 2012 16:17:22 +0200
-Message-Id: <1350483442-13180-1-git-send-email-laurent.pinchart@ideasonboard.com>
-X-Mailer: git-send-email 1.7.8.6
+	id S932346Ab2JQOQi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 10:16:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61936 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932179Ab2JQOQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 10:16:35 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 09/10] UAPI: Make arch/sh/include/uapi/asm/hw_breakpoint.h
+ non-empty
+To: torvalds@osdl.org
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org
+Date: Wed, 17 Oct 2012 15:16:28 +0100
+Message-ID: <20121017141628.29084.20868.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20121017141521.29084.36722.stgit@warthog.procyon.org.uk>
+References: <20121017141521.29084.36722.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kconfig lists CMA_SIZE_SEL_ABSOLUTE as the default value fo the CMA
-selected region size, but that option isn't available in the defined
-choices. Set the default to CMA_SIZE_SEL_MBYTES instead.
+arch/sh/include/uapi/asm/hw_breakpoint.h was emitted by the UAPI disintegration
+script as an empty file because the parent file had no UAPI stuff in it,
+despite being marked with "header-y".
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Unfortunately, the patch program deletes resultant empty files when applying a
+kernel patch.
+
+So just stick a comment in there as a placeholder.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Paul Mundt <lethal@linux-sh.org>
+cc: linux-sh@vger.kernel.org
 ---
- drivers/base/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-index 08b4c52..b34b5cd 100644
---- a/drivers/base/Kconfig
-+++ b/drivers/base/Kconfig
-@@ -236,7 +236,7 @@ config CMA_SIZE_PERCENTAGE
- 
- choice
- 	prompt "Selected region size"
--	default CMA_SIZE_SEL_ABSOLUTE
-+	default CMA_SIZE_SEL_MBYTES
- 
- config CMA_SIZE_SEL_MBYTES
- 	bool "Use mega bytes value only"
--- 
-Regards,
+ arch/sh/include/uapi/asm/hw_breakpoint.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-Laurent Pinchart
+diff --git a/arch/sh/include/uapi/asm/hw_breakpoint.h b/arch/sh/include/uapi/asm/hw_breakpoint.h
+index e69de29..ae5704f 100644
+--- a/arch/sh/include/uapi/asm/hw_breakpoint.h
++++ b/arch/sh/include/uapi/asm/hw_breakpoint.h
+@@ -0,0 +1,4 @@
++/*
++ * There isn't anything here anymore, but the file must not be empty or patch
++ * will delete it.
++ */
 
