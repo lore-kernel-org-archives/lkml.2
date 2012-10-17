@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154Ab2JQH1y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 03:27:54 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47744 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751403Ab2JQH1x (ORCPT
+	id S1756190Ab2JQHad (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 03:30:33 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38299 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752140Ab2JQHac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 03:27:53 -0400
-Date: Wed, 17 Oct 2012 16:27:48 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stan Hu <stanhu@gmail.com>
-Cc: spi-devel-general@lists.sourceforge.net,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Tony Lindgren <tony@atomide.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nicolas Pitre <nico@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] spi: omap2-mcspi: add option to configure output
- line for McSPI driver
-Message-ID: <20121017072746.GG14199@opensource.wolfsonmicro.com>
-References: <y>
- <1349735980-17015-1-git-send-email-stanhu@gmail.com>
+	Wed, 17 Oct 2012 03:30:32 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <507E5E6E.7040500@jp.fujitsu.com>
+Date: Wed, 17 Oct 2012 16:29:50 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349735980-17015-1-git-send-email-stanhu@gmail.com>
-X-Cookie: You will be run over by a beer truck.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Glauber Costa <glommer@parallels.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Suleiman Souhlal <suleiman@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Greg Thelen <gthelen@google.com>, devel@openvz.org,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v4 14/14] Add documentation about the kmem controller
+References: <1349690780-15988-1-git-send-email-glommer@parallels.com> <1349690780-15988-15-git-send-email-glommer@parallels.com>
+In-Reply-To: <1349690780-15988-15-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 04:39:40PM -0600, Stan Hu wrote:
-> McSPI driver previously assumed that D0 was input (MISO) and D1 was output (MOSI).
-> This forces the hardware designer to wire all SPI peripherals in this way when
-> it should be a software configuration option.
+(2012/10/08 19:06), Glauber Costa wrote:
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> ---
+>   Documentation/cgroups/memory.txt | 55 +++++++++++++++++++++++++++++++++++++++-
+>   1 file changed, 54 insertions(+), 1 deletion(-)
+> 
 
-I applied a similar patch from Daniel Mack just now; please check if
-there's anything he's missing.  His patch was sent earlier and also adds
-DT bindings.
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
