@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409Ab2JQQ2N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 12:28:13 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64591 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932325Ab2JQQ2L (ORCPT
+	id S1757424Ab2JQQe1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 12:34:27 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56011 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757410Ab2JQQeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 12:28:11 -0400
+	Wed, 17 Oct 2012 12:34:25 -0400
+Date: Wed, 17 Oct 2012 17:34:24 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arch@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [RFC][CFT][CFReview] execve and kernel_thread unification work
+Message-ID: <20121017163424.GA2616@ZenIV.linux.org.uk>
+References: <20121001213809.GA31155@ZenIV.linux.org.uk>
+ <20121015013009.GB2616@ZenIV.linux.org.uk>
+ <CAHkRjk7QbybMx1Kc9dP-Mz_ujMmHf5htLViviNok=HKjac0G+A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <507E60C2.6010104@cn.fujitsu.com>
-References: <1350444308-27102-1-git-send-email-tangchen@cn.fujitsu.com>
-	<CAE9FiQVFc9VVfWZpEfjPeGvo5pby3BQNzDei3VTXdoR048_SPg@mail.gmail.com>
-	<507E60C2.6010104@cn.fujitsu.com>
-Date: Wed, 17 Oct 2012 09:28:09 -0700
-X-Google-Sender-Auth: g-0yTC4c-Csf_nThCrdvkN5Mr1Y
-Message-ID: <CAE9FiQX60dOE7odBx4OC0kawesZW3w9yLHEhmLoOvASaZ7q8dw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Update acpi_root_bridge_list in container hotplug path.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: jiang.liu@huawei.com, bhelgaas@google.com, lenb@kernel.org,
-        izumi.taku@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHkRjk7QbybMx1Kc9dP-Mz_ujMmHf5htLViviNok=HKjac0G+A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 12:39 AM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
-> On 10/17/2012 01:18 PM, Yinghai Lu wrote:
->
-> And also, I have another 2 questions, maybe you can help me.
-> 1) Do we need to put PNP0A08 into acpi_pci_roots ?
+On Wed, Oct 17, 2012 at 03:02:15PM +0100, Catalin Marinas wrote:
+> Hi Al,
+> 
+> On 15 October 2012 02:30, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > arch-arm64 - patches from maintainer with minor followup folded
+> 
+> Thanks for updating the arm64 branch. I've adapted the changes, tested
+> and folded them into the branch below (the AArch64 instruction set
+> does not have conditional instructions):
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git
+> execve
 
-looks like we need to unify those two ids.
+Fetched and merged, thanks.  I'll probably drop arch-arm64 branch, now
+that I have yours directly merged.  In any case, right now arch-arm64
+points to the current head or yours and for-next has
 
-> 2) In container_notify_cb(), when it got a ACPI_NOTIFY_EJECT_REQUEST
->    event, it doesn't do the hot-remove things.
->    I use your sci emulator patch to test it. I did the following thing:
->         echo echo "\_SB_.LSB1" > /sys/kernel/debug/acpi/sci_notify
->    where \_SB_.LSB1 is a container, it just did nothing.
->    Do we need to support this operation ?
+commit 0cea479343cbfaec3a9b8accdeadae53322d98a8
+Merge: 43cc05a 6a87277
+Author: Al Viro <viro@zeniv.linux.org.uk>
+Date:   Wed Oct 17 12:29:32 2012 -0400
 
-yes, looks like need to add container_device_remove and call it under
- container_notify_cb/ACPI_NOTIFY_EJECT_REQUEST
+    Merge branch 'execve' of git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch
 
-and should look like handle_root_bridge_removal to call acpi_bus_trim two times.
-
-Thanks
-
-Yinghai
+in it...
