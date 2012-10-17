@@ -1,111 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932294Ab2JQNb7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 09:31:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46397 "EHLO mx2.suse.de"
+	id S1757005Ab2JQNcS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 09:32:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26223 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932179Ab2JQNbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 09:31:19 -0400
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-mm@kvack.org
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: [PATCH 4/6] cgroups: forbid pre_destroy callback to fail
-Date: Wed, 17 Oct 2012 15:30:46 +0200
-Message-Id: <1350480648-10905-5-git-send-email-mhocko@suse.cz>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1350480648-10905-1-git-send-email-mhocko@suse.cz>
-References: <1350480648-10905-1-git-send-email-mhocko@suse.cz>
+	id S1756979Ab2JQNcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 09:32:15 -0400
+Date: Wed, 17 Oct 2012 09:31:51 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Gerry Reno <greno@verizon.net>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michael Spang <spang@google.com>, linux-usb@vger.kernel.org,
+        Dave Jones <davej@redhat.com>, Michael Spang <spang@chromium.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Subject: Re: USB keyboard backlight powering down.
+Message-ID: <20121017133151.GB2934@hansolo.jdub.homelinux.org>
+References: <20121016152023.GA25506@redhat.com>
+ <CAC5F_1=tiGUtWOsOQ17vEYqVxuoVuoEH_nmEZ3BoL0dsgXJn3w@mail.gmail.com>
+ <20121016165436.GA5140@kroah.com>
+ <20121016173524.GG5378@xanatos>
+ <20121017125538.GA2934@hansolo.jdub.homelinux.org>
+ <507EAE24.60407@verizon.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <507EAE24.60407@verizon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that mem_cgroup_pre_destroy callback doesn't fail finally we can
-safely move on and forbit all the callbacks to fail. The last missing
-piece is moving cgroup_call_pre_destroy after cgroup_clear_css_refs so
-that css_tryget fails so no new charges for the memcg can happen.
-The callbacks are also called from within cgroup_lock to guarantee that
-no new tasks show up. We could theoretically call them outside of the
-lock but then we have to move after CGRP_REMOVED flag is set.
+On Wed, Oct 17, 2012 at 09:09:56AM -0400, Gerry Reno wrote:
+> >> This was the udev bug I was referring to, which I think is causing the
+> >> keyboard to have auto-suspend enabled:
+> >>
+> >> https://bugzilla.redhat.com/show_bug.cgi?id=825284
+> >>
+> >> udev shouldn't be enabling auto-suspend of USB hids by default, since
+> >> many of them don't send a wakeup to come out of suspend when they
+> >> should.  For example, most USB mice only send a wakeup even when they
+> >> are clicked, not when they are moved.  That causes the user to sit
+> >> there, frustrated, as they move their mouse and wonder why their screen
+> >> doesn't unblank.  Other keyboards also lose keystrokes, which means if
+> >> you pause to compose your thoughts, the first couple letters you type
+> >> gets dropped.
+> > I know we fixed that bug for F17, F18, and rawhide.  I did it myself.
+> > I don't think this is udev related, but we'll double check the version.
+> >
+> > Gerry, are you using udev-182-3.fc17 or newer on your F17 install?
+> >
+> > josh
+> >
+> 
+> 
+> 
+> Installed Packages
+> udev.x86_64                                                182-1.fc17                                               
+> @anaconda-0
+> 
+> There is an update available to 182-3 but I haven't installed it.  Didn't know what it might impact.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- kernel/cgroup.c |   30 +++++++++---------------------
- 1 file changed, 9 insertions(+), 21 deletions(-)
+Well, it would certainly be good to update to it and see if this bug is
+fixed for you.  You will probably need to rebuild your initramfs with
+the updated udev.
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index b7d9606..00729c1 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -855,7 +855,7 @@ static struct inode *cgroup_new_inode(umode_t mode, struct super_block *sb)
-  * Call subsys's pre_destroy handler.
-  * This is called before css refcnt check.
-  */
--static int cgroup_call_pre_destroy(struct cgroup *cgrp)
-+static void cgroup_call_pre_destroy(struct cgroup *cgrp)
- {
- 	struct cgroup_subsys *ss;
- 	int ret = 0;
-@@ -864,15 +864,8 @@ static int cgroup_call_pre_destroy(struct cgroup *cgrp)
- 		if (!ss->pre_destroy)
- 			continue;
- 
--		ret = ss->pre_destroy(cgrp);
--		if (ret) {
--			/* ->pre_destroy() failure is being deprecated */
--			WARN_ON_ONCE(!ss->__DEPRECATED_clear_css_refs);
--			break;
--		}
-+		BUG_ON(ss->pre_destroy(cgrp));
- 	}
--
--	return ret;
- }
- 
- static void cgroup_diput(struct dentry *dentry, struct inode *inode)
-@@ -4161,7 +4154,6 @@ again:
- 		mutex_unlock(&cgroup_mutex);
- 		return -EBUSY;
- 	}
--	mutex_unlock(&cgroup_mutex);
- 
- 	/*
- 	 * In general, subsystem has no css->refcnt after pre_destroy(). But
-@@ -4174,17 +4166,6 @@ again:
- 	 */
- 	set_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
- 
--	/*
--	 * Call pre_destroy handlers of subsys. Notify subsystems
--	 * that rmdir() request comes.
--	 */
--	ret = cgroup_call_pre_destroy(cgrp);
--	if (ret) {
--		clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
--		return ret;
--	}
--
--	mutex_lock(&cgroup_mutex);
- 	parent = cgrp->parent;
- 	if (atomic_read(&cgrp->count) || !list_empty(&cgrp->children)) {
- 		clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
-@@ -4206,6 +4187,13 @@ again:
- 			return -EINTR;
- 		goto again;
- 	}
-+
-+	/*
-+	 * Call pre_destroy handlers of subsys. Notify subsystems
-+	 * that rmdir() request comes.
-+	 */
-+	cgroup_call_pre_destroy(cgrp);
-+
- 	/* NO css_tryget() can success after here. */
- 	finish_wait(&cgroup_rmdir_waitq, &wait);
- 	clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
--- 
-1.7.10.4
-
+josh
