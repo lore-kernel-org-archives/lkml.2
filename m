@@ -1,61 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757832Ab2JQUco (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 16:32:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62935 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757279Ab2JQUcm (ORCPT
+	id S1757856Ab2JQUdG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 16:33:06 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:54694 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755580Ab2JQUdD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 16:32:42 -0400
-Date: Wed, 17 Oct 2012 13:32:39 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jean-Christian de Rivaz <jc@eclis.ch>
-Cc: Oliver Neukum <oneukum@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH] Add CDC-ACM support for the CX93010-2x UCMxx USB Modem
-Message-ID: <20121017203239.GD30907@kroah.com>
-References: <1348841764-26873-1-git-send-email-jc@eclis.ch>
- <16666667.izGXgx19Gh@linux-lqwf.site>
- <20121010222906.GA12493@cube>
+	Wed, 17 Oct 2012 16:33:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type
+	:content-transfer-encoding; q=dns; s=sasl; b=v0svSkxQfcjar3O9uT3
+	QVtWd/IOT4CMLS/bfSNQehvNdC8nbHoxhFiFJ8ZJ6+9s3I5o0eIlt9PPbpWLtCZO
+	OrNnRz7S1LXH+8oyJKf0iUuY4O9wig6IP6UrguKOWIlDlZnjip+/YVgx2A3xT6GO
+	U8xqbjb1RmrFNN8estC6WKTA=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v1.7.12.4
+Date: Wed, 17 Oct 2012 13:33:00 -0700
+Message-ID: <7v6268on43.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121010222906.GA12493@cube>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: D8ACFAA8-1899-11E2-A633-BB652E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 11, 2012 at 12:29:06AM +0200, Jean-Christian de Rivaz wrote:
-> On Wed, Oct 10, 2012 at 09:42:32PM +0200, Oliver Neukum wrote:
-> > On Friday 28 September 2012 16:16:04 jc@eclis.ch wrote:
-> > > From: Jean-Christian de Rivaz <jc@eclis.ch>
-> > > 
-> > > This USB V.92/V.32bis Controllered Modem have the USB vendor ID 0x0572
-> > > and device ID 0x1340. It need the NO_UNION_NORMAL quirk to be recognized.
-> > > 
-> > > Reference:
-> > > http://www.conexant.com/servlets/DownloadServlet/DSH-201723-005.pdf?docid=1725&revid=5
-> > > 
-> > > Signed-off-by: Jean-Christian de Rivaz <jc@eclis.ch>
-> > Acked-by: Oliver Neukum <oneukum@SUSE.DE>
-> > 
-> > However, this went to the wrong list. Please repost to
-> > 
-> > davem@davemloft.net
-> > netdev@vger.kernel.org
-> > 
-> > 	Regards
-> > 		Oliver
-> > 
-> 
-> Sorry for the wrong list, I used the scripts/get_maintainer.pl to get the
-> destinations, as recommanded in Documentation/SubmittingPatches. Is there
-> something to be fixed there or should I use an other procedure to get the
-> right destinations?
-> 
-> I will rebase and repost the patch.
+The latest maintenance release Git v1.7.12.4 is now available at
+the usual places.
 
-No need, you did this correctly.
+The release tarballs are found at:
 
-greg k-h
+    http://code.google.com/p/git-core/downloads/list
+
+and their SHA-1 checksums are:
+
+e7eb697fc12887138e44ae100165c620a1210e81  git-1.7.12.4.tar.gz
+1d4ce5c8fabbf576d611effcce2f87089da1bb89  git-htmldocs-1.7.12.4.tar.gz
+1f853aa40c4518a4fad829f255c96d6e21659e93  git-manpages-1.7.12.4.tar.gz
+
+Also the following public repositories all have a copy of the v1.7.12.4
+tag and the maint branch that the tag points at:
+
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+Git 1.7.12.4 Release Notes
+==========================
+
+Fixes since v1.7.12.3
+---------------------
+
+ * "git fetch" over the dumb-http revision walker could segfault when
+   curl's multi interface was used.
+
+ * It was possible to give specific paths for "asciidoc" and other
+   tools in the documentation toolchain, but not for "xmlto".
+
+ * "gitweb" did not give the correct committer timezone in its feed
+   output due to a typo.
+
+ * The "-Xours" (and similarly -Xtheirs) backend option to "git
+   merge -s recursive" was ignored for binary files.  Now it is
+   honored.
+
+ * The "binary" synthetic attribute made "diff" to treat the path as
+   binary, but not "merge".
+
+Also contains many documentation updates.
+
+----------------------------------------------------------------
+
+Changes since v1.7.12.3 are as follows:
+
+Ben Walton (1):
+      tests: "cp -a" is a GNUism
+
+Dave Borowitz (1):
+      Documentation/Makefile: Allow custom XMLTO binary
+
+Dylan Alex Simon (1):
+      gitweb.cgi: fix "comitter_tz" typo in feed
+
+Jeff King (1):
+      http: fix segfault in handle_curl_result
+
+Junio C Hamano (6):
+      merge: teach -Xours/-Xtheirs to binary ll-merge driver
+      attr: "binary" attribute should choose built-in "binary" merge driver
+      ll-merge: warn about inability to merge binary files only when we can't
+      t1450: the order the objects are checked is undefined
+      gitcli: parse-options lets you omit tail of long options
+      Git 1.7.12.4
+
+Nguyễn Thái Ngọc Duy (2):
+      gitignore.txt: suggestions how to get literal # or ! at the beginning
+      attr: a note about the order of .gitattributes lookup
+
+Philip Oakley (5):
+      Doc: shallow clone deepens _to_ new depth
+      Doc: separate gitignore pattern sources
+      Doc add: link gitignore
+      Doc clean: add See Also link
+      Doc branch: show -vv option and alternative
+
+Ramkumar Ramachandra (3):
+      t/test-lib: make sure Git has already been built
+      test-lib: use $SHELL_PATH, not $SHELL
+      Git url doc: mark ftp/ftps as read-only and deprecate them
+
+Richard Fearn (1):
+      Fix spelling error in post-receive-email hook
+
+Simon Ruderich (1):
+      l10n: de.po: fix a few minor typos
+
