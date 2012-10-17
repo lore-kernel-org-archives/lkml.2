@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933Ab2JQMiF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 08:38:05 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:33747 "EHLO
+	id S1756938Ab2JQMib (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 08:38:31 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:39889 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756764Ab2JQMiC (ORCPT
+	with ESMTP id S1756867Ab2JQMh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 08:38:02 -0400
+	Wed, 17 Oct 2012 08:37:56 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
         linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
         broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
         rmallon@gmail.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RFC 04/15 v5] gpio: Add device tree support to block GPIO API
-Date: Wed, 17 Oct 2012 14:31:36 +0200
-Message-Id: <1350477107-26512-5-git-send-email-stigge@antcom.de>
+Subject: [PATCH RFC 15/15 v5] gpio-ucb1400: Add block GPIO API
+Date: Wed, 17 Oct 2012 14:31:47 +0200
+Message-Id: <1350477107-26512-16-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1350477107-26512-1-git-send-email-stigge@antcom.de>
 References: <1350477107-26512-1-git-send-email-stigge@antcom.de>
@@ -26,149 +26,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree support to the block GPIO API.
+This patch adds block GPIO API support to the gpio-ucb1400 driver.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
-
 ---
- Documentation/devicetree/bindings/gpio/gpio-block.txt |   36 +++++++
- drivers/gpio/Makefile                                 |    1 
- drivers/gpio/gpioblock-of.c                           |   84 ++++++++++++++++++
- 3 files changed, 121 insertions(+)
+ drivers/gpio/gpio-ucb1400.c |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
---- /dev/null
-+++ linux-2.6/Documentation/devicetree/bindings/gpio/gpio-block.txt
-@@ -0,0 +1,36 @@
-+Block GPIO definition
-+=====================
-+
-+This binding specifies arbitrary blocks of gpios, combining gpios from one or
-+more GPIO controllers together, to form a word for r/w access.
-+
-+Required property:
-+- compatible: must be "linux,gpio-block"
-+
-+Required subnodes:
-+- the name will be the registered name of the block
-+- property "gpios" is a list of gpios for the respective block
-+
-+Example:
-+
-+        blockgpio {
-+                compatible = "linux,gpio-block";
-+
-+                block0 {
-+                        gpios = <&gpio 3 0 0>,
-+                                <&gpio 3 1 0>;
-+                };
-+                block1 {
-+                        gpios = <&gpio 4 1 0>,
-+                                <&gpio 4 3 0>,
-+                                <&gpio 4 2 0>,
-+                                <&gpio 4 4 0>,
-+                                <&gpio 4 5 0>,
-+                                <&gpio 4 6 0>,
-+                                <&gpio 4 7 0>,
-+                                <&gpio 4 8 0>,
-+                                <&gpio 4 9 0>,
-+                                <&gpio 4 10 0>,
-+                                <&gpio 4 19 0>;
-+                };
-+        };
---- linux-2.6.orig/drivers/gpio/Makefile
-+++ linux-2.6/drivers/gpio/Makefile
-@@ -4,6 +4,7 @@ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
+--- linux-2.6.orig/drivers/gpio/gpio-ucb1400.c
++++ linux-2.6/drivers/gpio/gpio-ucb1400.c
+@@ -45,6 +45,27 @@ static void ucb1400_gpio_set(struct gpio
+ 	ucb1400_gpio_set_value(gpio->ac97, off, val);
+ }
  
- obj-$(CONFIG_GPIOLIB)		+= gpiolib.o devres.o
- obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
-+obj-$(CONFIG_OF_GPIO)		+= gpioblock-of.o
- 
- # Device drivers. Generally keep list sorted alphabetically
- obj-$(CONFIG_GPIO_GENERIC)	+= gpio-generic.o
---- /dev/null
-+++ linux-2.6/drivers/gpio/gpioblock-of.c
-@@ -0,0 +1,84 @@
-+/*
-+ * OF implementation for Block GPIO
-+ *
-+ * Copyright (C) 2012 Roland Stigge <stigge@antcom.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/gpio.h>
-+#include <linux/of.h>
-+#include <linux/of_gpio.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+
-+static int __devinit gpioblock_of_probe(struct platform_device *pdev)
++static unsigned long ucb1400_gpio_get_block(struct gpio_chip *gc,
++					    unsigned long mask)
 +{
-+	struct device_node *block;
-+	unsigned *gpios;
-+	int ngpio;
-+	int ret;
-+	struct gpio_block *gb;
-+
-+	for_each_available_child_of_node(pdev->dev.of_node, block) {
-+		int i;
-+
-+		ngpio = of_gpio_count(block);
-+		gpios = kzalloc(ngpio * sizeof(*gpios), GFP_KERNEL);
-+		if (!gpios)
-+			return -ENOMEM;
-+		for (i = 0; i < ngpio; i++) {
-+			ret = of_get_gpio(block, i);
-+			if (ret < 0)
-+				return ret; /* expect -EPROBE_DEFER */
-+			gpios[i] = ret;
-+		}
-+		gb = gpio_block_create(gpios, ngpio, block->name);
-+		if (IS_ERR(gb)) {
-+			dev_err(&pdev->dev,
-+				"Error creating GPIO block from device tree\n");
-+			return PTR_ERR(gb);
-+		}
-+		ret = gpio_block_register(gb);
-+		if (ret < 0) {
-+			gpio_block_free(gb);
-+			return ret;
-+		}
-+		kfree(gpios);
-+		dev_info(&pdev->dev, "Registered gpio block %s: %d gpios\n",
-+			 block->name, ngpio);
-+	}
-+	return 0;
++	struct ucb1400_gpio *gpio;
++	gpio = container_of(gc, struct ucb1400_gpio, gc);
++	return ucb1400_reg_read(gpio->ac97, UCB_IO_DATA) & mask;
 +}
 +
-+#ifdef CONFIG_OF
-+static struct of_device_id gpioblock_of_match[] __devinitdata = {
-+	{ .compatible = "linux,gpio-block", },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, gpioblock_of_match);
-+#endif
++static void ucb1400_gpio_set_block(struct gpio_chip *gc, unsigned long mask,
++				   unsigned long values)
++{
++	struct ucb1400_gpio *gpio;
++	u16 tmp;
++	gpio = container_of(gc, struct ucb1400_gpio, gc);
 +
-+static struct platform_driver gpioblock_of_driver = {
-+	.driver	= {
-+		.name = "gpio-block",
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(gpioblock_of_match),
++	tmp = ucb1400_reg_read(gpio->ac97, UCB_IO_DATA) & ~mask;
++	tmp |= values & mask;
 +
-+	},
-+	.probe	= gpioblock_of_probe,
-+};
++	ucb1400_reg_write(gpio->ac97, UCB_IO_DATA, tmp);
++}
 +
-+module_platform_driver(gpioblock_of_driver);
-+
-+MODULE_DESCRIPTION("GPIO Block driver");
-+MODULE_AUTHOR("Roland Stigge <stigge@antcom.de>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:gpioblock-of");
+ static int ucb1400_gpio_probe(struct platform_device *dev)
+ {
+ 	struct ucb1400_gpio *ucb = dev->dev.platform_data;
+@@ -66,6 +87,8 @@ static int ucb1400_gpio_probe(struct pla
+ 	ucb->gc.direction_output = ucb1400_gpio_dir_out;
+ 	ucb->gc.get = ucb1400_gpio_get;
+ 	ucb->gc.set = ucb1400_gpio_set;
++	ucb->gc.get_block = ucb1400_gpio_get_block;
++	ucb->gc.set_block = ucb1400_gpio_set_block;
+ 	ucb->gc.can_sleep = 1;
+ 
+ 	err = gpiochip_add(&ucb->gc);
