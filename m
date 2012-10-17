@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab2JQMDZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 08:03:25 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:53857 "EHLO song.cn.fujitsu.com"
+	id S1756770Ab2JQMDY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 08:03:24 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:33626 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756689Ab2JQMDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756709Ab2JQMDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Oct 2012 08:03:21 -0400
 X-IronPort-AV: E=Sophos;i="4.80,600,1344182400"; 
-   d="scan'208";a="6017132"
+   d="scan'208";a="6017133"
 From: wency@cn.fujitsu.com
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
 Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
@@ -15,31 +15,38 @@ Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
         akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
         isimatu.yasuaki@jp.fujitsu.com, Wen Congyang <wency@cn.fujitsu.com>,
         Christoph Lameter <cl@linux.com>
-Subject: [PATCH v2 3/5] memory-hotplug: auto offline page_cgroup when onlining memory block failed
-Date: Wed, 17 Oct 2012 20:08:53 +0800
-Message-Id: <1350475735-26136-4-git-send-email-wency@cn.fujitsu.com>
+Subject: [PATCH v2 4/5] memory-hotplug: fix NR_FREE_PAGES mismatch
+Date: Wed, 17 Oct 2012 20:08:54 +0800
+Message-Id: <1350475735-26136-5-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1350475735-26136-1-git-send-email-wency@cn.fujitsu.com>
 References: <1350475735-26136-1-git-send-email-wency@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2012/10/17 20:02:55,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/17 20:02:57,
-	Serialize complete at 2012/10/17 20:02:57
+ 2012/10/17 20:02:58,
+	Serialize complete at 2012/10/17 20:02:58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wen Congyang <wency@cn.fujitsu.com>
 
-When a memory block is onlined, we will try allocate memory on that node
-to store page_cgroup. If onlining the memory block failed, we don't
-offline the page cgroup, and we have no chance to offline this page cgroup
-unless the memory block is onlined successfully again. It will cause
-that we can't hot-remove the memory device on that node, because some
-memory is used to store page cgroup. If onlining the memory block
-is failed, there is no need to stort page cgroup for this memory. So
-auto offline page_cgroup when onlining memory block failed.
+NR_FREE_PAGES will be wrong after offlining pages. We add/dec NR_FREE_PAGES
+like this now:
+1. mova all pages in buddy system to MIGRATE_ISOLATE, and dec NR_FREE_PAGES
+2. don't add NR_FREE_PAGES when it is freed and the migratetype is MIGRATE_ISOLATE
+3. dec NR_FREE_PAGES when offlining isolated pages.
+4. add NR_FREE_PAGES when undoing isolate pages.
+
+When we come to step 3, all pages are in MIGRATE_ISOLATE list, and NR_FREE_PAGES
+are right. When we come to step4, all pages are not in buddy system, so we don't
+change NR_FREE_PAGES in this step, but we change NR_FREE_PAGES in step3. So
+NR_FREE_PAGES is wrong after offlining pages. So there is no need to change
+NR_FREE_PAGES in step3.
+
+This patch also fixs a problem in step2: if the migratetype is MIGRATE_ISOLATE,
+we should not add NR_FRR_PAGES when we remove pages from pcppages.
 
 CC: David Rientjes <rientjes@google.com>
 CC: Jiang Liu <liuj97@gmail.com>
@@ -53,23 +60,39 @@ CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 ---
- mm/page_cgroup.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ mm/page_alloc.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-index 5ddad0c..44db00e 100644
---- a/mm/page_cgroup.c
-+++ b/mm/page_cgroup.c
-@@ -251,6 +251,9 @@ static int __meminit page_cgroup_callback(struct notifier_block *self,
- 				mn->nr_pages, mn->status_change_nid);
- 		break;
- 	case MEM_CANCEL_ONLINE:
-+		offline_page_cgroup(mn->start_pfn,
-+				mn->nr_pages, mn->status_change_nid);
-+		break;
- 	case MEM_GOING_OFFLINE:
- 		break;
- 	case MEM_ONLINE:
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index e33d0fb..9aa9490 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -667,11 +667,13 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+ 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
+ 			__free_one_page(page, zone, 0, mt);
+ 			trace_mm_page_pcpu_drain(page, 0, mt);
+-			if (is_migrate_cma(mt))
+-				__mod_zone_page_state(zone, NR_FREE_CMA_PAGES, 1);
++			if (likely(mt != MIGRATE_ISOLATE)) {
++				__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
++				if (is_migrate_cma(mt))
++					__mod_zone_page_state(zone, NR_FREE_CMA_PAGES, 1);
++			}
+ 		} while (--to_free && --batch_free && !list_empty(list));
+ 	}
+-	__mod_zone_page_state(zone, NR_FREE_PAGES, count);
+ 	spin_unlock(&zone->lock);
+ }
+ 
+@@ -6006,8 +6008,6 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+ 		list_del(&page->lru);
+ 		rmv_page_order(page);
+ 		zone->free_area[order].nr_free--;
+-		__mod_zone_page_state(zone, NR_FREE_PAGES,
+-				      - (1UL << order));
+ 		for (i = 0; i < (1 << order); i++)
+ 			SetPageReserved((page+i));
+ 		pfn += (1 << order);
 -- 
 1.7.1
 
