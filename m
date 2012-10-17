@@ -1,74 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab2JQG0e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 02:26:34 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:59888 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756015Ab2JQG0c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 02:26:32 -0400
-Message-ID: <507E4F8E.7000103@linux.vnet.ibm.com>
-Date: Wed, 17 Oct 2012 14:26:22 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Avi Kivity <avi@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [3.5.0 BUG] vmx_handle_exit: unexpected, valid vectoring info
- (0x80000b0e)
-References: <20120912044037.GA23094@localhost> <505044AC.80205@redhat.com> <5052C732.7060508@linux.vnet.ibm.com>
-In-Reply-To: <5052C732.7060508@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1756198Ab2JQG04 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 02:26:56 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:35604 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756120Ab2JQG0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 02:26:53 -0400
+Message-ID: <1350455212.3072.27.camel@joe-AO722>
+Subject: Re: [PATCH 1/2] cpufreq: Improve debug prints
+From: Joe Perches <joe@perches.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, pdsw-power-team@arm.com
+Date: Tue, 16 Oct 2012 23:26:52 -0700
+In-Reply-To: <CAKohpom6xHUmu2uYijdNVJHj6sFwJhYUYvXy+dN1a+WqzqTjZA@mail.gmail.com>
+References: <3b38cb8ab136e5af3a70fceb7d77ad9fc889eb3f.1350451100.git.viresh.kumar@linaro.org>
+	 <1350452374.3072.19.camel@joe-AO722>
+	 <CAKohpo=LL+wPcb97KNQvHbX0fzhnRBZjPsHXTj1PdYObuVVTgw@mail.gmail.com>
+	 <1350453876.3072.23.camel@joe-AO722>
+	 <CAKohpom6xHUmu2uYijdNVJHj6sFwJhYUYvXy+dN1a+WqzqTjZA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-x-cbid: 12101706-9264-0000-0000-000002829833
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2012 01:57 PM, Xiao Guangrong wrote:
-> On 09/12/2012 04:15 PM, Avi Kivity wrote:
->> On 09/12/2012 07:40 AM, Fengguang Wu wrote:
->>> Hi,
->>>
->>> 3 of my test boxes running v3.5 kernel become unaccessible and I find
->>> two of them kept emitting this dmesg:
->>>
->>> vmx_handle_exit: unexpected, valid vectoring info (0x80000b0e) and exit reason is 0x31
->>>
->>> The other one has froze and the above lines are the last dmesg.
->>> Any ideas?
->>
->> First, that printk should be rate-limited.
->>
->> Second, we should add EXIT_REASON_EPT_MISCONFIG (0x31) to 
->>
->> 	if ((vectoring_info & VECTORING_INFO_VALID_MASK) &&
->> 			(exit_reason != EXIT_REASON_EXCEPTION_NMI &&
->> 			exit_reason != EXIT_REASON_EPT_VIOLATION &&
->> 			exit_reason != EXIT_REASON_TASK_SWITCH))
->> 		printk(KERN_WARNING "%s: unexpected, valid vectoring info "
->> 		       "(0x%x) and exit reason is 0x%x\n",
->> 		       __func__, vectoring_info, exit_reason);
->>
->> since it's easily caused by the guest.
+On Wed, 2012-10-17 at 11:47 +0530, Viresh Kumar wrote:
+> On 17 October 2012 11:34, Joe Perches <joe@perches.com> wrote:
+> > I believe you are quoting KBUILD_MODNAME
 > 
-> Yes, i will do these.
-> 
->>
->> Third, it's really unexpected.  It seems the guest was attempting to deliver a page fault exception (0x0e) but encountered an mmio page during delivery (in the IDT, TSS, stack, or page tables).  Is this reproducible?  If so it's easy to patch kvm to halt in that case and allow examining the guest via qemu.
->>
-> 
-> Have no idea yet why the box was frozen under this case, will try to write a test case,
-> hope it can help me to find the reason out.
-> 
+> Yes. :(
+> Far better output with this. Thanks.
 
-Still did not know why linux kernel triggered it. I have posted
-a patchset to report an internal error for this case, hoping
-Fengguang can reproduce it after the patchset and Qemu's dump
-can help us to find the reason out.
+Oh good, but please use a space between KBUILD_MODNAME
+and the quoted ": ".
 
-I will keep working on it.
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
+look at:
+$ git grep -E -h "pr_fmt.*KBUILD_MODNAME" *|sort|uniq -c|sort -rn
 
 
