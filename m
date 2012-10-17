@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757140Ab2JQOLh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 10:11:37 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:59609 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756988Ab2JQOLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 10:11:36 -0400
-Message-ID: <1350483095.3072.35.camel@joe-AO722>
-Subject: Re: [PATCH 5/5] x86, MCA: Finish mca_config conversion
-From: Joe Perches <joe@perches.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Tony Luck <tony.luck@intel.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Date: Wed, 17 Oct 2012 07:11:35 -0700
-In-Reply-To: <1350472435-29307-6-git-send-email-bp@amd64.org>
-References: <1350472435-29307-1-git-send-email-bp@amd64.org>
-	 <1350472435-29307-6-git-send-email-bp@amd64.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757190Ab2JQOLn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 10:11:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47847 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757161Ab2JQOLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 10:11:41 -0400
+Date: Wed, 17 Oct 2012 16:11:30 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Sasha Levin <levinsasha928@gmail.com>, Jan Kara <jack@suse.cz>,
+        Tejun Heo <tj@kernel.org>, axboe@kernel.dk,
+        Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: blk: NULL ptr deref in blk_dequeue_request()
+In-Reply-To: <1350437371.26833.71.camel@deadeye.wl.decadent.org.uk>
+Message-ID: <alpine.LNX.2.00.1210171610220.17129@pobox.suse.cz>
+References: <505E2108.2060108@gmail.com>  <CA+1xoqc1Bc1rPgH+9Xs9-BV7qp3N7mDpNLj1mPwZHdF=H4mHTg@mail.gmail.com>  <20121008172207.GB14767@quack.suse.cz>  <alpine.LNX.2.00.1210082340501.19980@pobox.suse.cz>  <507424F7.60801@gmail.com> <50742600.10606@gmail.com>
+  <1349884374.6336.67.camel@deadeye.wl.decadent.org.uk>  <CA+1xoqcGN1xYP5-N17eZQ=F_JTG-8gr43DAxREa-Wf+n8=P7Og@mail.gmail.com> <1350437371.26833.71.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-17 at 13:13 +0200, Borislav Petkov wrote:
-> mce_ser, mce_bios_cmci_threshold and mce_disabled are the last three
-> bools which need conversion. Move them to the mca_config struct and
-> adjust usage sites accordingly.
-[]
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-[]
-> @@ -1009,6 +1004,7 @@ static void mce_clear_info(struct mce_info *mi)
->   */
->  void do_machine_check(struct pt_regs *regs, long error_code)
->  {
-> +	struct mca_config *cfg = &mca_cfg;
+On Wed, 17 Oct 2012, Ben Hutchings wrote:
 
-trivia:
+> > > 1. redo_fd_request() races with tear-down of the disks, but because
+> > > set_next_request() checks disk->queue before doing anything this was
+> > > usually harmless.  Now that do_floppy_init() doesn't clear disk->queue,
+> > > the race condition is much easier to hit.  This may fix that problem in
+> > > do_floppy_init(), though there appear to be worse bugs in tear-down
+> > > order in floppy_module_exit():
+> [...]
+> > > 2. I made a big mistake in using the existing GENHD_FL_UP flag, as it is
+> > > cleared by del_gendisk().  Incremental patch below, but it should be
+> > > squashed into the previous patch if that branch is still rebase-able.
+> [...]
+> > I'm now seeing these instead:
+> [...]
+> 
+> Sorry, I'm not going to spend more time in the quagmire of the floppy
+> driver.  Whoever has this commit in their tree, please revert or drop it
+> as appropriate.
 
-Why use cfg?
-This indirection and the cfg-> uses just seem obfuscating.
-Isn't mca_cfg. used everywhere else?
-No line wrapping is saved by indirecting.
+As far as I can tell, Jens has pulled it from me, but it hasn't made it 
+into Linus' tree as of today.
 
-> @@ -1036,7 +1032,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
->  
->  	this_cpu_inc(mce_exception_count);
->  
-> -	if (!mca_cfg.banks)
-> +	if (!cfg->banks)
+I will do it in my tree and send a new pull request to Jens.
 
-
-
+-- 
+Jiri Kosina
+SUSE Labs
