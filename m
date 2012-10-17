@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab2JQMh6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 08:37:58 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:39888 "EHLO
+	id S1756933Ab2JQMiF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 08:38:05 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:33747 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756764Ab2JQMhz (ORCPT
+	with ESMTP id S1756764Ab2JQMiC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 08:37:55 -0400
+	Wed, 17 Oct 2012 08:38:02 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
         linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
         broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
         rmallon@gmail.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RFC 14/15 v5] gpio-vt8500: Add block GPIO API
-Date: Wed, 17 Oct 2012 14:31:46 +0200
-Message-Id: <1350477107-26512-15-git-send-email-stigge@antcom.de>
+Subject: [PATCH RFC 04/15 v5] gpio: Add device tree support to block GPIO API
+Date: Wed, 17 Oct 2012 14:31:36 +0200
+Message-Id: <1350477107-26512-5-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1350477107-26512-1-git-send-email-stigge@antcom.de>
 References: <1350477107-26512-1-git-send-email-stigge@antcom.de>
@@ -26,51 +26,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds block GPIO API support to the gpio-vt8500 driver.
+This patch adds device tree support to the block GPIO API.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 
 ---
- drivers/gpio/gpio-vt8500.c |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ Documentation/devicetree/bindings/gpio/gpio-block.txt |   36 +++++++
+ drivers/gpio/Makefile                                 |    1 
+ drivers/gpio/gpioblock-of.c                           |   84 ++++++++++++++++++
+ 3 files changed, 121 insertions(+)
 
---- linux-2.6.orig/drivers/gpio/gpio-vt8500.c
-+++ linux-2.6/drivers/gpio/gpio-vt8500.c
-@@ -209,6 +209,28 @@ static void vt8500_gpio_set_value(struct
- 	writel_relaxed(val, vt8500_chip->base + vt8500_chip->regs->data_out);
- }
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/gpio/gpio-block.txt
+@@ -0,0 +1,36 @@
++Block GPIO definition
++=====================
++
++This binding specifies arbitrary blocks of gpios, combining gpios from one or
++more GPIO controllers together, to form a word for r/w access.
++
++Required property:
++- compatible: must be "linux,gpio-block"
++
++Required subnodes:
++- the name will be the registered name of the block
++- property "gpios" is a list of gpios for the respective block
++
++Example:
++
++        blockgpio {
++                compatible = "linux,gpio-block";
++
++                block0 {
++                        gpios = <&gpio 3 0 0>,
++                                <&gpio 3 1 0>;
++                };
++                block1 {
++                        gpios = <&gpio 4 1 0>,
++                                <&gpio 4 3 0>,
++                                <&gpio 4 2 0>,
++                                <&gpio 4 4 0>,
++                                <&gpio 4 5 0>,
++                                <&gpio 4 6 0>,
++                                <&gpio 4 7 0>,
++                                <&gpio 4 8 0>,
++                                <&gpio 4 9 0>,
++                                <&gpio 4 10 0>,
++                                <&gpio 4 19 0>;
++                };
++        };
+--- linux-2.6.orig/drivers/gpio/Makefile
++++ linux-2.6/drivers/gpio/Makefile
+@@ -4,6 +4,7 @@ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
  
-+static unsigned long vt8500_gpio_get_block(struct gpio_chip *chip,
-+					   unsigned long mask)
-+{
-+	struct vt8500_gpio_chip *vt8500_chip = to_vt8500(chip);
+ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o devres.o
+ obj-$(CONFIG_OF_GPIO)		+= gpiolib-of.o
++obj-$(CONFIG_OF_GPIO)		+= gpioblock-of.o
+ 
+ # Device drivers. Generally keep list sorted alphabetically
+ obj-$(CONFIG_GPIO_GENERIC)	+= gpio-generic.o
+--- /dev/null
++++ linux-2.6/drivers/gpio/gpioblock-of.c
+@@ -0,0 +1,84 @@
++/*
++ * OF implementation for Block GPIO
++ *
++ * Copyright (C) 2012 Roland Stigge <stigge@antcom.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
 +
-+	return readl_relaxed(vt8500_chip->base + vt8500_chip->regs->data_in) &
-+								mask;
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/gpio.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++
++static int __devinit gpioblock_of_probe(struct platform_device *pdev)
++{
++	struct device_node *block;
++	unsigned *gpios;
++	int ngpio;
++	int ret;
++	struct gpio_block *gb;
++
++	for_each_available_child_of_node(pdev->dev.of_node, block) {
++		int i;
++
++		ngpio = of_gpio_count(block);
++		gpios = kzalloc(ngpio * sizeof(*gpios), GFP_KERNEL);
++		if (!gpios)
++			return -ENOMEM;
++		for (i = 0; i < ngpio; i++) {
++			ret = of_get_gpio(block, i);
++			if (ret < 0)
++				return ret; /* expect -EPROBE_DEFER */
++			gpios[i] = ret;
++		}
++		gb = gpio_block_create(gpios, ngpio, block->name);
++		if (IS_ERR(gb)) {
++			dev_err(&pdev->dev,
++				"Error creating GPIO block from device tree\n");
++			return PTR_ERR(gb);
++		}
++		ret = gpio_block_register(gb);
++		if (ret < 0) {
++			gpio_block_free(gb);
++			return ret;
++		}
++		kfree(gpios);
++		dev_info(&pdev->dev, "Registered gpio block %s: %d gpios\n",
++			 block->name, ngpio);
++	}
++	return 0;
 +}
 +
-+static void vt8500_gpio_set_block(struct gpio_chip *chip, unsigned long mask,
-+				  unsigned long  values)
-+{
-+	struct vt8500_gpio_chip *vt8500_chip = to_vt8500(chip);
++#ifdef CONFIG_OF
++static struct of_device_id gpioblock_of_match[] __devinitdata = {
++	{ .compatible = "linux,gpio-block", },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, gpioblock_of_match);
++#endif
 +
-+	u32 val = readl_relaxed(vt8500_chip->base +
-+				vt8500_chip->regs->data_out);
-+	val &= ~mask;
-+	val |= values & mask;
++static struct platform_driver gpioblock_of_driver = {
++	.driver	= {
++		.name = "gpio-block",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(gpioblock_of_match),
 +
-+	writel_relaxed(val, vt8500_chip->base + vt8500_chip->regs->data_out);
-+}
++	},
++	.probe	= gpioblock_of_probe,
++};
 +
- static int vt8500_of_xlate(struct gpio_chip *gc,
- 			    const struct of_phandle_args *gpiospec, u32 *flags)
- {
-@@ -251,6 +273,8 @@ static int vt8500_add_chips(struct platf
- 		chip->direction_output = vt8500_gpio_direction_output;
- 		chip->get = vt8500_gpio_get_value;
- 		chip->set = vt8500_gpio_set_value;
-+		chip->get_block = vt8500_gpio_get_block;
-+		chip->set_block = vt8500_gpio_set_block;
- 		chip->can_sleep = 0;
- 		chip->base = pin_cnt;
- 		chip->ngpio = data->banks[i].ngpio;
++module_platform_driver(gpioblock_of_driver);
++
++MODULE_DESCRIPTION("GPIO Block driver");
++MODULE_AUTHOR("Roland Stigge <stigge@antcom.de>");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:gpioblock-of");
