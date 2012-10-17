@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757213Ab2JQOUG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 10:20:06 -0400
-Received: from relay.parallels.com ([195.214.232.42]:40279 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748Ab2JQOUF convert rfc822-to-8bit (ORCPT
+	id S1757182Ab2JQOVO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 10:21:14 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:37662 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756133Ab2JQOVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 10:20:05 -0400
-Message-ID: <507EBE8C.2030707@parallels.com>
-Date: Wed, 17 Oct 2012 18:19:56 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Wed, 17 Oct 2012 10:21:12 -0400
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [RFC PATCH v2] posix timers: allocate timer id per task
-References: <20121017131732.8781.75295.stgit@localhost.localdomain> <1350481466.26103.464.camel@edumazet-glaptop>
-In-Reply-To: <1350481466.26103.464.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1350387889-15324-3-git-send-email-hongbo.zhang@linaro.com>
+References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
+	<1350387889-15324-3-git-send-email-hongbo.zhang@linaro.com>
+Date: Wed, 17 Oct 2012 19:51:10 +0530
+Message-ID: <CAKohponedzqv3XeEjH+bSM6Ub2FU0yQma1W_AwuQaabpfL=tKA@mail.gmail.com>
+Subject: Re: [PATCH 2/5] Thermal: add indent for code alignment.
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "hongbo.zhang" <hongbo.zhang@linaro.org>
+Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        kernel@igloocommunity.org, linaro-kernel@lists.linaro.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-17.10.2012 17:44, Eric Dumazet пишет:
-> On Wed, 2012-10-17 at 17:18 +0400, Stanislav Kinsbursky wrote:
->
->> +static int hash(struct signal_struct *sig, unsigned int nr)
->> +{
->> +	int hash = hash_ptr(sig, POSIX_TIMERS_HASH_BITS);
->> +	return hash ^ hash_32(nr, POSIX_TIMERS_HASH_BITS);
->> +}
->> +
->
-> This is quite expensive on 64 bit arches. I suggest instead :
->
-> return hash_32(hash32_ptr(sig) ^ nr, POSIX_TIMERS_HASH_BITS);
->
->
+On 16 October 2012 17:14, hongbo.zhang <hongbo.zhang@linaro.org> wrote:
+> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
 
-I'm not familiar with hashing costs, so sure, I'll update.
+People always like to see a commit log here :)
 
--- 
-Best regards,
-Stanislav Kinsbursky
+> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
+> ---
+>  drivers/thermal/cpu_cooling.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+> index cc1c930..b6b4c2a 100644
+> --- a/drivers/thermal/cpu_cooling.c
+> +++ b/drivers/thermal/cpu_cooling.c
+> @@ -369,7 +369,7 @@ struct thermal_cooling_device *cpufreq_cooling_register(
+>                         if (min != policy.cpuinfo.min_freq ||
+>                                 max != policy.cpuinfo.max_freq)
+>                                 return ERR_PTR(-EINVAL);
+> -}
+> +               }
+
+Apart from that:
+
+Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
