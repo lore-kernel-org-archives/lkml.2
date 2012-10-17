@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab2JQI1o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 04:27:44 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:54265 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753394Ab2JQI1i (ORCPT
+	id S1754459Ab2JQI3F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 04:29:05 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64778 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751878Ab2JQI3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 04:27:38 -0400
-Date: Wed, 17 Oct 2012 10:27:36 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-kernel@vger.kernel.org
-cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [Q] reprobe deferred-probing drivers
-Message-ID: <Pine.LNX.4.64.1210171021060.7402@axis700.grange>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:muqaRf27SaVeu/ribnaeZfQhXcLeyPQj4omhKGMv2j1
- +/plFSAZpvrE8Q21Jj/VvvmQi1LLQsm3W0z0XHK1KX5+jsjRhy
- Uvd2WPiMxXC5gO2Pdq5cBgSSCwfHf4p+Yi0biJNw1KM1Tdh74R
- jA95io3I4FEF/SfQo8hCfqMGu3XrFGYfEWHIOO1tGuiZPf6YuG
- cHfWtNN/98uqbhKkIBs4eRkF5vMqVkOoqaZnX+eZPN13Xx/VUP
- NA2P4zWRPd9TZl4vtxqkdjrN5xl0UtEtz7jDzzT/kxyl85/o8H
- OwiGJ/JxiaUOTusCJWK+3+3YygjvZvYia5o4vzR2BAqxQM+NHh
- HacipCLYXOYviCspFMw9uflOcVLlG2PFrrGfEgFaQYq2FvAHMF
- x6AfDezQ+29Ew==
+	Wed, 17 Oct 2012 04:29:03 -0400
+X-AuditID: 9c930179-b7ca6ae000000e33-03-507e6c4b3a90
+From: Hyeoncheol Lee <hyc.lee@gmail.com>
+To: acme@ghostprotocols.net
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: [PATCH] perf probe: convert_name_to_addr() allocated the wrong size buffers for names
+Date: Wed, 17 Oct 2012 17:28:16 +0900
+Message-Id: <1350462496-20035-1-git-send-email-hyc.lee@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+The function allocated wrong size buffers for names
 
-I've got a situation, for which I currently don't have a (good) solution.
-
-Let's say device A depends on device B and as long as B hasn't probed, A 
-requests deferred probing. Now B probes, which causes A to also succeed 
-its probing. Next we want to remove B, say, by unloading its driver. A has 
-to go back into "deferred-probing" state. How do we do it? This can be 
-achieved by unloading B's driver and loading again. Essentially, we have 
-to use the sysfs "unbind" and then the "bind" attributes. But how do we do 
-this from the kernel? Shall we export driver_bind() and driver_unbind()?
-
-Thanks
-Guennadi
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Hyeoncheol Lee <hyc.lee@gmail.com>
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+ tools/perf/util/probe-event.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 49a256e..5cd7c42 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -2273,6 +2273,8 @@ int show_available_funcs(const char *target, struct strfilter *_filter,
+ 	return available_user_funcs(target);
+ }
+ 
++#define MAX_ADDRNAME_LEN  (3 + sizeof(unsigned long long) * 2)
++
+ /*
+  * uprobe_events only accepts address:
+  * Convert function and any offset to address
+@@ -2332,7 +2334,7 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
+ 	if (!pev->group) {
+ 		char *ptr1, *ptr2, *exec_copy;
+ 
+-		pev->group = zalloc(sizeof(char *) * 64);
++		pev->group = zalloc(sizeof(char) * 64);
+ 		exec_copy = strdup(exec);
+ 		if (!exec_copy) {
+ 			ret = -ENOMEM;
+@@ -2352,14 +2354,15 @@ static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
+ 		free(exec_copy);
+ 	}
+ 	free(pp->function);
+-	pp->function = zalloc(sizeof(char *) * MAX_PROBE_ARGS);
++	pp->function = zalloc(sizeof(char) * MAX_ADDRNAME_LEN);
+ 	if (!pp->function) {
+ 		ret = -ENOMEM;
+ 		pr_warning("Failed to allocate memory by zalloc.\n");
+ 		goto out;
+ 	}
+-	e_snprintf(pp->function, MAX_PROBE_ARGS, "0x%llx", vaddr);
+-	ret = 0;
++	ret = e_snprintf(pp->function, MAX_ADDRNAME_LEN, "0x%llx", vaddr);
++	if (ret > 0)
++		ret = 0;
+ 
+ out:
+ 	if (map) {
+-- 
+1.7.10.4
+
