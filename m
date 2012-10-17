@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932458Ab2JQRUp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 13:20:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46120 "EHLO
+	id S932445Ab2JQRUn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 13:20:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46122 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932411Ab2JQRUi (ORCPT
+	with ESMTP id S932429Ab2JQRUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Oct 2012 13:20:38 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 08/11] perf python: Initialize 'page_size' variable
-Date: Wed, 17 Oct 2012 14:19:44 -0300
-Message-Id: <1350494387-10987-9-git-send-email-acme@infradead.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 05/11] perf hists browser: Fix off-by-two bug on the first column
+Date: Wed, 17 Oct 2012 14:19:41 -0300
+Message-Id: <1350494387-10987-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1350494387-10987-1-git-send-email-acme@infradead.org>
 References: <1350494387-10987-1-git-send-email-acme@infradead.org>
@@ -29,46 +27,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-The commit 0c1fe6b:
+The commit 5395a04841fc ("perf hists: Separate overhead and baseline
+columns") makes the "Overhead" column no more the first one.  So it
+resulted in the mis-aligned column in the normal (non-diff) output.
 
- 'perf tools: Have the page size value available for all tools'
-
-Broke the python binding because the global variable 'page_size' is
-initialized on the main() routine, that is not called when using
-just the python binding, causing evlist.mmap() to fail because it
-expects that variable to be initialized to the system's page size.
-
-Fix it by initializing it on the binding init routine.
-
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-vrvp3azmbfzexnpmkhmvtzzc@git.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/None
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/python.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ tools/perf/ui/browsers/hists.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index 9181bf2..a2657fd 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -1015,6 +1015,8 @@ PyMODINIT_FUNC initperf(void)
- 	    pyrf_cpu_map__setup_types() < 0)
- 		return;
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 0568536..fe4430a 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -610,6 +610,7 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ 	char folded_sign = ' ';
+ 	bool current_entry = ui_browser__is_current_entry(&browser->b, row);
+ 	off_t row_offset = entry->row_offset;
++	bool first = true;
  
-+	page_size = sysconf(_SC_PAGE_SIZE);
-+
- 	Py_INCREF(&pyrf_evlist__type);
- 	PyModule_AddObject(module, "evlist", (PyObject*)&pyrf_evlist__type);
+ 	if (current_entry) {
+ 		browser->he_selection = entry;
+@@ -633,10 +634,11 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ 			if (!perf_hpp__format[i].cond)
+ 				continue;
  
+-			if (i) {
++			if (!first) {
+ 				slsmg_printf("  ");
+ 				width -= 2;
+ 			}
++			first = false;
+ 
+ 			if (perf_hpp__format[i].color) {
+ 				hpp.ptr = &percent;
 -- 
 1.7.1
 
