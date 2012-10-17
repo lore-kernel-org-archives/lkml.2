@@ -1,44 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab2JQHPx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 03:15:53 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10772 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414Ab2JQHPw (ORCPT
+	id S1756165Ab2JQHQD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 03:16:03 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:33165 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756123Ab2JQHQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 03:15:52 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 17 Oct 2012 00:04:05 -0700
-Message-ID: <507E5B15.8040107@nvidia.com>
-Date: Wed, 17 Oct 2012 15:15:33 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Wed, 17 Oct 2012 03:16:00 -0400
 MIME-Version: 1.0
-To: Zhang Rui <rui.zhang@intel.com>, "R, Durgadoss" <durgadoss.r@intel.com>,
-        "Brown, Len" <len.brown@intel.com>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "joe@perches.com" <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@ger.kernel.org" <linux-tegra@ger.kernel.org>,
-        Alex Courbot <acourbot@nvidia.com>
-Subject: How can I get the latest generic thermal framework
-References: <1342088573.27605.101.camel@tegra-chromium-2>  <4D68720C2E767A4AA6A8796D42C8EB5915287C@BGSMSX101.gar.corp.intel.com>  <1342144273.1682.237.camel@rui.sh.intel.com>  <1342164616.27605.129.camel@tegra-chromium-2> <1342165278.1682.259.camel@rui.sh.intel.com>
-In-Reply-To: <1342165278.1682.259.camel@rui.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1349967145-7462-1-git-send-email-siddhesh.poyarekar@gmail.com>
+References: <1349967145-7462-1-git-send-email-siddhesh.poyarekar@gmail.com>
+Date: Wed, 17 Oct 2012 12:45:59 +0530
+Message-ID: <CAAHN_R1O3asyJGXqjs5qt0b_qGR6S6RuM+E_85VaEoWAyAMheQ@mail.gmail.com>
+Subject: [PATCH RESEND] Take over futex of dead task only if FUTEX_WAITERS is
+ not set
+From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Darren Hart <dvhart@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, all
-Several months ago, I tried to use the generic thermal framework to work 
-with the lm90 driver on our SOC, but this work was not completed, and it 
-was pended.
-Now I want to start it again. I noticed that many new patches of this 
-framework were submitted, I checked linux-next.git, but it seems they 
-were not merged.
-How can I get the latest codes for this thermal framework? which git 
-repository should I use?
+In futex_lock_pi_atomic, we consider that if the value in the futex
+variable is 0 with additional flags, then it is safe for takeover
+since the owner of the futex is dead.  However, when FUTEX_WAITERS is
+set in the futex value, handle_futex_death calls futex_wake to wake up
+one task. Hence the assumption in futex_lock_pi_atomic is not correct.
+The correct assumption is that a futex may be considered safe for a
+takeover if The FUTEX_OWNER_DIED bit is set, the TID bits are 0 and
+the FUTEX_WAITERS bit is not set.
 
-Thanks.
-Wei.
+The race described above can be seen in the reproducer in the
+following glibc bug report:
+
+http://sourceware.org/bugzilla/show_bug.cgi?id=14076
+
+Signed-off-by: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+---
+ kernel/futex.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 3717e7b..9aa2d5a 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -760,9 +760,14 @@ retry:
+ 	* case. We also do an unconditional take over, when the owner
+ 	* of the futex died.
+ 	*
++	* We do not take over the futex if FUTEX_WAITERS is set because we
++	* could end up waking two tasks, the current one and the one that the
++	* futex death event wakes in handle_futex_death.
++	*
+ 	* This is safe as we are protected by the hash bucket lock !
+ 	*/
+-	if (unlikely(ownerdied || !(curval & FUTEX_TID_MASK))) {
++	if (unlikely(ownerdied ||
++			!(curval & (FUTEX_TID_MASK | FUTEX_WAITERS)))) {
+ 		/* Keep the OWNER_DIED bit */
+ 		newval = (curval & ~FUTEX_TID_MASK) | vpid;
+ 		ownerdied = 0;
+--
+1.7.7.6
+
+
+
+-- 
+http://siddhesh.in
