@@ -1,102 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755637Ab2JQGSe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 02:18:34 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:47559 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754314Ab2JQGSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 02:18:33 -0400
-X-IronPort-AV: E=Sophos;i="4.80,598,1344182400"; 
-   d="scan'208";a="6013990"
-Message-ID: <507E4F0C.9040506@cn.fujitsu.com>
-Date: Wed, 17 Oct 2012 14:24:12 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 2/2]suppress "Device nodeX does not have a release() function"
- warning
-References: <507656D1.5020703@jp.fujitsu.com> <50765896.4000300@jp.fujitsu.com> <CAHGf_=rvdU+TymYZSXvx1bz4xdp43bqnyjRMGEoiBizC5rP0sQ@mail.gmail.com>
-In-Reply-To: <CAHGf_=rvdU+TymYZSXvx1bz4xdp43bqnyjRMGEoiBizC5rP0sQ@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/17 14:18:11,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/17 14:18:12,
-	Serialize complete at 2012/10/17 14:18:12
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755946Ab2JQGTG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 02:19:06 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:34064 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755082Ab2JQGTE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 02:19:04 -0400
+From: Inderpal Singh <inderpal.singh@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: sbkim73@samsung.com, sameo@linux.intel.com, patches@linaro.org
+Subject: [PATCH] MFD: SEC: Fix reg_offset for interrupt registers
+Date: Wed, 17 Oct 2012 11:48:55 +0530
+Message-Id: <1350454735-17697-1-git-send-email-inderpal.singh@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 10/12/2012 06:33 AM, KOSAKI Motohiro Wrote:
-> On Thu, Oct 11, 2012 at 1:26 AM, Yasuaki Ishimatsu
-> <isimatu.yasuaki@jp.fujitsu.com> wrote:
->> When calling unregister_node(), the function shows following message at
->> device_release().
->>
->> "Device 'node2' does not have a release() function, it is broken and must
->> be fixed."
->>
->> The reason is node's device struct does not have a release() function.
->>
->> So the patch registers node_device_release() to the device's release()
->> function for suppressing the warning message. Additionally, the patch adds
->> memset() to initialize a node struct into register_node(). Because the node
->> struct is part of node_devices[] array and it cannot be freed by
->> node_device_release(). So if system reuses the node struct, it has a garbage.
->>
->> CC: David Rientjes <rientjes@google.com>
->> CC: Jiang Liu <liuj97@gmail.com>
->> Cc: Minchan Kim <minchan.kim@gmail.com>
->> CC: Andrew Morton <akpm@linux-foundation.org>
->> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->> ---
->>  drivers/base/node.c |   11 +++++++++++
->>  1 file changed, 11 insertions(+)
->>
->> Index: linux-3.6/drivers/base/node.c
->> ===================================================================
->> --- linux-3.6.orig/drivers/base/node.c  2012-10-11 10:04:02.149758748 +0900
->> +++ linux-3.6/drivers/base/node.c       2012-10-11 10:20:34.111806931 +0900
->> @@ -252,6 +252,14 @@ static inline void hugetlb_register_node
->>  static inline void hugetlb_unregister_node(struct node *node) {}
->>  #endif
->>
->> +static void node_device_release(struct device *dev)
->> +{
->> +#if defined(CONFIG_MEMORY_HOTPLUG_SPARSE) && defined(CONFIG_HUGETLBFS)
->> +       struct node *node_dev = to_node(dev);
->> +
->> +       flush_work(&node_dev->node_work);
->> +#endif
->> +}
-> 
-> The patch description don't explain why this flush_work() is needed.
+reg_offset is offset of the status/mask registers. Now, since status_base
+and mask_base are pointing to corresponding first registers, reg_offset
+should start from 0 otheriwse regmap_add_irq_chip will fail during probe.
 
-If the node is onlined after it is offlined, we will clear the memory,
-so we should flush_work() before node_dev is set to 0.
+Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
+---
+It is based on Samuel's for-next-merge branch of mfd-2.6 tree. 
 
-Thanks
-Wen Congyang
+ drivers/mfd/sec-irq.c |  102 ++++++++++++++++++++++++-------------------------
+ 1 file changed, 51 insertions(+), 51 deletions(-)
 
-> 
-> 
->>  /*
->>   * register_node - Setup a sysfs device for a node.
->> @@ -263,8 +271,11 @@ int register_node(struct node *node, int
->>  {
->>         int error;
->>
->> +       memset(node, 0, sizeof(*node));
->> +
-> 
-> You should add a comment why we need initialize a node here. A lot
-> of developers don't have hotplug knowledge.
-> 
+diff --git a/drivers/mfd/sec-irq.c b/drivers/mfd/sec-irq.c
+index c901fa5..0dd84e9 100644
+--- a/drivers/mfd/sec-irq.c
++++ b/drivers/mfd/sec-irq.c
+@@ -24,67 +24,67 @@
+ 
+ static struct regmap_irq s2mps11_irqs[] = {
+ 	[S2MPS11_IRQ_PWRONF] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S2MPS11_IRQ_PWRONF_MASK,
+ 	},
+ 	[S2MPS11_IRQ_PWRONR] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S2MPS11_IRQ_PWRONR_MASK,
+ 	},
+ 	[S2MPS11_IRQ_JIGONBF] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S2MPS11_IRQ_JIGONBF_MASK,
+ 	},
+ 	[S2MPS11_IRQ_JIGONBR] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S2MPS11_IRQ_JIGONBR_MASK,
+ 	},
+ 	[S2MPS11_IRQ_ACOKBF] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S2MPS11_IRQ_ACOKBF_MASK,
+ 	},
+ 	[S2MPS11_IRQ_ACOKBR] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S2MPS11_IRQ_ACOKBR_MASK,
+ 	},
+ 	[S2MPS11_IRQ_PWRON1S] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S2MPS11_IRQ_PWRON1S_MASK,
+ 	},
+ 	[S2MPS11_IRQ_MRB] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S2MPS11_IRQ_MRB_MASK,
+ 	},
+ 	[S2MPS11_IRQ_RTC60S] = {
+-		.reg_offset = 2,
++		.reg_offset = 1,
+ 		.mask = S2MPS11_IRQ_RTC60S_MASK,
+ 	},
+ 	[S2MPS11_IRQ_RTCA1] = {
+-		.reg_offset = 2,
++		.reg_offset = 1,
+ 		.mask = S2MPS11_IRQ_RTCA1_MASK,
+ 	},
+ 	[S2MPS11_IRQ_RTCA2] = {
+-		.reg_offset = 2,
++		.reg_offset = 1,
+ 		.mask = S2MPS11_IRQ_RTCA2_MASK,
+ 	},
+ 	[S2MPS11_IRQ_SMPL] = {
+-		.reg_offset = 2,
++		.reg_offset = 1,
+ 		.mask = S2MPS11_IRQ_SMPL_MASK,
+ 	},
+ 	[S2MPS11_IRQ_RTC1S] = {
+-		.reg_offset = 2,
++		.reg_offset = 1,
+ 		.mask = S2MPS11_IRQ_RTC1S_MASK,
+ 	},
+ 	[S2MPS11_IRQ_WTSR] = {
+-		.reg_offset = 2,
++		.reg_offset = 1,
+ 		.mask = S2MPS11_IRQ_WTSR_MASK,
+ 	},
+ 	[S2MPS11_IRQ_INT120C] = {
+-		.reg_offset = 3,
++		.reg_offset = 2,
+ 		.mask = S2MPS11_IRQ_INT120C_MASK,
+ 	},
+ 	[S2MPS11_IRQ_INT140C] = {
+-		.reg_offset = 3,
++		.reg_offset = 2,
+ 		.mask = S2MPS11_IRQ_INT140C_MASK,
+ 	},
+ };
+@@ -92,146 +92,146 @@ static struct regmap_irq s2mps11_irqs[] = {
+ 
+ static struct regmap_irq s5m8767_irqs[] = {
+ 	[S5M8767_IRQ_PWRR] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S5M8767_IRQ_PWRR_MASK,
+ 	},
+ 	[S5M8767_IRQ_PWRF] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S5M8767_IRQ_PWRF_MASK,
+ 	},
+ 	[S5M8767_IRQ_PWR1S] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S5M8767_IRQ_PWR1S_MASK,
+ 	},
+ 	[S5M8767_IRQ_JIGR] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S5M8767_IRQ_JIGR_MASK,
+ 	},
+ 	[S5M8767_IRQ_JIGF] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S5M8767_IRQ_JIGF_MASK,
+ 	},
+ 	[S5M8767_IRQ_LOWBAT2] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S5M8767_IRQ_LOWBAT2_MASK,
+ 	},
+ 	[S5M8767_IRQ_LOWBAT1] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S5M8767_IRQ_LOWBAT1_MASK,
+ 	},
+ 	[S5M8767_IRQ_MRB] = {
+-		.reg_offset = 2,
++		.reg_offset = 1,
+ 		.mask = S5M8767_IRQ_MRB_MASK,
+ 	},
+ 	[S5M8767_IRQ_DVSOK2] = {
+-		.reg_offset = 2,
++		.reg_offset = 1,
+ 		.mask = S5M8767_IRQ_DVSOK2_MASK,
+ 	},
+ 	[S5M8767_IRQ_DVSOK3] = {
+-		.reg_offset = 2,
++		.reg_offset = 1,
+ 		.mask = S5M8767_IRQ_DVSOK3_MASK,
+ 	},
+ 	[S5M8767_IRQ_DVSOK4] = {
+-		.reg_offset = 2,
++		.reg_offset = 1,
+ 		.mask = S5M8767_IRQ_DVSOK4_MASK,
+ 	},
+ 	[S5M8767_IRQ_RTC60S] = {
+-		.reg_offset = 3,
++		.reg_offset = 2,
+ 		.mask = S5M8767_IRQ_RTC60S_MASK,
+ 	},
+ 	[S5M8767_IRQ_RTCA1] = {
+-		.reg_offset = 3,
++		.reg_offset = 2,
+ 		.mask = S5M8767_IRQ_RTCA1_MASK,
+ 	},
+ 	[S5M8767_IRQ_RTCA2] = {
+-		.reg_offset = 3,
++		.reg_offset = 2,
+ 		.mask = S5M8767_IRQ_RTCA2_MASK,
+ 	},
+ 	[S5M8767_IRQ_SMPL] = {
+-		.reg_offset = 3,
++		.reg_offset = 2,
+ 		.mask = S5M8767_IRQ_SMPL_MASK,
+ 	},
+ 	[S5M8767_IRQ_RTC1S] = {
+-		.reg_offset = 3,
++		.reg_offset = 2,
+ 		.mask = S5M8767_IRQ_RTC1S_MASK,
+ 	},
+ 	[S5M8767_IRQ_WTSR] = {
+-		.reg_offset = 3,
++		.reg_offset = 2,
+ 		.mask = S5M8767_IRQ_WTSR_MASK,
+ 	},
+ };
+ 
+ static struct regmap_irq s5m8763_irqs[] = {
+ 	[S5M8763_IRQ_DCINF] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S5M8763_IRQ_DCINF_MASK,
+ 	},
+ 	[S5M8763_IRQ_DCINR] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S5M8763_IRQ_DCINR_MASK,
+ 	},
+ 	[S5M8763_IRQ_JIGF] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S5M8763_IRQ_JIGF_MASK,
+ 	},
+ 	[S5M8763_IRQ_JIGR] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S5M8763_IRQ_JIGR_MASK,
+ 	},
+ 	[S5M8763_IRQ_PWRONF] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S5M8763_IRQ_PWRONF_MASK,
+ 	},
+ 	[S5M8763_IRQ_PWRONR] = {
+-		.reg_offset = 1,
++		.reg_offset = 0,
+ 		.mask = S5M8763_IRQ_PWRONR_MASK,
+ 	},
+ 	[S5M8763_IRQ_WTSREVNT] = {
+-		.reg_offset = 2,
++		.reg_offset = 1,
+ 		.mask = S5M8763_IRQ_WTSREVNT_MASK,
+ 	},
+ 	[S5M8763_IRQ_SMPLEVNT] = {
+-		.reg_offset = 2,
++		.reg_offset = 1,
+ 		.mask = S5M8763_IRQ_SMPLEVNT_MASK,
+ 	},
+ 	[S5M8763_IRQ_ALARM1] = {
+-		.reg_offset = 2,
++		.reg_offset = 1,
+ 		.mask = S5M8763_IRQ_ALARM1_MASK,
+ 	},
+ 	[S5M8763_IRQ_ALARM0] = {
+-		.reg_offset = 2,
++		.reg_offset = 1,
+ 		.mask = S5M8763_IRQ_ALARM0_MASK,
+ 	},
+ 	[S5M8763_IRQ_ONKEY1S] = {
+-		.reg_offset = 3,
++		.reg_offset = 2,
+ 		.mask = S5M8763_IRQ_ONKEY1S_MASK,
+ 	},
+ 	[S5M8763_IRQ_TOPOFFR] = {
+-		.reg_offset = 3,
++		.reg_offset = 2,
+ 		.mask = S5M8763_IRQ_TOPOFFR_MASK,
+ 	},
+ 	[S5M8763_IRQ_DCINOVPR] = {
+-		.reg_offset = 3,
++		.reg_offset = 2,
+ 		.mask = S5M8763_IRQ_DCINOVPR_MASK,
+ 	},
+ 	[S5M8763_IRQ_CHGRSTF] = {
+-		.reg_offset = 3,
++		.reg_offset = 2,
+ 		.mask = S5M8763_IRQ_CHGRSTF_MASK,
+ 	},
+ 	[S5M8763_IRQ_DONER] = {
+-		.reg_offset = 3,
++		.reg_offset = 2,
+ 		.mask = S5M8763_IRQ_DONER_MASK,
+ 	},
+ 	[S5M8763_IRQ_CHGFAULT] = {
+-		.reg_offset = 3,
++		.reg_offset = 2,
+ 		.mask = S5M8763_IRQ_CHGFAULT_MASK,
+ 	},
+ 	[S5M8763_IRQ_LOBAT1] = {
+-		.reg_offset = 4,
++		.reg_offset = 3,
+ 		.mask = S5M8763_IRQ_LOBAT1_MASK,
+ 	},
+ 	[S5M8763_IRQ_LOBAT2] = {
+-		.reg_offset = 4,
++		.reg_offset = 3,
+ 		.mask = S5M8763_IRQ_LOBAT2_MASK,
+ 	},
+ };
+-- 
+1.7.9.5
 
