@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab2JQPHz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 11:07:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40242 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755544Ab2JQPHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 11:07:53 -0400
-Date: Wed, 17 Oct 2012 11:07:21 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH] percpu-rwsem: use barrier in unlock path
-In-Reply-To: <507E48ED.8060809@cn.fujitsu.com>
-Message-ID: <Pine.LNX.4.64.1210171046130.26481@file.rdu.redhat.com>
-References: <Pine.LNX.4.64.1210151716310.10685@file.rdu.redhat.com>
- <Pine.LNX.4.64.1210161924350.20581@file.rdu.redhat.com>
- <CA+55aFyZ9uq_yfHn9PwpmM77X3xVd+xseEbjJmeCCqbFddtjWA@mail.gmail.com>
- <507E48ED.8060809@cn.fujitsu.com>
+	id S1757368Ab2JQPKR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 11:10:17 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:63336 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754944Ab2JQPKP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 11:10:15 -0400
+Date: Wed, 17 Oct 2012 17:10:12 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: linux-kernel@vger.kernel.org,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: Re: [Q] reprobe deferred-probing drivers
+In-Reply-To: <20121017150217.GA29424@kroah.com>
+Message-ID: <Pine.LNX.4.64.1210171707250.7402@axis700.grange>
+References: <Pine.LNX.4.64.1210171021060.7402@axis700.grange>
+ <20121017150217.GA29424@kroah.com>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:BrW87Tu/s6h1/V/Ki+nzgqWLU1CTL1IY1OSpmCUGkfn
+ xemfkaCvTbfmxfYiHvEA2adxiTaz6aFECGkg0Li4D5frp9IO8t
+ EfEds5PXXB/uul+M/rOavk9TL38iBSd/gvZXSt8SHNMcGb3yEa
+ c0oqyoL9PX7X4bByX/nHmoWlJ+Gc356sbHRAilSMyS9gLVEsfd
+ bN9Klp5XEzXtKIuTr3BpKqE2SWNlzBBIuWQar+HiaGyG4Xc/zu
+ QG3bBeIIJ7mw6ufOGXI2T+ZJfGXdklO/kzAXePVKrExKggo4zu
+ F3S3Zk3nRnQskH9vsvjRXCWJtBoN15jjSYBurjnrnDOI7K6nEz
+ VfMzxaqCdCOwd7s3upDXw4FT/VH9jcTy0TMapVZ0+tKSo0nB5z
+ fLTCcBxbm3Gyg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Wed, 17 Oct 2012, Greg Kroah-Hartman wrote:
 
-
-On Wed, 17 Oct 2012, Lai Jiangshan wrote:
-
-> On 10/17/2012 10:23 AM, Linus Torvalds wrote:
-> > [ Architecture people, note the potential new SMP barrier! ]
+> On Wed, Oct 17, 2012 at 10:27:36AM +0200, Guennadi Liakhovetski wrote:
+> > Hi
 > > 
-> > On Tue, Oct 16, 2012 at 4:30 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
-> >> +       /*
-> >> +        * The lock is considered unlocked when p->locked is set to false.
-> >> +        * Use barrier prevent reordering of operations around p->locked.
-> >> +        */
-> >> +#if defined(CONFIG_X86) && (!defined(CONFIG_X86_PPRO_FENCE) && !defined(CONFIG_X86_OOSTORE))
-> >> +       barrier();
-> >> +#else
-> >> +       smp_mb();
-> >> +#endif
-> >>         p->locked = false;
+> > I've got a situation, for which I currently don't have a (good) solution.
 > > 
-> > Ugh. The #if is too ugly to live.
+> > Let's say device A depends on device B and as long as B hasn't probed, A 
+> > requests deferred probing. Now B probes, which causes A to also succeed 
+> > its probing. Next we want to remove B, say, by unloading its driver. A has 
+> > to go back into "deferred-probing" state. How do we do it? This can be 
+> > achieved by unloading B's driver and loading again. Essentially, we have 
+> > to use the sysfs "unbind" and then the "bind" attributes. But how do we do 
+> > this from the kernel? Shall we export driver_bind() and driver_unbind()?
 > 
-> Even the previous patch is applied, percpu_down_read() still
-> needs mb() to pair with it.
+> No, no driver should ever have to mess with that at all, it is up to the
+> bus to do this.  Do you have a pointer to the code you are concerned
+> about?
 
-percpu_down_read uses rcu_read_lock which should guarantee that memory 
-accesses don't escape in front of a rcu-protected section.
+No, not yet. I'm currently working on it. I'll do it using the
 
-If rcu_read_unlock has only an unlock barrier and not a full barrier, 
-memory accesses could be moved in front of rcu_read_unlock and reordered 
-with this_cpu_inc(*p->counters), but it doesn't matter because 
-percpu_down_write does synchronize_rcu(), so it never sees these accesses 
-halfway through.
+		device_release_driver(sd->dev);
+		device_attach(sd->dev);
 
-> > This is a classic case of "people who write their own serialization
-> > primitives invariably get them wrong". And this fix is just horrible,
-> > and code like this should not be allowed.
-> 
-> One of the most major problems of 62ac665ff9fc07497ca524bd20d6a96893d11071 is that
-> it is merged without Ackeds or Revieweds from Paul or Peter or someone else
-> who are expert at synchronization/arch memory models.
-> 
-> I suggest any new synchronization should stay in -tip for 2 or more cycles
-> before merged to mainline.
+trick and post to linux-media. I'll (try to remember to) add you to cc, 
+then we can see how to properly implement it.
 
-But the bug that this synchronization is fixing is quite serious (it 
-causes random crashes when block size is being changed, the crash happens 
-regularly at multiple important business sites) so it must be fixed soon 
-and not wait half a year.
-
-> Thanks,
-> Lai
-
-Mikulas
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
