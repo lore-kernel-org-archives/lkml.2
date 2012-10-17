@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166Ab2JQNbQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 09:31:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46368 "EHLO mx2.suse.de"
+	id S932239Ab2JQNbU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 09:31:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46390 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756086Ab2JQNbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 09:31:13 -0400
+	id S932206Ab2JQNbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 09:31:18 -0400
 From: Michal Hocko <mhocko@suse.cz>
 To: linux-mm@kvack.org
 Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -13,61 +13,167 @@ Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
         Johannes Weiner <hannes@cmpxchg.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Balbir Singh <bsingharora@gmail.com>
-Subject: [RFC] memcg/cgroup: do not fail fail on pre_destroy callbacks
-Date: Wed, 17 Oct 2012 15:30:42 +0200
-Message-Id: <1350480648-10905-1-git-send-email-mhocko@suse.cz>
+Subject: [PATCH 3/6] memcg: Simplify mem_cgroup_force_empty_list error handling
+Date: Wed, 17 Oct 2012 15:30:45 +0200
+Message-Id: <1350480648-10905-4-git-send-email-mhocko@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1350480648-10905-1-git-send-email-mhocko@suse.cz>
+References: <1350480648-10905-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-memcg is the only controller which might fail in its pre_destroy
-callback which makes the cgroup core more complicated for no good
-reason. This is an attempt to change this unfortunate state. 
+mem_cgroup_force_empty_list currently tries to remove all pages from
+the given LRU. To prevent from temoporary failures (EBUSY returned by
+mem_cgroup_move_parent) it uses a margin to the current LRU pages and
+returns the true if there are still some pages left on the list.
 
-I am sending this a RFC because I would like to hear back whether the
-approach is correct. I thought that the changes would be more invasive
-but it seems that the current code was mostly prepared for this and it
-needs just some small tweaks (so I might be missing something important
-here).
+If we consider that mem_cgroup_move_parent fails only when we are racing
+with somebody else removing the page (resp. uncharging it) or when the
+page is migrated then it is obvious that all those failures are only
+temporal and so we can safely retry later.
+Let's get rid of the safety margin and make the loop really wait for the
+empty LRU. The caller should still make sure that all charges have been
+removed from the res_counter because mem_cgroup_replace_page_cache might
+add a page to the LRU after the check (it doesn't touch res_counter
+though).
+This catches most of the cases except for shmem which might call
+mem_cgroup_replace_page_cache with a page which is not charged and on
+the LRU yet but this was the case also without this patch. In order to
+fix this we need a guarantee that try_get_mem_cgroup_from_page falls
+back to the current mm's cgroup so it needs css_tryget to fail. This
+will be fixed up in a later patch because it nees a help from cgroup
+core.
 
-The first two patches are just clean ups. They could be merged even
-without the rest.
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |   52 +++++++++++++++++++++++++++-------------------------
+ 1 file changed, 27 insertions(+), 25 deletions(-)
 
-The real change, although the code is not changed that much, is the 3rd
-patch. It changes the way how we handle mem_cgroup_move_parent failures.
-We have to realize that all those failures are *temporal*. Because we
-are either racing with the page removal or the page is temporarily off
-the LRU because of migration resp. global reclaim. As a result we do
-not fail mem_cgroup_force_empty_list if the page cannot be moved to the
-parent and rather retry until the LRU is empty.
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 9ce24b7..f57ba4c 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2697,9 +2697,13 @@ out:
+ }
+ 
+ /*
+- * move charges to its parent.
++ * move charges to its parent or the root cgroup if the group
++ * has no parent (aka use_hierarchy==0).
++ * Although this might fail the failure is always temporary and it
++ * signals a race with a page removal/uncharge or migration. In the
++ * first case the page will vanish from the LRU on the next attempt
++ * and the call should be retried later.
+  */
+-
+ static int mem_cgroup_move_parent(struct page *page,
+ 				  struct page_cgroup *pc,
+ 				  struct mem_cgroup *child)
+@@ -2726,8 +2730,10 @@ static int mem_cgroup_move_parent(struct page *page,
+ 	if (!parent)
+ 		parent = root_mem_cgroup;
+ 
+-	if (nr_pages > 1)
++	if (nr_pages > 1) {
++		VM_BUG_ON(!PageTransHuge(page));
+ 		flags = compound_lock_irqsave(page);
++	}
+ 
+ 	ret = mem_cgroup_move_account(page, nr_pages,
+ 				pc, child, parent);
+@@ -3679,15 +3685,14 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+ 
+ /*
+  * Traverse a specified page_cgroup list and try to drop them all.  This doesn't
+- * reclaim the pages page themselves - it just removes the page_cgroups.
+- * Returns true if some page_cgroups were not freed, indicating that the caller
+- * must retry this operation.
++ * reclaim the pages page themselves - pages are moved to the parent (or root)
++ * group.
+  */
+-static bool mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
++static void mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+ 				int node, int zid, enum lru_list lru)
+ {
+ 	struct mem_cgroup_per_zone *mz;
+-	unsigned long flags, loop;
++	unsigned long flags;
+ 	struct list_head *list;
+ 	struct page *busy;
+ 	struct zone *zone;
+@@ -3696,11 +3701,8 @@ static bool mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+ 	mz = mem_cgroup_zoneinfo(memcg, node, zid);
+ 	list = &mz->lruvec.lists[lru];
+ 
+-	loop = mz->lru_size[lru];
+-	/* give some margin against EBUSY etc...*/
+-	loop += 256;
+ 	busy = NULL;
+-	while (loop--) {
++	do {
+ 		struct page_cgroup *pc;
+ 		struct page *page;
+ 
+@@ -3726,8 +3728,7 @@ static bool mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+ 			cond_resched();
+ 		} else
+ 			busy = NULL;
+-	}
+-	return !list_empty(list);
++	} while (!list_empty(list));
+ }
+ 
+ /*
+@@ -3741,7 +3742,6 @@ static int mem_cgroup_reparent_charges(struct mem_cgroup *memcg)
+ {
+ 	struct cgroup *cgrp = memcg->css.cgroup;
+ 	int node, zid;
+-	int ret;
+ 
+ 	do {
+ 		if (cgroup_task_count(cgrp) || !list_empty(&cgrp->children))
+@@ -3749,28 +3749,30 @@ static int mem_cgroup_reparent_charges(struct mem_cgroup *memcg)
+ 		/* This is for making all *used* pages to be on LRU. */
+ 		lru_add_drain_all();
+ 		drain_all_stock_sync(memcg);
+-		ret = 0;
+ 		mem_cgroup_start_move(memcg);
+ 		for_each_node_state(node, N_HIGH_MEMORY) {
+-			for (zid = 0; !ret && zid < MAX_NR_ZONES; zid++) {
++			for (zid = 0; zid < MAX_NR_ZONES; zid++) {
+ 				enum lru_list lru;
+ 				for_each_lru(lru) {
+-					ret = mem_cgroup_force_empty_list(memcg,
++					mem_cgroup_force_empty_list(memcg,
+ 							node, zid, lru);
+-					if (ret)
+-						break;
+ 				}
+ 			}
+-			if (ret)
+-				break;
+ 		}
+ 		mem_cgroup_end_move(memcg);
+ 		memcg_oom_recover(memcg);
+ 		cond_resched();
+-	/* "ret" should also be checked to ensure all lists are empty. */
+-	} while (res_counter_read_u64(&memcg->res, RES_USAGE) > 0 || ret);
+ 
+-	return ret;
++		/*
++		 * This is a safety check because mem_cgroup_force_empty_list
++		 * could have raced with mem_cgroup_replace_page_cache callers
++		 * so the lru seemed empty but the page could have been added
++		 * right after the check. RES_USAGE should be safe as we always
++		 * charge before adding to the LRU.
++		 */
++	} while (res_counter_read_u64(&memcg->res, RES_USAGE) > 0);
++
++	return 0;
+ }
+ 
+ /*
+-- 
+1.7.10.4
 
-The 4th patch is for cgroup core. I have moved cgroup_call_pre_destroy
-inside the cgroup_lock which is not very nice because the callbacks
-can take some time. Maybe we can move this call at the very end of the
-function?
-All I need for memcg is that cgroup_call_pre_destroy has been called and
-that no new cgroups can be attached to the group. The cgroup_lock is
-necessary for the later condition but if we move after CGRP_REMOVED flag
-is set then we are safe as well.
-
-The last two patches are trivial follow ups for the cgroups core change
-because now we know that nobody will interfere with us so we can drop
-those empty && no child condition.
-
-Comments, thoughts?
-
-Michal Hocko (6):
-      memcg: split mem_cgroup_force_empty into reclaiming and reparenting parts
-      memcg: root_cgroup cannot reach mem_cgroup_move_parent
-      memcg: Simplify mem_cgroup_force_empty_list error handling
-      cgroups: forbid pre_destroy callback to fail
-      memcg: make mem_cgroup_reparent_charges non failing
-      hugetlb: do not fail in hugetlb_cgroup_pre_destroy
-
-Cumulative diffstat:
- kernel/cgroup.c     |   30 ++++---------
- mm/hugetlb_cgroup.c |   11 ++---
- mm/memcontrol.c     |  124 +++++++++++++++++++++++++++------------------------
- 3 files changed, 78 insertions(+), 87 deletions(-)
