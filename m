@@ -1,79 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab2JQBtQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Oct 2012 21:49:16 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:43964 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755923Ab2JQBtM (ORCPT
+	id S1756053Ab2JQBwe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Oct 2012 21:52:34 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:23132 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755952Ab2JQBwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Oct 2012 21:49:12 -0400
-X-AuditID: cbfee61a-b7f976d000001eb9-a1-507e0e96e22f
+	Tue, 16 Oct 2012 21:52:32 -0400
+X-AuditID: cbfee61a-b7f976d000001eb9-26-507e0f5fa3e1
 From: Jingoo Han <jg1.han@samsung.com>
-To: "'Linus Walleij'" <linus.walleij@linaro.org>
-Cc: "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Ryan Mallon'" <rmallon@gmail.com>,
+To: "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Linus Walleij'" <linus.walleij@linaro.org>
+Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "'Ryan Mallon'" <rmallon@gmail.com>,
         "'Jingoo Han'" <jg1.han@samsung.com>
-References: <008901cdab77$d2538800$76fa9800$%han@samsung.com>
- <CACRpkdbBuiae=+AXfAEargz0cJEDxa0-yVETw0zpNt_pOkuF4g@mail.gmail.com>
-In-reply-to: <CACRpkdbBuiae=+AXfAEargz0cJEDxa0-yVETw0zpNt_pOkuF4g@mail.gmail.com>
-Subject: Re: [PATCH V2 RESEND] gpio: samsung: use pr_* instead of printk
-Date: Wed, 17 Oct 2012 10:49:10 +0900
-Message-id: <002701cdac09$9a3b67c0$ceb23740$%han@samsung.com>
+Subject: [PATCH V3] gpio: samsung: use pr_* instead of printk
+Date: Wed, 17 Oct 2012 10:52:31 +0900
+Message-id: <002801cdac0a$11e4f340$35aed9c0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2rxEj7toa1Ocd2TtaF7hHC4cqQjwARA0OQ
+Thread-index: Ac2sChHMQwSjY9qSSRmfcoung56Ilw==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jQd1pfHUBBl86DS0u75rDZjHj/D4m
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDKOf+5kLfjMWXHg8SH2BsYz7F2MnBwSAiYSncdnsELY
-	YhIX7q1n62Lk4hASmM4osXL5FXYI5xejxOWZR8Cq2ATUJL58OQzWLSKgJ/HmawtYEbPAI0aJ
-	jc8PM0F0tDBKdGxbC+RwcHAKBEt8fxcE0iAs4CEx8+lLRhCbRUBV4veaNUwgNq+ArcTc9rks
-	ELagxI/J98BsZgEtic3bmlghbHmJzWveMoOMlBBQl3j0VxfEFBEwkrgxTxWiQkRi34t3jBMY
-	hWYhGTQLyaBZSAbNQtKygJFlFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwSD+T2sG4ssHi
-	EKMAB6MSD++H2bUBQqyJZcWVuYcYJTiYlUR4zRuBQrwpiZVVqUX58UWlOanFhxilOViUxHmb
-	PVIChATSE0tSs1NTC1KLYLJMHJxSDYwavvnlk0/bO6lwpE7oFjASvh/wn/dRk67pjOBDn8Wy
-	lL4nH9avyV6S/211olrHlNbVpz9GfQ29eLjg7N5P0fEdd0tK3rjJKT/I+7Rd9aZ3SPXlGY9k
-	bu9gFHlVur7WvOy5S0bo1O7tXg4///i08qYx8168tNhgaTOrvWnC1Jv7nHI0p86c+12JpTgj
-	0VCLuag4EQAC2sWsZQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJLMWRmVeSWpSXmKPExsVy+t9jAd14/roAg93flSwu75rDZjHj/D4m
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDJ6dl9gK/goUjH/dUwDY5dgFyMnh4SAicT8vp+MELaY
+	xIV769m6GLk4hAQWMUq0XO1ihXB+MUrcOb2VGaSKTUBN4suXw+wgtohAjMTtCZdYQIqYBbYw
+	SnRN6mQBSQgL2ErcO3aCqYuRg4NFQFXi5JowkDAvUHjDvvtsELagxI/J98DKmQW0JDZva2KF
+	sOUlNq95ywzSKiGgLvHory7EKj2Ja5ffsEGUiEjse/GOcQKjwCwkk2YhmTQLyaRZSFoWMLKs
+	YhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAgO0GdSOxhXNlgcYhTgYFTi4f0wuzZAiDWxrLgy
+	9xCjBAezkgiveSNQiDclsbIqtSg/vqg0J7X4EKM0B4uSOG+zR0qAkEB6YklqdmpqQWoRTJaJ
+	g1OqgbGGzf8Tm7Xp49cJZjWXJOa7HLr6U9SP5coL9Yj/is96JntFqPLMb/i1h1/Fc1lqZMNj
+	VYYl3nNKZFn9FswqNbRnq7/72MF1d8DNw6/ep+ibJ/nsq5JN+bBex/LwV6kQO/bQpg06debm
+	i453ZbtejubOzOeMvCwzTeBFOq+E+Rr28jaH5sjZSizFGYmGWsxFxYkAHfI/kEwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 17, 2012 2:33 AM Linus Walleij wrote:
-> 
-> On Tue, Oct 16, 2012 at 10:25 AM, Jingoo Han <jg1.han@samsung.com> wrote:
-> 
-> >  int samsung_gpio_setpull_updown(struct samsung_gpio_chip *chip,
-> >                                 unsigned int off, samsung_gpio_pull_t pull)
-> >  {
-> > @@ -599,7 +593,7 @@ static int samsung_gpiolib_4bit_input(struct gpio_chip *chip,
-> >         con &= ~(0xf << con_4bit_shift(offset));
-> >         __raw_writel(con, base + GPIOCON_OFF);
-> >
-> > -       gpio_dbg("%s: %p: CON now %08lx\n", __func__, base, con);
-> > +       pr_debug("%s: %p: CON now %08lx\n", __func__, base, con);
-> 
-> Does your struct gpio_chip provide a valid dev pointer so you can use:
-> 
-> dev_dbg(chip->dev, "%s: %p: CON now %08lx\n", __func__, base, con);
-> 
-> In that case use the dev_* print macros everywhere instead.
-> 
+This patch uses pr_* instead of printk. Also, gpio_dbg
+is replaced with pr_debug.
 
-No, a valid dev pointer is not provided yet.
-After a valid dev pointer is available, I will change
-pr_debug to dev_dbg.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+---
+Change since v2:
+- remove Ryan Mallon's signed-off-by
 
-Best regards,
-Jingoo Han
+ drivers/gpio/gpio-samsung.c |   18 ++++++------------
+ 1 files changed, 6 insertions(+), 12 deletions(-)
 
-> Yours,
-> Linus Walleij
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
+index a006f0d..5c5ccdf 100644
+--- a/drivers/gpio/gpio-samsung.c
++++ b/drivers/gpio/gpio-samsung.c
+@@ -42,12 +42,6 @@
+ #include <plat/gpio-fns.h>
+ #include <plat/pm.h>
+ 
+-#ifndef DEBUG_GPIO
+-#define gpio_dbg(x...) do { } while (0)
+-#else
+-#define gpio_dbg(x...) printk(KERN_DEBUG x)
+-#endif
+-
+ int samsung_gpio_setpull_updown(struct samsung_gpio_chip *chip,
+ 				unsigned int off, samsung_gpio_pull_t pull)
+ {
+@@ -599,7 +593,7 @@ static int samsung_gpiolib_4bit_input(struct gpio_chip *chip,
+ 	con &= ~(0xf << con_4bit_shift(offset));
+ 	__raw_writel(con, base + GPIOCON_OFF);
+ 
+-	gpio_dbg("%s: %p: CON now %08lx\n", __func__, base, con);
++	pr_debug("%s: %p: CON now %08lx\n", __func__, base, con);
+ 
+ 	return 0;
+ }
+@@ -627,7 +621,7 @@ static int samsung_gpiolib_4bit_output(struct gpio_chip *chip,
+ 	__raw_writel(con, base + GPIOCON_OFF);
+ 	__raw_writel(dat, base + GPIODAT_OFF);
+ 
+-	gpio_dbg("%s: %p: CON %08lx, DAT %08lx\n", __func__, base, con, dat);
++	pr_debug("%s: %p: CON %08lx, DAT %08lx\n", __func__, base, con, dat);
+ 
+ 	return 0;
+ }
+@@ -671,7 +665,7 @@ static int samsung_gpiolib_4bit2_input(struct gpio_chip *chip,
+ 	con &= ~(0xf << con_4bit_shift(offset));
+ 	__raw_writel(con, regcon);
+ 
+-	gpio_dbg("%s: %p: CON %08lx\n", __func__, base, con);
++	pr_debug("%s: %p: CON %08lx\n", __func__, base, con);
+ 
+ 	return 0;
+ }
+@@ -706,7 +700,7 @@ static int samsung_gpiolib_4bit2_output(struct gpio_chip *chip,
+ 	__raw_writel(con, regcon);
+ 	__raw_writel(dat, base + GPIODAT_OFF);
+ 
+-	gpio_dbg("%s: %p: CON %08lx, DAT %08lx\n", __func__, base, con, dat);
++	pr_debug("%s: %p: CON %08lx, DAT %08lx\n", __func__, base, con, dat);
+ 
+ 	return 0;
+ }
+@@ -926,10 +920,10 @@ static void __init samsung_gpiolib_add(struct samsung_gpio_chip *chip)
+ #ifdef CONFIG_PM
+ 	if (chip->pm != NULL) {
+ 		if (!chip->pm->save || !chip->pm->resume)
+-			printk(KERN_ERR "gpio: %s has missing PM functions\n",
++			pr_err("gpio: %s has missing PM functions\n",
+ 			       gc->label);
+ 	} else
+-		printk(KERN_ERR "gpio: %s has no PM function\n", gc->label);
++		pr_err("gpio: %s has no PM function\n", gc->label);
+ #endif
+ 
+ 	/* gpiochip_add() prints own failure message on error. */
+-- 
+1.7.1
+
 
