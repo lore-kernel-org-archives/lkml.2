@@ -1,126 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab2JQMlb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 08:41:31 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:35732 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756819Ab2JQMhj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 08:37:39 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
-        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
-        rmallon@gmail.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RFC 05/15 v5] gpio-max730x: Add block GPIO API
-Date: Wed, 17 Oct 2012 14:31:37 +0200
-Message-Id: <1350477107-26512-6-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1350477107-26512-1-git-send-email-stigge@antcom.de>
-References: <1350477107-26512-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	id S1756838Ab2JQMrQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 08:47:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16279 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755981Ab2JQMrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 08:47:15 -0400
+Date: Wed, 17 Oct 2012 14:47:11 +0200
+From: Jan Tluka <jtluka@redhat.com>
+To: rob@landley.net
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Documentation/networking/pktgen.txt: fix dst_mac and src_mac
+ typo
+Message-ID: <20121017124711.GA2703@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds block GPIO API support to the MAX730x driver.
+Dst_mac and src_mac parameters are incorrectly written with missing
+underscore - dstmac and srcmac. This typo can confuse the pktgen users.
 
-Due to hardware constraints in this chip, simultaneous access to GPIO lines can
-only be done in groups of 8: GPIOs 0-7, 8-15, 16-23, 24-27. However, setting
-and clearing will be done at once.
-
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-
+Signed-off-by: Jan Tluka <jtluka@redhat.com>
 ---
- drivers/gpio/gpio-max730x.c |   61 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 61 insertions(+)
+ Documentation/networking/pktgen.txt |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
---- linux-2.6.orig/drivers/gpio/gpio-max730x.c
-+++ linux-2.6/drivers/gpio/gpio-max730x.c
-@@ -146,6 +146,44 @@ static int max7301_get(struct gpio_chip
- 	return level;
- }
+diff --git a/Documentation/networking/pktgen.txt b/Documentation/networking/pktgen.txt
+index 75e4fd7..76658c6 100644
+--- a/Documentation/networking/pktgen.txt
++++ b/Documentation/networking/pktgen.txt
+@@ -87,8 +87,8 @@ Examples:
+  pgset "src_max 10.0.0.254"          Set the maximum source IP.
+  pgset "dst6 fec0::1"     IPV6 destination address
+  pgset "src6 fec0::2"     IPV6 source address
+- pgset "dstmac 00:00:00:00:00:00"    sets MAC destination address
+- pgset "srcmac 00:00:00:00:00:00"    sets MAC source address
++ pgset "dst_mac 00:00:00:00:00:00"    sets MAC destination address
++ pgset "src_mac 00:00:00:00:00:00"    sets MAC source address
  
-+static unsigned long max7301_get_block(struct gpio_chip *chip,
-+				       unsigned long mask)
-+{
-+	struct max7301 *ts = container_of(chip, struct max7301, chip);
-+	int i, j;
-+	unsigned long result = 0;
-+
-+	for (i = 0; i < 4; i++) {
-+		if ((mask >> (i * 8)) & 0xFF) { /* i/o only if necessary */
-+			u8 in_level = ts->read(ts->dev, 0x44 + i * 8);
-+			u8 in_mask = 0;
-+			u8 out_level = (ts->out_level >> (i * 8 + 4)) & 0xFF;
-+			u8 out_mask = 0;
-+
-+			for (j = 0; j < 8; j++) {
-+				int offset = 4 + i * 8 + j;
-+				int config = (ts->port_config[offset >> 2] >>
-+					      ((offset & 3) << 1)) &
-+					PIN_CONFIG_MASK;
-+
-+				switch (config) {
-+				case PIN_CONFIG_OUT:
-+					out_mask |= BIT(j);
-+					break;
-+				case PIN_CONFIG_IN_WO_PULLUP:
-+				case PIN_CONFIG_IN_PULLUP:
-+					in_mask |= BIT(j);
-+				}
-+			}
-+
-+			result |= ((unsigned long)(in_level & in_mask) |
-+				   (out_level & out_mask)) << (i * 8);
-+		}
-+	}
-+
-+	return result & mask;
-+}
-+
- static void max7301_set(struct gpio_chip *chip, unsigned offset, int value)
- {
- 	struct max7301 *ts = container_of(chip, struct max7301, chip);
-@@ -160,6 +198,27 @@ static void max7301_set(struct gpio_chip
- 	mutex_unlock(&ts->lock);
- }
- 
-+static void max7301_set_block(struct gpio_chip *chip, unsigned long mask,
-+			      unsigned long values)
-+{
-+	struct max7301 *ts = container_of(chip, struct max7301, chip);
-+	unsigned long changes;
-+	int i;
-+
-+	mutex_lock(&ts->lock);
-+
-+	changes = (ts->out_level ^ (values << 4)) & (mask << 4);
-+	ts->out_level ^= changes;
-+
-+	for (i = 0; i < 4; i++) {
-+		if ((changes >> (i * 8 + 4)) & 0xFF) /* i/o only on change */
-+			ts->write(ts->dev, 0x44 + i * 8,
-+				  (ts->out_level >> (i * 8 + 4)) & 0xFF);
-+	}
-+
-+	mutex_unlock(&ts->lock);
-+}
-+
- int __devinit __max730x_probe(struct max7301 *ts)
- {
- 	struct device *dev = ts->dev;
-@@ -183,8 +242,10 @@ int __devinit __max730x_probe(struct max
- 
- 	ts->chip.direction_input = max7301_direction_input;
- 	ts->chip.get = max7301_get;
-+	ts->chip.get_block = max7301_get_block;
- 	ts->chip.direction_output = max7301_direction_output;
- 	ts->chip.set = max7301_set;
-+	ts->chip.set_block = max7301_set_block;
- 
- 	ts->chip.base = pdata->base;
- 	ts->chip.ngpio = PIN_NUMBER;
+  pgset "queue_map_min 0" Sets the min value of tx queue interval
+  pgset "queue_map_max 7" Sets the max value of tx queue interval, for multiqueue devices
+-- 
+1.7.1
+
