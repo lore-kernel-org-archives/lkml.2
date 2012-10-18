@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080Ab2JRJ1W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 05:27:22 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:39896 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755000Ab2JRJ1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 05:27:19 -0400
-Message-ID: <1350552439.3072.65.camel@joe-AO722>
-Subject: Re: [PATCH v3 1/1] Input: serio - Add ARC PS/2 driver
-From: Joe Perches <joe@perches.com>
-To: Mischa Jonker <Mischa.Jonker@synopsys.com>
-Cc: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "m.d.s.x.jonker@gmail.com" <m.d.s.x.jonker@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arc-linux-dev@synopsys.com" <arc-linux-dev@synopsys.com>
-Date: Thu, 18 Oct 2012 02:27:19 -0700
-In-Reply-To: <E6BF041E97966E4DB955F0DF883AD2D6019A63@DE02WEMBX1.internal.synopsys.com>
-References: <1350549367-11098-1-git-send-email-mischa.jonker@synopsys.com>
-	 <1350549367-11098-2-git-send-email-mischa.jonker@synopsys.com>
-	 <1350550916.3072.61.camel@joe-AO722>
-	 <E6BF041E97966E4DB955F0DF883AD2D6019A63@DE02WEMBX1.internal.synopsys.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755032Ab2JRJ3N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 05:29:13 -0400
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:37229 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754678Ab2JRJ3M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 05:29:12 -0400
+From: Mischa Jonker <mischa.jonker@synopsys.com>
+To: dmitry.torokhov@gmail.com, m.d.s.x.jonker@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arc-linux-dev@synopsys.com
+Cc: Mischa Jonker <mischa.jonker@synopsys.com>
+Subject: [PATCH v4 0/1] Input: serio - Add ARC PS/2 driver
+Date: Thu, 18 Oct 2012 11:28:57 +0200
+Message-Id: <1350552538-24343-1-git-send-email-mischa.jonker@synopsys.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-18 at 09:05 +0000, Mischa Jonker wrote:
-> Hi Joe,
-> 
-> >> +	while (1) {
-> >infinite loop with bad hardware?
-> >Perhaps a jiffies timeout?
-> 
-> What do you suggest? Add a counter and limit the maximum number of iterations to an arbitrary number (say 1000)?
+main changes for v4:
+* add timeout for arc_ps2_check_rx() in case of
+  non responding hardware
 
-Yes, something like that.
-Or something like:
+main changes for v3:
+* proper __iomem annotation
+* correct return values in case of error
 
-	unsigned long timeout = jiffies + somevalue;
-	while (time_before(jiffies, timeout) {
-		etc...
-	}
+main changes for v2:
+* dev_* instead of pr_*
+* ioread32/iowrite32 instead of inl/outl
+* use module_platform_driver macro
+* disabling interrupt twice was unnecessary
 
-cheers, Joe
+New patch has been tested on our own architecture (ARC) and
+builds cleanly on x86-64.
+
+Mischa Jonker (1):
+  Input: serio - Add ARC PS/2 driver
+
+ drivers/input/serio/Kconfig   |    9 ++
+ drivers/input/serio/Makefile  |    1 +
+ drivers/input/serio/arc_ps2.c |  275 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 285 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/serio/arc_ps2.c
 
