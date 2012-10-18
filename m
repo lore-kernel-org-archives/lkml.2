@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab2JRL4p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 07:56:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60806 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753301Ab2JRL4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 07:56:43 -0400
-Date: Thu, 18 Oct 2012 13:56:40 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Sha Zhengju <handai.szj@gmail.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sha Zhengju <handai.szj@taobao.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] oom, memcg: handle sysctl oom_kill_allocating_task while
- memcg oom happening
-Message-ID: <20121018115640.GB24295@dhcp22.suse.cz>
-References: <1350382328-28977-1-git-send-email-handai.szj@taobao.com>
- <20121016133439.GI13991@dhcp22.suse.cz>
- <CAFj3OHVW-betpEnauzk-vQEfw_7bJxFneQb2oWpAZzOpZuMDiQ@mail.gmail.com>
+	id S1754217Ab2JRL7S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 07:59:18 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:48765 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752443Ab2JRL7Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 07:59:16 -0400
+Date: Thu, 18 Oct 2012 04:58:59 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rcu: restore correct batch limiting
+Message-ID: <20121018115859.GH2518@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1350458052.26103.31.camel@edumazet-glaptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFj3OHVW-betpEnauzk-vQEfw_7bJxFneQb2oWpAZzOpZuMDiQ@mail.gmail.com>
+In-Reply-To: <1350458052.26103.31.camel@edumazet-glaptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101811-2876-0000-0000-00000123E7D0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 17-10-12 01:14:48, Sha Zhengju wrote:
-> On Tuesday, October 16, 2012, Michal Hocko <mhocko@suse.cz> wrote:
-[...]
-> > Could you be more specific about the motivation for this patch? Is it
-> > "let's be consistent with the global oom" or you have a real use case
-> > for this knob.
-> >
+On Wed, Oct 17, 2012 at 09:14:12AM +0200, Eric Dumazet wrote:
+> From: Eric Dumazet <edumazet@google.com>
 > 
-> In our environment(rhel6), we encounter a memcg oom 'deadlock'
-> problem.  Simply speaking, suppose process A is selected to be killed
-> by memcg oom killer, but A is uninterruptible sleeping on a page
-> lock. What's worse, the exact page lock is holding by another memcg
-> process B which is trapped in mem_croup_oom_lock(proves to be a
-> livelock).
-
-Hmm, this is strange. How can you get down that road with the page lock
-held? Is it possible this is related to the issue fixed by: 1d65f86d
-(mm: preallocate page before lock_page() at filemap COW)?
-
-> Then A can not exit successfully to free the memory and both of them
-> can not moving on.
-
-> Indeed, we should dig into these locks to find the solution and
-> in fact the 37b23e05 (x86, mm: make pagefault killable) and
-> 7d9fdac(Memcg: make oom_lock 0 and 1 based other than counter) have
-> already solved the problem, but if oom_killing_allocating_task is
-> memcg aware, enabling this suicide oom behavior will be a simpler
-> workaround. What's more, enabling the sysctl can avoid other potential
-> oom problems to some extent.
-
-As I said, I am not against this but I really want to see a valid use
-case first. So far I haven't seen any because what you mention above is
-a clear bug which should be fixed. I can imagine the huge number of
-tasks in the group could be a problem as well but I would like to see
-what are those problems first.
-
-> > The primary motivation for oom_kill_allocating_tas AFAIU was to reduce
-> > search over huge tasklists and reduce task_lock holding times. I am not
-> > sure whether the original concern is still valid since 6b0c81b (mm,
-> > oom: reduce dependency on tasklist_lock) as the tasklist_lock usage has
-> > been reduced conciderably in favor of RCU read locks is taken but maybe
-> > even that can be too disruptive?
-> > David?
+> Commit 29c00b4a1d9e27 (rcu: Add event-tracing for RCU callback
+> invocation) added a regression in rcu_do_batch()
 > 
+> Under stress, RCU is supposed to allow to process all items in queue,
+> instead of a batch of 10 items (blimit), but an integer overflow makes
+> the effective limit being 1.
 > 
-> On the other hand, from the semantic meaning of oom_kill_allocating_task,
-> it implies to allow suicide-like oom, which has no obvious relationship
-> with performance problems(such as huge task lists or task_lock holding
-> time). 
+> So RCU cannot recover and machine eventually crash because of OOM.
+> 
+> Using long instead of int is not really needed, convert everything
+> to integers.
 
-I guess that suicide-like oom in fact means "kill the poor soul that
-happened to charge the last". I do not see any use case for this from
-top of my head (appart from the performance benefits of course).
+<facepalm>
 
-> So make the sysctl be consistent with global oom will be better or set
-> an individual option for memcg oom just as panic_on_oom does.
+Good catch!!!
 
--- 
-Michal Hocko
-SUSE Labs
+The reason for favoring long over int is that there are a few systems out
+there with terabytes of main memory.  In addition, there have been a few
+bugs over the past few years that could result in RCU CPU stalls of more
+than a minute.  This makes it impossible to rule out the possibility of
+a billion callbacks appearing on one CPU.
+
+So, does the following patch fix things, or a I still confused?
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+rcu: Fix batch-limit size problem
+
+Commit 29c00b4a1d9e27 (rcu: Add event-tracing for RCU callback
+invocation) added a regression in rcu_do_batch()
+
+Under stress, RCU is supposed to allow to process all items in queue,
+instead of a batch of 10 items (blimit), but an integer overflow makes
+the effective limit being 1.  So, unless there is frequent idle periods
+(during which RCU ignores batch limits), RCU can be forced into a
+state where it cannot keep up with the callback-generation rate,
+eventually resulting in OOM.
+
+This commit therefore converts a few variables in rcu_do_batch() from
+int to long to fix this problem.
+
+Reported-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index e36d085..e056e1e 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1823,7 +1823,8 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+ {
+ 	unsigned long flags;
+ 	struct rcu_head *next, *list, **tail;
+-	int bl, count, count_lazy, i;
++	long bl, count, count_lazy;
++	int i;
+ 
+ 	/* If no callbacks are ready, just return.*/
+ 	if (!cpu_has_callbacks_ready_to_invoke(rdp)) {
+
