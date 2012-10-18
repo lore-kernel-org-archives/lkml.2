@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237Ab2JRAw4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 20:52:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35414 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753087Ab2JRAwy (ORCPT
+	id S1753290Ab2JRAxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 20:53:36 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:4723 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753243Ab2JRAxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 20:52:54 -0400
-Date: Wed, 17 Oct 2012 17:52:51 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Peter Zijlstra <peterz@infradead.org>, Tang Chen <tangchen@cn.fujitsu.com>,
-        mingo@redhat.com, miaox@cn.fujitsu.com, wency@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org, linux-numa@vger.kernel.org
-Subject: Re: [PATCH] Do not use cpu_to_node() to find an offlined cpu's
- node.
-In-Reply-To: <alpine.DEB.2.00.1210101351050.31237@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1210171749150.20813@chino.kir.corp.google.com>
-References: <1349665183-11718-1-git-send-email-tangchen@cn.fujitsu.com> <1349780256.7880.12.camel@twins> <alpine.DEB.2.00.1210091328030.32588@chino.kir.corp.google.com> <1349815676.7880.85.camel@twins> <alpine.DEB.2.00.1210091617260.10143@chino.kir.corp.google.com>
- <1349860216.7880.105.camel@twins> <alpine.DEB.2.00.1210101324000.28583@chino.kir.corp.google.com> <20121010133709.7eaefcdb.akpm@linux-foundation.org> <alpine.DEB.2.00.1210101351050.31237@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 17 Oct 2012 20:53:34 -0400
+Message-ID: <507F52A1.1030800@huawei.com>
+Date: Thu, 18 Oct 2012 08:51:45 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, x86 <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH 00/40] PCI, ACPI, x86: pci root bus hotplug support
+References: <CAE9FiQWFcVNKMnV1qaHchwCXfZuMpyxf_f7GQy3FZid9YuLD3w@mail.gmail.com> <1348080894-23412-1-git-send-email-yinghai@kernel.org> <507E6355.40904@huawei.com> <CAE9FiQWW2zMK0fQ1RGox653PNxoH_RY_X8N4Oh_osu8Pt9gWpg@mail.gmail.com>
+In-Reply-To: <CAE9FiQWW2zMK0fQ1RGox653PNxoH_RY_X8N4Oh_osu8Pt9gWpg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.84]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Oct 2012, David Rientjes wrote:
-
-> It fixes a BUG() that only affects users who are doing node hot-remove, 
-> which is still radically under development, and nobody cares about except 
-> those on the cc list, but it also introduces the NULL pointer dereference 
-> that is attempting to be addressed in this patch.  The "fix" that causes 
-> this NULL pointer is clearly not the direction we want to go, I think we 
-> have agreement at node hot-remove to iterate all possible cpus are map all 
-> offline cpus with cpu_to_node(cpu) == node to NUMA_NO_NODE instead in the 
-> generic hotplug code.
+On 2012/10/18 0:19, Yinghai Lu wrote:
+> On Wed, Oct 17, 2012 at 12:50 AM, Yijing Wang <wangyijing@huawei.com> wrote:
+>> On 2012/9/20 2:54, Yinghai Lu wrote:
+>>
+>> Hi Yinghai,
+>>    I applied this series patches to the latest pci-next, but git am fail occured.
+>> When I try to pull from for-pci-root-bus-hotplug branch, I found some patches missed(eg. SCI_EMULATE).
+>> Where can I get the newest pci root bus hotplug patches?
 > 
-> Regardless, this shouldn't be touching the acpi code which
-> cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved.patch and 
-> cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved-fix.patch do since 
-> it makes the behavior inconsistent across interfaces and architectures.
+> should be
+> for-pci-split-pci-root-hp-2
+> or
+> for-pci-next-2
+> branch.
+> 
+> but
+>>> part6: acpi add/remove simulation
+>>> [PATCH 40/40] ACPI: Enable SCI_EMULATE to manually simulate physical
+> 
+> is not in. you need to apply that separately.
 > 
 
-Ok, so it's been a week and these patches are still in -mm.  This is what 
-I was afraid of: patches that both Peter and I nacked sitting in -mm and 
-allow a NULL pointer dereference because no alternative patch exists yet 
-to fix the issue correctly.
+OK, Thanks!
 
-Tang and Wen, are you intending on addressing these problems (i.e. not 
-touching the acpi code at all and rather clearing cpu-to-node mappings at 
-node hot-remove) as we've discussed or do I need to do it myself?
+> .
+> 
 
-Thanks.
+
+-- 
+Thanks!
+Yijing
+
