@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab2JRIyP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 04:54:15 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:60475 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752140Ab2JRIyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 04:54:13 -0400
-Message-ID: <50803433.4000904@parallels.com>
-Date: Thu, 18 Oct 2012 20:54:11 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+	id S1754584Ab2JRJAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 05:00:52 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54616 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab2JRJAu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 05:00:50 -0400
+Date: Thu, 18 Oct 2012 09:52:08 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Huang Shijie <b32955@freescale.com>
+Cc: Vinod Koul <vinod.koul@linux.intel.com>, djbw@fb.com, khali@linux-fr.org,
+        ben-linux@fluff.org, w.sang@pengutronix.de, cjb@laptop.org,
+        dwmw2@infradead.org, lrg@ti.com, broonie@opensource.wolfsonmicro.com,
+        perex@perex.cz, tiwai@suse.de, shawn.guo@linaro.org, marex@denx.de,
+        artem.bityutskiy@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-mtd@lists.infradead.org, alsa-devel@alsa-project.org,
+        linux-arm-kernel@lists.infradead.org, Huang Shijie <shijie8@gmail.com>
+Subject: Re: [PATCH] dma: add new DMA control commands
+Message-ID: <20121018085208.GR21164@n2100.arm.linux.org.uk>
+References: <1350538335-29026-1-git-send-email-b32955@freescale.com> <1350541111.5263.3.camel@vkoul-udesk3> <507FA595.4020507@freescale.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        "Pekka Enberg" <penberg@kernel.org>, <devel@openvz.org>,
-        <linux-kernel@vger.kernel.org>, Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v5 01/14] memcg: Make it possible to use the stock for
- more than one page.
-References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-2-git-send-email-glommer@parallels.com> <20121017151155.d417bd13.akpm@linux-foundation.org>
-In-Reply-To: <20121017151155.d417bd13.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <507FA595.4020507@freescale.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2012 02:11 AM, Andrew Morton wrote:
-> On Tue, 16 Oct 2012 14:16:38 +0400
-> Glauber Costa <glommer@parallels.com> wrote:
-> 
->> From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
->>
->> We currently have a percpu stock cache scheme that charges one page at a
->> time from memcg->res, the user counter. When the kernel memory
->> controller comes into play, we'll need to charge more than that.
->>
->> This is because kernel memory allocations will also draw from the user
->> counter, and can be bigger than a single page, as it is the case with
->> the stack (usually 2 pages) or some higher order slabs.
->>
->> ...
->>
->> -/*
->> - * Try to consume stocked charge on this cpu. If success, one page is consumed
->> - * from local stock and true is returned. If the stock is 0 or charges from a
->> - * cgroup which is not current target, returns false. This stock will be
->> - * refilled.
->> +/**
->> + * consume_stock: Try to consume stocked charge on this cpu.
->> + * @memcg: memcg to consume from.
->> + * @nr_pages: how many pages to charge.
->> + *
->> + * The charges will only happen if @memcg matches the current cpu's memcg
->> + * stock, and at least @nr_pages are available in that stock.  Failure to
->> + * service an allocation will refill the stock.
->> + *
->> + * returns true if succesfull, false otherwise.
-> 
-> spello.
-> 
-Thanks. I can never successfuly write successfull =(
+On Thu, Oct 18, 2012 at 02:45:41PM +0800, Huang Shijie wrote:
+> 于 2012年10月18日 14:18, Vinod Koul 写道:
+>> Why cant you do start (prepare clock etc) when you submit the descriptor
+>> to dmaengine. Can be done in tx_submit callback.
+>> Similarly remove the clock when dma transaction gets completed.
+> I ever thought this method too.
+>
+> But it will become low efficient in the following case:
+>
+>   Assuming the gpmi-nand driver has to read out 1024 pages in one  
+> _SINGLE_ read operation.
+> The gpmi-nand will submit the descriptor to dmaengine per page. So with  
+> your method,
+> the system will repeat the enable/disable dma clock 1024 time. At every  
+> enable/disable dma clock,
+> the system has to enable the clock chain and it's parents ...
 
->>   */
->> -static bool consume_stock(struct mem_cgroup *memcg)
->> +static bool consume_stock(struct mem_cgroup *memcg, int nr_pages)
-> 
-> I don't believe there is a case for nr_pages < 0 here?  If not then I
-> suggest that it would be clearer to use an unsigned type, like
-> memcg_stock_pcp.stock.
-> 
-
-Done, thanks.
-
+And what if you stop using clk_prepare_enable(), and prepare the clock
+when the channel is requested and only use clk_enable() in the tx_submit
+method?
