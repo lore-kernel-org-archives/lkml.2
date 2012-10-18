@@ -1,123 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019Ab2JRHUG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 03:20:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33795 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab2JRHUB (ORCPT
+	id S1752174Ab2JRHUN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 03:20:13 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:34327 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259Ab2JRHUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 03:20:01 -0400
-From: Hiromu Yakura <hiromu1996@gmail.com>
-To: linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
-        John Johansen <john.johansen@canonical.com>
-Subject: [PATCH] AppArmor: Modify Makefile to avoid Oops
-Date: Thu, 18 Oct 2012 16:19:46 +0900
-Message-ID: <38590271.RTeeX2bDYV@hiromu-macbook>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc1-debug+; KDE/4.8.5; x86_64; ; )
+	Thu, 18 Oct 2012 03:20:10 -0400
+X-IronPort-AV: E=Sophos;i="4.80,606,1344211200"; 
+   d="scan'208";a="15245287"
+Message-ID: <1350544809.28188.5.camel@dagon.hellion.org.uk>
+Subject: Re: [PATCH 6/6] xen: x86 pvh: use XENMEM_add_to_physmap_range for
+ foreign gmfn mappings
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Date: Thu, 18 Oct 2012 08:20:09 +0100
+In-Reply-To: <20121017165718.683fa30f@mantra.us.oracle.com>
+References: <1350473518.2460.58.camel@zakaz.uk.xensource.com>
+	 <1350473532-15863-6-git-send-email-ian.campbell@citrix.com>
+	 <20121017165718.683fa30f@mantra.us.oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In my environment, AppArmor cause Oops every time when cupsd launch.
+On Thu, 2012-10-18 at 00:57 +0100, Mukesh Rathor wrote:
+> On Wed, 17 Oct 2012 12:32:12 +0100
+> Ian Campbell <ian.campbell@citrix.com> wrote:
+> 
+> > Squeezing the necessary fields into the existing XENMEM_add_to_physmap
+> > interface was proving to be a bit tricky so we have decided to go with
+> > a new interface upstream (the XENMAPSPACE_gmfn_foreign interface using
+> > XENMEM_add_to_physmap was never committed anywhere). This interface
+> > also allows for batching which was impossible to support at the same
+> > time as foreign mfns in the old interface.
+> > 
+> > This reverts the relevant parts of "PVH: basic and header changes,
+> > elfnote changes, ..." and followups and trivially converts
+> > pvh_add_to_xen_p2m over.
+> 
+> 
+> Hmm... I don't see xen side implementation of XENMEM_add_to_physmap_range,
 
-This is the log of Oops:
-[  114.876511] general protection fault: 0000 [#1] SMP 
-[  114.876540] Modules linked in: usbhid bnep rfcomm parport_pc ppdev parport 
-dm_crypt binfmt_misc arc4 b43 mac80211 uvcvideo videobuf2_core cfg80211 
-videodev kvm_intel snd_hda_codec_hdmi kvm snd_hda_codec_cirrus snd_hda_intel 
-snd_hda_codec snd_hwdep snd_pcm snd_seq_midi snd_rawmidi snd_seq_midi_event 
-ssb media snd_seq snd_timer videobuf2_vmalloc snd_seq_device videobuf2_memops 
-bcm5974 snd bcma soundcore snd_page_alloc mei joydev hid_generic apple_bl 
-btusb bluetooth coretemp applesmc input_polldev hid_apple i915 firewire_ohci 
-tg3 firewire_core crc_itu_t drm_kms_helper sdhci_pci drm sdhci hid i2c_algo_bit 
-video [last unloaded: usbhid]
-[  114.876751] CPU 2 
-[  114.876759] Pid: 1099, comm: cupsd Not tainted 3.7.0-rc1+ #20 Apple Inc. 
-MacBookPro8,1/Mac-94245B3640C91C81
-[  114.876789] RIP: 0010:[<ffffffff81318f82>]  [<ffffffff81318f82>] strlen+0x2/0x20
-[  114.876814] RSP: 0018:ffff8801652c3cd0  EFLAGS: 00010246
-[  114.876830] RAX: 0000000000000000 RBX: ffff880169beba00 RCX: 000000000000001e
-[  114.876851] RDX: 0000000000002a04 RSI: 64656c62616e652e RDI: 
-64656c62616e652e
-[  114.876871] RBP: ffff8801652c3ce8 R08: 000000000000000a R09: 0000000000000000
-[  114.876891] R10: 000000000000039d R11: 000000000000039c R12: 
-64656c62616e652e
-[  114.876911] R13: ffffffff812cfc30 R14: ffff880165089950 R15: 00000000507fa2d4
-[  114.876932] FS:  00007fe581691740(0000) GS:ffff88016fa80000(0000) 
-knlGS:0000000000000000
-[  114.876955] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  114.876971] CR2: 00007fc429480000 CR3: 0000000163bf6000 CR4: 
-00000000000407e0
-[  114.876992] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 
-0000000000000000
-[  114.877012] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  114.877033] Process cupsd (pid: 1099, threadinfo ffff8801652c2000, task 
-ffff880165089950)
-[  114.877056] Stack:
-[  114.877062]  ffffffff810ba4e3 ffff880169beba00 ffff8801652c3e08 ffff8801652c3d08
-[  114.877085]  ffffffff812cfc81 ffff880169beba00 ffff8801652c3e08 ffff8801652c3d68
-[  114.878058]  ffffffff812c079d 0000000000000000 0000000000000000 ffff8801652c3da0
-[  114.879032] Call Trace:
-[  114.879989]  [<ffffffff810ba4e3>] ? audit_log_untrustedstring+0x23/0x40
-[  114.880910]  [<ffffffff812cfc81>] audit_cb+0x51/0x60
-[  114.881837]  [<ffffffff812c079d>] common_lsm_audit+0xad/0x720
-[  114.882716]  [<ffffffff812cf882>] aa_audit_msg+0x22/0x30
-[  114.883675]  [<ffffffff812cf8f5>] aa_audit+0x65/0x180
-[  114.884528]  [<ffffffff812cfb44>] audit_caps+0x134/0x220
-[  114.885354]  [<ffffffff812cfce5>] aa_capable+0x55/0x70
-[  114.886177]  [<ffffffff812d60ee>] apparmor_capable+0x7e/0xa0
-[  114.887018]  [<ffffffff8129cac8>] security_capable+0x18/0x20
-[  114.887833]  [<ffffffff8104dc90>] ns_capable+0x30/0x60
-[  114.888644]  [<ffffffff8104dcd7>] capable+0x17/0x20
-[  114.889453]  [<ffffffff811b8e8a>] sys_epoll_ctl+0xfa/0x950
-[  114.890278]  [<ffffffff811860b5>] ? poll_select_set_timeout+0x85/0xa0
-[  114.891130]  [<ffffffff815d4c5d>] system_call_fastpath+0x1a/0x1f
-[  114.892039] Code: 48 89 e5 f6 82 a0 63 64 81 20 74 15 0f 1f 44 00 00 48 83 
-c0 01 0f b6 10 f6 82 a0 63 64 81 20 75 f0 5d c3 66 0f 1f 44 00 00 31 c0 <80> 
-3f 00 55 48 89 e5 74 11 48 89 f8 66 90 48 83 c0 01 80 38 00 
-[  114.893969] RIP  [<ffffffff81318f82>] strlen+0x2/0x20
-[  114.894873]  RSP <ffff8801652c3cd0>
-[  114.906772] ---[ end trace 7a1af0265870215b ]---
+I said in the 0/6 patch, but should have repeated here:
 
-It seems that bad address was passed for the second argument of 
-audit_log_untrustedstring() at audit_cb() in capability.c:
- 52     audit_log_untrustedstring(ab, capability_names[sa->u.cap]);
+        The final patch requires that XENMEM_add_to_physmap_range be implemented
+        for x86 on the hypervisor side. For inspiration the ARM version can be
+        found at <1350314444-17148-1-git-send-email-ian.campbell@citrix.com>
+        (and will likely be in xen-unstable soon).
 
-The array "capability_names" is defined in capability_names.h but the content 
-of this is generated by Makefile from include/linux/capability.h
-However, capability.h was moved to include/uapi/linux/capability.h and because 
-of this, the array is empty.
-That's why, sa->u.cap become out of range this and segmentation fault caused.
+In the end I checked it in yesterday.
 
-Let's fix it.
+> and since I've already got my patches tested and cut, I'm going to send
+> them now. We can apply this change easily in konrad's tree.
 
-Cc: James Morris <james.l.morris@oracle.com>
-Cc: John Johansen <john.johansen@canonical.com>
+Sure, no problem.
 
-Signed-off-by: Hiromu Yakura <hiromu1996@gmail.com>
----
- security/apparmor/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/security/apparmor/Makefile b/security/apparmor/Makefile
-index 7b3021c..5706b74 100644
---- a/security/apparmor/Makefile
-+++ b/security/apparmor/Makefile
-@@ -57,7 +57,7 @@ cmd_make-rlim = echo "static const char *const 
-rlim_names[RLIM_NLIMITS] = {" \
- 
- $(obj)/capability.o : $(obj)/capability_names.h
- $(obj)/resource.o : $(obj)/rlim_names.h
--$(obj)/capability_names.h : $(srctree)/include/linux/capability.h \
-+$(obj)/capability_names.h : $(srctree)/include/uapi/linux/capability.h \
- 			    $(src)/Makefile
- 	$(call cmd,make-caps)
- $(obj)/rlim_names.h : $(srctree)/include/uapi/asm-generic/resource.h \
--- 
-1.7.9.5
+Ian.
 
 
