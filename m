@@ -1,165 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab2JRLM3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 07:12:29 -0400
-Received: from mga14.intel.com ([143.182.124.37]:20418 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754866Ab2JRLM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 07:12:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,606,1344236400"; 
-   d="scan'208";a="206020479"
-From: Jenny TC <jenny.tc@intel.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>, linux-kernel@vger.kernel.org
-Cc: Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, myungjoo.ham@samsung.com,
-        Jenny TC <jenny.tc@intel.com>
-Subject: [PATCH 2/7] power_supply: Add charger control properties
-Date: Thu, 18 Oct 2012 22:14:01 +0530
-Message-Id: <1350578646-3315-3-git-send-email-jenny.tc@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350578646-3315-1-git-send-email-jenny.tc@intel.com>
-References: <1350578646-3315-1-git-send-email-jenny.tc@intel.com>
+	id S1755574Ab2JRLNz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 07:13:55 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:61653 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752410Ab2JRLNw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 07:13:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <507FD383.5050302@snapgear.com>
+References: <20121018103713.0ccb63374964501c3d8d99a5@canb.auug.org.au>
+	<20121018103826.c8e1312904747b31caa376f6@canb.auug.org.au>
+	<507F78B0.70808@snapgear.com>
+	<CAMuHMdWX2ZVNcz1Ubsk0W3HH7qcBQhctaWSFVq=x+YwbuUE9YA@mail.gmail.com>
+	<507FD383.5050302@snapgear.com>
+Date: Thu, 18 Oct 2012 13:13:50 +0200
+X-Google-Sender-Auth: M1VtdyMo5kfNIp9iPI-lMwbSzOs
+Message-ID: <CAMuHMdV3hm7U2bjQVteYB4=eu9pcrtvY87ttvdTMu+VWXiTZFw@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the m68knommu tree with the tree
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Ungerer <gerg@snapgear.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The battery charger needs to have control path along
-with the reporting charger properties. In existing solutions
-this is implemented using regulator framework. A regulator
-framework doesn't fit a charger driver requirement because of the
-following reason
-Charger needs support two paths - charger path (charger to platform)
-and charging (charger to battery).Disabling the charging path alone
-(eg over battery temperature) will allow the platform to work with
-power from charger without discharging the battery. And the charger
-may need to be disabled completely based on the charger temperature
-or the platform temperature.
-Charger has more than one pair of voltage/current to control (CC,CV,INLMT)
-These features will not directly fit in the regulator framework
+Hi Greg,
 
-Since the charger driver sits in the power supply subsystem it make sense
-to add the properties to control the charger.
+On Thu, Oct 18, 2012 at 12:01 PM, Greg Ungerer <gerg@snapgear.com> wrote:
+> On 10/18/2012 03:51 PM, Geert Uytterhoeven wrote:
+>> On Thu, Oct 18, 2012 at 5:34 AM, Greg Ungerer <gerg@snapgear.com> wrote:
+>>> On 18/10/12 09:38, Stephen Rothwell wrote:
+>>>> On Thu, 18 Oct 2012 10:37:13 +1100 Stephen Rothwell
+>>>> <sfr@canb.auug.org.au>
+>>>> wrote:
+>>>>> Today's linux-next merge of the m68knommu tree got conflicts in
+>>>>> arch/m68k/include/asm/termios.h, arch/m68k/include/uapi/asm/auxvec.h,
+>>>>> arch/m68k/include/uapi/asm/msgbuf.h,
+>>>>> arch/m68k/include/uapi/asm/sembuf.h,
+>>>>> arch/m68k/include/uapi/asm/shmbuf.h,
+>>>>> arch/m68k/include/uapi/asm/socket.h,
+>>>>> arch/m68k/include/uapi/asm/sockios.h and
+>>>>> arch/m68k/include/uapi/asm/termbits.h between commit 10b3a979347d
+>>>>> ("UAPI:
+>>>>> (Scripted) Disintegrate arch/m68k/include/asm") from the m68k-current
+>>>>> tree and various commits from the m68knommu tree that use the
+>>>>> asm-generic
+>>>>> versions.
+>>>>>
+>>>>> I just deleted all those files and added the following merge fix patch
+>>>>> and can carry the fix as necessary.
+>>>>>
+>>>>> I think that this is the correct thing to do ...
+>>>
+>>>
+>>>
+>>> I think that is right. Thanks.
+>>
+>>
+>> I still have to do a proper review of your changes (I noticed a few
+>> things I have
+>> to double-check). After that, I guess it's easiest if I take your
+>> patch, updated for
+>> the UAPI disintegration?
+>
+>
+> Sure. My patches are based on 3.7-rc1. I am not sure if David's changes
+> are going upstream in a future rc, or are for 3.8.
 
-Also this patch adds/modify the power supply properties to meet the
-requirements for charger control
+I plan to submit hem later this week, but first I have to send out my sys_kcmp
+wire up patch so I can receive your ack ;-)
 
-Signed-off-by: Jenny TC <jenny.tc@intel.com>
----
- drivers/power/power_supply_sysfs.c |   16 ++++++++++++----
- include/linux/power_supply.h       |   24 ++++++++++++++++--------
- 2 files changed, 28 insertions(+), 12 deletions(-)
+Gr{oetje,eeting}s,
 
-diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
-index 40fa3b7..3166d00 100644
---- a/drivers/power/power_supply_sysfs.c
-+++ b/drivers/power/power_supply_sysfs.c
-@@ -160,12 +160,13 @@ static struct device_attribute power_supply_attrs[] = {
- 	POWER_SUPPLY_ATTR(charge_now),
- 	POWER_SUPPLY_ATTR(charge_avg),
- 	POWER_SUPPLY_ATTR(charge_counter),
--	POWER_SUPPLY_ATTR(constant_charge_current),
--	POWER_SUPPLY_ATTR(constant_charge_current_max),
--	POWER_SUPPLY_ATTR(constant_charge_voltage),
--	POWER_SUPPLY_ATTR(constant_charge_voltage_max),
-+	POWER_SUPPLY_ATTR(charge_current),
-+	POWER_SUPPLY_ATTR(max_charge_current),
-+	POWER_SUPPLY_ATTR(charge_voltage),
-+	POWER_SUPPLY_ATTR(max_charge_voltage),
- 	POWER_SUPPLY_ATTR(charge_control_limit),
- 	POWER_SUPPLY_ATTR(charge_control_limit_max),
-+	POWER_SUPPLY_ATTR(input_cur_limit),
- 	POWER_SUPPLY_ATTR(energy_full_design),
- 	POWER_SUPPLY_ATTR(energy_empty_design),
- 	POWER_SUPPLY_ATTR(energy_full),
-@@ -177,6 +178,8 @@ static struct device_attribute power_supply_attrs[] = {
- 	POWER_SUPPLY_ATTR(capacity_alert_max),
- 	POWER_SUPPLY_ATTR(capacity_level),
- 	POWER_SUPPLY_ATTR(temp),
-+	POWER_SUPPLY_ATTR(max_temp),
-+	POWER_SUPPLY_ATTR(min_temp),
- 	POWER_SUPPLY_ATTR(temp_alert_min),
- 	POWER_SUPPLY_ATTR(temp_alert_max),
- 	POWER_SUPPLY_ATTR(temp_ambient),
-@@ -188,6 +191,11 @@ static struct device_attribute power_supply_attrs[] = {
- 	POWER_SUPPLY_ATTR(time_to_full_avg),
- 	POWER_SUPPLY_ATTR(type),
- 	POWER_SUPPLY_ATTR(scope),
-+	POWER_SUPPLY_ATTR(charge_term_cur),
-+	POWER_SUPPLY_ATTR(enable_charging),
-+	POWER_SUPPLY_ATTR(enable_charger),
-+	POWER_SUPPLY_ATTR(cable_type),
-+	POWER_SUPPLY_ATTR(priority),
- 	/* Properties of type `const char *' */
- 	POWER_SUPPLY_ATTR(model_name),
- 	POWER_SUPPLY_ATTR(manufacturer),
-diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
-index 1f0ab90..7c06956 100644
---- a/include/linux/power_supply.h
-+++ b/include/linux/power_supply.h
-@@ -110,12 +110,13 @@ enum power_supply_property {
- 	POWER_SUPPLY_PROP_CHARGE_NOW,
- 	POWER_SUPPLY_PROP_CHARGE_AVG,
- 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
--	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT,
--	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX,
--	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE,
--	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE_MAX,
-+	POWER_SUPPLY_PROP_CHARGE_CURRENT,
-+	POWER_SUPPLY_PROP_MAX_CHARGE_CURRENT,
-+	POWER_SUPPLY_PROP_CHARGE_VOLTAGE,
-+	POWER_SUPPLY_PROP_MAX_CHARGE_VOLTAGE,
- 	POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT,
- 	POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT_MAX,
-+	POWER_SUPPLY_PROP_INLMT,
- 	POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN,
- 	POWER_SUPPLY_PROP_ENERGY_EMPTY_DESIGN,
- 	POWER_SUPPLY_PROP_ENERGY_FULL,
-@@ -127,6 +128,8 @@ enum power_supply_property {
- 	POWER_SUPPLY_PROP_CAPACITY_ALERT_MAX, /* in percents! */
- 	POWER_SUPPLY_PROP_CAPACITY_LEVEL,
- 	POWER_SUPPLY_PROP_TEMP,
-+	POWER_SUPPLY_PROP_MAX_TEMP,
-+	POWER_SUPPLY_PROP_MIN_TEMP,
- 	POWER_SUPPLY_PROP_TEMP_ALERT_MIN,
- 	POWER_SUPPLY_PROP_TEMP_ALERT_MAX,
- 	POWER_SUPPLY_PROP_TEMP_AMBIENT,
-@@ -138,6 +141,11 @@ enum power_supply_property {
- 	POWER_SUPPLY_PROP_TIME_TO_FULL_AVG,
- 	POWER_SUPPLY_PROP_TYPE, /* use power_supply.type instead */
- 	POWER_SUPPLY_PROP_SCOPE,
-+	POWER_SUPPLY_PROP_CHARGE_TERM_CUR,
-+	POWER_SUPPLY_PROP_ENABLE_CHARGING,
-+	POWER_SUPPLY_PROP_ENABLE_CHARGER,
-+	POWER_SUPPLY_PROP_CABLE_TYPE,
-+	POWER_SUPPLY_PROP_PRIORITY,
- 	/* Properties of type `const char *' */
- 	POWER_SUPPLY_PROP_MODEL_NAME,
- 	POWER_SUPPLY_PROP_MANUFACTURER,
-@@ -253,8 +261,8 @@ static inline bool power_supply_is_amp_property(enum power_supply_property psp)
- 	case POWER_SUPPLY_PROP_CHARGE_NOW:
- 	case POWER_SUPPLY_PROP_CHARGE_AVG:
- 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
--	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT:
--	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX:
-+	case POWER_SUPPLY_PROP_CHARGE_CURRENT:
-+	case POWER_SUPPLY_PROP_MAX_CHARGE_CURRENT:
- 	case POWER_SUPPLY_PROP_CURRENT_MAX:
- 	case POWER_SUPPLY_PROP_CURRENT_NOW:
- 	case POWER_SUPPLY_PROP_CURRENT_AVG:
-@@ -281,9 +289,9 @@ static inline bool power_supply_is_watt_property(enum power_supply_property psp)
- 	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
- 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
- 	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
-+	case POWER_SUPPLY_PROP_CHARGE_VOLTAGE:
- 	case POWER_SUPPLY_PROP_VOLTAGE_OCV:
--	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
--	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE_MAX:
-+	case POWER_SUPPLY_PROP_MAX_CHARGE_VOLTAGE:
- 	case POWER_SUPPLY_PROP_POWER_NOW:
- 		return 1;
- 	default:
--- 
-1.7.9.5
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
