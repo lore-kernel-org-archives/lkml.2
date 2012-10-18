@@ -1,51 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582Ab2JRKnP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 06:43:15 -0400
-Received: from mga09.intel.com ([134.134.136.24]:50582 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753415Ab2JRKnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 06:43:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,606,1344236400"; 
-   d="scan'208";a="207595223"
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: fengguang.wu@intel.com, Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Keith Busch <keith.busch@intel.com>
-Subject: [PATCH] NVMe: check the return of nvme_alloc_iod
-Date: Thu, 18 Oct 2012 18:43:20 +0800
-Message-Id: <1350557000-18825-1-git-send-email-yuanhan.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S1755634Ab2JRKpF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 06:45:05 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:53515 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755017Ab2JRKpD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 06:45:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAKohponyeATPdmB7BZGShfaH0ETX8qfBLNM5jSkk6DpQ8vKfZw@mail.gmail.com>
+References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
+	<1350387889-15324-6-git-send-email-hongbo.zhang@linaro.com>
+	<CAKohpo=Vfq=z8NK6w4_QpwwLniYiwcfGfzWZsoG_zBPYPXrcUw@mail.gmail.com>
+	<CAJLyvQyvMpeYK4PrgEcRwNX74-e5RApX9ZcWJp1+Fgp8jhD9cQ@mail.gmail.com>
+	<CAKohponyeATPdmB7BZGShfaH0ETX8qfBLNM5jSkk6DpQ8vKfZw@mail.gmail.com>
+Date: Thu, 18 Oct 2012 18:45:02 +0800
+Message-ID: <CAJLyvQyg7bFQxmegSD=cCsn0M+AM+NOPW5SrK09dXLi3aer7ww@mail.gmail.com>
+Subject: Re: [PATCH 5/5] Thermal: Add ST-Ericsson db8500 thermal dirver.
+From: Hongbo Zhang <hongbo.zhang@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        kernel@igloocommunity.org, linaro-kernel@lists.linaro.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It maybe failed due to out of memory.
+On 18 October 2012 16:07, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 18 October 2012 13:05, Hongbo Zhang <hongbo.zhang@linaro.org> wrote:
+>> On 17 October 2012 23:23, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>>> On 16 October 2012 17:14, hongbo.zhang <hongbo.zhang@linaro.org> wrote:
+>
+>>>> +static struct db8500_trip_point db8500_trips_table[] = {
+>>>> +       [0] = {
+>>>> +               .temp = 70000,
+>>>> +               .type = THERMAL_TRIP_ACTIVE,
+>>>> +               .cooling_dev_name = {
+>>>> +                       [0] = "thermal-cpufreq-0",
+>>>
+>>> If i am not wrong length of cooling_dev_name can't be greater than 8
+>> You are wrong this time, it is 20
+>> #define THERMAL_NAME_LENGTH 20
+>
+> Ahh.. Its the array size fixed to 8.. not length of each element within.
+>
+>>>>  static void __init mop500_init_machine(void)
+>>>> @@ -765,6 +834,10 @@ struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
+>>>>                 "ux500-msp-i2s.2", &msp2_platform_data),
+>>>>         OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80125000,
+>>>>                 "ux500-msp-i2s.3", &msp3_platform_data),
+>>>> +       OF_DEV_AUXDATA("stericsson,db8500-thermal", 0x801573c0,
+>>>> +                       "db8500-thermal", &db8500_thsens_data),
+>>>> +       OF_DEV_AUXDATA("stericsson,db8500-cpufreq-cooling", 0,
+>>>> +                       "db8500-cpufreq-cooling", NULL),
+>>>>         {},
+>>>>  };
+>
+>>> Whatever the case, at-least we should pass data via DT for
+>>> u8500_auxdata_lookup[].
+>>> As you are adding the driver for the first time here, it must be able to parse
+>>> data via DT.
+>> Yes, for "db8500-thermal", data &db8500_thsens_data is parsed via DT
+>> but there is really no data for "db8500-cpufreq-cooling".
+>
+> You didn't get my point. You are not parsing pdata via DT here, but setting
+> pdata of device node created due to DT.
+>
+> What i am saying is, you must put in code in thermal driver, which will actually
+> parse data from DT and create a pdata structure at run time. And there you
+> would be required to add another file in Documentation with bindings for this
+> driver.
+>
+Get the idea.
+I will update the DT related codes and sent it out again.
+Thanks.
 
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Cc: Keith Busch <keith.busch@intel.com>
-Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
----
- drivers/block/nvme.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/block/nvme.c b/drivers/block/nvme.c
-index 931769e..eb58978 100644
---- a/drivers/block/nvme.c
-+++ b/drivers/block/nvme.c
-@@ -1091,6 +1091,10 @@ static struct nvme_iod *nvme_map_user_pages(struct nvme_dev *dev, int write,
- 	}
- 
- 	iod = nvme_alloc_iod(count, length, GFP_KERNEL);
-+	if (!iod) {
-+		err = -ENOMEM;
-+		goto put_pages;
-+	}
- 	sg = iod->sg;
- 	sg_init_table(sg, count);
- 	for (i = 0; i < count; i++) {
--- 
-1.7.7.6
-
+>>>> +static int db8500_cpufreq_cooling_suspend(struct platform_device *pdev,
+>>>> +               pm_message_t state)
+>>>> +{
+>>>> +       return -ENOSYS;
+>>>> +}
+>>>> +
+>>>> +static int db8500_cpufreq_cooling_resume(struct platform_device *pdev)
+>>>> +{
+>>>> +       return -ENOSYS;
+>>>> +}
+>>>
+>>> Do you need these? Wouldn't it be same if you don't define them?
+>> There were not such functions before, I added them after reading
+>> Documentation/SubmittingDrivers.
+>> Is the document too old? should I follow it?
+>
+> Probably the document is correct and i am not :)
+>
+> --
+> viresh
