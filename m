@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab2JRKNq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 06:13:46 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:38167 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932091Ab2JRKNo (ORCPT
+	id S1755075Ab2JRKQX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 06:16:23 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:48768 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753851Ab2JRKQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 06:13:44 -0400
+	Thu, 18 Oct 2012 06:16:21 -0400
+From: Jian-Jhong Ding <jj_ding@emc.com.tw>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, fabien.andre@gmail.com,
+        scott.liu@emc.com.tw, Jean Delvare <khali@linux-fr.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        linux-i2c@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] i2c-hid: introduce HID over i2c specification implementation
+In-Reply-To: <CAN+gG=HLxXJAwZ8mWzuDFVBht4BeWaSEvXOQZEBgS8akyerQEw@mail.gmail.com>
+References: <1350333533-13366-1-git-send-email-benjamin.tissoires@gmail.com> <87zk3kjghz.fsf@emc.com.tw> <CAN+gG=HLxXJAwZ8mWzuDFVBht4BeWaSEvXOQZEBgS8akyerQEw@mail.gmail.com>
+User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 18 Oct 2012 18:16:21 +0800
+Message-ID: <87wqyojdai.fsf@emc.com.tw>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20121018094715.GC5685@mwanda>
-References: <1350230064.4069.1.camel@lorien2> <20121018094715.GC5685@mwanda>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Thu, 18 Oct 2012 12:13:23 +0200
-Message-ID: <CAKgNAkhx2trGUMCbpYbKbMYYjq9oTeAnqG436_MP2t6noA3K-g@mail.gmail.com>
-Subject: Re: [PATCH] Documentation DMA-API-HOWTO.txt Add dma mapping error
- check usage examples
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Shuah Khan <shuah.khan@hp.com>, Andrew Morton <akpm@linux-foundation.org>,
-        konrad.wilk@oracle.com, rob@landley.net, joerg.roedel@amd.com,
-        shuahkhan@gmail.com, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 11:47 AM, Dan Carpenter
-<dan.carpenter@oracle.com> wrote:
-> On Sun, Oct 14, 2012 at 09:54:24AM -0600, Shuah Khan wrote:
->> diff --git a/Documentation/DMA-API-HOWTO.txt b/Documentation/DMA-API-HOWTO.txt
->> index a0b6250..cf1adb4 100644
->> --- a/Documentation/DMA-API-HOWTO.txt
->> +++ b/Documentation/DMA-API-HOWTO.txt
->> @@ -468,11 +468,46 @@ To map a single region, you do:
->>       size_t size = buffer->len;
->>
->>       dma_handle = dma_map_single(dev, addr, size, direction);
->> +     if (unlikely(dma_mapping_error(dma_handle))) {
+Benjamin Tissoires <benjamin.tissoires@gmail.com> writes:
+> Hi JJ,
 >
-> Don't encourage people to put unlikely() and likely() into their
-> driver code.  It should only be used after benchmarking both with
-> and without.  I can't imagine how it would make a measurable
-> difference here.
+> On Thu, Oct 18, 2012 at 11:07 AM, Jian-Jhong Ding <jj_ding@emc.com.tw> wrote:
+>> Hi Benjamin,
+>>
+>> Some suggestions to make the error messages more "human", and a little
+>> question on the return value of i2c_hid_fetch_hid_descriptor.  Please see below:
+>
+> I fully agree with the more "human" error messages.
+>
+> However, for i2c_hid_fetch_hid_descriptor return values, I'm affraid I
+> can't use -EINVAL.
+>
+> Jean Delvare (one of the i2c maintainers) told in his review of the v1:
+> "
+> These should all be -ENODEV in this function
+> [i2c_hid_fetch_hid_descriptor]: the device isn't what you
+> expected. EINVAL is for invalid argument.
+> "
 
-(Hi Dan)
+I must have missed that mail.  Thank you for pointing this out.
 
-Quite. See http://blog.man7.org/2012/10/how-much-do-builtinexpect-likely-and.html
+-JJ
 
-I wonder how many blind uses of likely() and unlikely() in the kernel
-are actually degrading performance.
-
-Cheers,
-
-Michael
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+> So ENODEV is the right return value.
+>
+> Anyway, thanks for the review.
+>
+> Cheers,
+> Benjamin
