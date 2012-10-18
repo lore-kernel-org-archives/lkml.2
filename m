@@ -1,85 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab2JRLNz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 07:13:55 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:61653 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410Ab2JRLNw (ORCPT
+	id S1756091Ab2JRLTZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 07:19:25 -0400
+Received: from smtp-out-124.synserver.de ([212.40.185.124]:1280 "EHLO
+	smtp-out-124.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755807Ab2JRLTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 07:13:52 -0400
+	Thu, 18 Oct 2012 07:19:24 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 32037
+Message-ID: <507FE604.8070404@metafoo.de>
+Date: Thu, 18 Oct 2012 13:20:36 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120922 Icedove/10.0.7
 MIME-Version: 1.0
-In-Reply-To: <507FD383.5050302@snapgear.com>
-References: <20121018103713.0ccb63374964501c3d8d99a5@canb.auug.org.au>
-	<20121018103826.c8e1312904747b31caa376f6@canb.auug.org.au>
-	<507F78B0.70808@snapgear.com>
-	<CAMuHMdWX2ZVNcz1Ubsk0W3HH7qcBQhctaWSFVq=x+YwbuUE9YA@mail.gmail.com>
-	<507FD383.5050302@snapgear.com>
-Date: Thu, 18 Oct 2012 13:13:50 +0200
-X-Google-Sender-Auth: M1VtdyMo5kfNIp9iPI-lMwbSzOs
-Message-ID: <CAMuHMdV3hm7U2bjQVteYB4=eu9pcrtvY87ttvdTMu+VWXiTZFw@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the m68knommu tree with the tree
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: "Kim, Milo" <Milo.Kim@ti.com>
+CC: "cbou@mail.ru" <cbou@mail.ru>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Jonathan Cameron <jic23@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] lp8788-charger: fix wrong ADC conversion
+References: <A874F61F95741C4A9BA573A70FE3998F64178FA7@DQHE02.ent.ti.com>
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F64178FA7@DQHE02.ent.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Hi,
 
-On Thu, Oct 18, 2012 at 12:01 PM, Greg Ungerer <gerg@snapgear.com> wrote:
-> On 10/18/2012 03:51 PM, Geert Uytterhoeven wrote:
->> On Thu, Oct 18, 2012 at 5:34 AM, Greg Ungerer <gerg@snapgear.com> wrote:
->>> On 18/10/12 09:38, Stephen Rothwell wrote:
->>>> On Thu, 18 Oct 2012 10:37:13 +1100 Stephen Rothwell
->>>> <sfr@canb.auug.org.au>
->>>> wrote:
->>>>> Today's linux-next merge of the m68knommu tree got conflicts in
->>>>> arch/m68k/include/asm/termios.h, arch/m68k/include/uapi/asm/auxvec.h,
->>>>> arch/m68k/include/uapi/asm/msgbuf.h,
->>>>> arch/m68k/include/uapi/asm/sembuf.h,
->>>>> arch/m68k/include/uapi/asm/shmbuf.h,
->>>>> arch/m68k/include/uapi/asm/socket.h,
->>>>> arch/m68k/include/uapi/asm/sockios.h and
->>>>> arch/m68k/include/uapi/asm/termbits.h between commit 10b3a979347d
->>>>> ("UAPI:
->>>>> (Scripted) Disintegrate arch/m68k/include/asm") from the m68k-current
->>>>> tree and various commits from the m68knommu tree that use the
->>>>> asm-generic
->>>>> versions.
->>>>>
->>>>> I just deleted all those files and added the following merge fix patch
->>>>> and can carry the fix as necessary.
->>>>>
->>>>> I think that this is the correct thing to do ...
->>>
->>>
->>>
->>> I think that is right. Thanks.
->>
->>
->> I still have to do a proper review of your changes (I noticed a few
->> things I have
->> to double-check). After that, I guess it's easiest if I take your
->> patch, updated for
->> the UAPI disintegration?
->
->
-> Sure. My patches are based on 3.7-rc1. I am not sure if David's changes
-> are going upstream in a future rc, or are for 3.8.
+On 10/18/2012 08:11 AM, Kim, Milo wrote:
+>  To get the battery voltage and temperature, IIO ADC functions are used.
+>  LP8788 ADC driver provides RAW and SCALE channel information.
+>  Both RAW with SCALE values are used for the ADC calculation.
+>  The scale is micro unit, additional conversions are required in each case.
+>  This patch fixes wrong ADC result.
+> 
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> ---
+>  drivers/power/lp8788-charger.c |   18 ++++++++++++++++--
+>  1 file changed, 16 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/power/lp8788-charger.c b/drivers/power/lp8788-charger.c
+> index 02fc9ab..3c739e6 100644
+> --- a/drivers/power/lp8788-charger.c
+> +++ b/drivers/power/lp8788-charger.c
+> @@ -239,19 +239,26 @@ static int lp8788_get_vbatt_adc(struct lp8788_charger *pchg,
+>  				unsigned int *result)
+>  {
+>  	struct iio_channel *channel = pchg->chan[LP8788_VBATT];
+> +	int raw;
+>  	int scaleint;
+>  	int scalepart;
+>  	int ret;
+> +	unsigned long tmp;
+>  
+>  	if (!channel)
+>  		return -EINVAL;
+>  
+> +	ret = iio_read_channel_raw(channel, &raw);
+> +	if (ret != IIO_VAL_INT)
+> +		return -EINVAL;
+> +
+>  	ret = iio_read_channel_scale(channel, &scaleint, &scalepart);
+>  	if (ret != IIO_VAL_INT_PLUS_MICRO)
+>  		return -EINVAL;
+>  
+>  	/* unit: mV */
+> -	*result = (scaleint + scalepart * 1000000) / 1000;
+> +	tmp = raw * scaleint + div_u64(raw * scalepart, 1000000L);
+> +	*result = (unsigned int)tmp;
 
-I plan to submit hem later this week, but first I have to send out my sys_kcmp
-wire up patch so I can receive your ack ;-)
 
-Gr{oetje,eeting}s,
+We now have a function in the IIO core which does the sampling + conversion
+in one step: iio_read_channel_processed. This basically allows you to reduce
+this function to
 
-                        Geert
+	return iio_read_channel_processed(channel, result);
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+I'd also make the result parameter of lp8788_get_vbatt_adc signed, since
+both power_supply_propval.intval and iio_read_channel_processed use a signed
+int.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+>  
+>  	return 0;
+>  }
+> @@ -304,19 +311,26 @@ static int lp8788_get_battery_temperature(struct lp8788_charger *pchg,
+>  				union power_supply_propval *val)
+>  {
+>  	struct iio_channel *channel = pchg->chan[LP8788_BATT_TEMP];
+> +	int raw;
+>  	int scaleint;
+>  	int scalepart;
+>  	int ret;
+> +	unsigned long tmp;
+>  
+>  	if (!channel)
+>  		return -EINVAL;
+>  
+> +	ret = iio_read_channel_raw(channel, &raw);
+> +	if (ret != IIO_VAL_INT)
+> +		return -EINVAL;
+> +
+>  	ret = iio_read_channel_scale(channel, &scaleint, &scalepart);
+>  	if (ret != IIO_VAL_INT_PLUS_MICRO)
+>  		return -EINVAL;
+>  
+>  	/* unit: 0.1 'C */
+> -	val->intval = (scaleint + scalepart * 1000000) / 100;
+> +	tmp = raw * scaleint + div_u64(raw * scalepart, 1000000L);
+> +	val->intval = (unsigned int)tmp * 10;
+>  
+
+Same here
+
+>  	return 0;
+>  }
+
