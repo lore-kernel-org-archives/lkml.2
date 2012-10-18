@@ -1,64 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932771Ab2JRXZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 19:25:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41278 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932272Ab2JRXZy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 19:25:54 -0400
-Date: Thu, 18 Oct 2012 16:25:49 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: linux-kernel@vger.kernel.org, Konrad Wilk <konrad.wilk@oracle.com>
-Subject: Re: cancel_delayed_work() semantics broken?
-Message-ID: <20121018232549.GX13370@google.com>
-References: <444a6439-b1a4-4740-9e7e-bc37267cfe73@default>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <444a6439-b1a4-4740-9e7e-bc37267cfe73@default>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756927Ab2JRXZa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 19:25:30 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20461 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756754Ab2JRXTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 19:19:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,609,1344236400"; 
+   d="scan'208";a="229462626"
+From: Andi Kleen <andi@firstfloor.org>
+To: a.p.zijlstra@chello.nl
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, acme@redhat.com,
+        eranian@google.com, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 20/34] perf, core: Add generic transaction flags
+Date: Thu, 18 Oct 2012 16:19:28 -0700
+Message-Id: <1350602382-12771-21-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
+References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Dan.
+From: Andi Kleen <ak@linux.intel.com>
 
-On Thu, Oct 18, 2012 at 04:00:03PM -0700, Dan Magenheimer wrote:
-> Forgive me if I am missing something, but it appears
-> that your commit:  57b30ae77bf00d2318df711ef9a4d2a9be0a3a2a
-> (workqueue: reimplement cancel_delayed_work() using try_to_grab_pending())
-> has subtly broken the semantics of the function. If
-> work was idle, according to the comment, it should
-> return false, correct?
-> 
-> It appears that very few callsites check the return value,
-> but ramster does, as does ocfs2 from whence the code at the
-> ramster callsite was derived.  They both decrement
-> a kref count based on the return value.
-> 
-> I am still looking at try_to_grab_pending as I am not sure
-> if its semantics have also changed.
-> 
-> Thanks,
-> Dan
-> 
-> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index d951daa..042d221 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -2982,7 +2982,7 @@ bool cancel_delayed_work(struct delayed_work *dwork)
->  
->  	set_work_cpu_and_clear_pending(&dwork->work, work_cpu(&dwork->work));
->  	local_irq_restore(flags);
-> -	return true;
-> +	return ret;
+Add a generic qualifier for transaction events, as a new sample
+type that returns a flag word. This is particularly useful
+for qualifying aborts: to distinguish aborts which happen
+due to asynchronous events (like conflicts caused by another
+CPU) versus instructions that lead to an abort.
 
-Ah, you're right.  Applying to wq/for-3.7-fixes w/ patch description
-updated.  Thanks!
+The tuning strategies are very different for those cases,
+so it's important to distinguish them easily and early.
 
+Since it's inconvenient and inflexible to filter for this
+in the kernel we report all the events out and allow
+some post processing in user space.
+
+The flags are based on the Intel TSX events, but should be fairly
+generic and mostly applicable to other architectures too. In addition
+to various flag words there's also reserved space to report an
+program supplied abort code. For TSX this is used to distinguish specific
+classes of aborts, like a lock busy abort when doing lock elision.
+
+This adds the perf core glue needed for reporting the new flag word out.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ include/linux/perf_event.h      |    2 ++
+ include/uapi/linux/perf_event.h |   24 ++++++++++++++++++++++--
+ kernel/events/core.c            |    6 ++++++
+ 3 files changed, 30 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index f4ded17..7e6a4b6 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -589,6 +589,7 @@ struct perf_sample_data {
+ 	struct perf_regs_user		regs_user;
+ 	u64				stack_user_size;
+ 	u64				weight;
++	u64				transaction;
+ };
+ 
+ static inline void perf_sample_data_init(struct perf_sample_data *data,
+@@ -603,6 +604,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+ 	data->regs_user.regs = NULL;
+ 	data->stack_user_size = 0;
+ 	data->weight = 0;
++	data->transaction = 0;
+ }
+ 
+ extern void perf_output_sample(struct perf_output_handle *handle,
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index c067c9c..d1ffdb6 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -133,9 +133,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_REGS_USER			= 1U << 12,
+ 	PERF_SAMPLE_STACK_USER			= 1U << 13,
+ 	PERF_SAMPLE_WEIGHT			= 1U << 14,
++	PERF_SAMPLE_TRANSACTION			= 1U << 15,
+ 
+-	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
+-
++	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
+ };
+ 
+ /*
+@@ -179,6 +179,26 @@ enum perf_sample_regs_abi {
+ };
+ 
+ /*
++ * Values for the transaction event qualifier, mostly for abort events.
++ */
++enum {
++	PERF_SAMPLE_TXN_ELISION     = (1 << 0), /* From elision */
++	PERF_SAMPLE_TXN_TRANSACTION = (1 << 1), /* From transaction */
++	PERF_SAMPLE_TXN_SYNC        = (1 << 2), /* Instruction is related */
++	PERF_SAMPLE_TXN_ASYNC       = (1 << 3), /* Instruction not related */
++	PERF_SAMPLE_TXN_RETRY       = (1 << 4), /* Retry possible */
++	PERF_SAMPLE_TXN_CONFLICT    = (1 << 5), /* Conflict abort */
++	PERF_SAMPLE_TXN_CAPACITY    = (1 << 6), /* Capacity abort */
++
++	PERF_SAMPLE_TXN_MAX	    = (1 << 7),  /* non-ABI */
++
++	/* bits 24..31 are reserved for the abort code */
++
++	PERF_SAMPLE_TXN_ABORT_MASK  = 0xff000000,
++	PERF_SAMPLE_TXN_ABORT_SHIFT = 24,
++};
++
++/*
+  * The format of the data returned by read() on a perf event fd,
+  * as specified by attr.read_format:
+  *
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index d633581..534810d 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -955,6 +955,9 @@ static void perf_event__header_size(struct perf_event *event)
+ 	if (sample_type & PERF_SAMPLE_WEIGHT)
+ 		size += sizeof(data->weight);
+ 
++	if (sample_type & PERF_SAMPLE_TRANSACTION)
++		size += sizeof(data->transaction);
++
+ 	if (sample_type & PERF_SAMPLE_READ)
+ 		size += event->read_size;
+ 
+@@ -4086,6 +4089,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 	if (sample_type & PERF_SAMPLE_WEIGHT)
+ 		perf_output_put(handle, data->weight);
+ 
++	if (sample_type & PERF_SAMPLE_TRANSACTION)
++		perf_output_put(handle, data->transaction);
++
+ 	if (sample_type & PERF_SAMPLE_READ)
+ 		perf_output_read(handle, event);
+ 
 -- 
-tejun
+1.7.7.6
+
