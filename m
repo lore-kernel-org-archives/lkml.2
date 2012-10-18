@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290Ab2JRAxg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 20:53:36 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:4723 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753243Ab2JRAxe (ORCPT
+	id S1753272Ab2JRAyh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 20:54:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62515 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753099Ab2JRAyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 20:53:34 -0400
-Message-ID: <507F52A1.1030800@huawei.com>
-Date: Thu, 18 Oct 2012 08:51:45 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Wed, 17 Oct 2012 20:54:36 -0400
+Date: Wed, 17 Oct 2012 17:54:32 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: David Howells <dhowells@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jwboyer@redhat.com, pjones@redhat.com
+Subject: Re: RFC: sign the modules at install time
+Message-ID: <20121018005432.GA20163@kroah.com>
+References: <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com>
+ <3179.1350512382@warthog.procyon.org.uk>
+ <CA+55aFzEH1jguw8NB90si2uxvyO63FuKPOc8wiEPRCYwruSzRg@mail.gmail.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, x86 <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH 00/40] PCI, ACPI, x86: pci root bus hotplug support
-References: <CAE9FiQWFcVNKMnV1qaHchwCXfZuMpyxf_f7GQy3FZid9YuLD3w@mail.gmail.com> <1348080894-23412-1-git-send-email-yinghai@kernel.org> <507E6355.40904@huawei.com> <CAE9FiQWW2zMK0fQ1RGox653PNxoH_RY_X8N4Oh_osu8Pt9gWpg@mail.gmail.com>
-In-Reply-To: <CAE9FiQWW2zMK0fQ1RGox653PNxoH_RY_X8N4Oh_osu8Pt9gWpg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.84]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzEH1jguw8NB90si2uxvyO63FuKPOc8wiEPRCYwruSzRg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/10/18 0:19, Yinghai Lu wrote:
-> On Wed, Oct 17, 2012 at 12:50 AM, Yijing Wang <wangyijing@huawei.com> wrote:
->> On 2012/9/20 2:54, Yinghai Lu wrote:
->>
->> Hi Yinghai,
->>    I applied this series patches to the latest pci-next, but git am fail occured.
->> When I try to pull from for-pci-root-bus-hotplug branch, I found some patches missed(eg. SCI_EMULATE).
->> Where can I get the newest pci root bus hotplug patches?
+On Wed, Oct 17, 2012 at 03:44:28PM -0700, Linus Torvalds wrote:
+> On Wed, Oct 17, 2012 at 3:19 PM, David Howells <dhowells@redhat.com> wrote:
+> >
+> > It's probably even better to just get rid of all the automatic module signing
+> > stuff completely and leave the sign-file script for the builder to use
+> > manually.  The module verification code will still be present.
 > 
-> should be
-> for-pci-split-pci-root-hp-2
-> or
-> for-pci-next-2
-> branch.
+> That's just disgusting crazy talk.
 > 
-> but
->>> part6: acpi add/remove simulation
->>> [PATCH 40/40] ACPI: Enable SCI_EMULATE to manually simulate physical
+> Christ, David, get a grip on yourself. You seem to dismiss the "people
+> want to build their own kernel" people entirely.
 > 
-> is not in. you need to apply that separately.
+> One of the main sane use-cases for module signing is:
 > 
+>  - CONFIG_CHECK_SIGNATURE=y
+>  - randomly generated one-time key
+>  - "make modules_install; make install"
+>  - "make clean" to get rid of the keys.
+>  - reboot.
 
-OK, Thanks!
+I want that too, but right now 'make clean' leaves the keys around,
+which seems a bit dangerous to me.
 
-> .
-> 
+David, why aren't the keys cleaned up as well?  Was that on purpose or
+just an oversight?
 
+thanks,
 
--- 
-Thanks!
-Yijing
-
+greg k-h
