@@ -1,147 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610Ab2JROiv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 10:38:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60486 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056Ab2JROiu (ORCPT
+	id S1756631Ab2JROkf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 10:40:35 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38627 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756284Ab2JROke convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 10:38:50 -0400
-Date: Thu, 18 Oct 2012 11:38:35 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 09/11] perf python: Link with libtraceevent
-Message-ID: <20121018143835.GE2057@infradead.org>
-References: <1350494387-10987-1-git-send-email-acme@infradead.org>
- <1350494387-10987-10-git-send-email-acme@infradead.org>
- <87y5j41rw5.fsf@sejong.aot.lge.com>
- <20121018140033.GC2057@infradead.org>
+	Thu, 18 Oct 2012 10:40:34 -0400
+From: "Porter, Matt" <mporter@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alsa Devel List <alsa-devel@alsa-project.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Ben Gardiner <bengardiner@nanometrics.ca>,
+        Daniel Mack <zonque@gmail.com>
+Subject: Re: [PATCH v2 0/2] Convert davinci ASoC to genalloc SRAM
+Thread-Topic: [PATCH v2 0/2] Convert davinci ASoC to genalloc SRAM
+Thread-Index: AQHNrG6CyTzX50BI7U2Age1UjgQ9vpe/d/oA
+Date: Thu, 18 Oct 2012 14:40:28 +0000
+Message-ID: <3098B0AA-7032-4A49-8D4E-EF1D726ED85A@ti.com>
+References: <1349991229-32107-1-git-send-email-mporter@ti.com>
+ <20121017135116.GU14199@opensource.wolfsonmicro.com>
+In-Reply-To: <20121017135116.GU14199@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [128.247.5.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <D9AA8773DB5A8E409437D571059D4D4F@owa.mail.ti.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="kXdP64Ggrk/fb43R"
-Content-Disposition: inline
-In-Reply-To: <20121018140033.GC2057@infradead.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---kXdP64Ggrk/fb43R
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Oct 17, 2012, at 9:51 AM, Mark Brown wrote:
 
-Em Thu, Oct 18, 2012 at 11:00:33AM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Thu, Oct 18, 2012 at 10:38:18AM +0900, Namhyung Kim escreveu:
-> > On Wed, 17 Oct 2012 14:19:45 -0300, Arnaldo Carvalho de Melo wrote:
-> > I got a build error after adding 'extern unsigned int page_size' to
-> > util/python.c - please see my previous reply.
-> > 
-> >   namhyung@sejong:perf$ make
-> >       SUBDIR ../lib/traceevent/
-> >       LINK perf
-> >       GEN python/perf.so
-> >   gcc: error: python_ext_build/tmp//../../libtraceevent.a: No such file or directory
-> >   error: command 'gcc' failed with exit status 1
-> >   cp: cannot stat `python_ext_build/lib/perf.so': No such file or directory
-> >   make: *** [python/perf.so] Error 1
-> >   TRACE_EVENT_DIR = ../lib/traceevent/
-   
-> >   ifneq ($(OUTPUT),)
-> >   	TE_PATH=$(OUTPUT)
-> >   else
-> >   	TE_PATH=$(TRACE_EVENT_DIR)
-> >   endif
-> >   
-> >   LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
+> On Thu, Oct 11, 2012 at 05:33:47PM -0400, Matt Porter wrote:
 > 
-> I see, so we need to somehow propagate this TE_PATH variable to the setup.py file...
+>> This series converts davinci ASoC to use genalloc and enables
+>> that support on DA850. It applies to mainline on top of the
+>> uio_pruss/genalloc series [1] which allows DaVinci to provide
+>> a gen_pool via pdata for driver use.
+> 
+> I tried to apply these patches but patch 2 doesn't apply against
+> v3.7-rc1 I guess due to the series you mention.  What's the plan for
+> merging that series?  It'd also be good to get Daniel's patch squashed
+> in.
 
-Can you try with the attached patch? I tested it here and works with:
+I will ping Hans about the uio_pruss driver portion. Sekhar was waiting
+on a ack for that before applying all of the supporting genalloc patches
+for mach-davinci/
 
- make -C tools/perf
+-Matt
 
-and with O=
-
-- Arnaldo
-
---kXdP64Ggrk/fb43R
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="python-libtraceevent.patch"
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index f9126f8..c1c6e11 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -184,9 +184,22 @@ SCRIPT_SH += perf-archive.sh
- grep-libs = $(filter -l%,$(1))
- strip-libs = $(filter-out -l%,$(1))
- 
-+TRACE_EVENT_DIR = ../lib/traceevent/
-+
-+ifneq ($(OUTPUT),)
-+	TE_PATH=$(OUTPUT)
-+else
-+	TE_PATH=$(TRACE_EVENT_DIR)
-+endif
-+
-+LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
-+TE_LIB := -L$(TE_PATH) -ltraceevent
-+
- PYTHON_EXT_SRCS := $(shell grep -v ^\# util/python-ext-sources)
- PYTHON_EXT_DEPS := util/python-ext-sources util/setup.py
- 
-+export LIBTRACEEVENT
-+
- $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
- 	$(QUIET_GEN)CFLAGS='$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py \
- 	  --quiet build_ext; \
-@@ -198,17 +211,6 @@ $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
- 
- SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
- 
--TRACE_EVENT_DIR = ../lib/traceevent/
--
--ifneq ($(OUTPUT),)
--	TE_PATH=$(OUTPUT)
--else
--	TE_PATH=$(TRACE_EVENT_DIR)
--endif
--
--LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
--TE_LIB := -L$(TE_PATH) -ltraceevent
--
- #
- # Single 'perf' binary right now:
- #
-diff --git a/tools/perf/util/setup.py b/tools/perf/util/setup.py
-index 09c3cea..73d5102 100644
---- a/tools/perf/util/setup.py
-+++ b/tools/perf/util/setup.py
-@@ -23,6 +23,7 @@ cflags += getenv('CFLAGS', '').split()
- 
- build_lib = getenv('PYTHON_EXTBUILD_LIB')
- build_tmp = getenv('PYTHON_EXTBUILD_TMP')
-+libtraceevent = getenv('LIBTRACEEVENT')
- 
- ext_sources = [f.strip() for f in file('util/python-ext-sources')
- 				if len(f.strip()) > 0 and f[0] != '#']
-@@ -31,7 +32,7 @@ perf = Extension('perf',
- 		  sources = ext_sources,
- 		  include_dirs = ['util/include'],
- 		  extra_compile_args = cflags,
--		  extra_objects = [build_tmp + '/../../libtraceevent.a'],
-+		  extra_objects = [libtraceevent],
-                  )
- 
- setup(name='perf',
-
---kXdP64Ggrk/fb43R--
