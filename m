@@ -1,504 +1,555 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588Ab2JRU1N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 16:27:13 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:56837 "EHLO
+	id S1755526Ab2JRU1M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 16:27:12 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:56838 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755190Ab2JRU1C (ORCPT
+	with ESMTP id S1755219Ab2JRU1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Oct 2012 16:27:02 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 17/21] TTY: n_tty, propagate n_tty_data
-Date: Thu, 18 Oct 2012 22:26:43 +0200
-Message-Id: <1350592007-9216-18-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 21/21] TTY: move tty buffers to tty_port
+Date: Thu, 18 Oct 2012 22:26:47 +0200
+Message-Id: <1350592007-9216-22-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.12.3
 In-Reply-To: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
 References: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some funtions we need only n_tty_data, so pass it down directly in
-case tty is not needed there.
+So this is it. The big step why we did all the work over the past
+kernel releases. Now everything is prepared, so nothing protects us
+from doing that big step.
+
+           |  |            \  \ nnnn/^l      |  |
+           |  |             \  /     /       |  |
+           |  '-,.__   =>    \/   ,-`    =>  |  '-,.__
+           | O __.´´)        (  .`           | O __.´´)
+            ~~~   ~~          ``              ~~~   ~~
+The buffers are now in the tty_port structure and we can start
+teaching the buffer helpers (insert char/string, flip etc.) to use
+tty_port instead of tty_struct all around.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/tty/n_tty.c | 171 ++++++++++++++++++++++++----------------------------
- 1 file changed, 78 insertions(+), 93 deletions(-)
+ drivers/tty/n_tty.c      |   7 +++-
+ drivers/tty/pty.c        |   2 +-
+ drivers/tty/tty_buffer.c | 102 ++++++++++++++++++++++++-----------------------
+ drivers/tty/tty_io.c     |   2 -
+ drivers/tty/tty_ldisc.c  |  10 ++---
+ drivers/tty/tty_port.c   |   2 +
+ include/linux/tty.h      |   6 +--
+ include/linux/tty_flip.h |   2 +-
+ 8 files changed, 70 insertions(+), 63 deletions(-)
 
 diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 0a6fcda..531e539 100644
+index 531e539..60b076c 100644
 --- a/drivers/tty/n_tty.c
 +++ b/drivers/tty/n_tty.c
-@@ -153,10 +153,8 @@ static void n_tty_set_room(struct tty_struct *tty)
- 		schedule_work(&tty->buf.work);
+@@ -149,8 +149,11 @@ static void n_tty_set_room(struct tty_struct *tty)
+ 	tty->receive_room = left;
+ 
+ 	/* Did this open up the receive buffer? We may need to flip */
+-	if (left && !old_left)
+-		schedule_work(&tty->buf.work);
++	if (left && !old_left) {
++		WARN_RATELIMIT(tty->port->itty == NULL,
++				"scheduling with invalid itty");
++		schedule_work(&tty->port->buf.work);
++	}
  }
  
--static void put_tty_queue_nolock(unsigned char c, struct tty_struct *tty)
-+static void put_tty_queue_nolock(unsigned char c, struct n_tty_data *ldata)
+ static void put_tty_queue_nolock(unsigned char c, struct n_tty_data *ldata)
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index c326908..4219f04 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -93,7 +93,7 @@ static void pty_unthrottle(struct tty_struct *tty)
+ 
+ static int pty_space(struct tty_struct *to)
  {
--	struct n_tty_data *ldata = tty->disc_data;
--
- 	if (ldata->read_cnt < N_TTY_BUF_SIZE) {
- 		ldata->read_buf[ldata->read_head] = c;
- 		ldata->read_head = (ldata->read_head + 1) & (N_TTY_BUF_SIZE-1);
-@@ -167,23 +165,22 @@ static void put_tty_queue_nolock(unsigned char c, struct tty_struct *tty)
- /**
-  *	put_tty_queue		-	add character to tty
-  *	@c: character
-- *	@tty: tty device
-+ *	@ldata: n_tty data
-  *
-  *	Add a character to the tty read_buf queue. This is done under the
-  *	read_lock to serialize character addition and also to protect us
-  *	against parallel reads or flushes
+-	int n = 8192 - to->buf.memory_used;
++	int n = 8192 - to->port->buf.memory_used;
+ 	if (n < 0)
+ 		return 0;
+ 	return n;
+diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+index ffaa441..3876d3b 100644
+--- a/drivers/tty/tty_buffer.c
++++ b/drivers/tty/tty_buffer.c
+@@ -27,9 +27,9 @@
+  *	Locking: none
   */
  
--static void put_tty_queue(unsigned char c, struct tty_struct *tty)
-+static void put_tty_queue(unsigned char c, struct n_tty_data *ldata)
+-void tty_buffer_free_all(struct tty_struct *tty)
++void tty_buffer_free_all(struct tty_port *port)
  {
--	struct n_tty_data *ldata = tty->disc_data;
+-	struct tty_bufhead *buf = &tty->buf;
++	struct tty_bufhead *buf = &port->buf;
+ 	struct tty_buffer *thead;
+ 
+ 	while ((thead = buf->head) != NULL) {
+@@ -56,11 +56,11 @@ void tty_buffer_free_all(struct tty_struct *tty)
+  *	Locking: Caller must hold tty->buf.lock
+  */
+ 
+-static struct tty_buffer *tty_buffer_alloc(struct tty_struct *tty, size_t size)
++static struct tty_buffer *tty_buffer_alloc(struct tty_port *port, size_t size)
+ {
+ 	struct tty_buffer *p;
+ 
+-	if (tty->buf.memory_used + size > 65536)
++	if (port->buf.memory_used + size > 65536)
+ 		return NULL;
+ 	p = kmalloc(sizeof(struct tty_buffer) + 2 * size, GFP_ATOMIC);
+ 	if (p == NULL)
+@@ -72,7 +72,7 @@ static struct tty_buffer *tty_buffer_alloc(struct tty_struct *tty, size_t size)
+ 	p->read = 0;
+ 	p->char_buf_ptr = (char *)(p->data);
+ 	p->flag_buf_ptr = (unsigned char *)p->char_buf_ptr + size;
+-	tty->buf.memory_used += size;
++	port->buf.memory_used += size;
+ 	return p;
+ }
+ 
+@@ -87,9 +87,9 @@ static struct tty_buffer *tty_buffer_alloc(struct tty_struct *tty, size_t size)
+  *	Locking: Caller must hold tty->buf.lock
+  */
+ 
+-static void tty_buffer_free(struct tty_struct *tty, struct tty_buffer *b)
++static void tty_buffer_free(struct tty_port *port, struct tty_buffer *b)
+ {
+-	struct tty_bufhead *buf = &tty->buf;
++	struct tty_bufhead *buf = &port->buf;
+ 
+ 	/* Dumb strategy for now - should keep some stats */
+ 	buf->memory_used -= b->size;
+@@ -114,14 +114,14 @@ static void tty_buffer_free(struct tty_struct *tty, struct tty_buffer *b)
+  *	Locking: Caller must hold tty->buf.lock
+  */
+ 
+-static void __tty_buffer_flush(struct tty_struct *tty)
++static void __tty_buffer_flush(struct tty_port *port)
+ {
+-	struct tty_bufhead *buf = &tty->buf;
++	struct tty_bufhead *buf = &port->buf;
+ 	struct tty_buffer *thead;
+ 
+ 	while ((thead = buf->head) != NULL) {
+ 		buf->head = thead->next;
+-		tty_buffer_free(tty, thead);
++		tty_buffer_free(port, thead);
+ 	}
+ 	buf->tail = NULL;
+ }
+@@ -140,7 +140,7 @@ static void __tty_buffer_flush(struct tty_struct *tty)
+ void tty_buffer_flush(struct tty_struct *tty)
+ {
+ 	struct tty_port *port = tty->port;
+-	struct tty_bufhead *buf = &tty->buf;
++	struct tty_bufhead *buf = &port->buf;
  	unsigned long flags;
- 	/*
- 	 *	The problem of stomping on the buffers ends here.
- 	 *	Why didn't anyone see this one coming? --AJK
- 	*/
- 	spin_lock_irqsave(&ldata->read_lock, flags);
--	put_tty_queue_nolock(c, tty);
-+	put_tty_queue_nolock(c, ldata);
- 	spin_unlock_irqrestore(&ldata->read_lock, flags);
+ 
+ 	spin_lock_irqsave(&buf->lock, flags);
+@@ -155,7 +155,7 @@ void tty_buffer_flush(struct tty_struct *tty)
+ 				test_bit(TTYP_FLUSHPENDING, &port->iflags) == 0);
+ 		return;
+ 	} else
+-		__tty_buffer_flush(tty);
++		__tty_buffer_flush(port);
+ 	spin_unlock_irqrestore(&buf->lock, flags);
  }
  
-@@ -699,16 +696,15 @@ static void process_echoes(struct tty_struct *tty)
- /**
-  *	add_echo_byte	-	add a byte to the echo buffer
-  *	@c: unicode byte to echo
-- *	@tty: terminal device
-+ *	@ldata: n_tty data
-  *
-  *	Add a character or operation byte to the echo buffer.
-  *
-  *	Should be called under the echo lock to protect the echo buffer.
+@@ -171,9 +171,9 @@ void tty_buffer_flush(struct tty_struct *tty)
+  *	Locking: Caller must hold tty->buf.lock
   */
  
--static void add_echo_byte(unsigned char c, struct tty_struct *tty)
-+static void add_echo_byte(unsigned char c, struct n_tty_data *ldata)
+-static struct tty_buffer *tty_buffer_find(struct tty_struct *tty, size_t size)
++static struct tty_buffer *tty_buffer_find(struct tty_port *port, size_t size)
  {
--	struct n_tty_data *ldata = tty->disc_data;
- 	int	new_byte_pos;
- 
- 	if (ldata->echo_cnt == N_TTY_BUF_SIZE) {
-@@ -746,28 +742,24 @@ static void add_echo_byte(unsigned char c, struct tty_struct *tty)
- 
- /**
-  *	echo_move_back_col	-	add operation to move back a column
-- *	@tty: terminal device
-+ *	@ldata: n_tty data
-  *
-  *	Add an operation to the echo buffer to move back one column.
-  *
-  *	Locking: echo_lock to protect the echo buffer
-  */
- 
--static void echo_move_back_col(struct tty_struct *tty)
-+static void echo_move_back_col(struct n_tty_data *ldata)
- {
--	struct n_tty_data *ldata = tty->disc_data;
--
- 	mutex_lock(&ldata->echo_lock);
--
--	add_echo_byte(ECHO_OP_START, tty);
--	add_echo_byte(ECHO_OP_MOVE_BACK_COL, tty);
--
-+	add_echo_byte(ECHO_OP_START, ldata);
-+	add_echo_byte(ECHO_OP_MOVE_BACK_COL, ldata);
- 	mutex_unlock(&ldata->echo_lock);
- }
- 
- /**
-  *	echo_set_canon_col	-	add operation to set the canon column
-- *	@tty: terminal device
-+ *	@ldata: n_tty data
-  *
-  *	Add an operation to the echo buffer to set the canon column
-  *	to the current column.
-@@ -775,15 +767,11 @@ static void echo_move_back_col(struct tty_struct *tty)
-  *	Locking: echo_lock to protect the echo buffer
-  */
- 
--static void echo_set_canon_col(struct tty_struct *tty)
-+static void echo_set_canon_col(struct n_tty_data *ldata)
- {
--	struct n_tty_data *ldata = tty->disc_data;
--
- 	mutex_lock(&ldata->echo_lock);
--
--	add_echo_byte(ECHO_OP_START, tty);
--	add_echo_byte(ECHO_OP_SET_CANON_COL, tty);
--
-+	add_echo_byte(ECHO_OP_START, ldata);
-+	add_echo_byte(ECHO_OP_SET_CANON_COL, ldata);
- 	mutex_unlock(&ldata->echo_lock);
- }
- 
-@@ -791,7 +779,7 @@ static void echo_set_canon_col(struct tty_struct *tty)
-  *	echo_erase_tab	-	add operation to erase a tab
-  *	@num_chars: number of character columns already used
-  *	@after_tab: true if num_chars starts after a previous tab
-- *	@tty: terminal device
-+ *	@ldata: n_tty data
-  *
-  *	Add an operation to the echo buffer to erase a tab.
-  *
-@@ -805,14 +793,12 @@ static void echo_set_canon_col(struct tty_struct *tty)
-  */
- 
- static void echo_erase_tab(unsigned int num_chars, int after_tab,
--			   struct tty_struct *tty)
-+			   struct n_tty_data *ldata)
- {
--	struct n_tty_data *ldata = tty->disc_data;
--
- 	mutex_lock(&ldata->echo_lock);
- 
--	add_echo_byte(ECHO_OP_START, tty);
--	add_echo_byte(ECHO_OP_ERASE_TAB, tty);
-+	add_echo_byte(ECHO_OP_START, ldata);
-+	add_echo_byte(ECHO_OP_ERASE_TAB, ldata);
- 
- 	/* We only need to know this modulo 8 (tab spacing) */
- 	num_chars &= 7;
-@@ -821,7 +807,7 @@ static void echo_erase_tab(unsigned int num_chars, int after_tab,
- 	if (after_tab)
- 		num_chars |= 0x80;
- 
--	add_echo_byte(num_chars, tty);
-+	add_echo_byte(num_chars, ldata);
- 
- 	mutex_unlock(&ldata->echo_lock);
- }
-@@ -839,19 +825,15 @@ static void echo_erase_tab(unsigned int num_chars, int after_tab,
-  *	Locking: echo_lock to protect the echo buffer
-  */
- 
--static void echo_char_raw(unsigned char c, struct tty_struct *tty)
-+static void echo_char_raw(unsigned char c, struct n_tty_data *ldata)
- {
--	struct n_tty_data *ldata = tty->disc_data;
--
- 	mutex_lock(&ldata->echo_lock);
--
- 	if (c == ECHO_OP_START) {
--		add_echo_byte(ECHO_OP_START, tty);
--		add_echo_byte(ECHO_OP_START, tty);
-+		add_echo_byte(ECHO_OP_START, ldata);
-+		add_echo_byte(ECHO_OP_START, ldata);
- 	} else {
--		add_echo_byte(c, tty);
-+		add_echo_byte(c, ldata);
- 	}
--
- 	mutex_unlock(&ldata->echo_lock);
- }
- 
-@@ -876,12 +858,12 @@ static void echo_char(unsigned char c, struct tty_struct *tty)
- 	mutex_lock(&ldata->echo_lock);
- 
- 	if (c == ECHO_OP_START) {
--		add_echo_byte(ECHO_OP_START, tty);
--		add_echo_byte(ECHO_OP_START, tty);
-+		add_echo_byte(ECHO_OP_START, ldata);
-+		add_echo_byte(ECHO_OP_START, ldata);
- 	} else {
- 		if (L_ECHOCTL(tty) && iscntrl(c) && c != '\t')
--			add_echo_byte(ECHO_OP_START, tty);
--		add_echo_byte(c, tty);
-+			add_echo_byte(ECHO_OP_START, ldata);
-+		add_echo_byte(c, ldata);
- 	}
- 
- 	mutex_unlock(&ldata->echo_lock);
-@@ -889,14 +871,13 @@ static void echo_char(unsigned char c, struct tty_struct *tty)
- 
- /**
-  *	finish_erasing		-	complete erase
-- *	@tty: tty doing the erase
-+ *	@ldata: n_tty data
-  */
- 
--static inline void finish_erasing(struct tty_struct *tty)
-+static inline void finish_erasing(struct n_tty_data *ldata)
- {
--	struct n_tty_data *ldata = tty->disc_data;
- 	if (ldata->erasing) {
--		echo_char_raw('/', tty);
-+		echo_char_raw('/', ldata);
- 		ldata->erasing = 0;
- 	}
- }
-@@ -944,11 +925,11 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 					  (N_TTY_BUF_SIZE - 1));
- 			ldata->read_head = ldata->canon_head;
- 			spin_unlock_irqrestore(&ldata->read_lock, flags);
--			finish_erasing(tty);
-+			finish_erasing(ldata);
- 			echo_char(KILL_CHAR(tty), tty);
- 			/* Add a newline if ECHOK is on and ECHOKE is off. */
- 			if (L_ECHOK(tty))
--				echo_char_raw('\n', tty);
-+				echo_char_raw('\n', ldata);
- 			return;
+-	struct tty_buffer **tbh = &tty->buf.free;
++	struct tty_buffer **tbh = &port->buf.free;
+ 	while ((*tbh) != NULL) {
+ 		struct tty_buffer *t = *tbh;
+ 		if (t->size >= size) {
+@@ -182,14 +182,14 @@ static struct tty_buffer *tty_buffer_find(struct tty_struct *tty, size_t size)
+ 			t->used = 0;
+ 			t->commit = 0;
+ 			t->read = 0;
+-			tty->buf.memory_used += t->size;
++			port->buf.memory_used += t->size;
+ 			return t;
  		}
- 		kill_type = KILL;
-@@ -984,15 +965,16 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 		if (L_ECHO(tty)) {
- 			if (L_ECHOPRT(tty)) {
- 				if (!ldata->erasing) {
--					echo_char_raw('\\', tty);
-+					echo_char_raw('\\', ldata);
- 					ldata->erasing = 1;
- 				}
- 				/* if cnt > 1, output a multi-byte character */
- 				echo_char(c, tty);
- 				while (--cnt > 0) {
- 					head = (head+1) & (N_TTY_BUF_SIZE-1);
--					echo_char_raw(ldata->read_buf[head], tty);
--					echo_move_back_col(tty);
-+					echo_char_raw(ldata->read_buf[head],
-+							ldata);
-+					echo_move_back_col(ldata);
- 				}
- 			} else if (kill_type == ERASE && !L_ECHOE(tty)) {
- 				echo_char(ERASE_CHAR(tty), tty);
-@@ -1021,17 +1003,17 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 						num_chars++;
- 					}
- 				}
--				echo_erase_tab(num_chars, after_tab, tty);
-+				echo_erase_tab(num_chars, after_tab, ldata);
- 			} else {
- 				if (iscntrl(c) && L_ECHOCTL(tty)) {
--					echo_char_raw('\b', tty);
--					echo_char_raw(' ', tty);
--					echo_char_raw('\b', tty);
-+					echo_char_raw('\b', ldata);
-+					echo_char_raw(' ', ldata);
-+					echo_char_raw('\b', ldata);
- 				}
- 				if (!iscntrl(c) || L_ECHOCTL(tty)) {
--					echo_char_raw('\b', tty);
--					echo_char_raw(' ', tty);
--					echo_char_raw('\b', tty);
-+					echo_char_raw('\b', ldata);
-+					echo_char_raw(' ', ldata);
-+					echo_char_raw('\b', ldata);
- 				}
+ 		tbh = &((*tbh)->next);
+ 	}
+ 	/* Round the buffer size out */
+ 	size = (size + 0xFF) & ~0xFF;
+-	return tty_buffer_alloc(tty, size);
++	return tty_buffer_alloc(port, size);
+ 	/* Should possibly check if this fails for the largest buffer we
+ 	   have queued and recycle that ? */
+ }
+@@ -200,11 +200,11 @@ static struct tty_buffer *tty_buffer_find(struct tty_struct *tty, size_t size)
+  *
+  *	Make at least size bytes of linear space available for the tty
+  *	buffer. If we fail return the size we managed to find.
+- *      Locking: Caller must hold tty->buf.lock
++ *      Locking: Caller must hold port->buf.lock
+  */
+-static int __tty_buffer_request_room(struct tty_struct *tty, size_t size)
++static int __tty_buffer_request_room(struct tty_port *port, size_t size)
+ {
+-	struct tty_bufhead *buf = &tty->buf;
++	struct tty_bufhead *buf = &port->buf;
+ 	struct tty_buffer *b, *n;
+ 	int left;
+ 	/* OPTIMISATION: We could keep a per tty "zero" sized buffer to
+@@ -218,7 +218,7 @@ static int __tty_buffer_request_room(struct tty_struct *tty, size_t size)
+ 
+ 	if (left < size) {
+ 		/* This is the slow path - looking for new buffers to use */
+-		if ((n = tty_buffer_find(tty, size)) != NULL) {
++		if ((n = tty_buffer_find(port, size)) != NULL) {
+ 			if (b != NULL) {
+ 				b->next = n;
+ 				b->commit = b->used;
+@@ -241,16 +241,17 @@ static int __tty_buffer_request_room(struct tty_struct *tty, size_t size)
+  *	Make at least size bytes of linear space available for the tty
+  *	buffer. If we fail return the size we managed to find.
+  *
+- *	Locking: Takes tty->buf.lock
++ *	Locking: Takes port->buf.lock
+  */
+ int tty_buffer_request_room(struct tty_struct *tty, size_t size)
+ {
++	struct tty_port *port = tty->port;
+ 	unsigned long flags;
+ 	int length;
+ 
+-	spin_lock_irqsave(&tty->buf.lock, flags);
+-	length = __tty_buffer_request_room(tty, size);
+-	spin_unlock_irqrestore(&tty->buf.lock, flags);
++	spin_lock_irqsave(&port->buf.lock, flags);
++	length = __tty_buffer_request_room(port, size);
++	spin_unlock_irqrestore(&port->buf.lock, flags);
+ 	return length;
+ }
+ EXPORT_SYMBOL_GPL(tty_buffer_request_room);
+@@ -265,13 +266,13 @@ EXPORT_SYMBOL_GPL(tty_buffer_request_room);
+  *	Queue a series of bytes to the tty buffering. All the characters
+  *	passed are marked with the supplied flag. Returns the number added.
+  *
+- *	Locking: Called functions may take tty->buf.lock
++ *	Locking: Called functions may take port->buf.lock
+  */
+ 
+ int tty_insert_flip_string_fixed_flag(struct tty_struct *tty,
+ 		const unsigned char *chars, char flag, size_t size)
+ {
+-	struct tty_bufhead *buf = &tty->buf;
++	struct tty_bufhead *buf = &tty->port->buf;
+ 	int copied = 0;
+ 	do {
+ 		int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
+@@ -280,7 +281,7 @@ int tty_insert_flip_string_fixed_flag(struct tty_struct *tty,
+ 		struct tty_buffer *tb;
+ 
+ 		spin_lock_irqsave(&buf->lock, flags);
+-		space = __tty_buffer_request_room(tty, goal);
++		space = __tty_buffer_request_room(tty->port, goal);
+ 		tb = buf->tail;
+ 		/* If there is no space then tb may be NULL */
+ 		if (unlikely(space == 0)) {
+@@ -311,13 +312,13 @@ EXPORT_SYMBOL(tty_insert_flip_string_fixed_flag);
+  *	the flags array indicates the status of the character. Returns the
+  *	number added.
+  *
+- *	Locking: Called functions may take tty->buf.lock
++ *	Locking: Called functions may take port->buf.lock
+  */
+ 
+ int tty_insert_flip_string_flags(struct tty_struct *tty,
+ 		const unsigned char *chars, const char *flags, size_t size)
+ {
+-	struct tty_bufhead *buf = &tty->buf;
++	struct tty_bufhead *buf = &tty->port->buf;
+ 	int copied = 0;
+ 	do {
+ 		int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
+@@ -326,7 +327,7 @@ int tty_insert_flip_string_flags(struct tty_struct *tty,
+ 		struct tty_buffer *tb;
+ 
+ 		spin_lock_irqsave(&buf->lock, __flags);
+-		space = __tty_buffer_request_room(tty, goal);
++		space = __tty_buffer_request_room(tty->port, goal);
+ 		tb = buf->tail;
+ 		/* If there is no space then tb may be NULL */
+ 		if (unlikely(space == 0)) {
+@@ -355,12 +356,12 @@ EXPORT_SYMBOL(tty_insert_flip_string_flags);
+  *	ldisc side of the queue. It then schedules those characters for
+  *	processing by the line discipline.
+  *
+- *	Locking: Takes tty->buf.lock
++ *	Locking: Takes port->buf.lock
+  */
+ 
+ void tty_schedule_flip(struct tty_struct *tty)
+ {
+-	struct tty_bufhead *buf = &tty->buf;
++	struct tty_bufhead *buf = &tty->port->buf;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&buf->lock, flags);
+@@ -383,19 +384,19 @@ EXPORT_SYMBOL(tty_schedule_flip);
+  *	that need their own block copy routines into the buffer. There is no
+  *	guarantee the buffer is a DMA target!
+  *
+- *	Locking: May call functions taking tty->buf.lock
++ *	Locking: May call functions taking port->buf.lock
+  */
+ 
+ int tty_prepare_flip_string(struct tty_struct *tty, unsigned char **chars,
+-								size_t size)
++		size_t size)
+ {
+-	struct tty_bufhead *buf = &tty->buf;
++	struct tty_bufhead *buf = &tty->port->buf;
+ 	int space;
+ 	unsigned long flags;
+ 	struct tty_buffer *tb;
+ 
+ 	spin_lock_irqsave(&buf->lock, flags);
+-	space = __tty_buffer_request_room(tty, size);
++	space = __tty_buffer_request_room(tty->port, size);
+ 
+ 	tb = buf->tail;
+ 	if (likely(space)) {
+@@ -421,19 +422,19 @@ EXPORT_SYMBOL_GPL(tty_prepare_flip_string);
+  *	that need their own block copy routines into the buffer. There is no
+  *	guarantee the buffer is a DMA target!
+  *
+- *	Locking: May call functions taking tty->buf.lock
++ *	Locking: May call functions taking port->buf.lock
+  */
+ 
+ int tty_prepare_flip_string_flags(struct tty_struct *tty,
+ 			unsigned char **chars, char **flags, size_t size)
+ {
+-	struct tty_bufhead *buf = &tty->buf;
++	struct tty_bufhead *buf = &tty->port->buf;
+ 	int space;
+ 	unsigned long __flags;
+ 	struct tty_buffer *tb;
+ 
+ 	spin_lock_irqsave(&buf->lock, __flags);
+-	space = __tty_buffer_request_room(tty, size);
++	space = __tty_buffer_request_room(tty->port, size);
+ 
+ 	tb = buf->tail;
+ 	if (likely(space)) {
+@@ -462,13 +463,16 @@ EXPORT_SYMBOL_GPL(tty_prepare_flip_string_flags);
+ 
+ static void flush_to_ldisc(struct work_struct *work)
+ {
+-	struct tty_struct *tty =
+-		container_of(work, struct tty_struct, buf.work);
+-	struct tty_port *port = tty->port;
+-	struct tty_bufhead *buf = &tty->buf;
++	struct tty_port *port = container_of(work, struct tty_port, buf.work);
++	struct tty_bufhead *buf = &port->buf;
++	struct tty_struct *tty;
+ 	unsigned long 	flags;
+ 	struct tty_ldisc *disc;
+ 
++	tty = port->itty;
++	if (WARN_RATELIMIT(tty == NULL, "tty is NULL"))
++		return;
++
+ 	disc = tty_ldisc_ref(tty);
+ 	if (disc == NULL)	/*  !TTY_LDISC */
+ 		return;
+@@ -487,7 +491,7 @@ static void flush_to_ldisc(struct work_struct *work)
+ 				if (head->next == NULL)
+ 					break;
+ 				buf->head = head->next;
+-				tty_buffer_free(tty, head);
++				tty_buffer_free(port, head);
+ 				continue;
  			}
- 		}
-@@ -1039,7 +1021,7 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 			break;
+ 			/* Ldisc or user is trying to flush the buffers
+@@ -513,7 +517,7 @@ static void flush_to_ldisc(struct work_struct *work)
+ 	/* We may have a deferred request to flush the input buffer,
+ 	   if so pull the chain under the lock and empty the queue */
+ 	if (test_bit(TTYP_FLUSHPENDING, &port->iflags)) {
+-		__tty_buffer_flush(tty);
++		__tty_buffer_flush(port);
+ 		clear_bit(TTYP_FLUSHPENDING, &port->iflags);
+ 		wake_up(&tty->read_wait);
  	}
- 	if (ldata->read_head == ldata->canon_head && L_ECHO(tty))
--		finish_erasing(tty);
-+		finish_erasing(ldata);
+@@ -532,7 +536,7 @@ static void flush_to_ldisc(struct work_struct *work)
+  */
+ void tty_flush_to_ldisc(struct tty_struct *tty)
+ {
+-	flush_work(&tty->buf.work);
++	flush_work(&tty->port->buf.work);
  }
  
  /**
-@@ -1078,6 +1060,8 @@ static inline void isig(int sig, struct tty_struct *tty, int flush)
+@@ -550,7 +554,7 @@ void tty_flush_to_ldisc(struct tty_struct *tty)
  
- static inline void n_tty_receive_break(struct tty_struct *tty)
+ void tty_flip_buffer_push(struct tty_struct *tty)
  {
-+	struct n_tty_data *ldata = tty->disc_data;
-+
- 	if (I_IGNBRK(tty))
- 		return;
- 	if (I_BRKINT(tty)) {
-@@ -1085,10 +1069,10 @@ static inline void n_tty_receive_break(struct tty_struct *tty)
- 		return;
- 	}
- 	if (I_PARMRK(tty)) {
--		put_tty_queue('\377', tty);
--		put_tty_queue('\0', tty);
-+		put_tty_queue('\377', ldata);
-+		put_tty_queue('\0', ldata);
- 	}
--	put_tty_queue('\0', tty);
-+	put_tty_queue('\0', ldata);
- 	wake_up_interruptible(&tty->read_wait);
+-	struct tty_bufhead *buf = &tty->buf;
++	struct tty_bufhead *buf = &tty->port->buf;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&buf->lock, flags);
+@@ -575,9 +579,9 @@ EXPORT_SYMBOL(tty_flip_buffer_push);
+  *	Locking: none
+  */
+ 
+-void tty_buffer_init(struct tty_struct *tty)
++void tty_buffer_init(struct tty_port *port)
+ {
+-	struct tty_bufhead *buf = &tty->buf;
++	struct tty_bufhead *buf = &port->buf;
+ 
+ 	spin_lock_init(&buf->lock);
+ 	buf->head = NULL;
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 202008f..a3eba7f 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -186,7 +186,6 @@ void free_tty_struct(struct tty_struct *tty)
+ 	if (tty->dev)
+ 		put_device(tty->dev);
+ 	kfree(tty->write_buf);
+-	tty_buffer_free_all(tty);
+ 	tty->magic = 0xDEADDEAD;
+ 	kfree(tty);
+ }
+@@ -2935,7 +2934,6 @@ void initialize_tty_struct(struct tty_struct *tty,
+ 	tty_ldisc_init(tty);
+ 	tty->session = NULL;
+ 	tty->pgrp = NULL;
+-	tty_buffer_init(tty);
+ 	mutex_init(&tty->legacy_mutex);
+ 	mutex_init(&tty->termios_mutex);
+ 	mutex_init(&tty->ldisc_mutex);
+diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+index 47e3968..f4e6754 100644
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -512,7 +512,7 @@ static void tty_ldisc_restore(struct tty_struct *tty, struct tty_ldisc *old)
+ static int tty_ldisc_halt(struct tty_struct *tty)
+ {
+ 	clear_bit(TTY_LDISC, &tty->flags);
+-	return cancel_work_sync(&tty->buf.work);
++	return cancel_work_sync(&tty->port->buf.work);
  }
  
-@@ -1132,16 +1116,18 @@ static inline void n_tty_receive_overrun(struct tty_struct *tty)
- static inline void n_tty_receive_parity_error(struct tty_struct *tty,
- 					      unsigned char c)
+ /**
+@@ -525,7 +525,7 @@ static void tty_ldisc_flush_works(struct tty_struct *tty)
  {
-+	struct n_tty_data *ldata = tty->disc_data;
-+
- 	if (I_IGNPAR(tty))
- 		return;
- 	if (I_PARMRK(tty)) {
--		put_tty_queue('\377', tty);
--		put_tty_queue('\0', tty);
--		put_tty_queue(c, tty);
-+		put_tty_queue('\377', ldata);
-+		put_tty_queue('\0', ldata);
-+		put_tty_queue(c, ldata);
- 	} else	if (I_INPCK(tty))
--		put_tty_queue('\0', tty);
-+		put_tty_queue('\0', ldata);
+ 	flush_work(&tty->hangup_work);
+ 	flush_work(&tty->SAK_work);
+-	flush_work(&tty->buf.work);
++	flush_work(&tty->port->buf.work);
+ }
+ 
+ /**
+@@ -704,9 +704,9 @@ enable:
+ 	/* Restart the work queue in case no characters kick it off. Safe if
+ 	   already running */
+ 	if (work)
+-		schedule_work(&tty->buf.work);
++		schedule_work(&tty->port->buf.work);
+ 	if (o_work)
+-		schedule_work(&o_tty->buf.work);
++		schedule_work(&o_tty->port->buf.work);
+ 	mutex_unlock(&tty->ldisc_mutex);
+ 	tty_unlock(tty);
+ 	return retval;
+@@ -817,7 +817,7 @@ void tty_ldisc_hangup(struct tty_struct *tty)
+ 	 */
+ 	clear_bit(TTY_LDISC, &tty->flags);
+ 	tty_unlock(tty);
+-	cancel_work_sync(&tty->buf.work);
++	cancel_work_sync(&tty->port->buf.work);
+ 	mutex_unlock(&tty->ldisc_mutex);
+ retry:
+ 	tty_lock(tty);
+diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
+index d7bdd8d..416b42f 100644
+--- a/drivers/tty/tty_port.c
++++ b/drivers/tty/tty_port.c
+@@ -21,6 +21,7 @@
+ void tty_port_init(struct tty_port *port)
+ {
+ 	memset(port, 0, sizeof(*port));
++	tty_buffer_init(port);
+ 	init_waitqueue_head(&port->open_wait);
+ 	init_waitqueue_head(&port->close_wait);
+ 	init_waitqueue_head(&port->delta_msr_wait);
+@@ -126,6 +127,7 @@ static void tty_port_destructor(struct kref *kref)
+ 	struct tty_port *port = container_of(kref, struct tty_port, kref);
+ 	if (port->xmit_buf)
+ 		free_page((unsigned long)port->xmit_buf);
++	tty_buffer_free_all(port);
+ 	if (port->ops->destruct)
+ 		port->ops->destruct(port);
  	else
--		put_tty_queue(c, tty);
-+		put_tty_queue(c, ldata);
- 	wake_up_interruptible(&tty->read_wait);
- }
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 9be74d6..d7ff88f 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -188,6 +188,7 @@ struct tty_port_operations {
+ };
+ 	
+ struct tty_port {
++	struct tty_bufhead	buf;		/* Locked internally */
+ 	struct tty_struct	*tty;		/* Back pointer */
+ 	struct tty_struct	*itty;		/* internal back ptr */
+ 	const struct tty_port_operations *ops;	/* Port operations */
+@@ -259,7 +260,6 @@ struct tty_struct {
  
-@@ -1162,7 +1148,7 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
- 	int parmrk;
- 
- 	if (ldata->raw) {
--		put_tty_queue(c, tty);
-+		put_tty_queue(c, ldata);
- 		return;
- 	}
- 
-@@ -1172,7 +1158,7 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
- 		c = tolower(c);
- 
- 	if (L_EXTPROC(tty)) {
--		put_tty_queue(c, tty);
-+		put_tty_queue(c, ldata);
- 		return;
- 	}
- 
-@@ -1210,16 +1196,16 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
- 			return;
- 		}
- 		if (L_ECHO(tty)) {
--			finish_erasing(tty);
-+			finish_erasing(ldata);
- 			/* Record the column of first canon char. */
- 			if (ldata->canon_head == ldata->read_head)
--				echo_set_canon_col(tty);
-+				echo_set_canon_col(ldata);
- 			echo_char(c, tty);
- 			process_echoes(tty);
- 		}
- 		if (parmrk)
--			put_tty_queue(c, tty);
--		put_tty_queue(c, tty);
-+			put_tty_queue(c, ldata);
-+		put_tty_queue(c, ldata);
- 		return;
- 	}
- 
-@@ -1285,10 +1271,10 @@ send_signal:
- 		if (c == LNEXT_CHAR(tty) && L_IEXTEN(tty)) {
- 			ldata->lnext = 1;
- 			if (L_ECHO(tty)) {
--				finish_erasing(tty);
-+				finish_erasing(ldata);
- 				if (L_ECHOCTL(tty)) {
--					echo_char_raw('^', tty);
--					echo_char_raw('\b', tty);
-+					echo_char_raw('^', ldata);
-+					echo_char_raw('\b', ldata);
- 					process_echoes(tty);
- 				}
- 			}
-@@ -1298,9 +1284,9 @@ send_signal:
- 		    L_IEXTEN(tty)) {
- 			unsigned long tail = ldata->canon_head;
- 
--			finish_erasing(tty);
-+			finish_erasing(ldata);
- 			echo_char(c, tty);
--			echo_char_raw('\n', tty);
-+			echo_char_raw('\n', ldata);
- 			while (tail != ldata->read_head) {
- 				echo_char(ldata->read_buf[tail], tty);
- 				tail = (tail+1) & (N_TTY_BUF_SIZE-1);
-@@ -1315,7 +1301,7 @@ send_signal:
- 				return;
- 			}
- 			if (L_ECHO(tty) || L_ECHONL(tty)) {
--				echo_char_raw('\n', tty);
-+				echo_char_raw('\n', ldata);
- 				process_echoes(tty);
- 			}
- 			goto handle_newline;
-@@ -1343,7 +1329,7 @@ send_signal:
- 			if (L_ECHO(tty)) {
- 				/* Record the column of first canon char. */
- 				if (ldata->canon_head == ldata->read_head)
--					echo_set_canon_col(tty);
-+					echo_set_canon_col(ldata);
- 				echo_char(c, tty);
- 				process_echoes(tty);
- 			}
-@@ -1352,12 +1338,12 @@ send_signal:
- 			 * EOL_CHAR and EOL2_CHAR?
- 			 */
- 			if (parmrk)
--				put_tty_queue(c, tty);
-+				put_tty_queue(c, ldata);
- 
- handle_newline:
- 			spin_lock_irqsave(&ldata->read_lock, flags);
- 			set_bit(ldata->read_head, ldata->read_flags);
--			put_tty_queue_nolock(c, tty);
-+			put_tty_queue_nolock(c, ldata);
- 			ldata->canon_head = ldata->read_head;
- 			ldata->canon_data++;
- 			spin_unlock_irqrestore(&ldata->read_lock, flags);
-@@ -1376,22 +1362,22 @@ handle_newline:
- 		return;
- 	}
- 	if (L_ECHO(tty)) {
--		finish_erasing(tty);
-+		finish_erasing(ldata);
- 		if (c == '\n')
--			echo_char_raw('\n', tty);
-+			echo_char_raw('\n', ldata);
- 		else {
- 			/* Record the column of first canon char. */
- 			if (ldata->canon_head == ldata->read_head)
--				echo_set_canon_col(tty);
-+				echo_set_canon_col(ldata);
- 			echo_char(c, tty);
- 		}
- 		process_echoes(tty);
- 	}
- 
- 	if (parmrk)
--		put_tty_queue(c, tty);
-+		put_tty_queue(c, ldata);
- 
--	put_tty_queue(c, tty);
-+	put_tty_queue(c, ldata);
- }
- 
- 
-@@ -2140,9 +2126,8 @@ static unsigned int n_tty_poll(struct tty_struct *tty, struct file *file,
- 	return mask;
- }
- 
--static unsigned long inq_canon(struct tty_struct *tty)
-+static unsigned long inq_canon(struct n_tty_data *ldata)
+ 	struct tty_struct *link;
+ 	struct fasync_struct *fasync;
+-	struct tty_bufhead buf;		/* Locked internally */
+ 	int alt_speed;		/* For magic substitution of 38400 bps */
+ 	wait_queue_head_t write_wait;
+ 	wait_queue_head_t read_wait;
+@@ -388,9 +388,9 @@ extern void disassociate_ctty(int priv);
+ extern void no_tty(void);
+ extern void tty_flip_buffer_push(struct tty_struct *tty);
+ extern void tty_flush_to_ldisc(struct tty_struct *tty);
+-extern void tty_buffer_free_all(struct tty_struct *tty);
++extern void tty_buffer_free_all(struct tty_port *port);
+ extern void tty_buffer_flush(struct tty_struct *tty);
+-extern void tty_buffer_init(struct tty_struct *tty);
++extern void tty_buffer_init(struct tty_port *port);
+ extern speed_t tty_get_baud_rate(struct tty_struct *tty);
+ extern speed_t tty_termios_baud_rate(struct ktermios *termios);
+ extern speed_t tty_termios_input_baud_rate(struct ktermios *termios);
+diff --git a/include/linux/tty_flip.h b/include/linux/tty_flip.h
+index 9239d03..2002344 100644
+--- a/include/linux/tty_flip.h
++++ b/include/linux/tty_flip.h
+@@ -11,7 +11,7 @@ void tty_schedule_flip(struct tty_struct *tty);
+ static inline int tty_insert_flip_char(struct tty_struct *tty,
+ 					unsigned char ch, char flag)
  {
--	struct n_tty_data *ldata = tty->disc_data;
- 	int nr, head, tail;
- 
- 	if (!ldata->canon_data)
-@@ -2173,7 +2158,7 @@ static int n_tty_ioctl(struct tty_struct *tty, struct file *file,
- 		/* FIXME: Locking */
- 		retval = ldata->read_cnt;
- 		if (L_ICANON(tty))
--			retval = inq_canon(tty);
-+			retval = inq_canon(ldata);
- 		return put_user(retval, (unsigned int __user *) arg);
- 	default:
- 		return n_tty_ioctl_helper(tty, file, cmd, arg);
+-	struct tty_buffer *tb = tty->buf.tail;
++	struct tty_buffer *tb = tty->port->buf.tail;
+ 	if (tb && tb->used < tb->size) {
+ 		tb->flag_buf_ptr[tb->used] = flag;
+ 		tb->char_buf_ptr[tb->used++] = ch;
 -- 
 1.7.12.3
 
