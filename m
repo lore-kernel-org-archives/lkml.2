@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755Ab2JRXAM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 19:00:12 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:31163 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916Ab2JRXAK convert rfc822-to-8bit (ORCPT
+	id S1753968Ab2JRXD5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 19:03:57 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56202 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750781Ab2JRXD4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 19:00:10 -0400
-MIME-Version: 1.0
-Message-ID: <444a6439-b1a4-4740-9e7e-bc37267cfe73@default>
-Date: Thu, 18 Oct 2012 16:00:03 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: tj@kernel.org
-Cc: linux-kernel@vger.kernel.org, Konrad Wilk <konrad.wilk@oracle.com>
-Subject: cancel_delayed_work() semantics broken?
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6661.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
+	Thu, 18 Oct 2012 19:03:56 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: "cbou@mail.ru" <cbou@mail.ru>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Jonathan Cameron <jic23@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 3/3] lp8788-charger: fix wrong ADC conversion
+Thread-Topic: [PATCH 3/3] lp8788-charger: fix wrong ADC conversion
+Thread-Index: Ac2s93gDQSeJyP+TRoq5NeyBztAjJf//0CQA//63kgA=
+Date: Thu, 18 Oct 2012 23:03:38 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F641790DF@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F64178FA7@DQHE02.ent.ti.com>
+ <507FE604.8070404@metafoo.de>
+In-Reply-To: <507FE604.8070404@metafoo.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun --
-
-Forgive me if I am missing something, but it appears
-that your commit:  57b30ae77bf00d2318df711ef9a4d2a9be0a3a2a
-(workqueue: reimplement cancel_delayed_work() using try_to_grab_pending())
-has subtly broken the semantics of the function. If
-work was idle, according to the comment, it should
-return false, correct?
-
-It appears that very few callsites check the return value,
-but ramster does, as does ocfs2 from whence the code at the
-ramster callsite was derived.  They both decrement
-a kref count based on the return value.
-
-I am still looking at try_to_grab_pending as I am not sure
-if its semantics have also changed.
-
-Thanks,
-Dan
-
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index d951daa..042d221 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2982,7 +2982,7 @@ bool cancel_delayed_work(struct delayed_work *dwork)
+> -----Original Message-----
+> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+> Sent: Thursday, October 18, 2012 8:21 PM
+> To: Kim, Milo
+> Cc: cbou@mail.ru; Anton Vorontsov; Jonathan Cameron; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH 3/3] lp8788-charger: fix wrong ADC conversion
  
- 	set_work_cpu_and_clear_pending(&dwork->work, work_cpu(&dwork->work));
- 	local_irq_restore(flags);
--	return true;
-+	return ret;
- }
- EXPORT_SYMBOL(cancel_delayed_work);
+> >
+> > +	ret = iio_read_channel_raw(channel, &raw);
+> > +	if (ret != IIO_VAL_INT)
+> > +		return -EINVAL;
+> > +
+> >  	ret = iio_read_channel_scale(channel, &scaleint, &scalepart);
+> >  	if (ret != IIO_VAL_INT_PLUS_MICRO)
+> >  		return -EINVAL;
+> >
+> >  	/* unit: mV */
+> > -	*result = (scaleint + scalepart * 1000000) / 1000;
+> > +	tmp = raw * scaleint + div_u64(raw * scalepart, 1000000L);
+> > +	*result = (unsigned int)tmp;
+> 
+> 
+> We now have a function in the IIO core which does the sampling +
+> conversion
+> in one step: iio_read_channel_processed. This basically allows you to
+> reduce
+> this function to
+> 
+> 	return iio_read_channel_processed(channel, result);
+
+I was hesitating it before sending this patch. :)
+Currently, LP8788 ADC driver has no iio channel info for PROCESSED.
+Thus, I'll add it in the LP8788 ADC driver first.
+Then I'll send the patch for lp8788-charger again.
+
+Thanks for your comment!
+
+Best Regards,
+Milo
