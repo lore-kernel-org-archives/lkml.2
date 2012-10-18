@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab2JRMlx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 08:41:53 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:50985 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754801Ab2JRMlv (ORCPT
+	id S1755171Ab2JRMnI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 08:43:08 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:42496 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754819Ab2JRMnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 08:41:51 -0400
-Date: Thu, 18 Oct 2012 08:41:44 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: Hillf Danton <dhillf@gmail.com>, konrad.wilk@oracle.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, rob@landley.net,
-        akpm@linux-foundation.org, joerg.roedel@amd.com, bhelgaas@google.com,
-        shuahkhan@gmail.com, fujita.tomonori@lab.ntt.co.jp,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH v2 1/7] swiotlb: Make io_tlb_end a physical address
- instead of a virtual one
-Message-ID: <20121018124143.GA13854@localhost.localdomain>
-References: <20121011203010.12444.15503.stgit@gitlad.jf.intel.com>
- <20121011203421.12444.32871.stgit@gitlad.jf.intel.com>
- <CAJd=RBApQjWBA8w0y7_FhVAOoi17FO=UkCKQqnAX_vbFikkEVA@mail.gmail.com>
- <507C2F20.8000504@intel.com>
+	Thu, 18 Oct 2012 08:43:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <507C2F20.8000504@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.00.1210172021320.32271@chino.kir.corp.google.com>
+References: <20121018024317.GA25407@localhost>
+	<alpine.DEB.2.00.1210171957380.32271@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1210172021320.32271@chino.kir.corp.google.com>
+Date: Thu, 18 Oct 2012 20:43:03 +0800
+Message-ID: <CAJd=RBAeUs9qSHjL09Qe4RphuvfLyn=bcp=c4heSb+d15Gnh-g@mail.gmail.com>
+Subject: Re: [patch for-3.7] fs, xattr: fix bug when removing a name not in
+ xattr list
+From: Hillf Danton <dhillf@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Fengguang Wu <fengguang.wu@intel.com>, Hugh Dickins <hughd@google.com>,
+        Li Zefan <lizefan@huawei.com>, Aristeu Rozanski <aris@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        James Morris <jmorris@namei.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>, linux-sec@jasper.es,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 08:43:28AM -0700, Alexander Duyck wrote:
-> On 10/13/2012 05:52 AM, Hillf Danton wrote:
-> > Hi Alexander,
-> >
-> > On Fri, Oct 12, 2012 at 4:34 AM, Alexander Duyck
-> > <alexander.h.duyck@intel.com> wrote:
-> >> This change replaces all references to the virtual address for io_tlb_end
-> >> with references to the physical address io_tlb_end.  The main advantage of
-> >> replacing the virtual address with a physical address is that we can avoid
-> >> having to do multiple translations from the virtual address to the physical
-> >> one needed for testing an existing DMA address.
-> >>
-> >> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-> >> ---
-> >>
-> >>  lib/swiotlb.c |   24 +++++++++++++-----------
-> >>  1 files changed, 13 insertions(+), 11 deletions(-)
-> >>
-> >> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-> >> index f114bf6..19aac9f 100644
-> >> --- a/lib/swiotlb.c
-> >> +++ b/lib/swiotlb.c
-> >> @@ -57,7 +57,8 @@ int swiotlb_force;
-> >>   * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
-> >>   * API.
-> >>   */
-> >> -static char *io_tlb_start, *io_tlb_end;
-> >> +static char *io_tlb_start;
-> >> +phys_addr_t io_tlb_end;
-> > If add io_tlb_start_phy and io_tlb_end_phy, could we get same results
-> > with less hunks?
-> >
-> > Hillf
-> 
-> What do you mean by less hunks?  Are you referring to the memory space? 
+Hi David,
 
-As in less patch movements.
-> If so, then the patches I am submitting do not impact how much space is
-> used for the bounce buffer.  The only real result of these patches is
-> that the total code path is significantly reduced since we don't have to
-> perform any virtual to physical translations in the hot-path.
+On Thu, Oct 18, 2012 at 11:41 AM, David Rientjes <rientjes@google.com> wrote:
+> Commit 38f38657444d ("xattr: extract simple_xattr code from tmpfs") moved
+> some code from tmpfs but introduced a subtle bug along the way.
+>
+That commit is fine but you did revert commit b9d6cfdeaf67(xattr: mark
+variable as uninitialized to make both gcc and smatch happy), too late
+to spin?
 
-No. He is referring that you can keep io_tlb_end still here. Just
-do the computation of the physical address in the init path (of the end).
-Then you don't need to do the shifting in the 'is-this-swiotlb-buffer'
-and can just do a simple:
-	if (dma_addr >= io_tlb_start && dma_addr <= io_tlb_end)
-
+Hillf
+> If the name passed to simple_xattr_remove() does not exist in the list of
+> xattrs, then it is possible to call kfree(new_xattr) when new_xattr is
+> actually initialized to itself on the stack via uninitialized_var().
+>
+> This causes a BUG() since the memory was not allocated via the slab
+> allocator and was not bypassed through to the page allocator because it
+> was too large.
+>
+> Initialize the local variable to NULL so the kfree() never takes place.
+>
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>  fs/xattr.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/fs/xattr.c b/fs/xattr.c
+> --- a/fs/xattr.c
+> +++ b/fs/xattr.c
+> @@ -846,7 +846,7 @@ static int __simple_xattr_set(struct simple_xattrs *xattrs, const char *name,
+>                               const void *value, size_t size, int flags)
+>  {
+>         struct simple_xattr *xattr;
+> -       struct simple_xattr *uninitialized_var(new_xattr);
+> +       struct simple_xattr *new_xattr = NULL;
+>         int err = 0;
+>
+>         /* value == NULL means remove */
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
