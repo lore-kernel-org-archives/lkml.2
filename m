@@ -1,237 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab2JROta (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 10:49:30 -0400
-Received: from shutemov.name ([176.9.204.213]:59955 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756441Ab2JROt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 10:49:26 -0400
-Date: Thu, 18 Oct 2012 17:50:31 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Ni zhan Chen <nizhan.chen@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 00/10] Introduce huge zero page
-Message-ID: <20121018145031.GA29746@shutemov.name>
-References: <1349191172-28855-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20121002153148.1ae1020a.akpm@linux-foundation.org>
- <20121003000402.GA31141@shutemov.name>
- <507E18AD.3070000@gmail.com>
+	id S932215Ab2JROvE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 10:51:04 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:62091 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932158Ab2JROvB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 10:51:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <507E18AD.3070000@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121016193341.GD16166@google.com>
+References: <20121008020000.GB2575@localhost>
+	<CAFTL4hzXWtzp7megsCAEuak5=_2SWmp9age-+wrpyQAU4BRZ0w@mail.gmail.com>
+	<20121016193341.GD16166@google.com>
+Date: Thu, 18 Oct 2012 16:50:59 +0200
+Message-ID: <CAFTL4hzo_w7HTgC9ApTk113X8WdZSpV+D+VSEe=604YEJFmKsg@mail.gmail.com>
+Subject: Re: Is not locking task_lock in cgroup_fork() safe?
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 10:32:13AM +0800, Ni zhan Chen wrote:
-> On 10/03/2012 08:04 AM, Kirill A. Shutemov wrote:
-> >On Tue, Oct 02, 2012 at 03:31:48PM -0700, Andrew Morton wrote:
-> >>On Tue,  2 Oct 2012 18:19:22 +0300
-> >>"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> >>
-> >>>During testing I noticed big (up to 2.5 times) memory consumption overhead
-> >>>on some workloads (e.g. ft.A from NPB) if THP is enabled.
-> >>>
-> >>>The main reason for that big difference is lacking zero page in THP case.
-> >>>We have to allocate a real page on read page fault.
-> >>>
-> >>>A program to demonstrate the issue:
-> >>>#include <assert.h>
-> >>>#include <stdlib.h>
-> >>>#include <unistd.h>
-> >>>
-> >>>#define MB 1024*1024
-> >>>
-> >>>int main(int argc, char **argv)
-> >>>{
-> >>>         char *p;
-> >>>         int i;
-> >>>
-> >>>         posix_memalign((void **)&p, 2 * MB, 200 * MB);
-> >>>         for (i = 0; i < 200 * MB; i+= 4096)
-> >>>                 assert(p[i] == 0);
-> >>>         pause();
-> >>>         return 0;
-> >>>}
-> >>>
-> >>>With thp-never RSS is about 400k, but with thp-always it's 200M.
-> >>>After the patcheset thp-always RSS is 400k too.
-> >>I'd like to see a full description of the design, please.
-> >Okay. Design overview.
-> >
-> >Huge zero page (hzp) is a non-movable huge page (2M on x86-64) filled with
-> >zeros.  The way how we allocate it changes in the patchset:
-> >
-> >- [01/10] simplest way: hzp allocated on boot time in hugepage_init();
-> >- [09/10] lazy allocation on first use;
-> >- [10/10] lockless refcounting + shrinker-reclaimable hzp;
-> >
-> >We setup it in do_huge_pmd_anonymous_page() if area around fault address
-> >is suitable for THP and we've got read page fault.
-> >If we fail to setup hzp (ENOMEM) we fallback to handle_pte_fault() as we
-> >normally do in THP.
-> >
-> >On wp fault to hzp we allocate real memory for the huge page and clear it.
-> >If ENOMEM, graceful fallback: we create a new pmd table and set pte around
-> >fault address to newly allocated normal (4k) page. All other ptes in the
-> >pmd set to normal zero page.
-> >
-> >We cannot split hzp (and it's bug if we try), but we can split the pmd
-> >which points to it. On splitting the pmd we create a table with all ptes
-> >set to normal zero page.
-> >
-> >Patchset organized in bisect-friendly way:
-> >  Patches 01-07: prepare all code paths for hzp
-> >  Patch 08: all code paths are covered: safe to setup hzp
-> >  Patch 09: lazy allocation
-> >  Patch 10: lockless refcounting for hzp
-> >
-> >--------------------------------------------------------------------------
-> >
-> >By hpa request I've tried alternative approach for hzp implementation (see
-> >Virtual huge zero page patchset): pmd table with all entries set to zero
-> >page. This way should be more cache friendly, but it increases TLB
-> >pressure.
-> >
-> >The problem with virtual huge zero page: it requires per-arch enabling.
-> >We need a way to mark that pmd table has all ptes set to zero page.
-> >
-> >Some numbers to compare two implementations (on 4s Westmere-EX):
-> >
-> >Mirobenchmark1
-> >==============
-> >
-> >test:
-> >         posix_memalign((void **)&p, 2 * MB, 8 * GB);
-> >         for (i = 0; i < 100; i++) {
-> >                 assert(memcmp(p, p + 4*GB, 4*GB) == 0);
-> >                 asm volatile ("": : :"memory");
-> >         }
-> >
-> >hzp:
-> >  Performance counter stats for './test_memcmp' (5 runs):
-> >
-> >       32356.272845 task-clock                #    0.998 CPUs utilized            ( +-  0.13% )
-> >                 40 context-switches          #    0.001 K/sec                    ( +-  0.94% )
-> >                  0 CPU-migrations            #    0.000 K/sec
-> >              4,218 page-faults               #    0.130 K/sec                    ( +-  0.00% )
-> >     76,712,481,765 cycles                    #    2.371 GHz                      ( +-  0.13% ) [83.31%]
-> >     36,279,577,636 stalled-cycles-frontend   #   47.29% frontend cycles idle     ( +-  0.28% ) [83.35%]
-> >      1,684,049,110 stalled-cycles-backend    #    2.20% backend  cycles idle     ( +-  2.96% ) [66.67%]
-> >    134,355,715,816 instructions              #    1.75  insns per cycle
-> >                                              #    0.27  stalled cycles per insn  ( +-  0.10% ) [83.35%]
-> >     13,526,169,702 branches                  #  418.039 M/sec                    ( +-  0.10% ) [83.31%]
-> >          1,058,230 branch-misses             #    0.01% of all branches          ( +-  0.91% ) [83.36%]
-> >
-> >       32.413866442 seconds time elapsed                                          ( +-  0.13% )
-> >
-> >vhzp:
-> >  Performance counter stats for './test_memcmp' (5 runs):
-> >
-> >       30327.183829 task-clock                #    0.998 CPUs utilized            ( +-  0.13% )
-> >                 38 context-switches          #    0.001 K/sec                    ( +-  1.53% )
-> >                  0 CPU-migrations            #    0.000 K/sec
-> >              4,218 page-faults               #    0.139 K/sec                    ( +-  0.01% )
-> >     71,964,773,660 cycles                    #    2.373 GHz                      ( +-  0.13% ) [83.35%]
-> >     31,191,284,231 stalled-cycles-frontend   #   43.34% frontend cycles idle     ( +-  0.40% ) [83.32%]
-> >        773,484,474 stalled-cycles-backend    #    1.07% backend  cycles idle     ( +-  6.61% ) [66.67%]
-> >    134,982,215,437 instructions              #    1.88  insns per cycle
-> >                                              #    0.23  stalled cycles per insn  ( +-  0.11% ) [83.32%]
-> >     13,509,150,683 branches                  #  445.447 M/sec                    ( +-  0.11% ) [83.34%]
-> >          1,017,667 branch-misses             #    0.01% of all branches          ( +-  1.07% ) [83.32%]
-> >
-> >       30.381324695 seconds time elapsed                                          ( +-  0.13% )
-> >
-> >Mirobenchmark2
-> >==============
-> >
-> >test:
-> >         posix_memalign((void **)&p, 2 * MB, 8 * GB);
-> >         for (i = 0; i < 1000; i++) {
-> >                 char *_p = p;
-> >                 while (_p < p+4*GB) {
-> >                         assert(*_p == *(_p+4*GB));
-> >                         _p += 4096;
-> >                         asm volatile ("": : :"memory");
-> >                 }
-> >         }
-> >
-> >hzp:
-> >  Performance counter stats for 'taskset -c 0 ./test_memcmp2' (5 runs):
-> >
-> >        3505.727639 task-clock                #    0.998 CPUs utilized            ( +-  0.26% )
-> >                  9 context-switches          #    0.003 K/sec                    ( +-  4.97% )
-> >              4,384 page-faults               #    0.001 M/sec                    ( +-  0.00% )
-> >      8,318,482,466 cycles                    #    2.373 GHz                      ( +-  0.26% ) [33.31%]
-> >      5,134,318,786 stalled-cycles-frontend   #   61.72% frontend cycles idle     ( +-  0.42% ) [33.32%]
-> >      2,193,266,208 stalled-cycles-backend    #   26.37% backend  cycles idle     ( +-  5.51% ) [33.33%]
-> >      9,494,670,537 instructions              #    1.14  insns per cycle
-> >                                              #    0.54  stalled cycles per insn  ( +-  0.13% ) [41.68%]
-> >      2,108,522,738 branches                  #  601.451 M/sec                    ( +-  0.09% ) [41.68%]
-> >            158,746 branch-misses             #    0.01% of all branches          ( +-  1.60% ) [41.71%]
-> >      3,168,102,115 L1-dcache-loads
-> >           #  903.693 M/sec                    ( +-  0.11% ) [41.70%]
-> >      1,048,710,998 L1-dcache-misses
-> >          #   33.10% of all L1-dcache hits    ( +-  0.11% ) [41.72%]
-> >      1,047,699,685 LLC-load
-> >                  #  298.854 M/sec                    ( +-  0.03% ) [33.38%]
-> >              2,287 LLC-misses
-> >                #    0.00% of all LL-cache hits     ( +-  8.27% ) [33.37%]
-> >      3,166,187,367 dTLB-loads
-> >                #  903.147 M/sec                    ( +-  0.02% ) [33.35%]
-> >          4,266,538 dTLB-misses
-> >               #    0.13% of all dTLB cache hits   ( +-  0.03% ) [33.33%]
-> >
-> >        3.513339813 seconds time elapsed                                          ( +-  0.26% )
-> >
-> >vhzp:
-> >  Performance counter stats for 'taskset -c 0 ./test_memcmp2' (5 runs):
-> >
-> >       27313.891128 task-clock                #    0.998 CPUs utilized            ( +-  0.24% )
-> >                 62 context-switches          #    0.002 K/sec                    ( +-  0.61% )
-> >              4,384 page-faults               #    0.160 K/sec                    ( +-  0.01% )
-> >     64,747,374,606 cycles                    #    2.370 GHz                      ( +-  0.24% ) [33.33%]
-> >     61,341,580,278 stalled-cycles-frontend   #   94.74% frontend cycles idle     ( +-  0.26% ) [33.33%]
-> >     56,702,237,511 stalled-cycles-backend    #   87.57% backend  cycles idle     ( +-  0.07% ) [33.33%]
-> >     10,033,724,846 instructions              #    0.15  insns per cycle
-> >                                              #    6.11  stalled cycles per insn  ( +-  0.09% ) [41.65%]
-> >      2,190,424,932 branches                  #   80.195 M/sec                    ( +-  0.12% ) [41.66%]
-> >          1,028,630 branch-misses             #    0.05% of all branches          ( +-  1.50% ) [41.66%]
-> >      3,302,006,540 L1-dcache-loads
-> >           #  120.891 M/sec                    ( +-  0.11% ) [41.68%]
-> >        271,374,358 L1-dcache-misses
-> >          #    8.22% of all L1-dcache hits    ( +-  0.04% ) [41.66%]
-> >         20,385,476 LLC-load
-> >                  #    0.746 M/sec                    ( +-  1.64% ) [33.34%]
-> >             76,754 LLC-misses
-> >                #    0.38% of all LL-cache hits     ( +-  2.35% ) [33.34%]
-> >      3,309,927,290 dTLB-loads
-> >                #  121.181 M/sec                    ( +-  0.03% ) [33.34%]
-> >      2,098,967,427 dTLB-misses
-> >               #   63.41% of all dTLB cache hits   ( +-  0.03% ) [33.34%]
-> >
-> >       27.364448741 seconds time elapsed                                          ( +-  0.24% )
-> >
-> >--------------------------------------------------------------------------
-> 
-> Hi Kirill A. Shutemov,
-> 
-> I see in the kernel doc which describes the benefit of thp, "the TLB
-> miss will run faster" (especially with virtualization using nested
-> pagetables but almost always also on bare metal without
-> virtualization).
-> 
-> Could you explain me why TLB miss run faster? I think it only reduce
-> TLB miss ratio.
+2012/10/16 Tejun Heo <tj@kernel.org>:
+> Hey, Frederic.
+>
+> On Mon, Oct 08, 2012 at 02:48:58PM +0200, Frederic Weisbecker wrote:
+>> Yeah I missed this one.
+>> Now the whole cgroup_attach_task() is clusteracy without the
+>
+> Clusteracy?
+>
+>> threadgroup lock anyway:
+>>
+>> * The PF_EXITING check is racy (we are neither holding tsk->flags nor
+>> threagroup lock).
+>
+> PF_EXITING is *always* protected by threadgroup_change_begin/end().
+>
+>> * The cgrp == oldcgrp is racy (exit() can change the oldcgrp anytime.
+>
+> So, as long as this happens after PF_EXITING check, it should be safe.
+>
+>> * can_attach / attach / cancel_attach can race against fork/exit (and
+>> post_fork if you consider those interested in cgroup task link like
+>> the freezer. But that is racy in any case already even with
+>> threadgroup lock)
+>
+> Against exit, no.  Against forking a new process, can they?  If so, we
+> need to fix it.
+>
+>> It has been designed to be called under that lock. So I suspect the
+>
+> Ummm.... threadgroup_lock is a recent addition so things couldn't have
+> been designed to be called under that lock.  threadgroup_lock protects
+> the *threadgroup* - creating a new task in the same process or a task
+> of the process exiting.  It doesn't do anything about other processes.
+> In fact, the lock itself is per-process.
+>
+>> best, at least for now, is to threadgroup lock from
+>> cgroup_attach_task_all(). And also make cgroup_attach_task() static to
+>> avoid future unsafe callers.
+>
+> Oh, from that call path, sure.  Can someone teach me why we need that
+> one at all?  I think we're confusing each other here.  I was talking
+> about the usual migration path not protected against forking a new
+> process.
 
-TLB miss for huge page resolved on PMD, not on PTE level, so it's -1 table
-lookup.
+Ah right I was confused. Hmm, indeed we have a race here on
+cgroup_fork(). How about using css_try_get() in cgroup_fork() and
+refetch the parent's css until we succeed? This requires rcu_read_lock
+though, and freeing the css_set under RCU.
 
--- 
- Kirill A. Shutemov
+Don't know which is better.
+
+Different problem but I really would like we sanitize the cgroup hooks
+in fork. There is cgroup_fork(), cgroup_post_fork() which takes that
+big css_set_lock, plus the big threadgroup lock... I hope we can
+simplify the mess there.
+
+>
+>> There is no harm yet because the only user of it calls that with
+>> current as the "task" parameter, in a place that is
+>> not in the middle of a fork. So no need to worry about some stable backport.
+>>
+>> Also, looking at cgroup_attach_task_all(), what guarantee do we have
+>> that "from" is not concurrently exiting and removing its cgrp. Which
+>> is a separate problem. But we probably need to do some css_set_get()
+>> before playing with it.
+>
+> I really don't know.  Why isn't it locking the threadgroup to begin
+> with?
+
+No idea, sounds like something to fix.
