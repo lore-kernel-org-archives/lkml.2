@@ -1,147 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932712Ab2JRVVO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 17:21:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29502 "EHLO mx1.redhat.com"
+	id S1756727Ab2JRVYB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 17:24:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53447 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755998Ab2JRVVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 17:21:11 -0400
-Date: Thu, 18 Oct 2012 17:20:21 -0400
-From: Rik van Riel <riel@redhat.com>
-To: mingo@redhat.com
-Cc: linux-kernel@vger.kernel.org, aarcange@redhat.com, a.p.zijlstra@chello.nl
-Subject: [PATCH 2/2] rename NUMA fault handling functions
-Message-ID: <20121018172021.0b1f6e3d@cuia.bos.redhat.com>
-In-Reply-To: <20121018171821.7f1b1683@cuia.bos.redhat.com>
-References: <20121018171821.7f1b1683@cuia.bos.redhat.com>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756334Ab2JRVX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 17:23:59 -0400
+Date: Thu, 18 Oct 2012 23:23:57 +0200
+From: Jan Kara <jack@suse.cz>
+To: Fabio Coatti <fabio.coatti@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: ext3 issue on 3.6.1
+Message-ID: <20121018212357.GA17646@quack.suse.cz>
+References: <CADpTngUPcX71qjE2QKhYqgDg7tZoz+pu8A6nE9DT-zbFKWGx1g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADpTngUPcX71qjE2QKhYqgDg7tZoz+pu8A6nE9DT-zbFKWGx1g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Having the function name indicate what the function is used
-for makes the code a little easier to read.  Furthermore,
-the fault handling code largely consists of do_...._page
-functions.
+On Fri 12-10-12 14:57:55, Fabio Coatti wrote:
+> Hi all,
+> I'm getting this message on a hp g7 server with kernel 3.6.1:
+> 
+> [  248.026545] ------------[ cut here ]------------
+> [  248.026723] WARNING: at fs/ext3/inode.c:1754
+> ext3_journalled_writepage+0x55/0x1a7()
+> [  248.026920] Hardware name: ProLiant BL465c G7
+> [  248.027049] Pid: 2266, comm: flush-8:0 Not tainted 3.6.1-1000hz-preempt #2
+> [  248.027199] Call Trace:
+> [  248.027340]  [<ffffffff810578c4>] ? warn_slowpath_common+0x73/0x87
+> [  248.027482]  [<ffffffff8115cb86>] ? ext3_journalled_writepage+0x55/0x1a7
+> [  248.027653]  [<ffffffff810a279b>] ? __writepage+0xa/0x21
+> [  248.027787]  [<ffffffff810a3143>] ? write_cache_pages+0x206/0x2f8
+> [  248.027935]  [<ffffffff810a2791>] ? set_page_dirty+0x5e/0x5e
+> [  248.028053]  [<ffffffff81297933>] ? queue_unplugged+0x28/0x34
+> [  248.028188]  [<ffffffff810a3273>] ? generic_writepages+0x3e/0x55
+> [  248.028294]  [<ffffffff810f4da0>] ? __writeback_single_inode+0x39/0xd1
+> [  248.028416]  [<ffffffff810f5b59>] ? writeback_sb_inodes+0x206/0x392
+> [  248.028551]  [<ffffffff810f5d4c>] ? __writeback_inodes_wb+0x67/0xa2
+> [  248.028675]  [<ffffffff810f5eea>] ? wb_writeback+0xfd/0x18b
+> [  248.028794]  [<ffffffff810a3639>] ? bdi_dirty_limit+0x27/0x81
+> [  248.028908]  [<ffffffff810f60b5>] ? wb_do_writeback+0x13d/0x1a2
+> [  248.029031]  [<ffffffff81061edb>] ? add_timer_on+0x61/0x61
+> [  248.029142]  [<ffffffff810f6199>] ? bdi_writeback_thread+0x7f/0x13e
+> [  248.029306]  [<ffffffff810f611a>] ? wb_do_writeback+0x1a2/0x1a2
+> [  248.029401]  [<ffffffff810f611a>] ? wb_do_writeback+0x1a2/0x1a2
+> [  248.029498]  [<ffffffff8106e0dc>] ? kthread+0x81/0x89
+> [  248.029592]  [<ffffffff816003b4>] ? kernel_thread_helper+0x4/0x10
+> [  248.029687]  [<ffffffff8106e05b>] ? kthread_worker_fn+0xe0/0xe0
+> [  248.029781]  [<ffffffff816003b0>] ? gs_change+0xb/0xb
+> [  248.029872] ---[ end trace e60232a455c8e2dc ]---
+  Hum, this is interesting. The warning is:
+        WARN_ON_ONCE(IS_RDONLY(inode) &&
+                     !(EXT3_SB(inode->i_sb)->s_mount_state & EXT3_ERROR_FS));
 
-Rename the NUMA fault handling functions to indicate what
-they are used for.
+  So inode passed to writeback is on read-only filesystem. Is there
+anything else iteresting in the logs? Do you have some ext3 filesystem
+mounted read-only?
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
-Against tip.git numa/core
+> [13031.051521] ------------[ cut here ]------------
+> [13031.051576] WARNING: at fs/inode.c:280 drop_nlink+0x1b/0x35()
+> [13031.051624] Hardware name: ProLiant BL465c G7
+> [13031.051668] Pid: 3344, comm: php Tainted: G        W
+> 3.6.1-1000hz-preempt #2
+> [13031.051746] Call Trace:
+> [13031.051787]  [<ffffffff810578c4>] ? warn_slowpath_common+0x73/0x87
+> [13031.051837]  [<ffffffff810ec628>] ? drop_nlink+0x1b/0x35
+> [13031.051885]  [<ffffffff8118ad51>] ? nfs_dentry_iput+0x33/0x49
+> [13031.051934]  [<ffffffff810ea920>] ? d_kill+0xe8/0x108
+> [13031.051980]  [<ffffffff810eb001>] ? dput+0x147/0x154
+> [13031.052027]  [<ffffffff810d9e46>] ? __fput+0x19a/0x1b2
+> [13031.052073]  [<ffffffff8106bdf0>] ? task_work_run+0x4c/0x60
+> [13031.052123]  [<ffffffff815ff5e8>] ? int_signal+0x12/0x17
+> [13031.052169] ---[ end trace e60232a455c8e2dd ]---
+  And this seems unrelated - likely an NFS problem... Let's sort this out
+if you still see it after ext3 issue is solved.
 
- include/linux/huge_mm.h |  8 ++++----
- mm/huge_memory.c        |  4 ++--
- mm/memory.c             | 18 ++++++++++--------
- 3 files changed, 16 insertions(+), 14 deletions(-)
+> the server has a RAID bus controller: Hewlett-Packard Company Smart
+> Array G6 controllers (rev 01)
+> with hpsa driver. I don't know what exactly else could be useful to
+> dig into this, just let me know; please cc: me because I'm not
+> subscribed to the list right now.
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index ed60d79..9580e22 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -161,9 +161,9 @@ static inline struct page *compound_trans_head(struct page *page)
- 	return page;
- }
- 
--extern bool pmd_prot_none(struct vm_area_struct *vma, pmd_t pmd);
-+extern bool pmd_numa(struct vm_area_struct *vma, pmd_t pmd);
- 
--extern void do_huge_pmd_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
-+extern void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 				  unsigned long address, pmd_t *pmd,
- 				  unsigned int flags, pmd_t orig_pmd);
- 
-@@ -204,12 +204,12 @@ static inline int pmd_trans_huge_lock(pmd_t *pmd,
- 	return 0;
- }
- 
--static inline bool pmd_prot_none(struct vm_area_struct *vma, pmd_t pmd)
-+static inline bool pmd_numa(struct vm_area_struct *vma, pmd_t pmd)
- {
- 	return false;
- }
- 
--static inline void do_huge_pmd_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
-+static inline void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 				  unsigned long address, pmd_t *pmd,
- 				  unsigned int flags, pmd_t orig_pmd)
- {
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 5afd0d7..c25fd37 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -751,7 +751,7 @@ out:
- 	return handle_pte_fault(mm, vma, address, pte, pmd, flags);
- }
- 
--bool pmd_prot_none(struct vm_area_struct *vma, pmd_t pmd)
-+bool pmd_numa(struct vm_area_struct *vma, pmd_t pmd)
- {
- 	/*
- 	 * See pte_prot_none().
-@@ -762,7 +762,7 @@ bool pmd_prot_none(struct vm_area_struct *vma, pmd_t pmd)
- 	return pmd_same(pmd, pmd_modify(pmd, vma_prot_none(vma)));
- }
- 
--void do_huge_pmd_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
-+void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			   unsigned long address, pmd_t *pmd,
- 			   unsigned int flags, pmd_t entry)
- {
-diff --git a/mm/memory.c b/mm/memory.c
-index 9e56a44..c752379 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3425,11 +3425,13 @@ static int do_nonlinear_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	return __do_fault(mm, vma, address, pmd, pgoff, flags, orig_pte);
- }
- 
--static bool pte_prot_none(struct vm_area_struct *vma, pte_t pte)
-+static bool pte_numa(struct vm_area_struct *vma, pte_t pte)
- {
- 	/*
--	 * If we have the normal vma->vm_page_prot protections we're not a
--	 * 'special' PROT_NONE page.
-+	 * For NUMA page faults, we use PROT_NONE ptes in VMAs with
-+	 * "normal" vma->vm_page_prot protections.  Genuine PROT_NONE
-+	 * VMAs should never get here, because the fault handling code
-+	 * will notice that the VMA has no read or write permissions.
- 	 *
- 	 * This means we cannot get 'special' PROT_NONE faults from genuine
- 	 * PROT_NONE maps, nor from PROT_WRITE file maps that do dirty
-@@ -3444,7 +3446,7 @@ static bool pte_prot_none(struct vm_area_struct *vma, pte_t pte)
- 	return pte_same(pte, pte_modify(pte, vma_prot_none(vma)));
- }
- 
--static int do_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
-+static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			unsigned long address, pte_t *ptep, pmd_t *pmd,
- 			unsigned int flags, pte_t entry)
- {
-@@ -3541,8 +3543,8 @@ int handle_pte_fault(struct mm_struct *mm,
- 					pte, pmd, flags, entry);
- 	}
- 
--	if (pte_prot_none(vma, entry))
--		return do_prot_none(mm, vma, address, pte, pmd, flags, entry);
-+	if (pte_numa(vma, entry))
-+		return do_numa_page(mm, vma, address, pte, pmd, flags, entry);
- 
- 	ptl = pte_lockptr(mm, pmd);
- 	spin_lock(ptl);
-@@ -3612,8 +3614,8 @@ retry:
- 
- 		barrier();
- 		if (pmd_trans_huge(orig_pmd) && !pmd_trans_splitting(orig_pmd)) {
--			if (pmd_prot_none(vma, orig_pmd)) {
--				do_huge_pmd_prot_none(mm, vma, address, pmd,
-+			if (pmd_numa(vma, orig_pmd)) {
-+				do_huge_pmd_numa_page(mm, vma, address, pmd,
- 						      flags, orig_pmd);
- 			}
- 
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
