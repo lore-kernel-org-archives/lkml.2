@@ -1,81 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694Ab2JRR6V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 13:58:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12200 "EHLO mx1.redhat.com"
+	id S932715Ab2JRSCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 14:02:09 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:23924 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932363Ab2JRR6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 13:58:20 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] UAPI: S390 shouldn't've been changed to use
- uapi/asm-generic/kvm_para.h
-To: schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com
-Cc: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        Yuanhan Liu <yuanhan.liu@intel.com>, fengguang.wu@intel.com
-Date: Thu, 18 Oct 2012 18:58:13 +0100
-Message-ID: <20121018175813.7489.19089.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S932179Ab2JRSCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 14:02:07 -0400
+X-IronPort-AV: E=Sophos;i="4.80,608,1344211200"; 
+   d="scan'208";a="41718371"
+Message-ID: <5080441A.4020907@citrix.com>
+Date: Thu, 18 Oct 2012 19:02:02 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, "lenb@kernel.org" <lenb@kernel.org>
+Subject: Re: [Xen-devel] Is: axe read_tscp pvops call. Was: Re: [RFC] ACPI
+ S3 and Xen (suprisingly small\!).
+References: <1350481786-4969-1-git-send-email-konrad.wilk@oracle.com> <507ED6C0.4020503@zytor.com> <20121017161036.GA10691@phenom.dumpdata.com> <507EE1C3.7070300@zytor.com> <20121017165452.GA22740@phenom.dumpdata.com> <50802EEC.6060102@citrix.com> <20121018174200.GA20508@localhost.localdomain>
+In-Reply-To: <20121018174200.GA20508@localhost.localdomain>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It turns out that S390 shouldn't use uapi/asm-generic/kvm_para.h since it
-defines the functions in its non-UAPI kvm_para.h file.
+On 18/10/12 18:42, Konrad Rzeszutek Wilk wrote:
+>> As for 'perf', since Xen already provides a virtual PMU for HVM guests
+>> It's not clear why we would spend the effort to implement another
+>> mechanism for PV guests (instead of using the virtual PMU from a PVH guest).
+> 
+> Would that allow one to evaluate the performance/bottlenecks that the
+> hypervisor might have?
 
-#including <asm-generic/kvm_para.h> will first pick up
-include/asm-generic/kvm_para.h, which defines conflicting functions.
+Not right now, no. But I don't so why it couldn't be possible.
 
-Instead, partially revert commit 0420c87e648a3b623ad925038a0bcff2ef5a4bc9,
-ungenericising this file and just inserting a comment to prevent the patch
-program from deleting it.
-
-Reported-by: Yuanhan Liu <yuanhan.liu@intel.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Yuanhan Liu <yuanhan.liu@intel.com>
-cc: fengguang.wu@intel.com
----
-
- arch/s390/include/uapi/asm/Kbuild     |    2 --
- arch/s390/include/uapi/asm/kvm_para.h |   11 +++++++++++
- 2 files changed, 11 insertions(+), 2 deletions(-)
- create mode 100644 arch/s390/include/uapi/asm/kvm_para.h
-
-diff --git a/arch/s390/include/uapi/asm/Kbuild b/arch/s390/include/uapi/asm/Kbuild
-index 59b67ed..7bf68ff 100644
---- a/arch/s390/include/uapi/asm/Kbuild
-+++ b/arch/s390/include/uapi/asm/Kbuild
-@@ -1,8 +1,6 @@
- # UAPI Header export list
- include include/uapi/asm-generic/Kbuild.asm
- 
--generic-y += kvm_para.h
--
- header-y += auxvec.h
- header-y += bitsperlong.h
- header-y += byteorder.h
-diff --git a/arch/s390/include/uapi/asm/kvm_para.h b/arch/s390/include/uapi/asm/kvm_para.h
-new file mode 100644
-index 0000000..ff1f4e7
---- /dev/null
-+++ b/arch/s390/include/uapi/asm/kvm_para.h
-@@ -0,0 +1,11 @@
-+/*
-+ * User API definitions for paravirtual devices on s390
-+ *
-+ * Copyright IBM Corp. 2008
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License (version 2 only)
-+ * as published by the Free Software Foundation.
-+ *
-+ *    Author(s): Christian Borntraeger <borntraeger@de.ibm.com>
-+ */
+David
 
