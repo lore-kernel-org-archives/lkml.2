@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756975Ab2JRXZb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 19:25:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:16537 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756745Ab2JRXTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 19:19:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,609,1344236400"; 
-   d="scan'208";a="229462627"
-From: Andi Kleen <andi@firstfloor.org>
-To: a.p.zijlstra@chello.nl
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, acme@redhat.com,
-        eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 23/34] perf, tools: Point --sort documentation to --help
-Date: Thu, 18 Oct 2012 16:19:31 -0700
-Message-Id: <1350602382-12771-24-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
-References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
+	id S932771Ab2JRXZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 19:25:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41278 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932272Ab2JRXZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 19:25:54 -0400
+Date: Thu, 18 Oct 2012 16:25:49 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: linux-kernel@vger.kernel.org, Konrad Wilk <konrad.wilk@oracle.com>
+Subject: Re: cancel_delayed_work() semantics broken?
+Message-ID: <20121018232549.GX13370@google.com>
+References: <444a6439-b1a4-4740-9e7e-bc37267cfe73@default>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <444a6439-b1a4-4740-9e7e-bc37267cfe73@default>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Hello, Dan.
 
-The --sort documentation for top and report was hopelessly out-of-date
-Instead of having two more places that would need to be updated,
-just point to --help.
+On Thu, Oct 18, 2012 at 04:00:03PM -0700, Dan Magenheimer wrote:
+> Forgive me if I am missing something, but it appears
+> that your commit:  57b30ae77bf00d2318df711ef9a4d2a9be0a3a2a
+> (workqueue: reimplement cancel_delayed_work() using try_to_grab_pending())
+> has subtly broken the semantics of the function. If
+> work was idle, according to the comment, it should
+> return false, correct?
+> 
+> It appears that very few callsites check the return value,
+> but ramster does, as does ocfs2 from whence the code at the
+> ramster callsite was derived.  They both decrement
+> a kref count based on the return value.
+> 
+> I am still looking at try_to_grab_pending as I am not sure
+> if its semantics have also changed.
+> 
+> Thanks,
+> Dan
+> 
+> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index d951daa..042d221 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -2982,7 +2982,7 @@ bool cancel_delayed_work(struct delayed_work *dwork)
+>  
+>  	set_work_cpu_and_clear_pending(&dwork->work, work_cpu(&dwork->work));
+>  	local_irq_restore(flags);
+> -	return true;
+> +	return ret;
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-report.txt |    2 +-
- tools/perf/Documentation/perf-top.txt    |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Ah, you're right.  Applying to wq/for-3.7-fixes w/ patch description
+updated.  Thanks!
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index f4d91be..7cd5d0a 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -57,7 +57,7 @@ OPTIONS
- 
- -s::
- --sort=::
--	Sort by key(s): pid, comm, dso, symbol, parent, srcline.
-+	Sort by key(s): See --help for a full list.
- 
- -p::
- --parent=<regex>::
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index 5b80d84..0f0fa3e 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -112,7 +112,7 @@ Default is to monitor all CPUS.
- 
- -s::
- --sort::
--	Sort by key(s): pid, comm, dso, symbol, parent, srcline.
-+	Sort by key(s): see --help for a full list.
- 
- -n::
- --show-nr-samples::
 -- 
-1.7.7.6
-
+tejun
