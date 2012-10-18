@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab2JRMLY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 08:11:24 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:46522 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753957Ab2JRMLW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 08:11:22 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: akpm@linux-foundation.org, catalin.marinas@arm.com, will.deacon@arm.com,
-        dhowells@redhat.com, manfred@colorfullife.com, hughd@google.com,
-        jmorris@namei.org, mtk.manpages@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, paulmck@linux.vnet.ibm.com,
-        sds@tycho.nsa.gov, devel@openvz.org, a.p.zijlstra@chello.nl,
-        cmetcalf@tilera.com, linux-driver@qlogic.com, ron.mercer@qlogic.com,
-        viro@zeniv.linux.org.uk, eparis@parisplace.org, tglx@linutronix.de,
-        jitendra.kalsaria@qlogic.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        casey@schaufler-ca.com,
-        "Michael Kerrisk \(man-pages\)" <mtk.manpages@gmail.com>
-References: <20121018101543.16036.12221.stgit@localhost.localdomain>
-Date: Thu, 18 Oct 2012 05:11:08 -0700
-In-Reply-To: <20121018101543.16036.12221.stgit@localhost.localdomain>
-	(Stanislav Kinsbursky's message of "Thu, 18 Oct 2012 14:22:21 +0400")
-Message-ID: <87a9vk3rqb.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754780Ab2JRMMH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 08:12:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2646 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754525Ab2JRMMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 08:12:03 -0400
+Date: Thu, 18 Oct 2012 08:11:54 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        David Miller <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        pjones@redhat.com
+Subject: Re: RFC: sign the modules at install time
+Message-ID: <20121018121154.GE2934@hansolo.jdub.homelinux.org>
+References: <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com>
+ <3179.1350512382@warthog.procyon.org.uk>
+ <CA+55aFzEH1jguw8NB90si2uxvyO63FuKPOc8wiEPRCYwruSzRg@mail.gmail.com>
+ <87a9vko0z7.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18gjjTAaEtlbtyy8REANiH3CvG8dpdoTgg=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Stanislav Kinsbursky <skinsbursky@parallels.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v7 00/10] IPC: checkpoint/restore in userspace enhancements
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87a9vko0z7.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 18, 2012 at 03:01:08PM +1030, Rusty Russell wrote:
+> Linus Torvalds <torvalds@linux-foundation.org> writes:
+> > On Wed, Oct 17, 2012 at 3:19 PM, David Howells <dhowells@redhat.com> wrote:
+> >>
+> >> It's probably even better to just get rid of all the automatic module signing
+> >> stuff completely and leave the sign-file script for the builder to use
+> >> manually.  The module verification code will still be present.
+> >
+> > That's just disgusting crazy talk.
+> >
+> > Christ, David, get a grip on yourself. You seem to dismiss the "people
+> > want to build their own kernel" people entirely.
+> >
+> > One of the main sane use-cases for module signing is:
+> >
+> >  - CONFIG_CHECK_SIGNATURE=y
+> >  - randomly generated one-time key
+> >  - "make modules_install; make install"
+> >  - "make clean" to get rid of the keys.
+> >  - reboot.
+> >
+> > and now you have a custom kernel that has the convenience of modules,
+> > yet is basically as safe as a non-modular build. The above makes it
+> > much harder for any kind of root-kit module to be loaded, and
+> > basically entirely avoids one fundamental security scare of modules.
+> 
+> If you only want this, we could SHA all the built modules, put that in
+> the kernel, and verify the module being loaded matches one of them.
+> 
+> Sure, it means a bit of trickery to get the module sums into the
+> bzImage, but the rest is trivial.
 
-Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+It also excludes out-of-tree drivers.  I wouldn't personally shed a tear
+for them, but it eliminates a use-case that people could have if we just
+stuck to the signed module approach.
 
-You ignored all of my feedback that the first 7 messages of your
-patchset are unnecessary.  In particular you did not attempt to focus
-your patchset on those operations that are most important.
+I'd prefer if we just cleaned up what we already have.
 
-Upon examination it appears also that the 8th and 9th patches of the
-patchset are also unnecessary.  And the 10th patch is just a test of the
-previous patches, making the 10th patch unneceesary without the rest.
-
-In net this entire patchset is unnecessary and a waste of your reviewers
-time.
-
-Once you have IPC checkpoint and restore working there may be a point to
-come back and optimize things.  Please don't come back with any System V
-Interprocess Communication patches until you can report how much time
-is saved by each and every change.
-
-Eric
-
+josh
