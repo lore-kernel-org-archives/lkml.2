@@ -1,85 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757170Ab2JRQKi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 12:10:38 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6350 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755243Ab2JRQKf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 12:10:35 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 18 Oct 2012 09:10:29 -0700
-From: Philip Rakity <prakity@nvidia.com>
-To: Sangho Yi <antiroot@gmail.com>
-CC: "prakity@marvell.com" <prakity@marvell.com>,
-        "aaron.lu@amd.com" <aaron.lu@amd.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "ulf.hansson@stericsson.com" <ulf.hansson@stericsson.com>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Date: Thu, 18 Oct 2012 18:10:25 +0200
-Subject: Re: [PATCH 2/3] drivers: mmc: core: sdio.c: fixed coding style
- error on for() statement
-Thread-Topic: [PATCH 2/3] drivers: mmc: core: sdio.c: fixed coding style
- error on for() statement
-Thread-Index: Ac2tSxXLJn1rV4a8TdO+kduDOxX9Iw==
-Message-ID: <8B292373-3C73-41EF-A193-0ECF614BE06E@nvidia.com>
-References: <n> <1350576394-2008-1-git-send-email-antiroot@gmail.com>
- <1350576394-2008-2-git-send-email-antiroot@gmail.com>
-In-Reply-To: <1350576394-2008-2-git-send-email-antiroot@gmail.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	id S1757206Ab2JRQPD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 12:15:03 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34562 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756206Ab2JRQPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 12:15:01 -0400
+Message-ID: <50802B00.6090907@ti.com>
+Date: Thu, 18 Oct 2012 11:14:56 -0500
+From: Jon Hunter <jon-hunter@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>,
+        Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: discrepancy while save and restore of debounce registers
+References: <1BAFE6F6C881BF42822005164F1491C33EAA9A7C@DBDE01.ent.ti.com> <507F1F21.8040206@ti.com> <1BAFE6F6C881BF42822005164F1491C33EAAA89B@DBDE01.ent.ti.com>
+In-Reply-To: <1BAFE6F6C881BF42822005164F1491C33EAAA89B@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.157.144.139]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Gururaja,
 
-On 18 Oct 2012, at 17:06, Sangho Yi <antiroot@gmail.com> wrote:
+On 10/18/2012 12:31 AM, Hebbar, Gururaja wrote:
+> Jon,
+> 
+> On Thu, Oct 18, 2012 at 02:42:01, Hunter, Jon wrote:
 
-> add a whitespace after ";" on for statement, to follow a coding style guideline.
-> 
-> Signed-off-by: Sangho Yi <antiroot@gmail.com>
-> ---
-> drivers/mmc/core/sdio.c |    4 ++--
-> 1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-> index 14326e8..df09b63 100644
-> --- a/drivers/mmc/core/sdio.c
-> +++ b/drivers/mmc/core/sdio.c
-> @@ -819,7 +819,7 @@ static void mmc_sdio_remove(struct mmc_host *host)
-> 	BUG_ON(!host);
-> 	BUG_ON(!host->card);
-> 
-> -	for (i = 0;i < host->card->sdio_funcs;i++) {
-> +	for (i = 0; i < host->card->sdio_funcs; i++) {
-> 		if (host->card->sdio_func[i]) {
-> 			sdio_remove_func(host->card->sdio_func[i]);
-> 			host->card->sdio_func[i] = NULL;
-> @@ -1151,7 +1151,7 @@ int mmc_attach_sdio(struct mmc_host *host)
-> 	/*
-> 	 * ...then the SDIO functions.
-> 	 */
-> -	for (i = 0;i < funcs;i++) {
-> +	for (i = 0; i < funcs; i++) {
-> 		err = sdio_add_func(host->card->sdio_func[i]);
-> 		if (err)
-> 			goto remove_added;
-> -- 
-> 1.7.9.5
-> 
-> --
+[snip]
 
-Reviewed-by: Philip Rakity <prakity@nvidia.com>
+>>> My doubt/questions are
+>>> 1. Why should debounce registers be updated only when it's accessed previously?
+>>
+>> If debounce is not being used by any of the gpios, then there is no need
+>> to restore them as there are no bits set. So this makes sense and saves
+>> a couple register writes.
+> 
+> What I want to know is that other than saving register writes, is there any
+> other important stuff that specifies this requirement.
 
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>From a HW perspective, none that I can see.
+
+>From a SW perspective, yes, as I mentioned if you restore these
+registers without first initialising the context variables where these
+registers are stored, then you may be restoring unknown values to the
+registers and that is bad.
+
+>>> 2. What is the relation between updating debounce registers and crash seen on
+>>> others registers? 
+>>
+>> This I am not sure about. I gave this a quick try on my omap3430 beagle
+>> board, but I did not see any side-effects from doing this. However, if
+>> you are always restoring the debounce context regardless of whether
+>> debounce is being used, then you could be writing bad values to the
+>> debounce registers as the context variables bank->context.debouce and
+>> bank->context.debouce_en may not initialised. So that is bad. However,
+>> that said I am still not sure how this could cause a crash.
+>>
+>> Can you share more details on ...
+> 
+> Sorry for missing below details in first post.
+> 
+>> 1. The OMAP platform you are using?
+> 
+> I was trying this on TI AM335x platform (repo below). On AM335x EVM board
+> 
+> http://arago-project.org/git/projects/?p=linux-am33x.git;a=shortlog;
+> h=refs/heads/v3.2-staging
+> 
+>> 2. What linux distro/environment you are using?
+> 
+> Arago AM335x PSP release (linux 3.2 + am335x patch-set)
+> 
+>> 3. If there are any specific steps to reproduce this 100% of the time?
+> 
+> On top of this tree, try suspend/resume using "echo mem > /syspower/state"
+
+I have a beagle-bone but unfortunately, suspend does not appear to be
+supported in the mainline kernel yet so I am unable to test this on the
+am335x on the mainline.
+
+Have you compared the gpio driver from your v3.2 branch with the current
+mainline to see how different this code is? Ideally, it would be good to
+test on the mainline kernel for another data point to see if this is
+local to your branch.
+
+Cheers
+Jon
+
 
