@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383Ab2JRB0H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 21:26:07 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:13477 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302Ab2JRB0E (ORCPT
+	id S1753388Ab2JRBcC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 21:32:02 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58039 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753301Ab2JRBcB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 21:26:04 -0400
-Message-ID: <507F5A81.7010007@huawei.com>
-Date: Thu, 18 Oct 2012 09:25:21 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Wed, 17 Oct 2012 21:32:01 -0400
+X-AuditID: 9c930197-b7c4aae000004160-c1-507f5c0e6dbb
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 08/11] perf python: Initialize 'page_size' variable
+References: <1350494387-10987-1-git-send-email-acme@infradead.org>
+	<1350494387-10987-9-git-send-email-acme@infradead.org>
+Date: Thu, 18 Oct 2012 10:31:57 +0900
+In-Reply-To: <1350494387-10987-9-git-send-email-acme@infradead.org> (Arnaldo
+	Carvalho de Melo's message of "Wed, 17 Oct 2012 14:19:44 -0300")
+Message-ID: <87391c36r6.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <rjw@sisk.pl>, <oleg@redhat.com>, <linux-kernel@vger.kernel.org>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <stable@vger.kernel.org>
-Subject: Re: [PATCH 1/7] cgroup: cgroup_subsys->fork() should be called after
- the task is added to css_set
-References: <1350426526-14254-1-git-send-email-tj@kernel.org> <1350426526-14254-2-git-send-email-tj@kernel.org> <507E6C4B.6000704@huawei.com>
-In-Reply-To: <507E6C4B.6000704@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ÓÚ 2012/10/17 16:28, Li Zefan Ð´µÀ:
-> On 2012/10/17 6:28, Tejun Heo wrote:
->> cgroup core has a bug which violates a basic rule about event
->> notifications - when a new entity needs to be added, you add that to
->> the notification list first and then make the new entity conform to
->> the current state.  If done in the reverse order, an event happening
->> inbetween will be lost.
->>
->> cgroup_subsys->fork() is invoked way before the new task is added to
->> the css_set.  Currently, cgroup_freezer is the only user of ->fork()
->> and uses it to make new tasks conform to the current state of the
->> freezer.  If FROZEN state is requested while fork is in progress
->> between cgroup_fork_callbacks() and cgroup_post_fork(), the child
->> could escape freezing - the cgroup isn't frozen when ->fork() is
->> called and the freezer couldn't see the new task on the css_set.
->>
->> This patch moves cgroup_subsys->fork() invocation to
->> cgroup_post_fork() after the new task is added to the css_set.
->> cgroup_fork_callbacks() is removed.
->>
->> Because now a task may be migrated during cgroup_subsys->fork(),
->> freezer_fork() is updated so that it adheres to the usual RCU locking
->> and the rather pointless comment on why locking can be different there
->> is removed (if it doesn't make anything simpler, why even bother?).
->>
-> 
-> I don't think rcu read section is sufficient. It guarantees the data you're
-> accessing is valid, but the data can be new or can be old.
-> 
-> So a case below is possible:
-> 
-> in freezer_fork():
-> rcu_read_lock();
-> freezer = task_freezer(task);
->                                   move task from freezer to freezer2
->                                   which is in FREEZING/FROZEN state
-> freezer is in THAWED state,
-> nothing to do.
-> rcu_read_unlock();
-> 
+Hi Arnaldo,
 
-forget about it. The task will be correctly frozen when moving to
-another cgroup, so nothing unexpected will happen.
+On Wed, 17 Oct 2012 14:19:44 -0300, Arnaldo Carvalho de Melo wrote:
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+>
+> The commit 0c1fe6b:
+>
+>  'perf tools: Have the page size value available for all tools'
 
-for this patch:
+Is that commit in your perf/urgent branch?  I got this:
 
-Acked-by: Li Zefan <lizefan@huawei.com>
+    GEN python/perf.so
+util/python.c: In function â€˜initperfâ€™:
+util/python.c:1018:2: error: â€˜page_sizeâ€™ undeclared (first use in this function)
+util/python.c:1018:2: note: each undeclared identifier is reported only once for each function it appears in
+error: command 'gcc' failed with exit status 1
+cp: cannot stat `python_ext_build/lib/perf.so': No such file or directory
+make: *** [python/perf.so] Error 1
 
+Adding '#include "util.h"' didn't work.  But manually adding 'extern
+unsigned int page_size;' did.
+
+Thanks,
+Namhyung
+
+
+>
+> Broke the python binding because the global variable 'page_size' is
+> initialized on the main() routine, that is not called when using
+> just the python binding, causing evlist.mmap() to fail because it
+> expects that variable to be initialized to the system's page size.
+>
+> Fix it by initializing it on the binding init routine.
+>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Namhyung Kim <namhyung@gmail.com>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Stephane Eranian <eranian@google.com>
+> Link: http://lkml.kernel.org/n/tip-vrvp3azmbfzexnpmkhmvtzzc@git.kernel.org
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> ---
+>  tools/perf/util/python.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+> index 9181bf2..a2657fd 100644
+> --- a/tools/perf/util/python.c
+> +++ b/tools/perf/util/python.c
+> @@ -1015,6 +1015,8 @@ PyMODINIT_FUNC initperf(void)
+>  	    pyrf_cpu_map__setup_types() < 0)
+>  		return;
+>  
+> +	page_size = sysconf(_SC_PAGE_SIZE);
+> +
+>  	Py_INCREF(&pyrf_evlist__type);
+>  	PyModule_AddObject(module, "evlist", (PyObject*)&pyrf_evlist__type);
