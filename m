@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006Ab2JRJYB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 05:24:01 -0400
-Received: from gate.crashing.org ([63.228.1.57]:42113 "EHLO gate.crashing.org"
+	id S1755026Ab2JRJY6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 05:24:58 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:37123 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754736Ab2JRJX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 05:23:59 -0400
-Message-ID: <1350552198.2476.5.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Thu, 18 Oct 2012 20:23:18 +1100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1754072Ab2JRJY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 05:24:57 -0400
+Message-ID: <507FCADF.20109@parallels.com>
+Date: Thu, 18 Oct 2012 13:24:47 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
+        <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v5 07/14] mm: Allocate kernel pages to the right memcg
+References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-8-git-send-email-glommer@parallels.com> <20121017151221.4c420e5a.akpm@linux-foundation.org>
+In-Reply-To: <20121017151221.4c420e5a.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+On 10/18/2012 02:12 AM, Andrew Morton wrote:
+> On Tue, 16 Oct 2012 14:16:44 +0400
+> Glauber Costa <glommer@parallels.com> wrote:
+> 
+>> When a process tries to allocate a page with the __GFP_KMEMCG flag, the
+>> page allocator will call the corresponding memcg functions to validate
+>> the allocation. Tasks in the root memcg can always proceed.
+>>
+>> To avoid adding markers to the page - and a kmem flag that would
+>> necessarily follow, as much as doing page_cgroup lookups for no reason,
+>> whoever is marking its allocations with __GFP_KMEMCG flag is responsible
+>> for telling the page allocator that this is such an allocation at
+>> free_pages() time.
+> 
+> Well, why?  Was that the correct decision?
+> 
 
-Here are a handful of powerpc related fixes for you to pull.
+I don't fully understand your question. Is this the same question you
+posed in patch 0, about marking some versus marking all? If so, I
+believe I should have answered it there.
 
-Cheers,
-Ben.
+If not, please explain.
 
-The following changes since commit 18673533256a2953ccefded52df2679de8640685:
+>> This is done by the invocation of
+>> __free_accounted_pages() and free_accounted_pages().
+> 
+> These are very general-sounding names.  I'd expect the identifiers to
+> contain "memcg" and/or "kmem", to identify what's going on.
+> 
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2012-10-17 12:41:18 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-for you to fetch changes up to 83dac59409387789b88bed40b1be86a8abc572be:
-
-  cpuidle/powerpc: Fix snooze state problem in the cpuidle design on pseries. (2012-10-18 10:57:25 +1100)
-
-----------------------------------------------------------------
-Aneesh Kumar K.V (1):
-      powerpc: Build fix for powerpc KVM
-
-Benjamin Herrenschmidt (1):
-      Revert "powerpc/perf: Use pmc_overflow() to detect rolled back events"
-
-Deepthi Dharwar (3):
-      cpuidle/powerpc: Fix target residency initialisation in pseries cpuidle
-      cpuidle/powerpc: Fix smt_snooze_delay functionality.
-      cpuidle/powerpc: Fix snooze state problem in the cpuidle design on pseries.
-
- arch/powerpc/include/asm/kvm_book3s_32.h        |    1 +
- arch/powerpc/include/asm/processor.h            |    4 +-
- arch/powerpc/kernel/sysfs.c                     |    2 +-
- arch/powerpc/kvm/book3s_32_mmu_host.c           |    4 +-
- arch/powerpc/perf/core-book3s.c                 |    2 +-
- arch/powerpc/platforms/pseries/processor_idle.c |   62 +++++++++++------------
- 6 files changed, 36 insertions(+), 39 deletions(-)
-
-
+Changed.
