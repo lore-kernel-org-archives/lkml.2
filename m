@@ -1,48 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab2JRJiT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 05:38:19 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:37888 "EHLO mx2.parallels.com"
+	id S1755214Ab2JRJi1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 05:38:27 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:55496 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755163Ab2JRJiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 05:38:18 -0400
-Message-ID: <507FCE00.1090501@parallels.com>
-Date: Thu, 18 Oct 2012 13:38:08 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+	id S1755163Ab2JRJiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 05:38:23 -0400
+Date: Thu, 18 Oct 2012 15:09:48 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Rabin Vincent <rabin@rab.in>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Peter Zijlstra <peterz@infradead.org>, oleg@redhat.com
+Subject: Re: [PATCH 5/9] uprobes: allow arch-specific initialization
+Message-ID: <20121018093948.GA10321@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <1350242593-17761-1-git-send-email-rabin@rab.in>
+ <1350242593-17761-5-git-send-email-rabin@rab.in>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
-        <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v5 14/14] Add documentation about the kmem controller
-References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-15-git-send-email-glommer@parallels.com> <20121017151254.e26607c5.akpm@linux-foundation.org>
-In-Reply-To: <20121017151254.e26607c5.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1350242593-17761-5-git-send-email-rabin@rab.in>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101809-1976-0000-0000-000012770430
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2012 02:12 AM, Andrew Morton wrote:
-> On Tue, 16 Oct 2012 14:16:51 +0400
-> Glauber Costa <glommer@parallels.com> wrote:
-> 
->> +Kernel memory won't be accounted at all until limit on a group is set. This
->> +allows for existing setups to continue working without disruption.  The limit
->> +cannot be set if the cgroup have children, or if there are already tasks in the
->> +cgroup.
-> 
-> What behaviour will usersapce see if "The limit cannot be set"? 
-> write() returns -EINVAL, something like that?
-> 
--EBUSY.
+* Rabin Vincent <rabin@rab.in> [2012-10-14 21:23:09]:
 
-Will update.
+> Add a weak function for any architecture-specific initialization.  ARM
+> will use this to register the handlers for the undefined instructions it
+> uses to implement uprobes.
+> 
+> Signed-off-by: Rabin Vincent <rabin@rab.in>
+> ---
+>  include/linux/uprobes.h |    1 +
+>  kernel/events/uprobes.c |   10 ++++++++++
+>  2 files changed, 11 insertions(+)
+> 
+> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+> index b4380ad..c3dc5de 100644
+> --- a/include/linux/uprobes.h
+> +++ b/include/linux/uprobes.h
+> @@ -130,6 +130,7 @@ extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned l
+>  extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
+>  extern bool __weak arch_uprobe_ignore(struct arch_uprobe *aup, struct pt_regs *regs);
+>  extern void __weak arch_uprobe_xol_copy(struct arch_uprobe *auprobe, void *vaddr);
+> +extern int __weak arch_uprobes_init(void);
+>  #else /* !CONFIG_UPROBES */
+>  struct uprobes_state {
+>  };
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index f7ff3a4..ca000a9 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -1634,8 +1634,14 @@ static struct notifier_block uprobe_exception_nb = {
+>  	.priority		= INT_MAX-1,	/* notified after kprobes, kgdb */
+>  };
+> 
+> +int __weak __init arch_uprobes_init(void)
+> +{
+> +	return 0;
+> +}
+> +
+>  static int __init init_uprobes(void)
+>  {
+> +	int ret;
+>  	int i;
+> 
+>  	for (i = 0; i < UPROBES_HASH_SZ; i++) {
+> @@ -1643,6 +1649,10 @@ static int __init init_uprobes(void)
+>  		mutex_init(&uprobes_mmap_mutex[i]);
+>  	}
+> 
+> +	ret = arch_uprobes_init();
+> +	if (ret)
+> +		return ret;
+> +
+>  	return register_die_notifier(&uprobe_exception_nb);
+>  }
+>  module_init(init_uprobes);
+> -- 
+
+We should be able to move the register_die_notifier and
+uprobe_exception_nb structure into the default arch_uprobes_init.
+
+Right? 
+
+-- 
+thanks and regards
+Srikar
+
