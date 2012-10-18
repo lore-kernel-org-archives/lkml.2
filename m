@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182Ab2JRSvF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 14:51:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57821 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262Ab2JRSvD (ORCPT
+	id S1752123Ab2JRSyo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 14:54:44 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:38514 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab2JRSym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 14:51:03 -0400
-Date: Thu, 18 Oct 2012 15:50:56 -0300
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: Re: [ 108/147] ALSA: hda - Fix internal mic for Lenovo Ideapad U300s
-Message-ID: <20121018185055.GC3025@herton-Z68MA-D2H-B3>
-References: <20121014143533.742627615@decadent.org.uk>
- <20121014143548.361462458@decadent.org.uk>
+	Thu, 18 Oct 2012 14:54:42 -0400
+Date: Thu, 18 Oct 2012 20:54:37 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, eranian@gmail.com,
+        "Meadows, Lawrence F" <lawrence.f.meadows@intel.com>
+Subject: Re: [PATCH 0/3] perf_event: enable overflow interrupts on KNC
+Message-ID: <20121018185437.GA21109@gmail.com>
+References: <alpine.DEB.2.02.1210171256550.23243@vincent-weaver-1.um.maine.edu>
+ <20121017180753.GA7291@gmail.com>
+ <alpine.DEB.2.02.1210171614060.23685@vincent-weaver-1.um.maine.edu>
+ <20121017214700.GA9851@gmail.com>
+ <alpine.DEB.2.02.1210181339510.28924@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121014143548.361462458@decadent.org.uk>
+In-Reply-To: <alpine.DEB.2.02.1210181339510.28924@vincent-weaver-1.um.maine.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 14, 2012 at 03:37:21PM +0100, Ben Hutchings wrote:
-> 3.2-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: David Henningsson <david.henningsson@canonical.com>
-> 
-> commit 18dcd3044e4c4b3ab6341c98e8d0e81e0d58d5e3 upstream.
-> 
-> The internal mic input is phase inverted on one channel.
-> To avoid people in userspace summing the channels together
-> and get zero result, use a separate mixer control for the
-> inverted channel.
-> 
-> BugLink: https://bugs.launchpad.net/bugs/903853
-> Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> [bwh: Backported to 3.2:
->  - Adjust context
->  - Change both invocations of apply_pin_fixup()]
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 
-I noted today that a follow up fix for this is needed to avoid an oops
-in apply_fixup, please consider adding to the next 3.2 stable this:
+* Vince Weaver <vincent.weaver@maine.edu> wrote:
 
-commit 83b0c6ba999643ee8ad6329f26e1cdc870e1a920
-ALSA: hda - Fix oops caused by recent commit "Fix internal mic for Lenovo Ideapad U300s"
+> I looked into getting a 3.7 kernel up and going on the KNC 
+> board, but the diff between Intel's release and stock 
+> 2.6.34.11 has 70k lines.  Much of that is kdb, but there's 
+> also a lot of low-level changes too, some of it due to the 
+> fact that KNC is 64-bit x86 but has no support for SSE (so you 
+> need to handle that properly or none of your userspace will 
+> run).
 
-[...]
-> +static void apply_fixup(struct hda_codec *codec,
->  			    const struct snd_pci_quirk *quirk,
->  			    const struct cxt_pincfg **table)
->  {
-> +	struct conexant_spec *spec = codec->spec;
-> +
->  	quirk = snd_pci_quirk_lookup(codec->bus->pci, quirk);
-> -	if (quirk) {
-> +	if (quirk && table[quirk->value]) {
->  		snd_printdd(KERN_INFO "hda_codec: applying pincfg for %s\n",
->  			    quirk->name);
->  		apply_pincfg(codec, table[quirk->value]);
->  	}
-> +	if (quirk->value == CXT_FIXUP_STEREO_DMIC) {
-> +		snd_printdd(KERN_INFO "hda_codec: applying internal mic workaround for %s\n",
-> +			    quirk->name);
-> +		spec->fixup_stereo_dmic = 1;
-> +	}
->  }
-[...]
+Getting that support upstream would definitely be useful, so if 
+you feel so inclined splitting out (or creating anew) the 
+required patches ...
 
--- 
-[]'s
-Herton
+I don't know how it's structured, but making the !SSE 
+distinction runtime would be strongly preferred over any 
+compile-time .config switchery. Otherwise, the guiding principle 
+is that we'll do whatever it takes to support the hardware, with 
+the reasonably best possible cleanliness.
+
+Thanks,
+
+	Ingo
