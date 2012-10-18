@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751555Ab2JRHAg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 03:00:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49041 "EHLO mx2.suse.de"
+	id S1751403Ab2JRHCN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 03:02:13 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:40393 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751127Ab2JRHAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 03:00:35 -0400
-Date: Thu, 18 Oct 2012 09:00:26 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: Richard Yang <weiyang@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] remove untouched code in kfifo_in
-In-Reply-To: <1350538446.10942.1.camel@wall-e>
-Message-ID: <alpine.LNX.2.00.1210180858420.26584@pobox.suse.cz>
-References: <1350463837-30244-1-git-send-email-weiyang@linux.vnet.ibm.com>  <alpine.LNX.2.00.1210171434360.17129@pobox.suse.cz>  <20121017140136.GA7913@richard.(null)>  <alpine.LNX.2.00.1210171605030.17129@pobox.suse.cz>  <1350503509.9947.1.camel@wall-e>
- <20121018015959.GD4511@richard.(null)> <1350538446.10942.1.camel@wall-e>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1750705Ab2JRHCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 03:02:11 -0400
+Date: Thu, 18 Oct 2012 12:33:25 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] uprobes: Use brw_mutex to fix register/unregister
+ vs dup_mmap() race
+Message-ID: <20121018070325.GJ11096@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121015190958.GA4799@redhat.com>
+ <20121015191022.GA4823@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20121015191022.GA4823@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101807-1976-0000-0000-000012763196
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Oct 2012, Stefani Seibold wrote:
-
-> > >This was introduce by me to suppress a compiler warning, so don't remove
-> > >it. 
-> > Which warning? I compile by removing this, but not find warning.
-> > I compile it on x86_64 platform.
-> > >
+> This was always racy, but 268720903f87e0b84b161626c4447b81671b5d18
+> "uprobes: Rework register_for_each_vma() to make it O(n)" should be
+> blamed anyway, it made everything worse and I didn't notice.
 > 
-> Sorry, i can't remember, it is three years and two gcc major releases
-> ago.
+> register/unregister call build_map_info() and then do install/remove
+> breakpoint for every mm which mmaps inode/offset. This can obviously
+> race with fork()->dup_mmap() in between and we can miss the child.
+> 
+> uprobe_register() could be easily fixed but unregister is much worse,
+> the new mm inherits "int3" from parent and there is no way to detect
+> this if uprobe goes away.
+> 
+> So this patch simply adds brw_start/end_read() around dup_mmap(), and
+> brw_start/end_write() into register_for_each_vma().
+> 
+> This adds 2 new hooks into dup_mmap() but we can kill uprobe_dup_mmap()
+> and fold it into uprobe_end_dup_mmap().
+> 
+> Reported-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Well, exactly. gcc that needs this workaround seems to be pretty broken, 
-and I am not seeing any warnings either myself.
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-As it's quite a obscure and confusing construction, I'd not hesitate 
-removing that.
-
--- 
-Jiri Kosina
-SUSE Labs
