@@ -1,82 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932617Ab2JRRdp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 13:33:45 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45023 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932125Ab2JRRdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 13:33:44 -0400
-Date: Thu, 18 Oct 2012 20:28:08 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: viresh kumar <viresh.kumar@linaro.org>
-CC: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, <linux-kernel@vger.kernel.org>,
-        spear-devel <spear-devel@list.st.com>, <balbi@ti.com>
-Subject: Re: [PATCHv3 0/6] dw_dmac: few cleanups to the driver
-Message-ID: <20121018172808.GA7823@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1350570852-10398-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <CAOh2x=m_ZLD2shDA_utMoSvNNKkV4=zVDutVb+UOPRPVBnhObw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ew6BAiZeqk4r7MaW"
-Content-Disposition: inline
-In-Reply-To: <CAOh2x=m_ZLD2shDA_utMoSvNNKkV4=zVDutVb+UOPRPVBnhObw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932673Ab2JRRdx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 13:33:53 -0400
+Received: from smtp10.smtpout.orange.fr ([80.12.242.132]:20895 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932125Ab2JRRdv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 13:33:51 -0400
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Michal Marek <mmarek@suse.cz>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Yaakov Selkowitz <yselkowitz@gmail.com>
+Subject: [PATCH] kconfig/menuconfig: use TAILQ instead of CIRCLEQ
+Date: Thu, 18 Oct 2012 19:33:45 +0200
+Message-Id: <1350581625-23153-1-git-send-email-yann.morin.1998@free.fr>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ew6BAiZeqk4r7MaW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Some systems (eg. Cygwin, FreeBSD) are missing the CIRCLEQ macros.
+They were removed in Y2000 from FreeBSD:
+    http://svnweb.freebsd.org/base?view=revision&revision=70469
 
-Hi,
+The reason was that TAILQ are perfectly capable of doing the exact
+same things:
+    http://www.mavetju.org/mail/view_thread.php?list=freebsd-arch&id=915145&thread=yes
 
-On Thu, Oct 18, 2012 at 10:34:38PM +0530, viresh kumar wrote:
-> On Thu, Oct 18, 2012 at 8:04 PM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
-> > There are few cleanups to the driver which partialy acked and reviewed.
-> >
-> > Since v2:
-> >  - add one more clean up (patch 6/6)
-> >  - make a separate patch to WARN a user in dwc_handle_error (suggested =
-by
-> >    Felipe Balbi)
-> >  - add a description to patch 4/6
->=20
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+(Thank Yaakov for the pointers!)
 
-FWIW:
+So, switch to using TAILQ instead, which are more portable.
 
-Reviewed-by: Felipe Balbi <balbi@ti.com>
+Reported-by: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Reported-by: Benjamin Poirier <bpoirier@suse.de>
+Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Yaakov Selkowitz <yselkowitz@gmail.com>
+---
+ scripts/kconfig/expr.h  |    4 ++--
+ scripts/kconfig/mconf.c |    4 ++--
+ scripts/kconfig/menu.c  |    6 +++---
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-(for the entire series)
+diff --git a/scripts/kconfig/expr.h b/scripts/kconfig/expr.h
+index bd2e098..c6a8b99 100644
+--- a/scripts/kconfig/expr.h
++++ b/scripts/kconfig/expr.h
+@@ -175,12 +175,12 @@ struct menu {
+ #define MENU_ROOT		0x0002
+ 
+ struct jump_key {
+-	CIRCLEQ_ENTRY(jump_key) entries;
++	TAILQ_ENTRY(jump_key) entries;
+ 	size_t offset;
+ 	struct menu *target;
+ 	int index;
+ };
+-CIRCLEQ_HEAD(jk_head, jump_key);
++TAILQ_HEAD(jk_head, jump_key);
+ 
+ #define JUMP_NB			9
+ 
+diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
+index 48f6744..f1ee1c9 100644
+--- a/scripts/kconfig/mconf.c
++++ b/scripts/kconfig/mconf.c
+@@ -323,7 +323,7 @@ static void update_text(char *buf, size_t start, size_t end, void *_data)
+ 	struct jump_key *pos;
+ 	int k = 0;
+ 
+-	CIRCLEQ_FOREACH(pos, data->head, entries) {
++	TAILQ_FOREACH(pos, data->head, entries) {
+ 		if (pos->offset >= start && pos->offset < end) {
+ 			char header[4];
+ 
+@@ -375,7 +375,7 @@ again:
+ 
+ 	sym_arr = sym_re_search(dialog_input);
+ 	do {
+-		struct jk_head head = CIRCLEQ_HEAD_INITIALIZER(head);
++		struct jk_head head = TAILQ_HEAD_INITIALIZER(head);
+ 		struct menu *targets[JUMP_NB];
+ 		int keys[JUMP_NB + 1], i;
+ 		struct search_data data = {
+diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
+index a3cade6..9eff451 100644
+--- a/scripts/kconfig/menu.c
++++ b/scripts/kconfig/menu.c
+@@ -544,12 +544,12 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
+ 		} else
+ 			jump->target = location;
+ 
+-		if (CIRCLEQ_EMPTY(head))
++		if (TAILQ_EMPTY(head))
+ 			jump->index = 0;
+ 		else
+-			jump->index = CIRCLEQ_LAST(head)->index + 1;
++			jump->index = TAILQ_LAST(head, jk_head)->index + 1;
+ 
+-		CIRCLEQ_INSERT_TAIL(head, jump, entries);
++		TAILQ_INSERT_TAIL(head, jump, entries);
+ 	}
+ 
+ 	if (i > 0) {
+-- 
+1.7.2.5
 
---=20
-balbi
-
---ew6BAiZeqk4r7MaW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQgDwoAAoJEIaOsuA1yqREhakP/A3Gwfn8BaLrDRfpTd/Crve9
-tjatgyaBEXFwdUkUpo0nZIHtZQcAbXFJO50hA6uq1r/5n/o0gl0MHQYcncaVEWWr
-D3RL2tQndiquDARS/UpoCiAT2BOY3rHDlB4Cs1MNpKOcyL6zPKI0VeHgq3hX97vL
-r74MZfidP76Q13YH6XjmrS33daOte2eq2nPAivvXM6STXp4JJRCVr9lKIK88xDRz
-FkxgdiBbjoF3H0dQEG3qxgH2ZOf4xYDbVAydCyHl6XG6DdO3srndrtRq4t3fgKOe
-2nf7THTHNIJvSvP/anAwkSaNNuNqZS7C0ZdUgoIbO3vVVh1khcoqCABz6gWNofzT
-6u6l7F+sZILDtVBh0uvuJiD+lKujXnjnKkh2Yx8WLvUN/kC/nhxOU9WvbkDKcq6e
-Iu7m9O6JcpfhsOk4KoBczeAUNdGdaX7eX2+dEP+LtrzJ/83D44cl8siJJJoVIL7h
-Tno6Ham6VTQg/fhPj444hO7S7D/EHY7q9lwpERcT8YhlSUDaFMIeyx9davm26G0Y
-yXEH3kaFEjvQCYGo8Tng13OJ5Jv5e8OQlZW4xI+1fXj3JJnyV2m+AvpN1e22iJHS
-Xsjxb8K83u9TlG1CadyW0j554mIeXnQQZ3wD84C0c+oJy0pPkQlyjlN6TAhmv/Ug
-NX1gnddzas72EhRYrw/h
-=gFkG
------END PGP SIGNATURE-----
-
---ew6BAiZeqk4r7MaW--
