@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932498Ab2JRRI7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 13:08:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46824 "EHLO
+	id S932678Ab2JRRJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 13:09:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46837 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932120Ab2JRRI5 (ORCPT
+	with ESMTP id S932120Ab2JRRJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 13:08:57 -0400
-Date: Thu, 18 Oct 2012 10:08:32 -0700
+	Thu, 18 Oct 2012 13:09:49 -0400
+Date: Thu, 18 Oct 2012 10:09:30 -0700
 From: tip-bot for Ingo Molnar <mingo@elte.hu>
-Message-ID: <tip-8ed92e51f99c2199c64cb33b4ba95ab12940a94c@git.kernel.org>
+Message-ID: <tip-e99e955b90d7aaa4418cace9734e8069921ba440@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, efault@gmx.de,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, efault@gmx.de,
+        a.p.zijlstra@chello.nl, riel@redhat.com, tglx@linutronix.de,
+        oleg@redhat.com, mingo@elte.hu
+Reply-To: riel@redhat.com, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, oleg@redhat.com,
         tglx@linutronix.de, mingo@elte.hu
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Add WAKEUP_PREEMPTION feature flag,
-  on by default
-Git-Commit-ID: 8ed92e51f99c2199c64cb33b4ba95ab12940a94c
+Subject: [tip:numa/core] numa: Fix task_work() double add
+Git-Commit-ID: e99e955b90d7aaa4418cace9734e8069921ba440
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,59 +27,114 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 18 Oct 2012 10:08:38 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 18 Oct 2012 10:09:36 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8ed92e51f99c2199c64cb33b4ba95ab12940a94c
-Gitweb:     http://git.kernel.org/tip/8ed92e51f99c2199c64cb33b4ba95ab12940a94c
+Commit-ID:  e99e955b90d7aaa4418cace9734e8069921ba440
+Gitweb:     http://git.kernel.org/tip/e99e955b90d7aaa4418cace9734e8069921ba440
 Author:     Ingo Molnar <mingo@elte.hu>
-AuthorDate: Sun, 14 Oct 2012 14:28:50 +0200
+AuthorDate: Mon, 15 Oct 2012 07:46:28 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 16 Oct 2012 10:05:27 +0200
+CommitDate: Thu, 18 Oct 2012 08:08:24 +0200
 
-sched: Add WAKEUP_PREEMPTION feature flag, on by default
+numa: Fix task_work() double add
 
-As per the recent discussion with Mike and Linus, make it easier to
-test with/without this feature. No change in default behavior.
+task_work() must not be double added - it can result in an infinite
+loop in run_task_work().
 
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-izoxq4haeg4mTognnDbwcevt@git.kernel.org
+So separate out p->numa_work and signal an 'empty' work callback with
+numa_work->next == &numa_work. (NULL cannot be used as the task work
+code uses it.)
+
+It would be handy if kerne/task_work.c had something like this in
+run_task_work():
+
+	if (WARN_ON_ONCE(work->next == work))
+		break;
+
+As it took some time to figure out why it was sporadically hanging.
+
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/n/tip-gT2keodfehhzwmx0appafeUy@git.kernel.org
 ---
- kernel/sched/fair.c     |    2 +-
- kernel/sched/features.h |    5 +++++
- 2 files changed, 6 insertions(+), 1 deletions(-)
+ include/linux/sched.h |    1 +
+ kernel/sched/core.c   |    1 +
+ kernel/sched/fair.c   |   16 ++++++----------
+ 3 files changed, 8 insertions(+), 10 deletions(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index c86db44..7882686 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1529,6 +1529,7 @@ struct task_struct {
+ 	u64 node_stamp;			/* migration stamp  */
+ 	unsigned long numa_contrib;
+ 	unsigned long *numa_faults;
++	struct callback_head numa_work;
+ #endif /* CONFIG_SCHED_NUMA */
+ 
+ 	struct rcu_head rcu;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 23ad8b9..08661fe 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1546,6 +1546,7 @@ static void __sched_fork(struct task_struct *p)
+ 	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
+ 	p->numa_faults = NULL;
+ 	p->numa_task_period = sysctl_sched_numa_task_period_min;
++	p->numa_work.next = &p->numa_work;
+ #endif /* CONFIG_SCHED_NUMA */
+ }
+ 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6b800a1..f936552 100644
+index 530448c..1e24aa1 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -2907,7 +2907,7 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
- 	 * Batch and idle tasks do not preempt non-idle tasks (their preemption
- 	 * is driven by the tick):
+@@ -900,8 +900,9 @@ void task_numa_work(struct callback_head *work)
+ 	struct task_struct *p = current;
+ 	struct mm_struct *mm = p->mm;
+ 
+-	WARN_ON_ONCE(p != container_of(work, struct task_struct, rcu));
++	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
+ 
++	work->next = work; /* protect against double add */
+ 	/*
+ 	 * Who cares about NUMA placement when they're dying.
+ 	 *
+@@ -933,12 +934,13 @@ void task_numa_work(struct callback_head *work)
+  */
+ void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ {
++	struct callback_head *work = &curr->numa_work;
+ 	u64 period, now;
+ 
+ 	/*
+ 	 * We don't care about NUMA placement if we don't have memory.
  	 */
--	if (unlikely(p->policy != SCHED_NORMAL))
-+	if (unlikely(p->policy != SCHED_NORMAL) || !sched_feat(WAKEUP_PREEMPTION))
+-	if (!curr->mm)
++	if (!curr->mm || (curr->flags & PF_EXITING) || work->next != work)
  		return;
  
- 	find_matching_se(&se, &pse);
-diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-index eebefca..e68e69a 100644
---- a/kernel/sched/features.h
-+++ b/kernel/sched/features.h
-@@ -32,6 +32,11 @@ SCHED_FEAT(LAST_BUDDY, true)
- SCHED_FEAT(CACHE_HOT_BUDDY, true)
+ 	/*
+@@ -954,14 +956,8 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ 		curr->node_stamp = now;
  
- /*
-+ * Allow wakeup-time preemption of the current task:
-+ */
-+SCHED_FEAT(WAKEUP_PREEMPTION, true)
-+
-+/*
-  * Use arch dependent cpu power functions
-  */
- SCHED_FEAT(ARCH_POWER, true)
+ 		if (!time_before(jiffies, curr->mm->numa_next_scan)) {
+-			/*
+-			 * We can re-use curr->rcu because we checked curr->mm
+-			 * != NULL so release_task()->call_rcu() was not called
+-			 * yet and exit_task_work() is called before
+-			 * exit_notify().
+-			 */
+-			init_task_work(&curr->rcu, task_numa_work);
+-			task_work_add(curr, &curr->rcu, true);
++			init_task_work(work, task_numa_work); /* TODO: move this into sched_fork() */
++			task_work_add(curr, work, true);
+ 		}
+ 	}
+ }
