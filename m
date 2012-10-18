@@ -1,94 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab2JRWUL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 18:20:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40767 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724Ab2JRWUK (ORCPT
+	id S1756477Ab2JRWWi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 18:22:38 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:48494 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335Ab2JRWWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 18:20:10 -0400
-Date: Thu, 18 Oct 2012 15:20:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: wency@cn.fujitsu.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, minchan.kim@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH v2 2/5] memory-hotplug: update mce_bad_pages when
- removing the memory
-Message-Id: <20121018152008.ada8fea5.akpm@linux-foundation.org>
-In-Reply-To: <507ECA43.3070402@linux.vnet.ibm.com>
-References: <1350475735-26136-1-git-send-email-wency@cn.fujitsu.com>
-	<1350475735-26136-3-git-send-email-wency@cn.fujitsu.com>
-	<507ECA43.3070402@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Oct 2012 18:22:37 -0400
+Date: Thu, 18 Oct 2012 15:21:55 -0700
+From: Matt Helsley <matthltc@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Matt Helsley <matthltc@linux.vnet.ibm.com>, rjw@sisk.pl, oleg@redhat.com,
+        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.8] cgroup_freezer: allow migration
+ regardless of freezer state and update locking
+Message-ID: <20121018222155.GB6223@us.ibm.com>
+References: <1350426526-14254-1-git-send-email-tj@kernel.org>
+ <20121017191606.GA6223@us.ibm.com>
+ <20121018211434.GI13370@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121018211434.GI13370@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101822-7408-0000-0000-000009750C54
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Oct 2012 08:09:55 -0700
-Dave Hansen <dave@linux.vnet.ibm.com> wrote:
-
-> Hi Wen,
+On Thu, Oct 18, 2012 at 02:14:34PM -0700, Tejun Heo wrote:
+> Hello, Matt.
 > 
-> > +#ifdef CONFIG_MEMORY_FAILURE
-> > +static void clear_hwpoisoned_pages(struct page *memmap, int nr_pages)
-> > +{
-> > +	int i;
-> > +
-> > +	if (!memmap)
-> > +		return;
+> On Wed, Oct 17, 2012 at 12:16:06PM -0700, Matt Helsley wrote:
+> > > * Unfreezable kernel tasks don't prevent a cgroup from transitioning
+> > >   into FROZEN from FREEZING.  There's nothing userland can do with or
+> > >   about such tasks.
+> > 
+> > Seems like a non-problem. Do you have a testcase showing how kernel
+> > threads prevent cgroups that should be freezable from being frozen?
+> > It used to be that you couldn't move kernel threads out of the root
+> > cgroup and the root cgroup was not freezable. So this was never a
+> > problem before. Is there some change here that I'm unaware of?
 > 
-> I guess free_section_usemap() does the same thing.
+> Hmmm?  Nothing prevents kthreads from being moved around.  We only
+> recently added the restriction to prevent migration of the kthreadd
+> (the one which creates other kthreads).  You can reproduce it with
+> khungtask or any other !freezable kthreads.
 
-What does this observation mean?
+Ok. I don't immmediately see why that'd be a good idea but it's
+possible..
 
-> > +	for (i = 0; i < PAGES_PER_SECTION; i++) {
-> > +		if (PageHWPoison(&memmap[i])) {
-> > +			atomic_long_sub(1, &mce_bad_pages);
-> > +			ClearPageHWPoison(&memmap[i]);
-> > +		}
-> > +	}
-> > +}
-> > +#endif
-> > +
-> >  void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
-> >  {
-> >  	struct page *memmap = NULL;
->
-> ..
->
-> and keep the #ifdef out of sparse_remove_one_section().
+> 
+> > > * Tasks can be moved in and out of a frozen cgroup.  Tasks are made to
+> > >   conform to the state of the new cgroup during migration.  This
+> > >   behavior makes a lot more sense and removes the use of
+> > >   ->can_attach() which makes co-mounting difficult.
+> > 
+> > One nice aspect of freezing the set of tasks in the cgroup as well as the
+> > tasks themselves was you had a fixed set of tasks to work with (from
+> > userspace or otherwise). With this change that will no longer be true.
+> > This is a userspace-visible behavior change and userspace code may
+> > have relied on this feature.
+> >
+> > Will this work for the CRIU folks? With this patch one of the tasks being
+> > checkpointed could become thawed simply by some other process writing
+> > the pid into a different cgroup's tasks file. In contrast, with the
+> > current code they'd have to explicitly thaw its cgroup first.
+> 
+> Yeap, this is a userland visible behavior change.  Don't see any other
+> way around it tho and if you can't prevent someone else moving things
+> in/out of your cgroup, what prevents someone else echoing THAWED to
+> freezer.state?
 
-yup.
+The userspace code would at least have to be aware that the group could
+be frozen. That alone ought to encourage some tool writers to think
+about how to share the cgroup's freezer.state and possibly other bits
+with other tools and/or the user(s).
 
---- a/mm/sparse.c~memory-hotplug-update-mce_bad_pages-when-removing-the-memory-fix
-+++ a/mm/sparse.c
-@@ -788,6 +788,10 @@ static void clear_hwpoisoned_pages(struc
- 		}
- 	}
- }
-+#else
-+static inline void clear_hwpoisoned_pages(struct page *memmap, int nr_pages)
-+{
-+}
- #endif
- 
- void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
-@@ -803,10 +807,7 @@ void sparse_remove_one_section(struct zo
- 		ms->pageblock_flags = NULL;
- 	}
- 
--#ifdef CONFIG_MEMORY_FAILURE
- 	clear_hwpoisoned_pages(memmap, PAGES_PER_SECTION);
--#endif
--
- 	free_section_usemap(memmap, usemap);
- }
- #endif
-_
+In general though, yes, there's alot of potential for users and tools
+to step all over each others' toes when it comes to manipulating cgroup
+state. Even tools aware of the freezer could still write THAWED to the
+freezer state when another tool does not expect it.
+
+<off_topic>
+"Whoever" did the freeze needs a way to "lock" access to the freezer state,
+change the freezer state itself, do something (e.g. CRIU) which relies on
+the state not changing, and then release the lock. Plus the lock has to be
+released by the kernel if "Whoever" dies without the chance to release it.
+So I was thinking who holds the lock and its lifetime could be represented
+in userspace by file descriptor(s).
+</off_topic>
+
+> As for CRIU, it isn't using cgroup freezer at the moment because
+> frozen tasks can't be ptraced currently.  Something I'm hoping to
+> change but not sure when it can be done.
+
+OK, but that doesn't mean the frozen nature of the task list itself
+won't be useful in the future.
+
+Cheers,
+	-Matt Helsley
 
