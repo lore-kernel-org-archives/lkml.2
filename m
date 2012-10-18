@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932641Ab2JRRmT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 13:42:19 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:49566 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932125Ab2JRRmR (ORCPT
+	id S932665Ab2JRRyG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 13:54:06 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:56452 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932406Ab2JRRyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 13:42:17 -0400
-Date: Thu, 18 Oct 2012 13:42:03 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xensource.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, lenb@kernel.org
-Subject: Re: [Xen-devel] Is: axe read_tscp pvops call. Was: Re: [RFC] ACPI S3
- and Xen (suprisingly small\!).
-Message-ID: <20121018174200.GA20508@localhost.localdomain>
-References: <1350481786-4969-1-git-send-email-konrad.wilk@oracle.com>
- <507ED6C0.4020503@zytor.com>
- <20121017161036.GA10691@phenom.dumpdata.com>
- <507EE1C3.7070300@zytor.com>
- <20121017165452.GA22740@phenom.dumpdata.com>
- <50802EEC.6060102@citrix.com>
+	Thu, 18 Oct 2012 13:54:04 -0400
+Date: Thu, 18 Oct 2012 13:54:47 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Ingo Molnar <mingo@kernel.org>
+cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, eranian@gmail.com,
+        "Meadows, Lawrence F" <lawrence.f.meadows@intel.com>
+Subject: Re: [PATCH 0/3] perf_event: enable overflow interrupts on KNC
+In-Reply-To: <20121017214700.GA9851@gmail.com>
+Message-ID: <alpine.DEB.2.02.1210181339510.28924@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.02.1210171256550.23243@vincent-weaver-1.um.maine.edu> <20121017180753.GA7291@gmail.com> <alpine.DEB.2.02.1210171614060.23685@vincent-weaver-1.um.maine.edu> <20121017214700.GA9851@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50802EEC.6060102@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> As for 'perf', since Xen already provides a virtual PMU for HVM guests
-> It's not clear why we would spend the effort to implement another
-> mechanism for PV guests (instead of using the virtual PMU from a PVH guest).
+On Wed, 17 Oct 2012, Ingo Molnar wrote:
 
-Would that allow one to evaluate the performance/bottlenecks that the
-hypervisor might have?
+> > Since the knc pmu driver closely models the p6 one, it was 
+> > straightforward to use it as a basis for the forward port.  
+> > Everything _should_ work but I've only compile tested.
+> 
+> Ok. As long as it's all identical I'd still be inclined to 
+> include it in v3.7, to reduce version skew. If the v3.7-rc1 
+> kernel won't even boot it's not like we'll be able to further 
+> regress it.
+
+yes, it definitely shouldn't cause any regressions, and in fact the
+version in 3.7-rc1 might not work properly without patch2 in this 
+set applied due to the cpuc->enabled problem that it took us a while to 
+track down.
+
+I looked into getting a 3.7 kernel up and going on the KNC board, but
+the diff between Intel's release and stock 2.6.34.11 has 70k 
+lines.  Much of that is kdb, but there's also a lot of low-level 
+changes too, some of it due to the fact that KNC is 64-bit x86 but has no 
+support for SSE (so you need to handle that properly or none of your 
+userspace will run).
+
+Thanks,
+
+Vince Weaver
+vincent.weaver@maine.edu
