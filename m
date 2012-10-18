@@ -1,108 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755682Ab2JRKXs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 06:23:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55447 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754874Ab2JRKXp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 06:23:45 -0400
-Message-ID: <507FD8AA.50500@canonical.com>
-Date: Thu, 18 Oct 2012 12:23:38 +0200
-From: Stefan Bader <stefan.bader@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1755518Ab2JRKY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 06:24:28 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:26392 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754989Ab2JRKYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 06:24:24 -0400
+Subject: [PATCH v7 06/10] qlge driver: rename internal SEM_SET macro to
+	SEM_INIT
+To: akpm@linux-foundation.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: catalin.marinas@arm.com, will.deacon@arm.com, dhowells@redhat.com,
+        manfred@colorfullife.com, hughd@google.com, jmorris@namei.org,
+        mtk.manpages@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        paulmck@linux.vnet.ibm.com, sds@tycho.nsa.gov, devel@openvz.org,
+        a.p.zijlstra@chello.nl, cmetcalf@tilera.com, linux-driver@qlogic.com,
+        ron.mercer@qlogic.com, viro@zeniv.linux.org.uk, eparis@parisplace.org,
+        tglx@linutronix.de, jitendra.kalsaria@qlogic.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, ebiederm@xmission.com,
+        casey@schaufler-ca.com
+Date: Thu, 18 Oct 2012 14:23:06 +0400
+Message-ID: <20121018102306.16036.84713.stgit@localhost.localdomain>
+In-Reply-To: <20121018101543.16036.12221.stgit@localhost.localdomain>
+References: <20121018101543.16036.12221.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: cwillu <cwillu@cwillu.com>
-CC: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de
-Subject: Re: [tip:sched/core] sched: Fix race in task_group()
-References: <1340364965.18025.71.camel@twins> <tip-8323f26ce3425460769605a6aece7a174edaa7d1@git.kernel.org> <CAE5mzvjPXAZdOi1p8AB47zOQzgAErBU66gAS8spnpOs+=-+azA@mail.gmail.com>
-In-Reply-To: <CAE5mzvjPXAZdOi1p8AB47zOQzgAErBU66gAS8spnpOs+=-+azA@mail.gmail.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enigFFDC2738258993D489844527"
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigFFDC2738258993D489844527
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+The reason for this patch is that SET_SET is desired to be a new part IPC
+sys_semctl() API.
+The name itself for IPC is quite natural, because all linux-specific commands
+names for IPC system calls are originally created by replacing "IPC_" part by
+"SEM_"("MSG_", "SHM_") part.
+So, I'm hoping, that this change doesn't really matters for "QLogic qlge NIC
+HBA Driver" developers, since it's just an internal define.
 
-On 18.10.2012 10:27, cwillu wrote:
-> On Tue, Jul 24, 2012 at 8:21 AM, tip-bot for Peter Zijlstra
-> <peterz@infradead.org> wrote:
->> Commit-ID:  8323f26ce3425460769605a6aece7a174edaa7d1
->> Gitweb:     http://git.kernel.org/tip/8323f26ce3425460769605a6aece7a17=
-4edaa7d1
->> Author:     Peter Zijlstra <peterz@infradead.org>
->> AuthorDate: Fri, 22 Jun 2012 13:36:05 +0200
->> Committer:  Ingo Molnar <mingo@kernel.org>
->> CommitDate: Tue, 24 Jul 2012 13:58:20 +0200
->>
->> sched: Fix race in task_group()
->>
->> Stefan reported a crash on a kernel before a3e5d1091c1 ("sched:
->> Don't call task_group() too many times in set_task_rq()"), he
->> found the reason to be that the multiple task_group()
->> invocations in set_task_rq() returned different values.
->>
->> Looking at all that I found a lack of serialization and plain
->> wrong comments.
->>
->> The below tries to fix it using an extra pointer which is
->> updated under the appropriate scheduler locks. Its not pretty,
->> but I can't really see another way given how all the cgroup
->> stuff works.
->>
->> Reported-and-tested-by: Stefan Bader <stefan.bader@canonical.com>
->> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> Link: http://lkml.kernel.org/r/1340364965.18025.71.camel@twins
->> Signed-off-by: Ingo Molnar <mingo@kernel.org>
->=20
-> I just finished bisecting a crash on boot to this commit; booting with
-> "noautogroup" brings it back.
->=20
-> 3.5.4 is the latest -stable that still boots, and none of the 3.6 rc's
-> boot at all.
->=20
-> Photo of the bug (3.6.0next is 3.6 + btrfs's for-linus):
-> https://lh5.googleusercontent.com/-0DY-YYhgvzs/UHdB-BQdzMI/AAAAAAAAAEg/=
-QhY9rgxnv98/s811/2012-10-11
->=20
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ drivers/net/ethernet/qlogic/qlge/qlge.h      |    4 ++--
+ drivers/net/ethernet/qlogic/qlge/qlge_main.c |   16 ++++++++--------
+ 2 files changed, 10 insertions(+), 10 deletions(-)
 
-On a very quick glance I wonder whether there might be a case where sched=
-_fork
-goes into set_task_cpu with a different cpu than the current but has not =
-yet
-task_group.sched_task_group set to something valid...
+diff --git a/drivers/net/ethernet/qlogic/qlge/qlge.h b/drivers/net/ethernet/qlogic/qlge/qlge.h
+index a131d7b..6f46ea5 100644
+--- a/drivers/net/ethernet/qlogic/qlge/qlge.h
++++ b/drivers/net/ethernet/qlogic/qlge/qlge.h
+@@ -347,10 +347,10 @@ enum {
+ enum {
+ 	/*
+ 	 * Example:
+-	 * reg = SEM_XGMAC0_MASK | (SEM_SET << SEM_XGMAC0_SHIFT)
++	 * reg = SEM_XGMAC0_MASK | (SEM_INIT << SEM_XGMAC0_SHIFT)
+ 	 */
+ 	SEM_CLEAR = 0,
+-	SEM_SET = 1,
++	SEM_INIT = 1,
+ 	SEM_FORCE = 3,
+ 	SEM_XGMAC0_SHIFT = 0,
+ 	SEM_XGMAC1_SHIFT = 2,
+diff --git a/drivers/net/ethernet/qlogic/qlge/qlge_main.c b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
+index b262d61..cfb0f62 100644
+--- a/drivers/net/ethernet/qlogic/qlge/qlge_main.c
++++ b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
+@@ -109,28 +109,28 @@ static int ql_sem_trylock(struct ql_adapter *qdev, u32 sem_mask)
+ 
+ 	switch (sem_mask) {
+ 	case SEM_XGMAC0_MASK:
+-		sem_bits = SEM_SET << SEM_XGMAC0_SHIFT;
++		sem_bits = SEM_INIT << SEM_XGMAC0_SHIFT;
+ 		break;
+ 	case SEM_XGMAC1_MASK:
+-		sem_bits = SEM_SET << SEM_XGMAC1_SHIFT;
++		sem_bits = SEM_INIT << SEM_XGMAC1_SHIFT;
+ 		break;
+ 	case SEM_ICB_MASK:
+-		sem_bits = SEM_SET << SEM_ICB_SHIFT;
++		sem_bits = SEM_INIT << SEM_ICB_SHIFT;
+ 		break;
+ 	case SEM_MAC_ADDR_MASK:
+-		sem_bits = SEM_SET << SEM_MAC_ADDR_SHIFT;
++		sem_bits = SEM_INIT << SEM_MAC_ADDR_SHIFT;
+ 		break;
+ 	case SEM_FLASH_MASK:
+-		sem_bits = SEM_SET << SEM_FLASH_SHIFT;
++		sem_bits = SEM_INIT << SEM_FLASH_SHIFT;
+ 		break;
+ 	case SEM_PROBE_MASK:
+-		sem_bits = SEM_SET << SEM_PROBE_SHIFT;
++		sem_bits = SEM_INIT << SEM_PROBE_SHIFT;
+ 		break;
+ 	case SEM_RT_IDX_MASK:
+-		sem_bits = SEM_SET << SEM_RT_IDX_SHIFT;
++		sem_bits = SEM_INIT << SEM_RT_IDX_SHIFT;
+ 		break;
+ 	case SEM_PROC_REG_MASK:
+-		sem_bits = SEM_SET << SEM_PROC_REG_SHIFT;
++		sem_bits = SEM_INIT << SEM_PROC_REG_SHIFT;
+ 		break;
+ 	default:
+ 		netif_alert(qdev, probe, qdev->ndev, "bad Semaphore mask!.\n");
 
-
-
---------------enigFFDC2738258993D489844527
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
-
-iQIcBAEBCgAGBQJQf9iqAAoJEOhnXe7L7s6jXGYQANoHhRafySzjbpZUW0nj8IBf
-mC+Z1+VC4TfZIr2LQX/uw6Sw8amYcgivwr9b0ET2FOXTeO2Ntha/MOacJXibJIMd
-w8CjkubfbfZvbzSHgOhpiFDw4gcQlqD2VjvE1fx6xdpLGtYqWjjDW9GZHBXAOcfK
-NaMKyPO6j60yoQyq/jG+UW00ZTtGwxbcJXKtKyYil7iG/CH6I9P8f5tD+5n+pqwR
-rTl7IdcQKkmDcAfLc+FFEasMX0LC5DnGptquZ2BzCHaUeFYswmtcAcL5kRWZAIe4
-W2Iy5esCh6zONfanFUlYM1gIV7Q9i1SaRgoiQ4jWlUVs1vUGk3Qpq8+BSZLWtmVf
-0QyLpJzFCmlm/xti45qLztz5rmtTLUZ4dnGigVkdMoBkE92usTRVMZm/69FnWxfQ
-Rh4WlBZ2ZrErTsr7KbpV777NzUvMhrct3tPgXWJOTdS2ymrQ9cKL351GW8+LJAXV
-WMPQcEdnrdBqpYMLCa24yFKLfUIt/ECVx7mFgRyyif0IPisTk1WvpBl92uzaZ8PK
-SWmmJX5jJe9NHiJD3r0lm/PtoZsYB4oQsRLJuwihYRXupuqyjKX2LLGRU1FBQDe2
-M5QB81m3cYz3JRbwSTM6BbTOjv2RrW2M2+dQc+L4yYz/xUmbhii8l8DiAAzgy3Aa
-mrYikgfdxYx2KufaI4Z6
-=bjGF
------END PGP SIGNATURE-----
-
---------------enigFFDC2738258993D489844527--
