@@ -1,70 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257Ab2JRFxP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 01:53:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52965 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754198Ab2JRFxO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 01:53:14 -0400
-Message-ID: <507F9944.50505@kernel.dk>
-Date: Thu, 18 Oct 2012 07:53:08 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1754303Ab2JRFxb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 01:53:31 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:23314 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754275Ab2JRFx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 01:53:29 -0400
+X-IronPort-AV: E=Sophos;i="4.80,605,1344182400"; 
+   d="scan'208";a="6020972"
+Message-ID: <507F9915.2080409@cn.fujitsu.com>
+Date: Thu, 18 Oct 2012 13:52:21 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: MAX_LOCKDEP_ENTRIES too low  (called from ioc_release_fn)
-References: <20121018015312.GA29865@redhat.com>
-In-Reply-To: <20121018015312.GA29865@redhat.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: lenb@kernel.org, yinghai@kernel.org, jiang.liu@huawei.com,
+        izumi.taku@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add PNP0A08 into acpi_pci_roots array.
+References: <1350526971-9427-1-git-send-email-tangchen@cn.fujitsu.com> <CAErSpo6ehw1JHMyE27MuX2VR89+1zC48QJe9Udih88N-W-73Wg@mail.gmail.com>
+In-Reply-To: <CAErSpo6ehw1JHMyE27MuX2VR89+1zC48QJe9Udih88N-W-73Wg@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/18 13:53:04,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/18 13:53:05,
+	Serialize complete at 2012/10/18 13:53:05
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-10-18 03:53, Dave Jones wrote:
-> Triggered while fuzz testing..
-> 
-> 
-> BUG: MAX_LOCKDEP_ENTRIES too low!
-> turning off the locking correctness validator.
-> Pid: 22788, comm: kworker/2:1 Not tainted 3.7.0-rc1+ #34
-> Call Trace:
->  [<ffffffff810decdd>] add_lock_to_list.isra.29.constprop.45+0xdd/0xf0
->  [<ffffffff810e2871>] __lock_acquire+0x1121/0x1ba0
->  [<ffffffff810e3a12>] lock_acquire+0xa2/0x220
->  [<ffffffff8117bad2>] ? free_one_page+0x32/0x450
->  [<ffffffff816c5a59>] ? sub_preempt_count+0x79/0xd0
->  [<ffffffff816c0800>] _raw_spin_lock+0x40/0x80
->  [<ffffffff8117bad2>] ? free_one_page+0x32/0x450
->  [<ffffffff8117bad2>] free_one_page+0x32/0x450
->  [<ffffffff8117bf41>] ? __free_pages_ok.part.58+0x51/0x110
->  [<ffffffff8117bf9c>] __free_pages_ok.part.58+0xac/0x110
->  [<ffffffff8117cd73>] __free_pages+0x73/0x90
->  [<ffffffff811cb4f3>] __free_slab+0xd3/0x1b0
->  [<ffffffff811cb609>] discard_slab+0x39/0x50
->  [<ffffffff816b77db>] __slab_free+0x378/0x3a3
->  [<ffffffff81341289>] ? ioc_release_fn+0x99/0xe0
->  [<ffffffff81341289>] ? ioc_release_fn+0x99/0xe0
->  [<ffffffff811cd4e2>] kmem_cache_free+0x2f2/0x320
->  [<ffffffff816c5a59>] ? sub_preempt_count+0x79/0xd0
->  [<ffffffff81341289>] ioc_release_fn+0x99/0xe0
->  [<ffffffff81095a37>] process_one_work+0x207/0x780
->  [<ffffffff810959c7>] ? process_one_work+0x197/0x780
->  [<ffffffff813411f0>] ? get_io_context+0x20/0x20
->  [<ffffffff8109638e>] worker_thread+0x15e/0x440
->  [<ffffffff81096230>] ? rescuer_thread+0x240/0x240
->  [<ffffffff8109d0cd>] kthread+0xed/0x100
->  [<ffffffff810de02e>] ? put_lock_stats.isra.25+0xe/0x40
->  [<ffffffff8109cfe0>] ? kthread_create_on_node+0x160/0x160
->  [<ffffffff816c9dac>] ret_from_fork+0x7c/0xb0
->  [<ffffffff8109cfe0>] ? kthread_create_on_node+0x160/0x160
+On 10/18/2012 11:55 AM, Bjorn Helgaas wrote:
+> On Wed, Oct 17, 2012 at 8:22 PM, Tang Chen<tangchen@cn.fujitsu.com>  wrote:
+>> acpi_pci_roots array doesn't include PNP0A08, which is PCI Express
+>> Root Bridge.
+>
+> You need to explain why this change is necessary.  PNP0A08 devices
+> will have a PNP0A03 _CID, so the driver already claims PNP0A08 devices
+> because the _CID matches.
 
-Not sure why you are CC'ing a call site, rather than the maintainers of
-the code. Just looks like lockdep is using too small a static value.
-Though it is pretty darn large...
+Hi Bjorn,
 
--- 
-Jens Axboe
+Here is my reason, but just my personal opinion. :)
+
+1) There is no code to handle a pcie host bridge hotplug in kernel now.
+    And when this happens,  pci host bridge related code will be
+    executed, which makes me think that PNP0A03 and PNP0A08 are seen as
+    the same devices. At least for now they are.
+    So, acpi_pci_roots doesn't include PNP0A08 seems a little strange to
+    me.
+
+2) When I was reading Liu Jiang's "ACPI based hotplug framework"
+    patches, I happened to see that he defined the following:
+
+         static char *acpihp_dev_pcihb_ids[] = {
+	        "PNP0A03",
+                 "PNP0A08",
+                 NULL
+         };
+
+    And also, Lu Yinghai defined the following in his own patch:
+
+         static const struct acpi_device_id root_device_ids[] = {
+                 {"PNP0A03", 0},
+                 {"PNP0A08", 0},
+                 {NULL, 0}
+         };
+
+    I think all these arraies should represent the same things, and we
+    need only one of them.
+    For now, it is root_device_ids[] in drivers/acpi/pci_root.c.
+
+Well, all above is my own opinion. And you are right, even if we don't
+change it, there won't be any problem.
+
+Thanks. :)
+
+
+
+>
+>> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+>> ---
+>>   drivers/acpi/pci_root.c |    1 +
+>>   1 files changed, 1 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+>> index 037b59c..dedc4d6 100644
+>> --- a/drivers/acpi/pci_root.c
+>> +++ b/drivers/acpi/pci_root.c
+>> @@ -56,6 +56,7 @@ static int acpi_pci_root_start(struct acpi_device *device);
+>>
+>>   static const struct acpi_device_id root_device_ids[] = {
+>>          {"PNP0A03", 0},
+>> +       {"PNP0A08", 0},
+>>          {"", 0},
+>>   };
+>>   MODULE_DEVICE_TABLE(acpi, root_device_ids);
+>> --
+>> 1.7.1
+>>
+>
 
