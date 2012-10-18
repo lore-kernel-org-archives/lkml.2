@@ -1,103 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab2JRAEa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 20:04:30 -0400
-Received: from gate.crashing.org ([63.228.1.57]:57969 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752729Ab2JRAE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 20:04:29 -0400
-Message-ID: <1350518655.4678.120.camel@pasglop>
-Subject: Re: [RESEND PATCH 2/4] asm-generic: io: don't perform swab during
- {in,out} string functions
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Mike Frysinger <vapier@gentoo.org>
-Date: Thu, 18 Oct 2012 11:04:15 +1100
-In-Reply-To: <CAMuHMdXcQjDyen+o5aH=1zUOkNX-cfT3aXBOgCpyop=V67jk7w@mail.gmail.com>
-References: <1350488704-3711-1-git-send-email-will.deacon@arm.com>
-	 <1350488704-3711-3-git-send-email-will.deacon@arm.com>
-	 <CAMuHMdXcQjDyen+o5aH=1zUOkNX-cfT3aXBOgCpyop=V67jk7w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S1752930Ab2JRAG4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 20:06:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58484 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752830Ab2JRAGz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 20:06:55 -0400
+Date: Wed, 17 Oct 2012 17:06:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Qing Z <njumical@gmail.com>
+Cc: mingo@kernel.org, ben@decadent.org.uk, markivx@codeaurora.org,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, cxie4@marvell.com,
+        binw@marvell.com, wwang27@marvell.com, xjian@marvell.com,
+        zhangwm@marvell.com, Qing Zhu <qzhu@marvell.com>
+Subject: Re: [PATCH] panic: fix incomplete panic log in panic()
+Message-Id: <20121017170654.638e20bf.akpm@linux-foundation.org>
+In-Reply-To: <CAE-am1OY8Tjv6a004-NfhEe1DXTGcFC6ogVAmtVdESW8sZ_R4w@mail.gmail.com>
+References: <BD54883EA7DE8B41A61B7E723561C711139F75D348@sc-vexch3.marvell.com>
+	<CAE-am1NFB+opbid_f7RA_9EXUKjPCJssdOcZBrEQmQHG4EP9Gg@mail.gmail.com>
+	<20121015150204.6f837a39.akpm@linux-foundation.org>
+	<CAE-am1OY8Tjv6a004-NfhEe1DXTGcFC6ogVAmtVdESW8sZ_R4w@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-17 at 21:16 +0200, Geert Uytterhoeven wrote:
-> On Wed, Oct 17, 2012 at 5:45 PM, Will Deacon <will.deacon@arm.com> wrote:
-> > The {in,out}s{b,w,l} functions are designed to operate on a stream of
-> > bytes and therefore should not perform any byte-swapping, regardless of
-> > the CPU byte order.
+On Wed, 17 Oct 2012 18:44:32 +0800
+Qing Z <njumical@gmail.com> wrote:
+
+>          In ./drivers/video/fbmem.c, codes below cause issues:
+> 	
+>                             case FBIOPAN_DISPLAY:
+> 			...
+> 			console_lock();
+> 			ret = fb_pan_display(info, &var);
+> 			console_unlock();
+> 			...
+> 			break;
 > 
-> Euh?
-
-Will is perfectly right :-)
-
-> They transfer a stream of bytes between memory and PCI/ISA I/O space by
-> reading from/writing to a single I/O port of width 8, 16, or 32 bits.
-> On big endian machines, I/O port accesses may need to be swapped.
-
-No. Not for streams. I suggest you watch the recording of my Plumbers
-talk :-)
-
-The sort story is that endianness is not a property of the IO port but
-of the information that transit through it. If you're just going to copy
-it into memory, you want to preserve it's format and so do not byteswap.
-
-The byteswap we do on standard accessors is a "helper" because we assume
-that underneath those IO ports are registers that are Little Endian. But
-when using one as a window to a byte stream, we must not arbitrarily
-swap the byte stream. We copy it as-is to memory, and then one can work
-at interpreting the various fields that might or might not be present in
-that stream with the appropriate accessors for memory accesses. 
-
-You will notice that all our stream IO functions are similarly
-non-swapping on powerpc.
-
-> > This patch fixes the generic IO header so that {in,out}s{b,w,l} call
-> > the __raw_{read,write} functions directly rather than going via the
-> > endian-correcting accessors.
+> issue case 1:
+> 1. core 0 call console_lock();
+> 2. panic;
+> ...
+> 4. panic process done.
+> Result: all panic log won't be printed.
 > 
-> Furthermore __raw_*() has different semantics besides endianness, like
-> ordering barriers. So you can't just change one for the other.
-
-This is asm-generic. If you need barriers, implement your own. As far as
-I can tell, Will is perfectly correct.
-
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-
-Cheers,
-Ben.
-
-> > Cc: Mike Frysinger <vapier@gentoo.org>
-> > Cc: Ben Herrenschmidt <benh@kernel.crashing.org>
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > Signed-off-by: Will Deacon <will.deacon@arm.com>
-> > ---
-> >  include/asm-generic/io.h |   12 ++++++------
-> >  1 files changed, 6 insertions(+), 6 deletions(-)
-> >
-> > diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-> > index 3607921..403b861 100644
-> > --- a/include/asm-generic/io.h
-> > +++ b/include/asm-generic/io.h
-> > @@ -148,7 +148,7 @@ static inline void insb(unsigned long addr, void *buffer, int count)
+> issue case 2:
+> 1. core 0 panic;
+> 2. core 1 call console_lock();
+> 3. core 0 call smp_send_stop(), core1 stop;
+> 4. core 0 panic process done.
+> Result: only little top part of panic log will be printed.
 > 
-> The "addr" parameter is actually a misnomer. Probably it should be "port".
-> Oops, inb() and friends also use "addr".
+> My soluiton according to your suggestions:
 > 
-> Gr{oetje,eeting}s,
-> 
->                         Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
+> As you said, the first priority is to get oops message reliably
+> delivered. I think we needn't care about console_sem when panic, just
+> make sure we print the log imediately, so add
+> sema_init(&console_sem,1) in bust_spinlocks(0), just like zap_locks()
+> do.  It is safer than console_unlock() or up().
+
+hm, I see.
+
+> We can't add sema_init(..) in bust_spinlocks(1) due to issue case2,
+> although the condition is rare. About issue case 2: should we avoid
+> call console_lock() when panic?
+
+Well, I think we do have infrastructure to support that:
+
++	if (!oops_in_progress)
+		console_lock();
+
+I haven't looked to see how practical that approach would be.
 
 
+It would be better if we were to do
+
+	if (oops_in_progress)
+		console_trylock();
+	else
+		console_lock();
+
+where console_trylock() would *try* to do a console_lock() but would
+bail out if it was unable to immediately take the lock.  This is better
+because most of the time, the oopsing CPU *will* lock the console and
+will prevent other code from getting into the console code and messing
+things up.
+
+A problem with this approach is that it is very hard to test - the
+"console_trylock failed" case will be rare.
+
+
+I think it would be acceptable to just skip over the console_lock() if
+oops_in_progress is set.  And if we skipped the console_lock(), we
+should also skip the console_unlock().  So something like:
+
+	bool console_unlock_needed = true;
+
+	if (unlikely(oops_in_progress))
+		console_unlock_needed = false;
+	else
+		console_lock();
+
+	...
+
+	if (console_unlock_needed)
+		console_unlock();
+
+
+> If we init console_sem in panic, old text may be flushed too, but
+> should be before panic oops message. Also we can fix it by updating
+> con_start("con_start = log_end") once panic happen, only log after
+> panic will be printed.
