@@ -1,165 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991Ab2JRAHD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 20:07:03 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:46753 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936Ab2JRAG7 (ORCPT
+	id S1753032Ab2JRANh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 20:13:37 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:46402 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752918Ab2JRANf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 20:06:59 -0400
+	Wed, 17 Oct 2012 20:13:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzv=Kaa7e2jReyuJq-X7BTpSjS8V2D02y5exc_r2ZM_3w@mail.gmail.com>
+In-Reply-To: <CA+55aFyxuHTbqFHKoZ4Pqy28ivfginONowvfF0P9ctdiLmVqng@mail.gmail.com>
 References: <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com>
- <CA+5PVA7nio3D2sivVV6h7_gHEsehhMb5_Y=GTwsov3dEmkhtUQ@mail.gmail.com>
- <CA+55aFw0q-QMPJj2KZrawUZa9ikR85SiB2nUFmBKcWQtfeLbSA@mail.gmail.com>
- <CA+5PVA5TRAo7zu--_jd7yAqsSVHH9pdxkPh4v=rtfXTZVub0Zg@mail.gmail.com>
- <CA+55aFyO=GUQjY2vik=t2ntPJ4AQNYFFAhPuYyHbrZwFrwoQig@mail.gmail.com> <CA+55aFzv=Kaa7e2jReyuJq-X7BTpSjS8V2D02y5exc_r2ZM_3w@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 17 Oct 2012 17:06:37 -0700
-X-Google-Sender-Auth: pFyPPMVqfboF4n7R8s6rER6b6nw
-Message-ID: <CA+55aFyVxE-Y66kuvUujD-8Kxef=K-BSsNEStAL-TacPAUVgrQ@mail.gmail.com>
+	<CA+5PVA7nio3D2sivVV6h7_gHEsehhMb5_Y=GTwsov3dEmkhtUQ@mail.gmail.com>
+	<CA+55aFw0q-QMPJj2KZrawUZa9ikR85SiB2nUFmBKcWQtfeLbSA@mail.gmail.com>
+	<CA+55aFyxuHTbqFHKoZ4Pqy28ivfginONowvfF0P9ctdiLmVqng@mail.gmail.com>
+Date: Wed, 17 Oct 2012 20:13:34 -0400
+Message-ID: <CA+5PVA7fAtL3BEOjf8Ku1SBRbMvnneRXLkb=VRSpHkG=Bk7tzQ@mail.gmail.com>
 Subject: Re: RFC: sign the modules at install time
-To: Josh Boyer <jwboyer@gmail.com>
+From: Josh Boyer <jwboyer@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: David Miller <davem@davemloft.net>, Rusty Russell <rusty@rustcorp.com.au>,
         David Howells <dhowells@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=00504502b06d6830db04cc4a2a74
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00504502b06d6830db04cc4a2a74
-Content-Type: text/plain; charset=ISO-8859-1
-
-On Wed, Oct 17, 2012 at 4:44 PM, Linus Torvalds
+On Wed, Oct 17, 2012 at 7:21 PM, Linus Torvalds
 <torvalds@linux-foundation.org> wrote:
+> On Wed, Oct 17, 2012 at 4:07 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> Hmm. It *should* work for them too, because the debuginfo modules stay
+>> around in the object tree, and never get stripped there. None of this
+>> is different from what we used to do before: we stripped the modules
+>> as we copied them to /lib/modules (where the RPM build obviously would
+>> have that $RPM_BUILD_ROOT prefix on the module install path).
 >
-> I'll send out a fixed patch asap,
+> Ok, I read your description of the odd way fedora builds debuginfo kernels.
+>
+> I actually think that works fine too. I do agree with adding a "make
+> sign_modules" target, but it would *re-sign* them after "make
+> modules_install" has already signed them once.
+>
+> Why?
+>
+> What you'd do for your debuginfo requirements is:
+>
+>  - do the normal kernel build, and install modules (with *my* patch,
+> which does signing at install time)
+>
+>    This does the normal (conditionally stripped - you just wouldn't
+> strip them, but you cannot have done that before either) modules,
+> installs them, and signs then.
+>
+>    Ta-daa, you have your debuginfo modules installed, and they are
+> signed. Create the debuginfo rpm.
+>
+>  - now, strip the modules. This obviously destroys the signatures
 
-Ok, this is not pretty, and I think it generates the .signer and
-.keyid files at the wrong time.
+find-debuginfo.sh is what creates the debuginfo RPM.  It strips the
+module debug symbols (and the signature), so there's no need to further
+strip things at this point.
 
-I do the kernel build as a regular user, and just "make install" as
-root, and now it generates those turds as root-owned files. Ugly.
+>  - do the extra "make sign_modules" that you added, that re-signs the
+> already installed modules, and now you can create the non-debuginfo
+> rpm.
 
-But I took the code from the parts I had deleted in my over-eager
-"delete as much as possible of the strip-and-sign code", and moved it
-to the install phase. So this is the obvious quick fix, but I'm sure
-there are better solutions.
+OK, sounds sane at first glance.
 
-                    Linus
+> Voila. "make modules_install" does the right thing for everybody -
+> including normal users. And it does so without the incredible baroque
+> code. And no normal user is expected to ever use the new "make
+> sign_modules", but it allows for the Fedora "we'll want to sign them
+> again".
+>
+> That said, you could even just do "make sign-modules" on your own
+> without any makefile targets. After all, it would just be something
+> like
+>
+>    find $MODULEDIR --name '*.ko | while read i; do script/sign-file
+> keyfile x509file $i; done
+>
+> so it could even be done in that rpm script directly.
 
---00504502b06d6830db04cc4a2a74
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h8f40m0w0
+Sure, as long as the script is in the kernel tree (or at least I would
+like it to be).  When I wrote the patch, _none_ of the modsign stuff was
+in-tree at the time so I had to carry and adapt things as the code
+changed along the way.  In my defense, I did say I have to clean it up
+still. :)
 
-IE1ha2VmaWxlICAgICAgICAgICAgICAgICB8IDI1ICsrKysrKysrKysrKysrKy0KIHNjcmlwdHMv
-TWFrZWZpbGUubW9kaW5zdCB8ICA0ICstLQogc2NyaXB0cy9NYWtlZmlsZS5tb2Rwb3N0IHwgNzcg
-Ky0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiBzY3JpcHRz
-L3NpZ24tZmlsZSAgICAgICAgfCAgMiArLQogNCBmaWxlcyBjaGFuZ2VkLCAyOCBpbnNlcnRpb25z
-KCspLCA4MCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9NYWtlZmlsZSBiL01ha2VmaWxlCmlu
-ZGV4IDM2NmQwYWIwYzVmZS4uN2JjZjE4NDY1YjY5IDEwMDY0NAotLS0gYS9NYWtlZmlsZQorKysg
-Yi9NYWtlZmlsZQpAQCAtNzE5LDYgKzcxOSwxNiBAQCBlbmRpZiAjIElOU1RBTExfTU9EX1NUUklQ
-CiBleHBvcnQgbW9kX3N0cmlwX2NtZAogCiAKK2lmZXEgKCQoQ09ORklHX01PRFVMRV9TSUcpLHkp
-CitNT0RTRUNLRVkgPSAuL3NpZ25pbmdfa2V5LnByaXYKK01PRFBVQktFWSA9IC4vc2lnbmluZ19r
-ZXkueDUwOQorbW9kX3NpZ25fY21kID0gc2ggJChzcmN0cmVlKS9zY3JpcHRzL3NpZ24tZmlsZSAk
-KE1PRFNFQ0tFWSkgJChNT0RQVUJLRVkpCitlbHNlCittb2Rfc2lnbl9jbWQgPSB0cnVlCitlbmRp
-ZgorZXhwb3J0IG1vZF9zaWduX2NtZAorCisKIGlmZXEgKCQoS0JVSUxEX0VYVE1PRCksKQogY29y
-ZS15CQkrPSBrZXJuZWwvIG1tLyBmcy8gaXBjLyBzZWN1cml0eS8gY3J5cHRvLyBibG9jay8KIApA
-QCAtOTQ4LDggKzk1OCwyMSBAQCBtb2R1bGVzX3ByZXBhcmU6IHByZXBhcmUgc2NyaXB0cwogUEhP
-TlkgKz0gbW9kdWxlc19pbnN0YWxsCiBtb2R1bGVzX2luc3RhbGw6IF9tb2RpbnN0XyBfbW9kaW5z
-dF9wb3N0CiAKK2lmZXEgKCQoQ09ORklHX01PRFVMRV9TSUcpLHkpCitTSUdOSU5HX0RFUCA6PSAk
-KE1PRFNFQ0tFWSkgJChNT0RQVUJLRVkpICQoTU9EUFVCS0VZKS5zaWduZXIgJChNT0RQVUJLRVkp
-LmtleWlkCisKK3F1aWV0X2NtZF9nZW5rZXlpZCA9IEdFTktFWUlEICRACisJY21kX2dlbmtleWlk
-ID0gXAorCQlwZXJsICQoc3JjdHJlZSkvc2NyaXB0cy94NTA5a2V5aWQgJDwgJDwuc2lnbmVyICQ8
-LmtleWlkCisKKyUuc2lnbmVyICUua2V5aWQ6ICUKKwkkKGNhbGwgaWZfY2hhbmdlZCxnZW5rZXlp
-ZCkKKworZW5kaWYKKworCiBQSE9OWSArPSBfbW9kaW5zdF8KLV9tb2RpbnN0XzoKK19tb2RpbnN0
-XzogJChTSUdOSU5HX0RFUCkKIAlAcm0gLXJmICQoTU9ETElCKS9rZXJuZWwKIAlAcm0gLWYgJChN
-T0RMSUIpL3NvdXJjZQogCUBta2RpciAtcCAkKE1PRExJQikva2VybmVsCmRpZmYgLS1naXQgYS9z
-Y3JpcHRzL01ha2VmaWxlLm1vZGluc3QgYi9zY3JpcHRzL01ha2VmaWxlLm1vZGluc3QKaW5kZXgg
-M2QxM2QzYTNlZGZlLi40MzY3ZjEzNTEyM2UgMTAwNjQ0Ci0tLSBhL3NjcmlwdHMvTWFrZWZpbGUu
-bW9kaW5zdAorKysgYi9zY3JpcHRzL01ha2VmaWxlLm1vZGluc3QKQEAgLTE3LDcgKzE3LDcgQEAg
-X19tb2RpbnN0OiAkKG1vZHVsZXMpCiAJQDoKIAogcXVpZXRfY21kX21vZHVsZXNfaW5zdGFsbCA9
-IElOU1RBTEwgJEAKLSAgICAgIGNtZF9tb2R1bGVzX2luc3RhbGwgPSBta2RpciAtcCAkKDIpOyBj
-cCAkQCAkKDIpIDsgJChtb2Rfc3RyaXBfY21kKSAkKDIpLyQobm90ZGlyICRAKQorICAgICAgY21k
-X21vZHVsZXNfaW5zdGFsbCA9IG1rZGlyIC1wICQoMik7IGNwICRAICQoMikgOyAkKG1vZF9zdHJp
-cF9jbWQpICQoMikvJChub3RkaXIgJEApIDsgJChtb2Rfc2lnbl9jbWQpICQoMikvJChub3RkaXIg
-JEApCiAKICMgTW9kdWxlcyBidWlsdCBvdXRzaWRlIHRoZSBrZXJuZWwgc291cmNlIHRyZWUgZ28g
-aW50byBleHRyYSBieSBkZWZhdWx0CiBJTlNUQUxMX01PRF9ESVIgPz0gZXh0cmEKQEAgLTI1LDcg
-KzI1LDcgQEAgZXh0LW1vZC1kaXIgPSAkKElOU1RBTExfTU9EX0RJUikkKHN1YnN0ICQocGF0c3Vi
-c3QgJS8sJSwkKEtCVUlMRF9FWFRNT0QpKSwsJChARCkKIAogbW9kaW5zdF9kaXIgPSAkKGlmICQo
-S0JVSUxEX0VYVE1PRCksJChleHQtbW9kLWRpciksa2VybmVsLyQoQEQpKQogCi0kKG1vZHVsZXMp
-OgorJChtb2R1bGVzKTogJChTSUdOSU5HX0RFUCkKIAkkKGNhbGwgY21kLG1vZHVsZXNfaW5zdGFs
-bCwkKE1PRExJQikvJChtb2RpbnN0X2RpcikpCiAKIApkaWZmIC0tZ2l0IGEvc2NyaXB0cy9NYWtl
-ZmlsZS5tb2Rwb3N0IGIvc2NyaXB0cy9NYWtlZmlsZS5tb2Rwb3N0CmluZGV4IDAwMjA4OTE0MWRm
-NC4uYTFjYjAyMjJlYmU2IDEwMDY0NAotLS0gYS9zY3JpcHRzL01ha2VmaWxlLm1vZHBvc3QKKysr
-IGIvc2NyaXB0cy9NYWtlZmlsZS5tb2Rwb3N0CkBAIC0xNCw4ICsxNCw3IEBACiAjIDMpICBjcmVh
-dGUgb25lIDxtb2R1bGU+Lm1vZC5jIGZpbGUgcHIuIG1vZHVsZQogIyA0KSAgY3JlYXRlIG9uZSBN
-b2R1bGUuc3ltdmVycyBmaWxlIHdpdGggQ1JDIGZvciBhbGwgZXhwb3J0ZWQgc3ltYm9scwogIyA1
-KSBjb21waWxlIGFsbCA8bW9kdWxlPi5tb2QuYyBmaWxlcwotIyA2KSBmaW5hbCBsaW5rIG9mIHRo
-ZSBtb2R1bGUgdG8gYSA8bW9kdWxlLmtvPiAob3IgPG1vZHVsZS51bnNpZ25lZD4pIGZpbGUKLSMg
-Nykgc2lnbnMgdGhlIG1vZHVsZXMgdG8gYSA8bW9kdWxlLmtvPiBmaWxlCisjIDYpIGZpbmFsIGxp
-bmsgb2YgdGhlIG1vZHVsZSB0byBhIDxtb2R1bGUua28+IGZpbGUKIAogIyBTdGVwIDMgaXMgdXNl
-ZCB0byBwbGFjZSBjZXJ0YWluIGluZm9ybWF0aW9uIGluIHRoZSBtb2R1bGUncyBFTEYKICMgc2Vj
-dGlvbiwgaW5jbHVkaW5nIGluZm9ybWF0aW9uIHN1Y2ggYXM6CkBAIC0zMyw4ICszMiw2IEBACiAj
-IFN0ZXAgNCBpcyBzb2xlbHkgdXNlZCB0byBhbGxvdyBtb2R1bGUgdmVyc2lvbmluZyBpbiBleHRl
-cm5hbCBtb2R1bGVzLAogIyB3aGVyZSB0aGUgQ1JDIG9mIGVhY2ggbW9kdWxlIGlzIHJldHJpZXZl
-ZCBmcm9tIHRoZSBNb2R1bGUuc3ltdmVycyBmaWxlLgogCi0jIFN0ZXAgNyBpcyBkZXBlbmRlbnQg
-b24gQ09ORklHX01PRFVMRV9TSUcgYmVpbmcgZW5hYmxlZC4KLQogIyBLQlVJTERfTU9EUE9TVF9X
-QVJOIGNhbiBiZSBzZXQgdG8gYXZvaWQgZXJyb3Igb3V0IGluIGNhc2Ugb2YgdW5kZWZpbmVkCiAj
-IHN5bWJvbHMgaW4gdGhlIGZpbmFsIG1vZHVsZSBsaW5raW5nIHN0YWdlCiAjIEtCVUlMRF9NT0RQ
-T1NUX05PRklOQUwgY2FuIGJlIHNldCB0byBza2lwIHRoZSBmaW5hbCBsaW5rIG9mIG1vZHVsZXMu
-CkBAIC0xMTksNyArMTE2LDYgQEAgJChtb2R1bGVzOi5rbz0ubW9kLm8pOiAlLm1vZC5vOiAlLm1v
-ZC5jIEZPUkNFCiB0YXJnZXRzICs9ICQobW9kdWxlczoua289Lm1vZC5vKQogCiAjIFN0ZXAgNiks
-IGZpbmFsIGxpbmsgb2YgdGhlIG1vZHVsZXMKLWlmbmVxICgkKENPTkZJR19NT0RVTEVfU0lHKSx5
-KQogcXVpZXRfY21kX2xkX2tvX28gPSBMRCBbTV0gICRACiAgICAgICBjbWRfbGRfa29fbyA9ICQo
-TEQpIC1yICQoTERGTEFHUykgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcCiAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICQoS0JVSUxEX0xERkxBR1NfTU9EVUxFKSAkKExERkxB
-R1NfTU9EVUxFKSBcCkBAIC0xMjksNzggKzEyNSw3IEBAICQobW9kdWxlcyk6ICUua28gOiUubyAl
-Lm1vZC5vIEZPUkNFCiAJJChjYWxsIGlmX2NoYW5nZWQsbGRfa29fbykKIAogdGFyZ2V0cyArPSAk
-KG1vZHVsZXMpCi1lbHNlCi1xdWlldF9jbWRfbGRfa29fdW5zaWduZWRfbyA9IExEIFtNXSAgJEAK
-LSAgICAgIGNtZF9sZF9rb191bnNpZ25lZF9vID0JCQkJCQlcCi0JCSQoTEQpIC1yICQoTERGTEFH
-UykJCQkJCVwKLQkJCSAkKEtCVUlMRF9MREZMQUdTX01PRFVMRSkgJChMREZMQUdTX01PRFVMRSkJ
-XAotCQkJIC1vICRAICQoZmlsdGVyLW91dCBGT1JDRSwkXikJCQlcCi0JCSQoaWYgJChBRlRFUl9M
-SU5LKSw7ICQoQUZURVJfTElOSykpCi0KLSQobW9kdWxlczoua289LmtvLnVuc2lnbmVkKTogJS5r
-by51bnNpZ25lZCA6JS5vICUubW9kLm8gRk9SQ0UKLQkkKGNhbGwgaWZfY2hhbmdlZCxsZF9rb191
-bnNpZ25lZF9vKQotCi10YXJnZXRzICs9ICQobW9kdWxlczoua289LmtvLnVuc2lnbmVkKQotCi0j
-IFN0ZXAgNyksIHNpZ24gdGhlIG1vZHVsZXMKLU1PRFNFQ0tFWSA9IC4vc2lnbmluZ19rZXkucHJp
-dgotTU9EUFVCS0VZID0gLi9zaWduaW5nX2tleS54NTA5Ci0KLWlmZXEgKCQod2lsZGNhcmQgJChN
-T0RTRUNLRVkpKSskKHdpbGRjYXJkICQoTU9EUFVCS0VZKSksJChNT0RTRUNLRVkpKyQoTU9EUFVC
-S0VZKSkKLWlmZXEgKCQoS0JVSUxEX1NSQyksKQotCSMgbm8gTz0gaXMgYmVpbmcgdXNlZAotCVND
-UklQVFNfRElSIDo9IHNjcmlwdHMKLWVsc2UKLQlTQ1JJUFRTX0RJUiA6PSAkKEtCVUlMRF9TUkMp
-L3NjcmlwdHMKLWVuZGlmCi1TSUdOX01PRFVMRVMgOj0gMQotZWxzZQotU0lHTl9NT0RVTEVTIDo9
-IDAKLWVuZGlmCi0KLSMgb25seSBzaWduIGlmIGl0J3MgYW4gaW4tdHJlZSBtb2R1bGUKLWlmbmVx
-ICgkKEtCVUlMRF9FWFRNT0QpLCkKLVNJR05fTU9EVUxFUyA6PSAwCi1lbmRpZgogCi0jIFdlIHN0
-cmlwIHRoZSBtb2R1bGUgYXMgYmVzdCB3ZSBjYW4gLSBub3RlIHRoYXQgdXNpbmcgYm90aCBzdHJp
-cCBhbmQgZXUtc3RyaXAKLSMgcmVzdWx0cyBpbiBhIHNtYWxsZXIgbW9kdWxlIHRoYW4gdXNpbmcg
-ZWl0aGVyIGFsb25lLgotRVVfU1RSSVAgPSAkKHNoZWxsIHdoaWNoIGV1LXN0cmlwIHx8IGVjaG8g
-dHJ1ZSkKLQotcXVpZXRfY21kX3NpZ25fa29fc3RyaXBwZWRfa29fdW5zaWduZWQgPSBTVFJJUCBb
-TV0gJEAKLSAgICAgIGNtZF9zaWduX2tvX3N0cmlwcGVkX2tvX3Vuc2lnbmVkID0gXAotCQljcCAk
-PCAkQCAmJiBcCi0JCXN0cmlwIC14IC1nICRAICYmIFwKLQkJJChFVV9TVFJJUCkgJEAKLQotaWZl
-cSAoJChTSUdOX01PRFVMRVMpLDEpCi0KLXF1aWV0X2NtZF9nZW5rZXlpZCA9IEdFTktFWUlEICRA
-Ci0gICAgICBjbWRfZ2Vua2V5aWQgPSBcCi0JCXBlcmwgJChTQ1JJUFRTX0RJUikveDUwOWtleWlk
-ICQ8ICQ8LnNpZ25lciAkPC5rZXlpZAotCi0lLnNpZ25lciAlLmtleWlkOiAlCi0JJChjYWxsIGlm
-X2NoYW5nZWQsZ2Vua2V5aWQpCi0KLUtFWVJJTkdfREVQIDo9ICQoTU9EU0VDS0VZKSAkKE1PRFBV
-QktFWSkgJChNT0RQVUJLRVkpLnNpZ25lciAkKE1PRFBVQktFWSkua2V5aWQKLXF1aWV0X2NtZF9z
-aWduX2tvX2tvX3N0cmlwcGVkID0gU0lHTiBbTV0gJEAKLSAgICAgIGNtZF9zaWduX2tvX2tvX3N0
-cmlwcGVkID0gXAotCQlzaCAkKFNDUklQVFNfRElSKS9zaWduLWZpbGUgJChNT0RTRUNLRVkpICQo
-TU9EUFVCS0VZKSAkPCAkQAotZWxzZQotS0VZUklOR19ERVAgOj0KLXF1aWV0X2NtZF9zaWduX2tv
-X2tvX3Vuc2lnbmVkID0gTk8gU0lHTiBbTV0gJEAKLSAgICAgIGNtZF9zaWduX2tvX2tvX3Vuc2ln
-bmVkID0gXAotCQljcCAkPCAkQAotZW5kaWYKLQotJChtb2R1bGVzKTogJS5rbyA6JS5rby5zdHJp
-cHBlZCAkKEtFWVJJTkdfREVQKSBGT1JDRQotCSQoY2FsbCBpZl9jaGFuZ2VkLHNpZ25fa29fa29f
-c3RyaXBwZWQpCi0KLSQocGF0c3Vic3QgJS5rbywlLmtvLnN0cmlwcGVkLCQobW9kdWxlcykpOiAl
-LmtvLnN0cmlwcGVkIDolLmtvLnVuc2lnbmVkIEZPUkNFCi0JJChjYWxsIGlmX2NoYW5nZWQsc2ln
-bl9rb19zdHJpcHBlZF9rb191bnNpZ25lZCkKLQotdGFyZ2V0cyArPSAkKG1vZHVsZXMpCi1lbmRp
-ZgogCiAjIEFkZCBGT1JDRSB0byB0aGUgcHJlcXVpc2l0ZXMgb2YgYSB0YXJnZXQgdG8gZm9yY2Ug
-aXQgdG8gYmUgYWx3YXlzIHJlYnVpbHQuCiAjIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQpkaWZmIC0tZ2l0
-IGEvc2NyaXB0cy9zaWduLWZpbGUgYi9zY3JpcHRzL3NpZ24tZmlsZQppbmRleCBlNThlMzRlNTBh
-YzUuLjMwODRiYTQzYTE5ZCAxMDA2NDQKLS0tIGEvc2NyaXB0cy9zaWduLWZpbGUKKysrIGIvc2Ny
-aXB0cy9zaWduLWZpbGUKQEAgLTE2LDcgKzE2LDcgQEAgZmkKIGtleT0iJDEiCiB4NTA5PSIkMiIK
-IHNyYz0iJDMiCi1kc3Q9IiQ0IgorZHN0PSIkezQ6LSQzfSIKIAogaWYgWyAhIC1yICIka2V5IiBd
-CiB0aGVuCg==
---00504502b06d6830db04cc4a2a74--
+josh
