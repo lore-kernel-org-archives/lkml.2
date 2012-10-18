@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab2JRWjt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 18:39:49 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:36521 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932248Ab2JRWjr (ORCPT
+	id S932501Ab2JRWl3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 18:41:29 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34844 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754739Ab2JRWl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 18:39:47 -0400
+	Thu, 18 Oct 2012 18:41:28 -0400
+Message-ID: <50808595.8070505@wwwdotorg.org>
+Date: Thu, 18 Oct 2012 16:41:25 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <507F7313.8010707@oracle.com>
-References: <507F7313.8010707@oracle.com>
-Date: Thu, 18 Oct 2012 15:39:45 -0700
-X-Google-Sender-Auth: JYmN1ZPjD-lvQ0H8IXYRU6gFbSI
-Message-ID: <CAGXu5jKSD8nRMJ11DpKRe8M79W9MZ2eowAafXOQ9_WCj4dZXug@mail.gmail.com>
-Subject: Re: yama: lockdep warning on yama_ptracer_del
-From: Kees Cook <keescook@chromium.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: james.l.morris@oracle.com, John Johansen <john.johansen@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-security-module@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: linux@arm.linux.org.uk, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] ARM: tegra: dts: add slink controller dt entry
+References: <1350557795-31487-1-git-send-email-ldewangan@nvidia.com> <1350557795-31487-3-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1350557795-31487-3-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 8:10 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> Hi all,
->
-> I was fuzzing with trinity within a KVM tools guest (lkvm) on a linux-next kernel, and got the
-> following dump which I believe to be noise due to how the timers work - but I'm not 100% sure.
-> ...
-> [  954.674123]  Possible interrupt unsafe locking scenario:
-> [  954.674123]
-> [  954.674123]        CPU0                    CPU1
-> [  954.674123]        ----                    ----
-> [  954.674123]   lock(ptracer_relations_lock);
-> [  954.674123]                                local_irq_disable();
-> [  954.674123]                                lock(&(&new_timer->it_lock)->rlock);
-> [  954.674123]                                lock(ptracer_relations_lock);
-> [  954.674123]   <Interrupt>
-> [  954.674123]     lock(&(&new_timer->it_lock)->rlock);
-> [  954.674123]
-> [  954.674123]  *** DEADLOCK ***
+On 10/18/2012 04:56 AM, Laxman Dewangan wrote:
+> Add slink controller details in the dts file of
+> Tegra20 and Tegra30.
 
-I've been wanting to get rid of the Yama ptracer_relations_lock
-anyway, so maybe I should do that now just to avoid this case at all?
+> diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
 
--Kees
+> +	slink@7000d400 {
+> +		compatible = "nvidia,tegra20-slink";
+> +		reg = <0x7000d400 0x200>;
+> +		interrupts = <0 59 0x04>;
+> +		nvidia,dma-req-sel = <15>;
 
--- 
-Kees Cook
-Chrome OS Security
+I thought the common DT DMA bindings were going to be in 3.7, and hence
+we could just use them here rather than inventing another custom
+property for this purpose?
