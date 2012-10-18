@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164Ab2JRTed (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 15:34:33 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42976 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982Ab2JRTec (ORCPT
+	id S1753293Ab2JRTen (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 15:34:43 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:34515 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab2JRTek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 15:34:32 -0400
+	Thu, 18 Oct 2012 15:34:40 -0400
+Date: Thu, 18 Oct 2012 21:34:38 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: linux-kernel@vger.kernel.org, Scott H Kilau <Scott_Kilau@digi.com>,
+        devel@driverdev.osuosl.org, Bill Pemberton <wfp5p@virginia.edu>
+Subject: [PATCH] staging: remove version.h include from dgrp/dgrp_sysfs.c
+Message-ID: <alpine.LNX.2.00.1210182129570.17217@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdapB5x2MEKKvDU2MBKPVKXwYCx+HDYFUcY0vskeVOxPTg@mail.gmail.com>
-References: <CAK5ve-JAc2Env1AyZMY178QobhqmAh4euHQdPS=UH3mGGeSgLA@mail.gmail.com>
- <CACRpkdapB5x2MEKKvDU2MBKPVKXwYCx+HDYFUcY0vskeVOxPTg@mail.gmail.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Thu, 18 Oct 2012 12:34:10 -0700
-Message-ID: <CAK5ve-Lm6T0u08ZV+kw5+X_JUAoXksoPcxBo9FKAqQgdp6RRLA@mail.gmail.com>
-Subject: Re: [PATCH] ledtrig-cpu: use spin_lock to replace mutex lock
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Miles Lane <miles.lane@gmail.com>,
-        akpm <akpm@linux-foundation.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 11:35 AM, Linus Walleij
-<linus.walleij@linaro.org> wrote:
-> On Thu, Oct 18, 2012 at 8:18 PM, Bryan Wu <cooloney@gmail.com> wrote:
->
->> Mutex lock is not safe in atomic context like the bug reported by
->> Miles Lane:
-> (...)
->> This patch replace mutex lock with spin lock which is safe for this case.
->>
->> Reported-by: Miles Lane <miles.lane@gmail.com>
->> Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
->> Cc: Linus Walleij <linus.walleij@linaro.org>
->> Signed-off-by: Bryan Wu <cooloney@gmail.com>
->
-> Looks correct to me:
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->
+The file uses nothing from linux/version.h, so the include is
+pointless - remove it.
 
-Thanks, Linus.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/staging/dgrp/dgrp_sysfs.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Miles, could you please help to try this patch on your testing system?
-I really appreciate it.
+diff --git a/drivers/staging/dgrp/dgrp_sysfs.c b/drivers/staging/dgrp/dgrp_sysfs.c
+index e5a3c88..a13318c 100644
+--- a/drivers/staging/dgrp/dgrp_sysfs.c
++++ b/drivers/staging/dgrp/dgrp_sysfs.c
+@@ -17,7 +17,6 @@
+ #include "dgrp_common.h"
+ 
+ #include <linux/kernel.h>
+-#include <linux/version.h>
+ #include <linux/module.h>
+ #include <linux/ctype.h>
+ #include <linux/string.h>
+-- 
+1.7.1
 
--Bryan
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
