@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab2JRWEK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 18:04:10 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:51022 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754829Ab2JRWEI (ORCPT
+	id S1756258Ab2JRWFG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 18:05:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40666 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755787Ab2JRWFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 18:04:08 -0400
-Date: Thu, 18 Oct 2012 15:03:59 -0700
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH V3 2/6]: PVH: use native irq, enable
- callback, use HVM ring ops, smp, ...
-Message-ID: <20121018150359.794768d2@mantra.us.oracle.com>
-In-Reply-To: <1350557077.2460.113.camel@zakaz.uk.xensource.com>
-References: <20121017173005.73a03eec@mantra.us.oracle.com>
-	<1350557077.2460.113.camel@zakaz.uk.xensource.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Thu, 18 Oct 2012 18:05:04 -0400
+Date: Thu, 18 Oct 2012 15:05:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: David Miller <davem@davemloft.net>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "mhocko@suse.cz" <mhocko@suse.cz>,
+        "kirill@shutemov.name" <kirill@shutemov.name>,
+        "aarcange@redhat.com" <aarcange@redhat.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        Steve Capper <Steve.Capper@arm.com>
+Subject: Re: [PATCH v2] mm: thp: Set the accessed flag for old pages on
+ access fault.
+Message-Id: <20121018150502.3dee7899.akpm@linux-foundation.org>
+In-Reply-To: <20121017155401.GJ5973@mudshark.cambridge.arm.com>
+References: <1349197151-19645-1-git-send-email-will.deacon@arm.com>
+	<20121002150104.da57fa94.akpm@linux-foundation.org>
+	<20121017130125.GH5973@mudshark.cambridge.arm.com>
+	<20121017.112620.1865348978594874782.davem@davemloft.net>
+	<20121017155401.GJ5973@mudshark.cambridge.arm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Oct 2012 11:44:37 +0100
-Ian Campbell <Ian.Campbell@citrix.com> wrote:
+On Wed, 17 Oct 2012 16:54:02 +0100
+Will Deacon <will.deacon@arm.com> wrote:
 
-> On Thu, 2012-10-18 at 01:30 +0100, Mukesh Rathor wrote:
-> > PVH: make gdt_frames[]/gdt_ents into a union with {gdtaddr, gdtsz},
-> > PVH only needs to send down gdtaddr and gdtsz. irq.c: PVH uses
-> > native_irq_ops. vcpu hotplug is currently not available for PVH.
-> > events.c: setup callback vector for PVH. smp.c: This pertains to
-> > bringing up smp vcpus. PVH runs in ring 0, so syscalls are native.
-> > Also, the vcpu context is send down via the hcall to be set in the
-> > vmcs. gdtaddr and gdtsz are unionionized as PVH only needs to send
-> > these two to be set in the vmcs. Finally, PVH ring ops uses HVM
-> > paths for xenbus.
-> > 
-> > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > ---
-> >  arch/x86/include/asm/xen/interface.h |   11 +++++-
-> >  arch/x86/xen/irq.c                   |    5 ++-
-> >  arch/x86/xen/p2m.c                   |    2 +-
-> >  arch/x86/xen/smp.c                   |   75
-> > ++++++++++++++++++++++------------ drivers/xen/cpu_hotplug.c
-> > |    4 +- drivers/xen/events.c                 |    9 ++++-
-> >  drivers/xen/xenbus/xenbus_client.c   |    3 +-
+> On x86 memory accesses to pages without the ACCESSED flag set result in the
+> ACCESSED flag being set automatically. With the ARM architecture a page access
+> fault is raised instead (and it will continue to be raised until the ACCESSED
+> flag is set for the appropriate PTE/PMD).
 > 
-> This patch seems to have been horribly whitespace damaged.
+> For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
+> setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
+> be called for a write fault.
+> 
+> This patch ensures that faults on transparent hugepages which do not result
+> in a CoW update the access flags for the faulting pmd.
 
-Hmm.. not sure what happened. Resending. See another email.
-
-> Have you seen "git send-email" ? It's very useful for avoiding this
-> sort of thing and also takes a lot of the grunt work out of reposting
-> a series.
-
-> It also chains the patches as replies to the introductory zero-th mail
-> -- which is something I've been meaning to ask you to do for a while.
-> It's useful because it joins the series together in a thread which
-> makes it easier to keep track of in my INBOX.
-
-I prefer different thread-sets for different version. Otherwise too
-many emails makes much harder to manage and figure. Besides, as
-comments come in, path x of y,  may contain different files/changes in
-a subsequent version.
-
-thanks
-Mukesh
+Confused.  Where is the arm implementation of update_mmu_cache_pmd()?
