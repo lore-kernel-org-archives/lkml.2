@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab2JRU1K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 16:27:10 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:56839 "EHLO
+	id S1755677Ab2JRU15 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 16:27:57 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:56833 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755261Ab2JRU1C (ORCPT
+	with ESMTP id S1755166Ab2JRU1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 16:27:02 -0400
+	Thu, 18 Oct 2012 16:27:01 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 16/21] TTY: move ldisc data from tty_struct: locks
-Date: Thu, 18 Oct 2012 22:26:42 +0200
-Message-Id: <1350592007-9216-17-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 20/21] TTY: add port -> tty link
+Date: Thu, 18 Oct 2012 22:26:46 +0200
+Message-Id: <1350592007-9216-21-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.12.3
 In-Reply-To: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
 References: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
@@ -20,476 +20,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-atomic_write_lock is not n_tty specific, so move it up in the
-tty_struct.
+For that purpose we have to temporarily introduce a second tty back
+pointer into tty_port. It is because serial layer, and maybe others,
+still do not use tty_port_tty_set/get. So that we cannot set the
+tty_port->tty to NULL at will now.
 
-And since these are the last ones to move, remove also the comment
-saying there are some ldisc' members. There are none now.
+Yes, the fix would be to convert whole serial layer and all its users
+to tty_port_tty_set/get. However we are in the process of removing the
+need of tty in most of the call sites, so this would lead to a
+duplicated work.
+
+Instead we have now tty_port->itty (internal tty) which will be used
+only in flush_to_ldisc. For that one it is ensured that itty is valid
+wherever the work is run. IOW, the work is synchronously cancelled
+before we set itty to NULL and also before hangup is processed.
+
+After we need only tty_port and not tty_struct in most code, this
+shall be changed to tty_port_tty_set/get and itty removed completely.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/tty/n_tty.c  | 123 ++++++++++++++++++++++++++++++---------------------
- drivers/tty/tty_io.c |   4 --
- include/linux/tty.h  |  11 +----
- 3 files changed, 73 insertions(+), 65 deletions(-)
+ drivers/tty/pty.c    | 2 ++
+ drivers/tty/tty_io.c | 3 +++
+ include/linux/tty.h  | 1 +
+ 3 files changed, 6 insertions(+)
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 4794537..0a6fcda 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -96,6 +96,11 @@ struct n_tty_data {
- 	int canon_data;
- 	unsigned long canon_head;
- 	unsigned int canon_column;
-+
-+	struct mutex atomic_read_lock;
-+	struct mutex output_lock;
-+	struct mutex echo_lock;
-+	spinlock_t read_lock;
- };
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index 2728afe..c326908 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -345,6 +345,7 @@ static int pty_common_install(struct tty_driver *driver, struct tty_struct *tty,
+ 	tty_port_init(ports[1]);
+ 	o_tty->port = ports[0];
+ 	tty->port = ports[1];
++	o_tty->port->itty = o_tty;
  
- static inline int tty_put_user(struct tty_struct *tty, unsigned char x,
-@@ -171,14 +176,15 @@ static void put_tty_queue_nolock(unsigned char c, struct tty_struct *tty)
+ 	tty_driver_kref_get(driver);
+ 	tty->count++;
+@@ -371,6 +372,7 @@ static void pty_unix98_shutdown(struct tty_struct *tty)
  
- static void put_tty_queue(unsigned char c, struct tty_struct *tty)
+ static void pty_cleanup(struct tty_struct *tty)
  {
-+	struct n_tty_data *ldata = tty->disc_data;
- 	unsigned long flags;
- 	/*
- 	 *	The problem of stomping on the buffers ends here.
- 	 *	Why didn't anyone see this one coming? --AJK
- 	*/
--	spin_lock_irqsave(&tty->read_lock, flags);
-+	spin_lock_irqsave(&ldata->read_lock, flags);
- 	put_tty_queue_nolock(c, tty);
--	spin_unlock_irqrestore(&tty->read_lock, flags);
-+	spin_unlock_irqrestore(&ldata->read_lock, flags);
++	tty->port->itty = NULL;
+ 	kfree(tty->port);
  }
  
- /**
-@@ -212,13 +218,13 @@ static void reset_buffer_flags(struct tty_struct *tty)
- 	struct n_tty_data *ldata = tty->disc_data;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&tty->read_lock, flags);
-+	spin_lock_irqsave(&ldata->read_lock, flags);
- 	ldata->read_head = ldata->read_tail = ldata->read_cnt = 0;
--	spin_unlock_irqrestore(&tty->read_lock, flags);
-+	spin_unlock_irqrestore(&ldata->read_lock, flags);
- 
--	mutex_lock(&tty->echo_lock);
-+	mutex_lock(&ldata->echo_lock);
- 	ldata->echo_pos = ldata->echo_cnt = ldata->echo_overrun = 0;
--	mutex_unlock(&tty->echo_lock);
-+	mutex_unlock(&ldata->echo_lock);
- 
- 	ldata->canon_head = ldata->canon_data = ldata->erasing = 0;
- 	bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
-@@ -270,7 +276,7 @@ static ssize_t n_tty_chars_in_buffer(struct tty_struct *tty)
- 	unsigned long flags;
- 	ssize_t n = 0;
- 
--	spin_lock_irqsave(&tty->read_lock, flags);
-+	spin_lock_irqsave(&ldata->read_lock, flags);
- 	if (!ldata->icanon) {
- 		n = ldata->read_cnt;
- 	} else if (ldata->canon_data) {
-@@ -278,7 +284,7 @@ static ssize_t n_tty_chars_in_buffer(struct tty_struct *tty)
- 			ldata->canon_head - ldata->read_tail :
- 			ldata->canon_head + (N_TTY_BUF_SIZE - ldata->read_tail);
- 	}
--	spin_unlock_irqrestore(&tty->read_lock, flags);
-+	spin_unlock_irqrestore(&ldata->read_lock, flags);
- 	return n;
- }
- 
-@@ -408,14 +414,15 @@ static int do_output_char(unsigned char c, struct tty_struct *tty, int space)
- 
- static int process_output(unsigned char c, struct tty_struct *tty)
- {
-+	struct n_tty_data *ldata = tty->disc_data;
- 	int	space, retval;
- 
--	mutex_lock(&tty->output_lock);
-+	mutex_lock(&ldata->output_lock);
- 
- 	space = tty_write_room(tty);
- 	retval = do_output_char(c, tty, space);
- 
--	mutex_unlock(&tty->output_lock);
-+	mutex_unlock(&ldata->output_lock);
- 	if (retval < 0)
- 		return -1;
- 	else
-@@ -449,11 +456,11 @@ static ssize_t process_output_block(struct tty_struct *tty,
- 	int	i;
- 	const unsigned char *cp;
- 
--	mutex_lock(&tty->output_lock);
-+	mutex_lock(&ldata->output_lock);
- 
- 	space = tty_write_room(tty);
- 	if (!space) {
--		mutex_unlock(&tty->output_lock);
-+		mutex_unlock(&ldata->output_lock);
- 		return 0;
- 	}
- 	if (nr > space)
-@@ -496,7 +503,7 @@ static ssize_t process_output_block(struct tty_struct *tty,
- break_out:
- 	i = tty->ops->write(tty, buf, i);
- 
--	mutex_unlock(&tty->output_lock);
-+	mutex_unlock(&ldata->output_lock);
- 	return i;
- }
- 
-@@ -536,8 +543,8 @@ static void process_echoes(struct tty_struct *tty)
- 	if (!ldata->echo_cnt)
- 		return;
- 
--	mutex_lock(&tty->output_lock);
--	mutex_lock(&tty->echo_lock);
-+	mutex_lock(&ldata->output_lock);
-+	mutex_lock(&ldata->echo_lock);
- 
- 	space = tty_write_room(tty);
- 
-@@ -682,8 +689,8 @@ static void process_echoes(struct tty_struct *tty)
- 			ldata->echo_overrun = 0;
- 	}
- 
--	mutex_unlock(&tty->echo_lock);
--	mutex_unlock(&tty->output_lock);
-+	mutex_unlock(&ldata->echo_lock);
-+	mutex_unlock(&ldata->output_lock);
- 
- 	if (tty->ops->flush_chars)
- 		tty->ops->flush_chars(tty);
-@@ -748,12 +755,14 @@ static void add_echo_byte(unsigned char c, struct tty_struct *tty)
- 
- static void echo_move_back_col(struct tty_struct *tty)
- {
--	mutex_lock(&tty->echo_lock);
-+	struct n_tty_data *ldata = tty->disc_data;
-+
-+	mutex_lock(&ldata->echo_lock);
- 
- 	add_echo_byte(ECHO_OP_START, tty);
- 	add_echo_byte(ECHO_OP_MOVE_BACK_COL, tty);
- 
--	mutex_unlock(&tty->echo_lock);
-+	mutex_unlock(&ldata->echo_lock);
- }
- 
- /**
-@@ -768,12 +777,14 @@ static void echo_move_back_col(struct tty_struct *tty)
- 
- static void echo_set_canon_col(struct tty_struct *tty)
- {
--	mutex_lock(&tty->echo_lock);
-+	struct n_tty_data *ldata = tty->disc_data;
-+
-+	mutex_lock(&ldata->echo_lock);
- 
- 	add_echo_byte(ECHO_OP_START, tty);
- 	add_echo_byte(ECHO_OP_SET_CANON_COL, tty);
- 
--	mutex_unlock(&tty->echo_lock);
-+	mutex_unlock(&ldata->echo_lock);
- }
- 
- /**
-@@ -796,7 +807,9 @@ static void echo_set_canon_col(struct tty_struct *tty)
- static void echo_erase_tab(unsigned int num_chars, int after_tab,
- 			   struct tty_struct *tty)
- {
--	mutex_lock(&tty->echo_lock);
-+	struct n_tty_data *ldata = tty->disc_data;
-+
-+	mutex_lock(&ldata->echo_lock);
- 
- 	add_echo_byte(ECHO_OP_START, tty);
- 	add_echo_byte(ECHO_OP_ERASE_TAB, tty);
-@@ -810,7 +823,7 @@ static void echo_erase_tab(unsigned int num_chars, int after_tab,
- 
- 	add_echo_byte(num_chars, tty);
- 
--	mutex_unlock(&tty->echo_lock);
-+	mutex_unlock(&ldata->echo_lock);
- }
- 
- /**
-@@ -828,7 +841,9 @@ static void echo_erase_tab(unsigned int num_chars, int after_tab,
- 
- static void echo_char_raw(unsigned char c, struct tty_struct *tty)
- {
--	mutex_lock(&tty->echo_lock);
-+	struct n_tty_data *ldata = tty->disc_data;
-+
-+	mutex_lock(&ldata->echo_lock);
- 
- 	if (c == ECHO_OP_START) {
- 		add_echo_byte(ECHO_OP_START, tty);
-@@ -837,7 +852,7 @@ static void echo_char_raw(unsigned char c, struct tty_struct *tty)
- 		add_echo_byte(c, tty);
- 	}
- 
--	mutex_unlock(&tty->echo_lock);
-+	mutex_unlock(&ldata->echo_lock);
- }
- 
- /**
-@@ -856,7 +871,9 @@ static void echo_char_raw(unsigned char c, struct tty_struct *tty)
- 
- static void echo_char(unsigned char c, struct tty_struct *tty)
- {
--	mutex_lock(&tty->echo_lock);
-+	struct n_tty_data *ldata = tty->disc_data;
-+
-+	mutex_lock(&ldata->echo_lock);
- 
- 	if (c == ECHO_OP_START) {
- 		add_echo_byte(ECHO_OP_START, tty);
-@@ -867,7 +884,7 @@ static void echo_char(unsigned char c, struct tty_struct *tty)
- 		add_echo_byte(c, tty);
- 	}
- 
--	mutex_unlock(&tty->echo_lock);
-+	mutex_unlock(&ldata->echo_lock);
- }
- 
- /**
-@@ -914,19 +931,19 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 		kill_type = WERASE;
- 	else {
- 		if (!L_ECHO(tty)) {
--			spin_lock_irqsave(&tty->read_lock, flags);
-+			spin_lock_irqsave(&ldata->read_lock, flags);
- 			ldata->read_cnt -= ((ldata->read_head - ldata->canon_head) &
- 					  (N_TTY_BUF_SIZE - 1));
- 			ldata->read_head = ldata->canon_head;
--			spin_unlock_irqrestore(&tty->read_lock, flags);
-+			spin_unlock_irqrestore(&ldata->read_lock, flags);
- 			return;
- 		}
- 		if (!L_ECHOK(tty) || !L_ECHOKE(tty) || !L_ECHOE(tty)) {
--			spin_lock_irqsave(&tty->read_lock, flags);
-+			spin_lock_irqsave(&ldata->read_lock, flags);
- 			ldata->read_cnt -= ((ldata->read_head - ldata->canon_head) &
- 					  (N_TTY_BUF_SIZE - 1));
- 			ldata->read_head = ldata->canon_head;
--			spin_unlock_irqrestore(&tty->read_lock, flags);
-+			spin_unlock_irqrestore(&ldata->read_lock, flags);
- 			finish_erasing(tty);
- 			echo_char(KILL_CHAR(tty), tty);
- 			/* Add a newline if ECHOK is on and ECHOKE is off. */
-@@ -960,10 +977,10 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 				break;
- 		}
- 		cnt = (ldata->read_head - head) & (N_TTY_BUF_SIZE-1);
--		spin_lock_irqsave(&tty->read_lock, flags);
-+		spin_lock_irqsave(&ldata->read_lock, flags);
- 		ldata->read_head = head;
- 		ldata->read_cnt -= cnt;
--		spin_unlock_irqrestore(&tty->read_lock, flags);
-+		spin_unlock_irqrestore(&ldata->read_lock, flags);
- 		if (L_ECHO(tty)) {
- 			if (L_ECHOPRT(tty)) {
- 				if (!ldata->erasing) {
-@@ -1338,12 +1355,12 @@ send_signal:
- 				put_tty_queue(c, tty);
- 
- handle_newline:
--			spin_lock_irqsave(&tty->read_lock, flags);
-+			spin_lock_irqsave(&ldata->read_lock, flags);
- 			set_bit(ldata->read_head, ldata->read_flags);
- 			put_tty_queue_nolock(c, tty);
- 			ldata->canon_head = ldata->read_head;
- 			ldata->canon_data++;
--			spin_unlock_irqrestore(&tty->read_lock, flags);
-+			spin_unlock_irqrestore(&ldata->read_lock, flags);
- 			kill_fasync(&tty->fasync, SIGIO, POLL_IN);
- 			if (waitqueue_active(&tty->read_wait))
- 				wake_up_interruptible(&tty->read_wait);
-@@ -1417,7 +1434,7 @@ static void n_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 	unsigned long cpuflags;
- 
- 	if (ldata->real_raw) {
--		spin_lock_irqsave(&tty->read_lock, cpuflags);
-+		spin_lock_irqsave(&ldata->read_lock, cpuflags);
- 		i = min(N_TTY_BUF_SIZE - ldata->read_cnt,
- 			N_TTY_BUF_SIZE - ldata->read_head);
- 		i = min(count, i);
-@@ -1433,7 +1450,7 @@ static void n_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 		memcpy(ldata->read_buf + ldata->read_head, cp, i);
- 		ldata->read_head = (ldata->read_head + i) & (N_TTY_BUF_SIZE-1);
- 		ldata->read_cnt += i;
--		spin_unlock_irqrestore(&tty->read_lock, cpuflags);
-+		spin_unlock_irqrestore(&ldata->read_lock, cpuflags);
- 	} else {
- 		for (i = count, p = cp, f = fp; i; i--, p++) {
- 			if (f)
-@@ -1626,6 +1643,10 @@ static int n_tty_open(struct tty_struct *tty)
- 		goto err;
- 
- 	ldata->overrun_time = jiffies;
-+	mutex_init(&ldata->atomic_read_lock);
-+	mutex_init(&ldata->output_lock);
-+	mutex_init(&ldata->echo_lock);
-+	spin_lock_init(&ldata->read_lock);
- 
- 	/* These are ugly. Currently a malloc failure here can panic */
- 	ldata->read_buf = kzalloc(N_TTY_BUF_SIZE, GFP_KERNEL);
-@@ -1677,7 +1698,7 @@ static inline int input_available_p(struct tty_struct *tty, int amt)
-  *	buffer, and once to drain the space from the (physical) beginning of
-  *	the buffer to head pointer.
-  *
-- *	Called under the tty->atomic_read_lock sem
-+ *	Called under the ldata->atomic_read_lock sem
-  *
-  */
- 
-@@ -1693,10 +1714,10 @@ static int copy_from_read_buf(struct tty_struct *tty,
- 	bool is_eof;
- 
- 	retval = 0;
--	spin_lock_irqsave(&tty->read_lock, flags);
-+	spin_lock_irqsave(&ldata->read_lock, flags);
- 	n = min(ldata->read_cnt, N_TTY_BUF_SIZE - ldata->read_tail);
- 	n = min(*nr, n);
--	spin_unlock_irqrestore(&tty->read_lock, flags);
-+	spin_unlock_irqrestore(&ldata->read_lock, flags);
- 	if (n) {
- 		retval = copy_to_user(*b, &ldata->read_buf[ldata->read_tail], n);
- 		n -= retval;
-@@ -1704,13 +1725,13 @@ static int copy_from_read_buf(struct tty_struct *tty,
- 			ldata->read_buf[ldata->read_tail] == EOF_CHAR(tty);
- 		tty_audit_add_data(tty, &ldata->read_buf[ldata->read_tail], n,
- 				ldata->icanon);
--		spin_lock_irqsave(&tty->read_lock, flags);
-+		spin_lock_irqsave(&ldata->read_lock, flags);
- 		ldata->read_tail = (ldata->read_tail + n) & (N_TTY_BUF_SIZE-1);
- 		ldata->read_cnt -= n;
- 		/* Turn single EOF into zero-length read */
- 		if (L_EXTPROC(tty) && ldata->icanon && is_eof && !ldata->read_cnt)
- 			n = 0;
--		spin_unlock_irqrestore(&tty->read_lock, flags);
-+		spin_unlock_irqrestore(&ldata->read_lock, flags);
- 		*b += n;
- 		*nr -= n;
- 	}
-@@ -1818,10 +1839,10 @@ do_it_again:
- 	 *	Internal serialization of reads.
- 	 */
- 	if (file->f_flags & O_NONBLOCK) {
--		if (!mutex_trylock(&tty->atomic_read_lock))
-+		if (!mutex_trylock(&ldata->atomic_read_lock))
- 			return -EAGAIN;
- 	} else {
--		if (mutex_lock_interruptible(&tty->atomic_read_lock))
-+		if (mutex_lock_interruptible(&ldata->atomic_read_lock))
- 			return -ERESTARTSYS;
- 	}
- 	packet = tty->packet;
-@@ -1890,7 +1911,7 @@ do_it_again:
- 
- 		if (ldata->icanon && !L_EXTPROC(tty)) {
- 			/* N.B. avoid overrun if nr == 0 */
--			spin_lock_irqsave(&tty->read_lock, flags);
-+			spin_lock_irqsave(&ldata->read_lock, flags);
- 			while (nr && ldata->read_cnt) {
- 				int eol;
- 
-@@ -1908,25 +1929,25 @@ do_it_again:
- 					if (--ldata->canon_data < 0)
- 						ldata->canon_data = 0;
- 				}
--				spin_unlock_irqrestore(&tty->read_lock, flags);
-+				spin_unlock_irqrestore(&ldata->read_lock, flags);
- 
- 				if (!eol || (c != __DISABLED_CHAR)) {
- 					if (tty_put_user(tty, c, b++)) {
- 						retval = -EFAULT;
- 						b--;
--						spin_lock_irqsave(&tty->read_lock, flags);
-+						spin_lock_irqsave(&ldata->read_lock, flags);
- 						break;
- 					}
- 					nr--;
- 				}
- 				if (eol) {
- 					tty_audit_push(tty);
--					spin_lock_irqsave(&tty->read_lock, flags);
-+					spin_lock_irqsave(&ldata->read_lock, flags);
- 					break;
- 				}
--				spin_lock_irqsave(&tty->read_lock, flags);
-+				spin_lock_irqsave(&ldata->read_lock, flags);
- 			}
--			spin_unlock_irqrestore(&tty->read_lock, flags);
-+			spin_unlock_irqrestore(&ldata->read_lock, flags);
- 			if (retval)
- 				break;
- 		} else {
-@@ -1958,7 +1979,7 @@ do_it_again:
- 		if (time)
- 			timeout = time;
- 	}
--	mutex_unlock(&tty->atomic_read_lock);
-+	mutex_unlock(&ldata->atomic_read_lock);
- 	remove_wait_queue(&tty->read_wait, &wait);
- 
- 	if (!waitqueue_active(&tty->read_wait))
 diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 67b024c..f90b621 100644
+index f90b621..202008f 100644
 --- a/drivers/tty/tty_io.c
 +++ b/drivers/tty/tty_io.c
-@@ -2939,11 +2939,7 @@ void initialize_tty_struct(struct tty_struct *tty,
- 	init_waitqueue_head(&tty->write_wait);
- 	init_waitqueue_head(&tty->read_wait);
- 	INIT_WORK(&tty->hangup_work, do_tty_hangup);
--	mutex_init(&tty->atomic_read_lock);
- 	mutex_init(&tty->atomic_write_lock);
--	mutex_init(&tty->output_lock);
--	mutex_init(&tty->echo_lock);
--	spin_lock_init(&tty->read_lock);
- 	spin_lock_init(&tty->ctrl_lock);
- 	INIT_LIST_HEAD(&tty->tty_files);
- 	INIT_WORK(&tty->SAK_work, do_SAK_work);
+@@ -1417,6 +1417,8 @@ struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx)
+ 			"%s: %s driver does not set tty->port. This will crash the kernel later. Fix the driver!\n",
+ 			__func__, tty->driver->name);
+ 
++	tty->port->itty = tty;
++
+ 	/*
+ 	 * Structures all installed ... call the ldisc open routines.
+ 	 * If we fail here just call release_tty to clean up.  No need
+@@ -1552,6 +1554,7 @@ static void release_tty(struct tty_struct *tty, int idx)
+ 		tty->ops->shutdown(tty);
+ 	tty_free_termios(tty);
+ 	tty_driver_remove_tty(tty->driver, tty);
++	tty->port->itty = NULL;
+ 
+ 	if (tty->link)
+ 		tty_kref_put(tty->link);
 diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 226cf20..08787ec 100644
+index b4b3c56..9be74d6 100644
 --- a/include/linux/tty.h
 +++ b/include/linux/tty.h
-@@ -235,6 +235,7 @@ struct tty_struct {
- 	struct mutex ldisc_mutex;
- 	struct tty_ldisc *ldisc;
- 
-+	struct mutex atomic_write_lock;
- 	struct mutex legacy_mutex;
- 	struct mutex termios_mutex;
- 	spinlock_t ctrl_lock;
-@@ -265,20 +266,10 @@ struct tty_struct {
- 
- #define N_TTY_BUF_SIZE 4096
- 
--	/*
--	 * The following is data for the N_TTY line discipline.  For
--	 * historical reasons, this is included in the tty structure.
--	 * Mostly locked by the BKL.
--	 */
- 	unsigned char closing:1;
- 	unsigned short minimum_to_wake;
--	struct mutex atomic_read_lock;
--	struct mutex atomic_write_lock;
--	struct mutex output_lock;
--	struct mutex echo_lock;
- 	unsigned char *write_buf;
- 	int write_cnt;
--	spinlock_t read_lock;
- 	/* If the tty has a pending do_SAK, queue it here - akpm */
- 	struct work_struct SAK_work;
- 	struct tty_port *port;
+@@ -189,6 +189,7 @@ struct tty_port_operations {
+ 	
+ struct tty_port {
+ 	struct tty_struct	*tty;		/* Back pointer */
++	struct tty_struct	*itty;		/* internal back ptr */
+ 	const struct tty_port_operations *ops;	/* Port operations */
+ 	spinlock_t		lock;		/* Lock protecting tty field */
+ 	int			blocked_open;	/* Waiting to open */
 -- 
 1.7.12.3
 
