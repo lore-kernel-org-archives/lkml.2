@@ -1,91 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab2JRIZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 04:25:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:17377 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751938Ab2JRIZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 04:25:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,606,1344236400"; 
-   d="scan'208";a="207551935"
-From: dragos.tatulea@intel.com
-To: ccross@android.com, keescook@chromium.org, tony.luck@intel.com,
-        cbouatmailru@gmail.com, linux-kernel@vger.kernel.org
-Cc: adrian.hunter@intel.com, octavian.purdila@intel.com
-Subject: [PATCH v2 1/8] pstore: add flags
-Date: Thu, 18 Oct 2012 11:28:21 +0300
-Message-Id: <1350548908-24407-2-git-send-email-dragos.tatulea@intel.com>
+	id S1754019Ab2JRIaT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 04:30:19 -0400
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:10471
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752602Ab2JRIaQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 04:30:16 -0400
+X-Forefront-Antispam-Report: CIP:193.138.13.20;KIP:(null);UIP:(null);IPV:NLI;H:oce-exbhcs03a.oce.net;RD:smtp02.oce.com;EFVD:NLI
+X-SpamScore: 17
+X-BigFish: VS17(zzzz1ce5h1202h1d1ah1cabh1d2ahzz8275bhz2ei87h668h839hd24he5bhf0ah107ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441hff4m129fs1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: Ivo Sieben <meltedpianoman@gmail.com>
+To: <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>
+CC: <linux-serial@vger.kernel.org>, Alan Cox <alan@linux.intel.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Ivo Sieben <meltedpianoman@gmail.com>
+Subject: [PATCH-v2] sched: Prevent wakeup to enter critical section needlessly
+Date: Thu, 18 Oct 2012 10:30:05 +0200
+Message-ID: <1350549005-18309-1-git-send-email-meltedpianoman@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350548908-24407-1-git-send-email-dragos.tatulea@intel.com>
-References: <1350548908-24407-1-git-send-email-dragos.tatulea@intel.com>
+In-Reply-To: <20121010140249.GX16230@one.firstfloor.org>
+References: <20121010140249.GX16230@one.firstfloor.org>
+X-OriginalArrivalTime: 18 Oct 2012 08:30:07.0798 (UTC) FILETIME=[C7DC1560:01CDAD0A]
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: oce.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+Check the waitqueue task list to be non empty before entering the critical
+section. This prevents locking the spin lock needlessly in case the queue
+was empty, and therefor also prevent scheduling overhead on a PREEMPT_RT
+system.
 
-Let the back end tweak pstore behaviour.  Flags added are:
-
-	PSTORE_NO_HEADINGS
-
-		Omit pstore heading lines from dumped data
-
-	PSTORE_MAX_KMSG_BYTES
-
-		Default kmsg_bytes to ULONG_MAX
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
 ---
- fs/pstore/platform.c   |    9 ++++++++-
- include/linux/pstore.h |    4 ++++
- 2 files changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index a40da07..c4ea778 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -128,7 +128,11 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 		size_t len;
+ v2:
+ - We don't need the "careful" list empty, a normal list empty is sufficient:
+   if you miss an update it was just as it happened a little later.
+ - Because of memory ordering problems we can observe an unupdated list
+   administration. This can cause an wait_event-like code to miss an event.
+   Adding a memory barrier befor checking the list to be empty will guarantee we
+   evaluate a 100% updated list adminsitration.
+
+ kernel/sched/core.c |   19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2d8927f..168a9b2 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3090,9 +3090,22 @@ void __wake_up(wait_queue_head_t *q, unsigned int mode,
+ {
+ 	unsigned long flags;
  
- 		dst = psinfo->buf;
--		hsize = sprintf(dst, "%s#%d Part%d\n", why, oopscount, part);
-+		if (psinfo->flags & PSTORE_NO_HEADINGS)
-+			hsize = 0;
-+		else
-+			hsize = sprintf(dst, "%s#%d Part%d\n", why, oopscount,
-+					part);
- 		size = psinfo->bufsize - hsize;
- 		dst += hsize;
+-	spin_lock_irqsave(&q->lock, flags);
+-	__wake_up_common(q, mode, nr_exclusive, 0, key);
+-	spin_unlock_irqrestore(&q->lock, flags);
++	/*
++	 * We check for list emptiness outside the lock. This prevents the wake
++	 * up to enter the critical section needlessly when the task list is
++	 * empty.
++	 *
++	 * Placed a full memory barrier before checking list emptiness to make
++	 * 100% sure this function sees an up-to-date list administration.
++	 * Note that other code that manipulates the list uses a spin_lock and
++	 * therefore doesn't need additional memory barriers.
++	 */
++	smp_mb();
++	if (!list_empty(&q->task_list)) {
++		spin_lock_irqsave(&q->lock, flags);
++		__wake_up_common(q, mode, nr_exclusive, 0, key);
++		spin_unlock_irqrestore(&q->lock, flags);
++	}
+ }
+ EXPORT_SYMBOL(__wake_up);
  
-@@ -237,6 +241,9 @@ int pstore_register(struct pstore_info *psi)
- 		return -EINVAL;
- 	}
- 
-+	if (psinfo->flags & PSTORE_MAX_KMSG_BYTES)
-+		kmsg_bytes = ULONG_MAX;
-+
- 	if (pstore_is_mounted())
- 		pstore_get_records(0);
- 
-diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index ee3034a..55ab23f 100644
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -40,9 +40,13 @@ enum pstore_type_id {
- 
- struct module;
- 
-+#define PSTORE_NO_HEADINGS	BIT(0)
-+#define PSTORE_MAX_KMSG_BYTES	BIT(1)
-+
- struct pstore_info {
- 	struct module	*owner;
- 	char		*name;
-+	unsigned int	flags;
- 	spinlock_t	buf_lock;	/* serialize access to 'buf' */
- 	char		*buf;
- 	size_t		bufsize;
 -- 
 1.7.9.5
+
 
