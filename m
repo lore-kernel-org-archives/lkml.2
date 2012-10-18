@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916Ab2JRDSi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 23:18:38 -0400
-Received: from ozlabs.org ([203.10.76.45]:43131 "EHLO ozlabs.org"
+	id S1753854Ab2JRDSh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 23:18:37 -0400
+Received: from ozlabs.org ([203.10.76.45]:55401 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751645Ab2JRDSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751680Ab2JRDSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Oct 2012 23:18:35 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
-Cc: Will Deacon <will.deacon@arm.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        "lf-virt" <virtualization@lists.linux-foundation.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        Eric Van Hensbergen <ericvh@gmail.com>
-Subject: Re: [PATCH] virtio: 9p: correctly pass physical address to userspace for high pages
-In-Reply-To: <1350468877-7677-1-git-send-email-will.deacon@arm.com>
-References: <1350468877-7677-1-git-send-email-will.deacon@arm.com>
+To: mtk.manpages@gmail.com
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
+        linux-kernel@vger.kernel.org,
+        "Lucas De Marchi" <lucas.demarchi@profusion.mobi>,
+        <jonathon@jonmasters.org>
+Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
+In-Reply-To: <CAKgNAkh=99=x1=8Y=3odem-fXc9zEEbLvCc0WQku5Kyso4qHuQ@mail.gmail.com>
+References: <1348179300-11653-1-git-send-email-keescook@chromium.org> <CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com> <50749DE8.7010703@zytor.com> <CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com> <5074A0AB.8040207@zytor.com> <87d30o7iy6.fsf@rustcorp.com.au> <CAKgNAkh=99=x1=8Y=3odem-fXc9zEEbLvCc0WQku5Kyso4qHuQ@mail.gmail.com>
 User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 18 Oct 2012 12:49:06 +1030
-Message-ID: <87lif4o739.fsf@rustcorp.com.au>
+Date: Thu, 18 Oct 2012 13:42:16 +1030
+Message-ID: <87ipa8o4mn.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will Deacon <will.deacon@arm.com> writes:
-> When using a virtio transport, the 9p net device allocates pages to back
-> the descriptors inserted into the virtqueue. These allocations may be
-> performed from atomic context (under the channel lock) and can therefore
-> return high mappings which aren't suitable for virt_to_phys.
+"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+> Sure. But my point that started this subthread was: should we take the
+> opportunity now to add a 'flags' argument to the new finit_module()
+> system call, so as to allow flexibility in extending the behavior in
+> future? There have been so many cases of revised system calls in the
+> past few years that replaced calls without a 'flags' argument that it
+> seems worth at least some thought before the API is cast in stone.
 
-I had not appreciated that subtlety about GFP_ATOMIC :(
+(CC's trimmed, Lucas & Jon added; please include them in module
+discussions!)
 
-This isn't just 9p, the console, block, scsi and net devices also use
-GFP_ATOMIC.
+So I tried to think of why we'd want flags; if I could think of a
+plausible reason, obviously we should do it now.
 
-> @@ -165,7 +166,8 @@ static int vring_add_indirect(struct vring_virtqueue *vq,
->  	/* Use a single buffer which doesn't continue */
->  	head = vq->free_head;
->  	vq->vring.desc[head].flags = VRING_DESC_F_INDIRECT;
-> -	vq->vring.desc[head].addr = virt_to_phys(desc);
-> +	vq->vring.desc[head].addr = page_to_phys(kmap_to_page(desc)) +
-> +				    ((unsigned long)desc & ~PAGE_MASK);
->  	vq->vring.desc[head].len = i * sizeof(struct vring_desc);
+I think it would be neat for the force flags (eg. ignoring modversions
+or ignoring kernel version).  These are the only cases where libkmod
+needs to mangle the module.
 
-Gah, virt_to_phys_harder()?
+So here's the patch which adds the flags field, but nothing in there
+yet.  I'll add the remove flags soon, so libkmod can assume that if the
+syscall exists, those flags will work.
 
-What's the performance effect?  If it's negligible, why doesn't
-virt_to_phys() just do this for us?
-
-We do have an alternate solution: masking out __GFP_HIGHMEM from the
-kmalloc of desc.  If it fails, we will fall back to laying out the
-virtio request directly inside the ring; if it doesn't fit, we'll wait
-for the device to consume more buffers.
-
-> @@ -325,7 +326,7 @@ static int p9_get_mapped_pages(struct virtio_chan *chan,
->  		int count = nr_pages;
->  		while (nr_pages) {
->  			s = rest_of_page(data);
-> -			pages[index++] = virt_to_page(data);
-> +			pages[index++] = kmap_to_page(data);
->  			data += s;
->  			nr_pages--;
->  		}
-
-This seems like a separate bug fix.
-
-Cheers,
+Thoughts?
 Rusty.
+
+FIX: add flags arg to sys_finit_module()
+
+Thanks to Michael Kerrisk for keeping us honest.
+
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 32bc035..8cf7b50 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -868,5 +868,5 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
+ 
+ asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
+ 			 unsigned long idx1, unsigned long idx2);
+-asmlinkage long sys_finit_module(int fd, const char __user *uargs);
++asmlinkage long sys_finit_module(int fd, const char __user *uargs, int flags);
+ #endif
+diff --git a/kernel/module.c b/kernel/module.c
+index 261bf82..8b8d986 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -3260,7 +3260,7 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
+ 	return load_module(&info, uargs);
+ }
+ 
+-SYSCALL_DEFINE2(finit_module, int, fd, const char __user *, uargs)
++SYSCALL_DEFINE2(finit_module, int, fd, const char __user *, uargs, int, flags)
+ {
+ 	int err;
+ 	struct load_info info = { };
+@@ -3269,7 +3269,11 @@ SYSCALL_DEFINE2(finit_module, int, fd, const char __user *, uargs)
+ 	if (err)
+ 		return err;
+ 
+-	pr_debug("finit_module: fd=%d, uargs=%p\n", fd, uargs);
++	pr_debug("finit_module: fd=%d, uargs=%p, flags=%i\n", fd, uargs, flags);
++
++	/* Coming RSN... */
++	if (flags)
++		return -EINVAL;
+ 
+ 	err = copy_module_from_fd(fd, &info);
+ 	if (err)
