@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab2JROe2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 10:34:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:11550 "EHLO mga02.intel.com"
+	id S1753383Ab2JROe0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 10:34:26 -0400
+Received: from mga03.intel.com ([143.182.124.21]:5217 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752411Ab2JROeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753081Ab2JROeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Oct 2012 10:34:24 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,608,1344236400"; 
-   d="scan'208";a="229254050"
+X-IronPort-AV: E=Sophos;i="4.80,607,1344236400"; 
+   d="scan'208";a="206091412"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
         linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
         balbi@ti.com
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv3 5/6] dw_dmac: change dev_crit to dev_WARN in dwc_handle_error
-Date: Thu, 18 Oct 2012 17:34:11 +0300
-Message-Id: <1350570852-10398-6-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv3 4/6] dw_dmac: don't call platform_get_drvdata twice
+Date: Thu, 18 Oct 2012 17:34:10 +0300
+Message-Id: <1350570852-10398-5-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1350570852-10398-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1350570852-10398-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -24,36 +24,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case of handling a bad descriptor the dwc_handle_error() will dump a stack
-as well. It's a lot more verbose and more likely to get user's attention.
+There is no need to call platform_get_drvdata twice as we have it already in dw
+variable.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/dma/dw_dmac.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/dma/dw_dmac.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 180ffd5..826ff8d 100644
+index d4ddf48..180ffd5 100644
 --- a/drivers/dma/dw_dmac.c
 +++ b/drivers/dma/dw_dmac.c
-@@ -485,14 +485,14 @@ static void dwc_handle_error(struct dw_dma *dw, struct dw_dma_chan *dwc)
- 		dwc_dostart(dwc, dwc_first_active(dwc));
+@@ -1653,7 +1653,7 @@ static void dw_shutdown(struct platform_device *pdev)
+ {
+ 	struct dw_dma	*dw = platform_get_drvdata(pdev);
  
- 	/*
--	 * KERN_CRITICAL may seem harsh, but since this only happens
-+	 * WARN may seem harsh, but since this only happens
- 	 * when someone submits a bad physical address in a
- 	 * descriptor, we should consider ourselves lucky that the
- 	 * controller flagged an error instead of scribbling over
- 	 * random memory locations.
- 	 */
--	dev_crit(chan2dev(&dwc->chan), "Bad descriptor submitted for DMA!\n");
--	dev_crit(chan2dev(&dwc->chan), "  cookie: %d\n", bad_desc->txd.cookie);
-+	dev_WARN(chan2dev(&dwc->chan), "Bad descriptor submitted for DMA!\n"
-+				       "  cookie: %d\n", bad_desc->txd.cookie);
- 	dwc_dump_lli(dwc, &bad_desc->lli);
- 	list_for_each_entry(child, &bad_desc->tx_list, desc_node)
- 		dwc_dump_lli(dwc, &child->lli);
+-	dw_dma_off(platform_get_drvdata(pdev));
++	dw_dma_off(dw);
+ 	clk_disable_unprepare(dw->clk);
+ }
+ 
+@@ -1662,7 +1662,7 @@ static int dw_suspend_noirq(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct dw_dma	*dw = platform_get_drvdata(pdev);
+ 
+-	dw_dma_off(platform_get_drvdata(pdev));
++	dw_dma_off(dw);
+ 	clk_disable_unprepare(dw->clk);
+ 
+ 	return 0;
 -- 
 1.7.10.4
 
