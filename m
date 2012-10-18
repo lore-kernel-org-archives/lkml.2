@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab2JRMkR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 08:40:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14415 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754801Ab2JRMkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 08:40:15 -0400
-Message-ID: <507FF87C.2060708@redhat.com>
-Date: Thu, 18 Oct 2012 14:39:24 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1755150Ab2JRMlx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 08:41:53 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:50985 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754801Ab2JRMlv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 08:41:51 -0400
+Date: Thu, 18 Oct 2012 08:41:44 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: Hillf Danton <dhillf@gmail.com>, konrad.wilk@oracle.com,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, rob@landley.net,
+        akpm@linux-foundation.org, joerg.roedel@amd.com, bhelgaas@google.com,
+        shuahkhan@gmail.com, fujita.tomonori@lab.ntt.co.jp,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH v2 1/7] swiotlb: Make io_tlb_end a physical address
+ instead of a virtual one
+Message-ID: <20121018124143.GA13854@localhost.localdomain>
+References: <20121011203010.12444.15503.stgit@gitlad.jf.intel.com>
+ <20121011203421.12444.32871.stgit@gitlad.jf.intel.com>
+ <CAJd=RBApQjWBA8w0y7_FhVAOoi17FO=UkCKQqnAX_vbFikkEVA@mail.gmail.com>
+ <507C2F20.8000504@intel.com>
 MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        chegu vinod <chegu_vinod@hp.com>, LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
- handler
-References: <20120921120000.27611.71321.sendpatchset@codeblue> <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com> <50607F1F.2040704@redhat.com> <20121003122209.GA9076@linux.vnet.ibm.com> <506C7057.6000102@redhat.com> <506D69AB.7020400@linux.vnet.ibm.com> <506D83EE.2020303@redhat.com> <1349356038.14388.3.camel@twins> <506DA48C.8050200@redhat.com> <20121009185108.GA2549@linux.vnet.ibm.com>
-In-Reply-To: <20121009185108.GA2549@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <507C2F20.8000504@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2012 08:51 PM, Raghavendra K T wrote:
-> Here is the summary:
-> We do get good benefit by increasing ple window. Though we don't
-> see good benefit for kernbench and sysbench, for ebizzy, we get huge
-> improvement for 1x scenario. (almost 2/3rd of ple disabled case).
+On Mon, Oct 15, 2012 at 08:43:28AM -0700, Alexander Duyck wrote:
+> On 10/13/2012 05:52 AM, Hillf Danton wrote:
+> > Hi Alexander,
+> >
+> > On Fri, Oct 12, 2012 at 4:34 AM, Alexander Duyck
+> > <alexander.h.duyck@intel.com> wrote:
+> >> This change replaces all references to the virtual address for io_tlb_end
+> >> with references to the physical address io_tlb_end.  The main advantage of
+> >> replacing the virtual address with a physical address is that we can avoid
+> >> having to do multiple translations from the virtual address to the physical
+> >> one needed for testing an existing DMA address.
+> >>
+> >> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+> >> ---
+> >>
+> >>  lib/swiotlb.c |   24 +++++++++++++-----------
+> >>  1 files changed, 13 insertions(+), 11 deletions(-)
+> >>
+> >> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+> >> index f114bf6..19aac9f 100644
+> >> --- a/lib/swiotlb.c
+> >> +++ b/lib/swiotlb.c
+> >> @@ -57,7 +57,8 @@ int swiotlb_force;
+> >>   * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
+> >>   * API.
+> >>   */
+> >> -static char *io_tlb_start, *io_tlb_end;
+> >> +static char *io_tlb_start;
+> >> +phys_addr_t io_tlb_end;
+> > If add io_tlb_start_phy and io_tlb_end_phy, could we get same results
+> > with less hunks?
+> >
+> > Hillf
 > 
-> Let me know if you think we can increase the default ple_window
-> itself to 16k.
->
+> What do you mean by less hunks?  Are you referring to the memory space? 
 
-I think so, there is no point running with untuned defaults.
+As in less patch movements.
+> If so, then the patches I am submitting do not impact how much space is
+> used for the bounce buffer.  The only real result of these patches is
+> that the total code path is significantly reduced since we don't have to
+> perform any virtual to physical translations in the hot-path.
 
-> 
-> I can respin the whole series including this default ple_window change.
+No. He is referring that you can keep io_tlb_end still here. Just
+do the computation of the physical address in the init path (of the end).
+Then you don't need to do the shifting in the 'is-this-swiotlb-buffer'
+and can just do a simple:
+	if (dma_addr >= io_tlb_start && dma_addr <= io_tlb_end)
 
-It can come as a separate patch.
-
-> 
-> I also have the perf kvm top result for both ebizzy and kernbench.
-> I think they are in expected lines now.
-> 
-> Improvements
-> ================
-> 
-> 16 core PLE machine with 16 vcpu guest
-> 
-> base = 3.6.0-rc5 + ple handler optimization patches
-> base_pleopt_16k = base + ple_window = 16k
-> base_pleopt_32k = base + ple_window = 32k
-> base_pleopt_nople = base + ple_gap = 0
-> kernbench, hackbench, sysbench (time in sec lower is better)
-> ebizzy (rec/sec higher is better)
-> 
-> % improvements w.r.t base (ple_window = 4k)
-> ---------------+---------------+-----------------+-------------------+
->                |base_pleopt_16k| base_pleopt_32k | base_pleopt_nople |
-> ---------------+---------------+-----------------+-------------------+
-> kernbench_1x   |  0.42371      |  1.15164        |   0.09320         |
-> kernbench_2x   | -1.40981      | -17.48282       |  -570.77053       |
-> ---------------+---------------+-----------------+-------------------+
-> sysbench_1x    | -0.92367      | 0.24241         | -0.27027          |
-> sysbench_2x    | -2.22706      |-0.30896         | -1.27573          |
-> sysbench_3x    | -0.75509      | 0.09444         | -2.97756          |
-> ---------------+---------------+-----------------+-------------------+
-> ebizzy_1x      | 54.99976      | 67.29460        |  74.14076         |
-> ebizzy_2x      | -8.83386      |-27.38403        | -96.22066         |
-> ---------------+---------------+-----------------+-------------------+
-
-So it seems we want dynamic PLE windows.  As soon as we enter overcommit
-we need to decrease the window.
-
-
--- 
-error compiling committee.c: too many arguments to function
