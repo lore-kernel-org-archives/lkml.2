@@ -1,139 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513Ab2JRI0r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 04:26:47 -0400
-Received: from mga09.intel.com ([134.134.136.24]:17377 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753957Ab2JRIZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 04:25:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,606,1344236400"; 
-   d="scan'208";a="207552025"
-From: dragos.tatulea@intel.com
-To: ccross@android.com, keescook@chromium.org, tony.luck@intel.com,
-        cbouatmailru@gmail.com, linux-kernel@vger.kernel.org
-Cc: adrian.hunter@intel.com, octavian.purdila@intel.com
-Subject: [PATCH v2 6/8] pstore: do not run timer while pstore is not mounted
-Date: Thu, 18 Oct 2012 11:28:26 +0300
-Message-Id: <1350548908-24407-7-git-send-email-dragos.tatulea@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350548908-24407-1-git-send-email-dragos.tatulea@intel.com>
-References: <1350548908-24407-1-git-send-email-dragos.tatulea@intel.com>
+	id S1754573Ab2JRI05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 04:26:57 -0400
+Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:16207
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753957Ab2JRI0v convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 04:26:51 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzc89bhzz1202h1d1ah1d2ah1082kzzz2dh2a8h668h839h93fhd25he5bhf0ah107ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1155h)
+Message-ID: <507FBDF1.5050602@freescale.com>
+Date: Thu, 18 Oct 2012 16:29:37 +0800
+From: Huang Shijie <b32955@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Marek Vasut <marex@denx.de>
+CC: Vinod Koul <vinod.koul@linux.intel.com>, <djbw@fb.com>,
+        <khali@linux-fr.org>, <ben-linux@fluff.org>, <w.sang@pengutronix.de>,
+        <cjb@laptop.org>, <dwmw2@infradead.org>, <lrg@ti.com>,
+        <broonie@opensource.wolfsonmicro.com>, <perex@perex.cz>,
+        <tiwai@suse.de>, <shawn.guo@linaro.org>,
+        <artem.bityutskiy@linux.intel.com>, <linux-kernel@vger.kernel.org>,
+        <linux-i2c@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>, <alsa-devel@alsa-project.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        Huang Shijie <shijie8@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        "dedekind1@gmail.com" <dedekind1@gmail.com>
+Subject: Re: [PATCH] dma: add new DMA control commands
+References: <1350538335-29026-1-git-send-email-b32955@freescale.com> <201210180914.58527.marex@denx.de> <507FB495.7050104@freescale.com> <201210181016.06782.marex@denx.de>
+In-Reply-To: <201210181016.06782.marex@denx.de>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+于 2012年10月18日 16:16, Marek Vasut 写道:
+> So we can't stream data from the chip? About time to adjust the MTD framework to
+> allow that. Maybe implement a command queue?
+>
 
-A timer is used to periodically check for new dumps.
-The timer is not needed unless pstore is mounted,
-so disable it otherwise.
+to Artem & David:
+    is this possible to stream the data out with a command queue?
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- fs/pstore/inode.c    |    3 +++
- fs/pstore/internal.h |    2 ++
- fs/pstore/platform.c |   36 +++++++++++++++++++++++++++++-------
- 3 files changed, 34 insertions(+), 7 deletions(-)
-
-diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index 4800c09..5e20a8d 100644
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -397,6 +397,8 @@ static int pstore_fill_super(struct super_block *sb, void *data, int silent)
- 
- 	pstore_get_records(0);
- 
-+	pstore_add_timer();
-+
- 	return 0;
- }
- 
-@@ -408,6 +410,7 @@ static struct dentry *pstore_mount(struct file_system_type *fs_type,
- 
- static void pstore_kill_sb(struct super_block *sb)
- {
-+	pstore_del_timer();
- 	kill_litter_super(sb);
- 	pstore_sb = NULL;
- }
-diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
-index 4847f58..c7b8197 100644
---- a/fs/pstore/internal.h
-+++ b/fs/pstore/internal.h
-@@ -54,4 +54,6 @@ extern int	pstore_mkfile(enum pstore_type_id, char *psname, u64 id,
- 			      struct timespec time, struct pstore_info *psi);
- extern int	pstore_is_mounted(void);
- 
-+extern void pstore_add_timer(void);
-+extern void pstore_del_timer(void);
- #endif
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index 63ff377..3a4c38f 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -54,6 +54,8 @@ static int pstore_new_entry;
- 
- static void pstore_timefunc(unsigned long);
- static DEFINE_TIMER(pstore_timer, pstore_timefunc, 0, 0);
-+static DEFINE_SPINLOCK(pstore_timer_lock);
-+static int pstore_timer_on;
- 
- static void pstore_dowork(struct work_struct *);
- static DECLARE_WORK(pstore_work, pstore_dowork);
-@@ -351,12 +353,6 @@ int pstore_register(struct pstore_info *psi)
- 	pstore_register_console();
- 	pstore_register_ftrace();
- 
--	if (pstore_update_ms >= 0) {
--		pstore_timer.expires = jiffies +
--			msecs_to_jiffies(pstore_update_ms);
--		add_timer(&pstore_timer);
--	}
--
- 	pstore_debugfs_init();
- 
- 	return 0;
-@@ -411,12 +407,38 @@ static void pstore_dowork(struct work_struct *work)
- 
- static void pstore_timefunc(unsigned long dummy)
- {
-+	unsigned long flags;
-+
- 	if (pstore_new_entry) {
- 		pstore_new_entry = 0;
- 		schedule_work(&pstore_work);
- 	}
- 
--	mod_timer(&pstore_timer, jiffies + msecs_to_jiffies(pstore_update_ms));
-+	spin_lock_irqsave(&pstore_timer_lock, flags);
-+	if (pstore_timer_on)
-+		mod_timer(&pstore_timer,
-+				jiffies + msecs_to_jiffies(pstore_update_ms));
-+	spin_unlock_irqrestore(&pstore_timer_lock, flags);
-+}
-+
-+void pstore_add_timer(void)
-+{
-+	pstore_timer_on = 1;
-+	if (pstore_update_ms >= 0) {
-+		pstore_timer.expires = jiffies +
-+			msecs_to_jiffies(pstore_update_ms);
-+		add_timer(&pstore_timer);
-+	}
-+}
-+
-+void pstore_del_timer(void)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&pstore_timer_lock, flags);
-+	pstore_timer_on = 0;
-+	spin_unlock_irqrestore(&pstore_timer_lock, flags);
-+	del_timer_sync(&pstore_timer);
- }
- 
- /* pstore_write must only be called from PSTORE_DUMP notifier callbacks */
--- 
-1.7.9.5
+thanks
+Huang Shijie
 
