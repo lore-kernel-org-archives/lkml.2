@@ -1,80 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab2JRFhx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 01:37:53 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:54678 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951Ab2JRFhv (ORCPT
+	id S1754152Ab2JRFj0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 01:39:26 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:46565 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951Ab2JRFjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 01:37:51 -0400
-X-AuditID: cbfee61a-b7f976d000001eb9-0b-507f95ae6fd0
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-To: "'Arnd Bergmann'" <arnd@arndb.de>, "'Jaegeuk Kim'" <jaegeuk.kim@gmail.com>
-Cc: "'Dave Chinner'" <david@fromorbit.com>,
-        "'Vyacheslav Dubeyko'" <slava@dubeyko.com>, viro@zeniv.linux.org.uk,
-        "'Theodore Ts'o'" <tytso@mit.edu>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, chur.lee@samsung.com,
-        cm224.lee@samsung.com, jooyoung.hwang@samsung.com
-References: <001201cda2f1$633db960$29b92c20$%kim@samsung.com>
- <201210161138.35388.arnd@arndb.de> <1350419915.1958.39.camel@kjgkr>
- <201210171225.01511.arnd@arndb.de>
-In-reply-to: <201210171225.01511.arnd@arndb.de>
-Subject: RE: [PATCH 11/16] f2fs: add inode operations for special inodes
-Date: Thu, 18 Oct 2012 14:37:49 +0900
-Message-id: <000501cdacf2$b604bf80$220e3e80$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2sYnhgMs3NzrlxQH+2YrlXclOZ7QAjfkcA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFLMWRmVeSWpSXmKPExsVy+t9jQd11U+sDDHbt4rK4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZDU+mMBdc56yY9ngOUwPjGvYuRk4OCQETiYZpT6FsMYkL99az
-	gdhCAtMZJa7ecOli5AKy5zNJbP55kqWLkYODTUBbYvN+A5AaEQEviWer5zOD2MwC05kkppwT
-	hqhfwSjxsPcb2FBOAX2JJY3fwYYKC3hIXPu6ASzOIqAqcWndLTCbV8BWYvGOc1C2oMSPyffA
-	djELqEtMmZILMV9eYvOat8wgYQmg8KO/uhAnGEkcWN7OBFEiIrHvxTvGCYxCs5AMmoUwaBaS
-	QbOQdCxgZFnFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERzCz6R2MK5ssDjEKMDBqMTDe6mn
-	PkCINbGsuDL3EKMEB7OSCG+NM1CINyWxsiq1KD++qDQntfgQozQHi5I4b7NHSoCQQHpiSWp2
-	ampBahFMlomDU6qBMeva9p0/hbu3zLq/Mv38D7P8zUY3z6iYGTcUnj+nc5Nxr2WD6vx9shf1
-	7hW7zTH2PfjJKipo0TJZab2AGYrVpZIZVQfvPlcuCzkopCGZ5liYb33DYF/ytz+iPuovmW8/
-	vTmp4veP2ZGuLTseaRU6TfJb7rvfteBievWX6AXXFENumL5aLtf9U4mlOCPRUIu5qDgRAFky
-	qgNdAgAA
+	Thu, 18 Oct 2012 01:39:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <87ipa8o4mn.fsf@rustcorp.com.au>
+References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
+ <CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com>
+ <50749DE8.7010703@zytor.com> <CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com>
+ <5074A0AB.8040207@zytor.com> <87d30o7iy6.fsf@rustcorp.com.au>
+ <CAKgNAkh=99=x1=8Y=3odem-fXc9zEEbLvCc0WQku5Kyso4qHuQ@mail.gmail.com> <87ipa8o4mn.fsf@rustcorp.com.au>
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Thu, 18 Oct 2012 02:39:04 -0300
+Message-ID: <CAMOw1v4j5UVtneBTx1-FteEP53QqeMdH9GKnKs3OcybAceQxtg@mail.gmail.com>
+Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: mtk.manpages@gmail.com, "H. Peter Anvin" <hpa@zytor.com>,
+        Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        jonathon@jonmasters.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tuesday 16 October 2012, Jaegeuk Kim wrote:
-> > >
-> > > > > An xattr on the root inode that holds a list like this is something
-> > > > > that could be set at mkfs time, but then also updated easily by new
-> > > > > software packages that are installed...
-> > >
-> > > Yes, good idea.
-> >
-> > Likewise many file systems, f2fs also supports xattr as a configurable
-> > Kconfig option.
-> > If user disables the xattr feature, how can we do this?
-> 
-> I can see three options here:
-> 
-> * make the extension list feature dependent on xattr, and treat all files
->   the same if it's disabled.
-> 
-> * put the list into the superblock instead.
-> 
-> * fall back on a hardcoded list of extensions when the extended attribute
->   is not present or the feature is disabled.
-> 
+On Thu, Oct 18, 2012 at 12:12 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+>> Sure. But my point that started this subthread was: should we take the
+>> opportunity now to add a 'flags' argument to the new finit_module()
+>> system call, so as to allow flexibility in extending the behavior in
+>> future? There have been so many cases of revised system calls in the
+>> past few years that replaced calls without a 'flags' argument that it
+>> seems worth at least some thought before the API is cast in stone.
+>
+> (CC's trimmed, Lucas & Jon added; please include them in module
+> discussions!)
+>
+> So I tried to think of why we'd want flags; if I could think of a
+> plausible reason, obviously we should do it now.
+>
+> I think it would be neat for the force flags (eg. ignoring modversions
+> or ignoring kernel version).  These are the only cases where libkmod
+> needs to mangle the module.
 
-IMHO, we don't need to disable the extension list among the cases.
-So, as I described before, I propose the following options.
+Maybe we should put this back into kernel. With an fd we can't mangle
+the module anymore to ignore modversions or kernel version.
 
-* By default, mkfs stores an extension list in superblock, and f2fs simply
-   uses it.
-* If users try to handle cold files by themselves, they can give a hint
-  via the xattr interface.
-* Whenever they want not to use the default extension list, they can
-  easily disable it by a mount option.
+So yes, I think a 'flags' param is indeed needed.
 
-> 	Arnd
+Side note:  force won't work anymore by using init_module() and signed modules.
 
+>
+> So here's the patch which adds the flags field, but nothing in there
+> yet.  I'll add the remove flags soon, so libkmod can assume that if the
+> syscall exists, those flags will work.
+>
+> Thoughts?
+> Rusty.
+>
+> FIX: add flags arg to sys_finit_module()
+>
+> Thanks to Michael Kerrisk for keeping us honest.
+>
+> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+> index 32bc035..8cf7b50 100644
+> --- a/include/linux/syscalls.h
+> +++ b/include/linux/syscalls.h
+> @@ -868,5 +868,5 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
+>
+>  asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
+>                          unsigned long idx1, unsigned long idx2);
+> -asmlinkage long sys_finit_module(int fd, const char __user *uargs);
+> +asmlinkage long sys_finit_module(int fd, const char __user *uargs, int flags);
+>  #endif
+> diff --git a/kernel/module.c b/kernel/module.c
+> index 261bf82..8b8d986 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -3260,7 +3260,7 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
+>         return load_module(&info, uargs);
+>  }
+>
+> -SYSCALL_DEFINE2(finit_module, int, fd, const char __user *, uargs)
+> +SYSCALL_DEFINE2(finit_module, int, fd, const char __user *, uargs, int, flags)
+>  {
+>         int err;
+>         struct load_info info = { };
+> @@ -3269,7 +3269,11 @@ SYSCALL_DEFINE2(finit_module, int, fd, const char __user *, uargs)
+>         if (err)
+>                 return err;
+>
+> -       pr_debug("finit_module: fd=%d, uargs=%p\n", fd, uargs);
+> +       pr_debug("finit_module: fd=%d, uargs=%p, flags=%i\n", fd, uargs, flags);
+> +
+> +       /* Coming RSN... */
+> +       if (flags)
+> +               return -EINVAL;
+>
+>         err = copy_module_from_fd(fd, &info);
+>         if (err)
+
+
+Ack.
+
+Lucas De Marchi
