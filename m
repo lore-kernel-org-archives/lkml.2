@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869Ab2JRLEb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 07:04:31 -0400
+	id S1755848Ab2JRLE3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 07:04:29 -0400
 Received: from mga03.intel.com ([143.182.124.21]:42979 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932609Ab2JRLDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 07:03:25 -0400
+	id S932624Ab2JRLDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 07:03:30 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,606,1344236400"; 
-   d="scan'208";a="157620825"
+   d="scan'208";a="157620849"
 From: dragos.tatulea@intel.com
 To: ccross@android.com, keescook@chromium.org, tony.luck@intel.com,
         cbouatmailru@gmail.com, linux-kernel@vger.kernel.org
-Cc: adrian.hunter@intel.com, octavian.purdila@intel.com,
-        Dragos Tatulea <dragos.tatulea@intel.com>
-Subject: [PATCH v3 4/9] pstore: allow storing different type id's in ram backend
-Date: Thu, 18 Oct 2012 14:06:02 +0300
-Message-Id: <1350558367-31801-5-git-send-email-dragos.tatulea@intel.com>
+Cc: adrian.hunter@intel.com, octavian.purdila@intel.com
+Subject: [PATCH v3 6/9] pstore: do not run timer while pstore is not mounted
+Date: Thu, 18 Oct 2012 14:06:04 +0300
+Message-Id: <1350558367-31801-7-git-send-email-dragos.tatulea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1350558367-31801-1-git-send-email-dragos.tatulea@intel.com>
 References: <1350558367-31801-1-git-send-email-dragos.tatulea@intel.com>
@@ -24,74 +23,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dragos Tatulea <dragos.tatulea@intel.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-Added pstore_type_id in message header when storing to ram.
-On write, take into account the contents of this header and
-set the type accordingly.
+A timer is used to periodically check for new dumps.
+The timer is not needed unless pstore is mounted,
+so disable it otherwise.
 
-Signed-off-by: Dragos Tatulea <dragos.tatulea@intel.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- fs/pstore/ram.c |   18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ fs/pstore/inode.c    |    3 +++
+ fs/pstore/internal.h |    2 ++
+ fs/pstore/platform.c |   36 +++++++++++++++++++++++++++++-------
+ 3 files changed, 34 insertions(+), 7 deletions(-)
 
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index 1a4f6da..e1684ef 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -157,23 +157,30 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- 	time->tv_nsec = 0;
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 4800c09..5e20a8d 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -397,6 +397,8 @@ static int pstore_fill_super(struct super_block *sb, void *data, int silent)
  
- 	size = persistent_ram_old_size(prz);
-+	if (!size)
-+		return 0;
- 	*buf = kmalloc(size, GFP_KERNEL);
- 	if (*buf == NULL)
- 		return -ENOMEM;
- 	memcpy(*buf, persistent_ram_old(prz), size);
-+	/* Read header. */
-+	sscanf(*buf, "%u" RAMOOPS_KERNMSG_HDR "%lu.%lu",
-+		type, &time->tv_sec, &time->tv_nsec);
-+	time->tv_nsec *= 1000;
+ 	pstore_get_records(0);
  
- 	return size;
++	pstore_add_timer();
++
+ 	return 0;
  }
  
--static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
-+static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz,
-+				     enum pstore_type_id type)
- {
- 	char *hdr;
- 	struct timeval timestamp;
- 	size_t len;
+@@ -408,6 +410,7 @@ static struct dentry *pstore_mount(struct file_system_type *fs_type,
  
- 	do_gettimeofday(&timestamp);
--	hdr = kasprintf(GFP_ATOMIC, RAMOOPS_KERNMSG_HDR "%lu.%lu\n",
--		(long)timestamp.tv_sec, (long)timestamp.tv_usec);
-+	hdr = kasprintf(GFP_ATOMIC, "%u" RAMOOPS_KERNMSG_HDR "%lu.%lu\n",
-+		type, (long)timestamp.tv_sec, (long)timestamp.tv_usec);
- 	WARN_ON_ONCE(!hdr);
- 	len = hdr ? strlen(hdr) : 0;
- 	persistent_ram_write(prz, hdr, len);
-@@ -204,9 +211,6 @@ static int notrace ramoops_pstore_write_buf(enum pstore_type_id type,
- 		return 0;
+ static void pstore_kill_sb(struct super_block *sb)
+ {
++	pstore_del_timer();
+ 	kill_litter_super(sb);
+ 	pstore_sb = NULL;
+ }
+diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
+index 4847f58..c7b8197 100644
+--- a/fs/pstore/internal.h
++++ b/fs/pstore/internal.h
+@@ -54,4 +54,6 @@ extern int	pstore_mkfile(enum pstore_type_id, char *psname, u64 id,
+ 			      struct timespec time, struct pstore_info *psi);
+ extern int	pstore_is_mounted(void);
+ 
++extern void pstore_add_timer(void);
++extern void pstore_del_timer(void);
+ #endif
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index 63ff377..3a4c38f 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -54,6 +54,8 @@ static int pstore_new_entry;
+ 
+ static void pstore_timefunc(unsigned long);
+ static DEFINE_TIMER(pstore_timer, pstore_timefunc, 0, 0);
++static DEFINE_SPINLOCK(pstore_timer_lock);
++static int pstore_timer_on;
+ 
+ static void pstore_dowork(struct work_struct *);
+ static DECLARE_WORK(pstore_work, pstore_dowork);
+@@ -351,12 +353,6 @@ int pstore_register(struct pstore_info *psi)
+ 	pstore_register_console();
+ 	pstore_register_ftrace();
+ 
+-	if (pstore_update_ms >= 0) {
+-		pstore_timer.expires = jiffies +
+-			msecs_to_jiffies(pstore_update_ms);
+-		add_timer(&pstore_timer);
+-	}
+-
+ 	pstore_debugfs_init();
+ 
+ 	return 0;
+@@ -411,12 +407,38 @@ static void pstore_dowork(struct work_struct *work)
+ 
+ static void pstore_timefunc(unsigned long dummy)
+ {
++	unsigned long flags;
++
+ 	if (pstore_new_entry) {
+ 		pstore_new_entry = 0;
+ 		schedule_work(&pstore_work);
  	}
  
--	if (type != PSTORE_TYPE_DMESG)
--		return -EINVAL;
--
- 	/* Out of the various dmesg dump types, ramoops is currently designed
- 	 * to only store crash logs, rather than storing general kernel logs.
- 	 */
-@@ -226,7 +230,7 @@ static int notrace ramoops_pstore_write_buf(enum pstore_type_id type,
- 	if (part != 1)
- 		return -ENOSPC;
+-	mod_timer(&pstore_timer, jiffies + msecs_to_jiffies(pstore_update_ms));
++	spin_lock_irqsave(&pstore_timer_lock, flags);
++	if (pstore_timer_on)
++		mod_timer(&pstore_timer,
++				jiffies + msecs_to_jiffies(pstore_update_ms));
++	spin_unlock_irqrestore(&pstore_timer_lock, flags);
++}
++
++void pstore_add_timer(void)
++{
++	pstore_timer_on = 1;
++	if (pstore_update_ms >= 0) {
++		pstore_timer.expires = jiffies +
++			msecs_to_jiffies(pstore_update_ms);
++		add_timer(&pstore_timer);
++	}
++}
++
++void pstore_del_timer(void)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&pstore_timer_lock, flags);
++	pstore_timer_on = 0;
++	spin_unlock_irqrestore(&pstore_timer_lock, flags);
++	del_timer_sync(&pstore_timer);
+ }
  
--	hlen = ramoops_write_kmsg_hdr(prz);
-+	hlen = ramoops_write_kmsg_hdr(prz, type);
- 	if (size + hlen > prz->buffer_size)
- 		size = prz->buffer_size - hlen;
- 	persistent_ram_write(prz, buf, size);
+ /* pstore_write must only be called from PSTORE_DUMP notifier callbacks */
 -- 
 1.7.9.5
 
