@@ -1,62 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab2JRJJc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 05:09:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49477 "EHLO mga02.intel.com"
+	id S1754833Ab2JRJJb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 05:09:31 -0400
+Received: from mga02.intel.com ([134.134.136.20]:32521 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754788Ab2JRJJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754795Ab2JRJJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Oct 2012 05:09:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,606,1344236400"; 
-   d="scan'208";a="207567140"
+   d="scan'208";a="207567147"
 From: Youquan Song <youquan.song@intel.com>
 To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
         arjan@linux.intel.com, lenb@kernel.org, rjw@sisk.pl
 Cc: Rik van Riel <riel@redhat.com>,
         Youquan Song <youquan.song@linux.intel.com>,
         Youquan Song <youquan.song@intel.com>
-Subject: [PATCH V2 3/4] x86,idle: Set residency to 0 if target Cstate not enter
-Date: Thu, 18 Oct 2012 17:12:23 -0400
-Message-Id: <1350594744-22353-4-git-send-email-youquan.song@intel.com>
+Subject: [PATCH V2 4/4]  x86,idle: Get typical recent sleep interval
+Date: Thu, 18 Oct 2012 17:12:24 -0400
+Message-Id: <1350594744-22353-5-git-send-email-youquan.song@intel.com>
 X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1350594744-22353-3-git-send-email-youquan.song@intel.com>
+In-Reply-To: <1350594744-22353-4-git-send-email-youquan.song@intel.com>
 References: <1350594744-22353-1-git-send-email-youquan.song@intel.com>
  <1350594744-22353-2-git-send-email-youquan.song@intel.com>
  <1350594744-22353-3-git-send-email-youquan.song@intel.com>
+ <1350594744-22353-4-git-send-email-youquan.song@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When cpuidle governor choose a C-state to enter for idle CPU, but it notice that
-there is tasks request to be executed. So the idle CPU will not really enter
-the target C-state and go to run task.
+The function detect_repeating_patterns was not very useful for
+workloads with alternating long and short pauses, for example
+virtual machines handling network requests for each other (say
+a web and database server).
 
-In this situation, it will use the residency of previous really entered target 
-C-states. Obviously, it is not reasonable. 
+Instead, try to find a recent sleep interval that is somewhere
+between the median and the mode sleep time, by discarding outliers
+to the up side and recalculating the average and standard deviation
+until that is no longer required.
 
-So, this patch fix it by set the target C-state residency to 0. 
+This should do something sane with a sleep interval series like:
+
+	200 180 210 10000 30 1000 170 200
+
+The current code would simply discard such a series, while the
+new code will guess a typical sleep interval just shy of 200.
+
+The original patch come from Rik van Riel <riel@redhat.com>.
 
 Signed-off-by: Youquan Song <youquan.song@intel.com>
 Signed-off-by: Rik van Riel <riel@redhat.com>
 ---
- drivers/cpuidle/cpuidle.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/cpuidle/governors/menu.c |   69 +++++++++++++++++++++++++------------
+ 1 files changed, 46 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index e28f6ea..01dca54 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -144,6 +144,10 @@ int cpuidle_idle_call(void)
- 	/* ask the governor for the next state */
- 	next_state = cpuidle_curr_governor->select(drv, dev);
- 	if (need_resched()) {
-+		dev->last_residency = 0;
-+		/* give the governor an opportunity to reflect on the outcome */
-+		if (cpuidle_curr_governor->reflect)
-+			cpuidle_curr_governor->reflect(dev, next_state);
- 		local_irq_enable();
- 		return 0;
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index c824b4f..2411c4c 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -245,36 +245,59 @@ static enum hrtimer_restart menu_hrtimer_notify(struct hrtimer *hrtimer)
+  * of points is below a threshold. If it is... then use the
+  * average of these 8 points as the estimated value.
+  */
+-static int detect_repeating_patterns(struct menu_device *data)
++static u32 get_typical_interval(struct menu_device *data)
+ {
+-	int i;
+-	uint64_t avg = 0;
+-	uint64_t stddev = 0; /* contains the square of the std deviation */
+-	int ret = 0;
+-
+-	/* first calculate average and standard deviation of the past */
+-	for (i = 0; i < INTERVALS; i++)
+-		avg += data->intervals[i];
+-	avg = avg / INTERVALS;
++	int i = 0, divisor = 0;
++	int64_t max = 0, avg = 0, stddev = 0;
++	int64_t thresh = LLONG_MAX; /* Discard outliers above this value. */
++	unsigned int ret = 0;
+ 
+-	/* if the avg is beyond the known next tick, it's worthless */
+-	if (avg > data->expected_us)
+-		return 0;
+-
+-	for (i = 0; i < INTERVALS; i++)
+-		stddev += (data->intervals[i] - avg) *
+-			  (data->intervals[i] - avg);
++again:
+ 
+-	stddev = stddev / INTERVALS;
++	/* first calculate average and standard deviation of the past */
++	max = avg = divisor = stddev = 0;
++	for (i = 0; i < INTERVALS; i++) {
++		int64_t value = data->intervals[i];
++		if (value <= thresh) {
++			avg += value;
++			divisor++;
++			if (value > max)
++				max = value;
++		}
++	}
++	do_div(avg, divisor);
+ 
++	for (i = 0; i < INTERVALS; i++) {
++		int64_t value = data->intervals[i];
++		if (value <= thresh) {
++			int64_t diff = value - avg;
++			stddev += diff * diff;
++		}
++	}
++	do_div(stddev, divisor);
++	stddev = int_sqrt(stddev);
+ 	/*
+-	 * now.. if stddev is small.. then assume we have a
+-	 * repeating pattern and predict we keep doing this.
++	 * If we have outliers to the upside in our distribution, discard
++	 * those by setting the threshold to exclude these outliers, then
++	 * calculate the average and standard deviation again. Once we get
++	 * down to the bottom 3/4 of our samples, stop excluding samples.
++	 *
++	 * This can deal with workloads that have long pauses interspersed
++	 * with sporadic activity with a bunch of short pauses.
++	 *
++	 * The typical interval is obtained when standard deviation is small
++	 * or standard deviation is small compared to the average interval.
+ 	 */
+-
+-	if (avg && stddev < STDDEV_THRESH) {
++	if (((avg > stddev * 6) && (divisor * 4 >= INTERVALS * 3))
++							|| stddev <= 20) {
+ 		data->predicted_us = avg;
+ 		ret = 1;
++		return ret;
++
++	} else if ((divisor * 4) > INTERVALS * 3) {
++		/* Exclude the max interval */
++		thresh = max - 1;
++		goto again;
  	}
+ 
+ 	return ret;
+@@ -330,7 +353,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ 	data->predicted_us = div_round64(data->expected_us * data->correction_factor[data->bucket],
+ 					 RESOLUTION * DECAY);
+ 
+-	repeat = detect_repeating_patterns(data);
++	repeat = get_typical_interval(data);
+ 
+ 	/*
+ 	 * We want to default to C1 (hlt), not to busy polling
 -- 
 1.7.7.4
 
