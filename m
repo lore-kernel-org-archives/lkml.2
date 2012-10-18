@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab2JRUvg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 16:51:36 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:42623 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756443Ab2JRUvM (ORCPT
+	id S1756809Ab2JRUve (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 16:51:34 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:24800 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756459Ab2JRUvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 16:51:12 -0400
+	Thu, 18 Oct 2012 16:51:13 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
         Tejun Heo <tj@kernel.org>
 Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 04/19] x86, mm: only keep initial mapping for ram
-Date: Thu, 18 Oct 2012 13:50:15 -0700
-Message-Id: <1350593430-24470-8-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 14/19] x86, mm: Move back pgt_buf_* to mm/init.c
+Date: Thu, 18 Oct 2012 13:50:25 -0700
+Message-Id: <1350593430-24470-18-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1350593430-24470-1-git-send-email-yinghai@kernel.org>
 References: <1350593430-24470-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-0 mean any e820 type, for any range is overlapped with any entry in e820,
-kernel will keep it's initial page table mapping.
-
-What we want is only keeping initial page table for ram range.
-
-Change to E820_RAM and E820_RESERVED_KERN.
+Also change them to static.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init_64.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/init.h |    4 ----
+ arch/x86/mm/init.c          |    6 +++---
+ 2 files changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 61b3c44..4898e80 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -373,7 +373,8 @@ phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
- 		next = (addr & PAGE_MASK) + PAGE_SIZE;
- 		if (addr >= end) {
- 			if (!after_bootmem &&
--			    !e820_any_mapped(addr & PAGE_MASK, next, 0))
-+			    !e820_any_mapped(addr & PAGE_MASK, next, E820_RAM) &&
-+			    !e820_any_mapped(addr & PAGE_MASK, next, E820_RESERVED_KERN))
- 				set_pte(pte, __pte(0));
- 			continue;
- 		}
-@@ -420,7 +421,8 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- 		next = (address & PMD_MASK) + PMD_SIZE;
- 		if (address >= end) {
- 			if (!after_bootmem &&
--			    !e820_any_mapped(address & PMD_MASK, next, 0))
-+			    !e820_any_mapped(address & PMD_MASK, next, E820_RAM) &&
-+			    !e820_any_mapped(address & PMD_MASK, next, E820_RESERVED_KERN))
- 				set_pmd(pmd, __pmd(0));
- 			continue;
- 		}
-@@ -494,7 +496,8 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 		next = (addr & PUD_MASK) + PUD_SIZE;
- 		if (addr >= end) {
- 			if (!after_bootmem &&
--			    !e820_any_mapped(addr & PUD_MASK, next, 0))
-+			    !e820_any_mapped(addr & PUD_MASK, next, E820_RAM) &&
-+			    !e820_any_mapped(addr & PUD_MASK, next, E820_RESERVED_KERN))
- 				set_pud(pud, __pud(0));
- 			continue;
- 		}
+diff --git a/arch/x86/include/asm/init.h b/arch/x86/include/asm/init.h
+index 4f13998..626ea8d 100644
+--- a/arch/x86/include/asm/init.h
++++ b/arch/x86/include/asm/init.h
+@@ -12,8 +12,4 @@ kernel_physical_mapping_init(unsigned long start,
+ 			     unsigned long end,
+ 			     unsigned long page_size_mask);
+ 
+-extern unsigned long __initdata pgt_buf_start;
+-extern unsigned long __meminitdata pgt_buf_end;
+-extern unsigned long __meminitdata pgt_buf_top;
+-
+ #endif /* _ASM_X86_INIT_32_H */
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 4eece3c..3fcdfa9 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -19,9 +19,9 @@
+ 
+ #include "mm_internal.h"
+ 
+-unsigned long __initdata pgt_buf_start;
+-unsigned long __meminitdata pgt_buf_end;
+-unsigned long __meminitdata pgt_buf_top;
++static unsigned long __initdata pgt_buf_start;
++static unsigned long __initdata pgt_buf_end;
++static unsigned long __initdata pgt_buf_top;
+ 
+ static unsigned long min_pfn_mapped;
+ 
 -- 
 1.7.7
 
