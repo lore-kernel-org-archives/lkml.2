@@ -1,109 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab2JRAq6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 20:46:58 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:36552 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752980Ab2JRAq5 (ORCPT
+	id S1753225Ab2JRAvO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 20:51:14 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40561 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753074Ab2JRAvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 20:46:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <507F160A.7090302@am.sony.com>
-References: <CALF0-+XGn5=QSE0bpa4RTag9CAJ63MKz1kvaYbpw34qUhViaZA@mail.gmail.com>
- <m27gqwtyu9.fsf@firstfloor.org> <alpine.DEB.2.00.1210111558290.6409@chino.kir.corp.google.com>
- <m2391ktxjj.fsf@firstfloor.org> <CALF0-+WLZWtwYY4taYW9D7j-abCJeY90JzcTQ2hGK64ftWsdxw@mail.gmail.com>
- <alpine.DEB.2.00.1210130252030.7462@chino.kir.corp.google.com>
- <CALF0-+Xp_P_NjZpifzDSWxz=aBzy_fwaTB3poGLEJA8yBPQb_Q@mail.gmail.com>
- <alpine.DEB.2.00.1210151745400.31712@chino.kir.corp.google.com>
- <CALF0-+WgfnNOOZwj+WLB397cgGX7YhNuoPXAK5E0DZ5v_BxxEA@mail.gmail.com>
- <1350392160.3954.986.camel@edumazet-glaptop> <507DA245.9050709@am.sony.com>
- <CALF0-+VLVqy_uE63_jL83qh8MqBQAE3vYLRX1mRQURZ4a1M20g@mail.gmail.com>
- <1350414968.3954.1427.camel@edumazet-glaptop> <507EFCC3.1050304@am.sony.com>
- <1350501217.26103.852.camel@edumazet-glaptop> <CAGDaZ_qKg3x_ChdZck25P_XF78cJNeB_DJLg=ZtL3eZWSz3yXA@mail.gmail.com>
- <507F160A.7090302@am.sony.com>
-From: Shentino <shentino@gmail.com>
-Date: Wed, 17 Oct 2012 17:46:16 -0700
-Message-ID: <CAGDaZ_qQ6L38EVkwmSakWF4xGFcESY-cr_XbjwG1pELTr1XGQw@mail.gmail.com>
-Subject: Re: [Q] Default SLAB allocator
-To: Tim Bird <tim.bird@am.sony.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Ezequiel Garcia <elezegarcia@gmail.com>,
-        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "celinux-dev@lists.celinuxforum.org" 
-	<celinux-dev@lists.celinuxforum.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 17 Oct 2012 20:51:13 -0400
+Date: Thu, 18 Oct 2012 11:51:04 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, Linus <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: linux-next: stats for v3.7-rc1
+Message-Id: <20121018115104.453468c6332984d93cbe8d3a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__18_Oct_2012_11_51_04_+1100_2ovdA+0eq+ZFn3ca"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 1:33 PM, Tim Bird <tim.bird@am.sony.com> wrote:
-> On 10/17/2012 12:20 PM, Shentino wrote:
->> Potentially stupid question
->>
->> But is SLAB the one where all objects per cache have a fixed size and
->> thus you don't have any bookkeeping overhead for the actual
->> allocations?
->>
->> I remember something about one of the allocation mechanisms being
->> designed for caches of fixed sized objects to minimize the need for
->> bookkeeping.
->
-> I wouldn't say "don't have _any_ bookkeeping", but minimizing the
-> bookkeeping is indeed part of the SLAB goals.
->
-> However, that is for objects that are allocated at fixed size.
-> kmalloc is (currently) a thin wrapper over the slab system,
-> and it maps non-power-of-two allocations onto slabs that are
-> power-of-two sized.
+--Signature=_Thu__18_Oct_2012_11_51_04_+1100_2ovdA+0eq+ZFn3ca
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-...yuck?
+Hi all,
 
-> So, for example a string that is 18 bytes long
-> will be allocated out of a slab with 32-byte objects.  This
-> is the wastage that we're talking about here.  "Overhead" may
-> have been the wrong word on my part, as that may imply overhead
-> in the actual slab mechanisms, rather than just slop in the
-> data area.
+Well here are this merge windows' stats:
 
-Data slop (both for alignment as well as for making room for
-per-allocation bookkeeping overhead as is often done with userspace
-malloc arenas) is precisely what I was referring to here.
+(No merge commits counted, next-20121001 is the first linux-next after
+v3.6)
 
-Thanks for the answers I was curious.
+Commits in v3.7-rc1 (relative to v3.5): 10409
+Commits in next-20121001:		10459
+Commits with the same SHA1:		 8068
+Commits with the same patch_id:		  540	(1)
+Commits with the same subject line:	   87	(1)
 
-> As an aside...
->
-> Is there a canonical glossary for memory-related terms?  What
-> is the correct term for the difference between what is requested
-> and what is actually returned by the allocator?  I've been
-> calling it alternately "wastage" or "overhead", but maybe there's
-> a more official term?
->
-> I looked here: http://www.memorymanagement.org/glossary/
-> but didn't find exactly what I was looking for.  The closest
-> things I found were "internal fragmentation" and
-> "padding", but those didn't seem to exactly describe
-> the situation here.
+(1) not counting those in the lines above.
 
-Another stupid question.
+So commits in -rc1 that were "in" next-20121001:	8695	83.5%
+						(down from 86.4% last time)
+Commits in -rc1 that were not in next-20120722:		1714	16.5%
 
-Is it possible to have both SLAB for fixed sized objects and something
-like SLOB or SLUB standing aside with a different pool for variable
-sized allocations ala kmalloc?
+Again, not too bad, but it would be nice to figure out where the last lot
+came from.  I have the "git log --oneline --no-walk" list if someone wants =
+them.
 
-My hunch is that handling the two cases with separate methods may get
-the best of both worlds.  Or layering kmalloc through something that
-gets huge blocks from slab and slices them up in ways more amenable to
-avoiding power-of-2 slopping.
+Some break down of the onlines list:
+	grep for media gives 281 commits
+		 drm gives 278
+		 btrfs gives 122
+		 rbd gives 61
+		 scsi gives 58
+		 uapi gives 56
 
-No memory geek, so my two cents.
+As for the 1764 commits left in linux-next ... 1255 are in the kvmtool
+tree (most of these are in the tip tree as well - this has been pending a
+merge to Linus since before 3.2 ...)
 
->  -- Tim
->
-> =============================
-> Tim Bird
-> Architecture Group Chair, CE Workgroup of the Linux Foundation
-> Senior Staff Engineer, Sony Network Entertainment
-> =============================
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__18_Oct_2012_11_51_04_+1100_2ovdA+0eq+ZFn3ca
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQf1J4AAoJEECxmPOUX5FEpwoP/1ClDAX4lvH5rnwud9pQrOv9
+nJEwSn4C+Ygq5WhEXlruANrWvwyApMaSBqpHuXilHI6Gu91YTfEcRrxtNo9CCFRj
+LLpC7DZAzvqm3skx+1L7nipwl8cCBIp4A1tOKpeKYRit08ZdTpq3mg67jpRT6NgX
+oLbrZxklsAYTcQJssrKDVYHkybtaK9PyZqB6LLWf2JU7f9BRU2j3Vz/FP/fgK8MT
+AhMBD6HgkKTPx9SfQMOwZ2Jv7nur60KmgkT2FdCp8pv0/dd0+4mko/oJyJRHDshR
+n0LuH7UmT933le6lDDB109HBfLw2ePmhSwZ3X4nZYMwfvhn1UZIvawVbjJjm0rQ/
+8o7kfNpCQLTk8Dkcr3Wj23x1zAzwwLkdx81b2bUZMt7wK1A+tytZ3nDDbi2IV8v3
+MA8T0ald3InRK9B1Qr0cxyEtTeFM8aaVkalEcjLmjz4btWOrhrP1OHgHlakADImZ
+roQAmhxi90t3sHg7H/iChmqqaGsB+Pn6XEjInlD++hVDk3T9jk25BDjTbNVO1E3B
+DvLfJRJhPJDd9VZAnPokAJRx+F0nAwbYzfMwq2F9JCTtPJkrPz+ZM92q/uhrZz0E
+jALBY+S9c1zFCCzOjOcX7PNJ5Gk+xiMe7bgzNVne97oZ5wvSv34RFZeN51nAH0Z/
+ZrtDoG8/Z//d31dR6yuh
+=72+z
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__18_Oct_2012_11_51_04_+1100_2ovdA+0eq+ZFn3ca--
