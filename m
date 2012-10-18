@@ -1,110 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab2JRGVu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 02:21:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35386 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754225Ab2JRGVt (ORCPT
+	id S1754531Ab2JRGWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 02:22:17 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52415 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754352Ab2JRGWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 02:21:49 -0400
-Date: Thu, 18 Oct 2012 14:22:11 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 4/7] gpio/mxs: convert to use linear irqdomain
-Message-ID: <20121018062208.GB4513@S2101-09.ap.freescale.net>
-References: <1350415376-3217-1-git-send-email-linus.walleij@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350415376-3217-1-git-send-email-linus.walleij@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 18 Oct 2012 02:22:15 -0400
+Date: Thu, 18 Oct 2012 17:22:01 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: linux-next: build failure after merge of the final tree (tip/s390
+ trees related)
+Message-Id: <20121018172201.b81dcc8fe40868256f532364@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__18_Oct_2012_17_22_01_+1100_dyWMS8fv./DAH75Z"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 09:22:56PM +0200, Linus Walleij wrote:
-> The MXS driver tries to do the work of irq_domain_add_linear()
-> by reserving a bunch of descriptors somewhere and keeping track
-> of the base offset, then calling irq_domain_add_legacy(). Let's
-> stop doing that and simply use the linear IRQ domain.
-> 
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/gpio/gpio-mxs.c | 19 ++++++-------------
->  1 file changed, 6 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-mxs.c b/drivers/gpio/gpio-mxs.c
-> index 796fb13..71fd5b1 100644
-> --- a/drivers/gpio/gpio-mxs.c
-> +++ b/drivers/gpio/gpio-mxs.c
-> @@ -223,7 +223,6 @@ static int __devinit mxs_gpio_probe(struct platform_device *pdev)
->  	static void __iomem *base;
->  	struct mxs_gpio_port *port;
->  	struct resource *iores = NULL;
-> -	int irq_base;
+--Signature=_Thu__18_Oct_2012_17_22_01_+1100_dyWMS8fv./DAH75Z
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-...
+Hi all,
 
->  	int err;
->  
->  	port = devm_kzalloc(&pdev->dev, sizeof(*port), GFP_KERNEL);
-> @@ -272,16 +271,10 @@ static int __devinit mxs_gpio_probe(struct platform_device *pdev)
->  	/* clear address has to be used to clear IRQSTAT bits */
->  	writel(~0U, port->base + PINCTRL_IRQSTAT(port) + MXS_CLR);
->  
-> -	irq_base = irq_alloc_descs(-1, 0, 32, numa_node_id());
-> -	if (irq_base < 0)
-> -		return irq_base;
-> -
-> -	port->domain = irq_domain_add_legacy(np, 32, irq_base, 0,
-> +	port->domain = irq_domain_add_linear(np, 32,
->  					     &irq_domain_simple_ops, NULL);
-> -	if (!port->domain) {
-> -		err = -ENODEV;
-> -		goto out_irqdesc_free;
-> -	}
-> +	if (!port->domain)
-> +		return -ENODEV;
->  
->  	/* gpio-mxs can be a generic irq chip */
->  	mxs_gpio_init_gc(port, irq_base);
-                               ^^^^^^^^
+After merging the final tree, today's linux-next build (s390 allyesconfig)
+failed like this:
 
-So I know this one is not compile-tested.
+mm/huge_memory.c:1424:2: error: implicit declaration of function 'pmd_pgpro=
+t' [-Werror=3Dimplicit-function-declaration]
+mm/huge_memory.c:1424:7: error: incompatible types when assigning to type '=
+pgprot_t' from type 'int'
 
-This is exactly the reason why I have to use irq_domain_add_legacy
-other than irq_domain_add_linear when I add irqdomain support for the
-driver.  The driver uses generic-irq infrastructural which needs
-irq_base for setup.  So sadly, before generic-irq gets improved, any
-irq chip that uses generic-irq will have to use irq_domain_add_legacy.
+(see http://kisskb.ellerman.id.au/kisskb/buildresult/7383823/)
 
-Shawn
+Caused by commit 35d3d3427314 ("s390/thp: select
+HAVE_ARCH_TRANSPARENT_HUGEPAGE") from the s390 tree interacting with
+commit 93c9d633bd9e ("mm/thp: Preserve pgprot across huge page split")
+from the tip tree.
 
-> @@ -295,7 +288,7 @@ static int __devinit mxs_gpio_probe(struct platform_device *pdev)
->  			 port->base + PINCTRL_DOUT(port), NULL,
->  			 port->base + PINCTRL_DOE(port), NULL, 0);
->  	if (err)
-> -		goto out_irqdesc_free;
-> +		goto out_irqdomain_remove;
->  
->  	port->bgc.gc.to_irq = mxs_gpio_to_irq;
->  	port->bgc.gc.base = port->id * 32;
-> @@ -308,8 +301,8 @@ static int __devinit mxs_gpio_probe(struct platform_device *pdev)
->  
->  out_bgpio_remove:
->  	bgpio_remove(&port->bgc);
-> -out_irqdesc_free:
-> -	irq_free_descs(irq_base, 32);
-> +out_irqdomain_remove:
-> +	irq_domain_remove(port->domain);
->  	return err;
->  }
->  
-> -- 
-> 1.7.11.7
-> 
+N.B. Mips also selects HAVE_ARCH_TRANSPARENT_HUGEPAGE as of commit
+e21a828a1bba ("MIPS: Transparent Huge Pages support") from the mips tree
+and so will be broken in some configs now as well.
+
+Anyone have suggested merge fix patches I can apply?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__18_Oct_2012_17_22_01_+1100_dyWMS8fv./DAH75Z
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQf6AJAAoJEECxmPOUX5FEJfYP/R1P5W8BdqzX/JJgvRraTF80
++3TTMcj+fXREJeBEr3iKIH/L16bO6lIcYE5qhvo1ow3o9gCU3n3tzy+YP3Oe1+gw
+WW+oMej50aF7p2ejYWJiX//L6ZLu0oXu3A9mg7UtNtbUUAESrAEILs5/GyrSib4A
+ay4qWCqQxBLf0EQLh55I/Q/LZuLAuB/GYh5oZiX4y07ODFxma58lKnYrbqBFmXfb
+a1LhlCyWlKO0KJAHHrBPzToM+Vmbexh5P5VuH4hjSiSEaZxQ/Yo2tj8zchK3XnLr
+Qze/6aBIKkbnthvwoBhd6dWkFxSfiQkx7jSRmtJUg261WQN9idtCBlrfwhAf0RFL
+LTXHMnTQJlmlkm0T9z21xHm6rgQ8Vug0Ep34imhJ3YsTPmnr61pyzUCdrBBgeiaJ
+WEYD4in/OUOjcJ5MuVLhlfdqmH1wHfZ20X0ftmqH4XnYK1Y6+0Cyyn3knHaDSKaV
+FLwkPsynbPPlcIoVjE3EYha9epc/JI/gG7aDq2hAv81orzvcF8amuxFVoHCG8f78
+F3JY7155wdgbdvFUJq7U7UemINcLGqVQPvjpZfvNi019PddnQ0jK9YypUhaqLPD7
+qzpfVzO4cGOfLF3Fwt/kZ2Ik5F6k8KIgk5WsEeNRXPNhOHnhAIPSa4zhd7J/JGoC
+Tlmh1qkUUASi9Afhdjo8
+=4DdM
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__18_Oct_2012_17_22_01_+1100_dyWMS8fv./DAH75Z--
