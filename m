@@ -1,238 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab2JRJXn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 05:23:43 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:37010 "EHLO mx2.parallels.com"
+	id S1755006Ab2JRJYB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 05:24:01 -0400
+Received: from gate.crashing.org ([63.228.1.57]:42113 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752029Ab2JRJXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 05:23:41 -0400
-Message-ID: <507FCA90.8060307@parallels.com>
-Date: Thu, 18 Oct 2012 13:23:28 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
+	id S1754736Ab2JRJX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 05:23:59 -0400
+Message-ID: <1350552198.2476.5.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        <devel@openvz.org>, <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v5 06/14] memcg: kmem controller infrastructure
-References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-7-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1210171515290.20712@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1210171515290.20712@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Thu, 18 Oct 2012 20:23:18 +1100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2012 02:37 AM, David Rientjes wrote:
-> On Tue, 16 Oct 2012, Glauber Costa wrote:
-> 
->> +	/* If the test is dying, just let it go. */
->> +        if (unlikely(test_thread_flag(TIF_MEMDIE)
->> +                     || fatal_signal_pending(current)))
->> +		return true;
-> 
-> This can be simplified to just check fatal_signal_pending(), all threads 
-> with TIF_MEMDIE also have a pending SIGKILL.
+Hi Linus !
 
-Yes, I believe it is better. I will change.
+Here are a handful of powerpc related fixes for you to pull.
 
->> +
->> +	return __memcg_kmem_newpage_charge(gfp, memcg, order);
->> +}
->> +
->> +/**
->> + * memcg_kmem_uncharge_page: uncharge pages from memcg
-> 
-> Should be memcg_kmem_uncharge_pages() since it takes an order argument?
-> 
+Cheers,
+Ben.
 
-I tried to use naming as close as possible to user-memcg. But to be
-fair, their are always calling it page-by-page, so pages() won't be a
-problem here.
+The following changes since commit 18673533256a2953ccefded52df2679de8640685:
 
->> + * @page: pointer to struct page being freed
->> + * @order: allocation order.
->> + *
->> + * there is no need to specify memcg here, since it is embedded in page_cgroup
->> + */
->> +static __always_inline void
->> +memcg_kmem_uncharge_page(struct page *page, int order)
->> +{
->> +	if (memcg_kmem_enabled())
->> +		__memcg_kmem_uncharge_page(page, order);
->> +}
->> +
->> +/**
->> + * memcg_kmem_commit_charge: embeds correct memcg in a page
->> + * @page: pointer to struct page recently allocated
->> + * @memcg: the memcg structure we charged against
->> + * @order: allocation order.
->> + *
->> + * Needs to be called after memcg_kmem_newpage_charge, regardless of success or
->> + * failure of the allocation. if @page is NULL, this function will revert the
->> + * charges. Otherwise, it will commit the memcg given by @memcg to the
->> + * corresponding page_cgroup.
->> + */
->> +static __always_inline void
->> +memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg, int order)
->> +{
->> +	if (memcg_kmem_enabled() && memcg)
->> +		__memcg_kmem_commit_charge(page, memcg, order);
->> +}
->> +
->>  #else
->>  static inline void sock_update_memcg(struct sock *sk)
->>  {
->> @@ -406,6 +489,21 @@ static inline void sock_update_memcg(struct sock *sk)
->>  static inline void sock_release_memcg(struct sock *sk)
->>  {
->>  }
->> +
->> +static inline bool
->> +memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **memcg, int order)
->> +{
->> +	return true;
->> +}
->> +
->> +static inline void  memcg_kmem_uncharge_page(struct page *page, int order)
-> 
-> Two spaces.
-> 
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2012-10-17 12:41:18 -0700)
 
-Thanks.
+are available in the git repository at:
 
->> +{
->> +}
->> +
->> +static inline void
->> +memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg, int order)
->> +{
->> +}
->>  #endif /* CONFIG_MEMCG_KMEM */
->>  #endif /* _LINUX_MEMCONTROL_H */
->>  
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 30eafeb..1182188 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -10,6 +10,10 @@
->>   * Copyright (C) 2009 Nokia Corporation
->>   * Author: Kirill A. Shutemov
->>   *
->> + * Kernel Memory Controller
->> + * Copyright (C) 2012 Parallels Inc. and Google Inc.
->> + * Authors: Glauber Costa and Suleiman Souhlal
->> + *
->>   * This program is free software; you can redistribute it and/or modify
->>   * it under the terms of the GNU General Public License as published by
->>   * the Free Software Foundation; either version 2 of the License, or
->> @@ -2630,6 +2634,171 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
->>  	memcg_check_events(memcg, page);
->>  }
->>  
->> +#ifdef CONFIG_MEMCG_KMEM
->> +static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
->> +{
->> +	return !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
->> +		(memcg->kmem_accounted & KMEM_ACCOUNTED_MASK);
->> +}
->> +
->> +static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
->> +{
->> +	struct res_counter *fail_res;
->> +	struct mem_cgroup *_memcg;
->> +	int ret = 0;
->> +	bool may_oom;
->> +
->> +	ret = res_counter_charge(&memcg->kmem, size, &fail_res);
->> +	if (ret)
->> +		return ret;
->> +
->> +	/*
->> +	 * Conditions under which we can wait for the oom_killer.
->> +	 * We have to be able to wait, but also, if we can't retry,
->> +	 * we obviously shouldn't go mess with oom.
->> +	 */
->> +	may_oom = (gfp & __GFP_WAIT) && !(gfp & __GFP_NORETRY);
-> 
-> What about gfp & __GFP_FS?
->
 
-Do you intend to prevent or allow OOM under that flag? I personally
-think that anything that accepts to be OOM-killed should have GFP_WAIT
-set, so that ought to be enough.
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
 
->> +
->> +	_memcg = memcg;
->> +	ret = __mem_cgroup_try_charge(NULL, gfp, size >> PAGE_SHIFT,
->> +				      &_memcg, may_oom);
->> +
->> +	if (ret == -EINTR)  {
->> +		/*
->> +		 * __mem_cgroup_try_charge() chosed to bypass to root due to
->> +		 * OOM kill or fatal signal.  Since our only options are to
->> +		 * either fail the allocation or charge it to this cgroup, do
->> +		 * it as a temporary condition. But we can't fail. From a
->> +		 * kmem/slab perspective, the cache has already been selected,
->> +		 * by mem_cgroup_get_kmem_cache(), so it is too late to change
->> +		 * our minds. This condition will only trigger if the task
->> +		 * entered memcg_charge_kmem in a sane state, but was
->> +		 * OOM-killed.  during __mem_cgroup_try_charge. Tasks that are
-> 
-> Looks like some copy-and-paste damage.
-> 
+for you to fetch changes up to 83dac59409387789b88bed40b1be86a8abc572be:
 
-thanks.
+  cpuidle/powerpc: Fix snooze state problem in the cpuidle design on pseries. (2012-10-18 10:57:25 +1100)
 
->> +void __memcg_kmem_uncharge_page(struct page *page, int order)
->> +{
->> +	struct mem_cgroup *memcg = NULL;
->> +	struct page_cgroup *pc;
->> +
->> +
->> +	pc = lookup_page_cgroup(page);
->> +	/*
->> +	 * Fast unlocked return. Theoretically might have changed, have to
->> +	 * check again after locking.
->> +	 */
->> +	if (!PageCgroupUsed(pc))
->> +		return;
->> +
->> +	lock_page_cgroup(pc);
->> +	if (PageCgroupUsed(pc)) {
->> +		memcg = pc->mem_cgroup;
->> +		ClearPageCgroupUsed(pc);
->> +	}
->> +	unlock_page_cgroup(pc);
->> +
->> +	/*
->> +	 * We trust that only if there is a memcg associated with the page, it
->> +	 * is a valid allocation
->> +	 */
->> +	if (!memcg)
->> +		return;
->> +
->> +	VM_BUG_ON(mem_cgroup_is_root(memcg));
->> +	memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
->> +	mem_cgroup_put(memcg);
-> 
-> Should this mem_cgroup_put() be done conditionally on 
-> memcg->kmem_accounted & KMEM_ACCOUNTED_MASK?
-> 
-> The next patch in the series does memcg_kmem_newpage_charge() in the page 
-> allocator which will return true for memcg_can_account_kmem() without 
-> doing mem_cgroup_get().
->
+----------------------------------------------------------------
+Aneesh Kumar K.V (1):
+      powerpc: Build fix for powerpc KVM
 
-And then this put will go away as well.
+Benjamin Herrenschmidt (1):
+      Revert "powerpc/perf: Use pmc_overflow() to detect rolled back events"
 
-I am not testing for memcg_can_account_kmem in here, because having or
-not having the PageCgroupUsed bit set (and therefore, a valid memcg) in
-page_cgroup should be the most robust test here.
+Deepthi Dharwar (3):
+      cpuidle/powerpc: Fix target residency initialisation in pseries cpuidle
+      cpuidle/powerpc: Fix smt_snooze_delay functionality.
+      cpuidle/powerpc: Fix snooze state problem in the cpuidle design on pseries.
+
+ arch/powerpc/include/asm/kvm_book3s_32.h        |    1 +
+ arch/powerpc/include/asm/processor.h            |    4 +-
+ arch/powerpc/kernel/sysfs.c                     |    2 +-
+ arch/powerpc/kvm/book3s_32_mmu_host.c           |    4 +-
+ arch/powerpc/perf/core-book3s.c                 |    2 +-
+ arch/powerpc/platforms/pseries/processor_idle.c |   62 +++++++++++------------
+ 6 files changed, 36 insertions(+), 39 deletions(-)
+
 
