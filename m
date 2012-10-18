@@ -1,35 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab2JRTlL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 15:41:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58278 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752842Ab2JRTlH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 15:41:07 -0400
-Date: Thu, 18 Oct 2012 12:40:27 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dynamic_debug: Remove unnecessary __used
-Message-ID: <20121018194027.GA1246@kroah.com>
-References: <1350587223.5652.4.camel@joe-AO722>
+	id S1754037Ab2JRTla (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 15:41:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4856 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752826Ab2JRTlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 15:41:09 -0400
+Date: Thu, 18 Oct 2012 15:41:04 -0400
+From: Dave Jones <davej@redhat.com>
+To: gorcunov@openvz.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] print reason for failure in kcmp_test
+Message-ID: <20121018194104.GA15690@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, gorcunov@openvz.org,
+	Linux Kernel <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1350587223.5652.4.camel@joe-AO722>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 12:07:03PM -0700, Joe Perches wrote:
-> The __used attribute prevents gcc from eliminating
-> unnecessary, otherwise optimized away, metadata for
-> debugging logging messages.
-> 
-> Remove the __used attribute.
+I was curious why sys_kcmp wasn't working, which led me to the testcase.
+It turned out I hadn't enabled CHECKPOINT_RESTORE in the kernel I was testing.
+Add a decoding of errno to the testcase to make that obvious.
 
-Very cool.  Any idea how much space this saves?
+Signed-off-by: Dave Jones <davej@redhat.com>
 
-greg k-h
+diff --git a/tools/testing/selftests/kcmp/kcmp_test.c b/tools/testing/selftests/kcmp/kcmp_test.c
+index 358cc6b..fa4f1b3 100644
+--- a/tools/testing/selftests/kcmp/kcmp_test.c
++++ b/tools/testing/selftests/kcmp/kcmp_test.c
+@@ -72,7 +72,8 @@ int main(int argc, char **argv)
+ 		/* This one should return same fd */
+ 		ret = sys_kcmp(pid1, pid2, KCMP_FILE, fd1, fd1);
+ 		if (ret) {
+-			printf("FAIL: 0 expected but %d returned\n", ret);
++			printf("FAIL: 0 expected but %d returned (%s)\n",
++				ret, strerror(errno));
+ 			ret = -1;
+ 		} else
+ 			printf("PASS: 0 returned as expected\n");
+@@ -80,7 +81,8 @@ int main(int argc, char **argv)
+ 		/* Compare with self */
+ 		ret = sys_kcmp(pid1, pid1, KCMP_VM, 0, 0);
+ 		if (ret) {
+-			printf("FAIL: 0 expected but %li returned\n", ret);
++			printf("FAIL: 0 expected but %li returned (%s)\n",
++				ret, strerror(errno));
+ 			ret = -1;
+ 		} else
+ 			printf("PASS: 0 returned as expected\n");
