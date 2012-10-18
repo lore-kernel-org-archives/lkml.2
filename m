@@ -1,103 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932380Ab2JRQ6i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 12:58:38 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:42442 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932338Ab2JRQ6f (ORCPT
+	id S1756829Ab2JRQ7n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 12:59:43 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:63212 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757012Ab2JRQ7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 12:58:35 -0400
-Date: Thu, 18 Oct 2012 09:38:33 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] brw_mutex: big read-write mutex
-Message-ID: <20121018163833.GK2518@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20121015190958.GA4799@redhat.com>
- <20121015191018.GA4816@redhat.com>
- <CA+55aFwV-WOUx8MSr145f+HSrtmZ=nXHq0VLhtPyH=FNBFwmQg@mail.gmail.com>
- <20121017165902.GB9872@redhat.com>
- <20121017224430.GC2518@linux.vnet.ibm.com>
- <20121018162409.GA28504@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121018162409.GA28504@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101816-2876-0000-0000-000001263DD9
+	Thu, 18 Oct 2012 12:59:41 -0400
+From: Sangho Yi <antiroot@gmail.com>
+To: paul.gortmaker@windriver.com, stefan.xk.nilsson@stericsson.com,
+        linus.walleij@linaro.org, ulf.hansson@stericsson.com, rjw@sisk.pl,
+        girish.shivananjappa@linaro.org, cjb@laptop.org
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        Sangho Yi <antiroot@gmail.com>
+Subject: [PATCH 1/6] mmc: core: sdio_io.c: Fixed lines with > 80 chars
+Date: Fri, 19 Oct 2012 01:58:18 +0900
+Message-Id: <1350579503-3100-1-git-send-email-antiroot@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <n>
+References: <n>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 06:24:09PM +0200, Oleg Nesterov wrote:
-> On 10/17, Paul E. McKenney wrote:
-> >
-> > On Wed, Oct 17, 2012 at 06:37:02PM +0200, Oleg Nesterov wrote:
-> > > On 10/16, Paul E. McKenney wrote:
-> > > >
-> > > > Suppose that the writer arrives and sees that the value of the counter
-> > > > is zero,
-> > >
-> > > after synchronize_sched(). So there are no readers (but perhaps there
-> > > are brw_end_read's in flight which already decremented read_ctr)
-> >
-> > But the preempt_disable() region only covers read acquisition.  So
-> > synchronize_sched() waits only for all the brw_start_read() calls to
-> > reach the preempt_enable()
-> 
-> Yes.
-> 
-> > -- it cannot wait for all the resulting
-> > readers to reach the corresponding brw_end_read().
-> 
-> Indeed.
-> 
-> > > > and thus never sleeps, and so is also not awakened?
-> > >
-> > > and why do we need wakeup in this case?
-> >
-> > To get the memory barriers required to keep the critical sections
-> > ordered -- to ensure that everyone sees the reader's critical section
-> > as ending before the writer's critical section starts.
-> 
-> And now I am starting to think I misunderstood your concern from
-> the very beginning.
-> 
-> I thought that you meant that without mb() brw_start_write() can
-> race with brw_end_read() and hang forever.
-> 
-> But probably you meant that we need the barriers to ensure that,
-> say, if the reader does
-> 
-> 	brw_start_read();
-> 	CONDITION = 1;
-> 	brw_end_read();
-> 
-> then the writer must see CONDITION != 0 after brw_start_write() ?
-> (or vice-versa)
+I fixed lines over 80 characters per line.
 
-Yes, this is exactly my concern.
+Signed-off-by: Sangho Yi <antiroot@gmail.com>
+---
+ drivers/mmc/core/sdio_io.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-> In this case we need the barrier, yes. Obviously brw_start_write()
-> can return right after this_cpu_dec() and before wake_up_all().
-> 
-> 2/2 doesn't need this guarantee but I agree, this doesn't look
-> sane in gerenal...
-
-Or name it something not containing "lock".  And clearly document
-the behavior and how it is to be used.  ;-)
-
-Otherwise, someone will get confused and introduce bugs.
-
-> Or I misunderstood you again?
-
-No, this was indeed my concern.
-
-							Thanx, Paul
+diff --git a/drivers/mmc/core/sdio_io.c b/drivers/mmc/core/sdio_io.c
+index 8f6f5ac..c5f53d8 100644
+--- a/drivers/mmc/core/sdio_io.c
++++ b/drivers/mmc/core/sdio_io.c
+@@ -80,7 +80,8 @@ int sdio_enable_func(struct sdio_func *func)
+ 	timeout = jiffies + msecs_to_jiffies(func->enable_timeout);
+ 
+ 	while (1) {
+-		ret = mmc_io_rw_direct(func->card, 0, 0, SDIO_CCCR_IORx, 0, &reg);
++		ret = mmc_io_rw_direct(func->card, 0, 0, SDIO_CCCR_IORx, 0,
++				&reg);
+ 		if (ret)
+ 			goto err;
+ 		if (reg & (1 << func->num))
+@@ -664,7 +665,8 @@ void sdio_f0_writeb(struct sdio_func *func, unsigned char b, unsigned int addr,
+ 
+ 	BUG_ON(!func);
+ 
+-	if ((addr < 0xF0 || addr > 0xFF) && (!mmc_card_lenient_fn0(func->card))) {
++	if ((addr < 0xF0 || addr > 0xFF) &&
++	    (!mmc_card_lenient_fn0(func->card))) {
+ 		if (err_ret)
+ 			*err_ret = -EINVAL;
+ 		return;
+-- 
+1.7.9.5
 
