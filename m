@@ -1,114 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab2JRNLt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 09:11:49 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:17972 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753336Ab2JRNLs (ORCPT
+	id S1755487Ab2JRNOX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 09:14:23 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:28322 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753336Ab2JRNOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 09:11:48 -0400
-X-IronPort-AV: E=Sophos;i="4.80,607,1344211200"; 
-   d="scan'208";a="15255027"
-Date: Thu, 18 Oct 2012 14:11:23 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ian Campbell <ian.campbell@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Mukesh Rathor <mukesh.rathor@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: Re: [PATCH 1/6] xen: balloon: allow PVMMU interfaces to be compiled
- out
-In-Reply-To: <1350473532-15863-1-git-send-email-ian.campbell@citrix.com>
-Message-ID: <alpine.DEB.2.02.1210181410430.2689@kaball.uk.xensource.com>
-References: <1350473518.2460.58.camel@zakaz.uk.xensource.com> <1350473532-15863-1-git-send-email-ian.campbell@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Thu, 18 Oct 2012 09:14:22 -0400
+X-AuditID: cbfee61a-b7f976d000001eb9-89-508000aba14f
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: "'Laurent Pinchart'" <laurent.pinchart@ideasonboard.com>,
+        linux-kernel@vger.kernel.org
+References: <1350483442-13180-1-git-send-email-laurent.pinchart@ideasonboard.com>
+In-reply-to: <1350483442-13180-1-git-send-email-laurent.pinchart@ideasonboard.com>
+Subject: RE: [PATCH] drivers: cma: Fix wrong CMA selected region size default
+ value
+Date: Thu, 18 Oct 2012 15:14:11 +0200
+Organization: SPRC
+Message-id: <00c501cdad32$78729e40$6957dac0$%szyprowski@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2scgaQRjrdq8+lTpqTMg4KlI51WAAvVnAw
+Content-language: pl
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t9jQd3VDA0BBk9PWVhc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6M24eOMBbcY6+Y3TqHvYFxLlsXIyeHhICJxLnjp6BsMYkL99YD
+	2VwcQgLTGSUuL7wJ5cxikrj4dREjSBWbgKFE19susA4RgSiJc7f2MYPYQgLBEtd+7weLcwqE
+	SNxf3wFmCwuESrx8MZkdxGYRUJVY830FaxcjBwe/gJDExFkKIGFeAReJ22+PMkHYghI/Jt9j
+	AbGZBbQk1u88zgRhy0tsXvOWGaRVQkBd4tFfXRBTRMBI4lG/IESFiMTdhuesExiFZiEZNAvJ
+	oFlIBs1C0rKAkWUVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnAQP5PawbiyweIQowAHoxIP
+	76We+gAh1sSy4srcQ4wSHMxKIrwrNwGFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8zZ7pAQICaQn
+	lqRmp6YWpBbBZJk4OKUaGHkdmFmXt7s/MSti42vpud7cPm3rUj6ba8/O2a5+yXz04O17vREZ
+	S0rv7Fy/c2vPj8uKumYtDoosH3y6JXhCU550/RBRPDXbLzSqYLVpCGP1+bk5i18t3HFHuyey
+	qNfl8P6dM/MD3pWq+Z8qYw11YVKdYHSIvfBtW3Du4q+zHXjmnj7e/sV8rxJLcUaioRZzUXEi
+	ALMuSvFeAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Oct 2012, Ian Campbell wrote:
-> The ARM platform has no concept of PVMMU and therefor no
-> HYPERVISOR_update_va_mapping et al. Allow this code to be compiled out
-> when not required.
-> 
-> In some similar situations (e.g. P2M) we have defined dummy functions
-> to avoid this, however I think we can/should draw the line at dummying
-> out actual hypercalls.
-> 
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Hi Laurent,
 
-It is OK for me
+On Wednesday, October 17, 2012 4:17 PM Laurent Pinchart wrote:
+
+> Kconfig lists CMA_SIZE_SEL_ABSOLUTE as the default value fo the CMA
+> selected region size, but that option isn't available in the defined
+> choices. Set the default to CMA_SIZE_SEL_MBYTES instead.
+> 
+> Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> ---
+>  drivers/base/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+> index 08b4c52..b34b5cd 100644
+> --- a/drivers/base/Kconfig
+> +++ b/drivers/base/Kconfig
+> @@ -236,7 +236,7 @@ config CMA_SIZE_PERCENTAGE
+> 
+>  choice
+>  	prompt "Selected region size"
+> -	default CMA_SIZE_SEL_ABSOLUTE
+> +	default CMA_SIZE_SEL_MBYTES
+> 
+>  config CMA_SIZE_SEL_MBYTES
+>  	bool "Use mega bytes value only"
+> --
+
+Right, thanks for the fix, applied to my dma-mapping tree.
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
 
 
->  arch/x86/xen/Kconfig  |    1 +
->  drivers/xen/Kconfig   |    3 +++
->  drivers/xen/balloon.c |    4 ++++
->  3 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
-> index 9323b8c..6d101a1 100644
-> --- a/arch/x86/xen/Kconfig
-> +++ b/arch/x86/xen/Kconfig
-> @@ -6,6 +6,7 @@ config XEN
->  	bool "Xen guest support"
->  	select PARAVIRT
->  	select PARAVIRT_CLOCK
-> +	select XEN_HAVE_PVMMU
->  	depends on X86_64 || (X86_32 && X86_PAE && !X86_VISWS)
->  	depends on X86_CMPXCHG && X86_TSC
->  	help
-> diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
-> index d4dffcd..9c00652 100644
-> --- a/drivers/xen/Kconfig
-> +++ b/drivers/xen/Kconfig
-> @@ -204,4 +204,7 @@ config XEN_MCE_LOG
->  	  Allow kernel fetching MCE error from Xen platform and
->  	  converting it into Linux mcelog format for mcelog tools
->  
-> +config XEN_HAVE_PVMMU
-> +       bool
-> +
->  endmenu
-> diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-> index db3aa34..92449a0 100644
-> --- a/drivers/xen/balloon.c
-> +++ b/drivers/xen/balloon.c
-> @@ -360,6 +360,7 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
->  		if (!xen_feature(XENFEAT_auto_translated_physmap))
->  			set_phys_to_machine(pfn, frame_list[i]);
->  
-> +#ifdef CONFIG_XEN_HAVE_PVMMU
->  		/* Link back into the page tables if not highmem. */
->  		if (xen_pv_domain() && !PageHighMem(page) &&
->  		    !xen_feature(XENFEAT_auto_translated_physmap)) {
-> @@ -371,6 +372,7 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
->  				0);
->  			BUG_ON(ret);
->  		}
-> +#endif
->  
->  		/* Relinquish the page back to the allocator. */
->  		ClearPageReserved(page);
-> @@ -419,6 +421,7 @@ static enum bp_state decrease_reservation(unsigned long nr_pages, gfp_t gfp)
->  
->  		scrub_page(page);
->  
-> +#ifdef CONFIG_XEN_HAVE_PVMMU
->  		if (xen_pv_domain() && !PageHighMem(page)) {
->  			if (!xen_feature(XENFEAT_auto_translated_physmap)) {
->  				ret = HYPERVISOR_update_va_mapping(
-> @@ -427,6 +430,7 @@ static enum bp_state decrease_reservation(unsigned long nr_pages, gfp_t gfp)
->  				BUG_ON(ret);
->  			}
->  		}
-> +#endif
->  	}
->  
->  	/* Ensure that ballooned highmem pages don't have kmaps. */
-> -- 
-> 1.7.2.5
-> 
