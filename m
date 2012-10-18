@@ -1,63 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab2JRI1P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 04:27:15 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:39900 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602Ab2JRI1L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 04:27:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <tip-8323f26ce3425460769605a6aece7a174edaa7d1@git.kernel.org>
-References: <1340364965.18025.71.camel@twins>
-	<tip-8323f26ce3425460769605a6aece7a174edaa7d1@git.kernel.org>
-Date: Thu, 18 Oct 2012 02:27:10 -0600
-X-Google-Sender-Auth: N7XPkScFupdNgq_0mqBVpjw2FtI
-Message-ID: <CAE5mzvjPXAZdOi1p8AB47zOQzgAErBU66gAS8spnpOs+=-+azA@mail.gmail.com>
-Subject: Re: [tip:sched/core] sched: Fix race in task_group()
-From: cwillu <cwillu@cwillu.com>
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de,
-        stefan.bader@canonical.com
-Content-Type: text/plain; charset=UTF-8
+	id S1754610Ab2JRI2G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 04:28:06 -0400
+Received: from mga09.intel.com ([134.134.136.24]:17377 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753823Ab2JRIZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 04:25:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,606,1344236400"; 
+   d="scan'208";a="207551971"
+From: dragos.tatulea@intel.com
+To: ccross@android.com, keescook@chromium.org, tony.luck@intel.com,
+        cbouatmailru@gmail.com, linux-kernel@vger.kernel.org
+Cc: adrian.hunter@intel.com, octavian.purdila@intel.com
+Subject: [PATCH v2 3/8] pstore: add support for external writers
+Date: Thu, 18 Oct 2012 11:28:23 +0300
+Message-Id: <1350548908-24407-4-git-send-email-dragos.tatulea@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1350548908-24407-1-git-send-email-dragos.tatulea@intel.com>
+References: <1350548908-24407-1-git-send-email-dragos.tatulea@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 24, 2012 at 8:21 AM, tip-bot for Peter Zijlstra
-<peterz@infradead.org> wrote:
-> Commit-ID:  8323f26ce3425460769605a6aece7a174edaa7d1
-> Gitweb:     http://git.kernel.org/tip/8323f26ce3425460769605a6aece7a174edaa7d1
-> Author:     Peter Zijlstra <peterz@infradead.org>
-> AuthorDate: Fri, 22 Jun 2012 13:36:05 +0200
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Tue, 24 Jul 2012 13:58:20 +0200
->
-> sched: Fix race in task_group()
->
-> Stefan reported a crash on a kernel before a3e5d1091c1 ("sched:
-> Don't call task_group() too many times in set_task_rq()"), he
-> found the reason to be that the multiple task_group()
-> invocations in set_task_rq() returned different values.
->
-> Looking at all that I found a lack of serialization and plain
-> wrong comments.
->
-> The below tries to fix it using an extra pointer which is
-> updated under the appropriate scheduler locks. Its not pretty,
-> but I can't really see another way given how all the cgroup
-> stuff works.
->
-> Reported-and-tested-by: Stefan Bader <stefan.bader@canonical.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Link: http://lkml.kernel.org/r/1340364965.18025.71.camel@twins
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-I just finished bisecting a crash on boot to this commit; booting with
-"noautogroup" brings it back.
+Other modules that may wish to write to persistent storage
+are supported by adding a notifier and write function.
 
-3.5.4 is the latest -stable that still boots, and none of the 3.6 rc's
-boot at all.
+The notifier has 3 events: PSTORE_BEGIN, PSTORE_DUMP and
+PSTORE_END.  External writers use the PSTORE_DUMP event
+whereas the PSTORE_BEGIN and PSTORE_END can be used by
+platform code to ensure the back end is powered up.
 
-Photo of the bug (3.6.0next is 3.6 + btrfs's for-linus):
-https://lh5.googleusercontent.com/-0DY-YYhgvzs/UHdB-BQdzMI/AAAAAAAAAEg/QhY9rgxnv98/s811/2012-10-11
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ fs/pstore/platform.c   |   88 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pstore.h |   43 +++++++++++++++++++----
+ 2 files changed, 124 insertions(+), 7 deletions(-)
+
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index 9d65723..63ff377 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -34,6 +34,7 @@
+ #include <linux/jiffies.h>
+ #include <linux/workqueue.h>
+ #include <linux/debugfs.h>
++#include <linux/notifier.h>
+ 
+ #include "internal.h"
+ 
+@@ -74,6 +75,20 @@ void pstore_set_kmsg_bytes(int bytes)
+ 	kmsg_bytes = bytes;
+ }
+ 
++static ATOMIC_NOTIFIER_HEAD(pstore_notifiers);
++
++int pstore_notifier_register(struct notifier_block *n)
++{
++	return atomic_notifier_chain_register(&pstore_notifiers, n);
++}
++EXPORT_SYMBOL_GPL(pstore_notifier_register);
++
++int pstore_notifier_unregister(struct notifier_block *n)
++{
++	return atomic_notifier_chain_unregister(&pstore_notifiers, n);
++}
++EXPORT_SYMBOL_GPL(pstore_notifier_unregister);
++
+ /* Tag each group of saved records with a sequence number */
+ static int	oopscount;
+ 
+@@ -97,6 +112,26 @@ static const char *get_reason_str(enum kmsg_dump_reason reason)
+ 	}
+ }
+ 
++static int pstore_ext_flush(void)
++{
++	int ret;
++
++	if (!psinfo->ext_len)
++		return 0;
++
++	ret = psinfo->write(psinfo->ext_type, psinfo->ext_reason,
++			    &psinfo->ext_id, psinfo->ext_part++,
++			    psinfo->ext_len, psinfo);
++
++	if (ret == 0 && psinfo->ext_reason == KMSG_DUMP_OOPS &&
++	    pstore_is_mounted())
++		pstore_new_entry = 1;
++
++	psinfo->ext_len = 0;
++
++	return ret;
++}
++
+ /*
+  * callback from kmsg_dump. (s2,l2) has the most recently
+  * written bytes, older bytes are in (s1,l1). Save as much
+@@ -122,6 +157,15 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 	} else
+ 		spin_lock_irqsave(&psinfo->buf_lock, flags);
+ 	oopscount++;
++
++	psinfo->ext_id = 0;
++	psinfo->ext_len = 0;
++	psinfo->ext_part = 0;
++	psinfo->ext_type = PSTORE_TYPE_UNKNOWN;
++	psinfo->ext_reason = reason;
++
++	atomic_notifier_call_chain(&pstore_notifiers, PSTORE_BEGIN, psinfo);
++
+ 	while (total < kmsg_bytes) {
+ 		char *dst;
+ 		unsigned long size;
+@@ -148,6 +192,13 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 		total += hsize + len;
+ 		part++;
+ 	}
++
++	atomic_notifier_call_chain(&pstore_notifiers, PSTORE_DUMP, psinfo);
++
++	pstore_ext_flush();
++
++	atomic_notifier_call_chain(&pstore_notifiers, PSTORE_END, psinfo);
++
+ 	if (in_nmi()) {
+ 		if (is_locked)
+ 			spin_unlock(&psinfo->buf_lock);
+@@ -368,5 +419,42 @@ static void pstore_timefunc(unsigned long dummy)
+ 	mod_timer(&pstore_timer, jiffies + msecs_to_jiffies(pstore_update_ms));
+ }
+ 
++/* pstore_write must only be called from PSTORE_DUMP notifier callbacks */
++int pstore_write(enum pstore_type_id type, const char *buf, size_t size)
++{
++	size_t len;
++	int err = 0, err2;
++
++	if (!psinfo)
++		return -ENODEV;
++
++	/*
++	 * No locking is needed because pstore_write is called only from
++	 * PSTORE_DUMP notifier callbacks.
++	 */
++
++	if (type != psinfo->ext_type) {
++		err = pstore_ext_flush();
++		psinfo->ext_type = type;
++		psinfo->ext_part = 1;
++	}
++
++	while (size) {
++		len = min(size, psinfo->bufsize - psinfo->ext_len);
++		memcpy(psinfo->buf + psinfo->ext_len, buf, len);
++		psinfo->ext_len += len;
++		buf += len;
++		size -= len;
++		if (psinfo->ext_len == psinfo->bufsize) {
++			err2 = pstore_ext_flush();
++			if (err2 && !err)
++				err = err2;
++		}
++	}
++
++	return err;
++}
++EXPORT_SYMBOL_GPL(pstore_write);
++
+ module_param(backend, charp, 0444);
+ MODULE_PARM_DESC(backend, "Pstore backend to use");
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index 55ab23f..1bf7f4b 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -40,17 +40,27 @@ enum pstore_type_id {
+ 
+ struct module;
+ 
++/* Notifier events */
++#define PSTORE_BEGIN		1
++#define PSTORE_DUMP		2
++#define PSTORE_END		3
++
+ #define PSTORE_NO_HEADINGS	BIT(0)
+ #define PSTORE_MAX_KMSG_BYTES	BIT(1)
+ 
+ struct pstore_info {
+-	struct module	*owner;
+-	char		*name;
+-	unsigned int	flags;
+-	spinlock_t	buf_lock;	/* serialize access to 'buf' */
+-	char		*buf;
+-	size_t		bufsize;
+-	struct mutex	read_mutex;	/* serialize open/read/close */
++	struct module		*owner;
++	char			*name;
++	unsigned int		flags;
++	spinlock_t		buf_lock;	/* serialize access to 'buf' */
++	char			*buf;
++	size_t			bufsize;
++	struct mutex		read_mutex;	/* serialize open/read/close */
++	u64			ext_id;
++	size_t			ext_len;
++	unsigned int		ext_part;
++	enum pstore_type_id	ext_type;
++	enum kmsg_dump_reason	ext_reason;
+ 	int		(*open)(struct pstore_info *psi);
+ 	int		(*close)(struct pstore_info *psi);
+ 	ssize_t		(*read)(u64 *id, enum pstore_type_id *type,
+@@ -70,12 +80,31 @@ struct pstore_info {
+ 
+ #ifdef CONFIG_PSTORE
+ extern int pstore_register(struct pstore_info *);
++extern int pstore_notifier_register(struct notifier_block *n);
++extern int pstore_notifier_unregister(struct notifier_block *n);
++/* pstore_write must only be called from PSTORE_DUMP notifier callbacks */
++extern int pstore_write(enum pstore_type_id type, const char *buf, size_t size);
+ #else
+ static inline int
+ pstore_register(struct pstore_info *psi)
+ {
+ 	return -ENODEV;
+ }
++static inline int
++pstore_notifier_register(struct notifier_block *n)
++{
++	return 0;
++}
++static inline int
++pstore_notifier_unregister(struct notifier_block *n)
++{
++	return 0;
++}
++static inline int
++pstore_write(enum pstore_type_id type, const char *buf, size_t size)
++{
++	return 0;
++}
+ #endif
+ 
+ #endif /*_LINUX_PSTORE_H*/
+-- 
+1.7.9.5
+
