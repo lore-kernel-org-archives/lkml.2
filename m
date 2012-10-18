@@ -1,56 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab2JRLxv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 07:53:51 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:52600 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751969Ab2JRLxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 07:53:50 -0400
-Message-ID: <507FEDC1.4010406@parallels.com>
-Date: Thu, 18 Oct 2012 15:53:37 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+	id S1754087Ab2JRL4P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 07:56:15 -0400
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:35157 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752747Ab2JRL4N convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 07:56:13 -0400
+From: Nitin DHINGRA <nitin.dhingra@stericsson.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Anurag GUPTA-1 <anurag.gupta@stericsson.com>,
+        Ingvar PALSSON <ingvar.palsson@stericsson.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Par-Gunnar HJALMDAHL <par-gunnar.hjalmdahl@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mridul JAIN <mridul.jain@stericsson.com>
+Date: Thu, 18 Oct 2012 13:56:00 +0200
+Subject: RE: [PATCH] staging: Add ST-Ericsson CG2900 driver
+Thread-Topic: [PATCH] staging: Add ST-Ericsson CG2900 driver
+Thread-Index: Ac2srU4RDGZINQOKQzW6d16D62TEJgAeVNsA
+Message-ID: <3ED83A9DB3B6D94CA68BF7C03F2981D35D01B6F1FD@EXDCVYMBSTM006.EQ1STM.local>
+References: <1348733648-13769-1-git-send-email-nitin.dhingra@stericsson.com>
+ <20121017212051.GA30879@kroah.com>
+In-Reply-To: <20121017212051.GA30879@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
-        <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v5 07/14] mm: Allocate kernel pages to the right memcg
-References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-8-git-send-email-glommer@parallels.com> <20121017151221.4c420e5a.akpm@linux-foundation.org>
-In-Reply-To: <20121017151221.4c420e5a.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2012 02:12 AM, Andrew Morton wrote:
-> On Tue, 16 Oct 2012 14:16:44 +0400
-> Glauber Costa <glommer@parallels.com> wrote:
-> 
->> When a process tries to allocate a page with the __GFP_KMEMCG flag, the
->> page allocator will call the corresponding memcg functions to validate
->> the allocation. Tasks in the root memcg can always proceed.
->>
->> To avoid adding markers to the page - and a kmem flag that would
->> necessarily follow, as much as doing page_cgroup lookups for no reason,
->> whoever is marking its allocations with __GFP_KMEMCG flag is responsible
->> for telling the page allocator that this is such an allocation at
->> free_pages() time.
-> 
-> Well, why?  Was that the correct decision?
-> 
->> This is done by the invocation of
->> __free_accounted_pages() and free_accounted_pages().
-> 
-> These are very general-sounding names.  I'd expect the identifiers to
-> contain "memcg" and/or "kmem", to identify what's going on.
-> 
-I've just changed to free_memcg_kmem_pages.
-Let me know if the name is better.
 
+
+> -----Original Message-----
+> From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
+> Sent: Thursday, October 18, 2012 2:51 AM
+> To: Nitin DHINGRA
+> Cc: devel@driverdev.osuosl.org; Anurag GUPTA-1; Ingvar PALSSON; Linus
+> WALLEIJ; Par-Gunnar HJALMDAHL; linux-kernel@vger.kernel.org; Mridul
+> JAIN
+> Subject: Re: [PATCH] staging: Add ST-Ericsson CG2900 driver
+> 
+> On Thu, Sep 27, 2012 at 01:14:08AM -0700, Nitin Dhingra wrote:
+> > This patch adds support for the ST-Ericsson CG2900
+> > Connectivity Combo controller (Bluetooth, FM, GPS, ANT, NFC)
+> >
+> > Signed-off-by: Nitin Dhingra <nitin.dhingra@stericsson.com>
+> > Signed-off-by: Mridul Jain <mridul.jain@stericsson.com>
+> > Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+> > ---
+> >  arch/arm/configs/u8500_defconfig                 |    8 +
+> >  drivers/staging/Kconfig                          |    2 +
+> >  drivers/staging/Makefile                         |    1 +
+> >  drivers/staging/cg2900/Kconfig                   |   73 +
+> >  drivers/staging/cg2900/Makefile                  |   10 +
+> >  drivers/staging/cg2900/bluetooth/Makefile        |    9 +
+> >  drivers/staging/cg2900/bluetooth/btcg2900.c      |  865 +++++
+> >  drivers/staging/cg2900/bluetooth/cg2900_uart.c   | 2434 +++++++++++++
+> >  drivers/staging/cg2900/bluetooth/hci_ldisc.c     |  645 ++++
+> >  drivers/staging/cg2900/bluetooth/hci_uart.h      |  106 +
+> >  drivers/staging/cg2900/include/cg2900.h          |  338 ++
+> >  drivers/staging/cg2900/include/cg2900_audio.h    |  473 +++
+> >  drivers/staging/cg2900/include/cg2900_hci.h      |   19 +
+> >  drivers/staging/cg2900/mfd/Makefile              |   18 +
+> >  drivers/staging/cg2900/mfd/cg2900_audio.c        | 3533
+> +++++++++++++++++++
+> >  drivers/staging/cg2900/mfd/cg2900_char_devices.c |  802 +++++
+> >  drivers/staging/cg2900/mfd/cg2900_chip.c         | 3986
+> ++++++++++++++++++++++
+> >  drivers/staging/cg2900/mfd/cg2900_chip.h         |  608 ++++
+> >  drivers/staging/cg2900/mfd/cg2900_core.c         |  730 ++++
+> >  drivers/staging/cg2900/mfd/cg2900_core.h         |   52 +
+> >  drivers/staging/cg2900/mfd/cg2900_lib.c          |  287 ++
+> >  drivers/staging/cg2900/mfd/cg2900_lib.h          |   65 +
+> >  drivers/staging/cg2900/mfd/cg2900_test.c         |  402 +++
+> >  drivers/staging/cg2900/mfd/stlc2690_chip.c       | 1710 ++++++++++
+> >  drivers/staging/cg2900/mfd/stlc2690_chip.h       |   47 +
+> >  25 files changed, 17223 insertions(+), 0 deletions(-)
+> 
+> Please refresh my memory, why is this going into drivers/staging/ and
+> not into the "real" part of the kernel?
+Putting the code in staging would be convenient so that if there are any design/code suggestions it would be easier to incorporate. 
+
+> 
+> Hint, a TODO file listing what is needed to do to get the code merged
+> properly is needed here, care to make a follow-on patch adding this
+> which will explain what to do.
+Will do that.
+
+> 
+> thanks,
+> 
+> greg k-h
+
+Regards
+Nitin 
