@@ -1,103 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756492Ab2JRO20 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 10:28:26 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:36486 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756311Ab2JRO2X (ORCPT
+	id S1756355Ab2JRO1r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 10:27:47 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42203 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756293Ab2JRO1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 10:28:23 -0400
-Date: Thu, 18 Oct 2012 10:28:21 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Martin Vysny <vysny@baka.sk>
-cc: Kernel development list <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>, <1062114@bugs.launchpad.net>
-Subject: Re: usb issue on Intel chipset: abrupt mouse movements, usb keyboard
- loosing key events
-In-Reply-To: <507FA858.6090109@baka.sk>
-Message-ID: <Pine.LNX.4.44L0.1210181025450.1495-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 18 Oct 2012 10:27:43 -0400
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Richard Zhao <richard.zhao@freescale.com>,
+        Huang Shijie <shijie8@gmail.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
+        kernel@pengutronix.de, devicetree-discuss@lists.ozlabs.org
+Cc: Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v5 1/4] genalloc: add a global pool list, allow to find pools by phys address
+Date: Thu, 18 Oct 2012 16:27:30 +0200
+Message-Id: <1350570453-24546-2-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1350570453-24546-1-git-send-email-p.zabel@pengutronix.de>
+References: <1350570453-24546-1-git-send-email-p.zabel@pengutronix.de>
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Oct 2012, Martin Vysny wrote:
+This patch keeps all created pools in a global list and adds two
+functions that allow to retrieve the gen_pool pointer from a known
+physical address and from a device tree node.
 
-> Good day,
->    thank you for your response, please see the answers below.
-> 
-> 
-> On 10/17/2012 08:05 PM, Alan Stern wrote:
-> > On Wed, 17 Oct 2012, Martin Vysny wrote:
-> >
-> >> Good day,
-> >>     thank you for your mail. I was finally able to reproduce the issue. I
-> >> am attaching a dmesg output of a correct boot (please note that there
-> >> still are several unwanted IRQs), and a dmesg output of a reproduced error.
-> >
-> > Did you boot with the "irqpoll" option?  Judging by the log, it looks
-> > like you did.
-> >
-> 
-> Nope, I didn't boot with the irqpoll boot option enabled:
-> $ cat /proc/cmdline
-> BOOT_IMAGE=/boot/vmlinuz-3.5.0-17-generic 
-> root=UUID=02dfb985-99c1-431d-882f-87475db02062 ro 
-> crashkernel=384M-2G:64M,2G-:128M splash elevator=noop vt.handoff=7
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
+---
+ include/linux/genalloc.h |   14 ++++++++++
+ lib/genalloc.c           |   67 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 81 insertions(+)
 
-Hmmm.  Maybe the kernel automatically polls disabled IRQs every 0.1 
-second.
-
-> >> [   67.512014] ehci_hcd 0000:00:1d.0: >Unwanted IRQ: c000 0
-> >> [   67.512021] ehci_hcd 0000:00:1d.0: >Unwanted IRQ: e000 0
-> >> [   67.512023] irq 17: nobody cared (try booting with the "irqpoll" option)
-> >> [   67.512026] Pid: 0, comm: swapper/0 Tainted: G           O 3.5.0-17-generic #28
-> >> [   67.512027] Call Trace:
-> >> [   67.512034]  [<c10c6ae9>] __report_bad_irq+0x29/0xd0
-> >> [   67.512037]  [<c10c6db5>] note_interrupt+0x175/0x1c0
-> >> [   67.512041]  [<c1326d63>] ? intel_idle+0xc3/0x120
-> >> [   67.512045]  [<c10c4bdf>] handle_irq_event_percpu+0x9f/0x1d0
-> >> [   67.512047]  [<c10c4d4b>] handle_irq_event+0x3b/0x60
-> >> [   67.512050]  [<c10c7710>] ? unmask_irq+0x30/0x30
-> >> [   67.512052]  [<c10c775e>] handle_fasteoi_irq+0x4e/0xd0
-> >> [   67.512053]  <IRQ>  [<c15d0692>] ? do_IRQ+0x42/0xc0
-> >> [   67.512062]  [<c10689fe>] ? enqueue_hrtimer+0x1e/0x70
-> >> [   67.512064]  [<c15d04f0>] ? common_interrupt+0x30/0x38
-> >> [   67.512069]  [<c10400e0>] ? in_gate_area+0x10/0x50
-> >> [   67.512071]  [<c1326d63>] ? intel_idle+0xc3/0x120
-> >> [   67.512076]  [<c149b7b5>] ? cpuidle_enter+0x15/0x20
-> >> [   67.512078]  [<c149bd18>] ? cpuidle_idle_call+0x88/0x220
-> >> [   67.512081]  [<c101870a>] ? cpu_idle+0xaa/0xe0
-> >> [   67.512086]  [<c159f715>] ? rest_init+0x5d/0x68
-> >> [   67.512090]  [<c18b49be>] ? start_kernel+0x35d/0x363
-> >> [   67.512092]  [<c18b44ed>] ? do_early_param+0x80/0x80
-> >> [   67.512094]  [<c18b4303>] ? i386_start_kernel+0xa6/0xad
-> >> [   67.512095] handlers:
-> >> [   67.512098] [<c142fe00>] usb_hcd_irq
-> >> [   67.512099] Disabling IRQ #17
-> >> [   69.507175] ehci_hcd 0000:00:1d.0: >Unwanted IRQ: c000 0
-> >> [   69.607118] ehci_hcd 0000:00:1d.0: >Unwanted IRQ: c000 0
-> >
-> > The debugging output show that the EHCI controller was not the source
-> > of the unwanted IRQs.  And /proc/interrupts shows that ehci-hcd is the
-> > only driver using IRQ #17, for the 0000:00:1d.0 device.
-
-This should be stated more carefully.  The EHCI controller was not the 
-source of the unwanted IRQs, unless it is somehow malfunctioning.
-
-> > The most likely explanation is that there an interrupt-routing error
-> > and some other device is causing these problems.  I don't know of any
-> > easy way to find out what the other device is, however.
-> >
-> 
-> Thanks for hinting at the probable source of the problem. I am new to 
-> these things, but the /proc/interrupts lists IO-APIC-fasteoi. Perhaps 
-> there may be some relation to some APIC issue?
-
-There may be, but I don't know anything about that.  Somebody else will 
-have to help.
-
-Alan Stern
+diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
+index dd7c569..91d606e 100644
+--- a/include/linux/genalloc.h
++++ b/include/linux/genalloc.h
+@@ -47,6 +47,7 @@ typedef unsigned long (*genpool_algo_t)(unsigned long *map,
+  *  General purpose special memory pool descriptor.
+  */
+ struct gen_pool {
++	struct list_head next_pool;	/* pool in global list */
+ 	spinlock_t lock;
+ 	struct list_head chunks;	/* list of chunks in this pool */
+ 	int min_alloc_order;		/* minimum allocation order */
+@@ -105,4 +106,17 @@ extern unsigned long gen_pool_first_fit(unsigned long *map, unsigned long size,
+ extern unsigned long gen_pool_best_fit(unsigned long *map, unsigned long size,
+ 		unsigned long start, unsigned int nr, void *data);
+ 
++extern struct gen_pool *gen_pool_find_by_phys(phys_addr_t phys);
++
++struct device_node;
++#ifdef CONFIG_OF
++extern struct gen_pool *of_get_named_gen_pool(struct device_node *np,
++	const char *propname, int index);
++#else
++inline struct gen_pool *of_get_named_gen_pool(struct device_node *np,
++	const char *propname, int index)
++{
++	return NULL;
++}
++#endif
+ #endif /* __GENALLOC_H__ */
+diff --git a/lib/genalloc.c b/lib/genalloc.c
+index ca208a9..d77d240 100644
+--- a/lib/genalloc.c
++++ b/lib/genalloc.c
+@@ -34,6 +34,11 @@
+ #include <linux/rculist.h>
+ #include <linux/interrupt.h>
+ #include <linux/genalloc.h>
++#include <linux/of_address.h>
++#include <linux/of_device.h>
++
++static LIST_HEAD(pools);
++static DEFINE_SPINLOCK(list_lock);
+ 
+ static int set_bits_ll(unsigned long *addr, unsigned long mask_to_set)
+ {
+@@ -154,6 +159,9 @@ struct gen_pool *gen_pool_create(int min_alloc_order, int nid)
+ 		pool->min_alloc_order = min_alloc_order;
+ 		pool->algo = gen_pool_first_fit;
+ 		pool->data = NULL;
++		spin_lock(&list_lock);
++		list_add_rcu(&pool->next_pool, &pools);
++		spin_unlock(&list_lock);
+ 	}
+ 	return pool;
+ }
+@@ -236,6 +244,9 @@ void gen_pool_destroy(struct gen_pool *pool)
+ 	int order = pool->min_alloc_order;
+ 	int bit, end_bit;
+ 
++	spin_lock(&list_lock);
++	list_del_rcu(&pool->next_pool);
++	spin_unlock(&list_lock);
+ 	list_for_each_safe(_chunk, _next_chunk, &pool->chunks) {
+ 		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
+ 		list_del(&chunk->next_chunk);
+@@ -480,3 +491,59 @@ unsigned long gen_pool_best_fit(unsigned long *map, unsigned long size,
+ 	return start_bit;
+ }
+ EXPORT_SYMBOL(gen_pool_best_fit);
++
++/*
++ * gen_pool_find_by_phys - find a pool by physical start address
++ * @phys: physical address as added with gen_pool_add_virt
++ *
++ * Returns the pool that contains the chunk starting at phys,
++ * or NULL if not found.
++ */
++struct gen_pool *gen_pool_find_by_phys(phys_addr_t phys)
++{
++	struct gen_pool *pool, *found = NULL;
++	struct gen_pool_chunk *chunk;
++
++	rcu_read_lock();
++	list_for_each_entry_rcu(pool, &pools, next_pool) {
++		list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
++			if (phys == chunk->phys_addr) {
++				found = pool;
++				break;
++			}
++		}
++	}
++	rcu_read_unlock();
++
++	return found;
++}
++EXPORT_SYMBOL_GPL(gen_pool_find_by_phys);
++
++#ifdef CONFIG_OF
++/**
++ * of_get_named_gen_pool - find a pool by phandle property
++ * @np: device node
++ * @propname: property name containing phandle(s)
++ * @index: index into the phandle array
++ *
++ * Returns the pool that contains the chunk starting at the physical
++ * address of the device tree node pointed at by the phandle property,
++ * or NULL if not found.
++ */
++struct gen_pool *of_get_named_gen_pool(struct device_node *np,
++	const char *propname, int index)
++{
++	struct device_node *np_pool;
++	struct resource res;
++	int ret;
++
++	np_pool = of_parse_phandle(np, propname, index);
++	if (!np_pool)
++		return NULL;
++	ret = of_address_to_resource(np_pool, 0, &res);
++	if (ret < 0)
++		return NULL;
++	return gen_pool_find_by_phys((phys_addr_t) res.start);
++}
++EXPORT_SYMBOL_GPL(of_get_named_gen_pool);
++#endif /* CONFIG_OF */
+-- 
+1.7.10.4
 
