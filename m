@@ -1,138 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab2JRKCD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 06:02:03 -0400
-Received: from dnvwsmailout1.mcafee.com ([161.69.31.173]:31412 "EHLO
-	DNVWSMAILOUT1.mcafee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab2JRKCA (ORCPT
+	id S1755345Ab2JRKCS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 06:02:18 -0400
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:44765 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753415Ab2JRKCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 06:02:00 -0400
-Message-ID: <507FD383.5050302@snapgear.com>
-Date: Thu, 18 Oct 2012 20:01:39 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 18 Oct 2012 06:02:14 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Jean Nicolas Graux <jean-nicolas.graux@stericsson.com>,
+        Loic Pallardy <loic.pallardy@st.com>
+Subject: [PATCH] pinctrl: reserve pins when states are activated
+Date: Thu, 18 Oct 2012 12:01:27 +0200
+Message-ID: <1350554487-7914-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>
-Subject: Re: linux-next: manual merge of the m68knommu tree with the tree
-References: <20121018103713.0ccb63374964501c3d8d99a5@canb.auug.org.au> <20121018103826.c8e1312904747b31caa376f6@canb.auug.org.au> <507F78B0.70808@snapgear.com> <CAMuHMdWX2ZVNcz1Ubsk0W3HH7qcBQhctaWSFVq=x+YwbuUE9YA@mail.gmail.com>
-In-Reply-To: <CAMuHMdWX2ZVNcz1Ubsk0W3HH7qcBQhctaWSFVq=x+YwbuUE9YA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+From: Linus Walleij <linus.walleij@linaro.org>
 
-On 10/18/2012 03:51 PM, Geert Uytterhoeven wrote:
-> Hi Greg,
->
-> On Thu, Oct 18, 2012 at 5:34 AM, Greg Ungerer <gerg@snapgear.com> wrote:
->> On 18/10/12 09:38, Stephen Rothwell wrote:
->>>
->>> [Just cc'ing Geert]
->>>
->>> On Thu, 18 Oct 2012 10:37:13 +1100 Stephen Rothwell <sfr@canb.auug.org.au>
->>> wrote:
->>>>
->>>>
->>>> Hi Greg,
->>>>
->>>> Today's linux-next merge of the m68knommu tree got conflicts in
->>>> arch/m68k/include/asm/termios.h, arch/m68k/include/uapi/asm/auxvec.h,
->>>> arch/m68k/include/uapi/asm/msgbuf.h, arch/m68k/include/uapi/asm/sembuf.h,
->>>> arch/m68k/include/uapi/asm/shmbuf.h, arch/m68k/include/uapi/asm/socket.h,
->>>> arch/m68k/include/uapi/asm/sockios.h and
->>>> arch/m68k/include/uapi/asm/termbits.h between commit 10b3a979347d ("UAPI:
->>>> (Scripted) Disintegrate arch/m68k/include/asm") from the m68k-current
->>>> tree and various commits from the m68knommu tree that use the asm-generic
->>>> versions.
->>>>
->>>> I just deleted all those files and added the following merge fix patch
->>>> and can carry the fix as necessary.
->>>>
->>>> I think that this is the correct thing to do ...
->>
->>
->> I think that is right. Thanks.
->
-> I still have to do a proper review of your changes (I noticed a few
-> things I have
-> to double-check). After that, I guess it's easiest if I take your
-> patch, updated for
-> the UAPI disintegration?
+This switches the way that pins are reserved for multiplexing:
 
-Sure. My patches are based on 3.7-rc1. I am not sure if David's changes
-are going upstream in a future rc, or are for 3.8.
+We used to do this when the map was parsed, at the creation of
+the settings inside the pinctrl handle, in pinmux_map_to_setting().
 
-Regards
-Greg
+However this does not work for us, because we want to use the
+same set of pins with different devices at different times: the
+current code assumes that the pin groups in a pinmux state will
+only be used with one single device, albeit different groups can
+be active at different times. For example if a single I2C driver
+block is used to drive two different busses located on two
+pin groups A and B, then the pins for all possible states of a
+function are reserved when fetching the pinctrl handle: the
+I2C bus can choose either set A or set B by a mux state at
+runtime, but all pins in both group A and B (the superset) are
+effectively reserved for that I2C function and mapped to the
+device. Another device can never get in and use the pins in
+group A, even if the device/function is using group B at the
+moment.
 
+Instead: let use reserve the pins when the state is activated
+and drop them when the state is disabled, i.e. when we move to
+another state. This way different devices/functions can use the
+same pins at different times.
 
+We know that this is an odd way of doing things, but we really
+need to switch e.g. an SD-card slot to become a tracing output
+sink at runtime: we plug in a special "tracing card" then mux
+the pins that used to be an SD slot around to the tracing
+unit and push out tracing data there instead of SD-card
+traffic.
 
->>>> From: Stephen Rothwell <sfr@canb.auug.org.au>
->>>> Date: Thu, 18 Oct 2012 10:32:20 +1100
->>>> Subject: [PATCH] m68k: fix up for UAPI changes
->>>>
->>>> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
->>>> ---
->>>>    arch/m68k/include/uapi/asm/Kbuild |    8 --------
->>>>    1 file changed, 8 deletions(-)
->>>>
->>>> diff --git a/arch/m68k/include/uapi/asm/Kbuild
->>>> b/arch/m68k/include/uapi/asm/Kbuild
->>>> index 972bce1..aebdbf5 100644
->>>> --- a/arch/m68k/include/uapi/asm/Kbuild
->>>> +++ b/arch/m68k/include/uapi/asm/Kbuild
->>>> @@ -2,25 +2,17 @@
->>>>    include include/uapi/asm-generic/Kbuild.asm
->>>>
->>>>    header-y += a.out.h
->>>> -header-y += auxvec.h
->>>>    header-y += byteorder.h
->>>>    header-y += cachectl.h
->>>>    header-y += fcntl.h
->>>>    header-y += ioctls.h
->>>> -header-y += msgbuf.h
->>>>    header-y += param.h
->>>>    header-y += poll.h
->>>>    header-y += posix_types.h
->>>>    header-y += ptrace.h
->>>> -header-y += sembuf.h
->>>>    header-y += setup.h
->>>> -header-y += shmbuf.h
->>>>    header-y += sigcontext.h
->>>>    header-y += signal.h
->>>> -header-y += socket.h
->>>> -header-y += sockios.h
->>>>    header-y += stat.h
->>>>    header-y += swab.h
->>>> -header-y += termbits.h
->>>> -header-y += termios.h
->>>>    header-y += unistd.h
->>>> --
->>>> 1.7.10.280.gaa39
->
-> Gr{oetje,eeting}s,
->
->                          Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                  -- Linus Torvalds
->
->
->
+Cc: Patrice Chotard <patrice.chotard@st.com>
+Cc: Jean Nicolas Graux <jean-nicolas.graux@stericsson.com>
+Cc: Loic Pallardy <loic.pallardy@st.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ Documentation/pinctrl.txt |  4 ++-
+ drivers/pinctrl/core.c    |  2 ++
+ drivers/pinctrl/core.h    |  2 ++
+ drivers/pinctrl/pinmux.c  | 70 +++++++++++++++++------------------------------
+ 4 files changed, 32 insertions(+), 46 deletions(-)
 
-
+diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
+index 3b4ee53..a1cd2f9 100644
+--- a/Documentation/pinctrl.txt
++++ b/Documentation/pinctrl.txt
+@@ -1193,4 +1193,6 @@ foo_switch()
+ 	...
+ }
+ 
+-The above has to be done from process context.
++The above has to be done from process context. The reservation of the pins
++will be done when the state is activated, so in effect one specific pin
++can be used by different functions at different times on a running system.
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index 0f1ec9e..5c6dff2 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -563,6 +563,8 @@ static int add_setting(struct pinctrl *p, struct pinctrl_map const *map)
+ 		return -EPROBE_DEFER;
+ 	}
+ 
++	setting->dev_name = map->dev_name;
++
+ 	switch (map->type) {
+ 	case PIN_MAP_TYPE_MUX_GROUP:
+ 		ret = pinmux_map_to_setting(map, setting);
+diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
+index 1f40ff6..12f5694 100644
+--- a/drivers/pinctrl/core.h
++++ b/drivers/pinctrl/core.h
+@@ -105,12 +105,14 @@ struct pinctrl_setting_configs {
+  * @type: the type of setting
+  * @pctldev: pin control device handling to be programmed. Not used for
+  *   PIN_MAP_TYPE_DUMMY_STATE.
++ * @dev_name: the name of the device using this state
+  * @data: Data specific to the setting type
+  */
+ struct pinctrl_setting {
+ 	struct list_head node;
+ 	enum pinctrl_map_type type;
+ 	struct pinctrl_dev *pctldev;
++	const char *dev_name;
+ 	union {
+ 		struct pinctrl_setting_mux mux;
+ 		struct pinctrl_setting_configs configs;
+diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+index 9301a7a..dadc891 100644
+--- a/drivers/pinctrl/pinmux.c
++++ b/drivers/pinctrl/pinmux.c
+@@ -314,14 +314,11 @@ int pinmux_map_to_setting(struct pinctrl_map const *map,
+ {
+ 	struct pinctrl_dev *pctldev = setting->pctldev;
+ 	const struct pinmux_ops *pmxops = pctldev->desc->pmxops;
+-	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
+ 	char const * const *groups;
+ 	unsigned num_groups;
+ 	int ret;
+ 	const char *group;
+ 	int i;
+-	const unsigned *pins;
+-	unsigned num_pins;
+ 
+ 	if (!pmxops) {
+ 		dev_err(pctldev->dev, "does not support mux function\n");
+@@ -376,53 +373,15 @@ int pinmux_map_to_setting(struct pinctrl_map const *map,
+ 	}
+ 	setting->data.mux.group = ret;
+ 
+-	ret = pctlops->get_group_pins(pctldev, setting->data.mux.group, &pins,
+-				      &num_pins);
+-	if (ret) {
+-		dev_err(pctldev->dev,
+-			"could not get pins for device %s group selector %d\n",
+-			pinctrl_dev_get_name(pctldev), setting->data.mux.group);
+-			return -ENODEV;
+-	}
+-
+-	/* Try to allocate all pins in this group, one by one */
+-	for (i = 0; i < num_pins; i++) {
+-		ret = pin_request(pctldev, pins[i], map->dev_name, NULL);
+-		if (ret) {
+-			dev_err(pctldev->dev,
+-				"could not request pin %d on device %s\n",
+-				pins[i], pinctrl_dev_get_name(pctldev));
+-			/* On error release all taken pins */
+-			i--; /* this pin just failed */
+-			for (; i >= 0; i--)
+-				pin_free(pctldev, pins[i], NULL);
+-			return -ENODEV;
+-		}
+-	}
+-
+ 	return 0;
+ }
+ 
+ void pinmux_free_setting(struct pinctrl_setting const *setting)
+ {
+-	struct pinctrl_dev *pctldev = setting->pctldev;
+-	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
+-	const unsigned *pins;
+-	unsigned num_pins;
+-	int ret;
+-	int i;
+-
+-	ret = pctlops->get_group_pins(pctldev, setting->data.mux.group,
+-				      &pins, &num_pins);
+-	if (ret) {
+-		dev_err(pctldev->dev,
+-			"could not get pins for device %s group selector %d\n",
+-			pinctrl_dev_get_name(pctldev), setting->data.mux.group);
+-		return;
+-	}
+-
+-	for (i = 0; i < num_pins; i++)
+-		pin_free(pctldev, pins[i], NULL);
++	/*
++	 * If a setting is active, disable it so that all pins are released
++	 */
++	pinmux_disable_setting(setting);
+ }
+ 
+ int pinmux_enable_setting(struct pinctrl_setting const *setting)
+@@ -446,6 +405,22 @@ int pinmux_enable_setting(struct pinctrl_setting const *setting)
+ 		num_pins = 0;
+ 	}
+ 
++	/* Try to allocate all pins in this group, one by one */
++	for (i = 0; i < num_pins; i++) {
++		ret = pin_request(pctldev, pins[i], setting->dev_name, NULL);
++		if (ret) {
++			dev_err(pctldev->dev,
++				"could not request pin %d on device %s\n",
++				pins[i], pinctrl_dev_get_name(pctldev));
++			/* On error release all taken pins */
++			i--; /* this pin just failed */
++			for (; i >= 0; i--)
++				pin_free(pctldev, pins[i], NULL);
++			return -ENODEV;
++		}
++	}
++
++	/* Now that we have acquired the pins, encode the mux setting */
+ 	for (i = 0; i < num_pins; i++) {
+ 		desc = pin_desc_get(pctldev, pins[i]);
+ 		if (desc == NULL) {
+@@ -482,6 +457,7 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
+ 		num_pins = 0;
+ 	}
+ 
++	/* Flag the descs that no setting is active */
+ 	for (i = 0; i < num_pins; i++) {
+ 		desc = pin_desc_get(pctldev, pins[i]);
+ 		if (desc == NULL) {
+@@ -493,6 +469,10 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
+ 		desc->mux_setting = NULL;
+ 	}
+ 
++	/* And release the pins */
++	for (i = 0; i < num_pins; i++)
++		pin_free(pctldev, pins[i], NULL);
++
+ 	if (ops->disable)
+ 		ops->disable(pctldev, setting->data.mux.func, setting->data.mux.group);
+ }
 -- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close,                            FAX:         +61 7 3891 3630
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+1.7.11.3
+
