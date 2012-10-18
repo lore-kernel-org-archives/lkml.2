@@ -1,81 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755677Ab2JRXQF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 19:16:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41446 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916Ab2JRXQD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 19:16:03 -0400
-Date: Thu, 18 Oct 2012 16:16:01 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/23] printk: refactoring
-Message-Id: <20121018161601.c47c50c8.akpm@linux-foundation.org>
-In-Reply-To: <cover.1350449851.git.joe@perches.com>
-References: <cover.1350449851.git.joe@perches.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932367Ab2JRXUA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 19:20:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20461 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756594Ab2JRXT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 19:19:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,609,1344236400"; 
+   d="scan'208";a="229462634"
+From: Andi Kleen <andi@firstfloor.org>
+To: a.p.zijlstra@chello.nl
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, acme@redhat.com,
+        eranian@google.com, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 33/34] perf, tools: Default to cpu// for events v2
+Date: Thu, 18 Oct 2012 16:19:41 -0700
+Message-Id: <1350602382-12771-34-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
+References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Oct 2012 23:06:04 -0700
-Joe Perches <joe@perches.com> wrote:
+From: Andi Kleen <ak@linux.intel.com>
 
-> Make printk a bit more readable.
-> 
-> Joe Perches (23):
->   printk: Move to separate directory for easier modification
->   printk: Add console_cmdline.h
->   printk: Move braille console support into separate braille.[ch] files
->   printk: Use pointer for console_cmdline indexing
->   printk: rename struct log to struct printk_log
->   printk: Rename log_buf and __LOG_BUF_LEN
->   printk: Rename log_first and log_next variables
->   printk: Rename log_<foo> variables and functions
->   printk: Rename enum log_flags to printk_log_flags
->   printk: Rename log_wait to printk_log_wait
->   printk: Rename logbuf_lock to printk_logbuf_lock
->   printk: Rename clear_seq and clear_idx variables
->   printk: Remove static from printk_ variables
->   printk: Rename LOG_ALIGN to PRINTK_LOG_ALIGN
->   printk: Add and use printk_log.h
->   printk: Add printk_log.c
->   printk: Make wait_queue_head_t printk_log_wait extern
->   printk: Rename and move 2 #defines to printk_log.h
->   printk: Move devkmsg bits to separate file
->   printk: Prefix print_time and msg_print_text with printk_
->   printk: Move functions printk_print_time and printk_msg_print_text
->   printk: Add printk_syslog.c and .h
->   printk: Move kmsg_dump functions to separate file
+When an event fails to parse and it's not in a new style format,
+try to parse it again as a cpu event.
 
-OK, nobody's allowed to change the printk code for two months.
+This allows to use sysfs exported events directly without //, so I can use
 
->  drivers/accessibility/braille/braille_console.c |    9 +-
->  fs/proc/kmsg.c                                  |    4 +-
->  kernel/Makefile                                 |    3 +-
->  kernel/printk.c                                 | 2820 -----------------------
->  kernel/printk/Makefile                          |    6 +
->  kernel/printk/braille.c                         |   48 +
->  kernel/printk/braille.h                         |   48 +
->  kernel/printk/console_cmdline.h                 |   14 +
->  kernel/printk/devkmsg.c                         |  309 +++
->  kernel/printk/kmsg_dump.c                       |  328 +++
->  kernel/printk/printk.c                          | 1515 ++++++++++++
->  kernel/printk/printk_log.c                      |  263 +++
->  kernel/printk/printk_log.h                      |  123 +
->  kernel/printk/printk_syslog.c                   |  354 +++
->  kernel/printk/printk_syslog.h                   |   12 +
+perf record -e tx-aborts ...
 
-It wouldn't hurt to describe the design here a bit.  How was the code
-partitioned and what is the role of each file?
+instead of
 
-That's reasonably obvious from the names, but some might wonder about
-the difference between printk_log and printk_syslog and how that
-division was decided upon.
+perf record -e cpu/tx-aborts/
 
+v2: Handle multiple events
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/util/parse-events.c |   37 +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 37 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index de1cb9e..8b08140 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -765,6 +765,23 @@ int parse_events_name(struct list_head *list, char *name)
+ 	return 0;
+ }
+ 
++static void str_append(char **s, int *len, const char *a)
++{
++	int olen = *s ? strlen(*s) : 0;
++	int nlen = olen + strlen(a) + 1;
++	if (*len < nlen) { 
++		*len = *len * 2;
++		if (*len < nlen)
++			*len = nlen;
++		*s = realloc(*s, *len);
++		if (!*s) 
++			exit(ENOMEM);
++		if (olen == 0)
++			**s = 0;
++	}
++	strcat(*s, a);
++}
++
+ static int parse_events__scanner(const char *str, void *data, int start_token)
+ {
+ 	YY_BUFFER_STATE buffer;
+@@ -785,6 +802,26 @@ static int parse_events__scanner(const char *str, void *data, int start_token)
+ 	parse_events__flush_buffer(buffer, scanner);
+ 	parse_events__delete_buffer(buffer, scanner);
+ 	parse_events_lex_destroy(scanner);
++
++	if (ret && !strchr(str, '/')) {
++		char *o = strdup(str);
++		char *s = NULL;
++		char *t = o;
++		char *p;
++		int len = 0;
++
++		if (!o)
++			return ret;
++		while ((p = strsep(&t, ",")) != NULL) {
++			if (s)
++				str_append(&s, &len, ",");
++			str_append(&s, &len, "cpu/");
++			str_append(&s, &len, p);
++			str_append(&s, &len, "/");
++		}
++		free(o);
++		ret = parse_events__scanner(s, data, start_token);
++	}
+ 	return ret;
+ }
+ 
+-- 
+1.7.7.6
 
