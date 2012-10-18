@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694Ab2JRXUg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 19:20:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3930 "EHLO mga09.intel.com"
+	id S964809Ab2JRXVc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 19:21:32 -0400
+Received: from mga09.intel.com ([134.134.136.24]:40050 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932504Ab2JRXUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 19:20:08 -0400
+	id S932423Ab2JRXUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 19:20:07 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,609,1344236400"; 
-   d="scan'208";a="207876597"
+   d="scan'208";a="207876591"
 From: Andi Kleen <andi@firstfloor.org>
 To: a.p.zijlstra@chello.nl
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org, acme@redhat.com,
         eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 27/34] perf, x86: Report the arch perfmon events in sysfs
-Date: Thu, 18 Oct 2012 16:19:35 -0700
-Message-Id: <1350602382-12771-28-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 10/34] perf, x86: Support LBR filtering by INTX/NOTX/ABORT
+Date: Thu, 18 Oct 2012 16:19:18 -0700
+Message-Id: <1350602382-12771-11-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
 References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
@@ -25,150 +25,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Report all the supported arch perfmon events as event aliases in
-/sys/devices/cpu/...
-
-This is needed to use the TSX intx,intx_cp attributes with
-symbolic events, at least for these basic events.
-
-Currently cpu/instructions/ doesn't work because instructions
-is also a generic event. It works for all events which are not
-the same as generic events though.
-
-Probably needs to be fixed in the perf events parser.
+Add LBR filtering for branch in transaction, branch not in transaction
+or transaction abort. This is exposed as new sample types.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c       |    7 ++++
- arch/x86/kernel/cpu/perf_event.h       |    1 +
- arch/x86/kernel/cpu/perf_event_intel.c |   56 ++++++++++++++++++++++++++++++++
- 3 files changed, 64 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |   31 +++++++++++++++++++++++++--
+ include/uapi/linux/perf_event.h            |    5 +++-
+ 2 files changed, 32 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index b0f4edd..a5a5bef 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1309,6 +1309,11 @@ static struct attribute_group x86_pmu_format_group = {
- 	.attrs = NULL,
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index ad5af13..31fe046 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -85,9 +85,13 @@ enum {
+ 	X86_BR_JMP      = 1 << 9, /* jump */
+ 	X86_BR_IRQ      = 1 << 10,/* hw interrupt or trap or fault */
+ 	X86_BR_IND_CALL = 1 << 11,/* indirect calls */
++	X86_BR_ABORT    = 1 << 12,/* transaction abort */
++	X86_BR_INTX     = 1 << 13,/* in transaction */
++	X86_BR_NOTX     = 1 << 14,/* not in transaction */
  };
  
-+static struct attribute_group x86_pmu_events_group = {
-+	.name = "events",
-+	.attrs = NULL,
-+};
+ #define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
++#define X86_BR_ANYTX (X86_BR_NOTX | X86_BR_INTX)
+ 
+ #define X86_BR_ANY       \
+ 	(X86_BR_CALL    |\
+@@ -99,6 +103,7 @@ enum {
+ 	 X86_BR_JCC     |\
+ 	 X86_BR_JMP	 |\
+ 	 X86_BR_IRQ	 |\
++	 X86_BR_ABORT	 |\
+ 	 X86_BR_IND_CALL)
+ 
+ #define X86_BR_ALL (X86_BR_PLM | X86_BR_ANY)
+@@ -347,6 +352,16 @@ static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
+ 
+ 	if (br_type & PERF_SAMPLE_BRANCH_IND_CALL)
+ 		mask |= X86_BR_IND_CALL;
 +
- static int __init init_hw_perf_events(void)
- {
- 	struct x86_pmu_quirk *quirk;
-@@ -1354,6 +1359,7 @@ static int __init init_hw_perf_events(void)
- 
- 	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
- 	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
-+	x86_pmu_events_group.attrs = x86_pmu.events_attrs;
- 
- 	pr_info("... version:                %d\n",     x86_pmu.version);
- 	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
-@@ -1646,6 +1652,7 @@ static struct attribute_group x86_pmu_attr_group = {
- static const struct attribute_group *x86_pmu_attr_groups[] = {
- 	&x86_pmu_attr_group,
- 	&x86_pmu_format_group,
-+	&x86_pmu_events_group,
- 	NULL,
- };
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 7b43503..d3b3bb7 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -358,6 +358,7 @@ struct x86_pmu {
++	if (br_type & PERF_SAMPLE_BRANCH_ABORT)
++		mask |= X86_BR_ABORT;
++
++	if (br_type & PERF_SAMPLE_BRANCH_INTX)
++		mask |= X86_BR_INTX;
++
++	if (br_type & PERF_SAMPLE_BRANCH_NOTX)
++		mask |= X86_BR_NOTX;
++
+ 	/*
+ 	 * stash actual user request into reg, it may
+ 	 * be used by fixup code for some CPU
+@@ -393,7 +408,8 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
+ 	/*
+ 	 * no LBR on this PMU
  	 */
- 	int		attr_rdpmc;
- 	struct attribute **format_attrs;
-+	struct attribute **events_attrs;
+-	if (!x86_pmu.lbr_nr || x86_pmu.intel_cap.lbr_format > LBR_FORMAT_MAX_KNOWN)
++	if (!x86_pmu.lbr_nr ||
++	    x86_pmu.intel_cap.lbr_format > LBR_FORMAT_MAX_KNOWN)
+ 		return -EOPNOTSUPP;
  
  	/*
- 	 * CPU Hotplug hooks
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 274ed2c..878814a 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -34,6 +34,18 @@ static u64 intel_perfmon_event_map[PERF_COUNT_HW_MAX] __read_mostly =
- 	[PERF_COUNT_HW_REF_CPU_CYCLES]		= 0x0300, /* pseudo-encoding */
+@@ -421,7 +437,7 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
+  * decoded (e.g., text page not present), then X86_BR_NONE is
+  * returned.
+  */
+-static int branch_type(unsigned long from, unsigned long to)
++static int branch_type(unsigned long from, unsigned long to, int abort)
+ {
+ 	struct insn insn;
+ 	void *addr;
+@@ -441,6 +457,9 @@ static int branch_type(unsigned long from, unsigned long to)
+ 	if (from == 0 || to == 0)
+ 		return X86_BR_NONE;
+ 
++	if (abort)
++		return X86_BR_ABORT | to_plm;
++
+ 	if (from_plm == X86_BR_USER) {
+ 		/*
+ 		 * can happen if measuring at the user level only
+@@ -577,7 +596,13 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
+ 		from = cpuc->lbr_entries[i].from;
+ 		to = cpuc->lbr_entries[i].to;
+ 
+-		type = branch_type(from, to);
++		type = branch_type(from, to, cpuc->lbr_entries[i].abort);
++		if (type != X86_BR_NONE && (br_sel & X86_BR_ANYTX)) {
++			if (cpuc->lbr_entries[i].intx)
++				type |= X86_BR_INTX;
++			else
++				type |= X86_BR_NOTX;
++		}
+ 
+ 		/* if type does not correspond, then discard */
+ 		if (type == X86_BR_NONE || (br_sel & type) != type) {
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 4f63c05..37a8c4d 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -155,8 +155,11 @@ enum perf_branch_sample_type {
+ 	PERF_SAMPLE_BRANCH_ANY_CALL	= 1U << 4, /* any call branch */
+ 	PERF_SAMPLE_BRANCH_ANY_RETURN	= 1U << 5, /* any return branch */
+ 	PERF_SAMPLE_BRANCH_IND_CALL	= 1U << 6, /* indirect calls */
++	PERF_SAMPLE_BRANCH_ABORT	= 1U << 7, /* transaction aborts */
++	PERF_SAMPLE_BRANCH_INTX		= 1U << 8, /* in transaction (flag) */
++	PERF_SAMPLE_BRANCH_NOTX		= 1U << 9, /* not in transaction (flag) */
+ 
+-	PERF_SAMPLE_BRANCH_MAX		= 1U << 7, /* non-ABI */
++	PERF_SAMPLE_BRANCH_MAX		= 1U << 10, /* non-ABI */
  };
  
-+static const char *intel_perfmon_names[PERF_COUNT_HW_MAX] __read_mostly =
-+{
-+	[PERF_COUNT_HW_CPU_CYCLES]		= "cycles",
-+	[PERF_COUNT_HW_INSTRUCTIONS]		= "instructions",
-+	[PERF_COUNT_HW_CACHE_REFERENCES]	= "cache-references",
-+	[PERF_COUNT_HW_CACHE_MISSES]		= "cache-misses",
-+	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= "branches",
-+	[PERF_COUNT_HW_BRANCH_MISSES]		= "branch-misses",
-+	[PERF_COUNT_HW_BUS_CYCLES]		= "bus-cycles",
-+	[PERF_COUNT_HW_REF_CPU_CYCLES]		= "ref-cycles"
-+};
-+
- static struct event_constraint intel_core_event_constraints[] __read_mostly =
- {
- 	INTEL_EVENT_CONSTRAINT(0x11, 0x2), /* FP_ASSIST */
-@@ -1987,6 +1999,48 @@ static __init void intel_nehalem_quirk(void)
- 	}
- }
- 
-+static struct attribute *intel_arch_events[PERF_COUNT_HW_MAX + 1] __read_mostly;
-+
-+struct event_attribute {
-+	struct device_attribute		attr;
-+	u64				config;
-+};
-+
-+static struct event_attribute intel_arch_event_attr[PERF_COUNT_HW_MAX];
-+
-+static ssize_t show_event(struct device *dev,
-+			  struct device_attribute *attr,
-+			  char *page)
-+{
-+	struct event_attribute *e = container_of(attr, struct event_attribute, attr);
-+
-+	return sprintf(page, "event=%#llx,umask=%#llx",
-+		       e->config & 0xff,
-+		       (e->config >> 8) & 0xff);
-+}
-+
-+static __init void intel_gen_arch_events(void)
-+{
-+	int j, i;
-+
-+	j = 0;
-+	for_each_clear_bit(i, x86_pmu.events_mask, ARRAY_SIZE(intel_arch_events_map)) {
-+		struct event_attribute *e = intel_arch_event_attr + j;
-+		struct device_attribute *d = &e->attr;
-+		struct attribute *a = &d->attr;
-+		int id = intel_arch_events_map[i].id;
-+
-+		e->config = intel_perfmon_event_map[id];
-+		intel_arch_events[j] = a;
-+		a->name = intel_perfmon_names[id];
-+		a->mode = 0444;
-+		d->show = show_event;
-+		j++;
-+	}
-+	intel_arch_events[j] = NULL;
-+	x86_pmu.events_attrs = intel_arch_events;
-+}
-+
- __init int intel_pmu_init(void)
- {
- 	union cpuid10_edx edx;
-@@ -2032,6 +2086,8 @@ __init int intel_pmu_init(void)
- 
- 	x86_pmu.max_pebs_events		= min_t(unsigned, MAX_PEBS_EVENTS, x86_pmu.num_counters);
- 
-+	intel_gen_arch_events();
-+
- 	/*
- 	 * Quirk: v2 perfmon does not report fixed-purpose events, so
- 	 * assume at least 3 events:
+ #define PERF_SAMPLE_BRANCH_PLM_ALL \
 -- 
 1.7.7.6
 
