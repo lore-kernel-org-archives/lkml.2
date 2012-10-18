@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab2JRXD5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 19:03:57 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56202 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750781Ab2JRXD4 convert rfc822-to-8bit (ORCPT
+	id S1752560Ab2JRXJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 19:09:58 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:49359 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039Ab2JRXJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 19:03:56 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: "cbou@mail.ru" <cbou@mail.ru>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Jonathan Cameron <jic23@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 3/3] lp8788-charger: fix wrong ADC conversion
-Thread-Topic: [PATCH 3/3] lp8788-charger: fix wrong ADC conversion
-Thread-Index: Ac2s93gDQSeJyP+TRoq5NeyBztAjJf//0CQA//63kgA=
-Date: Thu, 18 Oct 2012 23:03:38 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F641790DF@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F64178FA7@DQHE02.ent.ti.com>
- <507FE604.8070404@metafoo.de>
-In-Reply-To: <507FE604.8070404@metafoo.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 18 Oct 2012 19:09:57 -0400
+X-Originating-IP: 217.70.178.152
+X-Originating-IP: 173.246.103.110
+Date: Thu, 18 Oct 2012 16:09:49 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Ed Cashin <ecashin@coraid.com>
+Cc: akpm@linux-foundation.org, rob@landley.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-sparse@vger.kernel.org,
+        sam@ravnborg.org, sparse@chrisli.org, ak@linux.intel.com
+Subject: Re: [PATCH] Documentation/sparse.txt: document context annotations
+ for lock checking
+Message-ID: <20121018230948.GC10627@jtriplet-mobl1>
+References: <1350570446.22036@cat.he.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350570446.22036@cat.he.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
-> Sent: Thursday, October 18, 2012 8:21 PM
-> To: Kim, Milo
-> Cc: cbou@mail.ru; Anton Vorontsov; Jonathan Cameron; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH 3/3] lp8788-charger: fix wrong ADC conversion
- 
-> >
-> > +	ret = iio_read_channel_raw(channel, &raw);
-> > +	if (ret != IIO_VAL_INT)
-> > +		return -EINVAL;
-> > +
-> >  	ret = iio_read_channel_scale(channel, &scaleint, &scalepart);
-> >  	if (ret != IIO_VAL_INT_PLUS_MICRO)
-> >  		return -EINVAL;
-> >
-> >  	/* unit: mV */
-> > -	*result = (scaleint + scalepart * 1000000) / 1000;
-> > +	tmp = raw * scaleint + div_u64(raw * scalepart, 1000000L);
-> > +	*result = (unsigned int)tmp;
+On Thu, Oct 18, 2012 at 07:27:26AM -0700, Ed Cashin wrote:
+> The context feature of sparse is used with the Linux kernel
+> sources to check for imbalanced uses of locks.  Document the
+> annotations defined in include/linux/compiler.h that tell sparse
+> what to expect when a lock is held on function entry, exit, or
+> both.
 > 
+> Signed-off-by: Ed Cashin <ecashin@coraid.com>
+
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+
+>  Documentation/sparse.txt |   18 ++++++++++++++++++
+>  1 files changed, 18 insertions(+), 0 deletions(-)
 > 
-> We now have a function in the IIO core which does the sampling +
-> conversion
-> in one step: iio_read_channel_processed. This basically allows you to
-> reduce
-> this function to
+> diff --git a/Documentation/sparse.txt b/Documentation/sparse.txt
+> index 4909d41..eceab13 100644
+> --- a/Documentation/sparse.txt
+> +++ b/Documentation/sparse.txt
+> @@ -49,6 +49,24 @@ be generated without __CHECK_ENDIAN__.
+>  __bitwise - noisy stuff; in particular, __le*/__be* are that.  We really
+>  don't want to drown in noise unless we'd explicitly asked for it.
+>  
+> +Using sparse for lock checking
+> +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> +
+> +The following macros are undefined for gcc and defined during a sparse
+> +run to use the "context" tracking feature of sparse, applied to
+> +locking.  These annotations tell sparse when a lock is held, with
+> +regard to the annotated function's entry and exit.
+> +
+> +__must_hold - The specified lock is held on function entry and exit.
+> +
+> +__acquires - The specified lock is held on function exit, but not entry.
+> +
+> +__releases - The specified lock is held on function entry, but not exit.
+> +
+> +If the function enters and exits without the lock held, acquiring and
+> +releasing the lock inside the function in a balanced way, no
+> +annotation is needed.  The tree annotations above are for cases where
+> +sparse would otherwise report a context imbalance.
+>  
+>  Getting sparse
+>  ~~~~~~~~~~~~~~
+> -- 
+> 1.7.1
 > 
-> 	return iio_read_channel_processed(channel, result);
-
-I was hesitating it before sending this patch. :)
-Currently, LP8788 ADC driver has no iio channel info for PROCESSED.
-Thus, I'll add it in the LP8788 ADC driver first.
-Then I'll send the patch for lp8788-charger again.
-
-Thanks for your comment!
-
-Best Regards,
-Milo
