@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab2JRN3O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 09:29:14 -0400
+	id S1756065Ab2JRN3L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 09:29:11 -0400
 Received: from mail-ie0-f174.google.com ([209.85.223.174]:33242 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755293Ab2JRNZ5 (ORCPT
+	with ESMTP id S1755795Ab2JRN0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 09:25:57 -0400
+	Thu, 18 Oct 2012 09:26:00 -0400
 From: Matt Porter <mporter@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
@@ -27,9 +27,9 @@ Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
 	<spi-devel-general@lists.sourceforge.net>,
         Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [RFC PATCH v3 07/16] dmaengine: edma: Add TI EDMA device tree binding
-Date: Thu, 18 Oct 2012 09:26:46 -0400
-Message-Id: <1350566815-409-8-git-send-email-mporter@ti.com>
+Subject: [RFC PATCH v3 09/16] dmaengine: add dma_request_slave_channel_compat()
+Date: Thu, 18 Oct 2012 09:26:48 -0400
+Message-Id: <1350566815-409-10-git-send-email-mporter@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1350566815-409-1-git-send-email-mporter@ti.com>
 References: <1350566815-409-1-git-send-email-mporter@ti.com>
@@ -37,72 +37,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The binding definition is based on the generic DMA controller
-binding.
+Adds a dma_request_slave_channel_compat() wrapper which accepts
+both the arguments from dma_request_channel() and
+dma_request_slave_channel(). Based on whether the driver is
+instantiated via DT, the appropriate channel request call will be
+made.
 
+This allows for a much cleaner migration of drivers to the
+dmaengine DT API as platforms continue to be mixed between those
+that boot using DT and those that do not.
+
+Suggested-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- Documentation/devicetree/bindings/dma/ti-edma.txt |   51 +++++++++++++++++++++
- 1 file changed, 51 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
+ include/linux/dmaengine.h |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/dma/ti-edma.txt b/Documentation/devicetree/bindings/dma/ti-edma.txt
-new file mode 100644
-index 0000000..3344345
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/ti-edma.txt
-@@ -0,0 +1,51 @@
-+TI EDMA
-+
-+Required properties:
-+- compatible : "ti,edma3"
-+- ti,hwmods: Name of the hwmods associated to the EDMA
-+- ti,edma-regions: Number of regions
-+- ti,edma-slots: Number of slots
-+- ti,edma-queue-tc-map: List of transfer control to queue mappings
-+- ti,edma-queue-priority-map: List of queue priority mappings
-+- ti,edma-default-queue: Default queue value
-+
-+Optional properties:
-+- ti,edma-reserved-channels: List of reserved channel regions
-+- ti,edma-reserved-slots: List of reserved slot regions
-+- ti,edma-xbar-event-map: Crossbar event to channel map
-+
-+Example:
-+
-+edma: edma@49000000 {
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+	reg = <0x49000000 0x10000>;
-+	interrupt-parent = <&intc>;
-+	interrupts = <12 13 14>;
-+	compatible = "ti,edma3";
-+	ti,hwmods = "tpcc", "tptc0", "tptc1", "tptc2";
-+	#dma-cells = <1>;
-+	dma-channels = <64>;
-+	ti,edma-regions = <4>;
-+	ti,edma-slots = <256>;
-+	ti,edma-reserved-channels = <0  2
-+				     14 2
-+				     26 6
-+				     48 4
-+				     56 8>;
-+	ti,edma-reserved-slots = <0  2
-+				  14 2
-+				  26 6
-+				  48 4
-+				  56 8
-+				  64 127>;
-+	ti,edma-queue-tc-map = <0 0
-+				1 1
-+				2 2>;
-+	ti,edma-queue-priority-map = <0 0
-+				      1 1
-+				      2 2>;
-+	ti,edma-default-queue = <0>;
-+	ti,edma-xbar-event-map = <1 12
-+				  2 13>;
-+};
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index c88f302..11d9e25 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -1007,6 +1007,16 @@ void dma_run_dependencies(struct dma_async_tx_descriptor *tx);
+ struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type);
+ struct dma_chan *net_dma_find_channel(void);
+ #define dma_request_channel(mask, x, y) __dma_request_channel(&(mask), x, y)
++static inline struct dma_chan
++*dma_request_slave_channel_compat(dma_cap_mask_t mask, dma_filter_fn fn,
++				  void *fn_param, struct device *dev,
++				  char *name)
++{
++	if (dev->of_node)
++		return dma_request_slave_channel(dev, name);
++	else
++		return dma_request_channel(mask, fn, fn_param);
++}
+ 
+ /* --- Helper iov-locking functions --- */
+ 
 -- 
 1.7.9.5
 
