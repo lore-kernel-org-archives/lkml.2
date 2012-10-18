@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235Ab2JRO10 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 10:27:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45324 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755810Ab2JRO1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 10:27:24 -0400
-Message-ID: <508011AD.5080307@zytor.com>
-Date: Thu, 18 Oct 2012 07:26:53 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
-MIME-Version: 1.0
-To: mtk.manpages@gmail.com
-CC: Rusty Russell <rusty@rustcorp.com.au>, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        James Morris <james.l.morris@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
-References: <1348179300-11653-1-git-send-email-keescook@chromium.org> <CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com> <50749DE8.7010703@zytor.com> <CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com> <5074A0AB.8040207@zytor.com> <87d30o7iy6.fsf@rustcorp.com.au> <507F848F.50707@zytor.com> <CAKgNAki+KV=Nh8D3La50uXpWv7PA5T-oPYJwK-PkOv5vMg0AqA@mail.gmail.com>
-In-Reply-To: <CAKgNAki+KV=Nh8D3La50uXpWv7PA5T-oPYJwK-PkOv5vMg0AqA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756268Ab2JRO1c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 10:27:32 -0400
+Received: from noserose.net ([66.220.18.76]:49036 "HELO noserose.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756241Ab2JRO13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 10:27:29 -0400
+Message-Id: <1350570446.22036@cat.he.net>
+Date: Thu, 18 Oct 2012 07:27:26 -0700
+From: Ed Cashin <ecashin@coraid.com>
+Subject: [PATCH] Documentation/sparse.txt: document context annotations for lock checking
+To: akpm@linux-foundation.org
+Cc: ecashin@coraid.com, josh@joshtriplett.org, rob@landley.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-sparse@vger.kernel.org, sam@ravnborg.org, sparse@chrisli.org,
+        ak@linux.intel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2012 01:05 AM, Michael Kerrisk (man-pages) wrote:
->>
->> So perhaps what we *should* have is something that points to the module
->> to a (buffer, length) in userspace, and the equivalent of the current
->> init_module() would be open() + mmap() + minit_module() + close()?
->
-> So, I don't get it. What are the args you propose for of minit_module()?
->
+The context feature of sparse is used with the Linux kernel
+sources to check for imbalanced uses of locks.  Document the
+annotations defined in include/linux/compiler.h that tell sparse
+what to expect when a lock is held on function entry, exit, or
+both.
 
-Nevermind, this is what the current init_module() already takes.
+Signed-off-by: Ed Cashin <ecashin@coraid.com>
+---
+ Documentation/sparse.txt |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
 
-So it sounds like Rusty is objecting to the very notion of tying a 
-module to a file descriptor the way the proposed finit_module() system 
-call does -- I was confused about the functioning of the *current* 
-init_module() system call.
-
-Given that, I have to say I now seriously question the value of 
-finit_module().  The kernel can trivially discover if the pointed-to 
-memory area is a MAP_SHARED mmap() of a file descriptor and if so which 
-file descriptor... why can't we handle this behind the scenes?
-
-	-hpa
-
-P.S. the man page for init_module(2) is seriously out of date...
-
+diff --git a/Documentation/sparse.txt b/Documentation/sparse.txt
+index 4909d41..eceab13 100644
+--- a/Documentation/sparse.txt
++++ b/Documentation/sparse.txt
+@@ -49,6 +49,24 @@ be generated without __CHECK_ENDIAN__.
+ __bitwise - noisy stuff; in particular, __le*/__be* are that.  We really
+ don't want to drown in noise unless we'd explicitly asked for it.
+ 
++Using sparse for lock checking
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++
++The following macros are undefined for gcc and defined during a sparse
++run to use the "context" tracking feature of sparse, applied to
++locking.  These annotations tell sparse when a lock is held, with
++regard to the annotated function's entry and exit.
++
++__must_hold - The specified lock is held on function entry and exit.
++
++__acquires - The specified lock is held on function exit, but not entry.
++
++__releases - The specified lock is held on function entry, but not exit.
++
++If the function enters and exits without the lock held, acquiring and
++releasing the lock inside the function in a balanced way, no
++annotation is needed.  The tree annotations above are for cases where
++sparse would otherwise report a context imbalance.
+ 
+ Getting sparse
+ ~~~~~~~~~~~~~~
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.1
 
