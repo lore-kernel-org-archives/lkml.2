@@ -1,111 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab2JRGMJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 02:12:09 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34178 "EHLO comal.ext.ti.com"
+	id S1754401Ab2JRGO6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 02:14:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47881 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754457Ab2JRGMG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 02:12:06 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "cbou@mail.ru" <cbou@mail.ru>
-CC: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] lp8788-charger: fix wrong ADC conversion
-Thread-Topic: [PATCH 3/3] lp8788-charger: fix wrong ADC conversion
-Thread-Index: Ac2s93gDQSeJyP+TRoq5NeyBztAjJQ==
-Date: Thu, 18 Oct 2012 06:11:53 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F64178FA7@DQHE02.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754218Ab2JRGO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 02:14:57 -0400
+Date: Thu, 18 Oct 2012 08:14:51 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        devel@openvz.org, linux-kernel@vger.kernel.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v5 09/14] memcg: kmem accounting lifecycle management
+Message-ID: <20121018061451.GA21277@dhcp22.suse.cz>
+References: <1350382611-20579-1-git-send-email-glommer@parallels.com>
+ <1350382611-20579-10-git-send-email-glommer@parallels.com>
+ <alpine.DEB.2.00.1210171624540.20813@chino.kir.corp.google.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1210171624540.20813@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- To get the battery voltage and temperature, IIO ADC functions are used.
- LP8788 ADC driver provides RAW and SCALE channel information.
- Both RAW with SCALE values are used for the ADC calculation.
- The scale is micro unit, additional conversions are required in each case.
- This patch fixes wrong ADC result.
+On Wed 17-10-12 16:28:38, David Rientjes wrote:
+> On Tue, 16 Oct 2012, Glauber Costa wrote:
+[...]
+> > +
+> > +static void memcg_kmem_mark_dead(struct mem_cgroup *memcg)
+> > +{
+> > +	if (test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_accounted))
+> > +		set_bit(KMEM_ACCOUNTED_DEAD, &memcg->kmem_accounted);
+> > +}
+> 
+> The set_bit() doesn't happen atomically with the test_bit(), what 
+> synchronization is required for this?
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- drivers/power/lp8788-charger.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/power/lp8788-charger.c b/drivers/power/lp8788-charger.c
-index 02fc9ab..3c739e6 100644
---- a/drivers/power/lp8788-charger.c
-+++ b/drivers/power/lp8788-charger.c
-@@ -239,19 +239,26 @@ static int lp8788_get_vbatt_adc(struct lp8788_charger *pchg,
- 				unsigned int *result)
- {
- 	struct iio_channel *channel = pchg->chan[LP8788_VBATT];
-+	int raw;
- 	int scaleint;
- 	int scalepart;
- 	int ret;
-+	unsigned long tmp;
- 
- 	if (!channel)
- 		return -EINVAL;
- 
-+	ret = iio_read_channel_raw(channel, &raw);
-+	if (ret != IIO_VAL_INT)
-+		return -EINVAL;
-+
- 	ret = iio_read_channel_scale(channel, &scaleint, &scalepart);
- 	if (ret != IIO_VAL_INT_PLUS_MICRO)
- 		return -EINVAL;
- 
- 	/* unit: mV */
--	*result = (scaleint + scalepart * 1000000) / 1000;
-+	tmp = raw * scaleint + div_u64(raw * scalepart, 1000000L);
-+	*result = (unsigned int)tmp;
- 
- 	return 0;
- }
-@@ -304,19 +311,26 @@ static int lp8788_get_battery_temperature(struct lp8788_charger *pchg,
- 				union power_supply_propval *val)
- {
- 	struct iio_channel *channel = pchg->chan[LP8788_BATT_TEMP];
-+	int raw;
- 	int scaleint;
- 	int scalepart;
- 	int ret;
-+	unsigned long tmp;
- 
- 	if (!channel)
- 		return -EINVAL;
- 
-+	ret = iio_read_channel_raw(channel, &raw);
-+	if (ret != IIO_VAL_INT)
-+		return -EINVAL;
-+
- 	ret = iio_read_channel_scale(channel, &scaleint, &scalepart);
- 	if (ret != IIO_VAL_INT_PLUS_MICRO)
- 		return -EINVAL;
- 
- 	/* unit: 0.1 'C */
--	val->intval = (scaleint + scalepart * 1000000) / 100;
-+	tmp = raw * scaleint + div_u64(raw * scalepart, 1000000L);
-+	val->intval = (unsigned int)tmp * 10;
- 
- 	return 0;
- }
+The group has to be active in order to become dead so the ordering is
+natural and you do not need to test&set atomicaly. Also once a group
+becomes active it is always marked that way until it goes away.
 -- 
-1.7.9.5
-
-
-Best Regards,
-Milo
-
-
+Michal Hocko
+SUSE Labs
