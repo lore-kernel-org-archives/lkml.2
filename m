@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932083Ab2JRKuN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 06:50:13 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:8055 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754926Ab2JRKuL (ORCPT
+	id S932141Ab2JRKva (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 06:51:30 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:60329 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932075Ab2JRKv3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 06:50:11 -0400
-X-IronPort-AV: E=Sophos;i="4.80,606,1344211200"; 
-   d="scan'208";a="15251311"
-Message-ID: <1350557371.2460.117.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH V3 4/6]: PVH:bootup and setup related
- changes.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 18 Oct 2012 11:49:31 +0100
-In-Reply-To: <20121017173223.7ea1901d@mantra.us.oracle.com>
-References: <20121017173223.7ea1901d@mantra.us.oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+	Thu, 18 Oct 2012 06:51:29 -0400
+X-Auth-Info: FMHCUiCY52hOon0mh70EyuxmoTITr9TiDYE035paIXs=
+From: Marek Vasut <marex@denx.de>
+To: Huang Shijie <b32955@freescale.com>
+Subject: Re: [PATCH] dma: add new DMA control commands
+Date: Thu, 18 Oct 2012 12:51:14 +0200
+User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Vinod Koul <vinod.koul@linux.intel.com>, djbw@fb.com, khali@linux-fr.org,
+        ben-linux@fluff.org, w.sang@pengutronix.de, cjb@laptop.org,
+        dwmw2@infradead.org, lrg@ti.com, broonie@opensource.wolfsonmicro.com,
+        perex@perex.cz, tiwai@suse.de, shawn.guo@linaro.org,
+        artem.bityutskiy@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-mtd@lists.infradead.org, alsa-devel@alsa-project.org,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        Huang Shijie <shijie8@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+References: <1350538335-29026-1-git-send-email-b32955@freescale.com> <201210181049.21556.marex@denx.de> <507FC827.40601@freescale.com>
+In-Reply-To: <507FC827.40601@freescale.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201210181251.15116.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-18 at 01:32 +0100, Mukesh Rathor wrote:
+Dear Huang Shijie,
+
+> 于 2012年10月18日 16:49, Marek Vasut 写道:
+> > Dear Huang Shijie,
+> > 
+> >> 于 2012年10月18日 16:16, Marek Vasut 写道:
+> >>> So we can't stream data from the chip? About time to adjust the MTD
+> >>> framework to allow that. Maybe implement a command queue?
+> >> 
+> >> IMHO, it's not possible. Because the READ-PAGE(00h-30h) command needs to
+> >> check the busy status
+> >> which means we have to stop in the middle, so we can not chain the all
+> >> the read-pages DMA commands.
+> > 
+> > Can the DMA not branch?
 > 
-> +       /* PVH TBD/FIXME: vcpu info placement in phase 2 */
-> +       if (xen_pvh_domain())
-> +               return; 
+> it's too complicated to the MTD layer, as well as the gpmi driver.
 
-Do you have a list of future work before PVH is "feature complete"
-somewhere?
+Can you please elaborate ?
 
-I wouldn't count vcpu placement specifically against completeness but
-the TBD triggered the thought.
-
-For example I was reviewing a migration patch this morning and was
-wondering if that sort of thing had been investigated yet.
-
-Ian.
-
+Best regards,
+Marek Vasut
