@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab2JRU1D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 16:27:03 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:56788 "EHLO
+	id S1755588Ab2JRU1N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 16:27:13 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:56837 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754232Ab2JRU0y (ORCPT
+	with ESMTP id S1755190Ab2JRU1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 16:26:54 -0400
+	Thu, 18 Oct 2012 16:27:02 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 05/21] TTY: move devpts kill to pty
-Date: Thu, 18 Oct 2012 22:26:31 +0200
-Message-Id: <1350592007-9216-6-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 17/21] TTY: n_tty, propagate n_tty_data
+Date: Thu, 18 Oct 2012 22:26:43 +0200
+Message-Id: <1350592007-9216-18-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.12.3
 In-Reply-To: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
 References: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
@@ -20,89 +20,485 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have control over tty->driver_data in pty, we can just
-kill the /dev/pts/ in pty code too. Namely, in ->shutdown hook of
-tty. For pty, this is called only once, for whichever end is closed
-last. But we don't care, both driver_data are the inode as it used to
-be till now.
+In some funtions we need only n_tty_data, so pass it down directly in
+case tty is not needed there.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/tty/pty.c    | 9 +++++++++
- drivers/tty/tty_io.c | 5 -----
- 2 files changed, 9 insertions(+), 5 deletions(-)
+ drivers/tty/n_tty.c | 171 ++++++++++++++++++++++++----------------------------
+ 1 file changed, 78 insertions(+), 93 deletions(-)
 
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index 559e5b2..2728afe 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -363,6 +363,12 @@ err:
- 	return retval;
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index 0a6fcda..531e539 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -153,10 +153,8 @@ static void n_tty_set_room(struct tty_struct *tty)
+ 		schedule_work(&tty->buf.work);
  }
  
-+/* this is called once with whichever end is closed last */
-+static void pty_unix98_shutdown(struct tty_struct *tty)
-+{
-+	devpts_kill_index(tty->driver_data, tty->index);
-+}
-+
- static void pty_cleanup(struct tty_struct *tty)
+-static void put_tty_queue_nolock(unsigned char c, struct tty_struct *tty)
++static void put_tty_queue_nolock(unsigned char c, struct n_tty_data *ldata)
  {
- 	kfree(tty->port);
-@@ -578,6 +584,7 @@ static const struct tty_operations ptm_unix98_ops = {
- 	.set_termios = pty_set_termios,
- 	.ioctl = pty_unix98_ioctl,
- 	.resize = pty_resize,
-+	.shutdown = pty_unix98_shutdown,
- 	.cleanup = pty_cleanup
- };
+-	struct n_tty_data *ldata = tty->disc_data;
+-
+ 	if (ldata->read_cnt < N_TTY_BUF_SIZE) {
+ 		ldata->read_buf[ldata->read_head] = c;
+ 		ldata->read_head = (ldata->read_head + 1) & (N_TTY_BUF_SIZE-1);
+@@ -167,23 +165,22 @@ static void put_tty_queue_nolock(unsigned char c, struct tty_struct *tty)
+ /**
+  *	put_tty_queue		-	add character to tty
+  *	@c: character
+- *	@tty: tty device
++ *	@ldata: n_tty data
+  *
+  *	Add a character to the tty read_buf queue. This is done under the
+  *	read_lock to serialize character addition and also to protect us
+  *	against parallel reads or flushes
+  */
  
-@@ -593,6 +600,7 @@ static const struct tty_operations pty_unix98_ops = {
- 	.chars_in_buffer = pty_chars_in_buffer,
- 	.unthrottle = pty_unthrottle,
- 	.set_termios = pty_set_termios,
-+	.shutdown = pty_unix98_shutdown,
- 	.cleanup = pty_cleanup,
- };
- 
-@@ -661,6 +669,7 @@ static int ptmx_open(struct inode *inode, struct file *filp)
- 		goto err_release;
- 
- 	tty_unlock(tty);
-+	tty->driver_data = inode;
- 	tty->link->driver_data = slave_inode;
- 	return 0;
- err_release:
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 2ea176b..e835a5b8 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1625,7 +1625,6 @@ int tty_release(struct inode *inode, struct file *filp)
- 	struct tty_struct *tty = file_tty(filp);
- 	struct tty_struct *o_tty;
- 	int	pty_master, tty_closing, o_tty_closing, do_sleep;
--	int	devpts;
- 	int	idx;
- 	char	buf[64];
- 
-@@ -1640,7 +1639,6 @@ int tty_release(struct inode *inode, struct file *filp)
- 	idx = tty->index;
- 	pty_master = (tty->driver->type == TTY_DRIVER_TYPE_PTY &&
- 		      tty->driver->subtype == PTY_TYPE_MASTER);
--	devpts = (tty->driver->flags & TTY_DRIVER_DEVPTS_MEM) != 0;
- 	/* Review: parallel close */
- 	o_tty = tty->link;
- 
-@@ -1799,9 +1797,6 @@ int tty_release(struct inode *inode, struct file *filp)
- 	release_tty(tty, idx);
- 	mutex_unlock(&tty_mutex);
- 
--	/* Make this pty number available for reallocation */
--	if (devpts)
--		devpts_kill_index(inode, idx);
- 	return 0;
+-static void put_tty_queue(unsigned char c, struct tty_struct *tty)
++static void put_tty_queue(unsigned char c, struct n_tty_data *ldata)
+ {
+-	struct n_tty_data *ldata = tty->disc_data;
+ 	unsigned long flags;
+ 	/*
+ 	 *	The problem of stomping on the buffers ends here.
+ 	 *	Why didn't anyone see this one coming? --AJK
+ 	*/
+ 	spin_lock_irqsave(&ldata->read_lock, flags);
+-	put_tty_queue_nolock(c, tty);
++	put_tty_queue_nolock(c, ldata);
+ 	spin_unlock_irqrestore(&ldata->read_lock, flags);
  }
  
+@@ -699,16 +696,15 @@ static void process_echoes(struct tty_struct *tty)
+ /**
+  *	add_echo_byte	-	add a byte to the echo buffer
+  *	@c: unicode byte to echo
+- *	@tty: terminal device
++ *	@ldata: n_tty data
+  *
+  *	Add a character or operation byte to the echo buffer.
+  *
+  *	Should be called under the echo lock to protect the echo buffer.
+  */
+ 
+-static void add_echo_byte(unsigned char c, struct tty_struct *tty)
++static void add_echo_byte(unsigned char c, struct n_tty_data *ldata)
+ {
+-	struct n_tty_data *ldata = tty->disc_data;
+ 	int	new_byte_pos;
+ 
+ 	if (ldata->echo_cnt == N_TTY_BUF_SIZE) {
+@@ -746,28 +742,24 @@ static void add_echo_byte(unsigned char c, struct tty_struct *tty)
+ 
+ /**
+  *	echo_move_back_col	-	add operation to move back a column
+- *	@tty: terminal device
++ *	@ldata: n_tty data
+  *
+  *	Add an operation to the echo buffer to move back one column.
+  *
+  *	Locking: echo_lock to protect the echo buffer
+  */
+ 
+-static void echo_move_back_col(struct tty_struct *tty)
++static void echo_move_back_col(struct n_tty_data *ldata)
+ {
+-	struct n_tty_data *ldata = tty->disc_data;
+-
+ 	mutex_lock(&ldata->echo_lock);
+-
+-	add_echo_byte(ECHO_OP_START, tty);
+-	add_echo_byte(ECHO_OP_MOVE_BACK_COL, tty);
+-
++	add_echo_byte(ECHO_OP_START, ldata);
++	add_echo_byte(ECHO_OP_MOVE_BACK_COL, ldata);
+ 	mutex_unlock(&ldata->echo_lock);
+ }
+ 
+ /**
+  *	echo_set_canon_col	-	add operation to set the canon column
+- *	@tty: terminal device
++ *	@ldata: n_tty data
+  *
+  *	Add an operation to the echo buffer to set the canon column
+  *	to the current column.
+@@ -775,15 +767,11 @@ static void echo_move_back_col(struct tty_struct *tty)
+  *	Locking: echo_lock to protect the echo buffer
+  */
+ 
+-static void echo_set_canon_col(struct tty_struct *tty)
++static void echo_set_canon_col(struct n_tty_data *ldata)
+ {
+-	struct n_tty_data *ldata = tty->disc_data;
+-
+ 	mutex_lock(&ldata->echo_lock);
+-
+-	add_echo_byte(ECHO_OP_START, tty);
+-	add_echo_byte(ECHO_OP_SET_CANON_COL, tty);
+-
++	add_echo_byte(ECHO_OP_START, ldata);
++	add_echo_byte(ECHO_OP_SET_CANON_COL, ldata);
+ 	mutex_unlock(&ldata->echo_lock);
+ }
+ 
+@@ -791,7 +779,7 @@ static void echo_set_canon_col(struct tty_struct *tty)
+  *	echo_erase_tab	-	add operation to erase a tab
+  *	@num_chars: number of character columns already used
+  *	@after_tab: true if num_chars starts after a previous tab
+- *	@tty: terminal device
++ *	@ldata: n_tty data
+  *
+  *	Add an operation to the echo buffer to erase a tab.
+  *
+@@ -805,14 +793,12 @@ static void echo_set_canon_col(struct tty_struct *tty)
+  */
+ 
+ static void echo_erase_tab(unsigned int num_chars, int after_tab,
+-			   struct tty_struct *tty)
++			   struct n_tty_data *ldata)
+ {
+-	struct n_tty_data *ldata = tty->disc_data;
+-
+ 	mutex_lock(&ldata->echo_lock);
+ 
+-	add_echo_byte(ECHO_OP_START, tty);
+-	add_echo_byte(ECHO_OP_ERASE_TAB, tty);
++	add_echo_byte(ECHO_OP_START, ldata);
++	add_echo_byte(ECHO_OP_ERASE_TAB, ldata);
+ 
+ 	/* We only need to know this modulo 8 (tab spacing) */
+ 	num_chars &= 7;
+@@ -821,7 +807,7 @@ static void echo_erase_tab(unsigned int num_chars, int after_tab,
+ 	if (after_tab)
+ 		num_chars |= 0x80;
+ 
+-	add_echo_byte(num_chars, tty);
++	add_echo_byte(num_chars, ldata);
+ 
+ 	mutex_unlock(&ldata->echo_lock);
+ }
+@@ -839,19 +825,15 @@ static void echo_erase_tab(unsigned int num_chars, int after_tab,
+  *	Locking: echo_lock to protect the echo buffer
+  */
+ 
+-static void echo_char_raw(unsigned char c, struct tty_struct *tty)
++static void echo_char_raw(unsigned char c, struct n_tty_data *ldata)
+ {
+-	struct n_tty_data *ldata = tty->disc_data;
+-
+ 	mutex_lock(&ldata->echo_lock);
+-
+ 	if (c == ECHO_OP_START) {
+-		add_echo_byte(ECHO_OP_START, tty);
+-		add_echo_byte(ECHO_OP_START, tty);
++		add_echo_byte(ECHO_OP_START, ldata);
++		add_echo_byte(ECHO_OP_START, ldata);
+ 	} else {
+-		add_echo_byte(c, tty);
++		add_echo_byte(c, ldata);
+ 	}
+-
+ 	mutex_unlock(&ldata->echo_lock);
+ }
+ 
+@@ -876,12 +858,12 @@ static void echo_char(unsigned char c, struct tty_struct *tty)
+ 	mutex_lock(&ldata->echo_lock);
+ 
+ 	if (c == ECHO_OP_START) {
+-		add_echo_byte(ECHO_OP_START, tty);
+-		add_echo_byte(ECHO_OP_START, tty);
++		add_echo_byte(ECHO_OP_START, ldata);
++		add_echo_byte(ECHO_OP_START, ldata);
+ 	} else {
+ 		if (L_ECHOCTL(tty) && iscntrl(c) && c != '\t')
+-			add_echo_byte(ECHO_OP_START, tty);
+-		add_echo_byte(c, tty);
++			add_echo_byte(ECHO_OP_START, ldata);
++		add_echo_byte(c, ldata);
+ 	}
+ 
+ 	mutex_unlock(&ldata->echo_lock);
+@@ -889,14 +871,13 @@ static void echo_char(unsigned char c, struct tty_struct *tty)
+ 
+ /**
+  *	finish_erasing		-	complete erase
+- *	@tty: tty doing the erase
++ *	@ldata: n_tty data
+  */
+ 
+-static inline void finish_erasing(struct tty_struct *tty)
++static inline void finish_erasing(struct n_tty_data *ldata)
+ {
+-	struct n_tty_data *ldata = tty->disc_data;
+ 	if (ldata->erasing) {
+-		echo_char_raw('/', tty);
++		echo_char_raw('/', ldata);
+ 		ldata->erasing = 0;
+ 	}
+ }
+@@ -944,11 +925,11 @@ static void eraser(unsigned char c, struct tty_struct *tty)
+ 					  (N_TTY_BUF_SIZE - 1));
+ 			ldata->read_head = ldata->canon_head;
+ 			spin_unlock_irqrestore(&ldata->read_lock, flags);
+-			finish_erasing(tty);
++			finish_erasing(ldata);
+ 			echo_char(KILL_CHAR(tty), tty);
+ 			/* Add a newline if ECHOK is on and ECHOKE is off. */
+ 			if (L_ECHOK(tty))
+-				echo_char_raw('\n', tty);
++				echo_char_raw('\n', ldata);
+ 			return;
+ 		}
+ 		kill_type = KILL;
+@@ -984,15 +965,16 @@ static void eraser(unsigned char c, struct tty_struct *tty)
+ 		if (L_ECHO(tty)) {
+ 			if (L_ECHOPRT(tty)) {
+ 				if (!ldata->erasing) {
+-					echo_char_raw('\\', tty);
++					echo_char_raw('\\', ldata);
+ 					ldata->erasing = 1;
+ 				}
+ 				/* if cnt > 1, output a multi-byte character */
+ 				echo_char(c, tty);
+ 				while (--cnt > 0) {
+ 					head = (head+1) & (N_TTY_BUF_SIZE-1);
+-					echo_char_raw(ldata->read_buf[head], tty);
+-					echo_move_back_col(tty);
++					echo_char_raw(ldata->read_buf[head],
++							ldata);
++					echo_move_back_col(ldata);
+ 				}
+ 			} else if (kill_type == ERASE && !L_ECHOE(tty)) {
+ 				echo_char(ERASE_CHAR(tty), tty);
+@@ -1021,17 +1003,17 @@ static void eraser(unsigned char c, struct tty_struct *tty)
+ 						num_chars++;
+ 					}
+ 				}
+-				echo_erase_tab(num_chars, after_tab, tty);
++				echo_erase_tab(num_chars, after_tab, ldata);
+ 			} else {
+ 				if (iscntrl(c) && L_ECHOCTL(tty)) {
+-					echo_char_raw('\b', tty);
+-					echo_char_raw(' ', tty);
+-					echo_char_raw('\b', tty);
++					echo_char_raw('\b', ldata);
++					echo_char_raw(' ', ldata);
++					echo_char_raw('\b', ldata);
+ 				}
+ 				if (!iscntrl(c) || L_ECHOCTL(tty)) {
+-					echo_char_raw('\b', tty);
+-					echo_char_raw(' ', tty);
+-					echo_char_raw('\b', tty);
++					echo_char_raw('\b', ldata);
++					echo_char_raw(' ', ldata);
++					echo_char_raw('\b', ldata);
+ 				}
+ 			}
+ 		}
+@@ -1039,7 +1021,7 @@ static void eraser(unsigned char c, struct tty_struct *tty)
+ 			break;
+ 	}
+ 	if (ldata->read_head == ldata->canon_head && L_ECHO(tty))
+-		finish_erasing(tty);
++		finish_erasing(ldata);
+ }
+ 
+ /**
+@@ -1078,6 +1060,8 @@ static inline void isig(int sig, struct tty_struct *tty, int flush)
+ 
+ static inline void n_tty_receive_break(struct tty_struct *tty)
+ {
++	struct n_tty_data *ldata = tty->disc_data;
++
+ 	if (I_IGNBRK(tty))
+ 		return;
+ 	if (I_BRKINT(tty)) {
+@@ -1085,10 +1069,10 @@ static inline void n_tty_receive_break(struct tty_struct *tty)
+ 		return;
+ 	}
+ 	if (I_PARMRK(tty)) {
+-		put_tty_queue('\377', tty);
+-		put_tty_queue('\0', tty);
++		put_tty_queue('\377', ldata);
++		put_tty_queue('\0', ldata);
+ 	}
+-	put_tty_queue('\0', tty);
++	put_tty_queue('\0', ldata);
+ 	wake_up_interruptible(&tty->read_wait);
+ }
+ 
+@@ -1132,16 +1116,18 @@ static inline void n_tty_receive_overrun(struct tty_struct *tty)
+ static inline void n_tty_receive_parity_error(struct tty_struct *tty,
+ 					      unsigned char c)
+ {
++	struct n_tty_data *ldata = tty->disc_data;
++
+ 	if (I_IGNPAR(tty))
+ 		return;
+ 	if (I_PARMRK(tty)) {
+-		put_tty_queue('\377', tty);
+-		put_tty_queue('\0', tty);
+-		put_tty_queue(c, tty);
++		put_tty_queue('\377', ldata);
++		put_tty_queue('\0', ldata);
++		put_tty_queue(c, ldata);
+ 	} else	if (I_INPCK(tty))
+-		put_tty_queue('\0', tty);
++		put_tty_queue('\0', ldata);
+ 	else
+-		put_tty_queue(c, tty);
++		put_tty_queue(c, ldata);
+ 	wake_up_interruptible(&tty->read_wait);
+ }
+ 
+@@ -1162,7 +1148,7 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
+ 	int parmrk;
+ 
+ 	if (ldata->raw) {
+-		put_tty_queue(c, tty);
++		put_tty_queue(c, ldata);
+ 		return;
+ 	}
+ 
+@@ -1172,7 +1158,7 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
+ 		c = tolower(c);
+ 
+ 	if (L_EXTPROC(tty)) {
+-		put_tty_queue(c, tty);
++		put_tty_queue(c, ldata);
+ 		return;
+ 	}
+ 
+@@ -1210,16 +1196,16 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
+ 			return;
+ 		}
+ 		if (L_ECHO(tty)) {
+-			finish_erasing(tty);
++			finish_erasing(ldata);
+ 			/* Record the column of first canon char. */
+ 			if (ldata->canon_head == ldata->read_head)
+-				echo_set_canon_col(tty);
++				echo_set_canon_col(ldata);
+ 			echo_char(c, tty);
+ 			process_echoes(tty);
+ 		}
+ 		if (parmrk)
+-			put_tty_queue(c, tty);
+-		put_tty_queue(c, tty);
++			put_tty_queue(c, ldata);
++		put_tty_queue(c, ldata);
+ 		return;
+ 	}
+ 
+@@ -1285,10 +1271,10 @@ send_signal:
+ 		if (c == LNEXT_CHAR(tty) && L_IEXTEN(tty)) {
+ 			ldata->lnext = 1;
+ 			if (L_ECHO(tty)) {
+-				finish_erasing(tty);
++				finish_erasing(ldata);
+ 				if (L_ECHOCTL(tty)) {
+-					echo_char_raw('^', tty);
+-					echo_char_raw('\b', tty);
++					echo_char_raw('^', ldata);
++					echo_char_raw('\b', ldata);
+ 					process_echoes(tty);
+ 				}
+ 			}
+@@ -1298,9 +1284,9 @@ send_signal:
+ 		    L_IEXTEN(tty)) {
+ 			unsigned long tail = ldata->canon_head;
+ 
+-			finish_erasing(tty);
++			finish_erasing(ldata);
+ 			echo_char(c, tty);
+-			echo_char_raw('\n', tty);
++			echo_char_raw('\n', ldata);
+ 			while (tail != ldata->read_head) {
+ 				echo_char(ldata->read_buf[tail], tty);
+ 				tail = (tail+1) & (N_TTY_BUF_SIZE-1);
+@@ -1315,7 +1301,7 @@ send_signal:
+ 				return;
+ 			}
+ 			if (L_ECHO(tty) || L_ECHONL(tty)) {
+-				echo_char_raw('\n', tty);
++				echo_char_raw('\n', ldata);
+ 				process_echoes(tty);
+ 			}
+ 			goto handle_newline;
+@@ -1343,7 +1329,7 @@ send_signal:
+ 			if (L_ECHO(tty)) {
+ 				/* Record the column of first canon char. */
+ 				if (ldata->canon_head == ldata->read_head)
+-					echo_set_canon_col(tty);
++					echo_set_canon_col(ldata);
+ 				echo_char(c, tty);
+ 				process_echoes(tty);
+ 			}
+@@ -1352,12 +1338,12 @@ send_signal:
+ 			 * EOL_CHAR and EOL2_CHAR?
+ 			 */
+ 			if (parmrk)
+-				put_tty_queue(c, tty);
++				put_tty_queue(c, ldata);
+ 
+ handle_newline:
+ 			spin_lock_irqsave(&ldata->read_lock, flags);
+ 			set_bit(ldata->read_head, ldata->read_flags);
+-			put_tty_queue_nolock(c, tty);
++			put_tty_queue_nolock(c, ldata);
+ 			ldata->canon_head = ldata->read_head;
+ 			ldata->canon_data++;
+ 			spin_unlock_irqrestore(&ldata->read_lock, flags);
+@@ -1376,22 +1362,22 @@ handle_newline:
+ 		return;
+ 	}
+ 	if (L_ECHO(tty)) {
+-		finish_erasing(tty);
++		finish_erasing(ldata);
+ 		if (c == '\n')
+-			echo_char_raw('\n', tty);
++			echo_char_raw('\n', ldata);
+ 		else {
+ 			/* Record the column of first canon char. */
+ 			if (ldata->canon_head == ldata->read_head)
+-				echo_set_canon_col(tty);
++				echo_set_canon_col(ldata);
+ 			echo_char(c, tty);
+ 		}
+ 		process_echoes(tty);
+ 	}
+ 
+ 	if (parmrk)
+-		put_tty_queue(c, tty);
++		put_tty_queue(c, ldata);
+ 
+-	put_tty_queue(c, tty);
++	put_tty_queue(c, ldata);
+ }
+ 
+ 
+@@ -2140,9 +2126,8 @@ static unsigned int n_tty_poll(struct tty_struct *tty, struct file *file,
+ 	return mask;
+ }
+ 
+-static unsigned long inq_canon(struct tty_struct *tty)
++static unsigned long inq_canon(struct n_tty_data *ldata)
+ {
+-	struct n_tty_data *ldata = tty->disc_data;
+ 	int nr, head, tail;
+ 
+ 	if (!ldata->canon_data)
+@@ -2173,7 +2158,7 @@ static int n_tty_ioctl(struct tty_struct *tty, struct file *file,
+ 		/* FIXME: Locking */
+ 		retval = ldata->read_cnt;
+ 		if (L_ICANON(tty))
+-			retval = inq_canon(tty);
++			retval = inq_canon(ldata);
+ 		return put_user(retval, (unsigned int __user *) arg);
+ 	default:
+ 		return n_tty_ioctl_helper(tty, file, cmd, arg);
 -- 
 1.7.12.3
 
