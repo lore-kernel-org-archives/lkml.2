@@ -1,36 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756410Ab2JROcE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 10:32:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45134 "EHLO mx1.redhat.com"
+	id S1752922Ab2JROeW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 10:34:22 -0400
+Received: from mga02.intel.com ([134.134.136.20]:11550 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756225Ab2JROcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 10:32:02 -0400
-Message-ID: <50801294.2020007@redhat.com>
-Date: Thu, 18 Oct 2012 16:30:44 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/2] KVM: VMX: report internal error for MMIO #PF due
- to delivery event
-References: <507E464C.3010108@linux.vnet.ibm.com> <507E4696.7020007@linux.vnet.ibm.com>
-In-Reply-To: <507E4696.7020007@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752411Ab2JROeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 10:34:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,607,1344236400"; 
+   d="scan'208";a="207676604"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
+        balbi@ti.com
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv3 0/6] dw_dmac: few cleanups to the driver
+Date: Thu, 18 Oct 2012 17:34:06 +0300
+Message-Id: <1350570852-10398-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2012 07:48 AM, Xiao Guangrong wrote:
-> The #PF with PFEC.RSV = 1 indicates that the guest is accessing MMIO, we
-> can not fix it if it is caused by delivery event. Reporting internal error
-> for this case
+There are few cleanups to the driver which partialy acked and reviewed.
 
-Applied, thanks.
+Since v2:
+ - add one more clean up (patch 6/6)
+ - make a separate patch to WARN a user in dwc_handle_error (suggested by
+   Felipe Balbi)
+ - add a description to patch 4/6
 
+Andy Shevchenko (4):
+  dw_dmac: change dev_printk() to corresponding macros
+  dw_dmac: don't call platform_get_drvdata twice
+  dw_dmac: change dev_crit to dev_WARN in dwc_handle_error
+  dw_dmac: introduce to_dw_desc() macro
+
+Heikki Krogerus (2):
+  dmaengine: dw_dmac: remove CLK dependency
+  dmaengine: dw_dmac: amend description and indentation
+
+ drivers/dma/Kconfig        |    1 -
+ drivers/dma/dw_dmac.c      |   33 ++++++++++++++-------------------
+ drivers/dma/dw_dmac_regs.h |    2 ++
+ 3 files changed, 16 insertions(+), 20 deletions(-)
 
 -- 
-error compiling committee.c: too many arguments to function
+1.7.10.4
+
