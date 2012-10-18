@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208Ab2JRUaF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 16:30:05 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:56786 "EHLO
+	id S1756061Ab2JRUaM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 16:30:12 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:56795 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754231Ab2JRU0z (ORCPT
+	with ESMTP id S1754314Ab2JRU0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 16:26:55 -0400
+	Thu, 18 Oct 2012 16:26:54 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 15/21] TTY: move ldisc data from tty_struct: read_* and echo_* and canon_* stuff
-Date: Thu, 18 Oct 2012 22:26:41 +0200
-Message-Id: <1350592007-9216-16-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 03/21] TTY: devpts, do not set driver_data
+Date: Thu, 18 Oct 2012 22:26:29 +0200
+Message-Id: <1350592007-9216-4-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.12.3
 In-Reply-To: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
 References: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
@@ -20,705 +20,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the ring-buffers...
+The goal is to stop setting and using tty->driver_data in devpts code.
+It should be used solely by the driver's code, pty in this case.
+
+Now driver_data are managed only in the pty driver. devpts_pty_new is
+switched to accept what we used to dig out of tty_struct, i.e. device
+node number and index.
+
+This also removes a note about driver_data being set outside of the
+driver.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/tty/n_tty.c | 260 +++++++++++++++++++++++++++-------------------------
- include/linux/tty.h |  10 --
- 2 files changed, 137 insertions(+), 133 deletions(-)
+ drivers/tty/pty.c         | 10 +++++-----
+ fs/devpts/inode.c         | 21 ++++++---------------
+ include/linux/devpts_fs.h |  9 +++++----
+ 3 files changed, 16 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 702dd4a..4794537 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -83,6 +83,19 @@ struct n_tty_data {
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index 9985b45..559e5b2 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -4,9 +4,6 @@
+  *  Added support for a Unix98-style ptmx device.
+  *    -- C. Scott Ananian <cananian@alumni.princeton.edu>, 14-Jan-1998
+  *
+- *  When reading this code see also fs/devpts. In particular note that the
+- *  driver_data field is used by the devpts side as a binding to the devpts
+- *  inode.
+  */
  
- 	DECLARE_BITMAP(process_char_map, 256);
- 	DECLARE_BITMAP(read_flags, N_TTY_BUF_SIZE);
-+
-+	char *read_buf;
-+	int read_head;
-+	int read_tail;
-+	int read_cnt;
-+
-+	unsigned char *echo_buf;
-+	unsigned int echo_pos;
-+	unsigned int echo_cnt;
-+
-+	int canon_data;
-+	unsigned long canon_head;
-+	unsigned int canon_column;
- };
- 
- static inline int tty_put_user(struct tty_struct *tty, unsigned char x,
-@@ -110,14 +123,14 @@ static void n_tty_set_room(struct tty_struct *tty)
- 	int left;
- 	int old_left;
- 
--	/* tty->read_cnt is not read locked ? */
-+	/* ldata->read_cnt is not read locked ? */
- 	if (I_PARMRK(tty)) {
- 		/* Multiply read_cnt by 3, since each byte might take up to
- 		 * three times as many spaces when PARMRK is set (depending on
- 		 * its flags, e.g. parity error). */
--		left = N_TTY_BUF_SIZE - tty->read_cnt * 3 - 1;
-+		left = N_TTY_BUF_SIZE - ldata->read_cnt * 3 - 1;
- 	} else
--		left = N_TTY_BUF_SIZE - tty->read_cnt - 1;
-+		left = N_TTY_BUF_SIZE - ldata->read_cnt - 1;
- 
- 	/*
- 	 * If we are doing input canonicalization, and there are no
-@@ -126,7 +139,7 @@ static void n_tty_set_room(struct tty_struct *tty)
- 	 * characters will be beeped.
- 	 */
- 	if (left <= 0)
--		left = ldata->icanon && !tty->canon_data;
-+		left = ldata->icanon && !ldata->canon_data;
- 	old_left = tty->receive_room;
- 	tty->receive_room = left;
- 
-@@ -137,10 +150,12 @@ static void n_tty_set_room(struct tty_struct *tty)
- 
- static void put_tty_queue_nolock(unsigned char c, struct tty_struct *tty)
- {
--	if (tty->read_cnt < N_TTY_BUF_SIZE) {
--		tty->read_buf[tty->read_head] = c;
--		tty->read_head = (tty->read_head + 1) & (N_TTY_BUF_SIZE-1);
--		tty->read_cnt++;
-+	struct n_tty_data *ldata = tty->disc_data;
-+
-+	if (ldata->read_cnt < N_TTY_BUF_SIZE) {
-+		ldata->read_buf[ldata->read_head] = c;
-+		ldata->read_head = (ldata->read_head + 1) & (N_TTY_BUF_SIZE-1);
-+		ldata->read_cnt++;
- 	}
- }
- 
-@@ -198,14 +213,14 @@ static void reset_buffer_flags(struct tty_struct *tty)
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&tty->read_lock, flags);
--	tty->read_head = tty->read_tail = tty->read_cnt = 0;
-+	ldata->read_head = ldata->read_tail = ldata->read_cnt = 0;
- 	spin_unlock_irqrestore(&tty->read_lock, flags);
- 
- 	mutex_lock(&tty->echo_lock);
--	tty->echo_pos = tty->echo_cnt = ldata->echo_overrun = 0;
-+	ldata->echo_pos = ldata->echo_cnt = ldata->echo_overrun = 0;
- 	mutex_unlock(&tty->echo_lock);
- 
--	tty->canon_head = tty->canon_data = ldata->erasing = 0;
-+	ldata->canon_head = ldata->canon_data = ldata->erasing = 0;
- 	bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
- 	n_tty_set_room(tty);
- }
-@@ -257,11 +272,11 @@ static ssize_t n_tty_chars_in_buffer(struct tty_struct *tty)
- 
- 	spin_lock_irqsave(&tty->read_lock, flags);
- 	if (!ldata->icanon) {
--		n = tty->read_cnt;
--	} else if (tty->canon_data) {
--		n = (tty->canon_head > tty->read_tail) ?
--			tty->canon_head - tty->read_tail :
--			tty->canon_head + (N_TTY_BUF_SIZE - tty->read_tail);
-+		n = ldata->read_cnt;
-+	} else if (ldata->canon_data) {
-+		n = (ldata->canon_head > ldata->read_tail) ?
-+			ldata->canon_head - ldata->read_tail :
-+			ldata->canon_head + (N_TTY_BUF_SIZE - ldata->read_tail);
- 	}
- 	spin_unlock_irqrestore(&tty->read_lock, flags);
- 	return n;
-@@ -331,11 +346,11 @@ static int do_output_char(unsigned char c, struct tty_struct *tty, int space)
- 		if (O_ONLCR(tty)) {
- 			if (space < 2)
- 				return -1;
--			tty->canon_column = ldata->column = 0;
-+			ldata->canon_column = ldata->column = 0;
- 			tty->ops->write(tty, "\r\n", 2);
- 			return 2;
+ #include <linux/module.h>
+@@ -59,7 +56,7 @@ static void pty_close(struct tty_struct *tty, struct file *filp)
+ #ifdef CONFIG_UNIX98_PTYS
+ 		if (tty->driver == ptm_driver) {
+ 		        mutex_lock(&devpts_mutex);
+-			devpts_pty_kill(tty->link);
++			devpts_pty_kill(tty->link->driver_data);
+ 		        mutex_unlock(&devpts_mutex);
  		}
--		tty->canon_column = ldata->column;
-+		ldata->canon_column = ldata->column;
- 		break;
- 	case '\r':
- 		if (O_ONOCR(tty) && ldata->column == 0)
-@@ -343,10 +358,10 @@ static int do_output_char(unsigned char c, struct tty_struct *tty, int space)
- 		if (O_OCRNL(tty)) {
- 			c = '\n';
- 			if (O_ONLRET(tty))
--				tty->canon_column = ldata->column = 0;
-+				ldata->canon_column = ldata->column = 0;
- 			break;
- 		}
--		tty->canon_column = ldata->column = 0;
-+		ldata->canon_column = ldata->column = 0;
- 		break;
- 	case '\t':
- 		spaces = 8 - (ldata->column & 7);
-@@ -453,14 +468,14 @@ static ssize_t process_output_block(struct tty_struct *tty,
- 				ldata->column = 0;
- 			if (O_ONLCR(tty))
- 				goto break_out;
--			tty->canon_column = ldata->column;
-+			ldata->canon_column = ldata->column;
- 			break;
- 		case '\r':
- 			if (O_ONOCR(tty) && ldata->column == 0)
- 				goto break_out;
- 			if (O_OCRNL(tty))
- 				goto break_out;
--			tty->canon_column = ldata->column = 0;
-+			ldata->canon_column = ldata->column = 0;
- 			break;
- 		case '\t':
- 			goto break_out;
-@@ -518,7 +533,7 @@ static void process_echoes(struct tty_struct *tty)
- 	unsigned char c;
- 	unsigned char *cp, *buf_end;
+ #endif
+@@ -651,7 +648,9 @@ static int ptmx_open(struct inode *inode, struct file *filp)
  
--	if (!tty->echo_cnt)
-+	if (!ldata->echo_cnt)
- 		return;
+ 	tty_add_file(tty, filp);
  
- 	mutex_lock(&tty->output_lock);
-@@ -526,9 +541,9 @@ static void process_echoes(struct tty_struct *tty)
+-	slave_inode = devpts_pty_new(inode, tty->link);
++	slave_inode = devpts_pty_new(inode,
++			MKDEV(UNIX98_PTY_SLAVE_MAJOR, index), index,
++			tty->link);
+ 	if (IS_ERR(slave_inode)) {
+ 		retval = PTR_ERR(slave_inode);
+ 		goto err_release;
+@@ -662,6 +661,7 @@ static int ptmx_open(struct inode *inode, struct file *filp)
+ 		goto err_release;
  
- 	space = tty_write_room(tty);
- 
--	buf_end = tty->echo_buf + N_TTY_BUF_SIZE;
--	cp = tty->echo_buf + tty->echo_pos;
--	nr = tty->echo_cnt;
-+	buf_end = ldata->echo_buf + N_TTY_BUF_SIZE;
-+	cp = ldata->echo_buf + ldata->echo_pos;
-+	nr = ldata->echo_cnt;
- 	while (nr > 0) {
- 		c = *cp;
- 		if (c == ECHO_OP_START) {
-@@ -565,7 +580,7 @@ static void process_echoes(struct tty_struct *tty)
- 				 * Otherwise, tab spacing is normal.
- 				 */
- 				if (!(num_chars & 0x80))
--					num_chars += tty->canon_column;
-+					num_chars += ldata->canon_column;
- 				num_bs = 8 - (num_chars & 7);
- 
- 				if (num_bs > space) {
-@@ -583,7 +598,7 @@ static void process_echoes(struct tty_struct *tty)
- 				break;
- 
- 			case ECHO_OP_SET_CANON_COL:
--				tty->canon_column = ldata->column;
-+				ldata->canon_column = ldata->column;
- 				cp += 2;
- 				nr -= 2;
- 				break;
-@@ -655,14 +670,14 @@ static void process_echoes(struct tty_struct *tty)
- 	}
- 
- 	if (nr == 0) {
--		tty->echo_pos = 0;
--		tty->echo_cnt = 0;
-+		ldata->echo_pos = 0;
-+		ldata->echo_cnt = 0;
- 		ldata->echo_overrun = 0;
- 	} else {
--		int num_processed = tty->echo_cnt - nr;
--		tty->echo_pos += num_processed;
--		tty->echo_pos &= N_TTY_BUF_SIZE - 1;
--		tty->echo_cnt = nr;
-+		int num_processed = ldata->echo_cnt - nr;
-+		ldata->echo_pos += num_processed;
-+		ldata->echo_pos &= N_TTY_BUF_SIZE - 1;
-+		ldata->echo_cnt = nr;
- 		if (num_processed > 0)
- 			ldata->echo_overrun = 0;
- 	}
-@@ -689,37 +704,37 @@ static void add_echo_byte(unsigned char c, struct tty_struct *tty)
- 	struct n_tty_data *ldata = tty->disc_data;
- 	int	new_byte_pos;
- 
--	if (tty->echo_cnt == N_TTY_BUF_SIZE) {
-+	if (ldata->echo_cnt == N_TTY_BUF_SIZE) {
- 		/* Circular buffer is already at capacity */
--		new_byte_pos = tty->echo_pos;
-+		new_byte_pos = ldata->echo_pos;
- 
- 		/*
- 		 * Since the buffer start position needs to be advanced,
- 		 * be sure to step by a whole operation byte group.
- 		 */
--		if (tty->echo_buf[tty->echo_pos] == ECHO_OP_START) {
--			if (tty->echo_buf[(tty->echo_pos + 1) &
-+		if (ldata->echo_buf[ldata->echo_pos] == ECHO_OP_START) {
-+			if (ldata->echo_buf[(ldata->echo_pos + 1) &
- 					  (N_TTY_BUF_SIZE - 1)] ==
- 						ECHO_OP_ERASE_TAB) {
--				tty->echo_pos += 3;
--				tty->echo_cnt -= 2;
-+				ldata->echo_pos += 3;
-+				ldata->echo_cnt -= 2;
- 			} else {
--				tty->echo_pos += 2;
--				tty->echo_cnt -= 1;
-+				ldata->echo_pos += 2;
-+				ldata->echo_cnt -= 1;
- 			}
- 		} else {
--			tty->echo_pos++;
-+			ldata->echo_pos++;
- 		}
--		tty->echo_pos &= N_TTY_BUF_SIZE - 1;
-+		ldata->echo_pos &= N_TTY_BUF_SIZE - 1;
- 
- 		ldata->echo_overrun = 1;
- 	} else {
--		new_byte_pos = tty->echo_pos + tty->echo_cnt;
-+		new_byte_pos = ldata->echo_pos + ldata->echo_cnt;
- 		new_byte_pos &= N_TTY_BUF_SIZE - 1;
--		tty->echo_cnt++;
-+		ldata->echo_cnt++;
- 	}
- 
--	tty->echo_buf[new_byte_pos] = c;
-+	ldata->echo_buf[new_byte_pos] = c;
- }
- 
- /**
-@@ -889,7 +904,7 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 	unsigned long flags;
- 
- 	/* FIXME: locking needed ? */
--	if (tty->read_head == tty->canon_head) {
-+	if (ldata->read_head == ldata->canon_head) {
- 		/* process_output('\a', tty); */ /* what do you think? */
- 		return;
- 	}
-@@ -900,17 +915,17 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 	else {
- 		if (!L_ECHO(tty)) {
- 			spin_lock_irqsave(&tty->read_lock, flags);
--			tty->read_cnt -= ((tty->read_head - tty->canon_head) &
-+			ldata->read_cnt -= ((ldata->read_head - ldata->canon_head) &
- 					  (N_TTY_BUF_SIZE - 1));
--			tty->read_head = tty->canon_head;
-+			ldata->read_head = ldata->canon_head;
- 			spin_unlock_irqrestore(&tty->read_lock, flags);
- 			return;
- 		}
- 		if (!L_ECHOK(tty) || !L_ECHOKE(tty) || !L_ECHOE(tty)) {
- 			spin_lock_irqsave(&tty->read_lock, flags);
--			tty->read_cnt -= ((tty->read_head - tty->canon_head) &
-+			ldata->read_cnt -= ((ldata->read_head - ldata->canon_head) &
- 					  (N_TTY_BUF_SIZE - 1));
--			tty->read_head = tty->canon_head;
-+			ldata->read_head = ldata->canon_head;
- 			spin_unlock_irqrestore(&tty->read_lock, flags);
- 			finish_erasing(tty);
- 			echo_char(KILL_CHAR(tty), tty);
-@@ -924,14 +939,14 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 
- 	seen_alnums = 0;
- 	/* FIXME: Locking ?? */
--	while (tty->read_head != tty->canon_head) {
--		head = tty->read_head;
-+	while (ldata->read_head != ldata->canon_head) {
-+		head = ldata->read_head;
- 
- 		/* erase a single possibly multibyte character */
- 		do {
- 			head = (head - 1) & (N_TTY_BUF_SIZE-1);
--			c = tty->read_buf[head];
--		} while (is_continuation(c, tty) && head != tty->canon_head);
-+			c = ldata->read_buf[head];
-+		} while (is_continuation(c, tty) && head != ldata->canon_head);
- 
- 		/* do not partially erase */
- 		if (is_continuation(c, tty))
-@@ -944,10 +959,10 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 			else if (seen_alnums)
- 				break;
- 		}
--		cnt = (tty->read_head - head) & (N_TTY_BUF_SIZE-1);
-+		cnt = (ldata->read_head - head) & (N_TTY_BUF_SIZE-1);
- 		spin_lock_irqsave(&tty->read_lock, flags);
--		tty->read_head = head;
--		tty->read_cnt -= cnt;
-+		ldata->read_head = head;
-+		ldata->read_cnt -= cnt;
- 		spin_unlock_irqrestore(&tty->read_lock, flags);
- 		if (L_ECHO(tty)) {
- 			if (L_ECHOPRT(tty)) {
-@@ -959,7 +974,7 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 				echo_char(c, tty);
- 				while (--cnt > 0) {
- 					head = (head+1) & (N_TTY_BUF_SIZE-1);
--					echo_char_raw(tty->read_buf[head], tty);
-+					echo_char_raw(ldata->read_buf[head], tty);
- 					echo_move_back_col(tty);
- 				}
- 			} else if (kill_type == ERASE && !L_ECHOE(tty)) {
-@@ -967,7 +982,7 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 			} else if (c == '\t') {
- 				unsigned int num_chars = 0;
- 				int after_tab = 0;
--				unsigned long tail = tty->read_head;
-+				unsigned long tail = ldata->read_head;
- 
- 				/*
- 				 * Count the columns used for characters
-@@ -976,9 +991,9 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 				 * This info is used to go back the correct
- 				 * number of columns.
- 				 */
--				while (tail != tty->canon_head) {
-+				while (tail != ldata->canon_head) {
- 					tail = (tail-1) & (N_TTY_BUF_SIZE-1);
--					c = tty->read_buf[tail];
-+					c = ldata->read_buf[tail];
- 					if (c == '\t') {
- 						after_tab = 1;
- 						break;
-@@ -1006,7 +1021,7 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 		if (kill_type == ERASE)
- 			break;
- 	}
--	if (tty->read_head == tty->canon_head && L_ECHO(tty))
-+	if (ldata->read_head == ldata->canon_head && L_ECHO(tty))
- 		finish_erasing(tty);
- }
- 
-@@ -1171,7 +1186,7 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
- 	if (!test_bit(c, ldata->process_char_map) || ldata->lnext) {
- 		ldata->lnext = 0;
- 		parmrk = (c == (unsigned char) '\377' && I_PARMRK(tty)) ? 1 : 0;
--		if (tty->read_cnt >= (N_TTY_BUF_SIZE - parmrk - 1)) {
-+		if (ldata->read_cnt >= (N_TTY_BUF_SIZE - parmrk - 1)) {
- 			/* beep if no space */
- 			if (L_ECHO(tty))
- 				process_output('\a', tty);
-@@ -1180,7 +1195,7 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
- 		if (L_ECHO(tty)) {
- 			finish_erasing(tty);
- 			/* Record the column of first canon char. */
--			if (tty->canon_head == tty->read_head)
-+			if (ldata->canon_head == ldata->read_head)
- 				echo_set_canon_col(tty);
- 			echo_char(c, tty);
- 			process_echoes(tty);
-@@ -1264,20 +1279,20 @@ send_signal:
- 		}
- 		if (c == REPRINT_CHAR(tty) && L_ECHO(tty) &&
- 		    L_IEXTEN(tty)) {
--			unsigned long tail = tty->canon_head;
-+			unsigned long tail = ldata->canon_head;
- 
- 			finish_erasing(tty);
- 			echo_char(c, tty);
- 			echo_char_raw('\n', tty);
--			while (tail != tty->read_head) {
--				echo_char(tty->read_buf[tail], tty);
-+			while (tail != ldata->read_head) {
-+				echo_char(ldata->read_buf[tail], tty);
- 				tail = (tail+1) & (N_TTY_BUF_SIZE-1);
- 			}
- 			process_echoes(tty);
- 			return;
- 		}
- 		if (c == '\n') {
--			if (tty->read_cnt >= N_TTY_BUF_SIZE) {
-+			if (ldata->read_cnt >= N_TTY_BUF_SIZE) {
- 				if (L_ECHO(tty))
- 					process_output('\a', tty);
- 				return;
-@@ -1289,9 +1304,9 @@ send_signal:
- 			goto handle_newline;
- 		}
- 		if (c == EOF_CHAR(tty)) {
--			if (tty->read_cnt >= N_TTY_BUF_SIZE)
-+			if (ldata->read_cnt >= N_TTY_BUF_SIZE)
- 				return;
--			if (tty->canon_head != tty->read_head)
-+			if (ldata->canon_head != ldata->read_head)
- 				set_bit(TTY_PUSH, &tty->flags);
- 			c = __DISABLED_CHAR;
- 			goto handle_newline;
-@@ -1300,7 +1315,7 @@ send_signal:
- 		    (c == EOL2_CHAR(tty) && L_IEXTEN(tty))) {
- 			parmrk = (c == (unsigned char) '\377' && I_PARMRK(tty))
- 				 ? 1 : 0;
--			if (tty->read_cnt >= (N_TTY_BUF_SIZE - parmrk)) {
-+			if (ldata->read_cnt >= (N_TTY_BUF_SIZE - parmrk)) {
- 				if (L_ECHO(tty))
- 					process_output('\a', tty);
- 				return;
-@@ -1310,7 +1325,7 @@ send_signal:
- 			 */
- 			if (L_ECHO(tty)) {
- 				/* Record the column of first canon char. */
--				if (tty->canon_head == tty->read_head)
-+				if (ldata->canon_head == ldata->read_head)
- 					echo_set_canon_col(tty);
- 				echo_char(c, tty);
- 				process_echoes(tty);
-@@ -1324,10 +1339,10 @@ send_signal:
- 
- handle_newline:
- 			spin_lock_irqsave(&tty->read_lock, flags);
--			set_bit(tty->read_head, ldata->read_flags);
-+			set_bit(ldata->read_head, ldata->read_flags);
- 			put_tty_queue_nolock(c, tty);
--			tty->canon_head = tty->read_head;
--			tty->canon_data++;
-+			ldata->canon_head = ldata->read_head;
-+			ldata->canon_data++;
- 			spin_unlock_irqrestore(&tty->read_lock, flags);
- 			kill_fasync(&tty->fasync, SIGIO, POLL_IN);
- 			if (waitqueue_active(&tty->read_wait))
-@@ -1337,7 +1352,7 @@ handle_newline:
- 	}
- 
- 	parmrk = (c == (unsigned char) '\377' && I_PARMRK(tty)) ? 1 : 0;
--	if (tty->read_cnt >= (N_TTY_BUF_SIZE - parmrk - 1)) {
-+	if (ldata->read_cnt >= (N_TTY_BUF_SIZE - parmrk - 1)) {
- 		/* beep if no space */
- 		if (L_ECHO(tty))
- 			process_output('\a', tty);
-@@ -1349,7 +1364,7 @@ handle_newline:
- 			echo_char_raw('\n', tty);
- 		else {
- 			/* Record the column of first canon char. */
--			if (tty->canon_head == tty->read_head)
-+			if (ldata->canon_head == ldata->read_head)
- 				echo_set_canon_col(tty);
- 			echo_char(c, tty);
- 		}
-@@ -1403,21 +1418,21 @@ static void n_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 
- 	if (ldata->real_raw) {
- 		spin_lock_irqsave(&tty->read_lock, cpuflags);
--		i = min(N_TTY_BUF_SIZE - tty->read_cnt,
--			N_TTY_BUF_SIZE - tty->read_head);
-+		i = min(N_TTY_BUF_SIZE - ldata->read_cnt,
-+			N_TTY_BUF_SIZE - ldata->read_head);
- 		i = min(count, i);
--		memcpy(tty->read_buf + tty->read_head, cp, i);
--		tty->read_head = (tty->read_head + i) & (N_TTY_BUF_SIZE-1);
--		tty->read_cnt += i;
-+		memcpy(ldata->read_buf + ldata->read_head, cp, i);
-+		ldata->read_head = (ldata->read_head + i) & (N_TTY_BUF_SIZE-1);
-+		ldata->read_cnt += i;
- 		cp += i;
- 		count -= i;
- 
--		i = min(N_TTY_BUF_SIZE - tty->read_cnt,
--			N_TTY_BUF_SIZE - tty->read_head);
-+		i = min(N_TTY_BUF_SIZE - ldata->read_cnt,
-+			N_TTY_BUF_SIZE - ldata->read_head);
- 		i = min(count, i);
--		memcpy(tty->read_buf + tty->read_head, cp, i);
--		tty->read_head = (tty->read_head + i) & (N_TTY_BUF_SIZE-1);
--		tty->read_cnt += i;
-+		memcpy(ldata->read_buf + ldata->read_head, cp, i);
-+		ldata->read_head = (ldata->read_head + i) & (N_TTY_BUF_SIZE-1);
-+		ldata->read_cnt += i;
- 		spin_unlock_irqrestore(&tty->read_lock, cpuflags);
- 	} else {
- 		for (i = count, p = cp, f = fp; i; i--, p++) {
-@@ -1449,7 +1464,7 @@ static void n_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 
- 	n_tty_set_room(tty);
- 
--	if ((!ldata->icanon && (tty->read_cnt >= tty->minimum_to_wake)) ||
-+	if ((!ldata->icanon && (ldata->read_cnt >= tty->minimum_to_wake)) ||
- 		L_EXTPROC(tty)) {
- 		kill_fasync(&tty->fasync, SIGIO, POLL_IN);
- 		if (waitqueue_active(&tty->read_wait))
-@@ -1500,12 +1515,12 @@ static void n_tty_set_termios(struct tty_struct *tty, struct ktermios *old)
- 		canon_change = (old->c_lflag ^ tty->termios.c_lflag) & ICANON;
- 	if (canon_change) {
- 		bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
--		tty->canon_head = tty->read_tail;
--		tty->canon_data = 0;
-+		ldata->canon_head = ldata->read_tail;
-+		ldata->canon_data = 0;
- 		ldata->erasing = 0;
- 	}
- 
--	if (canon_change && !L_ICANON(tty) && tty->read_cnt)
-+	if (canon_change && !L_ICANON(tty) && ldata->read_cnt)
- 		wake_up_interruptible(&tty->read_wait);
- 
- 	ldata->icanon = (L_ICANON(tty) != 0);
-@@ -1586,11 +1601,9 @@ static void n_tty_close(struct tty_struct *tty)
- 	struct n_tty_data *ldata = tty->disc_data;
- 
- 	n_tty_flush_buffer(tty);
--	kfree(tty->read_buf);
--	kfree(tty->echo_buf);
-+	kfree(ldata->read_buf);
-+	kfree(ldata->echo_buf);
- 	kfree(ldata);
--	tty->read_buf = NULL;
--	tty->echo_buf = NULL;
- 	tty->disc_data = NULL;
- }
- 
-@@ -1615,9 +1628,9 @@ static int n_tty_open(struct tty_struct *tty)
- 	ldata->overrun_time = jiffies;
- 
- 	/* These are ugly. Currently a malloc failure here can panic */
--	tty->read_buf = kzalloc(N_TTY_BUF_SIZE, GFP_KERNEL);
--	tty->echo_buf = kzalloc(N_TTY_BUF_SIZE, GFP_KERNEL);
--	if (!tty->read_buf || !tty->echo_buf)
-+	ldata->read_buf = kzalloc(N_TTY_BUF_SIZE, GFP_KERNEL);
-+	ldata->echo_buf = kzalloc(N_TTY_BUF_SIZE, GFP_KERNEL);
-+	if (!ldata->read_buf || !ldata->echo_buf)
- 		goto err_free_bufs;
- 
- 	tty->disc_data = ldata;
-@@ -1630,8 +1643,8 @@ static int n_tty_open(struct tty_struct *tty)
- 
+ 	tty_unlock(tty);
++	tty->link->driver_data = slave_inode;
  	return 0;
- err_free_bufs:
--	kfree(tty->read_buf);
--	kfree(tty->echo_buf);
-+	kfree(ldata->read_buf);
-+	kfree(ldata->echo_buf);
- 	kfree(ldata);
- err:
- 	return -ENOMEM;
-@@ -1643,9 +1656,9 @@ static inline int input_available_p(struct tty_struct *tty, int amt)
+ err_release:
+ 	tty_unlock(tty);
+diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
+index ec3bab7..7a20d67 100644
+--- a/fs/devpts/inode.c
++++ b/fs/devpts/inode.c
+@@ -545,12 +545,9 @@ void devpts_kill_index(struct inode *ptmx_inode, int idx)
+ 	mutex_unlock(&allocated_ptys_lock);
+ }
  
- 	tty_flush_to_ldisc(tty);
- 	if (ldata->icanon && !L_EXTPROC(tty)) {
--		if (tty->canon_data)
-+		if (ldata->canon_data)
- 			return 1;
--	} else if (tty->read_cnt >= (amt ? amt : 1))
-+	} else if (ldata->read_cnt >= (amt ? amt : 1))
- 		return 1;
- 
- 	return 0;
-@@ -1681,21 +1694,21 @@ static int copy_from_read_buf(struct tty_struct *tty,
- 
- 	retval = 0;
- 	spin_lock_irqsave(&tty->read_lock, flags);
--	n = min(tty->read_cnt, N_TTY_BUF_SIZE - tty->read_tail);
-+	n = min(ldata->read_cnt, N_TTY_BUF_SIZE - ldata->read_tail);
- 	n = min(*nr, n);
- 	spin_unlock_irqrestore(&tty->read_lock, flags);
- 	if (n) {
--		retval = copy_to_user(*b, &tty->read_buf[tty->read_tail], n);
-+		retval = copy_to_user(*b, &ldata->read_buf[ldata->read_tail], n);
- 		n -= retval;
- 		is_eof = n == 1 &&
--			tty->read_buf[tty->read_tail] == EOF_CHAR(tty);
--		tty_audit_add_data(tty, &tty->read_buf[tty->read_tail], n,
-+			ldata->read_buf[ldata->read_tail] == EOF_CHAR(tty);
-+		tty_audit_add_data(tty, &ldata->read_buf[ldata->read_tail], n,
- 				ldata->icanon);
- 		spin_lock_irqsave(&tty->read_lock, flags);
--		tty->read_tail = (tty->read_tail + n) & (N_TTY_BUF_SIZE-1);
--		tty->read_cnt -= n;
-+		ldata->read_tail = (ldata->read_tail + n) & (N_TTY_BUF_SIZE-1);
-+		ldata->read_cnt -= n;
- 		/* Turn single EOF into zero-length read */
--		if (L_EXTPROC(tty) && ldata->icanon && is_eof && !tty->read_cnt)
-+		if (L_EXTPROC(tty) && ldata->icanon && is_eof && !ldata->read_cnt)
- 			n = 0;
- 		spin_unlock_irqrestore(&tty->read_lock, flags);
- 		*b += n;
-@@ -1878,22 +1891,22 @@ do_it_again:
- 		if (ldata->icanon && !L_EXTPROC(tty)) {
- 			/* N.B. avoid overrun if nr == 0 */
- 			spin_lock_irqsave(&tty->read_lock, flags);
--			while (nr && tty->read_cnt) {
-+			while (nr && ldata->read_cnt) {
- 				int eol;
- 
--				eol = test_and_clear_bit(tty->read_tail,
-+				eol = test_and_clear_bit(ldata->read_tail,
- 						ldata->read_flags);
--				c = tty->read_buf[tty->read_tail];
--				tty->read_tail = ((tty->read_tail+1) &
-+				c = ldata->read_buf[ldata->read_tail];
-+				ldata->read_tail = ((ldata->read_tail+1) &
- 						  (N_TTY_BUF_SIZE-1));
--				tty->read_cnt--;
-+				ldata->read_cnt--;
- 				if (eol) {
- 					/* this test should be redundant:
- 					 * we shouldn't be reading data if
- 					 * canon_data is 0
- 					 */
--					if (--tty->canon_data < 0)
--						tty->canon_data = 0;
-+					if (--ldata->canon_data < 0)
-+						ldata->canon_data = 0;
- 				}
- 				spin_unlock_irqrestore(&tty->read_lock, flags);
- 
-@@ -2111,15 +2124,15 @@ static unsigned long inq_canon(struct tty_struct *tty)
- 	struct n_tty_data *ldata = tty->disc_data;
- 	int nr, head, tail;
- 
--	if (!tty->canon_data)
-+	if (!ldata->canon_data)
- 		return 0;
--	head = tty->canon_head;
--	tail = tty->read_tail;
-+	head = ldata->canon_head;
-+	tail = ldata->read_tail;
- 	nr = (head - tail) & (N_TTY_BUF_SIZE-1);
- 	/* Skip EOF-chars.. */
- 	while (head != tail) {
- 		if (test_bit(tail, ldata->read_flags) &&
--		    tty->read_buf[tail] == __DISABLED_CHAR)
-+		    ldata->read_buf[tail] == __DISABLED_CHAR)
- 			nr--;
- 		tail = (tail+1) & (N_TTY_BUF_SIZE-1);
- 	}
-@@ -2129,6 +2142,7 @@ static unsigned long inq_canon(struct tty_struct *tty)
- static int n_tty_ioctl(struct tty_struct *tty, struct file *file,
- 		       unsigned int cmd, unsigned long arg)
+-struct inode *devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty)
++struct inode *devpts_pty_new(struct inode *ptmx_inode, dev_t device, int index,
++		void *priv)
  {
-+	struct n_tty_data *ldata = tty->disc_data;
- 	int retval;
+-	/* tty layer puts index from devpts_new_index() in here */
+-	int number = tty->index;
+-	struct tty_driver *driver = tty->driver;
+-	dev_t device = MKDEV(driver->major, driver->minor_start+number);
+ 	struct dentry *dentry;
+ 	struct super_block *sb = pts_sb_from_inode(ptmx_inode);
+ 	struct inode *inode;
+@@ -559,23 +556,18 @@ struct inode *devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty)
+ 	struct pts_mount_opts *opts = &fsi->mount_opts;
+ 	char s[12];
  
- 	switch (cmd) {
-@@ -2136,7 +2150,7 @@ static int n_tty_ioctl(struct tty_struct *tty, struct file *file,
- 		return put_user(tty_chars_in_buffer(tty), (int __user *) arg);
- 	case TIOCINQ:
- 		/* FIXME: Locking */
--		retval = tty->read_cnt;
-+		retval = ldata->read_cnt;
- 		if (L_ICANON(tty))
- 			retval = inq_canon(tty);
- 		return put_user(retval, (unsigned int __user *) arg);
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 2161e6b..226cf20 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -272,16 +272,6 @@ struct tty_struct {
- 	 */
- 	unsigned char closing:1;
- 	unsigned short minimum_to_wake;
--	char *read_buf;
--	int read_head;
--	int read_tail;
--	int read_cnt;
--	unsigned char *echo_buf;
--	unsigned int echo_pos;
--	unsigned int echo_cnt;
--	int canon_data;
--	unsigned long canon_head;
--	unsigned int canon_column;
- 	struct mutex atomic_read_lock;
- 	struct mutex atomic_write_lock;
- 	struct mutex output_lock;
+-	/* We're supposed to be given the slave end of a pty */
+-	BUG_ON(driver->type != TTY_DRIVER_TYPE_PTY);
+-	BUG_ON(driver->subtype != PTY_TYPE_SLAVE);
+-
+ 	inode = new_inode(sb);
+ 	if (!inode)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	inode->i_ino = number + 3;
++	inode->i_ino = index + 3;
+ 	inode->i_uid = opts->setuid ? opts->uid : current_fsuid();
+ 	inode->i_gid = opts->setgid ? opts->gid : current_fsgid();
+ 	inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
+ 	init_special_inode(inode, S_IFCHR|opts->mode, device);
+-	inode->i_private = tty;
+-	tty->driver_data = inode;
++	inode->i_private = priv;
+ 
+-	sprintf(s, "%d", number);
++	sprintf(s, "%d", index);
+ 
+ 	mutex_lock(&root->d_inode->i_mutex);
+ 
+@@ -613,9 +605,8 @@ void *devpts_get_priv(struct inode *pts_inode)
+ 	return priv;
+ }
+ 
+-void devpts_pty_kill(struct tty_struct *tty)
++void devpts_pty_kill(struct inode *inode)
+ {
+-	struct inode *inode = tty->driver_data;
+ 	struct super_block *sb = pts_sb_from_inode(inode);
+ 	struct dentry *root = sb->s_root;
+ 	struct dentry *dentry;
+diff --git a/include/linux/devpts_fs.h b/include/linux/devpts_fs.h
+index 4ca846f..251a209 100644
+--- a/include/linux/devpts_fs.h
++++ b/include/linux/devpts_fs.h
+@@ -20,11 +20,12 @@
+ int devpts_new_index(struct inode *ptmx_inode);
+ void devpts_kill_index(struct inode *ptmx_inode, int idx);
+ /* mknod in devpts */
+-struct inode *devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty);
++struct inode *devpts_pty_new(struct inode *ptmx_inode, dev_t device, int index,
++		void *priv);
+ /* get private structure */
+ void *devpts_get_priv(struct inode *pts_inode);
+ /* unlink */
+-void devpts_pty_kill(struct tty_struct *tty);
++void devpts_pty_kill(struct inode *inode);
+ 
+ #else
+ 
+@@ -32,7 +33,7 @@ void devpts_pty_kill(struct tty_struct *tty);
+ static inline int devpts_new_index(struct inode *ptmx_inode) { return -EINVAL; }
+ static inline void devpts_kill_index(struct inode *ptmx_inode, int idx) { }
+ static inline struct inode *devpts_pty_new(struct inode *ptmx_inode,
+-		struct tty_struct *tty)
++		dev_t device, int index, void *priv)
+ {
+ 	return ERR_PTR(-EINVAL);
+ }
+@@ -40,7 +41,7 @@ static inline void *devpts_get_priv(struct inode *pts_inode)
+ {
+ 	return NULL;
+ }
+-static inline void devpts_pty_kill(struct tty_struct *tty) { }
++static inline void devpts_pty_kill(struct inode *inode) { }
+ 
+ #endif
+ 
 -- 
 1.7.12.3
 
