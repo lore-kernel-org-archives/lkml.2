@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199Ab2J2AJP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 20:09:15 -0400
-Received: from mailserver6.natinst.com ([130.164.80.6]:59709 "EHLO
-	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756038Ab2J2AJN (ORCPT
+	id S1756438Ab2J2AJX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 20:09:23 -0400
+Received: from mailserver5.natinst.com ([130.164.80.5]:44392 "EHLO
+	spamkiller05.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756038Ab2J2AJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 20:09:13 -0400
-Message-Id: <f0cf58bc8f8a34d226cccb6f89d3cd49a2620015.1351466765.git.josh.cartwright@ni.com>
+	Sun, 28 Oct 2012 20:09:19 -0400
+Message-Id: <94010fc0a0094ef29dc87fbdb77507e379c5fe76.1351466765.git.josh.cartwright@ni.com>
 In-Reply-To: <cover.1351466765.git.josh.cartwright@ni.com>
 References: <cover.1351466765.git.josh.cartwright@ni.com>
 From: Josh Cartwright <josh.cartwright@ni.com>
-Date: Sun, 21 Oct 2012 18:33:59 -0500
-Subject: [PATCH v4 4/5] ARM: annotate VMALLOC_END definition with _AC
+Date: Wed, 17 Oct 2012 19:46:49 -0500
+Subject: [PATCH v4 1/5] zynq: use GIC device tree bindings
 To: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         John Linn <john.linn@xilinx.com>,
@@ -29,29 +29,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes the definition of VMALLOC_END suitable for use within
-assembly code.  This is necessary to allow the use of VMALLOC_END in
-defining where the early uart is mapped for use with DEBUG_LL.
+The Zynq uses the cortex-a9-gic.  This eliminates the need to hardcode
+register addresses.
 
 Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
+Cc: John Linn <john.linn@xilinx.com>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/include/asm/pgtable.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/dts/zynq-ep107.dts           | 10 ++++++----
+ arch/arm/mach-zynq/common.c                |  7 ++++++-
+ arch/arm/mach-zynq/include/mach/zynq_soc.h |  2 --
+ 3 files changed, 12 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
-index 08c1231..72904a2 100644
---- a/arch/arm/include/asm/pgtable.h
-+++ b/arch/arm/include/asm/pgtable.h
-@@ -40,7 +40,7 @@
+diff --git a/arch/arm/boot/dts/zynq-ep107.dts b/arch/arm/boot/dts/zynq-ep107.dts
+index 37ca192..f914090 100644
+--- a/arch/arm/boot/dts/zynq-ep107.dts
++++ b/arch/arm/boot/dts/zynq-ep107.dts
+@@ -36,16 +36,18 @@
+ 		ranges;
+ 
+ 		intc: interrupt-controller@f8f01000 {
++			compatible = "arm,cortex-a9-gic";
++			#interrupt-cells = <3>;
++			#address-cells = <1>;
+ 			interrupt-controller;
+-			compatible = "arm,gic";
+-			reg = <0xF8F01000 0x1000>;
+-			#interrupt-cells = <2>;
++			reg = <0xF8F01000 0x1000>,
++			      <0xF8F00100 0x100>;
+ 		};
+ 
+ 		uart0: uart@e0000000 {
+ 			compatible = "xlnx,xuartps";
+ 			reg = <0xE0000000 0x1000>;
+-			interrupts = <59 0>;
++			interrupts = <0 27 4>;
+ 			clock = <50000000>;
+ 		};
+ 	};
+diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
+index ab5cfdd..d73963b 100644
+--- a/arch/arm/mach-zynq/common.c
++++ b/arch/arm/mach-zynq/common.c
+@@ -55,12 +55,17 @@ static void __init xilinx_init_machine(void)
+ 	of_platform_bus_probe(NULL, zynq_of_bus_ids, NULL);
+ }
+ 
++static struct of_device_id irq_match[] __initdata = {
++	{ .compatible = "arm,cortex-a9-gic", .data = gic_of_init, },
++	{ }
++};
++
+ /**
+  * xilinx_irq_init() - Interrupt controller initialization for the GIC.
   */
- #define VMALLOC_OFFSET		(8*1024*1024)
- #define VMALLOC_START		(((unsigned long)high_memory + VMALLOC_OFFSET) & ~(VMALLOC_OFFSET-1))
--#define VMALLOC_END		0xff000000UL
-+#define VMALLOC_END		_AC(0xff000000,UL)
+ static void __init xilinx_irq_init(void)
+ {
+-	gic_init(0, 29, SCU_GIC_DIST_BASE, SCU_GIC_CPU_BASE);
++	of_irq_init(irq_match);
+ }
  
- #define LIBRARY_TEXT_START	0x0c000000
+ /* The minimum devices needed to be mapped before the VM system is up and
+diff --git a/arch/arm/mach-zynq/include/mach/zynq_soc.h b/arch/arm/mach-zynq/include/mach/zynq_soc.h
+index d0d3f8f..3d1c6a6 100644
+--- a/arch/arm/mach-zynq/include/mach/zynq_soc.h
++++ b/arch/arm/mach-zynq/include/mach/zynq_soc.h
+@@ -35,8 +35,6 @@
  
+ #define TTC0_BASE			IOMEM(TTC0_VIRT)
+ #define SCU_PERIPH_BASE			IOMEM(SCU_PERIPH_VIRT)
+-#define SCU_GIC_CPU_BASE		(SCU_PERIPH_BASE + 0x100)
+-#define SCU_GIC_DIST_BASE		(SCU_PERIPH_BASE + 0x1000)
+ #define PL310_L2CC_BASE			IOMEM(PL310_L2CC_VIRT)
+ 
+ /*
 -- 
 1.8.0
 
