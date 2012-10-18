@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756448Ab2JRO4Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 10:56:16 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:34139 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab2JRO4P (ORCPT
+	id S1756759Ab2JRO5V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 10:57:21 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:44394 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756615Ab2JRO5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 10:56:15 -0400
-Message-ID: <5080188D.2010000@gmail.com>
-Date: Thu, 18 Oct 2012 09:56:13 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Thu, 18 Oct 2012 10:57:20 -0400
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 4/7] gpio/mxs: convert to use linear irqdomain
-References: <1350415376-3217-1-git-send-email-linus.walleij@linaro.org> <20121018062208.GB4513@S2101-09.ap.freescale.net>
-In-Reply-To: <20121018062208.GB4513@S2101-09.ap.freescale.net>
+Date: Thu, 18 Oct 2012 22:57:19 +0800
+Message-ID: <CAPgLHd8atrHJK0oiOsrJo1+GECi7YaJ+ZDd1oFE-VBmO1aHicQ@mail.gmail.com>
+Subject: [PATCH] dlm: remove unused variable in *dlm_lowcomms_get_buffer()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: ccaulfie@redhat.com, teigland@redhat.com
+Cc: yongjun_wei@trendmicro.com.cn, cluster-devel@redhat.com,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2012 01:22 AM, Shawn Guo wrote:
-> On Tue, Oct 16, 2012 at 09:22:56PM +0200, Linus Walleij wrote:
->> The MXS driver tries to do the work of irq_domain_add_linear()
->> by reserving a bunch of descriptors somewhere and keeping track
->> of the base offset, then calling irq_domain_add_legacy(). Let's
->> stop doing that and simply use the linear IRQ domain.
->>
->> Cc: Rob Herring <rob.herring@calxeda.com>
->> Cc: Grant Likely <grant.likely@secretlab.ca>
->> Cc: Shawn Guo <shawn.guo@linaro.org>
->> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
->> ---
->>  drivers/gpio/gpio-mxs.c | 19 ++++++-------------
->>  1 file changed, 6 insertions(+), 13 deletions(-)
->>
->> diff --git a/drivers/gpio/gpio-mxs.c b/drivers/gpio/gpio-mxs.c
->> index 796fb13..71fd5b1 100644
->> --- a/drivers/gpio/gpio-mxs.c
->> +++ b/drivers/gpio/gpio-mxs.c
->> @@ -223,7 +223,6 @@ static int __devinit mxs_gpio_probe(struct platform_device *pdev)
->>  	static void __iomem *base;
->>  	struct mxs_gpio_port *port;
->>  	struct resource *iores = NULL;
->> -	int irq_base;
-> 
-> ...
-> 
->>  	int err;
->>  
->>  	port = devm_kzalloc(&pdev->dev, sizeof(*port), GFP_KERNEL);
->> @@ -272,16 +271,10 @@ static int __devinit mxs_gpio_probe(struct platform_device *pdev)
->>  	/* clear address has to be used to clear IRQSTAT bits */
->>  	writel(~0U, port->base + PINCTRL_IRQSTAT(port) + MXS_CLR);
->>  
->> -	irq_base = irq_alloc_descs(-1, 0, 32, numa_node_id());
->> -	if (irq_base < 0)
->> -		return irq_base;
->> -
->> -	port->domain = irq_domain_add_legacy(np, 32, irq_base, 0,
->> +	port->domain = irq_domain_add_linear(np, 32,
->>  					     &irq_domain_simple_ops, NULL);
->> -	if (!port->domain) {
->> -		err = -ENODEV;
->> -		goto out_irqdesc_free;
->> -	}
->> +	if (!port->domain)
->> +		return -ENODEV;
->>  
->>  	/* gpio-mxs can be a generic irq chip */
->>  	mxs_gpio_init_gc(port, irq_base);
->                                ^^^^^^^^
-> 
-> So I know this one is not compile-tested.
-> 
-> This is exactly the reason why I have to use irq_domain_add_legacy
-> other than irq_domain_add_linear when I add irqdomain support for the
-> driver.  The driver uses generic-irq infrastructural which needs
-> irq_base for setup.  So sadly, before generic-irq gets improved, any
-> irq chip that uses generic-irq will have to use irq_domain_add_legacy.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-We should get someone to work on that. ;)
+The variable users is initialized but never used
+otherwise, so remove the unused variable.
 
-I think I need to go back and just fix this aspect rather than try and
-integrate irqdomains into generic-irqchip.
+dpatch engine is used to auto generate this patch.
+(https://github.com/weiyj/dpatch)
 
-Rob
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ fs/dlm/lowcomms.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
+index 331ea4f..dd87a31 100644
+--- a/fs/dlm/lowcomms.c
++++ b/fs/dlm/lowcomms.c
+@@ -1385,7 +1385,6 @@ void *dlm_lowcomms_get_buffer(int nodeid, int len, gfp_t allocation, char **ppc)
+ 	struct connection *con;
+ 	struct writequeue_entry *e;
+ 	int offset = 0;
+-	int users = 0;
+ 
+ 	con = nodeid2con(nodeid, allocation);
+ 	if (!con)
+@@ -1399,7 +1398,7 @@ void *dlm_lowcomms_get_buffer(int nodeid, int len, gfp_t allocation, char **ppc)
+ 	} else {
+ 		offset = e->end;
+ 		e->end += len;
+-		users = e->users++;
++		e->users++;
+ 	}
+ 	spin_unlock(&con->writequeue_lock);
+ 
+@@ -1414,7 +1413,7 @@ void *dlm_lowcomms_get_buffer(int nodeid, int len, gfp_t allocation, char **ppc)
+ 		spin_lock(&con->writequeue_lock);
+ 		offset = e->end;
+ 		e->end += len;
+-		users = e->users++;
++		e->users++;
+ 		list_add_tail(&e->list, &con->writequeue);
+ 		spin_unlock(&con->writequeue_lock);
+ 		goto got_one;
+
