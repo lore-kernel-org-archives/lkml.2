@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab2JRX3N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 19:29:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:16537 "EHLO mga02.intel.com"
+	id S932914Ab2JRX3L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 19:29:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20461 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751125Ab2JRXTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756267Ab2JRXTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Oct 2012 19:19:52 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,609,1344236400"; 
-   d="scan'208";a="229462617"
+   d="scan'208";a="229462619"
 From: Andi Kleen <andi@firstfloor.org>
 To: a.p.zijlstra@chello.nl
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org, acme@redhat.com,
         eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 01/34] perf, x86: Add PEBSv2 record support
-Date: Thu, 18 Oct 2012 16:19:09 -0700
-Message-Id: <1350602382-12771-2-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 05/34] perf, x86: Report PEBS event in a raw format
+Date: Thu, 18 Oct 2012 16:19:13 -0700
+Message-Id: <1350602382-12771-6-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
 References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
@@ -25,191 +25,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add support for the v2 PEBS format. It has a superset of the v1 PEBS
-fields, but has a longer record so we need to adjust the code paths.
+Add support for reporting PEBS records in a raw format that can
+be then parsed by perf script.
 
-The main advantage is the new "EventingRip" support which directly
-gives the instruction, not off-by-one instruction. So with precise == 2
-we use that directly and don't try to use LBRs and walking basic blocks.
-This lowers the overhead significantly.
+We exposed most of the Haswell PEBS fields in a generic way
+in this patchkit:
+- Aborted cycles is in weight
+- Memory latency is in weight
+- DataLA is in address
+- EventingRIP is used for precise ip
+- tsx_tuning and some bits of the abort code in RAX are
+mapped to transaction flags
 
-Some other features are added in later patches.
+Left over are the general registers. We need them for some analysis
+too: for example for loop trip count and string instruction trip
+count sampling.
+
+There isn't really any good way to generalize general registers.
+Obviously they are different for every architecture.
+
+So patch exports the RAW PEBS record when requested.
+
+With the new perf script infrastructure that was recently added
+it is reasonably easy and clean to process with script.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c          |    2 +-
- arch/x86/kernel/cpu/perf_event_intel_ds.c |  101 ++++++++++++++++++++++-------
- 2 files changed, 79 insertions(+), 24 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 915b876..87c2ab0 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -395,7 +395,7 @@ int x86_pmu_hw_config(struct perf_event *event)
- 		 * check that PEBS LBR correction does not conflict with
- 		 * whatever the user is asking with attr->branch_sample_type
- 		 */
--		if (event->attr.precise_ip > 1) {
-+		if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
- 			u64 *br_type = &event->attr.branch_sample_type;
- 
- 			if (has_branch_stack(event)) {
 diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 826054a..9d0dae0 100644
+index 91c2ab7..5d3d6be 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -41,6 +41,12 @@ struct pebs_record_nhm {
- 	u64 status, dla, dse, lat;
- };
- 
-+struct pebs_record_v2 {
-+	struct pebs_record_nhm nhm;
-+	u64 eventingrip;
-+	u64 tsx_tuning;
-+};
-+
- void init_debug_store_on_cpu(int cpu)
- {
- 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
-@@ -559,8 +565,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- {
- 	/*
- 	 * We cast to pebs_record_core since that is a subset of
--	 * both formats and we don't use the other fields in this
--	 * routine.
-+	 * both formats.
- 	 */
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+@@ -600,6 +600,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
  	struct pebs_record_core *pebs = __pebs;
-@@ -588,7 +593,10 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	regs.bp = pebs->bp;
- 	regs.sp = pebs->sp;
+ 	struct perf_sample_data data;
+ 	struct pt_regs regs;
++	struct perf_raw_record raw;
  
--	if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
-+	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
-+		regs.ip = ((struct pebs_record_v2 *)pebs)->eventingrip;
-+		regs.flags |= PERF_EFLAGS_EXACT;
-+	} else if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
- 		regs.flags |= PERF_EFLAGS_EXACT;
+ 	if (!intel_pmu_save_and_restart(event))
+ 		return;
+@@ -630,6 +631,12 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
  	else
  		regs.flags &= ~PERF_EFLAGS_EXACT;
-@@ -641,35 +649,21 @@ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
- 	__intel_pmu_pebs_event(event, iregs, at);
- }
  
--static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
-+static void intel_pmu_drain_pebs_common(struct pt_regs *iregs, void *at,
-+					void *top)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	struct debug_store *ds = cpuc->ds;
--	struct pebs_record_nhm *at, *top;
- 	struct perf_event *event = NULL;
- 	u64 status = 0;
--	int bit, n;
--
--	if (!x86_pmu.pebs_active)
--		return;
--
--	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
--	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
-+	int bit;
++	if (event->attr.sample_type & PERF_SAMPLE_RAW) {
++		raw.size = x86_pmu.pebs_record_size;
++		raw.data = __pebs;
++		data.raw = &raw;
++	}
++
+ 	if (has_branch_stack(event))
+ 		data.br_stack = &cpuc->lbr_stack;
  
- 	ds->pebs_index = ds->pebs_buffer_base;
- 
--	n = top - at;
--	if (n <= 0)
--		return;
-+	for ( ; at < top; at += x86_pmu.pebs_record_size) {
-+		struct pebs_record_nhm *p = at;
- 
--	/*
--	 * Should not happen, we program the threshold at 1 and do not
--	 * set a reset value.
--	 */
--	WARN_ONCE(n > x86_pmu.max_pebs_events, "Unexpected number of pebs records %d\n", n);
--
--	for ( ; at < top; at++) {
--		for_each_set_bit(bit, (unsigned long *)&at->status, x86_pmu.max_pebs_events) {
-+		for_each_set_bit(bit, (unsigned long *)&p->status, x86_pmu.max_pebs_events) {
- 			event = cpuc->events[bit];
- 			if (!test_bit(bit, cpuc->active_mask))
- 				continue;
-@@ -692,6 +686,61 @@ static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
- 	}
- }
- 
-+static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct debug_store *ds = cpuc->ds;
-+	struct pebs_record_nhm *at, *top;
-+	int n;
-+
-+	if (!x86_pmu.pebs_active)
-+		return;
-+
-+	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
-+	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
-+
-+	ds->pebs_index = ds->pebs_buffer_base;
-+
-+	n = top - at;
-+	if (n <= 0)
-+		return;
-+
-+	/*
-+	 * Should not happen, we program the threshold at 1 and do not
-+	 * set a reset value.
-+	 */
-+	WARN_ONCE(n > x86_pmu.max_pebs_events,
-+		  "Unexpected number of pebs records %d\n", n);
-+
-+	return intel_pmu_drain_pebs_common(iregs, at, top);
-+}
-+
-+static void intel_pmu_drain_pebs_v2(struct pt_regs *iregs)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct debug_store *ds = cpuc->ds;
-+	struct pebs_record_v2 *at, *top;
-+	int n;
-+
-+	if (!x86_pmu.pebs_active)
-+		return;
-+
-+	at  = (struct pebs_record_v2 *)(unsigned long)ds->pebs_buffer_base;
-+	top = (struct pebs_record_v2 *)(unsigned long)ds->pebs_index;
-+
-+	n = top - at;
-+	if (n <= 0)
-+		return;
-+	/*
-+	 * Should not happen, we program the threshold at 1 and do not
-+	 * set a reset value.
-+	 */
-+	WARN_ONCE(n > x86_pmu.max_pebs_events,
-+		  "Unexpected number of pebs records %d\n", n);
-+
-+	return intel_pmu_drain_pebs_common(iregs, at, top);
-+}
-+
- /*
-  * BTS, PEBS probe and setup
-  */
-@@ -723,6 +772,12 @@ void intel_ds_init(void)
- 			x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
- 			break;
- 
-+		case 2:
-+			printk(KERN_CONT "PEBS fmt2%c, ", pebs_type);
-+			x86_pmu.pebs_record_size = sizeof(struct pebs_record_v2);
-+			x86_pmu.drain_pebs = intel_pmu_drain_pebs_v2;
-+			break;
-+
- 		default:
- 			printk(KERN_CONT "no PEBS fmt%d%c, ", format, pebs_type);
- 			x86_pmu.pebs = 0;
 -- 
 1.7.7.6
 
