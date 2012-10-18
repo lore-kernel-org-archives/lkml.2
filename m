@@ -1,89 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab2JRFYP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 01:24:15 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54417 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811Ab2JRFYN (ORCPT
+	id S1754102Ab2JRFbT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 01:31:19 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60669 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754059Ab2JRFbR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 01:24:13 -0400
+	Thu, 18 Oct 2012 01:31:17 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: "Hunter, Jon" <jon-hunter@ti.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>,
+        Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: discrepancy while save and restore of debounce registers
+Thread-Topic: discrepancy while save and restore of debounce registers
+Thread-Index: Ac2sLoK1QcZgBYyrRUCfh4cWp+znkwAT3A2AABu2CfA=
+Date: Thu, 18 Oct 2012 05:31:11 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EAAA89B@DBDE01.ent.ti.com>
+References: <1BAFE6F6C881BF42822005164F1491C33EAA9A7C@DBDE01.ent.ti.com>
+ <507F1F21.8040206@ti.com>
+In-Reply-To: <507F1F21.8040206@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-puzzleid: {F2C0EDA5-58C2-4A8C-873E-D0D7CA435328}
+x-cr-hashedpuzzle: +IQ= EMCO GTl+ NC8V Qrfe Zbbz fPA9 f3vU jfuq k+xB tins
+ vCr3 w0tU 7Jpb AA1uUQ==
+ ABI9Eg==;5;ZwByAGEAbgB0AC4AbABpAGsAZQBsAHkAQABzAGUAYwByAGUAdABsAGEAYgAuAGMAYQA7AGwAaQBuAHUAeAAtAGEAcgBtAC0AawBlAHIAbgBlAGwAQABsAGkAcwB0AHMALgBpAG4AZgByAGEAZABlAGEAZAAuAG8AcgBnADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeAAtAG8AbQBhAHAAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHQAbwBuAHkAQABhAHQAbwBtAGkAZABlAC4AYwBvAG0A;Sosha1_v1;7;{F2C0EDA5-58C2-4A8C-873E-D0D7CA435328};ZwB1AHIAdQByAGEAagBhAC4AaABlAGIAYgBhAHIAQAB0AGkALgBjAG8AbQA=;Thu,
+ 18 Oct 2012 05:30:51
+ GMT;UgBFADoAIABkAGkAcwBjAHIAZQBwAGEAbgBjAHkAIAB3AGgAaQBsAGUAIABzAGEAdgBlACAAYQBuAGQAIAByAGUAcwB0AG8AcgBlACAAbwBmACAAZABlAGIAbwB1AG4AYwBlACAAcgBlAGcAaQBzAHQAZQByAHMA
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20121018051703.GR2739@dastard>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
-	<20121015204217.GB2739@dastard>
-	<CAEH94Lgfev1qg2S+2-D5VMtVgSES3cFw0KmJSJr5HObyhA8sbg@mail.gmail.com>
-	<20121018042916.GP2739@dastard>
-	<CAEH94LhtzMkKTVD_yDvotDMwkfFZbXObYVCPAzpZOcNVqxDxpQ@mail.gmail.com>
-	<20121018051703.GR2739@dastard>
-Date: Thu, 18 Oct 2012 13:24:11 +0800
-Message-ID: <CAEH94Lj2pYVJmNpnsqgfKSXrx7KECSTcieQwv=V0NBZUrA1XYw@mail.gmail.com>
-Subject: Re: [RFC v3 00/13] vfs: hot data tracking
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
-        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 1:17 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Thu, Oct 18, 2012 at 12:44:47PM +0800, Zhi Yong Wu wrote:
->> On Thu, Oct 18, 2012 at 12:29 PM, Dave Chinner <david@fromorbit.com> wrote:
->> > On Wed, Oct 17, 2012 at 04:57:14PM +0800, Zhi Yong Wu wrote:
->> >> On Tue, Oct 16, 2012 at 4:42 AM, Dave Chinner <david@fromorbit.com> wrote:
->> >> > On Wed, Oct 10, 2012 at 06:07:22PM +0800, zwu.kernel@gmail.com wrote:
->> >> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> > ....
->> >> > (*) Tested on an empty 17TB XFS filesystem with:
->> >> >
->> >> > $ sudo mkfs.xfs -f -l size=131072b,sunit=8 /dev/vdc
->> >> > meta-data=/dev/vdc               isize=256    agcount=17, agsize=268435455 blks
->> >> >          =                       sectsz=512   attr=2, projid32bit=0
->> >> > data     =                       bsize=4096   blocks=4563402735, imaxpct=5
->> >> >          =                       sunit=0      swidth=0 blks
->> >> > naming   =version 2              bsize=4096   ascii-ci=0
->> >> > log      =internal log           bsize=4096   blocks=131072, version=2
->> >> >          =                       sectsz=512   sunit=1 blks, lazy-count=1
->> >> > realtime =none                   extsz=4096   blocks=0, rtextents=0
->> >> > $ sudo mount -o logbsize=256k /dev/vdc /mnt/scratch
->> >> > $ sudo chmod 777 /mnt/scratch
->> >> > $ fs_mark  -D  10000  -S0  -n  100000  -s  1  -L  63  -d \
->> >> > /mnt/scratch/0  -d  /mnt/scratch/1  -d  /mnt/scratch/2  -d \
->> >> > /mnt/scratch/3  -d  /mnt/scratch/4  -d  /mnt/scratch/5  -d \
->> >> > /mnt/scratch/6  -d  /mnt/scratch/7
->> >> > .....
->> >> >      0     21600000            1      16679.3         12552262
->> >> >      0     22400000            1      15412.4         12588587
->> >> >      0     23200000            1      16367.6         14199322
->> >> >      0     24000000            1      15680.4         15741205
->> >> > <hangs here w/ OOM>
->> >> ^^^^In this test, i haven't see you enable hot_track function via
->> >> mount, why did it meet OOM?
->> >
->> > I copied the wrong mount command. It was definitely enabled.
->> OK, BTW: fs_mark is the script written by you? After xfsprogs is
->> installed, i haven't found this command.
->
-> # apt-get install fsmark
-thanks. let me try.
->
-> Or get the source here:
->
-> http://sourceforge.net/projects/fsmark/
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
+Jon,
+
+On Thu, Oct 18, 2012 at 02:42:01, Hunter, Jon wrote:
+> Hi Gururaja,
+> 
+> On 10/17/2012 01:13 AM, Hebbar, Gururaja wrote:
+> > Hi,
+> > 
+> > I came across a peculiar issue while updating GPIO debounce registers on
+> > OMAP platform.
+> > 
+> > According to mainline commit ae547354a8ed59f19b57f7e1de9c7816edfc3537
+> > 
+> > gpio/omap: save and restore debounce registers
+> > 
+> > GPIO debounce registers need to be saved and restored for proper functioning
+> > of driver.
+> > 
+> > ...
+> > @@ -1363,6 +1369,12 @@ static void omap_gpio_restore_context(struct gpio_bank *bank)
+> >         __raw_writel(bank->context.fallingdetect,
+> >                                 bank->base + bank->regs->fallingdetect);
+> >         __raw_writel(bank->context.dataout, bank->base + bank->regs->dataout);
+> > +       if (bank->dbck_enable_mask) {
+> > +               __raw_writel(bank->context.debounce, bank->base +
+> > +                                       bank->regs->debounce);
+> > +               __raw_writel(bank->context.debounce_en,
+> > +                                       bank->base + bank->regs->debounce_en);
+> > +       }
+> >  }
+> > 
+> > 
+> > Due to copy/paste of this commit into my local tree, I missed the check for 
+> > bank->dbck_enable_mask, and directly restored the saved value from context.
+> > 
+> > After this, I saw random crashes when accessing different registers (sometimes
+> > its OE register and sometime its DATAOUT register). 
+> > 
+> > These crashes were seen across 2nd and subsequent suspend/resume.
+> > 
+> > My doubt/questions are
+> > 1. Why should debounce registers be updated only when it's accessed previously?
+> 
+> If debounce is not being used by any of the gpios, then there is no need
+> to restore them as there are no bits set. So this makes sense and saves
+> a couple register writes.
+
+What I want to know is that other than saving register writes, is there any
+other important stuff that specifies this requirement.
+
+> 
+> > 2. What is the relation between updating debounce registers and crash seen on
+> > others registers? 
+> 
+> This I am not sure about. I gave this a quick try on my omap3430 beagle
+> board, but I did not see any side-effects from doing this. However, if
+> you are always restoring the debounce context regardless of whether
+> debounce is being used, then you could be writing bad values to the
+> debounce registers as the context variables bank->context.debouce and
+> bank->context.debouce_en may not initialised. So that is bad. However,
+> that said I am still not sure how this could cause a crash.
+> 
+> Can you share more details on ...
+
+Sorry for missing below details in first post.
+
+> 1. The OMAP platform you are using?
+
+I was trying this on TI AM335x platform (repo below). On AM335x EVM board
+
+http://arago-project.org/git/projects/?p=linux-am33x.git;a=shortlog;
+h=refs/heads/v3.2-staging
+
+> 2. What linux distro/environment you are using?
+
+Arago AM335x PSP release (linux 3.2 + am335x patch-set)
+
+> 3. If there are any specific steps to reproduce this 100% of the time?
+
+On top of this tree, try suspend/resume using "echo mem > /syspower/state"
+
+> 
+> Cheers
+> Jon
+> 
 
 
-
--- 
-Regards,
-
-Zhi Yong Wu
+Regards, 
+Gururaja
