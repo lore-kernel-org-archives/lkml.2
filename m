@@ -1,103 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab2JRL4P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 07:56:15 -0400
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:35157 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752747Ab2JRL4N convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 07:56:13 -0400
-From: Nitin DHINGRA <nitin.dhingra@stericsson.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Anurag GUPTA-1 <anurag.gupta@stericsson.com>,
-        Ingvar PALSSON <ingvar.palsson@stericsson.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Par-Gunnar HJALMDAHL <par-gunnar.hjalmdahl@stericsson.com>,
+	id S1754286Ab2JRL4p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 07:56:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60806 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753301Ab2JRL4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 07:56:43 -0400
+Date: Thu, 18 Oct 2012 13:56:40 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Sha Zhengju <handai.szj@gmail.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mridul JAIN <mridul.jain@stericsson.com>
-Date: Thu, 18 Oct 2012 13:56:00 +0200
-Subject: RE: [PATCH] staging: Add ST-Ericsson CG2900 driver
-Thread-Topic: [PATCH] staging: Add ST-Ericsson CG2900 driver
-Thread-Index: Ac2srU4RDGZINQOKQzW6d16D62TEJgAeVNsA
-Message-ID: <3ED83A9DB3B6D94CA68BF7C03F2981D35D01B6F1FD@EXDCVYMBSTM006.EQ1STM.local>
-References: <1348733648-13769-1-git-send-email-nitin.dhingra@stericsson.com>
- <20121017212051.GA30879@kroah.com>
-In-Reply-To: <20121017212051.GA30879@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        Sha Zhengju <handai.szj@taobao.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] oom, memcg: handle sysctl oom_kill_allocating_task while
+ memcg oom happening
+Message-ID: <20121018115640.GB24295@dhcp22.suse.cz>
+References: <1350382328-28977-1-git-send-email-handai.szj@taobao.com>
+ <20121016133439.GI13991@dhcp22.suse.cz>
+ <CAFj3OHVW-betpEnauzk-vQEfw_7bJxFneQb2oWpAZzOpZuMDiQ@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFj3OHVW-betpEnauzk-vQEfw_7bJxFneQb2oWpAZzOpZuMDiQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
-> Sent: Thursday, October 18, 2012 2:51 AM
-> To: Nitin DHINGRA
-> Cc: devel@driverdev.osuosl.org; Anurag GUPTA-1; Ingvar PALSSON; Linus
-> WALLEIJ; Par-Gunnar HJALMDAHL; linux-kernel@vger.kernel.org; Mridul
-> JAIN
-> Subject: Re: [PATCH] staging: Add ST-Ericsson CG2900 driver
-> 
-> On Thu, Sep 27, 2012 at 01:14:08AM -0700, Nitin Dhingra wrote:
-> > This patch adds support for the ST-Ericsson CG2900
-> > Connectivity Combo controller (Bluetooth, FM, GPS, ANT, NFC)
+On Wed 17-10-12 01:14:48, Sha Zhengju wrote:
+> On Tuesday, October 16, 2012, Michal Hocko <mhocko@suse.cz> wrote:
+[...]
+> > Could you be more specific about the motivation for this patch? Is it
+> > "let's be consistent with the global oom" or you have a real use case
+> > for this knob.
 > >
-> > Signed-off-by: Nitin Dhingra <nitin.dhingra@stericsson.com>
-> > Signed-off-by: Mridul Jain <mridul.jain@stericsson.com>
-> > Acked-by: Linus Walleij <linus.walleij@stericsson.com>
-> > ---
-> >  arch/arm/configs/u8500_defconfig                 |    8 +
-> >  drivers/staging/Kconfig                          |    2 +
-> >  drivers/staging/Makefile                         |    1 +
-> >  drivers/staging/cg2900/Kconfig                   |   73 +
-> >  drivers/staging/cg2900/Makefile                  |   10 +
-> >  drivers/staging/cg2900/bluetooth/Makefile        |    9 +
-> >  drivers/staging/cg2900/bluetooth/btcg2900.c      |  865 +++++
-> >  drivers/staging/cg2900/bluetooth/cg2900_uart.c   | 2434 +++++++++++++
-> >  drivers/staging/cg2900/bluetooth/hci_ldisc.c     |  645 ++++
-> >  drivers/staging/cg2900/bluetooth/hci_uart.h      |  106 +
-> >  drivers/staging/cg2900/include/cg2900.h          |  338 ++
-> >  drivers/staging/cg2900/include/cg2900_audio.h    |  473 +++
-> >  drivers/staging/cg2900/include/cg2900_hci.h      |   19 +
-> >  drivers/staging/cg2900/mfd/Makefile              |   18 +
-> >  drivers/staging/cg2900/mfd/cg2900_audio.c        | 3533
-> +++++++++++++++++++
-> >  drivers/staging/cg2900/mfd/cg2900_char_devices.c |  802 +++++
-> >  drivers/staging/cg2900/mfd/cg2900_chip.c         | 3986
-> ++++++++++++++++++++++
-> >  drivers/staging/cg2900/mfd/cg2900_chip.h         |  608 ++++
-> >  drivers/staging/cg2900/mfd/cg2900_core.c         |  730 ++++
-> >  drivers/staging/cg2900/mfd/cg2900_core.h         |   52 +
-> >  drivers/staging/cg2900/mfd/cg2900_lib.c          |  287 ++
-> >  drivers/staging/cg2900/mfd/cg2900_lib.h          |   65 +
-> >  drivers/staging/cg2900/mfd/cg2900_test.c         |  402 +++
-> >  drivers/staging/cg2900/mfd/stlc2690_chip.c       | 1710 ++++++++++
-> >  drivers/staging/cg2900/mfd/stlc2690_chip.h       |   47 +
-> >  25 files changed, 17223 insertions(+), 0 deletions(-)
 > 
-> Please refresh my memory, why is this going into drivers/staging/ and
-> not into the "real" part of the kernel?
-Putting the code in staging would be convenient so that if there are any design/code suggestions it would be easier to incorporate. 
+> In our environment(rhel6), we encounter a memcg oom 'deadlock'
+> problem.  Simply speaking, suppose process A is selected to be killed
+> by memcg oom killer, but A is uninterruptible sleeping on a page
+> lock. What's worse, the exact page lock is holding by another memcg
+> process B which is trapped in mem_croup_oom_lock(proves to be a
+> livelock).
 
-> 
-> Hint, a TODO file listing what is needed to do to get the code merged
-> properly is needed here, care to make a follow-on patch adding this
-> which will explain what to do.
-Will do that.
+Hmm, this is strange. How can you get down that road with the page lock
+held? Is it possible this is related to the issue fixed by: 1d65f86d
+(mm: preallocate page before lock_page() at filemap COW)?
 
-> 
-> thanks,
-> 
-> greg k-h
+> Then A can not exit successfully to free the memory and both of them
+> can not moving on.
 
-Regards
-Nitin 
+> Indeed, we should dig into these locks to find the solution and
+> in fact the 37b23e05 (x86, mm: make pagefault killable) and
+> 7d9fdac(Memcg: make oom_lock 0 and 1 based other than counter) have
+> already solved the problem, but if oom_killing_allocating_task is
+> memcg aware, enabling this suicide oom behavior will be a simpler
+> workaround. What's more, enabling the sysctl can avoid other potential
+> oom problems to some extent.
+
+As I said, I am not against this but I really want to see a valid use
+case first. So far I haven't seen any because what you mention above is
+a clear bug which should be fixed. I can imagine the huge number of
+tasks in the group could be a problem as well but I would like to see
+what are those problems first.
+
+> > The primary motivation for oom_kill_allocating_tas AFAIU was to reduce
+> > search over huge tasklists and reduce task_lock holding times. I am not
+> > sure whether the original concern is still valid since 6b0c81b (mm,
+> > oom: reduce dependency on tasklist_lock) as the tasklist_lock usage has
+> > been reduced conciderably in favor of RCU read locks is taken but maybe
+> > even that can be too disruptive?
+> > David?
+> 
+> 
+> On the other hand, from the semantic meaning of oom_kill_allocating_task,
+> it implies to allow suicide-like oom, which has no obvious relationship
+> with performance problems(such as huge task lists or task_lock holding
+> time). 
+
+I guess that suicide-like oom in fact means "kill the poor soul that
+happened to charge the last". I do not see any use case for this from
+top of my head (appart from the performance benefits of course).
+
+> So make the sysctl be consistent with global oom will be better or set
+> an individual option for memcg oom just as panic_on_oom does.
+
+-- 
+Michal Hocko
+SUSE Labs
