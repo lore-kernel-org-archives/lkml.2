@@ -1,87 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874Ab2JREix (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 00:38:53 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:46986 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751177Ab2JREiw (ORCPT
+	id S1751936Ab2JREle (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 00:41:34 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57555 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298Ab2JREld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 00:38:52 -0400
-X-Authenticated: #2770290
-X-Provags-ID: V01U2FsdGVkX19lXt9kAU1ljiOi32od9L/6d/xak2nRElkitd7Dfv
-	p5V0vYwIeMbhcT
-Date: Thu, 18 Oct 2012 06:38:48 +0200
-From: Daniel =?iso-8859-1?Q?Gl=F6ckner?= <daniel-gl@gmx.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Roland Stigge <stigge@antcom.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, highguy@gmail.com,
-        broonie@opensource.wolfsonmicro.com
-Subject: Re: [PATCH RFC 2/6 v3] gpio: Add sysfs support to block GPIO API
-Message-ID: <20121018043848.GA4022@minime.bse>
-References: <1350069085-13283-1-git-send-email-stigge@antcom.de>
- <1350069085-13283-3-git-send-email-stigge@antcom.de>
- <20121015180702.GA12801@game.jcrosoft.org>
- <20121015181928.GB27923@kroah.com>
- <CACRpkdZmg4+7Zjm2UJktt1uKvytUW3uaYtKz0nJvLeM2MMSV-Q@mail.gmail.com>
+	Thu, 18 Oct 2012 00:41:33 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <507F8864.1070203@jp.fujitsu.com>
+Date: Thu, 18 Oct 2012 13:41:08 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdZmg4+7Zjm2UJktt1uKvytUW3uaYtKz0nJvLeM2MMSV-Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Y-GMX-Trusted: 0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, bhutchings@solarflare.com,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch for-3.7 v2] mm, mempolicy: avoid taking mutex inside spinlock
+ when reading numa_maps
+References: <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com> <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com> <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com> <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com> <20121017040515.GA13505@redhat.com> <alpine.DEB.2.00.1210162222100.26279@chino.kir.corp.google.com> <20121017181413.GA16805@redhat.com> <alpine.DEB.2.00.1210171219010.28214@chino.kir.corp.google.com> <20121017193229.GC16805@redhat.com> <alpine.DEB.2.00.1210171237130.28214@chino.kir.corp.google.com> <20121017194501.GA24400@redhat.com> <alpine.DEB.2.00.1210171318400.28214@chino.kir.corp.google.com> <alpine.DEB.2.00.1210171428540.20712@chino.kir.corp.google.com> <507F803A.8000900@jp.fujitsu.com> <CA+55aFy9uYifEQ20-tQXvFCYSqb2VG74XhM6ZofHJW_VuqWdZQ@mail.gmail.com>
+In-Reply-To: <CA+55aFy9uYifEQ20-tQXvFCYSqb2VG74XhM6ZofHJW_VuqWdZQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-sorry for the late reply. I'm currently on vacation and it is no fun to
-use SSH with a 1s latency while Entel Chile injects RST/ACK packets.
-I'll read the remaining related mails that have accumulated in my inbox
-when I'm back home.
+(2012/10/18 13:14), Linus Torvalds wrote:
+> On Wed, Oct 17, 2012 at 9:06 PM, Kamezawa Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>>          if (vma && vma != priv->tail_vma) {
+>>                  struct mm_struct *mm = vma->vm_mm;
+>> +#ifdef CONFIG_NUMA
+>> +               task_lock(priv->task);
+>> +               __mpol_put(priv->task->mempolicy);
+>> +               task_unlock(priv->task);
+>> +#endif
+>>                  up_read(&mm->mmap_sem);
+>>                  mmput(mm);
+>
+> Please don't put #ifdef's inside code. It makes things really ugly and
+> hard to read.
+>
+> And that is *especially* true in this case, since there's a pattern to
+> all these things:
+>
+>> +#ifdef CONFIG_NUMA
+>> +       task_lock(priv->task);
+>> +       mpol_get(priv->task->mempolicy);
+>> +       task_unlock(priv->task);
+>> +#endif
+>
+>> +#ifdef CONFIG_NUMA
+>> +       task_lock(priv->task);
+>> +       __mpol_put(priv->task->mempolicy);
+>> +       task_unlock(priv->task);
+>> +#endif
+>
+> it really sounds like what you want to do is to just abstract a
+> "numa_policy_get/put(priv)" operation.
+>
+> So you could make it be something like
+>
+>    #ifdef CONFIG_NUMA
+>    static inline numa_policy_get(struct proc_maps_private *priv)
+>    {
+>        task_lock(priv->task);
+>        mpol_get(priv->task->mempolicy);
+>        task_unlock(priv->task);
+>    }
+>    .. same for the "put" function ..
+>    #else
+>      #define numa_policy_get(priv) do { } while (0)
+>      #define numa_policy_put(priv) do { } while (0)
+>    #endif
+>
+> and then you wouldn't have to have the #ifdef's in the middle of code,
+> and I think it will be more readable in general.
+>
+> Sure, it is going to be a few more actual lines of patch, but there's
+> no duplicated code sequence, and the added lines are just the syntax
+> that makes it look better.
+>
 
-On Mon, Oct 15, 2012 at 10:30:15PM +0200, Linus Walleij wrote:
-> Another patch that is circulating concerns edge triggers and similar,
-> and it appear that some parts of the GPIO sysfs is for example
-> redefining and exporting IRQchip properties like trigger edge
-> in sysfs, while the settings of the irqchip actually used by the driver
-> is not reflected in the other direction. So you can *set* these things
-> by writing in the GPIO sysfs, but never trust what you *read* from
-> there. And you can set what edges an IRQ will trigger on a certain
-> GPIO, and the way to handle the IRQs from usespace is to poll
-> on a value. This is not really documented but well ...
+you're right, I shouldn't send an ugly patch. I'm sorry.
+V2 uses suggested style, I think.
 
-Part of this sounds like you are not familiar with the GPIOlib sysfs
-IRQ stuff. The trigger edge set in sysfs is only used when userspace
-polls the GPIO via sysfs. Drivers that want to register a gpio IRQ
-should IMHO always explicitly request the edge/level to trigger on and
-they should request the gpio beforehand. This prevents the gpio from
-being exported to userspace. Only IRQ triggers accepted by the irq chip
-are settable in sysfs, so you can trust the value read from that file.
+Regards,
+-Kame
 
-> Sadly the main creator of this ABI is David Brownell who is
-> not able to respond nor maintain it from where he is now. But
-> we need to think hard about what we shall do with this particular
-> piece of legacy. Some of the stuff was added by Daniel
-> Glöckner so requesting advice from him.
 
-I'm only guilty of adding the IRQ sysfs interface.
-
-> Daniel: are you interested in helping us fixing the GPIOlib
-> sysfs ABI and kernel internals? I'm a bit afraid of it.
-
-Actually I don't know what you want to change to fix the existing sysfs
-ABI. Personally I'd like to see the following things changed:
- - /sys/gpio/.../direction does not correspond to hardware before first
-   use of gpio_direction_* due to lack of gpio_get_direction.
- - Names given to gpios by the chip should just result in symlinks to
-   the usual gpioX directories or (un)exporting of gpios should accept
-   names.
-
-Best regards,
-
-  Daniel
