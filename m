@@ -1,91 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab2JRUb4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 16:31:56 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:56793 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754441Ab2JRU0y (ORCPT
+	id S1753668Ab2JRUf3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 16:35:29 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55550 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724Ab2JRUf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 16:26:54 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 00/21] TTY buffer in tty_port and other stuff
-Date: Thu, 18 Oct 2012 22:26:26 +0200
-Message-Id: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.12.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 18 Oct 2012 16:35:27 -0400
+From: Mark Einon <mark.einon@gmail.com>
+To: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Mark Einon <mark.einon@gmail.com>
+Subject: [PATCH 2/2 v2] staging: et131x: Fix 64bit tx dma address handling
+Date: Thu, 18 Oct 2012 21:34:22 +0100
+Message-Id: <1350592462-23644-1-git-send-email-mark.einon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1350508512-15562-2-git-send-email-mark.einon@gmail.com>
+References: <1350508512-15562-2-git-send-email-mark.einon@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The driver checks that the device can handle 64bit DMA addressing in
+et131x_pci_setup(), but then assumes that the top dword of a tx dma
+address is always zero when creating a dma mapping in nic_send_packet().
+Fix the mapping to use the higher dword of the dma_addr_t returned by
+dma_map_single() and skb_frag_dma_map().
 
-this is the fifth series of patches which finally move tty buffers
-from tty_struct (present from open to close/hangup) to tty_port
-(present as long as the device). This allows us to get rid of the tty
-refcounting in the interrupt service routines and other hot paths
-after we are done. This is because we do not need to handle races
-among ISRs, timers, hangups and others, because tty_port lives as long
-as an interrupt/timer tick may occur. Unlike tty_struct.
+Also remove incorrect comments stating that dma_map_single() only returns
+a 32 bit address.
 
-This set also cleans up devpts handling a bit. Devpts used to play
-with tty->driver_data which was a bit ugly. Now devpts returns a node
-which we store to driver_data and pass it back when we need devpts to
-kill that. As a result, we can do that in the pty code instead of an
-ugly hook in tty_release.
+Signed-off-by: Mark Einon <mark.einon@gmail.com>
+---
+ drivers/staging/et131x/et131x.c |  102 +++++++++++++++------------------------
+ 1 file changed, 39 insertions(+), 63 deletions(-)
 
-Finally, the set moves all the n_tty private stuff from tty_struct to
-its own (internal) structure. This was an intention last time ago (at
-least here), but the races and undefined ldisc->open/close behavior
-did not allow us to do that. Now that we have ldisc kills and waits
-and bells and whistles we could finally go ahead.
-
-As usual, standard x86 stuff was runtime-tested. The rest is only
-checked to be compilation-errors free.
-
-Jiri Slaby (21):
-  TTY: devpts, don't care about TTY in devpts_get_tty
-  TTY: devpts, return created inode from devpts_pty_new
-  TTY: devpts, do not set driver_data
-  TTY: devpts, document devpts inode operations
-  TTY: move devpts kill to pty
-  TTY: vt, fix paste_selection ldisc handling
-  TTY: ldisc, wait for idle ldisc in release
-  TTY: hci_ldisc, remove invalid check in open
-  TTY: n_tty, simplify read_buf+echo_buf allocation
-  TTY: n_tty, remove bogus checks
-  TTY: audit, stop accessing tty->icount
-  TTY: n_tty, add ldisc data to n_tty
-  TTY: move ldisc data from tty_struct: simple members
-  TTY: move ldisc data from tty_struct: bitmaps
-  TTY: move ldisc data from tty_struct: read_* and echo_* and canon_*
-    stuff
-  TTY: move ldisc data from tty_struct: locks
-  TTY: n_tty, propagate n_tty_data
-  TTY: move TTY_FLUSH* flags to tty_port
-  TTY: tty_buffer, cache pointer to tty->buf
-  TTY: add port -> tty link
-  TTY: move tty buffers to tty_port
-
- drivers/bluetooth/hci_ldisc.c |   7 +-
- drivers/tty/n_tty.c           | 752 ++++++++++++++++++++++--------------------
- drivers/tty/pty.c             |  30 +-
- drivers/tty/tty_audit.c       |  15 +-
- drivers/tty/tty_buffer.c      | 224 +++++++------
- drivers/tty/tty_io.c          |  15 +-
- drivers/tty/tty_ldisc.c       |  15 +-
- drivers/tty/tty_port.c        |   2 +
- drivers/tty/vt/selection.c    |   9 +-
- fs/devpts/inode.c             |  61 ++--
- include/linux/devpts_fs.h     |  20 +-
- include/linux/tty.h           |  44 +--
- include/linux/tty_flip.h      |   2 +-
- 13 files changed, 633 insertions(+), 563 deletions(-)
-
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+index 9d258a3..23d166b 100644
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -3285,6 +3285,7 @@ static int nic_send_packet(struct et131x_adapter *adapter, struct tcb *tcb)
+ 	struct skb_frag_struct *frags = &skb_shinfo(skb)->frags[0];
+ 	unsigned long flags;
+ 	struct phy_device *phydev = adapter->phydev;
++	dma_addr_t dma_addr;
+ 
+ 	/* Part of the optimizations of this send routine restrict us to
+ 	 * sending 24 fragments at a pass.  In practice we should never see
+@@ -3314,77 +3315,46 @@ static int nic_send_packet(struct et131x_adapter *adapter, struct tcb *tcb)
+ 			 * doesn't seem to like large fragments.
+ 			 */
+ 			if (skb_headlen(skb) <= 1514) {
+-				desc[frag].addr_hi = 0;
+ 				/* Low 16bits are length, high is vlan and
+ 				   unused currently so zero */
+ 				desc[frag].len_vlan = skb_headlen(skb);
+-
+-				/* NOTE: Here, the dma_addr_t returned from
+-				 * dma_map_single() is implicitly cast as a
+-				 * u32. Although dma_addr_t can be
+-				 * 64-bit, the address returned by
+-				 * dma_map_single() is always 32-bit
+-				 * addressable (as defined by the pci/dma
+-				 * subsystem)
+-				 */
+-				desc[frag++].addr_lo =
+-				    dma_map_single(&adapter->pdev->dev,
+-						   skb->data,
+-						   skb_headlen(skb),
+-						   DMA_TO_DEVICE);
++				dma_addr = dma_map_single(&adapter->pdev->dev,
++							  skb->data,
++							  skb_headlen(skb),
++							  DMA_TO_DEVICE);
++				desc[frag].addr_lo = lower_32_bits(dma_addr);
++				desc[frag].addr_hi = upper_32_bits(dma_addr);
++				frag++;
+ 			} else {
+-				desc[frag].addr_hi = 0;
+ 				desc[frag].len_vlan = skb_headlen(skb) / 2;
+-
+-				/* NOTE: Here, the dma_addr_t returned from
+-				 * dma_map_single() is implicitly cast as a
+-				 * u32. Although dma_addr_t can be
+-				 * 64-bit, the address returned by
+-				 * dma_map_single() is always 32-bit
+-				 * addressable (as defined by the pci/dma
+-				 * subsystem)
+-				 */
+-				desc[frag++].addr_lo =
+-				    dma_map_single(&adapter->pdev->dev,
+-						   skb->data,
+-						   (skb_headlen(skb) / 2),
+-						   DMA_TO_DEVICE);
+-				desc[frag].addr_hi = 0;
++				dma_addr = dma_map_single(&adapter->pdev->dev,
++							  skb->data,
++							  (skb_headlen(skb) / 2),
++							  DMA_TO_DEVICE);
++				desc[frag].addr_lo = lower_32_bits(dma_addr);
++				desc[frag].addr_hi = upper_32_bits(dma_addr);
++				frag++;
+ 
+ 				desc[frag].len_vlan = skb_headlen(skb) / 2;
+-
+-				/* NOTE: Here, the dma_addr_t returned from
+-				 * dma_map_single() is implicitly cast as a
+-				 * u32. Although dma_addr_t can be
+-				 * 64-bit, the address returned by
+-				 * dma_map_single() is always 32-bit
+-				 * addressable (as defined by the pci/dma
+-				 * subsystem)
+-				 */
+-				desc[frag++].addr_lo =
+-				    dma_map_single(&adapter->pdev->dev,
+-						   skb->data +
+-							 (skb_headlen(skb) / 2),
+-						   (skb_headlen(skb) / 2),
+-						   DMA_TO_DEVICE);
++				dma_addr = dma_map_single(&adapter->pdev->dev,
++							  skb->data +
++							  (skb_headlen(skb) / 2),
++							  (skb_headlen(skb) / 2),
++							  DMA_TO_DEVICE);
++				desc[frag].addr_lo = lower_32_bits(dma_addr);
++				desc[frag].addr_hi = upper_32_bits(dma_addr);
++				frag++;
+ 			}
+ 		} else {
+-			desc[frag].addr_hi = 0;
+-			desc[frag].len_vlan =
+-					frags[i - 1].size;
+-
+-			/* NOTE: Here, the dma_addr_t returned from
+-			 * dma_map_page() is implicitly cast as a u32.
+-			 * Although dma_addr_t can be 64-bit, the address
+-			 * returned by dma_map_page() is always 32-bit
+-			 * addressable (as defined by the pci/dma subsystem)
+-			 */
+-			desc[frag++].addr_lo = skb_frag_dma_map(
+-							&adapter->pdev->dev,
+-							&frags[i - 1],
+-							0,
+-							frags[i - 1].size,
+-							DMA_TO_DEVICE);
++			desc[frag].len_vlan = frags[i - 1].size;
++			dma_addr = skb_frag_dma_map(&adapter->pdev->dev,
++						    &frags[i - 1],
++						    0,
++						    frags[i - 1].size,
++						    DMA_TO_DEVICE);
++			desc[frag].addr_lo = lower_32_bits(dma_addr);
++			desc[frag].addr_hi = upper_32_bits(dma_addr);
++			frag++;
+ 		}
+ 	}
+ 
+@@ -3611,6 +3581,7 @@ static inline void free_send_packet(struct et131x_adapter *adapter,
+ 	unsigned long flags;
+ 	struct tx_desc *desc = NULL;
+ 	struct net_device_stats *stats = &adapter->net_stats;
++	dma_addr_t dma_addr;
+ 
+ 	if (tcb->flags & fMP_DEST_BROAD)
+ 		atomic_inc(&adapter->stats.broadcast_pkts_xmtd);
+@@ -3631,8 +3602,13 @@ static inline void free_send_packet(struct et131x_adapter *adapter,
+ 				    (adapter->tx_ring.tx_desc_ring +
+ 						INDEX10(tcb->index_start));
+ 
++			dma_addr = desc->addr_lo;
++
++			if (sizeof(dma_addr_t) == sizeof(u64))
++				dma_addr |= ((dma_addr_t)desc->addr_hi) << 32;
++
+ 			dma_unmap_single(&adapter->pdev->dev,
+-					 desc->addr_lo,
++					 dma_addr,
+ 					 desc->len_vlan, DMA_TO_DEVICE);
+ 
+ 			add_10bit(&tcb->index_start, 1);
 -- 
-1.7.12.3
-
+1.7.9.5
 
