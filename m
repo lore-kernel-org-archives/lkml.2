@@ -1,63 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756599Ab2JRP27 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 11:28:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45903 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753341Ab2JRP25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 11:28:57 -0400
-Message-ID: <50802030.8070107@zytor.com>
-Date: Thu, 18 Oct 2012 08:28:48 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
+	id S1756947Ab2JRPaG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 11:30:06 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58645 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756028Ab2JRPaE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 11:30:04 -0400
+Message-ID: <50801F42.4050107@gmail.com>
+Date: Thu, 18 Oct 2012 17:24:50 +0200
+From: Daniel Mack <zonque@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Konrad Wilk <konrad.wilk@oracle.com>, linux-acpi@vger.kernel.org,
-        x86@kernel.org, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, lenb@kernel.org
-Subject: Re: [Xen-devel] Is: axe read_tscp pvops call. Was: Re: [RFC] ACPI
- S3 and Xen (suprisingly small\!).
-References: <1350481786-4969-1-git-send-email-konrad.wilk@oracle.com> <507ED6C0.4020503@zytor.com> <20121017161036.GA10691@phenom.dumpdata.com> <507EE1C3.7070300@zytor.com> <20121017165452.GA22740@phenom.dumpdata.com> <507EEC53.1010309@zytor.com> <84b3cbf9-7c84-4d7e-a2d7-46b0d1cc5975@default>
-In-Reply-To: <84b3cbf9-7c84-4d7e-a2d7-46b0d1cc5975@default>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Matt Porter <mporter@ti.com>
+CC: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alsa Devel List <alsa-devel@alsa-project.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] ASoC: davinci: replace private sram api with genalloc
+References: <1349991229-32107-1-git-send-email-mporter@ti.com> <1349991229-32107-2-git-send-email-mporter@ti.com> <50785049.50108@gmail.com> <20121018152149.GC25164@beef>
+In-Reply-To: <20121018152149.GC25164@beef>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2012 08:22 AM, Dan Magenheimer wrote:
->
-> It's a bit more complicated than that.  The problem is that if
-> any patch is ever submitted to the kernel that uses the rdtscp
-> instruction *in kernel space* in some clever way, the resultant
-> kernel may not behave as expected (depending on how the instruction
-> is used) on a 32-bit[1] PV kernel running on Xen, up to and including
-> the possibility of data corruption.
->
-> I don't know how one would implement it, but it's like a
-> BUILD_BUG_ON is needed if any kernel developer uses rdtscp
-> (one that never gets invoked by vdso code), that prints:
->
-> "WARNING: Please do not use this instruction in the kernel
-> without notifying the Xen maintainer as there is a possibility
-> it may behave unpredictably in some Xen environments.
-> See Documentation/.../xen_pv_limitations for detail."
->
-> The other virtualization-unsafe instructions may have similar
-> problems.
->
+On 18.10.2012 17:21, Matt Porter wrote:
+> On Fri, Oct 12, 2012 at 07:15:53PM +0200, Daniel Mack wrote:
+>> Hi Matt,
+>>
+>> On 11.10.2012 23:33, Matt Porter wrote:
+>>> Removes the DaVinci private SRAM API and replaces it with
+>>> the genalloc API. The SRAM gen_pool is passed in pdata since
+>>> DaVinci is in the early stages of DT conversion.
+>>>
+>>> Signed-off-by: Matt Porter <mporter@ti.com>
+>>> ---
+>>>  include/linux/platform_data/davinci_asp.h |    3 +++
+>>>  sound/soc/davinci/davinci-mcasp.c         |    2 ++
+>>>  sound/soc/davinci/davinci-pcm.c           |   18 ++++++++++++------
+>>>  sound/soc/davinci/davinci-pcm.h           |    2 ++
+>>>  4 files changed, 19 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/include/linux/platform_data/davinci_asp.h b/include/linux/platform_data/davinci_asp.h
+>>> index d0c5825..f3d6e4f 100644
+>>> --- a/include/linux/platform_data/davinci_asp.h
+>>> +++ b/include/linux/platform_data/davinci_asp.h
+>>> @@ -16,6 +16,8 @@
+>>>  #ifndef __DAVINCI_ASP_H
+>>>  #define __DAVINCI_ASP_H
+>>>  
+>>> +#include <linux/genalloc.h>
+>>> +
+>>>  struct snd_platform_data {
+>>>  	u32 tx_dma_offset;
+>>>  	u32 rx_dma_offset;
+>>> @@ -30,6 +32,7 @@ struct snd_platform_data {
+>>>  	unsigned enable_channel_combine:1;
+>>>  	unsigned sram_size_playback;
+>>>  	unsigned sram_size_capture;
+>>> +	struct gen_pool *sram_pool;
+>>>  
+>>>  	/*
+>>>  	 * If McBSP peripheral gets the clock from an external pin,
+>>> diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
+>>> index 714e51e..52194bb 100644
+>>> --- a/sound/soc/davinci/davinci-mcasp.c
+>>> +++ b/sound/soc/davinci/davinci-mcasp.c
+>>> @@ -1098,6 +1098,7 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
+>>>  	dma_data = &dev->dma_params[SNDRV_PCM_STREAM_PLAYBACK];
+>>>  	dma_data->asp_chan_q = pdata->asp_chan_q;
+>>>  	dma_data->ram_chan_q = pdata->ram_chan_q;
+>>> +	dma_data->sram_pool = pdata->sram_pool;
+>>>  	dma_data->sram_size = pdata->sram_size_playback;
+>>>  	dma_data->dma_addr = (dma_addr_t) (pdata->tx_dma_offset +
+>>>  							mem->start);
+>>> @@ -1115,6 +1116,7 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
+>>>  	dma_data = &dev->dma_params[SNDRV_PCM_STREAM_CAPTURE];
+>>>  	dma_data->asp_chan_q = pdata->asp_chan_q;
+>>>  	dma_data->ram_chan_q = pdata->ram_chan_q;
+>>> +	dma_data->sram_pool = pdata->sram_pool;
+>>>  	dma_data->sram_size = pdata->sram_size_capture;
+>>>  	dma_data->dma_addr = (dma_addr_t)(pdata->rx_dma_offset +
+>>>  							mem->start);
+>>> diff --git a/sound/soc/davinci/davinci-pcm.c b/sound/soc/davinci/davinci-pcm.c
+>>> index 93ea3bf..d2cc169 100644
+>>> --- a/sound/soc/davinci/davinci-pcm.c
+>>> +++ b/sound/soc/davinci/davinci-pcm.c
+>>> @@ -16,6 +16,7 @@
+>>>  #include <linux/slab.h>
+>>>  #include <linux/dma-mapping.h>
+>>>  #include <linux/kernel.h>
+>>> +#include <linux/genalloc.h>
+>>>  
+>>>  #include <sound/core.h>
+>>>  #include <sound/pcm.h>
+>>> @@ -23,7 +24,6 @@
+>>>  #include <sound/soc.h>
+>>>  
+>>>  #include <asm/dma.h>
+>>> -#include <mach/sram.h>
+>>>  
+>>>  #include "davinci-pcm.h"
+>>>  
+>>> @@ -259,7 +259,8 @@ static void davinci_pcm_dma_irq(unsigned link, u16 ch_status, void *data)
+>>>  	}
+>>>  }
+>>>  
+>>> -static int allocate_sram(struct snd_pcm_substream *substream, unsigned size,
+>>> +static int allocate_sram(struct snd_pcm_substream *substream,
+>>> +		struct gen_pool *sram_pool, unsigned size,
+>>>  		struct snd_pcm_hardware *ppcm)
+>>>  {
+>>>  	struct snd_dma_buffer *buf = &substream->dma_buffer;
+>>> @@ -271,9 +272,10 @@ static int allocate_sram(struct snd_pcm_substream *substream, unsigned size,
+>>>  		return 0;
+>>>  
+>>>  	ppcm->period_bytes_max = size;
+>>> -	iram_virt = sram_alloc(size, &iram_phys);
+>>> +	iram_virt = (void *)gen_pool_alloc(sram_pool, size);
+>>
+>> Did you see my patch that stubs out all functions that use gen_pool_*
+>> functions for !CONFIG_GENERIC_ALLOCATOR configs? It should still apply
+>> nicely on top of this one, and is necessary for AM33xx-only builds.
+> 
+> Sorry, I've had the last week of list traffic go to /dev/null. Catching
+> up now and I do see that. I'm assuming that will all be in your updated
+> series with these patches squashed in?
 
-Good frakking God.  This is the sort of things that makes me think that 
-Xen PV should just be thrown out of the kernel once and for all.
+Yes, exactly. I already sent them out yesterday.
 
-Do you notice that the document you just claimed doesn't even exist at 
-this point, never mind being somehow enforced?  In other word, there is 
-ABSOLUTELY NO WAY a mainline kernel developer can have any idea what 
-amount of violence Xen does to the architecture that it is parasiting on.
 
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Daniel
 
