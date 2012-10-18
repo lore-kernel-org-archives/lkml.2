@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984Ab2JRWDW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 18:03:22 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:59523 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750724Ab2JRWDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 18:03:20 -0400
-Date: Thu, 18 Oct 2012 18:03:06 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Jiang Liu <liuj97@gmail.com>, mhocko@suse.cz, bsingharora@gmail.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        paul.gortmaker@windriver.com
-Subject: Re: [PATCH] memory cgroup: update root memory cgroup when node is
- onlined
-Message-ID: <20121018220306.GA1739@cmpxchg.org>
-References: <505187D4.7070404@cn.fujitsu.com>
- <20120913205935.GK1560@cmpxchg.org>
- <alpine.LSU.2.00.1209131816070.1908@eggly.anvils>
- <507CF789.6050307@cn.fujitsu.com>
- <alpine.LSU.2.00.1210181129180.2137@eggly.anvils>
+	id S1755806Ab2JRWDe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 18:03:34 -0400
+Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:41293 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755239Ab2JRWDb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 18:03:31 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Takashi Iwai <tiwai@suse.de>
+Subject: Re: [alsa-devel] [PATCH 5/5] snd-ice1712: Fix resume on ice1724
+Date: Fri, 19 Oct 2012 00:02:44 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+References: <1350241763-7248-1-git-send-email-linux@rainbow-software.org> <1350241763-7248-6-git-send-email-linux@rainbow-software.org> <s5hhapt7fh8.wl%tiwai@suse.de>
+In-Reply-To: <s5hhapt7fh8.wl%tiwai@suse.de>
+X-KMail-QuotePrefix: > 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1210181129180.2137@eggly.anvils>
+Message-Id: <201210190002.44819.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 12:03:44PM -0700, Hugh Dickins wrote:
-> On Tue, 16 Oct 2012, Wen Congyang wrote:
-> > At 09/14/2012 09:36 AM, Hugh Dickins Wrote:
-> > > 
-> > > Description to be filled in later: would it be needed for -stable,
-> > > or is onlining already broken in other ways that you're now fixing up?
-> > > 
-> > > Reported-by: Tang Chen <tangchen@cn.fujitsu.com>
-> > > Signed-off-by: Hugh Dickins <hughd@google.com>
-> > 
-> > Hi, all:
-> > 
-> > What about the status of this patch?
-> 
-> Sorry I'm being so unresponsive at the moment (or, as usual).
-> 
-> When I sent the fixed version afterwards (minus mistaken VM_BUG_ON,
-> plus safer mem_cgroup_force_empty_list), I expected you or Konstantin
-> to respond with a patch to fix it as you preferred (at offline/online);
-> so this was on hold until we could compare and decide between them.
-> 
-> In the meantime, I assume, we've all come to feel that this way is
-> simple, and probably the best way for now; or at least good enough,
-> and we all have better things to do than play with alternatives.
-> 
-> I'll write up the description of the fixed version, and post it for
-> 3.7, including the Acks from Hannes and KAMEZAWA (assuming they carry
-> forward to the second version) - but probably not today or tomorrow.
+On Wednesday 17 October 2012 08:57:39 Takashi Iwai wrote:
+> At Sun, 14 Oct 2012 21:09:23 +0200,
+>
+> Ondrej Zary wrote:
+> > set_pro_rate() is called from hw_params() but not from prepare(),
+> > breaking running PCM on suspend/resume. Call it from prepare() if PCM was
+> > suspended to fix the problem.
+> >
+> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+>
+> This should be fixed in the resume callback.  Could you check the
+> patch below instead?
 
-Mine does, thanks for asking :-)
+Now I'm confused. This patch does not work with mplayer+dmix. And my patch 
+doesn't either...
+When mplayer is set to s32le (without dmix), it works fine without this or my 
+patch. Also aplay seems to work without these patches.
+I bet that when I tested my patch before, it fixed some real problem. But I'm 
+now unable to reproduce that...
+
+
+> thanks,
+>
+> Takashi
+>
+> ---
+> diff --git a/sound/pci/ice1712/ice1724.c b/sound/pci/ice1712/ice1724.c
+> index 161c8f6..5cc3fa5 100644
+> --- a/sound/pci/ice1712/ice1724.c
+> +++ b/sound/pci/ice1712/ice1724.c
+> @@ -2867,7 +2867,12 @@ static int snd_vt1724_resume(struct device *dev)
+>  		ice->set_spdif_clock(ice, 0);
+>  	} else {
+>  		/* internal on-card clock */
+> -		snd_vt1724_set_pro_rate(ice, ice->pro_rate_default, 1);
+> +		int rate;
+> +		if (ice->cur_rate)
+> +			rate = ice->cur_rate;
+> +		else
+> +			rate = ice->pro_rate_default;
+> +		snd_vt1724_set_pro_rate(ice, rate, 1);
+>  	}
+>
+>  	update_spdif_bits(ice, ice->pm_saved_spdif_ctrl);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+-- 
+Ondrej Zary
