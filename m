@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772Ab2JRWIM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 18:08:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54522 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753051Ab2JRWIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 18:08:11 -0400
-Date: Fri, 19 Oct 2012 00:08:09 +0200
-From: Jan Kara <jack@suse.cz>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Jan Kara <jack@suse.cz>, Fabio Coatti <fabio.coatti@gmail.com>,
-        linux-kernel@vger.kernel.org, Neil Brown <neilb@suse.de>
-Subject: Re: ext3 issue on 3.6.1
-Message-ID: <20121018220809.GD17646@quack.suse.cz>
-References: <CADpTngUPcX71qjE2QKhYqgDg7tZoz+pu8A6nE9DT-zbFKWGx1g@mail.gmail.com>
- <20121018212357.GA17646@quack.suse.cz>
- <1350596425.1366.15.camel@x61.thuisdomein>
+	id S1756074Ab2JRWOL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 18:14:11 -0400
+Received: from exprod7og107.obsmtp.com ([64.18.2.167]:36541 "EHLO
+	exprod7og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753125Ab2JRWOJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 18:14:09 -0400
+Message-ID: <50807F26.5070106@genband.com>
+Date: Thu, 18 Oct 2012 16:13:58 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350596425.1366.15.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jan Kara <jack@suse.cz>
+CC: Alex Bligh <alex@alex.org.uk>, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: Local DoS through write heavy I/O on CFQ & Deadline
+References: <0B138F62-16BF-4295-9AD9-64C0BB39FCE2@alex.org.uk> <20121012133044.GA10115@dhcp22.suse.cz> <E6EF14955C67D6CA58918872@nimrod.local> <20121012145838.GD22083@dhcp22.suse.cz> <3D1C85A52BB960B79E37AC30@nimrod.local> <20121018212845.GB17646@quack.suse.cz>
+In-Reply-To: <20121018212845.GB17646@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Oct 2012 22:13:59.0877 (UTC) FILETIME=[DFACBF50:01CDAD7D]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19286.001
+X-TM-AS-Result: No--8.423200-8.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 18-10-12 23:40:25, Paul Bolle wrote:
-> On Thu, 2012-10-18 at 23:23 +0200, Jan Kara wrote:
-> > On Fri 12-10-12 14:57:55, Fabio Coatti wrote:
-> > > [13031.051521] ------------[ cut here ]------------
-> > > [13031.051576] WARNING: at fs/inode.c:280 drop_nlink+0x1b/0x35()
-> > > [13031.051624] Hardware name: ProLiant BL465c G7
-> > > [13031.051668] Pid: 3344, comm: php Tainted: G        W
-> > > 3.6.1-1000hz-preempt #2
-> > > [13031.051746] Call Trace:
-> > > [13031.051787]  [<ffffffff810578c4>] ? warn_slowpath_common+0x73/0x87
-> > > [13031.051837]  [<ffffffff810ec628>] ? drop_nlink+0x1b/0x35
-> > > [13031.051885]  [<ffffffff8118ad51>] ? nfs_dentry_iput+0x33/0x49
-> > > [13031.051934]  [<ffffffff810ea920>] ? d_kill+0xe8/0x108
-> > > [13031.051980]  [<ffffffff810eb001>] ? dput+0x147/0x154
-> > > [13031.052027]  [<ffffffff810d9e46>] ? __fput+0x19a/0x1b2
-> > > [13031.052073]  [<ffffffff8106bdf0>] ? task_work_run+0x4c/0x60
-> > > [13031.052123]  [<ffffffff815ff5e8>] ? int_signal+0x12/0x17
-> > > [13031.052169] ---[ end trace e60232a455c8e2dd ]---
-> >   And this seems unrelated - likely an NFS problem... Let's sort this out
-> > if you still see it after ext3 issue is solved.
-> 
-> Looks rather similar too https://lkml.org/lkml/2012/8/29/165 , doesn't
-> it?
-  Yup. I wonder why that patch didn't get merged. Neil?
+On 10/18/2012 03:28 PM, Jan Kara wrote:
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+>    Yeah, ionice has its limitations. The problem is that all buffered
+> writes happen just into memory (so completely independently of ionice
+> settings). Subsequent writing of dirty memory to disk happens using flusher
+> thread which is a kernel process and it doesn't know anything about IO
+> priority set for task which created the file. If you wrote the file with
+> oflag=direct or oflag=sync you would see that ionice works as expected.
+
+Has anyone looked at storing the ionice value with the buffered write 
+request such that the actual writes to disk could be sorted by priority 
+and done with the ionice level of the original caller?
+
+Chris
