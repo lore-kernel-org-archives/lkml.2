@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932663Ab2JRXjd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 19:39:33 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:46690 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab2JRXjc (ORCPT
+	id S932424Ab2JRXjz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 19:39:55 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38095 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751850Ab2JRXjy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 19:39:32 -0400
-Date: Thu, 18 Oct 2012 16:39:28 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: linux-kernel@vger.kernel.org, Konrad Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] workqueue: cancel_delayed_work() should return %NULL if
- work item is idle
-Message-ID: <20121018233928.GY13370@google.com>
-References: <444a6439-b1a4-4740-9e7e-bc37267cfe73@default>
+	Thu, 18 Oct 2012 19:39:54 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: "cbou@mail.ru" <cbou@mail.ru>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Jonathan Cameron <jic23@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 3/3] lp8788-charger: fix wrong ADC conversion
+Thread-Topic: [PATCH 3/3] lp8788-charger: fix wrong ADC conversion
+Thread-Index: Ac2s93gDQSeJyP+TRoq5NeyBztAjJf//0CQA//63kgD//WkZ8A==
+Date: Thu, 18 Oct 2012 23:39:39 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F641790F2@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F64178FA7@DQHE02.ent.ti.com>
+ <507FE604.8070404@metafoo.de> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <444a6439-b1a4-4740-9e7e-bc37267cfe73@default>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From e65120fcfc1cb9697655d29ecd7982451c05d3c2 Mon Sep 17 00:00:00 2001
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-Date: Thu, 18 Oct 2012 16:31:37 -0700
+> > We now have a function in the IIO core which does the sampling +
+> > conversion
+> > in one step: iio_read_channel_processed. This basically allows you to
+> > reduce
+> > this function to
+> >
+> > 	return iio_read_channel_processed(channel, result);
+> 
+> I was hesitating it before sending this patch. :)
+> Currently, LP8788 ADC driver has no iio channel info for PROCESSED.
+> Thus, I'll add it in the LP8788 ADC driver first.
+> Then I'll send the patch for lp8788-charger again.
 
-57b30ae77b ("workqueue: reimplement cancel_delayed_work() using
-try_to_grab_pending()") made cancel_delayed_work() always return %true
-unless someone else is also trying to cancel the work item, which is
-broken - if the target work item is idle, the return value should be
-%false.
+I just found you have already handled in case that IIO driver has no IIO_CHAN_INFO_PROCESSED.
+(drivers/iio/inkern.c)
+So I don't need to worry about the LP8788 ADC driver.
+Only the IIO consumer driver(lp8788-charger) needs to be fixed.
 
-try_to_grab_pending() indicates that the target work item was idle by
-zero return value.  Use it for return.  Note that this brings
-cancel_delayed_work() in line with __cancel_work_timer() in return
-value handling.
-
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-LKML-Reference: <444a6439-b1a4-4740-9e7e-bc37267cfe73@default>
----
- kernel/workqueue.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index d951daa..042d221 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2982,7 +2982,7 @@ bool cancel_delayed_work(struct delayed_work *dwork)
- 
- 	set_work_cpu_and_clear_pending(&dwork->work, work_cpu(&dwork->work));
- 	local_irq_restore(flags);
--	return true;
-+	return ret;
- }
- EXPORT_SYMBOL(cancel_delayed_work);
- 
--- 
-1.7.7.3
-
+Thank you,
+Milo
