@@ -1,125 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932666Ab2JRWm3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 18:42:29 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:35953 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932574Ab2JRWmH (ORCPT
+	id S1756168Ab2JRWmu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 18:42:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54158 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932504Ab2JRWlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 18:42:07 -0400
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Cc: Tim Bird <tim.bird@am.sony.com>, Ezequiel Garcia <elezegarcia@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
-Subject: [PATCH 3/3] mm/sl[aou]b: Move common kmem_cache_size() to slab.h
-Date: Thu, 18 Oct 2012 19:41:47 -0300
-Message-Id: <1350600107-4558-3-git-send-email-elezegarcia@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1350600107-4558-1-git-send-email-elezegarcia@gmail.com>
-References: <1350600107-4558-1-git-send-email-elezegarcia@gmail.com>
+	Thu, 18 Oct 2012 18:41:52 -0400
+Date: Thu, 18 Oct 2012 15:41:48 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH 4/6] cgroups: forbid pre_destroy callback to fail
+Message-ID: <20121018224148.GR13370@google.com>
+References: <1350480648-10905-1-git-send-email-mhocko@suse.cz>
+ <1350480648-10905-5-git-send-email-mhocko@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350480648-10905-5-git-send-email-mhocko@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function is identically defined in all three allocators
-and it's trivial to move it to slab.h
+Hello, Michal.
 
-Since now it's static, inline, header-defined function
-this patch also drops the EXPORT_SYMBOL tag.
+On Wed, Oct 17, 2012 at 03:30:46PM +0200, Michal Hocko wrote:
+> Now that mem_cgroup_pre_destroy callback doesn't fail finally we can
+> safely move on and forbit all the callbacks to fail. The last missing
+> piece is moving cgroup_call_pre_destroy after cgroup_clear_css_refs so
+> that css_tryget fails so no new charges for the memcg can happen.
+> The callbacks are also called from within cgroup_lock to guarantee that
+> no new tasks show up. We could theoretically call them outside of the
+> lock but then we have to move after CGRP_REMOVED flag is set.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
 
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Matt Mackall <mpm@selenic.com>
-Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
----
- include/linux/slab.h |    9 ++++++++-
- mm/slab.c            |    6 ------
- mm/slob.c            |    6 ------
- mm/slub.c            |    9 ---------
- 4 files changed, 8 insertions(+), 22 deletions(-)
+So, the plan is to do something like the following once memcg is
+ready.
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 83d1a14..d513147 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -128,7 +128,6 @@ struct kmem_cache *kmem_cache_create(const char *, size_t, size_t,
- void kmem_cache_destroy(struct kmem_cache *);
- int kmem_cache_shrink(struct kmem_cache *);
- void kmem_cache_free(struct kmem_cache *, void *);
--unsigned int kmem_cache_size(struct kmem_cache *);
- 
- /*
-  * Please use this macro to create slab caches. Simply specify the
-@@ -388,6 +387,14 @@ static inline void *kzalloc_node(size_t size, gfp_t flags, int node)
- 	return kmalloc_node(size, flags | __GFP_ZERO, node);
- }
- 
-+/*
-+ * Determine the size of a slab object
-+ */
-+unsigned int kmem_cache_size(struct kmem_cache *s)
-+{
-+	return s->object_size;
-+}
-+
- void __init kmem_cache_init_late(void);
- 
- #endif	/* _LINUX_SLAB_H */
-diff --git a/mm/slab.c b/mm/slab.c
-index 87c55b0..92a3fec 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3969,12 +3969,6 @@ void kfree(const void *objp)
- }
- EXPORT_SYMBOL(kfree);
- 
--unsigned int kmem_cache_size(struct kmem_cache *cachep)
--{
--	return cachep->object_size;
--}
--EXPORT_SYMBOL(kmem_cache_size);
--
- /*
-  * This initializes kmem_list3 or resizes various caches for all nodes.
-  */
-diff --git a/mm/slob.c b/mm/slob.c
-index 287a88a..fffbc82 100644
---- a/mm/slob.c
-+++ b/mm/slob.c
-@@ -604,12 +604,6 @@ void kmem_cache_free(struct kmem_cache *c, void *b)
- }
- EXPORT_SYMBOL(kmem_cache_free);
- 
--unsigned int kmem_cache_size(struct kmem_cache *c)
--{
--	return c->object_size;
--}
--EXPORT_SYMBOL(kmem_cache_size);
--
- int __kmem_cache_shutdown(struct kmem_cache *c)
- {
- 	/* No way to check for remaining objects */
-diff --git a/mm/slub.c b/mm/slub.c
-index a0d6984..1f826b0 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3127,15 +3127,6 @@ error:
- 	return -EINVAL;
- }
- 
--/*
-- * Determine the size of a slab object
-- */
--unsigned int kmem_cache_size(struct kmem_cache *s)
--{
--	return s->object_size;
--}
--EXPORT_SYMBOL(kmem_cache_size);
--
- static void list_slab_objects(struct kmem_cache *s, struct page *page,
- 							const char *text)
- {
+  http://thread.gmane.org/gmane.linux.kernel.containers/22559/focus=75251
+
+Note that the patch is broken in a couple places but it does show the
+general direction.  I'd prefer if patch #3 simply makes pre_destroy()
+return 0 and drop __DEPRECATED_clear_css_refs from mem_cgroup_subsys.
+Then, I can pull the branch in and drop all the unnecessary cruft.
+
+Thanks.
+
 -- 
-1.7.8.6
-
+tejun
