@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932658Ab2JRR4p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 13:56:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16823 "EHLO mx1.redhat.com"
+	id S932694Ab2JRR6V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 13:58:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12200 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932125Ab2JRR4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 13:56:44 -0400
-Date: Thu, 18 Oct 2012 19:57:47 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mikulas Patocka <mpatocka@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] brw_mutex: big read-write mutex
-Message-ID: <20121018175747.GA30691@redhat.com>
-References: <20121015190958.GA4799@redhat.com> <20121015191018.GA4816@redhat.com> <CA+55aFwV-WOUx8MSr145f+HSrtmZ=nXHq0VLhtPyH=FNBFwmQg@mail.gmail.com> <20121017165902.GB9872@redhat.com> <20121017224430.GC2518@linux.vnet.ibm.com> <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com>
+	id S932363Ab2JRR6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 13:58:20 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] UAPI: S390 shouldn't've been changed to use
+ uapi/asm-generic/kvm_para.h
+To: schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com
+Cc: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>,
+        Yuanhan Liu <yuanhan.liu@intel.com>, fengguang.wu@intel.com
+Date: Thu, 18 Oct 2012 18:58:13 +0100
+Message-ID: <20121018175813.7489.19089.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121018163833.GK2518@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18, Paul E. McKenney wrote:
->
-> On Thu, Oct 18, 2012 at 06:24:09PM +0200, Oleg Nesterov wrote:
-> >
-> > I thought that you meant that without mb() brw_start_write() can
-> > race with brw_end_read() and hang forever.
-> >
-> > But probably you meant that we need the barriers to ensure that,
-> > say, if the reader does
-> >
-> > 	brw_start_read();
-> > 	CONDITION = 1;
-> > 	brw_end_read();
-> >
-> > then the writer must see CONDITION != 0 after brw_start_write() ?
-> > (or vice-versa)
->
-> Yes, this is exactly my concern.
+It turns out that S390 shouldn't use uapi/asm-generic/kvm_para.h since it
+defines the functions in its non-UAPI kvm_para.h file.
 
-Oh, thanks at lot Paul (as always).
+#including <asm-generic/kvm_para.h> will first pick up
+include/asm-generic/kvm_para.h, which defines conflicting functions.
 
-> > In this case we need the barrier, yes. Obviously brw_start_write()
-> > can return right after this_cpu_dec() and before wake_up_all().
-> >
-> > 2/2 doesn't need this guarantee but I agree, this doesn't look
-> > sane in gerenal...
->
-> Or name it something not containing "lock".  And clearly document
-> the behavior and how it is to be used.  ;-)
+Instead, partially revert commit 0420c87e648a3b623ad925038a0bcff2ef5a4bc9,
+ungenericising this file and just inserting a comment to prevent the patch
+program from deleting it.
 
-this would be insane, I guess ;)
+Reported-by: Yuanhan Liu <yuanhan.liu@intel.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Yuanhan Liu <yuanhan.liu@intel.com>
+cc: fengguang.wu@intel.com
+---
 
-So. Ignoring the possible optimization you mentioned before,
-brw_end_read() should do:
+ arch/s390/include/uapi/asm/Kbuild     |    2 --
+ arch/s390/include/uapi/asm/kvm_para.h |   11 +++++++++++
+ 2 files changed, 11 insertions(+), 2 deletions(-)
+ create mode 100644 arch/s390/include/uapi/asm/kvm_para.h
 
-	smp_mb();
-	this_cpu_dec();
-
-	wake_up_all();
-
-And yes, we need the full mb(). wmb() is enough to ensure that the
-writer will see the memory modifications done by the reader. But we
-also need to ensure that any LOAD inside start_read/end_read can not
-be moved outside of the critical section.
-
-But we should also ensure that "read" will see all modifications
-which were done under start_write/end_write. This means that
-brw_end_write() needs another synchronize_sched() before
-atomic_dec_and_test(), or brw_start_read() needs mb() in the
-fast-path.
-
-Correct?
-
-
-
-Ooooh. And I just noticed include/linux/percpu-rwsem.h which does
-something similar. Certainly it was not in my tree when I started
-this patch... percpu_down_write() doesn't allow multiple writers,
-but the main problem it uses msleep(1). It should not, I think.
-
-But. It seems that percpu_up_write() is equally wrong? Doesn't
-it need synchronize_rcu() before "p->locked = false" ?
-
-(add Mikulas)
-
-Oleg.
+diff --git a/arch/s390/include/uapi/asm/Kbuild b/arch/s390/include/uapi/asm/Kbuild
+index 59b67ed..7bf68ff 100644
+--- a/arch/s390/include/uapi/asm/Kbuild
++++ b/arch/s390/include/uapi/asm/Kbuild
+@@ -1,8 +1,6 @@
+ # UAPI Header export list
+ include include/uapi/asm-generic/Kbuild.asm
+ 
+-generic-y += kvm_para.h
+-
+ header-y += auxvec.h
+ header-y += bitsperlong.h
+ header-y += byteorder.h
+diff --git a/arch/s390/include/uapi/asm/kvm_para.h b/arch/s390/include/uapi/asm/kvm_para.h
+new file mode 100644
+index 0000000..ff1f4e7
+--- /dev/null
++++ b/arch/s390/include/uapi/asm/kvm_para.h
+@@ -0,0 +1,11 @@
++/*
++ * User API definitions for paravirtual devices on s390
++ *
++ * Copyright IBM Corp. 2008
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License (version 2 only)
++ * as published by the Free Software Foundation.
++ *
++ *    Author(s): Christian Borntraeger <borntraeger@de.ibm.com>
++ */
 
