@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757024Ab2JRQIJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 12:08:09 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49616 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753681Ab2JRQIF (ORCPT
+	id S1756790Ab2JRQKe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 12:10:34 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33623 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992Ab2JRQKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 12:08:05 -0400
-From: Sangho Yi <antiroot@gmail.com>
-To: prakity@marvell.com, aaron.lu@amd.com, linus.walleij@linaro.org,
-        ulf.hansson@stericsson.com, cjb@laptop.org
-Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        Sangho Yi <antiroot@gmail.com>
-Subject: [PATCH 1/3] drivers: mmc: core: sdio.c: fixed lines with > 80 chars
-Date: Fri, 19 Oct 2012 01:06:32 +0900
-Message-Id: <1350576394-2008-1-git-send-email-antiroot@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <n>
-References: <n>
+	Thu, 18 Oct 2012 12:10:32 -0400
+Subject: Re: [PATCH] rcu: restore correct batch limiting
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20121018152543.GI2518@linux.vnet.ibm.com>
+References: <1350458052.26103.31.camel@edumazet-glaptop>
+	 <20121018115859.GH2518@linux.vnet.ibm.com>
+	 <1350564290.26103.1496.camel@edumazet-glaptop>
+	 <20121018152543.GI2518@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Oct 2012 18:10:28 +0200
+Message-ID: <1350576628.32642.14.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style warning cases for exceeding 80 chars per line on
-sdio.c.
+On Thu, 2012-10-18 at 08:25 -0700, Paul E. McKenney wrote:
+> On Thu, Oct 18, 2012 at 02:44:50PM +0200, Eric Dumazet wrote:
 
-Signed-off-by: Sangho Yi <antiroot@gmail.com>
----
- drivers/mmc/core/sdio.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+> > 
+> > Having 2 billions callbacks on one cpu would be problematic, I really
+> > hope nobody relies on this ;)
+> 
+> Fair point!  ;-)
+> 
+> But just making everything long makes it quite easy to analyze.
+> 
+> > I guess the 10/infinity switch should be smarter.
+> > 
+> > something like the following maybe :
+> > 
+> > rdp->blimit = max(blimit, rdp->qlen >> 6);
+> > 
+> > (if queue is big, dont wait to hit 10000 before allowing more items to
+> > be handled per round)
+> 
+> The -rt guys would not be amused.  :-(
+> 
+> But for non-realtime use, increasing rcutree.blimit either at boot or
+> via sysfs could make sense.  It is also likely that I will move callback
+> processing to a kthread at some point, which would allow some additional
+> flexibility.
+> 
 
-diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-index 2273ce6..14326e8 100644
---- a/drivers/mmc/core/sdio.c
-+++ b/drivers/mmc/core/sdio.c
-@@ -47,7 +47,8 @@ static int sdio_read_fbr(struct sdio_func *func)
- 
- 	if (data == 0x0f) {
- 		ret = mmc_io_rw_direct(func->card, 0, 0,
--			SDIO_FBR_BASE(func->num) + SDIO_FBR_STD_IF_EXT, 0, &data);
-+			SDIO_FBR_BASE(func->num) + SDIO_FBR_STD_IF_EXT,
-+			0, &data);
- 		if (ret)
- 			goto out;
- 	}
-@@ -619,7 +620,8 @@ static int mmc_sdio_init_card(struct mmc_host *host, u32 ocr,
- 		card->type = MMC_TYPE_SD_COMBO;
- 
- 		if (oldcard && (oldcard->type != MMC_TYPE_SD_COMBO ||
--		    memcmp(card->raw_cid, oldcard->raw_cid, sizeof(card->raw_cid)) != 0)) {
-+			memcmp(card->raw_cid, oldcard->raw_cid,
-+				sizeof(card->raw_cid)) != 0)) {
- 			mmc_remove_card(card);
- 			return -ENOENT;
- 		}
--- 
-1.7.9.5
+Ah, I now realize the loop can exceed blimit, but is it true for BH
+variant ? (Not really a problem for 3.6/3.7 kernels, but prior ones)
+
+if (++count >= bl &&
+    (need_resched() ||
+     (!is_idle_task(current) && !rcu_is_callbacks_kthread())))
+        break;
+
+I wonder if ksoftirqd should be included as well...
+
+> Furthermore, it would be easy to have one default for non-rt and another
+> for -rt, if that would help.
+> 
+> > Signed-off-by: Eric Dumazet <edumazet@google.com>
+> > 
+> > Please dont forget stable teams.  (3.2 + )
+> 
+> Added both, please see below!
+> 
+
+Seems fine to me, thanks Paul !
+
 
