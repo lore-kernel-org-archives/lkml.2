@@ -1,138 +1,482 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756947Ab2JRPaG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 11:30:06 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:58645 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756028Ab2JRPaE (ORCPT
+	id S1756860Ab2JRPcq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 11:32:46 -0400
+Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:42458
+	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753697Ab2JRPco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 11:30:04 -0400
-Message-ID: <50801F42.4050107@gmail.com>
-Date: Thu, 18 Oct 2012 17:24:50 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
-MIME-Version: 1.0
-To: Matt Porter <mporter@ti.com>
-CC: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Alsa Devel List <alsa-devel@alsa-project.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] ASoC: davinci: replace private sram api with genalloc
-References: <1349991229-32107-1-git-send-email-mporter@ti.com> <1349991229-32107-2-git-send-email-mporter@ti.com> <50785049.50108@gmail.com> <20121018152149.GC25164@beef>
-In-Reply-To: <20121018152149.GC25164@beef>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 18 Oct 2012 11:32:44 -0400
+Message-ID: <1350574357.3894.29.camel@rhapsody>
+Subject: Re: [PATCH v5 1/2] x86, pci: Reset PCIe devices at boot time
+From: Khalid Aziz <khalid@gonehiking.org>
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: linux-pci@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        martin.wilck@ts.fujitsu.com, kexec@lists.infradead.org,
+        hbabu@us.ibm.com, andi@firstfloor.org, ddutile@redhat.com,
+        ishii.hironobu@jp.fujitsu.com, hpa@zytor.com, bhelgaas@google.com,
+        tglx@linutronix.de, mingo@redhat.com, vgoyal@redhat.com,
+        Alex Williamson <alex.williamson@redhat.com>
+Date: Thu, 18 Oct 2012 09:32:37 -0600
+In-Reply-To: <20121017061807.2944.82578.sendpatchset@indoh>
+References: <20121017061757.2944.36671.sendpatchset@indoh>
+	 <20121017061807.2944.82578.sendpatchset@indoh>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.10.2012 17:21, Matt Porter wrote:
-> On Fri, Oct 12, 2012 at 07:15:53PM +0200, Daniel Mack wrote:
->> Hi Matt,
->>
->> On 11.10.2012 23:33, Matt Porter wrote:
->>> Removes the DaVinci private SRAM API and replaces it with
->>> the genalloc API. The SRAM gen_pool is passed in pdata since
->>> DaVinci is in the early stages of DT conversion.
->>>
->>> Signed-off-by: Matt Porter <mporter@ti.com>
->>> ---
->>>  include/linux/platform_data/davinci_asp.h |    3 +++
->>>  sound/soc/davinci/davinci-mcasp.c         |    2 ++
->>>  sound/soc/davinci/davinci-pcm.c           |   18 ++++++++++++------
->>>  sound/soc/davinci/davinci-pcm.h           |    2 ++
->>>  4 files changed, 19 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/include/linux/platform_data/davinci_asp.h b/include/linux/platform_data/davinci_asp.h
->>> index d0c5825..f3d6e4f 100644
->>> --- a/include/linux/platform_data/davinci_asp.h
->>> +++ b/include/linux/platform_data/davinci_asp.h
->>> @@ -16,6 +16,8 @@
->>>  #ifndef __DAVINCI_ASP_H
->>>  #define __DAVINCI_ASP_H
->>>  
->>> +#include <linux/genalloc.h>
->>> +
->>>  struct snd_platform_data {
->>>  	u32 tx_dma_offset;
->>>  	u32 rx_dma_offset;
->>> @@ -30,6 +32,7 @@ struct snd_platform_data {
->>>  	unsigned enable_channel_combine:1;
->>>  	unsigned sram_size_playback;
->>>  	unsigned sram_size_capture;
->>> +	struct gen_pool *sram_pool;
->>>  
->>>  	/*
->>>  	 * If McBSP peripheral gets the clock from an external pin,
->>> diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
->>> index 714e51e..52194bb 100644
->>> --- a/sound/soc/davinci/davinci-mcasp.c
->>> +++ b/sound/soc/davinci/davinci-mcasp.c
->>> @@ -1098,6 +1098,7 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
->>>  	dma_data = &dev->dma_params[SNDRV_PCM_STREAM_PLAYBACK];
->>>  	dma_data->asp_chan_q = pdata->asp_chan_q;
->>>  	dma_data->ram_chan_q = pdata->ram_chan_q;
->>> +	dma_data->sram_pool = pdata->sram_pool;
->>>  	dma_data->sram_size = pdata->sram_size_playback;
->>>  	dma_data->dma_addr = (dma_addr_t) (pdata->tx_dma_offset +
->>>  							mem->start);
->>> @@ -1115,6 +1116,7 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
->>>  	dma_data = &dev->dma_params[SNDRV_PCM_STREAM_CAPTURE];
->>>  	dma_data->asp_chan_q = pdata->asp_chan_q;
->>>  	dma_data->ram_chan_q = pdata->ram_chan_q;
->>> +	dma_data->sram_pool = pdata->sram_pool;
->>>  	dma_data->sram_size = pdata->sram_size_capture;
->>>  	dma_data->dma_addr = (dma_addr_t)(pdata->rx_dma_offset +
->>>  							mem->start);
->>> diff --git a/sound/soc/davinci/davinci-pcm.c b/sound/soc/davinci/davinci-pcm.c
->>> index 93ea3bf..d2cc169 100644
->>> --- a/sound/soc/davinci/davinci-pcm.c
->>> +++ b/sound/soc/davinci/davinci-pcm.c
->>> @@ -16,6 +16,7 @@
->>>  #include <linux/slab.h>
->>>  #include <linux/dma-mapping.h>
->>>  #include <linux/kernel.h>
->>> +#include <linux/genalloc.h>
->>>  
->>>  #include <sound/core.h>
->>>  #include <sound/pcm.h>
->>> @@ -23,7 +24,6 @@
->>>  #include <sound/soc.h>
->>>  
->>>  #include <asm/dma.h>
->>> -#include <mach/sram.h>
->>>  
->>>  #include "davinci-pcm.h"
->>>  
->>> @@ -259,7 +259,8 @@ static void davinci_pcm_dma_irq(unsigned link, u16 ch_status, void *data)
->>>  	}
->>>  }
->>>  
->>> -static int allocate_sram(struct snd_pcm_substream *substream, unsigned size,
->>> +static int allocate_sram(struct snd_pcm_substream *substream,
->>> +		struct gen_pool *sram_pool, unsigned size,
->>>  		struct snd_pcm_hardware *ppcm)
->>>  {
->>>  	struct snd_dma_buffer *buf = &substream->dma_buffer;
->>> @@ -271,9 +272,10 @@ static int allocate_sram(struct snd_pcm_substream *substream, unsigned size,
->>>  		return 0;
->>>  
->>>  	ppcm->period_bytes_max = size;
->>> -	iram_virt = sram_alloc(size, &iram_phys);
->>> +	iram_virt = (void *)gen_pool_alloc(sram_pool, size);
->>
->> Did you see my patch that stubs out all functions that use gen_pool_*
->> functions for !CONFIG_GENERIC_ALLOCATOR configs? It should still apply
->> nicely on top of this one, and is necessary for AM33xx-only builds.
+On Wed, 2012-10-17 at 15:23 +0900, Takao Indoh wrote:
+> This patch resets PCIe devices at boot time by hot reset when
+> "reset_devices" is specified.
 > 
-> Sorry, I've had the last week of list traffic go to /dev/null. Catching
-> up now and I do see that. I'm assuming that will all be in your updated
-> series with these patches squashed in?
+> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+> ---
+>  arch/x86/include/asm/pci-direct.h |    1 
+>  arch/x86/kernel/setup.c           |    3 
+>  arch/x86/pci/early.c              |  353 ++++++++++++++++++++++++++++
+>  include/linux/pci.h               |    2 
+>  init/main.c                       |    4 
+>  5 files changed, 361 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/pci-direct.h b/arch/x86/include/asm/pci-direct.h
+> index b1e7a45..de30db2 100644
+> --- a/arch/x86/include/asm/pci-direct.h
+> +++ b/arch/x86/include/asm/pci-direct.h
+> @@ -18,4 +18,5 @@ extern int early_pci_allowed(void);
+>  extern unsigned int pci_early_dump_regs;
+>  extern void early_dump_pci_device(u8 bus, u8 slot, u8 func);
+>  extern void early_dump_pci_devices(void);
+> +extern void early_reset_pcie_devices(void);
+>  #endif /* _ASM_X86_PCI_DIRECT_H */
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index a2bb18e..73d3425 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -987,6 +987,9 @@ void __init setup_arch(char **cmdline_p)
+>  	generic_apic_probe();
+>  
+>  	early_quirks();
+> +#ifdef CONFIG_PCI
+> +	early_reset_pcie_devices();
+> +#endif
+>  
+>  	/*
+>  	 * Read APIC and some other early information from ACPI tables.
+> diff --git a/arch/x86/pci/early.c b/arch/x86/pci/early.c
+> index d1067d5..df7f4fc 100644
+> --- a/arch/x86/pci/early.c
+> +++ b/arch/x86/pci/early.c
+> @@ -1,5 +1,6 @@
+>  #include <linux/kernel.h>
+>  #include <linux/pci.h>
+> +#include <linux/bootmem.h>
+>  #include <asm/pci-direct.h>
+>  #include <asm/io.h>
+>  #include <asm/pci_x86.h>
+> @@ -109,3 +110,355 @@ void early_dump_pci_devices(void)
+>  		}
+>  	}
+>  }
+> +
+> +#define PCI_EXP_SAVE_REGS	7
+> +#define pcie_cap_has_devctl(type, flags)	1
+> +#define pcie_cap_has_lnkctl(type, flags)		\
+> +		((flags & PCI_EXP_FLAGS_VERS) > 1 ||	\
+> +		 (type == PCI_EXP_TYPE_ROOT_PORT ||	\
+> +		  type == PCI_EXP_TYPE_ENDPOINT ||	\
+> +		  type == PCI_EXP_TYPE_LEG_END))
+> +#define pcie_cap_has_sltctl(type, flags)		\
+> +		((flags & PCI_EXP_FLAGS_VERS) > 1 ||	\
+> +		 ((type == PCI_EXP_TYPE_ROOT_PORT) ||	\
+> +		  (type == PCI_EXP_TYPE_DOWNSTREAM &&	\
+> +		   (flags & PCI_EXP_FLAGS_SLOT))))
+> +#define pcie_cap_has_rtctl(type, flags)			\
+> +		((flags & PCI_EXP_FLAGS_VERS) > 1 ||	\
+> +		 (type == PCI_EXP_TYPE_ROOT_PORT ||	\
+> +		  type == PCI_EXP_TYPE_RC_EC))
+> +
+> +struct save_config {
+> +	u32 pci[16];
+> +	u16 pcie[PCI_EXP_SAVE_REGS];
+> +};
+> +
+> +struct pcie_dev {
+> +	int cap;   /* position of PCI Express capability */
+> +	int flags; /* PCI_EXP_FLAGS */
+> +	struct save_config save; /* saved configration register */
+> +};
+> +
+> +struct pcie_port {
+> +	struct list_head dev;
+> +	u8 bus;
+> +	u8 slot;
+> +	u8 func;
+> +	u8 secondary;
+> +	struct pcie_dev child[PCI_MAX_FUNCTIONS];
+> +};
+> +
+> +static LIST_HEAD(device_list);
+> +static void __init pci_udelay(int loops)
+> +{
+> +	while (loops--) {
+> +		/* Approximately 1 us */
+> +		native_io_delay();
+> +	}
+> +}
+> +
+> +/* Derived from drivers/pci/pci.c */
+> +#define PCI_FIND_CAP_TTL	48
+> +static int __init __pci_find_next_cap_ttl(u8 bus, u8 slot, u8 func,
+> +					  u8 pos, int cap, int *ttl)
+> +{
+> +	u8 id;
+> +
+> +	while ((*ttl)--) {
+> +		pos = read_pci_config_byte(bus, slot, func, pos);
+> +		if (pos < 0x40)
+> +			break;
+> +		pos &= ~3;
+> +		id = read_pci_config_byte(bus, slot, func,
+> +					pos + PCI_CAP_LIST_ID);
+> +		if (id == 0xff)
+> +			break;
+> +		if (id == cap)
+> +			return pos;
+> +		pos += PCI_CAP_LIST_NEXT;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int __init __pci_find_next_cap(u8 bus, u8 slot, u8 func, u8 pos, int cap)
+> +{
+> +	int ttl = PCI_FIND_CAP_TTL;
+> +
+> +	return __pci_find_next_cap_ttl(bus, slot, func, pos, cap, &ttl);
+> +}
+> +
+> +static int __init __pci_bus_find_cap_start(u8 bus, u8 slot, u8 func,
+> +					   u8 hdr_type)
+> +{
+> +	u16 status;
+> +
+> +	status = read_pci_config_16(bus, slot, func, PCI_STATUS);
+> +	if (!(status & PCI_STATUS_CAP_LIST))
+> +		return 0;
+> +
+> +	switch (hdr_type) {
+> +	case PCI_HEADER_TYPE_NORMAL:
+> +	case PCI_HEADER_TYPE_BRIDGE:
+> +		return PCI_CAPABILITY_LIST;
+> +	case PCI_HEADER_TYPE_CARDBUS:
+> +		return PCI_CB_CAPABILITY_LIST;
+> +	default:
+> +		return 0;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int __init early_pci_find_capability(u8 bus, u8 slot, u8 func, int cap)
+> +{
+> +	int pos;
+> +	u8 type = read_pci_config_byte(bus, slot, func, PCI_HEADER_TYPE);
+> +
+> +	pos = __pci_bus_find_cap_start(bus, slot, func, type & 0x7f);
+> +	if (pos)
+> +		pos = __pci_find_next_cap(bus, slot, func, pos, cap);
+> +
+> +	return pos;
+> +}
+> +
+> +static void __init do_reset(u8 bus, u8 slot, u8 func)
+> +{
+> +	u16 ctrl;
+> +
+> +	printk(KERN_INFO "pci 0000:%02x:%02x.%d reset\n", bus, slot, func);
+> +
+> +	/* Assert Secondary Bus Reset */
+> +	ctrl = read_pci_config_16(bus, slot, func, PCI_BRIDGE_CONTROL);
+> +	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
+> +	write_pci_config_16(bus, slot, func, PCI_BRIDGE_CONTROL, ctrl);
+> +
+> +	/*
+> +	 * PCIe spec requires software to ensure a minimum reset duration
+> +	 * (Trst == 1ms). We have here 5ms safety margin because pci_udelay is
+> +	 * not precise.
+> +	 */
+> +	pci_udelay(5000);
+> +
+> +	/* De-assert Secondary Bus Reset */
+> +	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
+> +	write_pci_config_16(bus, slot, func, PCI_BRIDGE_CONTROL, ctrl);
+> +}
+> +
+> +static void __init save_state(unsigned bus, unsigned slot, unsigned func,
+> +		struct pcie_dev *dev)
+> +{
+> +	int i;
+> +	int pcie, flags, pcie_type;
+> +	struct save_config *save;
+> +
+> +	pcie = dev->cap;
+> +	flags = dev->flags;
+> +	pcie_type = (flags & PCI_EXP_FLAGS_TYPE) >> 4;
+> +	save = &dev->save;
+> +
+> +	printk(KERN_INFO "pci 0000:%02x:%02x.%d save state\n", bus, slot, func);
+> +
+> +	for (i = 0; i < 16; i++)
+> +		save->pci[i] = read_pci_config(bus, slot, func, i * 4);
+> +	i = 0;
+> +	if (pcie_cap_has_devctl(pcie_type, flags))
+> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
+> +						      pcie + PCI_EXP_DEVCTL);
+> +	if (pcie_cap_has_lnkctl(pcie_type, flags))
+> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
+> +						      pcie + PCI_EXP_LNKCTL);
+> +	if (pcie_cap_has_sltctl(pcie_type, flags))
+> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
+> +						      pcie + PCI_EXP_SLTCTL);
+> +	if (pcie_cap_has_rtctl(pcie_type, flags))
+> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
+> +						      pcie + PCI_EXP_RTCTL);
+> +
+> +	if ((flags & PCI_EXP_FLAGS_VERS) >= 2) {
+> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
+> +						      pcie + PCI_EXP_DEVCTL2);
+> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
+> +						      pcie + PCI_EXP_LNKCTL2);
+> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
+> +						      pcie + PCI_EXP_SLTCTL2);
+> +	}
+> +}
+> +
+> +static void __init restore_state(unsigned bus, unsigned slot, unsigned func,
+> +		struct pcie_dev *dev)
+> +{
+> +	int i = 0;
+> +	int pcie, flags, pcie_type;
+> +	struct save_config *save;
+> +
+> +	pcie = dev->cap;
+> +	flags = dev->flags;
+> +	pcie_type = (flags & PCI_EXP_FLAGS_TYPE) >> 4;
+> +	save = &dev->save;
+> +
+> +	printk(KERN_INFO "pci 0000:%02x:%02x.%d restore state\n",
+> +	       bus, slot, func);
+> +
+> +	if (pcie_cap_has_devctl(pcie_type, flags))
+> +		write_pci_config_16(bus, slot, func,
+> +				    pcie + PCI_EXP_DEVCTL, save->pcie[i++]);
+> +	if (pcie_cap_has_lnkctl(pcie_type, flags))
+> +		write_pci_config_16(bus, slot, func,
+> +				    pcie + PCI_EXP_LNKCTL, save->pcie[i++]);
+> +	if (pcie_cap_has_sltctl(pcie_type, flags))
+> +		write_pci_config_16(bus, slot, func,
+> +				    pcie + PCI_EXP_SLTCTL, save->pcie[i++]);
+> +	if (pcie_cap_has_rtctl(pcie_type, flags))
+> +		write_pci_config_16(bus, slot, func,
+> +				    pcie + PCI_EXP_RTCTL, save->pcie[i++]);
+> +
+> +	if ((flags & PCI_EXP_FLAGS_VERS) >= 2) {
+> +		write_pci_config_16(bus, slot, func,
+> +				    pcie + PCI_EXP_DEVCTL2, save->pcie[i++]);
+> +		write_pci_config_16(bus, slot, func,
+> +				    pcie + PCI_EXP_LNKCTL2, save->pcie[i++]);
+> +		write_pci_config_16(bus, slot, func,
+> +				    pcie + PCI_EXP_SLTCTL2, save->pcie[i++]);
+> +	}
+> +
+> +	for (i = 15; i >= 0; i--)
+> +		write_pci_config(bus, slot, func, i * 4, save->pci[i]);
+> +}
+> +
+> +static void __init find_pcie_device(unsigned bus, unsigned slot, unsigned func)
+> +{
+> +	int f, count;
+> +	int pcie, pcie_type;
+> +	u8 type;
+> +	u16 vendor, flags;
+> +	u32 class;
+> +	int secondary;
+> +	struct pcie_port *port;
+> +	int pcie_cap[PCI_MAX_FUNCTIONS];
+> +	int pcie_flags[PCI_MAX_FUNCTIONS];
+> +
+> +	pcie = early_pci_find_capability(bus, slot, func, PCI_CAP_ID_EXP);
+> +	if (!pcie)
+> +		return;
+> +
+> +	flags = read_pci_config_16(bus, slot, func, pcie + PCI_EXP_FLAGS);
+> +	pcie_type = (flags & PCI_EXP_FLAGS_TYPE) >> 4;
+> +	if ((pcie_type != PCI_EXP_TYPE_ROOT_PORT) &&
+> +	    (pcie_type != PCI_EXP_TYPE_DOWNSTREAM))
+> +		return;
+> +
+> +	type = read_pci_config_byte(bus, slot, func, PCI_HEADER_TYPE);
+> +	if ((type & 0x7f) != PCI_HEADER_TYPE_BRIDGE)
+> +		return;
+> +	secondary = read_pci_config_byte(bus, slot, func, PCI_SECONDARY_BUS);
+> +
+> +	memset(pcie_cap, 0, sizeof(pcie_cap));
+> +	memset(pcie_flags, 0, sizeof(pcie_flags));
+> +	for (count = 0, f = 0; f < PCI_MAX_FUNCTIONS; f++) {
+> +		vendor = read_pci_config_16(secondary, 0, f, PCI_VENDOR_ID);
+> +		if (vendor == 0xffff)
+> +			continue;
+> +
+> +		pcie = early_pci_find_capability(secondary, 0, f,
+> +				PCI_CAP_ID_EXP);
+> +		if (!pcie)
+> +			continue;
+> +
+> +		flags = read_pci_config_16(secondary, 0, f,
+> +				pcie + PCI_EXP_FLAGS);
+> +		pcie_type = (flags & PCI_EXP_FLAGS_TYPE) >> 4;
+> +		if ((pcie_type == PCI_EXP_TYPE_UPSTREAM) ||
+> +		    (pcie_type == PCI_EXP_TYPE_PCI_BRIDGE))
+> +			/* Don't reset switch, bridge */
+> +			return;
+> +
+> +		class = read_pci_config(secondary, 0, f, PCI_CLASS_REVISION);
+> +		if ((class >> 24) == PCI_BASE_CLASS_DISPLAY)
+> +			/* Don't reset VGA device */
+> +			return;
+> +
+> +		count++;
+> +		pcie_cap[f] = pcie;
+> +		pcie_flags[f] = flags;
+> +	}
+> +
+> +	if (!count)
+> +		return;
+> +
+> +	port = (struct pcie_port *)alloc_bootmem(sizeof(struct pcie_port));
+> +	if (port == NULL) {
+> +		printk(KERN_ERR "pci 0000:%02x:%02x.%d alloc_bootmem failed\n",
+> +		       bus, slot, func);
+> +		return;
+> +	}
+> +	memset(port, 0, sizeof(*port));
+> +	port->bus = bus;
+> +	port->slot = slot;
+> +	port->func = func;
+> +	port->secondary = secondary;
+> +	for (f = 0; f < PCI_MAX_FUNCTIONS; f++) {
+> +		if (pcie_cap[f] != 0) {
+> +			port->child[f].cap = pcie_cap[f];
+> +			port->child[f].flags = pcie_flags[f];
+> +			save_state(secondary, 0, f, &port->child[f]);
+> +		}
+> +	}
+> +	list_add_tail(&port->dev, &device_list);
+> +}
+> +
+> +void __init early_reset_pcie_devices(void)
+> +{
+> +	unsigned bus, slot, func;
+> +	struct pcie_port *port, *tmp;
+> +
+> +	if (!early_pci_allowed() || !reset_devices)
+> +		return;
+> +
+> +	/* Find PCIe port and save config registers of its downstream devices */
+> +	for (bus = 0; bus < 256; bus++) {
+> +		for (slot = 0; slot < 32; slot++) {
+> +			for (func = 0; func < PCI_MAX_FUNCTIONS; func++) {
+> +				u16 vendor;
+> +				u8 type;
+> +				vendor = read_pci_config_16(bus, slot, func,
+> +						PCI_VENDOR_ID);
+> +
+> +				if (vendor == 0xffff)
+> +					continue;
+> +
+> +				find_pcie_device(bus, slot, func);
+> +
+> +				if (func == 0) {
+> +					type = read_pci_config_byte(bus, slot,
+> +								    func,
+> +							       PCI_HEADER_TYPE);
+> +					if (!(type & 0x80))
+> +						break;
+> +				}
+> +			}
+> +		}
+> +	}
+> +
+> +	if (list_empty(&device_list))
+> +		return;
+> +
+> +	/* Do bus reset */
+> +	list_for_each_entry(port, &device_list, dev)
+> +		do_reset(port->bus, port->slot, port->func);
+> +
+> +	/*
+> +	 * According to PCIe spec, software must wait a minimum of 100 ms
+> +	 * before sending a configuration request. We have 500ms safety margin
+> +	 * here.
+> +	 */
+> +	pci_udelay(500000);
+> +
+> +	/* Restore config registers and free memory */
+> +	list_for_each_entry_safe(port, tmp, &device_list, dev) {
+> +		for (func = 0; func < PCI_MAX_FUNCTIONS; func++)
+> +			if (port->child[func].cap)
+> +				restore_state(port->secondary, 0, func,
+> +					      &port->child[func]);
+> +		free_bootmem(__pa(port), sizeof(*port));
+> +	}
+> +}
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index ee21795..eca3231 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -35,6 +35,8 @@
+>  /* Include the ID list */
+>  #include <linux/pci_ids.h>
+>  
+> +#define PCI_MAX_FUNCTIONS 8
+> +
+>  /* pci_slot represents a physical slot */
+>  struct pci_slot {
+>  	struct pci_bus *bus;		/* The bus this slot is on */
+> diff --git a/init/main.c b/init/main.c
+> index 9cf77ab..0eb7430 100644
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -144,10 +144,10 @@ EXPORT_SYMBOL(reset_devices);
+>  static int __init set_reset_devices(char *str)
+>  {
+>  	reset_devices = 1;
+> -	return 1;
+> +	return 0;
+>  }
+>  
+> -__setup("reset_devices", set_reset_devices);
+> +early_param("reset_devices", set_reset_devices);
+>  
+>  static const char * argv_init[MAX_INIT_ARGS+2] = { "init", NULL, };
+>  const char * envp_init[MAX_INIT_ENVS+2] = { "HOME=/", "TERM=linux", NULL, };
+> 
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
 
-Yes, exactly. I already sent them out yesterday.
+This looks good. Good catch on access to downstream devices after reset.
+It is certainly safer to save all config registers before any resets.
 
+One thing I am concerned about is would a reset affect SR-IOV extended
+capability registers. If so, should save_state() save those registers as
+well? Alex Williamson (cc'd) can possibly comment on that aspect.
 
-Daniel
+--
+Khalid
 
