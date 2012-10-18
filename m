@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109Ab2JRNbU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 09:31:20 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:38280 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755691Ab2JRNbT (ORCPT
+	id S1756123Ab2JRNbc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 09:31:32 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:42180 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756007Ab2JRNbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 09:31:19 -0400
-X-IronPort-AV: E=Sophos;i="4.80,607,1344211200"; 
-   d="scan'208";a="15255641"
-Date: Thu, 18 Oct 2012 14:30:53 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ian Campbell <ian.campbell@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Mukesh Rathor <mukesh.rathor@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: Re: [PATCH 6/6] xen: x86 pvh: use XENMEM_add_to_physmap_range for
- foreign gmfn mappings
-In-Reply-To: <1350473532-15863-6-git-send-email-ian.campbell@citrix.com>
-Message-ID: <alpine.DEB.2.02.1210181429360.2689@kaball.uk.xensource.com>
-References: <1350473518.2460.58.camel@zakaz.uk.xensource.com> <1350473532-15863-6-git-send-email-ian.campbell@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 18 Oct 2012 09:31:20 -0400
+Date: Thu, 18 Oct 2012 16:31:06 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Sangho Yi <antiroot@gmail.com>
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] Drivers: Staging: CSR: Fixed indentation problems on
+ data_tx.c
+Message-ID: <20121018133106.GN5685@mwanda>
+References: <n>
+ <1350227813-30880-1-git-send-email-antiroot@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350227813-30880-1-git-send-email-antiroot@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Oct 2012, Ian Campbell wrote:
-> Squeezing the necessary fields into the existing XENMEM_add_to_physmap
-> interface was proving to be a bit tricky so we have decided to go with
-> a new interface upstream (the XENMAPSPACE_gmfn_foreign interface using
-> XENMEM_add_to_physmap was never committed anywhere). This interface
-> also allows for batching which was impossible to support at the same
-> time as foreign mfns in the old interface.
-> 
-> This reverts the relevant parts of "PVH: basic and header changes,
-> elfnote changes, ..." and followups and trivially converts
-> pvh_add_to_xen_p2m over.
-> 
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+On Mon, Oct 15, 2012 at 12:16:50AM +0900, Sangho Yi wrote:
+> @@ -15,36 +15,37 @@
+>  #include "csr_wifi_hip_unifi.h"
+>  #include "unifi_priv.h"
+>  
+> -int
+> -uf_verify_m4(unifi_priv_t *priv, const unsigned char *packet, unsigned int length)
+> -{
+> -    const unsigned char *p = packet;
+> -    u16 keyinfo;
+> +int uf_verify_m4 (unifi_priv_t *priv, const unsigned char *packet,
+> +	unsigned int length) {
 
+The original was correct.  The new code is wrong.
 
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+regards,
+dan carpenter
+
