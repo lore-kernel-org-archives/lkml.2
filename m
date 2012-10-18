@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543Ab2JRGiN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 02:38:13 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:62774 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754331Ab2JRGiK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 02:38:10 -0400
-Date: Thu, 18 Oct 2012 14:38:27 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Yong Ding <yongd@marvell.com>
-Cc: Chris Ball <cjb@laptop.org>, Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Wolfram Sang <w.sang@pengutronix.de>, Daniel Drake <dsd@laptop.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Wilson Callan <wilson.callan@savantsystems.com>,
-        Ben Dooks <ben-linux@fluff.org>, Zhangfei Gao <zgao6@marvell.com>,
-        Kevin Liu <kliu5@marvell.com>, Jialing Fu <jlfu@marvell.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mmc: esdhc: enable polling to detect card by itself
-Message-ID: <20121018063825.GC4513@S2101-09.ap.freescale.net>
-References: <1348828113-19668-1-git-send-email-yongd@marvell.com>
- <1348828113-19668-2-git-send-email-yongd@marvell.com>
- <20121007140648.GA10148@S2101-09.ap.freescale.net>
- <89813612683626448B837EE5A0B6A7CB30388601C9@SC-VEXCH4.marvell.com>
- <20121018054053.GA4513@S2101-09.ap.freescale.net>
- <89813612683626448B837EE5A0B6A7CB3038855FF9@SC-VEXCH4.marvell.com>
+	id S1754570Ab2JRGma (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 02:42:30 -0400
+Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:53890
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751755Ab2JRGm2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 02:42:28 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzc89bhd799hzz1202h1d1ah1d2ah1082kzzz2dh2a8h668h839h93fhd25he5bhf0ah107ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1155h)
+Message-ID: <507FA595.4020507@freescale.com>
+Date: Thu, 18 Oct 2012 14:45:41 +0800
+From: Huang Shijie <b32955@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <89813612683626448B837EE5A0B6A7CB3038855FF9@SC-VEXCH4.marvell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vinod Koul <vinod.koul@linux.intel.com>
+CC: <djbw@fb.com>, <khali@linux-fr.org>, <ben-linux@fluff.org>,
+        <w.sang@pengutronix.de>, <cjb@laptop.org>, <dwmw2@infradead.org>,
+        <lrg@ti.com>, <broonie@opensource.wolfsonmicro.com>, <perex@perex.cz>,
+        <tiwai@suse.de>, <shawn.guo@linaro.org>, <marex@denx.de>,
+        <artem.bityutskiy@linux.intel.com>, <linux-kernel@vger.kernel.org>,
+        <linux-i2c@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>, <alsa-devel@alsa-project.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        Huang Shijie <shijie8@gmail.com>
+Subject: Re: [PATCH] dma: add new DMA control commands
+References: <1350538335-29026-1-git-send-email-b32955@freescale.com> <1350541111.5263.3.camel@vkoul-udesk3>
+In-Reply-To: <1350541111.5263.3.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can you fix your mailer to use bottom posting rather than top posting,
-and have texts wrap around column 70?  Otherwise, you message stands
-a good chance to be ignored by people.
+于 2012年10月18日 14:18, Vinod Koul 写道:
+> Why cant you do start (prepare clock etc) when you submit the descriptor
+> to dmaengine. Can be done in tx_submit callback.
+> Similarly remove the clock when dma transaction gets completed.
+I ever thought this method too.
 
-On Wed, Oct 17, 2012 at 11:27:17PM -0700, Yong Ding wrote:
-> Shawn,
-> Thanks. Oh, sorry I really have missed the fact u mentioned. U are right in the current code, the bit will also be cleared for ESDHC_CD_GPIO. 
-> But I think this is improper since for GPIO detection type, we don't use the host controller internal card detection(ESDHC_CD_CONTROLLER), but with SDHCI_QUIRK_BROKEN_CARD_DETECTION cleared, we'll still enable/disable relevant INT bits (in sdhci_set_card_detection in sdhci.c). This is my biggest concern. And I think the SDHCI_QUIRK_BROKEN_CARD_DETECTION shall be purely used to notify whether the host controller detection method is used or not. So even for the ESDHC_CD_GPIO type, we should still set this flag. How do u think?
-> 
-I'm fine with that.  Just remind you a fact you seem missed in case
-you need to change sdhci-esdhc-imx.c to adapt the changes you are going
-to make on sdhci.c.
+But it will become low efficient in the following case:
 
-Shawn 
+   Assuming the gpmi-nand driver has to read out 1024 pages in one 
+_SINGLE_ read operation.
+The gpmi-nand will submit the descriptor to dmaengine per page. So with 
+your method,
+the system will repeat the enable/disable dma clock 1024 time. At every 
+enable/disable dma clock,
+the system has to enable the clock chain and it's parents ...
+
+But with this patch, we only need to enable/disable dma clock one time, 
+just at we select the nand chip.
+
+thanks
+Huang Shijie
+
+
+
+
