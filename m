@@ -1,135 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab2JRGwY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 02:52:24 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:41542 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753336Ab2JRGwW (ORCPT
+	id S1751399Ab2JRG5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 02:57:34 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52691 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab2JRG5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 02:52:22 -0400
-Message-ID: <507FA6D9.7080800@linux.vnet.ibm.com>
-Date: Thu, 18 Oct 2012 12:21:05 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 18 Oct 2012 02:57:33 -0400
+Message-ID: <507FA858.6090109@baka.sk>
+Date: Thu, 18 Oct 2012 08:57:28 +0200
+From: Martin Vysny <vysny@baka.sk>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH v9 05/12] x86, hotplug, suspend: Online CPU0 for suspend
- or hibernate
-References: <1350058189-6769-1-git-send-email-fenghua.yu@intel.com> <35538834.Boc5416YXf@vostro.rjw.lan> <3E5A0FA7E9CA944F9D5414FEC6C7122030B1A8BC@ORSMSX105.amr.corp.intel.com> <4821251.PVP3SGWCqy@vostro.rjw.lan>
-In-Reply-To: <4821251.PVP3SGWCqy@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Kernel development list <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>, 1062114@bugs.launchpad.net
+Subject: Re: usb issue on Intel chipset: abrupt mouse movements, usb keyboard
+ loosing key events
+References: <Pine.LNX.4.44L0.1210171348380.1743-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1210171348380.1743-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 12101806-5816-0000-0000-000004F25200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2012 12:03 PM, Rafael J. Wysocki wrote:
-> On Wednesday 17 of October 2012 17:39:48 Yu, Fenghua wrote:
->>>>> On Tuesday, October 16, 2012 10:19 PM Rafael J. Wysocki wrote:
->>> On Tuesday 16 of October 2012 22:12:27 Yu, Fenghua wrote:
->>>>> On 10/16/2012 09:47 PM, Rafael J. Wysocki wrote:
->>>>>> On Tuesday 16 of October 2012 11:05:18 Srivatsa S. Bhat wrote:
->>>>>>> On 10/16/2012 02:20 AM, Rafael J. Wysocki wrote:
->>>>>>>> On Friday 12 of October 2012 09:09:42 Fenghua Yu wrote:
->>>>>>>>> From: Fenghua Yu <fenghua.yu@intel.com>
->>>>> fix the bug I
->>>>> pointed out in my other mail.
->>> Because things like this are often overlooked by people trying to
->>> optimize
->>> stuff and the fact that you have to add a comment explaining that
->>> dependency
->>> only means that it is not exactly straightforward.
->>
->> If people try to optimize pm notifier, they really need to know
->> pm_notifier() API and its priority. If they ignore the priority, they will
->> screw up kernel no matter how many comments in it.
->>
->>>
->>> Moreover, you should also add a corresponding comment in the other
->>> notifier
->>> indicating that its priority should be higher than the priority of the
->>> new thing and explaining why.
->>
->> The comment in the patch explains this very clearly. I don't think it's
->> necessary to add comments in other notifiers.
->>
->> If adding comments in other notifiers each time when you add a new notifier,
->> will you add 10 more comments in all other notifiers if you add 10 new notifiers?
-> 
-> Well, if there are strict ordering requirements regarding them, then those
-> requirements should be documented in both places.  Otherwise, if somebody looks
-> at cpu_hotplug_pm_callback() alone, for example, he/she may not even realize
-> that it has to be strictly ordered with respect to bsp_pm_callback().
-> 
+Good day,
+   thank you for your response, please see the answers below.
 
-Right, either we could put comments at both places or set up #defines for
-their priorities in a common header file or some such and comment about it there,
-like what is done in include/linux/cpu.h for example. But atleast one of these
-*has* to be done; just commenting at one place is too risky for code-maintenance.
 
-> Of course, you can argue that people should know what they are doing, but
-> then reality is that it's quite easy to overlook things like that.
+On 10/17/2012 08:05 PM, Alan Stern wrote:
+> On Wed, 17 Oct 2012, Martin Vysny wrote:
+>
+>> Good day,
+>>     thank you for your mail. I was finally able to reproduce the issue. I
+>> am attaching a dmesg output of a correct boot (please note that there
+>> still are several unwanted IRQs), and a dmesg output of a reproduced error.
+>
+> Did you boot with the "irqpoll" option?  Judging by the log, it looks
+> like you did.
 >
 
-Yep.
- 
->> I would think when people try to change notifier priority, they should
->> know what they are going to do and search the notifiers and see the comments.
->>
->> BTW, the other notifier is in generic code. Adding a paranoid comment in
->> it doesn't seem to be worth. The comment in this patch code is very clear
->> already.
-> 
-> The problem is that it is generally difficult to find all subsystems that
-> have registered notifiers in a given chain and figuring out dependencies
-> between them is highly problematic.  That's why I'm saying this is a fragile
-> design - because it is so easy to break accidentally (and that's already
-> happened in CPU hotplug, so I'm not making that up).
+Nope, I didn't boot with the irqpoll boot option enabled:
+$ cat /proc/cmdline
+BOOT_IMAGE=/boot/vmlinuz-3.5.0-17-generic 
+root=UUID=02dfb985-99c1-431d-882f-87475db02062 ro 
+crashkernel=384M-2G:64M,2G-:128M splash elevator=noop vt.handoff=7
 
-True..
- 
-Regards,
-Srivatsa S. Bhat
 
-> 
->>> I really think that notifiers are fragile in general and this
->>> particular
->>> one is no exception.
->>
->> If we think pm_notifier API is fragile, we need to fix the API instead of
->> leaving it there and not allowing people to use it because it's suspected
->> fragile.
-> 
-> Because it is use by the existing code which generally works and may be
-> broken while attempting to "fix" the API.
-> 
->> It's simply not realistic to tell people not to use the API each
->> time in code review while in the meantime the API and its priority are staying
->> in kernel to allow people to use it.
-> 
-> I don't quite agree.  It sometimes is not worth changing code that's been
-> around for a while already, because it's been tested in multiple configurations
-> and changing it may cause things to break, although we may not like the APIs
-> used by that code.  That doesn't necessarily mean, however, that adding new
-> code using those APIs is always a good idea.
-> 
-> In this particular case I just wondered if we could avoid adding more code
-> that would use an API having known problems.  The answer seems to be that
-> it would cost some additional complexity that might not be worth it.  This
-> is a good answer, but you might have given it to me directly. :-)
-> 
+>> [   67.512014] ehci_hcd 0000:00:1d.0: >Unwanted IRQ: c000 0
+>> [   67.512021] ehci_hcd 0000:00:1d.0: >Unwanted IRQ: e000 0
+>> [   67.512023] irq 17: nobody cared (try booting with the "irqpoll" option)
+>> [   67.512026] Pid: 0, comm: swapper/0 Tainted: G           O 3.5.0-17-generic #28
+>> [   67.512027] Call Trace:
+>> [   67.512034]  [<c10c6ae9>] __report_bad_irq+0x29/0xd0
+>> [   67.512037]  [<c10c6db5>] note_interrupt+0x175/0x1c0
+>> [   67.512041]  [<c1326d63>] ? intel_idle+0xc3/0x120
+>> [   67.512045]  [<c10c4bdf>] handle_irq_event_percpu+0x9f/0x1d0
+>> [   67.512047]  [<c10c4d4b>] handle_irq_event+0x3b/0x60
+>> [   67.512050]  [<c10c7710>] ? unmask_irq+0x30/0x30
+>> [   67.512052]  [<c10c775e>] handle_fasteoi_irq+0x4e/0xd0
+>> [   67.512053]  <IRQ>  [<c15d0692>] ? do_IRQ+0x42/0xc0
+>> [   67.512062]  [<c10689fe>] ? enqueue_hrtimer+0x1e/0x70
+>> [   67.512064]  [<c15d04f0>] ? common_interrupt+0x30/0x38
+>> [   67.512069]  [<c10400e0>] ? in_gate_area+0x10/0x50
+>> [   67.512071]  [<c1326d63>] ? intel_idle+0xc3/0x120
+>> [   67.512076]  [<c149b7b5>] ? cpuidle_enter+0x15/0x20
+>> [   67.512078]  [<c149bd18>] ? cpuidle_idle_call+0x88/0x220
+>> [   67.512081]  [<c101870a>] ? cpu_idle+0xaa/0xe0
+>> [   67.512086]  [<c159f715>] ? rest_init+0x5d/0x68
+>> [   67.512090]  [<c18b49be>] ? start_kernel+0x35d/0x363
+>> [   67.512092]  [<c18b44ed>] ? do_early_param+0x80/0x80
+>> [   67.512094]  [<c18b4303>] ? i386_start_kernel+0xa6/0xad
+>> [   67.512095] handlers:
+>> [   67.512098] [<c142fe00>] usb_hcd_irq
+>> [   67.512099] Disabling IRQ #17
+>> [   69.507175] ehci_hcd 0000:00:1d.0: >Unwanted IRQ: c000 0
+>> [   69.607118] ehci_hcd 0000:00:1d.0: >Unwanted IRQ: c000 0
+>
+> The debugging output show that the EHCI controller was not the source
+> of the unwanted IRQs.  And /proc/interrupts shows that ehci-hcd is the
+> only driver using IRQ #17, for the 0000:00:1d.0 device.
+>
+> The most likely explanation is that there an interrupt-routing error
+> and some other device is causing these problems.  I don't know of any
+> easy way to find out what the other device is, however.
+>
+
+Thanks for hinting at the probable source of the problem. I am new to 
+these things, but the /proc/interrupts lists IO-APIC-fasteoi. Perhaps 
+there may be some relation to some APIC issue?
+Kind regards,
+Martin Vysny
+
+> Alan Stern
+>
 
