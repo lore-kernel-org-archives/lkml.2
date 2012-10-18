@@ -1,99 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932770Ab2JRSFS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 14:05:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59994 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932725Ab2JRSFP (ORCPT
+	id S932786Ab2JRSF3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 14:05:29 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:55568 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932696Ab2JRSFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 14:05:15 -0400
-Message-ID: <508044D7.7070005@mit.edu>
-Date: Thu, 18 Oct 2012 11:05:11 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Thu, 18 Oct 2012 14:05:24 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: mtk.manpages@gmail.com, "Paton J. Lewis" <palewis@adobe.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jason Baron <jbaron@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Paul Holland <pholland@adobe.com>,
-        Davide Libenzi <davidel@xmailserver.org>, libc-alpha@sourceware.org,
-        Linux API <linux-api@vger.kernel.org>, paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH v2] epoll: Support for disabling items, and a self-test
- app.
-References: <1345756535-8372-1-git-send-email-palewis@adobe.com> <CAKgNAkg0R2LwfpF8beCkawTfPu7oj_DDaDxf2VJ+xB6UTgRSaw@mail.gmail.com> <20121017163004.fb9de1b3.akpm@linux-foundation.org>
-In-Reply-To: <20121017163004.fb9de1b3.akpm@linux-foundation.org>
+In-Reply-To: <20121018132928.GG16835@localhost.localdomain>
+References: <1350559712-8514-1-git-send-email-shiraz.hashim@st.com>
+	<20121018120820.GA17980@avionic-0098.mockup.avionic-design.de>
+	<20121018132928.GG16835@localhost.localdomain>
+Date: Thu, 18 Oct 2012 23:35:23 +0530
+X-Google-Sender-Auth: eojIe12z8lLiPtWT1Xi-s5bePMk
+Message-ID: <CAOh2x=nA683kWG=QTx5Bt5xYNnqQvf8eJD7JT9YN00kaYvr+bg@mail.gmail.com>
+Subject: Re: [PATCH] pwm: add spear pwm driver support
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Shiraz Hashim <shiraz.hashim@st.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        spear--sw-devel@lists.codex.cro.st.com, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc Paul McKenney, who is probably the leading expert on these things]
+On Thu, Oct 18, 2012 at 6:59 PM, Shiraz Hashim <shiraz.hashim@st.com> wrote:
+>> Is there a reason to make this conditional? It looks like SPEAr has
+>> moved to OF, so this will always be enabled anyway, won't it?
+>
+> Yes, I would remove it, SPEAr cannot boot without DT.
 
-On 10/17/2012 04:30 PM, Andrew Morton wrote:
-> On Tue, 16 Oct 2012 17:12:57 +0200
-> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
-> 
->> On Thu, Aug 23, 2012 at 11:15 PM, Paton J. Lewis <palewis@adobe.com> wrote:
->>> From: "Paton J. Lewis" <palewis@adobe.com>
->>>
->>> Enhanced epoll_ctl to support EPOLL_CTL_DISABLE, which disables an epoll item.
->>> If epoll_ctl doesn't return -EBUSY in this case, it is then safe to delete the
->>> epoll item in a multi-threaded environment. Also added a new test_epoll self-
->>> test app to both demonstrate the need for this feature and test it.
->>
->> (There's a lot of background missing from this version of the patch
->> that was included in the previous version
->> [http://thread.gmane.org/gmane.linux.kernel/1311457]. It helps to
->> include the full rationale with a revised patch--best not to assume
->> that someone has the context of past mails when reading a revised
->> patch.)
->>
->> I've taken a look at this patch as it currently stands in 3.7-rc1, and
->> done a bit of testing. (By the way, the test program
->> tools/testing/selftests/epoll/test_epoll.c does not compile...)
-> 
-> Thanks for this.  You raise significant issues.  If we can't get these
-> fully resolved over the next month or so, we should revert the patch so
-> this new API doesn't get released in 3.7.  I have queued a patch to do
-> this and shall maintain it while I watch developments...
+Add a dependency on OF in the Kconfig then.
 
-I can't shake the feeling that EPOLL_CTL_DISABLE is solving a
-non-problem, or, more precisely, that there should be a perfectly good
-userspace solution with no kernel changes.
-
-Unless something is rather buggy in kernel land (and I don't think it
-is), once EPOLL_CTL_DEL has returned, no call to epoll_wait that starts
-*after* EPOLL_CTL_DEL finishes will return that object.  This suggests
-an RCU-like approach: once EPOLL_CTL_DEL has returned and every thread
-has returned from an epoll_wait call that started after the
-EPOLL_CTL_DEL returns, then the data structure can be safely freed.
-
-In pseudocode:
-
-delete(fd, pdata) {
-  pdata->dead = true;
-  EPOLL_CTL_DEL(fd);
-  rcu_call(delete pdata);
-}
-
-wait() {
-  epoll_wait;
-  for each event pdata {
-    if (pdata->gone) continue;
-    process the event;
-  }
-
-  rcu_this_is_a_grace_period();
-}
-
-Of course, these are not normal grace periods and would need to be
-tracked separately.  (The optimal data structure to do this without
-killing scalability is not obvious.  urcu presumably implements such a
-thing.)
-
-Am I right?
-
-
---Andy
+Also i haven't seen any suspend/resume routines here. Missed them?
