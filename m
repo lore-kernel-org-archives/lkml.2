@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab2JRTtT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 15:49:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21894 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752653Ab2JRTtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 15:49:19 -0400
-Date: Thu, 18 Oct 2012 15:28:56 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Oleg Nesterov <oleg@redhat.com>
-cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] brw_mutex: big read-write mutex
-In-Reply-To: <20121018175747.GA30691@redhat.com>
-Message-ID: <Pine.LNX.4.64.1210181525010.32376@file.rdu.redhat.com>
-References: <20121015190958.GA4799@redhat.com> <20121015191018.GA4816@redhat.com>
- <CA+55aFwV-WOUx8MSr145f+HSrtmZ=nXHq0VLhtPyH=FNBFwmQg@mail.gmail.com>
- <20121017165902.GB9872@redhat.com> <20121017224430.GC2518@linux.vnet.ibm.com>
- <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com>
- <20121018175747.GA30691@redhat.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754269Ab2JRTuY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 15:50:24 -0400
+Received: from smtp02.smtpout.orange.fr ([80.12.242.124]:57966 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754058Ab2JRTuV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 15:50:21 -0400
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: linux-kbuild@vger.kernel.org
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>
+Subject: [PATCH 2/3] kconfig: add a function to get the CONFIG_ prefix
+Date: Thu, 18 Oct 2012 21:50:15 +0200
+Message-Id: <1350589816-20447-3-git-send-email-yann.morin.1998@free.fr>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1350589816-20447-1-git-send-email-yann.morin.1998@free.fr>
+References: <1350589816-20447-1-git-send-email-yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Currently, we get the CONFIG_ prefix via the CONFIG_ macro, which means
+the CONFIG_ prefix is hard-coded at compile time. This goes against
+having a run-time defined CONFIG_ prefix.
 
+Add a function that returns the CONFIG_ prefix to use (but keep the
+current hard-coded behavior, to be changed in a later patch).
 
-On Thu, 18 Oct 2012, Oleg Nesterov wrote:
+Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+---
+ scripts/kconfig/lkc.h |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
 
-> Ooooh. And I just noticed include/linux/percpu-rwsem.h which does
-> something similar. Certainly it was not in my tree when I started
-> this patch... percpu_down_write() doesn't allow multiple writers,
-> but the main problem it uses msleep(1). It should not, I think.
+diff --git a/scripts/kconfig/lkc.h b/scripts/kconfig/lkc.h
+index c18f2bd..25862fd 100644
+--- a/scripts/kconfig/lkc.h
++++ b/scripts/kconfig/lkc.h
+@@ -36,9 +36,17 @@ extern "C" {
+ #define _(text) gettext(text)
+ #define N_(text) (text)
+ 
+-#ifndef CONFIG_
+-#define CONFIG_ "CONFIG_"
++/* Those two defines copied from include/linux/stringify.h */
++#define __stringify_1(x...)	#x
++#define __stringify(x...)	__stringify_1(x)
++static inline const char *CONFIG_prefix(void)
++{
++	return __stringify(CONFIG_);
++}
++#ifdef CONFIG_
++#undef CONFIG_
+ #endif
++#define CONFIG_ CONFIG_prefix()
+ 
+ #define TF_COMMAND	0x0001
+ #define TF_PARAM	0x0002
+-- 
+1.7.2.5
 
-synchronize_rcu() can sleep for hundred milliseconds, so msleep(1) is not 
-a big problem.
-
-> But. It seems that percpu_up_write() is equally wrong? Doesn't
-> it need synchronize_rcu() before "p->locked = false" ?
-
-Yes, it does ... and I sent patch for that to Linus.
-
-> (add Mikulas)
-> 
-> Oleg.
-
-Mikulas
