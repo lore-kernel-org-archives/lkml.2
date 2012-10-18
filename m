@@ -1,89 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757211Ab2JRQXh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 12:23:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10881 "EHLO mx1.redhat.com"
+	id S1757269Ab2JRQXm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 12:23:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43454 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756321Ab2JRQXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 12:23:35 -0400
-Date: Thu, 18 Oct 2012 12:17:29 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH] percpu-rwsem: use barrier in unlock path
-In-Reply-To: <1350533619.19292.59.camel@pippen.local.home>
-Message-ID: <Pine.LNX.4.64.1210181216590.22996@file.rdu.redhat.com>
-References: <Pine.LNX.4.64.1210151716310.10685@file.rdu.redhat.com> 
- <Pine.LNX.4.64.1210161924350.20581@file.rdu.redhat.com> 
- <CA+55aFyZ9uq_yfHn9PwpmM77X3xVd+xseEbjJmeCCqbFddtjWA@mail.gmail.com> 
- <507E48ED.8060809@cn.fujitsu.com>  <Pine.LNX.4.64.1210171046130.26481@file.rdu.redhat.com>
-  <20121017202806.GA7282@home.goodmis.org>  <507F66F6.20704@cn.fujitsu.com>
- <1350533619.19292.59.camel@pippen.local.home>
+	id S1757026Ab2JRQXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 12:23:36 -0400
+Date: Thu, 18 Oct 2012 18:24:09 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] brw_mutex: big read-write mutex
+Message-ID: <20121018162409.GA28504@redhat.com>
+References: <20121015190958.GA4799@redhat.com> <20121015191018.GA4816@redhat.com> <CA+55aFwV-WOUx8MSr145f+HSrtmZ=nXHq0VLhtPyH=FNBFwmQg@mail.gmail.com> <20121017165902.GB9872@redhat.com> <20121017224430.GC2518@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121017224430.GC2518@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/17, Paul E. McKenney wrote:
+>
+> On Wed, Oct 17, 2012 at 06:37:02PM +0200, Oleg Nesterov wrote:
+> > On 10/16, Paul E. McKenney wrote:
+> > >
+> > > Suppose that the writer arrives and sees that the value of the counter
+> > > is zero,
+> >
+> > after synchronize_sched(). So there are no readers (but perhaps there
+> > are brw_end_read's in flight which already decremented read_ctr)
+>
+> But the preempt_disable() region only covers read acquisition.  So
+> synchronize_sched() waits only for all the brw_start_read() calls to
+> reach the preempt_enable()
+
+Yes.
+
+> -- it cannot wait for all the resulting
+> readers to reach the corresponding brw_end_read().
+
+Indeed.
+
+> > > and thus never sleeps, and so is also not awakened?
+> >
+> > and why do we need wakeup in this case?
+>
+> To get the memory barriers required to keep the critical sections
+> ordered -- to ensure that everyone sees the reader's critical section
+> as ending before the writer's critical section starts.
+
+And now I am starting to think I misunderstood your concern from
+the very beginning.
+
+I thought that you meant that without mb() brw_start_write() can
+race with brw_end_read() and hang forever.
+
+But probably you meant that we need the barriers to ensure that,
+say, if the reader does
+
+	brw_start_read();
+	CONDITION = 1;
+	brw_end_read();
+
+then the writer must see CONDITION != 0 after brw_start_write() ?
+(or vice-versa)
 
 
-On Thu, 18 Oct 2012, Steven Rostedt wrote:
+In this case we need the barrier, yes. Obviously brw_start_write()
+can return right after this_cpu_dec() and before wake_up_all().
 
-> On Thu, 2012-10-18 at 10:18 +0800, Lai Jiangshan wrote:
-> > > 
-> > > Looking at the patch, you are correct. The read side doesn't need the
-> > > memory barrier as the worse thing that will happen is that it sees the
-> > > locked = false, and will just grab the mutex unnecessarily.
-> > 
-> > ---------------------
-> > A memory barrier can be added iff these two things are known:
-> > 	1) it disables the disordering between what and what.
-> > 	2) what is the corresponding mb() that it pairs with.
-> > 
-> 
-> OK, I was just looking at the protection and actions of the locked flag,
-> but I see what you are saying with the data itself.
-> 
-> > You tried to add a mb() in percpu_up_write(), OK, I know it disables the disordering
-> > between the writes to the protected data and the statement "p->locked = false",
-> > But I can't find out the corresponding mb() that it pairs with.
-> > 
-> > percpu_down_read()					writes to the data
-> > 	The cpu cache/prefetch the data			writes to the data
-> > 	which is chaos					writes to the data
-> > 							percpu_up_write()
-> > 								mb()
-> > 								p->locked = false;
-> > 	unlikely(p->locked)
-> > 		the cpu see p->lock = false,
-> > 		don't discard the cached/prefetch data
-> > 	this_cpu_inc(*p->counters);
-> > 	the code of read-access to the data
-> > 	****and we use the chaos data*****
-> > 
-> > So you need to add a mb() after "unlikely(p->locked)".
-> 
-> Does it need a full mb() or could it be just a rmb()? The down_read I
-> wouldn't think would need to protect against stores, would it? The
-> memory barrier should probably go in front of the unlikely() too. The
-> write to p->counters is handled by the synchronized sched, and adding a
-> rmb() in front of the unlikely check would keep prefetched data from
-> passing this barrier.
-> 
-> This is a perfect example why this primitive should be vetted outside of
-> mainline before it gets merged.
-> 
-> -- Steve
+2/2 doesn't need this guarantee but I agree, this doesn't look
+sane in gerenal...
 
-If we do synchronize_rcu() in percpu_up_write, we don't need a barrier in 
-percpu_down_read(). So I would do that.
+Or I misunderstood you again?
 
-Mikulas
+Oleg.
+
