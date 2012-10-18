@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331Ab2JRI0K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 04:26:10 -0400
+	id S1754513Ab2JRI0r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 04:26:47 -0400
 Received: from mga09.intel.com ([134.134.136.24]:17377 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754197Ab2JRIZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 04:25:55 -0400
+	id S1753957Ab2JRIZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 04:25:50 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,606,1344236400"; 
-   d="scan'208";a="207552062"
+   d="scan'208";a="207552025"
 From: dragos.tatulea@intel.com
 To: ccross@android.com, keescook@chromium.org, tony.luck@intel.com,
         cbouatmailru@gmail.com, linux-kernel@vger.kernel.org
-Cc: adrian.hunter@intel.com, octavian.purdila@intel.com,
-        Dragos Tatulea <dragos.tatulea@intel.com>
-Subject: [PATCH v2 8/8] pstore: max out console log level during sysfs dump switch
-Date: Thu, 18 Oct 2012 11:28:28 +0300
-Message-Id: <1350548908-24407-9-git-send-email-dragos.tatulea@intel.com>
+Cc: adrian.hunter@intel.com, octavian.purdila@intel.com
+Subject: [PATCH v2 6/8] pstore: do not run timer while pstore is not mounted
+Date: Thu, 18 Oct 2012 11:28:26 +0300
+Message-Id: <1350548908-24407-7-git-send-email-dragos.tatulea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1350548908-24407-1-git-send-email-dragos.tatulea@intel.com>
 References: <1350548908-24407-1-git-send-email-dragos.tatulea@intel.com>
@@ -24,39 +23,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dragos Tatulea <dragos.tatulea@intel.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-Otherwise we might miss out on some pstore dumpers that use
-printks below current log level.
+A timer is used to periodically check for new dumps.
+The timer is not needed unless pstore is mounted,
+so disable it otherwise.
 
-Signed-off-by: Dragos Tatulea <dragos.tatulea@intel.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- fs/pstore/platform.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/pstore/inode.c    |    3 +++
+ fs/pstore/internal.h |    2 ++
+ fs/pstore/platform.c |   36 +++++++++++++++++++++++++++++-------
+ 3 files changed, 34 insertions(+), 7 deletions(-)
 
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 4800c09..5e20a8d 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -397,6 +397,8 @@ static int pstore_fill_super(struct super_block *sb, void *data, int silent)
+ 
+ 	pstore_get_records(0);
+ 
++	pstore_add_timer();
++
+ 	return 0;
+ }
+ 
+@@ -408,6 +410,7 @@ static struct dentry *pstore_mount(struct file_system_type *fs_type,
+ 
+ static void pstore_kill_sb(struct super_block *sb)
+ {
++	pstore_del_timer();
+ 	kill_litter_super(sb);
+ 	pstore_sb = NULL;
+ }
+diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
+index 4847f58..c7b8197 100644
+--- a/fs/pstore/internal.h
++++ b/fs/pstore/internal.h
+@@ -54,4 +54,6 @@ extern int	pstore_mkfile(enum pstore_type_id, char *psname, u64 id,
+ 			      struct timespec time, struct pstore_info *psi);
+ extern int	pstore_is_mounted(void);
+ 
++extern void pstore_add_timer(void);
++extern void pstore_del_timer(void);
+ #endif
 diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index 25f59ed..e3ad13e 100644
+index 63ff377..3a4c38f 100644
 --- a/fs/pstore/platform.c
 +++ b/fs/pstore/platform.c
-@@ -267,6 +267,7 @@ static DEFINE_SPINLOCK(dbg_lock);
- static int dbg_dump(void *data, u64 val)
- {
- 	unsigned long flags;
-+	int saved_loglevel;
+@@ -54,6 +54,8 @@ static int pstore_new_entry;
  
- 	switch (val) {
- 	case KMSG_DUMP_PANIC:
-@@ -276,7 +277,10 @@ static int dbg_dump(void *data, u64 val)
- 	case KMSG_DUMP_HALT:
- 	case KMSG_DUMP_POWEROFF:
- 		spin_lock_irqsave(&dbg_lock, flags);
-+		saved_loglevel = console_loglevel;
-+		console_loglevel =  15;
- 		kmsg_dump(val);
-+		console_loglevel = saved_loglevel;
- 		spin_unlock_irqrestore(&dbg_lock, flags);
- 		return 0;
+ static void pstore_timefunc(unsigned long);
+ static DEFINE_TIMER(pstore_timer, pstore_timefunc, 0, 0);
++static DEFINE_SPINLOCK(pstore_timer_lock);
++static int pstore_timer_on;
+ 
+ static void pstore_dowork(struct work_struct *);
+ static DECLARE_WORK(pstore_work, pstore_dowork);
+@@ -351,12 +353,6 @@ int pstore_register(struct pstore_info *psi)
+ 	pstore_register_console();
+ 	pstore_register_ftrace();
+ 
+-	if (pstore_update_ms >= 0) {
+-		pstore_timer.expires = jiffies +
+-			msecs_to_jiffies(pstore_update_ms);
+-		add_timer(&pstore_timer);
+-	}
+-
+ 	pstore_debugfs_init();
+ 
+ 	return 0;
+@@ -411,12 +407,38 @@ static void pstore_dowork(struct work_struct *work)
+ 
+ static void pstore_timefunc(unsigned long dummy)
+ {
++	unsigned long flags;
++
+ 	if (pstore_new_entry) {
+ 		pstore_new_entry = 0;
+ 		schedule_work(&pstore_work);
  	}
+ 
+-	mod_timer(&pstore_timer, jiffies + msecs_to_jiffies(pstore_update_ms));
++	spin_lock_irqsave(&pstore_timer_lock, flags);
++	if (pstore_timer_on)
++		mod_timer(&pstore_timer,
++				jiffies + msecs_to_jiffies(pstore_update_ms));
++	spin_unlock_irqrestore(&pstore_timer_lock, flags);
++}
++
++void pstore_add_timer(void)
++{
++	pstore_timer_on = 1;
++	if (pstore_update_ms >= 0) {
++		pstore_timer.expires = jiffies +
++			msecs_to_jiffies(pstore_update_ms);
++		add_timer(&pstore_timer);
++	}
++}
++
++void pstore_del_timer(void)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&pstore_timer_lock, flags);
++	pstore_timer_on = 0;
++	spin_unlock_irqrestore(&pstore_timer_lock, flags);
++	del_timer_sync(&pstore_timer);
+ }
+ 
+ /* pstore_write must only be called from PSTORE_DUMP notifier callbacks */
 -- 
 1.7.9.5
 
