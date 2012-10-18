@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab2JRUaM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 16:30:12 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:56795 "EHLO
+	id S1756025Ab2JRUaK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 16:30:10 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:56789 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754314Ab2JRU0y (ORCPT
+	with ESMTP id S1754332Ab2JRU0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Oct 2012 16:26:54 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 03/21] TTY: devpts, do not set driver_data
-Date: Thu, 18 Oct 2012 22:26:29 +0200
-Message-Id: <1350592007-9216-4-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 02/21] TTY: devpts, return created inode from devpts_pty_new
+Date: Thu, 18 Oct 2012 22:26:28 +0200
+Message-Id: <1350592007-9216-3-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.12.3
 In-Reply-To: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
 References: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
@@ -23,156 +23,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 The goal is to stop setting and using tty->driver_data in devpts code.
 It should be used solely by the driver's code, pty in this case.
 
-Now driver_data are managed only in the pty driver. devpts_pty_new is
-switched to accept what we used to dig out of tty_struct, i.e. device
-node number and index.
+For the cleanup of layering, we will need the inode created in
+devpts_pty_new to be stored into slave's driver_data. So we convert
+devpts_pty_new to return the inode or an ERR_PTR-encoded error in case
+of failure.
 
-This also removes a note about driver_data being set outside of the
-driver.
+The move of 'inode = new_inode(sb);' from declarators to the code is
+only cosmetical, but it makes the code easier to read.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/tty/pty.c         | 10 +++++-----
- fs/devpts/inode.c         | 21 ++++++---------------
- include/linux/devpts_fs.h |  9 +++++----
- 3 files changed, 16 insertions(+), 24 deletions(-)
+ drivers/tty/pty.c         |  7 +++++--
+ fs/devpts/inode.c         | 12 ++++++------
+ include/linux/devpts_fs.h |  8 ++++----
+ 3 files changed, 15 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index 9985b45..559e5b2 100644
+index 65f7671..9985b45 100644
 --- a/drivers/tty/pty.c
 +++ b/drivers/tty/pty.c
-@@ -4,9 +4,6 @@
-  *  Added support for a Unix98-style ptmx device.
-  *    -- C. Scott Ananian <cananian@alumni.princeton.edu>, 14-Jan-1998
-  *
-- *  When reading this code see also fs/devpts. In particular note that the
-- *  driver_data field is used by the devpts side as a binding to the devpts
-- *  inode.
-  */
+@@ -614,6 +614,7 @@ static const struct tty_operations pty_unix98_ops = {
+ static int ptmx_open(struct inode *inode, struct file *filp)
+ {
+ 	struct tty_struct *tty;
++	struct inode *slave_inode;
+ 	int retval;
+ 	int index;
  
- #include <linux/module.h>
-@@ -59,7 +56,7 @@ static void pty_close(struct tty_struct *tty, struct file *filp)
- #ifdef CONFIG_UNIX98_PTYS
- 		if (tty->driver == ptm_driver) {
- 		        mutex_lock(&devpts_mutex);
--			devpts_pty_kill(tty->link);
-+			devpts_pty_kill(tty->link->driver_data);
- 		        mutex_unlock(&devpts_mutex);
- 		}
- #endif
-@@ -651,7 +648,9 @@ static int ptmx_open(struct inode *inode, struct file *filp)
+@@ -650,9 +651,11 @@ static int ptmx_open(struct inode *inode, struct file *filp)
  
  	tty_add_file(tty, filp);
  
--	slave_inode = devpts_pty_new(inode, tty->link);
-+	slave_inode = devpts_pty_new(inode,
-+			MKDEV(UNIX98_PTY_SLAVE_MAJOR, index), index,
-+			tty->link);
- 	if (IS_ERR(slave_inode)) {
- 		retval = PTR_ERR(slave_inode);
+-	retval = devpts_pty_new(inode, tty->link);
+-	if (retval)
++	slave_inode = devpts_pty_new(inode, tty->link);
++	if (IS_ERR(slave_inode)) {
++		retval = PTR_ERR(slave_inode);
  		goto err_release;
-@@ -662,6 +661,7 @@ static int ptmx_open(struct inode *inode, struct file *filp)
- 		goto err_release;
++	}
  
- 	tty_unlock(tty);
-+	tty->link->driver_data = slave_inode;
- 	return 0;
- err_release:
- 	tty_unlock(tty);
+ 	retval = ptm_driver->ops->open(tty, filp);
+ 	if (retval)
 diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
-index ec3bab7..7a20d67 100644
+index 4796580..ec3bab7 100644
 --- a/fs/devpts/inode.c
 +++ b/fs/devpts/inode.c
-@@ -545,12 +545,9 @@ void devpts_kill_index(struct inode *ptmx_inode, int idx)
+@@ -545,7 +545,7 @@ void devpts_kill_index(struct inode *ptmx_inode, int idx)
  	mutex_unlock(&allocated_ptys_lock);
  }
  
--struct inode *devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty)
-+struct inode *devpts_pty_new(struct inode *ptmx_inode, dev_t device, int index,
-+		void *priv)
+-int devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty)
++struct inode *devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty)
  {
--	/* tty layer puts index from devpts_new_index() in here */
--	int number = tty->index;
--	struct tty_driver *driver = tty->driver;
--	dev_t device = MKDEV(driver->major, driver->minor_start+number);
+ 	/* tty layer puts index from devpts_new_index() in here */
+ 	int number = tty->index;
+@@ -553,19 +553,19 @@ int devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty)
+ 	dev_t device = MKDEV(driver->major, driver->minor_start+number);
  	struct dentry *dentry;
  	struct super_block *sb = pts_sb_from_inode(ptmx_inode);
- 	struct inode *inode;
-@@ -559,23 +556,18 @@ struct inode *devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty)
+-	struct inode *inode = new_inode(sb);
++	struct inode *inode;
+ 	struct dentry *root = sb->s_root;
+ 	struct pts_fs_info *fsi = DEVPTS_SB(sb);
  	struct pts_mount_opts *opts = &fsi->mount_opts;
+-	int ret = 0;
  	char s[12];
  
--	/* We're supposed to be given the slave end of a pty */
--	BUG_ON(driver->type != TTY_DRIVER_TYPE_PTY);
--	BUG_ON(driver->subtype != PTY_TYPE_SLAVE);
--
- 	inode = new_inode(sb);
+ 	/* We're supposed to be given the slave end of a pty */
+ 	BUG_ON(driver->type != TTY_DRIVER_TYPE_PTY);
+ 	BUG_ON(driver->subtype != PTY_TYPE_SLAVE);
+ 
++	inode = new_inode(sb);
  	if (!inode)
- 		return ERR_PTR(-ENOMEM);
+-		return -ENOMEM;
++		return ERR_PTR(-ENOMEM);
  
--	inode->i_ino = number + 3;
-+	inode->i_ino = index + 3;
+ 	inode->i_ino = number + 3;
  	inode->i_uid = opts->setuid ? opts->uid : current_fsuid();
- 	inode->i_gid = opts->setgid ? opts->gid : current_fsgid();
- 	inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
- 	init_special_inode(inode, S_IFCHR|opts->mode, device);
--	inode->i_private = tty;
--	tty->driver_data = inode;
-+	inode->i_private = priv;
+@@ -585,12 +585,12 @@ int devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty)
+ 		fsnotify_create(root->d_inode, dentry);
+ 	} else {
+ 		iput(inode);
+-		ret = -ENOMEM;
++		inode = ERR_PTR(-ENOMEM);
+ 	}
  
--	sprintf(s, "%d", number);
-+	sprintf(s, "%d", index);
+ 	mutex_unlock(&root->d_inode->i_mutex);
  
- 	mutex_lock(&root->d_inode->i_mutex);
- 
-@@ -613,9 +605,8 @@ void *devpts_get_priv(struct inode *pts_inode)
- 	return priv;
+-	return ret;
++	return inode;
  }
  
--void devpts_pty_kill(struct tty_struct *tty)
-+void devpts_pty_kill(struct inode *inode)
- {
--	struct inode *inode = tty->driver_data;
- 	struct super_block *sb = pts_sb_from_inode(inode);
- 	struct dentry *root = sb->s_root;
- 	struct dentry *dentry;
+ void *devpts_get_priv(struct inode *pts_inode)
 diff --git a/include/linux/devpts_fs.h b/include/linux/devpts_fs.h
-index 4ca846f..251a209 100644
+index de635a5..4ca846f 100644
 --- a/include/linux/devpts_fs.h
 +++ b/include/linux/devpts_fs.h
-@@ -20,11 +20,12 @@
+@@ -20,7 +20,7 @@
  int devpts_new_index(struct inode *ptmx_inode);
  void devpts_kill_index(struct inode *ptmx_inode, int idx);
  /* mknod in devpts */
--struct inode *devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty);
-+struct inode *devpts_pty_new(struct inode *ptmx_inode, dev_t device, int index,
-+		void *priv);
+-int devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty);
++struct inode *devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty);
  /* get private structure */
  void *devpts_get_priv(struct inode *pts_inode);
  /* unlink */
--void devpts_pty_kill(struct tty_struct *tty);
-+void devpts_pty_kill(struct inode *inode);
- 
- #else
- 
-@@ -32,7 +33,7 @@ void devpts_pty_kill(struct tty_struct *tty);
+@@ -31,10 +31,10 @@ void devpts_pty_kill(struct tty_struct *tty);
+ /* Dummy stubs in the no-pty case */
  static inline int devpts_new_index(struct inode *ptmx_inode) { return -EINVAL; }
  static inline void devpts_kill_index(struct inode *ptmx_inode, int idx) { }
- static inline struct inode *devpts_pty_new(struct inode *ptmx_inode,
--		struct tty_struct *tty)
-+		dev_t device, int index, void *priv)
+-static inline int devpts_pty_new(struct inode *ptmx_inode,
+-				struct tty_struct *tty)
++static inline struct inode *devpts_pty_new(struct inode *ptmx_inode,
++		struct tty_struct *tty)
  {
- 	return ERR_PTR(-EINVAL);
+-	return -EINVAL;
++	return ERR_PTR(-EINVAL);
  }
-@@ -40,7 +41,7 @@ static inline void *devpts_get_priv(struct inode *pts_inode)
+ static inline void *devpts_get_priv(struct inode *pts_inode)
  {
- 	return NULL;
- }
--static inline void devpts_pty_kill(struct tty_struct *tty) { }
-+static inline void devpts_pty_kill(struct inode *inode) { }
- 
- #endif
- 
 -- 
 1.7.12.3
 
