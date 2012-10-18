@@ -1,47 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab2JREmG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 00:42:06 -0400
-Received: from ozlabs.org ([203.10.76.45]:40763 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751298Ab2JREmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 00:42:04 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Cc: David Howells <dhowells@redhat.com>, David Miller <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jwboyer@redhat.com, pjones@redhat.com
-Subject: Re: RFC: sign the modules at install time
-In-Reply-To: <CA+55aFxo-b3nUAWhG0N7hJkH1goStvBBTCT7XWGD+RJLG0=fsQ@mail.gmail.com>
-References: <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com> <3179.1350512382@warthog.procyon.org.uk> <CA+55aFzEH1jguw8NB90si2uxvyO63FuKPOc8wiEPRCYwruSzRg@mail.gmail.com> <20121018005432.GA20163@kroah.com> <CA+55aFxo-b3nUAWhG0N7hJkH1goStvBBTCT7XWGD+RJLG0=fsQ@mail.gmail.com>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 18 Oct 2012 15:04:26 +1030
-Message-ID: <877gqoo0tp.fsf@rustcorp.com.au>
+	id S1754016Ab2JREov (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 00:44:51 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53711 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab2JREot (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 00:44:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20121018042916.GP2739@dastard>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+	<20121015204217.GB2739@dastard>
+	<CAEH94Lgfev1qg2S+2-D5VMtVgSES3cFw0KmJSJr5HObyhA8sbg@mail.gmail.com>
+	<20121018042916.GP2739@dastard>
+Date: Thu, 18 Oct 2012 12:44:47 +0800
+Message-ID: <CAEH94LhtzMkKTVD_yDvotDMwkfFZbXObYVCPAzpZOcNVqxDxpQ@mail.gmail.com>
+Subject: Re: [RFC v3 00/13] vfs: hot data tracking
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
+        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
-> On Wed, Oct 17, 2012 at 5:54 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->>>
->>> One of the main sane use-cases for module signing is:
->>>
->>>  - CONFIG_CHECK_SIGNATURE=y
->>>  - randomly generated one-time key
->>>  - "make modules_install; make install"
->>>  - "make clean" to get rid of the keys.
->>>  - reboot.
->>
->> I want that too, but right now 'make clean' leaves the keys around,
->> which seems a bit dangerous to me.
+On Thu, Oct 18, 2012 at 12:29 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Wed, Oct 17, 2012 at 04:57:14PM +0800, Zhi Yong Wu wrote:
+>> On Tue, Oct 16, 2012 at 4:42 AM, Dave Chinner <david@fromorbit.com> wrote:
+>> > On Wed, Oct 10, 2012 at 06:07:22PM +0800, zwu.kernel@gmail.com wrote:
+>> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> ....
+>> > (*) Tested on an empty 17TB XFS filesystem with:
+>> >
+>> > $ sudo mkfs.xfs -f -l size=131072b,sunit=8 /dev/vdc
+>> > meta-data=/dev/vdc               isize=256    agcount=17, agsize=268435455 blks
+>> >          =                       sectsz=512   attr=2, projid32bit=0
+>> > data     =                       bsize=4096   blocks=4563402735, imaxpct=5
+>> >          =                       sunit=0      swidth=0 blks
+>> > naming   =version 2              bsize=4096   ascii-ci=0
+>> > log      =internal log           bsize=4096   blocks=131072, version=2
+>> >          =                       sectsz=512   sunit=1 blks, lazy-count=1
+>> > realtime =none                   extsz=4096   blocks=0, rtextents=0
+>> > $ sudo mount -o logbsize=256k /dev/vdc /mnt/scratch
+>> > $ sudo chmod 777 /mnt/scratch
+>> > $ fs_mark  -D  10000  -S0  -n  100000  -s  1  -L  63  -d \
+>> > /mnt/scratch/0  -d  /mnt/scratch/1  -d  /mnt/scratch/2  -d \
+>> > /mnt/scratch/3  -d  /mnt/scratch/4  -d  /mnt/scratch/5  -d \
+>> > /mnt/scratch/6  -d  /mnt/scratch/7
+>> > .....
+>> >      0     21600000            1      16679.3         12552262
+>> >      0     22400000            1      15412.4         12588587
+>> >      0     23200000            1      16367.6         14199322
+>> >      0     24000000            1      15680.4         15741205
+>> > <hangs here w/ OOM>
+>> ^^^^In this test, i haven't see you enable hot_track function via
+>> mount, why did it meet OOM?
 >
-> Oh, yes, we should make sure the key file gets cleaned up at "make clean".
+> I copied the wrong mount command. It was definitely enabled.
+OK, BTW: fs_mark is the script written by you? After xfsprogs is
+installed, i haven't found this command.
 
-I left it at distclean, figuring the temporary key is a bit like the
-.config.  But it's trivial to change if people think that's unnatural.
+>
+> Cheers,
+>
+> Dave.
+>
+> --
+> Dave Chinner
+> david@fromorbit.com
 
-Cheers,
-Rusty.
+
+
+-- 
+Regards,
+
+Zhi Yong Wu
