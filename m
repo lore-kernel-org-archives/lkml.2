@@ -1,123 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233Ab2JRFva (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 01:51:30 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:42105 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754178Ab2JRFv2 (ORCPT
+	id S1754257Ab2JRFxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 01:53:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52965 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754198Ab2JRFxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 01:51:28 -0400
+	Thu, 18 Oct 2012 01:53:14 -0400
+Message-ID: <507F9944.50505@kernel.dk>
+Date: Thu, 18 Oct 2012 07:53:08 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <507F78B0.70808@snapgear.com>
-References: <20121018103713.0ccb63374964501c3d8d99a5@canb.auug.org.au>
-	<20121018103826.c8e1312904747b31caa376f6@canb.auug.org.au>
-	<507F78B0.70808@snapgear.com>
-Date: Thu, 18 Oct 2012 07:51:26 +0200
-X-Google-Sender-Auth: Oe1nkTyc6_f6AolAPlGBtQWlOUw
-Message-ID: <CAMuHMdWX2ZVNcz1Ubsk0W3HH7qcBQhctaWSFVq=x+YwbuUE9YA@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the m68knommu tree with the tree
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Ungerer <gerg@snapgear.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: MAX_LOCKDEP_ENTRIES too low  (called from ioc_release_fn)
+References: <20121018015312.GA29865@redhat.com>
+In-Reply-To: <20121018015312.GA29865@redhat.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On 2012-10-18 03:53, Dave Jones wrote:
+> Triggered while fuzz testing..
+> 
+> 
+> BUG: MAX_LOCKDEP_ENTRIES too low!
+> turning off the locking correctness validator.
+> Pid: 22788, comm: kworker/2:1 Not tainted 3.7.0-rc1+ #34
+> Call Trace:
+>  [<ffffffff810decdd>] add_lock_to_list.isra.29.constprop.45+0xdd/0xf0
+>  [<ffffffff810e2871>] __lock_acquire+0x1121/0x1ba0
+>  [<ffffffff810e3a12>] lock_acquire+0xa2/0x220
+>  [<ffffffff8117bad2>] ? free_one_page+0x32/0x450
+>  [<ffffffff816c5a59>] ? sub_preempt_count+0x79/0xd0
+>  [<ffffffff816c0800>] _raw_spin_lock+0x40/0x80
+>  [<ffffffff8117bad2>] ? free_one_page+0x32/0x450
+>  [<ffffffff8117bad2>] free_one_page+0x32/0x450
+>  [<ffffffff8117bf41>] ? __free_pages_ok.part.58+0x51/0x110
+>  [<ffffffff8117bf9c>] __free_pages_ok.part.58+0xac/0x110
+>  [<ffffffff8117cd73>] __free_pages+0x73/0x90
+>  [<ffffffff811cb4f3>] __free_slab+0xd3/0x1b0
+>  [<ffffffff811cb609>] discard_slab+0x39/0x50
+>  [<ffffffff816b77db>] __slab_free+0x378/0x3a3
+>  [<ffffffff81341289>] ? ioc_release_fn+0x99/0xe0
+>  [<ffffffff81341289>] ? ioc_release_fn+0x99/0xe0
+>  [<ffffffff811cd4e2>] kmem_cache_free+0x2f2/0x320
+>  [<ffffffff816c5a59>] ? sub_preempt_count+0x79/0xd0
+>  [<ffffffff81341289>] ioc_release_fn+0x99/0xe0
+>  [<ffffffff81095a37>] process_one_work+0x207/0x780
+>  [<ffffffff810959c7>] ? process_one_work+0x197/0x780
+>  [<ffffffff813411f0>] ? get_io_context+0x20/0x20
+>  [<ffffffff8109638e>] worker_thread+0x15e/0x440
+>  [<ffffffff81096230>] ? rescuer_thread+0x240/0x240
+>  [<ffffffff8109d0cd>] kthread+0xed/0x100
+>  [<ffffffff810de02e>] ? put_lock_stats.isra.25+0xe/0x40
+>  [<ffffffff8109cfe0>] ? kthread_create_on_node+0x160/0x160
+>  [<ffffffff816c9dac>] ret_from_fork+0x7c/0xb0
+>  [<ffffffff8109cfe0>] ? kthread_create_on_node+0x160/0x160
 
-On Thu, Oct 18, 2012 at 5:34 AM, Greg Ungerer <gerg@snapgear.com> wrote:
-> On 18/10/12 09:38, Stephen Rothwell wrote:
->>
->> [Just cc'ing Geert]
->>
->> On Thu, 18 Oct 2012 10:37:13 +1100 Stephen Rothwell <sfr@canb.auug.org.au>
->> wrote:
->>>
->>>
->>> Hi Greg,
->>>
->>> Today's linux-next merge of the m68knommu tree got conflicts in
->>> arch/m68k/include/asm/termios.h, arch/m68k/include/uapi/asm/auxvec.h,
->>> arch/m68k/include/uapi/asm/msgbuf.h, arch/m68k/include/uapi/asm/sembuf.h,
->>> arch/m68k/include/uapi/asm/shmbuf.h, arch/m68k/include/uapi/asm/socket.h,
->>> arch/m68k/include/uapi/asm/sockios.h and
->>> arch/m68k/include/uapi/asm/termbits.h between commit 10b3a979347d ("UAPI:
->>> (Scripted) Disintegrate arch/m68k/include/asm") from the m68k-current
->>> tree and various commits from the m68knommu tree that use the asm-generic
->>> versions.
->>>
->>> I just deleted all those files and added the following merge fix patch
->>> and can carry the fix as necessary.
->>>
->>> I think that this is the correct thing to do ...
->
->
-> I think that is right. Thanks.
+Not sure why you are CC'ing a call site, rather than the maintainers of
+the code. Just looks like lockdep is using too small a static value.
+Though it is pretty darn large...
 
-I still have to do a proper review of your changes (I noticed a few
-things I have
-to double-check). After that, I guess it's easiest if I take your
-patch, updated for
-the UAPI disintegration?
+-- 
+Jens Axboe
 
->
-> Regards
-> Greg
->
->
->
->>> From: Stephen Rothwell <sfr@canb.auug.org.au>
->>> Date: Thu, 18 Oct 2012 10:32:20 +1100
->>> Subject: [PATCH] m68k: fix up for UAPI changes
->>>
->>> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
->>> ---
->>>   arch/m68k/include/uapi/asm/Kbuild |    8 --------
->>>   1 file changed, 8 deletions(-)
->>>
->>> diff --git a/arch/m68k/include/uapi/asm/Kbuild
->>> b/arch/m68k/include/uapi/asm/Kbuild
->>> index 972bce1..aebdbf5 100644
->>> --- a/arch/m68k/include/uapi/asm/Kbuild
->>> +++ b/arch/m68k/include/uapi/asm/Kbuild
->>> @@ -2,25 +2,17 @@
->>>   include include/uapi/asm-generic/Kbuild.asm
->>>
->>>   header-y += a.out.h
->>> -header-y += auxvec.h
->>>   header-y += byteorder.h
->>>   header-y += cachectl.h
->>>   header-y += fcntl.h
->>>   header-y += ioctls.h
->>> -header-y += msgbuf.h
->>>   header-y += param.h
->>>   header-y += poll.h
->>>   header-y += posix_types.h
->>>   header-y += ptrace.h
->>> -header-y += sembuf.h
->>>   header-y += setup.h
->>> -header-y += shmbuf.h
->>>   header-y += sigcontext.h
->>>   header-y += signal.h
->>> -header-y += socket.h
->>> -header-y += sockios.h
->>>   header-y += stat.h
->>>   header-y += swab.h
->>> -header-y += termbits.h
->>> -header-y += termios.h
->>>   header-y += unistd.h
->>> --
->>> 1.7.10.280.gaa39
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
