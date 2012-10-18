@@ -1,119 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755834Ab2JRNvz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 09:51:55 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:36263 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754818Ab2JRNvx (ORCPT
+	id S1755910Ab2JRN5r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 09:57:47 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:56853 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754818Ab2JRN5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 09:51:53 -0400
-Message-ID: <5080097D.5020501@gmail.com>
-Date: Thu, 18 Oct 2012 21:51:57 +0800
-From: Sha Zhengju <handai.szj@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sha Zhengju <handai.szj@taobao.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] oom, memcg: handle sysctl oom_kill_allocating_task while
- memcg oom happening
-References: <1350382328-28977-1-git-send-email-handai.szj@taobao.com> <20121016133439.GI13991@dhcp22.suse.cz> <CAFj3OHVW-betpEnauzk-vQEfw_7bJxFneQb2oWpAZzOpZuMDiQ@mail.gmail.com> <20121018115640.GB24295@dhcp22.suse.cz>
-In-Reply-To: <20121018115640.GB24295@dhcp22.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 18 Oct 2012 09:57:46 -0400
+X-Greylist: delayed 3634 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Oct 2012 09:57:46 EDT
+Message-ID: <1350565015.23730.4.camel@thor>
+Subject: [PATCH 0/1] staging: Add firewire-serial driver
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux1394-devel@lists.sourceforge.net
+Date: Thu, 18 Oct 2012 08:56:55 -0400
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.2.4-0build1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2012 07:56 PM, Michal Hocko wrote:
-> On Wed 17-10-12 01:14:48, Sha Zhengju wrote:
->> On Tuesday, October 16, 2012, Michal Hocko<mhocko@suse.cz>  wrote:
-> [...]
->>> Could you be more specific about the motivation for this patch? Is it
->>> "let's be consistent with the global oom" or you have a real use case
->>> for this knob.
->>>
->> In our environment(rhel6), we encounter a memcg oom 'deadlock'
->> problem.  Simply speaking, suppose process A is selected to be killed
->> by memcg oom killer, but A is uninterruptible sleeping on a page
->> lock. What's worse, the exact page lock is holding by another memcg
->> process B which is trapped in mem_croup_oom_lock(proves to be a
->> livelock).
-> Hmm, this is strange. How can you get down that road with the page lock
-> held? Is it possible this is related to the issue fixed by: 1d65f86d
-> (mm: preallocate page before lock_page() at filemap COW)?
+Please consider this serial driver for review for submission to staging.
+The firewire-serial driver implements TTY over IEEE 1394. In its default
+configuration, it creates 4 TTY devices and one loopback device per
+firewire card (respectively, named fwtty<n>~fwtty<n+3> and fwloop<n>).
 
-No, it has nothing with the cow page. By checking stack of the process A
-selected to be killed(uninterruptible sleeping), it was stuck at:
-__do_fault->filemap_fault->__lock_page_or_retry->wait_on_page_bit--(D 
-state).
-The person B holding the exactly page lock is on the following path:
-__do_fault->filemap_fault->__do_page_cache_readahead->..->mpage_readpages
-->add_to_page_cache_locked ---- >(in memcg oom and cannot exit)
-In mpage_readpages, B tends to read a dozen of pages in: for each of 
-page will do
-locking, charging, and then send out a big bio. And A is waiting for one 
-of the pages
-and stuck.
+Currently, the TTY devices auto-connect to every cabled peer (the TODO
+list includes plans for providing a sysfs interface to control virtual
+cabling with whitelist/blacklist support per GUID).
 
-As I said, 37b23e05 has made pagefault killable by changing 
-uninterruptible sleeping
-to killable sleeping. So A can be woke up to exit successfully and free 
-the memory which
-can in turn help B pass memcg charging period.
+Efforts are still ongoing for a companion console driver, with plans to
+eventually add early_printk & kgdb support (via additional drivers).
 
-(By the way, it seems commit 37b23e05 and 7d9fdac need to be backported 
-to --stable tree
-to deliver RHEL users. ;-) )
+Some issues did arise with both the TTY and Firewire subsystems which
+are noted in the TODO file. Please review these workarounds.
 
->> Then A can not exit successfully to free the memory and both of them
->> can not moving on.
->> Indeed, we should dig into these locks to find the solution and
->> in fact the 37b23e05 (x86, mm: make pagefault killable) and
->> 7d9fdac(Memcg: make oom_lock 0 and 1 based other than counter) have
->> already solved the problem, but if oom_killing_allocating_task is
->> memcg aware, enabling this suicide oom behavior will be a simpler
->> workaround. What's more, enabling the sysctl can avoid other potential
->> oom problems to some extent.
-> As I said, I am not against this but I really want to see a valid use
-> case first. So far I haven't seen any because what you mention above is
-> a clear bug which should be fixed. I can imagine the huge number of
-> tasks in the group could be a problem as well but I would like to see
-> what are those problems first.
->
+Peter Hurley (1):
+  staging: fwserial: Add TTY-over-Firewire serial driver
 
-In view of consistent with global oom and performance benefit, I suggest
-we may as well open it in memcg oom as there's no obvious harm.
-As refer to the bug I mentioned, obviously the key solution is the above two
-patchset, but considing other *potential* memcg oom bugs, the sysctl may
-be a role of temporary workaround to some extent... but it's just a 
-workaround.
+ drivers/staging/Kconfig             |    2 +
+ drivers/staging/Makefile            |    1 +
+ drivers/staging/fwserial/Kconfig    |    9 +
+ drivers/staging/fwserial/Makefile   |    2 +
+ drivers/staging/fwserial/TODO       |   89 ++
+ drivers/staging/fwserial/dma_fifo.c |  310 ++++
+ drivers/staging/fwserial/dma_fifo.h |  130 ++
+ drivers/staging/fwserial/fwserial.c | 2885 +++++++++++++++++++++++++++++++++++
+ drivers/staging/fwserial/fwserial.h |  355 +++++
+ 9 files changed, 3783 insertions(+)
+ create mode 100644 drivers/staging/fwserial/Kconfig
+ create mode 100644 drivers/staging/fwserial/Makefile
+ create mode 100644 drivers/staging/fwserial/TODO
+ create mode 100644 drivers/staging/fwserial/dma_fifo.c
+ create mode 100644 drivers/staging/fwserial/dma_fifo.h
+ create mode 100644 drivers/staging/fwserial/fwserial.c
+ create mode 100644 drivers/staging/fwserial/fwserial.h
+
+-- 
+1.7.12.3
 
 
-Thanks,
-Sha
-
->>> The primary motivation for oom_kill_allocating_tas AFAIU was to reduce
->>> search over huge tasklists and reduce task_lock holding times. I am not
->>> sure whether the original concern is still valid since 6b0c81b (mm,
->>> oom: reduce dependency on tasklist_lock) as the tasklist_lock usage has
->>> been reduced conciderably in favor of RCU read locks is taken but maybe
->>> even that can be too disruptive?
->>> David?
->>
->> On the other hand, from the semantic meaning of oom_kill_allocating_task,
->> it implies to allow suicide-like oom, which has no obvious relationship
->> with performance problems(such as huge task lists or task_lock holding
->> time).
-> I guess that suicide-like oom in fact means "kill the poor soul that
-> happened to charge the last". I do not see any use case for this from
-> top of my head (appart from the performance benefits of course).
->
->> So make the sysctl be consistent with global oom will be better or set
->> an individual option for memcg oom just as panic_on_oom does.
 
