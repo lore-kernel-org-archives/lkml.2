@@ -1,202 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab2JRLwb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 07:52:31 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:61907 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802Ab2JRLwa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 07:52:30 -0400
-X-IronPort-AV: E=Sophos;i="4.80,606,1344211200"; 
-   d="scan'208";a="15252989"
-Date: Thu, 18 Oct 2012 12:52:05 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 6/6]: PVH:privcmd changes.
-In-Reply-To: <20121017173448.7ef4c0b1@mantra.us.oracle.com>
-Message-ID: <alpine.DEB.2.02.1210181251520.2689@kaball.uk.xensource.com>
-References: <20121017173448.7ef4c0b1@mantra.us.oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753547Ab2JRLxv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 07:53:51 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:52600 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751969Ab2JRLxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 07:53:50 -0400
+Message-ID: <507FEDC1.4010406@parallels.com>
+Date: Thu, 18 Oct 2012 15:53:37 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
+        <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v5 07/14] mm: Allocate kernel pages to the right memcg
+References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-8-git-send-email-glommer@parallels.com> <20121017151221.4c420e5a.akpm@linux-foundation.org>
+In-Reply-To: <20121017151221.4c420e5a.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Oct 2012, Mukesh Rathor wrote:
-> PVH: privcmd changes. PVH only supports the batch interface. To map a foreign page to a process, pfn must be allocated. PVH path uses ballooning for that purpose. The returned pfn is then mapped to the foreign page. xen_unmap_domain_mfn_range() is introduced to unmap these pages via the privcmd close call.
+On 10/18/2012 02:12 AM, Andrew Morton wrote:
+> On Tue, 16 Oct 2012 14:16:44 +0400
+> Glauber Costa <glommer@parallels.com> wrote:
 > 
-> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+>> When a process tries to allocate a page with the __GFP_KMEMCG flag, the
+>> page allocator will call the corresponding memcg functions to validate
+>> the allocation. Tasks in the root memcg can always proceed.
+>>
+>> To avoid adding markers to the page - and a kmem flag that would
+>> necessarily follow, as much as doing page_cgroup lookups for no reason,
+>> whoever is marking its allocations with __GFP_KMEMCG flag is responsible
+>> for telling the page allocator that this is such an allocation at
+>> free_pages() time.
+> 
+> Well, why?  Was that the correct decision?
+> 
+>> This is done by the invocation of
+>> __free_accounted_pages() and free_accounted_pages().
+> 
+> These are very general-sounding names.  I'd expect the identifiers to
+> contain "memcg" and/or "kmem", to identify what's going on.
+> 
+I've just changed to free_memcg_kmem_pages.
+Let me know if the name is better.
 
-this one also looks all right
-
-
->  drivers/xen/privcmd.c |   69 +++++++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 67 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
-> index 63d9ee8..835166a 100644
-> --- a/drivers/xen/privcmd.c
-> +++ b/drivers/xen/privcmd.c
-> @@ -33,11 +33,14 @@
->  #include <xen/features.h>
->  #include <xen/page.h>
->  #include <xen/xen-ops.h>
-> +#include <xen/balloon.h>
->  
->  #include "privcmd.h"
->  
->  MODULE_LICENSE("GPL");
->  
-> +#define PRIV_VMA_LOCKED ((void *)1)
-> +
->  #ifndef HAVE_ARCH_PRIVCMD_MMAP
->  static int privcmd_enforce_singleshot_mapping(struct vm_area_struct *vma);
->  #endif
-> @@ -199,6 +202,10 @@ static long privcmd_ioctl_mmap(void __user *udata)
->  	if (!xen_initial_domain())
->  		return -EPERM;
->  
-> +	/* We only support privcmd_ioctl_mmap_batch for auto translated. */
-> +	if (xen_feature(XENFEAT_auto_translated_physmap))
-> +		return -ENOSYS;
-> +
->  	if (copy_from_user(&mmapcmd, udata, sizeof(mmapcmd)))
->  		return -EFAULT;
->  
-> @@ -246,6 +253,7 @@ struct mmap_batch_state {
->  	domid_t domain;
->  	unsigned long va;
->  	struct vm_area_struct *vma;
-> +	int index;
->  	/* A tristate:
->  	 *      0 for no errors
->  	 *      1 if at least one error has happened (and no
-> @@ -260,15 +268,24 @@ struct mmap_batch_state {
->  	xen_pfn_t __user *user_mfn;
->  };
->  
-> +/* auto translated dom0 note: if domU being created is PV, then mfn is
-> + * mfn(addr on bus). If it's auto xlated, then mfn is pfn (input to HAP).
-> + */
->  static int mmap_batch_fn(void *data, void *state)
->  {
->  	xen_pfn_t *mfnp = data;
->  	struct mmap_batch_state *st = state;
-> +	struct vm_area_struct *vma = st->vma;
-> +	struct page **pages = vma->vm_private_data;
-> +	struct page *cur_page = NULL;
->  	int ret;
->  
-> +	if (xen_feature(XENFEAT_auto_translated_physmap))
-> +		cur_page = pages[st->index++];
-> +
->  	ret = xen_remap_domain_mfn_range(st->vma, st->va & PAGE_MASK, *mfnp, 1,
->  					 st->vma->vm_page_prot, st->domain,
-> -					 NULL);
-> +					 &cur_page);
->  
->  	/* Store error code for second pass. */
->  	*(st->err++) = ret;
-> @@ -304,6 +321,32 @@ static int mmap_return_errors_v1(void *data, void *state)
->  	return __put_user(*mfnp, st->user_mfn++);
->  }
->  
-> +/* Allocate pfns that are then mapped with gmfns from foreign domid. Update
-> + * the vma with the page info to use later.
-> + * Returns: 0 if success, otherwise -errno
-> + */
-> +static int alloc_empty_pages(struct vm_area_struct *vma, int numpgs)
-> +{
-> +	int rc;
-> +	struct page **pages;
-> +
-> +	pages = kcalloc(numpgs, sizeof(pages[0]), GFP_KERNEL);
-> +	if (pages == NULL)
-> +		return -ENOMEM;
-> +
-> +	rc = alloc_xenballooned_pages(numpgs, pages, 0);
-> +	if (rc != 0) {
-> +		pr_warn("%s Could not alloc %d pfns rc:%d\n", __func__,
-> +			numpgs, rc);
-> +		kfree(pages);
-> +		return -ENOMEM;
-> +	}
-> +	BUG_ON(vma->vm_private_data != PRIV_VMA_LOCKED);
-> +	vma->vm_private_data = pages;
-> +
-> +	return 0;
-> +}
-> +
->  static struct vm_operations_struct privcmd_vm_ops;
->  
->  static long privcmd_ioctl_mmap_batch(void __user *udata, int version)
-> @@ -371,10 +414,18 @@ static long privcmd_ioctl_mmap_batch(void __user *udata, int version)
->  		up_write(&mm->mmap_sem);
->  		goto out;
->  	}
-> +	if (xen_feature(XENFEAT_auto_translated_physmap)) {
-> +		ret = alloc_empty_pages(vma, m.num);
-> +		if (ret < 0) {
-> +			up_write(&mm->mmap_sem);
-> +			goto out;
-> +		}
-> +	}
->  
->  	state.domain        = m.dom;
->  	state.vma           = vma;
->  	state.va            = m.addr;
-> +	state.index         = 0;
->  	state.global_error  = 0;
->  	state.err           = err_array;
->  
-> @@ -439,6 +490,19 @@ static long privcmd_ioctl(struct file *file,
->  	return ret;
->  }
->  
-> +static void privcmd_close(struct vm_area_struct *vma)
-> +{
-> +	struct page **pages = vma ? vma->vm_private_data : NULL;
-> +	int numpgs = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
-> +
-> +	if (!pages || !numpgs || !xen_feature(XENFEAT_auto_translated_physmap))
-> +		return;
-> +
-> +	xen_unmap_domain_mfn_range(vma, numpgs, pages);
-> +	free_xenballooned_pages(numpgs, pages);
-> +	kfree(pages);
-> +}
-> +
->  static int privcmd_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
->  {
->  	printk(KERN_DEBUG "privcmd_fault: vma=%p %lx-%lx, pgoff=%lx, uv=%p\n",
-> @@ -449,6 +513,7 @@ static int privcmd_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
->  }
->  
->  static struct vm_operations_struct privcmd_vm_ops = {
-> +	.close = privcmd_close,
->  	.fault = privcmd_fault
->  };
->  
-> @@ -465,7 +530,7 @@ static int privcmd_mmap(struct file *file, struct vm_area_struct *vma)
->  
->  static int privcmd_enforce_singleshot_mapping(struct vm_area_struct *vma)
->  {
-> -	return (xchg(&vma->vm_private_data, (void *)1) == NULL);
-> +	return !cmpxchg(&vma->vm_private_data, NULL, PRIV_VMA_LOCKED);
->  }
->  
->  const struct file_operations xen_privcmd_fops = {
-> -- 
-> 1.7.2.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
