@@ -1,97 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215Ab2JROvE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 10:51:04 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:62091 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932158Ab2JROvB (ORCPT
+	id S932269Ab2JROvV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 10:51:21 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:56296 "EHLO
+	eddie.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932158Ab2JROvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 10:51:01 -0400
+	Thu, 18 Oct 2012 10:51:17 -0400
+Date: Thu, 18 Oct 2012 16:51:01 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+ (tip/s390 trees related)
+Message-ID: <20121018145101.GA17439@linux-mips.org>
+References: <20121018172201.b81dcc8fe40868256f532364@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <20121016193341.GD16166@google.com>
-References: <20121008020000.GB2575@localhost>
-	<CAFTL4hzXWtzp7megsCAEuak5=_2SWmp9age-+wrpyQAU4BRZ0w@mail.gmail.com>
-	<20121016193341.GD16166@google.com>
-Date: Thu, 18 Oct 2012 16:50:59 +0200
-Message-ID: <CAFTL4hzo_w7HTgC9ApTk113X8WdZSpV+D+VSEe=604YEJFmKsg@mail.gmail.com>
-Subject: Re: Is not locking task_lock in cgroup_fork() safe?
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121018172201.b81dcc8fe40868256f532364@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/16 Tejun Heo <tj@kernel.org>:
-> Hey, Frederic.
->
-> On Mon, Oct 08, 2012 at 02:48:58PM +0200, Frederic Weisbecker wrote:
->> Yeah I missed this one.
->> Now the whole cgroup_attach_task() is clusteracy without the
->
-> Clusteracy?
->
->> threadgroup lock anyway:
->>
->> * The PF_EXITING check is racy (we are neither holding tsk->flags nor
->> threagroup lock).
->
-> PF_EXITING is *always* protected by threadgroup_change_begin/end().
->
->> * The cgrp == oldcgrp is racy (exit() can change the oldcgrp anytime.
->
-> So, as long as this happens after PF_EXITING check, it should be safe.
->
->> * can_attach / attach / cancel_attach can race against fork/exit (and
->> post_fork if you consider those interested in cgroup task link like
->> the freezer. But that is racy in any case already even with
->> threadgroup lock)
->
-> Against exit, no.  Against forking a new process, can they?  If so, we
-> need to fix it.
->
->> It has been designed to be called under that lock. So I suspect the
->
-> Ummm.... threadgroup_lock is a recent addition so things couldn't have
-> been designed to be called under that lock.  threadgroup_lock protects
-> the *threadgroup* - creating a new task in the same process or a task
-> of the process exiting.  It doesn't do anything about other processes.
-> In fact, the lock itself is per-process.
->
->> best, at least for now, is to threadgroup lock from
->> cgroup_attach_task_all(). And also make cgroup_attach_task() static to
->> avoid future unsafe callers.
->
-> Oh, from that call path, sure.  Can someone teach me why we need that
-> one at all?  I think we're confusing each other here.  I was talking
-> about the usual migration path not protected against forking a new
-> process.
+On Thu, Oct 18, 2012 at 05:22:01PM +1100, Stephen Rothwell wrote:
 
-Ah right I was confused. Hmm, indeed we have a race here on
-cgroup_fork(). How about using css_try_get() in cgroup_fork() and
-refetch the parent's css until we succeed? This requires rcu_read_lock
-though, and freeing the css_set under RCU.
+> After merging the final tree, today's linux-next build (s390 allyesconfig)
+> failed like this:
+> 
+> mm/huge_memory.c:1424:2: error: implicit declaration of function 'pmd_pgprot' [-Werror=implicit-function-declaration]
+> mm/huge_memory.c:1424:7: error: incompatible types when assigning to type 'pgprot_t' from type 'int'
+> 
+> (see http://kisskb.ellerman.id.au/kisskb/buildresult/7383823/)
+> 
+> Caused by commit 35d3d3427314 ("s390/thp: select
+> HAVE_ARCH_TRANSPARENT_HUGEPAGE") from the s390 tree interacting with
+> commit 93c9d633bd9e ("mm/thp: Preserve pgprot across huge page split")
+> from the tip tree.
+> 
+> N.B. Mips also selects HAVE_ARCH_TRANSPARENT_HUGEPAGE as of commit
+> e21a828a1bba ("MIPS: Transparent Huge Pages support") from the mips tree
+> and so will be broken in some configs now as well.
+> 
+> Anyone have suggested merge fix patches I can apply?
 
-Don't know which is better.
+See below.  There's further MIPS breakage in -next; more on than in a
+separate email.
 
-Different problem but I really would like we sanitize the cgroup hooks
-in fork. There is cgroup_fork(), cgroup_post_fork() which takes that
-big css_set_lock, plus the big threadgroup lock... I hope we can
-simplify the mess there.
+  Ralf
 
->
->> There is no harm yet because the only user of it calls that with
->> current as the "task" parameter, in a place that is
->> not in the middle of a fork. So no need to worry about some stable backport.
->>
->> Also, looking at cgroup_attach_task_all(), what guarantee do we have
->> that "from" is not concurrently exiting and removing its cgrp. Which
->> is a separate problem. But we probably need to do some css_set_get()
->> before playing with it.
->
-> I really don't know.  Why isn't it locking the threadgroup to begin
-> with?
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 
-No idea, sounds like something to fix.
+ arch/mips/include/asm/pgtable.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/mips/include/asm/pgtable.h b/arch/mips/include/asm/pgtable.h
+index 252202d..5f7c615 100644
+--- a/arch/mips/include/asm/pgtable.h
++++ b/arch/mips/include/asm/pgtable.h
+@@ -534,6 +534,8 @@ static inline pmd_t pmd_modify(pmd_t pmd, pgprot_t newprot)
+ 	return pmd;
+ }
+ 
++#define pmd_pgprot(x) __pgprot(pmd_val(x) & ~_PAGE_CHG_MASK)
++
+ static inline pmd_t pmd_mknotpresent(pmd_t pmd)
+ {
+ 	pmd_val(pmd) &= ~(_PAGE_PRESENT | _PAGE_VALID | _PAGE_DIRTY);
