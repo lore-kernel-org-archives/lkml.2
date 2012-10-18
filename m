@@ -1,106 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757078Ab2JRPdh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 11:33:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46690 "EHLO mx1.redhat.com"
+	id S1757145Ab2JRPhT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 11:37:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46008 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756738Ab2JRPde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 11:33:34 -0400
-Date: Thu, 18 Oct 2012 11:32:30 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH] percpu-rwsem: use barrier in unlock path
-In-Reply-To: <507F66F6.20704@cn.fujitsu.com>
-Message-ID: <Pine.LNX.4.64.1210181127460.22996@file.rdu.redhat.com>
-References: <Pine.LNX.4.64.1210151716310.10685@file.rdu.redhat.com>
- <Pine.LNX.4.64.1210161924350.20581@file.rdu.redhat.com>
- <CA+55aFyZ9uq_yfHn9PwpmM77X3xVd+xseEbjJmeCCqbFddtjWA@mail.gmail.com>
- <507E48ED.8060809@cn.fujitsu.com> <Pine.LNX.4.64.1210171046130.26481@file.rdu.redhat.com>
- <20121017202806.GA7282@home.goodmis.org> <507F66F6.20704@cn.fujitsu.com>
+	id S1756755Ab2JRPhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 11:37:17 -0400
+Message-ID: <50802093.2000301@zytor.com>
+Date: Thu, 18 Oct 2012 08:30:27 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Kees Cook <keescook@chromium.org>
+CC: mtk.manpages@gmail.com, Rusty Russell <rusty@rustcorp.com.au>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        James Morris <james.l.morris@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
+References: <1348179300-11653-1-git-send-email-keescook@chromium.org> <CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com> <50749DE8.7010703@zytor.com> <CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com> <5074A0AB.8040207@zytor.com> <87d30o7iy6.fsf@rustcorp.com.au> <507F848F.50707@zytor.com> <CAKgNAki+KV=Nh8D3La50uXpWv7PA5T-oPYJwK-PkOv5vMg0AqA@mail.gmail.com> <508011AD.5080307@zytor.com> <CAGXu5jJSz8aQiyNk9q3B05SRVm_YE=krg+Y91BU7550AOSRTSw@mail.gmail.com>
+In-Reply-To: <CAGXu5jJSz8aQiyNk9q3B05SRVm_YE=krg+Y91BU7550AOSRTSw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/18/2012 08:28 AM, Kees Cook wrote:
+>
+> The goal for finit_module is to make sure we're getting what's on the
+> filesystem, not an arbitrary blob, so we can reason about it for
+> security policy.
+>
 
+Yes, I get that... although I'm starting to think that that might 
+actually be a really bad idea.
 
-On Thu, 18 Oct 2012, Lai Jiangshan wrote:
+>> was confused about the functioning of the *current* init_module() system
+>> call.
+>>
+>> Given that, I have to say I now seriously question the value of
+>> finit_module().  The kernel can trivially discover if the pointed-to memory
+>> area is a MAP_SHARED mmap() of a file descriptor and if so which file
+>> descriptor... why can't we handle this behind the scenes?
+>
+> This makes me very nervous. I worry that it adds needless complexity
+> (it'd be many more checks besides "is it MAP_SHARED?", like "does the
+> memory region show the whole file?" "is the offset zero?" etc). Also
+> are we sure the memory area would be truly be unmodifiable in the case
+> where the filesystem is read-only?
 
-> On 10/18/2012 04:28 AM, Steven Rostedt wrote:
-> > On Wed, Oct 17, 2012 at 11:07:21AM -0400, Mikulas Patocka wrote:
-> >>>
-> >>> Even the previous patch is applied, percpu_down_read() still
-> >>> needs mb() to pair with it.
-> >>
-> >> percpu_down_read uses rcu_read_lock which should guarantee that memory 
-> >> accesses don't escape in front of a rcu-protected section.
-> > 
-> > You do realize that rcu_read_lock() does nothing more that a barrier(),
-> > right?
-> > 
-> > Paul worked really hard to get rcu_read_locks() to not call HW barriers.
-> > 
-> >>
-> >> If rcu_read_unlock has only an unlock barrier and not a full barrier, 
-> >> memory accesses could be moved in front of rcu_read_unlock and reordered 
-> >> with this_cpu_inc(*p->counters), but it doesn't matter because 
-> >> percpu_down_write does synchronize_rcu(), so it never sees these accesses 
-> >> halfway through.
-> > 
-> > Looking at the patch, you are correct. The read side doesn't need the
-> > memory barrier as the worse thing that will happen is that it sees the
-> > locked = false, and will just grab the mutex unnecessarily.
-> 
-> ---------------------
-> A memory barrier can be added iff these two things are known:
-> 	1) it disables the disordering between what and what.
-> 	2) what is the corresponding mb() that it pairs with.
-> 
-> You tried to add a mb() in percpu_up_write(), OK, I know it disables the disordering
-> between the writes to the protected data and the statement "p->locked = false",
-> But I can't find out the corresponding mb() that it pairs with.
+You may need to check for PROT_READONLY as well.
 
-Or alternativelly, instead of barrier, we can do this.
+	-hpa
 
-Mikulas
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
----
-
-percpu-rwsem: use barrier in unlock path
-
-The lock is considered unlocked when p->locked is set to false.
-Use barrier prevent reordering of operations around p->locked.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-
----
- include/linux/percpu-rwsem.h |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-Index: linux-3.6.2-fast/include/linux/percpu-rwsem.h
-===================================================================
---- linux-3.6.2-fast.orig/include/linux/percpu-rwsem.h	2012-10-17 20:48:40.000000000 +0200
-+++ linux-3.6.2-fast/include/linux/percpu-rwsem.h	2012-10-18 17:19:24.000000000 +0200
-@@ -66,6 +66,12 @@ static inline void percpu_down_write(str
- 
- static inline void percpu_up_write(struct percpu_rw_semaphore *p)
- {
-+	/*
-+	 * Make sure that other processes that are in rcu section and that
-+	 * may have seen partially modified state exit the rcu section and
-+	 * try to grab the mutex.
-+	 */
-+	synchronize_rcu();
- 	p->locked = false;
- 	mutex_unlock(&p->mtx);
- }
