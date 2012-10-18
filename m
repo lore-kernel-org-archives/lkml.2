@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756927Ab2JRXZa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 19:25:30 -0400
-Received: from mga02.intel.com ([134.134.136.20]:20461 "EHLO mga02.intel.com"
+	id S1757050Ab2JRX0o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 19:26:44 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16537 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756754Ab2JRXTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 19:19:55 -0400
+	id S1756611Ab2JRXTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 19:19:54 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,609,1344236400"; 
-   d="scan'208";a="229462626"
+   d="scan'208";a="229462622"
 From: Andi Kleen <andi@firstfloor.org>
 To: a.p.zijlstra@chello.nl
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org, acme@redhat.com,
         eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 20/34] perf, core: Add generic transaction flags
-Date: Thu, 18 Oct 2012 16:19:28 -0700
-Message-Id: <1350602382-12771-21-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 12/34] perf, tools: Support sorting by intx, abort branch flags
+Date: Thu, 18 Oct 2012 16:19:20 -0700
+Message-Id: <1350602382-12771-13-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
 References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
@@ -25,121 +25,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add a generic qualifier for transaction events, as a new sample
-type that returns a flag word. This is particularly useful
-for qualifying aborts: to distinguish aborts which happen
-due to asynchronous events (like conflicts caused by another
-CPU) versus instructions that lead to an abort.
-
-The tuning strategies are very different for those cases,
-so it's important to distinguish them easily and early.
-
-Since it's inconvenient and inflexible to filter for this
-in the kernel we report all the events out and allow
-some post processing in user space.
-
-The flags are based on the Intel TSX events, but should be fairly
-generic and mostly applicable to other architectures too. In addition
-to various flag words there's also reserved space to report an
-program supplied abort code. For TSX this is used to distinguish specific
-classes of aborts, like a lock busy abort when doing lock elision.
-
-This adds the perf core glue needed for reporting the new flag word out.
+Extend the perf branch sorting code to support sorting by intx
+or abort qualifiers. Also print out those qualifiers.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/perf_event.h      |    2 ++
- include/uapi/linux/perf_event.h |   24 ++++++++++++++++++++++--
- kernel/events/core.c            |    6 ++++++
- 3 files changed, 30 insertions(+), 2 deletions(-)
+ tools/perf/builtin-report.c |    3 +-
+ tools/perf/builtin-top.c    |    4 ++-
+ tools/perf/perf.h           |    4 ++-
+ tools/perf/util/hist.h      |    2 +
+ tools/perf/util/sort.c      |   55 +++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/sort.h      |    2 +
+ 6 files changed, 67 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index f4ded17..7e6a4b6 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -589,6 +589,7 @@ struct perf_sample_data {
- 	struct perf_regs_user		regs_user;
- 	u64				stack_user_size;
- 	u64				weight;
-+	u64				transaction;
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index a61725d..d46f887 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -595,7 +595,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "Use the stdio interface"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
+-		   " dso_from, symbol_to, symbol_from, mispredict"),
++		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
++		   " abort, intx"),
+ 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
+ 		    "Show sample percentage for different cpu modes"),
+ 	OPT_STRING('p', "parent", &parent_pattern, "regex",
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index ff6db80..3861118 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1221,7 +1221,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show counter open errors, etc)"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-		   "sort by key(s): pid, comm, dso, symbol, parent"),
++		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
++		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
++		   " abort, intx"),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+ 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top, "output_type,min_percent, call_order",
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 2762877..15c4f43 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -194,7 +194,9 @@ struct ip_callchain {
+ struct branch_flags {
+ 	u64 mispred:1;
+ 	u64 predicted:1;
+-	u64 reserved:62;
++	u64 intx:1;
++	u64 abort:1;
++	u64 reserved:60;
  };
  
- static inline void perf_sample_data_init(struct perf_sample_data *data,
-@@ -603,6 +604,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->regs_user.regs = NULL;
- 	data->stack_user_size = 0;
- 	data->weight = 0;
-+	data->transaction = 0;
- }
- 
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index c067c9c..d1ffdb6 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -133,9 +133,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_REGS_USER			= 1U << 12,
- 	PERF_SAMPLE_STACK_USER			= 1U << 13,
- 	PERF_SAMPLE_WEIGHT			= 1U << 14,
-+	PERF_SAMPLE_TRANSACTION			= 1U << 15,
- 
--	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
--
-+	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
+ struct branch_entry {
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 66cb31f..d918a1a 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -43,6 +43,8 @@ enum hist_column {
+ 	HISTC_PARENT,
+ 	HISTC_CPU,
+ 	HISTC_MISPREDICT,
++	HISTC_INTX,
++	HISTC_ABORT,
+ 	HISTC_SYMBOL_FROM,
+ 	HISTC_SYMBOL_TO,
+ 	HISTC_DSO_FROM,
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index b5b1b92..47fc0f2 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -470,6 +470,55 @@ struct sort_entry sort_mispredict = {
+ 	.se_width_idx	= HISTC_MISPREDICT,
  };
  
- /*
-@@ -179,6 +179,26 @@ enum perf_sample_regs_abi {
- };
- 
- /*
-+ * Values for the transaction event qualifier, mostly for abort events.
-+ */
-+enum {
-+	PERF_SAMPLE_TXN_ELISION     = (1 << 0), /* From elision */
-+	PERF_SAMPLE_TXN_TRANSACTION = (1 << 1), /* From transaction */
-+	PERF_SAMPLE_TXN_SYNC        = (1 << 2), /* Instruction is related */
-+	PERF_SAMPLE_TXN_ASYNC       = (1 << 3), /* Instruction not related */
-+	PERF_SAMPLE_TXN_RETRY       = (1 << 4), /* Retry possible */
-+	PERF_SAMPLE_TXN_CONFLICT    = (1 << 5), /* Conflict abort */
-+	PERF_SAMPLE_TXN_CAPACITY    = (1 << 6), /* Capacity abort */
++static int64_t
++sort__abort_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	return left->branch_info->flags.abort !=
++		right->branch_info->flags.abort;
++}
 +
-+	PERF_SAMPLE_TXN_MAX	    = (1 << 7),  /* non-ABI */
++static int hist_entry__abort_snprintf(struct hist_entry *self, char *bf,
++				    size_t size, unsigned int width)
++{
++	static const char *out = ".";
 +
-+	/* bits 24..31 are reserved for the abort code */
++	if (self->branch_info->flags.abort)
++		out = "A";
++	return repsep_snprintf(bf, size, "%-*s", width, out);
++}
 +
-+	PERF_SAMPLE_TXN_ABORT_MASK  = 0xff000000,
-+	PERF_SAMPLE_TXN_ABORT_SHIFT = 24,
++struct sort_entry sort_abort = {
++	.se_header	= "Transaction abort",
++	.se_cmp		= sort__abort_cmp,
++	.se_snprintf	= hist_entry__abort_snprintf,
++	.se_width_idx	= HISTC_ABORT,
 +};
 +
-+/*
-  * The format of the data returned by read() on a perf event fd,
-  * as specified by attr.read_format:
-  *
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index d633581..534810d 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -955,6 +955,9 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		size += sizeof(data->weight);
- 
-+	if (sample_type & PERF_SAMPLE_TRANSACTION)
-+		size += sizeof(data->transaction);
++static int64_t
++sort__intx_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	return left->branch_info->flags.intx !=
++		right->branch_info->flags.intx;
++}
 +
- 	if (sample_type & PERF_SAMPLE_READ)
- 		size += event->read_size;
- 
-@@ -4086,6 +4089,9 @@ void perf_output_sample(struct perf_output_handle *handle,
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		perf_output_put(handle, data->weight);
- 
-+	if (sample_type & PERF_SAMPLE_TRANSACTION)
-+		perf_output_put(handle, data->transaction);
++static int hist_entry__intx_snprintf(struct hist_entry *self, char *bf,
++				    size_t size, unsigned int width)
++{
++	static const char *out = ".";
 +
- 	if (sample_type & PERF_SAMPLE_READ)
- 		perf_output_read(handle, event);
++	if (self->branch_info->flags.intx)
++		out = "T";
++
++	return repsep_snprintf(bf, size, "%-*s", width, out);
++}
++
++struct sort_entry sort_intx = {
++	.se_header	= "Branch in transaction",
++	.se_cmp		= sort__intx_cmp,
++	.se_snprintf	= hist_entry__intx_snprintf,
++	.se_width_idx	= HISTC_INTX,
++};
++
+ struct sort_dimension {
+ 	const char		*name;
+ 	struct sort_entry	*entry;
+@@ -491,6 +540,8 @@ static struct sort_dimension sort_dimensions[] = {
+ 	DIM(SORT_CPU, "cpu", sort_cpu),
+ 	DIM(SORT_MISPREDICT, "mispredict", sort_mispredict),
+ 	DIM(SORT_SRCLINE, "srcline", sort_srcline),
++	DIM(SORT_ABORT, "abort", sort_abort),
++	DIM(SORT_INTX, "intx", sort_intx)
+ };
  
+ int sort_dimension__add(const char *tok)
+@@ -547,6 +598,10 @@ int sort_dimension__add(const char *tok)
+ 				sort__first_dimension = SORT_DSO_TO;
+ 			else if (!strcmp(sd->name, "mispredict"))
+ 				sort__first_dimension = SORT_MISPREDICT;
++			else if (!strcmp(sd->name, "intx"))
++				sort__first_dimension = SORT_INTX;
++			else if (!strcmp(sd->name, "abort"))
++				sort__first_dimension = SORT_ABORT;
+ 		}
+ 
+ 		list_add_tail(&sd->entry->list, &hist_entry__sort_list);
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 5786f32..10cf155 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -100,6 +100,8 @@ enum sort_type {
+ 	SORT_SYM_TO,
+ 	SORT_MISPREDICT,
+ 	SORT_SRCLINE,
++	SORT_ABORT,
++	SORT_INTX,
+ };
+ 
+ /*
 -- 
 1.7.7.6
 
