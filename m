@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759Ab2JRO5V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 10:57:21 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:44394 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756615Ab2JRO5U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 10:57:20 -0400
+	id S1756620Ab2JRPBo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 11:01:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45677 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752825Ab2JRPBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 11:01:42 -0400
+Message-ID: <508019C8.4030902@zytor.com>
+Date: Thu, 18 Oct 2012 08:01:28 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-Date: Thu, 18 Oct 2012 22:57:19 +0800
-Message-ID: <CAPgLHd8atrHJK0oiOsrJo1+GECi7YaJ+ZDd1oFE-VBmO1aHicQ@mail.gmail.com>
-Subject: [PATCH] dlm: remove unused variable in *dlm_lowcomms_get_buffer()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: ccaulfie@redhat.com, teigland@redhat.com
-Cc: yongjun_wei@trendmicro.com.cn, cluster-devel@redhat.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        lenb@kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH 1/4] x86/wakeup/sleep: Check whether the TSS GDT descriptor
+ is empty before using it.
+References: <1350481786-4969-1-git-send-email-konrad.wilk@oracle.com> <1350481786-4969-2-git-send-email-konrad.wilk@oracle.com> <507F473D.1060700@zytor.com> <20121018144709.GB19782@localhost.localdomain>
+In-Reply-To: <20121018144709.GB19782@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On 10/18/2012 07:47 AM, Konrad Rzeszutek Wilk wrote:
+>>
+>> Why is this patch necessary?  Presumably there is something further
+>> down the line which depends on the TSS descriptor being empty, but
+>> if so, what?
+>
+> I could not find it. This write has been in the code since the initial
+> git history. Is the pre-git bitkeeper tree somewhere available?
 
-The variable users is initialized but never used
-otherwise, so remove the unused variable.
+I didn't ask why the write was necessary, but why you need it to be 
+conditional.
 
-dpatch engine is used to auto generate this patch.
-(https://github.com/weiyj/dpatch)
+I know why the write is necessary: it is (presumably) there to clear the 
+TSS busy bit.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- fs/dlm/lowcomms.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+However, as for older records:
 
-diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
-index 331ea4f..dd87a31 100644
---- a/fs/dlm/lowcomms.c
-+++ b/fs/dlm/lowcomms.c
-@@ -1385,7 +1385,6 @@ void *dlm_lowcomms_get_buffer(int nodeid, int len, gfp_t allocation, char **ppc)
- 	struct connection *con;
- 	struct writequeue_entry *e;
- 	int offset = 0;
--	int users = 0;
- 
- 	con = nodeid2con(nodeid, allocation);
- 	if (!con)
-@@ -1399,7 +1398,7 @@ void *dlm_lowcomms_get_buffer(int nodeid, int len, gfp_t allocation, char **ppc)
- 	} else {
- 		offset = e->end;
- 		e->end += len;
--		users = e->users++;
-+		e->users++;
- 	}
- 	spin_unlock(&con->writequeue_lock);
- 
-@@ -1414,7 +1413,7 @@ void *dlm_lowcomms_get_buffer(int nodeid, int len, gfp_t allocation, char **ppc)
- 		spin_lock(&con->writequeue_lock);
- 		offset = e->end;
- 		e->end += len;
--		users = e->users++;
-+		e->users++;
- 		list_add_tail(&e->list, &con->writequeue);
- 		spin_unlock(&con->writequeue_lock);
- 		goto got_one;
+-bk era history (2.5.0-2.6.12-rc2):
+git://git.kernel.org/pub/scm/linux/kernel/git/tglx/history.git
+
+Ancient history (pre-2.4.0):
+git://git.kernel.org/pub/scm/linux/kernel/git/davej/history.git
+
+There doesn't seem to be any git trees known for the bridge between 
+2.4.0 and 2.5.0.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
