@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab2JRTre (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 15:47:34 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:57692 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753932Ab2JRTrc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 15:47:32 -0400
-Date: Thu, 18 Oct 2012 12:47:27 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>, devel@openvz.org,
-        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH v5 04/14] kmem accounting basic infrastructure
-Message-ID: <20121018194727.GB13370@google.com>
-References: <1350382611-20579-1-git-send-email-glommer@parallels.com>
- <1350382611-20579-5-git-send-email-glommer@parallels.com>
- <alpine.DEB.2.00.1210171455010.20712@chino.kir.corp.google.com>
- <508035E3.4080508@parallels.com>
+	id S1754004Ab2JRTtT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 15:49:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21894 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752653Ab2JRTtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 15:49:19 -0400
+Date: Thu, 18 Oct 2012 15:28:56 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Oleg Nesterov <oleg@redhat.com>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] brw_mutex: big read-write mutex
+In-Reply-To: <20121018175747.GA30691@redhat.com>
+Message-ID: <Pine.LNX.4.64.1210181525010.32376@file.rdu.redhat.com>
+References: <20121015190958.GA4799@redhat.com> <20121015191018.GA4816@redhat.com>
+ <CA+55aFwV-WOUx8MSr145f+HSrtmZ=nXHq0VLhtPyH=FNBFwmQg@mail.gmail.com>
+ <20121017165902.GB9872@redhat.com> <20121017224430.GC2518@linux.vnet.ibm.com>
+ <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com>
+ <20121018175747.GA30691@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508035E3.4080508@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Glauber.
 
-On Thu, Oct 18, 2012 at 09:01:23PM +0400, Glauber Costa wrote:
-> That is the offensive part. But it is also how things are done in memcg
-> right now, and there is nothing fundamentally different in this one.
-> Whatever lands in the remaining offenders, can land in here.
 
-I think the problem here is that we don't have "you're committing to
-creation of a new cgroup" callback and thus subsystem can't
-synchronize locally against cgroup creation.  For task migration
-->attach() does that but cgroup creation may fail after ->create()
-succeeded so that doesn't work.
+On Thu, 18 Oct 2012, Oleg Nesterov wrote:
 
-We'll probably need to add ->post_create() which is invoked after
-creation is complete.  Li?
+> Ooooh. And I just noticed include/linux/percpu-rwsem.h which does
+> something similar. Certainly it was not in my tree when I started
+> this patch... percpu_down_write() doesn't allow multiple writers,
+> but the main problem it uses msleep(1). It should not, I think.
 
-Thanks.
+synchronize_rcu() can sleep for hundred milliseconds, so msleep(1) is not 
+a big problem.
 
--- 
-tejun
+> But. It seems that percpu_up_write() is equally wrong? Doesn't
+> it need synchronize_rcu() before "p->locked = false" ?
+
+Yes, it does ... and I sent patch for that to Linus.
+
+> (add Mikulas)
+> 
+> Oleg.
+
+Mikulas
