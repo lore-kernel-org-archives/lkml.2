@@ -1,189 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186Ab2JRAez (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 20:34:55 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:50819 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752948Ab2JRAey (ORCPT
+	id S1753158Ab2JRAq6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 20:46:58 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:36552 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752980Ab2JRAq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 20:34:54 -0400
-Date: Wed, 17 Oct 2012 17:34:48 -0700
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH V3 6/6]: PVH:privcmd changes.
-Message-ID: <20121017173448.7ef4c0b1@mantra.us.oracle.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 17 Oct 2012 20:46:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <507F160A.7090302@am.sony.com>
+References: <CALF0-+XGn5=QSE0bpa4RTag9CAJ63MKz1kvaYbpw34qUhViaZA@mail.gmail.com>
+ <m27gqwtyu9.fsf@firstfloor.org> <alpine.DEB.2.00.1210111558290.6409@chino.kir.corp.google.com>
+ <m2391ktxjj.fsf@firstfloor.org> <CALF0-+WLZWtwYY4taYW9D7j-abCJeY90JzcTQ2hGK64ftWsdxw@mail.gmail.com>
+ <alpine.DEB.2.00.1210130252030.7462@chino.kir.corp.google.com>
+ <CALF0-+Xp_P_NjZpifzDSWxz=aBzy_fwaTB3poGLEJA8yBPQb_Q@mail.gmail.com>
+ <alpine.DEB.2.00.1210151745400.31712@chino.kir.corp.google.com>
+ <CALF0-+WgfnNOOZwj+WLB397cgGX7YhNuoPXAK5E0DZ5v_BxxEA@mail.gmail.com>
+ <1350392160.3954.986.camel@edumazet-glaptop> <507DA245.9050709@am.sony.com>
+ <CALF0-+VLVqy_uE63_jL83qh8MqBQAE3vYLRX1mRQURZ4a1M20g@mail.gmail.com>
+ <1350414968.3954.1427.camel@edumazet-glaptop> <507EFCC3.1050304@am.sony.com>
+ <1350501217.26103.852.camel@edumazet-glaptop> <CAGDaZ_qKg3x_ChdZck25P_XF78cJNeB_DJLg=ZtL3eZWSz3yXA@mail.gmail.com>
+ <507F160A.7090302@am.sony.com>
+From: Shentino <shentino@gmail.com>
+Date: Wed, 17 Oct 2012 17:46:16 -0700
+Message-ID: <CAGDaZ_qQ6L38EVkwmSakWF4xGFcESY-cr_XbjwG1pELTr1XGQw@mail.gmail.com>
+Subject: Re: [Q] Default SLAB allocator
+To: Tim Bird <tim.bird@am.sony.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Ezequiel Garcia <elezegarcia@gmail.com>,
+        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "celinux-dev@lists.celinuxforum.org" 
+	<celinux-dev@lists.celinuxforum.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PVH: privcmd changes. PVH only supports the batch interface. To map a foreign page to a process, pfn must be allocated. PVH path uses ballooning for that purpose. The returned pfn is then mapped to the foreign page. xen_unmap_domain_mfn_range() is introduced to unmap these pages via the privcmd close call.
+On Wed, Oct 17, 2012 at 1:33 PM, Tim Bird <tim.bird@am.sony.com> wrote:
+> On 10/17/2012 12:20 PM, Shentino wrote:
+>> Potentially stupid question
+>>
+>> But is SLAB the one where all objects per cache have a fixed size and
+>> thus you don't have any bookkeeping overhead for the actual
+>> allocations?
+>>
+>> I remember something about one of the allocation mechanisms being
+>> designed for caches of fixed sized objects to minimize the need for
+>> bookkeeping.
+>
+> I wouldn't say "don't have _any_ bookkeeping", but minimizing the
+> bookkeeping is indeed part of the SLAB goals.
+>
+> However, that is for objects that are allocated at fixed size.
+> kmalloc is (currently) a thin wrapper over the slab system,
+> and it maps non-power-of-two allocations onto slabs that are
+> power-of-two sized.
 
-Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
----
- drivers/xen/privcmd.c |   69 +++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 67 insertions(+), 2 deletions(-)
+...yuck?
 
-diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
-index 63d9ee8..835166a 100644
---- a/drivers/xen/privcmd.c
-+++ b/drivers/xen/privcmd.c
-@@ -33,11 +33,14 @@
- #include <xen/features.h>
- #include <xen/page.h>
- #include <xen/xen-ops.h>
-+#include <xen/balloon.h>
- 
- #include "privcmd.h"
- 
- MODULE_LICENSE("GPL");
- 
-+#define PRIV_VMA_LOCKED ((void *)1)
-+
- #ifndef HAVE_ARCH_PRIVCMD_MMAP
- static int privcmd_enforce_singleshot_mapping(struct vm_area_struct *vma);
- #endif
-@@ -199,6 +202,10 @@ static long privcmd_ioctl_mmap(void __user *udata)
- 	if (!xen_initial_domain())
- 		return -EPERM;
- 
-+	/* We only support privcmd_ioctl_mmap_batch for auto translated. */
-+	if (xen_feature(XENFEAT_auto_translated_physmap))
-+		return -ENOSYS;
-+
- 	if (copy_from_user(&mmapcmd, udata, sizeof(mmapcmd)))
- 		return -EFAULT;
- 
-@@ -246,6 +253,7 @@ struct mmap_batch_state {
- 	domid_t domain;
- 	unsigned long va;
- 	struct vm_area_struct *vma;
-+	int index;
- 	/* A tristate:
- 	 *      0 for no errors
- 	 *      1 if at least one error has happened (and no
-@@ -260,15 +268,24 @@ struct mmap_batch_state {
- 	xen_pfn_t __user *user_mfn;
- };
- 
-+/* auto translated dom0 note: if domU being created is PV, then mfn is
-+ * mfn(addr on bus). If it's auto xlated, then mfn is pfn (input to HAP).
-+ */
- static int mmap_batch_fn(void *data, void *state)
- {
- 	xen_pfn_t *mfnp = data;
- 	struct mmap_batch_state *st = state;
-+	struct vm_area_struct *vma = st->vma;
-+	struct page **pages = vma->vm_private_data;
-+	struct page *cur_page = NULL;
- 	int ret;
- 
-+	if (xen_feature(XENFEAT_auto_translated_physmap))
-+		cur_page = pages[st->index++];
-+
- 	ret = xen_remap_domain_mfn_range(st->vma, st->va & PAGE_MASK, *mfnp, 1,
- 					 st->vma->vm_page_prot, st->domain,
--					 NULL);
-+					 &cur_page);
- 
- 	/* Store error code for second pass. */
- 	*(st->err++) = ret;
-@@ -304,6 +321,32 @@ static int mmap_return_errors_v1(void *data, void *state)
- 	return __put_user(*mfnp, st->user_mfn++);
- }
- 
-+/* Allocate pfns that are then mapped with gmfns from foreign domid. Update
-+ * the vma with the page info to use later.
-+ * Returns: 0 if success, otherwise -errno
-+ */
-+static int alloc_empty_pages(struct vm_area_struct *vma, int numpgs)
-+{
-+	int rc;
-+	struct page **pages;
-+
-+	pages = kcalloc(numpgs, sizeof(pages[0]), GFP_KERNEL);
-+	if (pages == NULL)
-+		return -ENOMEM;
-+
-+	rc = alloc_xenballooned_pages(numpgs, pages, 0);
-+	if (rc != 0) {
-+		pr_warn("%s Could not alloc %d pfns rc:%d\n", __func__,
-+			numpgs, rc);
-+		kfree(pages);
-+		return -ENOMEM;
-+	}
-+	BUG_ON(vma->vm_private_data != PRIV_VMA_LOCKED);
-+	vma->vm_private_data = pages;
-+
-+	return 0;
-+}
-+
- static struct vm_operations_struct privcmd_vm_ops;
- 
- static long privcmd_ioctl_mmap_batch(void __user *udata, int version)
-@@ -371,10 +414,18 @@ static long privcmd_ioctl_mmap_batch(void __user *udata, int version)
- 		up_write(&mm->mmap_sem);
- 		goto out;
- 	}
-+	if (xen_feature(XENFEAT_auto_translated_physmap)) {
-+		ret = alloc_empty_pages(vma, m.num);
-+		if (ret < 0) {
-+			up_write(&mm->mmap_sem);
-+			goto out;
-+		}
-+	}
- 
- 	state.domain        = m.dom;
- 	state.vma           = vma;
- 	state.va            = m.addr;
-+	state.index         = 0;
- 	state.global_error  = 0;
- 	state.err           = err_array;
- 
-@@ -439,6 +490,19 @@ static long privcmd_ioctl(struct file *file,
- 	return ret;
- }
- 
-+static void privcmd_close(struct vm_area_struct *vma)
-+{
-+	struct page **pages = vma ? vma->vm_private_data : NULL;
-+	int numpgs = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
-+
-+	if (!pages || !numpgs || !xen_feature(XENFEAT_auto_translated_physmap))
-+		return;
-+
-+	xen_unmap_domain_mfn_range(vma, numpgs, pages);
-+	free_xenballooned_pages(numpgs, pages);
-+	kfree(pages);
-+}
-+
- static int privcmd_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- {
- 	printk(KERN_DEBUG "privcmd_fault: vma=%p %lx-%lx, pgoff=%lx, uv=%p\n",
-@@ -449,6 +513,7 @@ static int privcmd_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- }
- 
- static struct vm_operations_struct privcmd_vm_ops = {
-+	.close = privcmd_close,
- 	.fault = privcmd_fault
- };
- 
-@@ -465,7 +530,7 @@ static int privcmd_mmap(struct file *file, struct vm_area_struct *vma)
- 
- static int privcmd_enforce_singleshot_mapping(struct vm_area_struct *vma)
- {
--	return (xchg(&vma->vm_private_data, (void *)1) == NULL);
-+	return !cmpxchg(&vma->vm_private_data, NULL, PRIV_VMA_LOCKED);
- }
- 
- const struct file_operations xen_privcmd_fops = {
--- 
-1.7.2.3
+> So, for example a string that is 18 bytes long
+> will be allocated out of a slab with 32-byte objects.  This
+> is the wastage that we're talking about here.  "Overhead" may
+> have been the wrong word on my part, as that may imply overhead
+> in the actual slab mechanisms, rather than just slop in the
+> data area.
 
+Data slop (both for alignment as well as for making room for
+per-allocation bookkeeping overhead as is often done with userspace
+malloc arenas) is precisely what I was referring to here.
+
+Thanks for the answers I was curious.
+
+> As an aside...
+>
+> Is there a canonical glossary for memory-related terms?  What
+> is the correct term for the difference between what is requested
+> and what is actually returned by the allocator?  I've been
+> calling it alternately "wastage" or "overhead", but maybe there's
+> a more official term?
+>
+> I looked here: http://www.memorymanagement.org/glossary/
+> but didn't find exactly what I was looking for.  The closest
+> things I found were "internal fragmentation" and
+> "padding", but those didn't seem to exactly describe
+> the situation here.
+
+Another stupid question.
+
+Is it possible to have both SLAB for fixed sized objects and something
+like SLOB or SLUB standing aside with a different pool for variable
+sized allocations ala kmalloc?
+
+My hunch is that handling the two cases with separate methods may get
+the best of both worlds.  Or layering kmalloc through something that
+gets huge blocks from slab and slices them up in ways more amenable to
+avoiding power-of-2 slopping.
+
+No memory geek, so my two cents.
+
+>  -- Tim
+>
+> =============================
+> Tim Bird
+> Architecture Group Chair, CE Workgroup of the Linux Foundation
+> Senior Staff Engineer, Sony Network Entertainment
+> =============================
