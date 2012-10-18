@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757243Ab2JRXpG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 19:45:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41556 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757174Ab2JRXpD (ORCPT
+	id S1757267Ab2JRXsG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 19:48:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48573 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756176Ab2JRXsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 19:45:03 -0400
-Date: Thu, 18 Oct 2012 16:45:02 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH v4 10/10] thp: implement refcounting for huge zero page
-Message-Id: <20121018164502.b32791e7.akpm@linux-foundation.org>
-In-Reply-To: <1350280859-18801-11-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1350280859-18801-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1350280859-18801-11-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Oct 2012 19:48:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D41386D130@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D41386D130@USINDEM103.corp.hds.com>
+From: Mike Waychison <mikew@google.com>
+Date: Thu, 18 Oct 2012 16:47:40 -0700
+Message-ID: <CAGTjWtCKwubHVTvqkmSBvU0g6OiDFdKkULu+ZEneLoWyBgQesA@mail.gmail.com>
+Subject: Re: [RFC][PATCH 2/2] efi_pstore: add a sequence counter to a variable name
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Oct 2012 09:00:59 +0300
-"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+On Fri, Oct 5, 2012 at 12:02 PM, Seiji Aguchi <seiji.aguchi@hds.com> wrote:
+> [Problem]
+>
+> Currently, a variable name, which distinguishes each entry, consists of type, id and ctime.
+> But if multiple events happens in a short time, a second/third event may fail to log because
+> efi_pstore can't distinguish each event with current variable name.
+>
+> [Solution]
+>
+>   A reasonable way to identify all events precisely is introducing a sequence counter to
+>   the variable name.
+>
+> [Patch Description]
+>
+>   The sequence counter has already supported in a pstore layer with "oopscount".
+>   So, this patch adds it to a variable name.
+>   Also, it is passed to read/erase callbacks of platform drivers in accordance with
+>   the modification of the variable name.
+>
+>   <before applying this patch>
+>  a variable name of first event: dump-type0-1-12345678
+>  a variable name of second event: dump-type0-1-12345678
+>
+>   type:0
+>   id:1
+>   ctime:12345678
+>
+>  If multiple events happen in a short time, efi_pstore can't distinguish them because
+>  variable names are same among them.
+>
+>   <after applying this patch>
+>
+>  it can be distinguishable by adding a sequence counter as follows.
+>
+>  a variable name of first event: dump-type0-1-1-12345678
+>  a variable name of Second event: dump-type0-1-2-12345678
+>
+>   type:0
+>   id:1
+>   sequence counter: 1(first event), 2(second event)
+>   ctime:12345678
 
-> H. Peter Anvin doesn't like huge zero page which sticks in memory forever
-> after the first allocation. Here's implementation of lockless refcounting
-> for huge zero page.
-> 
-> We have two basic primitives: {get,put}_huge_zero_page(). They
-> manipulate reference counter.
-> 
-> If counter is 0, get_huge_zero_page() allocates a new huge page and
-> takes two references: one for caller and one for shrinker. We free the
-> page only in shrinker callback if counter is 1 (only shrinker has the
-> reference).
-> 
-> put_huge_zero_page() only decrements counter. Counter is never zero
-> in put_huge_zero_page() since shrinker holds on reference.
-> 
-> Freeing huge zero page in shrinker callback helps to avoid frequent
-> allocate-free.
-
-I'd like more details on this please.  The cost of freeing then
-reinstantiating that page is tremendous, because it has to be zeroed
-out again.  If there is any way at all in which the kernel can be made
-to enter a high-frequency free/reinstantiate pattern then I expect the
-effects would be quite bad.
-
-Do we have sufficient mechanisms in there to prevent this from
-happening in all cases?  If so, what are they, because I'm not seeing
-them?
-
-> Refcounting has cost. On 4 socket machine I observe ~1% slowdown on
-> parallel (40 processes) read page faulting comparing to lazy huge page
-> allocation.  I think it's pretty reasonable for synthetic benchmark.
+This patch plumbs the count through the same way as you plumbed the
+ctime through in patch 1/2, so I'm going to hold off on commenting on
+this patch until we better understand i_ctime use is resolved there.
+I suspect that we don't want to continue adding more arguments through
+pstore ops this way.
