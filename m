@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050Ab2JRX0o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 19:26:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:16537 "EHLO mga02.intel.com"
+	id S932831Ab2JRX0n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 19:26:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20461 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756611Ab2JRXTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756635Ab2JRXTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Oct 2012 19:19:54 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,609,1344236400"; 
-   d="scan'208";a="229462622"
+   d="scan'208";a="229462625"
 From: Andi Kleen <andi@firstfloor.org>
 To: a.p.zijlstra@chello.nl
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org, acme@redhat.com,
         eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 12/34] perf, tools: Support sorting by intx, abort branch flags
-Date: Thu, 18 Oct 2012 16:19:20 -0700
-Message-Id: <1350602382-12771-13-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 15/34] perf, core: Add a concept of a weightened sample
+Date: Thu, 18 Oct 2012 16:19:23 -0700
+Message-Id: <1350602382-12771-16-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
 References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
@@ -25,169 +25,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Extend the perf branch sorting code to support sorting by intx
-or abort qualifiers. Also print out those qualifiers.
+For some events it's useful to weight sample with a hardware
+provided number. This expresses how expensive the action the
+sample represent was.  This allows the profiler to scale
+the samples to be more informative to the programmer.
+
+There is already the period which is used similarly, but it means
+something different, so I chose to not overload it. Instead
+a new sample type for WEIGHT is added.
+
+Can be used for multiple things. Initially it is used for TSX abort costs
+and profiling by memory latencies (so to make expensive load appear higher
+up in the histograms)  The concept is quite generic and can be extended
+to many other kinds of events or architectures, as long as the hardware
+provides suitable auxillary values. In principle it could be also
+used for software tracpoints.
+
+This adds the generic glue. A new optional sample format for a 64bit
+weight value.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/builtin-report.c |    3 +-
- tools/perf/builtin-top.c    |    4 ++-
- tools/perf/perf.h           |    4 ++-
- tools/perf/util/hist.h      |    2 +
- tools/perf/util/sort.c      |   55 +++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/sort.h      |    2 +
- 6 files changed, 67 insertions(+), 3 deletions(-)
+ include/linux/perf_event.h      |    2 ++
+ include/uapi/linux/perf_event.h |    8 ++++++--
+ kernel/events/core.c            |    6 ++++++
+ 3 files changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index a61725d..d46f887 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -595,7 +595,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "Use the stdio interface"),
- 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
- 		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
--		   " dso_from, symbol_to, symbol_from, mispredict"),
-+		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
-+		   " abort, intx"),
- 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
- 		    "Show sample percentage for different cpu modes"),
- 	OPT_STRING('p', "parent", &parent_pattern, "regex",
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index ff6db80..3861118 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1221,7 +1221,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show counter open errors, etc)"),
- 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
--		   "sort by key(s): pid, comm, dso, symbol, parent"),
-+		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
-+		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
-+		   " abort, intx"),
- 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
- 		    "Show a column with the number of samples"),
- 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top, "output_type,min_percent, call_order",
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 2762877..15c4f43 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -194,7 +194,9 @@ struct ip_callchain {
- struct branch_flags {
- 	u64 mispred:1;
- 	u64 predicted:1;
--	u64 reserved:62;
-+	u64 intx:1;
-+	u64 abort:1;
-+	u64 reserved:60;
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 0e528fc..f4ded17 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -588,6 +588,7 @@ struct perf_sample_data {
+ 	struct perf_branch_stack	*br_stack;
+ 	struct perf_regs_user		regs_user;
+ 	u64				stack_user_size;
++	u64				weight;
  };
  
- struct branch_entry {
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 66cb31f..d918a1a 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -43,6 +43,8 @@ enum hist_column {
- 	HISTC_PARENT,
- 	HISTC_CPU,
- 	HISTC_MISPREDICT,
-+	HISTC_INTX,
-+	HISTC_ABORT,
- 	HISTC_SYMBOL_FROM,
- 	HISTC_SYMBOL_TO,
- 	HISTC_DSO_FROM,
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index b5b1b92..47fc0f2 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -470,6 +470,55 @@ struct sort_entry sort_mispredict = {
- 	.se_width_idx	= HISTC_MISPREDICT,
- };
+ static inline void perf_sample_data_init(struct perf_sample_data *data,
+@@ -601,6 +602,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+ 	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
+ 	data->regs_user.regs = NULL;
+ 	data->stack_user_size = 0;
++	data->weight = 0;
+ }
  
-+static int64_t
-+sort__abort_cmp(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return left->branch_info->flags.abort !=
-+		right->branch_info->flags.abort;
-+}
+ extern void perf_output_sample(struct perf_output_handle *handle,
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 37a8c4d..c067c9c 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -132,8 +132,10 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
+ 	PERF_SAMPLE_REGS_USER			= 1U << 12,
+ 	PERF_SAMPLE_STACK_USER			= 1U << 13,
++	PERF_SAMPLE_WEIGHT			= 1U << 14,
 +
-+static int hist_entry__abort_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width)
-+{
-+	static const char *out = ".";
-+
-+	if (self->branch_info->flags.abort)
-+		out = "A";
-+	return repsep_snprintf(bf, size, "%-*s", width, out);
-+}
-+
-+struct sort_entry sort_abort = {
-+	.se_header	= "Transaction abort",
-+	.se_cmp		= sort__abort_cmp,
-+	.se_snprintf	= hist_entry__abort_snprintf,
-+	.se_width_idx	= HISTC_ABORT,
-+};
-+
-+static int64_t
-+sort__intx_cmp(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return left->branch_info->flags.intx !=
-+		right->branch_info->flags.intx;
-+}
-+
-+static int hist_entry__intx_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width)
-+{
-+	static const char *out = ".";
-+
-+	if (self->branch_info->flags.intx)
-+		out = "T";
-+
-+	return repsep_snprintf(bf, size, "%-*s", width, out);
-+}
-+
-+struct sort_entry sort_intx = {
-+	.se_header	= "Branch in transaction",
-+	.se_cmp		= sort__intx_cmp,
-+	.se_snprintf	= hist_entry__intx_snprintf,
-+	.se_width_idx	= HISTC_INTX,
-+};
-+
- struct sort_dimension {
- 	const char		*name;
- 	struct sort_entry	*entry;
-@@ -491,6 +540,8 @@ static struct sort_dimension sort_dimensions[] = {
- 	DIM(SORT_CPU, "cpu", sort_cpu),
- 	DIM(SORT_MISPREDICT, "mispredict", sort_mispredict),
- 	DIM(SORT_SRCLINE, "srcline", sort_srcline),
-+	DIM(SORT_ABORT, "abort", sort_abort),
-+	DIM(SORT_INTX, "intx", sort_intx)
- };
++	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
  
- int sort_dimension__add(const char *tok)
-@@ -547,6 +598,10 @@ int sort_dimension__add(const char *tok)
- 				sort__first_dimension = SORT_DSO_TO;
- 			else if (!strcmp(sd->name, "mispredict"))
- 				sort__first_dimension = SORT_MISPREDICT;
-+			else if (!strcmp(sd->name, "intx"))
-+				sort__first_dimension = SORT_INTX;
-+			else if (!strcmp(sd->name, "abort"))
-+				sort__first_dimension = SORT_ABORT;
- 		}
- 
- 		list_add_tail(&sd->entry->list, &hist_entry__sort_list);
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 5786f32..10cf155 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -100,6 +100,8 @@ enum sort_type {
- 	SORT_SYM_TO,
- 	SORT_MISPREDICT,
- 	SORT_SRCLINE,
-+	SORT_ABORT,
-+	SORT_INTX,
+-	PERF_SAMPLE_MAX = 1U << 14,		/* non-ABI */
  };
  
  /*
+@@ -201,8 +203,9 @@ enum perf_event_read_format {
+ 	PERF_FORMAT_TOTAL_TIME_RUNNING		= 1U << 1,
+ 	PERF_FORMAT_ID				= 1U << 2,
+ 	PERF_FORMAT_GROUP			= 1U << 3,
++	PERF_FORMAT_WEIGHT			= 1U << 4,
+ 
+-	PERF_FORMAT_MAX = 1U << 4,		/* non-ABI */
++	PERF_FORMAT_MAX = 1U << 5,		/* non-ABI */
+ };
+ 
+ #define PERF_ATTR_SIZE_VER0	64	/* sizeof first published struct */
+@@ -562,6 +565,7 @@ enum perf_event_type {
+ 	 *	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
+ 	 *	{ u32			cpu, res; } && PERF_SAMPLE_CPU
+ 	 *	{ u64			period;   } && PERF_SAMPLE_PERIOD
++	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
+ 	 *
+ 	 *	{ struct read_format	values;	  } && PERF_SAMPLE_READ
+ 	 *
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index dbccf83..d633581 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -952,6 +952,9 @@ static void perf_event__header_size(struct perf_event *event)
+ 	if (sample_type & PERF_SAMPLE_PERIOD)
+ 		size += sizeof(data->period);
+ 
++	if (sample_type & PERF_SAMPLE_WEIGHT)
++		size += sizeof(data->weight);
++
+ 	if (sample_type & PERF_SAMPLE_READ)
+ 		size += event->read_size;
+ 
+@@ -4080,6 +4083,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 	if (sample_type & PERF_SAMPLE_PERIOD)
+ 		perf_output_put(handle, data->period);
+ 
++	if (sample_type & PERF_SAMPLE_WEIGHT)
++		perf_output_put(handle, data->weight);
++
+ 	if (sample_type & PERF_SAMPLE_READ)
+ 		perf_output_read(handle, event);
+ 
 -- 
 1.7.7.6
 
