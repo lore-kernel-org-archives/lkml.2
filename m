@@ -1,59 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564Ab2JRRA4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 13:00:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46712 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932386Ab2JRQ7u (ORCPT
+	id S932570Ab2JRRCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 13:02:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46706 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932159Ab2JRRCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 12:59:50 -0400
-From: Sangho Yi <antiroot@gmail.com>
-To: paul.gortmaker@windriver.com, stefan.xk.nilsson@stericsson.com,
-        linus.walleij@linaro.org, ulf.hansson@stericsson.com, rjw@sisk.pl,
-        girish.shivananjappa@linaro.org, cjb@laptop.org
-Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        Sangho Yi <antiroot@gmail.com>
-Subject: [PATCH 3/6] mmc: core: sdio_bus.c: Fixed lines > 80 chars
-Date: Fri, 19 Oct 2012 01:58:20 +0900
-Message-Id: <1350579503-3100-3-git-send-email-antiroot@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350579503-3100-1-git-send-email-antiroot@gmail.com>
-References: <n>
- <1350579503-3100-1-git-send-email-antiroot@gmail.com>
+	Thu, 18 Oct 2012 13:02:09 -0400
+Date: Thu, 18 Oct 2012 10:01:47 -0700
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-dvswxo34oaiibm06zyvrv0q5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:numa/core] sched/numa: Simplify task_numa_fault()
+Git-Commit-ID: f3bd8842a897685269b3fa48ad6f9d5590be67ab
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 18 Oct 2012 10:01:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I fixed lines over 80 characters per line.
+Commit-ID:  f3bd8842a897685269b3fa48ad6f9d5590be67ab
+Gitweb:     http://git.kernel.org/tip/f3bd8842a897685269b3fa48ad6f9d5590be67ab
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Wed, 10 Oct 2012 14:13:15 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 15 Oct 2012 12:30:16 +0200
 
-Signed-off-by: Sangho Yi <antiroot@gmail.com>
+sched/numa: Simplify task_numa_fault()
+
+Also fix numa_scan_seq off by one.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-dvswxo34oaiibm06zyvrv0q5@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/mmc/core/sdio_bus.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ include/linux/sched.h |   11 +----------
+ kernel/sched/core.c   |    2 +-
+ kernel/sched/fair.c   |    9 ++++-----
+ 3 files changed, 6 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/mmc/core/sdio_bus.c b/drivers/mmc/core/sdio_bus.c
-index 13146d2..efa30eb 100644
---- a/drivers/mmc/core/sdio_bus.c
-+++ b/drivers/mmc/core/sdio_bus.c
-@@ -27,7 +27,7 @@
- /* show configuration fields */
- #define sdio_config_attr(field, format_string)				\
- static ssize_t								\
--field##_show(struct device *dev, struct device_attribute *attr, char *buf)				\
-+field##_show(struct device *dev, struct device_attribute *attr, char *buf)\
- {									\
- 	struct sdio_func *func;						\
- 									\
-@@ -39,7 +39,8 @@ sdio_config_attr(class, "0x%02x\n");
- sdio_config_attr(vendor, "0x%04x\n");
- sdio_config_attr(device, "0x%04x\n");
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 99a70eb..c7f8656 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1608,16 +1608,7 @@ static inline int tsk_home_node(struct task_struct *p)
+ }
  
--static ssize_t modalias_show(struct device *dev, struct device_attribute *attr, char *buf)
-+static ssize_t modalias_show(struct device *dev, struct device_attribute *attr,
-+		char *buf)
+ extern void task_numa_placement(void);
+-extern void __task_numa_fault(int node);
+-static inline void task_numa_fault(int node)
+-{
+-	struct task_struct *p = current;
+-
+-	if (likely(p->numa_faults))
+-		p->numa_faults[node]++;
+-	else
+-		__task_numa_fault(node);
+-}
++extern void task_numa_fault(int node);
+ #else
+ static inline int tsk_home_node(struct task_struct *p)
  {
- 	struct sdio_func *func = dev_to_sdio_func (dev);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index ff4a3bd..b370f2f 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1543,7 +1543,7 @@ static void __sched_fork(struct task_struct *p)
+ 	p->node = -1;
+ 	p->node_stamp = 0ULL;
+ 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
+-	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq : 0;
++	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
+ 	p->numa_faults = NULL;
+ #endif /* CONFIG_SCHED_NUMA */
+ }
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 592291b..1a32930 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -823,18 +823,17 @@ unsigned int sysctl_sched_numa_settle_count = 2;
+ /*
+  * Got a PROT_NONE fault for a page on @node.
+  */
+-void __task_numa_fault(int node)
++void task_numa_fault(int node)
+ {
+ 	struct task_struct *p = current;
  
--- 
-1.7.9.5
-
+-	if (!p->numa_faults) {
++	if (unlikely(!p->numa_faults)) {
+ 		p->numa_faults = kzalloc(sizeof(unsigned long) * nr_node_ids,
+ 					 GFP_KERNEL);
++		if (!p->numa_faults)
++			return;
+ 	}
+ 
+-	if (!p->numa_faults)
+-		return;
+-
+ 	p->numa_faults[node]++;
+ }
+ 
