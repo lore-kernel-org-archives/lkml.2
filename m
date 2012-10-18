@@ -1,123 +1,360 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab2JRG31 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 02:29:27 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:52126 "EHLO ogre.sisk.pl"
+	id S1754533Ab2JRG3m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 02:29:42 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62394 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754269Ab2JRG3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 02:29:24 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH v9 05/12] x86, hotplug, suspend: Online CPU0 for suspend or hibernate
-Date: Thu, 18 Oct 2012 08:33:07 +0200
-Message-ID: <4821251.PVP3SGWCqy@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C7122030B1A8BC@ORSMSX105.amr.corp.intel.com>
-References: <1350058189-6769-1-git-send-email-fenghua.yu@intel.com> <35538834.Boc5416YXf@vostro.rjw.lan> <3E5A0FA7E9CA944F9D5414FEC6C7122030B1A8BC@ORSMSX105.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753669Ab2JRG3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 02:29:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,606,1344236400"; 
+   d="scan'208";a="207516121"
+Subject: Re: [PATCH] dma: add new DMA control commands
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Huang Shijie <b32955@freescale.com>
+Cc: djbw@fb.com, khali@linux-fr.org, ben-linux@fluff.org,
+        w.sang@pengutronix.de, cjb@laptop.org, dwmw2@infradead.org, lrg@ti.com,
+        broonie@opensource.wolfsonmicro.com, perex@perex.cz, tiwai@suse.de,
+        shawn.guo@linaro.org, marex@denx.de, artem.bityutskiy@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-mtd@lists.infradead.org,
+        alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, Huang Shijie <shijie8@gmail.com>
+In-Reply-To: <1350538335-29026-1-git-send-email-b32955@freescale.com>
+References: <1350538335-29026-1-git-send-email-b32955@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Oct 2012 11:48:31 +0530
+Message-ID: <1350541111.5263.3.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 of October 2012 17:39:48 Yu, Fenghua wrote:
-> > > > On Tuesday, October 16, 2012 10:19 PM Rafael J. Wysocki wrote:
-> > On Tuesday 16 of October 2012 22:12:27 Yu, Fenghua wrote:
-> > > > On 10/16/2012 09:47 PM, Rafael J. Wysocki wrote:
-> > > > > On Tuesday 16 of October 2012 11:05:18 Srivatsa S. Bhat wrote:
-> > > > >> On 10/16/2012 02:20 AM, Rafael J. Wysocki wrote:
-> > > > >>> On Friday 12 of October 2012 09:09:42 Fenghua Yu wrote:
-> > > > >>>> From: Fenghua Yu <fenghua.yu@intel.com>
-> > > > fix the bug I
-> > > > pointed out in my other mail.
-> > Because things like this are often overlooked by people trying to
-> > optimize
-> > stuff and the fact that you have to add a comment explaining that
-> > dependency
-> > only means that it is not exactly straightforward.
+On Thu, 2012-10-18 at 13:32 +0800, Huang Shijie wrote:
+> From: Huang Shijie <shijie8@gmail.com>
 > 
-> If people try to optimize pm notifier, they really need to know
-> pm_notifier() API and its priority. If they ignore the priority, they will
-> screw up kernel no matter how many comments in it.
+> [1] Why add these new DMA control commands?
+>     In mx6q, the gpmi-nand driver is the only user of the APBH-DMA. The dma clock
+>     is enabled when we have successfully requested a DMA channel. So even when
+>     the gpmi-nand driver does not work, the dma clock(apbh-dma) still runs
+>     in high speed (198MHz). To save some power, it is better to disable the dma
+>     clock when the dma device, such as gpmi-nand, is not working anymore.
+>     When the dma device becomes work again, enable the dma clock again.
 > 
-> > 
-> > Moreover, you should also add a corresponding comment in the other
-> > notifier
-> > indicating that its priority should be higher than the priority of the
-> > new thing and explaining why.
+> [2] add new DMA control commands: DMA_START/DMA_END
+>     DMA_START: do some preprations to start the DMA engine, such as enable the
+>                necessary clocks.
+>     DMA_END: do some works to end the DMA engine, such as disable the
+>                necessary clocks.
 > 
-> The comment in the patch explains this very clearly. I don't think it's
-> necessary to add comments in other notifiers.
+> [3] This patch does not change any logic in i2c-mxs driver and mxs-pcm driver.
+>     But for gpmi-nand driver, we will enable the the clock only when we select
+>     the nand chip, and want to do some real jobs with the nand chip.
+>     For mxs-mmc driver, disable the dma clock in the suspend; and enable the
+>     dma clock in the resume.
 > 
-> If adding comments in other notifiers each time when you add a new notifier,
-> will you add 10 more comments in all other notifiers if you add 10 new notifiers?
+Why cant you do start (prepare clock etc) when you submit the descriptor
+to dmaengine. Can be done in tx_submit callback.
+Similarly remove the clock when dma transaction gets completed.
 
-Well, if there are strict ordering requirements regarding them, then those
-requirements should be documented in both places.  Otherwise, if somebody looks
-at cpu_hotplug_pm_callback() alone, for example, he/she may not even realize
-that it has to be strictly ordered with respect to bsp_pm_callback().
+I don't think we need a new API for this, it needs to be handled by
+driver on its own.
 
-Of course, you can argue that people should know what they are doing, but
-then reality is that it's quite easy to overlook things like that.
-
-> I would think when people try to change notifier priority, they should
-> know what they are going to do and search the notifiers and see the comments.
+> Signed-off-by: Huang Shijie <b32955@freescale.com>
+> ---
+>  drivers/dma/mxs-dma.c                  |   17 +++++++++++++++++
+>  drivers/i2c/busses/i2c-mxs.c           |   10 +++++++++-
+>  drivers/mmc/host/mxs-mmc.c             |   19 ++++++++++++++++---
+>  drivers/mtd/nand/gpmi-nand/gpmi-lib.c  |   10 ++++++++++
+>  drivers/mtd/nand/gpmi-nand/gpmi-nand.c |   10 ++++++----
+>  include/linux/dmaengine.h              |    6 ++++++
+>  sound/soc/mxs/mxs-pcm.c                |   12 ++++++++++++
+>  7 files changed, 76 insertions(+), 8 deletions(-)
 > 
-> BTW, the other notifier is in generic code. Adding a paranoid comment in
-> it doesn't seem to be worth. The comment in this patch code is very clear
-> already.
-
-The problem is that it is generally difficult to find all subsystems that
-have registered notifiers in a given chain and figuring out dependencies
-between them is highly problematic.  That's why I'm saying this is a fragile
-design - because it is so easy to break accidentally (and that's already
-happened in CPU hotplug, so I'm not making that up).
-
-> > I really think that notifiers are fragile in general and this
-> > particular
-> > one is no exception.
-> 
-> If we think pm_notifier API is fragile, we need to fix the API instead of
-> leaving it there and not allowing people to use it because it's suspected
-> fragile.
-
-Because it is use by the existing code which generally works and may be
-broken while attempting to "fix" the API.
-
-> It's simply not realistic to tell people not to use the API each
-> time in code review while in the meantime the API and its priority are staying
-> in kernel to allow people to use it.
-
-I don't quite agree.  It sometimes is not worth changing code that's been
-around for a while already, because it's been tested in multiple configurations
-and changing it may cause things to break, although we may not like the APIs
-used by that code.  That doesn't necessarily mean, however, that adding new
-code using those APIs is always a good idea.
-
-In this particular case I just wondered if we could avoid adding more code
-that would use an API having known problems.  The answer seems to be that
-it would cost some additional complexity that might not be worth it.  This
-is a good answer, but you might have given it to me directly. :-)
-
-Thanks,
-Rafael
+> diff --git a/drivers/dma/mxs-dma.c b/drivers/dma/mxs-dma.c
+> index 9f02e79..89286f4 100644
+> --- a/drivers/dma/mxs-dma.c
+> +++ b/drivers/dma/mxs-dma.c
+> @@ -384,6 +384,8 @@ static int mxs_dma_alloc_chan_resources(struct dma_chan *chan)
+>  	/* the descriptor is ready */
+>  	async_tx_ack(&mxs_chan->desc);
+>  
+> +	clk_disable_unprepare(mxs_dma->clk);
+> +
+>  	return 0;
+>  
+>  err_clk:
+> @@ -399,6 +401,14 @@ static void mxs_dma_free_chan_resources(struct dma_chan *chan)
+>  {
+>  	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+>  	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
+> +	int ret;
+> +
+> +	ret = clk_prepare_enable(mxs_dma->clk);
+> +	if (ret) {
+> +		dev_err(mxs_dma->dma_device.dev,
+> +			"failed in enabling the dma clock\n");
+> +		return;
+> +	}
+>  
+>  	mxs_dma_disable_chan(mxs_chan);
+>  
+> @@ -597,9 +607,13 @@ static int mxs_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+>  		unsigned long arg)
+>  {
+>  	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+> +	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
+>  	int ret = 0;
+>  
+>  	switch (cmd) {
+> +	case DMA_START:
+> +		ret = clk_prepare_enable(mxs_dma->clk);
+> +		break;
+>  	case DMA_TERMINATE_ALL:
+>  		mxs_dma_reset_chan(mxs_chan);
+>  		mxs_dma_disable_chan(mxs_chan);
+> @@ -610,6 +624,9 @@ static int mxs_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+>  	case DMA_RESUME:
+>  		mxs_dma_resume_chan(mxs_chan);
+>  		break;
+> +	case DMA_END:
+> +		clk_disable_unprepare(mxs_dma->clk);
+> +		break;
+>  	default:
+>  		ret = -ENOSYS;
+>  	}
+> diff --git a/drivers/i2c/busses/i2c-mxs.c b/drivers/i2c/busses/i2c-mxs.c
+> index 1f58197..da1e881 100644
+> --- a/drivers/i2c/busses/i2c-mxs.c
+> +++ b/drivers/i2c/busses/i2c-mxs.c
+> @@ -643,6 +643,12 @@ static int __devinit mxs_i2c_probe(struct platform_device *pdev)
+>  			dev_err(dev, "Failed to request dma\n");
+>  			return -ENODEV;
+>  		}
+> +		err = dmaengine_device_control(i2c->dmach, DMA_START, 0);
+> +		if (err) {
+> +			dma_release_channel(i2c->dmach);
+> +			dev_err(dev, "Failed to start dma\n");
+> +			return err;
+> +		}
+>  	}
+>  
+>  	platform_set_drvdata(pdev, i2c);
+> @@ -680,8 +686,10 @@ static int __devexit mxs_i2c_remove(struct platform_device *pdev)
+>  	if (ret)
+>  		return -EBUSY;
+>  
+> -	if (i2c->dmach)
+> +	if (i2c->dmach) {
+> +		dmaengine_device_control(i2c->dmach, DMA_END, 0);
+>  		dma_release_channel(i2c->dmach);
+> +	}
+>  
+>  	writel(MXS_I2C_CTRL0_SFTRST, i2c->regs + MXS_I2C_CTRL0_SET);
+>  
+> diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
+> index 80d1e6d..aa91830 100644
+> --- a/drivers/mmc/host/mxs-mmc.c
+> +++ b/drivers/mmc/host/mxs-mmc.c
+> @@ -676,6 +676,9 @@ static int mxs_mmc_probe(struct platform_device *pdev)
+>  			"%s: failed to request dma\n", __func__);
+>  		goto out_clk_put;
+>  	}
+> +	ret = dmaengine_device_control(ssp->dmach, DMA_START, 0);
+> +	if (ret)
+> +		goto out_free_dma;
+>  
+>  	/* set mmc core parameters */
+>  	mmc->ops = &mxs_mmc_ops;
+> @@ -717,18 +720,20 @@ static int mxs_mmc_probe(struct platform_device *pdev)
+>  	ret = devm_request_irq(&pdev->dev, irq_err, mxs_mmc_irq_handler, 0,
+>  			       DRIVER_NAME, host);
+>  	if (ret)
+> -		goto out_free_dma;
+> +		goto out_end_free_dma;
+>  
+>  	spin_lock_init(&host->lock);
+>  
+>  	ret = mmc_add_host(mmc);
+>  	if (ret)
+> -		goto out_free_dma;
+> +		goto out_end_free_dma;
+>  
+>  	dev_info(mmc_dev(host->mmc), "initialized\n");
+>  
+>  	return 0;
+>  
+> +out_end_free_dma:
+> +	dmaengine_device_control(ssp->dmach, DMA_END, 0);
+>  out_free_dma:
+>  	if (ssp->dmach)
+>  		dma_release_channel(ssp->dmach);
+> @@ -750,8 +755,10 @@ static int mxs_mmc_remove(struct platform_device *pdev)
+>  
+>  	platform_set_drvdata(pdev, NULL);
+>  
+> -	if (ssp->dmach)
+> +	if (ssp->dmach) {
+> +		dmaengine_device_control(ssp->dmach, DMA_END, 0);
+>  		dma_release_channel(ssp->dmach);
+> +	}
+>  
+>  	clk_disable_unprepare(ssp->clk);
+>  	clk_put(ssp->clk);
+> @@ -772,6 +779,7 @@ static int mxs_mmc_suspend(struct device *dev)
+>  	ret = mmc_suspend_host(mmc);
+>  
+>  	clk_disable_unprepare(ssp->clk);
+> +	dmaengine_device_control(ssp->dmach, DMA_END, 0);
+>  
+>  	return ret;
+>  }
+> @@ -784,8 +792,13 @@ static int mxs_mmc_resume(struct device *dev)
+>  	int ret = 0;
+>  
+>  	clk_prepare_enable(ssp->clk);
+> +	ret = dmaengine_device_control(ssp->dmach, DMA_START, 0);
+> +	if (ret)
+> +		return ret;
+>  
+>  	ret = mmc_resume_host(mmc);
+> +	if (ret)
+> +		dmaengine_device_control(ssp->dmach, DMA_END, 0);
+>  
+>  	return ret;
+>  }
+> diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+> index 3502acc..20ed3f3 100644
+> --- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+> +++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
+> @@ -958,6 +958,7 @@ void gpmi_begin(struct gpmi_nand_data *this)
+>  	uint32_t       reg;
+>  	unsigned int   dll_wait_time_in_us;
+>  	struct gpmi_nfc_hardware_timing  hw;
+> +	struct dma_chan *channel = get_dma_chan(this);
+>  	int ret;
+>  
+>  	/* Enable the clock. */
+> @@ -967,6 +968,12 @@ void gpmi_begin(struct gpmi_nand_data *this)
+>  		goto err_out;
+>  	}
+>  
+> +	ret = dmaengine_device_control(channel, DMA_START, 0);
+> +	if (ret) {
+> +		gpmi_disable_clk(this);
+> +		goto err_out;
+> +	}
+> +
+>  	/* Only initialize the timing once */
+>  	if (this->flags & GPMI_TIMING_INIT_OK)
+>  		return;
+> @@ -1035,7 +1042,10 @@ err_out:
+>  
+>  void gpmi_end(struct gpmi_nand_data *this)
+>  {
+> +	struct dma_chan *channel = get_dma_chan(this);
+> +
+>  	gpmi_disable_clk(this);
+> +	dmaengine_device_control(channel, DMA_END, 0);
+>  }
+>  
+>  /* Clears a BCH interrupt. */
+> diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
+> index e2c56fc..5694d03 100644
+> --- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
+> +++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
+> @@ -815,12 +815,14 @@ static void gpmi_select_chip(struct mtd_info *mtd, int chipnr)
+>  	struct nand_chip *chip = mtd->priv;
+>  	struct gpmi_nand_data *this = chip->priv;
+>  
+> -	if ((this->current_chip < 0) && (chipnr >= 0))
+> +	if ((this->current_chip < 0) && (chipnr >= 0)) {
+> +		/* set the current_chip before we call gpmi_begin(). */
+> +		this->current_chip = chipnr;
+>  		gpmi_begin(this);
+> -	else if ((this->current_chip >= 0) && (chipnr < 0))
+> +	} else if ((this->current_chip >= 0) && (chipnr < 0)) {
+>  		gpmi_end(this);
+> -
+> -	this->current_chip = chipnr;
+> +		this->current_chip = chipnr;
+> +	}
+>  }
+>  
+>  static void gpmi_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> index d3201e4..79f864a 100644
+> --- a/include/linux/dmaengine.h
+> +++ b/include/linux/dmaengine.h
+> @@ -199,6 +199,8 @@ enum dma_ctrl_flags {
+>  /**
+>   * enum dma_ctrl_cmd - DMA operations that can optionally be exercised
+>   * on a running channel.
+> + * @DMA_START: do some preprations to start the DMA engine, such as enable the
+> + * necessary clocks.
+>   * @DMA_TERMINATE_ALL: terminate all ongoing transfers
+>   * @DMA_PAUSE: pause ongoing transfers
+>   * @DMA_RESUME: resume paused transfer
+> @@ -209,13 +211,17 @@ enum dma_ctrl_flags {
+>   * command.
+>   * @FSLDMA_EXTERNAL_START: this command will put the Freescale DMA controller
+>   * into external start mode.
+> + * @DMA_END: do some works to end the DMA engine, such as disable the
+> + * necessary clocks.
+>   */
+>  enum dma_ctrl_cmd {
+> +	DMA_START,
+>  	DMA_TERMINATE_ALL,
+>  	DMA_PAUSE,
+>  	DMA_RESUME,
+>  	DMA_SLAVE_CONFIG,
+>  	FSLDMA_EXTERNAL_START,
+> +	DMA_END,
+>  };
+>  
+>  /**
+> diff --git a/sound/soc/mxs/mxs-pcm.c b/sound/soc/mxs/mxs-pcm.c
+> index f82d766..cfcc30f 100644
+> --- a/sound/soc/mxs/mxs-pcm.c
+> +++ b/sound/soc/mxs/mxs-pcm.c
+> @@ -92,6 +92,7 @@ static int snd_mxs_open(struct snd_pcm_substream *substream)
+>  {
+>  	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+>  	struct mxs_pcm_dma_data *pcm_dma_data;
+> +	struct dma_chan *chan;
+>  	int ret;
+>  
+>  	pcm_dma_data = kzalloc(sizeof(*pcm_dma_data), GFP_KERNEL);
+> @@ -107,6 +108,14 @@ static int snd_mxs_open(struct snd_pcm_substream *substream)
+>  		return ret;
+>  	}
+>  
+> +	chan = snd_dmaengine_pcm_get_chan(substream);
+> +	ret = dmaengine_device_control(chan, DMA_START, (unsigned long)0);
+> +	if (ret) {
+> +		snd_dmaengine_pcm_close(substream);
+> +		kfree(pcm_dma_data);
+> +		return ret;
+> +	}
+> +
+>  	snd_soc_set_runtime_hwparams(substream, &snd_mxs_hardware);
+>  
+>  	snd_dmaengine_pcm_set_data(substream, pcm_dma_data);
+> @@ -117,7 +126,10 @@ static int snd_mxs_open(struct snd_pcm_substream *substream)
+>  static int snd_mxs_close(struct snd_pcm_substream *substream)
+>  {
+>  	struct mxs_pcm_dma_data *pcm_dma_data = snd_dmaengine_pcm_get_data(substream);
+> +	struct dma_chan *chan;
+>  
+> +	chan = snd_dmaengine_pcm_get_chan(substream);
+> +	dmaengine_device_control(chan, DMA_END, 0);
+>  	snd_dmaengine_pcm_close(substream);
+>  	kfree(pcm_dma_data);
+>  
 
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+~Vinod
+
