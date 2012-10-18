@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab2JRBjx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 21:39:53 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43550 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753095Ab2JRBjw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 21:39:52 -0400
-X-AuditID: 9c930197-b7c4aae000004160-68-507f5de55e45
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 10/11] perf tools: Fix build on sparc.
-References: <1350494387-10987-1-git-send-email-acme@infradead.org>
-	<1350494387-10987-11-git-send-email-acme@infradead.org>
-Date: Thu, 18 Oct 2012 10:39:49 +0900
-In-Reply-To: <1350494387-10987-11-git-send-email-acme@infradead.org> (Arnaldo
-	Carvalho de Melo's message of "Wed, 17 Oct 2012 14:19:46 -0300")
-Message-ID: <87txts1rtm.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	id S1753411Ab2JRBn1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 21:43:27 -0400
+Received: from noserose.net ([66.220.18.76]:52257 "HELO noserose.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753095Ab2JRBn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 21:43:26 -0400
+Date: Wed, 17 Oct 2012 18:43:15 -0700
+Message-Id: <cover.1350524227.git.ecashin@coraid.com>
+From: Ed Cashin <ecashin@coraid.com>
+Subject: [PATCH 0/9] aoe: various enhancements and cleanup from v50 to v60
+To: akpm@linux-foundation.org
+Cc: ecashin@coraid.com, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Oct 2012 14:19:46 -0300, Arnaldo Carvalho de Melo wrote:
-> From: David Miller <davem@davemloft.net>
->
-> More UAPI stuff.
+Change since first submission:
 
-What about other architectures?  Don't they have the same problem?
+	Go ahead and use the __must_hold() annotation provided
+	recently by Josh Triplett, already in mm.
 
-Thanks,
-Namhyung
+This patch series is based on linux-next/akpm from 11 Oct.
+
+Ed L. Cashin (9):
+  aoe: describe the behavior of the "err" character device
+  aoe: print warning regarding a common reason for dropped transmits
+  aoe: update cap on outstanding commands based on config query
+    response
+  aoe: support the forgetting (flushing) of a user-specified AoE target
+  aoe: support larger I/O requests via aoe_maxsectors module param
+  aoe: "payload" sysfs file exports per-AoE-command data transfer size
+  aoe: cleanup: remove unused ata_scnt function
+  aoe: whitespace cleanup
+  aoe: update driver-internal version number to 60
+
+ drivers/block/aoe/aoe.h     |   10 ++++----
+ drivers/block/aoe/aoeblk.c  |   19 ++++++++++++++++++
+ drivers/block/aoe/aoechr.c  |    7 +++++-
+ drivers/block/aoe/aoecmd.c  |   22 +++++++-------------
+ drivers/block/aoe/aoedev.c  |   44 +++++++++++++++++++++++++++++++++++++-----
+ drivers/block/aoe/aoemain.c |    2 +-
+ drivers/block/aoe/aoenet.c  |   11 ++++++---
+ 7 files changed, 84 insertions(+), 31 deletions(-)
+
