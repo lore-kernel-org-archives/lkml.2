@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902Ab2JRLKD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 07:10:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29135 "EHLO mga02.intel.com"
+	id S1755914Ab2JRLMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 07:12:18 -0400
+Received: from mga03.intel.com ([143.182.124.21]:47813 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755679Ab2JRLKB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 07:10:01 -0400
+	id S1754866Ab2JRLMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 07:12:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,606,1344236400"; 
-   d="scan'208";a="229179379"
-Message-ID: <1350558583.3568.9.camel@smile>
-Subject: Re: [PATCHv2 3/4] dw_dmac: change {dev_}printk() to corresponding
- macros
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: balbi@ti.com
-Cc: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
-Date: Thu, 18 Oct 2012 14:09:43 +0300
-In-Reply-To: <20121018103413.GB1449@arwen.pp.htv.fi>
-References: <1350469879-16018-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1350469879-16018-4-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <20121017130918.GD11394@arwen.pp.htv.fi> <1350481018.3568.3.camel@smile>
-	 <20121017135306.GG11394@arwen.pp.htv.fi> <1350548131.3568.6.camel@smile>
-	 <20121018103413.GB1449@arwen.pp.htv.fi>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+   d="scan'208";a="206020406"
+From: Jenny TC <jenny.tc@intel.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>, linux-kernel@vger.kernel.org
+Cc: Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, myungjoo.ham@samsung.com,
+        Jenny TC <jenny.tc@intel.com>
+Subject: [PATCH 0/7] power_supply: Introduce charging Framework
+Date: Thu, 18 Oct 2012 22:13:59 +0530
+Message-Id: <1350578646-3315-1-git-send-email-jenny.tc@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-18 at 13:34 +0300, Felipe Balbi wrote: 
-> On Thu, Oct 18, 2012 at 11:15:31AM +0300, Andy Shevchenko wrote:
-> > On Wed, 2012-10-17 at 16:53 +0300, Felipe Balbi wrote: 
-> > > On Wed, Oct 17, 2012 at 04:36:58PM +0300, Andy Shevchenko wrote:
-> > > > On Wed, 2012-10-17 at 16:09 +0300, Felipe Balbi wrote: 
+The Power Supply charging framework connects multiple subsystems
+to do charging in a generic way. The subsystems involves power_supply,
+extcon, and thermal. With this the charging is handled in a generic way.
 
-> > > > > > diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+The framework makes use of different new features - Battery Identification
+framework, pluggable charging algorithms, charger cable arbitrations.
+PSE compliant charging algorithm also enabled as part of this patchset.
 
-> > > > > > @@ -492,10 +491,8 @@ static void dwc_handle_error(struct dw_dma *dw, struct dw_dma_chan *dwc)
-> > > > > >  	 * controller flagged an error instead of scribbling over
-> > > > > >  	 * random memory locations.
-> > > > > >  	 */
-> > > > > > -	dev_printk(KERN_CRIT, chan2dev(&dwc->chan),
-> > > > > > -			"Bad descriptor submitted for DMA!\n");
-> > > > > > -	dev_printk(KERN_CRIT, chan2dev(&dwc->chan),
-> > > > > > -			"  cookie: %d\n", bad_desc->txd.cookie);
-> > > > > > +	dev_crit(chan2dev(&dwc->chan), "Bad descriptor submitted for DMA!\n");
-> > > > > > +	dev_crit(chan2dev(&dwc->chan), "  cookie: %d\n", bad_desc->txd.cookie);
-> > > > > 
-> > > > > now this is critical, indeed. I would suggest using dev_WARN_ONCE() so
-> > > > > that it's noisy enough to catch the failing user.
-> > > > To this and upper comment, there is an explanation why it's critical. I
-> > > > guess the WARN_ONCE is not good enough, for example if we have more than
-> > > > one user making such noise.
-> > > 
-> > > then use dev_WARN()
-> > I can't see how dev_WARN could be more useful here than the dev_crit. In
-> > current message we have channel and cookie to link back to the user.
-> > What does WARN add meaningful?
-> 
-> a dump_stack()
+With this framework the charging logic can be kept outside the charger driver.
+The charger driver just need to expose th get_property and set_property functions
+to get and set a specific set of power supply properties. The driver can
+convert these values to the hardware configurations to setup charging.
 
-How could it be useful? The dwc_handle_error is called from a tasklet
-that is called from scheduler asynchronously. The tasklet is queued in
-interrupt handler.
 
+Jenny TC (7):
+  power_supply : Introduce battery identification framework
+  power_supply: Add charger control properties
+  power_supply : add supported charger cable  feature
+  power_supply: add throttle state
+  power_supply: Introduce Power Supply charging framework
+  power_supply: enable charger framework callbacks
+  power_supply: Introduce PSE compliant algorithm
+
+ drivers/power/Kconfig                |   28 ++
+ drivers/power/Makefile               |    3 +
+ drivers/power/battery_id.c           |   94 +++++
+ drivers/power/charging_algo_pse.c    |   79 +++++
+ drivers/power/power_supply.h         |   20 ++
+ drivers/power/power_supply_charger.c |  634 ++++++++++++++++++++++++++++++++++
+ drivers/power/power_supply_charger.h |  165 +++++++++
+ drivers/power/power_supply_core.c    |   12 +
+ drivers/power/power_supply_sysfs.c   |   16 +-
+ include/linux/power/battery_id.h     |   97 ++++++
+ include/linux/power_supply.h         |   53 ++-
+ 11 files changed, 1189 insertions(+), 12 deletions(-)
+ create mode 100644 drivers/power/battery_id.c
+ create mode 100644 drivers/power/charging_algo_pse.c
+ create mode 100644 drivers/power/power_supply_charger.c
+ create mode 100644 drivers/power/power_supply_charger.h
+ create mode 100644 include/linux/power/battery_id.h
 
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+1.7.9.5
+
