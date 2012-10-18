@@ -1,77 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356Ab2JRNYB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 09:24:01 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:58067 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754995Ab2JRNYA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 09:24:00 -0400
-X-IronPort-AV: E=Sophos;i="4.80,607,1344211200"; 
-   d="scan'208";a="15255386"
-Date: Thu, 18 Oct 2012 14:23:35 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ian Campbell <ian.campbell@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Mukesh Rathor <mukesh.rathor@oracle.com>,
+	id S1755333Ab2JRNZB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 09:25:01 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:56627 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755064Ab2JRNZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 09:25:00 -0400
+Date: Thu, 18 Oct 2012 15:24:56 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
+        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
+        "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "masbock@linux.vnet.ibm.com" <masbock@linux.vnet.ibm.com>,
+        "x86@kernel.org" <x86@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: Re: [PATCH 4/6] xen: correctly use xen_pfn_t in
- remap_domain_mfn_range.
-In-Reply-To: <1350473532-15863-4-git-send-email-ian.campbell@citrix.com>
-Message-ID: <alpine.DEB.2.02.1210181422450.2689@kaball.uk.xensource.com>
-References: <1350473518.2460.58.camel@zakaz.uk.xensource.com> <1350473532-15863-4-git-send-email-ian.campbell@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+        "lcm@us.ibm.com" <lcm@us.ibm.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>
+Subject: Re: [PATCH v3] x86/mce: Honour bios-set CMCI threshold
+Message-ID: <20121018132456.GB6951@aftab.osrc.amd.com>
+References: <CA+8MBbKVa0=qUpG-rjV5ieKkponZo77mzk_y_dF4qA2gVG++6A@mail.gmail.com>
+ <20120912122516.3825.87838.stgit@localhost.localdomain>
+ <505C51D8.6070402@linux.vnet.ibm.com>
+ <20121017105940.GA14590@x1.osrc.amd.com>
+ <507E9622.6090606@linux.vnet.ibm.com>
+ <20121017130934.GB14590@x1.osrc.amd.com>
+ <507ED31B.7010402@linux.vnet.ibm.com>
+ <20121017164006.GA14596@x1.osrc.amd.com>
+ <3908561D78D1C84285E8C5FCA982C28F19D517FF@ORSMSX108.amr.corp.intel.com>
+ <507F96F2.9050305@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <507F96F2.9050305@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Oct 2012, Ian Campbell wrote:
-> For Xen on ARM a PFN is 64 bits so we need to use the appropriate
-> type here.
+On Thu, Oct 18, 2012 at 11:13:14AM +0530, Naveen N. Rao wrote:
+> On 10/17/2012 10:58 PM, Luck, Tony wrote:
+> >BUT (squared) do you even really need to know that thresholds were set? You
+> >could look at bits {52:38} in the MCi_STATUS information for the bank to see
+> >how many corrected errors had been logged.
 > 
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> Ah, nice. I think we should be able to use this instead of the sysfs
+> attribute.
 
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Ok, patch below removes it.
 
-In general every mfn/pfn type should be xen_pfn_t, we might have to do a
-closer audit of the code.
+@Tony: I'll send it upwards soonish in case there are no objections.
+This way no stable backport will be needed.
 
+Thanks.
 
->  arch/x86/xen/mmu.c    |    2 +-
->  include/xen/xen-ops.h |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index 1c5812b..d779e96 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -2603,7 +2603,7 @@ static int remap_area_mfn_pte_fn(pte_t *ptep, pgtable_t token,
->  
->  int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
->  			       unsigned long addr,
-> -			       unsigned long mfn, int nr,
-> +			       xen_pfn_t mfn, int nr,
->  			       pgprot_t prot, unsigned domid,
->  			       struct page **pages)
->  
-> diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
-> index 6a40253..dc63e80 100644
-> --- a/include/xen/xen-ops.h
-> +++ b/include/xen/xen-ops.h
-> @@ -26,7 +26,7 @@ void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order);
->  struct vm_area_struct;
->  int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
->  			       unsigned long addr,
-> -			       unsigned long mfn, int nr,
-> +			       xen_pfn_t mfn, int nr,
->  			       pgprot_t prot, unsigned domid,
->  			       struct page **pages);
->  int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
-> -- 
-> 1.7.2.5
-> 
+--
+From: Borislav Petkov <borislav.petkov@amd.com>
+Date: Thu, 18 Oct 2012 15:10:56 +0200
+Subject: [PATCH] x86, MCE: Remove bios_cmci_threshold sysfs attribute
+
+450cc201038f3 ("x86/mce: Provide boot argument to honour bios-set CMCI
+threshold") added the bios_cmci_threshold attribute which was supposed
+to communicate to userspace tools that BIOS CMCI threshold has been
+honoured.
+
+However, this info is not of any importance to userspace - rather it
+can get the actual error count it has been thresholded already from
+MCi_STATUS[38:52].
+
+So drop this before it becomes a used interface (good thing is we caught
+this early in 3.7-rc1, right after the merge window closed).
+
+Cc: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Link: http://lkml.kernel.org/r/20121017105940.GA14590@x1.osrc.amd.com
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 29e87d3b2843..46cbf8689692 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -2209,11 +2209,6 @@ static struct dev_ext_attribute dev_attr_cmci_disabled = {
+ 	&mce_cmci_disabled
+ };
+ 
+-static struct dev_ext_attribute dev_attr_bios_cmci_threshold = {
+-	__ATTR(bios_cmci_threshold, 0444, device_show_int, NULL),
+-	&mce_bios_cmci_threshold
+-};
+-
+ static struct device_attribute *mce_device_attrs[] = {
+ 	&dev_attr_tolerant.attr,
+ 	&dev_attr_check_interval.attr,
+@@ -2222,7 +2217,6 @@ static struct device_attribute *mce_device_attrs[] = {
+ 	&dev_attr_dont_log_ce.attr,
+ 	&dev_attr_ignore_ce.attr,
+ 	&dev_attr_cmci_disabled.attr,
+-	&dev_attr_bios_cmci_threshold.attr,
+ 	NULL
+ };
+ 
+-- 
+1.8.0.rc2.4.g42e55a5
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
