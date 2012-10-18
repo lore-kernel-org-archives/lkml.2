@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab2JRImQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 04:42:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52661 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752337Ab2JRImP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 04:42:15 -0400
-Date: Thu, 18 Oct 2012 10:42:12 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH 5/6] memcg: make mem_cgroup_reparent_charges non failing
-Message-ID: <20121018084212.GA24295@dhcp22.suse.cz>
-References: <1350480648-10905-1-git-send-email-mhocko@suse.cz>
- <1350480648-10905-6-git-send-email-mhocko@suse.cz>
- <507FBE1B.4080906@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <507FBE1B.4080906@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754684Ab2JRIoM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 04:44:12 -0400
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:42419 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752140Ab2JRIoJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 04:44:09 -0400
+From: Mischa Jonker <mischa.jonker@synopsys.com>
+To: dmitry.torokhov@gmail.com, m.d.s.x.jonker@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arc-linux-dev@synopsys.com
+Cc: Mischa Jonker <mischa.jonker@synopsys.com>
+Subject: [PATCH v3 0/1] Input: serio - Add ARC PS/2 driver
+Date: Thu, 18 Oct 2012 10:36:06 +0200
+Message-Id: <1350549367-11098-1-git-send-email-mischa.jonker@synopsys.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 18-10-12 16:30:19, Li Zefan wrote:
-> >  static int mem_cgroup_force_empty_write(struct cgroup *cont, unsigned int event)
-> > @@ -5013,13 +5011,9 @@ free_out:
-> >  static int mem_cgroup_pre_destroy(struct cgroup *cont)
-> >  {
-> >  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
-> > -	int ret;
-> >  
-> > -	css_get(&memcg->css);
-> > -	ret = mem_cgroup_reparent_charges(memcg);
-> > -	css_put(&memcg->css);
-> > -
-> > -	return ret;
-> > +	mem_cgroup_reparent_charges(memcg);
-> > +	return 0;
-> >  }
-> >  
-> 
-> Why don't you make pre_destroy() return void?
+main changes for v3:
+* proper __iomem annotation
+* correct return values in case of error
 
-Yes I plan to do that later after I have feedback for this RFC.  I am
-especially interested whether the cgroup core patch is OK, resp. has to
-be reworked to pull pre_destroy outside of cgroup_lock
+main changes for v2:
+* dev_* instead of pr_*
+* ioread32/iowrite32 instead of inl/outl
+* use module_platform_driver macro
+* disabling interrupt twice was unnecessary
 
-Thanks
--- 
-Michal Hocko
-SUSE Labs
+New patch has been tested on our own architecture (ARC) and
+builds cleanly on x86-64.
+
+Mischa Jonker (1):
+  Input: serio - Add ARC PS/2 driver
+
+ drivers/input/serio/Kconfig   |    9 ++
+ drivers/input/serio/Makefile  |    1 +
+ drivers/input/serio/arc_ps2.c |  275 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 285 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/serio/arc_ps2.c
+
