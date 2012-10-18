@@ -1,99 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab2JRKpF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 06:45:05 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:53515 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755017Ab2JRKpD (ORCPT
+	id S1755668Ab2JRKpT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 06:45:19 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:7507 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372Ab2JRKpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 06:45:03 -0400
+	Thu, 18 Oct 2012 06:45:17 -0400
+X-IronPort-AV: E=Sophos;i="4.80,606,1344211200"; 
+   d="scan'208";a="15251209"
+Message-ID: <1350557077.2460.113.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH V3 2/6]: PVH: use native irq, enable
+ callback, use HVM ring ops, smp, ...
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 18 Oct 2012 11:44:37 +0100
+In-Reply-To: <20121017173005.73a03eec@mantra.us.oracle.com>
+References: <20121017173005.73a03eec@mantra.us.oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-In-Reply-To: <CAKohponyeATPdmB7BZGShfaH0ETX8qfBLNM5jSkk6DpQ8vKfZw@mail.gmail.com>
-References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
-	<1350387889-15324-6-git-send-email-hongbo.zhang@linaro.com>
-	<CAKohpo=Vfq=z8NK6w4_QpwwLniYiwcfGfzWZsoG_zBPYPXrcUw@mail.gmail.com>
-	<CAJLyvQyvMpeYK4PrgEcRwNX74-e5RApX9ZcWJp1+Fgp8jhD9cQ@mail.gmail.com>
-	<CAKohponyeATPdmB7BZGShfaH0ETX8qfBLNM5jSkk6DpQ8vKfZw@mail.gmail.com>
-Date: Thu, 18 Oct 2012 18:45:02 +0800
-Message-ID: <CAJLyvQyg7bFQxmegSD=cCsn0M+AM+NOPW5SrK09dXLi3aer7ww@mail.gmail.com>
-Subject: Re: [PATCH 5/5] Thermal: Add ST-Ericsson db8500 thermal dirver.
-From: Hongbo Zhang <hongbo.zhang@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        kernel@igloocommunity.org, linaro-kernel@lists.linaro.org,
-        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 October 2012 16:07, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 18 October 2012 13:05, Hongbo Zhang <hongbo.zhang@linaro.org> wrote:
->> On 17 October 2012 23:23, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>> On 16 October 2012 17:14, hongbo.zhang <hongbo.zhang@linaro.org> wrote:
->
->>>> +static struct db8500_trip_point db8500_trips_table[] = {
->>>> +       [0] = {
->>>> +               .temp = 70000,
->>>> +               .type = THERMAL_TRIP_ACTIVE,
->>>> +               .cooling_dev_name = {
->>>> +                       [0] = "thermal-cpufreq-0",
->>>
->>> If i am not wrong length of cooling_dev_name can't be greater than 8
->> You are wrong this time, it is 20
->> #define THERMAL_NAME_LENGTH 20
->
-> Ahh.. Its the array size fixed to 8.. not length of each element within.
->
->>>>  static void __init mop500_init_machine(void)
->>>> @@ -765,6 +834,10 @@ struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
->>>>                 "ux500-msp-i2s.2", &msp2_platform_data),
->>>>         OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80125000,
->>>>                 "ux500-msp-i2s.3", &msp3_platform_data),
->>>> +       OF_DEV_AUXDATA("stericsson,db8500-thermal", 0x801573c0,
->>>> +                       "db8500-thermal", &db8500_thsens_data),
->>>> +       OF_DEV_AUXDATA("stericsson,db8500-cpufreq-cooling", 0,
->>>> +                       "db8500-cpufreq-cooling", NULL),
->>>>         {},
->>>>  };
->
->>> Whatever the case, at-least we should pass data via DT for
->>> u8500_auxdata_lookup[].
->>> As you are adding the driver for the first time here, it must be able to parse
->>> data via DT.
->> Yes, for "db8500-thermal", data &db8500_thsens_data is parsed via DT
->> but there is really no data for "db8500-cpufreq-cooling".
->
-> You didn't get my point. You are not parsing pdata via DT here, but setting
-> pdata of device node created due to DT.
->
-> What i am saying is, you must put in code in thermal driver, which will actually
-> parse data from DT and create a pdata structure at run time. And there you
-> would be required to add another file in Documentation with bindings for this
-> driver.
->
-Get the idea.
-I will update the DT related codes and sent it out again.
-Thanks.
+On Thu, 2012-10-18 at 01:30 +0100, Mukesh Rathor wrote:
+> PVH: make gdt_frames[]/gdt_ents into a union with {gdtaddr, gdtsz}, PVH
+> only needs to send down gdtaddr and gdtsz. irq.c: PVH uses
+> native_irq_ops. vcpu hotplug is currently not available for PVH.
+> events.c: setup callback vector for PVH. smp.c: This pertains to
+> bringing up smp vcpus. PVH runs in ring 0, so syscalls are native.
+> Also, the vcpu context is send down via the hcall to be set in the
+> vmcs. gdtaddr and gdtsz are unionionized as PVH only needs to send
+> these two to be set in the vmcs. Finally, PVH ring ops uses HVM paths
+> for xenbus.
+> 
+> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> ---
+>  arch/x86/include/asm/xen/interface.h |   11 +++++-
+>  arch/x86/xen/irq.c                   |    5 ++-
+>  arch/x86/xen/p2m.c                   |    2 +-
+>  arch/x86/xen/smp.c                   |   75
+> ++++++++++++++++++++++------------ drivers/xen/cpu_hotplug.c
+> |    4 +- drivers/xen/events.c                 |    9 ++++-
+>  drivers/xen/xenbus/xenbus_client.c   |    3 +-
 
->>>> +static int db8500_cpufreq_cooling_suspend(struct platform_device *pdev,
->>>> +               pm_message_t state)
->>>> +{
->>>> +       return -ENOSYS;
->>>> +}
->>>> +
->>>> +static int db8500_cpufreq_cooling_resume(struct platform_device *pdev)
->>>> +{
->>>> +       return -ENOSYS;
->>>> +}
->>>
->>> Do you need these? Wouldn't it be same if you don't define them?
->> There were not such functions before, I added them after reading
->> Documentation/SubmittingDrivers.
->> Is the document too old? should I follow it?
->
-> Probably the document is correct and i am not :)
->
-> --
-> viresh
+This patch seems to have been horribly whitespace damaged.
+
+Have you seen "git send-email" ? It's very useful for avoiding this sort
+of thing and also takes a lot of the grunt work out of reposting a
+series.
+
+It also chains the patches as replies to the introductory zero-th mail
+-- which is something I've been meaning to ask you to do for a while.
+It's useful because it joins the series together in a thread which makes
+it easier to keep track of in my INBOX.
+
+Ian.
+
