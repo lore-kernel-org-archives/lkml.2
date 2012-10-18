@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756884Ab2JRPLT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 11:11:19 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:38811 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756576Ab2JRPLR convert rfc822-to-8bit (ORCPT
+	id S1756897Ab2JRPMx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 11:12:53 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:56957 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752845Ab2JRPMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 11:11:17 -0400
+	Thu, 18 Oct 2012 11:12:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <201210181251.15116.marex@denx.de>
-References: <1350538335-29026-1-git-send-email-b32955@freescale.com>
-	<201210181049.21556.marex@denx.de>
-	<507FC827.40601@freescale.com>
-	<201210181251.15116.marex@denx.de>
-Date: Thu, 18 Oct 2012 11:11:15 -0400
-Message-ID: <CAMiH66HCDLZaxXckQz1bfqscNm2X2480HTr4bFHdJNteDLb=ig@mail.gmail.com>
-Subject: Re: [PATCH] dma: add new DMA control commands
-From: Huang Shijie <shijie8@gmail.com>
-To: Marek Vasut <marex@denx.de>
-Cc: Huang Shijie <b32955@freescale.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>, djbw@fb.com,
-        khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
-        cjb@laptop.org, dwmw2@infradead.org, lrg@ti.com,
-        broonie@opensource.wolfsonmicro.com, perex@perex.cz, tiwai@suse.de,
-        shawn.guo@linaro.org, artem.bityutskiy@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-mtd@lists.infradead.org,
-        alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, Fabio Estevam <fabio.estevam@freescale.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Date: Thu, 18 Oct 2012 23:12:50 +0800
+Message-ID: <CAPgLHd-H31dtsbyMmYmPnG7VnOTPMc23w7y5e6DN_wvpcqxBkQ@mail.gmail.com>
+Subject: [PATCH] vme: vme_tsi148.c: use module_pci_driver to simplify the code
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: martyn.welch@ge.com, manohar.vanga@gmail.com, gregkh@linuxfoundation.org
+Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 6:51 AM, Marek Vasut <marex@denx.de> wrote:
-> Dear Huang Shijie,
->
->> 于 2012年10月18日 16:49, Marek Vasut 写道:
->> > Dear Huang Shijie,
->> >
->> >> 于 2012年10月18日 16:16, Marek Vasut 写道:
->> >>> So we can't stream data from the chip? About time to adjust the MTD
->> >>> framework to allow that. Maybe implement a command queue?
->> >>
->> >> IMHO, it's not possible. Because the READ-PAGE(00h-30h) command needs to
->> >> check the busy status
->> >> which means we have to stop in the middle, so we can not chain the all
->> >> the read-pages DMA commands.
->> >
->> > Can the DMA not branch?
->>
->> it's too complicated to the MTD layer, as well as the gpmi driver.
->
-> Can you please elaborate ?
-could you read the nand spec about how to read a page out with the
-READ-PAGE(00-30) command,
-and tell me how to make the DMA branch?
-I really have no idea about how to make the DMA branch.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-thanks
-Huang Shijie
-.
+Use the module_pci_driver() macro to make the code simpler
+by eliminating module_init and module_exit calls.
 
+dpatch engine is used to auto generate this patch.
+(https://github.com/weiyj/dpatch)
 
-> Best regards,
-> Marek Vasut
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/vme/bridges/vme_tsi148.c | 15 +--------------
+ 1 file changed, 1 insertion(+), 14 deletions(-)
+
+diff --git a/drivers/vme/bridges/vme_tsi148.c b/drivers/vme/bridges/vme_tsi148.c
+index 5fbd08f..9c1aa4d 100644
+--- a/drivers/vme/bridges/vme_tsi148.c
++++ b/drivers/vme/bridges/vme_tsi148.c
+@@ -35,10 +35,8 @@
+ #include "../vme_bridge.h"
+ #include "vme_tsi148.h"
+ 
+-static int __init tsi148_init(void);
+ static int tsi148_probe(struct pci_dev *, const struct pci_device_id *);
+ static void tsi148_remove(struct pci_dev *);
+-static void __exit tsi148_exit(void);
+ 
+ 
+ /* Module parameter */
+@@ -2244,11 +2242,6 @@ static void tsi148_free_consistent(struct device *parent, size_t size,
+ 	pci_free_consistent(pdev, size, vaddr, dma);
+ }
+ 
+-static int __init tsi148_init(void)
+-{
+-	return pci_register_driver(&tsi148_driver);
+-}
+-
+ /*
+  * Configure CR/CSR space
+  *
+@@ -2754,10 +2747,7 @@ static void tsi148_remove(struct pci_dev *pdev)
+ 	kfree(tsi148_bridge);
+ }
+ 
+-static void __exit tsi148_exit(void)
+-{
+-	pci_unregister_driver(&tsi148_driver);
+-}
++module_pci_driver(tsi148_driver);
+ 
+ MODULE_PARM_DESC(err_chk, "Check for VME errors on reads and writes");
+ module_param(err_chk, bool, 0);
+@@ -2767,6 +2757,3 @@ module_param(geoid, int, 0);
+ 
+ MODULE_DESCRIPTION("VME driver for the Tundra Tempe VME bridge");
+ MODULE_LICENSE("GPL");
+-
+-module_init(tsi148_init);
+-module_exit(tsi148_exit);
+
