@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755677Ab2JRU15 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 16:27:57 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:56833 "EHLO
+	id S1755600Ab2JRU14 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 16:27:56 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:56835 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755166Ab2JRU1B (ORCPT
+	with ESMTP id S1755177Ab2JRU1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Oct 2012 16:27:01 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 20/21] TTY: add port -> tty link
-Date: Thu, 18 Oct 2012 22:26:46 +0200
-Message-Id: <1350592007-9216-21-git-send-email-jslaby@suse.cz>
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org
+Subject: [PATCH 08/21] TTY: hci_ldisc, remove invalid check in open
+Date: Thu, 18 Oct 2012 22:26:34 +0200
+Message-Id: <1350592007-9216-9-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.12.3
 In-Reply-To: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
 References: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
@@ -20,84 +24,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For that purpose we have to temporarily introduce a second tty back
-pointer into tty_port. It is because serial layer, and maybe others,
-still do not use tty_port_tty_set/get. So that we cannot set the
-tty_port->tty to NULL at will now.
+hci_ldisc's open checks if tty_struct->disc_data is set. And if so it
+returns with an error. But nothing ensures disc_data to be NULL. And
+since ld->ops->open shall be called only once, we do not need the
+check at all. So remove it.
 
-Yes, the fix would be to convert whole serial layer and all its users
-to tty_port_tty_set/get. However we are in the process of removing the
-need of tty in most of the call sites, so this would lead to a
-duplicated work.
-
-Instead we have now tty_port->itty (internal tty) which will be used
-only in flush_to_ldisc. For that one it is ensured that itty is valid
-wherever the work is run. IOW, the work is synchronously cancelled
-before we set itty to NULL and also before hangup is processed.
-
-After we need only tty_port and not tty_struct in most code, this
-shall be changed to tty_port_tty_set/get and itty removed completely.
+Note that this is not an issue now, but n_tty will start using the
+disc_data pointer and this invalid 'if' would trigger then rendering
+TTYs over BT unusable.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>
+Cc: Johan Hedberg <johan.hedberg@gmail.com>
+Cc: linux-bluetooth@vger.kernel.org
 ---
- drivers/tty/pty.c    | 2 ++
- drivers/tty/tty_io.c | 3 +++
- include/linux/tty.h  | 1 +
- 3 files changed, 6 insertions(+)
+ drivers/bluetooth/hci_ldisc.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index 2728afe..c326908 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -345,6 +345,7 @@ static int pty_common_install(struct tty_driver *driver, struct tty_struct *tty,
- 	tty_port_init(ports[1]);
- 	o_tty->port = ports[0];
- 	tty->port = ports[1];
-+	o_tty->port->itty = o_tty;
- 
- 	tty_driver_kref_get(driver);
- 	tty->count++;
-@@ -371,6 +372,7 @@ static void pty_unix98_shutdown(struct tty_struct *tty)
- 
- static void pty_cleanup(struct tty_struct *tty)
+diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
+index c8abce3..ed0fade 100644
+--- a/drivers/bluetooth/hci_ldisc.c
++++ b/drivers/bluetooth/hci_ldisc.c
+@@ -270,15 +270,10 @@ static int hci_uart_send_frame(struct sk_buff *skb)
+  */
+ static int hci_uart_tty_open(struct tty_struct *tty)
  {
-+	tty->port->itty = NULL;
- 	kfree(tty->port);
- }
+-	struct hci_uart *hu = (void *) tty->disc_data;
++	struct hci_uart *hu;
  
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index f90b621..202008f 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1417,6 +1417,8 @@ struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx)
- 			"%s: %s driver does not set tty->port. This will crash the kernel later. Fix the driver!\n",
- 			__func__, tty->driver->name);
+ 	BT_DBG("tty %p", tty);
  
-+	tty->port->itty = tty;
-+
- 	/*
- 	 * Structures all installed ... call the ldisc open routines.
- 	 * If we fail here just call release_tty to clean up.  No need
-@@ -1552,6 +1554,7 @@ static void release_tty(struct tty_struct *tty, int idx)
- 		tty->ops->shutdown(tty);
- 	tty_free_termios(tty);
- 	tty_driver_remove_tty(tty->driver, tty);
-+	tty->port->itty = NULL;
- 
- 	if (tty->link)
- 		tty_kref_put(tty->link);
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index b4b3c56..9be74d6 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -189,6 +189,7 @@ struct tty_port_operations {
- 	
- struct tty_port {
- 	struct tty_struct	*tty;		/* Back pointer */
-+	struct tty_struct	*itty;		/* internal back ptr */
- 	const struct tty_port_operations *ops;	/* Port operations */
- 	spinlock_t		lock;		/* Lock protecting tty field */
- 	int			blocked_open;	/* Waiting to open */
+-	/* FIXME: This btw is bogus, nothing requires the old ldisc to clear
+-	   the pointer */
+-	if (hu)
+-		return -EEXIST;
+-
+ 	/* Error if the tty has no write op instead of leaving an exploitable
+ 	   hole */
+ 	if (tty->ops->write == NULL)
 -- 
 1.7.12.3
 
