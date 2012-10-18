@@ -1,40 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757336Ab2JRS2o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 14:28:44 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:43047 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755143Ab2JRS2n (ORCPT
+	id S1756611Ab2JRSaD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 14:30:03 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:62094 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763Ab2JRSaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 14:28:43 -0400
-Date: Thu, 18 Oct 2012 19:28:31 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Daniel Vacek <neelx.g@gmail.com>
-Cc: matt.fleming@intel.com, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] efi: Build EFI stub with EFI-appropriate options
-Message-ID: <20121018182831.GA30905@srcf.ucam.org>
-References: <1343340000-7587-1-git-send-email-mjg@redhat.com>
- <CAA7rmPGL827cgT6hM8h_xhokEbTbTnrptoRekVByM7AcMdRUdw@mail.gmail.com>
+	Thu, 18 Oct 2012 14:30:00 -0400
+Date: Thu, 18 Oct 2012 20:29:53 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (tip/s390 trees related)
+Message-ID: <20121018182953.GA20658@gmail.com>
+References: <20121018172201.b81dcc8fe40868256f532364@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAA7rmPGL827cgT6hM8h_xhokEbTbTnrptoRekVByM7AcMdRUdw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20121018172201.b81dcc8fe40868256f532364@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 08:18:51PM +0200, Daniel Vacek wrote:
 
-> s/CLFAGS/CFLAGS/
+* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+
+> Hi all,
 > 
-> should go to stable too?
+> After merging the final tree, today's linux-next build (s390 allyesconfig)
+> failed like this:
+> 
+> mm/huge_memory.c:1424:2: error: implicit declaration of function 'pmd_pgprot' [-Werror=implicit-function-declaration]
+> mm/huge_memory.c:1424:7: error: incompatible types when assigning to type 'pgprot_t' from type 'int'
+> 
+> (see http://kisskb.ellerman.id.au/kisskb/buildresult/7383823/)
+> 
+> Caused by commit 35d3d3427314 ("s390/thp: select
+> HAVE_ARCH_TRANSPARENT_HUGEPAGE") from the s390 tree interacting with
+> commit 93c9d633bd9e ("mm/thp: Preserve pgprot across huge page split")
+> from the tip tree.
+> 
+> N.B. Mips also selects HAVE_ARCH_TRANSPARENT_HUGEPAGE as of commit
+> e21a828a1bba ("MIPS: Transparent Huge Pages support") from the mips tree
+> and so will be broken in some configs now as well.
+> 
+> Anyone have suggested merge fix patches I can apply?
 
-Crap. Yes. Feel free to send that.
+Resolved it for now by excluding those changes, will put them 
+back in once they are fixed.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Thanks,
+
+	Ingo
+
