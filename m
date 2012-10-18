@@ -1,76 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab2JRBrg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 21:47:36 -0400
-Received: from noserose.net ([66.220.18.76]:47081 "HELO noserose.net"
+	id S1753444Ab2JRBti (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 21:49:38 -0400
+Received: from noserose.net ([66.220.18.76]:44824 "HELO noserose.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753302Ab2JRBrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 21:47:35 -0400
-Date: Wed, 17 Oct 2012 18:47:31 -0700
-Message-Id: <0868aa101f303368be1cd83ca34e7ca4d35eb7a5.1350524227.git.ecashin@coraid.com>
+	id S1753356Ab2JRBth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 21:49:37 -0400
+Date: Wed, 17 Oct 2012 18:49:31 -0700
+Message-Id: <aa84749e245856ccac41c5ddea5db52fc6ac6ea1.1350524227.git.ecashin@coraid.com>
 In-Reply-To: <cover.1350524227.git.ecashin@coraid.com>
 References: <cover.1350524227.git.ecashin@coraid.com>
 From: Ed Cashin <ecashin@coraid.com>
-Subject: [PATCH 3/9] aoe: update cap on outstanding commands based on config query response
+Subject: [PATCH 4/9] aoe: support the forgetting (flushing) of a user-specified AoE target
 To: akpm@linux-foundation.org
 Cc: ecashin@coraid.com, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ATA over Ethernet config query response contains a "buffer count"
-field reflecting the AoE target's capacity to buffer incoming AoE
-commands.
-
-By taking the current value of this field into accound, we increase
-performance throughput or avoid network congestion, when the value
-has increased or decreased, respectively.
+Users sometimes want to cause the aoe driver to forget a
+particular previously discovered device when it is no longer
+online.  The aoetools provide an "aoe-flush" command that users
+run to perform this administrative task.  The changes below
+provide the support needed in the driver.
 
 Signed-off-by: Ed Cashin <ecashin@coraid.com>
 ---
- drivers/block/aoe/aoe.h    |    6 +++---
- drivers/block/aoe/aoecmd.c |    6 +++++-
- 2 files changed, 8 insertions(+), 4 deletions(-)
+ drivers/block/aoe/aoedev.c |   44 ++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 38 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/block/aoe/aoe.h b/drivers/block/aoe/aoe.h
-index d2ed7f1..52f75c0 100644
---- a/drivers/block/aoe/aoe.h
-+++ b/drivers/block/aoe/aoe.h
-@@ -122,14 +122,14 @@ struct aoeif {
+diff --git a/drivers/block/aoe/aoedev.c b/drivers/block/aoe/aoedev.c
+index 90e5b53..63b2660 100644
+--- a/drivers/block/aoe/aoedev.c
++++ b/drivers/block/aoe/aoedev.c
+@@ -241,6 +241,30 @@ aoedev_freedev(struct aoedev *d)
+ 	kfree(d);
+ }
  
- struct aoetgt {
- 	unsigned char addr[6];
--	ushort nframes;
-+	ushort nframes;		/* cap on frames to use */
- 	struct aoedev *d;			/* parent device I belong to */
- 	struct list_head ffree;			/* list of free frames */
- 	struct aoeif ifs[NAOEIFS];
- 	struct aoeif *ifp;	/* current aoeif in use */
- 	ushort nout;
--	ushort maxout;
--	ulong falloc;
-+	ushort maxout;		/* current value for max outstanding */
-+	ulong falloc;		/* number of allocated frames */
- 	ulong lastwadj;		/* last window adjustment */
- 	int minbcnt;
- 	int wpkts, rpkts;
-diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
-index 3804a0a..2bb8c7d 100644
---- a/drivers/block/aoe/aoecmd.c
-+++ b/drivers/block/aoe/aoecmd.c
-@@ -1373,7 +1373,11 @@ aoecmd_cfg_rsp(struct sk_buff *skb)
- 	spin_lock_irqsave(&d->lock, flags);
++/* return whether the user asked for this particular
++ * device to be flushed
++ */
++static int
++user_req(char *s, size_t slen, struct aoedev *d)
++{
++	char *p;
++	size_t lim;
++
++	if (!d->gd)
++		return 0;
++	p = strrchr(d->gd->disk_name, '/');
++	if (!p)
++		p = d->gd->disk_name;
++	else
++		p += 1;
++	lim = sizeof(d->gd->disk_name);
++	lim -= p - d->gd->disk_name;
++	if (slen < lim)
++		lim = slen;
++
++	return !strncmp(s, p, lim);
++}
++
+ int
+ aoedev_flush(const char __user *str, size_t cnt)
+ {
+@@ -249,6 +273,7 @@ aoedev_flush(const char __user *str, size_t cnt)
+ 	struct aoedev *rmd = NULL;
+ 	char buf[16];
+ 	int all = 0;
++	int specified = 0;	/* flush a specific device */
  
- 	t = gettgt(d, h->src);
--	if (!t) {
-+	if (t) {
-+		t->nframes = n;
-+		if (n < t->maxout)
-+			t->maxout = n;
-+	} else {
- 		t = addtgt(d, h->src, n);
- 		if (!t)
- 			goto bail;
+ 	if (cnt >= 3) {
+ 		if (cnt > sizeof buf)
+@@ -256,26 +281,33 @@ aoedev_flush(const char __user *str, size_t cnt)
+ 		if (copy_from_user(buf, str, cnt))
+ 			return -EFAULT;
+ 		all = !strncmp(buf, "all", 3);
++		if (!all)
++			specified = 1;
+ 	}
+ 
+ 	spin_lock_irqsave(&devlist_lock, flags);
+ 	dd = &devlist;
+ 	while ((d = *dd)) {
+ 		spin_lock(&d->lock);
+-		if ((!all && (d->flags & DEVFL_UP))
++		if (specified) {
++			if (!user_req(buf, cnt, d))
++				goto skip;
++		} else if ((!all && (d->flags & DEVFL_UP))
+ 		|| (d->flags & (DEVFL_GDALLOC|DEVFL_NEWSIZE))
+ 		|| d->nopen
+-		|| d->ref) {
+-			spin_unlock(&d->lock);
+-			dd = &d->next;
+-			continue;
+-		}
++		|| d->ref)
++			goto skip;
++
+ 		*dd = d->next;
+ 		aoedev_downdev(d);
+ 		d->flags |= DEVFL_TKILL;
+ 		spin_unlock(&d->lock);
+ 		d->next = rmd;
+ 		rmd = d;
++		continue;
++skip:
++		spin_unlock(&d->lock);
++		dd = &d->next;
+ 	}
+ 	spin_unlock_irqrestore(&devlist_lock, flags);
+ 	while ((d = rmd)) {
 -- 
 1.7.1
 
