@@ -1,41 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab2JRT7y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 15:59:54 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:57756 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753033Ab2JRT7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 15:59:47 -0400
-Message-ID: <1350590386.5652.7.camel@joe-AO722>
-Subject: Re: [PATCH] dynamic_debug: Remove unnecessary __used
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org
-Date: Thu, 18 Oct 2012 12:59:46 -0700
-In-Reply-To: <20121018194027.GA1246@kroah.com>
-References: <1350587223.5652.4.camel@joe-AO722>
-	 <20121018194027.GA1246@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
+	id S1754874Ab2JRUBJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 16:01:09 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:31556 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753987Ab2JRUBH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 16:01:07 -0400
+Message-ID: <1350590458.2680.44.camel@lorien2>
+Subject: [PATCH v2] Documentation DMA-API-HOWTO.txt Add dma mapping error
+ check usage examples
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: mtk.manpages@gmail.com, Dan Carpenter <dan.carpenter@oracle.com>,
+        konrad.wilk@oracle.com, rob@landley.net, joerg.roedel@amd.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, shuahkhan@gmail.com
+Date: Thu, 18 Oct 2012 14:00:58 -0600
+In-Reply-To: <CAKgNAkhx2trGUMCbpYbKbMYYjq9oTeAnqG436_MP2t6noA3K-g@mail.gmail.com>
+References: <1350230064.4069.1.camel@lorien2> <20121018094715.GC5685@mwanda>
+	 <CAKgNAkhx2trGUMCbpYbKbMYYjq9oTeAnqG436_MP2t6noA3K-g@mail.gmail.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-18 at 12:40 -0700, Greg KH wrote:
-> On Thu, Oct 18, 2012 at 12:07:03PM -0700, Joe Perches wrote:
-> > The __used attribute prevents gcc from eliminating
-> > unnecessary, otherwise optimized away, metadata for
-> > debugging logging messages.
-> > 
-> > Remove the __used attribute.
-> 
-> Very cool.  Any idea how much space this saves?
+Enhance the document to discuss the importance of dma mapping error checks
+after dma_map_single() and dma_map_page() calls. Also added usage examples
+that include unmap examples in error paths when dma mapping error is returned.
+Includes correct and incorrect usages to high light some common mistakes in
+error paths especially when dma mapping fails when more than one dma mapping
+call is made.
 
-Dunno, it's been a while since I did an allyesconfig on my
-netbook, my recollection is that was a few hundred kb.
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+---
+ Documentation/DMA-API-HOWTO.txt |  126 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 126 insertions(+)
 
-https://lkml.org/lkml/2012/5/17/340
+diff --git a/Documentation/DMA-API-HOWTO.txt b/Documentation/DMA-API-HOWTO.txt
+index a0b6250..4a4fb29 100644
+--- a/Documentation/DMA-API-HOWTO.txt
++++ b/Documentation/DMA-API-HOWTO.txt
+@@ -468,11 +468,46 @@ To map a single region, you do:
+ 	size_t size = buffer->len;
+ 
+ 	dma_handle = dma_map_single(dev, addr, size, direction);
++	if (dma_mapping_error(dma_handle)) {
++		/*
++		 * reduce current DMA mapping usage,
++		 * delay and try again later or
++		 * reset driver.
++		 */
++		goto map_error_handling;
++	}
+ 
+ and to unmap it:
+ 
+ 	dma_unmap_single(dev, dma_handle, size, direction);
+ 
++You should call dma_mapping_error() as dma_map_single() could fail and return
++error. Not all dma implementations support dma_mapping_error() interface.
++However, it is a good practice to call dma_mapping_error() interface, which
++will invoke the generic mapping error check interface. Doing so will ensure
++that the mapping code will work correctly on all dma implementations without
++any dependency on the specifics of the underlying implementation. Using the
++returned address without checking for errors could result in failures ranging
++from panics to silent data corruption. Couple of example of incorrect ways to
++check for errors that make assumptions about the underlying dma implementation
++are as follows and these are applicable to dma_map_page() as well.
++
++Incorrect example 1:
++	dma_addr_t dma_handle;
++
++	dma_handle = dma_map_single(dev, addr, size, direction);
++	if ((dma_handle & 0xffff != 0) || (dma_handle >= 0x1000000)) {
++		goto map_error;
++	}
++
++Incorrect example 2:
++	dma_addr_t dma_handle;
++
++	dma_handle = dma_map_single(dev, addr, size, direction);
++	if (dma_handle == DMA_ERROR_CODE) {
++		goto map_error;
++	}
++
+ You should call dma_unmap_single when the DMA activity is finished, e.g.
+ from the interrupt which told you that the DMA transfer is done.
+ 
+@@ -489,6 +524,14 @@ Specifically:
+ 	size_t size = buffer->len;
+ 
+ 	dma_handle = dma_map_page(dev, page, offset, size, direction);
++	if (dma_mapping_error(dma_handle)) {
++		/*
++		 * reduce current DMA mapping usage,
++		 * delay and try again later or
++		 * reset driver.
++		 */
++		goto map_error_handling;
++	}
+ 
+ 	...
+ 
+@@ -496,6 +539,12 @@ Specifically:
+ 
+ Here, "offset" means byte offset within the given page.
+ 
++You should call dma_mapping_error() as dma_map_page() could fail and return
++error as outlined under the dma_map_single() discussion.
++
++You should call dma_unmap_page when the DMA activity is finished, e.g.
++from the interrupt which told you that the DMA transfer is done.
++
+ With scatterlists, you map a region gathered from several regions by:
+ 
+ 	int i, count = dma_map_sg(dev, sglist, nents, direction);
+@@ -578,6 +627,14 @@ to use the dma_sync_*() interfaces.
+ 		dma_addr_t mapping;
+ 
+ 		mapping = dma_map_single(cp->dev, buffer, len, DMA_FROM_DEVICE);
++		if (dma_mapping_error(dma_handle)) {
++			/*
++			 * reduce current DMA mapping usage,
++			 * delay and try again later or
++			 * reset driver.
++			 */
++			goto map_error_handling;
++		}
+ 
+ 		cp->rx_buf = buffer;
+ 		cp->rx_len = len;
+@@ -658,6 +715,75 @@ failure can be determined by:
+ 		 * delay and try again later or
+ 		 * reset driver.
+ 		 */
++		goto map_error_handling;
++	}
++
++- unmap pages that are already mapped, when mapping error occurs in the middle
++  of a multiple page mapping attempt. These example are applicable to
++  dma_map_page() as well.
++
++Example 1:
++	dma_addr_t dma_handle1;
++	dma_addr_t dma_handle2;
++
++	dma_handle1 = dma_map_single(dev, addr, size, direction);
++	if (dma_mapping_error(dev, dma_handle1)) {
++		/*
++		 * reduce current DMA mapping usage,
++		 * delay and try again later or
++		 * reset driver.
++		 */
++		goto map_error_handling1;
++	}
++	dma_handle2 = dma_map_single(dev, addr, size, direction);
++	if (dma_mapping_error(dev, dma_handle2)) {
++		/*
++		 * reduce current DMA mapping usage,
++		 * delay and try again later or
++		 * reset driver.
++		 */
++		goto map_error_handling2;
++	}
++
++	...
++
++	map_error_handling2:
++		dma_unmap_single(dma_handle1);
++	map_error_handling1:
++
++Example 2: (if buffers are allocated a loop, unmap all mapped buffers when
++	    mapping error is detected in the middle)
++
++	dma_addr_t dma_addr;
++	dma_addr_t array[DMA_BUFFERS];
++	int save_index = 0;
++
++	for (i = 0; i < DMA_BUFFERS; i++) {
++
++		...
++
++		dma_addr = dma_map_single(dev, addr, size, direction);
++		if (dma_mapping_error(dev, dma_addr)) {
++			/*
++			 * reduce current DMA mapping usage,
++			 * delay and try again later or
++			 * reset driver.
++			 */
++			goto map_error_handling;
++		}
++		array[i].dma_addr = dma_addr;
++		save_index++;
++	}
++
++	...
++
++	map_error_handling:
++
++	for (i = 0; i < save_index; i++) {
++
++		...
++
++		dma_unmap_single(array[i].dma_addr);
+ 	}
+ 
+ Networking drivers must call dev_kfree_skb to free the socket buffer
+-- 
+1.7.9.5
+
 
 
