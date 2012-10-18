@@ -1,482 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756860Ab2JRPcq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 11:32:46 -0400
-Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:42458
-	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753697Ab2JRPco (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 11:32:44 -0400
-Message-ID: <1350574357.3894.29.camel@rhapsody>
-Subject: Re: [PATCH v5 1/2] x86, pci: Reset PCIe devices at boot time
-From: Khalid Aziz <khalid@gonehiking.org>
-To: Takao Indoh <indou.takao@jp.fujitsu.com>
-Cc: linux-pci@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        martin.wilck@ts.fujitsu.com, kexec@lists.infradead.org,
-        hbabu@us.ibm.com, andi@firstfloor.org, ddutile@redhat.com,
-        ishii.hironobu@jp.fujitsu.com, hpa@zytor.com, bhelgaas@google.com,
-        tglx@linutronix.de, mingo@redhat.com, vgoyal@redhat.com,
-        Alex Williamson <alex.williamson@redhat.com>
-Date: Thu, 18 Oct 2012 09:32:37 -0600
-In-Reply-To: <20121017061807.2944.82578.sendpatchset@indoh>
-References: <20121017061757.2944.36671.sendpatchset@indoh>
-	 <20121017061807.2944.82578.sendpatchset@indoh>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756986Ab2JRPdC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 11:33:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42450 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756634Ab2JRPc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 11:32:59 -0400
+Date: Thu, 18 Oct 2012 17:32:56 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Sha Zhengju <handai.szj@gmail.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sha Zhengju <handai.szj@taobao.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] oom, memcg: handle sysctl oom_kill_allocating_task while
+ memcg oom happening
+Message-ID: <20121018153256.GC24295@dhcp22.suse.cz>
+References: <1350382328-28977-1-git-send-email-handai.szj@taobao.com>
+ <20121016133439.GI13991@dhcp22.suse.cz>
+ <CAFj3OHVW-betpEnauzk-vQEfw_7bJxFneQb2oWpAZzOpZuMDiQ@mail.gmail.com>
+ <20121018115640.GB24295@dhcp22.suse.cz>
+ <5080097D.5020501@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5080097D.5020501@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-17 at 15:23 +0900, Takao Indoh wrote:
-> This patch resets PCIe devices at boot time by hot reset when
-> "reset_devices" is specified.
+On Thu 18-10-12 21:51:57, Sha Zhengju wrote:
+> On 10/18/2012 07:56 PM, Michal Hocko wrote:
+> >On Wed 17-10-12 01:14:48, Sha Zhengju wrote:
+> >>On Tuesday, October 16, 2012, Michal Hocko<mhocko@suse.cz>  wrote:
+> >[...]
+> >>>Could you be more specific about the motivation for this patch? Is it
+> >>>"let's be consistent with the global oom" or you have a real use case
+> >>>for this knob.
+> >>>
+> >>In our environment(rhel6), we encounter a memcg oom 'deadlock'
+> >>problem.  Simply speaking, suppose process A is selected to be killed
+> >>by memcg oom killer, but A is uninterruptible sleeping on a page
+> >>lock. What's worse, the exact page lock is holding by another memcg
+> >>process B which is trapped in mem_croup_oom_lock(proves to be a
+> >>livelock).
+> >Hmm, this is strange. How can you get down that road with the page lock
+> >held? Is it possible this is related to the issue fixed by: 1d65f86d
+> >(mm: preallocate page before lock_page() at filemap COW)?
 > 
-> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
-> ---
->  arch/x86/include/asm/pci-direct.h |    1 
->  arch/x86/kernel/setup.c           |    3 
->  arch/x86/pci/early.c              |  353 ++++++++++++++++++++++++++++
->  include/linux/pci.h               |    2 
->  init/main.c                       |    4 
->  5 files changed, 361 insertions(+), 2 deletions(-)
+> No, it has nothing with the cow page. By checking stack of the process A
+> selected to be killed(uninterruptible sleeping), it was stuck at:
+> __do_fault->filemap_fault->__lock_page_or_retry->wait_on_page_bit--(D
+> state).
+> The person B holding the exactly page lock is on the following path:
+> __do_fault->filemap_fault->__do_page_cache_readahead->..->mpage_readpages
+> ->add_to_page_cache_locked ---- >(in memcg oom and cannot exit)
+
+Hmm filemap_fault locks the page after the read ahead is triggered
+already so it doesn't call mpage_readpages with any page locked - the
+add_to_page_cache_lru is called without any page locked.
+This is at least the current code. It might be different in rhel6 but
+calling memcg charging with a page lock is definitely a bug.
+
+> In mpage_readpages, B tends to read a dozen of pages in: for each of
+> page will do
+> locking, charging, and then send out a big bio. And A is waiting for
+> one of the pages
+> and stuck.
 > 
-> diff --git a/arch/x86/include/asm/pci-direct.h b/arch/x86/include/asm/pci-direct.h
-> index b1e7a45..de30db2 100644
-> --- a/arch/x86/include/asm/pci-direct.h
-> +++ b/arch/x86/include/asm/pci-direct.h
-> @@ -18,4 +18,5 @@ extern int early_pci_allowed(void);
->  extern unsigned int pci_early_dump_regs;
->  extern void early_dump_pci_device(u8 bus, u8 slot, u8 func);
->  extern void early_dump_pci_devices(void);
-> +extern void early_reset_pcie_devices(void);
->  #endif /* _ASM_X86_PCI_DIRECT_H */
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index a2bb18e..73d3425 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -987,6 +987,9 @@ void __init setup_arch(char **cmdline_p)
->  	generic_apic_probe();
->  
->  	early_quirks();
-> +#ifdef CONFIG_PCI
-> +	early_reset_pcie_devices();
-> +#endif
->  
->  	/*
->  	 * Read APIC and some other early information from ACPI tables.
-> diff --git a/arch/x86/pci/early.c b/arch/x86/pci/early.c
-> index d1067d5..df7f4fc 100644
-> --- a/arch/x86/pci/early.c
-> +++ b/arch/x86/pci/early.c
-> @@ -1,5 +1,6 @@
->  #include <linux/kernel.h>
->  #include <linux/pci.h>
-> +#include <linux/bootmem.h>
->  #include <asm/pci-direct.h>
->  #include <asm/io.h>
->  #include <asm/pci_x86.h>
-> @@ -109,3 +110,355 @@ void early_dump_pci_devices(void)
->  		}
->  	}
->  }
-> +
-> +#define PCI_EXP_SAVE_REGS	7
-> +#define pcie_cap_has_devctl(type, flags)	1
-> +#define pcie_cap_has_lnkctl(type, flags)		\
-> +		((flags & PCI_EXP_FLAGS_VERS) > 1 ||	\
-> +		 (type == PCI_EXP_TYPE_ROOT_PORT ||	\
-> +		  type == PCI_EXP_TYPE_ENDPOINT ||	\
-> +		  type == PCI_EXP_TYPE_LEG_END))
-> +#define pcie_cap_has_sltctl(type, flags)		\
-> +		((flags & PCI_EXP_FLAGS_VERS) > 1 ||	\
-> +		 ((type == PCI_EXP_TYPE_ROOT_PORT) ||	\
-> +		  (type == PCI_EXP_TYPE_DOWNSTREAM &&	\
-> +		   (flags & PCI_EXP_FLAGS_SLOT))))
-> +#define pcie_cap_has_rtctl(type, flags)			\
-> +		((flags & PCI_EXP_FLAGS_VERS) > 1 ||	\
-> +		 (type == PCI_EXP_TYPE_ROOT_PORT ||	\
-> +		  type == PCI_EXP_TYPE_RC_EC))
-> +
-> +struct save_config {
-> +	u32 pci[16];
-> +	u16 pcie[PCI_EXP_SAVE_REGS];
-> +};
-> +
-> +struct pcie_dev {
-> +	int cap;   /* position of PCI Express capability */
-> +	int flags; /* PCI_EXP_FLAGS */
-> +	struct save_config save; /* saved configration register */
-> +};
-> +
-> +struct pcie_port {
-> +	struct list_head dev;
-> +	u8 bus;
-> +	u8 slot;
-> +	u8 func;
-> +	u8 secondary;
-> +	struct pcie_dev child[PCI_MAX_FUNCTIONS];
-> +};
-> +
-> +static LIST_HEAD(device_list);
-> +static void __init pci_udelay(int loops)
-> +{
-> +	while (loops--) {
-> +		/* Approximately 1 us */
-> +		native_io_delay();
-> +	}
-> +}
-> +
-> +/* Derived from drivers/pci/pci.c */
-> +#define PCI_FIND_CAP_TTL	48
-> +static int __init __pci_find_next_cap_ttl(u8 bus, u8 slot, u8 func,
-> +					  u8 pos, int cap, int *ttl)
-> +{
-> +	u8 id;
-> +
-> +	while ((*ttl)--) {
-> +		pos = read_pci_config_byte(bus, slot, func, pos);
-> +		if (pos < 0x40)
-> +			break;
-> +		pos &= ~3;
-> +		id = read_pci_config_byte(bus, slot, func,
-> +					pos + PCI_CAP_LIST_ID);
-> +		if (id == 0xff)
-> +			break;
-> +		if (id == cap)
-> +			return pos;
-> +		pos += PCI_CAP_LIST_NEXT;
-> +	}
-> +	return 0;
-> +}
-> +
-> +static int __init __pci_find_next_cap(u8 bus, u8 slot, u8 func, u8 pos, int cap)
-> +{
-> +	int ttl = PCI_FIND_CAP_TTL;
-> +
-> +	return __pci_find_next_cap_ttl(bus, slot, func, pos, cap, &ttl);
-> +}
-> +
-> +static int __init __pci_bus_find_cap_start(u8 bus, u8 slot, u8 func,
-> +					   u8 hdr_type)
-> +{
-> +	u16 status;
-> +
-> +	status = read_pci_config_16(bus, slot, func, PCI_STATUS);
-> +	if (!(status & PCI_STATUS_CAP_LIST))
-> +		return 0;
-> +
-> +	switch (hdr_type) {
-> +	case PCI_HEADER_TYPE_NORMAL:
-> +	case PCI_HEADER_TYPE_BRIDGE:
-> +		return PCI_CAPABILITY_LIST;
-> +	case PCI_HEADER_TYPE_CARDBUS:
-> +		return PCI_CB_CAPABILITY_LIST;
-> +	default:
-> +		return 0;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int __init early_pci_find_capability(u8 bus, u8 slot, u8 func, int cap)
-> +{
-> +	int pos;
-> +	u8 type = read_pci_config_byte(bus, slot, func, PCI_HEADER_TYPE);
-> +
-> +	pos = __pci_bus_find_cap_start(bus, slot, func, type & 0x7f);
-> +	if (pos)
-> +		pos = __pci_find_next_cap(bus, slot, func, pos, cap);
-> +
-> +	return pos;
-> +}
-> +
-> +static void __init do_reset(u8 bus, u8 slot, u8 func)
-> +{
-> +	u16 ctrl;
-> +
-> +	printk(KERN_INFO "pci 0000:%02x:%02x.%d reset\n", bus, slot, func);
-> +
-> +	/* Assert Secondary Bus Reset */
-> +	ctrl = read_pci_config_16(bus, slot, func, PCI_BRIDGE_CONTROL);
-> +	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
-> +	write_pci_config_16(bus, slot, func, PCI_BRIDGE_CONTROL, ctrl);
-> +
-> +	/*
-> +	 * PCIe spec requires software to ensure a minimum reset duration
-> +	 * (Trst == 1ms). We have here 5ms safety margin because pci_udelay is
-> +	 * not precise.
-> +	 */
-> +	pci_udelay(5000);
-> +
-> +	/* De-assert Secondary Bus Reset */
-> +	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
-> +	write_pci_config_16(bus, slot, func, PCI_BRIDGE_CONTROL, ctrl);
-> +}
-> +
-> +static void __init save_state(unsigned bus, unsigned slot, unsigned func,
-> +		struct pcie_dev *dev)
-> +{
-> +	int i;
-> +	int pcie, flags, pcie_type;
-> +	struct save_config *save;
-> +
-> +	pcie = dev->cap;
-> +	flags = dev->flags;
-> +	pcie_type = (flags & PCI_EXP_FLAGS_TYPE) >> 4;
-> +	save = &dev->save;
-> +
-> +	printk(KERN_INFO "pci 0000:%02x:%02x.%d save state\n", bus, slot, func);
-> +
-> +	for (i = 0; i < 16; i++)
-> +		save->pci[i] = read_pci_config(bus, slot, func, i * 4);
-> +	i = 0;
-> +	if (pcie_cap_has_devctl(pcie_type, flags))
-> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
-> +						      pcie + PCI_EXP_DEVCTL);
-> +	if (pcie_cap_has_lnkctl(pcie_type, flags))
-> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
-> +						      pcie + PCI_EXP_LNKCTL);
-> +	if (pcie_cap_has_sltctl(pcie_type, flags))
-> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
-> +						      pcie + PCI_EXP_SLTCTL);
-> +	if (pcie_cap_has_rtctl(pcie_type, flags))
-> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
-> +						      pcie + PCI_EXP_RTCTL);
-> +
-> +	if ((flags & PCI_EXP_FLAGS_VERS) >= 2) {
-> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
-> +						      pcie + PCI_EXP_DEVCTL2);
-> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
-> +						      pcie + PCI_EXP_LNKCTL2);
-> +		save->pcie[i++] = read_pci_config_16(bus, slot, func,
-> +						      pcie + PCI_EXP_SLTCTL2);
-> +	}
-> +}
-> +
-> +static void __init restore_state(unsigned bus, unsigned slot, unsigned func,
-> +		struct pcie_dev *dev)
-> +{
-> +	int i = 0;
-> +	int pcie, flags, pcie_type;
-> +	struct save_config *save;
-> +
-> +	pcie = dev->cap;
-> +	flags = dev->flags;
-> +	pcie_type = (flags & PCI_EXP_FLAGS_TYPE) >> 4;
-> +	save = &dev->save;
-> +
-> +	printk(KERN_INFO "pci 0000:%02x:%02x.%d restore state\n",
-> +	       bus, slot, func);
-> +
-> +	if (pcie_cap_has_devctl(pcie_type, flags))
-> +		write_pci_config_16(bus, slot, func,
-> +				    pcie + PCI_EXP_DEVCTL, save->pcie[i++]);
-> +	if (pcie_cap_has_lnkctl(pcie_type, flags))
-> +		write_pci_config_16(bus, slot, func,
-> +				    pcie + PCI_EXP_LNKCTL, save->pcie[i++]);
-> +	if (pcie_cap_has_sltctl(pcie_type, flags))
-> +		write_pci_config_16(bus, slot, func,
-> +				    pcie + PCI_EXP_SLTCTL, save->pcie[i++]);
-> +	if (pcie_cap_has_rtctl(pcie_type, flags))
-> +		write_pci_config_16(bus, slot, func,
-> +				    pcie + PCI_EXP_RTCTL, save->pcie[i++]);
-> +
-> +	if ((flags & PCI_EXP_FLAGS_VERS) >= 2) {
-> +		write_pci_config_16(bus, slot, func,
-> +				    pcie + PCI_EXP_DEVCTL2, save->pcie[i++]);
-> +		write_pci_config_16(bus, slot, func,
-> +				    pcie + PCI_EXP_LNKCTL2, save->pcie[i++]);
-> +		write_pci_config_16(bus, slot, func,
-> +				    pcie + PCI_EXP_SLTCTL2, save->pcie[i++]);
-> +	}
-> +
-> +	for (i = 15; i >= 0; i--)
-> +		write_pci_config(bus, slot, func, i * 4, save->pci[i]);
-> +}
-> +
-> +static void __init find_pcie_device(unsigned bus, unsigned slot, unsigned func)
-> +{
-> +	int f, count;
-> +	int pcie, pcie_type;
-> +	u8 type;
-> +	u16 vendor, flags;
-> +	u32 class;
-> +	int secondary;
-> +	struct pcie_port *port;
-> +	int pcie_cap[PCI_MAX_FUNCTIONS];
-> +	int pcie_flags[PCI_MAX_FUNCTIONS];
-> +
-> +	pcie = early_pci_find_capability(bus, slot, func, PCI_CAP_ID_EXP);
-> +	if (!pcie)
-> +		return;
-> +
-> +	flags = read_pci_config_16(bus, slot, func, pcie + PCI_EXP_FLAGS);
-> +	pcie_type = (flags & PCI_EXP_FLAGS_TYPE) >> 4;
-> +	if ((pcie_type != PCI_EXP_TYPE_ROOT_PORT) &&
-> +	    (pcie_type != PCI_EXP_TYPE_DOWNSTREAM))
-> +		return;
-> +
-> +	type = read_pci_config_byte(bus, slot, func, PCI_HEADER_TYPE);
-> +	if ((type & 0x7f) != PCI_HEADER_TYPE_BRIDGE)
-> +		return;
-> +	secondary = read_pci_config_byte(bus, slot, func, PCI_SECONDARY_BUS);
-> +
-> +	memset(pcie_cap, 0, sizeof(pcie_cap));
-> +	memset(pcie_flags, 0, sizeof(pcie_flags));
-> +	for (count = 0, f = 0; f < PCI_MAX_FUNCTIONS; f++) {
-> +		vendor = read_pci_config_16(secondary, 0, f, PCI_VENDOR_ID);
-> +		if (vendor == 0xffff)
-> +			continue;
-> +
-> +		pcie = early_pci_find_capability(secondary, 0, f,
-> +				PCI_CAP_ID_EXP);
-> +		if (!pcie)
-> +			continue;
-> +
-> +		flags = read_pci_config_16(secondary, 0, f,
-> +				pcie + PCI_EXP_FLAGS);
-> +		pcie_type = (flags & PCI_EXP_FLAGS_TYPE) >> 4;
-> +		if ((pcie_type == PCI_EXP_TYPE_UPSTREAM) ||
-> +		    (pcie_type == PCI_EXP_TYPE_PCI_BRIDGE))
-> +			/* Don't reset switch, bridge */
-> +			return;
-> +
-> +		class = read_pci_config(secondary, 0, f, PCI_CLASS_REVISION);
-> +		if ((class >> 24) == PCI_BASE_CLASS_DISPLAY)
-> +			/* Don't reset VGA device */
-> +			return;
-> +
-> +		count++;
-> +		pcie_cap[f] = pcie;
-> +		pcie_flags[f] = flags;
-> +	}
-> +
-> +	if (!count)
-> +		return;
-> +
-> +	port = (struct pcie_port *)alloc_bootmem(sizeof(struct pcie_port));
-> +	if (port == NULL) {
-> +		printk(KERN_ERR "pci 0000:%02x:%02x.%d alloc_bootmem failed\n",
-> +		       bus, slot, func);
-> +		return;
-> +	}
-> +	memset(port, 0, sizeof(*port));
-> +	port->bus = bus;
-> +	port->slot = slot;
-> +	port->func = func;
-> +	port->secondary = secondary;
-> +	for (f = 0; f < PCI_MAX_FUNCTIONS; f++) {
-> +		if (pcie_cap[f] != 0) {
-> +			port->child[f].cap = pcie_cap[f];
-> +			port->child[f].flags = pcie_flags[f];
-> +			save_state(secondary, 0, f, &port->child[f]);
-> +		}
-> +	}
-> +	list_add_tail(&port->dev, &device_list);
-> +}
-> +
-> +void __init early_reset_pcie_devices(void)
-> +{
-> +	unsigned bus, slot, func;
-> +	struct pcie_port *port, *tmp;
-> +
-> +	if (!early_pci_allowed() || !reset_devices)
-> +		return;
-> +
-> +	/* Find PCIe port and save config registers of its downstream devices */
-> +	for (bus = 0; bus < 256; bus++) {
-> +		for (slot = 0; slot < 32; slot++) {
-> +			for (func = 0; func < PCI_MAX_FUNCTIONS; func++) {
-> +				u16 vendor;
-> +				u8 type;
-> +				vendor = read_pci_config_16(bus, slot, func,
-> +						PCI_VENDOR_ID);
-> +
-> +				if (vendor == 0xffff)
-> +					continue;
-> +
-> +				find_pcie_device(bus, slot, func);
-> +
-> +				if (func == 0) {
-> +					type = read_pci_config_byte(bus, slot,
-> +								    func,
-> +							       PCI_HEADER_TYPE);
-> +					if (!(type & 0x80))
-> +						break;
-> +				}
-> +			}
-> +		}
-> +	}
-> +
-> +	if (list_empty(&device_list))
-> +		return;
-> +
-> +	/* Do bus reset */
-> +	list_for_each_entry(port, &device_list, dev)
-> +		do_reset(port->bus, port->slot, port->func);
-> +
-> +	/*
-> +	 * According to PCIe spec, software must wait a minimum of 100 ms
-> +	 * before sending a configuration request. We have 500ms safety margin
-> +	 * here.
-> +	 */
-> +	pci_udelay(500000);
-> +
-> +	/* Restore config registers and free memory */
-> +	list_for_each_entry_safe(port, tmp, &device_list, dev) {
-> +		for (func = 0; func < PCI_MAX_FUNCTIONS; func++)
-> +			if (port->child[func].cap)
-> +				restore_state(port->secondary, 0, func,
-> +					      &port->child[func]);
-> +		free_bootmem(__pa(port), sizeof(*port));
-> +	}
-> +}
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index ee21795..eca3231 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -35,6 +35,8 @@
->  /* Include the ID list */
->  #include <linux/pci_ids.h>
->  
-> +#define PCI_MAX_FUNCTIONS 8
-> +
->  /* pci_slot represents a physical slot */
->  struct pci_slot {
->  	struct pci_bus *bus;		/* The bus this slot is on */
-> diff --git a/init/main.c b/init/main.c
-> index 9cf77ab..0eb7430 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -144,10 +144,10 @@ EXPORT_SYMBOL(reset_devices);
->  static int __init set_reset_devices(char *str)
->  {
->  	reset_devices = 1;
-> -	return 1;
-> +	return 0;
->  }
->  
-> -__setup("reset_devices", set_reset_devices);
-> +early_param("reset_devices", set_reset_devices);
->  
->  static const char * argv_init[MAX_INIT_ARGS+2] = { "init", NULL, };
->  const char * envp_init[MAX_INIT_ENVS+2] = { "HOME=/", "TERM=linux", NULL, };
+> As I said, 37b23e05 has made pagefault killable by changing
+> uninterruptible sleeping to killable sleeping. So A can be woke up to
+> exit successfully and free the memory which can in turn help B pass
+> memcg charging period.
 > 
+> (By the way, it seems commit 37b23e05 and 7d9fdac need to be
+
+79dfdaccd1d5 you mean, right? That one just helps when there are too
+many tasks trashing oom killer so it is not related to what you are
+trying to achieve. Besides that make sure you take 23751be0 if you
+take it.
+
+> backported to --stable tree to deliver RHEL users. ;-) )
+
+I am not sure the first one qualifies the stable tree inclusion as it is
+a feature.
+
+> >>Then A can not exit successfully to free the memory and both of them
+> >>can not moving on.
+> >>Indeed, we should dig into these locks to find the solution and
+> >>in fact the 37b23e05 (x86, mm: make pagefault killable) and
+> >>7d9fdac(Memcg: make oom_lock 0 and 1 based other than counter) have
+> >>already solved the problem, but if oom_killing_allocating_task is
+> >>memcg aware, enabling this suicide oom behavior will be a simpler
+> >>workaround. What's more, enabling the sysctl can avoid other potential
+> >>oom problems to some extent.
+> >As I said, I am not against this but I really want to see a valid use
+> >case first. So far I haven't seen any because what you mention above is
+> >a clear bug which should be fixed. I can imagine the huge number of
+> >tasks in the group could be a problem as well but I would like to see
+> >what are those problems first.
+> >
 > 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+> In view of consistent with global oom and performance benefit, I suggest
+> we may as well open it in memcg oom as there's no obvious harm.
 
-This looks good. Good catch on access to downstream devices after reset.
-It is certainly safer to save all config registers before any resets.
+I am not sure about "no obvious harm" part. The policy could be
+different in different groups e.g. and the global knob could be really
+misleading. But the question is. Is it worth having this per group? To
+be honest, I do not like the global knob either and I am not entirely
+keen on spreading it out into memcg unless there is a real use case for
+it.
 
-One thing I am concerned about is would a reset affect SR-IOV extended
-capability registers. If so, should save_state() save those registers as
-well? Alex Williamson (cc'd) can possibly comment on that aspect.
+> As refer to the bug I mentioned, obviously the key solution is the above two
+> patchset, but considing other *potential* memcg oom bugs, the sysctl may
+> be a role of temporary workaround to some extent... but it's just a
+> workaround.
 
---
-Khalid
-
+We shouldn't add something like that just to workaround obvious bugs.
+-- 
+Michal Hocko
+SUSE Labs
