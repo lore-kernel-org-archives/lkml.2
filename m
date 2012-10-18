@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895Ab2JRP2U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 11:28:20 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:65321 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756443Ab2JRP2R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 11:28:17 -0400
+	id S1756599Ab2JRP27 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 11:28:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45903 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753341Ab2JRP25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 11:28:57 -0400
+Message-ID: <50802030.8070107@zytor.com>
+Date: Thu, 18 Oct 2012 08:28:48 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-In-Reply-To: <1350571624-4666-1-git-send-email-peter.senna@gmail.com>
-References: <5075AB4F.3030709@samsung.com>
-	<1350571624-4666-1-git-send-email-peter.senna@gmail.com>
-Date: Thu, 18 Oct 2012 12:28:15 -0300
-Message-ID: <CALF0-+WPZ7b83Mg=b1KirHt39QE4fuO4MDGhNpQNxMY09O87HA@mail.gmail.com>
-Subject: Re: [PATCH V2] drivers/media/v4l2-core/videobuf2-core.c: fix error
- return code
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: pawel@osciak.com, m.szyprowski@samsung.com, kyungmin.park@samsung.com,
-        mchehab@infradead.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Konrad Wilk <konrad.wilk@oracle.com>, linux-acpi@vger.kernel.org,
+        x86@kernel.org, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, lenb@kernel.org
+Subject: Re: [Xen-devel] Is: axe read_tscp pvops call. Was: Re: [RFC] ACPI
+ S3 and Xen (suprisingly small\!).
+References: <1350481786-4969-1-git-send-email-konrad.wilk@oracle.com> <507ED6C0.4020503@zytor.com> <20121017161036.GA10691@phenom.dumpdata.com> <507EE1C3.7070300@zytor.com> <20121017165452.GA22740@phenom.dumpdata.com> <507EEC53.1010309@zytor.com> <84b3cbf9-7c84-4d7e-a2d7-46b0d1cc5975@default>
+In-Reply-To: <84b3cbf9-7c84-4d7e-a2d7-46b0d1cc5975@default>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 11:47 AM, Peter Senna Tschudin
-<peter.senna@gmail.com> wrote:
-> This patch fixes a NULL pointer dereference bug at __vb2_init_fileio().
-> The NULL pointer deference happens at videobuf2-core.c:
+On 10/18/2012 08:22 AM, Dan Magenheimer wrote:
 >
-> static size_t __vb2_perform_fileio(struct vb2_queue *q, char __user *data, size_t count,
->                 loff_t *ppos, int nonblock, int read)
-> {
-> ...
->         if (!q->fileio) {
->                 ret = __vb2_init_fileio(q, read);
->                 dprintk(3, "file io: vb2_init_fileio result: %d\n", ret);
->                 if (ret)
->                         return ret;
->         }
->         fileio = q->fileio; // NULL pointer deference here
-> ...
-> }
+> It's a bit more complicated than that.  The problem is that if
+> any patch is ever submitted to the kernel that uses the rdtscp
+> instruction *in kernel space* in some clever way, the resultant
+> kernel may not behave as expected (depending on how the instruction
+> is used) on a 32-bit[1] PV kernel running on Xen, up to and including
+> the possibility of data corruption.
 >
-> It was tested with vivi driver and qv4l2 for selecting read() as capture method.
-> The OOPS happened when I've artificially forced the error by commenting the line:
->         if (fileio->bufs[i].vaddr == NULL)
+> I don't know how one would implement it, but it's like a
+> BUILD_BUG_ON is needed if any kernel developer uses rdtscp
+> (one that never gets invoked by vdso code), that prints:
+>
+> "WARNING: Please do not use this instruction in the kernel
+> without notifying the Xen maintainer as there is a possibility
+> it may behave unpredictably in some Xen environments.
+> See Documentation/.../xen_pv_limitations for detail."
+>
+> The other virtualization-unsafe instructions may have similar
+> problems.
 >
 
-... but if you manually changed the original source, how
-can this be a real BUG?
+Good frakking God.  This is the sort of things that makes me think that 
+Xen PV should just be thrown out of the kernel once and for all.
 
-Or am I missing something here ?
+Do you notice that the document you just claimed doesn't even exist at 
+this point, never mind being somehow enforced?  In other word, there is 
+ABSOLUTELY NO WAY a mainline kernel developer can have any idea what 
+amount of violence Xen does to the architecture that it is parasiting on.
 
-    Ezequiel
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
