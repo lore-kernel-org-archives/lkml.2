@@ -1,121 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091Ab2JRLTZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 07:19:25 -0400
-Received: from smtp-out-124.synserver.de ([212.40.185.124]:1280 "EHLO
-	smtp-out-124.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755807Ab2JRLTY (ORCPT
+	id S1756105Ab2JRLTl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 07:19:41 -0400
+Received: from mga09.intel.com ([134.134.136.24]:45887 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753027Ab2JRLTk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 07:19:24 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 32037
-Message-ID: <507FE604.8070404@metafoo.de>
-Date: Thu, 18 Oct 2012 13:20:36 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120922 Icedove/10.0.7
-MIME-Version: 1.0
-To: "Kim, Milo" <Milo.Kim@ti.com>
-CC: "cbou@mail.ru" <cbou@mail.ru>,
+	Thu, 18 Oct 2012 07:19:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,606,1344236400"; 
+   d="scan'208";a="229182392"
+From: "Tc, Jenny" <jenny.tc@intel.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>,
         Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Jonathan Cameron <jic23@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] lp8788-charger: fix wrong ADC conversion
-References: <A874F61F95741C4A9BA573A70FE3998F64178FA7@DQHE02.ent.ti.com>
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F64178FA7@DQHE02.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+CC: "David Rajamanickam, Ajay Thomas" 
+	<ajay.thomas.david.rajamanickam@intel.com>,
+        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Subject: RE: [PATCH V2] power_supply : Introduce battery identification
+ framework
+Thread-Topic: [PATCH V2] power_supply : Introduce battery identification
+ framework
+Thread-Index: AQHNqGpZRYNIavanGkeJFGVUBtfgmZe+86/g
+Date: Thu, 18 Oct 2012 11:19:23 +0000
+Message-ID: <20ADAB092842284E95860F279283C5643BCC3F@BGSMSX101.gar.corp.intel.com>
+References: <1350060188-23936-1-git-send-email-jenny.tc@intel.com>
+In-Reply-To: <1350060188-23936-1-git-send-email-jenny.tc@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Anton,
 
-On 10/18/2012 08:11 AM, Kim, Milo wrote:
->  To get the battery voltage and temperature, IIO ADC functions are used.
->  LP8788 ADC driver provides RAW and SCALE channel information.
->  Both RAW with SCALE values are used for the ADC calculation.
->  The scale is micro unit, additional conversions are required in each case.
->  This patch fixes wrong ADC result.
+Please ignore this patch. I submitted this as part of charging framework.
+
+-jtc
+
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Jenny TC
+> Sent: Friday, October 12, 2012 10:13 PM
+> To: Anton Vorontsov; Anton Vorontsov; dwmw2@infradead.org; linux-
+> kernel@vger.kernel.org
+> Cc: Tc, Jenny; David Rajamanickam, Ajay Thomas; Pallala, Ramakrishna
+> Subject: [PATCH V2] power_supply : Introduce battery identification
+> framework
 > 
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> This patch introduces generic battid framework. Different battid drivers
+> sitting on different linux kernel subsystem (1wire, I2C, SFI etc) can interface
+> with the power supply susbsytem using the APIs exposed in the power
+> supply usbsystem. The consumers (charger driver/battery driver/power
+> management drivers) can register for notification from the battery id drivers
+> using the APIs from this framework
+> 
+> Signed-off-by: Jenny TC <jenny.tc@intel.com>
+> Signed-off-by: adavidra <ajay.thomas.david.rajamanickam@intel.com>
 > ---
->  drivers/power/lp8788-charger.c |   18 ++++++++++++++++--
->  1 file changed, 16 insertions(+), 2 deletions(-)
+> V1: Submitted the initialcode
+> V2:
+>    Added file headers
 > 
-> diff --git a/drivers/power/lp8788-charger.c b/drivers/power/lp8788-charger.c
-> index 02fc9ab..3c739e6 100644
-> --- a/drivers/power/lp8788-charger.c
-> +++ b/drivers/power/lp8788-charger.c
-> @@ -239,19 +239,26 @@ static int lp8788_get_vbatt_adc(struct lp8788_charger *pchg,
->  				unsigned int *result)
->  {
->  	struct iio_channel *channel = pchg->chan[LP8788_VBATT];
-> +	int raw;
->  	int scaleint;
->  	int scalepart;
->  	int ret;
-> +	unsigned long tmp;
->  
->  	if (!channel)
->  		return -EINVAL;
->  
-> +	ret = iio_read_channel_raw(channel, &raw);
-> +	if (ret != IIO_VAL_INT)
-> +		return -EINVAL;
+>  drivers/power/Kconfig            |    8 ++++
+>  drivers/power/Makefile           |    1 +
+>  drivers/power/battery_id.c       |   94
+> ++++++++++++++++++++++++++++++++++++++
+>  include/linux/power/battery_id.h |   50 ++++++++++++++++++++
+>  4 files changed, 153 insertions(+)
+>  create mode 100644 drivers/power/battery_id.c  create mode 100644
+> include/linux/power/battery_id.h
+> 
+> diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig index
+> 49a8939..74b297d 100644
+> --- a/drivers/power/Kconfig
+> +++ b/drivers/power/Kconfig
+> @@ -8,6 +8,14 @@ menuconfig POWER_SUPPLY
+> 
+>  if POWER_SUPPLY
+> 
+> +config POWER_SUPPLY_BATTID
+> +	bool "Power Supply Battery Identification Framework"
+> +	help
+> +	 Say Y here to enable the power supply battery idnetification
+> +	 framework. The framework would allow different battery
+> identification
+> +	 drivers to interface with power supply subsystem. Also it allows
+> consumer
+> +	 drivers to register for notification from the power_supply
+> subsystem.
 > +
->  	ret = iio_read_channel_scale(channel, &scaleint, &scalepart);
->  	if (ret != IIO_VAL_INT_PLUS_MICRO)
->  		return -EINVAL;
->  
->  	/* unit: mV */
-> -	*result = (scaleint + scalepart * 1000000) / 1000;
-> +	tmp = raw * scaleint + div_u64(raw * scalepart, 1000000L);
-> +	*result = (unsigned int)tmp;
-
-
-We now have a function in the IIO core which does the sampling + conversion
-in one step: iio_read_channel_processed. This basically allows you to reduce
-this function to
-
-	return iio_read_channel_processed(channel, result);
-
-I'd also make the result parameter of lp8788_get_vbatt_adc signed, since
-both power_supply_propval.intval and iio_read_channel_processed use a signed
-int.
-
->  
->  	return 0;
->  }
-> @@ -304,19 +311,26 @@ static int lp8788_get_battery_temperature(struct lp8788_charger *pchg,
->  				union power_supply_propval *val)
->  {
->  	struct iio_channel *channel = pchg->chan[LP8788_BATT_TEMP];
-> +	int raw;
->  	int scaleint;
->  	int scalepart;
->  	int ret;
-> +	unsigned long tmp;
->  
->  	if (!channel)
->  		return -EINVAL;
->  
-> +	ret = iio_read_channel_raw(channel, &raw);
-> +	if (ret != IIO_VAL_INT)
-> +		return -EINVAL;
+>  config POWER_SUPPLY_DEBUG
+>  	bool "Power supply debug"
+>  	help
+> diff --git a/drivers/power/Makefile b/drivers/power/Makefile index
+> b949cf8..6a63f45 100644
+> --- a/drivers/power/Makefile
+> +++ b/drivers/power/Makefile
+> @@ -3,6 +3,7 @@ ccflags-$(CONFIG_POWER_SUPPLY_DEBUG) := -DDEBUG
+>  power_supply-y				:= power_supply_core.o
+>  power_supply-$(CONFIG_SYSFS)		+= power_supply_sysfs.o
+>  power_supply-$(CONFIG_LEDS_TRIGGERS)	+= power_supply_leds.o
+> +power_supply-$(CONFIG_POWER_SUPPLY_BATTID) += battery_id.o
+> 
+>  obj-$(CONFIG_POWER_SUPPLY)	+= power_supply.o
+>  obj-$(CONFIG_GENERIC_ADC_BATTERY)	+= generic-adc-battery.o
+> diff --git a/drivers/power/battery_id.c b/drivers/power/battery_id.c new file
+> mode 100644 index 0000000..f6160b6
+> --- /dev/null
+> +++ b/drivers/power/battery_id.c
+> @@ -0,0 +1,94 @@
+> +/*
+> + * battery_id.c - Power supply battery identification framework
+> + *
+> + * Copyright (C) 2012 Intel Corporation
+> + *
+> + *
+> +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> ~~~~~~~~~~~~~~
+> +~~~
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; version 2 of the License.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+> GNU
+> + * General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> +along
+> + * with this program; if not, write to the Free Software Foundation,
+> +Inc.,
+> + * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+> + *
+> + *
+> +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> ~~~~~~~~~~~~~~
+> +~~~
+> + * Author: Jenny TC <jenny.tc@intel.com>
+> + * Author: David Rajamanickam, Ajay Thomas
+> + *		<ajay.thomas.david.rajamanickam@intel.com>
+> + */
 > +
->  	ret = iio_read_channel_scale(channel, &scaleint, &scalepart);
->  	if (ret != IIO_VAL_INT_PLUS_MICRO)
->  		return -EINVAL;
->  
->  	/* unit: 0.1 'C */
-> -	val->intval = (scaleint + scalepart * 1000000) / 100;
-> +	tmp = raw * scaleint + div_u64(raw * scalepart, 1000000L);
-> +	val->intval = (unsigned int)tmp * 10;
->  
-
-Same here
-
->  	return 0;
->  }
-
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/io.h>
+> +#include <linux/err.h>
+> +#include <linux/notifier.h>
+> +#include <linux/power/battery_id.h>
+> +
+> +ATOMIC_NOTIFIER_HEAD(batt_id_notifier);
+> +
+> +static struct ps_batt_chg_prof *batt_property; static int batt_status;
+> +
+> +int batt_id_reg_notifier(struct notifier_block *nb) {
+> +	return atomic_notifier_chain_register(&batt_id_notifier, nb); }
+> +EXPORT_SYMBOL_GPL(batt_id_reg_notifier);
+> +
+> +void batt_id_unreg_notifier(struct notifier_block *nb) {
+> +	atomic_notifier_chain_unregister(&batt_id_notifier, nb); }
+> +EXPORT_SYMBOL_GPL(batt_id_unreg_notifier);
+> +
+> +
+> +/**
+> + * battery_prop_changed - Update properties when  battery connection
+> status
+> + *                        changes
+> + * @battery_conn_stat : The current connection status of battery
+> + * @batt_prop : Address of the ps_batt_chg_prof structure with the
+> updated
+> + *              values passed from the calling function
+> + *
+> + * Whenever the battery connection status changes this function will be
+> +called
+> + * to indicate a change in the status and to update the status and
+> +value of
+> + * properties
+> + */
+> +void battery_prop_changed(int battery_conn_stat,
+> +			struct ps_batt_chg_prof *batt_prop)
+> +{
+> +	if (batt_status != battery_conn_stat) {
+> +		if (battery_conn_stat ==
+> POWER_SUPPLY_BATTERY_INSERTED)
+> +			batt_property = batt_prop;
+> +		else
+> +			batt_property = NULL;
+> +
+> +		batt_status = battery_conn_stat;
+> +	}
+> +
+> +	atomic_notifier_call_chain(&batt_id_notifier,
+> +			0, &(batt_property));
+> +
+> +}
+> +EXPORT_SYMBOL_GPL(battery_prop_changed);
+> +
+> +/**
+> + * get_batt_prop - Get the battery connection status and updated
+> +properties
+> + * @batt_prop : battery properties structure copied to this address  */
+> +int get_batt_prop(struct ps_batt_chg_prof *batt_prop) {
+> +	if (batt_property)
+> +		memcpy(batt_prop, batt_property,
+> +			sizeof(struct ps_batt_chg_prof));
+> +	else
+> +		return -ENOMEM;
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(get_batt_prop);
+> diff --git a/include/linux/power/battery_id.h
+> b/include/linux/power/battery_id.h
+> new file mode 100644
+> index 0000000..9a4832e
+> --- /dev/null
+> +++ b/include/linux/power/battery_id.h
+> @@ -0,0 +1,50 @@
+> +/*
+> + * battery_id.h - Power supply battery identification framework header
+> +file
+> + *
+> + * Copyright (C) 2012 Intel Corporation
+> + *
+> + *
+> +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> ~~~~~~~~~~~~~~
+> +~~~
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; version 2 of the License.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+> GNU
+> + * General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> +along
+> + * with this program; if not, write to the Free Software Foundation,
+> +Inc.,
+> + * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+> + *
+> + *
+> +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> ~~~~~~~~~~~~~~
+> +~~~
+> + * Author: Jenny TC <jenny.tc@intel.com>
+> + * Author: David Rajamanickam, Ajay Thomas
+> + *		<ajay.thomas.david.rajamanickam@intel.com>
+> + */
+> +
+> +#ifndef __BATTERY_ID_H__
+> +
+> +#define __BATTERY_ID_H__
+> +
+> +enum {
+> +	POWER_SUPPLY_BATTERY_REMOVED = 0,
+> +	POWER_SUPPLY_BATTERY_INSERTED,
+> +};
+> +
+> +/* charging profile structure definition */ struct ps_batt_chg_prof {
+> +	enum batt_chrg_prof_type chrg_prof_type;
+> +	void *batt_prof;
+> +};
+> +
+> +/*For notification during battery change event*/
+> +extern struct atomic_notifier_head    batt_id_notifier;
+> +
+> +extern void battery_prop_changed(int battery_conn_stat,
+> +				struct ps_batt_chg_prof *batt_prop); extern
+> int
+> +get_batt_prop(struct ps_batt_chg_prof *batt_prop); extern int
+> +batt_id_reg_notifier(struct notifier_block *nb); extern void
+> +batt_id_unreg_notifier(struct notifier_block *nb); #endif
+> --
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the
+> body of a message to majordomo@vger.kernel.org More majordomo info at
+> http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
