@@ -1,109 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab2JRIQU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 04:16:20 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:47777 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496Ab2JRIQQ convert rfc822-to-8bit (ORCPT
+	id S1753539Ab2JRIV7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 04:21:59 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63905 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454Ab2JRIV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 04:16:16 -0400
-X-Auth-Info: 5tVyBKQGt0ivHA/m82XpuLOP64N7i6qYo7dGcviuDIo=
-From: Marek Vasut <marex@denx.de>
-To: Huang Shijie <b32955@freescale.com>
-Subject: Re: [PATCH] dma: add new DMA control commands
-Date: Thu, 18 Oct 2012 10:16:06 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Vinod Koul <vinod.koul@linux.intel.com>, djbw@fb.com, khali@linux-fr.org,
-        ben-linux@fluff.org, w.sang@pengutronix.de, cjb@laptop.org,
-        dwmw2@infradead.org, lrg@ti.com, broonie@opensource.wolfsonmicro.com,
-        perex@perex.cz, tiwai@suse.de, shawn.guo@linaro.org,
-        artem.bityutskiy@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-mtd@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        Huang Shijie <shijie8@gmail.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        artem.bityutskiy@linux.intel.com
-References: <1350538335-29026-1-git-send-email-b32955@freescale.com> <201210180914.58527.marex@denx.de> <507FB495.7050104@freescale.com>
-In-Reply-To: <507FB495.7050104@freescale.com>
+	Thu, 18 Oct 2012 04:21:57 -0400
+Message-ID: <507FBC20.50004@linaro.org>
+Date: Thu, 18 Oct 2012 10:21:52 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201210181016.06782.marex@denx.de>
+To: Julius Werner <jwerner@chromium.org>
+CC: linux-kernel@vger.kernel.org, len.brown@intel.com, khilman@ti.com,
+        rjw@sisk.pl, deepthi@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        g.trinabh@gmail.com, snanda@chromium.org,
+        Lists Linaro-dev <linaro-dev@lists.linaro.org>
+Subject: Re: [PATCH] cpuidle: reinitialize power_usage values when adding/removing
+ C-states
+References: <1350427184-11684-1-git-send-email-jwerner@chromium.org> <507E88F3.8070403@linaro.org> <CAODwPW8CfgLQS+933ZQSueiat3QrAtRZh98h3iqtN8vxBOy=qg@mail.gmail.com>
+In-Reply-To: <CAODwPW8CfgLQS+933ZQSueiat3QrAtRZh98h3iqtN8vxBOy=qg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Huang Shijie,
-
-> 于 2012年10月18日 15:14, Marek Vasut 写道:
-> > Dear Huang Shijie,
-> > 
-> > Why such massive CC ?
-> > 
-> >> 于 2012年10月18日 14:18, Vinod Koul 写道:
-> >>> Why cant you do start (prepare clock etc) when you submit the
-> >>> descriptor to dmaengine. Can be done in tx_submit callback.
-> >>> Similarly remove the clock when dma transaction gets completed.
-> >> 
-> >> I ever thought this method too.
-> >> 
-> >> But it will become low efficient in the following case:
-> >>     Assuming the gpmi-nand driver has to read out 1024 pages in one
-> >> 
-> >> _SINGLE_ read operation.
-> >> The gpmi-nand will submit the descriptor to dmaengine per page.
-> > 
-> > It will? Then GPMI NAND is flat our broken ... again.
+On 10/17/2012 08:43 PM, Julius Werner wrote:
+>> This is specific to the acpi and should be handled in the
+>> processor_idle.c file instead of the cpuidle core code.
+>>
+>> Could be the function 'acpi_processor_cst_has_changed' the right place
+>> to set a dummy power value for the power in the new C-state ?
 > 
-> yes.
-> 
-> Please read the NAND chip spec about the comand READ PAGE(00h-30h) and
-> the code
-> nand_do_read_ops(). The nand chip limits us only read one page out one
-> time. So the driver will submit the descriptor to dmaengine per page.
+> Thanks for your feedback. I think it wouldn't be wise to split the
+> dummy power value logic over two places, but I could submit a patch
+> that makes set_power_states globally accessible and calls it from
+> acpi_processor_cst_has_changed instead.
 
-So we can't stream data from the chip? About time to adjust the MTD framework to 
-allow that. Maybe implement a command queue?
+No please, do not export this function. That will add more confusion on
+the acpi code and more generally in the cpuidle core code.
 
-> >> So with
-> >> your method,
-> >> the system will repeat the enable/disable dma clock 1024 time.
-> > 
-> > Yes, it is the driver that's wrong.
-> 
-> not the driver.
-> 
-> >> At every
-> >> enable/disable dma clock,
-> >> the system has to enable the clock chain and it's parents ...
-> >> 
-> >> But with this patch, we only need to enable/disable dma clock one time,
-> >> just at we select the nand chip.
-> > 
-> > You are fixing a driver problem at a framework level, wrong.
-> > 
-> > So, check how the MXS SPI driver handles descriptor chaining. Indeed, the
-> > Sigmatel screwed the DMA stuff good. But if you analyze the SPI driver,
-> > you'll notice a few important points that might come handy when you fix
-> > the GPMI NAND driver properly.
-> > 
-> > The direction to take here is:
-> > 1) Implement DMA chaining into the GPMI NAND driver
-> 
-> How can i implement the DMA chain if the nand chip READ-PAGE command
-> gives us the one page limit?
+IIUC, a new state is inserted/deleted and we will set the entire array
+of states to setup the power.
 
-This smells like a time to extend the MTD api ?
+You have the acpi_processor_cst_has_changed function calling the
+acpi_processor_setup_cpuidle_states function. It seems to be a good
+candidate to setup the power of the new state. All the states are filled
+again AFAICS under the lock.
 
-> thanks
-> Huang Shijie
-> 
-> > 2) You might need to do one PIO transfer to reconfigure the IP registers
-> > between each segment of the DMA chain (just as MXS SPI does it)
-> > 3) You might run out of DMA descriptors when doing too long chains -- so
-> > you might need to fix that part of the mxs DMA driver.
+> However, I do not think this should really be ACPI specific. It
+> applies to any cpuidle driver that wants to change its idle states at
+> runtime. Currently only the ACPI one does, but the future might bring
+> others that would run into the same problem. I also think that
+> set_power_states fits much better into cpuidle_enable_device
+> conceptually anyway (right next to poll_idle_init which also does
+> state initialization).
 
-Best regards,
-Marek Vasut
+The states are now part of the cpuidle driver and the set_power_states
+should remain to this file. The dynamic C-states brought some complexity
+in the acpi code and honestly this code is very confusing.
+
+Maybe one day, that would make sense but until then I am in favor of
+keeping the arch specific bits in the drivers, especially when they are
+*hum* so "complex".
+
+poll_idle_init looks hackish for me and probably move it to the arch
+would also make sense.
+
+Thanks
+  -- Daniel
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
