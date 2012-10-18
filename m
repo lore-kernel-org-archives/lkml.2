@@ -1,100 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757206Ab2JRQPD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 12:15:03 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34562 "EHLO bear.ext.ti.com"
+	id S932191Ab2JRQRF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 12:17:05 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40508 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756206Ab2JRQPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 12:15:01 -0400
-Message-ID: <50802B00.6090907@ti.com>
-Date: Thu, 18 Oct 2012 11:14:56 -0500
-From: Jon Hunter <jon-hunter@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1753324Ab2JRQRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 12:17:00 -0400
+Date: Thu, 18 Oct 2012 18:17:00 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Konrad Wilk <konrad.wilk@oracle.com>,
+        linux-acpi@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        lenb@kernel.org
+Subject: Re: [Xen-devel] Is: axe read_tscp pvops call. Was: Re: [RFC] ACPI S3
+ and Xen (suprisingly small\!).
+Message-ID: <20121018161659.GA20354@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Dan Magenheimer <dan.magenheimer@oracle.com>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Konrad Wilk <konrad.wilk@oracle.com>, linux-acpi@vger.kernel.org,
+	x86@kernel.org, xen-devel@lists.xensource.com,
+	linux-kernel@vger.kernel.org, lenb@kernel.org
+References: <1350481786-4969-1-git-send-email-konrad.wilk@oracle.com>
+ <507ED6C0.4020503@zytor.com>
+ <20121017161036.GA10691@phenom.dumpdata.com>
+ <507EE1C3.7070300@zytor.com>
+ <20121017165452.GA22740@phenom.dumpdata.com>
+ <507EEC53.1010309@zytor.com>
+ <84b3cbf9-7c84-4d7e-a2d7-46b0d1cc5975@default>
+ <50802030.8070107@zytor.com>
+ <dd8748de-4715-499a-8c7e-745af37fa6c4@default>
 MIME-Version: 1.0
-To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>,
-        Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: discrepancy while save and restore of debounce registers
-References: <1BAFE6F6C881BF42822005164F1491C33EAA9A7C@DBDE01.ent.ti.com> <507F1F21.8040206@ti.com> <1BAFE6F6C881BF42822005164F1491C33EAAA89B@DBDE01.ent.ti.com>
-In-Reply-To: <1BAFE6F6C881BF42822005164F1491C33EAAA89B@DBDE01.ent.ti.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.157.144.139]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <dd8748de-4715-499a-8c7e-745af37fa6c4@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gururaja,
+On Thu, Oct 18, 2012 at 08:56:40AM -0700, Dan Magenheimer wrote:
+> I agree the whole idea of paravirtualization is a hack, but it is a
+> hack to workaround some poor architectural design decisions many years
+> ago by Intel processor designers who should have known better. Go yell
+> at them.
+>
+> Worse, the rdtscp instruction was a poor design decision by AMD
+> processor designers to hack around tsc skew problems. Go yell at them
+> too.
+>
+> And both Intel and AMD chose to perpetuate the problem with a
+> complicated VT/SVM implementation that will never perform as well as
+> native. At least they tried ;-)
 
-On 10/18/2012 12:31 AM, Hebbar, Gururaja wrote:
-> Jon,
-> 
-> On Thu, Oct 18, 2012 at 02:42:01, Hunter, Jon wrote:
+Looks like xen people seem to know better so maybe they should design
+their own processor, add xen support for it and leave the linux kernel
+alone so that both camps can finally get on with their lives.
 
-[snip]
-
->>> My doubt/questions are
->>> 1. Why should debounce registers be updated only when it's accessed previously?
->>
->> If debounce is not being used by any of the gpios, then there is no need
->> to restore them as there are no bits set. So this makes sense and saves
->> a couple register writes.
-> 
-> What I want to know is that other than saving register writes, is there any
-> other important stuff that specifies this requirement.
-
->From a HW perspective, none that I can see.
-
->From a SW perspective, yes, as I mentioned if you restore these
-registers without first initialising the context variables where these
-registers are stored, then you may be restoring unknown values to the
-registers and that is bad.
-
->>> 2. What is the relation between updating debounce registers and crash seen on
->>> others registers? 
->>
->> This I am not sure about. I gave this a quick try on my omap3430 beagle
->> board, but I did not see any side-effects from doing this. However, if
->> you are always restoring the debounce context regardless of whether
->> debounce is being used, then you could be writing bad values to the
->> debounce registers as the context variables bank->context.debouce and
->> bank->context.debouce_en may not initialised. So that is bad. However,
->> that said I am still not sure how this could cause a crash.
->>
->> Can you share more details on ...
-> 
-> Sorry for missing below details in first post.
-> 
->> 1. The OMAP platform you are using?
-> 
-> I was trying this on TI AM335x platform (repo below). On AM335x EVM board
-> 
-> http://arago-project.org/git/projects/?p=linux-am33x.git;a=shortlog;
-> h=refs/heads/v3.2-staging
-> 
->> 2. What linux distro/environment you are using?
-> 
-> Arago AM335x PSP release (linux 3.2 + am335x patch-set)
-> 
->> 3. If there are any specific steps to reproduce this 100% of the time?
-> 
-> On top of this tree, try suspend/resume using "echo mem > /syspower/state"
-
-I have a beagle-bone but unfortunately, suspend does not appear to be
-supported in the mainline kernel yet so I am unable to test this on the
-am335x on the mainline.
-
-Have you compared the gpio driver from your v3.2 branch with the current
-mainline to see how different this code is? Ideally, it would be good to
-test on the mainline kernel for another data point to see if this is
-local to your branch.
-
-Cheers
-Jon
-
-
+-- 
+Regards/Gruss,
+Boris.
