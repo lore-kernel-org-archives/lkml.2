@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756937Ab2JRPNk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 11:13:40 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:38627 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755744Ab2JRPNi (ORCPT
+	id S1756442Ab2JRPPI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 11:15:08 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:42748 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755636Ab2JRPPG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 11:13:38 -0400
+	Thu, 18 Oct 2012 11:15:06 -0400
 MIME-Version: 1.0
-Date: Thu, 18 Oct 2012 23:13:37 +0800
-Message-ID: <CAPgLHd__XiRNpPNqePy2Qa1_8-SMbyF54Ef-Cko5pR7+nPCxxw@mail.gmail.com>
-Subject: [PATCH] vme: vme_ca91cx42.c: use module_pci_driver to simplify the code
+Date: Thu, 18 Oct 2012 23:15:05 +0800
+Message-ID: <CAPgLHd-jNUdrUE5cwm=+iEbJQb+N_Bdduwa9kMh_rJMmU=tYuw@mail.gmail.com>
+Subject: [PATCH] vme: vme_vmivme7805.c: use module_pci_driver to simplify the code
 From: Wei Yongjun <weiyj.lk@gmail.com>
 To: martyn.welch@ge.com, manohar.vanga@gmail.com, gregkh@linuxfoundation.org
 Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
@@ -30,52 +30,52 @@ dpatch engine is used to auto generate this patch.
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/vme/bridges/vme_ca91cx42.c | 15 +--------------
+ drivers/vme/boards/vme_vmivme7805.c | 15 +--------------
  1 file changed, 1 insertion(+), 14 deletions(-)
 
-diff --git a/drivers/vme/bridges/vme_ca91cx42.c b/drivers/vme/bridges/vme_ca91cx42.c
-index 1425d22c..64bfea3 100644
---- a/drivers/vme/bridges/vme_ca91cx42.c
-+++ b/drivers/vme/bridges/vme_ca91cx42.c
-@@ -34,10 +34,8 @@
- #include "../vme_bridge.h"
- #include "vme_ca91cx42.h"
+diff --git a/drivers/vme/boards/vme_vmivme7805.c b/drivers/vme/boards/vme_vmivme7805.c
+index 8e05bb4..dd22b50 100644
+--- a/drivers/vme/boards/vme_vmivme7805.c
++++ b/drivers/vme/boards/vme_vmivme7805.c
+@@ -19,10 +19,8 @@
  
--static int __init ca91cx42_init(void);
- static int ca91cx42_probe(struct pci_dev *, const struct pci_device_id *);
- static void ca91cx42_remove(struct pci_dev *);
--static void __exit ca91cx42_exit(void);
+ #include "vme_vmivme7805.h"
  
- /* Module parameters */
- static int geoid;
-@@ -1523,11 +1521,6 @@ static void ca91cx42_free_consistent(struct device *parent, size_t size,
- 	pci_free_consistent(pdev, size, vaddr, dma);
- }
+-static int __init vmic_init(void);
+ static int vmic_probe(struct pci_dev *, const struct pci_device_id *);
+ static void vmic_remove(struct pci_dev *);
+-static void __exit vmic_exit(void);
  
--static int __init ca91cx42_init(void)
+ /** Base address to access FPGA register */
+ static void *vmic_base;
+@@ -41,11 +39,6 @@ static struct pci_driver vmic_driver = {
+ 	.remove = vmic_remove,
+ };
+ 
+-static int __init vmic_init(void)
 -{
--	return pci_register_driver(&ca91cx42_driver);
+-	return pci_register_driver(&vmic_driver);
 -}
 -
- /*
-  * Configure CR/CSR space
-  *
-@@ -1944,16 +1937,10 @@ static void ca91cx42_remove(struct pci_dev *pdev)
- 	kfree(ca91cx42_bridge);
+ static int vmic_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ {
+ 	int retval;
+@@ -109,15 +102,9 @@ static void vmic_remove(struct pci_dev *pdev)
+ 
  }
  
--static void __exit ca91cx42_exit(void)
+-static void __exit vmic_exit(void)
 -{
--	pci_unregister_driver(&ca91cx42_driver);
+-	pci_unregister_driver(&vmic_driver);
 -}
-+module_pci_driver(ca91cx42_driver);
++module_pci_driver(vmic_driver);
  
- MODULE_PARM_DESC(geoid, "Override geographical addressing");
- module_param(geoid, int, 0);
- 
- MODULE_DESCRIPTION("VME driver for the Tundra Universe II VME bridge");
+ MODULE_DESCRIPTION("VMIVME-7805 board support driver");
+ MODULE_AUTHOR("Arthur Benilov <arthur.benilov@iba-group.com>");
  MODULE_LICENSE("GPL");
+ 
+-module_init(vmic_init);
+-module_exit(vmic_exit);
 -
--module_init(ca91cx42_init);
--module_exit(ca91cx42_exit);
+
 
