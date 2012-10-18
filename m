@@ -1,104 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab2JRFsT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 01:48:19 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:44197 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754091Ab2JRFsR (ORCPT
+	id S1754220Ab2JRFuO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 01:50:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55415 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754183Ab2JRFuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 01:48:17 -0400
+	Thu, 18 Oct 2012 01:50:12 -0400
+Date: Thu, 18 Oct 2012 13:50:33 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Yong Ding <yongd@marvell.com>
+Cc: Chris Ball <cjb@laptop.org>, Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, Daniel Drake <dsd@laptop.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Wilson Callan <wilson.callan@savantsystems.com>,
+        Ben Dooks <ben-linux@fluff.org>, Zhangfei Gao <zgao6@marvell.com>,
+        Kevin Liu <kliu5@marvell.com>, Jialing Fu <jlfu@marvell.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] mmc: esdhc: enable polling to detect card by itself
+Message-ID: <20121018054053.GA4513@S2101-09.ap.freescale.net>
+References: <1348828113-19668-1-git-send-email-yongd@marvell.com>
+ <1348828113-19668-2-git-send-email-yongd@marvell.com>
+ <20121007140648.GA10148@S2101-09.ap.freescale.net>
+ <89813612683626448B837EE5A0B6A7CB30388601C9@SC-VEXCH4.marvell.com>
 MIME-Version: 1.0
-In-Reply-To: <1350518655.4678.120.camel@pasglop>
-References: <1350488704-3711-1-git-send-email-will.deacon@arm.com>
-	<1350488704-3711-3-git-send-email-will.deacon@arm.com>
-	<CAMuHMdXcQjDyen+o5aH=1zUOkNX-cfT3aXBOgCpyop=V67jk7w@mail.gmail.com>
-	<1350518655.4678.120.camel@pasglop>
-Date: Thu, 18 Oct 2012 07:48:16 +0200
-X-Google-Sender-Auth: dtFM8yD2GBcfNMFQ1otY-_ZZg84
-Message-ID: <CAMuHMdWH3GXJ_dW-FCAX=LAkBuQmQtwRUtNpcqg_afm-UFK_2g@mail.gmail.com>
-Subject: Re: [RESEND PATCH 2/4] asm-generic: io: don't perform swab during
- {in,out} string functions
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Mike Frysinger <vapier@gentoo.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <89813612683626448B837EE5A0B6A7CB30388601C9@SC-VEXCH4.marvell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+On Tue, Oct 16, 2012 at 09:01:40PM -0700, Yong Ding wrote:
+> Shawn,
+> Thanks for your comment. And sorry for my so late due to illness:-)
+> SDHCI_QUIRK_BROKEN_CARD_DETECTION is used for notifying we don't use the host internal card detection method so that we don't need enable/disable those relevant interrupt bits of host(sdhci_set_card_detection in sdhci.c). 
+> And as I double-checked the latest kernel code, actually sdhci-esdhc-imx sets this flag by default, and then will clear it only when the detection type is ESDHC_CD_CONTROLLER. So this aligns with my understanding. 
 
-On Thu, Oct 18, 2012 at 2:04 AM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> On Wed, 2012-10-17 at 21:16 +0200, Geert Uytterhoeven wrote:
->> On Wed, Oct 17, 2012 at 5:45 PM, Will Deacon <will.deacon@arm.com> wrote:
->> > The {in,out}s{b,w,l} functions are designed to operate on a stream of
->> > bytes and therefore should not perform any byte-swapping, regardless of
->> > the CPU byte order.
->>
->> Euh?
->
-> Will is perfectly right :-)
->
->> They transfer a stream of bytes between memory and PCI/ISA I/O space by
->> reading from/writing to a single I/O port of width 8, 16, or 32 bits.
->> On big endian machines, I/O port accesses may need to be swapped.
->
-> No. Not for streams. I suggest you watch the recording of my Plumbers
-> talk :-)
+What I was saying is the bit will be cleared when the detection type is
+ESDHC_CD_CONTROLLE or ESDHC_CD_GPIO.  You may have missed the fact that
+there is no "break" in case ESDHC_CD_GPIO but a "fall through" comment.
 
-I will. But as email text on lkml is easier to refer to than videos, I
-will continue below,
-so yo can refute me in plain text ;-)
+        switch (boarddata->cd_type) {
+        case ESDHC_CD_GPIO:
+                err = gpio_request_one(boarddata->cd_gpio, GPIOF_IN, "ESDHC_CD");
+                if (err) {
+                        dev_err(mmc_dev(host->mmc),
+                                "no card-detect pin available!\n");
+                        goto no_card_detect_pin;
+                }
 
-> The sort story is that endianness is not a property of the IO port but
-> of the information that transit through it. If you're just going to copy
-> it into memory, you want to preserve it's format and so do not byteswap.
->
-> The byteswap we do on standard accessors is a "helper" because we assume
-> that underneath those IO ports are registers that are Little Endian. But
-> when using one as a window to a byte stream, we must not arbitrarily
-> swap the byte stream. We copy it as-is to memory, and then one can work
-> at interpreting the various fields that might or might not be present in
-> that stream with the appropriate accessors for memory accesses.
+                err = request_irq(gpio_to_irq(boarddata->cd_gpio), cd_irq,
+                                 IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
+                                 mmc_hostname(host->mmc), host);
+                if (err) {
+                        dev_err(mmc_dev(host->mmc), "request irq error\n");
+                        goto no_card_detect_irq;
+                }
+                /* fall through */
 
-So assume you have the bytestream "Hello, world!\n" in memory on the
-PCI device.I.e.
+        case ESDHC_CD_CONTROLLER:
+                /* we have a working card_detect back */
+                host->quirks &= ~SDHCI_QUIRK_BROKEN_CARD_DETECTION;
+                break;
 
-00000000  48 65 6c 6c 6f 2c 20 77  6f 72 6c 64 21 0a        |Hello, world!.|
+        case ESDHC_CD_PERMANENT:
+                host->mmc->caps = MMC_CAP_NONREMOVABLE;
+                break;
 
-You want to copy it to system RAM using readsl(), which does:
+        case ESDHC_CD_NONE:
+                break;
+        }
 
-               u32 *buf = buffer;
-               do {
-                       u32 x = __raw_readl(addr + PCI_IOBASE);
-                       *buf++ = x;
-                } while (--count);
+Shawn
 
-On little endian, the first __raw_readl() should return "0x6c6c6548", so
-it is stored correctly by "*buf = x ".
-On big endian, the first __raw_readl() should return "0x48656c6c" instead,
-else it's stored incorrectly by "*buf = x ".
-But the PCI bus is little endian, so I expect __raw_readl() would return
-"0x6c6c6548", and thus needs swapping?
-
-On m68k (classic with MMU), the situation is a bit more complicated, as some ISA
-(or PCMCIA) busses are physically wired swapped. But inw() and insw() always do
-either both swapping, or both no swapping. The state of support for ISA drivers
-is a bit vague, though.
-
-Now, on m68k without MMU, inw() doesn't do swapping, but insw() does.
-This agrees more or less with you and Will, except that the bus seems to be
-physically swapped?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> What I want to do is that 1st we shall set MMC_CAP_NEEDS_POLL by our host driver itself and 2nd remove the improper logic in sdhci_add_host() . How do u think? Thanks.
+> 
