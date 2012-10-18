@@ -1,133 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab2JRFbT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 01:31:19 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60669 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754059Ab2JRFbR convert rfc822-to-8bit (ORCPT
+	id S1754095Ab2JRFez (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 01:34:55 -0400
+Received: from www84.your-server.de ([213.133.104.84]:42020 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951Ab2JRFey (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 01:31:17 -0400
-From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-To: "Hunter, Jon" <jon-hunter@ti.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>,
-        Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: discrepancy while save and restore of debounce registers
-Thread-Topic: discrepancy while save and restore of debounce registers
-Thread-Index: Ac2sLoK1QcZgBYyrRUCfh4cWp+znkwAT3A2AABu2CfA=
-Date: Thu, 18 Oct 2012 05:31:11 +0000
-Message-ID: <1BAFE6F6C881BF42822005164F1491C33EAAA89B@DBDE01.ent.ti.com>
-References: <1BAFE6F6C881BF42822005164F1491C33EAA9A7C@DBDE01.ent.ti.com>
- <507F1F21.8040206@ti.com>
-In-Reply-To: <507F1F21.8040206@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-puzzleid: {F2C0EDA5-58C2-4A8C-873E-D0D7CA435328}
-x-cr-hashedpuzzle: +IQ= EMCO GTl+ NC8V Qrfe Zbbz fPA9 f3vU jfuq k+xB tins
- vCr3 w0tU 7Jpb AA1uUQ==
- ABI9Eg==;5;ZwByAGEAbgB0AC4AbABpAGsAZQBsAHkAQABzAGUAYwByAGUAdABsAGEAYgAuAGMAYQA7AGwAaQBuAHUAeAAtAGEAcgBtAC0AawBlAHIAbgBlAGwAQABsAGkAcwB0AHMALgBpAG4AZgByAGEAZABlAGEAZAAuAG8AcgBnADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeAAtAG8AbQBhAHAAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHQAbwBuAHkAQABhAHQAbwBtAGkAZABlAC4AYwBvAG0A;Sosha1_v1;7;{F2C0EDA5-58C2-4A8C-873E-D0D7CA435328};ZwB1AHIAdQByAGEAagBhAC4AaABlAGIAYgBhAHIAQAB0AGkALgBjAG8AbQA=;Thu,
- 18 Oct 2012 05:30:51
- GMT;UgBFADoAIABkAGkAcwBjAHIAZQBwAGEAbgBjAHkAIAB3AGgAaQBsAGUAIABzAGEAdgBlACAAYQBuAGQAIAByAGUAcwB0AG8AcgBlACAAbwBmACAAZABlAGIAbwB1AG4AYwBlACAAcgBlAGcAaQBzAHQAZQByAHMA
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 18 Oct 2012 01:34:54 -0400
+Message-ID: <1350538446.10942.1.camel@wall-e>
+Subject: Re: [PATCH] remove untouched code in kfifo_in
+From: Stefani Seibold <stefani@seibold.net>
+To: Richard Yang <weiyang@linux.vnet.ibm.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+Date: Thu, 18 Oct 2012 07:34:06 +0200
+In-Reply-To: <20121018015959.GD4511@richard.(null)>
+References: <1350463837-30244-1-git-send-email-weiyang@linux.vnet.ibm.com>
+	 <alpine.LNX.2.00.1210171434360.17129@pobox.suse.cz>
+	 <20121017140136.GA7913@richard.(null)>
+	 <alpine.LNX.2.00.1210171605030.17129@pobox.suse.cz>
+	 <1350503509.9947.1.camel@wall-e> <20121018015959.GD4511@richard.(null)>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jon,
+Am Donnerstag, den 18.10.2012, 09:59 +0800 schrieb Richard Yang:
+> On Wed, Oct 17, 2012 at 09:51:49PM +0200, Stefani Seibold wrote:
+> >This was introduce by me to suppress a compiler warning, so don't remove
+> >it. 
+> Which warning? I compile by removing this, but not find warning.
+> I compile it on x86_64 platform.
+> >
 
-On Thu, Oct 18, 2012 at 02:42:01, Hunter, Jon wrote:
-> Hi Gururaja,
-> 
-> On 10/17/2012 01:13 AM, Hebbar, Gururaja wrote:
-> > Hi,
-> > 
-> > I came across a peculiar issue while updating GPIO debounce registers on
-> > OMAP platform.
-> > 
-> > According to mainline commit ae547354a8ed59f19b57f7e1de9c7816edfc3537
-> > 
-> > gpio/omap: save and restore debounce registers
-> > 
-> > GPIO debounce registers need to be saved and restored for proper functioning
-> > of driver.
-> > 
-> > ...
-> > @@ -1363,6 +1369,12 @@ static void omap_gpio_restore_context(struct gpio_bank *bank)
-> >         __raw_writel(bank->context.fallingdetect,
-> >                                 bank->base + bank->regs->fallingdetect);
-> >         __raw_writel(bank->context.dataout, bank->base + bank->regs->dataout);
-> > +       if (bank->dbck_enable_mask) {
-> > +               __raw_writel(bank->context.debounce, bank->base +
-> > +                                       bank->regs->debounce);
-> > +               __raw_writel(bank->context.debounce_en,
-> > +                                       bank->base + bank->regs->debounce_en);
-> > +       }
-> >  }
-> > 
-> > 
-> > Due to copy/paste of this commit into my local tree, I missed the check for 
-> > bank->dbck_enable_mask, and directly restored the saved value from context.
-> > 
-> > After this, I saw random crashes when accessing different registers (sometimes
-> > its OE register and sometime its DATAOUT register). 
-> > 
-> > These crashes were seen across 2nd and subsequent suspend/resume.
-> > 
-> > My doubt/questions are
-> > 1. Why should debounce registers be updated only when it's accessed previously?
-> 
-> If debounce is not being used by any of the gpios, then there is no need
-> to restore them as there are no bits set. So this makes sense and saves
-> a couple register writes.
+Sorry, i can't remember, it is three years and two gcc major releases
+ago.
 
-What I want to know is that other than saving register writes, is there any
-other important stuff that specifies this requirement.
-
-> 
-> > 2. What is the relation between updating debounce registers and crash seen on
-> > others registers? 
-> 
-> This I am not sure about. I gave this a quick try on my omap3430 beagle
-> board, but I did not see any side-effects from doing this. However, if
-> you are always restoring the debounce context regardless of whether
-> debounce is being used, then you could be writing bad values to the
-> debounce registers as the context variables bank->context.debouce and
-> bank->context.debouce_en may not initialised. So that is bad. However,
-> that said I am still not sure how this could cause a crash.
-> 
-> Can you share more details on ...
-
-Sorry for missing below details in first post.
-
-> 1. The OMAP platform you are using?
-
-I was trying this on TI AM335x platform (repo below). On AM335x EVM board
-
-http://arago-project.org/git/projects/?p=linux-am33x.git;a=shortlog;
-h=refs/heads/v3.2-staging
-
-> 2. What linux distro/environment you are using?
-
-Arago AM335x PSP release (linux 3.2 + am335x patch-set)
-
-> 3. If there are any specific steps to reproduce this 100% of the time?
-
-On top of this tree, try suspend/resume using "echo mem > /syspower/state"
-
-> 
-> Cheers
-> Jon
+> >Am Mittwoch, den 17.10.2012, 16:05 +0200 schrieb Jiri Kosina:
+> >> On Wed, 17 Oct 2012, Richard Yang wrote:
+> >> 
+> >> > >> This patch just remove this code.
+> >> > >> ---
+> >> > >>  include/linux/kfifo.h |    4 ----
+> >> > >>  1 files changed, 0 insertions(+), 4 deletions(-)
+> >> > >> 
+> >> > >> diff --git a/include/linux/kfifo.h b/include/linux/kfifo.h
+> >> > >> index 10308c6..e7015bb 100644
+> >> > >> --- a/include/linux/kfifo.h
+> >> > >> +++ b/include/linux/kfifo.h
+> >> > >> @@ -512,10 +512,6 @@ __kfifo_uint_must_check_helper( \
+> >> > >>  	unsigned long __n = (n); \
+> >> > >>  	const size_t __recsize = sizeof(*__tmp->rectype); \
+> >> > >>  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> >> > >> -	if (0) { \
+> >> > >> -		typeof(__tmp->ptr_const) __dummy __attribute__ ((unused)); \
+> >> > >> -		__dummy = (typeof(__buf))NULL; \
+> >> > >> -	} \
+> >> > >>  	(__recsize) ?\
+> >> > >>  	__kfifo_in_r(__kfifo, __buf, __n, __recsize) : \
+> >> > >>  	__kfifo_in(__kfifo, __buf, __n); \
+> >> > >
+> >> > >Frankly, I'd first like to understand what was the rationale for adding it 
+> >> > >at the first place. Adding Stefani and lkml to CC.
+> >> > 
+> >> > Agree.
+> >> > 
+> >> > BTW, by git blame, I just see commit 2e956fb3 which is checked in by Stefani. 
+> >> > While looking in the diff, the kfifo_in() is already there. Looks like this
+> >> > commit move the definition from one file to another file. 
+> >> > 
+> >> > So I am not sure the if(0) code is added by Stefani. Any other method to trace
+> >> > the ealier history?
+> >> 
+> >> git blame -- include/linux/kfifo-new.h 2e956fb3~1
+> >> 
+> >
 > 
 
 
-Regards, 
-Gururaja
