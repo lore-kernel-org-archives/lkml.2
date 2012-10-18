@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932725Ab2JRXUi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 19:20:38 -0400
-Received: from mga09.intel.com ([134.134.136.24]:40050 "EHLO mga09.intel.com"
+	id S932694Ab2JRXUg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 19:20:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3930 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932495Ab2JRXUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932504Ab2JRXUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Oct 2012 19:20:08 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,609,1344236400"; 
-   d="scan'208";a="207876596"
+   d="scan'208";a="207876597"
 From: Andi Kleen <andi@firstfloor.org>
 To: a.p.zijlstra@chello.nl
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org, acme@redhat.com,
         eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 22/34] perf, tools: Add support for record transaction flags
-Date: Thu, 18 Oct 2012 16:19:30 -0700
-Message-Id: <1350602382-12771-23-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 27/34] perf, x86: Report the arch perfmon events in sysfs
+Date: Thu, 18 Oct 2012 16:19:35 -0700
+Message-Id: <1350602382-12771-28-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
 References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
@@ -25,120 +25,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add the glue in the user tools to record transaction flags with
---transaction (-T was already taken) and dump them.
+Report all the supported arch perfmon events as event aliases in
+/sys/devices/cpu/...
 
-Followon patches will use them.
+This is needed to use the TSX intx,intx_cp attributes with
+symbolic events, at least for these basic events.
+
+Currently cpu/instructions/ doesn't work because instructions
+is also a generic event. It works for all events which are not
+the same as generic events though.
+
+Probably needs to be fixed in the perf events parser.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/Documentation/perf-record.txt |    5 ++++-
- tools/perf/builtin-record.c              |    2 ++
- tools/perf/perf.h                        |    1 +
- tools/perf/util/event.h                  |    1 +
- tools/perf/util/evsel.c                  |    9 +++++++++
- tools/perf/util/session.c                |    3 +++
- 6 files changed, 20 insertions(+), 1 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c       |    7 ++++
+ arch/x86/kernel/cpu/perf_event.h       |    1 +
+ arch/x86/kernel/cpu/perf_event_intel.c |   56 ++++++++++++++++++++++++++++++++
+ 3 files changed, 64 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 4930654..2ede9e6 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -182,12 +182,15 @@ is enabled for all the sampling events. The sampled branch type is the same for
- The various filters must be specified as a comma separated list: --branch-filter any_ret,u,k
- Note that this feature may not be available on all processors.
- 
---W::
- --weight::
- Enable weightened sampling. When the event supports an additional weight per sample scale
- the histogram by this weight. This currently works for TSX abort events and some memory events
- in precise mode on modern Intel CPUs.
- 
-+-T::
-+--transaction::
-+Record transaction flags for transaction related events.
-+
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-list[1]
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 5b74245..3785e6e 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -1008,6 +1008,8 @@ const struct option record_options[] = {
- 		     parse_branch_stack),
- 	OPT_BOOLEAN('W', "weight", &record.opts.sample_weight,
- 		    "sample by weight (on special events only)"),
-+	OPT_BOOLEAN(0, "transaction", &record.opts.sample_transaction,
-+		    "sample transaction flags (special events only)"),
- 	OPT_END()
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index b0f4edd..a5a5bef 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1309,6 +1309,11 @@ static struct attribute_group x86_pmu_format_group = {
+ 	.attrs = NULL,
  };
  
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 0523ee8..8aa4001 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -246,6 +246,7 @@ struct perf_record_opts {
- 	u64	     default_interval;
- 	u64	     user_interval;
- 	u16	     stack_dump_size;
-+	bool	     sample_transaction;
++static struct attribute_group x86_pmu_events_group = {
++	.name = "events",
++	.attrs = NULL,
++};
++
+ static int __init init_hw_perf_events(void)
+ {
+ 	struct x86_pmu_quirk *quirk;
+@@ -1354,6 +1359,7 @@ static int __init init_hw_perf_events(void)
+ 
+ 	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
+ 	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
++	x86_pmu_events_group.attrs = x86_pmu.events_attrs;
+ 
+ 	pr_info("... version:                %d\n",     x86_pmu.version);
+ 	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
+@@ -1646,6 +1652,7 @@ static struct attribute_group x86_pmu_attr_group = {
+ static const struct attribute_group *x86_pmu_attr_groups[] = {
+ 	&x86_pmu_attr_group,
+ 	&x86_pmu_format_group,
++	&x86_pmu_events_group,
+ 	NULL,
  };
  
- #endif
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index d60015b..28fd2eb 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -88,6 +88,7 @@ struct perf_sample {
- 	u64 stream_id;
- 	u64 period;
- 	u64 weight;
-+	u64 transaction;
- 	u32 cpu;
- 	u32 raw_size;
- 	void *raw_data;
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 3800fb5..5c9790d 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -448,6 +448,9 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
- 	if (opts->sample_weight)
- 		attr->sample_type	|= PERF_SAMPLE_WEIGHT;
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 7b43503..d3b3bb7 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -358,6 +358,7 @@ struct x86_pmu {
+ 	 */
+ 	int		attr_rdpmc;
+ 	struct attribute **format_attrs;
++	struct attribute **events_attrs;
  
-+	if (opts->sample_transaction)
-+		attr->sample_type	|= PERF_SAMPLE_TRANSACTION;
+ 	/*
+ 	 * CPU Hotplug hooks
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 274ed2c..878814a 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -34,6 +34,18 @@ static u64 intel_perfmon_event_map[PERF_COUNT_HW_MAX] __read_mostly =
+ 	[PERF_COUNT_HW_REF_CPU_CYCLES]		= 0x0300, /* pseudo-encoding */
+ };
+ 
++static const char *intel_perfmon_names[PERF_COUNT_HW_MAX] __read_mostly =
++{
++	[PERF_COUNT_HW_CPU_CYCLES]		= "cycles",
++	[PERF_COUNT_HW_INSTRUCTIONS]		= "instructions",
++	[PERF_COUNT_HW_CACHE_REFERENCES]	= "cache-references",
++	[PERF_COUNT_HW_CACHE_MISSES]		= "cache-misses",
++	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= "branches",
++	[PERF_COUNT_HW_BRANCH_MISSES]		= "branch-misses",
++	[PERF_COUNT_HW_BUS_CYCLES]		= "bus-cycles",
++	[PERF_COUNT_HW_REF_CPU_CYCLES]		= "ref-cycles"
++};
 +
- 	if (opts->call_graph) {
- 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
- 
-@@ -951,6 +954,12 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
- 		array++;
+ static struct event_constraint intel_core_event_constraints[] __read_mostly =
+ {
+ 	INTEL_EVENT_CONSTRAINT(0x11, 0x2), /* FP_ASSIST */
+@@ -1987,6 +1999,48 @@ static __init void intel_nehalem_quirk(void)
  	}
- 
-+	data->transaction = 0;
-+	if (type & PERF_SAMPLE_TRANSACTION) {
-+		data->transaction = *array;
-+		array++;
-+	}
-+
- 	if (type & PERF_SAMPLE_READ) {
- 		fprintf(stderr, "PERF_SAMPLE_READ is unsupported for now\n");
- 		return -1;
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 2009665..316dd91 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1009,6 +1009,9 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
- 
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		printf("... weight: %" PRIu64 "\n", sample->weight);
-+
-+	if (sample_type & PERF_SAMPLE_TRANSACTION)
-+		printf("... transaction: %" PRIx64 "\n", sample->transaction);
  }
  
- static struct machine *
++static struct attribute *intel_arch_events[PERF_COUNT_HW_MAX + 1] __read_mostly;
++
++struct event_attribute {
++	struct device_attribute		attr;
++	u64				config;
++};
++
++static struct event_attribute intel_arch_event_attr[PERF_COUNT_HW_MAX];
++
++static ssize_t show_event(struct device *dev,
++			  struct device_attribute *attr,
++			  char *page)
++{
++	struct event_attribute *e = container_of(attr, struct event_attribute, attr);
++
++	return sprintf(page, "event=%#llx,umask=%#llx",
++		       e->config & 0xff,
++		       (e->config >> 8) & 0xff);
++}
++
++static __init void intel_gen_arch_events(void)
++{
++	int j, i;
++
++	j = 0;
++	for_each_clear_bit(i, x86_pmu.events_mask, ARRAY_SIZE(intel_arch_events_map)) {
++		struct event_attribute *e = intel_arch_event_attr + j;
++		struct device_attribute *d = &e->attr;
++		struct attribute *a = &d->attr;
++		int id = intel_arch_events_map[i].id;
++
++		e->config = intel_perfmon_event_map[id];
++		intel_arch_events[j] = a;
++		a->name = intel_perfmon_names[id];
++		a->mode = 0444;
++		d->show = show_event;
++		j++;
++	}
++	intel_arch_events[j] = NULL;
++	x86_pmu.events_attrs = intel_arch_events;
++}
++
+ __init int intel_pmu_init(void)
+ {
+ 	union cpuid10_edx edx;
+@@ -2032,6 +2086,8 @@ __init int intel_pmu_init(void)
+ 
+ 	x86_pmu.max_pebs_events		= min_t(unsigned, MAX_PEBS_EVENTS, x86_pmu.num_counters);
+ 
++	intel_gen_arch_events();
++
+ 	/*
+ 	 * Quirk: v2 perfmon does not report fixed-purpose events, so
+ 	 * assume at least 3 events:
 -- 
 1.7.7.6
 
