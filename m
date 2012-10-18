@@ -1,92 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727Ab2JRVYB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 17:24:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53447 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756334Ab2JRVX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 17:23:59 -0400
-Date: Thu, 18 Oct 2012 23:23:57 +0200
-From: Jan Kara <jack@suse.cz>
-To: Fabio Coatti <fabio.coatti@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: ext3 issue on 3.6.1
-Message-ID: <20121018212357.GA17646@quack.suse.cz>
-References: <CADpTngUPcX71qjE2QKhYqgDg7tZoz+pu8A6nE9DT-zbFKWGx1g@mail.gmail.com>
+	id S1756817Ab2JRV2k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 17:28:40 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45702 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752080Ab2JRV2j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 17:28:39 -0400
+Date: Fri, 19 Oct 2012 01:28:35 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Pavel Emelyanov <xemul@parallels.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC] procfs: Add VmFlags field in smaps output
+Message-ID: <20121018212835.GK8790@moon>
+References: <20121018095503.GB8790@moon>
+ <20121018103118.GC11750@moon>
+ <20121018140259.dad6d5b5.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CADpTngUPcX71qjE2QKhYqgDg7tZoz+pu8A6nE9DT-zbFKWGx1g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121018140259.dad6d5b5.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 12-10-12 14:57:55, Fabio Coatti wrote:
-> Hi all,
-> I'm getting this message on a hp g7 server with kernel 3.6.1:
+On Thu, Oct 18, 2012 at 02:02:59PM -0700, Andrew Morton wrote:
+> > +#ifdef CONFIG_CHECKPOINT_RESTORE
+> > +static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
+> > +{
+> > +	seq_printf(m,
+> > +		   "VmFlags:               %c%c%c%c%c%c%c%c%c\n",
+> > +		   vma->vm_flags & VM_LOCKED ?		'l' : '-',
+> > +		   vma->vm_flags & VM_GROWSDOWN ?	'g' : '-',
+> > +		   vma->vm_flags & VM_RAND_READ ?	'r' : '-',
+> > +		   vma->vm_flags & VM_SEQ_READ ?	'q' : '-',
+> > +		   vma->vm_flags & VM_DONTCOPY ?	'-' : 'c',
+> > +		   vma->vm_flags & VM_MERGEABLE ?	'm' : '-',
+> > +		   vma->vm_flags & VM_HUGEPAGE ?	'h' : '-',
+> > +		   vma->vm_flags & VM_NOHUGEPAGE ?	'-' : 'h',
+> > +		   vma->vm_flags & VM_DONTDUMP ?	'-' : 'd');
+> > +}
+> > +#else
+> > +static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma) { }
+> > +#endif
 > 
-> [  248.026545] ------------[ cut here ]------------
-> [  248.026723] WARNING: at fs/ext3/inode.c:1754
-> ext3_journalled_writepage+0x55/0x1a7()
-> [  248.026920] Hardware name: ProLiant BL465c G7
-> [  248.027049] Pid: 2266, comm: flush-8:0 Not tainted 3.6.1-1000hz-preempt #2
-> [  248.027199] Call Trace:
-> [  248.027340]  [<ffffffff810578c4>] ? warn_slowpath_common+0x73/0x87
-> [  248.027482]  [<ffffffff8115cb86>] ? ext3_journalled_writepage+0x55/0x1a7
-> [  248.027653]  [<ffffffff810a279b>] ? __writepage+0xa/0x21
-> [  248.027787]  [<ffffffff810a3143>] ? write_cache_pages+0x206/0x2f8
-> [  248.027935]  [<ffffffff810a2791>] ? set_page_dirty+0x5e/0x5e
-> [  248.028053]  [<ffffffff81297933>] ? queue_unplugged+0x28/0x34
-> [  248.028188]  [<ffffffff810a3273>] ? generic_writepages+0x3e/0x55
-> [  248.028294]  [<ffffffff810f4da0>] ? __writeback_single_inode+0x39/0xd1
-> [  248.028416]  [<ffffffff810f5b59>] ? writeback_sb_inodes+0x206/0x392
-> [  248.028551]  [<ffffffff810f5d4c>] ? __writeback_inodes_wb+0x67/0xa2
-> [  248.028675]  [<ffffffff810f5eea>] ? wb_writeback+0xfd/0x18b
-> [  248.028794]  [<ffffffff810a3639>] ? bdi_dirty_limit+0x27/0x81
-> [  248.028908]  [<ffffffff810f60b5>] ? wb_do_writeback+0x13d/0x1a2
-> [  248.029031]  [<ffffffff81061edb>] ? add_timer_on+0x61/0x61
-> [  248.029142]  [<ffffffff810f6199>] ? bdi_writeback_thread+0x7f/0x13e
-> [  248.029306]  [<ffffffff810f611a>] ? wb_do_writeback+0x1a2/0x1a2
-> [  248.029401]  [<ffffffff810f611a>] ? wb_do_writeback+0x1a2/0x1a2
-> [  248.029498]  [<ffffffff8106e0dc>] ? kthread+0x81/0x89
-> [  248.029592]  [<ffffffff816003b4>] ? kernel_thread_helper+0x4/0x10
-> [  248.029687]  [<ffffffff8106e05b>] ? kthread_worker_fn+0xe0/0xe0
-> [  248.029781]  [<ffffffff816003b0>] ? gs_change+0xb/0xb
-> [  248.029872] ---[ end trace e60232a455c8e2dc ]---
-  Hum, this is interesting. The warning is:
-        WARN_ON_ONCE(IS_RDONLY(inode) &&
-                     !(EXT3_SB(inode->i_sb)->s_mount_state & EXT3_ERROR_FS));
+> I guess this more terse output is better.  It should be documented (in
 
-  So inode passed to writeback is on read-only filesystem. Is there
-anything else iteresting in the logs? Do you have some ext3 filesystem
-mounted read-only?
+Well, I started with terse output but then I thought that if one day
+some flag get vanished we will have to remember which character has been
+used for it to not reassign it to some new flag in future. That's from where
+this long words came.
 
-> [13031.051521] ------------[ cut here ]------------
-> [13031.051576] WARNING: at fs/inode.c:280 drop_nlink+0x1b/0x35()
-> [13031.051624] Hardware name: ProLiant BL465c G7
-> [13031.051668] Pid: 3344, comm: php Tainted: G        W
-> 3.6.1-1000hz-preempt #2
-> [13031.051746] Call Trace:
-> [13031.051787]  [<ffffffff810578c4>] ? warn_slowpath_common+0x73/0x87
-> [13031.051837]  [<ffffffff810ec628>] ? drop_nlink+0x1b/0x35
-> [13031.051885]  [<ffffffff8118ad51>] ? nfs_dentry_iput+0x33/0x49
-> [13031.051934]  [<ffffffff810ea920>] ? d_kill+0xe8/0x108
-> [13031.051980]  [<ffffffff810eb001>] ? dput+0x147/0x154
-> [13031.052027]  [<ffffffff810d9e46>] ? __fput+0x19a/0x1b2
-> [13031.052073]  [<ffffffff8106bdf0>] ? task_work_run+0x4c/0x60
-> [13031.052123]  [<ffffffff815ff5e8>] ? int_signal+0x12/0x17
-> [13031.052169] ---[ end trace e60232a455c8e2dd ]---
-  And this seems unrelated - likely an NFS problem... Let's sort this out
-if you still see it after ext3 issue is solved.
+> Documentation/filesystems/proc.txt, I suppose) and we should add a code
+> comment here reminding people to update that documentation when they
+> change this function.
 
-> the server has a RAID bus controller: Hewlett-Packard Company Smart
-> Array G6 controllers (rev 01)
-> with hpsa driver. I don't know what exactly else could be useful to
-> dig into this, just let me know; please cc: me because I'm not
-> subscribed to the list right now.
+Sure, thanks for reminder Andrew, I must admit I forgot about docs.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> There are about 28 VM_foo flags and here you've semi-randomly chosen 9
+> of them for display.  This seems rather ugly and we should expect that
+
+Yes, but I choose only those flags which can be used/modified from user
+space and which can't be fetched by other way (for example we can figure
+out if vma is executable/shared/private from /proc/pid/map).
+
+Thus I think better try to not display flags which are pretty kernel
+internal, no?
+
+> people will change this code to display additional flags in the future.
+> 
+> And we should also expect some of the flags which _are_ displayed to
+> vanish in the future as the code evolves.
+> 
+> This data is pretty dependent upon internal kernel implementation
+> details, so it is something we normally try to avoid exporting to
+> userspace.
+
+Yes, but I fear here I have no choise. These flags modify the kernel
+behaviour and they are set from userspace (mlock/madvise) so we need
+some way to fetch them back and do yield appropriate syscalls on
+restore procedure.
+
+> We should design the interface with these future changes in mind.  That
+> means careful documentation and perhaps a format which discourages
+> userspace programmers from assuming that there will always be nine
+> fields.
+> 
+> A common way in which we do this future-proofing is to display the info
+> in name:value tuples (eg, /proc/meminfo).  So userspace parses for the
+> "name" rather than looking into a fixed position in the /proc output.
+> 
+> So....  with this thought in mind, perhaps a better output format would
+> be something like:
+> 
+> 	VmFlags: LO:1 GR:0 RA:0 SE:1 ...
+> 
+> ie: a two-character "name" and a boolean "value".  Something like that.
+
+OK, Andrew, I'll try to come with something like that tomorrow, thanks!
+
+> Also, it worries me a bit that this interface vanishes if
+> CONFIG_CHECKPOINT_RESTORE=n.  One can easily anticipate that non-c/r
+> userspace programs will start to use this interface, and they will want
+> it to be present in CONFIG_CHECKPOINT_RESTORE=n kernels.
+
+Well, hard to tell, I personally can't imagine who else and why might
+need this flags, but there is no problem to drop this CONFIG wrap if
+needed.
