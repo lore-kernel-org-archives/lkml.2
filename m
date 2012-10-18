@@ -1,98 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab2JRHq6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 03:46:58 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:29340
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752443Ab2JRHqm convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 03:46:42 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VS2(zzc89bh1432Id799hzz1202h1d1ah1d2ah1082kzzz2dh2a8h668h839h93fhd25he5bhf0ah107ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1155h)
-Message-ID: <507FB495.7050104@freescale.com>
-Date: Thu, 18 Oct 2012 15:49:41 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1752728Ab2JRHr4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 03:47:56 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:4667 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750785Ab2JRHrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 03:47:55 -0400
+Subject: [PATCH v3] posix timers: allocate timer id per process
+To: peterz@infradead.org, mingo@redhat.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: tglx@linutronix.de, devel@openvz.org, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com
+Date: Thu, 18 Oct 2012 11:49:54 +0400
+Message-ID: <20121018074953.14057.52370.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Marek Vasut <marex@denx.de>
-CC: Vinod Koul <vinod.koul@linux.intel.com>, <djbw@fb.com>,
-        <khali@linux-fr.org>, <ben-linux@fluff.org>, <w.sang@pengutronix.de>,
-        <cjb@laptop.org>, <dwmw2@infradead.org>, <lrg@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <perex@perex.cz>,
-        <tiwai@suse.de>, <shawn.guo@linaro.org>,
-        <artem.bityutskiy@linux.intel.com>, <linux-kernel@vger.kernel.org>,
-        <linux-i2c@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>, <alsa-devel@alsa-project.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        Huang Shijie <shijie8@gmail.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] dma: add new DMA control commands
-References: <1350538335-29026-1-git-send-email-b32955@freescale.com> <1350541111.5263.3.camel@vkoul-udesk3> <507FA595.4020507@freescale.com> <201210180914.58527.marex@denx.de>
-In-Reply-To: <201210180914.58527.marex@denx.de>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年10月18日 15:14, Marek Vasut 写道:
-> Dear Huang Shijie,
->
-> Why such massive CC ?
->
->> 于 2012年10月18日 14:18, Vinod Koul 写道:
->>> Why cant you do start (prepare clock etc) when you submit the descriptor
->>> to dmaengine. Can be done in tx_submit callback.
->>> Similarly remove the clock when dma transaction gets completed.
->> I ever thought this method too.
->>
->> But it will become low efficient in the following case:
->>
->>     Assuming the gpmi-nand driver has to read out 1024 pages in one
->> _SINGLE_ read operation.
->> The gpmi-nand will submit the descriptor to dmaengine per page.
-> It will? Then GPMI NAND is flat our broken ... again.
-yes.
+v3:
+1) hash calculation simlified to improve perfomance.
 
-Please read the NAND chip spec about the comand READ PAGE(00h-30h) and 
-the code
-nand_do_read_ops(). The nand chip limits us only read one page out one time.
-So the driver will submit the descriptor to dmaengine per page.
+v2:
+1) Hash table become RCU-friendly. Hash table search now done under RCU lock
+protection.
+I've tested scalability on KVM with 4 CPU. The testing environment was build
+of 10 processes, each had 512 posix timers running (SIGSEV_NONE) and was
+calling timer_gettime() in loop. With all this stuff being running, I was
+measuring time of calling of syscall timer_gettime() 10000 times.
 
+Without this patch: ~7ms
+With this patch   : ~7ms
 
+This patch is required CRIU project (www.criu.org).
+To migrate processes with posix timers we have to make sure, that we can
+restore posix timer with proper id.
+Currently, this is not true, because timer ids are allocated globally.
+So, this is precursor patch and it's purpose is make posix timer id to be
+allocated per process.
 
->> So with
->> your method,
->> the system will repeat the enable/disable dma clock 1024 time.
-> Yes, it is the driver that's wrong.
-not the driver.
->> At every
->> enable/disable dma clock,
->> the system has to enable the clock chain and it's parents ...
->>
->> But with this patch, we only need to enable/disable dma clock one time,
->> just at we select the nand chip.
-> You are fixing a driver problem at a framework level, wrong.
->
-> So, check how the MXS SPI driver handles descriptor chaining. Indeed, the
-> Sigmatel screwed the DMA stuff good. But if you analyze the SPI driver, you'll
-> notice a few important points that might come handy when you fix the GPMI NAND
-> driver properly.
->
-> The direction to take here is:
-> 1) Implement DMA chaining into the GPMI NAND driver
-How can i implement the DMA chain if the nand chip READ-PAGE command 
-gives us the one page limit?
+Patch replaces global idr with global hash table for posix timers and
+makes timer ids unique not globally, but per task. Next free timer id is type
+of integer and stored on signal struct (posix_timer_id). If free timer id
+reaches negative value on timer creation, it will be dropped to zero and
+-EAGAIN will be returned to user.
+Hash table is size of page (4KB).
+Key is constructed as follows:
+key = hash_ptr(current->signal) ^ hash_32(posix_timer_id);
 
-thanks
-Huang Shijie
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ include/linux/posix-timers.h |    1 
+ include/linux/sched.h        |    4 +-
+ kernel/posix-timers.c        |  111 ++++++++++++++++++++++++++++--------------
+ 3 files changed, 77 insertions(+), 39 deletions(-)
 
-
-> 2) You might need to do one PIO transfer to reconfigure the IP registers between
-> each segment of the DMA chain (just as MXS SPI does it)
-> 3) You might run out of DMA descriptors when doing too long chains -- so you
-> might need to fix that part of the mxs DMA driver.
-
+diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
+index 042058f..60bac69 100644
+--- a/include/linux/posix-timers.h
++++ b/include/linux/posix-timers.h
+@@ -55,6 +55,7 @@ struct cpu_timer_list {
+ /* POSIX.1b interval timer structure. */
+ struct k_itimer {
+ 	struct list_head list;		/* free/ allocate list */
++	struct hlist_node t_hash;
+ 	spinlock_t it_lock;
+ 	clockid_t it_clock;		/* which timer type */
+ 	timer_t it_id;			/* timer id */
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 0dd42a0..dce1651 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -51,6 +51,7 @@ struct sched_param {
+ #include <linux/cred.h>
+ #include <linux/llist.h>
+ #include <linux/uidgid.h>
++#include <linux/idr.h>
+ 
+ #include <asm/processor.h>
+ 
+@@ -536,7 +537,8 @@ struct signal_struct {
+ 	unsigned int		has_child_subreaper:1;
+ 
+ 	/* POSIX.1b Interval Timers */
+-	struct list_head posix_timers;
++	int			posix_timer_id;
++	struct list_head	posix_timers;
+ 
+ 	/* ITIMER_REAL timer for the process */
+ 	struct hrtimer real_timer;
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index 69185ae..4a89667 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -47,31 +47,28 @@
+ #include <linux/wait.h>
+ #include <linux/workqueue.h>
+ #include <linux/export.h>
++#include <linux/hash.h>
+ 
+ /*
+- * Management arrays for POSIX timers.	 Timers are kept in slab memory
+- * Timer ids are allocated by an external routine that keeps track of the
+- * id and the timer.  The external interface is:
+- *
+- * void *idr_find(struct idr *idp, int id);           to find timer_id <id>
+- * int idr_get_new(struct idr *idp, void *ptr);       to get a new id and
+- *                                                    related it to <ptr>
+- * void idr_remove(struct idr *idp, int id);          to release <id>
+- * void idr_init(struct idr *idp);                    to initialize <idp>
+- *                                                    which we supply.
+- * The idr_get_new *may* call slab for more memory so it must not be
+- * called under a spin lock.  Likewise idr_remore may release memory
+- * (but it may be ok to do this under a lock...).
+- * idr_find is just a memory look up and is quite fast.  A -1 return
+- * indicates that the requested id does not exist.
++ * Management arrays for POSIX timers. Timers are now kept in static PAGE-size
++ * hash table.
++ * Timer ids are allocated by local routine, which selects proper hash head by
++ * key, constructed from current->signal address and per signal struct counter.
++ * This keeps timer ids unique per process, but now they can intersect between
++ * processes.
+  */
+ 
+ /*
+  * Lets keep our timers in a slab cache :-)
+  */
+ static struct kmem_cache *posix_timers_cache;
+-static struct idr posix_timers_id;
+-static DEFINE_SPINLOCK(idr_lock);
++
++#define POSIX_TIMERS_HASH_BITS		9
++#define POSIX_TIMERS_HASH_SIZE		(1 << POSIX_TIMERS_HASH_BITS)
++
++/* Hash table is size of PAGE currently */
++static struct hlist_head posix_timers_hashtable[POSIX_TIMERS_HASH_SIZE];
++static DEFINE_SPINLOCK(hash_lock);
+ 
+ /*
+  * we assume that the new SIGEV_THREAD_ID shares no bits with the other
+@@ -152,6 +149,55 @@ static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags);
+ 	__timr;								   \
+ })
+ 
++static int hash(struct signal_struct *sig, unsigned int nr)
++{
++	return hash_32(hash32_ptr(sig) ^ nr, POSIX_TIMERS_HASH_BITS);
++}
++
++static struct k_itimer *__posix_timers_find(struct hlist_head *head, struct signal_struct *sig, timer_t id)
++{
++	struct hlist_node *node;
++	struct k_itimer *timer;
++
++	hlist_for_each_entry_rcu(timer, node, head, t_hash) {
++		if ((timer->it_signal == sig) && (timer->it_id == id))
++			return timer;
++	}
++	return NULL;
++}
++
++static struct k_itimer *posix_timer_by_id(timer_t id)
++{
++	struct signal_struct *sig = current->signal;
++	struct hlist_head *head = &posix_timers_hashtable[hash(sig, id)];
++
++	return __posix_timers_find(head, sig, id);
++}
++
++static int posix_timer_add(struct k_itimer *timer)
++{
++	struct signal_struct *sig = current->signal;
++	int next_free_id = sig->posix_timer_id;
++	struct hlist_head *head;
++	int ret = -ENOENT;
++
++	do {
++		spin_lock(&hash_lock);
++		head = &posix_timers_hashtable[hash(sig, sig->posix_timer_id)];
++		if (__posix_timers_find(head, sig, sig->posix_timer_id) == NULL) {
++			hlist_add_head_rcu(&timer->t_hash, head);
++			ret = sig->posix_timer_id++;
++		} else {
++			if (++sig->posix_timer_id < 0)
++				sig->posix_timer_id = 0;
++			if (sig->posix_timer_id == next_free_id)
++				ret = -EAGAIN;
++		}
++		spin_unlock(&hash_lock);
++	} while (ret == -ENOENT);
++	return ret;
++}
++
+ static inline void unlock_timer(struct k_itimer *timr, unsigned long flags)
+ {
+ 	spin_unlock_irqrestore(&timr->it_lock, flags);
+@@ -271,6 +317,7 @@ static __init int init_posix_timers(void)
+ 		.timer_get	= common_timer_get,
+ 		.timer_del	= common_timer_del,
+ 	};
++	int i;
+ 
+ 	posix_timers_register_clock(CLOCK_REALTIME, &clock_realtime);
+ 	posix_timers_register_clock(CLOCK_MONOTONIC, &clock_monotonic);
+@@ -282,7 +329,8 @@ static __init int init_posix_timers(void)
+ 	posix_timers_cache = kmem_cache_create("posix_timers_cache",
+ 					sizeof (struct k_itimer), 0, SLAB_PANIC,
+ 					NULL);
+-	idr_init(&posix_timers_id);
++	for (i = 0; i < POSIX_TIMERS_HASH_SIZE; i++)
++		INIT_HLIST_HEAD(&posix_timers_hashtable[i]);
+ 	return 0;
+ }
+ 
+@@ -504,9 +552,9 @@ static void release_posix_timer(struct k_itimer *tmr, int it_id_set)
+ {
+ 	if (it_id_set) {
+ 		unsigned long flags;
+-		spin_lock_irqsave(&idr_lock, flags);
+-		idr_remove(&posix_timers_id, tmr->it_id);
+-		spin_unlock_irqrestore(&idr_lock, flags);
++		spin_lock_irqsave(&hash_lock, flags);
++		hlist_del_rcu(&tmr->t_hash);
++		spin_unlock_irqrestore(&hash_lock, flags);
+ 	}
+ 	put_pid(tmr->it_pid);
+ 	sigqueue_free(tmr->sigq);
+@@ -552,22 +600,9 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
+ 		return -EAGAIN;
+ 
+ 	spin_lock_init(&new_timer->it_lock);
+- retry:
+-	if (unlikely(!idr_pre_get(&posix_timers_id, GFP_KERNEL))) {
+-		error = -EAGAIN;
+-		goto out;
+-	}
+-	spin_lock_irq(&idr_lock);
+-	error = idr_get_new(&posix_timers_id, new_timer, &new_timer_id);
+-	spin_unlock_irq(&idr_lock);
+-	if (error) {
+-		if (error == -EAGAIN)
+-			goto retry;
+-		/*
+-		 * Weird looking, but we return EAGAIN if the IDR is
+-		 * full (proper POSIX return value for this)
+-		 */
+-		error = -EAGAIN;
++	new_timer_id = posix_timer_add(new_timer);
++	if (new_timer_id < 0) {
++		error = new_timer_id;
+ 		goto out;
+ 	}
+ 
+@@ -640,7 +675,7 @@ static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags)
+ 	struct k_itimer *timr;
+ 
+ 	rcu_read_lock();
+-	timr = idr_find(&posix_timers_id, (int)timer_id);
++	timr = posix_timer_by_id(timer_id);
+ 	if (timr) {
+ 		spin_lock_irqsave(&timr->it_lock, *flags);
+ 		if (timr->it_signal == current->signal) {
 
