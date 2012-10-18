@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab2JRL7S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 07:59:18 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:48765 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752443Ab2JRL7Q (ORCPT
+	id S1754440Ab2JRMHE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 08:07:04 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:60025 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753877Ab2JRMHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 07:59:16 -0400
-Date: Thu, 18 Oct 2012 04:58:59 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rcu: restore correct batch limiting
-Message-ID: <20121018115859.GH2518@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1350458052.26103.31.camel@edumazet-glaptop>
+	Thu, 18 Oct 2012 08:07:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350458052.26103.31.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101811-2876-0000-0000-00000123E7D0
+In-Reply-To: <507FA52E.9050400@ti.com>
+References: <1350474822-7315-1-git-send-email-vinholikatti@gmail.com>
+	<1350474822-7315-2-git-send-email-vinholikatti@gmail.com>
+	<507FA52E.9050400@ti.com>
+Date: Thu, 18 Oct 2012 17:37:01 +0530
+Message-ID: <CAKVbJB_FpmbtcLr5G5sSphNOPnodZUd0sN8ha0C_RtCDtWUG=Q@mail.gmail.com>
+Subject: Re: [PATCH V4 1/4] [SCSI] drivers/scsi/ufs: Seggregate PCI Specific Code
+From: vinayak holikatti <vinholikatti@gmail.com>
+To: Venkatraman S <svenkatr@ti.com>
+Cc: James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org,
+        linux-samsung-soc@vger.kernel.org, arnd@linaro.org,
+        girish.shivananjappa@linaro.org, saugata.das@linaro.org,
+        vishak.g@samsung.com, venkat@linaro.org, k.rajesh@samsung.com,
+        dsaxena@linaro.org, ilho215.lee@samsung.com, nala.la@samsung.com,
+        sreekumar.c@samsung.com, Santosh Yaraganavi <santoshsy@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 09:14:12AM +0200, Eric Dumazet wrote:
-> From: Eric Dumazet <edumazet@google.com>
-> 
-> Commit 29c00b4a1d9e27 (rcu: Add event-tracing for RCU callback
-> invocation) added a regression in rcu_do_batch()
-> 
-> Under stress, RCU is supposed to allow to process all items in queue,
-> instead of a batch of 10 items (blimit), but an integer overflow makes
-> the effective limit being 1.
-> 
-> So RCU cannot recover and machine eventually crash because of OOM.
-> 
-> Using long instead of int is not really needed, convert everything
-> to integers.
+On Thu, Oct 18, 2012 at 12:13 PM, Venkatraman S <svenkatr@ti.com> wrote:
+> On Wednesday 17 October 2012 05:23 PM, Vinayak Holikatti wrote:
+>>
+>> This patch seggregates the PCI specific code in ufshcd.c to make it
+>> ready for splitting into core ufs driver and PCI glue driver. Also
+>> copyright header modification to remove extra warranty disclaim.
+>>
+>> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+>> Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+>> Signed-off-by: Vinayak Holikatti <vinholikatti@gmail.com>
+>> Signed-off-by: Santosh Yaraganavi <santoshsy@gmail.com>
+>> ---
+>>   drivers/scsi/ufs/Kconfig  |   50 +++----
+>>   drivers/scsi/ufs/ufs.h    |   42 ++----
+>>   drivers/scsi/ufs/ufshcd.c |  358
+>> ++++++++++++++++++++++++++-------------------
+>>   drivers/scsi/ufs/ufshci.h |   42 ++----
+>>   4 files changed, 256 insertions(+), 236 deletions(-)
+>>
+I am Vacation will look into it when i am back to work.
+> This doesn't apply on 3.7-rc1. Am I missing any patches in between ?
 
-<facepalm>
 
-Good catch!!!
 
-The reason for favoring long over int is that there are a few systems out
-there with terabytes of main memory.  In addition, there have been a few
-bugs over the past few years that could result in RCU CPU stalls of more
-than a minute.  This makes it impossible to rule out the possibility of
-a billion callbacks appearing on one CPU.
-
-So, does the following patch fix things, or a I still confused?
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-rcu: Fix batch-limit size problem
-
-Commit 29c00b4a1d9e27 (rcu: Add event-tracing for RCU callback
-invocation) added a regression in rcu_do_batch()
-
-Under stress, RCU is supposed to allow to process all items in queue,
-instead of a batch of 10 items (blimit), but an integer overflow makes
-the effective limit being 1.  So, unless there is frequent idle periods
-(during which RCU ignores batch limits), RCU can be forced into a
-state where it cannot keep up with the callback-generation rate,
-eventually resulting in OOM.
-
-This commit therefore converts a few variables in rcu_do_batch() from
-int to long to fix this problem.
-
-Reported-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index e36d085..e056e1e 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1823,7 +1823,8 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
- {
- 	unsigned long flags;
- 	struct rcu_head *next, *list, **tail;
--	int bl, count, count_lazy, i;
-+	long bl, count, count_lazy;
-+	int i;
- 
- 	/* If no callbacks are ready, just return.*/
- 	if (!cpu_has_callbacks_ready_to_invoke(rdp)) {
-
+-- 
+Regards,
+Vinayak Holikatti
