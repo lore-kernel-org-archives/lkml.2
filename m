@@ -1,136 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab2JRKle (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 06:41:34 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:44546 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410Ab2JRKlc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 06:41:32 -0400
-MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20121018101543.16036.12221.stgit@localhost.localdomain>
-References: <20121018101543.16036.12221.stgit@localhost.localdomain>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Thu, 18 Oct 2012 12:41:11 +0200
-Message-ID: <CAKgNAkhrLSTOm=zHRQPUV4WJYe8D3rhE0S3F2ATc5QRKzh4UpQ@mail.gmail.com>
-Subject: Re: [PATCH v7 00/10] IPC: checkpoint/restore in userspace enhancements
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: akpm@linux-foundation.org, catalin.marinas@arm.com, will.deacon@arm.com,
-        dhowells@redhat.com, manfred@colorfullife.com, hughd@google.com,
-        jmorris@namei.org, kosaki.motohiro@jp.fujitsu.com,
-        paulmck@linux.vnet.ibm.com, sds@tycho.nsa.gov, devel@openvz.org,
-        a.p.zijlstra@chello.nl, cmetcalf@tilera.com, linux-driver@qlogic.com,
-        ron.mercer@qlogic.com, viro@zeniv.linux.org.uk, eparis@parisplace.org,
-        tglx@linutronix.de, jitendra.kalsaria@qlogic.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, ebiederm@xmission.com,
-        casey@schaufler-ca.com, Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755582Ab2JRKnP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 06:43:15 -0400
+Received: from mga09.intel.com ([134.134.136.24]:50582 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753415Ab2JRKnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 06:43:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,606,1344236400"; 
+   d="scan'208";a="207595223"
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: fengguang.wu@intel.com, Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Keith Busch <keith.busch@intel.com>
+Subject: [PATCH] NVMe: check the return of nvme_alloc_iod
+Date: Thu, 18 Oct 2012 18:43:20 +0800
+Message-Id: <1350557000-18825-1-git-send-email-yuanhan.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stanislaw,
+It maybe failed due to out of memory.
 
-This patch series is an API change. Could you please make sure that
-all future revisions CC linux-api@vger.kernel.org, as per
-Documentation/SubmitChecklist.
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: Keith Busch <keith.busch@intel.com>
+Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+---
+ drivers/block/nvme.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Cheers,
-
-Michael
-
-
-On Thu, Oct 18, 2012 at 12:22 PM, Stanislav Kinsbursky
-<skinsbursky@parallels.com> wrote:
-> v7:
-> 1) Added comments in places, when behiviour is not obvious.
-> 2) Compilation fixed for compat layer
-> 3) test updated to use existent header files (instead of hard-coding new
-> defines in case of absence).
-> 4) comment fixed in qlge driver
->
-> v6:
-> 1) rebased on 3.7-rc1
->
-> v5:
-> 1) Several define-dependent compile bugs fixed
-> 2) IPC message copy test updated
-> 3) A couple of minor fixes.
-> 4) Qlogic driver update: rename of its internal SEM_SET define into SEM_INIT
-> (compile error).
->
-> v4:
-> 1) If MSG_COPY flag is specified, then "mtype" is not a type, but message
-> number to copy.
-> 2) MSG_SET_COPY logic for sys_msgctl() was removed.
->
-> v3:
-> 1) Copy messages to user-space under spinlock was replaced by allocation of
-> dummy message before queue lock and then copy of desired message to the dummy
-> one instead of unlinking it from queue list.
-> I.e. the message queue copy logic was changed: messages can be retrived one by
-> one (instead of receiving of the whole list at once).
->
-> This patch set is aimed to provide additional functionality for all IPC
-> objects,
-> which is required for migration of these objects by user-space
-> checkpoint/restore utils (CRIU).
->
-> The main problem here was impossibility to set up object id. This patch set
-> solves the problem in two steps:
-> 1) Makes it possible to create new object (shared memory, semaphores set or
-> messages queue) with ID, equal to passed key.
-> 2) Makes it possible to change existent object key.
->
-> Another problem was to peek messages from queues without deleting them.
-> This was achived by introducing of new MSG_COPY flag for sys_msgrcv(). If
-> MSG_COPY flag is set, then msgtyp is interpreted as message number.
->
-> The following series implements...
->
-> ---
->
-> Stanislav Kinsbursky (10):
->       ipc: remove forced assignment of selected message
->       ipc: "use key as id" functionality for resource get system call introduced
->       ipc: segment key change helper introduced
->       ipc: add new SHM_SET command for sys_shmctl() call
->       ipc: add new MSG_SET command for sys_msgctl() call
->       qlge driver: rename internal SEM_SET macro to SEM_INIT
->       ipc: add new SEM_SET command for sys_semctl() call
->       IPC: message queue receive cleanup
->       IPC: message queue copy feature introduced
->       test: IPC message queue copy feture test
->
->
->  drivers/net/ethernet/qlogic/qlge/qlge.h      |    4
->  drivers/net/ethernet/qlogic/qlge/qlge_main.c |   16 +-
->  include/linux/msg.h                          |    5 -
->  include/uapi/linux/ipc.h                     |    1
->  include/uapi/linux/msg.h                     |    2
->  include/uapi/linux/sem.h                     |    1
->  include/uapi/linux/shm.h                     |    1
->  ipc/compat.c                                 |   54 +++---
->  ipc/msg.c                                    |  117 ++++++++++---
->  ipc/msgutil.c                                |   38 ++++
->  ipc/sem.c                                    |   15 +-
->  ipc/shm.c                                    |   18 ++
->  ipc/util.c                                   |   67 +++++++-
->  ipc/util.h                                   |    6 +
->  security/selinux/hooks.c                     |    3
->  security/smack/smack_lsm.c                   |    3
->  tools/testing/selftests/ipc/Makefile         |   25 +++
->  tools/testing/selftests/ipc/msgque.c         |  231 ++++++++++++++++++++++++++
->  18 files changed, 526 insertions(+), 81 deletions(-)
->  create mode 100644 tools/testing/selftests/ipc/Makefile
->  create mode 100644 tools/testing/selftests/ipc/msgque.c
->
-
-
-
+diff --git a/drivers/block/nvme.c b/drivers/block/nvme.c
+index 931769e..eb58978 100644
+--- a/drivers/block/nvme.c
++++ b/drivers/block/nvme.c
+@@ -1091,6 +1091,10 @@ static struct nvme_iod *nvme_map_user_pages(struct nvme_dev *dev, int write,
+ 	}
+ 
+ 	iod = nvme_alloc_iod(count, length, GFP_KERNEL);
++	if (!iod) {
++		err = -ENOMEM;
++		goto put_pages;
++	}
+ 	sg = iod->sg;
+ 	sg_init_table(sg, count);
+ 	for (i = 0; i < count; i++) {
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+1.7.7.6
+
