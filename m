@@ -1,50 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932548Ab2JRQdt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 12:33:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49585 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932480Ab2JRQdq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 12:33:46 -0400
-From: Sangho Yi <antiroot@gmail.com>
-To: paul.gortmaker@windriver.com, stefan.xk.nilsson@stericsson.com,
-        linus.walleij@linaro.org, ulf.hansson@stericsson.com, rjw@sisk.pl,
-        girish.shivananjappa@linaro.org, cjb@laptop.org
-Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        Sangho Yi <antiroot@gmail.com>
-Subject: [PATCH 5/6] mmc: core: sdio_bus.c: Fixed a warning for the pr_warning(...
-Date: Fri, 19 Oct 2012 01:31:58 +0900
-Message-Id: <1350577919-2750-5-git-send-email-antiroot@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350577919-2750-1-git-send-email-antiroot@gmail.com>
-References: <n>
- <1350577919-2750-1-git-send-email-antiroot@gmail.com>
+	id S1757237Ab2JRQfq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 12:35:46 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:53456 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756206Ab2JRQfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 12:35:44 -0400
+Date: Thu, 18 Oct 2012 09:35:25 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rcu: restore correct batch limiting
+Message-ID: <20121018163525.GJ2518@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1350458052.26103.31.camel@edumazet-glaptop>
+ <20121018115859.GH2518@linux.vnet.ibm.com>
+ <1350564290.26103.1496.camel@edumazet-glaptop>
+ <20121018152543.GI2518@linux.vnet.ibm.com>
+ <1350576628.32642.14.camel@edumazet-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350576628.32642.14.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101816-7182-0000-0000-000002E005BA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I fixed a line which had the following warning:
-WARNING: Prefer pr_warn(... to pr_warning(...
+On Thu, Oct 18, 2012 at 06:10:28PM +0200, Eric Dumazet wrote:
+> On Thu, 2012-10-18 at 08:25 -0700, Paul E. McKenney wrote:
+> > On Thu, Oct 18, 2012 at 02:44:50PM +0200, Eric Dumazet wrote:
+> 
+> > > 
+> > > Having 2 billions callbacks on one cpu would be problematic, I really
+> > > hope nobody relies on this ;)
+> > 
+> > Fair point!  ;-)
+> > 
+> > But just making everything long makes it quite easy to analyze.
+> > 
+> > > I guess the 10/infinity switch should be smarter.
+> > > 
+> > > something like the following maybe :
+> > > 
+> > > rdp->blimit = max(blimit, rdp->qlen >> 6);
+> > > 
+> > > (if queue is big, dont wait to hit 10000 before allowing more items to
+> > > be handled per round)
+> > 
+> > The -rt guys would not be amused.  :-(
+> > 
+> > But for non-realtime use, increasing rcutree.blimit either at boot or
+> > via sysfs could make sense.  It is also likely that I will move callback
+> > processing to a kthread at some point, which would allow some additional
+> > flexibility.
+> > 
+> 
+> Ah, I now realize the loop can exceed blimit, but is it true for BH
+> variant ? (Not really a problem for 3.6/3.7 kernels, but prior ones)
 
-Signed-off-by: Sangho Yi <antiroot@gmail.com>
----
- drivers/mmc/core/sdio_bus.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Yep, applies to all the RCU flavors.
 
-diff --git a/drivers/mmc/core/sdio_bus.c b/drivers/mmc/core/sdio_bus.c
-index 1a1d96c..e5b7197 100644
---- a/drivers/mmc/core/sdio_bus.c
-+++ b/drivers/mmc/core/sdio_bus.c
-@@ -175,7 +175,7 @@ static int sdio_bus_remove(struct device *dev)
- 	drv->remove(func);
- 
- 	if (func->irq_handler) {
--		pr_warning("WARNING: driver %s did not remove "
-+		pr_warn("WARNING: driver %s did not remove "
- 			"its interrupt handler!\n", drv->name);
- 		sdio_claim_host(func);
- 		sdio_release_irq(func);
--- 
-1.7.9.5
+> if (++count >= bl &&
+>     (need_resched() ||
+>      (!is_idle_task(current) && !rcu_is_callbacks_kthread())))
+>         break;
+> 
+> I wonder if ksoftirqd should be included as well...
+
+This would be safe only if ksoftirqd could be guaranteed to be the
+lowest-priority process on the given CPU, which I do not believe to be
+the case.  The problem is that if ksoftirqd is not the lowest-priority
+process on the given CPU, we can seriously delay that other process
+for no good reason.  The fact that ksoftirqd does local_bh_disable()
+means that the scheduler cannot preempt it, either.  :-(
+
+> > Furthermore, it would be easy to have one default for non-rt and another
+> > for -rt, if that would help.
+> > 
+> > > Signed-off-by: Eric Dumazet <edumazet@google.com>
+> > > 
+> > > Please dont forget stable teams.  (3.2 + )
+> > 
+> > Added both, please see below!
+> 
+> Seems fine to me, thanks Paul !
+
+Thank you for everything on this one!
+
+							Thanx, Paul
 
