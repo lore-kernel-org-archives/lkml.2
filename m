@@ -1,116 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab2JRKHr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 06:07:47 -0400
-Received: from antcom.de ([188.40.178.216]:52803 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752998Ab2JRKHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 06:07:46 -0400
-Message-ID: <507FD4EB.1080204@antcom.de>
-Date: Thu, 18 Oct 2012 12:07:39 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S1755508Ab2JRKMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 06:12:50 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:13407
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753549Ab2JRKMs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 06:12:48 -0400
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+X-SpamScore: 17
+X-BigFish: VS17(zzzz1ce5h1202h1d1ah1cabh1d2ahzz8275bhz2ei87h2a8h668h839hd24he5bh107ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h13eah1441h14ddhff4m129fs1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: Bob Liu <lliubbo@gmail.com>
+To: <akpm@linux-foundation.org>
+CC: <aarcange@redhat.com>, <xiaoguangrong@linux.vnet.ibm.com>,
+        <hughd@google.com>, <rientjes@google.com>,
+        <linux-kernel@vger.kernel.org>, <kirill.shutemov@linux.intel.com>,
+        Bob Liu <lliubbo@gmail.com>
+Subject: [PATCH 1/4] thp: clean up __collapse_huge_page_isolate
+Date: Thu, 18 Oct 2012 18:12:17 +0800
+Message-ID: <1350555140-11030-1-git-send-email-lliubbo@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        w.sang@pengutronix.de, jbe@pengutronix.de, plagnioj@jcrosoft.com,
-        highguy@gmail.com, broonie@opensource.wolfsonmicro.com,
-        daniel-gl@gmx.net, rmallon@gmail.com
-Subject: Re: [PATCH RFC 02/15 v5] gpio: Add sysfs support to block GPIO API
-References: <1350477107-26512-1-git-send-email-stigge@antcom.de> <1350477107-26512-3-git-send-email-stigge@antcom.de> <20121017190520.GC25996@kroah.com>
-In-Reply-To: <20121017190520.GC25996@kroah.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2012 09:05 PM, Greg KH wrote:
->> +static int gpio_block_value_unexport(struct gpio_block *block)
->> +{
->> +	struct device	*dev;
->> +	int		i;
->> +
->> +	dev = class_find_device(&gpio_block_class, NULL, block, match_export);
->> +	if (!dev)
->> +		return -ENODEV;
->> +
->> +	for (i = 0; i < block->ngpio; i++)
->> +		gpio_free(block->gpio[i]);
->> +
->> +	device_remove_file(dev, &dev_attr_block_value);
->> +
->> +	return 0;
->> +}
-> 
-> Wait, what?  You are removing a sysfs file in this function, from within
-> a sysfs write:
+There are duplicated place using release_pte_pages().
+And release_all_pte_pages() can also be removed.
 
-Yes, exactly:
+Signed-off-by: Bob Liu <lliubbo@gmail.com>
+---
+ mm/huge_memory.c |   37 +++++++++++--------------------------
+ 1 file changed, 11 insertions(+), 26 deletions(-)
 
->> +static ssize_t gpio_block_exported_store(struct device *dev,
->> +					 struct device_attribute *attr,
->> +					 const char *buf, size_t size)
->> +{
->> +	long	value;
->> +	int	status;
->> +	struct	gpio_block *block = dev_get_drvdata(dev);
->> +	int	exported = gpio_block_value_is_exported(block);
->> +
->> +	status = kstrtoul(buf, 0, &value);
->> +	if (status < 0)
->> +		goto err;
->> +
->> +	if (value != exported) {
->> +		if (value)
->> +			status = gpio_block_value_export(block);
->> +		else
->> +			status = gpio_block_value_unexport(block);
-> 
-> That looks like a recipie for disaster.  Why do you allow userspace to
-> do this?
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index a863af2..462d6ea 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1700,64 +1700,49 @@ static void release_pte_pages(pte_t *pte, pte_t *_pte)
+ 	}
+ }
+ 
+-static void release_all_pte_pages(pte_t *pte)
+-{
+-	release_pte_pages(pte, pte + HPAGE_PMD_NR);
+-}
+-
+ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+ 					unsigned long address,
+ 					pte_t *pte)
+ {
+ 	struct page *page;
+ 	pte_t *_pte;
+-	int referenced = 0, isolated = 0, none = 0;
++	int referenced = 0, isolated = 1, none = 0;
+ 	for (_pte = pte; _pte < pte+HPAGE_PMD_NR;
+ 	     _pte++, address += PAGE_SIZE) {
+ 		pte_t pteval = *_pte;
+ 		if (pte_none(pteval)) {
+ 			if (++none <= khugepaged_max_ptes_none)
+ 				continue;
+-			else {
+-				release_pte_pages(pte, _pte);
++			else
+ 				goto out;
+-			}
+ 		}
+-		if (!pte_present(pteval) || !pte_write(pteval)) {
+-			release_pte_pages(pte, _pte);
++		if (!pte_present(pteval) || !pte_write(pteval))
+ 			goto out;
+-		}
+ 		page = vm_normal_page(vma, address, pteval);
+-		if (unlikely(!page)) {
+-			release_pte_pages(pte, _pte);
++		if (unlikely(!page))
+ 			goto out;
+-		}
++
+ 		VM_BUG_ON(PageCompound(page));
+ 		BUG_ON(!PageAnon(page));
+ 		VM_BUG_ON(!PageSwapBacked(page));
+ 
+ 		/* cannot use mapcount: can't collapse if there's a gup pin */
+-		if (page_count(page) != 1) {
+-			release_pte_pages(pte, _pte);
++		if (page_count(page) != 1)
+ 			goto out;
+-		}
+ 		/*
+ 		 * We can do it before isolate_lru_page because the
+ 		 * page can't be freed from under us. NOTE: PG_lock
+ 		 * is needed to serialize against split_huge_page
+ 		 * when invoked from the VM.
+ 		 */
+-		if (!trylock_page(page)) {
+-			release_pte_pages(pte, _pte);
++		if (!trylock_page(page))
+ 			goto out;
+-		}
+ 		/*
+ 		 * Isolate the page to avoid collapsing an hugepage
+ 		 * currently in use by the VM.
+ 		 */
+ 		if (isolate_lru_page(page)) {
+ 			unlock_page(page);
+-			release_pte_pages(pte, _pte);
+ 			goto out;
+ 		}
+ 		/* 0 stands for page_is_file_cache(page) == false */
+@@ -1770,11 +1755,11 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+ 		    mmu_notifier_test_young(vma->vm_mm, address))
+ 			referenced = 1;
+ 	}
+-	if (unlikely(!referenced))
+-		release_all_pte_pages(pte);
+-	else
+-		isolated = 1;
++	if (unlikely(!referenced)) {
+ out:
++		release_pte_pages(pte, _pte);
++		isolated = 0;
++	}
+ 	return isolated;
+ }
+ 
+-- 
+1.7.9.5
 
-Exporting for gpio blocks is done as follows: writing "1" to the
-"exported" _device_ attribute of the gpio block creates the "values"
-attribute and at the same time requests the whole block (including all
-of its gpios) as "sysfs".
 
-This admittedly deviates from the exporting of gpios (with the "export"
-and "unexport" _class_ attributes) because blocks are not numbered. In
-contrast, they are registered in a list (as was requested). Now, I
-already had the idea of also having an "export" and "unexport" _class_
-attribute for blocks also, but from a userspace perspective you only see
-the presence and name of the gpio block if it is already being in sysfs
-(even if not exported yet). If it wouldn't be this way, a user couldn't
-guess how the required gpio block is called (or numbered), wouldn't even
-know about its presence.
-
-Just for understanding your strong desire for the device attribute
-("value") being always present (in contrast to being created and removed
-dynamically) - can you please give me any hint how the dynamic approach
-would lead to disaster?
-
-One possibility would be to always have "value" as a default device
-attribute, but then it wouldn't be so obvious that it's useless until
-"exported" is "1".
-
-What do you think?
-
-For now, I would elaborate about my terse "only available if /exported
-is 1" like this:
-
-"
-Block GPIO devices are visible in sysfs as soon as they are registered
-(e.g. via devicetree definition). For actual I/O use, their "exported"
-boolean attribute must be set to "1". Then, the attribute "values" is
-created and at the same time, the GPIOs in the block are requested for
-exclusive use by sysfs.
-"
-
-Thanks in advance,
-
-Roland
