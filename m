@@ -1,394 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab2JRGuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 02:50:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41560 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188Ab2JRGuJ (ORCPT
+	id S1754695Ab2JRGwY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 02:52:24 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:41542 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753336Ab2JRGwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 02:50:09 -0400
-Date: Wed, 17 Oct 2012 23:50:04 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mischa Jonker <mischa.jonker@synopsys.com>
-Cc: m.d.s.x.jonker@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arc-linux-dev@synopsys.com
-Subject: Re: [PATCH] Input: serio - Add ARC PS/2 driver
-Message-ID: <20121018065004.GA12838@core.coreip.homeip.net>
-References: <1350468619-4813-1-git-send-email-mischa.jonker@synopsys.com>
- <1350468619-4813-2-git-send-email-mischa.jonker@synopsys.com>
+	Thu, 18 Oct 2012 02:52:22 -0400
+Message-ID: <507FA6D9.7080800@linux.vnet.ibm.com>
+Date: Thu, 18 Oct 2012 12:21:05 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350468619-4813-2-git-send-email-mischa.jonker@synopsys.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH v9 05/12] x86, hotplug, suspend: Online CPU0 for suspend
+ or hibernate
+References: <1350058189-6769-1-git-send-email-fenghua.yu@intel.com> <35538834.Boc5416YXf@vostro.rjw.lan> <3E5A0FA7E9CA944F9D5414FEC6C7122030B1A8BC@ORSMSX105.amr.corp.intel.com> <4821251.PVP3SGWCqy@vostro.rjw.lan>
+In-Reply-To: <4821251.PVP3SGWCqy@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12101806-5816-0000-0000-000004F25200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mischa,
-
-On Wed, Oct 17, 2012 at 12:10:19PM +0200, Mischa Jonker wrote:
-> This adds support for the PS/2 block that is used in various ARC FPGA
-> platforms.
+On 10/18/2012 12:03 PM, Rafael J. Wysocki wrote:
+> On Wednesday 17 of October 2012 17:39:48 Yu, Fenghua wrote:
+>>>>> On Tuesday, October 16, 2012 10:19 PM Rafael J. Wysocki wrote:
+>>> On Tuesday 16 of October 2012 22:12:27 Yu, Fenghua wrote:
+>>>>> On 10/16/2012 09:47 PM, Rafael J. Wysocki wrote:
+>>>>>> On Tuesday 16 of October 2012 11:05:18 Srivatsa S. Bhat wrote:
+>>>>>>> On 10/16/2012 02:20 AM, Rafael J. Wysocki wrote:
+>>>>>>>> On Friday 12 of October 2012 09:09:42 Fenghua Yu wrote:
+>>>>>>>>> From: Fenghua Yu <fenghua.yu@intel.com>
+>>>>> fix the bug I
+>>>>> pointed out in my other mail.
+>>> Because things like this are often overlooked by people trying to
+>>> optimize
+>>> stuff and the fact that you have to add a comment explaining that
+>>> dependency
+>>> only means that it is not exactly straightforward.
+>>
+>> If people try to optimize pm notifier, they really need to know
+>> pm_notifier() API and its priority. If they ignore the priority, they will
+>> screw up kernel no matter how many comments in it.
+>>
+>>>
+>>> Moreover, you should also add a corresponding comment in the other
+>>> notifier
+>>> indicating that its priority should be higher than the priority of the
+>>> new thing and explaining why.
+>>
+>> The comment in the patch explains this very clearly. I don't think it's
+>> necessary to add comments in other notifiers.
+>>
+>> If adding comments in other notifiers each time when you add a new notifier,
+>> will you add 10 more comments in all other notifiers if you add 10 new notifiers?
+> 
+> Well, if there are strict ordering requirements regarding them, then those
+> requirements should be documented in both places.  Otherwise, if somebody looks
+> at cpu_hotplug_pm_callback() alone, for example, he/she may not even realize
+> that it has to be strictly ordered with respect to bsp_pm_callback().
 > 
 
-Thank you for making changes. A few more comments below.
+Right, either we could put comments at both places or set up #defines for
+their priorities in a common header file or some such and comment about it there,
+like what is done in include/linux/cpu.h for example. But atleast one of these
+*has* to be done; just commenting at one place is too risky for code-maintenance.
 
-> Signed-off-by: Mischa Jonker <mischa.jonker@synopsys.com>
-> ---
->  drivers/input/serio/Kconfig   |    9 ++
->  drivers/input/serio/Makefile  |    1 +
->  drivers/input/serio/arc_ps2.c |  275 +++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 285 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/input/serio/arc_ps2.c
+> Of course, you can argue that people should know what they are doing, but
+> then reality is that it's quite easy to overlook things like that.
+>
+
+Yep.
+ 
+>> I would think when people try to change notifier priority, they should
+>> know what they are going to do and search the notifiers and see the comments.
+>>
+>> BTW, the other notifier is in generic code. Adding a paranoid comment in
+>> it doesn't seem to be worth. The comment in this patch code is very clear
+>> already.
 > 
-> diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
-> index 55f2c22..4a4e182 100644
-> --- a/drivers/input/serio/Kconfig
-> +++ b/drivers/input/serio/Kconfig
-> @@ -234,4 +234,13 @@ config SERIO_PS2MULT
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called ps2mult.
->  
-> +config SERIO_ARC_PS2
-> +	tristate "ARC PS/2 support"
-> +	help
-> +	  Say Y here if you have an ARC FPGA platform with a PS/2
-> +	  controller in it.
-> +
-> +	  To compile this driver as a module, choose M here; the module
-> +	  will be called arc_ps2.
-> +
->  endif
-> diff --git a/drivers/input/serio/Makefile b/drivers/input/serio/Makefile
-> index dbbe376..4b0c8f8 100644
-> --- a/drivers/input/serio/Makefile
-> +++ b/drivers/input/serio/Makefile
-> @@ -25,3 +25,4 @@ obj-$(CONFIG_SERIO_RAW)		+= serio_raw.o
->  obj-$(CONFIG_SERIO_AMS_DELTA)	+= ams_delta_serio.o
->  obj-$(CONFIG_SERIO_XILINX_XPS_PS2)	+= xilinx_ps2.o
->  obj-$(CONFIG_SERIO_ALTERA_PS2)	+= altera_ps2.o
-> +obj-$(CONFIG_SERIO_ARC_PS2)	+= arc_ps2.o
-> diff --git a/drivers/input/serio/arc_ps2.c b/drivers/input/serio/arc_ps2.c
-> new file mode 100644
-> index 0000000..c952685
-> --- /dev/null
-> +++ b/drivers/input/serio/arc_ps2.c
-> @@ -0,0 +1,275 @@
-> +/*
-> + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * Driver is originally developed by Pavel Sokolov <psokolov@synopsys.com>
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/input.h>
-> +#include <linux/serio.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/io.h>
-> +#include <linux/kernel.h>
-> +#include <linux/slab.h>
-> +
-> +#define ARC_PS2_PORTS                   (2)
-> +
-> +#define ARC_ARC_PS2_ID                  (0x0001f609)
-> +
-> +#define STAT_TIMEOUT                    (128)
-> +
-> +#define PS2_STAT_RX_FRM_ERR             (1)
-> +#define PS2_STAT_RX_BUF_OVER            (1 << 1)
-> +#define PS2_STAT_RX_INT_EN              (1 << 2)
-> +#define PS2_STAT_RX_VAL                 (1 << 3)
-> +#define PS2_STAT_TX_ISNOT_FUL           (1 << 4)
-> +#define PS2_STAT_TX_INT_EN              (1 << 5)
-> +
-> +struct arc_ps2_port {
-> +	void *data, *status;
+> The problem is that it is generally difficult to find all subsystems that
+> have registered notifiers in a given chain and figuring out dependencies
+> between them is highly problematic.  That's why I'm saying this is a fragile
+> design - because it is so easy to break accidentally (and that's already
+> happened in CPU hotplug, so I'm not making that up).
 
-These 2 should be annotated as __iomem. May I also suggest calling them
-data_addt and status_addr?
+True..
+ 
+Regards,
+Srivatsa S. Bhat
 
-> +	struct serio *io;
-> +};
-> +
-> +struct arc_ps2_data {
-> +	struct arc_ps2_port port[ARC_PS2_PORTS];
-> +	struct resource *iomem_res;
-> +	int irq;
-> +	void *addr;
-
-void __iomem *
-
-> +	unsigned frame_error;
-
-Prefer "unsigned int".
-
-> +	unsigned buf_overflow;
-> +	unsigned total_int;
-> +};
-> +
-> +static void arc_ps2_check_rx(struct arc_ps2_data *arc_ps2,
-> +			     struct arc_ps2_port *port)
-> +{
-> +	unsigned flag, status;
-> +	unsigned char data;
-> +
-> +	while (1) {
-> +		status = ioread32(port->status);
-> +		if (!(status & PS2_STAT_RX_VAL))
-> +			break;
-> +		flag = 0;
-> +
-> +		arc_ps2->total_int++;
-> +		if (status & PS2_STAT_RX_FRM_ERR) {
-> +			arc_ps2->frame_error++;
-> +			flag |= SERIO_PARITY;
-> +		} else if (status & PS2_STAT_RX_BUF_OVER) {
-> +			arc_ps2->buf_overflow++;
-> +			flag |= SERIO_FRAME;
-> +		}
-> +		data = ioread32(port->data) & 0xff;
-> +
-> +		serio_interrupt(port->io, data, flag);
-> +	}
-> +}
-> +
-> +static irqreturn_t arc_ps2_interrupt(int irq, void *dev)
-> +{
-> +	struct arc_ps2_data *arc_ps2 = dev;
-> +	int i;
-> +
-> +	for (i = 0; i < ARC_PS2_PORTS; i++)
-> +		arc_ps2_check_rx(arc_ps2, &arc_ps2->port[i]);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int arc_ps2_write(struct serio *io, unsigned char val)
-> +{
-> +	unsigned status;
-> +	struct arc_ps2_port *port = io->port_data;
-> +	int timeout = STAT_TIMEOUT;
-> +
-> +	do {
-> +		status = ioread32(port->status);
-> +		cpu_relax();
-> +		timeout--;
-> +	} while (!(status & PS2_STAT_TX_ISNOT_FUL) && timeout);
-> +
-> +	if (timeout)
-
-Curly braces on this branch too please - the rule is that all branches
-should have or not have braces. This overrides the single-statement
-rule.
-
-> +		iowrite32(val & 0xff, port->data);
-> +	else {
-> +		dev_err(&io->dev, "write timeout\n");
-> +		return -ETIMEDOUT;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int arc_ps2_open(struct serio *io)
-> +{
-> +	struct arc_ps2_port *port = io->port_data;
-> +	iowrite32(PS2_STAT_RX_INT_EN, port->status);
-> +	return 0;
-> +}
-> +
-> +static void arc_ps2_close(struct serio *io)
-> +{
-> +	struct arc_ps2_port *port = io->port_data;
-> +
-> +	iowrite32(ioread32(port->status) & ~PS2_STAT_RX_INT_EN, port->status);
-> +}
-> +
-> +static int __devinit arc_ps2_allocate_port(struct platform_device *pdev,
-> +					   struct arc_ps2_port *port,
-> +					   int index, void *base)
-> +{
-> +	struct serio *io;
-> +
-> +	io = kzalloc(sizeof(struct serio), GFP_KERNEL);
-> +	if (!io)
-> +		return -ENOMEM;
-> +
-> +	io->id.type = SERIO_8042;
-> +	io->write = arc_ps2_write;
-> +	io->open = arc_ps2_open;
-> +	io->close = arc_ps2_close;
-> +	snprintf(io->name, sizeof(io->name), "ARC PS/2 port%d", index);
-> +	snprintf(io->phys, sizeof(io->phys), "arc/serio%d", index);
-> +	io->port_data = port;
-> +
-> +	port->io = io;
-> +
-> +	port->data = base + 4 + index * 4;
-> +	port->status = base + 4 + ARC_PS2_PORTS * 4 + index * 4;
-> +
-> +	dev_dbg(&pdev->dev, "port%d is allocated (data = 0x%p, status = 0x%p)\n",
-> +		index, port->data, port->status);
-> +
-> +	return 0;
-> +}
-> +
-> +static int __devinit arc_ps2_probe(struct platform_device *pdev)
-> +{
-> +	struct arc_ps2_data *arc_ps2;
-> +	int ret, id, i;
-> +
-> +	arc_ps2 = kzalloc(sizeof(struct arc_ps2_data), GFP_KERNEL);
-> +	if (!arc_ps2) {
-> +		dev_err(&pdev->dev, "out of memory\n");
-> +		ret = -ENOMEM;
-> +		goto out;
-> +	}
-> +
-> +	arc_ps2->iomem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (!arc_ps2->iomem_res) {
-> +		dev_err(&pdev->dev, "no IO memory defined\n");
-> +		ret = -ENODEV;
-
--EINVAL
-
-> +		goto out_free;
-> +	}
-> +
-> +	arc_ps2->irq = platform_get_irq_byname(pdev, "arc_ps2_irq");
-> +	if (arc_ps2->irq < 0) {
-> +		dev_err(&pdev->dev, "no IRQ defined\n");
-> +		ret = -ENODEV;
-
--EINVAL
-
-> +		goto out_free;
-> +	}
-> +
-> +	if (!request_mem_region(arc_ps2->iomem_res->start,
-> +	    resource_size(arc_ps2->iomem_res), pdev->name)) {
-> +		dev_err(&pdev->dev, "memory allocation failed cannot get the I/O addr 0x%x\n",
-> +			(unsigned int)arc_ps2->iomem_res->start);
-
-I think we have a format specifier for resources.
-
-> +
-> +		ret = -EBUSY;
-> +		goto out_free;
-> +	}
-> +
-> +	arc_ps2->addr = ioremap_nocache(arc_ps2->iomem_res->start,
-> +					resource_size(arc_ps2->iomem_res));
-> +	if (!arc_ps2->addr) {
-> +		dev_err(&pdev->dev, "memory mapping failed\n");
-> +		ret = -ENOMEM;
-> +		goto out_release_region;
-> +	}
-> +
-> +	dev_info(&pdev->dev, "irq = %d, address = 0x%p, ports = %i\n",
-> +		 arc_ps2->irq, arc_ps2->addr, ARC_PS2_PORTS);
-> +
-> +	id = ioread32(arc_ps2->addr);
-> +	if (id != ARC_ARC_PS2_ID) {
-> +		dev_err(&pdev->dev, "device id does not match\n");
-> +		ret = ENXIO;
-
--ENXIO
-
-> +		goto out_unmap;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, arc_ps2);
-> +
-> +	for (i = 0; i < ARC_PS2_PORTS; i++) {
-> +		ret = arc_ps2_allocate_port(pdev, &arc_ps2->port[i], i,
-> +					    arc_ps2->addr);
-> +		if (ret)
-> +			goto release;
-
-Can we rename 'ret' to 'error'?
-
-> +		serio_register_port(arc_ps2->port[i].io);
-> +	}
-> +
-> +	ret = request_irq(arc_ps2->irq, arc_ps2_interrupt, 0,
-> +			  "arc_ps2", arc_ps2);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Could not allocate IRQ\n");
-> +		goto release;
-> +	}
-> +
-> +	return 0;
-> +
-> +release:
-> +	for (i = 0; i < ARC_PS2_PORTS; i++) {
-> +		if (arc_ps2->port[i].io)
-> +			serio_unregister_port(arc_ps2->port[i].io);
-> +	}
-> +out_unmap:
-> +	iounmap((void __iomem *) arc_ps2->addr);
-
-No need to cast to __iomem here.
-
-> +out_release_region:
-> +	release_mem_region(arc_ps2->iomem_res->start,
-> +			   resource_size(arc_ps2->iomem_res));
-> +out_free:
-> +	kfree(arc_ps2);
-> +out:
-> +	return ret;
-> +}
-> +
-> +static int __devexit arc_ps2_remove(struct platform_device *pdev)
-> +{
-> +	struct arc_ps2_data *arc_ps2;
-> +	int i;
-> +
-> +	arc_ps2 = platform_get_drvdata(pdev);
-> +	for (i = 0; i < ARC_PS2_PORTS; i++)
-> +		serio_unregister_port(arc_ps2->port[i].io);
-> +
-> +	free_irq(arc_ps2->irq, arc_ps2);
-> +	iounmap((void __iomem *) arc_ps2->addr);
-
-No need to cast to __iomem here.
-
-> +	release_mem_region(arc_ps2->iomem_res->start,
-> +			   resource_size(arc_ps2->iomem_res));
-> +
-> +	dev_dbg(&pdev->dev, "interrupt count = %i\n", arc_ps2->total_int);
-> +	dev_dbg(&pdev->dev, "frame error count = %i\n", arc_ps2->frame_error);
-> +	dev_dbg(&pdev->dev, "buffer overflow count = %i\n",
-> +		arc_ps2->buf_overflow);
-> +
-> +	kfree(arc_ps2);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver arc_ps2_driver = {
-> +	.driver = {
-> +		   .name = "arc_ps2",
-> +		   .owner = THIS_MODULE,
-> +		   },
-> +	.probe = arc_ps2_probe,
-> +	.remove = __devexit_p(arc_ps2_remove),
-> +};
-> +
-> +module_platform_driver(arc_ps2_driver);
-> +
-> +MODULE_LICENSE("GPL");
-> +MODULE_AUTHOR("Pavel Sokolov <psokolov@synopsys.com>");
-> +MODULE_DESCRIPTION("ARC PS/2 Driver");
-> -- 
-> 1.7.0.4
+> 
+>>> I really think that notifiers are fragile in general and this
+>>> particular
+>>> one is no exception.
+>>
+>> If we think pm_notifier API is fragile, we need to fix the API instead of
+>> leaving it there and not allowing people to use it because it's suspected
+>> fragile.
+> 
+> Because it is use by the existing code which generally works and may be
+> broken while attempting to "fix" the API.
+> 
+>> It's simply not realistic to tell people not to use the API each
+>> time in code review while in the meantime the API and its priority are staying
+>> in kernel to allow people to use it.
+> 
+> I don't quite agree.  It sometimes is not worth changing code that's been
+> around for a while already, because it's been tested in multiple configurations
+> and changing it may cause things to break, although we may not like the APIs
+> used by that code.  That doesn't necessarily mean, however, that adding new
+> code using those APIs is always a good idea.
+> 
+> In this particular case I just wondered if we could avoid adding more code
+> that would use an API having known problems.  The answer seems to be that
+> it would cost some additional complexity that might not be worth it.  This
+> is a good answer, but you might have given it to me directly. :-)
 > 
 
--- 
-Dmitry
