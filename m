@@ -1,219 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874Ab2JRUBJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 16:01:09 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:31556 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987Ab2JRUBH (ORCPT
+	id S1754542Ab2JRUDo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 16:03:44 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:35364 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753226Ab2JRUDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 16:01:07 -0400
-Message-ID: <1350590458.2680.44.camel@lorien2>
-Subject: [PATCH v2] Documentation DMA-API-HOWTO.txt Add dma mapping error
- check usage examples
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: mtk.manpages@gmail.com, Dan Carpenter <dan.carpenter@oracle.com>,
-        konrad.wilk@oracle.com, rob@landley.net, joerg.roedel@amd.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, shuahkhan@gmail.com
-Date: Thu, 18 Oct 2012 14:00:58 -0600
-In-Reply-To: <CAKgNAkhx2trGUMCbpYbKbMYYjq9oTeAnqG436_MP2t6noA3K-g@mail.gmail.com>
-References: <1350230064.4069.1.camel@lorien2> <20121018094715.GC5685@mwanda>
-	 <CAKgNAkhx2trGUMCbpYbKbMYYjq9oTeAnqG436_MP2t6noA3K-g@mail.gmail.com>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 18 Oct 2012 16:03:43 -0400
+Date: Thu, 18 Oct 2012 13:03:38 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, bhutchings@solarflare.com,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch for-3.7 v2] mm, mempolicy: avoid taking mutex inside
+ spinlock when reading numa_maps
+In-Reply-To: <507F86BD.7070201@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1210181255470.26994@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com> <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com> <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com> <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com>
+ <20121017040515.GA13505@redhat.com> <alpine.DEB.2.00.1210162222100.26279@chino.kir.corp.google.com> <20121017181413.GA16805@redhat.com> <alpine.DEB.2.00.1210171219010.28214@chino.kir.corp.google.com> <20121017193229.GC16805@redhat.com>
+ <alpine.DEB.2.00.1210171237130.28214@chino.kir.corp.google.com> <20121017194501.GA24400@redhat.com> <alpine.DEB.2.00.1210171318400.28214@chino.kir.corp.google.com> <alpine.DEB.2.00.1210171428540.20712@chino.kir.corp.google.com> <507F803A.8000900@jp.fujitsu.com>
+ <507F86BD.7070201@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance the document to discuss the importance of dma mapping error checks
-after dma_map_single() and dma_map_page() calls. Also added usage examples
-that include unmap examples in error paths when dma mapping error is returned.
-Includes correct and incorrect usages to high light some common mistakes in
-error paths especially when dma mapping fails when more than one dma mapping
-call is made.
+On Thu, 18 Oct 2012, Kamezawa Hiroyuki wrote:
 
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
----
- Documentation/DMA-API-HOWTO.txt |  126 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 126 insertions(+)
+> diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+> index cceaab0..43973b0 100644
+> --- a/fs/proc/internal.h
+> +++ b/fs/proc/internal.h
+> @@ -12,6 +12,7 @@
+>  #include <linux/sched.h>
+>  #include <linux/proc_fs.h>
+>  struct  ctl_table_header;
+> +struct  mempolicy;
+>   extern struct proc_dir_entry proc_root;
+>  #ifdef CONFIG_PROC_SYSCTL
+> @@ -74,6 +75,9 @@ struct proc_maps_private {
+>  #ifdef CONFIG_MMU
+>  	struct vm_area_struct *tail_vma;
+>  #endif
+> +#ifdef CONFIG_NUMA
+> +	struct mempolicy *task_mempolicy;
+> +#endif
+>  };
+>   void proc_init_inodecache(void);
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index 14df880..624927d 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -89,11 +89,41 @@ static void pad_len_spaces(struct seq_file *m, int len)
+>  		len = 1;
+>  	seq_printf(m, "%*c", len, ' ');
+>  }
+> +#ifdef CONFIG_NUMA
+> +/*
+> + * numa_maps scans all vmas under mmap_sem and checks their mempolicy.
 
-diff --git a/Documentation/DMA-API-HOWTO.txt b/Documentation/DMA-API-HOWTO.txt
-index a0b6250..4a4fb29 100644
---- a/Documentation/DMA-API-HOWTO.txt
-+++ b/Documentation/DMA-API-HOWTO.txt
-@@ -468,11 +468,46 @@ To map a single region, you do:
- 	size_t size = buffer->len;
- 
- 	dma_handle = dma_map_single(dev, addr, size, direction);
-+	if (dma_mapping_error(dma_handle)) {
-+		/*
-+		 * reduce current DMA mapping usage,
-+		 * delay and try again later or
-+		 * reset driver.
-+		 */
-+		goto map_error_handling;
-+	}
- 
- and to unmap it:
- 
- 	dma_unmap_single(dev, dma_handle, size, direction);
- 
-+You should call dma_mapping_error() as dma_map_single() could fail and return
-+error. Not all dma implementations support dma_mapping_error() interface.
-+However, it is a good practice to call dma_mapping_error() interface, which
-+will invoke the generic mapping error check interface. Doing so will ensure
-+that the mapping code will work correctly on all dma implementations without
-+any dependency on the specifics of the underlying implementation. Using the
-+returned address without checking for errors could result in failures ranging
-+from panics to silent data corruption. Couple of example of incorrect ways to
-+check for errors that make assumptions about the underlying dma implementation
-+are as follows and these are applicable to dma_map_page() as well.
-+
-+Incorrect example 1:
-+	dma_addr_t dma_handle;
-+
-+	dma_handle = dma_map_single(dev, addr, size, direction);
-+	if ((dma_handle & 0xffff != 0) || (dma_handle >= 0x1000000)) {
-+		goto map_error;
-+	}
-+
-+Incorrect example 2:
-+	dma_addr_t dma_handle;
-+
-+	dma_handle = dma_map_single(dev, addr, size, direction);
-+	if (dma_handle == DMA_ERROR_CODE) {
-+		goto map_error;
-+	}
-+
- You should call dma_unmap_single when the DMA activity is finished, e.g.
- from the interrupt which told you that the DMA transfer is done.
- 
-@@ -489,6 +524,14 @@ Specifically:
- 	size_t size = buffer->len;
- 
- 	dma_handle = dma_map_page(dev, page, offset, size, direction);
-+	if (dma_mapping_error(dma_handle)) {
-+		/*
-+		 * reduce current DMA mapping usage,
-+		 * delay and try again later or
-+		 * reset driver.
-+		 */
-+		goto map_error_handling;
-+	}
- 
- 	...
- 
-@@ -496,6 +539,12 @@ Specifically:
- 
- Here, "offset" means byte offset within the given page.
- 
-+You should call dma_mapping_error() as dma_map_page() could fail and return
-+error as outlined under the dma_map_single() discussion.
-+
-+You should call dma_unmap_page when the DMA activity is finished, e.g.
-+from the interrupt which told you that the DMA transfer is done.
-+
- With scatterlists, you map a region gathered from several regions by:
- 
- 	int i, count = dma_map_sg(dev, sglist, nents, direction);
-@@ -578,6 +627,14 @@ to use the dma_sync_*() interfaces.
- 		dma_addr_t mapping;
- 
- 		mapping = dma_map_single(cp->dev, buffer, len, DMA_FROM_DEVICE);
-+		if (dma_mapping_error(dma_handle)) {
-+			/*
-+			 * reduce current DMA mapping usage,
-+			 * delay and try again later or
-+			 * reset driver.
-+			 */
-+			goto map_error_handling;
-+		}
- 
- 		cp->rx_buf = buffer;
- 		cp->rx_len = len;
-@@ -658,6 +715,75 @@ failure can be determined by:
- 		 * delay and try again later or
- 		 * reset driver.
- 		 */
-+		goto map_error_handling;
-+	}
-+
-+- unmap pages that are already mapped, when mapping error occurs in the middle
-+  of a multiple page mapping attempt. These example are applicable to
-+  dma_map_page() as well.
-+
-+Example 1:
-+	dma_addr_t dma_handle1;
-+	dma_addr_t dma_handle2;
-+
-+	dma_handle1 = dma_map_single(dev, addr, size, direction);
-+	if (dma_mapping_error(dev, dma_handle1)) {
-+		/*
-+		 * reduce current DMA mapping usage,
-+		 * delay and try again later or
-+		 * reset driver.
-+		 */
-+		goto map_error_handling1;
-+	}
-+	dma_handle2 = dma_map_single(dev, addr, size, direction);
-+	if (dma_mapping_error(dev, dma_handle2)) {
-+		/*
-+		 * reduce current DMA mapping usage,
-+		 * delay and try again later or
-+		 * reset driver.
-+		 */
-+		goto map_error_handling2;
-+	}
-+
-+	...
-+
-+	map_error_handling2:
-+		dma_unmap_single(dma_handle1);
-+	map_error_handling1:
-+
-+Example 2: (if buffers are allocated a loop, unmap all mapped buffers when
-+	    mapping error is detected in the middle)
-+
-+	dma_addr_t dma_addr;
-+	dma_addr_t array[DMA_BUFFERS];
-+	int save_index = 0;
-+
-+	for (i = 0; i < DMA_BUFFERS; i++) {
-+
-+		...
-+
-+		dma_addr = dma_map_single(dev, addr, size, direction);
-+		if (dma_mapping_error(dev, dma_addr)) {
-+			/*
-+			 * reduce current DMA mapping usage,
-+			 * delay and try again later or
-+			 * reset driver.
-+			 */
-+			goto map_error_handling;
-+		}
-+		array[i].dma_addr = dma_addr;
-+		save_index++;
-+	}
-+
-+	...
-+
-+	map_error_handling:
-+
-+	for (i = 0; i < save_index; i++) {
-+
-+		...
-+
-+		dma_unmap_single(array[i].dma_addr);
- 	}
- 
- Networking drivers must call dev_kfree_skb to free the socket buffer
--- 
-1.7.9.5
+Doesn't only affect numa_maps, it also affects maps and smaps although 
+they don't need the refcounts.
 
+> + * But task->mempolicy is not guarded by mmap_sem, it can be cleared/freed
+> + * under task_lock() (see kernel/exit.c) replacement of it is guarded by
+> + * mmap_sem.
 
+I think this should be a little more verbose making it clear that 
+task->mempolicy can be cleared and freed if its refcount drops to 0 and is 
+only protected by task_lock() and that we're safe from task->mempolicy 
+changing between ->start(), ->next(), and ->stop() because 
+task->mm->mmap_sem is held for the duration.
 
+> So, take referenceount under task_lock() before we start
+> + * scanning and drop it when numa_maps reaches the end.
+> + */
+> +static void hold_task_mempolicy(struct proc_maps_private *priv)
+> +{
+> +	struct task_struct *task = priv->task;
+> +
+> +	task_lock(task);
+> +	priv->task_mempolicy = task->mempolicy;
+> +	mpol_get(priv->task_mempolicy);
+> +	task_unlock(task);
+> +}
+> +static void release_task_mempolicy(struct proc_maps_private *priv)
+> +{
+> +	mpol_put(priv->task_mempolicy);
+> +}
+> +#else
+> +static void hold_task_mempolicy(struct proc_maps_private *priv)
+> +{
+> +}
+> +static void release_task_mempolicy(struct proc_maps_private *priv)
+> +{
+> +}
+> +#endif
+>   static void vma_stop(struct proc_maps_private *priv, struct vm_area_struct
+> *vma)
+>  {
+>  	if (vma && vma != priv->tail_vma) {
+>  		struct mm_struct *mm = vma->vm_mm;
+> +		release_task_mempolicy(priv);
+>  		up_read(&mm->mmap_sem);
+>  		mmput(mm);
+>  	}
+> @@ -132,7 +162,7 @@ static void *m_start(struct seq_file *m, loff_t *pos)
+>   	tail_vma = get_gate_vma(priv->task->mm);
+>  	priv->tail_vma = tail_vma;
+> -
+> +	hold_task_mempolicy(priv);
+>  	/* Start with last addr hint */
+>  	vma = find_vma(mm, last_addr);
+>  	if (last_addr && vma) {
+> @@ -159,6 +189,7 @@ out:
+>  	if (vma)
+>  		return vma;
+>  +	release_task_mempolicy(priv);
+>  	/* End of vmas has been reached */
+>  	m->version = (tail_vma != NULL)? 0: -1UL;
+>  	up_read(&mm->mmap_sem);
+
+Otherwise looks good, but please remove the two task_lock()'s in 
+show_numa_map() that I added as part of this since you're replacing the 
+need for locking.
