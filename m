@@ -1,37 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932786Ab2JRSF3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 14:05:29 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:55568 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932696Ab2JRSFY (ORCPT
+	id S932759Ab2JRSI2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 14:08:28 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:55415 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932725Ab2JRSI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 14:05:24 -0400
+	Thu, 18 Oct 2012 14:08:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <20121018132928.GG16835@localhost.localdomain>
-References: <1350559712-8514-1-git-send-email-shiraz.hashim@st.com>
-	<20121018120820.GA17980@avionic-0098.mockup.avionic-design.de>
-	<20121018132928.GG16835@localhost.localdomain>
-Date: Thu, 18 Oct 2012 23:35:23 +0530
-X-Google-Sender-Auth: eojIe12z8lLiPtWT1Xi-s5bePMk
-Message-ID: <CAOh2x=nA683kWG=QTx5Bt5xYNnqQvf8eJD7JT9YN00kaYvr+bg@mail.gmail.com>
-Subject: Re: [PATCH] pwm: add spear pwm driver support
+In-Reply-To: <CAKohpo=Vfq=z8NK6w4_QpwwLniYiwcfGfzWZsoG_zBPYPXrcUw@mail.gmail.com>
+References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
+	<1350387889-15324-6-git-send-email-hongbo.zhang@linaro.com>
+	<CAKohpo=Vfq=z8NK6w4_QpwwLniYiwcfGfzWZsoG_zBPYPXrcUw@mail.gmail.com>
+Date: Thu, 18 Oct 2012 23:38:26 +0530
+X-Google-Sender-Auth: 3g65jqPY0GYcwwGbmlOH62GqBpI
+Message-ID: <CAOh2x=ntPkmYn0CRc+k4fPqU+y2ZMv2_cRE2vAeRM-d_dvm2BA@mail.gmail.com>
+Subject: Re: [PATCH 5/5] Thermal: Add ST-Ericsson db8500 thermal dirver.
 From: viresh kumar <viresh.kumar@linaro.org>
-To: Shiraz Hashim <shiraz.hashim@st.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        spear--sw-devel@lists.codex.cro.st.com, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com
+To: "hongbo.zhang" <hongbo.zhang@linaro.org>
+Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        kernel@igloocommunity.org, linaro-kernel@lists.linaro.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 6:59 PM, Shiraz Hashim <shiraz.hashim@st.com> wrote:
->> Is there a reason to make this conditional? It looks like SPEAr has
->> moved to OF, so this will always be enabled anyway, won't it?
->
-> Yes, I would remove it, SPEAr cannot boot without DT.
+On Wed, Oct 17, 2012 at 8:53 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 16 October 2012 17:14, hongbo.zhang <hongbo.zhang@linaro.org> wrote:
 
-Add a dependency on OF in the Kconfig then.
+>> +static int __devinit db8500_cpufreq_cooling_probe(struct platform_device *pdev)
+>> +{
+>> +       struct db8500_cpufreq_cdev *cooling_devs;
 
-Also i haven't seen any suspend/resume routines here. Missed them?
+Hi Hongbo,
+
+I saw somebody saying this in another thread:
+
+> > __devinit &__devexit will go away sometime soon, so please don't use it in new
+> > code.
+
+commit 45f035a (only in linux-next I think) has some details.
+
+--
+viresh
