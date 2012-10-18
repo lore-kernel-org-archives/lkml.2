@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab2JRUbd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 16:31:33 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:56782 "EHLO
+	id S1756070Ab2JRUbc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 16:31:32 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:56785 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131Ab2JRU0y (ORCPT
+	with ESMTP id S1754058Ab2JRU0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Oct 2012 16:26:54 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 11/21] TTY: audit, stop accessing tty->icount
-Date: Thu, 18 Oct 2012 22:26:37 +0200
-Message-Id: <1350592007-9216-12-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 14/21] TTY: move ldisc data from tty_struct: bitmaps
+Date: Thu, 18 Oct 2012 22:26:40 +0200
+Message-Id: <1350592007-9216-15-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.12.3
 In-Reply-To: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
 References: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
@@ -20,128 +20,169 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a private member of n_tty. Stop accessing it. Instead, take is
-as an argument.
-
-This is needed to allow clean switch of the private members to a
-separate private structure of n_tty.
+Here we move bitmaps and use DECLARE_BITMAP to declare them in the new
+structure. And instead of memset, we use bitmap_zero as it is more
+appropriate.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/tty/n_tty.c     |  5 +++--
- drivers/tty/tty_audit.c | 15 ++++++++-------
- include/linux/tty.h     |  4 ++--
- 3 files changed, 13 insertions(+), 11 deletions(-)
+ drivers/tty/n_tty.c | 52 ++++++++++++++++++++++++++++------------------------
+ include/linux/tty.h |  2 --
+ 2 files changed, 28 insertions(+), 26 deletions(-)
 
 diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index ceae074..3ebab0c 100644
+index bd775a7..702dd4a 100644
 --- a/drivers/tty/n_tty.c
 +++ b/drivers/tty/n_tty.c
-@@ -76,7 +76,7 @@
- static inline int tty_put_user(struct tty_struct *tty, unsigned char x,
- 			       unsigned char __user *ptr)
- {
--	tty_audit_add_data(tty, &x, 1);
-+	tty_audit_add_data(tty, &x, 1, tty->icanon);
- 	return put_user(x, ptr);
- }
+@@ -80,6 +80,9 @@ struct n_tty_data {
  
-@@ -1644,7 +1644,8 @@ static int copy_from_read_buf(struct tty_struct *tty,
- 		n -= retval;
- 		is_eof = n == 1 &&
- 			tty->read_buf[tty->read_tail] == EOF_CHAR(tty);
--		tty_audit_add_data(tty, &tty->read_buf[tty->read_tail], n);
-+		tty_audit_add_data(tty, &tty->read_buf[tty->read_tail], n,
-+				tty->icanon);
- 		spin_lock_irqsave(&tty->read_lock, flags);
- 		tty->read_tail = (tty->read_tail + n) & (N_TTY_BUF_SIZE-1);
- 		tty->read_cnt -= n;
-diff --git a/drivers/tty/tty_audit.c b/drivers/tty/tty_audit.c
-index b0b39b8..6953dc8 100644
---- a/drivers/tty/tty_audit.c
-+++ b/drivers/tty/tty_audit.c
-@@ -23,7 +23,7 @@ struct tty_audit_buf {
+ 	unsigned char lnext:1, erasing:1, raw:1, real_raw:1, icanon:1;
+ 	unsigned char echo_overrun:1;
++
++	DECLARE_BITMAP(process_char_map, 256);
++	DECLARE_BITMAP(read_flags, N_TTY_BUF_SIZE);
  };
  
- static struct tty_audit_buf *tty_audit_buf_alloc(int major, int minor,
--						 int icanon)
-+						 unsigned icanon)
+ static inline int tty_put_user(struct tty_struct *tty, unsigned char x,
+@@ -203,7 +206,7 @@ static void reset_buffer_flags(struct tty_struct *tty)
+ 	mutex_unlock(&tty->echo_lock);
+ 
+ 	tty->canon_head = tty->canon_data = ldata->erasing = 0;
+-	memset(&tty->read_flags, 0, sizeof tty->read_flags);
++	bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
+ 	n_tty_set_room(tty);
+ }
+ 
+@@ -1165,7 +1168,7 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
+ 	 * handle specially, do shortcut processing to speed things
+ 	 * up.
+ 	 */
+-	if (!test_bit(c, tty->process_char_map) || ldata->lnext) {
++	if (!test_bit(c, ldata->process_char_map) || ldata->lnext) {
+ 		ldata->lnext = 0;
+ 		parmrk = (c == (unsigned char) '\377' && I_PARMRK(tty)) ? 1 : 0;
+ 		if (tty->read_cnt >= (N_TTY_BUF_SIZE - parmrk - 1)) {
+@@ -1321,7 +1324,7 @@ send_signal:
+ 
+ handle_newline:
+ 			spin_lock_irqsave(&tty->read_lock, flags);
+-			set_bit(tty->read_head, tty->read_flags);
++			set_bit(tty->read_head, ldata->read_flags);
+ 			put_tty_queue_nolock(c, tty);
+ 			tty->canon_head = tty->read_head;
+ 			tty->canon_data++;
+@@ -1496,7 +1499,7 @@ static void n_tty_set_termios(struct tty_struct *tty, struct ktermios *old)
+ 	if (old)
+ 		canon_change = (old->c_lflag ^ tty->termios.c_lflag) & ICANON;
+ 	if (canon_change) {
+-		memset(&tty->read_flags, 0, sizeof tty->read_flags);
++		bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
+ 		tty->canon_head = tty->read_tail;
+ 		tty->canon_data = 0;
+ 		ldata->erasing = 0;
+@@ -1516,41 +1519,41 @@ static void n_tty_set_termios(struct tty_struct *tty, struct ktermios *old)
+ 	    I_ICRNL(tty) || I_INLCR(tty) || L_ICANON(tty) ||
+ 	    I_IXON(tty) || L_ISIG(tty) || L_ECHO(tty) ||
+ 	    I_PARMRK(tty)) {
+-		memset(tty->process_char_map, 0, 256/8);
++		bitmap_zero(ldata->process_char_map, 256);
+ 
+ 		if (I_IGNCR(tty) || I_ICRNL(tty))
+-			set_bit('\r', tty->process_char_map);
++			set_bit('\r', ldata->process_char_map);
+ 		if (I_INLCR(tty))
+-			set_bit('\n', tty->process_char_map);
++			set_bit('\n', ldata->process_char_map);
+ 
+ 		if (L_ICANON(tty)) {
+-			set_bit(ERASE_CHAR(tty), tty->process_char_map);
+-			set_bit(KILL_CHAR(tty), tty->process_char_map);
+-			set_bit(EOF_CHAR(tty), tty->process_char_map);
+-			set_bit('\n', tty->process_char_map);
+-			set_bit(EOL_CHAR(tty), tty->process_char_map);
++			set_bit(ERASE_CHAR(tty), ldata->process_char_map);
++			set_bit(KILL_CHAR(tty), ldata->process_char_map);
++			set_bit(EOF_CHAR(tty), ldata->process_char_map);
++			set_bit('\n', ldata->process_char_map);
++			set_bit(EOL_CHAR(tty), ldata->process_char_map);
+ 			if (L_IEXTEN(tty)) {
+ 				set_bit(WERASE_CHAR(tty),
+-					tty->process_char_map);
++					ldata->process_char_map);
+ 				set_bit(LNEXT_CHAR(tty),
+-					tty->process_char_map);
++					ldata->process_char_map);
+ 				set_bit(EOL2_CHAR(tty),
+-					tty->process_char_map);
++					ldata->process_char_map);
+ 				if (L_ECHO(tty))
+ 					set_bit(REPRINT_CHAR(tty),
+-						tty->process_char_map);
++						ldata->process_char_map);
+ 			}
+ 		}
+ 		if (I_IXON(tty)) {
+-			set_bit(START_CHAR(tty), tty->process_char_map);
+-			set_bit(STOP_CHAR(tty), tty->process_char_map);
++			set_bit(START_CHAR(tty), ldata->process_char_map);
++			set_bit(STOP_CHAR(tty), ldata->process_char_map);
+ 		}
+ 		if (L_ISIG(tty)) {
+-			set_bit(INTR_CHAR(tty), tty->process_char_map);
+-			set_bit(QUIT_CHAR(tty), tty->process_char_map);
+-			set_bit(SUSP_CHAR(tty), tty->process_char_map);
++			set_bit(INTR_CHAR(tty), ldata->process_char_map);
++			set_bit(QUIT_CHAR(tty), ldata->process_char_map);
++			set_bit(SUSP_CHAR(tty), ldata->process_char_map);
+ 		}
+-		clear_bit(__DISABLED_CHAR, tty->process_char_map);
++		clear_bit(__DISABLED_CHAR, ldata->process_char_map);
+ 		ldata->raw = 0;
+ 		ldata->real_raw = 0;
+ 	} else {
+@@ -1879,7 +1882,7 @@ do_it_again:
+ 				int eol;
+ 
+ 				eol = test_and_clear_bit(tty->read_tail,
+-						tty->read_flags);
++						ldata->read_flags);
+ 				c = tty->read_buf[tty->read_tail];
+ 				tty->read_tail = ((tty->read_tail+1) &
+ 						  (N_TTY_BUF_SIZE-1));
+@@ -2105,6 +2108,7 @@ static unsigned int n_tty_poll(struct tty_struct *tty, struct file *file,
+ 
+ static unsigned long inq_canon(struct tty_struct *tty)
  {
- 	struct tty_audit_buf *buf;
++	struct n_tty_data *ldata = tty->disc_data;
+ 	int nr, head, tail;
  
-@@ -239,7 +239,8 @@ int tty_audit_push_task(struct task_struct *tsk, kuid_t loginuid, u32 sessionid)
-  *	if TTY auditing is disabled or out of memory.  Otherwise, return a new
-  *	reference to the buffer.
-  */
--static struct tty_audit_buf *tty_audit_buf_get(struct tty_struct *tty)
-+static struct tty_audit_buf *tty_audit_buf_get(struct tty_struct *tty,
-+		unsigned icanon)
- {
- 	struct tty_audit_buf *buf, *buf2;
- 
-@@ -257,7 +258,7 @@ static struct tty_audit_buf *tty_audit_buf_get(struct tty_struct *tty)
- 
- 	buf2 = tty_audit_buf_alloc(tty->driver->major,
- 				   tty->driver->minor_start + tty->index,
--				   tty->icanon);
-+				   icanon);
- 	if (buf2 == NULL) {
- 		audit_log_lost("out of memory in TTY auditing");
- 		return NULL;
-@@ -287,7 +288,7 @@ static struct tty_audit_buf *tty_audit_buf_get(struct tty_struct *tty)
-  *	Audit @data of @size from @tty, if necessary.
-  */
- void tty_audit_add_data(struct tty_struct *tty, unsigned char *data,
--			size_t size)
-+			size_t size, unsigned icanon)
- {
- 	struct tty_audit_buf *buf;
- 	int major, minor;
-@@ -299,7 +300,7 @@ void tty_audit_add_data(struct tty_struct *tty, unsigned char *data,
- 	    && tty->driver->subtype == PTY_TYPE_MASTER)
- 		return;
- 
--	buf = tty_audit_buf_get(tty);
-+	buf = tty_audit_buf_get(tty, icanon);
- 	if (!buf)
- 		return;
- 
-@@ -307,11 +308,11 @@ void tty_audit_add_data(struct tty_struct *tty, unsigned char *data,
- 	major = tty->driver->major;
- 	minor = tty->driver->minor_start + tty->index;
- 	if (buf->major != major || buf->minor != minor
--	    || buf->icanon != tty->icanon) {
-+	    || buf->icanon != icanon) {
- 		tty_audit_buf_push_current(buf);
- 		buf->major = major;
- 		buf->minor = minor;
--		buf->icanon = tty->icanon;
-+		buf->icanon = icanon;
- 	}
- 	do {
- 		size_t run;
+ 	if (!tty->canon_data)
+@@ -2114,7 +2118,7 @@ static unsigned long inq_canon(struct tty_struct *tty)
+ 	nr = (head - tail) & (N_TTY_BUF_SIZE-1);
+ 	/* Skip EOF-chars.. */
+ 	while (head != tail) {
+-		if (test_bit(tail, tty->read_flags) &&
++		if (test_bit(tail, ldata->read_flags) &&
+ 		    tty->read_buf[tail] == __DISABLED_CHAR)
+ 			nr--;
+ 		tail = (tail+1) & (N_TTY_BUF_SIZE-1);
 diff --git a/include/linux/tty.h b/include/linux/tty.h
-index f0b4eb4..f02712d 100644
+index de590ce..2161e6b 100644
 --- a/include/linux/tty.h
 +++ b/include/linux/tty.h
-@@ -535,7 +535,7 @@ extern void n_tty_inherit_ops(struct tty_ldisc_ops *ops);
- /* tty_audit.c */
- #ifdef CONFIG_AUDIT
- extern void tty_audit_add_data(struct tty_struct *tty, unsigned char *data,
--			       size_t size);
-+			       size_t size, unsigned icanon);
- extern void tty_audit_exit(void);
- extern void tty_audit_fork(struct signal_struct *sig);
- extern void tty_audit_tiocsti(struct tty_struct *tty, char ch);
-@@ -544,7 +544,7 @@ extern int tty_audit_push_task(struct task_struct *tsk,
- 			       kuid_t loginuid, u32 sessionid);
- #else
- static inline void tty_audit_add_data(struct tty_struct *tty,
--				      unsigned char *data, size_t size)
-+		unsigned char *data, size_t size, unsigned icanon)
- {
- }
- static inline void tty_audit_tiocsti(struct tty_struct *tty, char ch)
+@@ -272,12 +272,10 @@ struct tty_struct {
+ 	 */
+ 	unsigned char closing:1;
+ 	unsigned short minimum_to_wake;
+-	unsigned long process_char_map[256/(8*sizeof(unsigned long))];
+ 	char *read_buf;
+ 	int read_head;
+ 	int read_tail;
+ 	int read_cnt;
+-	unsigned long read_flags[N_TTY_BUF_SIZE/(8*sizeof(unsigned long))];
+ 	unsigned char *echo_buf;
+ 	unsigned int echo_pos;
+ 	unsigned int echo_cnt;
 -- 
 1.7.12.3
 
