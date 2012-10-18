@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab2JRXJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 19:09:58 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:49359 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab2JRXJ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 19:09:57 -0400
-X-Originating-IP: 217.70.178.152
-X-Originating-IP: 173.246.103.110
-Date: Thu, 18 Oct 2012 16:09:49 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Ed Cashin <ecashin@coraid.com>
-Cc: akpm@linux-foundation.org, rob@landley.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-sparse@vger.kernel.org,
-        sam@ravnborg.org, sparse@chrisli.org, ak@linux.intel.com
-Subject: Re: [PATCH] Documentation/sparse.txt: document context annotations
- for lock checking
-Message-ID: <20121018230948.GC10627@jtriplet-mobl1>
-References: <1350570446.22036@cat.he.net>
+	id S1754269Ab2JRXNP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 19:13:15 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:53642 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751348Ab2JRXNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 19:13:13 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [RFC PATCH v1 2/3] PM / Runtime: force memory allocation with no I/O during runtime_resume callbcack
+Date: Fri, 19 Oct 2012 01:16:58 +0200
+Message-ID: <11374134.vToUn932b7@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <CACVXFVP-JerxiTU9Kr9Lrwe2XkKBU=EsZJUcEiPVCQWw6iiw2Q@mail.gmail.com>
+References: <1350403183-12650-1-git-send-email-ming.lei@canonical.com> <6431373.tJcdR3m2Df@vostro.rjw.lan> <CACVXFVP-JerxiTU9Kr9Lrwe2XkKBU=EsZJUcEiPVCQWw6iiw2Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350570446.22036@cat.he.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 07:27:26AM -0700, Ed Cashin wrote:
-> The context feature of sparse is used with the Linux kernel
-> sources to check for imbalanced uses of locks.  Document the
-> annotations defined in include/linux/compiler.h that tell sparse
-> what to expect when a lock is held on function entry, exit, or
-> both.
+On Wednesday 17 of October 2012 19:07:25 Ming Lei wrote:
+> On Wed, Oct 17, 2012 at 1:43 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >
+> > This appears to be a bit too heavy handed.  First of all, it seems to affect
+> > all memory allocations going in parallel with the resume callback.  Second,
 > 
-> Signed-off-by: Ed Cashin <ecashin@coraid.com>
+> No, the flag is per task, only memory allocation inside resume callback
+> is effected.
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+OK
 
->  Documentation/sparse.txt |   18 ++++++++++++++++++
->  1 files changed, 18 insertions(+), 0 deletions(-)
+> > it affects all resume callbacks, not only those where the problem really
 > 
-> diff --git a/Documentation/sparse.txt b/Documentation/sparse.txt
-> index 4909d41..eceab13 100644
-> --- a/Documentation/sparse.txt
-> +++ b/Documentation/sparse.txt
-> @@ -49,6 +49,24 @@ be generated without __CHECK_ENDIAN__.
->  __bitwise - noisy stuff; in particular, __le*/__be* are that.  We really
->  don't want to drown in noise unless we'd explicitly asked for it.
->  
-> +Using sparse for lock checking
-> +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> +
-> +The following macros are undefined for gcc and defined during a sparse
-> +run to use the "context" tracking feature of sparse, applied to
-> +locking.  These annotations tell sparse when a lock is held, with
-> +regard to the annotated function's entry and exit.
-> +
-> +__must_hold - The specified lock is held on function entry and exit.
-> +
-> +__acquires - The specified lock is held on function exit, but not entry.
-> +
-> +__releases - The specified lock is held on function entry, but not exit.
-> +
-> +If the function enters and exits without the lock held, acquiring and
-> +releasing the lock inside the function in a balanced way, no
-> +annotation is needed.  The tree annotations above are for cases where
-> +sparse would otherwise report a context imbalance.
->  
->  Getting sparse
->  ~~~~~~~~~~~~~~
-> -- 
-> 1.7.1
-> 
+> We can do it only on block device, block device's ancestor and network
+> devices(iSCSI case), but that may introduce policy into PM core or add
+> one flag of memalloc_noio_resume into 'dev_pm_info', could you agree
+> on it?
+
+Well, the question is how many runtime resume callbacks actually allocate
+memory.  If they are not too many, we can just flag all of them.  Otherwise,
+adding a flag may be a better approach.  I'm not sure ATM.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
