@@ -1,87 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071Ab2JRHPK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 03:15:10 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:35483 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab2JRHPI convert rfc822-to-8bit (ORCPT
+	id S1752019Ab2JRHUG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 03:20:06 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33795 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259Ab2JRHUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 03:15:08 -0400
-X-Auth-Info: ovJ96S+jscvNkYn4A2xe2ll9/iuzotorg0yk01iUSGs=
-From: Marek Vasut <marex@denx.de>
-To: Huang Shijie <b32955@freescale.com>
-Subject: Re: [PATCH] dma: add new DMA control commands
-Date: Thu, 18 Oct 2012 09:14:58 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Vinod Koul <vinod.koul@linux.intel.com>, djbw@fb.com, khali@linux-fr.org,
-        ben-linux@fluff.org, w.sang@pengutronix.de, cjb@laptop.org,
-        dwmw2@infradead.org, lrg@ti.com, broonie@opensource.wolfsonmicro.com,
-        perex@perex.cz, tiwai@suse.de, shawn.guo@linaro.org,
-        artem.bityutskiy@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-mtd@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        Huang Shijie <shijie8@gmail.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-References: <1350538335-29026-1-git-send-email-b32955@freescale.com> <1350541111.5263.3.camel@vkoul-udesk3> <507FA595.4020507@freescale.com>
-In-Reply-To: <507FA595.4020507@freescale.com>
+	Thu, 18 Oct 2012 03:20:01 -0400
+From: Hiromu Yakura <hiromu1996@gmail.com>
+To: linux-security-module@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, James Morris <james.l.morris@oracle.com>,
+        John Johansen <john.johansen@canonical.com>
+Subject: [PATCH] AppArmor: Modify Makefile to avoid Oops
+Date: Thu, 18 Oct 2012 16:19:46 +0900
+Message-ID: <38590271.RTeeX2bDYV@hiromu-macbook>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc1-debug+; KDE/4.8.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201210180914.58527.marex@denx.de>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Huang Shijie,
+In my environment, AppArmor cause Oops every time when cupsd launch.
 
-Why such massive CC ?
+This is the log of Oops:
+[  114.876511] general protection fault: 0000 [#1] SMP 
+[  114.876540] Modules linked in: usbhid bnep rfcomm parport_pc ppdev parport 
+dm_crypt binfmt_misc arc4 b43 mac80211 uvcvideo videobuf2_core cfg80211 
+videodev kvm_intel snd_hda_codec_hdmi kvm snd_hda_codec_cirrus snd_hda_intel 
+snd_hda_codec snd_hwdep snd_pcm snd_seq_midi snd_rawmidi snd_seq_midi_event 
+ssb media snd_seq snd_timer videobuf2_vmalloc snd_seq_device videobuf2_memops 
+bcm5974 snd bcma soundcore snd_page_alloc mei joydev hid_generic apple_bl 
+btusb bluetooth coretemp applesmc input_polldev hid_apple i915 firewire_ohci 
+tg3 firewire_core crc_itu_t drm_kms_helper sdhci_pci drm sdhci hid i2c_algo_bit 
+video [last unloaded: usbhid]
+[  114.876751] CPU 2 
+[  114.876759] Pid: 1099, comm: cupsd Not tainted 3.7.0-rc1+ #20 Apple Inc. 
+MacBookPro8,1/Mac-94245B3640C91C81
+[  114.876789] RIP: 0010:[<ffffffff81318f82>]  [<ffffffff81318f82>] strlen+0x2/0x20
+[  114.876814] RSP: 0018:ffff8801652c3cd0  EFLAGS: 00010246
+[  114.876830] RAX: 0000000000000000 RBX: ffff880169beba00 RCX: 000000000000001e
+[  114.876851] RDX: 0000000000002a04 RSI: 64656c62616e652e RDI: 
+64656c62616e652e
+[  114.876871] RBP: ffff8801652c3ce8 R08: 000000000000000a R09: 0000000000000000
+[  114.876891] R10: 000000000000039d R11: 000000000000039c R12: 
+64656c62616e652e
+[  114.876911] R13: ffffffff812cfc30 R14: ffff880165089950 R15: 00000000507fa2d4
+[  114.876932] FS:  00007fe581691740(0000) GS:ffff88016fa80000(0000) 
+knlGS:0000000000000000
+[  114.876955] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  114.876971] CR2: 00007fc429480000 CR3: 0000000163bf6000 CR4: 
+00000000000407e0
+[  114.876992] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 
+0000000000000000
+[  114.877012] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  114.877033] Process cupsd (pid: 1099, threadinfo ffff8801652c2000, task 
+ffff880165089950)
+[  114.877056] Stack:
+[  114.877062]  ffffffff810ba4e3 ffff880169beba00 ffff8801652c3e08 ffff8801652c3d08
+[  114.877085]  ffffffff812cfc81 ffff880169beba00 ffff8801652c3e08 ffff8801652c3d68
+[  114.878058]  ffffffff812c079d 0000000000000000 0000000000000000 ffff8801652c3da0
+[  114.879032] Call Trace:
+[  114.879989]  [<ffffffff810ba4e3>] ? audit_log_untrustedstring+0x23/0x40
+[  114.880910]  [<ffffffff812cfc81>] audit_cb+0x51/0x60
+[  114.881837]  [<ffffffff812c079d>] common_lsm_audit+0xad/0x720
+[  114.882716]  [<ffffffff812cf882>] aa_audit_msg+0x22/0x30
+[  114.883675]  [<ffffffff812cf8f5>] aa_audit+0x65/0x180
+[  114.884528]  [<ffffffff812cfb44>] audit_caps+0x134/0x220
+[  114.885354]  [<ffffffff812cfce5>] aa_capable+0x55/0x70
+[  114.886177]  [<ffffffff812d60ee>] apparmor_capable+0x7e/0xa0
+[  114.887018]  [<ffffffff8129cac8>] security_capable+0x18/0x20
+[  114.887833]  [<ffffffff8104dc90>] ns_capable+0x30/0x60
+[  114.888644]  [<ffffffff8104dcd7>] capable+0x17/0x20
+[  114.889453]  [<ffffffff811b8e8a>] sys_epoll_ctl+0xfa/0x950
+[  114.890278]  [<ffffffff811860b5>] ? poll_select_set_timeout+0x85/0xa0
+[  114.891130]  [<ffffffff815d4c5d>] system_call_fastpath+0x1a/0x1f
+[  114.892039] Code: 48 89 e5 f6 82 a0 63 64 81 20 74 15 0f 1f 44 00 00 48 83 
+c0 01 0f b6 10 f6 82 a0 63 64 81 20 75 f0 5d c3 66 0f 1f 44 00 00 31 c0 <80> 
+3f 00 55 48 89 e5 74 11 48 89 f8 66 90 48 83 c0 01 80 38 00 
+[  114.893969] RIP  [<ffffffff81318f82>] strlen+0x2/0x20
+[  114.894873]  RSP <ffff8801652c3cd0>
+[  114.906772] ---[ end trace 7a1af0265870215b ]---
 
-> 于 2012年10月18日 14:18, Vinod Koul 写道:
-> > Why cant you do start (prepare clock etc) when you submit the descriptor
-> > to dmaengine. Can be done in tx_submit callback.
-> > Similarly remove the clock when dma transaction gets completed.
-> 
-> I ever thought this method too.
-> 
-> But it will become low efficient in the following case:
-> 
->    Assuming the gpmi-nand driver has to read out 1024 pages in one
-> _SINGLE_ read operation.
-> The gpmi-nand will submit the descriptor to dmaengine per page.
+It seems that bad address was passed for the second argument of 
+audit_log_untrustedstring() at audit_cb() in capability.c:
+ 52     audit_log_untrustedstring(ab, capability_names[sa->u.cap]);
 
-It will? Then GPMI NAND is flat our broken ... again.
+The array "capability_names" is defined in capability_names.h but the content 
+of this is generated by Makefile from include/linux/capability.h
+However, capability.h was moved to include/uapi/linux/capability.h and because 
+of this, the array is empty.
+That's why, sa->u.cap become out of range this and segmentation fault caused.
 
-> So with
-> your method,
-> the system will repeat the enable/disable dma clock 1024 time.
+Let's fix it.
 
-Yes, it is the driver that's wrong.
+Cc: James Morris <james.l.morris@oracle.com>
+Cc: John Johansen <john.johansen@canonical.com>
 
-> At every
-> enable/disable dma clock,
-> the system has to enable the clock chain and it's parents ...
-> 
-> But with this patch, we only need to enable/disable dma clock one time,
-> just at we select the nand chip.
+Signed-off-by: Hiromu Yakura <hiromu1996@gmail.com>
+---
+ security/apparmor/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-You are fixing a driver problem at a framework level, wrong.
+diff --git a/security/apparmor/Makefile b/security/apparmor/Makefile
+index 7b3021c..5706b74 100644
+--- a/security/apparmor/Makefile
++++ b/security/apparmor/Makefile
+@@ -57,7 +57,7 @@ cmd_make-rlim = echo "static const char *const 
+rlim_names[RLIM_NLIMITS] = {" \
+ 
+ $(obj)/capability.o : $(obj)/capability_names.h
+ $(obj)/resource.o : $(obj)/rlim_names.h
+-$(obj)/capability_names.h : $(srctree)/include/linux/capability.h \
++$(obj)/capability_names.h : $(srctree)/include/uapi/linux/capability.h \
+ 			    $(src)/Makefile
+ 	$(call cmd,make-caps)
+ $(obj)/rlim_names.h : $(srctree)/include/uapi/asm-generic/resource.h \
+-- 
+1.7.9.5
 
-So, check how the MXS SPI driver handles descriptor chaining. Indeed, the 
-Sigmatel screwed the DMA stuff good. But if you analyze the SPI driver, you'll 
-notice a few important points that might come handy when you fix the GPMI NAND 
-driver properly.
 
-The direction to take here is:
-1) Implement DMA chaining into the GPMI NAND driver
-2) You might need to do one PIO transfer to reconfigure the IP registers between 
-each segment of the DMA chain (just as MXS SPI does it)
-3) You might run out of DMA descriptors when doing too long chains -- so you 
-might need to fix that part of the mxs DMA driver.
-
-> thanks
-> Huang Shijie
-
-Best regards,
-Marek Vasut
