@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab2JRAyh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 20:54:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62515 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099Ab2JRAyg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 20:54:36 -0400
-Date: Wed, 17 Oct 2012 17:54:32 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: David Howells <dhowells@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jwboyer@redhat.com, pjones@redhat.com
-Subject: Re: RFC: sign the modules at install time
-Message-ID: <20121018005432.GA20163@kroah.com>
-References: <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com>
- <3179.1350512382@warthog.procyon.org.uk>
- <CA+55aFzEH1jguw8NB90si2uxvyO63FuKPOc8wiEPRCYwruSzRg@mail.gmail.com>
+	id S1753268Ab2JRBBv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 21:01:51 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:30053 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753111Ab2JRBBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 21:01:50 -0400
+X-IronPort-AV: E=Sophos;i="4.80,604,1344182400"; 
+   d="scan'208";a="6018721"
+Message-ID: <507F54BA.2050103@cn.fujitsu.com>
+Date: Thu, 18 Oct 2012 09:00:42 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzEH1jguw8NB90si2uxvyO63FuKPOc8wiEPRCYwruSzRg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: jiang.liu@huawei.com, bhelgaas@google.com, lenb@kernel.org,
+        izumi.taku@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Update acpi_root_bridge_list in container hotplug
+ path.
+References: <1350444308-27102-1-git-send-email-tangchen@cn.fujitsu.com> <CAE9FiQVFc9VVfWZpEfjPeGvo5pby3BQNzDei3VTXdoR048_SPg@mail.gmail.com> <507E60C2.6010104@cn.fujitsu.com> <CAE9FiQX60dOE7odBx4OC0kawesZW3w9yLHEhmLoOvASaZ7q8dw@mail.gmail.com>
+In-Reply-To: <CAE9FiQX60dOE7odBx4OC0kawesZW3w9yLHEhmLoOvASaZ7q8dw@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/18 09:01:26,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/18 09:01:27,
+	Serialize complete at 2012/10/18 09:01:27
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 03:44:28PM -0700, Linus Torvalds wrote:
-> On Wed, Oct 17, 2012 at 3:19 PM, David Howells <dhowells@redhat.com> wrote:
-> >
-> > It's probably even better to just get rid of all the automatic module signing
-> > stuff completely and leave the sign-file script for the builder to use
-> > manually.  The module verification code will still be present.
-> 
-> That's just disgusting crazy talk.
-> 
-> Christ, David, get a grip on yourself. You seem to dismiss the "people
-> want to build their own kernel" people entirely.
-> 
-> One of the main sane use-cases for module signing is:
-> 
->  - CONFIG_CHECK_SIGNATURE=y
->  - randomly generated one-time key
->  - "make modules_install; make install"
->  - "make clean" to get rid of the keys.
->  - reboot.
+On 10/18/2012 12:28 AM, Yinghai Lu wrote:
+> On Wed, Oct 17, 2012 at 12:39 AM, Tang Chen<tangchen@cn.fujitsu.com>  wrote:
+>> On 10/17/2012 01:18 PM, Yinghai Lu wrote:
+>>
+>> And also, I have another 2 questions, maybe you can help me.
+>> 1) Do we need to put PNP0A08 into acpi_pci_roots ?
+>
+> looks like we need to unify those two ids.
+>
+>> 2) In container_notify_cb(), when it got a ACPI_NOTIFY_EJECT_REQUEST
+>>     event, it doesn't do the hot-remove things.
+>>     I use your sci emulator patch to test it. I did the following thing:
+>>          echo echo "\_SB_.LSB1">  /sys/kernel/debug/acpi/sci_notify
+>>     where \_SB_.LSB1 is a container, it just did nothing.
+>>     Do we need to support this operation ?
+>
+> yes, looks like need to add container_device_remove and call it under
+>   container_notify_cb/ACPI_NOTIFY_EJECT_REQUEST
+>
+> and should look like handle_root_bridge_removal to call acpi_bus_trim two times.
 
-I want that too, but right now 'make clean' leaves the keys around,
-which seems a bit dangerous to me.
+Hi Yinghai,
 
-David, why aren't the keys cleaned up as well?  Was that on purpose or
-just an oversight?
+OK, I can do that. :)
+And I'll send patches for that soon. :)
 
-thanks,
+>
+> Thanks
+>
+> Yinghai
+>
 
-greg k-h
