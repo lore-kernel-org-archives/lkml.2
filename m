@@ -1,178 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab2JRGfO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 02:35:14 -0400
-Received: from mail.crc.id.au ([203.56.246.92]:48258 "EHLO mail.crc.id.au"
+	id S1754393Ab2JRGhf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 02:37:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5077 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467Ab2JRGfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 02:35:13 -0400
-X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Oct 2012 02:35:12 EDT
-Message-ID: <507FA1D2.3070407@crc.id.au>
-Date: Thu, 18 Oct 2012 17:29:38 +1100
-From: Steven Haigh <netwiz@crc.id.au>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1751457Ab2JRGhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 02:37:33 -0400
+Message-ID: <507FA2B3.3080403@redhat.com>
+Date: Thu, 18 Oct 2012 14:33:23 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110904 Red Hat/3.1.14-1.el6_1 Thunderbird/3.1.14
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: CONFIG_SYSFS_DEPRECATED & CONFIG_SYSFS_DEPRECATED_V2 appear to not
- work
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms020908070704090701010800"
+To: Dave Young <hidave.darkstar@gmail.com>
+CC: Ingo Molnar <mingo@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>, Flavio Leitner <fbl@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Tejun Heo <tj@kernel.org>, ianfang.cn@gmail.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: kexec/kdump kernel fails to start
+References: <20120904143215.5bbbb2a4@obelix.rh>	<CAM_iQpVVCjJ0Bde9RS9Rm-0RJ=CtTyX3eUH45+oaaepvdAvAmQ@mail.gmail.com>	<20120923202727.GA28937@mwanda>	<CAE9FiQX-R1L-0LDZNTbk-a6SUog+=tTrdwcfr0QUczH_PLMMpw@mail.gmail.com>	<20120929071318.GA7444@gmail.com> <CABqxG0czidut37LkwqH2_D44ng-HWHudjgZr9w8csqnGVUT0rA@mail.gmail.com>
+In-Reply-To: <CABqxG0czidut37LkwqH2_D44ng-HWHudjgZr9w8csqnGVUT0rA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+On 10/18/2012 10:16 AM, Dave Young wrote:
 
---------------ms020908070704090701010800
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: quoted-printable
+> On Sat, Sep 29, 2012 at 3:13 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>>
+>> * Yinghai Lu <yinghai@kernel.org> wrote:
+>>
+>>> On Sun, Sep 23, 2012 at 1:27 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+>>>> On Wed, Sep 05, 2012 at 11:34:25PM +0800, Cong Wang wrote:
+>>>>> On Wed, Sep 5, 2012 at 1:32 AM, Flavio Leitner <fbl@redhat.com> wrote:
+>>>>>> Hi folks,
+>>>>>>
+>>>>>> I have system that no longer boots kdump kernel. Basically,
+>>>>>>
+>>>>>> # echo c > /proc/sysrq-trigger
+>>>>>>
+>>>>>> to dump a vmcore doesn't work. It just hangs after showing the usual
+>>>>>> panic messages. I've bisected the problem and the commit introducing
+>>>>>> the issue is the one below.
+>>>>>>
+>>>>>> Any idea?
+>>>>>>
+>>>>>> commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8
+>>>>>> Author: WANG Cong <xiyou.wangcong@gmail.com>  2012-03-05 20:05:13
+>>>>>> Committer: Ingo Molnar <mingo@elte.hu>  2012-03-06 05:38:26
+>>>>>> Parent: 550cf00dbc8ee402bef71628cb71246493dd4500 (Merge tag 'mmc-fixes-for-3.3' of git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc)
+>>>>>> Child:  a6fca40f1d7f3e232c9de27c1cebbb9f787fbc4f (x86, tlb: Switch cr3 in leave_mm() only when needed)
+>>>>>> Branches: master, remotes/origin/master
+>>>>>> Follows: v3.3-rc6
+>>>>>> Precedes: v3.5-rc1
+>>>>>>
+>>>>>>     x86/mm: Fix the size calculation of mapping tables
+>>>>>
+>>>>> There was some attempt to fix this:
+>>>>> https://patchwork.kernel.org/patch/1195751/
+>>>>>
+>>>>> but for some reason it is not accepted.
+>>>>
+>>>> I filed a bug for this:
+>>>> https://bugzilla.kernel.org/show_bug.cgi?id=47881
+>>>>
+>>>> Is it fixed now?
+>>>
+>>> that offending patch should be reverted...
+>>>
+>>> 722bc6b16771ed80871e1fd81c86d3627dda2ac8
+>>
+>> It does not revert cleanly - could someone send a (kexec
+>> tested!) patch with a proper description?
+> 
+> Hi, ingo
+> 
+> Besides of commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8,
+> below commit also need revert.
+> 
+> commit bd2753b2dda7bb43c7468826de75f49c6a7e8965
+> Author: Yinghai Lu <yinghai@kernel.org>
+> Date:   Wed Jun 6 10:55:40 2012 -0700
+> 
+>     x86/mm: Only add extra pages count for the first memory range
+> during pre-allocation early page table space
+> 
+>     Robin found this regression:
+> 
+>     | I just tried to boot an 8TB system.  It fails very early in boot with:
+>     | Kernel panic - not syncing: Cannot find space for the kernel page tables
+> 
+>     git bisect commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8.
+> 
+>     A git revert of that commit does boot past that point on the 8TB
+>     configuration.
+> 
+>     That commit will add up extra pages for all memory range even
+>     above 4g.
+> 
+>     Try to limit that extra page count adding to first entry only.
+> 
+>     Bisected-by: Robin Holt <holt@sgi.com>
+>     Tested-by: Robin Holt <holt@sgi.com>
+>     Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>     Cc: WANG Cong <xiyou.wangcong@gmail.com>
+>     Cc: Linus Torvalds <torvalds@linux-foundation.org>
+>     Cc: Andrew Morton <akpm@linux-foundation.org>
+>     Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>     Link: http://lkml.kernel.org/r/CAE9FiQUj3wyzQxtq9yzBNc9u220p8JZ1FYHG7t%3DMOzJ%3D9BZMYA@mail.gmail.com
+>     Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> 
+> 
+> 
+> OTOH,  Jacob and Yinghai has better init_memory_mapping
+> cleanup patches which are in tip:x86/mm2 already.  Their patches fixes
+> this issue
+> as well.
+> 
+> Since kdump does not work for long time since
+> 722bc6b16771ed80871e1fd81c86d3627dda2ac8
+> Can you or someone else help to get the init_memory_mapping patches merged?
+> 
+> Or do you still prefer to revert 722bc6b and bd2753b2d?  I think
+> stable kernel also need a fix.
+> 
 
-Hi all,
-
-Firstly, please CC me in replies as I am not subscribed to the list.
-
-I'm trying to build kernel 3.5.4 and 3.6.2 to work with EL5. Each time I =
-
-try to boot this kernel, I get a panic stating it can't find /
-
-The same kernel config works correctly in EL6 (without the=20
-CONFIG_SYSFS_DEPRECATED and CONFIG_SYSFS_DEPRECATED_V2 options set)
-
-The documentation I have found states that for compatibility with EL5, I =
-
-should enable the CONFIG_SYSFS_DEPRECATED and=20
-CONFIG_SYSFS_DEPRECATED_V2 options in General Setup.
-
-I have done this as shown:
-# grep SYSFS /boot/config-3.5.4-4.el5xen.x86_64
-CONFIG_SYSFS_DEPRECATED=3Dy
-CONFIG_SYSFS_DEPRECATED_V2=3Dy
-CONFIG_WIRELESS_EXT_SYSFS=3Dy
-CONFIG_ISCSI_BOOT_SYSFS=3Dm
-# CONFIG_GPIO_SYSFS is not set
-CONFIG_VIDEO_PVRUSB2_SYSFS=3Dy
-CONFIG_RTC_INTF_SYSFS=3Dy
-# CONFIG_DMI_SYSFS is not set
-CONFIG_SYSFS=3Dy
-
-The system however does not boot. I have also tried passing
-"sysfs.deprecated=3D1" on the kernel line in grub with no success.
-
-I cannot seem to find anything further that could cause this issue other =
-
-than a fault in these kernel options.
-
-I have added a few attachments (kernel config, screenshot of panic)=20
-which I won't attach to the list:
-	https://bugzilla.kernel.org/show_bug.cgi?id=3D48991
-
-Can anyone much wiser than me assist here? How can I help debug this=20
-further?
-
---=20
-Steven Haigh
-
-Email: netwiz@crc.id.au
-Web: http://www.crc.id.au
-Phone: (03) 9001 6090 - 0412 935 897
-Fax: (03) 8338 0299
 
 
---------------ms020908070704090701010800
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIOSjCC
-BjQwggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
-MTAyNDIxMDE1NVoXDTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
-dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
-aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
-aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOr
-lr6KMoOMpohBllVHrdRvEg/q6r8jR+EK75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSM
-zR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6
-qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxDz2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSD
-kOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr/+N2JLKutIxMYqQOJebr/f/h5t95
-m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
-Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFcfH6WNU7y1LhRgjAfBgNV
-HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
-MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
-dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
-c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqD
-CH14qywGXLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy
-6QMVQjbbMXltUfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPI
-zKKR9tQW8gGK+2+RHxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKf
-KSETEPrHh7p5shuuNktvsv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HOR
-z9v3vQwR4e3ksLc2JZOAFK+ssS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9
-sIPP7ON0fz095HdThKjiVJe6vofq+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCie
-uoBJ9OlqmsVWQvifIYf40dJPZkk9YgGTzWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7t
-w1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGqUp/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQ
-G2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb19mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t
-5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIIDjCCBvagAwIBAgIDA7ikMA0GCSqGSIb3DQEB
-BQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMi
-U2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20g
-Q2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcNMTIwMjEzMTMzODE0
-WhcNMTMwMjEzMTc1NjUzWjBXMRkwFwYDVQQNExB3bjVlU1RNM2RWOUIwMEk5MRkwFwYDVQQD
-DBBuZXR3aXpAY3JjLmlkLmF1MR8wHQYJKoZIhvcNAQkBFhBuZXR3aXpAY3JjLmlkLmF1MIIC
-IjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAzTaLiL78pm4Hqp7Pou4C60jt2wdvDiPt
-Sq6hspKk6oaST7BFeDOfoed3mvzytkjNr3C1gds3zsHulAMzRjuX2M1zPkfaj5QFkmlqQcxr
-+tnaf8QFpn9PrUcjpbYDYPxdcGR+SeClKzmjdxicHuYDrD8YXnbk+k8dWDaCuv5sKRQHJmIR
-maqUIGoVML+/kUR+sqkMpnbhOsL+E84Hg4fxLzpV3Tjf9bZbKgaspvg+BeJJCYKThBxMnZJI
-cQ9JzDGL4rO2BEuTXI9Ofl0+AAttBEpZeqc2rePCfA9NivKTCZ0qaFKmvM5SN7TiZUqv80rD
-ewTp+OLXNZEd5aa5jEDPNlznkcX0WfuKCmtyIEzT7PgHl1tOWTx7nw6FVWcB8qjC6xlyaL6W
-1oS7Om3b2ka+9vSiz7DrPZzUDZuS91Fr2zIIMrrRzhN8q/JdQf8lGTydpmoRUB0z+BAcH8V/
-nOcMMDogqV6/dCfywi7zFQK4AsiPSpyBAZyO53J4uPgoIzSpFj54f83KRIobHCWDU1BaU2+6
-CfEoAD3iMId1tcFWTXikEThL+3oHQullq9EbPR4f3ToAU7aTZYWG4KNKrmG93KAfyCUFb+bf
-mt3hf1BprKIUJnpOxdZHi0KwLXVwURiB4XQKZpEWL8mRbHRdxVATKrrJAHOFTl3/s37VLprP
-J9kCAwEAAaOCA6swggOnMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQGCCsG
-AQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUS9is0NdoOI3DZ/36Zlq78IrSedgwHwYDVR0j
-BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwGwYDVR0RBBQwEoEQbmV0d2l6QGNyYy5pZC5h
-dTCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJo
-dHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8v
-d3d3LnN0YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBT
-dGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0
-ZSB3YXMgaXNzdWVkIGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVp
-cmVtZW50cyBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0
-aGUgaW50ZW5kZWQgcHVycG9zZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5
-IG9ibGlnYXRpb25zLjCBnAYIKwYBBQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlv
-biBBdXRob3JpdHkwAwIBAhpkTGlhYmlsaXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVk
-ISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExpbWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20g
-Q0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9j
-cnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2Nz
-cC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6
-Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xpZW50LmNhLmNydDAjBgNV
-HRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBABL6
-TyHlAHW0kkHb0ZLcd/pn7Ue0B5mIWBhmta4dK8qd0hXw+/lhpWaJWR/RltCSPabxSd+Lm9Iw
-NWm7WP73GHAGby0TC+siwDJSk7CwDBqnVM1T3XQ5TgjfVX7h9qjVixsSWzAD++dXFmpf/344
-Uf3zcG/hKJSeRtOvM/88nn4eJtrn7QFnIm4AJpHEgrqwU/0pmQBLwmEYS1G5cr04Oact2v6W
-L3JHOlEP8lPBAO9GtZD8UZGmBoDTNG0Rf4TnVTBGdw1sLZqpXnkcVI+rDUaFk/jb7AtCB30N
-8tbm2I5ALevgjv+vNMZIQD/0AgOaylGrQwbP852lgOvMo2AdpGExggTdMIIE2QIBATCBlDCB
-jDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3Vy
-ZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNz
-IDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMDuKQwCQYFKw4DAhoFAKCCAh0w
-GAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIxMDE4MDYyOTM4
-WjAjBgkqhkiG9w0BCQQxFgQUOGcG5KCZBH5Kwc0Wn0/hR0LoP8MwbAYJKoZIhvcNAQkPMV8w
-XTALBglghkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIA
-gDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIBKDCBpQYJKwYBBAGCNxAE
-MYGXMIGUMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UE
-CxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRD
-b20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAwO4pDCBpwYLKoZI
-hvcNAQkQAgsxgZeggZQwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQu
-MSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQD
-Ey9TdGFydENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQQIDA7ik
-MA0GCSqGSIb3DQEBAQUABIICAJOhVu2xhmWWhnurnt8wUK11ZJb0aruMDIhAsi8VN0/dAhKk
-R4qJ8KZgJKimBIr79jaDP7W3LvpM5tzzJ0FDPUX73ZKQ6IJjQ2o0JHzE5tvQCIIypvCKboGY
-nff3fYZjHLjjMpRfXihlkgOWYzIiQlzo/N+znjQAGxIs0L22lrV9tG4hCBfH65+XdbILy2Kn
-OxcGqtjHgXsmSiUbtSQIUcxemQJ9pmx9eSnOQ33e4auoeZTW+qeTWRXD9gEJX3pfAjylk0Ct
-GmwHVwzKK/dxt2+FzCS1jgPl9eHCPNLwr2v2E4kVusIzysJH+j40g+KNWX6/jHIn7oJzd+/y
-75iG9CzDr7ninauK8fgE6tyv14qkxPqCKd8H4il2Q5YwimHxutZ2Ol98M1k8gCBWFWXlhuvD
-o5QmNOGgy1m3v6n2sxhhuf5mYiTuWuXw5HaClkw5sCp5FIZPIsO0B0KQApk3zt8frRToQ9w1
-zpoYZS9SMVV4SWjckDfdaQQK713X+b2X8haQf7R4Bi7Q+zQ/odPoXvzR8fBbtolMsfgFer98
-99D/tOFj/84F4L6b21Dg44jtxsdpL6B0DtS8DD75o3GjsdEyTFs+LTGWVow4ZepWoE7svIEv
-ZBkRd3VPGl6h8gNWd1IS00DBT2H/9Q8NhymKTFf6PpzfFmdkp66+HqpJU/vnAAAAAAAA
---------------ms020908070704090701010800--
+Just see Yinghai's coments, later init_memory_mapping cleanup
+will also address the 4k pages in first 2/4M, so revert them should be better.
+https://lkml.org/lkml/2012/9/4/533
+
+Here is a patch for the reverting:
+---
+x86 mm: Revert find_early_table_space fix
+
+722bc6b16771ed80871e1fd81c86d3627dda2ac8 Try to address the issue that the
+first 2/4M should use 4k pages if PSE enabled. but extra counts should only
+valid for x86_32. This commit cause kdump regression, kdump kernel hangs happens
+with it. 
+
+As Yinghai Lu said they should be reverted. see below post:
+https://lkml.org/lkml/2012/9/4/533 
+
+As there's a later fix to above fix which is bd2753b2dda7bb43c7468826de75f49c6a7e8965
+So we need revert both of these two commits.
+
+Tested kdump on physical and virutual machines. 
+
+Reverted commits:
+commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8
+Author: WANG Cong <xiyou.wangcong@gmail.com>
+Date:   Mon Mar 5 15:05:13 2012 -0800
+
+    x86/mm: Fix the size calculation of mapping tables
+    
+    For machines that enable PSE, the first 2/4M memory region still uses
+    4K pages, so needs more PTEs in this case, but
+    find_early_table_space() doesn't count this.
+    
+    This patch fixes it.
+    
+    The bug was found via code review, no misbehavior of the kernel
+    was observed.
+    
+    Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+    Cc: Yinghai Lu <yinghai@kernel.org>
+    Cc: Tejun Heo <tj@kernel.org>
+    Cc: <ianfang.cn@gmail.com>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Link: http://lkml.kernel.org/n/tip-kq6a00qe33h7c7ais2xsywnh@git.kernel.org
+    Signed-off-by: Ingo Molnar <mingo@elte.hu>
+
+commit bd2753b2dda7bb43c7468826de75f49c6a7e8965
+Author: Yinghai Lu <yinghai@kernel.org>
+Date:   Wed Jun 6 10:55:40 2012 -0700
+
+    x86/mm: Only add extra pages count for the first memory range during pre-allocatio
+    
+    Robin found this regression:
+    
+    | I just tried to boot an 8TB system.  It fails very early in boot with:
+    | Kernel panic - not syncing: Cannot find space for the kernel page tables
+    
+    git bisect commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8.
+    
+    A git revert of that commit does boot past that point on the 8TB
+    configuration.
+    
+    That commit will add up extra pages for all memory range even
+    above 4g.
+    
+    Try to limit that extra page count adding to first entry only.
+    
+    Bisected-by: Robin Holt <holt@sgi.com>
+    Tested-by: Robin Holt <holt@sgi.com>
+    Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+    Cc: WANG Cong <xiyou.wangcong@gmail.com>
+    Cc: Linus Torvalds <torvalds@linux-foundation.org>
+    Cc: Andrew Morton <akpm@linux-foundation.org>
+    Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Link: http://lkml.kernel.org/r/CAE9FiQUj3wyzQxtq9yzBNc9u220p8JZ1FYHG7t%3DMOzJ%3D9B
+    Signed-off-by: Ingo Molnar <mingo@kernel.org>
+
+
+Signed-off-by: Dave Young <dyoung@redhat.com>
+---
+ arch/x86/mm/init.c |   22 +++++++++-------------
+ 1 file changed, 9 insertions(+), 13 deletions(-)
+
+--- linux-2.6.orig/arch/x86/mm/init.c
++++ linux-2.6/arch/x86/mm/init.c
+@@ -29,14 +29,8 @@ int direct_gbpages
+ #endif
+ ;
+ 
+-struct map_range {
+-	unsigned long start;
+-	unsigned long end;
+-	unsigned page_size_mask;
+-};
+-
+-static void __init find_early_table_space(struct map_range *mr, unsigned long end,
+-					  int use_pse, int use_gbpages)
++static void __init find_early_table_space(unsigned long end, int use_pse,
++					  int use_gbpages)
+ {
+ 	unsigned long puds, pmds, ptes, tables, start = 0, good_end = end;
+ 	phys_addr_t base;
+@@ -61,10 +55,6 @@ static void __init find_early_table_spac
+ #ifdef CONFIG_X86_32
+ 		extra += PMD_SIZE;
+ #endif
+-		/* The first 2/4M doesn't use large pages. */
+-		if (mr->start < PMD_SIZE)
+-			extra += mr->end - mr->start;
+-
+ 		ptes = (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 	} else
+ 		ptes = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
+@@ -95,6 +85,12 @@ void __init native_pagetable_reserve(u64
+ 	memblock_reserve(start, end - start);
+ }
+ 
++struct map_range {
++	unsigned long start;
++	unsigned long end;
++	unsigned page_size_mask;
++};
++
+ #ifdef CONFIG_X86_32
+ #define NR_RANGE_MR 3
+ #else /* CONFIG_X86_64 */
+@@ -267,7 +263,7 @@ unsigned long __init_refok init_memory_m
+ 	 * nodes are discovered.
+ 	 */
+ 	if (!after_bootmem)
+-		find_early_table_space(&mr[0], end, use_pse, use_gbpages);
++		find_early_table_space(end, use_pse, use_gbpages);
+ 
+ 	for (i = 0; i < nr_range; i++)
+ 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
