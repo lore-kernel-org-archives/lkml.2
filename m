@@ -1,50 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab2JROeW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 10:34:22 -0400
+	id S1753122Ab2JROeY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 10:34:24 -0400
 Received: from mga02.intel.com ([134.134.136.20]:11550 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752411Ab2JROeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 10:34:21 -0400
+	id S1752411Ab2JROeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 10:34:23 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,607,1344236400"; 
-   d="scan'208";a="207676604"
+X-IronPort-AV: E=Sophos;i="4.80,608,1344236400"; 
+   d="scan'208";a="229254041"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
         linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
         balbi@ti.com
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCHv3 0/6] dw_dmac: few cleanups to the driver
-Date: Thu, 18 Oct 2012 17:34:06 +0300
-Message-Id: <1350570852-10398-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv3 2/6] dmaengine: dw_dmac: amend description and indentation
+Date: Thu, 18 Oct 2012 17:34:08 +0300
+Message-Id: <1350570852-10398-3-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1350570852-10398-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1350570852-10398-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are few cleanups to the driver which partialy acked and reviewed.
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 
-Since v2:
- - add one more clean up (patch 6/6)
- - make a separate patch to WARN a user in dwc_handle_error (suggested by
-   Felipe Balbi)
- - add a description to patch 4/6
+The driver will be used as a core part for various implementations of the
+DesignWare DMA device. The patch adjusts description on the top and corrects
+paragraph indentation in few places across the code.
 
-Andy Shevchenko (4):
-  dw_dmac: change dev_printk() to corresponding macros
-  dw_dmac: don't call platform_get_drvdata twice
-  dw_dmac: change dev_crit to dev_WARN in dwc_handle_error
-  dw_dmac: introduce to_dw_desc() macro
+Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/dma/dw_dmac.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Heikki Krogerus (2):
-  dmaengine: dw_dmac: remove CLK dependency
-  dmaengine: dw_dmac: amend description and indentation
-
- drivers/dma/Kconfig        |    1 -
- drivers/dma/dw_dmac.c      |   33 ++++++++++++++-------------------
- drivers/dma/dw_dmac_regs.h |    2 ++
- 3 files changed, 16 insertions(+), 20 deletions(-)
-
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index c4b0eb3..c27c125 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -1,6 +1,5 @@
+ /*
+- * Driver for the Synopsys DesignWare DMA Controller (aka DMACA on
+- * AVR32 systems.)
++ * Core driver for the Synopsys DesignWare DMA Controller
+  *
+  * Copyright (C) 2007-2008 Atmel Corporation
+  * Copyright (C) 2010-2011 ST Microelectronics
+@@ -9,6 +8,7 @@
+  * it under the terms of the GNU General Public License version 2 as
+  * published by the Free Software Foundation.
+  */
++
+ #include <linux/bitops.h>
+ #include <linux/clk.h>
+ #include <linux/delay.h>
+@@ -222,7 +222,6 @@ static inline void dwc_dump_chan_regs(struct dw_dma_chan *dwc)
+ 		channel_readl(dwc, CTL_LO));
+ }
+ 
+-
+ static inline void dwc_chan_disable(struct dw_dma *dw, struct dw_dma_chan *dwc)
+ {
+ 	channel_clear_bit(dw, CH_EN, dwc->mask);
+@@ -1679,6 +1678,7 @@ static int dw_resume_noirq(struct device *dev)
+ 
+ 	clk_prepare_enable(dw->clk);
+ 	dma_writel(dw, CFG, DW_CFG_DMA_EN);
++
+ 	return 0;
+ }
+ 
 -- 
 1.7.10.4
 
