@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab2JRIFm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 04:05:42 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:41178 "EHLO
+	id S1753496Ab2JRIH5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 04:07:57 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:41464 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705Ab2JRIFi (ORCPT
+	with ESMTP id S1752731Ab2JRIHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 04:05:38 -0400
+	Thu, 18 Oct 2012 04:07:52 -0400
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <507F848F.50707@zytor.com>
-References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
- <CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com>
- <50749DE8.7010703@zytor.com> <CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com>
- <5074A0AB.8040207@zytor.com> <87d30o7iy6.fsf@rustcorp.com.au> <507F848F.50707@zytor.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Thu, 18 Oct 2012 10:05:17 +0200
-Message-ID: <CAKgNAki+KV=Nh8D3La50uXpWv7PA5T-oPYJwK-PkOv5vMg0AqA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        James Morris <james.l.morris@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
+In-Reply-To: <CAJLyvQyvMpeYK4PrgEcRwNX74-e5RApX9ZcWJp1+Fgp8jhD9cQ@mail.gmail.com>
+References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
+	<1350387889-15324-6-git-send-email-hongbo.zhang@linaro.com>
+	<CAKohpo=Vfq=z8NK6w4_QpwwLniYiwcfGfzWZsoG_zBPYPXrcUw@mail.gmail.com>
+	<CAJLyvQyvMpeYK4PrgEcRwNX74-e5RApX9ZcWJp1+Fgp8jhD9cQ@mail.gmail.com>
+Date: Thu, 18 Oct 2012 13:37:51 +0530
+Message-ID: <CAKohponyeATPdmB7BZGShfaH0ETX8qfBLNM5jSkk6DpQ8vKfZw@mail.gmail.com>
+Subject: Re: [PATCH 5/5] Thermal: Add ST-Ericsson db8500 thermal dirver.
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Hongbo Zhang <hongbo.zhang@linaro.org>
+Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        kernel@igloocommunity.org, linaro-kernel@lists.linaro.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 6:24 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 10/11/2012 03:16 PM, Rusty Russell wrote:
->> "H. Peter Anvin" <hpa@zytor.com> writes:
->>
->>> On 10/10/2012 06:03 AM, Michael Kerrisk (man-pages) wrote:
->>>> Good point. A "whole hog" openat()-style interface is worth thinking about too.
->>>
->>> *Although* you could argue that you can always simply open the module
->>> file first, and that finit_module() is really what we should have had in
->>> the first place.  Then you don't need the flags since those would come
->>> from openat().
->>
->> There's no fundamental reason that modules have to be in a file.  I'm
->> thinking of compressed modules, or an initrd which simply includes all
->> the modules it wants to load in one linear file.
->>
->> Also, --force options manipulate the module before loading (as did the
->> now-obsolete module rename option).
->>
->
-> So perhaps what we *should* have is something that points to the module
-> to a (buffer, length) in userspace, and the equivalent of the current
-> init_module() would be open() + mmap() + minit_module() + close()?
+On 18 October 2012 13:05, Hongbo Zhang <hongbo.zhang@linaro.org> wrote:
+> On 17 October 2012 23:23, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> On 16 October 2012 17:14, hongbo.zhang <hongbo.zhang@linaro.org> wrote:
 
-So, I don't get it. What are the args you propose for of minit_module()?
+>>> +static struct db8500_trip_point db8500_trips_table[] = {
+>>> +       [0] = {
+>>> +               .temp = 70000,
+>>> +               .type = THERMAL_TRIP_ACTIVE,
+>>> +               .cooling_dev_name = {
+>>> +                       [0] = "thermal-cpufreq-0",
+>>
+>> If i am not wrong length of cooling_dev_name can't be greater than 8
+> You are wrong this time, it is 20
+> #define THERMAL_NAME_LENGTH 20
 
+Ahh.. Its the array size fixed to 8.. not length of each element within.
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+>>>  static void __init mop500_init_machine(void)
+>>> @@ -765,6 +834,10 @@ struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
+>>>                 "ux500-msp-i2s.2", &msp2_platform_data),
+>>>         OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80125000,
+>>>                 "ux500-msp-i2s.3", &msp3_platform_data),
+>>> +       OF_DEV_AUXDATA("stericsson,db8500-thermal", 0x801573c0,
+>>> +                       "db8500-thermal", &db8500_thsens_data),
+>>> +       OF_DEV_AUXDATA("stericsson,db8500-cpufreq-cooling", 0,
+>>> +                       "db8500-cpufreq-cooling", NULL),
+>>>         {},
+>>>  };
+
+>> Whatever the case, at-least we should pass data via DT for
+>> u8500_auxdata_lookup[].
+>> As you are adding the driver for the first time here, it must be able to parse
+>> data via DT.
+> Yes, for "db8500-thermal", data &db8500_thsens_data is parsed via DT
+> but there is really no data for "db8500-cpufreq-cooling".
+
+You didn't get my point. You are not parsing pdata via DT here, but setting
+pdata of device node created due to DT.
+
+What i am saying is, you must put in code in thermal driver, which will actually
+parse data from DT and create a pdata structure at run time. And there you
+would be required to add another file in Documentation with bindings for this
+driver.
+
+>>> +static int db8500_cpufreq_cooling_suspend(struct platform_device *pdev,
+>>> +               pm_message_t state)
+>>> +{
+>>> +       return -ENOSYS;
+>>> +}
+>>> +
+>>> +static int db8500_cpufreq_cooling_resume(struct platform_device *pdev)
+>>> +{
+>>> +       return -ENOSYS;
+>>> +}
+>>
+>> Do you need these? Wouldn't it be same if you don't define them?
+> There were not such functions before, I added them after reading
+> Documentation/SubmittingDrivers.
+> Is the document too old? should I follow it?
+
+Probably the document is correct and i am not :)
+
+--
+viresh
