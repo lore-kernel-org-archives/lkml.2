@@ -1,88 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab2JRThY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 15:37:24 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:46709 "EHLO
+	id S1753862Ab2JRTlF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 15:41:05 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60589 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268Ab2JRThV (ORCPT
+	with ESMTP id S1752400Ab2JRTlC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 15:37:21 -0400
-Date: Thu, 18 Oct 2012 12:37:17 -0700
-From: Tejun Heo <tj@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>, devel@openvz.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 04/14] kmem accounting basic infrastructure
-Message-ID: <20121018193717.GA13370@google.com>
-References: <1350382611-20579-1-git-send-email-glommer@parallels.com>
- <1350382611-20579-5-git-send-email-glommer@parallels.com>
- <alpine.DEB.2.00.1210171455010.20712@chino.kir.corp.google.com>
+	Thu, 18 Oct 2012 15:41:02 -0400
+Date: Thu, 18 Oct 2012 10:24:03 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [GIT PULL] extcon fixes for Linux 3.6
+Message-ID: <20121018172403.GA29562@kroah.com>
+References: <50762167.8060806@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1210171455010.20712@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <50762167.8060806@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, David.
-
-On Wed, Oct 17, 2012 at 03:08:04PM -0700, David Rientjes wrote:
-> > +static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
-> > +{
-> > +	int ret = -EINVAL;
-> > +#ifdef CONFIG_MEMCG_KMEM
-> > +	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
-> > +	/*
-> > +	 * For simplicity, we won't allow this to be disabled.  It also can't
-> > +	 * be changed if the cgroup has children already, or if tasks had
-> > +	 * already joined.
-> > +	 *
-> > +	 * If tasks join before we set the limit, a person looking at
-> > +	 * kmem.usage_in_bytes will have no way to determine when it took
-> > +	 * place, which makes the value quite meaningless.
-> > +	 *
-> > +	 * After it first became limited, changes in the value of the limit are
-> > +	 * of course permitted.
-> > +	 *
-> > +	 * Taking the cgroup_lock is really offensive, but it is so far the only
-> > +	 * way to guarantee that no children will appear. There are plenty of
-> > +	 * other offenders, and they should all go away. Fine grained locking
-> > +	 * is probably the way to go here. When we are fully hierarchical, we
-> > +	 * can also get rid of the use_hierarchy check.
+On Thu, Oct 11, 2012 at 10:31:19AM +0900, Chanwoo Choi wrote:
+> Hi Greg,
 > 
-> Not sure it's so offensive, it's a pretty standard way of ensuring that 
-> cont->children doesn't get manipulated in a race.
+> Please pull extcon fixes for Linux 3.6 from:
+> 
+>     git://git.infradead.org/users/kmpark/linux-samsung extcon-for-next
+> 
+> I've been creating "extcon-for-next" tree at git.infradead.org
+> and rebasing the branch base on your
+> driver-core.git(branch:driver-core-next).
+> 
+> This tree contains various small bugfixes and enhancements, fix typos.
+> And extcon-max77693 initialize MUIC register during probe()
+> to unmask internal interrupt of max77693 MUIC device.
 
-cgroup_lock is inherently one of the outermost locks as it protects
-cgroup hierarchy and modifying cgroup hierarchy involves invoking
-subsystem callbacks which may grab subsystem locks.  Grabbing it
-directly from subsystems thus creates high likelihood of creating a
-dependency loop and it's nasty to break.
+Now that you have a kernel.org account, can you move this tree to
+git.kernel.org, and provide me a signed tag to pull from for this set of
+patches to go into 3.7?
 
-And I'm unsure whether making cgroup locks finer grained would help as
-cpuset grabs cgroup_lock to perform actual task migration which would
-require the outermost cgroup locking anyway.  This one already has
-showed up in a couple lockdep warnings involving static_key usages.
+thanks,
 
-A couple days ago, I posted a patchset to remove cgroup_lock usage
-from cgroup_freezer and at least cgroup_freezer seems like it was
-aiming for the wrong behavior which led to the wrong locking behavior
-requiring grabbing cgroup_lock.  I can't say whether others will be
-that easy tho.
-
-Anyways, so, cgroup_lock is in the process of being unexported and I'd
-really like another usage isn't added but maybe that requires larger
-changes to memcg and not something which can be achieved here.  Dunno.
-Will think more about it.
-
-Thanks.
-
--- 
-tejun
+greg k-h
