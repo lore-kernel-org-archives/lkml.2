@@ -1,105 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477Ab2JRWWi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 18:22:38 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:48494 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753335Ab2JRWWh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 18:22:37 -0400
-Date: Thu, 18 Oct 2012 15:21:55 -0700
-From: Matt Helsley <matthltc@linux.vnet.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Matt Helsley <matthltc@linux.vnet.ibm.com>, rjw@sisk.pl, oleg@redhat.com,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.8] cgroup_freezer: allow migration
- regardless of freezer state and update locking
-Message-ID: <20121018222155.GB6223@us.ibm.com>
-References: <1350426526-14254-1-git-send-email-tj@kernel.org>
- <20121017191606.GA6223@us.ibm.com>
- <20121018211434.GI13370@google.com>
+	id S1756585Ab2JRWYx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 18:24:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54949 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750724Ab2JRWYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 18:24:52 -0400
+Date: Fri, 19 Oct 2012 00:24:49 +0200
+From: Jan Kara <jack@suse.cz>
+To: Chris Friesen <chris.friesen@genband.com>
+Cc: Jan Kara <jack@suse.cz>, Alex Bligh <alex@alex.org.uk>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Subject: Re: Local DoS through write heavy I/O on CFQ & Deadline
+Message-ID: <20121018222449.GA19204@quack.suse.cz>
+References: <0B138F62-16BF-4295-9AD9-64C0BB39FCE2@alex.org.uk>
+ <20121012133044.GA10115@dhcp22.suse.cz>
+ <E6EF14955C67D6CA58918872@nimrod.local>
+ <20121012145838.GD22083@dhcp22.suse.cz>
+ <3D1C85A52BB960B79E37AC30@nimrod.local>
+ <20121018212845.GB17646@quack.suse.cz>
+ <50807F26.5070106@genband.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121018211434.GI13370@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101822-7408-0000-0000-000009750C54
+In-Reply-To: <50807F26.5070106@genband.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 02:14:34PM -0700, Tejun Heo wrote:
-> Hello, Matt.
+On Thu 18-10-12 16:13:58, Chris Friesen wrote:
+> On 10/18/2012 03:28 PM, Jan Kara wrote:
 > 
-> On Wed, Oct 17, 2012 at 12:16:06PM -0700, Matt Helsley wrote:
-> > > * Unfreezable kernel tasks don't prevent a cgroup from transitioning
-> > >   into FROZEN from FREEZING.  There's nothing userland can do with or
-> > >   about such tasks.
-> > 
-> > Seems like a non-problem. Do you have a testcase showing how kernel
-> > threads prevent cgroups that should be freezable from being frozen?
-> > It used to be that you couldn't move kernel threads out of the root
-> > cgroup and the root cgroup was not freezable. So this was never a
-> > problem before. Is there some change here that I'm unaware of?
+> >   Yeah, ionice has its limitations. The problem is that all buffered
+> >writes happen just into memory (so completely independently of ionice
+> >settings). Subsequent writing of dirty memory to disk happens using flusher
+> >thread which is a kernel process and it doesn't know anything about IO
+> >priority set for task which created the file. If you wrote the file with
+> >oflag=direct or oflag=sync you would see that ionice works as expected.
 > 
-> Hmmm?  Nothing prevents kthreads from being moved around.  We only
-> recently added the restriction to prevent migration of the kthreadd
-> (the one which creates other kthreads).  You can reproduce it with
-> khungtask or any other !freezable kthreads.
+> Has anyone looked at storing the ionice value with the buffered
+> write request such that the actual writes to disk could be sorted by
+> priority and done with the ionice level of the original caller?
+  There's nothing as "buffered write request" in kernel. When buffered
+write happens, data are just copied into page cache. We could attach a tag
+to each modified page in the page cache but that would get really expensive.
 
-Ok. I don't immmediately see why that'd be a good idea but it's
-possible..
+Essentially the same problems happens with cgroups where buffered writes
+are not accounted as well. There we considered to attach a tag to inodes
+(which doesn't work well if processes from different cgroups / with
+different IO priority write to the same inode but that's not that common)
+which is reasonably cheap. But then you have to build smarts into flusher
+thread to prioritize inodes according to tags (you cannot really let
+flusher thread just submit IO with that priority because when it gets
+blocked, it starves writeback with possible higher priority). Alternatively
+you could have separate flusher thread per-cgroup / IO priority. That is
+easier from code point of view but throughput suffers because of limited
+merging of IO. So all in all the problem is known but hard to tackle.
 
-> 
-> > > * Tasks can be moved in and out of a frozen cgroup.  Tasks are made to
-> > >   conform to the state of the new cgroup during migration.  This
-> > >   behavior makes a lot more sense and removes the use of
-> > >   ->can_attach() which makes co-mounting difficult.
-> > 
-> > One nice aspect of freezing the set of tasks in the cgroup as well as the
-> > tasks themselves was you had a fixed set of tasks to work with (from
-> > userspace or otherwise). With this change that will no longer be true.
-> > This is a userspace-visible behavior change and userspace code may
-> > have relied on this feature.
-> >
-> > Will this work for the CRIU folks? With this patch one of the tasks being
-> > checkpointed could become thawed simply by some other process writing
-> > the pid into a different cgroup's tasks file. In contrast, with the
-> > current code they'd have to explicitly thaw its cgroup first.
-> 
-> Yeap, this is a userland visible behavior change.  Don't see any other
-> way around it tho and if you can't prevent someone else moving things
-> in/out of your cgroup, what prevents someone else echoing THAWED to
-> freezer.state?
-
-The userspace code would at least have to be aware that the group could
-be frozen. That alone ought to encourage some tool writers to think
-about how to share the cgroup's freezer.state and possibly other bits
-with other tools and/or the user(s).
-
-In general though, yes, there's alot of potential for users and tools
-to step all over each others' toes when it comes to manipulating cgroup
-state. Even tools aware of the freezer could still write THAWED to the
-freezer state when another tool does not expect it.
-
-<off_topic>
-"Whoever" did the freeze needs a way to "lock" access to the freezer state,
-change the freezer state itself, do something (e.g. CRIU) which relies on
-the state not changing, and then release the lock. Plus the lock has to be
-released by the kernel if "Whoever" dies without the chance to release it.
-So I was thinking who holds the lock and its lifetime could be represented
-in userspace by file descriptor(s).
-</off_topic>
-
-> As for CRIU, it isn't using cgroup freezer at the moment because
-> frozen tasks can't be ptraced currently.  Something I'm hoping to
-> change but not sure when it can be done.
-
-OK, but that doesn't mean the frozen nature of the task list itself
-won't be useful in the future.
-
-Cheers,
-	-Matt Helsley
-
+							Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
