@@ -1,53 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932749Ab2JRSE5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 14:04:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11091 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932725Ab2JRSE4 (ORCPT
+	id S932770Ab2JRSFS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 14:05:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59994 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932725Ab2JRSFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 14:04:56 -0400
-X-Authority-Analysis: v=2.0 cv=IZ4FqBWa c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=B91VBO2a_qwA:10 a=c7QpnVTx6xIA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=_Pjek1p4V8oA:10 a=wLd2_EhOBAfv83gkEDkA:9 a=CjuIK1q_8ugA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Date: Thu, 18 Oct 2012 14:04:53 -0400 (EDT)
-From: Steven Rostedt <rostedt@goodmis.org>
-X-X-Sender: rostedt@localhost.localdomain
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk, Christoph Lameter <cl@linux.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [ 004/120] slab: fix the DEADLOCK issue on l3 alien lock
-In-Reply-To: <20121018171411.GC23278@kroah.com>
-Message-ID: <alpine.DEB.2.02.1210181401210.376@localhost.localdomain>
-References: <20121011005825.364610894@linuxfoundation.org> <20121011005826.156478516@linuxfoundation.org> <20121018132020.GB7282@home.goodmis.org> <20121018171411.GC23278@kroah.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 18 Oct 2012 14:05:15 -0400
+Message-ID: <508044D7.7070005@mit.edu>
+Date: Thu, 18 Oct 2012 11:05:11 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: mtk.manpages@gmail.com, "Paton J. Lewis" <palewis@adobe.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jason Baron <jbaron@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Paul Holland <pholland@adobe.com>,
+        Davide Libenzi <davidel@xmailserver.org>, libc-alpha@sourceware.org,
+        Linux API <linux-api@vger.kernel.org>, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH v2] epoll: Support for disabling items, and a self-test
+ app.
+References: <1345756535-8372-1-git-send-email-palewis@adobe.com> <CAKgNAkg0R2LwfpF8beCkawTfPu7oj_DDaDxf2VJ+xB6UTgRSaw@mail.gmail.com> <20121017163004.fb9de1b3.akpm@linux-foundation.org>
+In-Reply-To: <20121017163004.fb9de1b3.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[cc Paul McKenney, who is probably the leading expert on these things]
 
-
-On Thu, 18 Oct 2012, Greg Kroah-Hartman wrote:
-
->>> Michael traced the problem back to a commit in release 3.0.0:
+On 10/17/2012 04:30 PM, Andrew Morton wrote:
+> On Tue, 16 Oct 2012 17:12:57 +0200
+> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
+> 
+>> On Thu, Aug 23, 2012 at 11:15 PM, Paton J. Lewis <palewis@adobe.com> wrote:
+>>> From: "Paton J. Lewis" <palewis@adobe.com>
+>>>
+>>> Enhanced epoll_ctl to support EPOLL_CTL_DISABLE, which disables an epoll item.
+>>> If epoll_ctl doesn't return -EBUSY in this case, it is then safe to delete the
+>>> epoll item in a multi-threaded environment. Also added a new test_epoll self-
+>>> test app to both demonstrate the need for this feature and test it.
 >>
->> I don't see this fix in the last 3.0 stable release. Shouldn't it go
->> there too?
->
-> As-is, it doesn't apply at all.  If someone provides me a backport, I'll
-> be glad to apply it there.
->
+>> (There's a lot of background missing from this version of the patch
+>> that was included in the previous version
+>> [http://thread.gmane.org/gmane.linux.kernel/1311457]. It helps to
+>> include the full rationale with a revised patch--best not to assume
+>> that someone has the context of past mails when reading a revised
+>> patch.)
+>>
+>> I've taken a look at this patch as it currently stands in 3.7-rc1, and
+>> done a bit of testing. (By the way, the test program
+>> tools/testing/selftests/epoll/test_epoll.c does not compile...)
+> 
+> Thanks for this.  You raise significant issues.  If we can't get these
+> fully resolved over the next month or so, we should revert the patch so
+> this new API doesn't get released in 3.7.  I have queued a patch to do
+> this and shall maintain it while I watch developments...
 
-Ug, it seems that the bug isn't in 3.0 :-/
+I can't shake the feeling that EPOLL_CTL_DISABLE is solving a
+non-problem, or, more precisely, that there should be a perfectly good
+userspace solution with no kernel changes.
 
-I was looking at a diff and interpreted it incorrectly. The bug doesn't 
-look to be in 3.0.
+Unless something is rather buggy in kernel land (and I don't think it
+is), once EPOLL_CTL_DEL has returned, no call to epoll_wait that starts
+*after* EPOLL_CTL_DEL finishes will return that object.  This suggests
+an RCU-like approach: once EPOLL_CTL_DEL has returned and every thread
+has returned from an epoll_wait call that started after the
+EPOLL_CTL_DEL returns, then the data structure can be safely freed.
 
-Sorry for the noise.
+In pseudocode:
 
--- Steve
+delete(fd, pdata) {
+  pdata->dead = true;
+  EPOLL_CTL_DEL(fd);
+  rcu_call(delete pdata);
+}
+
+wait() {
+  epoll_wait;
+  for each event pdata {
+    if (pdata->gone) continue;
+    process the event;
+  }
+
+  rcu_this_is_a_grace_period();
+}
+
+Of course, these are not normal grace periods and would need to be
+tracked separately.  (The optimal data structure to do this without
+killing scalability is not obvious.  urcu presumably implements such a
+thing.)
+
+Am I right?
+
+
+--Andy
