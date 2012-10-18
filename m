@@ -1,433 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120Ab2JRWbF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 18:31:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55126 "EHLO mx2.suse.de"
+	id S1756621Ab2JRWfJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 18:35:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14487 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755239Ab2JRWbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 18:31:02 -0400
-Date: Fri, 19 Oct 2012 00:30:58 +0200
-From: Jan Kara <jack@suse.cz>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: jack@suse.cz, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ashish Sangwan <a.sangwan@samsung.com>,
-        Bonggil Bak <bgbak@samsung.com>
-Subject: Re: [PATCH 5/6] udf: implement extent caching while
- reading-writing to a file
-Message-ID: <20121018223058.GA19469@quack.suse.cz>
-References: <1349795401-6497-1-git-send-email-linkinjeon@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349795401-6497-1-git-send-email-linkinjeon@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754223Ab2JRWfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 18:35:08 -0400
+Date: Thu, 18 Oct 2012 19:35:03 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Fw: [GIT PULL for v3.7-rc1] media fixes
+Message-ID: <20121018193503.53565401@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+Hi Linus,
 
-On Wed 10-10-12 00:10:01, Namjae Jeon wrote:
-> From: Namjae Jeon <namjae.jeon@samsung.com>
-> 
-> This patch implements extent caching.
-> Instead of reading metadata everytime from file's starting position,
-> now we read from the cached extent.
-> This speeds up the transformation of file logical offsets to
-> corresponding on-disk blocks.
-  I have some mostly minor comments to the patch. But when reading the
-extent code it is just ugly and hard to follow. So I'm thinking how to
-improve that before making things even harder with the extent cache. So
-give me a few more days please.
+Please pull from:
+	git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
 
-								Honza
+For:
+	- one Kconfig fix patch;
+	- one patch fixing DocBook breakage due to the drivers/media UAPI changes;
+	- the remaining UAPI media changes (DVB API).
 
-> 
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-> Signed-off-by: Bonggil Bak <bgbak@samsung.com>
-> ---
->  fs/udf/ialloc.c  |    2 +
->  fs/udf/inode.c   |  147 +++++++++++++++++++++++++++++++++++++++++++++++++-----
->  fs/udf/udf_i.h   |   17 +++++++
->  fs/udf/udfdecl.h |   10 ++--
->  4 files changed, 159 insertions(+), 17 deletions(-)
-> 
-> diff --git a/fs/udf/ialloc.c b/fs/udf/ialloc.c
-> index 7e5aae4..7dd86a4a 100644
-> --- a/fs/udf/ialloc.c
-> +++ b/fs/udf/ialloc.c
-> @@ -117,6 +117,8 @@ struct inode *udf_new_inode(struct inode *dir, umode_t mode, int *err)
->  	iinfo->i_lenAlloc = 0;
->  	iinfo->i_use = 0;
->  	iinfo->i_checkpoint = 1;
-> +	memset(&iinfo->cached_extent, 0, sizeof(struct udf_ext_cache));
-> +	mutex_init(&(iinfo->i_extent_cache_lock));
->  	if (UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_USE_AD_IN_ICB))
->  		iinfo->i_alloc_type = ICBTAG_FLAG_AD_IN_ICB;
->  	else if (UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_USE_SHORT_AD))
-> diff --git a/fs/udf/inode.c b/fs/udf/inode.c
-> index 6fd9dc5..38aee74 100644
-> --- a/fs/udf/inode.c
-> +++ b/fs/udf/inode.c
-> @@ -90,6 +90,7 @@ void udf_evict_inode(struct inode *inode)
->  	}
->  	kfree(iinfo->i_ext.i_data);
->  	iinfo->i_ext.i_data = NULL;
-> +	udf_clear_extent_cache(iinfo);
->  	if (want_delete) {
->  		udf_free_inode(inode);
->  	}
-> @@ -105,6 +106,7 @@ static void udf_write_failed(struct address_space *mapping, loff_t to)
->  		truncate_pagecache(inode, to, isize);
->  		if (iinfo->i_alloc_type != ICBTAG_FLAG_AD_IN_ICB) {
->  			down_write(&iinfo->i_data_sem);
-> +			udf_clear_extent_cache(iinfo);
->  			udf_truncate_extents(inode);
->  			up_write(&iinfo->i_data_sem);
->  		}
-> @@ -588,27 +590,32 @@ static sector_t inode_getblk(struct inode *inode, sector_t block,
->  			     int *err, int *new)
->  {
->  	struct kernel_long_ad laarr[EXTENT_MERGE_SIZE];
-> -	struct extent_position prev_epos, cur_epos, next_epos;
-> -	int count = 0, startnum = 0, endnum = 0;
-> +	struct extent_position prev_epos, cur_epos, next_epos, cache_epos;
-> +	int count = 0, startnum = 0, endnum = 0, epos_count;
->  	uint32_t elen = 0, tmpelen;
->  	struct kernel_lb_addr eloc, tmpeloc;
->  	int c = 1;
->  	loff_t lbcount = 0, b_off = 0;
-> +	loff_t cur_ext_lbcount = 0, prev_ext_lbcount = 0;
->  	uint32_t newblocknum, newblock;
->  	sector_t offset = 0;
->  	int8_t etype;
->  	struct udf_inode_info *iinfo = UDF_I(inode);
->  	int goal = 0, pgoal = iinfo->i_location.logicalBlockNum;
-> -	int lastblock = 0;
-> +	int lastblock = 0, check_endnum = 0;
->  	bool isBeyondEOF;
->  
->  	*err = 0;
->  	*new = 0;
-> -	prev_epos.offset = udf_file_entry_alloc_offset(inode);
-> -	prev_epos.block = iinfo->i_location;
-> -	prev_epos.bh = NULL;
-> -	cur_epos = next_epos = prev_epos;
->  	b_off = (loff_t)block << inode->i_sb->s_blocksize_bits;
-> +	if (!udf_read_extent_cache(inode, b_off, &lbcount, &prev_epos)) {
-> +		prev_epos.offset = udf_file_entry_alloc_offset(inode);
-> +		prev_epos.block = iinfo->i_location;
-> +		prev_epos.bh = NULL;
-> +	} else {
-> +		cur_ext_lbcount = prev_ext_lbcount = lbcount;
-> +	}
-> +	cur_epos = next_epos = prev_epos;
->  
->  	/* find the extent which contains the block we are looking for.
->  	   alternate between laarr[0] and laarr[1] for locations of the
-> @@ -626,6 +633,8 @@ static sector_t inode_getblk(struct inode *inode, sector_t block,
->  		}
->  
->  		lbcount += elen;
-> +		prev_ext_lbcount = cur_ext_lbcount;
-> +		cur_ext_lbcount += elen;
->  
->  		prev_epos.block = cur_epos.block;
->  		cur_epos.block = next_epos.block;
-> @@ -649,6 +658,9 @@ static sector_t inode_getblk(struct inode *inode, sector_t block,
->  
->  		count++;
->  	} while (lbcount + elen <= b_off);
-> +	memcpy(&cache_epos, &prev_epos, sizeof(struct extent_position));
-> +	if (cache_epos.bh != NULL)
-> +		get_bh(cache_epos.bh);
->  
->  	b_off -= lbcount;
->  	offset = b_off >> inode->i_sb->s_blocksize_bits;
-> @@ -669,9 +681,29 @@ static sector_t inode_getblk(struct inode *inode, sector_t block,
->  				 ~(inode->i_sb->s_blocksize - 1));
->  			udf_write_aext(inode, &cur_epos, &eloc, elen, 1);
->  		}
-> +		/*
-> +		 * Update extent cache, iterate over laarr[EXTENT_MERGE_SIZE]
-> +		 * to find the epos corresponding to eloc at laarr[c]
-> +		 */
-> +		epos_count = 0;
-> +		do {
-> +			etype = udf_next_aext(inode, &cache_epos, &eloc,
-> +					      &elen, 1);
-> +			if ((etype == (EXT_RECORDED_ALLOCATED >> 30))
-> +			    && (laarr[c].extLocation.logicalBlockNum ==
-> +				eloc.logicalBlockNum)
-> +			    && (laarr[c].extLocation.partitionReferenceNum ==
-> +				eloc.partitionReferenceNum)) {
-> +				udf_update_extent_cache(inode,
-> +					cur_ext_lbcount, &cache_epos, 1);
-> +				break;
-> +			}
-> +			epos_count++;
-> +		} while ((etype != -1) && (epos_count < EXTENT_MERGE_SIZE));
->  		brelse(prev_epos.bh);
->  		brelse(cur_epos.bh);
->  		brelse(next_epos.bh);
-> +		brelse(cache_epos.bh);
->  		newblock = udf_get_lb_pblock(inode->i_sb, &eloc, offset);
->  		return newblock;
->  	}
-> @@ -699,6 +731,7 @@ static sector_t inode_getblk(struct inode *inode, sector_t block,
->  			brelse(prev_epos.bh);
->  			brelse(cur_epos.bh);
->  			brelse(next_epos.bh);
-> +			brelse(cache_epos.bh);
->  			*err = ret;
->  			return 0;
->  		}
-> @@ -716,6 +749,8 @@ static sector_t inode_getblk(struct inode *inode, sector_t block,
->  				inode->i_sb->s_blocksize;
->  			memset(&laarr[c].extLocation, 0x00,
->  				sizeof(struct kernel_lb_addr));
-> +			if (b_off != 0)
-> +				cur_ext_lbcount += b_off;
->  			count++;
->  		}
->  		endnum = c + 1;
-> @@ -744,6 +779,8 @@ static sector_t inode_getblk(struct inode *inode, sector_t block,
->  			endnum++;
->  		} else
->  			lastblock = 1;
-> +		if (b_off != 0)
-> +			cur_ext_lbcount += b_off;
->  	}
->  
->  	/* if the current extent is not recorded but allocated, get the
-> @@ -766,6 +803,7 @@ static sector_t inode_getblk(struct inode *inode, sector_t block,
->  			brelse(prev_epos.bh);
->  			brelse(cur_epos.bh);
->  			brelse(next_epos.bh);
-> +			brelse(cache_epos.bh);
->  			*err = -ENOSPC;
->  			return 0;
->  		}
-> @@ -791,16 +829,41 @@ static sector_t inode_getblk(struct inode *inode, sector_t block,
->  #endif
->  
->  	/* merge any continuous blocks in laarr */
-> +	check_endnum = endnum;
->  	udf_merge_extents(inode, laarr, &endnum);
-> +	if (check_endnum > endnum) {
-> +		c--;
-> +		cur_ext_lbcount = prev_ext_lbcount;
-> +	}
->  
->  	/* write back the new extents, inserting new extents if the new number
->  	 * of extents is greater than the old number, and deleting extents if
->  	 * the new number of extents is less than the old number */
->  	udf_update_extents(inode, laarr, startnum, endnum, &prev_epos);
->  
-> +	/*
-> +	 * Update extent cache, iterate over laarr[EXTENT_MERGE_SIZE] to find
-> +	 * the epos corresponding to eloc at laarr[c]
-> +	 */
-> +	epos_count = 0;
-> +	do {
-> +		etype = udf_next_aext(inode, &cache_epos, &eloc, &elen, 1);
-> +		if ((etype == (EXT_RECORDED_ALLOCATED >> 30))
-> +		    && (laarr[c].extLocation.logicalBlockNum ==
-> +			eloc.logicalBlockNum)
-> +		    && (laarr[c].extLocation.partitionReferenceNum ==
-> +			eloc.partitionReferenceNum)) {
-> +			udf_update_extent_cache(inode, cur_ext_lbcount,
-> +						&cache_epos, 1);
-> +			break;
-> +		}
-> +		epos_count++;
-> +	} while ((etype != -1) && (epos_count < EXTENT_MERGE_SIZE));
-> +
->  	brelse(prev_epos.bh);
->  	brelse(cur_epos.bh);
->  	brelse(next_epos.bh);
-> +	brelse(cache_epos.bh);
->  
->  	newblock = udf_get_pblock(inode->i_sb, newblocknum,
->  				iinfo->i_location.partitionReferenceNum, 0);
-> @@ -1173,6 +1236,7 @@ set_size:
->  	} else {
->  		if (iinfo->i_alloc_type == ICBTAG_FLAG_AD_IN_ICB) {
->  			down_write(&iinfo->i_data_sem);
-> +			udf_clear_extent_cache(iinfo);
->  			memset(iinfo->i_ext.i_data + iinfo->i_lenEAttr + newsize,
->  			       0x00, bsize - newsize -
->  			       udf_file_entry_alloc_offset(inode));
-> @@ -1186,6 +1250,7 @@ set_size:
->  		if (err)
->  			return err;
->  		down_write(&iinfo->i_data_sem);
-> +		udf_clear_extent_cache(iinfo);
->  		truncate_setsize(inode, newsize);
->  		udf_truncate_extents(inode);
->  		up_write(&iinfo->i_data_sem);
-> @@ -1303,6 +1368,8 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
->  	iinfo->i_lenAlloc = 0;
->  	iinfo->i_next_alloc_block = 0;
->  	iinfo->i_next_alloc_goal = 0;
-> +	memset(&iinfo->cached_extent, 0, sizeof(struct udf_ext_cache));
-> +	mutex_init(&(iinfo->i_extent_cache_lock));
->  	if (fe->descTag.tagIdent == cpu_to_le16(TAG_IDENT_EFE)) {
->  		iinfo->i_efe = 1;
->  		iinfo->i_use = 0;
-> @@ -2158,11 +2225,12 @@ int8_t inode_bmap(struct inode *inode, sector_t block,
->  	struct udf_inode_info *iinfo;
->  
->  	iinfo = UDF_I(inode);
-> -	pos->offset = 0;
-> -	pos->block = iinfo->i_location;
-> -	pos->bh = NULL;
-> +	if (!udf_read_extent_cache(inode, bcount, &lbcount, pos)) {
-> +		pos->offset = 0;
-> +		pos->block = iinfo->i_location;
-> +		pos->bh = NULL;
-> +	}
->  	*elen = 0;
-> -
->  	do {
->  		etype = udf_next_aext(inode, pos, eloc, elen, 1);
->  		if (etype == -1) {
-> @@ -2172,7 +2240,8 @@ int8_t inode_bmap(struct inode *inode, sector_t block,
->  		}
->  		lbcount += *elen;
->  	} while (lbcount <= bcount);
-> -
-> +	/* update extent cache */
-> +	udf_update_extent_cache(inode, lbcount - *elen, pos, 1);
->  	*offset = (bcount + *elen - lbcount) >> blocksize_bits;
->  
->  	return etype;
-> @@ -2202,3 +2271,57 @@ long udf_block_map(struct inode *inode, sector_t block)
->  	else
->  		return ret;
->  }
-> +int udf_read_extent_cache(struct inode *inode, loff_t bcount,
-> +			  loff_t *lbcount, struct extent_position *pos)
-> +{
-> +	struct udf_inode_info *iinfo = UDF_I(inode);
-> +	mutex_lock(&iinfo->i_extent_cache_lock);
-> +	if ((iinfo->cached_extent.lstart <= bcount) &&
-> +	    (iinfo->cached_extent.valid)) {
-> +		/* Cache hit */
-> +		*lbcount = iinfo->cached_extent.lstart;
-> +		memcpy(pos, &iinfo->cached_extent.epos,
-> +		       sizeof(struct extent_position));
-> +		mutex_unlock(&iinfo->i_extent_cache_lock);
-> +		return 1;
-> +	}
-> +	mutex_unlock(&iinfo->i_extent_cache_lock);
-> +	return 0;
-> +}
-> +void udf_update_extent_cache(struct inode *inode, loff_t estart,
-> +			     struct extent_position *pos, int next_epos)
-> +{
-> +	struct udf_inode_info *iinfo = UDF_I(inode);
-> +	mutex_lock(&iinfo->i_extent_cache_lock);
-> +	udf_clear_extent_cache(iinfo);
-> +	if (pos->bh != NULL)
-> +		/* Increase ref count */
-> +		get_bh(pos->bh);
-> +	memcpy(&iinfo->cached_extent.epos, pos,
-> +	       sizeof(struct extent_position));
-> +	iinfo->cached_extent.lstart = estart;
-> +	iinfo->cached_extent.valid = 1;
-> +	if (next_epos)
-> +		switch (iinfo->i_alloc_type) {
-> +		case ICBTAG_FLAG_AD_SHORT:
-> +			iinfo->cached_extent.epos.offset -=
-> +			sizeof(struct short_ad);
-> +			break;
-> +		case ICBTAG_FLAG_AD_LONG:
-> +			iinfo->cached_extent.epos.offset -=
-> +			sizeof(struct long_ad);
-> +		}
-> +	mutex_unlock(&iinfo->i_extent_cache_lock);
-> +}
-> +
-> +/* This function should be called after i_data_sem is
-> + * held for writing OR i_extent_cache_lock is taken.
-> + */
-> +void udf_clear_extent_cache(struct udf_inode_info *iinfo)
-> +{
-> +	if (iinfo->cached_extent.valid) {
-> +		brelse(iinfo->cached_extent.epos.bh);
-> +		memset(&iinfo->cached_extent, 0, sizeof(struct udf_ext_cache));
-> +	}
-> +}
-> +
-> diff --git a/fs/udf/udf_i.h b/fs/udf/udf_i.h
-> index bb8309d..95e5e17 100644
-> --- a/fs/udf/udf_i.h
-> +++ b/fs/udf/udf_i.h
-> @@ -1,6 +1,20 @@
->  #ifndef _UDF_I_H
->  #define _UDF_I_H
->  
-> +struct extent_position {
-> +	struct buffer_head *bh;
-> +	uint32_t offset;
-> +	struct kernel_lb_addr block;
-> +};
-> +
-> +struct udf_ext_cache {
-> +	/* Extent position */
-> +	struct extent_position epos;
-> +	/* Start logical offset in bytes */
-> +	loff_t lstart;
-> +	bool valid;
-> +};
-> +
->  /*
->   * The i_data_sem and i_mutex serve for protection of allocation information
->   * of a regular files and symlinks. This includes all extents belonging to
-> @@ -35,6 +49,9 @@ struct udf_inode_info {
->  		__u8		*i_data;
->  	} i_ext;
->  	struct rw_semaphore	i_data_sem;
-> +	struct udf_ext_cache cached_extent;
-> +	/* Mutex for protecting extent cache */
-> +	struct mutex i_extent_cache_lock;
->  	struct inode vfs_inode;
->  };
->  
-> diff --git a/fs/udf/udfdecl.h b/fs/udf/udfdecl.h
-> index de038da..db4a22e 100644
-> --- a/fs/udf/udfdecl.h
-> +++ b/fs/udf/udfdecl.h
-> @@ -113,11 +113,6 @@ struct ustr {
->  	uint8_t u_len;
->  };
->  
-> -struct extent_position {
-> -	struct buffer_head *bh;
-> -	uint32_t offset;
-> -	struct kernel_lb_addr block;
-> -};
->  
->  /* super.c */
->  
-> @@ -164,6 +159,11 @@ extern int8_t udf_next_aext(struct inode *, struct extent_position *,
->  			    struct kernel_lb_addr *, uint32_t *, int);
->  extern int8_t udf_current_aext(struct inode *, struct extent_position *,
->  			       struct kernel_lb_addr *, uint32_t *, int);
-> +int udf_read_extent_cache(struct inode *inode, loff_t bcount, loff_t *lbcount,
-> +			  struct extent_position *pos);
-> +void udf_update_extent_cache(struct inode *inode, loff_t estart,
-> +			     struct extent_position *pos, int next_epos);
-> +void udf_clear_extent_cache(struct udf_inode_info *iinfo);
->  
->  /* misc.c */
->  extern struct buffer_head *udf_tgetblk(struct super_block *, int);
-> -- 
-> 1.7.9.5
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+I'm aware that is is a little late for the UAPI renames for the DVB API, but IMHO,
+it is better to merge it for 3.7, due to two reasons:
+
+	1) There is a major rename at 3.7 (not only uapi changes, but also the
+	   entire media drivers were reorganized on 3.7, in order to simplify
+	   the Kconfig logic, and easy drivers selection, especially for hybrid
+	   devices). By confining all those renames there at 3.7 it will cause
+	   all the harm at for media developers on just one shot. Stable backports
+	   upstream and at distros will likely welcome it as well, as they
+	   won't need to check what changed on 3.7 and what was postponed for on 3.8.
+
+	2) The V4L2 DocBook Makefile creates a cross-reference between the media
+	   API headers and the specs. This helps us _a_lot_ to be sure that all
+	   API improvements are properly documented. Every time a header changes from
+	   one place to another, DocBook/media/Makefile needs to be patched.
+	   Currently, the DocBook breakage patch depends on the DVB UAPI.
+
+Of course, if you prefer to not merge this as-is, it is not a big deal to break the
+DocBook fixup into two parts, one for 3.7 and another one for 3.8. Just let me know
+and I'll revert those two patches and make another pull request one without the DVB
+UAPI patch.
+
+Thank you!
+Mauro
+
+-
+
+Latest commit at the branch: 
+2c76a12ae9f5e6e2afc400bfbdd8b326e7d36b2a [media] Kconfig: Fix dependencies for driver autoselect options
+The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
+
+  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+
+for you to fetch changes up to 2c76a12ae9f5e6e2afc400bfbdd8b326e7d36b2a:
+
+  [media] Kconfig: Fix dependencies for driver autoselect options (2012-10-17 16:45:56 -0300)
+
+----------------------------------------------------------------
+David Howells (1):
+      UAPI: (Scripted) Disintegrate include/linux/dvb
+
+Mauro Carvalho Chehab (3):
+      Merge tag 'v3.7-rc1' into staging/for_v3.8
+      DocBook/media/Makefile: Fix build due to uapi breakage
+      [media] Kconfig: Fix dependencies for driver autoselect options
+
+ Documentation/DocBook/media/Makefile    |  76 ++++-----
+ drivers/media/Kconfig                   |  18 ++-
+ include/linux/dvb/Kbuild                |   8 -
+ include/linux/dvb/dmx.h                 | 130 +--------------
+ include/linux/dvb/video.h               | 249 +----------------------------
+ include/uapi/linux/dvb/Kbuild           |   8 +
+ include/{ => uapi}/linux/dvb/audio.h    |   0
+ include/{ => uapi}/linux/dvb/ca.h       |   0
+ include/uapi/linux/dvb/dmx.h            | 155 ++++++++++++++++++
+ include/{ => uapi}/linux/dvb/frontend.h |   0
+ include/{ => uapi}/linux/dvb/net.h      |   0
+ include/{ => uapi}/linux/dvb/osd.h      |   0
+ include/{ => uapi}/linux/dvb/version.h  |   0
+ include/uapi/linux/dvb/video.h          | 274 ++++++++++++++++++++++++++++++++
+ 14 files changed, 487 insertions(+), 431 deletions(-)
+ rename include/{ => uapi}/linux/dvb/audio.h (100%)
+ rename include/{ => uapi}/linux/dvb/ca.h (100%)
+ create mode 100644 include/uapi/linux/dvb/dmx.h
+ rename include/{ => uapi}/linux/dvb/frontend.h (100%)
+ rename include/{ => uapi}/linux/dvb/net.h (100%)
+ rename include/{ => uapi}/linux/dvb/osd.h (100%)
+ rename include/{ => uapi}/linux/dvb/version.h (100%)
+ create mode 100644 include/uapi/linux/dvb/video.h
+
