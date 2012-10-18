@@ -1,126 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756986Ab2JRPdC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 11:33:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42450 "EHLO mx2.suse.de"
+	id S1757078Ab2JRPdh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 11:33:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46690 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756634Ab2JRPc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 11:32:59 -0400
-Date: Thu, 18 Oct 2012 17:32:56 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Sha Zhengju <handai.szj@gmail.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sha Zhengju <handai.szj@taobao.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] oom, memcg: handle sysctl oom_kill_allocating_task while
- memcg oom happening
-Message-ID: <20121018153256.GC24295@dhcp22.suse.cz>
-References: <1350382328-28977-1-git-send-email-handai.szj@taobao.com>
- <20121016133439.GI13991@dhcp22.suse.cz>
- <CAFj3OHVW-betpEnauzk-vQEfw_7bJxFneQb2oWpAZzOpZuMDiQ@mail.gmail.com>
- <20121018115640.GB24295@dhcp22.suse.cz>
- <5080097D.5020501@gmail.com>
+	id S1756738Ab2JRPde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 11:33:34 -0400
+Date: Thu, 18 Oct 2012 11:32:30 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+cc: Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH] percpu-rwsem: use barrier in unlock path
+In-Reply-To: <507F66F6.20704@cn.fujitsu.com>
+Message-ID: <Pine.LNX.4.64.1210181127460.22996@file.rdu.redhat.com>
+References: <Pine.LNX.4.64.1210151716310.10685@file.rdu.redhat.com>
+ <Pine.LNX.4.64.1210161924350.20581@file.rdu.redhat.com>
+ <CA+55aFyZ9uq_yfHn9PwpmM77X3xVd+xseEbjJmeCCqbFddtjWA@mail.gmail.com>
+ <507E48ED.8060809@cn.fujitsu.com> <Pine.LNX.4.64.1210171046130.26481@file.rdu.redhat.com>
+ <20121017202806.GA7282@home.goodmis.org> <507F66F6.20704@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5080097D.5020501@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 18-10-12 21:51:57, Sha Zhengju wrote:
-> On 10/18/2012 07:56 PM, Michal Hocko wrote:
-> >On Wed 17-10-12 01:14:48, Sha Zhengju wrote:
-> >>On Tuesday, October 16, 2012, Michal Hocko<mhocko@suse.cz>  wrote:
-> >[...]
-> >>>Could you be more specific about the motivation for this patch? Is it
-> >>>"let's be consistent with the global oom" or you have a real use case
-> >>>for this knob.
+
+
+On Thu, 18 Oct 2012, Lai Jiangshan wrote:
+
+> On 10/18/2012 04:28 AM, Steven Rostedt wrote:
+> > On Wed, Oct 17, 2012 at 11:07:21AM -0400, Mikulas Patocka wrote:
 > >>>
-> >>In our environment(rhel6), we encounter a memcg oom 'deadlock'
-> >>problem.  Simply speaking, suppose process A is selected to be killed
-> >>by memcg oom killer, but A is uninterruptible sleeping on a page
-> >>lock. What's worse, the exact page lock is holding by another memcg
-> >>process B which is trapped in mem_croup_oom_lock(proves to be a
-> >>livelock).
-> >Hmm, this is strange. How can you get down that road with the page lock
-> >held? Is it possible this is related to the issue fixed by: 1d65f86d
-> >(mm: preallocate page before lock_page() at filemap COW)?
+> >>> Even the previous patch is applied, percpu_down_read() still
+> >>> needs mb() to pair with it.
+> >>
+> >> percpu_down_read uses rcu_read_lock which should guarantee that memory 
+> >> accesses don't escape in front of a rcu-protected section.
+> > 
+> > You do realize that rcu_read_lock() does nothing more that a barrier(),
+> > right?
+> > 
+> > Paul worked really hard to get rcu_read_locks() to not call HW barriers.
+> > 
+> >>
+> >> If rcu_read_unlock has only an unlock barrier and not a full barrier, 
+> >> memory accesses could be moved in front of rcu_read_unlock and reordered 
+> >> with this_cpu_inc(*p->counters), but it doesn't matter because 
+> >> percpu_down_write does synchronize_rcu(), so it never sees these accesses 
+> >> halfway through.
+> > 
+> > Looking at the patch, you are correct. The read side doesn't need the
+> > memory barrier as the worse thing that will happen is that it sees the
+> > locked = false, and will just grab the mutex unnecessarily.
 > 
-> No, it has nothing with the cow page. By checking stack of the process A
-> selected to be killed(uninterruptible sleeping), it was stuck at:
-> __do_fault->filemap_fault->__lock_page_or_retry->wait_on_page_bit--(D
-> state).
-> The person B holding the exactly page lock is on the following path:
-> __do_fault->filemap_fault->__do_page_cache_readahead->..->mpage_readpages
-> ->add_to_page_cache_locked ---- >(in memcg oom and cannot exit)
-
-Hmm filemap_fault locks the page after the read ahead is triggered
-already so it doesn't call mpage_readpages with any page locked - the
-add_to_page_cache_lru is called without any page locked.
-This is at least the current code. It might be different in rhel6 but
-calling memcg charging with a page lock is definitely a bug.
-
-> In mpage_readpages, B tends to read a dozen of pages in: for each of
-> page will do
-> locking, charging, and then send out a big bio. And A is waiting for
-> one of the pages
-> and stuck.
+> ---------------------
+> A memory barrier can be added iff these two things are known:
+> 	1) it disables the disordering between what and what.
+> 	2) what is the corresponding mb() that it pairs with.
 > 
-> As I said, 37b23e05 has made pagefault killable by changing
-> uninterruptible sleeping to killable sleeping. So A can be woke up to
-> exit successfully and free the memory which can in turn help B pass
-> memcg charging period.
-> 
-> (By the way, it seems commit 37b23e05 and 7d9fdac need to be
+> You tried to add a mb() in percpu_up_write(), OK, I know it disables the disordering
+> between the writes to the protected data and the statement "p->locked = false",
+> But I can't find out the corresponding mb() that it pairs with.
 
-79dfdaccd1d5 you mean, right? That one just helps when there are too
-many tasks trashing oom killer so it is not related to what you are
-trying to achieve. Besides that make sure you take 23751be0 if you
-take it.
+Or alternativelly, instead of barrier, we can do this.
 
-> backported to --stable tree to deliver RHEL users. ;-) )
+Mikulas
 
-I am not sure the first one qualifies the stable tree inclusion as it is
-a feature.
+---
 
-> >>Then A can not exit successfully to free the memory and both of them
-> >>can not moving on.
-> >>Indeed, we should dig into these locks to find the solution and
-> >>in fact the 37b23e05 (x86, mm: make pagefault killable) and
-> >>7d9fdac(Memcg: make oom_lock 0 and 1 based other than counter) have
-> >>already solved the problem, but if oom_killing_allocating_task is
-> >>memcg aware, enabling this suicide oom behavior will be a simpler
-> >>workaround. What's more, enabling the sysctl can avoid other potential
-> >>oom problems to some extent.
-> >As I said, I am not against this but I really want to see a valid use
-> >case first. So far I haven't seen any because what you mention above is
-> >a clear bug which should be fixed. I can imagine the huge number of
-> >tasks in the group could be a problem as well but I would like to see
-> >what are those problems first.
-> >
-> 
-> In view of consistent with global oom and performance benefit, I suggest
-> we may as well open it in memcg oom as there's no obvious harm.
+percpu-rwsem: use barrier in unlock path
 
-I am not sure about "no obvious harm" part. The policy could be
-different in different groups e.g. and the global knob could be really
-misleading. But the question is. Is it worth having this per group? To
-be honest, I do not like the global knob either and I am not entirely
-keen on spreading it out into memcg unless there is a real use case for
-it.
+The lock is considered unlocked when p->locked is set to false.
+Use barrier prevent reordering of operations around p->locked.
 
-> As refer to the bug I mentioned, obviously the key solution is the above two
-> patchset, but considing other *potential* memcg oom bugs, the sysctl may
-> be a role of temporary workaround to some extent... but it's just a
-> workaround.
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 
-We shouldn't add something like that just to workaround obvious bugs.
--- 
-Michal Hocko
-SUSE Labs
+---
+ include/linux/percpu-rwsem.h |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+Index: linux-3.6.2-fast/include/linux/percpu-rwsem.h
+===================================================================
+--- linux-3.6.2-fast.orig/include/linux/percpu-rwsem.h	2012-10-17 20:48:40.000000000 +0200
++++ linux-3.6.2-fast/include/linux/percpu-rwsem.h	2012-10-18 17:19:24.000000000 +0200
+@@ -66,6 +66,12 @@ static inline void percpu_down_write(str
+ 
+ static inline void percpu_up_write(struct percpu_rw_semaphore *p)
+ {
++	/*
++	 * Make sure that other processes that are in rcu section and that
++	 * may have seen partially modified state exit the rcu section and
++	 * try to grab the mutex.
++	 */
++	synchronize_rcu();
+ 	p->locked = false;
+ 	mutex_unlock(&p->mtx);
+ }
