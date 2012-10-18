@@ -1,122 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab2JRNZB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 09:25:01 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:56627 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755064Ab2JRNZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 09:25:00 -0400
-Date: Thu, 18 Oct 2012 15:24:56 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
-        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
-        "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        "masbock@linux.vnet.ibm.com" <masbock@linux.vnet.ibm.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lcm@us.ibm.com" <lcm@us.ibm.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>
-Subject: Re: [PATCH v3] x86/mce: Honour bios-set CMCI threshold
-Message-ID: <20121018132456.GB6951@aftab.osrc.amd.com>
-References: <CA+8MBbKVa0=qUpG-rjV5ieKkponZo77mzk_y_dF4qA2gVG++6A@mail.gmail.com>
- <20120912122516.3825.87838.stgit@localhost.localdomain>
- <505C51D8.6070402@linux.vnet.ibm.com>
- <20121017105940.GA14590@x1.osrc.amd.com>
- <507E9622.6090606@linux.vnet.ibm.com>
- <20121017130934.GB14590@x1.osrc.amd.com>
- <507ED31B.7010402@linux.vnet.ibm.com>
- <20121017164006.GA14596@x1.osrc.amd.com>
- <3908561D78D1C84285E8C5FCA982C28F19D517FF@ORSMSX108.amr.corp.intel.com>
- <507F96F2.9050305@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <507F96F2.9050305@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755621Ab2JRNZq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 09:25:46 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:61187 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755072Ab2JRNZn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 09:25:43 -0400
+From: Matt Porter <mporter@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>
+Cc: Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [RFC PATCH v3 01/16] dmaengine: edma: fix slave config dependency on direction
+Date: Thu, 18 Oct 2012 09:26:40 -0400
+Message-Id: <1350566815-409-2-git-send-email-mporter@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1350566815-409-1-git-send-email-mporter@ti.com>
+References: <1350566815-409-1-git-send-email-mporter@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 11:13:14AM +0530, Naveen N. Rao wrote:
-> On 10/17/2012 10:58 PM, Luck, Tony wrote:
-> >BUT (squared) do you even really need to know that thresholds were set? You
-> >could look at bits {52:38} in the MCi_STATUS information for the bank to see
-> >how many corrected errors had been logged.
-> 
-> Ah, nice. I think we should be able to use this instead of the sysfs
-> attribute.
+The edma_slave_config() implementation depends on the
+direction field such that it will not properly configure
+a slave channel when called without direction set.
 
-Ok, patch below removes it.
+This fixes the implementation so that the slave config
+is copied as is and prep_slave_sg() handles the
+direction dependent handling. spi-omap2-mcspi and
+omap_hsmmc both expose this bug as they configure the
+slave channel config from a common path with an unconfigured
+direction field.
 
-@Tony: I'll send it upwards soonish in case there are no objections.
-This way no stable backport will be needed.
-
-Thanks.
-
---
-From: Borislav Petkov <borislav.petkov@amd.com>
-Date: Thu, 18 Oct 2012 15:10:56 +0200
-Subject: [PATCH] x86, MCE: Remove bios_cmci_threshold sysfs attribute
-
-450cc201038f3 ("x86/mce: Provide boot argument to honour bios-set CMCI
-threshold") added the bios_cmci_threshold attribute which was supposed
-to communicate to userspace tools that BIOS CMCI threshold has been
-honoured.
-
-However, this info is not of any importance to userspace - rather it
-can get the actual error count it has been thresholded already from
-MCi_STATUS[38:52].
-
-So drop this before it becomes a used interface (good thing is we caught
-this early in 3.7-rc1, right after the merge window closed).
-
-Cc: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Link: http://lkml.kernel.org/r/20121017105940.GA14590@x1.osrc.amd.com
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Matt Porter <mporter@ti.com>
 ---
- arch/x86/kernel/cpu/mcheck/mce.c | 6 ------
- 1 file changed, 6 deletions(-)
+ drivers/dma/edma.c |   55 ++++++++++++++++++++++++++--------------------------
+ 1 file changed, 27 insertions(+), 28 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 29e87d3b2843..46cbf8689692 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -2209,11 +2209,6 @@ static struct dev_ext_attribute dev_attr_cmci_disabled = {
- 	&mce_cmci_disabled
+diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+index 05aea3c..fdcf079 100644
+--- a/drivers/dma/edma.c
++++ b/drivers/dma/edma.c
+@@ -69,9 +69,7 @@ struct edma_chan {
+ 	int				ch_num;
+ 	bool				alloced;
+ 	int				slot[EDMA_MAX_SLOTS];
+-	dma_addr_t			addr;
+-	int				addr_width;
+-	int				maxburst;
++	struct dma_slave_config		cfg;
  };
  
--static struct dev_ext_attribute dev_attr_bios_cmci_threshold = {
--	__ATTR(bios_cmci_threshold, 0444, device_show_int, NULL),
--	&mce_bios_cmci_threshold
--};
+ struct edma_cc {
+@@ -178,29 +176,14 @@ static int edma_terminate_all(struct edma_chan *echan)
+ 	return 0;
+ }
+ 
 -
- static struct device_attribute *mce_device_attrs[] = {
- 	&dev_attr_tolerant.attr,
- 	&dev_attr_check_interval.attr,
-@@ -2222,7 +2217,6 @@ static struct device_attribute *mce_device_attrs[] = {
- 	&dev_attr_dont_log_ce.attr,
- 	&dev_attr_ignore_ce.attr,
- 	&dev_attr_cmci_disabled.attr,
--	&dev_attr_bios_cmci_threshold.attr,
- 	NULL
- };
+ static int edma_slave_config(struct edma_chan *echan,
+-	struct dma_slave_config *config)
++	struct dma_slave_config *cfg)
+ {
+-	if ((config->src_addr_width > DMA_SLAVE_BUSWIDTH_4_BYTES) ||
+-	    (config->dst_addr_width > DMA_SLAVE_BUSWIDTH_4_BYTES))
++	if (cfg->src_addr_width == DMA_SLAVE_BUSWIDTH_8_BYTES ||
++	    cfg->dst_addr_width == DMA_SLAVE_BUSWIDTH_8_BYTES)
+ 		return -EINVAL;
  
+-	if (config->direction == DMA_MEM_TO_DEV) {
+-		if (config->dst_addr)
+-			echan->addr = config->dst_addr;
+-		if (config->dst_addr_width)
+-			echan->addr_width = config->dst_addr_width;
+-		if (config->dst_maxburst)
+-			echan->maxburst = config->dst_maxburst;
+-	} else if (config->direction == DMA_DEV_TO_MEM) {
+-		if (config->src_addr)
+-			echan->addr = config->src_addr;
+-		if (config->src_addr_width)
+-			echan->addr_width = config->src_addr_width;
+-		if (config->src_maxburst)
+-			echan->maxburst = config->src_maxburst;
+-	}
++	memcpy(&echan->cfg, cfg, sizeof(echan->cfg));
+ 
+ 	return 0;
+ }
+@@ -235,6 +218,9 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+ 	struct edma_chan *echan = to_edma_chan(chan);
+ 	struct device *dev = chan->device->dev;
+ 	struct edma_desc *edesc;
++	dma_addr_t dev_addr;
++	enum dma_slave_buswidth dev_width;
++	u32 burst;
+ 	struct scatterlist *sg;
+ 	int i;
+ 	int acnt, bcnt, ccnt, src, dst, cidx;
+@@ -243,7 +229,20 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+ 	if (unlikely(!echan || !sgl || !sg_len))
+ 		return NULL;
+ 
+-	if (echan->addr_width == DMA_SLAVE_BUSWIDTH_UNDEFINED) {
++	if (direction == DMA_DEV_TO_MEM) {
++		dev_addr = echan->cfg.src_addr;
++		dev_width = echan->cfg.src_addr_width;
++		burst = echan->cfg.src_maxburst;
++	} else if (direction == DMA_MEM_TO_DEV) {
++		dev_addr = echan->cfg.dst_addr;
++		dev_width = echan->cfg.dst_addr_width;
++		burst = echan->cfg.dst_maxburst;
++	} else {
++		dev_err(dev, "%s: bad direction?\n", __func__);
++		return NULL;
++	}
++
++	if (dev_width == DMA_SLAVE_BUSWIDTH_UNDEFINED) {
+ 		dev_err(dev, "Undefined slave buswidth\n");
+ 		return NULL;
+ 	}
+@@ -275,14 +274,14 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+ 			}
+ 		}
+ 
+-		acnt = echan->addr_width;
++		acnt = dev_width;
+ 
+ 		/*
+ 		 * If the maxburst is equal to the fifo width, use
+ 		 * A-synced transfers. This allows for large contiguous
+ 		 * buffer transfers using only one PaRAM set.
+ 		 */
+-		if (echan->maxburst == 1) {
++		if (burst == 1) {
+ 			edesc->absync = false;
+ 			ccnt = sg_dma_len(sg) / acnt / (SZ_64K - 1);
+ 			bcnt = sg_dma_len(sg) / acnt - ccnt * (SZ_64K - 1);
+@@ -302,7 +301,7 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+ 		 */
+ 		} else {
+ 			edesc->absync = true;
+-			bcnt = echan->maxburst;
++			bcnt = burst;
+ 			ccnt = sg_dma_len(sg) / (acnt * bcnt);
+ 			if (ccnt > (SZ_64K - 1)) {
+ 				dev_err(dev, "Exceeded max SG segment size\n");
+@@ -313,13 +312,13 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+ 
+ 		if (direction == DMA_MEM_TO_DEV) {
+ 			src = sg_dma_address(sg);
+-			dst = echan->addr;
++			dst = dev_addr;
+ 			src_bidx = acnt;
+ 			src_cidx = cidx;
+ 			dst_bidx = 0;
+ 			dst_cidx = 0;
+ 		} else {
+-			src = echan->addr;
++			src = dev_addr;
+ 			dst = sg_dma_address(sg);
+ 			src_bidx = 0;
+ 			src_cidx = 0;
 -- 
-1.8.0.rc2.4.g42e55a5
+1.7.9.5
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
