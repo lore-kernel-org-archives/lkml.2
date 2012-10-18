@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756230Ab2JRUcA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 16:32:00 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:56792 "EHLO
+	id S1756208Ab2JRUb6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 16:31:58 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:56796 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754307Ab2JRU0y (ORCPT
+	with ESMTP id S1754340Ab2JRU0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Oct 2012 16:26:54 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 01/21] TTY: devpts, don't care about TTY in devpts_get_tty
-Date: Thu, 18 Oct 2012 22:26:27 +0200
-Message-Id: <1350592007-9216-2-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 10/21] TTY: n_tty, remove bogus checks
+Date: Thu, 18 Oct 2012 22:26:36 +0200
+Message-Id: <1350592007-9216-11-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.12.3
 In-Reply-To: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
 References: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
@@ -20,94 +20,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The goal is to stop setting and using tty->driver_data in devpts code.
-It should be used solely by the driver's code, pty in this case.
-
-First, here we remove TTY from devpts_get_tty and rename it to
-devpts_get_priv. Note we do not remove type safety, we just shift the
-[implicit] (void *) cast one layer up.
-
-index was unused in devpts_get_tty, so remove that from the prototype
-too.
+* BUG_ON(!tty) in n_tty_set_termios -- it cannot be called with tty ==
+  NULL. It is called from two call sites. First, from n_tty_open where
+  we have a valid tty. Second, as ld->ops->set_termios from
+  tty_set_termios. But there we have a valid tty too.
+* if (!tty) in n_tty_open -- why would the TTY layer call ldisc's
+  open with an invalid TTY? No it indeed does not. All call sites have
+  a tty and dereference that.
+* BUG_ON(!tty->read_buf) in n_tty_read -- this used to be a valid
+  check. The ldisc handling was broken some time ago when I added the
+  check to ensure everything is OK. It still can catch the case, but
+  no later than we move the buffer to ldisc data. Then there will be
+  no read_buf in tty_struct, i.e. nothing to check for.
+* if (!tty->read_buf) in n_tty_receive_buf -- this should never
+  happen. All callers of ldisc->ops->receive_ops should hold a
+  reference to an ldisc and close (which frees read_buf) cannot be
+  called until the reference is dropped.
+* if (WARN_ON(!tty->read_buf)) in n_tty_read -- the same as in the
+  previous case.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/tty/pty.c         | 2 +-
- fs/devpts/inode.c         | 9 ++++-----
- include/linux/devpts_fs.h | 7 +++----
- 3 files changed, 8 insertions(+), 10 deletions(-)
+ drivers/tty/n_tty.c | 12 ------------
+ 1 file changed, 12 deletions(-)
 
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index a82b399..65f7671 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -547,7 +547,7 @@ static struct tty_struct *pts_unix98_lookup(struct tty_driver *driver,
- 	struct tty_struct *tty;
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index f27289d..ceae074 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1375,9 +1375,6 @@ static void n_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ 	char	buf[64];
+ 	unsigned long cpuflags;
  
- 	mutex_lock(&devpts_mutex);
--	tty = devpts_get_tty(pts_inode, idx);
-+	tty = devpts_get_priv(pts_inode);
- 	mutex_unlock(&devpts_mutex);
- 	/* Master must be open before slave */
- 	if (!tty)
-diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
-index 14afbab..4796580 100644
---- a/fs/devpts/inode.c
-+++ b/fs/devpts/inode.c
-@@ -593,10 +593,10 @@ int devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty)
- 	return ret;
- }
- 
--struct tty_struct *devpts_get_tty(struct inode *pts_inode, int number)
-+void *devpts_get_priv(struct inode *pts_inode)
+-	if (!tty->read_buf)
+-		return;
+-
+ 	if (tty->real_raw) {
+ 		spin_lock_irqsave(&tty->read_lock, cpuflags);
+ 		i = min(N_TTY_BUF_SIZE - tty->read_cnt,
+@@ -1471,7 +1468,6 @@ int is_ignored(int sig)
+ static void n_tty_set_termios(struct tty_struct *tty, struct ktermios *old)
  {
- 	struct dentry *dentry;
--	struct tty_struct *tty;
-+	void *priv = NULL;
+ 	int canon_change = 1;
+-	BUG_ON(!tty);
  
- 	BUG_ON(pts_inode->i_rdev == MKDEV(TTYAUX_MAJOR, PTMX_MINOR));
+ 	if (old)
+ 		canon_change = (old->c_lflag ^ tty->termios.c_lflag) & ICANON;
+@@ -1579,9 +1575,6 @@ static void n_tty_close(struct tty_struct *tty)
  
-@@ -605,13 +605,12 @@ struct tty_struct *devpts_get_tty(struct inode *pts_inode, int number)
- 	if (!dentry)
- 		return NULL;
- 
--	tty = NULL;
- 	if (pts_inode->i_sb->s_magic == DEVPTS_SUPER_MAGIC)
--		tty = (struct tty_struct *)pts_inode->i_private;
-+		priv = pts_inode->i_private;
- 
- 	dput(dentry);
- 
--	return tty;
-+	return priv;
- }
- 
- void devpts_pty_kill(struct tty_struct *tty)
-diff --git a/include/linux/devpts_fs.h b/include/linux/devpts_fs.h
-index 5ce0e5f..de635a5 100644
---- a/include/linux/devpts_fs.h
-+++ b/include/linux/devpts_fs.h
-@@ -21,8 +21,8 @@ int devpts_new_index(struct inode *ptmx_inode);
- void devpts_kill_index(struct inode *ptmx_inode, int idx);
- /* mknod in devpts */
- int devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty);
--/* get tty structure */
--struct tty_struct *devpts_get_tty(struct inode *pts_inode, int number);
-+/* get private structure */
-+void *devpts_get_priv(struct inode *pts_inode);
- /* unlink */
- void devpts_pty_kill(struct tty_struct *tty);
- 
-@@ -36,8 +36,7 @@ static inline int devpts_pty_new(struct inode *ptmx_inode,
+ static int n_tty_open(struct tty_struct *tty)
  {
- 	return -EINVAL;
- }
--static inline struct tty_struct *devpts_get_tty(struct inode *pts_inode,
--		int number)
-+static inline void *devpts_get_priv(struct inode *pts_inode)
- {
- 	return NULL;
- }
+-	if (!tty)
+-		return -EINVAL;
+-
+ 	/* These are ugly. Currently a malloc failure here can panic */
+ 	tty->read_buf = kzalloc(N_TTY_BUF_SIZE, GFP_KERNEL);
+ 	tty->echo_buf = kzalloc(N_TTY_BUF_SIZE, GFP_KERNEL);
+@@ -1736,10 +1729,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+ 	int packet;
+ 
+ do_it_again:
+-
+-	if (WARN_ON(!tty->read_buf))
+-		return -EAGAIN;
+-
+ 	c = job_control(tty, file);
+ 	if (c < 0)
+ 		return c;
+@@ -1825,7 +1814,6 @@ do_it_again:
+ 			/* FIXME: does n_tty_set_room need locking ? */
+ 			n_tty_set_room(tty);
+ 			timeout = schedule_timeout(timeout);
+-			BUG_ON(!tty->read_buf);
+ 			continue;
+ 		}
+ 		__set_current_state(TASK_RUNNING);
 -- 
 1.7.12.3
 
