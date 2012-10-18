@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453Ab2JRBvf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 21:51:35 -0400
-Received: from noserose.net ([66.220.18.76]:51727 "HELO noserose.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753364Ab2JRBve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 21:51:34 -0400
-Date: Wed, 17 Oct 2012 18:51:31 -0700
-Message-Id: <99ed04bff467f3b3752bc9b2480db07f12a2b2f5.1350524227.git.ecashin@coraid.com>
-In-Reply-To: <cover.1350524227.git.ecashin@coraid.com>
-References: <cover.1350524227.git.ecashin@coraid.com>
-From: Ed Cashin <ecashin@coraid.com>
-Subject: [PATCH 5/9] aoe: support larger I/O requests via aoe_maxsectors module param
-To: akpm@linux-foundation.org
-Cc: ecashin@coraid.com, linux-kernel@vger.kernel.org
+	id S1753471Ab2JRBxV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 21:53:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6180 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753364Ab2JRBxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 21:53:20 -0400
+Date: Wed, 17 Oct 2012 21:53:12 -0400
+From: Dave Jones <davej@redhat.com>
+To: axboe@kernel.dk
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: MAX_LOCKDEP_ENTRIES too low  (called from ioc_release_fn)
+Message-ID: <20121018015312.GA29865@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, axboe@kernel.dk,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GPFS filesystem is an example of an aoe user that requires the
-aoe driver to support I/O request sizes larger than the default.
-Most users will not need large I/O request sizes, because they would
-need to be split up into multiple AoE commands anyway.
+Triggered while fuzz testing..
 
-Signed-off-by: Ed Cashin <ecashin@coraid.com>
----
- drivers/block/aoe/aoeblk.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/block/aoe/aoeblk.c b/drivers/block/aoe/aoeblk.c
-index 00dfc50..d5aa3b8 100644
---- a/drivers/block/aoe/aoeblk.c
-+++ b/drivers/block/aoe/aoeblk.c
-@@ -16,11 +16,18 @@
- #include <linux/netdevice.h>
- #include <linux/mutex.h>
- #include <linux/export.h>
-+#include <linux/moduleparam.h>
- #include "aoe.h"
- 
- static DEFINE_MUTEX(aoeblk_mutex);
- static struct kmem_cache *buf_pool_cache;
- 
-+/* GPFS needs a larger value than the default. */
-+static int aoe_maxsectors;
-+module_param(aoe_maxsectors, int, 0644);
-+MODULE_PARM_DESC(aoe_maxsectors,
-+	"When nonzero, set the maximum number of sectors per I/O request");
-+
- static ssize_t aoedisk_show_state(struct device *dev,
- 				  struct device_attribute *attr, char *page)
- {
-@@ -248,6 +255,8 @@ aoeblk_gdalloc(void *vp)
- 	d->blkq = gd->queue = q;
- 	q->queuedata = d;
- 	d->gd = gd;
-+	if (aoe_maxsectors)
-+		blk_queue_max_hw_sectors(q, aoe_maxsectors);
- 	gd->major = AOE_MAJOR;
- 	gd->first_minor = d->sysminor;
- 	gd->fops = &aoe_bdops;
--- 
-1.7.1
+BUG: MAX_LOCKDEP_ENTRIES too low!
+turning off the locking correctness validator.
+Pid: 22788, comm: kworker/2:1 Not tainted 3.7.0-rc1+ #34
+Call Trace:
+ [<ffffffff810decdd>] add_lock_to_list.isra.29.constprop.45+0xdd/0xf0
+ [<ffffffff810e2871>] __lock_acquire+0x1121/0x1ba0
+ [<ffffffff810e3a12>] lock_acquire+0xa2/0x220
+ [<ffffffff8117bad2>] ? free_one_page+0x32/0x450
+ [<ffffffff816c5a59>] ? sub_preempt_count+0x79/0xd0
+ [<ffffffff816c0800>] _raw_spin_lock+0x40/0x80
+ [<ffffffff8117bad2>] ? free_one_page+0x32/0x450
+ [<ffffffff8117bad2>] free_one_page+0x32/0x450
+ [<ffffffff8117bf41>] ? __free_pages_ok.part.58+0x51/0x110
+ [<ffffffff8117bf9c>] __free_pages_ok.part.58+0xac/0x110
+ [<ffffffff8117cd73>] __free_pages+0x73/0x90
+ [<ffffffff811cb4f3>] __free_slab+0xd3/0x1b0
+ [<ffffffff811cb609>] discard_slab+0x39/0x50
+ [<ffffffff816b77db>] __slab_free+0x378/0x3a3
+ [<ffffffff81341289>] ? ioc_release_fn+0x99/0xe0
+ [<ffffffff81341289>] ? ioc_release_fn+0x99/0xe0
+ [<ffffffff811cd4e2>] kmem_cache_free+0x2f2/0x320
+ [<ffffffff816c5a59>] ? sub_preempt_count+0x79/0xd0
+ [<ffffffff81341289>] ioc_release_fn+0x99/0xe0
+ [<ffffffff81095a37>] process_one_work+0x207/0x780
+ [<ffffffff810959c7>] ? process_one_work+0x197/0x780
+ [<ffffffff813411f0>] ? get_io_context+0x20/0x20
+ [<ffffffff8109638e>] worker_thread+0x15e/0x440
+ [<ffffffff81096230>] ? rescuer_thread+0x240/0x240
+ [<ffffffff8109d0cd>] kthread+0xed/0x100
+ [<ffffffff810de02e>] ? put_lock_stats.isra.25+0xe/0x40
+ [<ffffffff8109cfe0>] ? kthread_create_on_node+0x160/0x160
+ [<ffffffff816c9dac>] ret_from_fork+0x7c/0xb0
+ [<ffffffff8109cfe0>] ? kthread_create_on_node+0x160/0x160
 
