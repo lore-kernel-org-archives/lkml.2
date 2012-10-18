@@ -1,96 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751222Ab2JREPB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 00:15:01 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:45574 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790Ab2JREPA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 00:15:00 -0400
+	id S1751282Ab2JREZH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 00:25:07 -0400
+Received: from mga01.intel.com ([192.55.52.88]:50980 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750797Ab2JREZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 00:25:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,604,1344236400"; 
+   d="scan'208";a="235360705"
+Message-ID: <507F848F.50707@zytor.com>
+Date: Wed, 17 Oct 2012 21:24:47 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <507F803A.8000900@jp.fujitsu.com>
-References: <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com>
- <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com>
- <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com>
- <20121017040515.GA13505@redhat.com> <alpine.DEB.2.00.1210162222100.26279@chino.kir.corp.google.com>
- <20121017181413.GA16805@redhat.com> <alpine.DEB.2.00.1210171219010.28214@chino.kir.corp.google.com>
- <20121017193229.GC16805@redhat.com> <alpine.DEB.2.00.1210171237130.28214@chino.kir.corp.google.com>
- <20121017194501.GA24400@redhat.com> <alpine.DEB.2.00.1210171318400.28214@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1210171428540.20712@chino.kir.corp.google.com> <507F803A.8000900@jp.fujitsu.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 17 Oct 2012 21:14:38 -0700
-X-Google-Sender-Auth: XRoJry7vVSV5A3QVZbUwy5BerkM
-Message-ID: <CA+55aFy9uYifEQ20-tQXvFCYSqb2VG74XhM6ZofHJW_VuqWdZQ@mail.gmail.com>
-Subject: Re: [patch for-3.7 v2] mm, mempolicy: avoid taking mutex inside
- spinlock when reading numa_maps
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>,
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: mtk.manpages@gmail.com, Kees Cook <keescook@chromium.org>,
+        linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, bhutchings@solarflare.com,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        James Morris <james.l.morris@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
+References: <1348179300-11653-1-git-send-email-keescook@chromium.org> <CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com> <50749DE8.7010703@zytor.com> <CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com> <5074A0AB.8040207@zytor.com> <87d30o7iy6.fsf@rustcorp.com.au>
+In-Reply-To: <87d30o7iy6.fsf@rustcorp.com.au>
+X-Enigmail-Version: 1.4.3
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 9:06 PM, Kamezawa Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
->         if (vma && vma != priv->tail_vma) {
->                 struct mm_struct *mm = vma->vm_mm;
-> +#ifdef CONFIG_NUMA
-> +               task_lock(priv->task);
-> +               __mpol_put(priv->task->mempolicy);
-> +               task_unlock(priv->task);
-> +#endif
->                 up_read(&mm->mmap_sem);
->                 mmput(mm);
+On 10/11/2012 03:16 PM, Rusty Russell wrote:
+> "H. Peter Anvin" <hpa@zytor.com> writes:
+> 
+>> On 10/10/2012 06:03 AM, Michael Kerrisk (man-pages) wrote:
+>>> Good point. A "whole hog" openat()-style interface is worth thinking about too.
+>>
+>> *Although* you could argue that you can always simply open the module
+>> file first, and that finit_module() is really what we should have had in
+>> the first place.  Then you don't need the flags since those would come
+>> from openat().
+> 
+> There's no fundamental reason that modules have to be in a file.  I'm
+> thinking of compressed modules, or an initrd which simply includes all
+> the modules it wants to load in one linear file.
+> 
+> Also, --force options manipulate the module before loading (as did the
+> now-obsolete module rename option).
+> 
 
-Please don't put #ifdef's inside code. It makes things really ugly and
-hard to read.
+So perhaps what we *should* have is something that points to the module
+to a (buffer, length) in userspace, and the equivalent of the current
+init_module() would be open() + mmap() + minit_module() + close()?
 
-And that is *especially* true in this case, since there's a pattern to
-all these things:
+	-hpa
 
-> +#ifdef CONFIG_NUMA
-> +       task_lock(priv->task);
-> +       mpol_get(priv->task->mempolicy);
-> +       task_unlock(priv->task);
-> +#endif
 
-> +#ifdef CONFIG_NUMA
-> +       task_lock(priv->task);
-> +       __mpol_put(priv->task->mempolicy);
-> +       task_unlock(priv->task);
-> +#endif
 
-it really sounds like what you want to do is to just abstract a
-"numa_policy_get/put(priv)" operation.
-
-So you could make it be something like
-
-  #ifdef CONFIG_NUMA
-  static inline numa_policy_get(struct proc_maps_private *priv)
-  {
-      task_lock(priv->task);
-      mpol_get(priv->task->mempolicy);
-      task_unlock(priv->task);
-  }
-  .. same for the "put" function ..
-  #else
-    #define numa_policy_get(priv) do { } while (0)
-    #define numa_policy_put(priv) do { } while (0)
-  #endif
-
-and then you wouldn't have to have the #ifdef's in the middle of code,
-and I think it will be more readable in general.
-
-Sure, it is going to be a few more actual lines of patch, but there's
-no duplicated code sequence, and the added lines are just the syntax
-that makes it look better.
-
-                Linus
