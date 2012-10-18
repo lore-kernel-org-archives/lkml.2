@@ -1,237 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756892Ab2JRXW7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 19:22:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61940 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932100Ab2JRXT6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 19:19:58 -0400
-From: Joonsoo Kim <js1304@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Len Brown <lenb@kernel.org>, Jeff Garzik <jgarzik@pobox.com>,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        Ron Mercer <ron.mercer@qlogic.com>, Tejun Heo <tj@kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <jhs@mojatatu.com>
-Subject: [PATCH 2/2] timer: use new setup_timer_deferrable() macro
-Date: Fri, 19 Oct 2012 08:18:28 +0900
-Message-Id: <1350602308-2120-3-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350602308-2120-1-git-send-email-js1304@gmail.com>
-References: <Yes>
- <1350602308-2120-1-git-send-email-js1304@gmail.com>
+	id S1756905Ab2JRXX2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 19:23:28 -0400
+Received: from mga02.intel.com ([134.134.136.20]:4639 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756085Ab2JRXT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 19:19:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,609,1344236400"; 
+   d="scan'208";a="229462631"
+From: Andi Kleen <andi@firstfloor.org>
+To: a.p.zijlstra@chello.nl
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, acme@redhat.com,
+        eranian@google.com, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 30/34] perf, tools: Add perf stat --transaction v2
+Date: Thu, 18 Oct 2012 16:19:38 -0700
+Message-Id: <1350602382-12771-31-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
+References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, we have a handy macro for initializing deferrable timer.
-Using it makes code clean and easy to understand.
+From: Andi Kleen <ak@linux.intel.com>
 
-Additionally, in some driver codes, use setup_timer() instead of init_timer().
+Add support to perf stat to print the basic transactional execution statistics:
+Total cycles, Cycles in Transaction, Cycles in aborted transsactions
+using the intx and intx_checkpoint qualifiers.
+Transaction Starts and Elision Starts, to compute the average transaction length.
 
-This patch doesn't make any functional difference.
+This is a reasonable overview over the success of the transactions.
 
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Cc: Len Brown <lenb@kernel.org>
-Cc: Jeff Garzik <jgarzik@pobox.com>
-Cc: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
-Cc: Ron Mercer <ron.mercer@qlogic.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Jamal Hadi Salim <jhs@mojatatu.com>
+Enable with a new --transaction / -T option.
 
-diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-index 1599566..1707f9a 100644
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -944,9 +944,8 @@ static int __devinit ghes_probe(struct platform_device *ghes_dev)
- 	}
- 	switch (generic->notify.type) {
- 	case ACPI_HEST_NOTIFY_POLLED:
--		ghes->timer.function = ghes_poll_func;
--		ghes->timer.data = (unsigned long)ghes;
--		init_timer_deferrable(&ghes->timer);
-+		setup_timer_deferrable(&ghes->timer, ghes_poll_func,
-+							(unsigned long)ghes);
- 		ghes_add_timer(ghes);
- 		break;
- 	case ACPI_HEST_NOTIFY_EXTERNAL:
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 3cc7096..a811e6f 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -5616,9 +5616,8 @@ struct ata_port *ata_port_alloc(struct ata_host *host)
- 	INIT_LIST_HEAD(&ap->eh_done_q);
- 	init_waitqueue_head(&ap->eh_wait_q);
- 	init_completion(&ap->park_req_pending);
--	init_timer_deferrable(&ap->fastdrain_timer);
--	ap->fastdrain_timer.function = ata_eh_fastdrain_timerfn;
--	ap->fastdrain_timer.data = (unsigned long)ap;
-+	setup_timer_deferrable(&ap->fastdrain_timer, ata_eh_fastdrain_timerfn,
-+							(unsigned long)ap);
+This requires measuring these events in a group, since they depend on each
+other.
+
+This is implemented by using TM sysfs events exported by the kernel
+
+v2: Only print the extended statistics when the option is enabled.
+This avoids negative output when the user specifies the -T events
+in separate groups.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/Documentation/perf-stat.txt |    3 +
+ tools/perf/builtin-stat.c              |  101 +++++++++++++++++++++++++++++++-
+ tools/perf/util/evsel.h                |    6 ++
+ 3 files changed, 107 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index 2fa173b..653bdbd 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -108,7 +108,10 @@ with it.  --append may be used here.  Examples:
+      3>results  perf stat --log-fd 3          -- $cmd
+      3>>results perf stat --log-fd 3 --append -- $cmd
  
- 	ap->cbl = ATA_CBL_NONE;
++-T::
++--transaction::
  
-diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index 876bece..987e2cf 100644
---- a/drivers/net/ethernet/nvidia/forcedeth.c
-+++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -5548,15 +5548,10 @@ static int __devinit nv_probe(struct pci_dev *pci_dev, const struct pci_device_i
- 	spin_lock_init(&np->hwstats_lock);
- 	SET_NETDEV_DEV(dev, &pci_dev->dev);
++Print statistics of transactional execution if supported.
  
--	init_timer(&np->oom_kick);
--	np->oom_kick.data = (unsigned long) dev;
--	np->oom_kick.function = nv_do_rx_refill;	/* timer handler */
--	init_timer(&np->nic_poll);
--	np->nic_poll.data = (unsigned long) dev;
--	np->nic_poll.function = nv_do_nic_poll;	/* timer handler */
--	init_timer_deferrable(&np->stats_poll);
--	np->stats_poll.data = (unsigned long) dev;
--	np->stats_poll.function = nv_do_stats_poll;	/* timer handler */
-+	setup_timer(&np->oom_kick, nv_do_rx_refill, (unsigned long)dev);
-+	setup_timer(&np->nic_poll, nv_do_nic_poll, (unsigned long)dev);
-+	setup_timer_deferrable(&np->stats_poll, nv_do_stats_poll,
-+						(unsigned long)dev);
+ EXAMPLES
+ --------
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 93b9011..a451490 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -64,6 +64,29 @@
+ #define CNTR_NOT_SUPPORTED	"<not supported>"
+ #define CNTR_NOT_COUNTED	"<not counted>"
  
- 	err = pci_enable_device(pci_dev);
- 	if (err)
-diff --git a/drivers/net/ethernet/qlogic/qlge/qlge_main.c b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
-index b262d61..1687883 100644
---- a/drivers/net/ethernet/qlogic/qlge/qlge_main.c
-+++ b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
-@@ -4707,9 +4707,7 @@ static int __devinit qlge_probe(struct pci_dev *pdev,
- 	/* Start up the timer to trigger EEH if
- 	 * the bus goes dead
- 	 */
--	init_timer_deferrable(&qdev->timer);
--	qdev->timer.data = (unsigned long)qdev;
--	qdev->timer.function = ql_timer;
-+	setup_timer_deferrable(&qdev->timer, ql_timer, (unsigned long)qdev);
- 	qdev->timer.expires = jiffies + (5*HZ);
- 	add_timer(&qdev->timer);
- 	ql_link_off(qdev);
-diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
-index 607976c..743c7d7 100644
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -995,9 +995,8 @@ static void vxlan_setup(struct net_device *dev)
++static const char *transaction_attrs[] = {
++	"task-clock",
++	"{"
++	"instructions,"
++	"cycles,"
++	"cpu/cycles-t/,"
++	"cpu/cycles-ct/,"
++	"cpu/tx-start/,"
++	"cpu/el-start/"
++	"}"
++};
++
++/* must match the transaction_attrs above */
++enum {
++	T_TASK_CLOCK,
++	T_INSTRUCTIONS,
++	T_CYCLES,
++	T_CYCLES_INTX,
++	T_CYCLES_INTX_CP,
++	T_TRANSACTION_START,
++	T_ELISION_START
++};
++
+ static struct perf_evlist	*evsel_list;
  
- 	spin_lock_init(&vxlan->hash_lock);
+ static struct perf_target	target = {
+@@ -77,6 +100,7 @@ static bool			no_aggr				= false;
+ static pid_t			child_pid			= -1;
+ static bool			null_run			=  false;
+ static int			detailed_run			=  0;
++static bool			transaction_run			=  false;
+ static bool			big_num				=  true;
+ static int			big_num_opt			=  -1;
+ static const char		*csv_sep			= NULL;
+@@ -123,7 +147,11 @@ static struct stats runtime_l1_icache_stats[MAX_NR_CPUS];
+ static struct stats runtime_ll_cache_stats[MAX_NR_CPUS];
+ static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
+ static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
++static struct stats runtime_cycles_intx_stats[MAX_NR_CPUS];
++static struct stats runtime_cycles_intxcp_stats[MAX_NR_CPUS];
+ static struct stats walltime_nsecs_stats;
++static struct stats runtime_transaction_stats[MAX_NR_CPUS];
++static struct stats runtime_elision_stats[MAX_NR_CPUS];
  
--	init_timer_deferrable(&vxlan->age_timer);
--	vxlan->age_timer.function = vxlan_cleanup;
--	vxlan->age_timer.data = (unsigned long) vxlan;
-+	setup_timer_deferrable(&vxlan->age_timer, vxlan_cleanup,
-+						(unsigned long)vxlan);
+ static int create_perf_stat_counter(struct perf_evsel *evsel,
+ 				    struct perf_evsel *first)
+@@ -183,6 +211,18 @@ static inline int nsec_counter(struct perf_evsel *evsel)
+ 	return 0;
+ }
  
- 	inet_get_local_port_range(&low, &high);
- 	vxlan->port_min = low;
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index d951daa..77d6f62 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3845,10 +3845,8 @@ static int __init init_workqueues(void)
- 			INIT_LIST_HEAD(&pool->worklist);
- 			INIT_LIST_HEAD(&pool->idle_list);
++static struct perf_evsel *nth_evsel(int n)
++{
++	struct perf_evsel *ev;
++	int j;
++
++	j = 0;
++	list_for_each_entry (ev, &evsel_list->entries, node)
++		if (j++ == n)
++			return ev;
++	return NULL;
++}
++
+ /*
+  * Update various tracking values we maintain to print
+  * more semantic information such as miss/hit ratios,
+@@ -194,8 +234,14 @@ static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
+ 		update_stats(&runtime_nsecs_stats[0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_CPU_CYCLES))
+ 		update_stats(&runtime_cycles_stats[0], count[0]);
+-	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_FRONTEND))
+-		update_stats(&runtime_stalled_cycles_front_stats[0], count[0]);
++	else if (perf_evsel__cmp(counter, nth_evsel(T_CYCLES_INTX)))
++		update_stats(&runtime_cycles_intx_stats[0], count[0]);
++	else if (perf_evsel__cmp(counter, nth_evsel(T_CYCLES_INTX_CP)))
++		update_stats(&runtime_cycles_intxcp_stats[0], count[0]);
++	else if (perf_evsel__cmp(counter, nth_evsel(T_TRANSACTION_START)))
++		update_stats(&runtime_transaction_stats[0], count[0]);
++	else if (perf_evsel__cmp(counter, nth_evsel(T_ELISION_START)))
++		update_stats(&runtime_elision_stats[0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_BACKEND))
+ 		update_stats(&runtime_stalled_cycles_back_stats[0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_BRANCH_INSTRUCTIONS))
+@@ -633,7 +679,7 @@ static void print_ll_cache_misses(int cpu,
  
--			init_timer_deferrable(&pool->idle_timer);
--			pool->idle_timer.function = idle_worker_timeout;
--			pool->idle_timer.data = (unsigned long)pool;
--
-+			setup_timer_deferrable(&pool->idle_timer,
-+				    idle_worker_timeout, (unsigned long)pool);
- 			setup_timer(&pool->mayday_timer, gcwq_mayday_timeout,
- 				    (unsigned long)pool);
+ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+ {
+-	double total, ratio = 0.0;
++	double total, ratio = 0.0, total2;
+ 	char cpustr[16] = { '\0', };
+ 	const char *fmt;
  
-diff --git a/net/mac80211/agg-rx.c b/net/mac80211/agg-rx.c
-index 186d991..c8985c1 100644
---- a/net/mac80211/agg-rx.c
-+++ b/net/mac80211/agg-rx.c
-@@ -294,14 +294,14 @@ void ieee80211_process_addba_request(struct ieee80211_local *local,
- 	spin_lock_init(&tid_agg_rx->reorder_lock);
+@@ -733,6 +779,41 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
+ 			ratio = 1.0 * avg / total;
  
- 	/* rx timer */
--	tid_agg_rx->session_timer.function = sta_rx_agg_session_timer_expired;
--	tid_agg_rx->session_timer.data = (unsigned long)&sta->timer_to_tid[tid];
--	init_timer_deferrable(&tid_agg_rx->session_timer);
-+	setup_timer_deferrable(&tid_agg_rx->session_timer,
-+				sta_rx_agg_session_timer_expired,
-+				(unsigned long)&sta->timer_to_tid[tid]);
+ 		fprintf(output, " # %8.3f GHz                    ", ratio);
++	} else if (perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_INTX)) && 
++		   transaction_run) {
++		total = avg_stats(&runtime_cycles_stats[cpu]);
++		if (total)
++			fprintf(output,
++				" #   %5.2f%% transactional cycles   ",
++				100.0 * (avg / total));
++	} else if (perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_INTX_CP)) &&
++		   transaction_run) {
++		total = avg_stats(&runtime_cycles_stats[cpu]);
++		total2 = avg_stats(&runtime_cycles_intx_stats[cpu]);
++		if (total)
++			fprintf(output,
++				" #   %5.2f%% aborted cycles         ",
++				100.0 * ((total2-avg) / total));
++	} else if (perf_evsel__cmp(evsel, nth_evsel(T_TRANSACTION_START)) &&
++		   avg > 0 &&
++		   runtime_cycles_intx_stats[cpu].n != 0 &&
++		   transaction_run) {
++		total = avg_stats(&runtime_cycles_intx_stats[cpu]);
++
++		if (total)
++			ratio = total / avg;
++
++		fprintf(output, " # %8.0f cycles / transaction ", ratio);
++	} else if (perf_evsel__cmp(evsel, nth_evsel(T_ELISION_START)) &&
++		   avg > 0 &&
++		   runtime_cycles_intx_stats[cpu].n != 0 &&
++		   transaction_run) {
++		total = avg_stats(&runtime_cycles_intx_stats[cpu]);
++
++		if (total)
++			ratio = total / avg;
++
++		fprintf(output, " # %8.0f cycles / elision     ", ratio);
+ 	} else if (runtime_nsecs_stats[cpu].n != 0) {
+ 		char unit = 'M';
  
- 	/* rx reorder timer */
--	tid_agg_rx->reorder_timer.function = sta_rx_agg_reorder_timer_expired;
--	tid_agg_rx->reorder_timer.data = (unsigned long)&sta->timer_to_tid[tid];
--	init_timer(&tid_agg_rx->reorder_timer);
-+	setup_timer(&tid_agg_rx->reorder_timer,
-+				sta_rx_agg_reorder_timer_expired,
-+				(unsigned long)&sta->timer_to_tid[tid]);
+@@ -1039,6 +1120,18 @@ static int add_default_attributes(void)
+ 	if (null_run)
+ 		return 0;
  
- 	/* prepare reordering buffer */
- 	tid_agg_rx->reorder_buf =
-diff --git a/net/mac80211/agg-tx.c b/net/mac80211/agg-tx.c
-index 3195a63..cacd75d 100644
---- a/net/mac80211/agg-tx.c
-+++ b/net/mac80211/agg-tx.c
-@@ -535,14 +535,14 @@ int ieee80211_start_tx_ba_session(struct ieee80211_sta *pubsta, u16 tid,
- 	tid_tx->timeout = timeout;
++	if (transaction_run) {
++		unsigned i;
++
++		for (i = 0; i < ARRAY_SIZE(transaction_attrs); i++) {
++			if (parse_events(evsel_list, transaction_attrs[i], 0)) {
++				fprintf(stderr, "Cannot set up transaction events\n");
++				return -1;
++			}
++		}
++		return 0;
++	}
++
+ 	if (!evsel_list->nr_entries) {
+ 		if (perf_evlist__add_default_attrs(evsel_list, default_attrs) < 0)
+ 			return -1;
+@@ -1114,6 +1207,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "append", &append_file, "append to the output file"),
+ 	OPT_INTEGER(0, "log-fd", &output_fd,
+ 		    "log output to fd, instead of stderr"),
++	OPT_BOOLEAN('T', "transaction", &transaction_run,
++		    "hardware transaction statistics"),
+ 	OPT_END()
+ 	};
+ 	const char * const stat_usage[] = {
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 6f94d6d..418405e 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -158,6 +158,12 @@ static inline bool perf_evsel__match2(struct perf_evsel *e1,
+ 	       (e1->attr.config == e2->attr.config);
+ }
  
- 	/* response timer */
--	tid_tx->addba_resp_timer.function = sta_addba_resp_timer_expired;
--	tid_tx->addba_resp_timer.data = (unsigned long)&sta->timer_to_tid[tid];
--	init_timer(&tid_tx->addba_resp_timer);
-+	setup_timer(&tid_tx->addba_resp_timer,
-+				sta_addba_resp_timer_expired,
-+				(unsigned long)&sta->timer_to_tid[tid]);
++#define perf_evsel__cmp(a, b)			\
++	((a) &&					\
++	 (b) &&					\
++	 (a)->attr.type == (b)->attr.type &&	\
++	 (a)->attr.config == (b)->attr.config)
++
+ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
+ 			      int cpu, int thread, bool scale);
  
- 	/* tx timer */
--	tid_tx->session_timer.function = sta_tx_agg_session_timer_expired;
--	tid_tx->session_timer.data = (unsigned long)&sta->timer_to_tid[tid];
--	init_timer_deferrable(&tid_tx->session_timer);
-+	setup_timer_deferrable(&tid_tx->session_timer,
-+				sta_tx_agg_session_timer_expired,
-+				(unsigned long)&sta->timer_to_tid[tid]);
- 
- 	/* assign a dialog token */
- 	sta->ampdu_mlme.dialog_token_allocator++;
-diff --git a/net/sched/cls_flow.c b/net/sched/cls_flow.c
-index ce82d0c..ff1afc5 100644
---- a/net/sched/cls_flow.c
-+++ b/net/sched/cls_flow.c
-@@ -457,9 +457,8 @@ static int flow_change(struct sk_buff *in_skb,
- 		f->mask	  = ~0U;
- 
- 		get_random_bytes(&f->hashrnd, 4);
--		f->perturb_timer.function = flow_perturbation;
--		f->perturb_timer.data = (unsigned long)f;
--		init_timer_deferrable(&f->perturb_timer);
-+		setup_timer_deferrable(&f->perturb_timer, flow_perturbation,
-+							(unsigned long)f);
- 	}
- 
- 	tcf_exts_change(tp, &f->exts, &e);
-diff --git a/net/sched/sch_sfq.c b/net/sched/sch_sfq.c
-index d3a1bc2..93ff569 100644
---- a/net/sched/sch_sfq.c
-+++ b/net/sched/sch_sfq.c
-@@ -739,9 +739,8 @@ static int sfq_init(struct Qdisc *sch, struct nlattr *opt)
- 	struct sfq_sched_data *q = qdisc_priv(sch);
- 	int i;
- 
--	q->perturb_timer.function = sfq_perturbation;
--	q->perturb_timer.data = (unsigned long)sch;
--	init_timer_deferrable(&q->perturb_timer);
-+	setup_timer_deferrable(&q->perturb_timer, sfq_perturbation,
-+						(unsigned long)sch);
- 
- 	for (i = 0; i < SFQ_MAX_DEPTH + 1; i++) {
- 		q->dep[i].next = i + SFQ_MAX_FLOWS;
 -- 
-1.7.9.5
+1.7.7.6
 
