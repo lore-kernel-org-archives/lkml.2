@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab2JRI05 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 04:26:57 -0400
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:16207
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753957Ab2JRI0v convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 04:26:51 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzc89bhzz1202h1d1ah1d2ah1082kzzz2dh2a8h668h839h93fhd25he5bhf0ah107ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1155h)
-Message-ID: <507FBDF1.5050602@freescale.com>
-Date: Thu, 18 Oct 2012 16:29:37 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1754601Ab2JRI1P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 04:27:15 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:39900 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752602Ab2JRI1L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 04:27:11 -0400
 MIME-Version: 1.0
-To: Marek Vasut <marex@denx.de>
-CC: Vinod Koul <vinod.koul@linux.intel.com>, <djbw@fb.com>,
-        <khali@linux-fr.org>, <ben-linux@fluff.org>, <w.sang@pengutronix.de>,
-        <cjb@laptop.org>, <dwmw2@infradead.org>, <lrg@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <perex@perex.cz>,
-        <tiwai@suse.de>, <shawn.guo@linaro.org>,
-        <artem.bityutskiy@linux.intel.com>, <linux-kernel@vger.kernel.org>,
-        <linux-i2c@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>, <alsa-devel@alsa-project.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        Huang Shijie <shijie8@gmail.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        "dedekind1@gmail.com" <dedekind1@gmail.com>
-Subject: Re: [PATCH] dma: add new DMA control commands
-References: <1350538335-29026-1-git-send-email-b32955@freescale.com> <201210180914.58527.marex@denx.de> <507FB495.7050104@freescale.com> <201210181016.06782.marex@denx.de>
-In-Reply-To: <201210181016.06782.marex@denx.de>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+In-Reply-To: <tip-8323f26ce3425460769605a6aece7a174edaa7d1@git.kernel.org>
+References: <1340364965.18025.71.camel@twins>
+	<tip-8323f26ce3425460769605a6aece7a174edaa7d1@git.kernel.org>
+Date: Thu, 18 Oct 2012 02:27:10 -0600
+X-Google-Sender-Auth: N7XPkScFupdNgq_0mqBVpjw2FtI
+Message-ID: <CAE5mzvjPXAZdOi1p8AB47zOQzgAErBU66gAS8spnpOs+=-+azA@mail.gmail.com>
+Subject: Re: [tip:sched/core] sched: Fix race in task_group()
+From: cwillu <cwillu@cwillu.com>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de,
+        stefan.bader@canonical.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年10月18日 16:16, Marek Vasut 写道:
-> So we can't stream data from the chip? About time to adjust the MTD framework to
-> allow that. Maybe implement a command queue?
+On Tue, Jul 24, 2012 at 8:21 AM, tip-bot for Peter Zijlstra
+<peterz@infradead.org> wrote:
+> Commit-ID:  8323f26ce3425460769605a6aece7a174edaa7d1
+> Gitweb:     http://git.kernel.org/tip/8323f26ce3425460769605a6aece7a174edaa7d1
+> Author:     Peter Zijlstra <peterz@infradead.org>
+> AuthorDate: Fri, 22 Jun 2012 13:36:05 +0200
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Tue, 24 Jul 2012 13:58:20 +0200
 >
+> sched: Fix race in task_group()
+>
+> Stefan reported a crash on a kernel before a3e5d1091c1 ("sched:
+> Don't call task_group() too many times in set_task_rq()"), he
+> found the reason to be that the multiple task_group()
+> invocations in set_task_rq() returned different values.
+>
+> Looking at all that I found a lack of serialization and plain
+> wrong comments.
+>
+> The below tries to fix it using an extra pointer which is
+> updated under the appropriate scheduler locks. Its not pretty,
+> but I can't really see another way given how all the cgroup
+> stuff works.
+>
+> Reported-and-tested-by: Stefan Bader <stefan.bader@canonical.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Link: http://lkml.kernel.org/r/1340364965.18025.71.camel@twins
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
 
-to Artem & David:
-    is this possible to stream the data out with a command queue?
+I just finished bisecting a crash on boot to this commit; booting with
+"noautogroup" brings it back.
 
-thanks
-Huang Shijie
+3.5.4 is the latest -stable that still boots, and none of the 3.6 rc's
+boot at all.
 
+Photo of the bug (3.6.0next is 3.6 + btrfs's for-linus):
+https://lh5.googleusercontent.com/-0DY-YYhgvzs/UHdB-BQdzMI/AAAAAAAAAEg/QhY9rgxnv98/s811/2012-10-11
