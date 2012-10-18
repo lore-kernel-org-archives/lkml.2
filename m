@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910Ab2JRN5r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 09:57:47 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:56853 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754818Ab2JRN5q (ORCPT
+	id S1756084Ab2JRN6C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 09:58:02 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37561 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755972Ab2JRN57 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 09:57:46 -0400
-X-Greylist: delayed 3634 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Oct 2012 09:57:46 EDT
-Message-ID: <1350565015.23730.4.camel@thor>
-Subject: [PATCH 0/1] staging: Add firewire-serial driver
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux1394-devel@lists.sourceforge.net
-Date: Thu, 18 Oct 2012 08:56:55 -0400
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.2.4-0build1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Thu, 18 Oct 2012 09:57:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <507FA2B3.3080403@redhat.com>
+References: <20120904143215.5bbbb2a4@obelix.rh>
+	<CAM_iQpVVCjJ0Bde9RS9Rm-0RJ=CtTyX3eUH45+oaaepvdAvAmQ@mail.gmail.com>
+	<20120923202727.GA28937@mwanda>
+	<CAE9FiQX-R1L-0LDZNTbk-a6SUog+=tTrdwcfr0QUczH_PLMMpw@mail.gmail.com>
+	<20120929071318.GA7444@gmail.com>
+	<CABqxG0czidut37LkwqH2_D44ng-HWHudjgZr9w8csqnGVUT0rA@mail.gmail.com>
+	<507FA2B3.3080403@redhat.com>
+Date: Thu, 18 Oct 2012 21:57:59 +0800
+Message-ID: <CAM_iQpVWS81jCu=P53auFiDvGeZsW-ONRqEF2=K2SK-vrT4VhQ@mail.gmail.com>
+Subject: Re: kexec/kdump kernel fails to start
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Dave Young <dyoung@redhat.com>
+Cc: Dave Young <hidave.darkstar@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Flavio Leitner <fbl@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
+        ianfang.cn@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please consider this serial driver for review for submission to staging.
-The firewire-serial driver implements TTY over IEEE 1394. In its default
-configuration, it creates 4 TTY devices and one loopback device per
-firewire card (respectively, named fwtty<n>~fwtty<n+3> and fwloop<n>).
+On Thu, Oct 18, 2012 at 2:33 PM, Dave Young <dyoung@redhat.com> wrote:
+> Here is a patch for the reverting:
+> ---
+> x86 mm: Revert find_early_table_space fix
+>
+> 722bc6b16771ed80871e1fd81c86d3627dda2ac8 Try to address the issue that the
+> first 2/4M should use 4k pages if PSE enabled. but extra counts should only
+> valid for x86_32. This commit cause kdump regression, kdump kernel hangs happens
+> with it.
+>
+> As Yinghai Lu said they should be reverted. see below post:
+> https://lkml.org/lkml/2012/9/4/533
+>
+> As there's a later fix to above fix which is bd2753b2dda7bb43c7468826de75f49c6a7e8965
+> So we need revert both of these two commits.
+>
+> Tested kdump on physical and virutual machines.
 
-Currently, the TTY devices auto-connect to every cabled peer (the TODO
-list includes plans for providing a sysfs interface to control virtual
-cabling with whitelist/blacklist support per GUID).
+Looks good to me,
 
-Efforts are still ongoing for a companion console driver, with plans to
-eventually add early_printk & kgdb support (via additional drivers).
+Acked-by: Cong Wang <xiyou.wangcong@gmail.com>
 
-Some issues did arise with both the TTY and Firewire subsystems which
-are noted in the TODO file. Please review these workarounds.
-
-Peter Hurley (1):
-  staging: fwserial: Add TTY-over-Firewire serial driver
-
- drivers/staging/Kconfig             |    2 +
- drivers/staging/Makefile            |    1 +
- drivers/staging/fwserial/Kconfig    |    9 +
- drivers/staging/fwserial/Makefile   |    2 +
- drivers/staging/fwserial/TODO       |   89 ++
- drivers/staging/fwserial/dma_fifo.c |  310 ++++
- drivers/staging/fwserial/dma_fifo.h |  130 ++
- drivers/staging/fwserial/fwserial.c | 2885 +++++++++++++++++++++++++++++++++++
- drivers/staging/fwserial/fwserial.h |  355 +++++
- 9 files changed, 3783 insertions(+)
- create mode 100644 drivers/staging/fwserial/Kconfig
- create mode 100644 drivers/staging/fwserial/Makefile
- create mode 100644 drivers/staging/fwserial/TODO
- create mode 100644 drivers/staging/fwserial/dma_fifo.c
- create mode 100644 drivers/staging/fwserial/dma_fifo.h
- create mode 100644 drivers/staging/fwserial/fwserial.c
- create mode 100644 drivers/staging/fwserial/fwserial.h
-
--- 
-1.7.12.3
-
-
-
+Thanks for the fix!
