@@ -1,360 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533Ab2JRG3m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 02:29:42 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62394 "EHLO mga09.intel.com"
+	id S1753676Ab2JRGfO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 02:35:14 -0400
+Received: from mail.crc.id.au ([203.56.246.92]:48258 "EHLO mail.crc.id.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753669Ab2JRG3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 02:29:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,606,1344236400"; 
-   d="scan'208";a="207516121"
-Subject: Re: [PATCH] dma: add new DMA control commands
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Huang Shijie <b32955@freescale.com>
-Cc: djbw@fb.com, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, cjb@laptop.org, dwmw2@infradead.org, lrg@ti.com,
-        broonie@opensource.wolfsonmicro.com, perex@perex.cz, tiwai@suse.de,
-        shawn.guo@linaro.org, marex@denx.de, artem.bityutskiy@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-mtd@lists.infradead.org,
-        alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, Huang Shijie <shijie8@gmail.com>
-In-Reply-To: <1350538335-29026-1-git-send-email-b32955@freescale.com>
-References: <1350538335-29026-1-git-send-email-b32955@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Oct 2012 11:48:31 +0530
-Message-ID: <1350541111.5263.3.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751467Ab2JRGfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 02:35:13 -0400
+X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Oct 2012 02:35:12 EDT
+Message-ID: <507FA1D2.3070407@crc.id.au>
+Date: Thu, 18 Oct 2012 17:29:38 +1100
+From: Steven Haigh <netwiz@crc.id.au>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: CONFIG_SYSFS_DEPRECATED & CONFIG_SYSFS_DEPRECATED_V2 appear to not
+ work
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms020908070704090701010800"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-18 at 13:32 +0800, Huang Shijie wrote:
-> From: Huang Shijie <shijie8@gmail.com>
-> 
-> [1] Why add these new DMA control commands?
->     In mx6q, the gpmi-nand driver is the only user of the APBH-DMA. The dma clock
->     is enabled when we have successfully requested a DMA channel. So even when
->     the gpmi-nand driver does not work, the dma clock(apbh-dma) still runs
->     in high speed (198MHz). To save some power, it is better to disable the dma
->     clock when the dma device, such as gpmi-nand, is not working anymore.
->     When the dma device becomes work again, enable the dma clock again.
-> 
-> [2] add new DMA control commands: DMA_START/DMA_END
->     DMA_START: do some preprations to start the DMA engine, such as enable the
->                necessary clocks.
->     DMA_END: do some works to end the DMA engine, such as disable the
->                necessary clocks.
-> 
-> [3] This patch does not change any logic in i2c-mxs driver and mxs-pcm driver.
->     But for gpmi-nand driver, we will enable the the clock only when we select
->     the nand chip, and want to do some real jobs with the nand chip.
->     For mxs-mmc driver, disable the dma clock in the suspend; and enable the
->     dma clock in the resume.
-> 
-Why cant you do start (prepare clock etc) when you submit the descriptor
-to dmaengine. Can be done in tx_submit callback.
-Similarly remove the clock when dma transaction gets completed.
+This is a cryptographically signed message in MIME format.
 
-I don't think we need a new API for this, it needs to be handled by
-driver on its own.
+--------------ms020908070704090701010800
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: quoted-printable
 
-> Signed-off-by: Huang Shijie <b32955@freescale.com>
-> ---
->  drivers/dma/mxs-dma.c                  |   17 +++++++++++++++++
->  drivers/i2c/busses/i2c-mxs.c           |   10 +++++++++-
->  drivers/mmc/host/mxs-mmc.c             |   19 ++++++++++++++++---
->  drivers/mtd/nand/gpmi-nand/gpmi-lib.c  |   10 ++++++++++
->  drivers/mtd/nand/gpmi-nand/gpmi-nand.c |   10 ++++++----
->  include/linux/dmaengine.h              |    6 ++++++
->  sound/soc/mxs/mxs-pcm.c                |   12 ++++++++++++
->  7 files changed, 76 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/dma/mxs-dma.c b/drivers/dma/mxs-dma.c
-> index 9f02e79..89286f4 100644
-> --- a/drivers/dma/mxs-dma.c
-> +++ b/drivers/dma/mxs-dma.c
-> @@ -384,6 +384,8 @@ static int mxs_dma_alloc_chan_resources(struct dma_chan *chan)
->  	/* the descriptor is ready */
->  	async_tx_ack(&mxs_chan->desc);
->  
-> +	clk_disable_unprepare(mxs_dma->clk);
-> +
->  	return 0;
->  
->  err_clk:
-> @@ -399,6 +401,14 @@ static void mxs_dma_free_chan_resources(struct dma_chan *chan)
->  {
->  	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
->  	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
-> +	int ret;
-> +
-> +	ret = clk_prepare_enable(mxs_dma->clk);
-> +	if (ret) {
-> +		dev_err(mxs_dma->dma_device.dev,
-> +			"failed in enabling the dma clock\n");
-> +		return;
-> +	}
->  
->  	mxs_dma_disable_chan(mxs_chan);
->  
-> @@ -597,9 +607,13 @@ static int mxs_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
->  		unsigned long arg)
->  {
->  	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
-> +	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
->  	int ret = 0;
->  
->  	switch (cmd) {
-> +	case DMA_START:
-> +		ret = clk_prepare_enable(mxs_dma->clk);
-> +		break;
->  	case DMA_TERMINATE_ALL:
->  		mxs_dma_reset_chan(mxs_chan);
->  		mxs_dma_disable_chan(mxs_chan);
-> @@ -610,6 +624,9 @@ static int mxs_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
->  	case DMA_RESUME:
->  		mxs_dma_resume_chan(mxs_chan);
->  		break;
-> +	case DMA_END:
-> +		clk_disable_unprepare(mxs_dma->clk);
-> +		break;
->  	default:
->  		ret = -ENOSYS;
->  	}
-> diff --git a/drivers/i2c/busses/i2c-mxs.c b/drivers/i2c/busses/i2c-mxs.c
-> index 1f58197..da1e881 100644
-> --- a/drivers/i2c/busses/i2c-mxs.c
-> +++ b/drivers/i2c/busses/i2c-mxs.c
-> @@ -643,6 +643,12 @@ static int __devinit mxs_i2c_probe(struct platform_device *pdev)
->  			dev_err(dev, "Failed to request dma\n");
->  			return -ENODEV;
->  		}
-> +		err = dmaengine_device_control(i2c->dmach, DMA_START, 0);
-> +		if (err) {
-> +			dma_release_channel(i2c->dmach);
-> +			dev_err(dev, "Failed to start dma\n");
-> +			return err;
-> +		}
->  	}
->  
->  	platform_set_drvdata(pdev, i2c);
-> @@ -680,8 +686,10 @@ static int __devexit mxs_i2c_remove(struct platform_device *pdev)
->  	if (ret)
->  		return -EBUSY;
->  
-> -	if (i2c->dmach)
-> +	if (i2c->dmach) {
-> +		dmaengine_device_control(i2c->dmach, DMA_END, 0);
->  		dma_release_channel(i2c->dmach);
-> +	}
->  
->  	writel(MXS_I2C_CTRL0_SFTRST, i2c->regs + MXS_I2C_CTRL0_SET);
->  
-> diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-> index 80d1e6d..aa91830 100644
-> --- a/drivers/mmc/host/mxs-mmc.c
-> +++ b/drivers/mmc/host/mxs-mmc.c
-> @@ -676,6 +676,9 @@ static int mxs_mmc_probe(struct platform_device *pdev)
->  			"%s: failed to request dma\n", __func__);
->  		goto out_clk_put;
->  	}
-> +	ret = dmaengine_device_control(ssp->dmach, DMA_START, 0);
-> +	if (ret)
-> +		goto out_free_dma;
->  
->  	/* set mmc core parameters */
->  	mmc->ops = &mxs_mmc_ops;
-> @@ -717,18 +720,20 @@ static int mxs_mmc_probe(struct platform_device *pdev)
->  	ret = devm_request_irq(&pdev->dev, irq_err, mxs_mmc_irq_handler, 0,
->  			       DRIVER_NAME, host);
->  	if (ret)
-> -		goto out_free_dma;
-> +		goto out_end_free_dma;
->  
->  	spin_lock_init(&host->lock);
->  
->  	ret = mmc_add_host(mmc);
->  	if (ret)
-> -		goto out_free_dma;
-> +		goto out_end_free_dma;
->  
->  	dev_info(mmc_dev(host->mmc), "initialized\n");
->  
->  	return 0;
->  
-> +out_end_free_dma:
-> +	dmaengine_device_control(ssp->dmach, DMA_END, 0);
->  out_free_dma:
->  	if (ssp->dmach)
->  		dma_release_channel(ssp->dmach);
-> @@ -750,8 +755,10 @@ static int mxs_mmc_remove(struct platform_device *pdev)
->  
->  	platform_set_drvdata(pdev, NULL);
->  
-> -	if (ssp->dmach)
-> +	if (ssp->dmach) {
-> +		dmaengine_device_control(ssp->dmach, DMA_END, 0);
->  		dma_release_channel(ssp->dmach);
-> +	}
->  
->  	clk_disable_unprepare(ssp->clk);
->  	clk_put(ssp->clk);
-> @@ -772,6 +779,7 @@ static int mxs_mmc_suspend(struct device *dev)
->  	ret = mmc_suspend_host(mmc);
->  
->  	clk_disable_unprepare(ssp->clk);
-> +	dmaengine_device_control(ssp->dmach, DMA_END, 0);
->  
->  	return ret;
->  }
-> @@ -784,8 +792,13 @@ static int mxs_mmc_resume(struct device *dev)
->  	int ret = 0;
->  
->  	clk_prepare_enable(ssp->clk);
-> +	ret = dmaengine_device_control(ssp->dmach, DMA_START, 0);
-> +	if (ret)
-> +		return ret;
->  
->  	ret = mmc_resume_host(mmc);
-> +	if (ret)
-> +		dmaengine_device_control(ssp->dmach, DMA_END, 0);
->  
->  	return ret;
->  }
-> diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> index 3502acc..20ed3f3 100644
-> --- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> +++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-> @@ -958,6 +958,7 @@ void gpmi_begin(struct gpmi_nand_data *this)
->  	uint32_t       reg;
->  	unsigned int   dll_wait_time_in_us;
->  	struct gpmi_nfc_hardware_timing  hw;
-> +	struct dma_chan *channel = get_dma_chan(this);
->  	int ret;
->  
->  	/* Enable the clock. */
-> @@ -967,6 +968,12 @@ void gpmi_begin(struct gpmi_nand_data *this)
->  		goto err_out;
->  	}
->  
-> +	ret = dmaengine_device_control(channel, DMA_START, 0);
-> +	if (ret) {
-> +		gpmi_disable_clk(this);
-> +		goto err_out;
-> +	}
-> +
->  	/* Only initialize the timing once */
->  	if (this->flags & GPMI_TIMING_INIT_OK)
->  		return;
-> @@ -1035,7 +1042,10 @@ err_out:
->  
->  void gpmi_end(struct gpmi_nand_data *this)
->  {
-> +	struct dma_chan *channel = get_dma_chan(this);
-> +
->  	gpmi_disable_clk(this);
-> +	dmaengine_device_control(channel, DMA_END, 0);
->  }
->  
->  /* Clears a BCH interrupt. */
-> diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-> index e2c56fc..5694d03 100644
-> --- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-> +++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-> @@ -815,12 +815,14 @@ static void gpmi_select_chip(struct mtd_info *mtd, int chipnr)
->  	struct nand_chip *chip = mtd->priv;
->  	struct gpmi_nand_data *this = chip->priv;
->  
-> -	if ((this->current_chip < 0) && (chipnr >= 0))
-> +	if ((this->current_chip < 0) && (chipnr >= 0)) {
-> +		/* set the current_chip before we call gpmi_begin(). */
-> +		this->current_chip = chipnr;
->  		gpmi_begin(this);
-> -	else if ((this->current_chip >= 0) && (chipnr < 0))
-> +	} else if ((this->current_chip >= 0) && (chipnr < 0)) {
->  		gpmi_end(this);
-> -
-> -	this->current_chip = chipnr;
-> +		this->current_chip = chipnr;
-> +	}
->  }
->  
->  static void gpmi_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
-> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> index d3201e4..79f864a 100644
-> --- a/include/linux/dmaengine.h
-> +++ b/include/linux/dmaengine.h
-> @@ -199,6 +199,8 @@ enum dma_ctrl_flags {
->  /**
->   * enum dma_ctrl_cmd - DMA operations that can optionally be exercised
->   * on a running channel.
-> + * @DMA_START: do some preprations to start the DMA engine, such as enable the
-> + * necessary clocks.
->   * @DMA_TERMINATE_ALL: terminate all ongoing transfers
->   * @DMA_PAUSE: pause ongoing transfers
->   * @DMA_RESUME: resume paused transfer
-> @@ -209,13 +211,17 @@ enum dma_ctrl_flags {
->   * command.
->   * @FSLDMA_EXTERNAL_START: this command will put the Freescale DMA controller
->   * into external start mode.
-> + * @DMA_END: do some works to end the DMA engine, such as disable the
-> + * necessary clocks.
->   */
->  enum dma_ctrl_cmd {
-> +	DMA_START,
->  	DMA_TERMINATE_ALL,
->  	DMA_PAUSE,
->  	DMA_RESUME,
->  	DMA_SLAVE_CONFIG,
->  	FSLDMA_EXTERNAL_START,
-> +	DMA_END,
->  };
->  
->  /**
-> diff --git a/sound/soc/mxs/mxs-pcm.c b/sound/soc/mxs/mxs-pcm.c
-> index f82d766..cfcc30f 100644
-> --- a/sound/soc/mxs/mxs-pcm.c
-> +++ b/sound/soc/mxs/mxs-pcm.c
-> @@ -92,6 +92,7 @@ static int snd_mxs_open(struct snd_pcm_substream *substream)
->  {
->  	struct snd_soc_pcm_runtime *rtd = substream->private_data;
->  	struct mxs_pcm_dma_data *pcm_dma_data;
-> +	struct dma_chan *chan;
->  	int ret;
->  
->  	pcm_dma_data = kzalloc(sizeof(*pcm_dma_data), GFP_KERNEL);
-> @@ -107,6 +108,14 @@ static int snd_mxs_open(struct snd_pcm_substream *substream)
->  		return ret;
->  	}
->  
-> +	chan = snd_dmaengine_pcm_get_chan(substream);
-> +	ret = dmaengine_device_control(chan, DMA_START, (unsigned long)0);
-> +	if (ret) {
-> +		snd_dmaengine_pcm_close(substream);
-> +		kfree(pcm_dma_data);
-> +		return ret;
-> +	}
-> +
->  	snd_soc_set_runtime_hwparams(substream, &snd_mxs_hardware);
->  
->  	snd_dmaengine_pcm_set_data(substream, pcm_dma_data);
-> @@ -117,7 +126,10 @@ static int snd_mxs_open(struct snd_pcm_substream *substream)
->  static int snd_mxs_close(struct snd_pcm_substream *substream)
->  {
->  	struct mxs_pcm_dma_data *pcm_dma_data = snd_dmaengine_pcm_get_data(substream);
-> +	struct dma_chan *chan;
->  
-> +	chan = snd_dmaengine_pcm_get_chan(substream);
-> +	dmaengine_device_control(chan, DMA_END, 0);
->  	snd_dmaengine_pcm_close(substream);
->  	kfree(pcm_dma_data);
->  
+Hi all,
+
+Firstly, please CC me in replies as I am not subscribed to the list.
+
+I'm trying to build kernel 3.5.4 and 3.6.2 to work with EL5. Each time I =
+
+try to boot this kernel, I get a panic stating it can't find /
+
+The same kernel config works correctly in EL6 (without the=20
+CONFIG_SYSFS_DEPRECATED and CONFIG_SYSFS_DEPRECATED_V2 options set)
+
+The documentation I have found states that for compatibility with EL5, I =
+
+should enable the CONFIG_SYSFS_DEPRECATED and=20
+CONFIG_SYSFS_DEPRECATED_V2 options in General Setup.
+
+I have done this as shown:
+# grep SYSFS /boot/config-3.5.4-4.el5xen.x86_64
+CONFIG_SYSFS_DEPRECATED=3Dy
+CONFIG_SYSFS_DEPRECATED_V2=3Dy
+CONFIG_WIRELESS_EXT_SYSFS=3Dy
+CONFIG_ISCSI_BOOT_SYSFS=3Dm
+# CONFIG_GPIO_SYSFS is not set
+CONFIG_VIDEO_PVRUSB2_SYSFS=3Dy
+CONFIG_RTC_INTF_SYSFS=3Dy
+# CONFIG_DMI_SYSFS is not set
+CONFIG_SYSFS=3Dy
+
+The system however does not boot. I have also tried passing
+"sysfs.deprecated=3D1" on the kernel line in grub with no success.
+
+I cannot seem to find anything further that could cause this issue other =
+
+than a fault in these kernel options.
+
+I have added a few attachments (kernel config, screenshot of panic)=20
+which I won't attach to the list:
+	https://bugzilla.kernel.org/show_bug.cgi?id=3D48991
+
+Can anyone much wiser than me assist here? How can I help debug this=20
+further?
+
+--=20
+Steven Haigh
+
+Email: netwiz@crc.id.au
+Web: http://www.crc.id.au
+Phone: (03) 9001 6090 - 0412 935 897
+Fax: (03) 8338 0299
 
 
--- 
-~Vinod
+--------------ms020908070704090701010800
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
 
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIOSjCC
+BjQwggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
+DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
+MTAyNDIxMDE1NVoXDTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
+dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
+aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
+aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOr
+lr6KMoOMpohBllVHrdRvEg/q6r8jR+EK75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSM
+zR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6
+qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxDz2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSD
+kOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr/+N2JLKutIxMYqQOJebr/f/h5t95
+m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
+Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFcfH6WNU7y1LhRgjAfBgNV
+HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
+MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
+dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
+c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqD
+CH14qywGXLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy
+6QMVQjbbMXltUfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPI
+zKKR9tQW8gGK+2+RHxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKf
+KSETEPrHh7p5shuuNktvsv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HOR
+z9v3vQwR4e3ksLc2JZOAFK+ssS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9
+sIPP7ON0fz095HdThKjiVJe6vofq+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCie
+uoBJ9OlqmsVWQvifIYf40dJPZkk9YgGTzWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7t
+w1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGqUp/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQ
+G2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb19mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t
+5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIIDjCCBvagAwIBAgIDA7ikMA0GCSqGSIb3DQEB
+BQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMi
+U2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20g
+Q2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcNMTIwMjEzMTMzODE0
+WhcNMTMwMjEzMTc1NjUzWjBXMRkwFwYDVQQNExB3bjVlU1RNM2RWOUIwMEk5MRkwFwYDVQQD
+DBBuZXR3aXpAY3JjLmlkLmF1MR8wHQYJKoZIhvcNAQkBFhBuZXR3aXpAY3JjLmlkLmF1MIIC
+IjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAzTaLiL78pm4Hqp7Pou4C60jt2wdvDiPt
+Sq6hspKk6oaST7BFeDOfoed3mvzytkjNr3C1gds3zsHulAMzRjuX2M1zPkfaj5QFkmlqQcxr
++tnaf8QFpn9PrUcjpbYDYPxdcGR+SeClKzmjdxicHuYDrD8YXnbk+k8dWDaCuv5sKRQHJmIR
+maqUIGoVML+/kUR+sqkMpnbhOsL+E84Hg4fxLzpV3Tjf9bZbKgaspvg+BeJJCYKThBxMnZJI
+cQ9JzDGL4rO2BEuTXI9Ofl0+AAttBEpZeqc2rePCfA9NivKTCZ0qaFKmvM5SN7TiZUqv80rD
+ewTp+OLXNZEd5aa5jEDPNlznkcX0WfuKCmtyIEzT7PgHl1tOWTx7nw6FVWcB8qjC6xlyaL6W
+1oS7Om3b2ka+9vSiz7DrPZzUDZuS91Fr2zIIMrrRzhN8q/JdQf8lGTydpmoRUB0z+BAcH8V/
+nOcMMDogqV6/dCfywi7zFQK4AsiPSpyBAZyO53J4uPgoIzSpFj54f83KRIobHCWDU1BaU2+6
+CfEoAD3iMId1tcFWTXikEThL+3oHQullq9EbPR4f3ToAU7aTZYWG4KNKrmG93KAfyCUFb+bf
+mt3hf1BprKIUJnpOxdZHi0KwLXVwURiB4XQKZpEWL8mRbHRdxVATKrrJAHOFTl3/s37VLprP
+J9kCAwEAAaOCA6swggOnMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQGCCsG
+AQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUS9is0NdoOI3DZ/36Zlq78IrSedgwHwYDVR0j
+BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwGwYDVR0RBBQwEoEQbmV0d2l6QGNyYy5pZC5h
+dTCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJo
+dHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8v
+d3d3LnN0YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBT
+dGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0
+ZSB3YXMgaXNzdWVkIGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVp
+cmVtZW50cyBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0
+aGUgaW50ZW5kZWQgcHVycG9zZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5
+IG9ibGlnYXRpb25zLjCBnAYIKwYBBQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlv
+biBBdXRob3JpdHkwAwIBAhpkTGlhYmlsaXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVk
+ISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExpbWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20g
+Q0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9j
+cnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2Nz
+cC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6
+Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xpZW50LmNhLmNydDAjBgNV
+HRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBABL6
+TyHlAHW0kkHb0ZLcd/pn7Ue0B5mIWBhmta4dK8qd0hXw+/lhpWaJWR/RltCSPabxSd+Lm9Iw
+NWm7WP73GHAGby0TC+siwDJSk7CwDBqnVM1T3XQ5TgjfVX7h9qjVixsSWzAD++dXFmpf/344
+Uf3zcG/hKJSeRtOvM/88nn4eJtrn7QFnIm4AJpHEgrqwU/0pmQBLwmEYS1G5cr04Oact2v6W
+L3JHOlEP8lPBAO9GtZD8UZGmBoDTNG0Rf4TnVTBGdw1sLZqpXnkcVI+rDUaFk/jb7AtCB30N
+8tbm2I5ALevgjv+vNMZIQD/0AgOaylGrQwbP852lgOvMo2AdpGExggTdMIIE2QIBATCBlDCB
+jDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3Vy
+ZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNz
+IDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMDuKQwCQYFKw4DAhoFAKCCAh0w
+GAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIxMDE4MDYyOTM4
+WjAjBgkqhkiG9w0BCQQxFgQUOGcG5KCZBH5Kwc0Wn0/hR0LoP8MwbAYJKoZIhvcNAQkPMV8w
+XTALBglghkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIA
+gDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIBKDCBpQYJKwYBBAGCNxAE
+MYGXMIGUMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UE
+CxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRD
+b20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAwO4pDCBpwYLKoZI
+hvcNAQkQAgsxgZeggZQwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQu
+MSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQD
+Ey9TdGFydENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQQIDA7ik
+MA0GCSqGSIb3DQEBAQUABIICAJOhVu2xhmWWhnurnt8wUK11ZJb0aruMDIhAsi8VN0/dAhKk
+R4qJ8KZgJKimBIr79jaDP7W3LvpM5tzzJ0FDPUX73ZKQ6IJjQ2o0JHzE5tvQCIIypvCKboGY
+nff3fYZjHLjjMpRfXihlkgOWYzIiQlzo/N+znjQAGxIs0L22lrV9tG4hCBfH65+XdbILy2Kn
+OxcGqtjHgXsmSiUbtSQIUcxemQJ9pmx9eSnOQ33e4auoeZTW+qeTWRXD9gEJX3pfAjylk0Ct
+GmwHVwzKK/dxt2+FzCS1jgPl9eHCPNLwr2v2E4kVusIzysJH+j40g+KNWX6/jHIn7oJzd+/y
+75iG9CzDr7ninauK8fgE6tyv14qkxPqCKd8H4il2Q5YwimHxutZ2Ol98M1k8gCBWFWXlhuvD
+o5QmNOGgy1m3v6n2sxhhuf5mYiTuWuXw5HaClkw5sCp5FIZPIsO0B0KQApk3zt8frRToQ9w1
+zpoYZS9SMVV4SWjckDfdaQQK713X+b2X8haQf7R4Bi7Q+zQ/odPoXvzR8fBbtolMsfgFer98
+99D/tOFj/84F4L6b21Dg44jtxsdpL6B0DtS8DD75o3GjsdEyTFs+LTGWVow4ZepWoE7svIEv
+ZBkRd3VPGl6h8gNWd1IS00DBT2H/9Q8NhymKTFf6PpzfFmdkp66+HqpJU/vnAAAAAAAA
+--------------ms020908070704090701010800--
