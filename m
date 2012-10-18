@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab2JRNoN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 09:44:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29920 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756019Ab2JRNoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 09:44:10 -0400
-Date: Thu, 18 Oct 2012 09:43:53 -0400
-From: Aristeu Rozanski <aris@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Fengguang Wu <fengguang.wu@intel.com>, Hugh Dickins <hughd@google.com>,
-        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [patch for-3.7] fs, xattr: fix bug when removing a name not in
- xattr list
-Message-ID: <20121018134353.GM29956@redhat.com>
-References: <20121018024317.GA25407@localhost>
- <alpine.DEB.2.00.1210171957380.32271@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1210172021320.32271@chino.kir.corp.google.com>
+	id S1755863Ab2JRNrO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 09:47:14 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:13424 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752950Ab2JRNrN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 09:47:13 -0400
+X-IronPort-AV: E=Sophos;i="4.80,607,1344211200"; 
+   d="scan'208";a="15256152"
+Message-ID: <1350568030.2460.149.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH 5/6] xen: arm: implement remap interfaces needed for
+ privcmd mappings.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Mukesh Rathor <mukesh.rathor@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Date: Thu, 18 Oct 2012 14:47:10 +0100
+In-Reply-To: <alpine.DEB.2.02.1210181434420.2689@kaball.uk.xensource.com>
+References: <1350473518.2460.58.camel@zakaz.uk.xensource.com>
+	 <1350473532-15863-5-git-send-email-ian.campbell@citrix.com>
+	 <alpine.DEB.2.02.1210181426090.2689@kaball.uk.xensource.com>
+	 <1350567209.2460.145.camel@zakaz.uk.xensource.com>
+	 <alpine.DEB.2.02.1210181434420.2689@kaball.uk.xensource.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1210172021320.32271@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 08:41:15PM -0700, David Rientjes wrote:
-> Commit 38f38657444d ("xattr: extract simple_xattr code from tmpfs") moved
-> some code from tmpfs but introduced a subtle bug along the way.
+On Thu, 2012-10-18 at 14:35 +0100, Stefano Stabellini wrote:
+> On Thu, 18 Oct 2012, Ian Campbell wrote:
+> > On Thu, 2012-10-18 at 14:27 +0100, Stefano Stabellini wrote:
+> > > On Wed, 17 Oct 2012, Ian Campbell wrote:
+> > > > We use XENMEM_add_to_physmap_range which is the preferred interface
+> > > > for foreign mappings.
+> > > > 
+> > > > Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> > > 
+> > > It looks OK but there are few code style issues, please run the patch
+> > > through checkpatch.
+> > 
+> > The only one I get is:
+> > WARNING: please, no spaces at the start of a line
+> > #83: FILE: include/xen/interface/memory.h:175:
+> > +    uint16_t    size;$
+> > 
+> > total: 0 errors, 1 warnings, 64 lines checked
+> > 
+> > The prevailing indentation in that file is 4 spaces so I think we should
+> > ignore the warning in this case in the interests of consistency with the
+> > surrounding code.
 > 
-> If the name passed to simple_xattr_remove() does not exist in the list of
-> xattrs, then it is possible to call kfree(new_xattr) when new_xattr is
-> actually initialized to itself on the stack via uninitialized_var().
-> 
-> This causes a BUG() since the memory was not allocated via the slab
-> allocator and was not bypassed through to the page allocator because it
-> was too large.
-> 
-> Initialize the local variable to NULL so the kfree() never takes place.
-> 
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
->  fs/xattr.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/xattr.c b/fs/xattr.c
-> --- a/fs/xattr.c
-> +++ b/fs/xattr.c
-> @@ -846,7 +846,7 @@ static int __simple_xattr_set(struct simple_xattrs *xattrs, const char *name,
->  			      const void *value, size_t size, int flags)
->  {
->  	struct simple_xattr *xattr;
-> -	struct simple_xattr *uninitialized_var(new_xattr);
-> +	struct simple_xattr *new_xattr = NULL;
->  	int err = 0;
->  
->  	/* value == NULL means remove */
+> Strange, I get:
 
-I think Sasha Levin was working on that (Cc'd) along with the smatch fix.
-Anyway, __simple_xattr_set is too confusing and rewriting it is in my TODO list
-which will shut up smatch too.
+I'm running v3.7-rc1-187-g7bbf07e so it is pretty recent.
+[...]
 
-Acked-by: Aristeu Rozanski <aris@redhat.com>
+> total: 2 errors, 6 warnings, 162 lines checked
 
--- 
-Aristeu
+Ah, I was looking at patch 6/6... 
+
+The warnings in this one are all of the same class as before (4 space
+indentation). But you are right, the other two need fixing. Done in my
+tree.
+
 
