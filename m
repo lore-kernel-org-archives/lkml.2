@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757396Ab2JRRH5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 13:07:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46806 "EHLO
+	id S932498Ab2JRRI7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 13:08:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46824 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756206Ab2JRRH4 (ORCPT
+	with ESMTP id S932120Ab2JRRI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 13:07:56 -0400
-Date: Thu, 18 Oct 2012 10:07:35 -0700
+	Thu, 18 Oct 2012 13:08:57 -0400
+Date: Thu, 18 Oct 2012 10:08:32 -0700
 From: tip-bot for Ingo Molnar <mingo@elte.hu>
-Message-ID: <tip-45e23a2f98bf5ca9552ce50f7ce590f999c2ce0d@git.kernel.org>
+Message-ID: <tip-8ed92e51f99c2199c64cb33b4ba95ab12940a94c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, efault@gmx.de,
+        tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, efault@gmx.de,
+        tglx@linutronix.de, mingo@elte.hu
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:numa/core] sched/numa/mm:
-  Further clean up migrate_misplaced_page()
-Git-Commit-ID: 45e23a2f98bf5ca9552ce50f7ce590f999c2ce0d
+Subject: [tip:sched/urgent] sched: Add WAKEUP_PREEMPTION feature flag,
+  on by default
+Git-Commit-ID: 8ed92e51f99c2199c64cb33b4ba95ab12940a94c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -26,76 +28,59 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 18 Oct 2012 10:07:40 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 18 Oct 2012 10:08:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  45e23a2f98bf5ca9552ce50f7ce590f999c2ce0d
-Gitweb:     http://git.kernel.org/tip/45e23a2f98bf5ca9552ce50f7ce590f999c2ce0d
+Commit-ID:  8ed92e51f99c2199c64cb33b4ba95ab12940a94c
+Gitweb:     http://git.kernel.org/tip/8ed92e51f99c2199c64cb33b4ba95ab12940a94c
 Author:     Ingo Molnar <mingo@elte.hu>
-AuthorDate: Mon, 15 Oct 2012 11:10:38 +0200
+AuthorDate: Sun, 14 Oct 2012 14:28:50 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 16 Oct 2012 10:04:41 +0200
+CommitDate: Tue, 16 Oct 2012 10:05:27 +0200
 
-sched/numa/mm: Further clean up migrate_misplaced_page()
+sched: Add WAKEUP_PREEMPTION feature flag, on by default
 
-The 'mm' parameter is not used anymore, get rid of it.
+As per the recent discussion with Mike and Linus, make it easier to
+test with/without this feature. No change in default behavior.
 
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-rwqEijuwdsgpooxrce9kniG8@git.kernel.org
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/n/tip-izoxq4haeg4mTognnDbwcevt@git.kernel.org
 ---
- include/linux/migrate.h |    4 ++--
- mm/memory.c             |    2 +-
- mm/migrate.c            |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ kernel/sched/fair.c     |    2 +-
+ kernel/sched/features.h |    5 +++++
+ 2 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index 7544d1a..9a5afea 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -30,7 +30,7 @@ extern int migrate_vmas(struct mm_struct *mm,
- extern void migrate_page_copy(struct page *newpage, struct page *page);
- extern int migrate_huge_page_move_mapping(struct address_space *mapping,
- 				  struct page *newpage, struct page *page);
--extern int migrate_misplaced_page(struct mm_struct *, struct page *, int);
-+extern int migrate_misplaced_page(struct page *page, int node);
- #else
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 6b800a1..f936552 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2907,7 +2907,7 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
+ 	 * Batch and idle tasks do not preempt non-idle tasks (their preemption
+ 	 * is driven by the tick):
+ 	 */
+-	if (unlikely(p->policy != SCHED_NORMAL))
++	if (unlikely(p->policy != SCHED_NORMAL) || !sched_feat(WAKEUP_PREEMPTION))
+ 		return;
  
- static inline void putback_lru_pages(struct list_head *l) {}
-@@ -65,7 +65,7 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
- #define fail_migrate_page NULL
+ 	find_matching_se(&se, &pse);
+diff --git a/kernel/sched/features.h b/kernel/sched/features.h
+index eebefca..e68e69a 100644
+--- a/kernel/sched/features.h
++++ b/kernel/sched/features.h
+@@ -32,6 +32,11 @@ SCHED_FEAT(LAST_BUDDY, true)
+ SCHED_FEAT(CACHE_HOT_BUDDY, true)
  
- static inline
--int migrate_misplaced_page(struct mm_struct *mm, struct page *page, int node)
-+int migrate_misplaced_page(struct page *page, int node)
- {
- 	return -EAGAIN; /* can't migrate now */
- }
-diff --git a/mm/memory.c b/mm/memory.c
-index 8b1ad86..fc48fe8 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3486,7 +3486,7 @@ out:
- migrate:
- 	pte_unmap_unlock(ptep, ptl);
- 
--	if (!migrate_misplaced_page(mm, page, node)) {
-+	if (!migrate_misplaced_page(page, node)) {
- 		page_nid = node;
- 		goto out;
- 	}
-diff --git a/mm/migrate.c b/mm/migrate.c
-index e3cff03..72d1056 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1418,7 +1418,7 @@ int migrate_vmas(struct mm_struct *mm, const nodemask_t *to,
-  * Attempt to migrate a misplaced page to the specified destination
-  * node.
+ /*
++ * Allow wakeup-time preemption of the current task:
++ */
++SCHED_FEAT(WAKEUP_PREEMPTION, true)
++
++/*
+  * Use arch dependent cpu power functions
   */
--int migrate_misplaced_page(struct mm_struct *mm, struct page *page, int node)
-+int migrate_misplaced_page(struct page *page, int node)
- {
- 	struct address_space *mapping = page_mapping(page);
- 	int page_lru = page_is_file_cache(page);
+ SCHED_FEAT(ARCH_POWER, true)
