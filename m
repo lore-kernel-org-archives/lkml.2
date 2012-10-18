@@ -1,89 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab2JRAan (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 20:30:43 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36016 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961Ab2JRAal (ORCPT
+	id S1753125Ab2JRAbV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 20:31:21 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:42324 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752774Ab2JRAbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 20:30:41 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <507F4D86.106@jp.fujitsu.com>
-Date: Thu, 18 Oct 2012 09:29:58 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Wed, 17 Oct 2012 20:31:20 -0400
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [RFC] memcg/cgroup: do not fail fail on pre_destroy callbacks
-References: <1350480648-10905-1-git-send-email-mhocko@suse.cz>
-In-Reply-To: <1350480648-10905-1-git-send-email-mhocko@suse.cz>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1350508512-15562-2-git-send-email-mark.einon@gmail.com>
+References: <1350508512-15562-1-git-send-email-mark.einon@gmail.com>
+	<1350508512-15562-2-git-send-email-mark.einon@gmail.com>
+Date: Wed, 17 Oct 2012 20:31:19 -0400
+Message-ID: <CAEJO9GS6Q72bSc+FgK29=dASu+E731uL-nFApKw0-tMSjaTsDw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] staging: et131x: Fix 64bit tx dma address handling
+From: Jeffrey Ladouceur <jladouceur@gmail.com>
+To: Mark Einon <mark.einon@gmail.com>
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/10/17 22:30), Michal Hocko wrote:
-> Hi,
-> memcg is the only controller which might fail in its pre_destroy
-> callback which makes the cgroup core more complicated for no good
-> reason. This is an attempt to change this unfortunate state.
-> 
-> I am sending this a RFC because I would like to hear back whether the
-> approach is correct. I thought that the changes would be more invasive
-> but it seems that the current code was mostly prepared for this and it
-> needs just some small tweaks (so I might be missing something important
-> here).
-> 
-> The first two patches are just clean ups. They could be merged even
-> without the rest.
-> 
-> The real change, although the code is not changed that much, is the 3rd
-> patch. It changes the way how we handle mem_cgroup_move_parent failures.
-> We have to realize that all those failures are *temporal*. Because we
-> are either racing with the page removal or the page is temporarily off
-> the LRU because of migration resp. global reclaim. As a result we do
-> not fail mem_cgroup_force_empty_list if the page cannot be moved to the
-> parent and rather retry until the LRU is empty.
-> 
-> The 4th patch is for cgroup core. I have moved cgroup_call_pre_destroy
-> inside the cgroup_lock which is not very nice because the callbacks
-> can take some time. Maybe we can move this call at the very end of the
-> function?
-> All I need for memcg is that cgroup_call_pre_destroy has been called and
-> that no new cgroups can be attached to the group. The cgroup_lock is
-> necessary for the later condition but if we move after CGRP_REMOVED flag
-> is set then we are safe as well.
-> 
-> The last two patches are trivial follow ups for the cgroups core change
-> because now we know that nobody will interfere with us so we can drop
-> those empty && no child condition.
-> 
-> Comments, thoughts?
-> 
-> Michal Hocko (6):
->        memcg: split mem_cgroup_force_empty into reclaiming and reparenting parts
->        memcg: root_cgroup cannot reach mem_cgroup_move_parent
->        memcg: Simplify mem_cgroup_force_empty_list error handling
->        cgroups: forbid pre_destroy callback to fail
->        memcg: make mem_cgroup_reparent_charges non failing
->        hugetlb: do not fail in hugetlb_cgroup_pre_destroy
-> 
-> Cumulative diffstat:
->   kernel/cgroup.c     |   30 ++++---------
->   mm/hugetlb_cgroup.c |   11 ++---
->   mm/memcontrol.c     |  124 +++++++++++++++++++++++++++------------------------
->   3 files changed, 78 insertions(+), 87 deletions(-)
+On Wed, Oct 17, 2012 at 5:15 PM, Mark Einon <mark.einon@gmail.com> wrote:
+> The driver checks that the device can handle 64bit DMA addressing in
+> et131x_pci_setup(), but then assumes that the top dword of a tx dma
+> address is always zero when creating a dma mapping in nic_send_packet().
+> Fix the mapping to use the higher dword of the dma_addr_t returned by
+> dma_map_single() and skb_frag_dma_map().
+>
+> Also remove incorrect comments stating that dma_map_single() only returns
+> a 32 bit address.
+>
+> Signed-off-by: Mark Einon <mark.einon@gmail.com>
+> ---
+>  drivers/staging/et131x/et131x.c |  102 +++++++++++++++------------------------
+>  1 file changed, 39 insertions(+), 63 deletions(-)
+>
+> diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+> index f0fe4bd..83643be 100644
+> --- a/drivers/staging/et131x/et131x.c
+> +++ b/drivers/staging/et131x/et131x.c
+> @@ -3285,6 +3285,7 @@ static int nic_send_packet(struct et131x_adapter *adapter, struct tcb *tcb)
+>         struct skb_frag_struct *frags = &skb_shinfo(skb)->frags[0];
+>         unsigned long flags;
+>         struct phy_device *phydev = adapter->phydev;
+> +       dma_addr_t dma_addr;
+>
+>         /* Part of the optimizations of this send routine restrict us to
+>          * sending 24 fragments at a pass.  In practice we should never see
+> @@ -3314,77 +3315,46 @@ static int nic_send_packet(struct et131x_adapter *adapter, struct tcb *tcb)
+>                          * doesn't seem to like large fragments.
+>                          */
+>                         if (skb_headlen(skb) <= 1514) {
+> -                               desc[frag].addr_hi = 0;
+>                                 /* Low 16bits are length, high is vlan and
+>                                    unused currently so zero */
+>                                 desc[frag].len_vlan = skb_headlen(skb);
+> -
+> -                               /* NOTE: Here, the dma_addr_t returned from
+> -                                * dma_map_single() is implicitly cast as a
+> -                                * u32. Although dma_addr_t can be
+> -                                * 64-bit, the address returned by
+> -                                * dma_map_single() is always 32-bit
+> -                                * addressable (as defined by the pci/dma
+> -                                * subsystem)
+> -                                */
+> -                               desc[frag++].addr_lo =
+> -                                   dma_map_single(&adapter->pdev->dev,
+> -                                                  skb->data,
+> -                                                  skb_headlen(skb),
+> -                                                  DMA_TO_DEVICE);
+> +                               dma_addr = dma_map_single(&adapter->pdev->dev,
+> +                                                         skb->data,
+> +                                                         skb_headlen(skb),
+> +                                                         DMA_TO_DEVICE);
+> +                               desc[frag].addr_lo = dma_addr & 0xFFFFFFFF;
+> +                               desc[frag].addr_hi = dma_addr >> 32;
 
-Thank you very much ! The whole patch seems good to me and I like this approach.
+Maybe use macros defined in kernel.h instead:
 
-Thanks,
--Kame
+desc[frag].addr_lo = lower_32_bits(dma_addr);
+desc[frag].addr_hi = upper_32_bits(dma_addr);
+
+A few more instances below.
 
 
+> +                               frag++;
+>                         } else {
+> -                               desc[frag].addr_hi = 0;
+>                                 desc[frag].len_vlan = skb_headlen(skb) / 2;
+> -
+> -                               /* NOTE: Here, the dma_addr_t returned from
+> -                                * dma_map_single() is implicitly cast as a
+> -                                * u32. Although dma_addr_t can be
+> -                                * 64-bit, the address returned by
+> -                                * dma_map_single() is always 32-bit
+> -                                * addressable (as defined by the pci/dma
+> -                                * subsystem)
+> -                                */
+> -                               desc[frag++].addr_lo =
+> -                                   dma_map_single(&adapter->pdev->dev,
+> -                                                  skb->data,
+> -                                                  (skb_headlen(skb) / 2),
+> -                                                  DMA_TO_DEVICE);
+> -                               desc[frag].addr_hi = 0;
+> +                               dma_addr = dma_map_single(&adapter->pdev->dev,
+> +                                                         skb->data,
+> +                                                         (skb_headlen(skb) / 2),
+> +                                                         DMA_TO_DEVICE);
+> +                               desc[frag].addr_lo = dma_addr & 0xFFFFFFFF;
+> +                               desc[frag].addr_hi = dma_addr >> 32;
+> +                               frag++;
+>
+>                                 desc[frag].len_vlan = skb_headlen(skb) / 2;
+> -
+> -                               /* NOTE: Here, the dma_addr_t returned from
+> -                                * dma_map_single() is implicitly cast as a
+> -                                * u32. Although dma_addr_t can be
+> -                                * 64-bit, the address returned by
+> -                                * dma_map_single() is always 32-bit
+> -                                * addressable (as defined by the pci/dma
+> -                                * subsystem)
+> -                                */
+> -                               desc[frag++].addr_lo =
+> -                                   dma_map_single(&adapter->pdev->dev,
+> -                                                  skb->data +
+> -                                                        (skb_headlen(skb) / 2),
+> -                                                  (skb_headlen(skb) / 2),
+> -                                                  DMA_TO_DEVICE);
+> +                               dma_addr = dma_map_single(&adapter->pdev->dev,
+> +                                                         skb->data +
+> +                                                         (skb_headlen(skb) / 2),
+> +                                                         (skb_headlen(skb) / 2),
+> +                                                         DMA_TO_DEVICE);
+> +                               desc[frag].addr_lo = dma_addr & 0xFFFFFFFF;
+> +                               desc[frag].addr_hi = dma_addr >> 32;
+> +                               frag++;
+>                         }
+>                 } else {
+> -                       desc[frag].addr_hi = 0;
+> -                       desc[frag].len_vlan =
+> -                                       frags[i - 1].size;
+> -
+> -                       /* NOTE: Here, the dma_addr_t returned from
+> -                        * dma_map_page() is implicitly cast as a u32.
+> -                        * Although dma_addr_t can be 64-bit, the address
+> -                        * returned by dma_map_page() is always 32-bit
+> -                        * addressable (as defined by the pci/dma subsystem)
+> -                        */
+> -                       desc[frag++].addr_lo = skb_frag_dma_map(
+> -                                                       &adapter->pdev->dev,
+> -                                                       &frags[i - 1],
+> -                                                       0,
+> -                                                       frags[i - 1].size,
+> -                                                       DMA_TO_DEVICE);
+> +                       desc[frag].len_vlan = frags[i - 1].size;
+> +                       dma_addr = skb_frag_dma_map(&adapter->pdev->dev,
+> +                                                   &frags[i - 1],
+> +                                                   0,
+> +                                                   frags[i - 1].size,
+> +                                                   DMA_TO_DEVICE);
+> +                       desc[frag].addr_lo = dma_addr & 0xFFFFFFFF;
+> +                       desc[frag].addr_hi = dma_addr >> 32;
+> +                       frag++;
+>                 }
+>         }
+>
+> @@ -3611,6 +3581,7 @@ static inline void free_send_packet(struct et131x_adapter *adapter,
+>         unsigned long flags;
+>         struct tx_desc *desc = NULL;
+>         struct net_device_stats *stats = &adapter->net_stats;
+> +       dma_addr_t dma_addr;
+>
+>         if (tcb->flags & fMP_DEST_BROAD)
+>                 atomic_inc(&adapter->stats.broadcast_pkts_xmtd);
+> @@ -3631,8 +3602,13 @@ static inline void free_send_packet(struct et131x_adapter *adapter,
+>                                     (adapter->tx_ring.tx_desc_ring +
+>                                                 INDEX10(tcb->index_start));
+>
+> +                       dma_addr = desc->addr_lo;
+> +
+> +                       if (sizeof(dma_addr_t) == sizeof(u64))
+> +                               dma_addr += ((dma_addr_t)desc->addr_hi) << 32;
 
+Probably end result the same, but don't see + too often. Not usually
+the way we think of it.
 
+dma_addr |= (dma_addr_t)desc->addr_hi << 32;
+
+> +
+>                         dma_unmap_single(&adapter->pdev->dev,
+> -                                        desc->addr_lo,
+> +                                        dma_addr,
+>                                          desc->len_vlan, DMA_TO_DEVICE);
+>
+>                         add_10bit(&tcb->index_start, 1);
+> --
+> 1.7.9.5
+>
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
