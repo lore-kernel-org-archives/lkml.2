@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab2JROqD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 10:46:03 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:23818 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756615Ab2JROqB (ORCPT
+	id S1756707Ab2JROq0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 10:46:26 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:55140 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756524Ab2JROqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 10:46:01 -0400
-Date: Thu, 18 Oct 2012 10:45:41 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        lenb@kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH 2/4] xen/lowlevel: Implement pvop call for load_idt
- (sidt).
-Message-ID: <20121018144538.GA19782@localhost.localdomain>
-References: <1350481786-4969-1-git-send-email-konrad.wilk@oracle.com>
- <1350481786-4969-3-git-send-email-konrad.wilk@oracle.com>
- <507F4475.80705@zytor.com>
+	Thu, 18 Oct 2012 10:46:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <507F4475.80705@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Date: Thu, 18 Oct 2012 22:46:23 +0800
+Message-ID: <CAPgLHd93+h76d2ABQCAaeM2PEuVQdBSTcuGAk_PG63AjCP0D6Q@mail.gmail.com>
+Subject: [PATCH] ALSA: snd-usb: remove unused variable in init_pitch_v2()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: perex@perex.cz, tiwai@suse.de
+Cc: yongjun_wei@trendmicro.com.cn, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 04:51:17PM -0700, H. Peter Anvin wrote:
-> On 10/17/2012 06:49 AM, Konrad Rzeszutek Wilk wrote:
-> >In the past it used to point to 'sidt' (native_store_idt) operation
-> >which is a non-privileged operation. This resulted in the
-> >'struct desc_ptr' value containing the address of Xen's IDT table,
-> >instead of the IDT table that Linux thinks its using. The end result
-> >is that doing:
-> >
-> >   store_idt(&desc);
-> >   load_idt(&desc);
-> >
-> >would blow up b/c xen_load_idt would try to parse the IDT contents
-> >(desc) and de-reference a virtual address that is outside Linux's
-> >__va (it is in Xen's virtual address).
-> >
-> >With this patch we are providing the last written IDT address.
-> >
-> 
-> OK... this seems like another excellent set of pvops calls that
-> should be nukable to Kingdom Come.  There is no reason, ever, to
-> read the IDT and GDT from the kernel... the kernel already knows
-> what they should be!
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Even during suspend and resume cycle? There are the sequence of
-sidt/lidt calls being done there. And we do need to filter at
-least the sidt call - and in the case of ACPI suspend path,
-the lidt.
-> 
-> 	-hpa
-> 
-> 
-> -- 
-> H. Peter Anvin, Intel Open Source Technology Center
-> I work for Intel.  I don't speak on their behalf.
-> 
+The variable ep is initialized but never used
+otherwise, so remove the unused variable.
+
+dpatch engine is used to auto generate this patch.
+(https://github.com/weiyj/dpatch)
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ sound/usb/pcm.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/sound/usb/pcm.c b/sound/usb/pcm.c
+index 55e19e1..f77b87a 100644
+--- a/sound/usb/pcm.c
++++ b/sound/usb/pcm.c
+@@ -171,11 +171,8 @@ static int init_pitch_v2(struct snd_usb_audio *chip, int iface,
+ {
+ 	struct usb_device *dev = chip->dev;
+ 	unsigned char data[1];
+-	unsigned int ep;
+ 	int err;
+ 
+-	ep = get_endpoint(alts, 0)->bEndpointAddress;
+-
+ 	data[0] = 1;
+ 	if ((err = snd_usb_ctl_msg(dev, usb_sndctrlpipe(dev, 0), UAC2_CS_CUR,
+ 				   USB_TYPE_CLASS | USB_RECIP_ENDPOINT | USB_DIR_OUT,
+
