@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749Ab2JRC0w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 22:26:52 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40375 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030Ab2JRC0u (ORCPT
+	id S1753820Ab2JRC1F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 22:27:05 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37197 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab2JRC1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 22:26:50 -0400
+	Wed, 17 Oct 2012 22:27:00 -0400
+Date: Wed, 17 Oct 2012 19:26:58 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Daniel Santos <daniel.santos@pobox.com>
+cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH v2 01/10] compiler-gcc4.h: Reorder macros based upon gcc
+ ver
+In-Reply-To: <5070703F.8050004@att.net>
+Message-ID: <alpine.DEB.2.00.1210171926230.30443@chino.kir.corp.google.com>
+References: <1349465759-20524-1-git-send-email-daniel.santos@pobox.com> <1349466169-20637-1-git-send-email-daniel.santos@pobox.com> <20121006174220.GB6110@liondog.tnic> <5070703F.8050004@att.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20121018022530.GB24939@gmail.com>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
-	<1349863655-29320-10-git-send-email-zwu.kernel@gmail.com>
-	<20121016002744.GC2864@dastard>
-	<CAEH94LjoanfL3piP89qM6MP6zdN0AybfeqJe0kR_5-DJ0mLH_w@mail.gmail.com>
-	<20121018022530.GB24939@gmail.com>
-Date: Thu, 18 Oct 2012 10:26:48 +0800
-Message-ID: <CAEH94Lh9vmXaOw3-ezKLwfUw5ZwXcV7Wkumy6sYUTiFQ+NEzyA@mail.gmail.com>
-Subject: Re: [RFC v3 09/13] vfs: add one wq to update map info periodically
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Zhi Yong Wu <zwu.kernel@gmail.com>, Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
-        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 10:25 AM, Zheng Liu <gnehzuil.liu@gmail.com> wrote:
-> On Wed, Oct 17, 2012 at 02:34:15PM +0800, Zhi Yong Wu wrote:
->> >> diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
->> >> index d19e64a..7a79a6d 100644
->> >> --- a/fs/hot_tracking.h
->> >> +++ b/fs/hot_tracking.h
->> >> @@ -36,6 +36,9 @@
->> >>   */
->> >>  #define TIME_TO_KICK 400
->> >>
->> >> +/* set how often to update temperatures (seconds) */
->> >> +#define HEAT_UPDATE_DELAY 400
->> >
->> > FWIW, 400 seconds is an unusual time period. It's expected that
->> > periodic work might take place at intervals of 5 minutes, 10
->> > minutes, etc, not 6m40s. It's much easier to predict and understand
->> > behaviour if it's at a interval of whole units like minutes,
->> > especially when looking at timestamped event traces. Hence 300s (5
->> > minutes) makes a lot more sense as a period for updates...
->> got it. thanks.
->
-> Hi Zhi Yong,
->
-> IMHO we'd better to make this value parameterized, and then the user
-> can adjust this value dynamically.
-Yeah, this has been in my TODO list. But i want to make the core
-function can work at first.
+On Sat, 6 Oct 2012, Daniel Santos wrote:
 
->
-> Regards,
-> Zheng
+> These are based against -mm, where another commit is already in that
+> changes it.  I was told that since that commit was already in -mm, to
+> not include it in the patch set:
+> 
+> 6c620cf1536a0ce6a83ecaaaf05298dcc0f7d440 (committed 2012-09-27)
+> 
+> This was probably (at least partially) the result of the fiasco I had
+> with my email.
+> 
 
-
-
--- 
-Regards,
-
-Zhi Yong Wu
+Yeah, this patch applies fine on linux-next, which is the correct thing to 
+do if you're building upon already queued patches.
