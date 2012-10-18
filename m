@@ -1,61 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756582Ab2JROiJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 10:38:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31214 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752983Ab2JROiH (ORCPT
+	id S1756610Ab2JROiv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 10:38:51 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60486 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056Ab2JROiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 10:38:07 -0400
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=n-0JqeCyZE-p9jdWBlIA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Subject: [ANNOUNCE] 3.0.45-rt68
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Oct 2012 10:38:03 -0400
-Message-ID: <1350571083.19292.71.camel@pippen.local.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Oct 2012 10:38:50 -0400
+Date: Thu, 18 Oct 2012 11:38:35 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 09/11] perf python: Link with libtraceevent
+Message-ID: <20121018143835.GE2057@infradead.org>
+References: <1350494387-10987-1-git-send-email-acme@infradead.org>
+ <1350494387-10987-10-git-send-email-acme@infradead.org>
+ <87y5j41rw5.fsf@sejong.aot.lge.com>
+ <20121018140033.GC2057@infradead.org>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="kXdP64Ggrk/fb43R"
+Content-Disposition: inline
+In-Reply-To: <20121018140033.GC2057@infradead.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Dear RT Folks,
+--kXdP64Ggrk/fb43R
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I'm pleased to announce the 3.0.45-rt68 stable release.
+Em Thu, Oct 18, 2012 at 11:00:33AM -0300, Arnaldo Carvalho de Melo escreveu:
+> Em Thu, Oct 18, 2012 at 10:38:18AM +0900, Namhyung Kim escreveu:
+> > On Wed, 17 Oct 2012 14:19:45 -0300, Arnaldo Carvalho de Melo wrote:
+> > I got a build error after adding 'extern unsigned int page_size' to
+> > util/python.c - please see my previous reply.
+> > 
+> >   namhyung@sejong:perf$ make
+> >       SUBDIR ../lib/traceevent/
+> >       LINK perf
+> >       GEN python/perf.so
+> >   gcc: error: python_ext_build/tmp//../../libtraceevent.a: No such file or directory
+> >   error: command 'gcc' failed with exit status 1
+> >   cp: cannot stat `python_ext_build/lib/perf.so': No such file or directory
+> >   make: *** [python/perf.so] Error 1
+> >   TRACE_EVENT_DIR = ../lib/traceevent/
+   
+> >   ifneq ($(OUTPUT),)
+> >   	TE_PATH=$(OUTPUT)
+> >   else
+> >   	TE_PATH=$(TRACE_EVENT_DIR)
+> >   endif
+> >   
+> >   LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
+> 
+> I see, so we need to somehow propagate this TE_PATH variable to the setup.py file...
 
+Can you try with the attached patch? I tested it here and works with:
 
-This release is just an update to the new stable 3.0.45 version
-and no RT specific changes have been made.
+ make -C tools/perf
 
+and with O=
 
-You can get this release via the git tree at:
+- Arnaldo
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+--kXdP64Ggrk/fb43R
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="python-libtraceevent.patch"
 
-  Head SHA1: ec0eb0e2dca4005fcf984d3f1b67511b43d546fb
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index f9126f8..c1c6e11 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -184,9 +184,22 @@ SCRIPT_SH += perf-archive.sh
+ grep-libs = $(filter -l%,$(1))
+ strip-libs = $(filter-out -l%,$(1))
+ 
++TRACE_EVENT_DIR = ../lib/traceevent/
++
++ifneq ($(OUTPUT),)
++	TE_PATH=$(OUTPUT)
++else
++	TE_PATH=$(TRACE_EVENT_DIR)
++endif
++
++LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
++TE_LIB := -L$(TE_PATH) -ltraceevent
++
+ PYTHON_EXT_SRCS := $(shell grep -v ^\# util/python-ext-sources)
+ PYTHON_EXT_DEPS := util/python-ext-sources util/setup.py
+ 
++export LIBTRACEEVENT
++
+ $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
+ 	$(QUIET_GEN)CFLAGS='$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py \
+ 	  --quiet build_ext; \
+@@ -198,17 +211,6 @@ $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
+ 
+ SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
+ 
+-TRACE_EVENT_DIR = ../lib/traceevent/
+-
+-ifneq ($(OUTPUT),)
+-	TE_PATH=$(OUTPUT)
+-else
+-	TE_PATH=$(TRACE_EVENT_DIR)
+-endif
+-
+-LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
+-TE_LIB := -L$(TE_PATH) -ltraceevent
+-
+ #
+ # Single 'perf' binary right now:
+ #
+diff --git a/tools/perf/util/setup.py b/tools/perf/util/setup.py
+index 09c3cea..73d5102 100644
+--- a/tools/perf/util/setup.py
++++ b/tools/perf/util/setup.py
+@@ -23,6 +23,7 @@ cflags += getenv('CFLAGS', '').split()
+ 
+ build_lib = getenv('PYTHON_EXTBUILD_LIB')
+ build_tmp = getenv('PYTHON_EXTBUILD_TMP')
++libtraceevent = getenv('LIBTRACEEVENT')
+ 
+ ext_sources = [f.strip() for f in file('util/python-ext-sources')
+ 				if len(f.strip()) > 0 and f[0] != '#']
+@@ -31,7 +32,7 @@ perf = Extension('perf',
+ 		  sources = ext_sources,
+ 		  include_dirs = ['util/include'],
+ 		  extra_compile_args = cflags,
+-		  extra_objects = [build_tmp + '/../../libtraceevent.a'],
++		  extra_objects = [libtraceevent],
+                  )
+ 
+ setup(name='perf',
 
-
-Or to build 3.0.45-rt68 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.45.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.45-rt68.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-
+--kXdP64Ggrk/fb43R--
