@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757177Ab2JRQIQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 12:08:16 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:60959 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754948Ab2JRQIN (ORCPT
+	id S1757024Ab2JRQIJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 12:08:09 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:49616 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753681Ab2JRQIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 12:08:13 -0400
+	Thu, 18 Oct 2012 12:08:05 -0400
 From: Sangho Yi <antiroot@gmail.com>
 To: prakity@marvell.com, aaron.lu@amd.com, linus.walleij@linaro.org,
         ulf.hansson@stericsson.com, cjb@laptop.org
 Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
         Sangho Yi <antiroot@gmail.com>
-Subject: [PATCH 3/3] drivers: mmc: core: sdio.c: fixed from pr_warning(... to pr_warn(...
-Date: Fri, 19 Oct 2012 01:06:34 +0900
-Message-Id: <1350576394-2008-3-git-send-email-antiroot@gmail.com>
+Subject: [PATCH 1/3] drivers: mmc: core: sdio.c: fixed lines with > 80 chars
+Date: Fri, 19 Oct 2012 01:06:32 +0900
+Message-Id: <1350576394-2008-1-git-send-email-antiroot@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350576394-2008-1-git-send-email-antiroot@gmail.com>
+In-Reply-To: <n>
 References: <n>
- <1350576394-2008-1-git-send-email-antiroot@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced pr_warning(... to pr_warn(... on sdio.c
+Fixed coding style warning cases for exceeding 80 chars per line on
+sdio.c.
 
 Signed-off-by: Sangho Yi <antiroot@gmail.com>
 ---
- drivers/mmc/core/sdio.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mmc/core/sdio.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-index df09b63..889d3da 100644
+index 2273ce6..14326e8 100644
 --- a/drivers/mmc/core/sdio.c
 +++ b/drivers/mmc/core/sdio.c
-@@ -220,7 +220,7 @@ static int sdio_enable_wide(struct mmc_card *card)
- 		return ret;
+@@ -47,7 +47,8 @@ static int sdio_read_fbr(struct sdio_func *func)
  
- 	if ((ctrl & SDIO_BUS_WIDTH_MASK) == SDIO_BUS_WIDTH_RESERVED)
--		pr_warning("%s: SDIO_CCCR_IF is invalid: 0x%02x\n",
-+		pr_warn("%s: SDIO_CCCR_IF is invalid: 0x%02x\n",
- 			   mmc_hostname(card->host), ctrl);
+ 	if (data == 0x0f) {
+ 		ret = mmc_io_rw_direct(func->card, 0, 0,
+-			SDIO_FBR_BASE(func->num) + SDIO_FBR_STD_IF_EXT, 0, &data);
++			SDIO_FBR_BASE(func->num) + SDIO_FBR_STD_IF_EXT,
++			0, &data);
+ 		if (ret)
+ 			goto out;
+ 	}
+@@ -619,7 +620,8 @@ static int mmc_sdio_init_card(struct mmc_host *host, u32 ocr,
+ 		card->type = MMC_TYPE_SD_COMBO;
  
- 	/* set as 4-bit bus width */
-@@ -1068,7 +1068,7 @@ int mmc_attach_sdio(struct mmc_host *host)
- 	 * support.
- 	 */
- 	if (ocr & 0x7F) {
--		pr_warning("%s: card claims to support voltages "
-+		pr_warn("%s: card claims to support voltages "
- 		       "below the defined range. These will be ignored.\n",
- 		       mmc_hostname(host));
- 		ocr &= ~0x7F;
+ 		if (oldcard && (oldcard->type != MMC_TYPE_SD_COMBO ||
+-		    memcmp(card->raw_cid, oldcard->raw_cid, sizeof(card->raw_cid)) != 0)) {
++			memcmp(card->raw_cid, oldcard->raw_cid,
++				sizeof(card->raw_cid)) != 0)) {
+ 			mmc_remove_card(card);
+ 			return -ENOENT;
+ 		}
 -- 
 1.7.9.5
 
