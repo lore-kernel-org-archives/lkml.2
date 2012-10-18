@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147Ab2JRJ3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 05:29:39 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:64224 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752654Ab2JRJ3M convert rfc822-to-8bit (ORCPT
+	id S1754979Ab2JRJd2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 05:33:28 -0400
+Received: from smtp-out-124.synserver.de ([212.40.185.124]:1033 "EHLO
+	smtp-out-124.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220Ab2JRJd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 05:29:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <507FA595.4020507@freescale.com>
-References: <1350538335-29026-1-git-send-email-b32955@freescale.com>
-	<1350541111.5263.3.camel@vkoul-udesk3>
-	<507FA595.4020507@freescale.com>
-Date: Thu, 18 Oct 2012 14:59:10 +0530
-Message-ID: <CAJe_ZhfarH-HpJkEOpH=jY1Gc-UPEyuA4bJ4LSQES7Uyea2BQw@mail.gmail.com>
-Subject: Re: [PATCH] dma: add new DMA control commands
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Huang Shijie <b32955@freescale.com>
-Cc: Vinod Koul <vinod.koul@linux.intel.com>, marex@denx.de,
-        Huang Shijie <shijie8@gmail.com>, alsa-devel@alsa-project.org,
-        shawn.guo@linaro.org, linux@arm.linux.org.uk, tiwai@suse.de,
-        artem.bityutskiy@linux.intel.com, broonie@opensource.wolfsonmicro.com,
-        linux-mmc@vger.kernel.org, w.sang@pengutronix.de, perex@perex.cz,
-        linux-mtd@lists.infradead.org, linux-i2c@vger.kernel.org,
-        ben-linux@fluff.org, djbw@fb.com, khali@linux-fr.org, cjb@laptop.org,
-        dwmw2@infradead.org, lrg@ti.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+	Thu, 18 Oct 2012 05:33:27 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 12705
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] time/jiffies: Make clocksource_jiffies static
+Date: Thu, 18 Oct 2012 11:34:41 +0200
+Message-Id: <1350552881-16356-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 October 2012 12:15, Huang Shijie <b32955@freescale.com> wrote:
-> 于 2012年10月18日 14:18, Vinod Koul 写道:
->
->> Why cant you do start (prepare clock etc) when you submit the descriptor
->> to dmaengine. Can be done in tx_submit callback.
->> Similarly remove the clock when dma transaction gets completed.
->
-> I ever thought this method too.
->
-> But it will become low efficient in the following case:
->
->   Assuming the gpmi-nand driver has to read out 1024 pages in one _SINGLE_
-> read operation.
-> The gpmi-nand will submit the descriptor to dmaengine per page. So with your
-> method,
-> the system will repeat the enable/disable dma clock 1024 time. At every
-> enable/disable dma clock,
-> the system has to enable the clock chain and it's parents ...
->
-> But with this patch, we only need to enable/disable dma clock one time, just
-> at we select the nand chip.
->
-If the clock is the dmac's property (not channels'), the toggling
-seems too aggressive.
-You could try using runtime_suspend/resume for clock
-disabling/enabling. How about employing autosuspend with a few ms
-delay?
+Commit f1b8274 ("clocksource: Cleanup clocksource selection") removed all
+external references to clocksource_jiffies so there is no need to have the
+symbol globally visible.
+
+Fixes the following sparse warning:
+  CHECK   kernel/time/jiffies.c kernel/time/jiffies.c:61:20: warning: symbol 'clocksource_jiffies' was not declared. Should it be static?
+
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ kernel/time/jiffies.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/time/jiffies.c b/kernel/time/jiffies.c
+index 6629bf7..25f5b26 100644
+--- a/kernel/time/jiffies.c
++++ b/kernel/time/jiffies.c
+@@ -58,7 +58,7 @@ static cycle_t jiffies_read(struct clocksource *cs)
+ 	return (cycle_t) jiffies;
+ }
+ 
+-struct clocksource clocksource_jiffies = {
++static struct clocksource clocksource_jiffies = {
+ 	.name		= "jiffies",
+ 	.rating		= 1, /* lowest valid rating*/
+ 	.read		= jiffies_read,
+-- 
+1.7.10.4
+
