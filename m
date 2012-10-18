@@ -1,88 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab2JRHqn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 03:46:43 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48421 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab2JRHql (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 03:46:41 -0400
-Subject: Re: [PATCH] procfs: Improve Scaling in proc
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Nathan Zimmer <nzimmer@sgi.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, paulmck@linux.vnet.ibm.com
-In-Reply-To: <1350505538-22733-1-git-send-email-nzimmer@sgi.com>
-References: <1350505538-22733-1-git-send-email-nzimmer@sgi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Oct 2012 09:46:38 +0200
-Message-ID: <1350546398.26103.1133.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753345Ab2JRHq6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 03:46:58 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:29340
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752443Ab2JRHqm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 03:46:42 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(zzc89bh1432Id799hzz1202h1d1ah1d2ah1082kzzz2dh2a8h668h839h93fhd25he5bhf0ah107ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1155h)
+Message-ID: <507FB495.7050104@freescale.com>
+Date: Thu, 18 Oct 2012 15:49:41 +0800
+From: Huang Shijie <b32955@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Marek Vasut <marex@denx.de>
+CC: Vinod Koul <vinod.koul@linux.intel.com>, <djbw@fb.com>,
+        <khali@linux-fr.org>, <ben-linux@fluff.org>, <w.sang@pengutronix.de>,
+        <cjb@laptop.org>, <dwmw2@infradead.org>, <lrg@ti.com>,
+        <broonie@opensource.wolfsonmicro.com>, <perex@perex.cz>,
+        <tiwai@suse.de>, <shawn.guo@linaro.org>,
+        <artem.bityutskiy@linux.intel.com>, <linux-kernel@vger.kernel.org>,
+        <linux-i2c@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>, <alsa-devel@alsa-project.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        Huang Shijie <shijie8@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] dma: add new DMA control commands
+References: <1350538335-29026-1-git-send-email-b32955@freescale.com> <1350541111.5263.3.camel@vkoul-udesk3> <507FA595.4020507@freescale.com> <201210180914.58527.marex@denx.de>
+In-Reply-To: <201210180914.58527.marex@denx.de>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-17 at 15:25 -0500, Nathan Zimmer wrote:
-> I am currently tracking a hotlock reported by a customer on a large, 512 cores,
-> system, I am currently running 3.7.0 rc1 but the issue looks like it has been
-> this way for a very long time.
-> The offending lock is proc_dir_entry->pde_unload_lock.
-> 
-> This patch converts the replaces the lock with the rcu. It is a refresh of what
-> was orignally suggested by Eric Dumazet.  I refreshed it to the 3.7.
-> 
-> Supporting numbers, lower is better, they are from the test I posted earlier.
-> cpuinfo baseline        Rcu
-> tasks   read-sec        read-sec
-> 1       0.0141          0.0141
-> 2       0.0140          0.0142
-> 4       0.0140          0.0141
-> 8       0.0145          0.0140
-> 16      0.0553          0.0168
-> 32      0.1688          0.0549
-> 64      0.5017          0.1690
-> 128     1.7005          0.5038
-> 256     5.2513          2.0804
-> 512     8.0529          3.0162
-> 
-> 
-> Cc: Eric Dumazet <eric.dumazet@gmail.com>
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: Alexey Dobriyan <adobriyan@gmail.com>
-> Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
+于 2012年10月18日 15:14, Marek Vasut 写道:
+> Dear Huang Shijie,
+>
+> Why such massive CC ?
+>
+>> 于 2012年10月18日 14:18, Vinod Koul 写道:
+>>> Why cant you do start (prepare clock etc) when you submit the descriptor
+>>> to dmaengine. Can be done in tx_submit callback.
+>>> Similarly remove the clock when dma transaction gets completed.
+>> I ever thought this method too.
+>>
+>> But it will become low efficient in the following case:
+>>
+>>     Assuming the gpmi-nand driver has to read out 1024 pages in one
+>> _SINGLE_ read operation.
+>> The gpmi-nand will submit the descriptor to dmaengine per page.
+> It will? Then GPMI NAND is flat our broken ... again.
+yes.
+
+Please read the NAND chip spec about the comand READ PAGE(00h-30h) and 
+the code
+nand_do_read_ops(). The nand chip limits us only read one page out one time.
+So the driver will submit the descriptor to dmaengine per page.
 
 
-Hmm, this patch had several issues and I had no time yet to work on a
-new version. I probably wont have time in a near future.
 
-Paul sent me some comments about it, I hope he doesnt mind I copy them
-here, if you want to polish the patch.
+>> So with
+>> your method,
+>> the system will repeat the enable/disable dma clock 1024 time.
+> Yes, it is the driver that's wrong.
+not the driver.
+>> At every
+>> enable/disable dma clock,
+>> the system has to enable the clock chain and it's parents ...
+>>
+>> But with this patch, we only need to enable/disable dma clock one time,
+>> just at we select the nand chip.
+> You are fixing a driver problem at a framework level, wrong.
+>
+> So, check how the MXS SPI driver handles descriptor chaining. Indeed, the
+> Sigmatel screwed the DMA stuff good. But if you analyze the SPI driver, you'll
+> notice a few important points that might come handy when you fix the GPMI NAND
+> driver properly.
+>
+> The direction to take here is:
+> 1) Implement DMA chaining into the GPMI NAND driver
+How can i implement the DMA chain if the nand chip READ-PAGE command 
+gives us the one page limit?
 
-Thanks !
+thanks
+Huang Shijie
 
-On Wed, 2012-10-03 at 10:56 -0700, Paul E. McKenney wrote: 
-> Finally getting back to this...  :-/
-> 
-> Why not set the initial value of the reference counter to 1
-> (rather than zero), continue acquiring with atomic_inc(), but
-> use atomic_dec_and_test() to decrement?  Put a completion in
-> the data structure, so if the atomic_dec_and_test() indicates that
-> the counter is now zero, do a complete().
-> 
-> Then to free the object, remove it from the data structure, do a
-> synchronize_rcu(), do an atomic_dec_and_test() to remove the initial
-> value, again doing a complete() if the counter is now zero.  The do
-> a wait_for_completion().
-> 
-> This would get rid of the polling loop.
-> 
-> So, what am I missing here?  ;-)
-> 
-> 							Thanx, Paul
-> 
+
+> 2) You might need to do one PIO transfer to reconfigure the IP registers between
+> each segment of the DMA chain (just as MXS SPI does it)
+> 3) You might run out of DMA descriptors when doing too long chains -- so you
+> might need to fix that part of the mxs DMA driver.
+
 
