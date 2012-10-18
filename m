@@ -1,49 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932529Ab2JRWlx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 18:41:53 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:39363 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932503Ab2JRWlv (ORCPT
+	id S932566Ab2JRWmA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 18:42:00 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:35953 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932503Ab2JRWl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 18:41:51 -0400
-MIME-Version: 1.0
-Date: Thu, 18 Oct 2012 19:41:51 -0300
-Message-ID: <CALF0-+XKorADZ7DSp_yDFG4UkYr3W_pXHCA0ZWVzZpd8dJW_Gw@mail.gmail.com>
-Subject: [PATCH 0/3] Small slob fixes and some more comon code
+	Thu, 18 Oct 2012 18:41:58 -0400
 From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: linux-mm@kvack.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>, David Rientjes <rientjes@google.com>,
-        Christoph Lameter <cl@linux.com>, Tim Bird <tim.bird@am.sony.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Cc: Tim Bird <tim.bird@am.sony.com>, Ezequiel Garcia <elezegarcia@gmail.com>,
+        Pekka Penberg <penberg@kernel.org>
+Subject: [PATCH 1/3] mm/slob: Drop usage of page->private for storing page-sized allocations
+Date: Thu, 18 Oct 2012 19:41:45 -0300
+Message-Id: <1350600107-4558-1-git-send-email-elezegarcia@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks,
+This field was being used to store size allocation so it could be
+retrieved by ksize(). However, it is a bad practice to not mark a page
+as a slab page and then use fields for special purposes.
+There is no need to store the allocated size and
+ksize() can simply return PAGE_SIZE << compound_order(page).
 
-A little patchset brought to you by the CELF project:
-"Kernel dynamic memory allocation tracking and reduction" [1].
+Cc: Pekka Penberg <penberg@kernel.org>
+Acked-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+---
+ mm/slob.c |   24 ++++++++++--------------
+ 1 files changed, 10 insertions(+), 14 deletions(-)
 
-This applies cleanly on top of Pekka's slab/for-linus,
-which seems to be the latest branch.
-(slab-next is a bit outdated)
+diff --git a/mm/slob.c b/mm/slob.c
+index a08e468..06a5ec7 100644
+--- a/mm/slob.c
++++ b/mm/slob.c
+@@ -28,9 +28,8 @@
+  * from kmalloc are prepended with a 4-byte header with the kmalloc size.
+  * If kmalloc is asked for objects of PAGE_SIZE or larger, it calls
+  * alloc_pages() directly, allocating compound pages so the page order
+- * does not have to be separately tracked, and also stores the exact
+- * allocation size in page->private so that it can be used to accurately
+- * provide ksize(). These objects are detected in kfree() because slob_page()
++ * does not have to be separately tracked.
++ * These objects are detected in kfree() because PageSlab()
+  * is false for them.
+  *
+  * SLAB is emulated on top of SLOB by simply calling constructors and
+@@ -455,11 +454,6 @@ __do_kmalloc_node(size_t size, gfp_t gfp, int node, unsigned long caller)
+ 		if (likely(order))
+ 			gfp |= __GFP_COMP;
+ 		ret = slob_new_pages(gfp, order, node);
+-		if (ret) {
+-			struct page *page;
+-			page = virt_to_page(ret);
+-			page->private = size;
+-		}
+ 
+ 		trace_kmalloc_node(caller, ret,
+ 				   size, PAGE_SIZE << order, gfp, node);
+@@ -514,18 +508,20 @@ EXPORT_SYMBOL(kfree);
+ size_t ksize(const void *block)
+ {
+ 	struct page *sp;
++	int align;
++	unsigned int *m;
+ 
+ 	BUG_ON(!block);
+ 	if (unlikely(block == ZERO_SIZE_PTR))
+ 		return 0;
+ 
+ 	sp = virt_to_page(block);
+-	if (PageSlab(sp)) {
+-		int align = max(ARCH_KMALLOC_MINALIGN, ARCH_SLAB_MINALIGN);
+-		unsigned int *m = (unsigned int *)(block - align);
+-		return SLOB_UNITS(*m) * SLOB_UNIT;
+-	} else
+-		return sp->private;
++	if (unlikely(!PageSlab(sp)))
++		return PAGE_SIZE << compound_order(sp);
++
++	align = max(ARCH_KMALLOC_MINALIGN, ARCH_SLAB_MINALIGN);
++	m = (unsigned int *)(block - align);
++	return SLOB_UNITS(*m) * SLOB_UNIT;
+ }
+ EXPORT_SYMBOL(ksize);
+ 
+-- 
+1.7.8.6
 
-Ezequiel Garcia (3):
- mm/sl[aou]b: Move common kmem_cache_size() to slab.h
- mm/slob: Use object_size field in kmem_cache_size()
- mm/slob: Drop usage of page->private for storing page-sized allocations
-
- include/linux/slab.h |    9 ++++++++-
- mm/slab.c            |    6 ------
- mm/slob.c            |   34 ++++++++++++----------------------
- mm/slub.c            |    9 ---------
- 4 files changed, 20 insertions(+), 38 deletions(-)
-
- Any comments/flames welcome!
-Thanks!
-
-    Ezequiel
-
-[1] http://elinux.org/Kernel_dynamic_memory_allocation_tracking_and_reduction
