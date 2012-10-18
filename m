@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367Ab2JRXUA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 19:20:00 -0400
-Received: from mga02.intel.com ([134.134.136.20]:20461 "EHLO mga02.intel.com"
+	id S932515Ab2JRXUJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 19:20:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3930 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756594Ab2JRXT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 19:19:57 -0400
+	id S1756463Ab2JRXUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 19:20:04 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,609,1344236400"; 
-   d="scan'208";a="229462634"
+   d="scan'208";a="207876589"
 From: Andi Kleen <andi@firstfloor.org>
 To: a.p.zijlstra@chello.nl
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org, acme@redhat.com,
-        eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 33/34] perf, tools: Default to cpu// for events v2
-Date: Thu, 18 Oct 2012 16:19:41 -0700
-Message-Id: <1350602382-12771-34-git-send-email-andi@firstfloor.org>
+        eranian@google.com, Andi Kleen <ak@linux.intel.com>, avi@redhat.com
+Subject: [PATCH 06/34] perf, kvm: Support the intx/intx_cp modifiers in KVM arch perfmon emulation v2
+Date: Thu, 18 Oct 2012 16:19:14 -0700
+Message-Id: <1350602382-12771-7-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
 References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
@@ -25,78 +25,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-When an event fails to parse and it's not in a new style format,
-try to parse it again as a cpu event.
+This is not arch perfmon, but older CPUs will just ignore it. This makes
+it possible to do at least some TSX measurements from a KVM guest
 
-This allows to use sysfs exported events directly without //, so I can use
-
-perf record -e tx-aborts ...
-
-instead of
-
-perf record -e cpu/tx-aborts/
-
-v2: Handle multiple events
+Cc: avi@redhat.com
+v2: Various fixes to address review feedback
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/util/parse-events.c |   37 +++++++++++++++++++++++++++++++++++++
- 1 files changed, 37 insertions(+), 0 deletions(-)
+ arch/x86/kvm/pmu.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index de1cb9e..8b08140 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -765,6 +765,23 @@ int parse_events_name(struct list_head *list, char *name)
- 	return 0;
- }
+diff --git a/arch/x86/kvm/pmu.c b/arch/x86/kvm/pmu.c
+index cfc258a..81c1632 100644
+--- a/arch/x86/kvm/pmu.c
++++ b/arch/x86/kvm/pmu.c
+@@ -160,7 +160,7 @@ static void stop_counter(struct kvm_pmc *pmc)
  
-+static void str_append(char **s, int *len, const char *a)
-+{
-+	int olen = *s ? strlen(*s) : 0;
-+	int nlen = olen + strlen(a) + 1;
-+	if (*len < nlen) { 
-+		*len = *len * 2;
-+		if (*len < nlen)
-+			*len = nlen;
-+		*s = realloc(*s, *len);
-+		if (!*s) 
-+			exit(ENOMEM);
-+		if (olen == 0)
-+			**s = 0;
-+	}
-+	strcat(*s, a);
-+}
-+
- static int parse_events__scanner(const char *str, void *data, int start_token)
+ static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
+ 		unsigned config, bool exclude_user, bool exclude_kernel,
+-		bool intr)
++		bool intr, bool intx, bool intx_cp)
  {
- 	YY_BUFFER_STATE buffer;
-@@ -785,6 +802,26 @@ static int parse_events__scanner(const char *str, void *data, int start_token)
- 	parse_events__flush_buffer(buffer, scanner);
- 	parse_events__delete_buffer(buffer, scanner);
- 	parse_events_lex_destroy(scanner);
-+
-+	if (ret && !strchr(str, '/')) {
-+		char *o = strdup(str);
-+		char *s = NULL;
-+		char *t = o;
-+		char *p;
-+		int len = 0;
-+
-+		if (!o)
-+			return ret;
-+		while ((p = strsep(&t, ",")) != NULL) {
-+			if (s)
-+				str_append(&s, &len, ",");
-+			str_append(&s, &len, "cpu/");
-+			str_append(&s, &len, p);
-+			str_append(&s, &len, "/");
-+		}
-+		free(o);
-+		ret = parse_events__scanner(s, data, start_token);
-+	}
- 	return ret;
+ 	struct perf_event *event;
+ 	struct perf_event_attr attr = {
+@@ -173,6 +173,11 @@ static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
+ 		.exclude_kernel = exclude_kernel,
+ 		.config = config,
+ 	};
++	/* Will be ignored on CPUs that don't support this. */
++	if (intx)
++		attr.config |= HSW_INTX;
++	if (intx_cp)
++		attr.config |= HSW_INTX_CHECKPOINTED;
+ 
+ 	attr.sample_period = (-pmc->counter) & pmc_bitmask(pmc);
+ 
+@@ -239,7 +244,9 @@ static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
+ 	reprogram_counter(pmc, type, config,
+ 			!(eventsel & ARCH_PERFMON_EVENTSEL_USR),
+ 			!(eventsel & ARCH_PERFMON_EVENTSEL_OS),
+-			eventsel & ARCH_PERFMON_EVENTSEL_INT);
++			eventsel & ARCH_PERFMON_EVENTSEL_INT,
++			(eventsel & HSW_INTX),
++			(eventsel & HSW_INTX_CHECKPOINTED));
  }
  
+ static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
+@@ -256,7 +263,7 @@ static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
+ 			arch_events[fixed_pmc_events[idx]].event_type,
+ 			!(en & 0x2), /* exclude user */
+ 			!(en & 0x1), /* exclude kernel */
+-			pmi);
++			pmi, false, false);
+ }
+ 
+ static inline u8 fixed_en_pmi(u64 ctrl, int idx)
+@@ -400,7 +407,7 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, u32 index, u64 data)
+ 		} else if ((pmc = get_gp_pmc(pmu, index, MSR_P6_EVNTSEL0))) {
+ 			if (data == pmc->eventsel)
+ 				return 0;
+-			if (!(data & 0xffffffff00200000ull)) {
++			if (!(data & 0xfffffffc00200000ull)) {
+ 				reprogram_gp_counter(pmc, data);
+ 				return 0;
+ 			}
 -- 
 1.7.7.6
 
