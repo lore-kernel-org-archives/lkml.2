@@ -1,167 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab2JRCQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Oct 2012 22:16:29 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:33429 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753493Ab2JRCQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Oct 2012 22:16:26 -0400
-X-IronPort-AV: E=Sophos;i="4.80,604,1344182400"; 
-   d="scan'208";a="6019312"
-Message-ID: <507F66F6.20704@cn.fujitsu.com>
-Date: Thu, 18 Oct 2012 10:18:30 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1753755Ab2JRCQp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Oct 2012 22:16:45 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:56198 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753707Ab2JRCQn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Oct 2012 22:16:43 -0400
 MIME-Version: 1.0
-To: Mikulas Patocka <mpatocka@redhat.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH] percpu-rwsem: use barrier in unlock path
-References: <Pine.LNX.4.64.1210151716310.10685@file.rdu.redhat.com> <Pine.LNX.4.64.1210161924350.20581@file.rdu.redhat.com> <CA+55aFyZ9uq_yfHn9PwpmM77X3xVd+xseEbjJmeCCqbFddtjWA@mail.gmail.com> <507E48ED.8060809@cn.fujitsu.com> <Pine.LNX.4.64.1210171046130.26481@file.rdu.redhat.com> <20121017202806.GA7282@home.goodmis.org>
-In-Reply-To: <20121017202806.GA7282@home.goodmis.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/18 10:15:24,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/18 10:15:31,
-	Serialize complete at 2012/10/18 10:15:31
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120929071318.GA7444@gmail.com>
+References: <20120904143215.5bbbb2a4@obelix.rh>
+	<CAM_iQpVVCjJ0Bde9RS9Rm-0RJ=CtTyX3eUH45+oaaepvdAvAmQ@mail.gmail.com>
+	<20120923202727.GA28937@mwanda>
+	<CAE9FiQX-R1L-0LDZNTbk-a6SUog+=tTrdwcfr0QUczH_PLMMpw@mail.gmail.com>
+	<20120929071318.GA7444@gmail.com>
+Date: Thu, 18 Oct 2012 10:16:42 +0800
+Message-ID: <CABqxG0czidut37LkwqH2_D44ng-HWHudjgZr9w8csqnGVUT0rA@mail.gmail.com>
+Subject: Re: kexec/kdump kernel fails to start
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, Dan Carpenter <dan.carpenter@oracle.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>, Flavio Leitner <fbl@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Tejun Heo <tj@kernel.org>, ianfang.cn@gmail.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vivek Goyal <vgoyal@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2012 04:28 AM, Steven Rostedt wrote:
-> On Wed, Oct 17, 2012 at 11:07:21AM -0400, Mikulas Patocka wrote:
->>>
->>> Even the previous patch is applied, percpu_down_read() still
->>> needs mb() to pair with it.
+On Sat, Sep 29, 2012 at 3:13 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Yinghai Lu <yinghai@kernel.org> wrote:
+>
+>> On Sun, Sep 23, 2012 at 1:27 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+>> > On Wed, Sep 05, 2012 at 11:34:25PM +0800, Cong Wang wrote:
+>> >> On Wed, Sep 5, 2012 at 1:32 AM, Flavio Leitner <fbl@redhat.com> wrote:
+>> >> > Hi folks,
+>> >> >
+>> >> > I have system that no longer boots kdump kernel. Basically,
+>> >> >
+>> >> > # echo c > /proc/sysrq-trigger
+>> >> >
+>> >> > to dump a vmcore doesn't work. It just hangs after showing the usual
+>> >> > panic messages. I've bisected the problem and the commit introducing
+>> >> > the issue is the one below.
+>> >> >
+>> >> > Any idea?
+>> >> >
+>> >> > commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8
+>> >> > Author: WANG Cong <xiyou.wangcong@gmail.com>  2012-03-05 20:05:13
+>> >> > Committer: Ingo Molnar <mingo@elte.hu>  2012-03-06 05:38:26
+>> >> > Parent: 550cf00dbc8ee402bef71628cb71246493dd4500 (Merge tag 'mmc-fixes-for-3.3' of git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc)
+>> >> > Child:  a6fca40f1d7f3e232c9de27c1cebbb9f787fbc4f (x86, tlb: Switch cr3 in leave_mm() only when needed)
+>> >> > Branches: master, remotes/origin/master
+>> >> > Follows: v3.3-rc6
+>> >> > Precedes: v3.5-rc1
+>> >> >
+>> >> >     x86/mm: Fix the size calculation of mapping tables
+>> >>
+>> >> There was some attempt to fix this:
+>> >> https://patchwork.kernel.org/patch/1195751/
+>> >>
+>> >> but for some reason it is not accepted.
+>> >
+>> > I filed a bug for this:
+>> > https://bugzilla.kernel.org/show_bug.cgi?id=47881
+>> >
+>> > Is it fixed now?
 >>
->> percpu_down_read uses rcu_read_lock which should guarantee that memory 
->> accesses don't escape in front of a rcu-protected section.
-> 
-> You do realize that rcu_read_lock() does nothing more that a barrier(),
-> right?
-> 
-> Paul worked really hard to get rcu_read_locks() to not call HW barriers.
-> 
+>> that offending patch should be reverted...
 >>
->> If rcu_read_unlock has only an unlock barrier and not a full barrier, 
->> memory accesses could be moved in front of rcu_read_unlock and reordered 
->> with this_cpu_inc(*p->counters), but it doesn't matter because 
->> percpu_down_write does synchronize_rcu(), so it never sees these accesses 
->> halfway through.
-> 
-> Looking at the patch, you are correct. The read side doesn't need the
-> memory barrier as the worse thing that will happen is that it sees the
-> locked = false, and will just grab the mutex unnecessarily.
+>> 722bc6b16771ed80871e1fd81c86d3627dda2ac8
+>
+> It does not revert cleanly - could someone send a (kexec
+> tested!) patch with a proper description?
 
----------------------
-A memory barrier can be added iff these two things are known:
-	1) it disables the disordering between what and what.
-	2) what is the corresponding mb() that it pairs with.
+Hi, ingo
 
-You tried to add a mb() in percpu_up_write(), OK, I know it disables the disordering
-between the writes to the protected data and the statement "p->locked = false",
-But I can't find out the corresponding mb() that it pairs with.
+Besides of commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8,
+below commit also need revert.
 
-percpu_down_read()					writes to the data
-	The cpu cache/prefetch the data			writes to the data
-	which is chaos					writes to the data
-							percpu_up_write()
-								mb()
-								p->locked = false;
-	unlikely(p->locked)
-		the cpu see p->lock = false,
-		don't discard the cached/prefetch data
-	this_cpu_inc(*p->counters);
-	the code of read-access to the data
-	****and we use the chaos data*****
+commit bd2753b2dda7bb43c7468826de75f49c6a7e8965
+Author: Yinghai Lu <yinghai@kernel.org>
+Date:   Wed Jun 6 10:55:40 2012 -0700
 
-So you need to add a mb() after "unlikely(p->locked)".
+    x86/mm: Only add extra pages count for the first memory range
+during pre-allocation early page table space
 
--------------------------
+    Robin found this regression:
 
-The RCU you use don't protect any data. It protects codes of the fast path:
-	unlikely(p->locked);
-	this_cpu_inc(*p->counters);
+    | I just tried to boot an 8TB system.  It fails very early in boot with:
+    | Kernel panic - not syncing: Cannot find space for the kernel page tables
 
-and synchronize_rcu() ensures all previous fast path had fully finished
-"this_cpu_inc(*p->counters);".
+    git bisect commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8.
 
-It don't protect other code/data, if you want to protect other code or other
-data, please add more synchronizations or mb()s.
+    A git revert of that commit does boot past that point on the 8TB
+    configuration.
 
----------------
+    That commit will add up extra pages for all memory range even
+    above 4g.
 
-I extremely hate a synchronization protects code instead of data.
-but sometimes I also have to do it.
+    Try to limit that extra page count adding to first entry only.
 
----------------
-
-a very draft example of paired-mb()s is here:
+    Bisected-by: Robin Holt <holt@sgi.com>
+    Tested-by: Robin Holt <holt@sgi.com>
+    Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+    Cc: WANG Cong <xiyou.wangcong@gmail.com>
+    Cc: Linus Torvalds <torvalds@linux-foundation.org>
+    Cc: Andrew Morton <akpm@linux-foundation.org>
+    Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Link: http://lkml.kernel.org/r/CAE9FiQUj3wyzQxtq9yzBNc9u220p8JZ1FYHG7t%3DMOzJ%3D9BZMYA@mail.gmail.com
+    Signed-off-by: Ingo Molnar <mingo@kernel.org>
 
 
-diff --git a/include/linux/percpu-rwsem.h b/include/linux/percpu-rwsem.h
-index cf80f7e..84a93c0 100644
---- a/include/linux/percpu-rwsem.h
-+++ b/include/linux/percpu-rwsem.h
-@@ -12,6 +12,14 @@ struct percpu_rw_semaphore {
- 	struct mutex mtx;
- };
- 
-+#if 1
-+#define light_mb() barrier()
-+#define heavy_mb() synchronize_sched()
-+#else
-+#define light_mb() smp_mb()
-+#define heavy_mb() smp_mb();
-+#endif
-+
- static inline void percpu_down_read(struct percpu_rw_semaphore *p)
- {
- 	rcu_read_lock();
-@@ -24,22 +32,12 @@ static inline void percpu_down_read(struct percpu_rw_semaphore *p)
- 	}
- 	this_cpu_inc(*p->counters);
- 	rcu_read_unlock();
-+	light_mb(); /* A, between read of p->locked and read of data, paired with D */
- }
- 
- static inline void percpu_up_read(struct percpu_rw_semaphore *p)
- {
--	/*
--	 * On X86, write operation in this_cpu_dec serves as a memory unlock
--	 * barrier (i.e. memory accesses may be moved before the write, but
--	 * no memory accesses are moved past the write).
--	 * On other architectures this may not be the case, so we need smp_mb()
--	 * there.
--	 */
--#if defined(CONFIG_X86) && (!defined(CONFIG_X86_PPRO_FENCE) && !defined(CONFIG_X86_OOSTORE))
--	barrier();
--#else
--	smp_mb();
--#endif
-+	light_mb(); /* B, between read of the data and write to p->counter, paired with C */
- 	this_cpu_dec(*p->counters);
- }
- 
-@@ -61,11 +59,12 @@ static inline void percpu_down_write(struct percpu_rw_semaphore *p)
- 	synchronize_rcu();
- 	while (__percpu_count(p->counters))
- 		msleep(1);
--	smp_rmb(); /* paired with smp_mb() in percpu_sem_up_read() */
-+	heavy_mb(); /* C, between read of p->counter and write to data, paired with B */
- }
- 
- static inline void percpu_up_write(struct percpu_rw_semaphore *p)
- {
-+	heavy_mb(); /* D, between write to data and write to p->locked, paired with A */
- 	p->locked = false;
- 	mutex_unlock(&p->mtx);
- }
+
+OTOH,  Jacob and Yinghai has better init_memory_mapping
+cleanup patches which are in tip:x86/mm2 already.  Their patches fixes
+this issue
+as well.
+
+Since kdump does not work for long time since
+722bc6b16771ed80871e1fd81c86d3627dda2ac8
+Can you or someone else help to get the init_memory_mapping patches merged?
+
+Or do you still prefer to revert 722bc6b and bd2753b2d?  I think
+stable kernel also need a fix.
+
+-- 
+Regards
+Dave
