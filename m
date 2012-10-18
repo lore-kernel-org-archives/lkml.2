@@ -1,40 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103Ab2JRSq7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 14:46:59 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:35038 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab2JRSq6 (ORCPT
+	id S1752182Ab2JRSvF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 14:51:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57821 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab2JRSvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 14:46:58 -0400
+	Thu, 18 Oct 2012 14:51:03 -0400
+Date: Thu, 18 Oct 2012 15:50:56 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: Re: [ 108/147] ALSA: hda - Fix internal mic for Lenovo Ideapad U300s
+Message-ID: <20121018185055.GC3025@herton-Z68MA-D2H-B3>
+References: <20121014143533.742627615@decadent.org.uk>
+ <20121014143548.361462458@decadent.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <871ugwny1n.fsf@rustcorp.com.au>
-References: <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com>
- <87txtso9xw.fsf@rustcorp.com.au> <CA+55aFxZdtD51AVKLtKK95ooh8VB8-5Tt8nHsxSUT67CBRrp2g@mail.gmail.com>
- <871ugwny1n.fsf@rustcorp.com.au>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 18 Oct 2012 11:46:36 -0700
-X-Google-Sender-Auth: Zh-u8V-R2sZAHJmZJMhGsp6Cttw
-Message-ID: <CA+55aFwTz6xadNL37H6Qb8+rWNefn0cQ0URFPfD=Ea=J54xzGg@mail.gmail.com>
-Subject: Re: RFC: sign the modules at install time
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: David Miller <davem@davemloft.net>, David Howells <dhowells@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121014143548.361462458@decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 10:34 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->
-> Hacking the keyid and signer-name to be extracted every time by
-> sign-file takes my modules_install time from 18.6 seconds to 19.1.  We'd
-> get that back easily by making sign-file a perl script anyway; it calls
-> out to perl 3 times already.
+On Sun, Oct 14, 2012 at 03:37:21PM +0100, Ben Hutchings wrote:
+> 3.2-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: David Henningsson <david.henningsson@canonical.com>
+> 
+> commit 18dcd3044e4c4b3ab6341c98e8d0e81e0d58d5e3 upstream.
+> 
+> The internal mic input is phase inverted on one channel.
+> To avoid people in userspace summing the channels together
+> and get zero result, use a separate mixer control for the
+> inverted channel.
+> 
+> BugLink: https://bugs.launchpad.net/bugs/903853
+> Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> [bwh: Backported to 3.2:
+>  - Adjust context
+>  - Change both invocations of apply_pin_fixup()]
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 
-Ok, that tiny slowdown seems worth the cleanup, especially if we'd get
-it back from somebody re-writing it in perl.
+I noted today that a follow up fix for this is needed to avoid an oops
+in apply_fixup, please consider adding to the next 3.2 stable this:
 
-Want to sign off on the two patches, or put them in your git tree?
+commit 83b0c6ba999643ee8ad6329f26e1cdc870e1a920
+ALSA: hda - Fix oops caused by recent commit "Fix internal mic for Lenovo Ideapad U300s"
 
-                     Linus
+[...]
+> +static void apply_fixup(struct hda_codec *codec,
+>  			    const struct snd_pci_quirk *quirk,
+>  			    const struct cxt_pincfg **table)
+>  {
+> +	struct conexant_spec *spec = codec->spec;
+> +
+>  	quirk = snd_pci_quirk_lookup(codec->bus->pci, quirk);
+> -	if (quirk) {
+> +	if (quirk && table[quirk->value]) {
+>  		snd_printdd(KERN_INFO "hda_codec: applying pincfg for %s\n",
+>  			    quirk->name);
+>  		apply_pincfg(codec, table[quirk->value]);
+>  	}
+> +	if (quirk->value == CXT_FIXUP_STEREO_DMIC) {
+> +		snd_printdd(KERN_INFO "hda_codec: applying internal mic workaround for %s\n",
+> +			    quirk->name);
+> +		spec->fixup_stereo_dmic = 1;
+> +	}
+>  }
+[...]
+
+-- 
+[]'s
+Herton
