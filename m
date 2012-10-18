@@ -1,56 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263Ab2JRK5F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 06:57:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54779 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754197Ab2JRK5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 06:57:02 -0400
-Date: Thu, 18 Oct 2012 12:56:49 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/20] perf report: Add support for event group view (v3)
-Message-ID: <20121018105649.GA11999@krava.brq.redhat.com>
-References: <1349354994-17853-1-git-send-email-namhyung@kernel.org>
+	id S932315Ab2JRK5l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 06:57:41 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19594 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932269Ab2JRK5k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 06:57:40 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 18 Oct 2012 03:57:37 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <swarren@wwwdotorg.org>, <linux@arm.linux.org.uk>
+CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 2/5] ARM: tegra: dts: add slink controller dt entry
+Date: Thu, 18 Oct 2012 16:26:32 +0530
+Message-ID: <1350557795-31487-3-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1350557795-31487-1-git-send-email-ldewangan@nvidia.com>
+References: <1350557795-31487-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349354994-17853-1-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 04, 2012 at 09:49:34PM +0900, Namhyung Kim wrote:
-> Hi,
-> 
-> This is my v3 of event group view support.
-> For basic idea and usage example, please see my original post [1].
-> 
-> I rebased the series on top of selected hpp changes from Jiri's diff
-> patchset [2] since it contains cleanups and improves that can be used
-> in this series too.
-> 
-> You can also get it via my tree at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git  perf/group-v3
-> 
-> Any comments are welcome, thanks,
-> Namhyung
-> 
-> v2 -> v3:
->  * drop patch 1 since it's merged into acme/perf/core
->  * cherry-pick Jiri's hpp changes
->  * add missing bswap_32 on reading nr_groups (Jiri)
->  * remove perf_evlist__recalc_nr_groups() in favor of list_is_last (Jiri)
+Add slink controller details in the dts file of
+Tegra20 and Tegra30.
 
-Acked-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ arch/arm/boot/dts/tegra20.dtsi |   40 ++++++++++++++++++++++++++
+ arch/arm/boot/dts/tegra30.dtsi |   60 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 100 insertions(+), 0 deletions(-)
 
-for patches 10 to 20, the rest is already in
+diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+index 6934bca..d12a310 100644
+--- a/arch/arm/boot/dts/tegra20.dtsi
++++ b/arch/arm/boot/dts/tegra20.dtsi
+@@ -186,6 +186,46 @@
+ 		status = "disabled";
+ 	};
+ 
++	slink@7000d400 {
++		compatible = "nvidia,tegra20-slink";
++		reg = <0x7000d400 0x200>;
++		interrupts = <0 59 0x04>;
++		nvidia,dma-req-sel = <15>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
++
++	slink@7000d600 {
++		compatible = "nvidia,tegra20-slink";
++		reg = <0x7000d600 0x200>;
++		interrupts = <0 82 0x04>;
++		nvidia,dma-req-sel = <16>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
++
++	slink@7000d800 {
++		compatible = "nvidia,tegra20-slink";
++		reg = <0x7000d480 0x200>;
++		interrupts = <0 83 0x04>;
++		nvidia,dma-req-sel = <17>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
++
++	slink@7000da00 {
++		compatible = "nvidia,tegra20-slink";
++		reg = <0x7000da00 0x200>;
++		interrupts = <0 93 0x04>;
++		nvidia,dma-req-sel = <18>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
++
+ 	pmc {
+ 		compatible = "nvidia,tegra20-pmc";
+ 		reg = <0x7000e400 0x400>;
+diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+index 81f5df4..f898911 100644
+--- a/arch/arm/boot/dts/tegra30.dtsi
++++ b/arch/arm/boot/dts/tegra30.dtsi
+@@ -191,6 +191,66 @@
+ 		status = "disabled";
+ 	};
+ 
++	slink@7000d400 {
++		compatible = "nvidia,tegra30-slink", "nvidia,tegra20-slink";
++		reg = <0x7000d400 0x200>;
++		interrupts = <0 59 0x04>;
++		nvidia,dma-req-sel = <15>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
++
++	slink@7000d600 {
++		compatible = "nvidia,tegra30-slink", "nvidia,tegra20-slink";
++		reg = <0x7000d600 0x200>;
++		interrupts = <0 82 0x04>;
++		nvidia,dma-req-sel = <16>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
++
++	slink@7000d800 {
++		compatible = "nvidia,tegra30-slink", "nvidia,tegra20-slink";
++		reg = <0x7000d480 0x200>;
++		interrupts = <0 83 0x04>;
++		nvidia,dma-req-sel = <17>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
++
++	slink@7000da00 {
++		compatible = "nvidia,tegra30-slink", "nvidia,tegra20-slink";
++		reg = <0x7000da00 0x200>;
++		interrupts = <0 93 0x04>;
++		nvidia,dma-req-sel = <18>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
++
++	slink@7000dc00 {
++		compatible = "nvidia,tegra30-slink", "nvidia,tegra20-slink";
++		reg = <0x7000dc00 0x200>;
++		interrupts = <0 94 0x04>;
++		nvidia,dma-req-sel = <27>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
++
++	slink@7000de00 {
++		compatible = "nvidia,tegra30-slink", "nvidia,tegra20-slink";
++		reg = <0x7000de00 0x200>;
++		interrupts = <0 79 0x04>;
++		nvidia,dma-req-sel = <28>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
++
+ 	pmc {
+ 		compatible = "nvidia,tegra20-pmc", "nvidia,tegra30-pmc";
+ 		reg = <0x7000e400 0x400>;
+-- 
+1.7.1.1
 
-thanks,
-jirka
