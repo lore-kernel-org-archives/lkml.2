@@ -1,146 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468Ab2JRKYz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 06:24:55 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:23697 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755558Ab2JRKVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 06:21:25 -0400
-Subject: [PATCH v7 05/10] ipc: add new MSG_SET command for sys_msgctl() call
-To: akpm@linux-foundation.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: catalin.marinas@arm.com, will.deacon@arm.com, dhowells@redhat.com,
-        manfred@colorfullife.com, hughd@google.com, jmorris@namei.org,
-        mtk.manpages@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        paulmck@linux.vnet.ibm.com, sds@tycho.nsa.gov, devel@openvz.org,
-        a.p.zijlstra@chello.nl, cmetcalf@tilera.com, linux-driver@qlogic.com,
-        ron.mercer@qlogic.com, viro@zeniv.linux.org.uk, eparis@parisplace.org,
-        tglx@linutronix.de, jitendra.kalsaria@qlogic.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, ebiederm@xmission.com,
-        casey@schaufler-ca.com
-Date: Thu, 18 Oct 2012 14:23:01 +0400
-Message-ID: <20121018102301.16036.36199.stgit@localhost.localdomain>
-In-Reply-To: <20121018101543.16036.12221.stgit@localhost.localdomain>
-References: <20121018101543.16036.12221.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1755244Ab2JRKbY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 06:31:24 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:64636 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752559Ab2JRKbX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 06:31:23 -0400
+Date: Thu, 18 Oct 2012 14:31:18 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC] procfs: Add VmFlags field in smaps output
+Message-ID: <20121018103118.GC11750@moon>
+References: <20121018095503.GB8790@moon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121018095503.GB8790@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New MSG_SET command will be interpreted exactly as IPC_SET, but also will
-update key, cuid and cgid values. IOW, it allows to change existent key value.
-The fact, that key is not used is checked before update. Otherwise -EEXIST is
-returned.
+On Thu, Oct 18, 2012 at 01:55:03PM +0400, Cyrill Gorcunov wrote:
+> Hi guys, in a sake of c/r we need to fetch additional
+> VMA characteristics, so I though would /proc/pid/smaps
+> be appropriate place for it? If yes, I would like to
+> know if the output format provided below looks reasonable.
+> 
+> Please review, thanks!
+> ---
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Also I've had a bit different output format, not sure
+which one is better.
 ---
- include/uapi/linux/msg.h   |    1 +
- ipc/compat.c               |    1 +
- ipc/msg.c                  |   14 ++++++++++++--
- security/selinux/hooks.c   |    1 +
- security/smack/smack_lsm.c |    1 +
- 5 files changed, 16 insertions(+), 2 deletions(-)
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [RFC] procfs: Add VmFlags field in smaps output
 
-diff --git a/include/uapi/linux/msg.h b/include/uapi/linux/msg.h
-index 78dbd2f..76999c9 100644
---- a/include/uapi/linux/msg.h
-+++ b/include/uapi/linux/msg.h
-@@ -6,6 +6,7 @@
- /* ipcs ctl commands */
- #define MSG_STAT 11
- #define MSG_INFO 12
-+#define MSG_SET  13
- 
- /* msgrcv options */
- #define MSG_NOERROR     010000  /* no error if message is too big */
-diff --git a/ipc/compat.c b/ipc/compat.c
-index 35c750d..9c70f9a 100644
---- a/ipc/compat.c
-+++ b/ipc/compat.c
-@@ -483,6 +483,7 @@ long compat_sys_msgctl(int first, int second, void __user *uptr)
- 		break;
- 
- 	case IPC_SET:
-+	case MSG_SET:
- 		if (version == IPC_64) {
- 			err = get_compat_msqid64(&m64, uptr);
- 		} else {
-diff --git a/ipc/msg.c b/ipc/msg.c
-index 2f44946..3c13b99 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -392,6 +392,9 @@ copy_msqid_from_user(struct msqid64_ds *out, void __user *buf, int version)
- 		out->msg_perm.uid      	= tbuf_old.msg_perm.uid;
- 		out->msg_perm.gid      	= tbuf_old.msg_perm.gid;
- 		out->msg_perm.mode     	= tbuf_old.msg_perm.mode;
-+		out->msg_perm.cuid	= tbuf_old.msg_perm.cuid;
-+		out->msg_perm.cgid	= tbuf_old.msg_perm.cgid;
-+		out->msg_perm.key	= tbuf_old.msg_perm.key;
- 
- 		if (tbuf_old.msg_qbytes == 0)
- 			out->msg_qbytes	= tbuf_old.msg_lqbytes;
-@@ -418,12 +421,13 @@ static int msgctl_down(struct ipc_namespace *ns, int msqid, int cmd,
- 	struct msg_queue *msq;
- 	int err;
- 
--	if (cmd == IPC_SET) {
-+	if (cmd == IPC_SET || cmd == MSG_SET) {
- 		if (copy_msqid_from_user(&msqid64, buf, version))
- 			return -EFAULT;
- 	}
- 
--	ipcp = ipcctl_pre_down(ns, &msg_ids(ns), msqid, cmd,
-+	ipcp = ipcctl_pre_down(ns, &msg_ids(ns), msqid,
-+			       (cmd != MSG_SET) ? cmd : IPC_SET,
- 			       &msqid64.msg_perm, msqid64.msg_qbytes);
- 	if (IS_ERR(ipcp))
- 		return PTR_ERR(ipcp);
-@@ -438,6 +442,11 @@ static int msgctl_down(struct ipc_namespace *ns, int msqid, int cmd,
- 	case IPC_RMID:
- 		freeque(ns, ipcp);
- 		goto out_up;
-+	case MSG_SET:
-+		err = ipc_update_key(&msg_ids(ns), &msqid64.msg_perm, ipcp);
-+		if (err)
-+			break;
-+		 /* fall through */
- 	case IPC_SET:
- 		if (msqid64.msg_qbytes > ns->msg_ctlmnb &&
- 		    !capable(CAP_SYS_RESOURCE)) {
-@@ -569,6 +578,7 @@ SYSCALL_DEFINE3(msgctl, int, msqid, int, cmd, struct msqid_ds __user *, buf)
- 	}
- 	case IPC_SET:
- 	case IPC_RMID:
-+	case MSG_SET:
- 		err = msgctl_down(ns, msqid, cmd, buf, version);
- 		return err;
- 	default:
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 62b2447..78b77ac 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -4885,6 +4885,7 @@ static int selinux_msg_queue_msgctl(struct msg_queue *msq, int cmd)
- 		perms = MSGQ__GETATTR | MSGQ__ASSOCIATE;
- 		break;
- 	case IPC_SET:
-+	case MSG_SET:
- 		perms = MSGQ__SETATTR;
- 		break;
- 	case IPC_RMID:
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index c7eabc9..d51a8da 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -2374,6 +2374,7 @@ static int smack_msg_queue_msgctl(struct msg_queue *msq, int cmd)
- 		may = MAY_READ;
- 		break;
- 	case IPC_SET:
-+	case MSG_SET:
- 	case IPC_RMID:
- 		may = MAY_READWRITE;
- 		break;
+When we do restore VMA area after checkpoint
+we would like to know if the area was locked
+or say it has mergeable attribute, but at moment
+the kernel does not provide such information, thus
+we can't figure out if we should call mlock/madvise
+on VMA restore.
 
+This patch adds new VmFlags field to smaps output
+with vma->vm_flags encoded.
+
+This field is CONFIG_CHECKPOINT_RESTORE dependent
+since at moment I don't know if someone else might
+need it.
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ fs/proc/task_mmu.c |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+Index: linux-2.6.git/fs/proc/task_mmu.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/task_mmu.c
++++ linux-2.6.git/fs/proc/task_mmu.c
+@@ -480,6 +480,25 @@ static int smaps_pte_range(pmd_t *pmd, u
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_CHECKPOINT_RESTORE
++static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
++{
++	seq_printf(m,
++		   "VmFlags:               %c%c%c%c%c%c%c%c%c\n",
++		   vma->vm_flags & VM_LOCKED ?		'l' : '-',
++		   vma->vm_flags & VM_GROWSDOWN ?	'g' : '-',
++		   vma->vm_flags & VM_RAND_READ ?	'r' : '-',
++		   vma->vm_flags & VM_SEQ_READ ?	'q' : '-',
++		   vma->vm_flags & VM_DONTCOPY ?	'-' : 'c',
++		   vma->vm_flags & VM_MERGEABLE ?	'm' : '-',
++		   vma->vm_flags & VM_HUGEPAGE ?	'h' : '-',
++		   vma->vm_flags & VM_NOHUGEPAGE ?	'-' : 'h',
++		   vma->vm_flags & VM_DONTDUMP ?	'-' : 'd');
++}
++#else
++static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma) { }
++#endif
++
+ static int show_smap(struct seq_file *m, void *v, int is_pid)
+ {
+ 	struct proc_maps_private *priv = m->private;
+@@ -535,6 +554,8 @@ static int show_smap(struct seq_file *m,
+ 		seq_printf(m, "Nonlinear:      %8lu kB\n",
+ 				mss.nonlinear >> 10);
+ 
++	show_smap_vma_flags(m, vma);
++
+ 	if (m->count < m->size)  /* vma is copied successfully */
+ 		m->version = (vma != get_gate_vma(task->mm))
+ 			? vma->vm_start : 0;
