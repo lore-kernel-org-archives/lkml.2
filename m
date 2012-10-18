@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768Ab2JRPZe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 11:25:34 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:51289 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755762Ab2JRPZb convert rfc822-to-8bit (ORCPT
+	id S1756811Ab2JRP2G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 11:28:06 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:63422 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756443Ab2JRP2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 11:25:31 -0400
+	Thu, 18 Oct 2012 11:28:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAMiH66H=VMEgHFMdEhCTqA5AtVw6iN97-cbwUd86Ghd77OLcWA@mail.gmail.com>
-References: <1350538335-29026-1-git-send-email-b32955@freescale.com>
-	<1350541111.5263.3.camel@vkoul-udesk3>
-	<507FA595.4020507@freescale.com>
-	<CAJe_ZhfarH-HpJkEOpH=jY1Gc-UPEyuA4bJ4LSQES7Uyea2BQw@mail.gmail.com>
-	<CAMiH66H=VMEgHFMdEhCTqA5AtVw6iN97-cbwUd86Ghd77OLcWA@mail.gmail.com>
-Date: Thu, 18 Oct 2012 20:55:30 +0530
-Message-ID: <CAJe_ZheWd3scXDhWukeZMuOOz8+bZRwZOw_ftDW8wmkqq9H45Q@mail.gmail.com>
-Subject: Re: [PATCH] dma: add new DMA control commands
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Huang Shijie <shijie8@gmail.com>
-Cc: Huang Shijie <b32955@freescale.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>, marex@denx.de,
-        alsa-devel@alsa-project.org, shawn.guo@linaro.org,
-        linux@arm.linux.org.uk, tiwai@suse.de,
-        artem.bityutskiy@linux.intel.com, broonie@opensource.wolfsonmicro.com,
-        linux-mmc@vger.kernel.org, w.sang@pengutronix.de, perex@perex.cz,
-        linux-mtd@lists.infradead.org, linux-i2c@vger.kernel.org,
-        ben-linux@fluff.org, djbw@fb.com, khali@linux-fr.org, cjb@laptop.org,
-        dwmw2@infradead.org, lrg@ti.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <508011AD.5080307@zytor.com>
+References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
+	<CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com>
+	<50749DE8.7010703@zytor.com>
+	<CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com>
+	<5074A0AB.8040207@zytor.com>
+	<87d30o7iy6.fsf@rustcorp.com.au>
+	<507F848F.50707@zytor.com>
+	<CAKgNAki+KV=Nh8D3La50uXpWv7PA5T-oPYJwK-PkOv5vMg0AqA@mail.gmail.com>
+	<508011AD.5080307@zytor.com>
+Date: Thu, 18 Oct 2012 08:28:02 -0700
+X-Google-Sender-Auth: 1mfIHUQF6zrZQ0BQ4VKrACPmmVo
+Message-ID: <CAGXu5jJSz8aQiyNk9q3B05SRVm_YE=krg+Y91BU7550AOSRTSw@mail.gmail.com>
+Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: mtk.manpages@gmail.com, Rusty Russell <rusty@rustcorp.com.au>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        James Morris <james.l.morris@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 October 2012 20:48, Huang Shijie <shijie8@gmail.com> wrote:
-> On Thu, Oct 18, 2012 at 5:29 AM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
->> On 18 October 2012 12:15, Huang Shijie <b32955@freescale.com> wrote:
->>> 于 2012年10月18日 14:18, Vinod Koul 写道:
+On Thu, Oct 18, 2012 at 7:26 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 10/18/2012 01:05 AM, Michael Kerrisk (man-pages) wrote:
 >>>
->>>> Why cant you do start (prepare clock etc) when you submit the descriptor
->>>> to dmaengine. Can be done in tx_submit callback.
->>>> Similarly remove the clock when dma transaction gets completed.
 >>>
->>> I ever thought this method too.
->>>
->>> But it will become low efficient in the following case:
->>>
->>>   Assuming the gpmi-nand driver has to read out 1024 pages in one _SINGLE_
->>> read operation.
->>> The gpmi-nand will submit the descriptor to dmaengine per page. So with your
->>> method,
->>> the system will repeat the enable/disable dma clock 1024 time. At every
->>> enable/disable dma clock,
->>> the system has to enable the clock chain and it's parents ...
->>>
->>> But with this patch, we only need to enable/disable dma clock one time, just
->>> at we select the nand chip.
->>>
->> If the clock is the dmac's property (not channels'), the toggling
->> seems too aggressive.
->> You could try using runtime_suspend/resume for clock
->> disabling/enabling. How about employing autosuspend with a few ms
->> delay?
+>>> So perhaps what we *should* have is something that points to the module
+>>> to a (buffer, length) in userspace, and the equivalent of the current
+>>> init_module() would be open() + mmap() + minit_module() + close()?
+>>
+>>
+>> So, I don't get it. What are the args you propose for of minit_module()?
+>>
 >
-> Yes, employing the autosuspend is workable method too.o
-> But it's a little more complicated then this patch. You have to create
-> a thread or workqueue to
-> do the job.
+> Nevermind, this is what the current init_module() already takes.
 >
-I am not sure why you would need to create any thread/workqueue ?
-Just pm_runtime_put_autosuspend() in drivers/ to see how it works.
+> So it sounds like Rusty is objecting to the very notion of tying a module to
+> a file descriptor the way the proposed finit_module() system call does -- I
+
+The goal for finit_module is to make sure we're getting what's on the
+filesystem, not an arbitrary blob, so we can reason about it for
+security policy.
+
+> was confused about the functioning of the *current* init_module() system
+> call.
+>
+> Given that, I have to say I now seriously question the value of
+> finit_module().  The kernel can trivially discover if the pointed-to memory
+> area is a MAP_SHARED mmap() of a file descriptor and if so which file
+> descriptor... why can't we handle this behind the scenes?
+
+This makes me very nervous. I worry that it adds needless complexity
+(it'd be many more checks besides "is it MAP_SHARED?", like "does the
+memory region show the whole file?" "is the offset zero?" etc). Also
+are we sure the memory area would be truly be unmodifiable in the case
+where the filesystem is read-only?
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
