@@ -1,160 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605Ab2JRRE4 (ORCPT <rfc822;w@1wt.eu>);
+	id S932627Ab2JRRFL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 13:05:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46747 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932595Ab2JRRE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Oct 2012 13:04:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46745 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932343Ab2JRREy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 13:04:54 -0400
-Date: Thu, 18 Oct 2012 10:04:41 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-h1utred3dhv2ausjg1wqwuym@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:numa/core] sched/numa/mm:
-  Avoid pointless TLB invalidation from page-migration
-Git-Commit-ID: 5cc4a4cb0abc63699b6741d7737e07e49b502782
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+Message-ID: <5080369B.3080204@zytor.com>
+Date: Thu, 18 Oct 2012 10:04:27 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 18 Oct 2012 10:04:46 -0700 (PDT)
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Borislav Petkov <bp@alien8.de>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>
+Subject: Re: [Xen-devel] Is: axe read_tscp pvops call. Was: Re: [RFC] ACPI
+ S3 and Xen (suprisingly small\!).
+References: <1350481786-4969-1-git-send-email-konrad.wilk@oracle.com> <507ED6C0.4020503@zytor.com> <20121017161036.GA10691@phenom.dumpdata.com> <507EE1C3.7070300@zytor.com> <20121017165452.GA22740@phenom.dumpdata.com> <507EEC53.1010309@zytor.com> <84b3cbf9-7c84-4d7e-a2d7-46b0d1cc5975@default> <50802030.8070107@zytor.com> <dd8748de-4715-499a-8c7e-745af37fa6c4@default> <20121018161659.GA20354@x1.osrc.amd.com> <alpine.DEB.2.02.1210181737390.2689@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1210181737390.2689@kaball.uk.xensource.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5cc4a4cb0abc63699b6741d7737e07e49b502782
-Gitweb:     http://git.kernel.org/tip/5cc4a4cb0abc63699b6741d7737e07e49b502782
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Thu, 11 Oct 2012 17:42:06 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 15 Oct 2012 13:56:50 +0200
+On 10/18/2012 09:44 AM, Stefano Stabellini wrote:
+>
+> I know that it is obvious but it is worth stating it in clear letters:
+>
+> these are Dan's personal opinions and by no means represent the position
+> of the Xen community as a whole on this topic.
+>
+> I, for one, have no idea what he is talking about.
+>
 
-sched/numa/mm: Avoid pointless TLB invalidation from page-migration
+He is referring to the non-self-virtualizability of the pre-VT-x x86 
+architecture; search for "Popek and Goldberg Virtualization Criteria". 
+However, his response is misguided, because the issue at hand isn't the 
+paravirtualization itself but the lack of documentation.
 
-When we do migrate-on-fault we faulted on a PROT_NONE entry, this is
-a !present entry, we then replace this with a regular entry and then
-proceed with page-migration.
+Paravirtualization creates a new platform, and that platform needs to be 
+documented as much as any hardware platform.  Once that documentation 
+exists it is possible to make a reasoned judgement if that platform can 
+be unified with an existing platform like native x86.
 
-Page-migration in turn replaces the now valid entry with a
-migration-PTE (which is again !present) which requires a TLB
-invalidate.
+However, the Xen platform is not documented in any useful way at all, 
+and having "fun" little bits like this coming out of nowhere is just 
+plain unacceptable.
 
-Instead, leave the PROT_NONE entry in-place when we need to migrate
-such that the PROT_NONE -> migration-PTE transition is a !preset ->
-!preset transition and doesn't require a TLB invalidate.
+Either way, it doesn't change the starting point of this -- we don't 
+keep around hooks that aren't even used.  End of story.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-h1utred3dhv2ausjg1wqwuym@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- mm/memory.c |   63 +++++++++++++++++++++++++++++------------------------------
- 1 files changed, 31 insertions(+), 32 deletions(-)
+	-hpa
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 9ada7ed..8b1ad86 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3442,38 +3442,12 @@ static bool pte_prot_none(struct vm_area_struct *vma, pte_t pte)
- 	return pte_same(pte, pte_modify(pte, vma_prot_none(vma)));
- }
- 
--#ifdef CONFIG_NUMA
--
--
--static void do_prot_none_numa(struct mm_struct *mm, struct vm_area_struct *vma,
--			      unsigned long address, struct page *page)
--{
--	int node, page_nid = page_to_nid(page);
--
--	task_numa_placement();
--
--	/*
--	 * For NUMA systems we use the special PROT_NONE maps to drive
--	 * lazy page migration, see MPOL_MF_LAZY and related.
--	 */
--	node = mpol_misplaced(page, vma, address);
--	if (node != -1 && !migrate_misplaced_page(mm, page, node))
--		page_nid = node;
--
--	task_numa_fault(page_nid);
--}
--#else
--static void do_prot_none_numa(struct mm_struct *mm, struct vm_area_struct *vma,
--			      unsigned long address, struct page *page)
--{
--}
--#endif /* CONFIG_NUMA */
--
- static int do_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
- 			unsigned long address, pte_t *ptep, pmd_t *pmd,
- 			unsigned int flags, pte_t entry)
- {
- 	struct page *page = NULL;
-+	int node, page_nid = -1;
- 	spinlock_t *ptl;
- 
- 	ptl = pte_lockptr(mm, pmd);
-@@ -3481,6 +3455,16 @@ static int do_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if (unlikely(!pte_same(*ptep, entry)))
- 		goto unlock;
- 
-+	page = vm_normal_page(vma, address, entry);
-+	if (page) {
-+		get_page(page);
-+		page_nid = page_to_nid(page);
-+		node = mpol_misplaced(page, vma, address);
-+		if (node != -1)
-+			goto migrate;
-+	}
-+
-+fixup:
- 	flush_cache_page(vma, address, pte_pfn(entry));
- 
- 	ptep_modify_prot_start(mm, address, ptep);
-@@ -3489,17 +3473,32 @@ static int do_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
- 
- 	update_mmu_cache(vma, address, ptep);
- 
--	page = vm_normal_page(vma, address, entry);
--	if (page)
--		get_page(page);
--
- unlock:
- 	pte_unmap_unlock(ptep, ptl);
-+out:
- 	if (page) {
--		do_prot_none_numa(mm, vma, address, page);
-+		task_numa_fault(page_nid, 1);
- 		put_page(page);
- 	}
-+
- 	return 0;
-+
-+migrate:
-+	pte_unmap_unlock(ptep, ptl);
-+
-+	if (!migrate_misplaced_page(mm, page, node)) {
-+		page_nid = node;
-+		goto out;
-+	}
-+
-+	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
-+	if (!pte_same(*ptep, entry)) {
-+		put_page(page);
-+		page = NULL;
-+		goto unlock;
-+	}
-+
-+	goto fixup;
- }
- 
- /*
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
