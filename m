@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757951Ab2JSTTt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 15:19:49 -0400
-Received: from alpha.arachsys.com ([91.203.57.7]:51834 "EHLO
-	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754214Ab2JSTTs (ORCPT
+	id S1758109Ab2JSTU3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 15:20:29 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:36740 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757969Ab2JSTU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 15:19:48 -0400
-Date: Fri, 19 Oct 2012 20:19:44 +0100
-From: Richard Davies <richard.davies@elastichosts.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Dmitry Fleytman <dmitry@daynix.com>, linux-kernel@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net,
-        Chris Webb <chris.webb@elastichosts.com>
-Subject: Re: [E1000-devel] [PATCH] RX initialization sequence fixed -
- enable RX after corresponding ring initialization only
-Message-ID: <20121019191944.GA27699@alpha.arachsys.com>
-References: <1350235151-11146-1-git-send-email-dmitry@daynix.com>
- <1350235151-11146-2-git-send-email-dmitry@daynix.com>
- <1350280341.2152.12.camel@jtkirshe-mobl>
+	Fri, 19 Oct 2012 15:20:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350280341.2152.12.camel@jtkirshe-mobl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1350641040-19434-3-git-send-email-wency@cn.fujitsu.com>
+References: <1350641040-19434-1-git-send-email-wency@cn.fujitsu.com> <1350641040-19434-3-git-send-email-wency@cn.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Fri, 19 Oct 2012 15:20:06 -0400
+X-Google-Sender-Auth: jFQVhqmcLHtf0h0liR0cpqP4bvs
+Message-ID: <CAHGf_=pxLj8r99GwKO3n-Zc_drebVe5Lr4dB+xqB=TQG2B0Wtg@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] acpi,memory-hotplug: introduce a mutex lock to
+ protect the list in acpi_memory_device
+To: wency@cn.fujitsu.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, liuj97@gmail.com, len.brown@intel.com,
+        akpm@linux-foundation.org, isimatu.yasuaki@jp.fujitsu.com,
+        muneda.takahiro@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
+        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Kirsher wrote:
-> Dmitry Fleytman wrote:
-> > Reported-by: Chris Webb <chris.webb@elastichosts.com>
-> > Reported-by: Richard Davies <richard.davies@elastichosts.com>
-> >
-> > Signed-off-by: Dmitry Fleytman <dmitry@daynix.com>
-> > ---
-> >  drivers/net/ethernet/intel/e1000/e1000_ethtool.c |    9 +++++----
-> >  drivers/net/ethernet/intel/e1000/e1000_main.c    |   18
-> > ++++++++++++++++--
-> >  2 files changed, 21 insertions(+), 6 deletions(-) 
+On Fri, Oct 19, 2012 at 6:03 AM,  <wency@cn.fujitsu.com> wrote:
+> From: Wen Congyang <wency@cn.fujitsu.com>
 >
-> I will add it to my queue.  Thanks!
+> The memory device can be removed by 2 ways:
+> 1. send eject request by SCI
+> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+>
+> This 2 events may happen at the same time, so we may touch
+> acpi_memory_device.res_list at the same time. This patch
+> introduce a lock to protect this list.
+>
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+>  drivers/acpi/acpi_memhotplug.c |   17 +++++++++++++++--
+>  1 files changed, 15 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> index 1e90e8f..8ff2976 100644
+> --- a/drivers/acpi/acpi_memhotplug.c
+> +++ b/drivers/acpi/acpi_memhotplug.c
+> @@ -83,7 +83,8 @@ struct acpi_memory_info {
+>  struct acpi_memory_device {
+>         struct acpi_device * device;
+>         unsigned int state;     /* State of the memory device */
+> -       struct list_head res_list;
+> +       struct mutex lock;
+> +       struct list_head res_list;      /* protected by lock */
+>  };
 
-Hi Jeff,
-
-I hope it was already clear from the following discussion - this patch
-turned out to be a qemu-kvm bug and you do not need to apply it.
-
-Dmitry - please confirm.
-
-Richard.
+Please avoid grep unfriendly name. "lock" is too common. res_list_lock
+or list_lock
+are better IMHO.
