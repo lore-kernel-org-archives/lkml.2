@@ -1,58 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030339Ab2JSDJF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:09:05 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51857 "EHLO mail.kernel.org"
+	id S1757512Ab2JSCsV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:48:21 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51795 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757514Ab2JSCsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:48:22 -0400
+	id S932525Ab2JSCsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:48:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Cyril B." <cbay@excellency.fr>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 06/76] nfsd4: fix nfs4 stateid leak
-Date: Thu, 18 Oct 2012 19:46:30 -0700
-Message-Id: <20121019024351.106421748@linuxfoundation.org>
+        "Do Q.Thang" <dq-thang@jinso.co.jp>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 57/62] ASoC: fsi: dont reschedule DMA from an atomic context
+Date: Thu, 18 Oct 2012 19:45:25 -0700
+Message-Id: <20121019024305.164946745@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
-References: <20121019024350.087156547@linuxfoundation.org>
+In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
+References: <20121019024255.944999470@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-commit cf9182e90b2af04245ac4fae497fe73fc71285b4 upstream.
+commit 57451e437796548d658d03c2c4aab659eafcd799 upstream.
 
-Processes that open and close multiple files may end up setting this
-oo_last_closed_stid without freeing what was previously pointed to.
-This can result in a major leak, visible for example by watching the
-nfsd4_stateids line of /proc/slabinfo.
+shdma doesn't support transfer re-scheduling or triggering from callbacks
+or from atomic context. The fsi driver issues DMA transfers from a tasklet
+context, which is a bug. To fix it convert tasklet to a work.
 
-Reported-by: Cyril B. <cbay@excellency.fr>
-Tested-by: Cyril B. <cbay@excellency.fr>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Reported-by: Do Q.Thang <dq-thang@jinso.co.jp>
+Tested-by: Do Q.Thang <dq-thang@jinso.co.jp>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4state.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/sh/fsi.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -3782,6 +3782,7 @@ nfsd4_close(struct svc_rqst *rqstp, stru
- 	memcpy(&close->cl_stateid, &stp->st_stid.sc_stateid, sizeof(stateid_t));
+--- a/sound/soc/sh/fsi.c
++++ b/sound/soc/sh/fsi.c
+@@ -20,6 +20,7 @@
+ #include <linux/sh_dma.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
++#include <linux/workqueue.h>
+ #include <sound/soc.h>
+ #include <sound/sh_fsi.h>
  
- 	nfsd4_close_open_stateid(stp);
-+	release_last_closed_stateid(oo);
- 	oo->oo_last_closed_stid = stp;
+@@ -199,7 +200,7 @@ struct fsi_stream {
+ 	 */
+ 	struct dma_chan		*chan;
+ 	struct sh_dmae_slave	slave; /* see fsi_handler_init() */
+-	struct tasklet_struct	tasklet;
++	struct work_struct	work;
+ 	dma_addr_t		dma;
+ };
  
- 	if (list_empty(&oo->oo_owner.so_stateids)) {
+@@ -968,9 +969,9 @@ static dma_addr_t fsi_dma_get_area(struc
+ 	return io->dma + samples_to_bytes(runtime, io->buff_sample_pos);
+ }
+ 
+-static void fsi_dma_do_tasklet(unsigned long data)
++static void fsi_dma_do_work(struct work_struct *work)
+ {
+-	struct fsi_stream *io = (struct fsi_stream *)data;
++	struct fsi_stream *io = container_of(work, struct fsi_stream, work);
+ 	struct fsi_priv *fsi = fsi_stream_to_priv(io);
+ 	struct dma_chan *chan;
+ 	struct snd_soc_dai *dai;
+@@ -1023,7 +1024,7 @@ static void fsi_dma_do_tasklet(unsigned
+ 	 * FIXME
+ 	 *
+ 	 * In DMAEngine case, codec and FSI cannot be started simultaneously
+-	 * since FSI is using tasklet.
++	 * since FSI is using the scheduler work queue.
+ 	 * Therefore, in capture case, probably FSI FIFO will have got
+ 	 * overflow error in this point.
+ 	 * in that case, DMA cannot start transfer until error was cleared.
+@@ -1047,7 +1048,7 @@ static bool fsi_dma_filter(struct dma_ch
+ 
+ static int fsi_dma_transfer(struct fsi_priv *fsi, struct fsi_stream *io)
+ {
+-	tasklet_schedule(&io->tasklet);
++	schedule_work(&io->work);
+ 
+ 	return 0;
+ }
+@@ -1087,14 +1088,14 @@ static int fsi_dma_probe(struct fsi_priv
+ 	if (!io->chan)
+ 		return -EIO;
+ 
+-	tasklet_init(&io->tasklet, fsi_dma_do_tasklet, (unsigned long)io);
++	INIT_WORK(&io->work, fsi_dma_do_work);
+ 
+ 	return 0;
+ }
+ 
+ static int fsi_dma_remove(struct fsi_priv *fsi, struct fsi_stream *io)
+ {
+-	tasklet_kill(&io->tasklet);
++	cancel_work_sync(&io->work);
+ 
+ 	fsi_stream_stop(fsi, io);
+ 
 
 
