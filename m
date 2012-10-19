@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758221Ab2JSToX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 15:44:23 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:49540 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752624Ab2JSToV (ORCPT
+	id S1758265Ab2JSTox (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 15:44:53 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:34800 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758009Ab2JSTow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 15:44:21 -0400
+	Fri, 19 Oct 2012 15:44:52 -0400
+Date: Fri, 19 Oct 2012 19:44:49 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, devel@openvz.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v5 10/18] sl[au]b: always get the cache from its page in
+ kfree
+In-Reply-To: <1350656442-1523-11-git-send-email-glommer@parallels.com>
+Message-ID: <0000013a7a8e764d-5cef2c85-993f-4600-85c7-ce3fe137f16f-000000@email.amazonses.com>
+References: <1350656442-1523-1-git-send-email-glommer@parallels.com> <1350656442-1523-11-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20121019193808.GL13370@google.com>
-References: <20121008020000.GB2575@localhost>
-	<20121019005922.GG13370@google.com>
-	<CAFTL4hz82==b3ioSMhbKzh0CN1ivR7RQMKKMFFWu5PHPjg=Bfg@mail.gmail.com>
-	<20121019193808.GL13370@google.com>
-Date: Fri, 19 Oct 2012 15:44:20 -0400
-Message-ID: <CAFTL4hwQ6Ntn5GJwj=jiO2p3GdwhEMp0MyR8dgUj_Lx0U4kNqg@mail.gmail.com>
-Subject: Re: [PATCH cgroup/for-3.7-fixes 1/2] Revert "cgroup: Remove
- task_lock() from cgroup_post_fork()"
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/19 Tejun Heo <tj@kernel.org>:
-> On Fri, Oct 19, 2012 at 09:35:26AM -0400, Frederic Weisbecker wrote:
->> 2012/10/18 Tejun Heo <tj@kernel.org>:
->> > From d935a5d6832a264ce52f4257e176f4f96cbaf048 Mon Sep 17 00:00:00 2001
->> > From: Tejun Heo <tj@kernel.org>
->> > Date: Thu, 18 Oct 2012 17:40:30 -0700
->> >
->> > This reverts commit 7e3aa30ac8c904a706518b725c451bb486daaae9.
->> >
->> > The commit incorrectly assumed that fork path always performed
->> > threadgroup_change_begin/end() and depended on that for
->> > synchronization against task exit and cgroup migration paths instead
->> > of explicitly grabbing task_lock().
->> >
->> > threadgroup_change is not locked when forking a new process (as
->> > opposed to a new thread in the same process) and even if it were it
->> > wouldn't be effective as different processes use different threadgroup
->> > locks.
->> >
->> > Revert the incorrect optimization.
->>
->> Ok but there is still no good reason to task_lock() there. But the
->> comment is indeed wrong,  how about fixing it instead? I can send you
->> a patch for that.
->
-> For -stable, I think it's better to revert.  If you want to remove
-> task_lock, let's do it for 3.8.
+On Fri, 19 Oct 2012, Glauber Costa wrote:
 
-I don't think that a wrong comment justifies a patch to stable.
+> struct page already have this information. If we start chaining
+> caches, this information will always be more trustworthy than
+> whatever is passed into the function
+
+Yes it does but the information is not standardized between the allocators
+yet. Coul you unify that? Come out with a struct page overlay that is as
+much the same as possible. Then kfree can also be unified because the
+lookup is always the same. That way you can move kfree into slab_common
+and avoid modifying multiple allocators.
+
