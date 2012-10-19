@@ -1,73 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932765Ab2JSJ6e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 05:58:34 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:39078 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752371Ab2JSJ62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 05:58:28 -0400
-X-IronPort-AV: E=Sophos;i="4.80,612,1344182400"; 
-   d="scan'208";a="6031026"
-From: wency@cn.fujitsu.com
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Cc: liuj97@gmail.com, len.brown@intel.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        muneda.takahiro@jp.fujitsu.com, Wen Congyang <wency@cn.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: [PATCH v2 1/3] acpi,memory-hotplug: call acpi_bus_trim() to remove memory device
-Date: Fri, 19 Oct 2012 18:03:58 +0800
-Message-Id: <1350641040-19434-2-git-send-email-wency@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1350641040-19434-1-git-send-email-wency@cn.fujitsu.com>
-References: <1350641040-19434-1-git-send-email-wency@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/19 17:58:00,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/19 17:58:01,
-	Serialize complete at 2012/10/19 17:58:01
+	id S1758221Ab2JSKAP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 06:00:15 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37963 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753231Ab2JSKAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 06:00:11 -0400
+From: Afzal Mohammed <afzal@ti.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <rtc-linux@googlegroups.com>,
+        Daniel Mack <zonque@gmail.com>, Afzal Mohammed <afzal@ti.com>
+Subject: [PATCH v4 1/5] rtc: omap: kicker mechanism support
+Date: Fri, 19 Oct 2012 15:29:24 +0530
+Message-ID: <2b03d31c625936283b51d504a27e0b8017d2b27d.1350633036.git.afzal@ti.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <cover.1350633036.git.afzal@ti.com>
+References: <cover.1350633036.git.afzal@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wen Congyang <wency@cn.fujitsu.com>
+OMAP RTC IP can have kicker feature. This prevents spurious
+writes to register. To write to registers kicker lock has to
+be released. Procedure to do it as follows,
 
-The memory device has been ejected and powoffed, so we can call
-acpi_bus_trim() to remove the memory device from acpi bus.
+1. write to kick0 register, 0x83e70b13
+2. write to kick1 register, 0x95a4f1e0
 
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+Writing value other than 0x83e70b13 to kick0 enables write
+locking, more details about kicker mechanism can be found in
+section 20.3.3.5.3 of AM335X TRM @www.ti.com/am335x
+
+Here id table information is added and is used to distinguish
+those that require kicker handling and the ones that doesn't
+need it. There are more features in the newer IP's compared
+to legacy ones other than kicker, which driver currently
+doesn't handle, supporting additional features would be
+easier with the addition of id table.
+
+Older IP (of OMAP1) doesn't have revision register as per
+TRM, so revision register can't be relied always to find
+features, hence id table is being used.
+
+While at it, replace __raw_writeb/__raw_readb with
+writeb/readb; this driver is used on ARMv7 (AM335X SoC)
+
+Signed-off-by: Afzal Mohammed <afzal@ti.com>
+Acked-by: Sekhar Nori <nsekhar@ti.com>
 ---
- drivers/acpi/acpi_memhotplug.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index 24c807f..1e90e8f 100644
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -401,8 +401,9 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
- 		}
+v4:
+ Resolve build error during module build
+
+v3:
+ Use readb/writeb instead of __raw_* variants
+ Remove unnecessary parens
+
+v2:
+ Use device name da830-rtc instead of am1808-rtc
+ Newly added register name made similar to that existing in the driver
+ Better commit message description
+
+ drivers/rtc/rtc-omap.c | 44 +++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 41 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+index 0b614e3..d948426 100644
+--- a/drivers/rtc/rtc-omap.c
++++ b/drivers/rtc/rtc-omap.c
+@@ -38,6 +38,8 @@
+  * the SoC). See the BOARD-SPECIFIC CUSTOMIZATION comment.
+  */
  
- 		/*
--		 * TBD: Invoke acpi_bus_remove to cleanup data structures
-+		 * Invoke acpi_bus_trim() to remove memory device
- 		 */
-+		acpi_bus_trim(device, 1);
++#define	DRIVER_NAME			"omap_rtc"
++
+ #define OMAP_RTC_BASE			0xfffb4800
  
- 		/* _EJ0 succeeded; _OST is not necessary */
- 		return;
+ /* RTC registers */
+@@ -64,6 +66,9 @@
+ #define OMAP_RTC_COMP_MSB_REG		0x50
+ #define OMAP_RTC_OSC_REG		0x54
+ 
++#define OMAP_RTC_KICK0_REG		0x6c
++#define OMAP_RTC_KICK1_REG		0x70
++
+ /* OMAP_RTC_CTRL_REG bit fields: */
+ #define OMAP_RTC_CTRL_SPLIT		(1<<7)
+ #define OMAP_RTC_CTRL_DISABLE		(1<<6)
+@@ -88,10 +93,18 @@
+ #define OMAP_RTC_INTERRUPTS_IT_ALARM    (1<<3)
+ #define OMAP_RTC_INTERRUPTS_IT_TIMER    (1<<2)
+ 
++/* OMAP_RTC_KICKER values */
++#define	KICK0_VALUE			0x83e70b13
++#define	KICK1_VALUE			0x95a4f1e0
++
++#define	OMAP_RTC_HAS_KICKER		0x1
++
+ static void __iomem	*rtc_base;
+ 
+-#define rtc_read(addr)		__raw_readb(rtc_base + (addr))
+-#define rtc_write(val, addr)	__raw_writeb(val, rtc_base + (addr))
++#define rtc_read(addr)		readb(rtc_base + (addr))
++#define rtc_write(val, addr)	writeb(val, rtc_base + (addr))
++
++#define rtc_writel(val, addr)	writel(val, rtc_base + (addr))
+ 
+ 
+ /* we rely on the rtc framework to handle locking (rtc->ops_lock),
+@@ -285,11 +298,23 @@ static struct rtc_class_ops omap_rtc_ops = {
+ static int omap_rtc_alarm;
+ static int omap_rtc_timer;
+ 
++static struct platform_device_id omap_rtc_devtype[] = {
++	{
++		.name	= DRIVER_NAME,
++	}, {
++		.name	= "da830-rtc",
++		.driver_data = OMAP_RTC_HAS_KICKER,
++	},
++	{},
++};
++MODULE_DEVICE_TABLE(platform, omap_rtc_devtype);
++
+ static int __init omap_rtc_probe(struct platform_device *pdev)
+ {
+ 	struct resource		*res, *mem;
+ 	struct rtc_device	*rtc;
+ 	u8			reg, new_ctrl;
++	const struct platform_device_id *id_entry;
+ 
+ 	omap_rtc_timer = platform_get_irq(pdev, 0);
+ 	if (omap_rtc_timer <= 0) {
+@@ -322,6 +347,12 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 		goto fail;
+ 	}
+ 
++	id_entry = platform_get_device_id(pdev);
++	if (id_entry && (id_entry->driver_data & OMAP_RTC_HAS_KICKER)) {
++		rtc_writel(KICK0_VALUE, OMAP_RTC_KICK0_REG);
++		rtc_writel(KICK1_VALUE, OMAP_RTC_KICK1_REG);
++	}
++
+ 	rtc = rtc_device_register(pdev->name, &pdev->dev,
+ 			&omap_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(rtc)) {
+@@ -398,6 +429,8 @@ fail2:
+ fail1:
+ 	rtc_device_unregister(rtc);
+ fail0:
++	if (id_entry && (id_entry->driver_data & OMAP_RTC_HAS_KICKER))
++		rtc_writel(0, OMAP_RTC_KICK0_REG);
+ 	iounmap(rtc_base);
+ fail:
+ 	release_mem_region(mem->start, resource_size(mem));
+@@ -408,6 +441,8 @@ static int __exit omap_rtc_remove(struct platform_device *pdev)
+ {
+ 	struct rtc_device	*rtc = platform_get_drvdata(pdev);
+ 	struct resource		*mem = dev_get_drvdata(&rtc->dev);
++	const struct platform_device_id *id_entry =
++				platform_get_device_id(pdev);
+ 
+ 	device_init_wakeup(&pdev->dev, 0);
+ 
+@@ -420,6 +455,8 @@ static int __exit omap_rtc_remove(struct platform_device *pdev)
+ 		free_irq(omap_rtc_alarm, rtc);
+ 
+ 	rtc_device_unregister(rtc);
++	if (id_entry && (id_entry->driver_data & OMAP_RTC_HAS_KICKER))
++		rtc_writel(0, OMAP_RTC_KICK0_REG);
+ 	iounmap(rtc_base);
+ 	release_mem_region(mem->start, resource_size(mem));
+ 	return 0;
+@@ -471,9 +508,10 @@ static struct platform_driver omap_rtc_driver = {
+ 	.resume		= omap_rtc_resume,
+ 	.shutdown	= omap_rtc_shutdown,
+ 	.driver		= {
+-		.name	= "omap_rtc",
++		.name	= DRIVER_NAME,
+ 		.owner	= THIS_MODULE,
+ 	},
++	.id_table	= omap_rtc_devtype,
+ };
+ 
+ static int __init rtc_init(void)
 -- 
-1.7.1
+1.7.12
 
