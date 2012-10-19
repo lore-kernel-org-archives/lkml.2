@@ -1,167 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758003Ab2JSJkR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 05:40:17 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34438 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757806Ab2JSJkO (ORCPT
+	id S1758080Ab2JSJnW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 05:43:22 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:39069 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757806Ab2JSJnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 05:40:14 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50811FE1.4080606@jp.fujitsu.com>
-Date: Fri, 19 Oct 2012 18:39:45 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Fri, 19 Oct 2012 05:43:20 -0400
+Date: Fri, 19 Oct 2012 15:13:09 +0530
+From: Shiraz Hashim <shiraz.hashim@st.com>
+To: viresh kumar <viresh.kumar@linaro.org>
+Cc: <thierry.reding@avionic-design.de>,
+        <spear--sw-devel@lists.codex.cro.st.com>,
+        <linux-kernel@vger.kernel.org>, <spear-devel@list.st.com>
+Subject: Re: [PATCH] pwm: add spear pwm driver support
+Message-ID: <20121019094308.GC4185@localhost.localdomain>
+References: <1350559712-8514-1-git-send-email-shiraz.hashim@st.com>
+ <CAOh2x=mdtkW=a-xv1BeHxoGsgbF5s+4B8QmZBdvqnWHr30Ap2A@mail.gmail.com>
+ <20121019055943.GA4185@localhost.localdomain>
+ <CAOh2x=kXu2EG4GFaW8HpSi=VFLvGEMEyeN_3L74wU2sfe1Z=uQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>,
-        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH v3 0/9] bugfix for memory hotplug
-References: <1350629202-9664-1-git-send-email-wency@cn.fujitsu.com> <508109F2.1080402@jp.fujitsu.com> <50810D14.8020609@jp.fujitsu.com> <50811336.7070704@cn.fujitsu.com>
-In-Reply-To: <50811336.7070704@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAOh2x=kXu2EG4GFaW8HpSi=VFLvGEMEyeN_3L74wU2sfe1Z=uQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/19 17:45, Wen Congyang wrote:
-> At 10/19/2012 04:19 PM, Yasuaki Ishimatsu Wrote:
->> 2012/10/19 17:06, Yasuaki Ishimatsu wrote:
->>> Hi Wen,
->>>
->>> Some bug fix patches have been merged into linux-next.
->>> So the patches confuse me.
-> 
-> Sorry, I don't check linux-next tree.
-> 
->>
->> The following patches have been already merged into linux-next
->> and mm-tree as long as I know.
->>
->>>> Wen Congyang (6):
->>>>      clear the memory to store struct page
->>
->>
->>>>      memory-hotplug: skip HWPoisoned page when offlining pages
->>
->> mm-tree
-> 
-> Hmm, I don't find this patch in this URL:
-> http://www.ozlabs.org/~akpm/mmotm/broken-out/
-> 
-> Do I miss something?
+Hi Viresh,
 
-But Andrew announced that the patch was merged in mm-tree.
-And you received the announcement.
-
->>
->>>>      memory-hotplug: update mce_bad_pages when removing the memory
->>
->>>>      memory-hotplug: auto offline page_cgroup when onlining memory block
->>>>        failed
->>
->> mm-tree
->>
->>>>      memory-hotplug: fix NR_FREE_PAGES mismatch
->>
->> mm-tree
->>
->>>>      memory-hotplug: allocate zone's pcp before onlining pages
->>
->> mm-tree
->>
->>>>
->>>> Yasuaki Ishimatsu (3):
->>>>      suppress "Device memoryX does not have a release() function" warning
->>
->> linux-next
->>
->>>>      suppress "Device nodeX does not have a release() function" warning
->>>>      memory-hotplug: flush the work for the node when the node is offlined
->>
->> linux-next
+On Fri, Oct 19, 2012 at 12:23:08PM +0530, viresh kumar wrote:
+> On Fri, Oct 19, 2012 at 11:29 AM, Shiraz Hashim <shiraz.hashim@st.com> wrote:
+> > On Thu, Oct 18, 2012 at 11:11:06PM +0530, viresh kumar wrote:
+> >> On Thu, Oct 18, 2012 at 4:58 PM, Shiraz Hashim <shiraz.hashim@st.com> wrote:
 > 
-> I split this patch to two patches according to kosaki's comment.
-
-Yeah, I know. But is the patch really need now?
-
-Thanks,
-Yasuaki Ishimatsu
-
+> >> > +static int __devexit spear_pwm_remove(struct platform_device *pdev)
+> >> > +{
+> >> > +       struct spear_pwm_chip *pc = platform_get_drvdata(pdev);
+> >> > +       int i;
+> >> > +
+> >> > +       if (WARN_ON(!pc))
+> >> > +               return -ENODEV;
+> >> > +
+> >> > +       for (i = 0; i < NUM_PWM; i++) {
+> >> > +               struct pwm_device *pwmd = &pc->chip.pwms[i];
+> >> > +
+> >> > +               if (!test_bit(PWMF_ENABLED, &pwmd->flags))
 > 
-> Thanks
-> Wen Congyang
-> 
->>
->> Thanks,
->> Yasuaki Ishimatsu
->>
->>> Why did you send same patches again?
->>>
->>> Thanks,
->>> Yasuaki Ishimatsu
->>>
->>> 2012/10/19 15:46, wency@cn.fujitsu.com wrote:
->>>> From: Wen Congyang <wency@cn.fujitsu.com>
->>>>
->>>> Changes from v2 to v3:
->>>>      Merge the bug fix from ishimatsu to this patchset(Patch 1-3)
->>>>      Patch 3: split it from patch as it fixes another bug.
->>>>      Patch 4: new patch, and fix bad-page state when hotadding a memory
->>>>               device after hotremoving it. I forgot to post this patch in v2.
->>>>      Patch 6: update it according to Dave Hansen's comment.
->>>>
->>>> Changes from v1 to v2:
->>>>      Patch 1: updated according to kosaki's suggestion
->>>>
->>>>      Patch 2: new patch, and update mce_bad_pages when removing memory.
->>>>
->>>>      Patch 4: new patch, and fix a NR_FREE_PAGES mismatch, and this bug
->>>>               cause oom in my test.
->>>>
->>>>      Patch 5: new patch, and fix a new bug. When repeating to online/offline
->>>>               pages, the free pages will continue to decrease.
->>>>
->>>> Wen Congyang (6):
->>>>      clear the memory to store struct page
->>>>      memory-hotplug: skip HWPoisoned page when offlining pages
->>>>      memory-hotplug: update mce_bad_pages when removing the memory
->>>>      memory-hotplug: auto offline page_cgroup when onlining memory block
->>>>        failed
->>>>      memory-hotplug: fix NR_FREE_PAGES mismatch
->>>>      memory-hotplug: allocate zone's pcp before onlining pages
->>>>
->>>> Yasuaki Ishimatsu (3):
->>>>      suppress "Device memoryX does not have a release() function" warning
->>>>      suppress "Device nodeX does not have a release() function" warning
->>>>      memory-hotplug: flush the work for the node when the node is offlined
->>>>
->>>>     drivers/base/memory.c          |    9 ++++++++-
->>>>     drivers/base/node.c            |   11 +++++++++++
->>>>     include/linux/page-isolation.h |   10 ++++++----
->>>>     mm/memory-failure.c            |    2 +-
->>>>     mm/memory_hotplug.c            |   14 ++++++++------
->>>>     mm/page_alloc.c                |   37 ++++++++++++++++++++++++++++---------
->>>>     mm/page_cgroup.c               |    3 +++
->>>>     mm/page_isolation.c            |   27 ++++++++++++++++++++-------
->>>>     mm/sparse.c                    |   22 +++++++++++++++++++++-
->>>>     9 files changed, 106 insertions(+), 29 deletions(-)
->>>>
->>>
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>
->>
->>
+> One point here: If i am not wrong you want to disable pwmd if it is enabled.
+> Shouldn't you check for if (test_bit(PWMF_ENABLED, &pwmd->flags)) instead?
 > 
 
+You are right. The code is un-necessarily disabling all pwms while trying to
+enable the clock for those which are not enabled also.
 
+
+> >> > +                       if (clk_prepare_enable(pc->clk) < 0)
+> >> > +                               continue;
+> >> > +
+> >> > +               spear_pwm_writel(pc, i, PWMCR, 0);
+> >> > +               clk_disable_unprepare(pc->clk);
+> >> > +       }
+> >>
+> >> You are enabling/disabling clock N times here and each of these will
+> >> write to an register. Do something better.
+> >>
+> >
+> > I need to shut down all active pwms, how else would you suggest that ?
+> 
+> Sorry, i misread the code on the second go :(
+> 
+> I am proposing something like:
+> 
+> static int __devexit spear_pwm_remove(struct platform_device *pdev)
+> {
+>        struct spear_pwm_chip *pc = platform_get_drvdata(pdev);
+>        int i, clk_enabled = 0;
+> 
+>        if (WARN_ON(!pc))
+>                return -ENODEV;
+> 
+>        for (i = 0; i < NUM_PWM; i++) {
+>                struct pwm_device *pwmd = &pc->chip.pwms[i];
+> 
+>                if (!test_bit(PWMF_ENABLED, &pwmd->flags) && !clk_enabled)
+>                        if (clk_prepare_enable(pc->clk) < 0)
+>                                continue;
+> 		       else
+> 			       clk_enabled++;
+> 
+>                spear_pwm_writel(pc, i, PWMCR, 0);
+>        }
+> 
+>        if (clk_enabled)
+> 	       clk_disable_unprepare(pc->clk);
+>        ...
+> }
+
+
+It may not be required as pwms which are not enabled do not have
+their clocks enabled. Hence, perhaps we can do following,
+
+8<---------------------------
+static int spear_pwm_remove(struct platform_device *pdev)
+{
+        struct spear_pwm_chip *pc = platform_get_drvdata(pdev);
+        int i;
+
+        if (WARN_ON(!pc))
+                return -ENODEV;
+
+        for (i = 0; i < NUM_PWM; i++) {
+                struct pwm_device *pwm = &pc->chip.pwms[i];
+
+                if (test_bit(PWMF_ENABLED, &pwm->flags)) {
+                        spear_pwm_writel(pc, i, PWMCR, 0);
+                        clk_disable(pc->clk);
+                }
+        }
+
+        /* clk was prepared in probe, hence unprepare it here */
+        clk_unprepare(pc->clk);
+        return pwmchip_remove(&pc->chip);
+}
+
+---------------------------->8
+
+--
+regards
+Shiraz 
