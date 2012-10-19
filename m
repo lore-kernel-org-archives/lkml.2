@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758221Ab2JSKAP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 06:00:15 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37963 "EHLO arroyo.ext.ti.com"
+	id S1758332Ab2JSKAY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 06:00:24 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59646 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753231Ab2JSKAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 06:00:11 -0400
+	id S1752090Ab2JSKAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 06:00:18 -0400
 From: Afzal Mohammed <afzal@ti.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: Grant Likely <grant.likely@secretlab.ca>,
@@ -18,9 +18,9 @@ CC: Grant Likely <grant.likely@secretlab.ca>,
         <davinci-linux-open-source@linux.davincidsp.com>,
         <linux-arm-kernel@lists.infradead.org>, <rtc-linux@googlegroups.com>,
         Daniel Mack <zonque@gmail.com>, Afzal Mohammed <afzal@ti.com>
-Subject: [PATCH v4 1/5] rtc: omap: kicker mechanism support
-Date: Fri, 19 Oct 2012 15:29:24 +0530
-Message-ID: <2b03d31c625936283b51d504a27e0b8017d2b27d.1350633036.git.afzal@ti.com>
+Subject: [PATCH v4 4/5] rtc: omap: depend on am33xx
+Date: Fri, 19 Oct 2012 15:29:43 +0530
+Message-ID: <461eeca5902e383a3d26149700cde751d5450951.1350633036.git.afzal@ti.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <cover.1350633036.git.afzal@ti.com>
 References: <cover.1350633036.git.afzal@ti.com>
@@ -30,170 +30,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OMAP RTC IP can have kicker feature. This prevents spurious
-writes to register. To write to registers kicker lock has to
-be released. Procedure to do it as follows,
-
-1. write to kick0 register, 0x83e70b13
-2. write to kick1 register, 0x95a4f1e0
-
-Writing value other than 0x83e70b13 to kick0 enables write
-locking, more details about kicker mechanism can be found in
-section 20.3.3.5.3 of AM335X TRM @www.ti.com/am335x
-
-Here id table information is added and is used to distinguish
-those that require kicker handling and the ones that doesn't
-need it. There are more features in the newer IP's compared
-to legacy ones other than kicker, which driver currently
-doesn't handle, supporting additional features would be
-easier with the addition of id table.
-
-Older IP (of OMAP1) doesn't have revision register as per
-TRM, so revision register can't be relied always to find
-features, hence id table is being used.
-
-While at it, replace __raw_writeb/__raw_readb with
-writeb/readb; this driver is used on ARMv7 (AM335X SoC)
+rtc-omap driver can be reused for AM33xx RTC.
+Provide dependency in Kconfig.
 
 Signed-off-by: Afzal Mohammed <afzal@ti.com>
 Acked-by: Sekhar Nori <nsekhar@ti.com>
 ---
 
-v4:
- Resolve build error during module build
-
-v3:
- Use readb/writeb instead of __raw_* variants
- Remove unnecessary parens
-
 v2:
- Use device name da830-rtc instead of am1808-rtc
- Newly added register name made similar to that existing in the driver
- Better commit message description
+ Modify Kconfig help, resolve checkpatch warning
 
- drivers/rtc/rtc-omap.c | 44 +++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 41 insertions(+), 3 deletions(-)
+ drivers/rtc/Kconfig | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-index 0b614e3..d948426 100644
---- a/drivers/rtc/rtc-omap.c
-+++ b/drivers/rtc/rtc-omap.c
-@@ -38,6 +38,8 @@
-  * the SoC). See the BOARD-SPECIFIC CUSTOMIZATION comment.
-  */
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 19c03ab..4f7ecb6 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -777,11 +777,13 @@ config RTC_DRV_IMXDI
  
-+#define	DRIVER_NAME			"omap_rtc"
+ config RTC_DRV_OMAP
+ 	tristate "TI OMAP1"
+-	depends on ARCH_OMAP15XX || ARCH_OMAP16XX || ARCH_OMAP730 || ARCH_DAVINCI_DA8XX
++	depends on ARCH_OMAP15XX || ARCH_OMAP16XX || ARCH_OMAP730 || ARCH_DAVINCI_DA8XX || SOC_AM33XX
+ 	help
+-	  Say "yes" here to support the real time clock on TI OMAP1 and
+-	  DA8xx/OMAP-L13x chips.  This driver can also be built as a
+-	  module called rtc-omap.
++	  Say "yes" here to support the on chip real time clock
++	  present on TI OMAP1, AM33xx and DA8xx/OMAP-L13x.
 +
- #define OMAP_RTC_BASE			0xfffb4800
++	  This driver can also be built as a module, if so, module
++	  will be called rtc-omap.
  
- /* RTC registers */
-@@ -64,6 +66,9 @@
- #define OMAP_RTC_COMP_MSB_REG		0x50
- #define OMAP_RTC_OSC_REG		0x54
- 
-+#define OMAP_RTC_KICK0_REG		0x6c
-+#define OMAP_RTC_KICK1_REG		0x70
-+
- /* OMAP_RTC_CTRL_REG bit fields: */
- #define OMAP_RTC_CTRL_SPLIT		(1<<7)
- #define OMAP_RTC_CTRL_DISABLE		(1<<6)
-@@ -88,10 +93,18 @@
- #define OMAP_RTC_INTERRUPTS_IT_ALARM    (1<<3)
- #define OMAP_RTC_INTERRUPTS_IT_TIMER    (1<<2)
- 
-+/* OMAP_RTC_KICKER values */
-+#define	KICK0_VALUE			0x83e70b13
-+#define	KICK1_VALUE			0x95a4f1e0
-+
-+#define	OMAP_RTC_HAS_KICKER		0x1
-+
- static void __iomem	*rtc_base;
- 
--#define rtc_read(addr)		__raw_readb(rtc_base + (addr))
--#define rtc_write(val, addr)	__raw_writeb(val, rtc_base + (addr))
-+#define rtc_read(addr)		readb(rtc_base + (addr))
-+#define rtc_write(val, addr)	writeb(val, rtc_base + (addr))
-+
-+#define rtc_writel(val, addr)	writel(val, rtc_base + (addr))
- 
- 
- /* we rely on the rtc framework to handle locking (rtc->ops_lock),
-@@ -285,11 +298,23 @@ static struct rtc_class_ops omap_rtc_ops = {
- static int omap_rtc_alarm;
- static int omap_rtc_timer;
- 
-+static struct platform_device_id omap_rtc_devtype[] = {
-+	{
-+		.name	= DRIVER_NAME,
-+	}, {
-+		.name	= "da830-rtc",
-+		.driver_data = OMAP_RTC_HAS_KICKER,
-+	},
-+	{},
-+};
-+MODULE_DEVICE_TABLE(platform, omap_rtc_devtype);
-+
- static int __init omap_rtc_probe(struct platform_device *pdev)
- {
- 	struct resource		*res, *mem;
- 	struct rtc_device	*rtc;
- 	u8			reg, new_ctrl;
-+	const struct platform_device_id *id_entry;
- 
- 	omap_rtc_timer = platform_get_irq(pdev, 0);
- 	if (omap_rtc_timer <= 0) {
-@@ -322,6 +347,12 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 		goto fail;
- 	}
- 
-+	id_entry = platform_get_device_id(pdev);
-+	if (id_entry && (id_entry->driver_data & OMAP_RTC_HAS_KICKER)) {
-+		rtc_writel(KICK0_VALUE, OMAP_RTC_KICK0_REG);
-+		rtc_writel(KICK1_VALUE, OMAP_RTC_KICK1_REG);
-+	}
-+
- 	rtc = rtc_device_register(pdev->name, &pdev->dev,
- 			&omap_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(rtc)) {
-@@ -398,6 +429,8 @@ fail2:
- fail1:
- 	rtc_device_unregister(rtc);
- fail0:
-+	if (id_entry && (id_entry->driver_data & OMAP_RTC_HAS_KICKER))
-+		rtc_writel(0, OMAP_RTC_KICK0_REG);
- 	iounmap(rtc_base);
- fail:
- 	release_mem_region(mem->start, resource_size(mem));
-@@ -408,6 +441,8 @@ static int __exit omap_rtc_remove(struct platform_device *pdev)
- {
- 	struct rtc_device	*rtc = platform_get_drvdata(pdev);
- 	struct resource		*mem = dev_get_drvdata(&rtc->dev);
-+	const struct platform_device_id *id_entry =
-+				platform_get_device_id(pdev);
- 
- 	device_init_wakeup(&pdev->dev, 0);
- 
-@@ -420,6 +455,8 @@ static int __exit omap_rtc_remove(struct platform_device *pdev)
- 		free_irq(omap_rtc_alarm, rtc);
- 
- 	rtc_device_unregister(rtc);
-+	if (id_entry && (id_entry->driver_data & OMAP_RTC_HAS_KICKER))
-+		rtc_writel(0, OMAP_RTC_KICK0_REG);
- 	iounmap(rtc_base);
- 	release_mem_region(mem->start, resource_size(mem));
- 	return 0;
-@@ -471,9 +508,10 @@ static struct platform_driver omap_rtc_driver = {
- 	.resume		= omap_rtc_resume,
- 	.shutdown	= omap_rtc_shutdown,
- 	.driver		= {
--		.name	= "omap_rtc",
-+		.name	= DRIVER_NAME,
- 		.owner	= THIS_MODULE,
- 	},
-+	.id_table	= omap_rtc_devtype,
- };
- 
- static int __init rtc_init(void)
+ config HAVE_S3C_RTC
+ 	bool
 -- 
 1.7.12
 
