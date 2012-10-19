@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775Ab2JSBOw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 21:14:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33041 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756413Ab2JSBOu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 21:14:50 -0400
-Date: Thu, 18 Oct 2012 18:14:45 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk, neilb@suse.de, vgoyal@redhat.com
-Subject: Re: [PATCH v4 00/24] Prep work for immutable bio vecs
-Message-ID: <20121019011445.GJ13370@google.com>
-References: <1350331769-14856-1-git-send-email-koverstreet@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350331769-14856-1-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756832Ab2JSBVz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 21:21:55 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:46082 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751026Ab2JSBVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 21:21:53 -0400
+Message-ID: <1350609711.22385.21.camel@joe-AO722>
+Subject: Re: [PATCH] Fix printing when no interrupt is allocated
+From: Joe Perches <joe@perches.com>
+To: Daniel J Blueman <daniel@numascale-asia.com>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 18 Oct 2012 18:21:51 -0700
+In-Reply-To: <1350606821-29813-1-git-send-email-daniel@numascale-asia.com>
+References: <1350606821-29813-1-git-send-email-daniel@numascale-asia.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Mon, Oct 15, 2012 at 01:08:34PM -0700, Kent Overstreet wrote:
-> Since last time - split bio integrity stuff out into its own 2 patch series.
+On Fri, 2012-10-19 at 08:33 +0800, Daniel J Blueman wrote:
+> Previously a new line is implicitly added in the no GSI case:
 > 
-> Also changed bio_advance() a bit - it now explicitly special cases discard and
-> WRITE_SAME requests, so that partial completions will work. Previously, partial
-> completions worked for other requests but would've silently blown up for those
-> - this'll be of use later too, for generic bio splitting.
+> [    7.185182] pci 0001:00:12.0: can't derive routing for PCI INT A
+> [    7.191352] pci 0001:00:12.0: PCI INT A: no GSI
+> [    7.195956]  - using ISA IRQ 10
 > 
-> I've got 3 patch series queued up but they all should be independent - git tree
-> is at
+> The code thus prints a blank line where no legacy IRQ is available:
 > 
-> http://evilpiepirate.org/git/linux-bcache.git for-jens
+> [    1.650124] pci 0000:00:14.0: can't derive routing for PCI INT A
+> [    1.650126] pci 0000:00:14.0: PCI INT A: no GSI
+> [    1.650126] 
+> [    1.650180] pci 0000:00:14.0: can't derive routing for PCI INT A
 > 
-> It's on top of jens' for-next branch.
+> Fix this by making the newline explicit and removing the superfluous
+> one.
 
-Your patch series posting is messed up somehow.  I'm gonna review from
-the git branch and post comments here but you'll probably have to post
-them again.
 
-Thanks.
+I think this is a better fix:
 
--- 
-tejun
+ drivers/acpi/pci_irq.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+index 0eefa12..9b98f9f 100644
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -459,19 +459,20 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
+ 	 */
+ 	if (gsi < 0) {
+ 		u32 dev_gsi;
+-		dev_warn(&dev->dev, "PCI INT %c: no GSI", pin_name(pin));
+ 		/* Interrupt Line values above 0xF are forbidden */
+ 		if (dev->irq > 0 && (dev->irq <= 0xF) &&
+ 		    (acpi_isa_irq_to_gsi(dev->irq, &dev_gsi) == 0)) {
+-			printk(" - using ISA IRQ %d\n", dev->irq);
++			dev_warn(&dev->dev,
++				 "PCI INT %c: no GSI - using ISA IRQ %d\n",
++				 pin_name(pin), dev->irq);
+ 			acpi_register_gsi(&dev->dev, dev_gsi,
+ 					  ACPI_LEVEL_SENSITIVE,
+ 					  ACPI_ACTIVE_LOW);
+-			return 0;
+ 		} else {
+-			printk("\n");
+-			return 0;
++			dev_warn(&dev->dev, "PCI INT %c: no GSI\n",
++				 pin_name(pin));
+ 		}
++		return 0;
+ 	}
+ 
+ 	rc = acpi_register_gsi(&dev->dev, gsi, triggering, polarity);
+
+
