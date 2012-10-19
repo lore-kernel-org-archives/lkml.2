@@ -1,53 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755987Ab2JSK4p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 06:56:45 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:37791 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028Ab2JSK4o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 06:56:44 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] mm: Simplify for_each_populated_zone()
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, kosaki.motohiro@gmail.com, akpm@linux-foundation.org,
-        hannes@cmpxchg.org, srivatsa.bhat@linux.vnet.ibm.com
-Date: Fri, 19 Oct 2012 16:25:47 +0530
-Message-ID: <20121019105546.9704.93446.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	id S1758305Ab2JSLJy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 07:09:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48947 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754062Ab2JSLJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 07:09:53 -0400
+Date: Fri, 19 Oct 2012 13:09:49 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Zefan <lizefan@huawei.com>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH 4/6] cgroups: forbid pre_destroy callback to fail
+Message-ID: <20121019110949.GC799@dhcp22.suse.cz>
+References: <1350480648-10905-1-git-send-email-mhocko@suse.cz>
+ <1350480648-10905-5-git-send-email-mhocko@suse.cz>
+ <50811E5E.1090205@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12101910-0260-0000-0000-00000201C255
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50811E5E.1090205@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the check for populated_zone() to the control statement of the
-'for' loop and get rid of the odd looking if/else block.
+On Fri 19-10-12 17:33:18, Li Zefan wrote:
+> On 2012/10/17 21:30, Michal Hocko wrote:
+> > Now that mem_cgroup_pre_destroy callback doesn't fail finally we can
+> > safely move on and forbit all the callbacks to fail. The last missing
+> > piece is moving cgroup_call_pre_destroy after cgroup_clear_css_refs so
+> > that css_tryget fails so no new charges for the memcg can happen.
+> 
+> > The callbacks are also called from within cgroup_lock to guarantee that
+> > no new tasks show up. 
+> 
+> I'm afraid this won't work. See commit 3fa59dfbc3b223f02c26593be69ce6fc9a940405
+> ("cgroup: fix potential deadlock in pre_destroy")
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Very good point. Thanks for poiting this out. So we should call
+pre_destroy at the very end? What about the following?
+Or should be rather drop the lock after check_for_release(parent) or
+sooner but after CGRP_REMOVED is set?
 ---
+>From 70ea8718aba1c1784b94bfb26aa2307195c07c0b Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Wed, 17 Oct 2012 13:42:06 +0200
+Subject: [PATCH] cgroups: forbid pre_destroy callback to fail
 
- include/linux/mmzone.h |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+Now that mem_cgroup_pre_destroy callback doesn't fail finally we can
+safely move on and forbit all the callbacks to fail. The last missing
+piece is moving cgroup_call_pre_destroy after cgroup_clear_css_refs so
+that css_tryget fails so no new charges for the memcg can happen.
+We cannot, however, move cgroup_call_pre_destroy right after because we
+cannot call mem_cgroup_pre_destroy with the cgroup_lock held (see
+3fa59dfb cgroup: fix potential deadlock in pre_destroy) so we have to
+move it after the lock is released.
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 50aaca8..5bdf02e 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -913,11 +913,8 @@ extern struct zone *next_zone(struct zone *zone);
- 
- #define for_each_populated_zone(zone)		        \
- 	for (zone = (first_online_pgdat())->node_zones; \
--	     zone;					\
--	     zone = next_zone(zone))			\
--		if (!populated_zone(zone))		\
--			; /* do nothing */		\
--		else
-+	     zone && populated_zone(zone);		\
-+	     zone = next_zone(zone))
- 
- static inline struct zone *zonelist_zone(struct zoneref *zoneref)
+Changes since v1
+- Li Zefan pointed out that mem_cgroup_pre_destroy cannot be called with
+  cgroup_lock held
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ kernel/cgroup.c |   30 +++++++++---------------------
+ 1 file changed, 9 insertions(+), 21 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index b7d9606..4c6adbd 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -855,7 +855,7 @@ static struct inode *cgroup_new_inode(umode_t mode, struct super_block *sb)
+  * Call subsys's pre_destroy handler.
+  * This is called before css refcnt check.
+  */
+-static int cgroup_call_pre_destroy(struct cgroup *cgrp)
++static void cgroup_call_pre_destroy(struct cgroup *cgrp)
  {
+ 	struct cgroup_subsys *ss;
+ 	int ret = 0;
+@@ -864,15 +864,8 @@ static int cgroup_call_pre_destroy(struct cgroup *cgrp)
+ 		if (!ss->pre_destroy)
+ 			continue;
+ 
+-		ret = ss->pre_destroy(cgrp);
+-		if (ret) {
+-			/* ->pre_destroy() failure is being deprecated */
+-			WARN_ON_ONCE(!ss->__DEPRECATED_clear_css_refs);
+-			break;
+-		}
++		BUG_ON(ss->pre_destroy(cgrp));
+ 	}
+-
+-	return ret;
+ }
+ 
+ static void cgroup_diput(struct dentry *dentry, struct inode *inode)
+@@ -4161,7 +4154,6 @@ again:
+ 		mutex_unlock(&cgroup_mutex);
+ 		return -EBUSY;
+ 	}
+-	mutex_unlock(&cgroup_mutex);
+ 
+ 	/*
+ 	 * In general, subsystem has no css->refcnt after pre_destroy(). But
+@@ -4174,17 +4166,6 @@ again:
+ 	 */
+ 	set_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
+ 
+-	/*
+-	 * Call pre_destroy handlers of subsys. Notify subsystems
+-	 * that rmdir() request comes.
+-	 */
+-	ret = cgroup_call_pre_destroy(cgrp);
+-	if (ret) {
+-		clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
+-		return ret;
+-	}
+-
+-	mutex_lock(&cgroup_mutex);
+ 	parent = cgrp->parent;
+ 	if (atomic_read(&cgrp->count) || !list_empty(&cgrp->children)) {
+ 		clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
+@@ -4206,6 +4187,7 @@ again:
+ 			return -EINTR;
+ 		goto again;
+ 	}
++
+ 	/* NO css_tryget() can success after here. */
+ 	finish_wait(&cgroup_rmdir_waitq, &wait);
+ 	clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
+@@ -4244,6 +4226,12 @@ again:
+ 	spin_unlock(&cgrp->event_list_lock);
+ 
+ 	mutex_unlock(&cgroup_mutex);
++
++	/*
++	 * Call pre_destroy handlers of subsys. Notify subsystems
++	 * that rmdir() request comes.
++	 */
++	cgroup_call_pre_destroy(cgrp);
+ 	return 0;
+ }
+ 
+-- 
+1.7.10.4
 
+
+-- 
+Michal Hocko
+SUSE Labs
