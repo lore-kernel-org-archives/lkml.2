@@ -1,91 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758449Ab2JSKIv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 06:08:51 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:56467 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753539Ab2JSKIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 06:08:49 -0400
-Message-ID: <5081269B.5000603@parallels.com>
-Date: Fri, 19 Oct 2012 14:08:27 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+	id S1758479Ab2JSKJE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 06:09:04 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:53575 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758463Ab2JSKJB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 06:09:01 -0400
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        <devel@openvz.org>, <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v5 06/14] memcg: kmem controller infrastructure
-References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-7-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1210171515290.20712@chino.kir.corp.google.com> <507FCA90.8060307@parallels.com> <alpine.DEB.2.00.1210181454100.30894@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1210181454100.30894@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <002801cdac0a$11e4f340$35aed9c0$%han@samsung.com>
+References: <002801cdac0a$11e4f340$35aed9c0$%han@samsung.com>
+Date: Fri, 19 Oct 2012 12:08:59 +0200
+Message-ID: <CACRpkdYx1HLF2==6DsPp+qC6Xyb7Ag8qa1K7g2Ht-Y2T-UjzMA@mail.gmail.com>
+Subject: Re: [PATCH V3] gpio: samsung: use pr_* instead of printk
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ryan Mallon <rmallon@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2012 01:59 AM, David Rientjes wrote:
-> On Thu, 18 Oct 2012, Glauber Costa wrote:
-> 
->>>> @@ -2630,6 +2634,171 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
->>>>  	memcg_check_events(memcg, page);
->>>>  }
->>>>  
->>>> +#ifdef CONFIG_MEMCG_KMEM
->>>> +static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
->>>> +{
->>>> +	return !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
->>>> +		(memcg->kmem_accounted & KMEM_ACCOUNTED_MASK);
->>>> +}
->>>> +
->>>> +static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
->>>> +{
->>>> +	struct res_counter *fail_res;
->>>> +	struct mem_cgroup *_memcg;
->>>> +	int ret = 0;
->>>> +	bool may_oom;
->>>> +
->>>> +	ret = res_counter_charge(&memcg->kmem, size, &fail_res);
->>>> +	if (ret)
->>>> +		return ret;
->>>> +
->>>> +	/*
->>>> +	 * Conditions under which we can wait for the oom_killer.
->>>> +	 * We have to be able to wait, but also, if we can't retry,
->>>> +	 * we obviously shouldn't go mess with oom.
->>>> +	 */
->>>> +	may_oom = (gfp & __GFP_WAIT) && !(gfp & __GFP_NORETRY);
->>>
->>> What about gfp & __GFP_FS?
->>>
->>
->> Do you intend to prevent or allow OOM under that flag? I personally
->> think that anything that accepts to be OOM-killed should have GFP_WAIT
->> set, so that ought to be enough.
->>
-> 
-> The oom killer in the page allocator cannot trigger without __GFP_FS 
-> because direct reclaim has little chance of being very successful and 
-> thus we end up needlessly killing processes, and that tends to happen 
-> quite a bit if we dont check for it.  Seems like this would also happen 
-> with memcg if mem_cgroup_reclaim() has a large probability of failing?
-> 
+On Wed, Oct 17, 2012 at 3:52 AM, Jingoo Han <jg1.han@samsung.com> wrote:
 
-I can indeed see tests for GFP_FS in some key locations in mm/ before
-calling the OOM Killer.
+> This patch uses pr_* instead of printk. Also, gpio_dbg
+> is replaced with pr_debug.
+>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> Reviewed-by: Linus Walleij <linus.walleij@linaro.org> <- NAK
 
-Should I test for GFP_IO as well? If the idea is preventing OOM to
-trigger for allocations that can write their pages back, how would you
-feel about the following test:
+Please consult Documentation/SubmittingPatches as to the conditions that
+apply when you add Reviewed-by tags.
 
-may_oom = (gfp & GFP_KERNEL) && !(gfp & __GFP_NORETRY) ?
+Hint: it doesn't mean "I know Linus looked at this patch".
 
-Michal, what is your take in here?
-
-
-
+Yours,
+Linus Walleij
