@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932735Ab2JSDTm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:19:42 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54667 "EHLO mail.kernel.org"
+	id S932882Ab2JSDT7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:19:59 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54659 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758099Ab2JSDRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:49 -0400
+	id S1758092Ab2JSDRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Rafal Fitt <rafalf@aplusc.com.pl>, David Miller <davem@davemloft.net>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 23/37] netfilter: nf_nat_sip: fix incorrect handling of EBUSY for RTCP expectation
-Date: Thu, 18 Oct 2012 20:16:46 -0700
-Message-Id: <20121019031306.577236590@linuxfoundation.org>
+        Josef Bacik <jbacik@fusionio.com>, Jan Kara <jack@suse.cz>
+Subject: [ 31/37] jbd: Fix assertion failure in commit code due to lacking transaction credits
+Date: Thu, 18 Oct 2012 20:16:54 -0700
+Message-Id: <20121019031307.852350678@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -26,51 +25,230 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pablo Neira Ayuso <pablo@netfilter.org>
+From: Jan Kara <jack@suse.cz>
 
-commit 3f509c689a07a4aa989b426893d8491a7ffcc410 upstream.
+commit 09e05d4805e6c524c1af74e524e5d0528bb3fef3 upstream.
 
-We're hitting bug while trying to reinsert an already existing
-expectation:
+ext3 users of data=journal mode with blocksize < pagesize were occasionally
+hitting assertion failure in journal_commit_transaction() checking whether the
+transaction has at least as many credits reserved as buffers attached.  The
+core of the problem is that when a file gets truncated, buffers that still need
+checkpointing or that are attached to the committing transaction are left with
+buffer_mapped set. When this happens to buffers beyond i_size attached to a
+page stradding i_size, subsequent write extending the file will see these
+buffers and as they are mapped (but underlying blocks were freed) things go
+awry from here.
 
-kernel BUG at kernel/timer.c:895!
-invalid opcode: 0000 [#1] SMP
-[...]
-Call Trace:
- <IRQ>
- [<ffffffffa0069563>] nf_ct_expect_related_report+0x4a0/0x57a [nf_conntrack]
- [<ffffffff812d423a>] ? in4_pton+0x72/0x131
- [<ffffffffa00ca69e>] ip_nat_sdp_media+0xeb/0x185 [nf_nat_sip]
- [<ffffffffa00b5b9b>] set_expected_rtp_rtcp+0x32d/0x39b [nf_conntrack_sip]
- [<ffffffffa00b5f15>] process_sdp+0x30c/0x3ec [nf_conntrack_sip]
- [<ffffffff8103f1eb>] ? irq_exit+0x9a/0x9c
- [<ffffffffa00ca738>] ? ip_nat_sdp_media+0x185/0x185 [nf_nat_sip]
+The assertion failure just coincidentally (and in this case luckily as we would
+start corrupting filesystem) triggers due to journal_head not being properly
+cleaned up as well.
 
-We have to remove the RTP expectation if the RTCP expectation hits EBUSY
-since we keep trying with other ports until we succeed.
+Under some rare circumstances this bug could even hit data=ordered mode users.
+There the assertion won't trigger and we would end up corrupting the
+filesystem.
 
-Reported-by: Rafal Fitt <rafalf@aplusc.com.pl>
-Acked-by: David Miller <davem@davemloft.net>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+We fix the problem by unmapping buffers if possible (in lots of cases we just
+need a buffer attached to a transaction as a place holder but it must not be
+written out anyway). And in one case, we just have to bite the bullet and wait
+for transaction commit to finish.
+
+Reviewed-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ipv4/netfilter/nf_nat_sip.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/jbd/commit.c      |   45 +++++++++++++++++++++++++++--------
+ fs/jbd/transaction.c |   64 +++++++++++++++++++++++++++++++++++----------------
+ 2 files changed, 78 insertions(+), 31 deletions(-)
 
---- a/net/ipv4/netfilter/nf_nat_sip.c
-+++ b/net/ipv4/netfilter/nf_nat_sip.c
-@@ -501,7 +501,10 @@ static unsigned int ip_nat_sdp_media(str
- 		ret = nf_ct_expect_related(rtcp_exp);
- 		if (ret == 0)
- 			break;
--		else if (ret != -EBUSY) {
-+		else if (ret == -EBUSY) {
-+			nf_ct_unexpect_related(rtp_exp);
-+			continue;
-+		} else if (ret < 0) {
- 			nf_ct_unexpect_related(rtp_exp);
- 			port = 0;
- 			break;
+--- a/fs/jbd/commit.c
++++ b/fs/jbd/commit.c
+@@ -85,7 +85,12 @@ nope:
+ static void release_data_buffer(struct buffer_head *bh)
+ {
+ 	if (buffer_freed(bh)) {
++		WARN_ON_ONCE(buffer_dirty(bh));
+ 		clear_buffer_freed(bh);
++		clear_buffer_mapped(bh);
++		clear_buffer_new(bh);
++		clear_buffer_req(bh);
++		bh->b_bdev = NULL;
+ 		release_buffer_page(bh);
+ 	} else
+ 		put_bh(bh);
+@@ -840,17 +845,35 @@ restart_loop:
+ 		 * there's no point in keeping a checkpoint record for
+ 		 * it. */
+ 
+-		/* A buffer which has been freed while still being
+-		 * journaled by a previous transaction may end up still
+-		 * being dirty here, but we want to avoid writing back
+-		 * that buffer in the future after the "add to orphan"
+-		 * operation been committed,  That's not only a performance
+-		 * gain, it also stops aliasing problems if the buffer is
+-		 * left behind for writeback and gets reallocated for another
+-		 * use in a different page. */
+-		if (buffer_freed(bh) && !jh->b_next_transaction) {
+-			clear_buffer_freed(bh);
+-			clear_buffer_jbddirty(bh);
++		/*
++		 * A buffer which has been freed while still being journaled by
++		 * a previous transaction.
++		 */
++		if (buffer_freed(bh)) {
++			/*
++			 * If the running transaction is the one containing
++			 * "add to orphan" operation (b_next_transaction !=
++			 * NULL), we have to wait for that transaction to
++			 * commit before we can really get rid of the buffer.
++			 * So just clear b_modified to not confuse transaction
++			 * credit accounting and refile the buffer to
++			 * BJ_Forget of the running transaction. If the just
++			 * committed transaction contains "add to orphan"
++			 * operation, we can completely invalidate the buffer
++			 * now. We are rather throughout in that since the
++			 * buffer may be still accessible when blocksize <
++			 * pagesize and it is attached to the last partial
++			 * page.
++			 */
++			jh->b_modified = 0;
++			if (!jh->b_next_transaction) {
++				clear_buffer_freed(bh);
++				clear_buffer_jbddirty(bh);
++				clear_buffer_mapped(bh);
++				clear_buffer_new(bh);
++				clear_buffer_req(bh);
++				bh->b_bdev = NULL;
++			}
+ 		}
+ 
+ 		if (buffer_jbddirty(bh)) {
+--- a/fs/jbd/transaction.c
++++ b/fs/jbd/transaction.c
+@@ -1837,15 +1837,16 @@ static int __dispose_buffer(struct journ
+  * We're outside-transaction here.  Either or both of j_running_transaction
+  * and j_committing_transaction may be NULL.
+  */
+-static int journal_unmap_buffer(journal_t *journal, struct buffer_head *bh)
++static int journal_unmap_buffer(journal_t *journal, struct buffer_head *bh,
++				int partial_page)
+ {
+ 	transaction_t *transaction;
+ 	struct journal_head *jh;
+ 	int may_free = 1;
+-	int ret;
+ 
+ 	BUFFER_TRACE(bh, "entry");
+ 
++retry:
+ 	/*
+ 	 * It is safe to proceed here without the j_list_lock because the
+ 	 * buffers cannot be stolen by try_to_free_buffers as long as we are
+@@ -1873,10 +1874,18 @@ static int journal_unmap_buffer(journal_
+ 	 * clear the buffer dirty bit at latest at the moment when the
+ 	 * transaction marking the buffer as freed in the filesystem
+ 	 * structures is committed because from that moment on the
+-	 * buffer can be reallocated and used by a different page.
++	 * block can be reallocated and used by a different page.
+ 	 * Since the block hasn't been freed yet but the inode has
+ 	 * already been added to orphan list, it is safe for us to add
+ 	 * the buffer to BJ_Forget list of the newest transaction.
++	 *
++	 * Also we have to clear buffer_mapped flag of a truncated buffer
++	 * because the buffer_head may be attached to the page straddling
++	 * i_size (can happen only when blocksize < pagesize) and thus the
++	 * buffer_head can be reused when the file is extended again. So we end
++	 * up keeping around invalidated buffers attached to transactions'
++	 * BJ_Forget list just to stop checkpointing code from cleaning up
++	 * the transaction this buffer was modified in.
+ 	 */
+ 	transaction = jh->b_transaction;
+ 	if (transaction == NULL) {
+@@ -1903,13 +1912,9 @@ static int journal_unmap_buffer(journal_
+ 			 * committed, the buffer won't be needed any
+ 			 * longer. */
+ 			JBUFFER_TRACE(jh, "checkpointed: add to BJ_Forget");
+-			ret = __dispose_buffer(jh,
++			may_free = __dispose_buffer(jh,
+ 					journal->j_running_transaction);
+-			journal_put_journal_head(jh);
+-			spin_unlock(&journal->j_list_lock);
+-			jbd_unlock_bh_state(bh);
+-			spin_unlock(&journal->j_state_lock);
+-			return ret;
++			goto zap_buffer;
+ 		} else {
+ 			/* There is no currently-running transaction. So the
+ 			 * orphan record which we wrote for this file must have
+@@ -1917,13 +1922,9 @@ static int journal_unmap_buffer(journal_
+ 			 * the committing transaction, if it exists. */
+ 			if (journal->j_committing_transaction) {
+ 				JBUFFER_TRACE(jh, "give to committing trans");
+-				ret = __dispose_buffer(jh,
++				may_free = __dispose_buffer(jh,
+ 					journal->j_committing_transaction);
+-				journal_put_journal_head(jh);
+-				spin_unlock(&journal->j_list_lock);
+-				jbd_unlock_bh_state(bh);
+-				spin_unlock(&journal->j_state_lock);
+-				return ret;
++				goto zap_buffer;
+ 			} else {
+ 				/* The orphan record's transaction has
+ 				 * committed.  We can cleanse this buffer */
+@@ -1944,10 +1945,24 @@ static int journal_unmap_buffer(journal_
+ 		}
+ 		/*
+ 		 * The buffer is committing, we simply cannot touch
+-		 * it. So we just set j_next_transaction to the
+-		 * running transaction (if there is one) and mark
+-		 * buffer as freed so that commit code knows it should
+-		 * clear dirty bits when it is done with the buffer.
++		 * it. If the page is straddling i_size we have to wait
++		 * for commit and try again.
++		 */
++		if (partial_page) {
++			tid_t tid = journal->j_committing_transaction->t_tid;
++
++			journal_put_journal_head(jh);
++			spin_unlock(&journal->j_list_lock);
++			jbd_unlock_bh_state(bh);
++			spin_unlock(&journal->j_state_lock);
++			log_wait_commit(journal, tid);
++			goto retry;
++		}
++		/*
++		 * OK, buffer won't be reachable after truncate. We just set
++		 * j_next_transaction to the running transaction (if there is
++		 * one) and mark buffer as freed so that commit code knows it
++		 * should clear dirty bits when it is done with the buffer.
+ 		 */
+ 		set_buffer_freed(bh);
+ 		if (journal->j_running_transaction && buffer_jbddirty(bh))
+@@ -1970,6 +1985,14 @@ static int journal_unmap_buffer(journal_
+ 	}
+ 
+ zap_buffer:
++	/*
++	 * This is tricky. Although the buffer is truncated, it may be reused
++	 * if blocksize < pagesize and it is attached to the page straddling
++	 * EOF. Since the buffer might have been added to BJ_Forget list of the
++	 * running transaction, journal_get_write_access() won't clear
++	 * b_modified and credit accounting gets confused. So clear b_modified
++	 * here. */
++	jh->b_modified = 0;
+ 	journal_put_journal_head(jh);
+ zap_buffer_no_jh:
+ 	spin_unlock(&journal->j_list_lock);
+@@ -2018,7 +2041,8 @@ void journal_invalidatepage(journal_t *j
+ 		if (offset <= curr_off) {
+ 			/* This block is wholly outside the truncation point */
+ 			lock_buffer(bh);
+-			may_free &= journal_unmap_buffer(journal, bh);
++			may_free &= journal_unmap_buffer(journal, bh,
++							 offset > 0);
+ 			unlock_buffer(bh);
+ 		}
+ 		curr_off = next_off;
 
 
