@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030484Ab2JSDSA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:18:00 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54737 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161025Ab2JSDR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1161016Ab2JSDR5 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 18 Oct 2012 23:17:57 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54691 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758084Ab2JSDRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 32/37] x86, random: Architectural inlines to get random integers with RDRAND
-Date: Thu, 18 Oct 2012 20:16:55 -0700
-Message-Id: <20121019031308.005024817@linuxfoundation.org>
+        Peter Huewe <peter.huewe@infineon.com>,
+        Kent Yoder <key@linux.vnet.ibm.com>
+Subject: [ 34/37] tpm: Propagate error from tpm_transmit to fix a timeout hang
+Date: Thu, 18 Oct 2012 20:16:57 -0700
+Message-Id: <20121019031308.335582004@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -27,145 +26,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+From: Peter Huewe <peter.huewe@infineon.com>
 
-commit 628c6246d47b85f5357298601df2444d7f4dd3fd upstream.
+commit abce9ac292e13da367bbd22c1f7669f988d931ac upstream.
 
-Architectural inlines to get random ints and longs using the RDRAND
-instruction.
+tpm_write calls tpm_transmit without checking the return value and
+assigns the return value unconditionally to chip->pending_data, even if
+it's an error value.
+This causes three bugs.
 
-Intel has introduced a new RDRAND instruction, a Digital Random Number
-Generator (DRNG), which is functionally an high bandwidth entropy
-source, cryptographic whitener, and integrity monitor all built into
-hardware.  This enables RDRAND to be used directly, bypassing the
-kernel random number pool.
+So if we write to /dev/tpm0 with a tpm_param_size bigger than
+TPM_BUFSIZE=0x1000 (e.g. 0x100a)
+and a bufsize also bigger than TPM_BUFSIZE (e.g. 0x100a)
+tpm_transmit returns -E2BIG which is assigned to chip->pending_data as
+-7, but tpm_write returns that TPM_BUFSIZE bytes have been successfully
+been written to the TPM, altough this is not true (bug #1).
 
-For technical documentation, see:
+As we did write more than than TPM_BUFSIZE bytes but tpm_write reports
+that only TPM_BUFSIZE bytes have been written the vfs tries to write
+the remaining bytes (in this case 10 bytes) to the tpm device driver via
+tpm_write which then blocks at
 
-http://software.intel.com/en-us/articles/download-the-latest-bull-mountain-software-implementation-guide/
+ /* cannot perform a write until the read has cleared
+ either via tpm_read or a user_read_timer timeout */
+ while (atomic_read(&chip->data_pending) != 0)
+	 msleep(TPM_TIMEOUT);
 
-In this patch, this is *only* used for the nonblocking random number
-pool.  RDRAND is a nonblocking source, similar to our /dev/urandom,
-and is therefore not a direct replacement for /dev/random.  The
-architectural hooks presented in the previous patch only feed the
-kernel internal users, which only use the nonblocking pool, and so
-this is not a problem.
+for 60 seconds, since data_pending is -7 and nobody is able to
+read it (since tpm_read luckily checks if data_pending is greater than
+0) (#bug 2).
 
-Since this instruction is available in userspace, there is no reason
-to have a /dev/hw_rng device driver for the purpose of feeding rngd.
-This is especially so since RDRAND is a nonblocking source, and needs
-additional whitening and reduction (see the above technical
-documentation for details) in order to be of "pure entropy source"
-quality.
+After that the remaining bytes are written to the TPM which are
+interpreted by the tpm as a normal command. (bug #3)
+So if the last bytes of the command stream happen to be a e.g.
+tpm_force_clear this gets accidentally sent to the TPM.
 
-The CONFIG_EXPERT compile-time option can be used to disable this use
-of RDRAND.
+This patch fixes all three bugs, by propagating the error code of
+tpm_write and returning -E2BIG if the input buffer is too big,
+since the response from the tpm for a truncated value is bogus anyway.
+Moreover it returns -EBUSY to userspace if there is a response ready to be
+read.
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Originally-by: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Peter Huewe <peter.huewe@infineon.com>
+Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/Kconfig                  |    9 ++++
- arch/x86/include/asm/archrandom.h |   73 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 82 insertions(+)
+ drivers/char/tpm/tpm.c |   21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
 
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1451,6 +1451,15 @@ config ARCH_USES_PG_UNCACHED
- 	def_bool y
- 	depends on X86_PAT
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -1019,17 +1019,20 @@ ssize_t tpm_write(struct file *file, con
+ 		  size_t size, loff_t *off)
+ {
+ 	struct tpm_chip *chip = file->private_data;
+-	size_t in_size = size, out_size;
++	size_t in_size = size;
++	ssize_t out_size;
  
-+config ARCH_RANDOM
-+	def_bool y
-+	prompt "x86 architectural random number generator" if EXPERT
-+	---help---
-+	  Enable the x86 architectural RDRAND instruction
-+	  (Intel Bull Mountain technology) to generate random numbers.
-+	  If supported, this is a high bandwidth, cryptographically
-+	  secure hardware random number generator.
+ 	/* cannot perform a write until the read has cleared
+-	   either via tpm_read or a user_read_timer timeout */
+-	while (atomic_read(&chip->data_pending) != 0)
+-		msleep(TPM_TIMEOUT);
+-
+-	mutex_lock(&chip->buffer_mutex);
++	   either via tpm_read or a user_read_timer timeout.
++	   This also prevents splitted buffered writes from blocking here.
++	*/
++	if (atomic_read(&chip->data_pending) != 0)
++		return -EBUSY;
+ 
+ 	if (in_size > TPM_BUFSIZE)
+-		in_size = TPM_BUFSIZE;
++		return -E2BIG;
 +
- config EFI
- 	bool "EFI runtime service support"
- 	depends on ACPI
---- /dev/null
-+++ b/arch/x86/include/asm/archrandom.h
-@@ -0,0 +1,73 @@
-+/*
-+ * This file is part of the Linux kernel.
-+ *
-+ * Copyright (c) 2011, Intel Corporation
-+ * Authors: Fenghua Yu <fenghua.yu@intel.com>,
-+ *          H. Peter Anvin <hpa@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-+ *
-+ */
-+
-+#ifndef ASM_X86_ARCHRANDOM_H
-+#define ASM_X86_ARCHRANDOM_H
-+
-+#include <asm/processor.h>
-+#include <asm/cpufeature.h>
-+#include <asm/alternative.h>
-+#include <asm/nops.h>
-+
-+#define RDRAND_RETRY_LOOPS	10
-+
-+#define RDRAND_INT	".byte 0x0f,0xc7,0xf0"
-+#ifdef CONFIG_X86_64
-+# define RDRAND_LONG	".byte 0x48,0x0f,0xc7,0xf0"
-+#else
-+# define RDRAND_LONG	RDRAND_INT
-+#endif
-+
-+#ifdef CONFIG_ARCH_RANDOM
-+
-+#define GET_RANDOM(name, type, rdrand, nop)			\
-+static inline int name(type *v)					\
-+{								\
-+	int ok;							\
-+	alternative_io("movl $0, %0\n\t"			\
-+		       nop,					\
-+		       "\n1: " rdrand "\n\t"			\
-+		       "jc 2f\n\t"				\
-+		       "decl %0\n\t"                            \
-+		       "jnz 1b\n\t"                             \
-+		       "2:",                                    \
-+		       X86_FEATURE_RDRAND,                      \
-+		       ASM_OUTPUT2("=r" (ok), "=a" (*v)),       \
-+		       "0" (RDRAND_RETRY_LOOPS));		\
-+	return ok;						\
-+}
-+
-+#ifdef CONFIG_X86_64
-+
-+GET_RANDOM(arch_get_random_long, unsigned long, RDRAND_LONG, ASM_NOP5);
-+GET_RANDOM(arch_get_random_int, unsigned int, RDRAND_INT, ASM_NOP4);
-+
-+#else
-+
-+GET_RANDOM(arch_get_random_long, unsigned long, RDRAND_LONG, ASM_NOP3);
-+GET_RANDOM(arch_get_random_int, unsigned int, RDRAND_INT, ASM_NOP3);
-+
-+#endif /* CONFIG_X86_64 */
-+
-+#endif  /* CONFIG_ARCH_RANDOM */
-+
-+#endif /* ASM_X86_ARCHRANDOM_H */
++	mutex_lock(&chip->buffer_mutex);
+ 
+ 	if (copy_from_user
+ 	    (chip->data_buffer, (void __user *) buf, in_size)) {
+@@ -1039,6 +1042,10 @@ ssize_t tpm_write(struct file *file, con
+ 
+ 	/* atomic tpm command send and result receive */
+ 	out_size = tpm_transmit(chip, chip->data_buffer, TPM_BUFSIZE);
++	if (out_size < 0) {
++		mutex_unlock(&chip->buffer_mutex);
++		return out_size;
++	}
+ 
+ 	atomic_set(&chip->data_pending, out_size);
+ 	mutex_unlock(&chip->buffer_mutex);
 
 
