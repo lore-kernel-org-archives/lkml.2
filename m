@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965054Ab2JSDd0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:33:26 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51089 "EHLO mail.kernel.org"
+	id S1754169Ab2JSCq6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:46:58 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51051 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754696Ab2JSCrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:00 -0400
+	id S1752238Ab2JSCq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:46:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ronnie Sahlberg <ronniesahlberg@gmail.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 12/62] iscsi-target: Correctly set 0xffffffff field within ISCSI_OP_REJECT PDU
-Date: Thu, 18 Oct 2012 19:44:40 -0700
-Message-Id: <20121019024257.917393710@linuxfoundation.org>
+        Jason Wessel <jason.wessel@windriver.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 09/62] mips,kgdb: fix recursive page fault with CONFIG_KPROBES
+Date: Thu, 18 Oct 2012 19:44:37 -0700
+Message-Id: <20121019024257.445873324@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -26,35 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Jason Wessel <jason.wessel@windriver.com>
 
-commit f25590f39d543272f7ae7b00d533359c8d7ff331 upstream.
+commit f0a996eeeda214f4293e234df33b29bec003b536 upstream.
 
-This patch adds a missing iscsi_reject->ffffffff assignment within
-iscsit_send_reject() code to properly follow RFC-3720 Section 10.17
-Bytes 16 -> 19 for the PDU format definition of ISCSI_OP_REJECT.
+This fault was detected using the kgdb test suite on boot and it
+crashes recursively due to the fact that CONFIG_KPROBES on mips adds
+an extra die notifier in the page fault handler.  The crash signature
+looks like this:
 
-We've not seen any initiators care about this bytes in practice, but
-as Ronnie reported this was causing trouble with wireshark packet
-decoding lets go ahead and fix this up now.
+kgdbts:RUN bad memory access test
+KGDB: re-enter exception: ALL breakpoints killed
+Call Trace:
+[<807b7548>] dump_stack+0x20/0x54
+[<807b7548>] dump_stack+0x20/0x54
 
-Reported-by: Ronnie Sahlberg <ronniesahlberg@gmail.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+The fix for now is to have kgdb return immediately if the fault type
+is DIE_PAGE_FAULT and allow the kprobe code to decide what is supposed
+to happen.
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/mips/kernel/kgdb.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -3349,6 +3349,7 @@ static int iscsit_send_reject(
- 	hdr->opcode		= ISCSI_OP_REJECT;
- 	hdr->flags		|= ISCSI_FLAG_CMD_FINAL;
- 	hton24(hdr->dlength, ISCSI_HDR_LEN);
-+	hdr->ffffffff		= 0xffffffff;
- 	cmd->stat_sn		= conn->stat_sn++;
- 	hdr->statsn		= cpu_to_be32(cmd->stat_sn);
- 	hdr->exp_cmdsn	= cpu_to_be32(conn->sess->exp_cmd_sn);
+--- a/arch/mips/kernel/kgdb.c
++++ b/arch/mips/kernel/kgdb.c
+@@ -283,6 +283,15 @@ static int kgdb_mips_notify(struct notif
+ 	struct pt_regs *regs = args->regs;
+ 	int trap = (regs->cp0_cause & 0x7c) >> 2;
+ 
++#ifdef CONFIG_KPROBES
++	/*
++	 * Return immediately if the kprobes fault notifier has set
++	 * DIE_PAGE_FAULT.
++	 */
++	if (cmd == DIE_PAGE_FAULT)
++		return NOTIFY_DONE;
++#endif /* CONFIG_KPROBES */
++
+ 	/* Userspace events, ignore. */
+ 	if (user_mode(regs))
+ 		return NOTIFY_DONE;
 
 
