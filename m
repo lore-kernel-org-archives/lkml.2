@@ -1,87 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759304Ab2JSQMT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 12:12:19 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:44159 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822Ab2JSQMS (ORCPT
+	id S1758548Ab2JSQMt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 12:12:49 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60110 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532Ab2JSQMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 12:12:18 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: avi@redhat.com, gleb@redhat.com, mtosatti@redhat.com
-Cc: davej@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com, Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] kvm, async_pf: exit idleness when handling KVM_PV_REASON_PAGE_NOT_PRESENT
-Date: Fri, 19 Oct 2012 12:11:55 -0400
-Message-Id: <1350663115-11373-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.7.12.3
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Fri, 19 Oct 2012 12:12:47 -0400
+Message-ID: <50817BFC.9000106@wwwdotorg.org>
+Date: Fri, 19 Oct 2012 10:12:44 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH 4/4 v2] gpio/tegra: convert to use linear irqdomain
+References: <1350644052-31926-1-git-send-email-linus.walleij@linaro.org>
+In-Reply-To: <1350644052-31926-1-git-send-email-linus.walleij@linaro.org>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KVM_PV_REASON_PAGE_NOT_PRESENT kicks cpu out of idleness, but we haven't
-marked that spot as an exit from idleness.
+On 10/19/2012 04:54 AM, Linus Walleij wrote:
+> The Tegra driver tries to do the work of irq_domain_add_linear()
+> by reserving a bunch of descriptors somewhere and keeping track
+> of the base offset, then calling irq_domain_add_legacy(). Let's
+> stop doing that and simply use the linear IRQ domain.
+> 
+> For this to work: use irq_create_mapping() in the IRQ iterator
+> so that the descriptors get allocated here.
 
-Not doing so can cause RCU warnings such as:
-
-[  732.788386] ===============================
-[  732.789803] [ INFO: suspicious RCU usage. ]
-[  732.790032] 3.7.0-rc1-next-20121019-sasha-00002-g6d8d02d-dirty #63 Tainted: G        W
-[  732.790032] -------------------------------
-[  732.790032] include/linux/rcupdate.h:738 rcu_read_lock() used illegally while idle!
-[  732.790032]
-[  732.790032] other info that might help us debug this:
-[  732.790032]
-[  732.790032]
-[  732.790032] RCU used illegally from idle CPU!
-[  732.790032] rcu_scheduler_active = 1, debug_locks = 1
-[  732.790032] RCU used illegally from extended quiescent state!
-[  732.790032] 2 locks held by trinity-child31/8252:
-[  732.790032]  #0:  (&rq->lock){-.-.-.}, at: [<ffffffff83a67528>] __schedule+0x178/0x8f0
-[  732.790032]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff81152bde>] cpuacct_charge+0xe/0x200
-[  732.790032]
-[  732.790032] stack backtrace:
-[  732.790032] Pid: 8252, comm: trinity-child31 Tainted: G        W    3.7.0-rc1-next-20121019-sasha-00002-g6d8d02d-dirty #63
-[  732.790032] Call Trace:
-[  732.790032]  [<ffffffff8118266b>] lockdep_rcu_suspicious+0x10b/0x120
-[  732.790032]  [<ffffffff81152c60>] cpuacct_charge+0x90/0x200
-[  732.790032]  [<ffffffff81152bde>] ? cpuacct_charge+0xe/0x200
-[  732.790032]  [<ffffffff81158093>] update_curr+0x1a3/0x270
-[  732.790032]  [<ffffffff81158a6a>] dequeue_entity+0x2a/0x210
-[  732.790032]  [<ffffffff81158ea5>] dequeue_task_fair+0x45/0x130
-[  732.790032]  [<ffffffff8114ae29>] dequeue_task+0x89/0xa0
-[  732.790032]  [<ffffffff8114bb9e>] deactivate_task+0x1e/0x20
-[  732.790032]  [<ffffffff83a67c29>] __schedule+0x879/0x8f0
-[  732.790032]  [<ffffffff8117e20d>] ? trace_hardirqs_off+0xd/0x10
-[  732.790032]  [<ffffffff810a37a5>] ? kvm_async_pf_task_wait+0x1d5/0x2b0
-[  732.790032]  [<ffffffff83a67cf5>] schedule+0x55/0x60
-[  732.790032]  [<ffffffff810a37c4>] kvm_async_pf_task_wait+0x1f4/0x2b0
-[  732.790032]  [<ffffffff81139e50>] ? abort_exclusive_wait+0xb0/0xb0
-[  732.790032]  [<ffffffff81139c25>] ? prepare_to_wait+0x25/0x90
-[  732.790032]  [<ffffffff810a3a66>] do_async_page_fault+0x56/0xa0
-[  732.790032]  [<ffffffff83a6a6e8>] async_page_fault+0x28/0x30
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- arch/x86/kernel/kvm.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index b3e5e51..4180a87 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -247,7 +247,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
- 		break;
- 	case KVM_PV_REASON_PAGE_NOT_PRESENT:
- 		/* page is swapped out by the host. */
-+		rcu_irq_enter();
-+		exit_idle();
- 		kvm_async_pf_task_wait((u32)read_cr2());
-+		rcu_irq_exit();
- 		break;
- 	case KVM_PV_REASON_PAGE_READY:
- 		rcu_irq_enter();
--- 
-1.7.12.3
-
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
