@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab2JSAEr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 20:04:47 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:50895 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710Ab2JSAEq (ORCPT
+	id S1757436Ab2JSAEu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 20:04:50 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:58067 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710Ab2JSAEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 20:04:46 -0400
+	Thu, 18 Oct 2012 20:04:48 -0400
 From: Fabio Estevam <festevam@gmail.com>
 To: rob.herring@calxeda.com
 Cc: shawn.guo@linaro.org, kernel@pengutronix.de,
         broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH v2 1/2] ARM: multi_v7_defconfig: Add ARCH_MXC
-Date: Thu, 18 Oct 2012 21:04:05 -0300
-Message-Id: <1350605046-21358-1-git-send-email-festevam@gmail.com>
+Subject: [PATCH v2 2/2] mfd: Kconfig: Let MFD_SYSCON select REGMAP
+Date: Thu, 18 Oct 2012 21:04:06 -0300
+Message-Id: <1350605046-21358-2-git-send-email-festevam@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1350605046-21358-1-git-send-email-festevam@gmail.com>
+References: <1350605046-21358-1-git-send-email-festevam@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fabio Estevam <fabio.estevam@freescale.com>
 
-Let ARCH_MXC be covered by multi_v7_defconfig.
+Building multi_v7_defconfig for mx6 causes the following build error:
 
-Allow booting mx6 via NFS.
+  CC      drivers/mfd/syscon.o
+drivers/mfd/syscon.c:94: error: variable 'syscon_regmap_config' has initializer but incomplete type
+drivers/mfd/syscon.c:95: error: unknown field 'reg_bits' specified in initializer
+drivers/mfd/syscon.c:95: warning: excess elements in struct initializer
+drivers/mfd/syscon.c:95: warning: (near initialization for 'syscon_regmap_config')
+drivers/mfd/syscon.c:96: error: unknown field 'val_bits' specified in initializer
+drivers/mfd/syscon.c:96: warning: excess elements in struct initializer
+drivers/mfd/syscon.c:96: warning: (near initialization for 'syscon_regmap_config')
+drivers/mfd/syscon.c:97: error: unknown field 'reg_stride' specified in initializer
+drivers/mfd/syscon.c:97: warning: excess elements in struct initializer
+drivers/mfd/syscon.c:97: warning: (near initialization for 'syscon_regmap_config')
+drivers/mfd/syscon.c: In function 'syscon_probe':
+drivers/mfd/syscon.c:124: error: invalid use of undefined type 'struct regmap_config'
+drivers/mfd/syscon.c:125: error: implicit declaration of function 'devm_regmap_init_mmio'
+drivers/mfd/syscon.c:126: warning: assignment makes pointer from integer without a cast
+
+Fix it by selecting REGMAP option.
 
 Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 ---
 Changes since v1:
-- Provide a more complete config that allows booting mx6 via NFS
+- No changes. Newly introduced in this series
 
- arch/arm/configs/multi_v7_defconfig |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/mfd/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index 159f75f..df1e563 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -5,6 +5,8 @@ CONFIG_ARCH_MVEBU=y
- CONFIG_MACH_ARMADA_370=y
- CONFIG_MACH_ARMADA_XP=y
- CONFIG_ARCH_HIGHBANK=y
-+CONFIG_ARCH_MXC=y
-+CONFIG_SOC_IMX6Q=y
- CONFIG_ARCH_SOCFPGA=y
- # CONFIG_ARCH_VEXPRESS_CORTEX_A5_A9_ERRATA is not set
- CONFIG_ARM_ERRATA_754322=y
-@@ -17,18 +19,29 @@ CONFIG_ARM_APPENDED_DTB=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- CONFIG_NET=y
-+CONFIG_PACKET=y
-+CONFIG_UNIX=y
-+CONFIG_INET=y
-+CONFIG_IP_PNP=y
-+CONFIG_IP_PNP_DHCP=y
- CONFIG_ATA=y
- CONFIG_SATA_HIGHBANK=y
- CONFIG_NETDEVICES=y
- CONFIG_NET_CALXEDA_XGMAC=y
- CONFIG_SMSC911X=y
- CONFIG_STMMAC_ETH=y
-+CONFIG_NFS_FS=y
-+CONFIG_NFS_V3_ACL=y
-+CONFIG_NFS_V4=y
-+CONFIG_ROOT_NFS=y
- CONFIG_SERIO_AMBAKMI=y
- CONFIG_SERIAL_8250=y
- CONFIG_SERIAL_8250_CONSOLE=y
- CONFIG_SERIAL_8250_DW=y
- CONFIG_SERIAL_AMBA_PL011=y
- CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
-+CONFIG_SERIAL_IMX=y
-+CONFIG_SERIAL_IMX_CONSOLE=y
- CONFIG_SERIAL_OF_PLATFORM=y
- CONFIG_IPMI_HANDLER=y
- CONFIG_IPMI_SI=y
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index acab3ef..ef56515 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -1030,6 +1030,7 @@ config MFD_SYSCON
+ 	bool "System Controller Register R/W Based on Regmap"
+ 	depends on OF
+ 	select REGMAP_MMIO
++	select REGMAP
+ 	help
+ 	  Select this option to enable accessing system control registers
+ 	  via regmap.
 -- 
 1.7.9.5
 
