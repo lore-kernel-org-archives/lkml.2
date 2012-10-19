@@ -1,80 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757404Ab2JSTPN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 15:15:13 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:40669 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754787Ab2JSTPM (ORCPT
+	id S1757677Ab2JSTPk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 15:15:40 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:33144 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756835Ab2JSTPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 15:15:12 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] xen/hvm: If we fail to fetch an HVM parameter print out which flag it is.
-Date: Fri, 19 Oct 2012 15:03:01 -0400
-Message-Id: <1350673381-20342-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.6
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Fri, 19 Oct 2012 15:15:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <508110C4.6030805@jp.fujitsu.com>
+References: <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com>
+ <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com>
+ <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com>
+ <20121017040515.GA13505@redhat.com> <alpine.DEB.2.00.1210162222100.26279@chino.kir.corp.google.com>
+ <20121017181413.GA16805@redhat.com> <alpine.DEB.2.00.1210171219010.28214@chino.kir.corp.google.com>
+ <20121017193229.GC16805@redhat.com> <alpine.DEB.2.00.1210171237130.28214@chino.kir.corp.google.com>
+ <20121017194501.GA24400@redhat.com> <alpine.DEB.2.00.1210171318400.28214@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1210171428540.20712@chino.kir.corp.google.com>
+ <507F803A.8000900@jp.fujitsu.com> <507F86BD.7070201@jp.fujitsu.com>
+ <alpine.DEB.2.00.1210181255470.26994@chino.kir.corp.google.com> <508110C4.6030805@jp.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Fri, 19 Oct 2012 15:15:18 -0400
+Message-ID: <CAHGf_=pBZAZFQm2+4w8ox3uCZ5psgYmtQmHk7aZU5dgY64+4jQ@mail.gmail.com>
+Subject: Re: [patch for-3.7 v3] mm, mempolicy: hold task->mempolicy refcount
+ while reading numa_maps.
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, bhutchings@solarflare.com,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Makes it easier to troubleshoot in the field.
+On Fri, Oct 19, 2012 at 4:35 AM, Kamezawa Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> (2012/10/19 5:03), David Rientjes wrote:
+>>
+>> On Thu, 18 Oct 2012, Kamezawa Hiroyuki wrote:
+>>>
+>>> @@ -132,7 +162,7 @@ static void *m_start(struct seq_file *m, loff_t *pos)
+>>>         tail_vma = get_gate_vma(priv->task->mm);
+>>>         priv->tail_vma = tail_vma;
+>>> -
+>>> +       hold_task_mempolicy(priv);
+>>>         /* Start with last addr hint */
+>>>         vma = find_vma(mm, last_addr);
+>>>         if (last_addr && vma) {
+>>> @@ -159,6 +189,7 @@ out:
+>>>         if (vma)
+>>>                 return vma;
+>>>   +     release_task_mempolicy(priv);
+>>>         /* End of vmas has been reached */
+>>>         m->version = (tail_vma != NULL)? 0: -1UL;
+>>>         up_read(&mm->mmap_sem);
+>>
+>>
+>> Otherwise looks good, but please remove the two task_lock()'s in
+>> show_numa_map() that I added as part of this since you're replacing the
+>> need for locking.
+>>
+> Thank you for your review.
+> How about this ?
+>
+> ==
+> From c5849c9034abeec3f26bf30dadccd393b0c5c25e Mon Sep 17 00:00:00 2001
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Fri, 19 Oct 2012 17:00:55 +0900
+> Subject: [PATCH] hold task->mempolicy while numa_maps scans.
+>
+>  /proc/<pid>/numa_maps scans vma and show mempolicy under
+>  mmap_sem. It sometimes accesses task->mempolicy which can
+>  be freed without mmap_sem and numa_maps can show some
+>  garbage while scanning.
+>
+> This patch tries to take reference count of task->mempolicy at reading
+> numa_maps before calling get_vma_policy(). By this, task->mempolicy
+> will not be freed until numa_maps reaches its end.
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>
+> V2->v3
+>  -  updated comments to be more verbose.
+>  -  removed task_lock() in numa_maps code.
+> V1->V2
+>  -  access task->mempolicy only once and remember it.  Becase kernel/exit.c
+>     can overwrite it.
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- include/xen/hvm.h |   31 +++++++++++++++++++++++++++++--
- 1 files changed, 29 insertions(+), 2 deletions(-)
-
-diff --git a/include/xen/hvm.h b/include/xen/hvm.h
-index b193fa2..c2a4238 100644
---- a/include/xen/hvm.h
-+++ b/include/xen/hvm.h
-@@ -5,6 +5,33 @@
- #include <xen/interface/hvm/params.h>
- #include <asm/xen/hypercall.h>
- 
-+static const char *param_name(int op)
-+{
-+	static const char *const names[] = {
-+		[HVM_PARAM_CALLBACK_IRQ] = "HVM_PARAM_CALLBACK_IRQ",
-+		[HVM_PARAM_STORE_PFN] = "HVM_PARAM_STORE_PFN",
-+		[HVM_PARAM_STORE_EVTCHN] = "HVM_PARAM_STORE_EVTCHN",
-+		[HVM_PARAM_PAE_ENABLED] = "HVM_PARAM_PAE_ENABLED",
-+		[HVM_PARAM_IOREQ_PFN] = "HVM_PARAM_IOREQ_PFN",
-+		[HVM_PARAM_BUFIOREQ_PFN] = "HVM_PARAM_BUFIOREQ_PFN",
-+		[HVM_PARAM_TIMER_MODE] = "HVM_PARAM_TIMER_MODE",
-+		[HVM_PARAM_HPET_ENABLED] = "HVM_PARAM_HPET_ENABLED",
-+		[HVM_PARAM_IDENT_PT] = "HVM_PARAM_IDENT_PT",
-+		[HVM_PARAM_DM_DOMAIN] = "HVM_PARAM_DM_DOMAIN",
-+		[HVM_PARAM_ACPI_S_STATE] = "HVM_PARAM_ACPI_S_STATE",
-+		[HVM_PARAM_VM86_TSS] = "HVM_PARAM_VM86_TSS",
-+		[HVM_PARAM_VPT_ALIGN] = "HVM_PARAM_VPT_ALIGN",
-+		[HVM_PARAM_CONSOLE_PFN] = "HVM_PARAM_CONSOLE_PFN",
-+		[HVM_PARAM_CONSOLE_EVTCHN] = "HVM_PARAM_CONSOLE_EVTCHN" };
-+
-+	if (op >= ARRAY_SIZE(names))
-+		return "unknown";
-+
-+	if (!names[op])
-+		return "reserved";
-+
-+	return names[op];
-+}
- static inline int hvm_get_parameter(int idx, uint64_t *value)
- {
- 	struct xen_hvm_param xhv;
-@@ -14,8 +41,8 @@ static inline int hvm_get_parameter(int idx, uint64_t *value)
- 	xhv.index = idx;
- 	r = HYPERVISOR_hvm_op(HVMOP_get_param, &xhv);
- 	if (r < 0) {
--		printk(KERN_ERR "Cannot get hvm parameter %d: %d!\n",
--			idx, r);
-+		printk(KERN_ERR "Cannot get hvm parameter %s (%d): %d!\n",
-+			param_name(idx), idx, r);
- 		return r;
- 	}
- 	*value = xhv.value;
--- 
-1.7.7.6
-
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
