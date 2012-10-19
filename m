@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977Ab2JSDQW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:16:22 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51480 "EHLO mail.kernel.org"
+	id S1030273Ab2JSDQi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:16:38 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51456 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757344Ab2JSCrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:33 -0400
+	id S1757326Ab2JSCr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Alex Lyashkov <umka@cloudlinux.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 26/62] module: taint kernel when lve module is loaded
-Date: Thu, 18 Oct 2012 19:44:54 -0700
-Message-Id: <20121019024300.183823614@linuxfoundation.org>
+        Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        David Miller <davem@davemloft.net>
+Subject: [ 34/62] ipvs: fix oops in ip_vs_dst_event on rmmod
+Date: Thu, 18 Oct 2012 19:45:02 -0700
+Message-Id: <20121019024301.502441628@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -27,36 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg59@srcf.ucam.org>
+From: Julian Anastasov <ja@ssi.bg>
 
-commit c99af3752bb52ba3aece5315279a57a477edfaf1 upstream.
+commit 283283c4da91adc44b03519f434ee1e7e91d6fdb upstream.
 
-Cloudlinux have a product called lve that includes a kernel module. This
-was previously GPLed but is now under a proprietary license, but the
-module continues to declare MODULE_LICENSE("GPL") and makes use of some
-EXPORT_SYMBOL_GPL symbols. Forcibly taint it in order to avoid this.
+	After commit 39f618b4fd95ae243d940ec64c961009c74e3333 (3.4)
+"ipvs: reset ipvs pointer in netns" we can oops in
+ip_vs_dst_event on rmmod ip_vs because ip_vs_control_cleanup
+is called after the ipvs_core_ops subsys is unregistered and
+net->ipvs is NULL. Fix it by exiting early from ip_vs_dst_event
+if ipvs is NULL. It is safe because all services and dests
+for the net are already freed.
 
-Signed-off-by: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Alex Lyashkov <umka@cloudlinux.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Simon Horman <horms@verge.net.au>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Acked-by: David Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/module.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/netfilter/ipvs/ip_vs_ctl.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2729,6 +2729,10 @@ static int check_module_license_and_vers
- 	if (strcmp(mod->name, "driverloader") == 0)
- 		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
+--- a/net/netfilter/ipvs/ip_vs_ctl.c
++++ b/net/netfilter/ipvs/ip_vs_ctl.c
+@@ -1521,11 +1521,12 @@ static int ip_vs_dst_event(struct notifi
+ {
+ 	struct net_device *dev = ptr;
+ 	struct net *net = dev_net(dev);
++	struct netns_ipvs *ipvs = net_ipvs(net);
+ 	struct ip_vs_service *svc;
+ 	struct ip_vs_dest *dest;
+ 	unsigned int idx;
  
-+	/* lve claims to be GPL but upstream won't provide source */
-+	if (strcmp(mod->name, "lve") == 0)
-+		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
-+
- #ifdef CONFIG_MODVERSIONS
- 	if ((mod->num_syms && !mod->crcs)
- 	    || (mod->num_gpl_syms && !mod->gpl_crcs)
+-	if (event != NETDEV_UNREGISTER)
++	if (event != NETDEV_UNREGISTER || !ipvs)
+ 		return NOTIFY_DONE;
+ 	IP_VS_DBG(3, "%s() dev=%s\n", __func__, dev->name);
+ 	EnterFunction(2);
+@@ -1551,7 +1552,7 @@ static int ip_vs_dst_event(struct notifi
+ 		}
+ 	}
+ 
+-	list_for_each_entry(dest, &net_ipvs(net)->dest_trash, n_list) {
++	list_for_each_entry(dest, &ipvs->dest_trash, n_list) {
+ 		__ip_vs_dev_reset(dest, dev);
+ 	}
+ 	mutex_unlock(&__ip_vs_mutex);
 
 
