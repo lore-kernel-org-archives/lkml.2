@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030515Ab2JSDK6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:10:58 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51754 "EHLO mail.kernel.org"
+	id S1030519Ab2JSDLf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:11:35 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51720 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932530Ab2JSCsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:48:08 -0400
+	id S932467Ab2JSCsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:48:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 59/62] ASoC: wm2200: Fix non-inverted OUT2 mute control
-Date: Thu, 18 Oct 2012 19:45:27 -0700
-Message-Id: <20121019024305.514727392@linuxfoundation.org>
+        Fabio Porcedda <fabio.porcedda@gmail.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 55/62] usb: gadget: at91_udc: fix dt support
+Date: Thu, 18 Oct 2012 19:45:23 -0700
+Message-Id: <20121019024304.843530517@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -25,27 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Fabio Porcedda <fabio.porcedda@gmail.com>
 
-commit a1b98e12b7f8fad2f0aa3c08a3302bcac7ae1ec7 upstream.
+commit 9c6d196d5aa35e07482f23c3e37755e7a82140e0 upstream.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Don't fail the initialization check for the platform_data
+if there is avaiable an associated device tree node.
+
+Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm2200.c |    2 +-
+ drivers/usb/gadget/at91_udc.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm2200.c
-+++ b/sound/soc/codecs/wm2200.c
-@@ -1028,7 +1028,7 @@ SOC_DOUBLE_R_TLV("OUT2 Digital Volume",
- 		 WM2200_DAC_DIGITAL_VOLUME_2R, WM2200_OUT2L_VOL_SHIFT, 0x9f, 0,
- 		 digital_tlv),
- SOC_DOUBLE("OUT2 Switch", WM2200_PDM_1, WM2200_SPK1L_MUTE_SHIFT,
--	   WM2200_SPK1R_MUTE_SHIFT, 1, 0),
-+	   WM2200_SPK1R_MUTE_SHIFT, 1, 1),
- };
+--- a/drivers/usb/gadget/at91_udc.c
++++ b/drivers/usb/gadget/at91_udc.c
+@@ -1735,7 +1735,7 @@ static int __devinit at91udc_probe(struc
+ 	int		retval;
+ 	struct resource	*res;
  
- WM2200_MIXER_ENUMS(OUT1L, WM2200_OUT1LMIX_INPUT_1_SOURCE);
+-	if (!dev->platform_data) {
++	if (!dev->platform_data && !pdev->dev.of_node) {
+ 		/* small (so we copy it) but critical! */
+ 		DBG("missing platform_data\n");
+ 		return -ENODEV;
 
 
