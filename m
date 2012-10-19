@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758709Ab2JSOH1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 10:07:27 -0400
-Received: from mail.kernel.org ([198.145.19.201]:41797 "EHLO mail.kernel.org"
+	id S1758763Ab2JSOHx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 10:07:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9026 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758587Ab2JSOHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 10:07:21 -0400
-Date: Fri, 19 Oct 2012 07:07:20 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: stable@vger.kernel.org, tony.luck@intel.com, bp@amd64.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        miaox@cn.fujitsu.com, laijs@cn.fujitsu.com, wency@cn.fujitsu.com,
-        x86@kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] Replace if statement with WARN_ON_ONCE() in
- cmci_rediscover().
-Message-ID: <20121019140720.GA27454@kroah.com>
-References: <1350625528-1385-1-git-send-email-tangchen@cn.fujitsu.com>
- <1350625528-1385-2-git-send-email-tangchen@cn.fujitsu.com>
+	id S1754452Ab2JSOHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 10:07:51 -0400
+Message-ID: <50815EA5.5080502@redhat.com>
+Date: Fri, 19 Oct 2012 10:07:33 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350625528-1385-2-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org, aarcange@redhat.com,
+        Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH 2/2] rename NUMA fault handling functions
+References: <20121018171821.7f1b1683@cuia.bos.redhat.com>  <20121018172021.0b1f6e3d@cuia.bos.redhat.com> <1350646863.30157.13.camel@twins>
+In-Reply-To: <1350646863.30157.13.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 01:45:27PM +0800, Tang Chen wrote:
-> cmci_rediscover() is only called by the CPU_POST_DEAD event handler,
-> which means the corresponding cpu has already dead. As a result, it
-> won't be accessed in the for_each_online_cpu loop.
-> So, we could change the if(cpu == dying) statement into a WARN_ON_ONCE().
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce_intel.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+On 10/19/2012 07:41 AM, Peter Zijlstra wrote:
+> On Thu, 2012-10-18 at 17:20 -0400, Rik van Riel wrote:
+>> Having the function name indicate what the function is used
+>> for makes the code a little easier to read.  Furthermore,
+>> the fault handling code largely consists of do_...._page
+>> functions.
+>
+> I don't much care either way, but I was thinking walken might want to
+> use something similar to do WSS estimation, in which case the NUMA name
+> is just as wrong.
 
-<formletter>
+That's a good point. I had not considered other uses of the
+same code.
 
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-for how to do this properly.
-
-</formletter>
+-- 
+All rights reversed
