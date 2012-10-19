@@ -1,131 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758355Ab2JSKAh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 06:00:37 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38150 "EHLO arroyo.ext.ti.com"
+	id S1758263Ab2JSKAy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 06:00:54 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:53863 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758305Ab2JSKAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 06:00:34 -0400
-From: Afzal Mohammed <afzal@ti.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <rtc-linux@googlegroups.com>,
-        Daniel Mack <zonque@gmail.com>, Afzal Mohammed <afzal@ti.com>
-Subject: [PATCH v4 3/5] rtc: omap: dt support
-Date: Fri, 19 Oct 2012 15:29:38 +0530
-Message-ID: <061c670b0a05570d7b83d8a8f105ee5b35583f7f.1350633036.git.afzal@ti.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <cover.1350633036.git.afzal@ti.com>
-References: <cover.1350633036.git.afzal@ti.com>
+	id S1758338Ab2JSKAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 06:00:36 -0400
+Message-ID: <508124B7.2050002@parallels.com>
+Date: Fri, 19 Oct 2012 14:00:23 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        <devel@openvz.org>, <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v5 06/14] memcg: kmem controller infrastructure
+References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-7-git-send-email-glommer@parallels.com> <20121017151214.e3d2aa3b.akpm@linux-foundation.org> <507FC8E3.8020006@parallels.com> <alpine.DEB.2.00.1210181502270.30894@chino.kir.corp.google.com> <50811903.9000105@parallels.com> <alpine.DEB.2.00.1210190229450.26815@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1210190229450.26815@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-enhance rtc-omap driver with DT capability
+On 10/19/2012 01:31 PM, David Rientjes wrote:
+> On Fri, 19 Oct 2012, Glauber Costa wrote:
+> 
+>>>>> Do we actually need to test PF_KTHREAD when current->mm == NULL? 
+>>>>> Perhaps because of aio threads whcih temporarily adopt a userspace mm?
+>>>>
+>>>> I believe so. I remember I discussed this in the past with David
+>>>> Rientjes and he advised me to test for both.
+>>>>
+>>>
+>>> PF_KTHREAD can do use_mm() to assume an ->mm but hopefully they aren't 
+>>> allocating slab while doing so.  Have you considered actually charging 
+>>> current->mm->owner for that memory, though, since the kthread will have 
+>>> freed the memory before unuse_mm() or otherwise have charged it on behalf 
+>>> of a user process, i.e. only exempting PF_KTHREAD?
+>>>
+>> I always charge current->mm->owner.
+>>
+> 
+> Yeah, I'm asking have you considered charging current->mm->owner for the 
+> memory when a kthread (current) assumes the mm of a user process via 
+> use_mm()?  It may free the memory before calling unuse_mm(), but it's also 
+> allocating the memory on behalf of a user so this exemption might be 
+> dangerous if use_mm() becomes more popular.  I don't think there's 
+> anything that prevents that charge, I'm just wondering if you considered 
+> doing it even for kthreads with an mm.
+> 
+Well, I thought about it.
 
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
-Acked-by: Sekhar Nori <nsekhar@ti.com>
----
+And I personally don't like it. I think all kthreads should be treated
+the same. We have control over it, unlike any userspace application. We
+never expect its memory consumption to explode.
 
-v4:
- Proper devicetree documentation
-
-v2:
- Use compatible as ti,da830-rtc instead of ti,am1808-rtc
-
- Documentation/devicetree/bindings/rtc/rtc-omap.txt | 17 +++++++++++++++++
- drivers/rtc/rtc-omap.c                             | 18 ++++++++++++++++++
- 2 files changed, 35 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/rtc/rtc-omap.txt
-
-diff --git a/Documentation/devicetree/bindings/rtc/rtc-omap.txt b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
-new file mode 100644
-index 0000000..b47aa41
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
-@@ -0,0 +1,17 @@
-+TI Real Time Clock
-+
-+Required properties:
-+- compatible: "ti,da830-rtc"
-+- reg: Address range of rtc register set
-+- interrupts: rtc timer, alarm interrupts in order
-+- interrupt-parent: phandle for the interrupt controller
-+
-+Example:
-+
-+rtc@1c23000 {
-+	compatible = "ti,da830-rtc";
-+	reg = <0x23000 0x1000>;
-+	interrupts = <19
-+		      19>;
-+	interrupt-parent = <&intc>;
-+};
-diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-index d948426..dff9ff4 100644
---- a/drivers/rtc/rtc-omap.c
-+++ b/drivers/rtc/rtc-omap.c
-@@ -20,6 +20,8 @@
- #include <linux/rtc.h>
- #include <linux/bcd.h>
- #include <linux/platform_device.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
- 
- #include <asm/io.h>
- 
-@@ -298,6 +300,8 @@ static struct rtc_class_ops omap_rtc_ops = {
- static int omap_rtc_alarm;
- static int omap_rtc_timer;
- 
-+#define	OMAP_RTC_DATA_DA830_IDX	1
-+
- static struct platform_device_id omap_rtc_devtype[] = {
- 	{
- 		.name	= DRIVER_NAME,
-@@ -309,12 +313,25 @@ static struct platform_device_id omap_rtc_devtype[] = {
- };
- MODULE_DEVICE_TABLE(platform, omap_rtc_devtype);
- 
-+static const struct of_device_id omap_rtc_of_match[] = {
-+	{	.compatible	= "ti,da830-rtc",
-+		.data		= &omap_rtc_devtype[OMAP_RTC_DATA_DA830_IDX],
-+	},
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, omap_rtc_of_match);
-+
- static int __init omap_rtc_probe(struct platform_device *pdev)
- {
- 	struct resource		*res, *mem;
- 	struct rtc_device	*rtc;
- 	u8			reg, new_ctrl;
- 	const struct platform_device_id *id_entry;
-+	const struct of_device_id *of_id;
-+
-+	of_id = of_match_device(omap_rtc_of_match, &pdev->dev);
-+	if (of_id)
-+		pdev->id_entry = of_id->data;
- 
- 	omap_rtc_timer = platform_get_irq(pdev, 0);
- 	if (omap_rtc_timer <= 0) {
-@@ -510,6 +527,7 @@ static struct platform_driver omap_rtc_driver = {
- 	.driver		= {
- 		.name	= DRIVER_NAME,
- 		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(omap_rtc_of_match),
- 	},
- 	.id_table	= omap_rtc_devtype,
- };
--- 
-1.7.12
-
+Specially considering that those allocations are supposed to be
+short-lived, we are only paying the res_counters count for no reason.
