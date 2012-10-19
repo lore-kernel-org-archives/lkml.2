@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757711Ab2JSDOK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:14:10 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51600 "EHLO mail.kernel.org"
+	id S1757942Ab2JSDO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:14:28 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51589 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757449Ab2JSCrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757443Ab2JSCrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Oct 2012 22:47:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Egbert Eich <eich@suse.de>, Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 45/62] drm/radeon: Dont destroy I2C Bus Rec in radeon_ext_tmds_enc_destroy().
-Date: Thu, 18 Oct 2012 19:45:13 -0700
-Message-Id: <20121019024303.248853111@linuxfoundation.org>
+        Jean-Christian de Rivaz <jc@eclis.ch>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 44/62] Add CDC-ACM support for the CX93010-2x UCMxx USB Modem
+Date: Thu, 18 Oct 2012 19:45:12 -0700
+Message-Id: <20121019024303.091743819@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -25,44 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Egbert Eich <eich@suse.de>
+From: Jean-Christian de Rivaz <jc@eclis.ch>
 
-commit 082918471139b07964967cfe5f70230909c82ae1 upstream.
+commit e7d491a19d3e3aac544070293891a2542ae0c565 upstream.
 
-radeon_i2c_fini() walks thru the list of I2C bus recs rdev->i2c_bus[]
-to destroy each of them.
-radeon_ext_tmds_enc_destroy() however also has code to destroy it's
-associated I2C bus rec which has been obtained by radeon_i2c_lookup()
-and is therefore also in the i2c_bus[] list.
-This causes a double free resulting in a kernel panic when unloading
-the radeon driver.
-Removing destroy code from radeon_ext_tmds_enc_destroy() fixes this
-problem.
+This USB V.92/V.32bis Controllered Modem have the USB vendor ID 0x0572
+and device ID 0x1340. It need the NO_UNION_NORMAL quirk to be recognized.
 
-agd5f: fix compiler warning
+Reference:
+http://www.conexant.com/servlets/DownloadServlet/DSH-201723-005.pdf?docid=1725&revid=5
+See idVendor and idProduct in table 6-1. Device Descriptors
 
-Signed-off-by: Egbert Eich <eich@suse.de>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Jean-Christian de Rivaz <jc@eclis.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ drivers/usb/class/cdc-acm.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-+++ b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-@@ -973,11 +973,7 @@ static void radeon_legacy_tmds_ext_mode_
- static void radeon_ext_tmds_enc_destroy(struct drm_encoder *encoder)
- {
- 	struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
--	struct radeon_encoder_ext_tmds *tmds = radeon_encoder->enc_priv;
--	if (tmds) {
--		if (tmds->i2c_bus)
--			radeon_i2c_destroy(tmds->i2c_bus);
--	}
-+	/* don't destroy the i2c bus record here, this will be done in radeon_i2c_fini */
- 	kfree(radeon_encoder->enc_priv);
- 	drm_encoder_cleanup(encoder);
- 	kfree(radeon_encoder);
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1551,6 +1551,9 @@ static const struct usb_device_id acm_id
+ 					   Maybe we should define a new
+ 					   quirk for this. */
+ 	},
++	{ USB_DEVICE(0x0572, 0x1340), /* Conexant CX93010-2x UCMxx */
++	.driver_info = NO_UNION_NORMAL,
++	},
+ 	{ USB_DEVICE(0x1bbb, 0x0003), /* Alcatel OT-I650 */
+ 	.driver_info = NO_UNION_NORMAL, /* reports zero length descriptor */
+ 	},
 
 
