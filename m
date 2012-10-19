@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab2JTQuR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 12:50:17 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:59626 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753303Ab2JTQuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 12:50:15 -0400
-Message-ID: <1350751814.10791.10.camel@joe-AO722>
-Subject: Re: [RFC PATCH 8/8] printk: Wake up klogd using irq_work
-From: Joe Perches <joe@perches.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Sat, 20 Oct 2012 09:50:14 -0700
-In-Reply-To: <1350750167-14263-9-git-send-email-fweisbec@gmail.com>
-References: <1350750167-14263-1-git-send-email-fweisbec@gmail.com>
-	 <1350750167-14263-9-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756266Ab2JTQ5j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 12:57:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3204 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756007Ab2JTQ5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Oct 2012 12:57:38 -0400
+Message-ID: <5081B7F8.7040302@draigBrady.com>
+Date: Fri, 19 Oct 2012 13:28:40 -0700
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: abhishek agarwal <abhigem.126@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [Perf] Adding timeout option
+References: <CAMjzKwXZLGX7EM7dVOHWcN-8Ay40bbhiR4v5M352Xd2g2uHY1g@mail.gmail.com>
+In-Reply-To: <CAMjzKwXZLGX7EM7dVOHWcN-8Ay40bbhiR4v5M352Xd2g2uHY1g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-10-20 at 12:22 -0400, Frederic Weisbecker wrote:
-> lets implement the printk tick using irq work.
+On 10/13/2012 08:54 AM, abhishek agarwal wrote:
+> Hi folks..
+>
+> I was thinking that why cant we have a timeout option in perf stat
+> command.  The timeout feature will help us to profile a process for a
+> stipulated time (preferably in millisecs) and make perf stat return
+> after that time.
+> Eg:
+>
+> perf stat --timeout=10 sleep 100
+>
+> This will make perf return and report stats after 10 ms...
+>
+> Hope anyone can shed some more light on the idea
 
-Hi Frederic.
+It seems preferable to use the timeout program to do this.
+Either sending a handled signal to the perf process like:
 
-Can you redo this change please against -next in a few days? 
+     timeout -s HUP 10 perf stat sleep 100
 
-Andrew Morton picked up this series,
-https://lkml.org/lkml/2012/10/17/41
-but it's not yet in -next.
+Or even better, just use that to kill the monitored process itself
 
-https://lkml.org/lkml/2012/10/18/600
+     perf stat timeout 10 sleep 100
 
-kernel/printk.c has been moved to kernel/printk/printk.c
-and broken up into multiple files.
-
-thanks,  Joe
-
+cheers,
+Pádraig.
