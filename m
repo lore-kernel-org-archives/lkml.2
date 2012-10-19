@@ -1,100 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933007Ab2JSVjN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 17:39:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41157 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932149Ab2JSVjL (ORCPT
+	id S1759402Ab2JSVoJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 17:44:09 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:57050 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350Ab2JSVoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 17:39:11 -0400
-Date: Fri, 19 Oct 2012 22:39:05 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk
-Message-ID: <20121019213904.GB13292@decadent.org.uk>
-References: <20121019024255.944999470@linuxfoundation.org>
- <20121019024301.172251728@linuxfoundation.org>
+	Fri, 19 Oct 2012 17:44:07 -0400
+Date: Fri, 19 Oct 2012 12:28:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] brw_mutex: big read-write mutex
+Message-ID: <20121019192838.GM2518@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121015190958.GA4799@redhat.com>
+ <20121015191018.GA4816@redhat.com>
+ <CA+55aFwV-WOUx8MSr145f+HSrtmZ=nXHq0VLhtPyH=FNBFwmQg@mail.gmail.com>
+ <20121017165902.GB9872@redhat.com>
+ <20121017224430.GC2518@linux.vnet.ibm.com>
+ <20121018162409.GA28504@redhat.com>
+ <20121018163833.GK2518@linux.vnet.ibm.com>
+ <20121018175747.GA30691@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121019024301.172251728@linuxfoundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [ 32/62] kdb,vt_console: Fix missed data due to pager overruns
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+In-Reply-To: <20121018175747.GA30691@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101921-5406-0000-0000-00000144A4E1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 07:45:00PM -0700, Greg Kroah-Hartman wrote:
-> 3.4-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Oct 18, 2012 at 07:57:47PM +0200, Oleg Nesterov wrote:
+> On 10/18, Paul E. McKenney wrote:
+> >
+> > On Thu, Oct 18, 2012 at 06:24:09PM +0200, Oleg Nesterov wrote:
+> > >
+> > > I thought that you meant that without mb() brw_start_write() can
+> > > race with brw_end_read() and hang forever.
+> > >
+> > > But probably you meant that we need the barriers to ensure that,
+> > > say, if the reader does
+> > >
+> > > 	brw_start_read();
+> > > 	CONDITION = 1;
+> > > 	brw_end_read();
+> > >
+> > > then the writer must see CONDITION != 0 after brw_start_write() ?
+> > > (or vice-versa)
+> >
+> > Yes, this is exactly my concern.
 > 
-> ------------------
+> Oh, thanks at lot Paul (as always).
+
+Glad it helped.  ;-)
+
+> > > In this case we need the barrier, yes. Obviously brw_start_write()
+> > > can return right after this_cpu_dec() and before wake_up_all().
+> > >
+> > > 2/2 doesn't need this guarantee but I agree, this doesn't look
+> > > sane in gerenal...
+> >
+> > Or name it something not containing "lock".  And clearly document
+> > the behavior and how it is to be used.  ;-)
 > 
-> From: Jason Wessel <jason.wessel@windriver.com>
+> this would be insane, I guess ;)
+
+Well, I suppose you could call it a "phase" : brw_start_phase_1() and
+so on.
+
+> So. Ignoring the possible optimization you mentioned before,
+> brw_end_read() should do:
 > 
-> commit 17b572e82032bc246324ce136696656b66d4e3f1 upstream.
-[...]
-> This also means that the vt screen needs to set the kdb COLUMNS
-> variable.
-[...]
-> --- a/drivers/tty/vt/vt.c
-> +++ b/drivers/tty/vt/vt.c
-> @@ -3475,6 +3475,19 @@ int con_debug_enter(struct vc_data *vc)
->  			kdb_set(2, setargs);
->  		}
->  	}
-> +	if (vc->vc_cols < 999) {
-> +		int colcount;
-> +		char cols[4];
-> +		const char *setargs[3] = {
-> +			"set",
-> +			"COLUMNS",
-> +			cols,
-> +		};
-> +		if (kdbgetintenv(setargs[0], &colcount)) {
-> +			snprintf(cols, 4, "%i", vc->vc_cols);
-> +			kdb_set(2, setargs);
-> +		}
-> +	}
+> 	smp_mb();
+> 	this_cpu_dec();
+> 
+> 	wake_up_all();
+> 
+> And yes, we need the full mb(). wmb() is enough to ensure that the
+> writer will see the memory modifications done by the reader. But we
+> also need to ensure that any LOAD inside start_read/end_read can not
+> be moved outside of the critical section.
+> 
+> But we should also ensure that "read" will see all modifications
+> which were done under start_write/end_write. This means that
+> brw_end_write() needs another synchronize_sched() before
+> atomic_dec_and_test(), or brw_start_read() needs mb() in the
+> fast-path.
+> 
+> Correct?
 
-Presumably the idea here was to avoid overriding the 'COLUMNS'
-variable if it is already set, but it's actually testing whether the
-variable 'set' is set.  (Besides which, there should be a kdbsetenv()
-instead of this gross hack of faking up a user command.  And whyever
-did kdb have to make argc off-by-one from the usual C convention?)
+Good point, I missed the need for synchronize_sched() to avoid
+readers sleeping through the next write cycle due to racing with
+an exiting writer.  But yes, this sounds correct.
 
-[...]
-> +	if (KDB_STATE(PAGER)) {
-> +		/*
-> +		 * Check printed string to decide how to bump the
-> +		 * kdb_nextline to control when the more prompt should
-> +		 * show up.
-> +		 */
-> +		int got = 0;
-> +		len = retlen;
-> +		while (len--) {
-> +			if (kdb_buffer[len] == '\n') {
-> +				kdb_nextline++;
-> +				got = 0;
-> +			} else if (kdb_buffer[len] == '\r') {
-> +				got = 0;
-> +			} else {
-> +				got++;
-> +			}
-> +		}
-> +		kdb_nextline += got / (colcount + 1);
+> Ooooh. And I just noticed include/linux/percpu-rwsem.h which does
+> something similar. Certainly it was not in my tree when I started
+> this patch... percpu_down_write() doesn't allow multiple writers,
+> but the main problem it uses msleep(1). It should not, I think.
+> 
+> But. It seems that percpu_up_write() is equally wrong? Doesn't
+> it need synchronize_rcu() before "p->locked = false" ?
+> 
+> (add Mikulas)
 
-What if more than one logical line is wrapped?
-Why divide by colcount + 1?  Shouldn't it be (got - 1) / colcount?
- 
-Ben.
+Mikulas said something about doing an updated patch, so I figured I
+would look at his next version.
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+							Thanx, Paul
+
