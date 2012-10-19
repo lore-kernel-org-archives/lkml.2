@@ -1,272 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953Ab2JSHs2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 03:48:28 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:25317 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756570Ab2JSHs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 03:48:26 -0400
-Subject: [PATCH v4] posix timers: allocate timer id per process
-To: peterz@infradead.org, mingo@redhat.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: tglx@linutronix.de, devel@openvz.org, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, xemul@parallels.com
-Date: Fri, 19 Oct 2012 11:50:13 +0400
-Message-ID: <20121019074912.10745.339.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1757504Ab2JSHvJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 03:51:09 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:54319 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753417Ab2JSHvH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 03:51:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAKYAXd975U_n2SSFXz0VfEs6GrVCoc2S=3kQbfw_2uOtGXbGxA@mail.gmail.com>
+References: <1347798342-2830-1-git-send-email-linkinjeon@gmail.com>
+	<20120920084422.GA5697@localhost>
+	<20120925013658.GC23520@dastard>
+	<CAKYAXd975U_n2SSFXz0VfEs6GrVCoc2S=3kQbfw_2uOtGXbGxA@mail.gmail.com>
+Date: Fri, 19 Oct 2012 16:51:05 +0900
+Message-ID: <CAKYAXd-BXOrXJDMo5_ANACn2qo3J5oM3vMJD-LXnEacegxHgTA@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] writeback: add dirty_background_centisecs per bdi variable
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Vivek Trivedi <t.vivek@samsung.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v4:
-1) a couple of coding style fixes (lines over 80 characters)
+Hi Dave.
 
-v3:
-1) hash calculation simlified to improve perfomance.
+Test Procedure:
 
-v2:
-1) Hash table become RCU-friendly. Hash table search now done under RCU lock
-protection.
-I've tested scalability on KVM with 4 CPU. The testing environment was build
-of 10 processes, each had 512 posix timers running (SIGSEV_NONE) and was
-calling timer_gettime() in loop. With all this stuff being running, I was
-measuring time of calling of syscall timer_gettime() 10000 times.
+1) Local USB disk WRITE speed on NFS server is ~25 MB/s
 
-Without this patch: ~7ms
-With this patch   : ~7ms
+2) Run WRITE test(create 1 GB file) on NFS Client with default
+writeback settings on NFS Server. By default
+bdi->dirty_background_bytes = 0, that means no change in default
+writeback behaviour
 
-This patch is required CRIU project (www.criu.org).
-To migrate processes with posix timers we have to make sure, that we can
-restore posix timer with proper id.
-Currently, this is not true, because timer ids are allocated globally.
-So, this is precursor patch and it's purpose is make posix timer id to be
-allocated per process.
+3) Next we change bdi->dirty_background_bytes = 25 MB (almost equal to
+local USB disk write speed on NFS Server)
+*** only on NFS Server - not on NFS Client ***
 
-Patch replaces global idr with global hash table for posix timers and
-makes timer ids unique not globally, but per task. Next free timer id is type
-of integer and stored on signal struct (posix_timer_id). If free timer id
-reaches negative value on timer creation, it will be dropped to zero and
--EAGAIN will be returned to user.
-Hash table is size of page (4KB).
-Key is constructed as follows:
-key = hash_32(current->signal) ^ hash_32(posix_timer_id);
+[NFS Server]
+# echo $((25*1024*1024)) > /sys/block/sdb/bdi/dirty_background_bytes
+# cat /sys/block/sdb/bdi/dirty_background_bytes
+26214400
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- include/linux/posix-timers.h |    1 
- include/linux/sched.h        |    4 +
- kernel/posix-timers.c        |  113 ++++++++++++++++++++++++++++--------------
- 3 files changed, 79 insertions(+), 39 deletions(-)
+4) Run WRITE test again on NFS client to see change in WRITE speed at NFS client
 
-diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
-index 042058f..60bac69 100644
---- a/include/linux/posix-timers.h
-+++ b/include/linux/posix-timers.h
-@@ -55,6 +55,7 @@ struct cpu_timer_list {
- /* POSIX.1b interval timer structure. */
- struct k_itimer {
- 	struct list_head list;		/* free/ allocate list */
-+	struct hlist_node t_hash;
- 	spinlock_t it_lock;
- 	clockid_t it_clock;		/* which timer type */
- 	timer_t it_id;			/* timer id */
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 0dd42a0..dce1651 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -51,6 +51,7 @@ struct sched_param {
- #include <linux/cred.h>
- #include <linux/llist.h>
- #include <linux/uidgid.h>
-+#include <linux/idr.h>
- 
- #include <asm/processor.h>
- 
-@@ -536,7 +537,8 @@ struct signal_struct {
- 	unsigned int		has_child_subreaper:1;
- 
- 	/* POSIX.1b Interval Timers */
--	struct list_head posix_timers;
-+	int			posix_timer_id;
-+	struct list_head	posix_timers;
- 
- 	/* ITIMER_REAL timer for the process */
- 	struct hrtimer real_timer;
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index 69185ae..6d94d8e 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -47,31 +47,28 @@
- #include <linux/wait.h>
- #include <linux/workqueue.h>
- #include <linux/export.h>
-+#include <linux/hash.h>
- 
- /*
-- * Management arrays for POSIX timers.	 Timers are kept in slab memory
-- * Timer ids are allocated by an external routine that keeps track of the
-- * id and the timer.  The external interface is:
-- *
-- * void *idr_find(struct idr *idp, int id);           to find timer_id <id>
-- * int idr_get_new(struct idr *idp, void *ptr);       to get a new id and
-- *                                                    related it to <ptr>
-- * void idr_remove(struct idr *idp, int id);          to release <id>
-- * void idr_init(struct idr *idp);                    to initialize <idp>
-- *                                                    which we supply.
-- * The idr_get_new *may* call slab for more memory so it must not be
-- * called under a spin lock.  Likewise idr_remore may release memory
-- * (but it may be ok to do this under a lock...).
-- * idr_find is just a memory look up and is quite fast.  A -1 return
-- * indicates that the requested id does not exist.
-+ * Management arrays for POSIX timers. Timers are now kept in static PAGE-size
-+ * hash table.
-+ * Timer ids are allocated by local routine, which selects proper hash head by
-+ * key, constructed from current->signal address and per signal struct counter.
-+ * This keeps timer ids unique per process, but now they can intersect between
-+ * processes.
-  */
- 
- /*
-  * Lets keep our timers in a slab cache :-)
-  */
- static struct kmem_cache *posix_timers_cache;
--static struct idr posix_timers_id;
--static DEFINE_SPINLOCK(idr_lock);
-+
-+#define POSIX_TIMERS_HASH_BITS		9
-+#define POSIX_TIMERS_HASH_SIZE		(1 << POSIX_TIMERS_HASH_BITS)
-+
-+/* Hash table is size of PAGE currently */
-+static struct hlist_head posix_timers_hashtable[POSIX_TIMERS_HASH_SIZE];
-+static DEFINE_SPINLOCK(hash_lock);
- 
- /*
-  * we assume that the new SIGEV_THREAD_ID shares no bits with the other
-@@ -152,6 +149,57 @@ static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags);
- 	__timr;								   \
- })
- 
-+static int hash(struct signal_struct *sig, unsigned int nr)
-+{
-+	return hash_32(hash32_ptr(sig) ^ nr, POSIX_TIMERS_HASH_BITS);
-+}
-+
-+static struct k_itimer *__posix_timers_find(struct hlist_head *head,
-+					    struct signal_struct *sig,
-+					    timer_t id)
-+{
-+	struct hlist_node *node;
-+	struct k_itimer *timer;
-+
-+	hlist_for_each_entry_rcu(timer, node, head, t_hash) {
-+		if ((timer->it_signal == sig) && (timer->it_id == id))
-+			return timer;
-+	}
-+	return NULL;
-+}
-+
-+static struct k_itimer *posix_timer_by_id(timer_t id)
-+{
-+	struct signal_struct *sig = current->signal;
-+	struct hlist_head *head = &posix_timers_hashtable[hash(sig, id)];
-+
-+	return __posix_timers_find(head, sig, id);
-+}
-+
-+static int posix_timer_add(struct k_itimer *timer)
-+{
-+	struct signal_struct *sig = current->signal;
-+	int next_free_id = sig->posix_timer_id;
-+	struct hlist_head *head;
-+	int ret = -ENOENT;
-+
-+	do {
-+		spin_lock(&hash_lock);
-+		head = &posix_timers_hashtable[hash(sig, sig->posix_timer_id)];
-+		if (!__posix_timers_find(head, sig, sig->posix_timer_id)) {
-+			hlist_add_head_rcu(&timer->t_hash, head);
-+			ret = sig->posix_timer_id++;
-+		} else {
-+			if (++sig->posix_timer_id < 0)
-+				sig->posix_timer_id = 0;
-+			if (sig->posix_timer_id == next_free_id)
-+				ret = -EAGAIN;
-+		}
-+		spin_unlock(&hash_lock);
-+	} while (ret == -ENOENT);
-+	return ret;
-+}
-+
- static inline void unlock_timer(struct k_itimer *timr, unsigned long flags)
- {
- 	spin_unlock_irqrestore(&timr->it_lock, flags);
-@@ -271,6 +319,7 @@ static __init int init_posix_timers(void)
- 		.timer_get	= common_timer_get,
- 		.timer_del	= common_timer_del,
- 	};
-+	int i;
- 
- 	posix_timers_register_clock(CLOCK_REALTIME, &clock_realtime);
- 	posix_timers_register_clock(CLOCK_MONOTONIC, &clock_monotonic);
-@@ -282,7 +331,8 @@ static __init int init_posix_timers(void)
- 	posix_timers_cache = kmem_cache_create("posix_timers_cache",
- 					sizeof (struct k_itimer), 0, SLAB_PANIC,
- 					NULL);
--	idr_init(&posix_timers_id);
-+	for (i = 0; i < POSIX_TIMERS_HASH_SIZE; i++)
-+		INIT_HLIST_HEAD(&posix_timers_hashtable[i]);
- 	return 0;
- }
- 
-@@ -504,9 +554,9 @@ static void release_posix_timer(struct k_itimer *tmr, int it_id_set)
- {
- 	if (it_id_set) {
- 		unsigned long flags;
--		spin_lock_irqsave(&idr_lock, flags);
--		idr_remove(&posix_timers_id, tmr->it_id);
--		spin_unlock_irqrestore(&idr_lock, flags);
-+		spin_lock_irqsave(&hash_lock, flags);
-+		hlist_del_rcu(&tmr->t_hash);
-+		spin_unlock_irqrestore(&hash_lock, flags);
- 	}
- 	put_pid(tmr->it_pid);
- 	sigqueue_free(tmr->sigq);
-@@ -552,22 +602,9 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
- 		return -EAGAIN;
- 
- 	spin_lock_init(&new_timer->it_lock);
-- retry:
--	if (unlikely(!idr_pre_get(&posix_timers_id, GFP_KERNEL))) {
--		error = -EAGAIN;
--		goto out;
--	}
--	spin_lock_irq(&idr_lock);
--	error = idr_get_new(&posix_timers_id, new_timer, &new_timer_id);
--	spin_unlock_irq(&idr_lock);
--	if (error) {
--		if (error == -EAGAIN)
--			goto retry;
--		/*
--		 * Weird looking, but we return EAGAIN if the IDR is
--		 * full (proper POSIX return value for this)
--		 */
--		error = -EAGAIN;
-+	new_timer_id = posix_timer_add(new_timer);
-+	if (new_timer_id < 0) {
-+		error = new_timer_id;
- 		goto out;
- 	}
- 
-@@ -640,7 +677,7 @@ static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags)
- 	struct k_itimer *timr;
- 
- 	rcu_read_lock();
--	timr = idr_find(&posix_timers_id, (int)timer_id);
-+	timr = posix_timer_by_id(timer_id);
- 	if (timr) {
- 		spin_lock_irqsave(&timr->it_lock, *flags);
- 		if (timr->it_signal == current->signal) {
+Test setup details:
+Test result on PC - FC16 - RAM 3 GB - ethernet - 1000 Mbits/s,
+Create 1 GB File
 
+--------------------------------------------------------------------------------
+Table 1: XFS over NFS - WRITE SPEED on NFS Client
+--------------------------------------------------------------------------------
+             default writeback        bdi->dirty_background_bytes
+                      setting                  = 25 MB
+
+RecSize     write speed(MB/s)   write speed(MB/s)          % Change
+10485760       27.39                       28.53                          4%
+1048576         27.9                        28.59                          2%
+524288           27.55                      28.94                          5%
+262144           25.4                        28.58                         13%
+131072           25.73                       27.55                         7%
+65536             25.85                       28.45                        10%
+32768             26.13                       28.64                        10%
+16384             26.17                       27.93                         7%
+8192              25.64                        28.07                         9%
+4096              26.28                        28.19                         7%
+
+------------------------------------------------------------------------------
+Table 2: EXT4 over NFS - WRITE SPEED on NFS Client
+------------------------------------------------------------------------------
+                  default writeback    bdi->dirty_background_bytes
+                          setting              = 25 MB
+
+RecSize     write speed(MB/s)   write speed(MB/s)       % Change
+10485760         23.87                     28.3                        19%
+1048576           24.81                    27.79                       12%
+524288            24.53                     28.14                       15%
+262144            24.21                     27.99                       16%
+131072            24.11                     28.33                       18%
+65536              23.73                     28.21                       19%
+32768              25.66                     27.52                        7%
+16384              24.3                       27.67                       14%
+8192                23.6                       27.08                       15%
+4096                23.35                     27.24                        17%
+
+As mentioned in the above Table 1 & 2, there is performance
+improvement on NFS client on gigabit Ethernet on both EXT4/XFS over
+NFS. We did not observe any degradation in write speed.
+However, performance gain varies on different file systems i.e.
+different on XFS & EXT4 over NFS.
+
+We also tried this change on BTRFS over NFS, but we did not see any
+significant change in WRITE speed.
+
+----------------------------------------------------------------------------------
+Multiple NFS Client test:
+-----------------------------------------------------------------------------------
+Sorry - We could not arrange multiple PCs to verify this.
+So, we tried 1 NFS Server + 2 NFS Clients using 3 target boards:
+ARM Target + 512 MB RAM + ethernet - 100 Mbits/s, create 1 GB File
+
+-----------------------------------------------------------------------------
+Table 3: bdi->dirty_background_bytes = 0 MB
+         - default writeback behaviour
+-----------------------------------------------------------------------------
+RecSize        Write Speed        Write Speed     Combined
+                    on Client 1          on client 2     write speed
+                        (MB/s)               (MB/s)          (MB/s)
+
+10485760            5.45                  5.36              10.81
+1048576              5.44                  5.34              10.78
+524288                5.48                  5.51              10.99
+262144                6.24                  4.83              11.07
+131072                5.58                  5.53              11.11
+65536                  5.51                  5.48              10.99
+32768                  5.42                  5.46              10.88
+16384                  5.62                  5.58              11.2
+8192                    5.59                  5.49              11.08
+4096                    5.57                  6.38              11.95
+
+-----------------------------------------------------------------------
+Table 4: bdi->dirty_background_bytes = 25 MB
+-----------------------------------------------------------------------
+RecSize        Write Speed        Write Speed     Combined
+                     on Client 1        on client 2     write speed
+                         (MB/s)            (MB/s)          (MB/s)
+
+10485760              5.43              5.76             11.19
+1048576                5.51              5.72             11.23
+524288                  5.37              5.69             11.06
+262144                  5.46              5.51             10.97
+131072                  5.64              5.6               11.24
+65536                    5.53              5.64             11.17
+32768                    5.51              5.53             11.04
+16384                    5.51              5.51             11.02
+8192                      5.61              5.59             11.2
+4096                      6.11              5.65             11.76
+
+As mentioned in the above table 3 & 4, there is no significant drop in
+WRITE speed of individual NFS Clients.
+There is minor improvement on combined write speed of NFS client 1 & 2.
+
+
+> 1. what's the comparison in performance to typical NFS
+> server writeback parameter tuning? i.e. dirty_background_ratio=5,
+> dirty_ratio=10, dirty_expire_centiseconds=1000,
+> dirty_writeback_centisecs=1? i.e. does this give change give any
+> benefit over the current common practice for configuring NFS
+> servers?
+
+Agreed, that above improvement in write speed can be achieved by
+tuning above write-back parameters.
+But if we change these settings, it will change write-back behavior
+system wide.
+On the other hand, if we change proposed per bdi setting,
+bdi->dirty_background_bytes it will change write-back behavior for the
+block device exported on NFS server.
+
+> 2. what happens when you have 10 clients all writing to the server
+> at once? Or a 100? NFS servers rarely have a single writer to a
+> single file at a time, so what impact does this change have on
+> multiple concurrent file write performance from multiple clients
+
+Sorry, we could not arrange more than 2 PCs for verifying this.
+So, We tried this on 3 ARM target boards - 1 ARM board as NFS server &
+2 ARM targets as NFS clients connected with HUB on 100 Mbits/s
+ethernet link speed.
+Please refer above Table 3 & 4 results for this.
+
+> 3. Following on from the multiple client test, what difference does it
+> make to file fragmentation rates? Writing more frequently means
+> smaller allocations and writes, and that tends to lead to higher
+> fragmentation rates, especially when multiple files are being
+> written concurrently. Higher fragmentation also means lower
+> performance over time as fragmentation accelerates filesystem aging
+> effects on performance.  IOWs, it may be faster when new, but it
+> will be slower 3 months down the track and that's a bad tradeoff to
+> make.
+
+We agree that there could be bit more framentation. But as you know,
+we are not changing writeback settings at NFS clients.
+So, write-back behavior on NFS client will not change - IO requests
+will be buffered at NFS client as per existing write-back behavior.
+
+Also, by default we set bdi->dirty_background_bytes = 0, so, it does
+not change default writeback setting unless user wants to tune it as
+per the environment.
+
+
+> 4. What happens for higher bandwidth network links? e.g. gigE or
+> 10gigE? Are the improvements still there? Or does it cause
+> regressions at higher speeds? I'm especially interested in what
+> happens to multiple writers at higher network speeds, because that's
+> a key performance metric used to measure enterprise level NFS
+> servers.
+
+As mentioned in the above table 1 & 2, on GIGABIT Ethernet interface
+also it provides performance improvement in WRITE speed. It is not
+degrading write speed.
+
+We could not arrange 10gigE, so we could verify this patch only on
+100Mbits/s and 1000Mbits/s Ethernet link.
+
+> 5. Are the improvements consistent across different filesystem
+> types?  We've had writeback changes in the past cause improvements
+> on one filesystem but significant regressions on others.  I'd
+> suggest that you need to present results for ext4, XFS and btrfs so
+> that we have a decent idea of what we can expect from the change to
+> the generic code.
+
+As mentioned in the above Table 1 & 2, performance gain in WRITE speed
+is different on different file systems i.e. different on NFS client
+over XFS & EXT4.
+We also tried BTRFS over NFS, but we could not see any WRITE speed
+performance gain/degrade on BTRFS over NFS, so we are not posting
+BTRFS results here.
+
+Please let us know your opinion.
+
+Thanks.
