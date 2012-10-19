@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758211Ab2JSJOf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 05:14:35 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18894 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753954Ab2JSJOe (ORCPT
+	id S1758215Ab2JSJSi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 05:18:38 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45555 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753795Ab2JSJSg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 05:14:34 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 19 Oct 2012 02:14:31 -0700
-Message-ID: <508119CE.9070408@nvidia.com>
-Date: Fri, 19 Oct 2012 14:43:50 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Fri, 19 Oct 2012 05:18:36 -0400
+Date: Fri, 19 Oct 2012 10:18:11 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Thomas Meyer <thomas@m3y3r.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        airlied <airlied@linux.ie>, "David S. Miller" <davem@davemloft.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: "read_current_timer" undefined!
+Message-ID: <20121019091811.GB4582@mudshark.cambridge.arm.com>
+References: <1350562575.1270.3.camel@localhost.localdomain>
+ <5080F0EF.5040100@ahsoftware.de>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/5] ARM: tegra: fix clock entry of slink controller
-References: <1350557795-31487-1-git-send-email-ldewangan@nvidia.com> <1350557795-31487-4-git-send-email-ldewangan@nvidia.com> <5080862C.9030203@wwwdotorg.org>
-In-Reply-To: <5080862C.9030203@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5080F0EF.5040100@ahsoftware.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 19 October 2012 04:13 AM, Stephen Warren wrote:
->
-> The patch subject isn't entirely accurate here; this patch isn't just
-> about fixing clock entries.
->
+On Fri, Oct 19, 2012 at 07:19:27AM +0100, Alexander Holler wrote:
+> Hello,
+> 
+> Am 18.10.2012 14:16, schrieb Thomas Meyer:
+> 
+> > ERROR: "read_current_timer" [drivers/gpu/drm/udl/udl.ko] undefined!
+> > ERROR: "read_current_timer" [crypto/tcrypt.ko] undefined!
+> 
+> There is already a long thread about that, along with patches:
+> 
+> https://lkml.org/lkml/2012/10/9/393
+> 
+> If you need a patch for 3.6, here is what I did before I found the above 
+> thread:
 
-OK, then  will break in two patches.
+Arnd sent an updated pull request here:
 
->
->> +	OF_DEV_AUXDATA("nvidia,tegra20-slink", TEGRA_SLINK1_BASE, "spi-tegra-slink.0", NULL),
-> Here, can't we just use the existing device names in the clock files...
->
-> So we can completely drop the changes to these two files:
->
-I want to name the driver as spi-tegra-slink. When we add the sflash spi 
-driver for tegra20, the driver name will be spi-tegra-sflash.
-Also current name is "spi_tegra" I do not want to name with "_". So it 
-is require to convert as "-".
+  http://lists.infradead.org/pipermail/linux-arm-kernel/2012-October/124756.html
 
+but it was a reply to a previous pull, so it may have been missed. Could you
+pull that for -rc2 please Russell?
 
+Thanks,
 
->> diff --git a/arch/arm/mach-tegra/tegra20_clocks_data.c b/arch/arm/mach-tegra/tegra20_clocks_data.c
->> diff --git a/arch/arm/mach-tegra/tegra30_clocks_data.c b/arch/arm/mach-tegra/tegra30_clocks_data.c
-> The device names will hopefully be irrelevant once we're able to use
-> DT-based clock lookups.
-Agree, but currently we can add this to have progress.
-
+Will
