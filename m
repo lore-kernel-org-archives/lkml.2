@@ -1,99 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673Ab2JSEJM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 00:09:12 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:54369 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976Ab2JSEJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 00:09:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: srivatsa.bhat@linux.vnet.ibm.com, toshi.kani@hp.com, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] acpi : cpu hot-remove returns error when cpu_down() fails
-Date: Fri, 19 Oct 2012 03:06:19 +0200
-Message-ID: <4180255.BSUqs0l2F5@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <50657D92.3010106@jp.fujitsu.com>
-References: <50657D92.3010106@jp.fujitsu.com>
+	id S1752001Ab2JSELv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 00:11:51 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:56611 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387Ab2JSELu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 00:11:50 -0400
+Message-ID: <5080D308.1020805@gmail.com>
+Date: Fri, 19 Oct 2012 12:11:52 +0800
+From: Sha Zhengju <handai.szj@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Michal Hocko <mhocko@suse.cz>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sha Zhengju <handai.szj@taobao.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] oom, memcg: handle sysctl oom_kill_allocating_task while
+ memcg oom happening
+References: <1350382328-28977-1-git-send-email-handai.szj@taobao.com> <20121016133439.GI13991@dhcp22.suse.cz> <CAFj3OHVW-betpEnauzk-vQEfw_7bJxFneQb2oWpAZzOpZuMDiQ@mail.gmail.com> <20121018115640.GB24295@dhcp22.suse.cz> <5080097D.5020501@gmail.com> <20121018153256.GC24295@dhcp22.suse.cz>
+In-Reply-To: <20121018153256.GC24295@dhcp22.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 28 of September 2012 19:36:02 Yasuaki Ishimatsu wrote:
-> Even if cpu_down() fails, acpi_processor_remove() continues to remove the cpu.
-> But in this case, it should return error number since some process may run on
-> the cpu. If the cpu has a running process and the cpu is turned the power off,
-> the system may not work well.
-> 
-> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> ---
->  drivers/acpi/processor_driver.c |   18 ++++++++++++------
->  1 file changed, 12 insertions(+), 6 deletions(-)
-> 
-> Index: linux-3.6-rc7/drivers/acpi/processor_driver.c
-> ===================================================================
-> --- linux-3.6-rc7.orig/drivers/acpi/processor_driver.c	2012-09-24 10:10:57.000000000 +0900
-> +++ linux-3.6-rc7/drivers/acpi/processor_driver.c	2012-09-28 19:16:33.207858261 +0900
-> @@ -605,7 +605,7 @@ err_free_pr:
->  static int acpi_processor_remove(struct acpi_device *device, int type)
->  {
->  	struct acpi_processor *pr = NULL;
-> -
-> +	int ret;
->  
->  	if (!device || !acpi_driver_data(device))
->  		return -EINVAL;
-> @@ -616,8 +616,9 @@ static int acpi_processor_remove(struct 
->  		goto free;
->  
->  	if (type == ACPI_BUS_REMOVAL_EJECT) {
-> -		if (acpi_processor_handle_eject(pr))
-> -			return -EINVAL;
-> +		ret = acpi_processor_handle_eject(pr);
-> +		if (ret)
-> +			return ret;
->  	}
->  
->  	acpi_processor_power_exit(pr, device);
-> @@ -848,12 +849,17 @@ static acpi_status acpi_processor_hotadd
->  
->  static int acpi_processor_handle_eject(struct acpi_processor *pr)
->  {
-> -	if (cpu_online(pr->id))
-> -		cpu_down(pr->id);
-> +	int ret = 0;
-> +
-> +	if (cpu_online(pr->id)) {
-> +		ret = cpu_down(pr->id);
+On 10/18/2012 11:32 PM, Michal Hocko wrote:
+> On Thu 18-10-12 21:51:57, Sha Zhengju wrote:
+>> On 10/18/2012 07:56 PM, Michal Hocko wrote:
+>>> On Wed 17-10-12 01:14:48, Sha Zhengju wrote:
+>>>> On Tuesday, October 16, 2012, Michal Hocko<mhocko@suse.cz>   wrote:
+>>> [...]
+>>>>> Could you be more specific about the motivation for this patch? Is it
+>>>>> "let's be consistent with the global oom" or you have a real use case
+>>>>> for this knob.
+>>>>>
+>>>> In our environment(rhel6), we encounter a memcg oom 'deadlock'
+>>>> problem.  Simply speaking, suppose process A is selected to be killed
+>>>> by memcg oom killer, but A is uninterruptible sleeping on a page
+>>>> lock. What's worse, the exact page lock is holding by another memcg
+>>>> process B which is trapped in mem_croup_oom_lock(proves to be a
+>>>> livelock).
+>>> Hmm, this is strange. How can you get down that road with the page lock
+>>> held? Is it possible this is related to the issue fixed by: 1d65f86d
+>>> (mm: preallocate page before lock_page() at filemap COW)?
+>> No, it has nothing with the cow page. By checking stack of the process A
+>> selected to be killed(uninterruptible sleeping), it was stuck at:
+>> __do_fault->filemap_fault->__lock_page_or_retry->wait_on_page_bit--(D
+>> state).
+>> The person B holding the exactly page lock is on the following path:
+>> __do_fault->filemap_fault->__do_page_cache_readahead->..->mpage_readpages
+>> ->add_to_page_cache_locked ---->(in memcg oom and cannot exit)
+> Hmm filemap_fault locks the page after the read ahead is triggered
+> already so it doesn't call mpage_readpages with any page locked - the
+> add_to_page_cache_lru is called without any page locked.
 
-If you defined ret here ...
+It's not the page being fault in filemap_fault that causing the problem, 
+but those
+pages handling by readhead. To clarify the point, the more detailed call 
+stack is:
+filemap_fault->do_async/sync_mmap_readahead->ondemand_readahead->
+__do_page_cache_readahead->read_pages->ext3/4_readpages->*mpage_readpages*
 
-> +		if (ret)
-> +			return ret;
-> +	}
->  
->  	arch_unregister_cpu(pr->id);
->  	acpi_unmap_lsapic(pr->id);
-> -	return (0);
-> +	return ret;
+It is because mpage_readpages that bring the risk:
+for each of readahead pages
+      (1)add_to_page_cache_lru (--> *will lock page and go through memcg 
+charging*)
+      add the page to a big bio
+submit_bio (So those locked pages will be unlocked in end_bio after swapin)
 
-... this line wouldn't need to be changed.
+So if a page is being charged and cannot exit from memcg oom successfully
+(following I'll explain the reason) in step (1), it will cause the 
+submit_bio indefinitely
+postponed while holding the PageLock of previous pages.
 
->  }
->  #else
->  static acpi_status acpi_processor_hotadd_init(struct acpi_processor *pr)
+> This is at least the current code. It might be different in rhel6 but
+> calling memcg charging with a page lock is definitely a bug.
+>
+
+The current code (mm repo since-3.6) here remains unchanged. Through we 
+may need
+to take care of page lock and memcg charging in mpage_readpages, it 
+dives to fs level.
+Besides 37b23e05 have already fixed the deadlock from the other side: 
+process still can be
+killed even waiting for pagelock. But considering other potential 
+problem, we may as well do
+something in mpage_readpages to avoid calling add_to_page_cache_lru with 
+any page locked.
+
+>> In mpage_readpages, B tends to read a dozen of pages in: for each of
+>> page will do
+>> locking, charging, and then send out a big bio. And A is waiting for
+>> one of the pages
+>> and stuck.
+>>
+>> As I said, 37b23e05 has made pagefault killable by changing
+>> uninterruptible sleeping to killable sleeping. So A can be woke up to
+>> exit successfully and free the memory which can in turn help B pass
+>> memcg charging period.
+>>
+>> (By the way, it seems commit 37b23e05 and 7d9fdac need to be
+> 79dfdaccd1d5 you mean, right? That one just helps when there are too
+> many tasks trashing oom killer so it is not related to what you are
+> trying to achieve. Besides that make sure you take 23751be0 if you
+> take it.
+>
+
+Here is the reason why I said a process may go though memcg oom and cannot
+exit. It's just the phenomenon described in the commit log of 79dfdaccd:
+the old version of memcg oom lock can lead to serious starvation and make
+many tasks trash oom killer but nothing useful can be done.
+
+
+It is for these two reasons that cause the bug and can make the memcg 
+unusable
+(sys up to almost 100%)for hours even days... Once we give some extra memory
+to the memcg(such as increase hardlimit a little), the processes tending 
+into oom killer
+will pass the charging and send bio out eventually, which will unlock 
+those pages and
+wake up the D sleeper.
+
+
+>> backported to --stable tree to deliver RHEL users. ;-) )
+> I am not sure the first one qualifies the stable tree inclusion as it is
+> a feature.
+>
+
+When debugging the problem, we indeed found 37b23e05 is the key
+enemy of the deadlock bug.
+
+
+>>>> Then A can not exit successfully to free the memory and both of them
+>>>> can not moving on.
+>>>> Indeed, we should dig into these locks to find the solution and
+>>>> in fact the 37b23e05 (x86, mm: make pagefault killable) and
+>>>> 7d9fdac(Memcg: make oom_lock 0 and 1 based other than counter) have
+>>>> already solved the problem, but if oom_killing_allocating_task is
+>>>> memcg aware, enabling this suicide oom behavior will be a simpler
+>>>> workaround. What's more, enabling the sysctl can avoid other potential
+>>>> oom problems to some extent.
+>>> As I said, I am not against this but I really want to see a valid use
+>>> case first. So far I haven't seen any because what you mention above is
+>>> a clear bug which should be fixed. I can imagine the huge number of
+>>> tasks in the group could be a problem as well but I would like to see
+>>> what are those problems first.
+>>>
+>> In view of consistent with global oom and performance benefit, I suggest
+>> we may as well open it in memcg oom as there's no obvious harm.
+> I am not sure about "no obvious harm" part. The policy could be
+> different in different groups e.g. and the global knob could be really
+> misleading. But the question is. Is it worth having this per group? To
+> be honest, I do not like the global knob either and I am not entirely
+> keen on spreading it out into memcg unless there is a real use case for
+> it.
+>
+
+Okay...then let's lie it on the table. We may use it as a in-house 
+patch. :-)
+
 
 Thanks,
-Rafael
+Sha
 
+>> As refer to the bug I mentioned, obviously the key solution is the above two
+>> patchset, but considing other *potential* memcg oom bugs, the sysctl may
+>> be a role of temporary workaround to some extent... but it's just a
+>> workaround.
+> We shouldn't add something like that just to workaround obvious bugs.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
