@@ -1,93 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757791Ab2JSTRg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 15:17:36 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:12231 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753363Ab2JSTRd (ORCPT
+	id S1757951Ab2JSTTt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 15:19:49 -0400
+Received: from alpha.arachsys.com ([91.203.57.7]:51834 "EHLO
+	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754214Ab2JSTTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 15:17:33 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: linux-acpi@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl
-Cc: linux-kernel@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        imammedo@redhat.com, vijaymohan.pandarathil@hp.com, prarit@redhat.com,
-        bhelgaas@google.com, Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v2 RESEND] ACPI: Add ACPI CPU hot-remove support
-Date: Fri, 19 Oct 2012 13:09:53 -0600
-Message-Id: <1350673793-19248-1-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.7.11.7
+	Fri, 19 Oct 2012 15:19:48 -0400
+Date: Fri, 19 Oct 2012 20:19:44 +0100
+From: Richard Davies <richard.davies@elastichosts.com>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Dmitry Fleytman <dmitry@daynix.com>, linux-kernel@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net,
+        Chris Webb <chris.webb@elastichosts.com>
+Subject: Re: [E1000-devel] [PATCH] RX initialization sequence fixed -
+ enable RX after corresponding ring initialization only
+Message-ID: <20121019191944.GA27699@alpha.arachsys.com>
+References: <1350235151-11146-1-git-send-email-dmitry@daynix.com>
+ <1350235151-11146-2-git-send-email-dmitry@daynix.com>
+ <1350280341.2152.12.camel@jtkirshe-mobl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350280341.2152.12.camel@jtkirshe-mobl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added CPU hot-remove support through an ACPI eject notification.
-It calls acpi_bus_hot_remove_device(), which shares the same code
-path with the sysfs eject operation.  acpi_os_hotplug_execute()
-serializes hot-remove operations between ACPI hot-remove and sysfs
-eject requests.
+Jeff Kirsher wrote:
+> Dmitry Fleytman wrote:
+> > Reported-by: Chris Webb <chris.webb@elastichosts.com>
+> > Reported-by: Richard Davies <richard.davies@elastichosts.com>
+> >
+> > Signed-off-by: Dmitry Fleytman <dmitry@daynix.com>
+> > ---
+> >  drivers/net/ethernet/intel/e1000/e1000_ethtool.c |    9 +++++----
+> >  drivers/net/ethernet/intel/e1000/e1000_main.c    |   18
+> > ++++++++++++++++--
+> >  2 files changed, 21 insertions(+), 6 deletions(-) 
+>
+> I will add it to my queue.  Thanks!
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Tested-by: IgorMammedov <imammedo@redhat.com>
-Tested-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
-Tested-by: Prarit Bhargava <prarit@redhat.com>
----
-v2: Rebased to the current Linus's tree.
----
- drivers/acpi/processor_driver.c | 27 +++++++++++++++++----------
- 1 file changed, 17 insertions(+), 10 deletions(-)
+Hi Jeff,
 
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index e78c2a5..1cc9652 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -694,8 +694,8 @@ int acpi_processor_device_add(acpi_handle handle, struct acpi_device **device)
- static void acpi_processor_hotplug_notify(acpi_handle handle,
- 					  u32 event, void *data)
- {
--	struct acpi_processor *pr;
- 	struct acpi_device *device = NULL;
-+	struct acpi_eject_event *ej_event = NULL;
- 	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
- 	int result;
- 
-@@ -727,20 +727,27 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
- 				  "received ACPI_NOTIFY_EJECT_REQUEST\n"));
- 
- 		if (acpi_bus_get_device(handle, &device)) {
--			printk(KERN_ERR PREFIX
--				    "Device don't exist, dropping EJECT\n");
-+			pr_err(PREFIX "Device don't exist, dropping EJECT\n");
- 			break;
- 		}
--		pr = acpi_driver_data(device);
--		if (!pr) {
--			printk(KERN_ERR PREFIX
--				    "Driver data is NULL, dropping EJECT\n");
-+		if (!acpi_driver_data(device)) {
-+			pr_err(PREFIX "Driver data is NULL, dropping EJECT\n");
- 			break;
- 		}
- 
--		/* REVISIT: update when eject is supported */
--		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
--		break;
-+		ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
-+		if (!ej_event) {
-+			pr_err(PREFIX "No memory, dropping EJECT\n");
-+			break;
-+		}
-+
-+		ej_event->handle = handle;
-+		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
-+		acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
-+					(void *)ej_event);
-+
-+		/* eject is performed asynchronously */
-+		return;
- 
- 	default:
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
--- 
-1.7.11.7
+I hope it was already clear from the following discussion - this patch
+turned out to be a qemu-kvm bug and you do not need to apply it.
 
+Dmitry - please confirm.
+
+Richard.
