@@ -1,100 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758600Ab2JSMDb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 08:03:31 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45207 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751794Ab2JSMD3 convert rfc822-to-8bit (ORCPT
+	id S1758767Ab2JSMLQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 08:11:16 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:63690 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754051Ab2JSMLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 08:03:29 -0400
-From: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
-To: "Porter, Matt" <mporter@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: RE: [RFC PATCH v3 00/16] DMA Engine support for AM33XX
-Thread-Topic: [RFC PATCH v3 00/16] DMA Engine support for AM33XX
-Thread-Index: AQHNrTQZOLq9jfMJNk+iV4vTK/FhGJfAWwaQ///EmACAAGcAIA==
-Date: Fri, 19 Oct 2012 12:02:42 +0000
-Message-ID: <B5906170F1614E41A8A28DE3B8D121433EBD2CE1@DBDE01.ent.ti.com>
-References: <1350566815-409-1-git-send-email-mporter@ti.com>
- <B5906170F1614E41A8A28DE3B8D121433EBD29FC@DBDE01.ent.ti.com>
- <20121019111558.GD25164@beef>
-In-Reply-To: <20121019111558.GD25164@beef>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.133.70]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 19 Oct 2012 08:11:15 -0400
+X-Nat-Received: from [202.181.97.72]:63527 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1350648660.13887
+To: yann.morin.1998@free.fr, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: mmarek@suse.cz, bpoirier@suse.de, yselkowitz@gmail.com
+Subject: Re: [PATCH] kconfig/menuconfig: use TAILQ instead of CIRCLEQ
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <1350581625-23153-1-git-send-email-yann.morin.1998@free.fr>
+In-Reply-To: <1350581625-23153-1-git-send-email-yann.morin.1998@free.fr>
+Message-Id: <201210192110.CII57863.VOStFJQFMLHOFO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Fri, 19 Oct 2012 21:10:53 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 19102012 #8151499, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 16:45:58, Porter, Matt wrote:
-> On Fri, Oct 19, 2012 at 10:26:20AM +0000, Bedia, Vaibhav wrote:
-[...]
-> > 
-> > I didn't see all the patches that you posted on edma-dmaengine-v3
-> > but I do seem them on edma-dmaengine-am33xx-v3 branch.
+Yann E. MORIN wrote:
+> Some systems (eg. Cygwin, FreeBSD) are missing the CIRCLEQ macros.
+> They were removed in Y2000 from FreeBSD:
+>     http://svnweb.freebsd.org/base?view=revision&revision=70469
 > 
-> I see I referenced the wrong branch in the cover letter. Thanks for
-> testing and noticing this. Sorry to make you hunt for the correct
-> branch in that repo. ;) 
+> The reason was that TAILQ are perfectly capable of doing the exact
+> same things:
+>     http://www.mavetju.org/mail/view_thread.php?list=freebsd-arch&id=915145&thread=yes
 > 
-
-No problem.
-
-> https://github.com/ohporter/linux/tree/edma-dmaengine-am33xx-v3
-> is indeed the correct branch for those wanting to pull this in or
-> grab some of the not-to-be-merged drivers I used for testing.
+> (Thank Yaakov for the pointers!)
 > 
-> > I added a couple of patches to enable earlyprintk and build the DTB
-> > appended kernel image uImage-dtb.am335x-evm
-> > 
-> > Here's what i see
-> > 
-> > [...]
+> So, switch to using TAILQ instead, which are more portable.
 > 
-> <snip>
+> Reported-by: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+> Reported-by: Benjamin Poirier <bpoirier@suse.de>
+> Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+> Cc: Yaakov Selkowitz <yselkowitz@gmail.com>
+> ---
+>  scripts/kconfig/expr.h  |    4 ++--
+>  scripts/kconfig/mconf.c |    4 ++--
+>  scripts/kconfig/menu.c  |    6 +++---
+>  3 files changed, 7 insertions(+), 7 deletions(-)
 > 
-> > [    0.175354] edma: probe of 49000000.edma failed with error -16
-> 
-> I missed an uninitialized pdata case in the bug fixes mentioned in
-> the changelog and the folks previously failing the same way didn't
-> hit the case I suspect you are hitting. Can you try this and let me
-> know how it works?
-> 
+Excuse me, but your patch does not solve my problem because kconfig started
+using macros which does not exist in "@(#)queue.h 8.3 (Berkeley) 12/13/93".
+Kconfig still fails after applying your patch:
 
-That doesn't help :(
+  HOSTCC  scripts/kconfig/mconf.o
+scripts/kconfig/mconf.c: In function `update_text':
+scripts/kconfig/mconf.c:326: warning: implicit declaration of function `TAILQ_FOREACH'
+scripts/kconfig/mconf.c:326: error: `entries' undeclared (first use in this function)
+scripts/kconfig/mconf.c:326: error: (Each undeclared identifier is reported only once
+scripts/kconfig/mconf.c:326: error: for each function it appears in.)
+scripts/kconfig/mconf.c:326: error: syntax error before '{' token
+scripts/kconfig/mconf.c:333: error: `header' undeclared (first use in this function)
+scripts/kconfig/mconf.c: At top level:
+scripts/kconfig/mconf.c:343: error: syntax error before '}' token
+scripts/kconfig/mconf.c: In function `search_conf':
+scripts/kconfig/mconf.c:378: warning: implicit declaration of function `TAILQ_HEAD_INITIALIZER'
+scripts/kconfig/mconf.c:378: error: invalid initializer
+make[1]: *** [scripts/kconfig/mconf.o] Error 1
+make: *** [menuconfig] Error 2
 
-Looking at the original crash log, I suspect something is not correct
-with the irq portion, probably in the DT or the driver. 
-
-"genirq: Flags mismatch irq 28. 00000000 (edma) vs. 00000000 (edma)"
-
-The warning below that is coming due to fail case in edma_probe not tracking
-the request_irq status properly and but IMO that's a separate issue.
-
-BTW, I am trying this on the EVM.
-
-Regards,
-Vaibhav
+So, would you add something which looks like "sed -e 's/CIRCLEQ/TAILQ/g'" upon
+https://lkml.org/lkml/2012/10/16/274 ?
