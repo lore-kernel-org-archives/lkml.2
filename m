@@ -1,198 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030257Ab2JSO0v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 10:26:51 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:20854 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751855Ab2JSOWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 10:22:30 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-mm@kvack.org>
-Cc: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: [PATCH v5 17/18] slub: slub-specific propagation changes.
-Date: Fri, 19 Oct 2012 18:20:41 +0400
-Message-Id: <1350656442-1523-18-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1350656442-1523-1-git-send-email-glommer@parallels.com>
-References: <1350656442-1523-1-git-send-email-glommer@parallels.com>
+	id S1030374Ab2JSO05 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 10:26:57 -0400
+Received: from usindpps05.hds.com ([207.126.252.18]:50378 "EHLO
+	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030291Ab2JSO0x convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 10:26:53 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Mike Waychison <mikew@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [RFC][PATCH 1/2] efi_pstore: hold multiple logs
+Thread-Topic: [RFC][PATCH 1/2] efi_pstore: hold multiple logs
+Thread-Index: Ac2jK99U09LpQXG2SOCTo9e3vvE7GwKf8wOAABYFMeA=
+Date: Fri, 19 Oct 2012 14:26:33 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D4138796E1@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D41386D119@USINDEM103.corp.hds.com>
+ <CAGTjWtDgrDGN-+yCqfFsfaA8Xjbhj8nherA+puoGVRs-8vXO5g@mail.gmail.com>
+In-Reply-To: <CAGTjWtDgrDGN-+yCqfFsfaA8Xjbhj8nherA+puoGVRs-8vXO5g@mail.gmail.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-19_03:2012-10-19,2012-10-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1210190149
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SLUB allows us to tune a particular cache behavior with sysfs-based
-tunables.  When creating a new memcg cache copy, we'd like to preserve
-any tunables the parent cache already had.
+Mike,
 
-This can be done by tapping into the store attribute function provided
-by the allocator. We of course don't need to mess with read-only
-fields. Since the attributes can have multiple types and are stored
-internally by sysfs, the best strategy is to issue a ->show() in the
-root cache, and then ->store() in the memcg cache.
+Thank you for reviewing my patch.
+Here is my comment.
 
-The drawback of that, is that sysfs can allocate up to a page in
-buffering for show(), that we are likely not to need, but also can't
-guarantee. To avoid always allocating a page for that, we can update the
-caches at store time with the maximum attribute size ever stored to the
-root cache. We will then get a buffer big enough to hold it. The
-corolary to this, is that if no stores happened, nothing will be
-propagated.
+> >   - Write callback
+> >     - Check if there are enough spaces to write logs with QueryVariableInfo()
+> >       to avoid handling out of space situation. (It is suggested by
+> > Matthew Garrett.)
+> >
+> 
+> I would prefer to see the exposing query_variable_info callback as a separate patch.  The check in the patch looks good.
+>
 
-It can also happen that a root cache has its tunables updated during
-normal system operation. In this case, we will propagate the change to
-all caches that are already active.
+OK. I will make a separate patch.
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Michal Hocko <mhocko@suse.cz>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>
-CC: Suleiman Souhlal <suleiman@google.com>
-CC: Tejun Heo <tj@kernel.org>
----
- include/linux/slub_def.h |  1 +
- mm/slub.c                | 76 +++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 76 insertions(+), 1 deletion(-)
+ 
+> >     - Remove a logic erasing existing entries.
+> >
+> >   - Erase callback
+> >     - Freshly create a logic rather than sharing it with a write callback because
+> >       erasing entries doesn't need in a write callback.
+> >
+> 
+> This sort of change is a lot easier to review if you copy and paste the routine in a patch separate from this one.
+> 
 
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index ed330df..f41acb9 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -105,6 +105,7 @@ struct kmem_cache {
- #endif
- #ifdef CONFIG_MEMCG_KMEM
- 	struct memcg_cache_params *memcg_params;
-+	int max_attr_size; /* for propagation, maximum size of a stored attr */
- #endif
- 
- #ifdef CONFIG_NUMA
-diff --git a/mm/slub.c b/mm/slub.c
-index b5b970b..41c3caf 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -203,13 +203,14 @@ enum track_item { TRACK_ALLOC, TRACK_FREE };
- static int sysfs_slab_add(struct kmem_cache *);
- static int sysfs_slab_alias(struct kmem_cache *, const char *);
- static void sysfs_slab_remove(struct kmem_cache *);
--
-+static void memcg_propagate_slab_attrs(struct kmem_cache *s);
- #else
- static inline int sysfs_slab_add(struct kmem_cache *s) { return 0; }
- static inline int sysfs_slab_alias(struct kmem_cache *s, const char *p)
- 							{ return 0; }
- static inline void sysfs_slab_remove(struct kmem_cache *s) { }
- 
-+static inline void memcg_propagate_slab_attrs(struct kmem_cache *s) { }
- #endif
- 
- static inline void stat(const struct kmem_cache *s, enum stat_item si)
-@@ -3973,6 +3974,7 @@ int __kmem_cache_create(struct kmem_cache *s, unsigned long flags)
- 	if (err)
- 		return err;
- 
-+	memcg_propagate_slab_attrs(s);
- 	mutex_unlock(&slab_mutex);
- 	err = sysfs_slab_add(s);
- 	mutex_lock(&slab_mutex);
-@@ -5198,6 +5200,7 @@ static ssize_t slab_attr_store(struct kobject *kobj,
- 	struct slab_attribute *attribute;
- 	struct kmem_cache *s;
- 	int err;
-+	int i __maybe_unused;
- 
- 	attribute = to_slab_attr(attr);
- 	s = to_slab(kobj);
-@@ -5206,10 +5209,81 @@ static ssize_t slab_attr_store(struct kobject *kobj,
- 		return -EIO;
- 
- 	err = attribute->store(s, buf, len);
-+#ifdef CONFIG_MEMCG_KMEM
-+	if (slab_state < FULL)
-+		return err;
- 
-+	if ((err < 0) || !is_root_cache(s))
-+		return err;
-+
-+	mutex_lock(&slab_mutex);
-+	if (s->max_attr_size < len)
-+		s->max_attr_size = len;
-+
-+	for_each_memcg_cache_index(i) {
-+		struct kmem_cache *c = cache_from_memcg(s, i);
-+		if (c)
-+			/* return value determined by the parent cache only */
-+			attribute->store(c, buf, len);
-+	}
-+	mutex_unlock(&slab_mutex);
-+#endif
- 	return err;
- }
- 
-+#ifdef CONFIG_MEMCG_KMEM
-+static void memcg_propagate_slab_attrs(struct kmem_cache *s)
-+{
-+	int i;
-+	char *buffer = NULL;
-+
-+	if (!is_root_cache(s))
-+		return;
-+
-+	/*
-+	 * This mean this cache had no attribute written. Therefore, no point
-+	 * in copying default values around
-+	 */
-+	if (!s->max_attr_size)
-+		return;
-+
-+	for (i = 0; i < ARRAY_SIZE(slab_attrs); i++) {
-+		char mbuf[64];
-+		char *buf;
-+		struct slab_attribute *attr = to_slab_attr(slab_attrs[i]);
-+
-+		if (!attr || !attr->store || !attr->show)
-+			continue;
-+
-+		/*
-+		 * It is really bad that we have to allocate here, so we will
-+		 * do it only as a fallback. If we actually allocate, though,
-+		 * we can just use the allocated buffer until the end.
-+		 *
-+		 * Most of the slub attributes will tend to be very small in
-+		 * size, but sysfs allows buffers up to a page, so they can
-+		 * theoretically happen.
-+		 */
-+		if (buffer)
-+			buf = buffer;
-+		else if (s->max_attr_size < ARRAY_SIZE(mbuf))
-+			buf = mbuf;
-+		else {
-+			buffer = (char *) get_zeroed_page(GFP_KERNEL);
-+			if (WARN_ON(!buffer))
-+				continue;
-+			buf = buffer;
-+		}
-+
-+		attr->show(s->memcg_params->root_cache, buf);
-+		attr->store(s, buf, strlen(buf));
-+	}
-+
-+	if (buffer)
-+		free_page((unsigned long)buffer);
-+}
-+#endif
-+
- static const struct sysfs_ops slab_sysfs_ops = {
- 	.show = slab_attr_show,
- 	.store = slab_attr_store,
--- 
-1.7.11.7
+I will separate it as well.
 
+
+> > +       /*
+> > +        * Check if there is a space enough to log.
+> > +        * size: a size of logging data
+> > +        * DUMP_NAME_LEN * 2: a maximum size of variable name
+> > +        *
+> 
+> extra line
+> 
+
+Will fix.
+
+> > +
+> > +       efivars->ops->set_variable(efi_name, &vendor, PSTORE_EFI_ATTRIBUTES,
+> > +                                  size, psi->buf);
+> > +
+> > +       spin_unlock(&efivars->lock);
+> > +
+> > +       if (size)
+> > +               ret = efivar_create_sysfs_entry(efivars,
+> > +                                         utf16_strsize(efi_name,
+> > +                                                       DUMP_NAME_LEN * 2),
+> > +                                         efi_name, &vendor);
+> 
+> What is happening here?  Why is size checked for non-zero?
+> 
+
+I just copied an original code sharing a logic of write callback and erase callback.. 
+But, if size is zero, we don't need to create a sysfs file because a set_variable service erases the entry.
+It is defined in EFI specification.
+So, I think this code is right.
+
+> > +++ b/fs/pstore/inode.c
+> > @@ -175,7 +175,8 @@ static int pstore_unlink(struct inode *dir, struct dentry *dentry)
+> >         struct pstore_private *p = dentry->d_inode->i_private;
+> >
+> >         if (p->psi->erase)
+> > -               p->psi->erase(p->type, p->id, p->psi);
+> > +               p->psi->erase(p->type, p->id, dentry->d_inode->i_ctime,
+> > +                             p->psi);
+> 
+> This doesn't look right.  What guarantees that the i_ctime means anything across reboots?
+> 
+
+Ctime is persistent across reboots because ctime of pstore means the date that the recode was
+originally stored. (See below.)
+
+To do this, efi_pstore saves the ctime to variable name at writing time and passes it to pstore at reading time.
+
+fs/pstore/inode.c:
+<snip>
+/*
+  * Make a regular file in the root directory of our file system.
+  * Load it up with "size" bytes of data from "buf".
+  * Set the mtime & ctime to the date that this record was originally stored.
+  */
+int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
+                   char *data, size_t size, struct timespec time,
+                   struct pstore_info *psi) {
+         struct dentry           *root = pstore_sb->s_root;
+         struct dentry           *dentry;
+         struct inode            *inode;
+         int                     rc = 0;
+         char                    name[PSTORE_NAMELEN];
+<snip>
+
+Seiji
