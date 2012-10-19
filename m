@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945935Ab2JSQjP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 12:39:15 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:55486 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752296Ab2JSQjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 12:39:14 -0400
-Message-ID: <1350664752.16440.3.camel@joe-AO722>
-Subject: Re: [ath9k-devel] [PATCH net-next 00/21] treewide: Use consistent
- api style for address testing
-From: Joe Perches <joe@perches.com>
-To: Pavel Roskin <proski@gnu.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, ath9k-devel <ath9k-devel@venema.h4ckr.net>
-Date: Fri, 19 Oct 2012 09:39:12 -0700
-In-Reply-To: <20121019115517.7b8514a8@mj>
-References: <cover.1350618006.git.joe@perches.com>
-	 <1350630254.2293.183.camel@edumazet-glaptop> <20121019115517.7b8514a8@mj>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
+	id S1422669Ab2JSQjV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 12:39:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51825 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758406Ab2JSQjS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 12:39:18 -0400
+Message-ID: <1350664742.2768.40.camel@twins>
+Subject: Re: question on NUMA page migration
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Mel Gorman <mel@csn.ul.ie>,
+        Linux kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Fri, 19 Oct 2012 18:39:02 +0200
+In-Reply-To: <5081777A.8050104@redhat.com>
+References: <5081777A.8050104@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc list trimmed)
-
-On Fri, 2012-10-19 at 11:55 -0400, Pavel Roskin wrote:
-> On Fri, 19 Oct 2012 09:04:14 +0200
-> Eric Dumazet <eric.dumazet@gmail.com> wrote:
+On Fri, 2012-10-19 at 11:53 -0400, Rik van Riel wrote:
 > 
-> > Yes they are some names discrepancies, thats a big deal.
-> > 
-> > And we have alloc_skb() / kfree_skb() / skb_clone() 
-> > 
-> > Why not skb_alloc() / skb_free() / skb_clone() ?
-> > 
-> > Some people actually know current code by name of functions, they dont
-> > want to change their mind and having to grep include files and git log
-> > to learn the new names of an old function, especially when traveling
-> > and using a laptop.
-> 
-> I agree.
-> 
-> Also, it makes sense to introduce a more consistent name for a function
-> when it's improved in some way and the callers need to be adjusted or
-> re-checked.
-> 
-> That way, the old name can be phased out as the code is made compatible
-> with the new function.
+> If we do need the extra refcount, why is normal
+> page migration safe? :) 
 
-That can also be done, as was done with this series, with backward
-compatible #defines.
+Its mostly a matter of how convoluted you make the code, regular page
+migration is about as bad as you can get
+
+Normal does:
+
+  follow_page(FOLL_GET) +1
+
+  isolate_lru_page() +1
+
+  put_page() -1
+
+ending up with a page with a single reference (for anon, or one extra
+each for the mapping and buffer).
+
+And while I suppose I could do a put_page() in migrate_misplaced_page()
+that makes the function frob the page-count depending on the return
+value.
+
+I always try and avoid conditional locks/refs, therefore the code ends
+up doing:
+
+  page = vm_normal_page()
+  if (page) {
+    get_page()
+
+    migrate_misplaced_page()
+
+    put_page()
+  }
 
 
+where migrate_misplaced_page() does isolate_lru_page()/putback_lru_page,
+and this leaves the page-count invariant.
 
+We got a ref, therefore we must put a ref, is easier than we got a ref
+and must put except when...
