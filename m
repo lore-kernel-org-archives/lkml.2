@@ -1,82 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569Ab2JSIOT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 04:14:19 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51697 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab2JSIOP (ORCPT
+	id S1754359Ab2JSIUA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 04:20:00 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40175 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753665Ab2JSIT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 04:14:15 -0400
+	Fri, 19 Oct 2012 04:19:57 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50810D14.8020609@jp.fujitsu.com>
+Date: Fri, 19 Oct 2012 17:19:32 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <5080f0b3.85712b0a.0d0f.ffff9dd2SMTPIN_ADDED@mx.google.com>
-References: <1350568765-5723-1-git-send-email-weiyang@linux.vnet.ibm.com>
-	<CAFLxGvwfGc_4z1JM=pAb-U4tNVeMZR1zs-neQv7Vz2-6DQT+9Q@mail.gmail.com>
-	<1350624189.14741.1.camel@wall-e>
-	<5080f0b3.85712b0a.0d0f.ffff9dd2SMTPIN_ADDED@mx.google.com>
-Date: Fri, 19 Oct 2012 10:14:14 +0200
-Message-ID: <CAFLxGvxdH=sx9+1y0Uw5gNWL9ZRbPTst3Fj2SgAimoUDbo_2PQ@mail.gmail.com>
-Subject: Re: [PATCH] remove untouched code in kfifo_in
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Richard Yang <weiyang@linux.vnet.ibm.com>
-Cc: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
-        jkosina@suse.cz
-Content-Type: text/plain; charset=ISO-8859-1
+To: <wency@cn.fujitsu.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>,
+        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH v3 0/9] bugfix for memory hotplug
+References: <1350629202-9664-1-git-send-email-wency@cn.fujitsu.com> <508109F2.1080402@jp.fujitsu.com>
+In-Reply-To: <508109F2.1080402@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 8:18 AM, Richard Yang
-<weiyang@linux.vnet.ibm.com> wrote:
-> On Fri, Oct 19, 2012 at 07:23:09AM +0200, Stefani Seibold wrote:
+2012/10/19 17:06, Yasuaki Ishimatsu wrote:
+> Hi Wen,
+> 
+> Some bug fix patches have been merged into linux-next.
+> So the patches confuse me.
+
+The following patches have been already merged into linux-next
+and mm-tree as long as I know. 
+
+>> Wen Congyang (6):
+>>     clear the memory to store struct page
+
+
+>>     memory-hotplug: skip HWPoisoned page when offlining pages
+
+mm-tree
+
+>>     memory-hotplug: update mce_bad_pages when removing the memory
+
+>>     memory-hotplug: auto offline page_cgroup when onlining memory block
+>>       failed
+
+mm-tree
+
+>>     memory-hotplug: fix NR_FREE_PAGES mismatch
+
+mm-tree
+
+>>     memory-hotplug: allocate zone's pcp before onlining pages
+
+mm-tree
+
 >>
->>Am Freitag, den 19.10.2012, 00:37 +0200 schrieb richard -rw- weinberger:
->>> On Thu, Oct 18, 2012 at 3:59 PM, Wei Yang <weiyang@linux.vnet.ibm.com> wrote:
->>> > In kfifo_in marco, one piece of code is arounded by if(0). This code in
->>> > introduced by Stefani Seibold <stefani@seibold.net> to suppress a compiler
->>> > warning. This warning is not there with the upgrade of gcc version.
->>> >
->>> > This patch just remove this code.
->>>
->>> Are you sure?
->>> This code fragment looks like a compiler bomb to detect type mismatch to me...
->>>
->>
->>Yes, you are great! That was the reason why i made this peace of code.
->>So don't remove it!
-> Thanks for your confirmation.
->
-> Hmm, would you give me a hint on how it check the type mismatch?
+>> Yasuaki Ishimatsu (3):
+>>     suppress "Device memoryX does not have a release() function" warning
 
-Here a small hint:
----cut---
-struct x {
-};
-struct y {
-};
+linux-next
 
-#define check(a, b) \
-({ \
-        if (0) { \
-                typeof(a) __dummy __attribute__ ((unused)); \
-                __dummy = (typeof(b))NULL; \
-        } \
-})
+>>     suppress "Device nodeX does not have a release() function" warning
+>>     memory-hotplug: flush the work for the node when the node is offlined
 
-int main(int argc, char **argv)
-{
-        struct x _x;
-        struct y _y;
+linux-next
 
-        check(&_x, &_x); //okay
-        check(&_x, &_y); //will explode with "assignment from
-incompatible pointer type"
-
-        return 0;
-}
-
----cut---
-
-
--- 
 Thanks,
-//richard
+Yasuaki Ishimatsu
+
+> Why did you send same patches again?
+> 
+> Thanks,
+> Yasuaki Ishimatsu
+> 
+> 2012/10/19 15:46, wency@cn.fujitsu.com wrote:
+>> From: Wen Congyang <wency@cn.fujitsu.com>
+>>
+>> Changes from v2 to v3:
+>>     Merge the bug fix from ishimatsu to this patchset(Patch 1-3)
+>>     Patch 3: split it from patch as it fixes another bug.
+>>     Patch 4: new patch, and fix bad-page state when hotadding a memory
+>>              device after hotremoving it. I forgot to post this patch in v2.
+>>     Patch 6: update it according to Dave Hansen's comment.
+>>
+>> Changes from v1 to v2:
+>>     Patch 1: updated according to kosaki's suggestion
+>>
+>>     Patch 2: new patch, and update mce_bad_pages when removing memory.
+>>
+>>     Patch 4: new patch, and fix a NR_FREE_PAGES mismatch, and this bug
+>>              cause oom in my test.
+>>
+>>     Patch 5: new patch, and fix a new bug. When repeating to online/offline
+>>              pages, the free pages will continue to decrease.
+>>
+>> Wen Congyang (6):
+>>     clear the memory to store struct page
+>>     memory-hotplug: skip HWPoisoned page when offlining pages
+>>     memory-hotplug: update mce_bad_pages when removing the memory
+>>     memory-hotplug: auto offline page_cgroup when onlining memory block
+>>       failed
+>>     memory-hotplug: fix NR_FREE_PAGES mismatch
+>>     memory-hotplug: allocate zone's pcp before onlining pages
+>>
+>> Yasuaki Ishimatsu (3):
+>>     suppress "Device memoryX does not have a release() function" warning
+>>     suppress "Device nodeX does not have a release() function" warning
+>>     memory-hotplug: flush the work for the node when the node is offlined
+>>
+>>    drivers/base/memory.c          |    9 ++++++++-
+>>    drivers/base/node.c            |   11 +++++++++++
+>>    include/linux/page-isolation.h |   10 ++++++----
+>>    mm/memory-failure.c            |    2 +-
+>>    mm/memory_hotplug.c            |   14 ++++++++------
+>>    mm/page_alloc.c                |   37 ++++++++++++++++++++++++++++---------
+>>    mm/page_cgroup.c               |    3 +++
+>>    mm/page_isolation.c            |   27 ++++++++++++++++++++-------
+>>    mm/sparse.c                    |   22 +++++++++++++++++++++-
+>>    9 files changed, 106 insertions(+), 29 deletions(-)
+>>
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
