@@ -1,39 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933117Ab2JSXGz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 19:06:55 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:53912 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759141Ab2JSXGx (ORCPT
+	id S933157Ab2JSXHY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 19:07:24 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:45940 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757478Ab2JSXGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 19:06:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFyauaYYe=C1PAbhjHUECXSefPncv_COQ05J-zpF6-H7Zg@mail.gmail.com>
-References: <20121019225140.31460.32873.stgit@warthog.procyon.org.uk> <CA+55aFyauaYYe=C1PAbhjHUECXSefPncv_COQ05J-zpF6-H7Zg@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 19 Oct 2012 16:06:32 -0700
-X-Google-Sender-Auth: Th-OfotuTWu5oE0h3t08JjAypEA
-Message-ID: <CA+55aFy7QgEt_VU84aXZ_RY9C392C=B0Ewzd4GwZ44kQ5cGV3A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] MODSIGN: perlify sign-file and merge in x509keyid
- [ver #2]
-To: David Howells <dhowells@redhat.com>
-Cc: rusty@rustcorp.com.au, davem@davemloft.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 19 Oct 2012 19:06:38 -0400
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: linux-kbuild@vger.kernel.org
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>
+Subject: [PATCH 2/3] kconfig: add a function to get the CONFIG_ prefix
+Date: Sat, 20 Oct 2012 01:06:24 +0200
+Message-Id: <1350687985-21053-3-git-send-email-yann.morin.1998@free.fr>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1350687985-21053-1-git-send-email-yann.morin.1998@free.fr>
+References: <1350687985-21053-1-git-send-email-yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 3:58 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Also, I wonder how standard this /usr/bin/perl is:
->
->> +#!/usr/bin/perl -w
+Currently, we get the CONFIG_ prefix via the CONFIG_ macro, which means
+the CONFIG_ prefix is hard-coded at compile time. This goes against
+having a run-time defined CONFIG_ prefix.
 
-Well, we have other uses of that path in the kernel already, and your
-v3 patch uses 'perl' in the Makefile to run it, so it will pick up the
-path that way.
+Add a function that returns the CONFIG_ prefix to use (but keep the
+current hard-coded behavior, to be changed in a later patch).
 
-So I think it all looks fine now. Will apply, thanks,
+To avoid touching all the code that uses the CONFIG_ macro, we just
+undef it, and define it to be a call to the function.
 
-             Linus
+Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+---
+ scripts/kconfig/lkc.h |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/scripts/kconfig/lkc.h b/scripts/kconfig/lkc.h
+index c18f2bd..7aa9db0 100644
+--- a/scripts/kconfig/lkc.h
++++ b/scripts/kconfig/lkc.h
+@@ -39,6 +39,12 @@ extern "C" {
+ #ifndef CONFIG_
+ #define CONFIG_ "CONFIG_"
+ #endif
++static inline const char *CONFIG_prefix(void)
++{
++	return CONFIG_;
++}
++#undef CONFIG_
++#define CONFIG_ CONFIG_prefix()
+ 
+ #define TF_COMMAND	0x0001
+ #define TF_PARAM	0x0002
+-- 
+1.7.2.5
+
