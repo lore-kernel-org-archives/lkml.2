@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758359Ab2JSKRN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 06:17:13 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:59878 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878Ab2JSKRK (ORCPT
+	id S1758565Ab2JSKUW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 06:20:22 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58139 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758336Ab2JSKUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 06:17:10 -0400
+	Fri, 19 Oct 2012 06:20:20 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50812949.6040005@jp.fujitsu.com>
+Date: Fri, 19 Oct 2012 19:19:53 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <507EF9AB.9070603@wwwdotorg.org>
-References: <1350415413-3723-1-git-send-email-linus.walleij@linaro.org>
-	<507DE0AE.7090701@wwwdotorg.org>
-	<507EF9AB.9070603@wwwdotorg.org>
-Date: Fri, 19 Oct 2012 12:17:09 +0200
-Message-ID: <CACRpkdbknYsVKTMRzeDRo5DPfnSUSUwCNd2GKVRO_YOwrNdBFA@mail.gmail.com>
-Subject: Re: [PATCH 7/7] gpio/tegra: convert to use linear irqdomain
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: <wency@cn.fujitsu.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linux-acpi@vger.kernel.org>, <liuj97@gmail.com>,
+        <len.brown@intel.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>, <muneda.takahiro@jp.fujitsu.com>,
+        <rjw@sisk.pl>
+Subject: Re: [PATCH v2 0/3] acpi,memory-hotplug : implement framework for
+ hot removing memory
+References: <1350641040-19434-1-git-send-email-wency@cn.fujitsu.com>
+In-Reply-To: <1350641040-19434-1-git-send-email-wency@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 8:32 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 10/16/2012 04:33 PM, Stephen Warren wrote:
->> On 10/16/2012 01:23 PM, Linus Walleij wrote:
->>> The MXS driver tries to do the work of irq_domain_add_linear()
->>> by reserving a bunch of descriptors somewhere and keeping track
->>> of the base offset, then calling irq_domain_add_legacy(). Let's
->>> stop doing that and simply use the linear IRQ domain.
->>
->> This /looks/ fine, but appears to break users of GPIOs from this module,
->> and causes a backtrace when cat /sys/kernel/debug/gpio:
-> ...
->
-> The following additional diff makes it work:
->
->> diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
->> index 0234162..c7c175a 100644
->> --- a/drivers/gpio/gpio-tegra.c
->> +++ b/drivers/gpio/gpio-tegra.c
->> @@ -460,7 +460,7 @@ static int __devinit tegra_gpio_probe(struct platform_device *pdev)
->>         gpiochip_add(&tegra_gpio_chip);
->>
->>         for (gpio = 0; gpio < tegra_gpio_chip.ngpio; gpio++) {
->> -               int irq = irq_find_mapping(irq_domain, gpio);
->> +               int irq = irq_create_mapping(irq_domain, gpio);
->>                 /* No validity check; all Tegra GPIOs are valid IRQs */
->>
->>                 bank = &tegra_gpio_banks[GPIO_BANK(gpio)];
->
-> I wonder if perhaps the entirety of that loop and perhaps the one after
-> it should be in the IRQ domain's map op - is that how all this is
-> intended to work?
+CCing Rafael, because he become ACPI Maintainer.
 
-I've been asking the same kind of question...
+Hi Wen,
 
-Basically as far as I understand:
+If you update the patch-set, please CCing Rafael from the next time.
 
-- If you use a linear IRQ domain you need to call irq_create_mapping()
- atleast once, and at that point the IRQ descriptor will be dynamically
- allocated. On subsequent calls, irq_find_mapping() can be used.
+Thanks,
+Yasuaki Ishimatsu
 
-- If using legacy IRQ domains, descriptors are supposed to be
- allocated elsewhere, and you can just use irq_find_mapping(),
- but irq_create_mapping() does not hurt, because that call will
- check if a descriptor is already available.
+2012/10/19 19:03, wency@cn.fujitsu.com wrote:
+> From: Wen Congyang <wency@cn.fujitsu.com>
+> 
+> The patch-set implements a framework for hot removing memory.
+> 
+> The memory device can be removed by 2 ways:
+> 1. send eject request by SCI
+> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+> 
+> In the 1st case, acpi_memory_disable_device() will be called.
+> In the 2nd case, acpi_memory_device_remove() will be called.
+> acpi_memory_device_remove() will also be called when we unbind the
+> memory device from the driver acpi_memhotplug or a driver initialization
+> fails.
+> 
+> acpi_memory_disable_device() has already implemented a code which
+> offlines memory and releases acpi_memory_info struct . But
+> acpi_memory_device_remove() has not implemented it yet.
+> 
+> So the patch prepares the framework for hot removing memory and
+> adds the framework into acpi_memory_device_remove().
+> 
+> The last version of this patchset is here:
+> https://lkml.org/lkml/2012/10/3/126
+> 
+> Changelos from v1 to v2:
+>    Patch1: use acpi_bus_trim() instead of acpi_bus_remove()
+>    Patch2: new patch, introduce a lock to protect the list
+>    Patch3: remove memory too when type is ACPI_BUS_REMOVAL_NORMAL
+>    Note: I don't send [Patch2-4 v1] in this series because they
+>    are no logical changes in these 3 patches.
+> 
+> Wen Congyang (2):
+>    acpi,memory-hotplug: call acpi_bus_trim() to remove memory device
+>    acpi,memory-hotplug: introduce a mutex lock to protect the list in
+>      acpi_memory_device
+> 
+> Yasuaki Ishimatsu (1):
+>    acpi,memory-hotplug : add memory offline code to
+>      acpi_memory_device_remove()
+> 
+>   drivers/acpi/acpi_memhotplug.c |   51 ++++++++++++++++++++++++++++++++--------
+>   1 files changed, 41 insertions(+), 10 deletions(-)
+> 
 
-- With the simple domain (as augmented by myself) the mappins
-  will be dynamically created if the passed IRQ base is <= 0
-  else it falls through to creating a linear domain, so in this case
-  to be certain irq_create_mapping() should also be called at
-  least once.
 
-I'm not overly happy with these semantics :-(
-
-Basically irq_find_mapping() may be a fragile and dangerous
-optimization path.
-
-I've folded the above into my patch.
-
-Yours,
-Linus Walleij
