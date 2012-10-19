@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757377Ab2JSK3i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 06:29:38 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:43875 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753419Ab2JSK3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 06:29:37 -0400
-Message-ID: <1350642576.11308.13.camel@joe-AO722>
-Subject: Re: [PATCH net-next 00/21] treewide: Use consistent api style for
- address testing
-From: Joe Perches <joe@perches.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 19 Oct 2012 03:29:36 -0700
-In-Reply-To: <1350630254.2293.183.camel@edumazet-glaptop>
-References: <cover.1350618006.git.joe@perches.com>
-	 <1350630254.2293.183.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758583Ab2JSK34 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 06:29:56 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:41818 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758441Ab2JSK3y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 06:29:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121018043848.GA4022@minime.bse>
+References: <1350069085-13283-1-git-send-email-stigge@antcom.de>
+	<1350069085-13283-3-git-send-email-stigge@antcom.de>
+	<20121015180702.GA12801@game.jcrosoft.org>
+	<20121015181928.GB27923@kroah.com>
+	<CACRpkdZmg4+7Zjm2UJktt1uKvytUW3uaYtKz0nJvLeM2MMSV-Q@mail.gmail.com>
+	<20121018043848.GA4022@minime.bse>
+Date: Fri, 19 Oct 2012 12:29:52 +0200
+Message-ID: <CACRpkdZje-D9RDqDtsmb0DCqBo4fLs+YF=RFbHjtgKn6Co=SsQ@mail.gmail.com>
+Subject: Re: [PATCH RFC 2/6 v3] gpio: Add sysfs support to block GPIO API
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Daniel_Gl=F6ckner?= <daniel-gl@gmx.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Roland Stigge <stigge@antcom.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, highguy@gmail.com,
+        broonie@opensource.wolfsonmicro.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(trimmed over long cc list from original 00/21 post)
+On Thu, Oct 18, 2012 at 6:38 AM, Daniel Glöckner <daniel-gl@gmx.net> wrote:
+> On Mon, Oct 15, 2012 at 10:30:15PM +0200, Linus Walleij wrote:
+>>
+>> Another patch that is circulating concerns edge triggers and similar,
+>> and it appear that some parts of the GPIO sysfs is for example
+>> redefining and exporting IRQchip properties like trigger edge
+>> in sysfs, while the settings of the irqchip actually used by the driver
+>> is not reflected in the other direction. So you can *set* these things
+>> by writing in the GPIO sysfs, but never trust what you *read* from
+>> there. And you can set what edges an IRQ will trigger on a certain
+>> GPIO, and the way to handle the IRQs from usespace is to poll
+>> on a value. This is not really documented but well ...
+>
+> Part of this sounds like you are not familiar with the GPIOlib sysfs
+> IRQ stuff.
 
-On Fri, 2012-10-19 at 09:04 +0200, Eric Dumazet wrote:
-> On Thu, 2012-10-18 at 20:55 -0700, Joe Perches wrote:
-> > ethernet, ipv4, and ipv6 address testing uses 3 different api naming styles.
-> > 
-> > ethernet uses:	is_<foo>_ether_addr
-> > ipv4 uses:	ipv4_is_<foo>
-> > ipv6 uses:	ipv6_addr_<foo>
-> > 
-> > Standardize on the ipv6 style of <prefix>_addr_<type> to reduce
-> > the number of styles to remember.
-[]
-> Yes they are some names discrepancies, thats a big deal.
+Yeah you bet :-)
 
-missing a not maybe?
+I'm just trying to maintain it, I think I need your help with this.
 
-> And we have alloc_skb() / kfree_skb() / skb_clone() 
-> Why not skb_alloc() / skb_free() / skb_clone() ?
+Do you think it'd be possible for you to augment the
+Documentation/gpio.txt file with some userspace code examples?
+I think this could be very useful.
 
-Not really a similar use case to this renaming, as alloc/free
-functions generally start with alloc/free.
+> The trigger edge set in sysfs is only used when userspace
+> polls the GPIO via sysfs. Drivers that want to register a gpio IRQ
+> should IMHO always explicitly request the edge/level to trigger on and
+> they should request the gpio beforehand. This prevents the gpio from
+> being exported to userspace. Only IRQ triggers accepted by the irq chip
+> are settable in sysfs, so you can trust the value read from that file.
 
-These particular functions all refer to address tests.
+OK.
 
-> Some people actually know current code by name of functions, they dont
-> want to change their mind and having to grep include files and git log
-> to learn the new names of an old function, especially when traveling and
-> using a laptop.
-> 
-> Sure, when we want to use eth_random_addr(), a grep into include files
-> to check if its still the right name (old one was random_ether_addr())
-> is OK because we dont use this one often.
-> 
-> If you think about it, eth_random_addr() was not the perfect name.
+>> Daniel: are you interested in helping us fixing the GPIOlib
+>> sysfs ABI and kernel internals? I'm a bit afraid of it.
+>
+> Actually I don't know what you want to change to fix the existing sysfs
+> ABI. Personally I'd like to see the following things changed:
+>  - /sys/gpio/.../direction does not correspond to hardware before first
+>    use of gpio_direction_* due to lack of gpio_get_direction.
+>  - Names given to gpios by the chip should just result in symlinks to
+>    the usual gpioX directories or (un)exporting of gpios should accept
+>    names.
 
-Luckily, that one's only got 46 references.
-I don't care for the <type>_<action>_addr vs <type>_addr_<test>
-use either.  Maybe a set in the name would have been/still be better.
+Please send a patch! I'll merge.
 
-> Think about all the documentation you can find outside of kernel tree,
-> RFC and things like that, copy/pasting some linux kernel code.
-> 
-> This kind of changes make our life more difficult, when we have to
-> backport patches or rebase code, or even perform some searches to find
-> prior issues/discussions.
-> 
-> Life of a kernel developer is not only dealing with latest Linus (or
-> -next) tree, and using automatic 'tools'.
-> 
-> Thats a real pain for me at least.
+Actually I'm mostly referring to another floating patch, I will try to
+dig it up and CC you.
 
-Pity, api consistency has some value.
-
-cheers, Joe
-
+Yours,
+Linus Walleij
