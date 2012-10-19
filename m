@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964955Ab2JSDRc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:17:32 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54430 "EHLO mail.kernel.org"
+	id S1758085Ab2JSDRo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:17:44 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54562 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757842Ab2JSDRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:22 -0400
+	id S964978Ab2JSDRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 05/37] mips,kgdb: fix recursive page fault with CONFIG_KPROBES
-Date: Thu, 18 Oct 2012 20:16:28 -0700
-Message-Id: <20121019031303.646702741@linuxfoundation.org>
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        David Miller <davem@davemloft.net>
+Subject: [ 22/37] netfilter: nf_ct_ipv4: packets with wrong ihl are invalid
+Date: Thu, 18 Oct 2012 20:16:45 -0700
+Message-Id: <20121019031306.414704593@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -27,51 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wessel <jason.wessel@windriver.com>
+From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
 
-commit f0a996eeeda214f4293e234df33b29bec003b536 upstream.
+commit 07153c6ec074257ade76a461429b567cff2b3a1e upstream.
 
-This fault was detected using the kgdb test suite on boot and it
-crashes recursively due to the fact that CONFIG_KPROBES on mips adds
-an extra die notifier in the page fault handler.  The crash signature
-looks like this:
+It was reported that the Linux kernel sometimes logs:
 
-kgdbts:RUN bad memory access test
-KGDB: re-enter exception: ALL breakpoints killed
-Call Trace:
-[<807b7548>] dump_stack+0x20/0x54
-[<807b7548>] dump_stack+0x20/0x54
+klogd: [2629147.402413] kernel BUG at net / netfilter /
+nf_conntrack_proto_tcp.c: 447!
+klogd: [1072212.887368] kernel BUG at net / netfilter /
+nf_conntrack_proto_tcp.c: 392
 
-The fix for now is to have kgdb return immediately if the fault type
-is DIE_PAGE_FAULT and allow the kprobe code to decide what is supposed
-to happen.
+ipv4_get_l4proto() in nf_conntrack_l3proto_ipv4.c and tcp_error() in
+nf_conntrack_proto_tcp.c should catch malformed packets, so the errors
+at the indicated lines - TCP options parsing - should not happen.
+However, tcp_error() relies on the "dataoff" offset to the TCP header,
+calculated by ipv4_get_l4proto().  But ipv4_get_l4proto() does not check
+bogus ihl values in IPv4 packets, which then can slip through tcp_error()
+and get caught at the TCP options parsing routines.
 
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: David S. Miller <davem@davemloft.net>
+The patch fixes ipv4_get_l4proto() by invalidating packets with bogus
+ihl value.
+
+The patch closes netfilter bugzilla id 771.
+
+Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Acked-by: David Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/kernel/kgdb.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/arch/mips/kernel/kgdb.c
-+++ b/arch/mips/kernel/kgdb.c
-@@ -283,6 +283,15 @@ static int kgdb_mips_notify(struct notif
- 	struct pt_regs *regs = args->regs;
- 	int trap = (regs->cp0_cause & 0x7c) >> 2;
+--- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
++++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4.c
+@@ -84,6 +84,14 @@ static int ipv4_get_l4proto(const struct
+ 	*dataoff = nhoff + (iph->ihl << 2);
+ 	*protonum = iph->protocol;
  
-+#ifdef CONFIG_KPROBES
-+	/*
-+	 * Return immediately if the kprobes fault notifier has set
-+	 * DIE_PAGE_FAULT.
-+	 */
-+	if (cmd == DIE_PAGE_FAULT)
-+		return NOTIFY_DONE;
-+#endif /* CONFIG_KPROBES */
++	/* Check bogus IP headers */
++	if (*dataoff > skb->len) {
++		pr_debug("nf_conntrack_ipv4: bogus IPv4 packet: "
++			 "nhoff %u, ihl %u, skblen %u\n",
++			 nhoff, iph->ihl << 2, skb->len);
++		return -NF_ACCEPT;
++	}
 +
- 	/* Userspace events, ignore. */
- 	if (user_mode(regs))
- 		return NOTIFY_DONE;
+ 	return NF_ACCEPT;
+ }
+ 
 
 
