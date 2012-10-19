@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004Ab2JSGvv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 02:51:51 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:33489 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713Ab2JSGvu (ORCPT
+	id S1753226Ab2JSGxK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 02:53:10 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:33092 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976Ab2JSGxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 02:51:50 -0400
+	Fri, 19 Oct 2012 02:53:09 -0400
 MIME-Version: 1.0
-In-Reply-To: <507F86BD.7070201@jp.fujitsu.com>
-References: <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com>
- <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com>
- <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com>
- <20121017040515.GA13505@redhat.com> <alpine.DEB.2.00.1210162222100.26279@chino.kir.corp.google.com>
- <20121017181413.GA16805@redhat.com> <alpine.DEB.2.00.1210171219010.28214@chino.kir.corp.google.com>
- <20121017193229.GC16805@redhat.com> <alpine.DEB.2.00.1210171237130.28214@chino.kir.corp.google.com>
- <20121017194501.GA24400@redhat.com> <alpine.DEB.2.00.1210171318400.28214@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1210171428540.20712@chino.kir.corp.google.com>
- <507F803A.8000900@jp.fujitsu.com> <507F86BD.7070201@jp.fujitsu.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Fri, 19 Oct 2012 02:51:29 -0400
-Message-ID: <CAHGf_=r9ynudaetANyEng64OSXOsLqdQ1SXHb0Z9AnAr23ahZw@mail.gmail.com>
-Subject: Re: [patch for-3.7 v2] mm, mempolicy: avoid taking mutex inside
- spinlock when reading numa_maps
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, bhutchings@solarflare.com,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
+In-Reply-To: <20121019055943.GA4185@localhost.localdomain>
+References: <1350559712-8514-1-git-send-email-shiraz.hashim@st.com>
+	<CAOh2x=mdtkW=a-xv1BeHxoGsgbF5s+4B8QmZBdvqnWHr30Ap2A@mail.gmail.com>
+	<20121019055943.GA4185@localhost.localdomain>
+Date: Fri, 19 Oct 2012 12:23:08 +0530
+X-Google-Sender-Auth: L0HTjR0qbputBtkHP-9b8avNvEo
+Message-ID: <CAOh2x=kXu2EG4GFaW8HpSi=VFLvGEMEyeN_3L74wU2sfe1Z=uQ@mail.gmail.com>
+Subject: Re: [PATCH] pwm: add spear pwm driver support
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Shiraz Hashim <shiraz.hashim@st.com>
+Cc: thierry.reding@avionic-design.de, spear--sw-devel@lists.codex.cro.st.com,
+        linux-kernel@vger.kernel.org, spear-devel@list.st.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Can't we have another way to fix ? like this ? too ugly ?
->> Again, I'm sorry if I misunderstand the points.
->>
-> Sorry this patch itself may be buggy. please don't test..
-> I missed that kernel/exit.c sets task->mempolicy to be NULL.
-> fixed one here.
->
-> --
-> From 5581c71e68a7f50e52fd67cca00148911023f9f5 Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Thu, 18 Oct 2012 13:50:29 +0900
->
-> Subject: [PATCH] hold task->mempolicy while numa_maps scans.
->
->  /proc/<pid>/numa_maps scans vma and show mempolicy under
->  mmap_sem. It sometimes accesses task->mempolicy which can
->  be freed without mmap_sem and numa_maps can show some
->  garbage while scanning.
->
-> This patch tries to take reference count of task->mempolicy at reading
-> numa_maps before calling get_vma_policy(). By this, task->mempolicy
-> will not be freed until numa_maps reaches its end.
->
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->
-> V1->V2
->  -  access task->mempolicy only once and remember it.  Becase kernel/exit.c
->     can overwrite it.
->
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On Fri, Oct 19, 2012 at 11:29 AM, Shiraz Hashim <shiraz.hashim@st.com> wrote:
+> On Thu, Oct 18, 2012 at 11:11:06PM +0530, viresh kumar wrote:
+>> On Thu, Oct 18, 2012 at 4:58 PM, Shiraz Hashim <shiraz.hashim@st.com> wrote:
 
-Ok, this is acceptable to me. go ahead.
+>> > +static int __devexit spear_pwm_remove(struct platform_device *pdev)
+>> > +{
+>> > +       struct spear_pwm_chip *pc = platform_get_drvdata(pdev);
+>> > +       int i;
+>> > +
+>> > +       if (WARN_ON(!pc))
+>> > +               return -ENODEV;
+>> > +
+>> > +       for (i = 0; i < NUM_PWM; i++) {
+>> > +               struct pwm_device *pwmd = &pc->chip.pwms[i];
+>> > +
+>> > +               if (!test_bit(PWMF_ENABLED, &pwmd->flags))
+
+One point here: If i am not wrong you want to disable pwmd if it is enabled.
+Shouldn't you check for if (test_bit(PWMF_ENABLED, &pwmd->flags)) instead?
+
+>> > +                       if (clk_prepare_enable(pc->clk) < 0)
+>> > +                               continue;
+>> > +
+>> > +               spear_pwm_writel(pc, i, PWMCR, 0);
+>> > +               clk_disable_unprepare(pc->clk);
+>> > +       }
+>>
+>> You are enabling/disabling clock N times here and each of these will
+>> write to an register. Do something better.
+>>
+>
+> I need to shut down all active pwms, how else would you suggest that ?
+
+Sorry, i misread the code on the second go :(
+
+I am proposing something like:
+
+static int __devexit spear_pwm_remove(struct platform_device *pdev)
+{
+       struct spear_pwm_chip *pc = platform_get_drvdata(pdev);
+       int i, clk_enabled = 0;
+
+       if (WARN_ON(!pc))
+               return -ENODEV;
+
+       for (i = 0; i < NUM_PWM; i++) {
+               struct pwm_device *pwmd = &pc->chip.pwms[i];
+
+               if (!test_bit(PWMF_ENABLED, &pwmd->flags) && !clk_enabled)
+                       if (clk_prepare_enable(pc->clk) < 0)
+                               continue;
+		       else
+			       clk_enabled++;
+
+               spear_pwm_writel(pc, i, PWMCR, 0);
+       }
+
+       if (clk_enabled)
+	       clk_disable_unprepare(pc->clk);
+       ...
+}
