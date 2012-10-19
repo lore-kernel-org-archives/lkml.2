@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758755Ab2JSXGj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 19:06:39 -0400
-Received: from mail-wi0-f194.google.com ([209.85.212.194]:59013 "EHLO
-	mail-wi0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755395Ab2JSXGg (ORCPT
+	id S933117Ab2JSXGz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 19:06:55 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:53912 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759141Ab2JSXGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 19:06:36 -0400
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: linux-kbuild@vger.kernel.org
-Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3 v3] kconfig: get the CONFIG_ prefix from the environment
-Date: Sat, 20 Oct 2012 01:06:22 +0200
-Message-Id: <1350687985-21053-1-git-send-email-yann.morin.1998@free.fr>
-X-Mailer: git-send-email 1.7.2.5
+	Fri, 19 Oct 2012 19:06:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFyauaYYe=C1PAbhjHUECXSefPncv_COQ05J-zpF6-H7Zg@mail.gmail.com>
+References: <20121019225140.31460.32873.stgit@warthog.procyon.org.uk> <CA+55aFyauaYYe=C1PAbhjHUECXSefPncv_COQ05J-zpF6-H7Zg@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 19 Oct 2012 16:06:32 -0700
+X-Google-Sender-Auth: Th-OfotuTWu5oE0h3t08JjAypEA
+Message-ID: <CA+55aFy7QgEt_VU84aXZ_RY9C392C=B0Ewzd4GwZ44kQ5cGV3A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] MODSIGN: perlify sign-file and merge in x509keyid
+ [ver #2]
+To: David Howells <dhowells@redhat.com>
+Cc: rusty@rustcorp.com.au, davem@davemloft.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello All!
+On Fri, Oct 19, 2012 at 3:58 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Also, I wonder how standard this /usr/bin/perl is:
+>
+>> +#!/usr/bin/perl -w
 
-This little patch series allows one to override the CONFIG_ prefix at 
-runtime, without the need to rebuild the frontends.
+Well, we have other uses of that path in the kernel already, and your
+v3 patch uses 'perl' in the Makefile to run it, so it will pick up the
+path that way.
 
-This will be useful to have, to share the same kconfig frontends between
-different projects that may use different prefix. For example:
-  - busybox and uClibc use the standard 'CONFIG_'
-  - crosstool-NG uses 'CT_'
-  - PTXdist uses 'PTXCONF_'
-  - buildroot does not use a prefix at all
-  - and so on...
+So I think it all looks fine now. Will apply, thanks,
 
-    [PATCH 1/3] kconfig: remove CONFIG_ from string constants
-    [PATCH 2/3] kconfig: add a function to get the CONFIG_ prefix
-    [PATCH 3/3] kconfig: get CONFIG_ prefix from environment
-
-This is part of my efforts to get a generic package that encapsulates the
-kconfig frontends and parser into a standalone package, to make it easy
-for third-party projects to easily sync (and ultimately share) their
-kconfig infrastructure:
-    kconfig-frontends
-    http://ymorin.is-a-geek.org/projects/kconfig-frontends
-
-Changes in v3:
-  - simplify the CONFIG_prefix() function (Michal)
-  - rebase on-top master to date
-Changes in v2:
-  - call getenv() only once
-  - don't touch code when not strictly neeeded (don't fold not-so-long lines)
-  - rebase on-top 3.7-rc1
-
-Regards,
-Yann E. MORIN.
-
+             Linus
