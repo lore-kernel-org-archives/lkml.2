@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030477Ab2JSD2T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:28:19 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54296 "EHLO mail.kernel.org"
+	id S1030433Ab2JSDQx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:16:53 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51446 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757719Ab2JSDRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:05 -0400
+	id S1757083Ab2JSCr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Michael Olbrich <m.olbrich@pengutronix.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 01/37] ARM: vfp: fix saving d16-d31 vfp registers on v6+ kernels
-Date: Thu, 18 Oct 2012 20:16:24 -0700
-Message-Id: <20121019031303.006228182@linuxfoundation.org>
+        Cong Wang <amwang@redhat.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 33/62] pktgen: fix crash when generating IPv6 packets
+Date: Thu, 18 Oct 2012 19:45:01 -0700
+Message-Id: <20121019024301.334795540@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
-References: <20121019031302.789593147@linuxfoundation.org>
+In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
+References: <20121019024255.944999470@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Amerigo Wang <amwang@redhat.com>
 
-commit 846a136881b8f73c1f74250bf6acfaa309cab1f2 upstream.
+commit 5aa8b572007c4bca1e6d3dd4c4820f1ae49d6bb2 upstream.
 
-Michael Olbrich reported that his test program fails when built with
--O2 -mcpu=cortex-a8 -mfpu=neon, and a kernel which supports v6 and v7
-CPUs:
+For IPv6, sizeof(struct ipv6hdr) = 40, thus the following
+expression will result negative:
 
-volatile int x = 2;
-volatile int64_t y = 2;
+        datalen = pkt_dev->cur_pkt_size - 14 -
+                  sizeof(struct ipv6hdr) - sizeof(struct udphdr) -
+                  pkt_dev->pkt_overhead;
 
-int main() {
-	volatile int a = 0;
-	volatile int64_t b = 0;
-	while (1) {
-		a = (a + x) % (1 << 30);
-		b = (b + y) % (1 << 30);
-		assert(a == b);
-	}
-}
+And,  the check "if (datalen < sizeof(struct pktgen_hdr))" will be
+passed as "datalen" is promoted to unsigned, therefore will cause
+a crash later.
 
-and two instances are run.  When built for just v7 CPUs, this program
-works fine.  It uses the "vadd.i64 d19, d18, d16" VFP instruction.
+This is a quick fix by checking if "datalen" is negative. The following
+patch will increase the default value of 'min_pkt_size' for IPv6.
 
-It appears that we do not save the high-16 double VFP registers across
-context switches when the kernel is built for v6 CPUs.  Fix that.
+This bug should exist for a long time, so Cc -stable too.
 
-Tested-By: Michael Olbrich <m.olbrich@pengutronix.de>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Cong Wang <amwang@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/vfpmacros.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/core/pktgen.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/include/asm/vfpmacros.h
-+++ b/arch/arm/include/asm/vfpmacros.h
-@@ -28,7 +28,7 @@
- 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
- 	ldr	\tmp, [\tmp, #0]
- 	tst	\tmp, #HWCAP_VFPv3D16
--	ldceq	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
-+	ldceql	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
- 	addne	\base, \base, #32*4		    @ step over unused register space
- #else
- 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
-@@ -52,7 +52,7 @@
- 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
- 	ldr	\tmp, [\tmp, #0]
- 	tst	\tmp, #HWCAP_VFPv3D16
--	stceq	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
-+	stceql	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
- 	addne	\base, \base, #32*4		    @ step over unused register space
- #else
- 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -2932,7 +2932,7 @@ static struct sk_buff *fill_packet_ipv6(
+ 		  sizeof(struct ipv6hdr) - sizeof(struct udphdr) -
+ 		  pkt_dev->pkt_overhead;
+ 
+-	if (datalen < sizeof(struct pktgen_hdr)) {
++	if (datalen < 0 || datalen < sizeof(struct pktgen_hdr)) {
+ 		datalen = sizeof(struct pktgen_hdr);
+ 		if (net_ratelimit())
+ 			pr_info("increased datalen to %d\n", datalen);
 
 
