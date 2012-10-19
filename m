@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161008Ab2JSDDS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:03:18 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52112 "EHLO mail.kernel.org"
+	id S1161021Ab2JSDDo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:03:44 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52089 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964883Ab2JSCss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:48:48 -0400
+	id S964867Ab2JSCsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:48:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Simon Kirby <sim@hostway.ca>
-Subject: [ 28/76] SUNRPC: Ensure that the TCP socket is closed when in CLOSE_WAIT
-Date: Thu, 18 Oct 2012 19:46:52 -0700
-Message-Id: <20121019024354.651015115@linuxfoundation.org>
+        Colin Cross <ccross@android.com>, R Sricharan <r.sricharan@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [ 26/76] ARM: OMAP: counter: add locking to read_persistent_clock
+Date: Thu, 18 Oct 2012 19:46:50 -0700
+Message-Id: <20121019024354.313574630@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -26,86 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Colin Cross <ccross@android.com>
 
-commit a519fc7a70d1a918574bb826cc6905b87b482eb9 upstream.
+commit 9d7d6e363b06934221b81a859d509844c97380df upstream.
 
-Instead of doing a shutdown() call, we need to do an actual close().
-Ditto if/when the server is sending us junk RPC headers.
+read_persistent_clock uses a global variable, use a spinlock to
+ensure non-atomic updates to the variable don't overlap and cause
+time to move backwards.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Tested-by: Simon Kirby <sim@hostway.ca>
+Signed-off-by: Colin Cross <ccross@android.com>
+Signed-off-by: R Sricharan <r.sricharan@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/xprtsock.c |   21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
+ arch/arm/plat-omap/counter_32k.c |   21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
 
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -1025,6 +1025,16 @@ static void xs_udp_data_ready(struct soc
- 	read_unlock_bh(&sk->sk_callback_lock);
+--- a/arch/arm/plat-omap/counter_32k.c
++++ b/arch/arm/plat-omap/counter_32k.c
+@@ -55,22 +55,29 @@ static u32 notrace omap_32k_read_sched_c
+  * nsecs and adds to a monotonically increasing timespec.
+  */
+ static struct timespec persistent_ts;
+-static cycles_t cycles, last_cycles;
++static cycles_t cycles;
+ static unsigned int persistent_mult, persistent_shift;
++static DEFINE_SPINLOCK(read_persistent_clock_lock);
++
+ static void omap_read_persistent_clock(struct timespec *ts)
+ {
+ 	unsigned long long nsecs;
+-	cycles_t delta;
+-	struct timespec *tsp = &persistent_ts;
++	cycles_t last_cycles;
++	unsigned long flags;
++
++	spin_lock_irqsave(&read_persistent_clock_lock, flags);
+ 
+ 	last_cycles = cycles;
+ 	cycles = sync32k_cnt_reg ? __raw_readl(sync32k_cnt_reg) : 0;
+-	delta = cycles - last_cycles;
+ 
+-	nsecs = clocksource_cyc2ns(delta, persistent_mult, persistent_shift);
++	nsecs = clocksource_cyc2ns(cycles - last_cycles,
++					persistent_mult, persistent_shift);
++
++	timespec_add_ns(&persistent_ts, nsecs);
++
++	*ts = persistent_ts;
+ 
+-	timespec_add_ns(tsp, nsecs);
+-	*ts = *tsp;
++	spin_unlock_irqrestore(&read_persistent_clock_lock, flags);
  }
  
-+/*
-+ * Helper function to force a TCP close if the server is sending
-+ * junk and/or it has put us in CLOSE_WAIT
-+ */
-+static void xs_tcp_force_close(struct rpc_xprt *xprt)
-+{
-+	set_bit(XPRT_CONNECTION_CLOSE, &xprt->state);
-+	xprt_force_disconnect(xprt);
-+}
-+
- static inline void xs_tcp_read_fraghdr(struct rpc_xprt *xprt, struct xdr_skb_reader *desc)
- {
- 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
-@@ -1051,7 +1061,7 @@ static inline void xs_tcp_read_fraghdr(s
- 	/* Sanity check of the record length */
- 	if (unlikely(transport->tcp_reclen < 8)) {
- 		dprintk("RPC:       invalid TCP record fragment length\n");
--		xprt_force_disconnect(xprt);
-+		xs_tcp_force_close(xprt);
- 		return;
- 	}
- 	dprintk("RPC:       reading TCP record fragment of length %d\n",
-@@ -1132,7 +1142,7 @@ static inline void xs_tcp_read_calldir(s
- 		break;
- 	default:
- 		dprintk("RPC:       invalid request message type\n");
--		xprt_force_disconnect(&transport->xprt);
-+		xs_tcp_force_close(&transport->xprt);
- 	}
- 	xs_tcp_check_fraghdr(transport);
- }
-@@ -1455,6 +1465,8 @@ static void xs_tcp_cancel_linger_timeout
- static void xs_sock_mark_closed(struct rpc_xprt *xprt)
- {
- 	smp_mb__before_clear_bit();
-+	clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
-+	clear_bit(XPRT_CONNECTION_CLOSE, &xprt->state);
- 	clear_bit(XPRT_CLOSE_WAIT, &xprt->state);
- 	clear_bit(XPRT_CLOSING, &xprt->state);
- 	smp_mb__after_clear_bit();
-@@ -1512,8 +1524,8 @@ static void xs_tcp_state_change(struct s
- 		break;
- 	case TCP_CLOSE_WAIT:
- 		/* The server initiated a shutdown of the socket */
--		xprt_force_disconnect(xprt);
- 		xprt->connect_cookie++;
-+		xs_tcp_force_close(xprt);
- 	case TCP_CLOSING:
- 		/*
- 		 * If the server closed down the connection, make sure that
-@@ -2199,8 +2211,7 @@ static void xs_tcp_setup_socket(struct w
- 		/* We're probably in TIME_WAIT. Get rid of existing socket,
- 		 * and retry
- 		 */
--		set_bit(XPRT_CONNECTION_CLOSE, &xprt->state);
--		xprt_force_disconnect(xprt);
-+		xs_tcp_force_close(xprt);
- 		break;
- 	case -ECONNREFUSED:
- 	case -ECONNRESET:
+ /**
 
 
