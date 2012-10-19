@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209Ab2JSCqt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:46:49 -0400
-Received: from mail.kernel.org ([198.145.19.201]:50978 "EHLO mail.kernel.org"
+	id S1757033Ab2JSCrP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:47:15 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51172 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751438Ab2JSCqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:46:44 -0400
+	id S1756769Ab2JSCrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Cyril B." <cbay@excellency.fr>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 02/62] nfsd4: fix nfs4 stateid leak
-Date: Thu, 18 Oct 2012 19:44:30 -0700
-Message-Id: <20121019024256.319019527@linuxfoundation.org>
+        Kouei Abe <kouei.abe.cp@rms.renesas.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Simon Horman <horms@verge.net.au>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 18/62] ARM: 7541/1: Add ARM ERRATA 775420 workaround
+Date: Thu, 18 Oct 2012 19:44:46 -0700
+Message-Id: <20121019024258.904414612@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -26,33 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Simon Horman <horms@verge.net.au>
 
-commit cf9182e90b2af04245ac4fae497fe73fc71285b4 upstream.
+commit 7253b85cc62d6ff84143d96fe6cd54f73736f4d7 upstream.
 
-Processes that open and close multiple files may end up setting this
-oo_last_closed_stid without freeing what was previously pointed to.
-This can result in a major leak, visible for example by watching the
-nfsd4_stateids line of /proc/slabinfo.
+arm: Add ARM ERRATA 775420 workaround
 
-Reported-by: Cyril B. <cbay@excellency.fr>
-Tested-by: Cyril B. <cbay@excellency.fr>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Workaround for the 775420 Cortex-A9 (r2p2, r2p6,r2p8,r2p10,r3p0) erratum.
+In case a date cache maintenance operation aborts with MMU exception, it
+might cause the processor to deadlock. This workaround puts DSB before
+executing ISB if an abort may occur on cache maintenance.
+
+Based on work by Kouei Abe and feedback from Catalin Marinas.
+
+Signed-off-by: Kouei Abe <kouei.abe.cp@rms.renesas.com>
+[ horms@verge.net.au: Changed to implementation
+  suggested by catalin.marinas@arm.com ]
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Simon Horman <horms@verge.net.au>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4state.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/Kconfig       |   10 ++++++++++
+ arch/arm/mm/cache-v7.S |    3 +++
+ 2 files changed, 13 insertions(+)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -3783,6 +3783,7 @@ nfsd4_close(struct svc_rqst *rqstp, stru
- 	memcpy(&close->cl_stateid, &stp->st_stid.sc_stateid, sizeof(stateid_t));
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1405,6 +1405,16 @@ config PL310_ERRATA_769419
+ 	  on systems with an outer cache, the store buffer is drained
+ 	  explicitly.
  
- 	nfsd4_close_open_stateid(stp);
-+	release_last_closed_stateid(oo);
- 	oo->oo_last_closed_stid = stp;
++config ARM_ERRATA_775420
++       bool "ARM errata: A data cache maintenance operation which aborts, might lead to deadlock"
++       depends on CPU_V7
++       help
++	 This option enables the workaround for the 775420 Cortex-A9 (r2p2,
++	 r2p6,r2p8,r2p10,r3p0) erratum. In case a date cache maintenance
++	 operation aborts with MMU exception, it might cause the processor
++	 to deadlock. This workaround puts DSB before executing ISB if
++	 an abort may occur on cache maintenance.
++
+ endmenu
  
- 	/* place unused nfs4_stateowners on so_close_lru list to be
+ source "arch/arm/common/Kconfig"
+--- a/arch/arm/mm/cache-v7.S
++++ b/arch/arm/mm/cache-v7.S
+@@ -211,6 +211,9 @@ ENTRY(v7_coherent_user_range)
+  * isn't mapped, just try the next page.
+  */
+ 9001:
++#ifdef CONFIG_ARM_ERRATA_775420
++	dsb
++#endif
+ 	mov	r12, r12, lsr #12
+ 	mov	r12, r12, lsl #12
+ 	add	r12, r12, #4096
 
 
