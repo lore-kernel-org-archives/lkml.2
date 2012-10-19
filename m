@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756285Ab2JSNeS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 09:34:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54175 "EHLO mx2.suse.de"
+	id S1756691Ab2JSNgR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 09:36:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29202 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751476Ab2JSNeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 09:34:16 -0400
-Date: Fri, 19 Oct 2012 15:34:15 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH 4/6] cgroups: forbid pre_destroy callback to fail
-Message-ID: <20121019133415.GF799@dhcp22.suse.cz>
-References: <1350480648-10905-1-git-send-email-mhocko@suse.cz>
- <1350480648-10905-5-git-send-email-mhocko@suse.cz>
- <20121018224148.GR13370@google.com>
- <20121018224606.GS13370@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121018224606.GS13370@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751276Ab2JSNgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 09:36:16 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20121014085617.GA22544@gmail.com>
+References: <20121014085617.GA22544@gmail.com> <11002.1350125310@warthog.procyon.org.uk> <CA+55aFzu83ktX=ereRACNa6stEU0H5vNxKObUN9bymYCCaHyew@mail.gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        paulus@samba.org, davem@davemloft.net, jaxboe@fusionio.com,
+        tj@kernel.org, viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] perf: Fix UAPI fallout
+Date: Fri, 19 Oct 2012 14:35:37 +0100
+Message-ID: <30780.1350653737@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 18-10-12 15:46:06, Tejun Heo wrote:
-> On Thu, Oct 18, 2012 at 03:41:48PM -0700, Tejun Heo wrote:
-> > Note that the patch is broken in a couple places but it does show the
-> > general direction.  I'd prefer if patch #3 simply makes pre_destroy()
-> > return 0 and drop __DEPRECATED_clear_css_refs from mem_cgroup_subsys.
-> > Then, I can pull the branch in and drop all the unnecessary cruft.
-> 
-> But you need the locking change for further memcg cleanup.  To avoid
-> interlocked pulls from both sides, I think it's okay to push this one
-> with the rest of memcg changes.  I can do the cleanup on top of this
-> whole series, but please do drop .__DEPRECATED_clear_css_refs from
-> memcg.
+Ingo Molnar <mingo@kernel.org> wrote:
 
-OK I will drop that one.
+> What we want in .c files are not ../.. inclusions but the 
+> 'seemless' <linux/abc.h> inclusions. Which is the overwhelming 
+> majority, gladly. Do we want to make that the 100% majority?
 
->  Acked-by: Tejun Heo <tj@kernel.org>
+I think this is going to be necessary for when x86 gets merged.  x86's
+asm/unistd.h #includes uapi/asm/unistd.h, so you can't manually specify the
+header without also specifying a -I flag.
 
-Do you still agree with the v2 based on Li's feedback?
+I've been having a prod at it, and this seems to partially work:
 
-Thanks
--- 
-Michal Hocko
-SUSE Labs
+	-BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)util -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+	+$(info XXX $(srctree))
+	+
+	+BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I../../arch/$(ARCH)/include -I$(OUTPUT)util -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+
+However, I'm trying to work out what will happen if this is run in a separate
+output dir, but if I do:
+
+	make tools/perf O=build_dir
+
+from the bottom directory, I get:
+
+	scripts/Makefile.include:2: *** O=build_dir does not exist.  Stop.
+
+The problem is that the bottom-level Makefile does this:
+
+	tools/: FORCE
+		$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= -C $(src)/tools/
+	tools/%: FORCE
+		$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= -C $(src)/tools/ $*
+
+which changes the directory, rendering a relative O= that would be good for
+building the normal kernel useless for building a tool.  Should these rules
+respecify the O= flag here, or should we give an error if someone tries it?
+
+David
