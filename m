@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932399Ab2JSOWn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 10:22:43 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:20245 "EHLO relay.sw.ru"
+	id S1759026Ab2JSOWl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 10:22:41 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:23326 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758928Ab2JSOWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758903Ab2JSOWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Oct 2012 10:22:31 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
@@ -15,12 +15,12 @@ Cc: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
         <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
         David Rientjes <rientjes@google.com>,
         Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
-        Suleiman Souhlal <suleiman@google.com>,
         Glauber Costa <glommer@parallels.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v5 13/18] memcg/sl[au]b Track all the memcg children of a kmem_cache.
-Date: Fri, 19 Oct 2012 18:20:37 +0400
-Message-Id: <1350656442-1523-14-git-send-email-glommer@parallels.com>
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: [PATCH v5 18/18] Add slab-specific documentation about the kmem controller
+Date: Fri, 19 Oct 2012 18:20:42 +0400
+Message-Id: <1350656442-1523-19-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1350656442-1523-1-git-send-email-glommer@parallels.com>
 References: <1350656442-1523-1-git-send-email-glommer@parallels.com>
@@ -28,119 +28,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables us to remove all the children of a kmem_cache being
-destroyed, if for example the kernel module it's being used in
-gets unloaded. Otherwise, the children will still point to the
-destroyed parent.
-
-Signed-off-by: Suleiman Souhlal <suleiman@google.com>
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 CC: Christoph Lameter <cl@linux.com>
 CC: Pekka Enberg <penberg@cs.helsinki.fi>
 CC: Michal Hocko <mhocko@suse.cz>
 CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 CC: Johannes Weiner <hannes@cmpxchg.org>
+CC: Suleiman Souhlal <suleiman@google.com>
 CC: Tejun Heo <tj@kernel.org>
 ---
- include/linux/memcontrol.h |  5 +++++
- mm/memcontrol.c            | 32 ++++++++++++++++++++++++++++++--
- mm/slab_common.c           |  3 +++
- 3 files changed, 38 insertions(+), 2 deletions(-)
+ Documentation/cgroups/memory.txt | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 9152d49..5c1d234 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -427,6 +427,7 @@ struct kmem_cache *
- __memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index 206853b..9d9938d 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -301,6 +301,13 @@ to trigger slab reclaim when those limits are reached.
+ kernel memory, we prevent new processes from being created when the kernel
+ memory usage is too high.
  
- void mem_cgroup_destroy_cache(struct kmem_cache *cachep);
-+void kmem_cache_destroy_memcg_children(struct kmem_cache *s);
- 
- /**
-  * memcg_kmem_newpage_charge: verify if a new kmem allocation is allowed.
-@@ -576,6 +577,10 @@ memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
- {
- 	return cachep;
- }
++* slab pages: pages allocated by the SLAB or SLUB allocator are tracked. A copy
++of each kmem_cache is created everytime the cache is touched by the first time
++from inside the memcg. The creation is done lazily, so some objects can still be
++skipped while the cache is being created. All objects in a slab page should
++belong to the same memcg. This only fails to hold when a task is migrated to a
++different memcg during the page allocation by the cache.
 +
-+static inline void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
-+{
-+}
- #endif /* CONFIG_MEMCG_KMEM */
- #endif /* _LINUX_MEMCONTROL_H */
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 0359b3a..f5089b3 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2715,6 +2715,8 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
- 	memcg_check_events(memcg, page);
- }
- 
-+static DEFINE_MUTEX(set_limit_mutex);
-+
- #ifdef CONFIG_MEMCG_KMEM
- static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
- {
-@@ -3095,6 +3097,34 @@ out:
- 	return new_cachep;
- }
- 
-+void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
-+{
-+	struct kmem_cache *c;
-+	int i;
-+
-+	if (!s->memcg_params)
-+		return;
-+	if (!s->memcg_params->is_root_cache)
-+		return;
-+
-+	/*
-+	 * If the cache is being destroyed, we trust that there is no one else
-+	 * requesting objects from it. Even if there are, the sanity checks in
-+	 * kmem_cache_destroy should caught this ill-case.
-+	 *
-+	 * Still, we don't want anyone else freeing memcg_caches under our
-+	 * noses, which can happen if a new memcg comes to life. As usual,
-+	 * we'll take the set_limit_mutex to protect ourselves against this.
-+	 */
-+	mutex_lock(&set_limit_mutex);
-+	for (i = 0; i < memcg_limited_groups_array_size; i++) {
-+		c = s->memcg_params->memcg_caches[i];
-+		if (c)
-+			kmem_cache_destroy(c);
-+	}
-+	mutex_unlock(&set_limit_mutex);
-+}
-+
- struct create_work {
- 	struct mem_cgroup *memcg;
- 	struct kmem_cache *cachep;
-@@ -4192,8 +4222,6 @@ void mem_cgroup_print_bad_page(struct page *page)
- }
- #endif
- 
--static DEFINE_MUTEX(set_limit_mutex);
--
- static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
- 				unsigned long long val)
- {
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index fcf59d7..c02faf5 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -214,6 +214,9 @@ EXPORT_SYMBOL(kmem_cache_create);
- 
- void kmem_cache_destroy(struct kmem_cache *s)
- {
-+	/* Destroy all the children caches if we aren't a memcg cache */
-+	kmem_cache_destroy_memcg_children(s);
-+
- 	get_online_cpus();
- 	mutex_lock(&slab_mutex);
- 	s->refcount--;
+ * sockets memory pressure: some sockets protocols have memory pressure
+ thresholds. The Memory Controller allows them to be controlled individually
+ per cgroup, instead of globally.
 -- 
 1.7.11.7
 
