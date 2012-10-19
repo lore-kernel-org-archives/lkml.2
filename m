@@ -1,68 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759380Ab2JSVhi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 17:37:38 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:37032 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751780Ab2JSVhg (ORCPT
+	id S933007Ab2JSVjN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 17:39:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41157 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932149Ab2JSVjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 17:37:36 -0400
-Date: Fri, 19 Oct 2012 23:37:27 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: linux-next: build failure after merge of the final tree
- (tip/s390 trees related)
-Message-ID: <20121019213727.GA9630@gmail.com>
-References: <20121018172201.b81dcc8fe40868256f532364@canb.auug.org.au>
- <20121018182642.2a541275@thinkpad>
+	Fri, 19 Oct 2012 17:39:11 -0400
+Date: Fri, 19 Oct 2012 22:39:05 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk
+Message-ID: <20121019213904.GB13292@decadent.org.uk>
+References: <20121019024255.944999470@linuxfoundation.org>
+ <20121019024301.172251728@linuxfoundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121018182642.2a541275@thinkpad>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121019024301.172251728@linuxfoundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [ 32/62] kdb,vt_console: Fix missed data due to pager overruns
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Gerald Schaefer <gerald.schaefer@de.ibm.com> wrote:
-
-> On Thu, 18 Oct 2012 17:22:01 +1100
-> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Thu, Oct 18, 2012 at 07:45:00PM -0700, Greg Kroah-Hartman wrote:
+> 3.4-stable review patch.  If anyone has any objections, please let me know.
 > 
-> > Hi all,
-> > 
-> > After merging the final tree, today's linux-next build (s390 allyesconfig)
-> > failed like this:
-> > 
-> > mm/huge_memory.c:1424:2: error: implicit declaration of function 'pmd_pgprot' [-Werror=implicit-function-declaration]
-> > mm/huge_memory.c:1424:7: error: incompatible types when assigning to type 'pgprot_t' from type 'int'
-> > 
-> > (see http://kisskb.ellerman.id.au/kisskb/buildresult/7383823/)
-> > 
-> > Caused by commit 35d3d3427314 ("s390/thp: select
-> > HAVE_ARCH_TRANSPARENT_HUGEPAGE") from the s390 tree interacting with
-> > commit 93c9d633bd9e ("mm/thp: Preserve pgprot across huge page split")
-> > from the tip tree.
-> > 
-> > N.B. Mips also selects HAVE_ARCH_TRANSPARENT_HUGEPAGE as of commit
-> > e21a828a1bba ("MIPS: Transparent Huge Pages support") from the mips tree
-> > and so will be broken in some configs now as well.
-> > 
-> > Anyone have suggested merge fix patches I can apply?
+> ------------------
 > 
-> Subject: [PATCH] s390/thp: implement pmd_pgprot() for s390
+> From: Jason Wessel <jason.wessel@windriver.com>
+> 
+> commit 17b572e82032bc246324ce136696656b66d4e3f1 upstream.
+[...]
+> This also means that the vt screen needs to set the kdb COLUMNS
+> variable.
+[...]
+> --- a/drivers/tty/vt/vt.c
+> +++ b/drivers/tty/vt/vt.c
+> @@ -3475,6 +3475,19 @@ int con_debug_enter(struct vc_data *vc)
+>  			kdb_set(2, setargs);
+>  		}
+>  	}
+> +	if (vc->vc_cols < 999) {
+> +		int colcount;
+> +		char cols[4];
+> +		const char *setargs[3] = {
+> +			"set",
+> +			"COLUMNS",
+> +			cols,
+> +		};
+> +		if (kdbgetintenv(setargs[0], &colcount)) {
+> +			snprintf(cols, 4, "%i", vc->vc_cols);
+> +			kdb_set(2, setargs);
+> +		}
+> +	}
 
-Thanks Gerald! I'll merge this as well so that the semantic 
-conflict disappears from linux-next.
+Presumably the idea here was to avoid overriding the 'COLUMNS'
+variable if it is already set, but it's actually testing whether the
+variable 'set' is set.  (Besides which, there should be a kdbsetenv()
+instead of this gross hack of faking up a user command.  And whyever
+did kdb have to make argc off-by-one from the usual C convention?)
 
-Thanks,
+[...]
+> +	if (KDB_STATE(PAGER)) {
+> +		/*
+> +		 * Check printed string to decide how to bump the
+> +		 * kdb_nextline to control when the more prompt should
+> +		 * show up.
+> +		 */
+> +		int got = 0;
+> +		len = retlen;
+> +		while (len--) {
+> +			if (kdb_buffer[len] == '\n') {
+> +				kdb_nextline++;
+> +				got = 0;
+> +			} else if (kdb_buffer[len] == '\r') {
+> +				got = 0;
+> +			} else {
+> +				got++;
+> +			}
+> +		}
+> +		kdb_nextline += got / (colcount + 1);
 
-	Ingo
+What if more than one logical line is wrapped?
+Why divide by colcount + 1?  Shouldn't it be (got - 1) / colcount?
+ 
+Ben.
+
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
