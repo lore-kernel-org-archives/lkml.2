@@ -1,103 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757844Ab2JSDHJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:07:09 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:52142 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757804Ab2JSDHG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:07:06 -0400
-Date: Fri, 19 Oct 2012 14:07:02 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the final tree
- (tip/s390 trees related)
-Message-Id: <20121019140702.39b6e85901be2e39254b576a@canb.auug.org.au>
-In-Reply-To: <20121018182953.GA20658@gmail.com>
-References: <20121018172201.b81dcc8fe40868256f532364@canb.auug.org.au>
-	<20121018182953.GA20658@gmail.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__19_Oct_2012_14_07_02_+1100_BPIyOvgS7s8bk4GH"
+	id S1030306Ab2JSDHn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:07:43 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51900 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932581Ab2JSCs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:48:26 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 10/76] lockd: create and use per-net NSM RPC clients on MON/UNMON requests
+Date: Thu, 18 Oct 2012 19:46:34 -0700
+Message-Id: <20121019024351.743658599@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
+References: <20121019024350.087156547@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__19_Oct_2012_14_07_02_+1100_BPIyOvgS7s8bk4GH
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
-Hi Ingo,
+------------------
 
-On Thu, 18 Oct 2012 20:29:53 +0200 Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >=20
-> > After merging the final tree, today's linux-next build (s390 allyesconf=
-ig)
-> > failed like this:
-> >=20
-> > mm/huge_memory.c:1424:2: error: implicit declaration of function 'pmd_p=
-gprot' [-Werror=3Dimplicit-function-declaration]
-> > mm/huge_memory.c:1424:7: error: incompatible types when assigning to ty=
-pe 'pgprot_t' from type 'int'
-> >=20
-> > (see http://kisskb.ellerman.id.au/kisskb/buildresult/7383823/)
-> >=20
-> > Caused by commit 35d3d3427314 ("s390/thp: select
-> > HAVE_ARCH_TRANSPARENT_HUGEPAGE") from the s390 tree interacting with
-> > commit 93c9d633bd9e ("mm/thp: Preserve pgprot across huge page split")
-> > from the tip tree.
-> >=20
-> > N.B. Mips also selects HAVE_ARCH_TRANSPARENT_HUGEPAGE as of commit
-> > e21a828a1bba ("MIPS: Transparent Huge Pages support") from the mips tree
-> > and so will be broken in some configs now as well.
-> >=20
-> > Anyone have suggested merge fix patches I can apply?
->=20
-> Resolved it for now by excluding those changes, will put them=20
-> back in once they are fixed.
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-It looks as though you have not gone back far enough - you removed a
-couple of merges of sched/numa, but there are more. I have two of the
-problems resolved with merge patches that supply pmd_pgprot() for s390
-and mips, but there is another problem with mips (see Ralf's other email).
+commit cb7323fffa85df37161f4d3be45e1f787808309c upstream.
 
-Also, I suspect that if you do exclude all the sched/numa changes it will
-make a mess of Andrew's mmotm (as it basically sits on top of linux-next).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+NSM RPC client can be required on NFSv3 umount, when child reaper is dying
+(and destroying it's mount namespace). It means, that current nsproxy is set
+to NULL already, but creation of RPC client requires UTS namespace for gaining
+hostname string.
 
---Signature=_Fri__19_Oct_2012_14_07_02_+1100_BPIyOvgS7s8bk4GH
-Content-Type: application/pgp-signature
+This patch creates reference-counted per-net NSM client on first monitor
+request and destroys it after last unmonitor request.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-iQIcBAEBCAAGBQJQgMPWAAoJEECxmPOUX5FE+qIP+wVoKr45ibqRji4b4ghGberU
-I/wIl0qscOj5XJZnR5avriMWXoel4ZrG7fgEZS9nZ1/RuRnum7PSmbdVNz6cZROC
-brJ18EtaKq6pZOEQXWLg0fOJPh6MbSCD9CE8U8IA+MUrmg1ZT+gy6uyUCzyfORrr
-Xx2ItaguNY8lG0bFI9aTRJFwQTosilgXMZA4AtHMmMRHZhsVTkjgw/GolKHvVU9X
-l9R46KNyKpEHtYwm8LNo25YkzDhb8vOtcmhbE73BkgqY9hcJ6du+rgmlWMwVGAx7
-2occIh5wbttbusSIPLIngpvZ2Uryy28ZwkC526hwp5qRNqYhH11kBW92jFNlRHOP
-5bv64BP+yRqHUtkM0G7RgFtH/OTUznfFfl5tYFc5O40ElFutoKGVFypdgJFEzd0e
-ByrU7FJPF7Hq8ymszjHuP2Z5bsrJSkoBZCRMs2ZX1nN3ukqHVswi/sjbPsRVYq59
-XBW0ugLmZ+yjaGcIsJmV17Xa2WJW4/qOhRmsF7w5M8+e91CmmGWjWgEIZL6RbqEg
-+WLRECQpqvnRnvC2C9WnndETlH9NJUQDS2F0K4i3xffDg1OfQS5ThRWMERYintRA
-i9PBP1MDOyotbV/WSRqya69RY8a6uvR2xym7Pyv3wwcj5MpanCzLIwWTEyZMucH7
-hhFQy0zgGKlDe9iUvy/J
-=bjy9
------END PGP SIGNATURE-----
+---
+ fs/lockd/mon.c |   37 ++++++++++++++++++++-----------------
+ 1 file changed, 20 insertions(+), 17 deletions(-)
 
---Signature=_Fri__19_Oct_2012_14_07_02_+1100_BPIyOvgS7s8bk4GH--
+--- a/fs/lockd/mon.c
++++ b/fs/lockd/mon.c
+@@ -7,7 +7,6 @@
+  */
+ 
+ #include <linux/types.h>
+-#include <linux/utsname.h>
+ #include <linux/kernel.h>
+ #include <linux/ktime.h>
+ #include <linux/slab.h>
+@@ -86,7 +85,7 @@ static struct rpc_clnt *nsm_create(struc
+ 	return rpc_create(&args);
+ }
+ 
+-__maybe_unused static struct rpc_clnt *nsm_client_get(struct net *net)
++static struct rpc_clnt *nsm_client_get(struct net *net)
+ {
+ 	static DEFINE_MUTEX(nsm_create_mutex);
+ 	struct rpc_clnt	*clnt;
+@@ -113,7 +112,7 @@ out:
+ 	return clnt;
+ }
+ 
+-__maybe_unused static void nsm_client_put(struct net *net)
++static void nsm_client_put(struct net *net)
+ {
+ 	struct lockd_net *ln = net_generic(net, lockd_net_id);
+ 	struct rpc_clnt	*clnt = ln->nsm_clnt;
+@@ -132,9 +131,8 @@ __maybe_unused static void nsm_client_pu
+ }
+ 
+ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
+-			 struct net *net)
++			 struct rpc_clnt *clnt)
+ {
+-	struct rpc_clnt	*clnt;
+ 	int		status;
+ 	struct nsm_args args = {
+ 		.priv		= &nsm->sm_priv,
+@@ -142,20 +140,14 @@ static int nsm_mon_unmon(struct nsm_hand
+ 		.vers		= 3,
+ 		.proc		= NLMPROC_NSM_NOTIFY,
+ 		.mon_name	= nsm->sm_mon_name,
+-		.nodename	= utsname()->nodename,
++		.nodename	= clnt->cl_nodename,
+ 	};
+ 	struct rpc_message msg = {
+ 		.rpc_argp	= &args,
+ 		.rpc_resp	= res,
+ 	};
+ 
+-	clnt = nsm_create(net);
+-	if (IS_ERR(clnt)) {
+-		status = PTR_ERR(clnt);
+-		dprintk("lockd: failed to create NSM upcall transport, "
+-				"status=%d\n", status);
+-		goto out;
+-	}
++	BUG_ON(clnt == NULL);
+ 
+ 	memset(res, 0, sizeof(*res));
+ 
+@@ -166,8 +158,6 @@ static int nsm_mon_unmon(struct nsm_hand
+ 				status);
+ 	else
+ 		status = 0;
+-	rpc_shutdown_client(clnt);
+- out:
+ 	return status;
+ }
+ 
+@@ -187,6 +177,7 @@ int nsm_monitor(const struct nlm_host *h
+ 	struct nsm_handle *nsm = host->h_nsmhandle;
+ 	struct nsm_res	res;
+ 	int		status;
++	struct rpc_clnt *clnt;
+ 
+ 	dprintk("lockd: nsm_monitor(%s)\n", nsm->sm_name);
+ 
+@@ -199,7 +190,15 @@ int nsm_monitor(const struct nlm_host *h
+ 	 */
+ 	nsm->sm_mon_name = nsm_use_hostnames ? nsm->sm_name : nsm->sm_addrbuf;
+ 
+-	status = nsm_mon_unmon(nsm, NSMPROC_MON, &res, host->net);
++	clnt = nsm_client_get(host->net);
++	if (IS_ERR(clnt)) {
++		status = PTR_ERR(clnt);
++		dprintk("lockd: failed to create NSM upcall transport, "
++				"status=%d, net=%p\n", status, host->net);
++		return status;
++	}
++
++	status = nsm_mon_unmon(nsm, NSMPROC_MON, &res, clnt);
+ 	if (unlikely(res.status != 0))
+ 		status = -EIO;
+ 	if (unlikely(status < 0)) {
+@@ -231,9 +230,11 @@ void nsm_unmonitor(const struct nlm_host
+ 
+ 	if (atomic_read(&nsm->sm_count) == 1
+ 	 && nsm->sm_monitored && !nsm->sm_sticky) {
++		struct lockd_net *ln = net_generic(host->net, lockd_net_id);
++
+ 		dprintk("lockd: nsm_unmonitor(%s)\n", nsm->sm_name);
+ 
+-		status = nsm_mon_unmon(nsm, NSMPROC_UNMON, &res, host->net);
++		status = nsm_mon_unmon(nsm, NSMPROC_UNMON, &res, ln->nsm_clnt);
+ 		if (res.status != 0)
+ 			status = -EIO;
+ 		if (status < 0)
+@@ -241,6 +242,8 @@ void nsm_unmonitor(const struct nlm_host
+ 					nsm->sm_name);
+ 		else
+ 			nsm->sm_monitored = 0;
++
++		nsm_client_put(host->net);
+ 	}
+ }
+ 
+
+
