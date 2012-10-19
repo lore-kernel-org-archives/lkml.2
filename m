@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932526Ab2JSNnA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 09:43:00 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:45950 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758773Ab2JSNm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 09:42:59 -0400
-Message-ID: <508158D6.4040806@linux.vnet.ibm.com>
-Date: Fri, 19 Oct 2012 06:42:46 -0700
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1030281Ab2JSNos (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 09:44:48 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:44972 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932548Ab2JSNor (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 09:44:47 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: wency@cn.fujitsu.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, minchan.kim@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH v2 2/5] memory-hotplug: update mce_bad_pages when removing
- the memory
-References: <1350475735-26136-1-git-send-email-wency@cn.fujitsu.com> <1350475735-26136-3-git-send-email-wency@cn.fujitsu.com> <507ECA43.3070402@linux.vnet.ibm.com> <20121018152008.ada8fea5.akpm@linux-foundation.org>
-In-Reply-To: <20121018152008.ada8fea5.akpm@linux-foundation.org>
+In-Reply-To: <1350641746-14520-1-git-send-email-shiraz.hashim@st.com>
+References: <1350641746-14520-1-git-send-email-shiraz.hashim@st.com>
+Date: Fri, 19 Oct 2012 19:14:47 +0530
+Message-ID: <CAKohpok9PNEpvMeKJ0QRHN+pRQuZBEicb3DZgsyht77+wUmGWA@mail.gmail.com>
+Subject: Re: [PATCH V2] PWM: Add SPEAr PWM chip driver support
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Shiraz Hashim <shiraz.hashim@st.com>
+Cc: thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101913-7182-0000-0000-000002E284CE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2012 03:20 PM, Andrew Morton wrote:
-> On Wed, 17 Oct 2012 08:09:55 -0700
-> Dave Hansen <dave@linux.vnet.ibm.com> wrote:
->>> +#ifdef CONFIG_MEMORY_FAILURE
->>> +static void clear_hwpoisoned_pages(struct page *memmap, int nr_pages)
->>> +{
->>> +	int i;
->>> +
->>> +	if (!memmap)
->>> +		return;
->>
->> I guess free_section_usemap() does the same thing.
-> 
-> What does this observation mean?
+On 19 October 2012 15:45, Shiraz Hashim <shiraz.hashim@st.com> wrote:
+> diff --git a/Documentation/devicetree/bindings/pwm/spear-pwm.txt b/Documentation/devicetree/bindings/pwm/spear-pwm.txt
+> +        pwm: pwm@a8000000 {
+> +            compatible ="st,spear320-pwm";
+> +            reg = <0xa8000000 0x1000>;
+> +            #pwm-cells = <2>;
+> +            status = "disabled";
 
-sparse_remove_one_section() has an if(ms->section_mem_map) statement.
-Inside that if() block is the only place in the function where 'memmap'
-can get set.
+Must remove disabled from here. Isn't it?
 
-Currently, sparse_remove_one_section() calls in to free_section_usemap()
-ouside of that if() block.  With this patch new call to
-clear_hwpoisoned_pages() is done in the same place, both passing 'memmap'.
+> diff --git a/drivers/pwm/pwm-spear.c b/drivers/pwm/pwm-spear.c
+> +#include <linux/clk.h>
+> +#include <linux/err.h>
+> +#include <linux/io.h>
+> +#include <linux/ioport.h>
+> +#include <linux/kernel.h>
+> +#include <linux/math64.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/pwm.h>
+> +#include <linux/slab.h>
+> +#include <linux/types.h>
+> +
+> +#define NUM_PWM                4
+> +
+> +/* PWM registers and bits definitions */
+> +#define PWMCR                  0x00    /* Control Register */
+> +#define PWMCR_PWM_ENABLE       0x1
+> +#define PWMCR_PRESCALE_SHIFT   2
+> +#define PWMCR_MIN_PRESCALE     0x00
+> +#define PWMCR_MAX_PRESCALE     0x3FFF
 
-However, both free_section_usemap() and clear_hwpoisoned_pages() check
-'memmap' for NULL and immediately return if so.  That's a bit silly
-since it could hide garbage coming back from sparse_decode_mem_map().
-Seems like we should just call them both inside that if() block, or
-reorganize sparse_remove_one_section(), maybe like this:
+I would do it as to make it more readable, your call:
 
-void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
-{
-        struct page *memmap = NULL;
-        unsigned long *usemap = NULL;
+#define PWMCR                  0x00    /* Control Register */
+	#define PWMCR_PWM_ENABLE       0x1
+	#define PWMCR_PRESCALE_SHIFT   2
+	#define PWMCR_MIN_PRESCALE     0x00
+	#define PWMCR_MAX_PRESCALE     0x3FFF
 
-        if (!ms->section_mem_map)
-		return;
+> +static int spear_pwm_remove(struct platform_device *pdev)
+> +{
+> +       struct spear_pwm_chip *pc = platform_get_drvdata(pdev);
+> +       int i;
+> +
+> +       if (WARN_ON(!pc))
+> +               return -ENODEV;
 
-        usemap = ms->pageblock_flags;
-        memmap = sparse_decode_mem_map(ms->section_mem_map,
-                                                __section_nr(ms));
-        ms->section_mem_map = 0;
-        ms->pageblock_flags = NULL;
+Sorry for not asking earlier, how can this be true anytime?
 
-        free_section_usemap(memmap, usemap);
-	clear_hwpoisoned_pages(usemap, ...);
-}
-
+--
+viresh
