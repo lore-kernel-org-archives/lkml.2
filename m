@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757257Ab2JSCrY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:47:24 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51225 "EHLO mail.kernel.org"
+	id S1757616Ab2JSD3f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:29:35 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51347 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757025Ab2JSCrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:15 -0400
+	id S1757247Ab2JSCrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 23/62] xen/bootup: allow read_tscp call for Xen PV guests.
-Date: Thu, 18 Oct 2012 19:44:51 -0700
-Message-Id: <20121019024259.709517533@linuxfoundation.org>
+        Christian Hildner <christian.hildner@siemens.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 29/62] timers: Fix endless looping between cascade() and internal_add_timer()
+Date: Thu, 18 Oct 2012 19:44:57 -0700
+Message-Id: <20121019024300.672630751@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -25,31 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: "Hildner, Christian" <christian.hildner@siemens.com>
 
-commit cd0608e71e9757f4dae35bcfb4e88f4d1a03a8ab upstream.
+commit 26cff4e2aa4d666dc6a120ea34336b5057e3e187 upstream.
 
-The hypervisor will trap it. However without this patch,
-we would crash as the .read_tscp is set to NULL. This patch
-fixes it and sets it to the native_read_tscp call.
+Adding two (or more) timers with large values for "expires" (they have
+to reside within tv5 in the same list) leads to endless looping
+between cascade() and internal_add_timer() in case CONFIG_BASE_SMALL
+is one and jiffies are crossing the value 1 << 18. The bug was
+introduced between 2.6.11 and 2.6.12 (and survived for quite some
+time).
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+This patch ensures that when cascade() is called timers within tv5 are
+not added endlessly to their own list again, instead they are added to
+the next lower tv level tv4 (as expected).
+
+Signed-off-by: Christian Hildner <christian.hildner@siemens.com>
+Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
+Link: http://lkml.kernel.org/r/98673C87CB31274881CFFE0B65ECC87B0F5FC1963E@DEFTHW99EA4MSX.ww902.siemens.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/enlighten.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/timer.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1135,6 +1135,8 @@ static const struct pv_cpu_ops xen_cpu_o
- 	.read_tsc = native_read_tsc,
- 	.read_pmc = native_read_pmc,
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -63,6 +63,7 @@ EXPORT_SYMBOL(jiffies_64);
+ #define TVR_SIZE (1 << TVR_BITS)
+ #define TVN_MASK (TVN_SIZE - 1)
+ #define TVR_MASK (TVR_SIZE - 1)
++#define MAX_TVAL ((unsigned long)((1ULL << (TVR_BITS + 4*TVN_BITS)) - 1))
  
-+	.read_tscp = native_read_tscp,
-+
- 	.iret = xen_iret,
- 	.irq_enable_sysexit = xen_sysexit,
- #ifdef CONFIG_X86_64
+ struct tvec {
+ 	struct list_head vec[TVN_SIZE];
+@@ -356,11 +357,12 @@ static void internal_add_timer(struct tv
+ 		vec = base->tv1.vec + (base->timer_jiffies & TVR_MASK);
+ 	} else {
+ 		int i;
+-		/* If the timeout is larger than 0xffffffff on 64-bit
+-		 * architectures then we use the maximum timeout:
++		/* If the timeout is larger than MAX_TVAL (on 64-bit
++		 * architectures or with CONFIG_BASE_SMALL=1) then we
++		 * use the maximum timeout.
+ 		 */
+-		if (idx > 0xffffffffUL) {
+-			idx = 0xffffffffUL;
++		if (idx > MAX_TVAL) {
++			idx = MAX_TVAL;
+ 			expires = idx + base->timer_jiffies;
+ 		}
+ 		i = (expires >> (TVR_BITS + 3 * TVN_BITS)) & TVN_MASK;
 
 
