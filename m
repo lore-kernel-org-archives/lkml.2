@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758906Ab2JSNkj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 09:40:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15572 "EHLO mx1.redhat.com"
+	id S1758921Ab2JSNlq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 09:41:46 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:43423 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754520Ab2JSNkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 09:40:37 -0400
-Message-ID: <508157F7.3010906@redhat.com>
-Date: Fri, 19 Oct 2012 15:39:03 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1758908Ab2JSNlp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 09:41:45 -0400
+From: Florian Fainelli <ffainelli@freebox.fr>
+To: linux-kernel@vger.kernel.org, bigeasy@linutronix.de, mingo@redhat.com,
+        bigeasy@linutronix.de
+Subject: Re: [PATCH] x86/dt: use linear irq domain for ioapic(s).
+Date: Fri, 19 Oct 2012 15:40:29 +0200
+Message-ID: <6899584.nNROmkLzNS@flexo>
+Organization: Freebox
+User-Agent: KMail/4.8.5 (Linux/3.2.0-24-generic; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <loom.20121019T133451-621@post.gmane.org>
+References: <1343890270-13007-1-git-send-email-thierry.reding@avionic-design.de> <502252C8.3090600@linutronix.de> <loom.20121019T133451-621@post.gmane.org>
 MIME-Version: 1.0
-To: Paul Holland <pholland@adobe.com>
-CC: Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "mtk.manpages@gmail.com" <mtk.manpages@gmail.com>,
-        Paton Lewis <palewis@adobe.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jason Baron <jbaron@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] epoll: Support for disabling items, and a self-test
- app.
-References: <CCA6A06A.10264%pholland@adobe.com>
-In-Reply-To: <CCA6A06A.10264%pholland@adobe.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 19/10/2012 15:29, Paul Holland ha scritto:
-> A disadvantage of solutions in this direction, which was not preset in
-> Paton's patch, is that all calls to epoll_wait would need to specify some
-> timeout value (!= -1) to guarantee that they each come out of epoll_wait
-> and execute the "pass the buck" or "grace_period" logic.  So you would
-> then have contention between designs that want highly responsive "delete"
-> operations (those would require very short timeout values to epoll_wait)
-> and those that want low execution overhead (those would want larger
-> timeout values).
+On Friday 19 October 2012 11:36:25  Fainelli wrote:
+> Sebastian Andrzej Siewior <bigeasy <at> linutronix.de> writes:
+> > 
+> > No. You do have a compatible entry. It first appeared on the ce4100
+> > CPU. If it happens to also work on the n450 then it seems to be
+> > compatible with that one. "This" is documented somewhere…
+> > Usually you add 'compatible = "your cpu", "generic binding"' in case
+> > you need a fixup / errata whatever for "your cpu". Even if you compare
+> > all hpets from Intel there is the one or other difference / errata.
+> 
+> Can we make sure that his hits the future 3.6 stable releases? We had to merge
+> this back to your 3.6 kernel tree in order to have a functionnal CE4100 system.
+> 
+> Thank you!
 
-Is this really a problem?  If your thread pool risks getting oversized,
-you might need some kind of timeout anyway to expire threads.  If your
-thread pool is busy, the timeout will never be reached.
-
-I'm not against EPOLL_CTL_DISABLE, just couldn't resist replying to "The
-optimal data structure to do this without killing scalability is not
-obvious". :)
-
-Paolo
+Adding Adding Thomas, Ingo and Sebastian in CC.
+--
+Florian
