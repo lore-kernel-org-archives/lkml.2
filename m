@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030318Ab2JSC6v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:58:51 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52319 "EHLO mail.kernel.org"
+	id S964959Ab2JSCtH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:49:07 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52207 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964966Ab2JSCtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:49:10 -0400
+	id S964928Ab2JSCs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:48:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 47/76] ath9k: use ieee80211_free_txskb
-Date: Thu, 18 Oct 2012 19:47:11 -0700
-Message-Id: <20121019024357.681793651@linuxfoundation.org>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 37/76] xen/bootup: allow {read|write}_cr8 pvops call.
+Date: Thu, 18 Oct 2012 19:47:01 -0700
+Message-Id: <20121019024356.093698327@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -26,171 +25,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 249ee72249140fe5b9adc988f97298f0aa5db2fc upstream.
+commit 1a7bbda5b1ab0e02622761305a32dc38735b90b2 upstream.
 
-Using ieee80211_free_txskb for tx frames is required, since mac80211 clones
-skbs for which socket tx status is requested.
+We actually do not do anything about it. Just return a default
+value of zero and if the kernel tries to write anything but 0
+we BUG_ON.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This fixes the case when an user tries to suspend the machine
+and it blows up in save_processor_state b/c 'read_cr8' is set
+to NULL and we get:
+
+kernel BUG at /home/konrad/ssd/linux/arch/x86/include/asm/paravirt.h:100!
+invalid opcode: 0000 [#1] SMP
+Pid: 2687, comm: init.late Tainted: G           O 3.6.0upstream-00002-gac264ac-dirty #4 Bochs Bochs
+RIP: e030:[<ffffffff814d5f42>]  [<ffffffff814d5f42>] save_processor_state+0x212/0x270
+
+.. snip..
+Call Trace:
+ [<ffffffff810733bf>] do_suspend_lowlevel+0xf/0xac
+ [<ffffffff8107330c>] ? x86_acpi_suspend_lowlevel+0x10c/0x150
+ [<ffffffff81342ee2>] acpi_suspend_enter+0x57/0xd5
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/beacon.c |    2 -
- drivers/net/wireless/ath/ath9k/main.c   |    2 -
- drivers/net/wireless/ath/ath9k/xmit.c   |   53 +++++++++++++++++---------------
- 3 files changed, 31 insertions(+), 26 deletions(-)
+ arch/x86/xen/enlighten.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/beacon.c
-+++ b/drivers/net/wireless/ath/ath9k/beacon.c
-@@ -120,7 +120,7 @@ static void ath9k_tx_cabq(struct ieee802
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -984,7 +984,16 @@ static void xen_write_cr4(unsigned long
  
- 	if (ath_tx_start(hw, skb, &txctl) != 0) {
- 		ath_dbg(common, XMIT, "CABQ TX failed\n");
--		dev_kfree_skb_any(skb);
-+		ieee80211_free_txskb(hw, skb);
- 	}
+ 	native_write_cr4(cr4);
  }
- 
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -767,7 +767,7 @@ static void ath9k_tx(struct ieee80211_hw
- 
- 	return;
- exit:
--	dev_kfree_skb_any(skb);
-+	ieee80211_free_txskb(hw, skb);
- }
- 
- static void ath9k_stop(struct ieee80211_hw *hw)
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -66,8 +66,7 @@ static void ath_tx_update_baw(struct ath
- static struct ath_buf *ath_tx_setup_buffer(struct ath_softc *sc,
- 					   struct ath_txq *txq,
- 					   struct ath_atx_tid *tid,
--					   struct sk_buff *skb,
--					   bool dequeue);
-+					   struct sk_buff *skb);
- 
- enum {
- 	MCS_HT20,
-@@ -176,7 +175,15 @@ static void ath_tx_flush_tid(struct ath_
- 		fi = get_frame_info(skb);
- 		bf = fi->bf;
- 
--		if (bf && fi->retries) {
-+		if (!bf) {
-+			bf = ath_tx_setup_buffer(sc, txq, tid, skb);
-+			if (!bf) {
-+				ieee80211_free_txskb(sc->hw, skb);
-+				continue;
-+			}
-+		}
-+
-+		if (fi->retries) {
- 			list_add_tail(&bf->list, &bf_head);
- 			ath_tx_update_baw(sc, tid, bf->bf_state.seqno);
- 			ath_tx_complete_buf(sc, bf, txq, &bf_head, &ts, 0);
-@@ -785,10 +792,13 @@ static enum ATH_AGGR_STATUS ath_tx_form_
- 		fi = get_frame_info(skb);
- 		bf = fi->bf;
- 		if (!fi->bf)
--			bf = ath_tx_setup_buffer(sc, txq, tid, skb, true);
-+			bf = ath_tx_setup_buffer(sc, txq, tid, skb);
- 
--		if (!bf)
-+		if (!bf) {
-+			__skb_unlink(skb, &tid->buf_q);
-+			ieee80211_free_txskb(sc->hw, skb);
- 			continue;
-+		}
- 
- 		bf->bf_state.bf_type = BUF_AMPDU | BUF_AGGR;
- 		seqno = bf->bf_state.seqno;
-@@ -1731,9 +1741,11 @@ static void ath_tx_send_ampdu(struct ath
- 		return;
- 	}
- 
--	bf = ath_tx_setup_buffer(sc, txctl->txq, tid, skb, false);
--	if (!bf)
-+	bf = ath_tx_setup_buffer(sc, txctl->txq, tid, skb);
-+	if (!bf) {
-+		ieee80211_free_txskb(sc->hw, skb);
- 		return;
-+	}
- 
- 	bf->bf_state.bf_type = BUF_AMPDU;
- 	INIT_LIST_HEAD(&bf_head);
-@@ -1757,11 +1769,6 @@ static void ath_tx_send_normal(struct at
- 	struct ath_buf *bf;
- 
- 	bf = fi->bf;
--	if (!bf)
--		bf = ath_tx_setup_buffer(sc, txq, tid, skb, false);
 -
--	if (!bf)
--		return;
- 
- 	INIT_LIST_HEAD(&bf_head);
- 	list_add_tail(&bf->list, &bf_head);
-@@ -1834,8 +1841,7 @@ u8 ath_txchainmask_reduction(struct ath_
- static struct ath_buf *ath_tx_setup_buffer(struct ath_softc *sc,
- 					   struct ath_txq *txq,
- 					   struct ath_atx_tid *tid,
--					   struct sk_buff *skb,
--					   bool dequeue)
-+					   struct sk_buff *skb)
++#ifdef CONFIG_X86_64
++static inline unsigned long xen_read_cr8(void)
++{
++	return 0;
++}
++static inline void xen_write_cr8(unsigned long val)
++{
++	BUG_ON(val);
++}
++#endif
+ static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
  {
- 	struct ath_common *common = ath9k_hw_common(sc->sc_ah);
- 	struct ath_frame_info *fi = get_frame_info(skb);
-@@ -1847,7 +1853,7 @@ static struct ath_buf *ath_tx_setup_buff
- 	bf = ath_tx_get_buffer(sc);
- 	if (!bf) {
- 		ath_dbg(common, XMIT, "TX buffers are full\n");
--		goto error;
-+		return NULL;
- 	}
+ 	int ret;
+@@ -1153,6 +1162,11 @@ static const struct pv_cpu_ops xen_cpu_o
+ 	.read_cr4_safe = native_read_cr4_safe,
+ 	.write_cr4 = xen_write_cr4,
  
- 	ATH_TXBUF_RESET(bf);
-@@ -1876,18 +1882,12 @@ static struct ath_buf *ath_tx_setup_buff
- 		ath_err(ath9k_hw_common(sc->sc_ah),
- 			"dma_mapping_error() on TX\n");
- 		ath_tx_return_buffer(sc, bf);
--		goto error;
-+		return NULL;
- 	}
++#ifdef CONFIG_X86_64
++	.read_cr8 = xen_read_cr8,
++	.write_cr8 = xen_write_cr8,
++#endif
++
+ 	.wbinvd = native_wbinvd,
  
- 	fi->bf = bf;
- 
- 	return bf;
--
--error:
--	if (dequeue)
--		__skb_unlink(skb, &tid->buf_q);
--	dev_kfree_skb_any(skb);
--	return NULL;
- }
- 
- /* FIXME: tx power */
-@@ -1916,9 +1916,14 @@ static void ath_tx_start_dma(struct ath_
- 		 */
- 		ath_tx_send_ampdu(sc, tid, skb, txctl);
- 	} else {
--		bf = ath_tx_setup_buffer(sc, txctl->txq, tid, skb, false);
--		if (!bf)
-+		bf = ath_tx_setup_buffer(sc, txctl->txq, tid, skb);
-+		if (!bf) {
-+			if (txctl->paprd)
-+				dev_kfree_skb_any(skb);
-+			else
-+				ieee80211_free_txskb(sc->hw, skb);
- 			return;
-+		}
- 
- 		bf->bf_state.bfs_paprd = txctl->paprd;
- 
+ 	.read_msr = native_read_msr_safe,
 
 
