@@ -1,80 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757984Ab2JST3U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 15:29:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49878 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757094Ab2JST3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 15:29:19 -0400
-Date: Fri, 19 Oct 2012 15:29:01 -0400
-From: Dave Jones <davej@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: MAX_LOCKDEP_ENTRIES too low  (called from ioc_release_fn)
-Message-ID: <20121019192901.GA8468@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Peter Zijlstra <peterz@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Ingo Molnar <mingo@elte.hu>
-References: <20121018015312.GA29865@redhat.com>
- <507F9944.50505@kernel.dk>
- <20121019052136.GA30852@redhat.com>
- <1350650972.30157.34.camel@twins>
+	id S1757933Ab2JSTeR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 15:34:17 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:20419 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757107Ab2JSTeP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 15:34:15 -0400
+Date: Fri, 19 Oct 2012 19:34:14 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, devel@openvz.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v5 04/18] slab: don't preemptively remove element from
+ list in cache destroy
+In-Reply-To: <1350656442-1523-5-git-send-email-glommer@parallels.com>
+Message-ID: <0000013a7a84cb28-334eab12-33c4-4a92-bd9c-e5ad938f83d0-000000@email.amazonses.com>
+References: <1350656442-1523-1-git-send-email-glommer@parallels.com> <1350656442-1523-5-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350650972.30157.34.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 02:49:32PM +0200, Peter Zijlstra wrote:
+On Fri, 19 Oct 2012, Glauber Costa wrote:
 
- > Of course, if you do run out of lock classes, the next thing to do is
- > to find the offending lock classes.  First, the following command gives
- > you the number of lock classes currently in use along with the maximum:
- > 
- >         grep "lock-classes" /proc/lockdep_stats
- > 
- > This command produces the following output on a modest system:
- > 
- >          lock-classes:                          748 [max: 8191]
+> I, however, see no reason why we need to do so, since we are now locked
+> during the whole deletion (which wasn't necessarily true before).  I
+> propose a simplification in which we delete it only when there is no
+> more going back, so we don't need to add it again.
 
-After the BUG gets hit..
+Ok lets hope that holding the lock does not cause issues.
 
- lock-classes:                         1726 [max: 8191]
-
- > If the number allocated (748 above) increases continually over time,
- > then there is likely a leak.  The following command can be used to
- > identify the leaking lock classes:
- > 
- >         grep "BD" /proc/lockdep
- > 
- > Run the command and save the output, then compare against the output from
- > a later run of this command to identify the leakers.  This same output
- > can also help you find situations where runtime lock initialization has
- > been omitted.
-
-I've not had chance to do this, because after the BUG, lockdep turns itself off,
-and I've not rebooted. I'm probably not going to get to this until after the weekend.
-
-There's just a *lot* of dependancies.
-
-Here's the full output http://codemonkey.org.uk/junk/lockdep
-
-the top few backwards deps..
-
-ffffffff81c8f218 FD:    1 BD: 1201 -.-.-.: pool_lock
-ffffffff82ae1210 FD:    2 BD: 1200 -.-.-.: &obj_hash[i].lock
-ffffffff820677c1 FD:    1 BD: 1131 -.-.-.: &rt_rq->rt_runtime_lock
-ffffffff82066949 FD:    3 BD: 1131 -.-.-.: &cpu_base->lock
-ffffffff820221c0 FD:    1 BD: 1130 -.-.-.: &sig->cputimer.lock
-ffffffff820677b8 FD:    5 BD: 1129 -.-.-.: &rt_b->rt_runtime_lock
-ffffffff82067675 FD:    3 BD: 1129 ..-.-.: &rq->lock/1
-ffffffff82067674 FD:    8 BD: 1128 -.-.-.: &rq->lock
-ffffffff8298bbd0 FD:    1 BD: 1006 -.-.-.: &(&n->list_lock)->rlock
-
-	Dave
-
+Acked-by: Christoph Lameter <cl@linux.com>
