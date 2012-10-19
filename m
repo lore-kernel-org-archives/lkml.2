@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589Ab2JSCxM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:53:12 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52595 "EHLO mail.kernel.org"
+	id S1757625Ab2JSCxs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:53:48 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52559 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965017Ab2JSCtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:49:36 -0400
+	id S965052Ab2JSCtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:49:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 68/76] ALSA: hda - Fix registration race of VGA switcheroo
-Date: Thu, 18 Oct 2012 19:47:32 -0700
-Message-Id: <20121019024401.059608500@linuxfoundation.org>
+        Peter Huewe <peter.huewe@infineon.com>,
+        Kent Yoder <key@linux.vnet.ibm.com>
+Subject: [ 66/76] tpm: Propagate error from tpm_transmit to fix a timeout hang
+Date: Thu, 18 Oct 2012 19:47:30 -0700
+Message-Id: <20121019024400.747115973@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -25,105 +26,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Peter Huewe <peter.huewe@infineon.com>
 
-commit 128960a9ad67e2d119738f5211956e0304517551 upstream.
+commit abce9ac292e13da367bbd22c1f7669f988d931ac upstream.
 
-Delay the registration of VGA switcheroo client to the end of the
-probing.  Otherwise a too quick switching may result in Oops during
-probing.
+tpm_write calls tpm_transmit without checking the return value and
+assigns the return value unconditionally to chip->pending_data, even if
+it's an error value.
+This causes three bugs.
 
-Also add the check of the return value from snd_hda_lock_devices().
+So if we write to /dev/tpm0 with a tpm_param_size bigger than
+TPM_BUFSIZE=0x1000 (e.g. 0x100a)
+and a bufsize also bigger than TPM_BUFSIZE (e.g. 0x100a)
+tpm_transmit returns -E2BIG which is assigned to chip->pending_data as
+-7, but tpm_write returns that TPM_BUFSIZE bytes have been successfully
+been written to the TPM, altough this is not true (bug #1).
 
-Reported-and-tested-by: Daniel J Blueman <daniel@quora.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+As we did write more than than TPM_BUFSIZE bytes but tpm_write reports
+that only TPM_BUFSIZE bytes have been written the vfs tries to write
+the remaining bytes (in this case 10 bytes) to the tpm device driver via
+tpm_write which then blocks at
+
+ /* cannot perform a write until the read has cleared
+ either via tpm_read or a user_read_timer timeout */
+ while (atomic_read(&chip->data_pending) != 0)
+	 msleep(TPM_TIMEOUT);
+
+for 60 seconds, since data_pending is -7 and nobody is able to
+read it (since tpm_read luckily checks if data_pending is greater than
+0) (#bug 2).
+
+After that the remaining bytes are written to the TPM which are
+interpreted by the tpm as a normal command. (bug #3)
+So if the last bytes of the command stream happen to be a e.g.
+tpm_force_clear this gets accidentally sent to the TPM.
+
+This patch fixes all three bugs, by propagating the error code of
+tpm_write and returning -E2BIG if the input buffer is too big,
+since the response from the tpm for a truncated value is bogus anyway.
+Moreover it returns -EBUSY to userspace if there is a response ready to be
+read.
+
+Signed-off-by: Peter Huewe <peter.huewe@infineon.com>
+Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_intel.c |   31 ++++++++++++++++++++-----------
- 1 file changed, 20 insertions(+), 11 deletions(-)
+ drivers/char/tpm/tpm.c |   21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -487,6 +487,7 @@ struct azx {
- 
- 	/* VGA-switcheroo setup */
- 	unsigned int use_vga_switcheroo:1;
-+	unsigned int vga_switcheroo_registered:1;
- 	unsigned int init_failed:1; /* delayed init failed */
- 	unsigned int disabled:1; /* disabled by VGA-switcher */
- 
-@@ -2556,7 +2557,9 @@ static void azx_vs_set_state(struct pci_
- 		if (disabled) {
- 			azx_suspend(&pci->dev);
- 			chip->disabled = true;
--			snd_hda_lock_devices(chip->bus);
-+			if (snd_hda_lock_devices(chip->bus))
-+				snd_printk(KERN_WARNING SFX
-+					   "Cannot lock devices!\n");
- 		} else {
- 			snd_hda_unlock_devices(chip->bus);
- 			chip->disabled = false;
-@@ -2599,14 +2602,20 @@ static const struct vga_switcheroo_clien
- 
- static int __devinit register_vga_switcheroo(struct azx *chip)
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -1186,17 +1186,20 @@ ssize_t tpm_write(struct file *file, con
+ 		  size_t size, loff_t *off)
  {
-+	int err;
-+
- 	if (!chip->use_vga_switcheroo)
- 		return 0;
- 	/* FIXME: currently only handling DIS controller
- 	 * is there any machine with two switchable HDMI audio controllers?
- 	 */
--	return vga_switcheroo_register_audio_client(chip->pci, &azx_vs_ops,
-+	err = vga_switcheroo_register_audio_client(chip->pci, &azx_vs_ops,
- 						    VGA_SWITCHEROO_DIS,
- 						    chip->bus != NULL);
-+	if (err < 0)
-+		return err;
-+	chip->vga_switcheroo_registered = 1;
-+	return 0;
- }
- #else
- #define init_vga_switcheroo(chip)		/* NOP */
-@@ -2626,7 +2635,8 @@ static int azx_free(struct azx *chip)
- 	if (use_vga_switcheroo(chip)) {
- 		if (chip->disabled && chip->bus)
- 			snd_hda_unlock_devices(chip->bus);
--		vga_switcheroo_unregister_client(chip->pci);
-+		if (chip->vga_switcheroo_registered)
-+			vga_switcheroo_unregister_client(chip->pci);
- 	}
+ 	struct tpm_chip *chip = file->private_data;
+-	size_t in_size = size, out_size;
++	size_t in_size = size;
++	ssize_t out_size;
  
- 	if (chip->initialized) {
-@@ -2974,14 +2984,6 @@ static int __devinit azx_create(struct s
- 	}
- 
-  ok:
--	err = register_vga_switcheroo(chip);
--	if (err < 0) {
--		snd_printk(KERN_ERR SFX
--			   "Error registering VGA-switcheroo client\n");
--		azx_free(chip);
--		return err;
--	}
+ 	/* cannot perform a write until the read has cleared
+-	   either via tpm_read or a user_read_timer timeout */
+-	while (atomic_read(&chip->data_pending) != 0)
+-		msleep(TPM_TIMEOUT);
 -
- 	err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops);
- 	if (err < 0) {
- 		snd_printk(KERN_ERR SFX "Error creating device [card]!\n");
-@@ -3208,6 +3210,13 @@ static int __devinit azx_probe(struct pc
+-	mutex_lock(&chip->buffer_mutex);
++	   either via tpm_read or a user_read_timer timeout.
++	   This also prevents splitted buffered writes from blocking here.
++	*/
++	if (atomic_read(&chip->data_pending) != 0)
++		return -EBUSY;
  
- 	pci_set_drvdata(pci, card);
- 
-+	err = register_vga_switcheroo(chip);
-+	if (err < 0) {
-+		snd_printk(KERN_ERR SFX
-+			   "Error registering VGA-switcheroo client\n");
-+		goto out_free;
-+	}
+ 	if (in_size > TPM_BUFSIZE)
+-		in_size = TPM_BUFSIZE;
++		return -E2BIG;
 +
- 	dev++;
- 	return 0;
++	mutex_lock(&chip->buffer_mutex);
  
+ 	if (copy_from_user
+ 	    (chip->data_buffer, (void __user *) buf, in_size)) {
+@@ -1206,6 +1209,10 @@ ssize_t tpm_write(struct file *file, con
+ 
+ 	/* atomic tpm command send and result receive */
+ 	out_size = tpm_transmit(chip, chip->data_buffer, TPM_BUFSIZE);
++	if (out_size < 0) {
++		mutex_unlock(&chip->buffer_mutex);
++		return out_size;
++	}
+ 
+ 	atomic_set(&chip->data_pending, out_size);
+ 	mutex_unlock(&chip->buffer_mutex);
 
 
