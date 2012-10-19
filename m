@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757329Ab2JRX6h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 19:58:37 -0400
-Received: from shutemov.name ([176.9.204.213]:59962 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942Ab2JRX6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 19:58:36 -0400
-Date: Fri, 19 Oct 2012 02:59:41 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 10/10] thp: implement refcounting for huge zero page
-Message-ID: <20121018235941.GA32397@shutemov.name>
-References: <1350280859-18801-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1350280859-18801-11-git-send-email-kirill.shutemov@linux.intel.com>
- <20121018164502.b32791e7.akpm@linux-foundation.org>
+	id S1757357Ab2JSAB7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 20:01:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50569 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757333Ab2JSAB6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 20:01:58 -0400
+Date: Thu, 18 Oct 2012 17:01:53 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Matt Helsley <matthltc@linux.vnet.ibm.com>
+Cc: rjw@sisk.pl, oleg@redhat.com, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.8] cgroup_freezer: allow migration
+ regardless of freezer state and update locking
+Message-ID: <20121019000153.GZ13370@google.com>
+References: <1350426526-14254-1-git-send-email-tj@kernel.org>
+ <20121017191606.GA6223@us.ibm.com>
+ <20121018211434.GI13370@google.com>
+ <20121018222155.GB6223@us.ibm.com>
+ <20121018223517.GQ13370@google.com>
+ <20121018234726.GC6223@us.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121018164502.b32791e7.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121018234726.GC6223@us.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 04:45:02PM -0700, Andrew Morton wrote:
-> On Mon, 15 Oct 2012 09:00:59 +0300
-> "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> 
-> > H. Peter Anvin doesn't like huge zero page which sticks in memory forever
-> > after the first allocation. Here's implementation of lockless refcounting
-> > for huge zero page.
-> > 
-> > We have two basic primitives: {get,put}_huge_zero_page(). They
-> > manipulate reference counter.
-> > 
-> > If counter is 0, get_huge_zero_page() allocates a new huge page and
-> > takes two references: one for caller and one for shrinker. We free the
-> > page only in shrinker callback if counter is 1 (only shrinker has the
-> > reference).
-> > 
-> > put_huge_zero_page() only decrements counter. Counter is never zero
-> > in put_huge_zero_page() since shrinker holds on reference.
-> > 
-> > Freeing huge zero page in shrinker callback helps to avoid frequent
-> > allocate-free.
-> 
-> I'd like more details on this please.  The cost of freeing then
-> reinstantiating that page is tremendous, because it has to be zeroed
-> out again.  If there is any way at all in which the kernel can be made
-> to enter a high-frequency free/reinstantiate pattern then I expect the
-> effects would be quite bad.
-> 
-> Do we have sufficient mechanisms in there to prevent this from
-> happening in all cases?  If so, what are they, because I'm not seeing
-> them?
+Hello, Matt.
 
-We only free huge zero page in shrinker callback if nobody in the system
-uses it. Never on put_huge_zero_page(). Shrinker runs only under memory
-pressure or if user asks (drop_caches).
-Do you think we need an additional protection mechanism?
-
+On Thu, Oct 18, 2012 at 04:47:26PM -0700, Matt Helsley wrote:
+> > I think the only sane way would be having a userland arbitrator which
+> > owns the kernel interface to itself and makes policy decisions from
+> > userland clients and configures cgroup accordingly.
 > 
-> > Refcounting has cost. On 4 socket machine I observe ~1% slowdown on
-> > parallel (40 processes) read page faulting comparing to lazy huge page
-> > allocation.  I think it's pretty reasonable for synthetic benchmark.
+> OK -- yeah, solving the arbitration issue in userspace might be best.
+
+Yeah, I think we need that but there currently isn't any concrete (or
+even floppy) plan for it.  If anyone is interested, beer is on me. :)
+
+> > I think that should be solved via userland policies rather than
+> > depending on this accidental cgroup_freezer feature.
+> 
+> It's not accidental -- it *was an intended feature*:
+> 
+>   22 # This bash script tests freezer code by starting a long sleep process.
+>   23 # The sleep process is frozen. We then move the sleep process to a THAWED
+>   24 # cgroup. We expect moving the sleep process to fail.
+> 
+> ( This atrocious link is the easiest way to see the testcase:
+> http://ltp.git.sourceforge.net/git/gitweb.cgi?p=ltp/ltp.git;a=blob;f=testcases/kernel/controllers/freezer/freeze_move_thaw.sh;h=b2d5a83506a8425b117be9ff775d9f73d2d58393;hb=0436176dbfe6fdaaf97590d2356eb23d2739b2c2
+> )
+> 
+> It was intended for something very much like the CRIU case I mentioned
+> :).
+
+I probably have chosen the wrong word.  I mean that it's a hierarchy
+management feature implemented at the wrong layer.  If we want to
+provide cgroup migration locking, it should be implemented at the
+cgroup core layer as a controller independent feature.  It's kinda
+interesting the incorrect layering here almost directly caused messy
+locking problem too.  I hope we don't need it with (the imaginary)
+proper userland arbitration but even if we do implementing it in
+cgroup proper as a separate feature would be a lot less messy.
+
+Thanks.
 
 -- 
- Kirill A. Shutemov
+tejun
