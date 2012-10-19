@@ -1,251 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933125Ab2JSWIk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 18:08:40 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:53545 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933049Ab2JSWIg (ORCPT
+	id S933103Ab2JSWKm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 18:10:42 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41373 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933027Ab2JSWKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 18:08:36 -0400
-From: Mark Einon <mark.einon@gmail.com>
-To: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 3/3] staging: et131x: Remove USE_FBR0 define and #ifdefs
-Date: Fri, 19 Oct 2012 23:08:16 +0100
-Message-Id: <1350684496-14384-3-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350684496-14384-1-git-send-email-mark.einon@gmail.com>
-References: <1350684496-14384-1-git-send-email-mark.einon@gmail.com>
+	Fri, 19 Oct 2012 18:10:40 -0400
+Date: Fri, 19 Oct 2012 23:10:30 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk
+Message-ID: <20121019221030.GC13292@decadent.org.uk>
+References: <20121019024350.087156547@linuxfoundation.org>
+ <20121019024351.583490752@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121019024351.583490752@linuxfoundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [ 09/76] lockd: use rpc clients cl_nodename for id encoding
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-USE_FBR0 has always been defined, even in the original driver code.
-Remove the define and #ifdef code to leave the code in the same state.
+On Thu, Oct 18, 2012 at 07:46:33PM -0700, Greg Kroah-Hartman wrote:
+> 3.6-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> 
+> commit 303a7ce92064c285a04c870f2dc0192fdb2968cb upstream.
+> 
+> Taking hostname from uts namespace if not safe, because this cuold be
+> performind during umount operation on child reaper death. And in this case
+> current->nsproxy is NULL already.
+> 
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> ---
+>  fs/lockd/mon.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> --- a/fs/lockd/mon.c
+> +++ b/fs/lockd/mon.c
+> @@ -42,6 +42,7 @@ struct nsm_args {
+>  	u32			proc;
+>  
+>  	char			*mon_name;
+> +	char			*nodename;
+>  };
+>  
+>  struct nsm_res {
+> @@ -141,6 +142,7 @@ static int nsm_mon_unmon(struct nsm_hand
+>  		.vers		= 3,
+>  		.proc		= NLMPROC_NSM_NOTIFY,
+>  		.mon_name	= nsm->sm_mon_name,
+> +		.nodename	= utsname()->nodename,
 
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
----
- drivers/staging/et131x/et131x.c |   58 +++++----------------------------------
- 1 file changed, 7 insertions(+), 51 deletions(-)
+Can we be sure that this string pointer will remain valid at the point
+where current->nsproxy has become NULL?  Or should nsm_args::nodename
+actually be a copy of the string?
 
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index 32f909a..c33cafd 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -176,20 +176,13 @@ MODULE_DESCRIPTION("10/100/1000 Base-T Ethernet Driver for the ET1310 by Agere S
- #define PARM_DMA_CACHE_DEF      0
- 
- /* RX defines */
--#define USE_FBR0 1
- #define FBR_CHUNKS 32
- #define MAX_DESC_PER_RING_RX         1024
- 
- /* number of RFDs - default and min */
--#ifdef USE_FBR0
- #define RFD_LOW_WATER_MARK	40
- #define NIC_DEFAULT_NUM_RFD	1024
- #define NUM_FBRS		2
--#else
--#define RFD_LOW_WATER_MARK	20
--#define NIC_DEFAULT_NUM_RFD	256
--#define NUM_FBRS		1
--#endif
- 
- #define NIC_MIN_NUM_RFD		64
- #define NUM_PACKETS_HANDLED	256
-@@ -871,7 +864,7 @@ static void et131x_rx_dma_enable(struct et131x_adapter *adapter)
- 		csr |= 0x1000;
- 	else if (adapter->rx_ring.fbr[0]->buffsize == 16384)
- 		csr |= 0x1800;
--#ifdef USE_FBR0
-+
- 	csr |= 0x0400;		/* FBR0 enable */
- 	if (adapter->rx_ring.fbr[1]->buffsize == 256)
- 		csr |= 0x0100;
-@@ -879,7 +872,6 @@ static void et131x_rx_dma_enable(struct et131x_adapter *adapter)
- 		csr |= 0x0200;
- 	else if (adapter->rx_ring.fbr[1]->buffsize == 1024)
- 		csr |= 0x0300;
--#endif
- 	writel(csr, &adapter->regs->rxdma.csr);
- 
- 	csr = readl(&adapter->regs->rxdma.csr);
-@@ -1909,7 +1901,6 @@ static void et131x_config_rx_dma_regs(struct et131x_adapter *adapter)
- 	   ((rx_local->fbr[0]->num_entries * LO_MARK_PERCENT_FOR_RX) / 100) - 1,
- 	   &rx_dma->fbr1_min_des);
- 
--#ifdef USE_FBR0
- 	/* Now's the best time to initialize FBR0 contents */
- 	fbr_entry = (struct fbr_desc *) rx_local->fbr[1]->ring_virtaddr;
- 	for (entry = 0; entry < rx_local->fbr[1]->num_entries; entry++) {
-@@ -1933,7 +1924,6 @@ static void et131x_config_rx_dma_regs(struct et131x_adapter *adapter)
- 	writel(
- 	   ((rx_local->fbr[1]->num_entries * LO_MARK_PERCENT_FOR_RX) / 100) - 1,
- 	   &rx_dma->fbr0_min_des);
--#endif
- 
- 	/* Program the number of packets we will receive before generating an
- 	 * interrupt.
-@@ -2305,9 +2295,7 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- 	rx_ring = &adapter->rx_ring;
- 
- 	/* Alloc memory for the lookup table */
--#ifdef USE_FBR0
- 	rx_ring->fbr[1] = kmalloc(sizeof(struct fbr_lookup), GFP_KERNEL);
--#endif
- 	rx_ring->fbr[0] = kmalloc(sizeof(struct fbr_lookup), GFP_KERNEL);
- 
- 	/* The first thing we will do is configure the sizes of the buffer
-@@ -2329,35 +2317,25 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- 	 */
- 
- 	if (adapter->registry_jumbo_packet < 2048) {
--#ifdef USE_FBR0
- 		rx_ring->fbr[1]->buffsize = 256;
- 		rx_ring->fbr[1]->num_entries = 512;
--#endif
- 		rx_ring->fbr[0]->buffsize = 2048;
- 		rx_ring->fbr[0]->num_entries = 512;
- 	} else if (adapter->registry_jumbo_packet < 4096) {
--#ifdef USE_FBR0
- 		rx_ring->fbr[1]->buffsize = 512;
- 		rx_ring->fbr[1]->num_entries = 1024;
--#endif
- 		rx_ring->fbr[0]->buffsize = 4096;
- 		rx_ring->fbr[0]->num_entries = 512;
- 	} else {
--#ifdef USE_FBR0
- 		rx_ring->fbr[1]->buffsize = 1024;
- 		rx_ring->fbr[1]->num_entries = 768;
--#endif
- 		rx_ring->fbr[0]->buffsize = 16384;
- 		rx_ring->fbr[0]->num_entries = 128;
- 	}
- 
--#ifdef USE_FBR0
- 	adapter->rx_ring.psr_num_entries =
- 				adapter->rx_ring.fbr[1]->num_entries +
- 				adapter->rx_ring.fbr[0]->num_entries;
--#else
--	adapter->rx_ring.psr_num_entries = adapter->rx_ring.fbr[0]->num_entries;
--#endif
- 
- 	/* Allocate an area of memory for Free Buffer Ring 1 */
- 	bufsize = (sizeof(struct fbr_desc) * rx_ring->fbr[0]->num_entries) +
-@@ -2381,7 +2359,6 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- 			(void *)((u8 *) rx_ring->fbr[0]->ring_virtaddr +
- 			rx_ring->fbr[0]->offset);
- 
--#ifdef USE_FBR0
- 	/* Allocate an area of memory for Free Buffer Ring 0 */
- 	bufsize = (sizeof(struct fbr_desc) * rx_ring->fbr[1]->num_entries) +
- 									0xfff;
-@@ -2403,7 +2380,7 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- 	rx_ring->fbr[1]->ring_virtaddr =
- 			(void *)((u8 *) rx_ring->fbr[1]->ring_virtaddr +
- 			rx_ring->fbr[1]->offset);
--#endif
-+
- 	for (i = 0; i < (rx_ring->fbr[0]->num_entries / FBR_CHUNKS); i++) {
- 		u64 fbr1_tmp_physaddr;
- 		u64 fbr1_offset;
-@@ -2468,7 +2445,6 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- 		}
- 	}
- 
--#ifdef USE_FBR0
- 	/* Same for FBR0 (if in use) */
- 	for (i = 0; i < (rx_ring->fbr[1]->num_entries / FBR_CHUNKS); i++) {
- 		u64 fbr0_tmp_physaddr;
-@@ -2515,7 +2491,6 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- 					rx_ring->fbr[1]->virt[index] - 4;
- 		}
- 	}
--#endif
- 
- 	/* Allocate an area of memory for FIFO of Packet Status ring entries */
- 	pktstat_ringsize =
-@@ -2644,7 +2619,6 @@ static void et131x_rx_dma_memory_free(struct et131x_adapter *adapter)
- 		rx_ring->fbr[0]->ring_virtaddr = NULL;
- 	}
- 
--#ifdef USE_FBR0
- 	/* Now the same for Free Buffer Ring 0 */
- 	if (rx_ring->fbr[1]->ring_virtaddr) {
- 		/* First the packet memory */
-@@ -2679,7 +2653,6 @@ static void et131x_rx_dma_memory_free(struct et131x_adapter *adapter)
- 
- 		rx_ring->fbr[1]->ring_virtaddr = NULL;
- 	}
--#endif
- 
- 	/* Free Packet Status Ring */
- 	if (rx_ring->ps_ring_virtaddr) {
-@@ -2709,10 +2682,7 @@ static void et131x_rx_dma_memory_free(struct et131x_adapter *adapter)
- 	}
- 
- 	/* Free the FBR Lookup Table */
--#ifdef USE_FBR0
- 	kfree(rx_ring->fbr[1]);
--#endif
--
- 	kfree(rx_ring->fbr[0]);
- 
- 	/* Reset Counters */
-@@ -2808,9 +2778,7 @@ static void nic_return_rfd(struct et131x_adapter *adapter, struct rfd *rfd)
- 	 * need to clean up OOB data
- 	 */
- 	if (
--#ifdef USE_FBR0
- 	    (ring_index == 0 && buff_index < rx_local->fbr[1]->num_entries) ||
--#endif
- 	    (ring_index == 1 && buff_index < rx_local->fbr[0]->num_entries)) {
- 		spin_lock_irqsave(&adapter->fbr_lock, flags);
- 
-@@ -2831,9 +2799,7 @@ static void nic_return_rfd(struct et131x_adapter *adapter, struct rfd *rfd)
- 					&rx_local->fbr[0]->local_full,
- 					rx_local->fbr[0]->num_entries - 1),
- 					&rx_dma->fbr1_full_offset);
--		}
--#ifdef USE_FBR0
--		else {
-+		} else {
- 			struct fbr_desc *next = (struct fbr_desc *)
- 				rx_local->fbr[1]->ring_virtaddr +
- 				    INDEX10(rx_local->fbr[1]->local_full);
-@@ -2851,7 +2817,6 @@ static void nic_return_rfd(struct et131x_adapter *adapter, struct rfd *rfd)
- 					rx_local->fbr[1]->num_entries - 1),
- 			       &rx_dma->fbr0_full_offset);
- 		}
--#endif
- 		spin_unlock_irqrestore(&adapter->fbr_lock, flags);
- 	} else {
- 		dev_err(&adapter->pdev->dev,
-@@ -2934,20 +2899,11 @@ static struct rfd *nic_rx_pkts(struct et131x_adapter *adapter)
- 	writel(rx_local->local_psr_full,
- 	       &adapter->regs->rxdma.psr_full_offset);
- 
--#ifndef USE_FBR0
--	if (ring_index != 1)
--		return NULL;
--#endif
--
--#ifdef USE_FBR0
- 	if (ring_index > 1 ||
--		(ring_index == 0 &&
--		buff_index > rx_local->fbr[1]->num_entries - 1) ||
--		(ring_index == 1 &&
--		buff_index > rx_local->fbr[0]->num_entries - 1)) {
--#else
--	if (ring_index != 1 || buff_index > rx_local->fbr[0]->num_entries - 1) {
--#endif
-+			(ring_index == 0 &&
-+			buff_index > rx_local->fbr[1]->num_entries - 1) ||
-+			(ring_index == 1 &&
-+			buff_index > rx_local->fbr[0]->num_entries - 1)) {
- 		/* Illegal buffer or ring index cannot be used by S/W*/
- 		dev_err(&adapter->pdev->dev,
- 			  "NICRxPkts PSR Entry %d indicates "
+Ben.
+
+>  	};
+>  	struct rpc_message msg = {
+>  		.rpc_argp	= &args,
+> @@ -477,7 +479,7 @@ static void encode_my_id(struct xdr_stre
+>  {
+>  	__be32 *p;
+>  
+> -	encode_nsm_string(xdr, utsname()->nodename);
+> +	encode_nsm_string(xdr, argp->nodename);
+>  	p = xdr_reserve_space(xdr, 4 + 4 + 4);
+>  	*p++ = cpu_to_be32(argp->prog);
+>  	*p++ = cpu_to_be32(argp->vers);
+
 -- 
-1.7.9.5
-
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
