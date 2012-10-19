@@ -1,62 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758786Ab2JSOn5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 10:43:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58953 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758028Ab2JSOnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 10:43:55 -0400
-Date: Fri, 19 Oct 2012 10:43:51 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: weird use-after-free bug in module_put
-Message-ID: <20121019144351.GA1532@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>
+	id S932948Ab2JSOoG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 10:44:06 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:44741 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758069Ab2JSOoC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 10:44:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50812112.2020709@metafoo.de>
+References: <1350603664-18148-1-git-send-email-marcos.souza.org@gmail.com>
+	<1350603664-18148-4-git-send-email-marcos.souza.org@gmail.com>
+	<50812112.2020709@metafoo.de>
+Date: Fri, 19 Oct 2012 11:44:00 -0300
+Message-ID: <CAH0vN5J0yUSSHnJDRqPSbSu8wrTKo7FRzxpXwoqbypQoNX=_vg@mail.gmail.com>
+Subject: Re: [PATCH 3/4] Use devm_request_irq to avoid some checks
+From: Marcos Souza <marcos.souza.org@gmail.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: cbou@mail.ru, dwmw2@infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've hit this twice in the last two days while fuzz testing.
-(Both times on i686 only, my x86-64 tests aren't hitting it
- for some reason).
+Hi Lars,
 
-BUG: unable to handle kernel paging request at 6b6b6ce3
-IP: [<c10b52fe>] module_put+0x1e/0x160
-*pdpt = 0000000025a4b001 *pde = 0000000000000000 
-Oops: 0000 [#1] PREEMPT SMP 
-Modules linked in: fuse tun binfmt_misc nfnetlink nfc caif_socket caif phonet bluetooth rfkill can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key decnet rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 lockd sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 nf_conntrack_ipv4 ip6table_filter ip6_tables nf_defrag_ipv4 xt_state nf_conntrack kvm_intel kvm microcode serio_raw pcspkr i2c_i801 tg3 i2c_core shpchp raid0 ata_piix
-Pid: 512, comm: acpid Not tainted 3.7.0-rc1+ #11 Dell Inc.                 Precision WorkStation 490    /0DT031
-EIP: 0060:[<c10b52fe>] EFLAGS: 00010246 CPU: 1
-EIP is at module_put+0x1e/0x160
-EAX: 00000000 EBX: 6b6b6b6b ECX: 00000000 EDX: c118509c
-ESI: 00000010 EDI: 6b6b6b6b EBP: e5ae9f44 ESP: e5ae9f34
- DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-CR0: 8005003b CR2: 6b6b6ce3 CR3: 25a4a000 CR4: 000007f0
-DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-DR6: ffff0ff0 DR7: 00000400
-Process acpid (pid: 512, ti=e5ae8000 task=e6311680 task.ti=e5ae8000)
-Stack:
- e6062140 6b6b6b6b 00000010 f01ce540 e5ae9f50 c118509c e6062140 e5ae9f80
- c11821ed 00000001 00000000 00000000 f2073410 ef256814 ef256814 e6062148
- 00000000 e6311a60 e6311680 e5ae9f88 c118226d e5ae9f9c c1062f19 00000002
-Call Trace:
- [<c118509c>] cdev_put+0x1c/0x20
- [<c11821ed>] __fput+0x20d/0x280
- [<c118226d>] ____fput+0xd/0x10
- [<c1062f19>] task_work_run+0x89/0xb0
- [<c1002c41>] do_notify_resume+0x61/0xa0
- [<c15d32f0>] work_notifysig+0x29/0x31
-Code: 51 00 eb df 89 f6 8d bc 27 00 00 00 00 55 89 e5 57 56 53 83 ec 04 66 66 66 66 90 85 c0 89 c7 74 44 b8 01 00 00 00 e8 c2 14 52 00 <8b> 87 78 01 00 00 64 ff 40 04 8b 45 04 89 45 f0 66 66 66 66 90
+2012/10/19 Lars-Peter Clausen <lars@metafoo.de>:
+> On 10/19/2012 01:41 AM, Marcos Paulo de Souza wrote:
+>> With this we can remove a lot of checks.
+>>
+>> Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+>
+> This one is a bit more tricky and the driver currently gets it (partially
+> wrong). The issue is that since the power supply is referenced in the
+> interrupt handler, the IRQs should be requested after the power supply has
+> been registered and be freed before the power supply is unregistered.
+>
+> So devm can't really be used here. But as I said the current driver already
+> gets it wrong.
+
+Tanks for all the reviews! I will resend these patches will your comments.
+
+But in this case, there is a way that we can fix this issue about
+register/unregister IRQ?
+
+Maybe another approach?
+
+If you give some tips for me, my next patches will have this issue fixed too.
+
+Thanks for all!
+
+> - Lars
+>
+>> ---
+>>  drivers/power/jz4740-battery.c |   25 ++++++++-----------------
+>>  1 file changed, 8 insertions(+), 17 deletions(-)
+>>
+>> diff --git a/drivers/power/jz4740-battery.c b/drivers/power/jz4740-battery.c
+>> index 9d9b2a8..b80f7ed 100644
+>> --- a/drivers/power/jz4740-battery.c
+>> +++ b/drivers/power/jz4740-battery.c
+>> @@ -307,8 +307,8 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+>>
+>>       INIT_DELAYED_WORK(&jz_battery->work, jz_battery_work);
+>>
+>> -     ret = request_irq(jz_battery->irq, jz_battery_irq_handler, 0, pdev->name,
+>> -                     jz_battery);
+>> +     ret = devm_request_irq(&pdev->dev, jz_battery->irq, jz_battery_irq_handler,
+>> +                             0, pdev->name, jz_battery);
+>>       if (ret) {
+>>               dev_err(&pdev->dev, "Failed to request irq %d\n", ret);
+>>               goto err;
+>> @@ -319,7 +319,7 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+>>               ret = gpio_request(pdata->gpio_charge, dev_name(&pdev->dev));
+>>               if (ret) {
+>>                       dev_err(&pdev->dev, "charger state gpio request failed.\n");
+>> -                     goto err_free_irq;
+>> +                     goto err;
+>>               }
+>>               ret = gpio_direction_input(pdata->gpio_charge);
+>>               if (ret) {
+>> @@ -330,7 +330,8 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+>>               jz_battery->charge_irq = gpio_to_irq(pdata->gpio_charge);
+>>
+>>               if (jz_battery->charge_irq >= 0) {
+>> -                     ret = request_irq(jz_battery->charge_irq,
+>> +                     ret = devm_request_irq(&pdev->dev,
+>> +                                 jz_battery->charge_irq,
+>>                                   jz_battery_charge_irq,
+>>                                   IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+>>                                   dev_name(&pdev->dev), jz_battery);
+>> @@ -352,7 +353,7 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+>>       ret = power_supply_register(&pdev->dev, &jz_battery->battery);
+>>       if (ret) {
+>>               dev_err(&pdev->dev, "power supply battery register failed.\n");
+>> -             goto err_free_charge_irq;
+>> +             goto err_free_gpio;
+>>       }
+>>
+>>       platform_set_drvdata(pdev, jz_battery);
+>> @@ -360,16 +361,11 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+>>
+>>       return 0;
+>>
+>> -err_free_charge_irq:
+>> -     if (jz_battery->charge_irq >= 0)
+>> -             free_irq(jz_battery->charge_irq, jz_battery);
+>>  err_free_gpio:
+>>       if (gpio_is_valid(pdata->gpio_charge))
+>>               gpio_free(jz_battery->pdata->gpio_charge);
+>> -err_free_irq:
+>> -     free_irq(jz_battery->irq, jz_battery);
+>> -     platform_set_drvdata(pdev, NULL);
+>>  err:
+>> +     platform_set_drvdata(pdev, NULL);
+>>       return ret;
+>>  }
+>>
+>> @@ -379,16 +375,11 @@ static int __devexit jz_battery_remove(struct platform_device *pdev)
+>>
+>>       cancel_delayed_work_sync(&jz_battery->work);
+>>
+>> -     if (gpio_is_valid(jz_battery->pdata->gpio_charge)) {
+>> -             if (jz_battery->charge_irq >= 0)
+>> -                     free_irq(jz_battery->charge_irq, jz_battery);
+>> +     if (gpio_is_valid(jz_battery->pdata->gpio_charge))
+>>               gpio_free(jz_battery->pdata->gpio_charge);
+>> -     }
+>>
+>>       power_supply_unregister(&jz_battery->battery);
+>>
+>> -     free_irq(jz_battery->irq, jz_battery);
+>> -
+>>       return 0;
+>>  }
+>>
+>
 
 
-It looks like the chardev went away under our feet.
-How can this happen ?
 
-	Dave
+-- 
+Att,
+
+Marcos Paulo de Souza
+Acadêmico de Ciencia da Computação - FURB - SC
+Github: https://github.com/marcosps/
+"Uma vida sem desafios é uma vida sem razão"
+"A life without challenges, is a non reason life"
