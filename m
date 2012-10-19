@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab2JSRA7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 13:00:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37421 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276Ab2JSRA5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 13:00:57 -0400
-Date: Fri, 19 Oct 2012 10:00:49 -0700
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: joseph.salisbury@canonical.com
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        perex@perex.cz, tiwai@suse.de, david.henningsson@canonical.com,
-        alsa-devel@alsa-project.org, stable@vger.kernel.org
-Subject: Re: [PATCH 0/1] ALSA: hda - add quirk for Thinkpad T430
-Message-ID: <20121019170049.GA4787@elie.Belkin>
-References: <cover.1350570761.git.joseph.salisbury@canonical.com>
+	id S1756126Ab2JSRBX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 13:01:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33507 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754060Ab2JSRBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 13:01:22 -0400
+Message-ID: <5081875D.90105@suse.cz>
+Date: Fri, 19 Oct 2012 19:01:17 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1350570761.git.joseph.salisbury@canonical.com>
-User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] kconfig: add a function to get the CONFIG_ prefix
+References: <1350589816-20447-1-git-send-email-yann.morin.1998@free.fr> <1350589816-20447-3-git-send-email-yann.morin.1998@free.fr>
+In-Reply-To: <1350589816-20447-3-git-send-email-yann.morin.1998@free.fr>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joseph,
+On 18.10.2012 21:50, Yann E. MORIN wrote:
+> -#ifndef CONFIG_
+> -#define CONFIG_ "CONFIG_"
+> +/* Those two defines copied from include/linux/stringify.h */
+> +#define __stringify_1(x...)	#x
+> +#define __stringify(x...)	__stringify_1(x)
+> +static inline const char *CONFIG_prefix(void)
+> +{
+> +	return __stringify(CONFIG_);
 
-joseph.salisbury@canonical.com wrote:
+This changes the semantics of the CONFIG_ macro. Previously, a
+double-quoted string was accepted, now you have to define it to a token
+that is turned into a string. Why don't you keep it as before and just do a
 
-> [Subject: [PATCH 0/1] ALSA: hda - add quirk for Thinkpad T430]]
-[...]
-> This patch is to enable audio on T430 Thinkpads.  There is no audo
-> from the headphone jack without this patch.  This patch adds a quirk
-> for the T430 model.  
+return CONFIG_;
 
-Please don't do this cover-letter thing.  A cover letter can be a
-good way to *summarize* a long patch series so readers are less
-daunted, but any information that was needed to know in order to
-evaluate a patch, briefly stated, should be in the commit message that
-actually gets committed.
+in the function?
 
-Thanks and hope that helps,
-Jonathan
+Michal
