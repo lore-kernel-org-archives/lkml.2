@@ -1,105 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683Ab2JSIWA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 04:22:00 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57173 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab2JSIV4 (ORCPT
+	id S1753437Ab2JSIXr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 04:23:47 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:53696 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab2JSIXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 04:21:56 -0400
+	Fri, 19 Oct 2012 04:23:45 -0400
+Message-ID: <50810D0E.9090700@linux.vnet.ibm.com>
+Date: Fri, 19 Oct 2012 13:49:26 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121016031710.GD2864@dastard>
-References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
-	<1349863655-29320-12-git-send-email-zwu.kernel@gmail.com>
-	<20121016031710.GD2864@dastard>
-Date: Fri, 19 Oct 2012 16:21:54 +0800
-Message-ID: <CAEH94LjWqh3q29AnQpmedLjjxY66WxcNueiprXkzGkceBxHPkQ@mail.gmail.com>
-Subject: Re: [RFC v3 11/13] vfs: add 3 new ioctl interfaces
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
-        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Avi Kivity <avi@redhat.com>
+CC: "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        chegu vinod <chegu_vinod@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH RFC 1/2] kvm: Handle undercommitted guest case in PLE
+ handler
+References: <20120921120000.27611.71321.sendpatchset@codeblue> <505C654B.2050106@redhat.com> <505CA2EB.7050403@linux.vnet.ibm.com> <50607F1F.2040704@redhat.com> <20121003122209.GA9076@linux.vnet.ibm.com> <506C7057.6000102@redhat.com> <506D69AB.7020400@linux.vnet.ibm.com> <506D83EE.2020303@redhat.com> <1349356038.14388.3.camel@twins> <506DA48C.8050200@redhat.com> <20121009185108.GA2549@linux.vnet.ibm.com> <507FF87C.2060708@redhat.com>
+In-Reply-To: <507FF87C.2060708@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12101908-8256-0000-0000-000004A59DDE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 11:17 AM, Dave Chinner <david@fromorbit.com> wrote:
-> On Wed, Oct 10, 2012 at 06:07:33PM +0800, zwu.kernel@gmail.com wrote:
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On 10/18/2012 06:09 PM, Avi Kivity wrote:
+> On 10/09/2012 08:51 PM, Raghavendra K T wrote:
+>> Here is the summary:
+>> We do get good benefit by increasing ple window. Though we don't
+>> see good benefit for kernbench and sysbench, for ebizzy, we get huge
+>> improvement for 1x scenario. (almost 2/3rd of ple disabled case).
 >>
->>   FS_IOC_GET_HEAT_INFO: return a struct containing the various
->> metrics collected in btrfs_freq_data structs, and also return a
->
-> I think you mean hot_freq_data :P
->
->> calculated data temperature based on those metrics. Optionally, retrieve
->> the temperature from the hot data hash list instead of recalculating it.
->
-> To get the heat info for a specific file you have to know what file
-> you want to get that info for, right?  I can see the usefulness of
-> asking for the heat data on a specific file, but how do you find the
-> hot files in the first place? i.e. the big question the user
-> interface needs to answer is "what files are hot?".
->
-> Once userspace knows what the hottest files are, it can open them
-> and query the data via the above ioctl, but expecting userspace to
-> iterate millions of inodes in a filesystem to find hot files is very
-> inefficient.
->
-> FWIW, if you were to return file handles to the hottest files, then
-Good idea. I am not very clear about how to implement it. file handles
-mean file_handle??  How to return them to the application? via
-debugfs? How many hottest files should be returned?? Top 100?
-
-> the application could open and query them without even needing to
-> know the path name to them. This woul dbe exceedingly useful for
-> defragmentation programs, especially as that is the way xfs_fsr
-> already operates on candidate files.(*)
->
-> IOWs, sometimes the pathname is irrelevant to the operations that
-> applications want to perform - all they care about having an
-> efficient method of finding the inode they want and getting a file
-> descriptor that points to the file. Given the heat map info fits
-> right in to the sort of operations defrag and data mover tools
-> already do, it kind of makes sense to optimise the interface towards
-> those uses....
->
-> (*) i.e. finds them via bulkstat which returns handle information
-> along with all the other inode data, then opens the file by handle
-> to do the defrag work....
->
->>   FS_IOC_GET_HEAT_OPTS: return an integer representing the current
->> state of hot data tracking and migration:
+>> Let me know if you think we can increase the default ple_window
+>> itself to 16k.
 >>
->> 0 = do nothing
->> 1 = track frequency of access
+>
+> I think so, there is no point running with untuned defaults.
+>
+
+Oaky.
+
 >>
->>   FS_IOC_SET_HEAT_OPTS: change the state of hot data tracking and
->> migration, as described above.
+>> I can respin the whole series including this default ple_window change.
 >
-> I can't see how this is a manageable interface. It is not
-> persistent, so after every filesystem mount you'd have to set the
-> flag on all your inodes again. Hence, for the moment, I'd suggest
-> that dropping per-inode tracking control until all the core issues
-> are sorted out....
+> It can come as a separate patch.
+
+Yes. Will spin it separately.
+
 >
-> Cheers,
+>>
+>> I also have the perf kvm top result for both ebizzy and kernbench.
+>> I think they are in expected lines now.
+>>
+>> Improvements
+>> ================
+>>
+>> 16 core PLE machine with 16 vcpu guest
+>>
+>> base = 3.6.0-rc5 + ple handler optimization patches
+>> base_pleopt_16k = base + ple_window = 16k
+>> base_pleopt_32k = base + ple_window = 32k
+>> base_pleopt_nople = base + ple_gap = 0
+>> kernbench, hackbench, sysbench (time in sec lower is better)
+>> ebizzy (rec/sec higher is better)
+>>
+>> % improvements w.r.t base (ple_window = 4k)
+>> ---------------+---------------+-----------------+-------------------+
+>>                 |base_pleopt_16k| base_pleopt_32k | base_pleopt_nople |
+>> ---------------+---------------+-----------------+-------------------+
+>> kernbench_1x   |  0.42371      |  1.15164        |   0.09320         |
+>> kernbench_2x   | -1.40981      | -17.48282       |  -570.77053       |
+>> ---------------+---------------+-----------------+-------------------+
+>> sysbench_1x    | -0.92367      | 0.24241         | -0.27027          |
+>> sysbench_2x    | -2.22706      |-0.30896         | -1.27573          |
+>> sysbench_3x    | -0.75509      | 0.09444         | -2.97756          |
+>> ---------------+---------------+-----------------+-------------------+
+>> ebizzy_1x      | 54.99976      | 67.29460        |  74.14076         |
+>> ebizzy_2x      | -8.83386      |-27.38403        | -96.22066         |
+>> ---------------+---------------+-----------------+-------------------+
 >
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> So it seems we want dynamic PLE windows.  As soon as we enter overcommit
+> we need to decrease the window.
+>
 
+Okay.
+I have some rough idea on the implementation. I 'll try that after this
+V2 experiments are over.
+So in brief, I have this in my queue priority wise
 
+1) V2 version of this patch series( in progress)
+2) default PLE window
+3) preemption notifiers
+4) Pv spinlock
 
--- 
-Regards,
-
-Zhi Yong Wu
