@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149Ab2JSWPz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 18:15:55 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:55860 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933002Ab2JSWPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 18:15:54 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Witold Szczeponik <Witold.Szczeponik@gmx.net>
-Cc: Borislav Petkov <bp@alien8.de>, bhelgaas@google.com, lenb@kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH V3 0/3] PNP: Allow PNP resources to be disabled (interface)
-Date: Sat, 20 Oct 2012 00:19:40 +0200
-Message-ID: <5450043.aKImp0J8nh@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <5081A3BC.9050201@gmx.net>
-References: <50158321.4030007@gmx.net> <201209182342.30244.rjw@sisk.pl> <5081A3BC.9050201@gmx.net>
+	id S932817Ab2JSWgc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 18:36:32 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:44735 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694Ab2JSWga (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 18:36:30 -0400
+Date: Sat, 20 Oct 2012 00:36:24 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+ (tip/s390 trees related)
+Message-ID: <20121019223624.GA12658@gmail.com>
+References: <20121018172201.b81dcc8fe40868256f532364@canb.auug.org.au>
+ <20121018150209.GB17439@linux-mips.org>
+ <1350683562.2768.78.camel@twins>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350683562.2768.78.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 19 of October 2012 21:02:20 Witold Szczeponik wrote:
-> On 18/09/12 23:42, Rafael J. Wysocki wrote:
+
+* Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Thu, 2012-10-18 at 17:02 +0200, Ralf Baechle wrote:
+> >   CC      mm/huge_memory.o
+> > mm/huge_memory.c: In function ???do_huge_pmd_prot_none???:
+> > mm/huge_memory.c:789:3: error: incompatible type for argument 3 of ???update_mmu_cache???
 > 
-> > Hi,
-> > 
-> > On Sunday, September 16, 2012, Witold Szczeponik wrote:
-> >> Hi Rafael, 
-> >>
-> >> what about the patches 1 and 3 which do not make any changes to the ABI?
-> >> The first patch simplifies the code, while the third patch fixes a problem in
-> >> the PNP resource allocation.  Any chances to have them included in 3.7?
-> > 
-> > They would be fine as far as I'm concerned, but I'm not maintaining that part
-> > of the kernel (at least at the moment).
-> > 
-> > I'm not sure who's the maintainer of it, to be honest.
-> 
-> Well, according to https://lkml.org/lkml/2012/10/19/375, that would be you
-> (together with Bjorn and Len).  :-)  Hence I am resending the request for
-> inclusion to you as well.  PNP code went, if I am not mistaken, traditionally
-> through Len's tree.  
+> That appears to have become update_mmu_cache_pmd(), which 
+> makes sense given that there's now architectures that care 
+> about it.
 
-OK, so can you please resend them?
+Ok, I fixed it as per below. Does everyone agree?
 
-Rafael
+Thanks,
 
+	Ingo
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+---------------->
+>From 6e683978132907ff339e8a01a4d901c75709e62c Mon Sep 17 00:00:00 2001
+From: Ingo Molnar <mingo@kernel.org>
+Date: Sat, 20 Oct 2012 00:33:01 +0200
+Subject: [PATCH] MIPS/thp: Fix update_mmu_cache() cache call
+
+As per recent upstream commit:
+
+  b113da65785d mm: Add and use update_mmu_cache_pmd() in transparent huge page code.
+
+The call in do_huge_pmd_prot_none() needs to call update_mmu_cache_pmd()
+as well.
+
+This resolves a MIPS build error triggered on linux-next.
+
+Reported-by: Ralf Baechle <ralf@linux-mips.org>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20121018145101.GA17439@linux-mips.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ mm/huge_memory.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 8100c01..57c5018 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -770,7 +770,7 @@ fixup:
+ 	/* change back to regular protection */
+ 	entry = pmd_modify(entry, vma->vm_page_prot);
+ 	set_pmd_at(mm, haddr, pmd, entry);
+-	update_mmu_cache(vma, address, entry);
++	update_mmu_cache_pmd(vma, address, entry);
+ 
+ unlock:
+ 	spin_unlock(&mm->page_table_lock);
+
