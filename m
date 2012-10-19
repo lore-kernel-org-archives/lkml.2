@@ -1,352 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758968Ab2JSOWf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 10:22:35 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:9123 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758901Ab2JSOWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 10:22:31 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-mm@kvack.org>
-Cc: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v5 01/18] move slabinfo processing to slab_common.c
-Date: Fri, 19 Oct 2012 18:20:25 +0400
-Message-Id: <1350656442-1523-2-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1350656442-1523-1-git-send-email-glommer@parallels.com>
-References: <1350656442-1523-1-git-send-email-glommer@parallels.com>
+	id S1759134Ab2JSOZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 10:25:27 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:37257 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759120Ab2JSOZW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 10:25:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <1350045042-1369134-1-git-send-email-avagin@openvz.org>
+References: <1350045042-1369134-1-git-send-email-avagin@openvz.org>
+Date: Fri, 19 Oct 2012 18:25:21 +0400
+Message-ID: <CANaxB-yw+onpghQ8pHxrdr21etJ-FYROYhiUo3Yw53EoZGSMcg@mail.gmail.com>
+Subject: Re: [PATCH] pidns: limit the nesting depth of pid namespaces
+From: Andrey Wagin <avagin@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Vagin <avagin@openvz.org>, Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves all the common machinery to slabinfo processing
-to slab_common.c. We can do better by noticing that the output is
-heavily common, and having the allocators to just provide finished
-information about this. But after this first step, this can be done
-easier.
+Hello Andrew and Oleg,
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-Acked-by: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: David Rientjes <rientjes@google.com>
----
- mm/slab.c        | 72 ++++++++++----------------------------------------------
- mm/slab.h        |  8 +++++++
- mm/slab_common.c | 70 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
- mm/slub.c        | 51 ++++-----------------------------------
- 4 files changed, 96 insertions(+), 105 deletions(-)
+Andrew, what do you think about this patch? I reworked it according
+with your comments to the previous version.
 
-diff --git a/mm/slab.c b/mm/slab.c
-index eafef58..e35970a 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -4263,7 +4263,7 @@ out:
- 
- #ifdef CONFIG_SLABINFO
- 
--static void print_slabinfo_header(struct seq_file *m)
-+void print_slabinfo_header(struct seq_file *m)
- {
- 	/*
- 	 * Output format version, so at least we can change it
-@@ -4286,28 +4286,7 @@ static void print_slabinfo_header(struct seq_file *m)
- 	seq_putc(m, '\n');
- }
- 
--static void *s_start(struct seq_file *m, loff_t *pos)
--{
--	loff_t n = *pos;
--
--	mutex_lock(&slab_mutex);
--	if (!n)
--		print_slabinfo_header(m);
--
--	return seq_list_start(&slab_caches, *pos);
--}
--
--static void *s_next(struct seq_file *m, void *p, loff_t *pos)
--{
--	return seq_list_next(p, &slab_caches, pos);
--}
--
--static void s_stop(struct seq_file *m, void *p)
--{
--	mutex_unlock(&slab_mutex);
--}
--
--static int s_show(struct seq_file *m, void *p)
-+int slabinfo_show(struct seq_file *m, void *p)
- {
- 	struct kmem_cache *cachep = list_entry(p, struct kmem_cache, list);
- 	struct slab *slabp;
-@@ -4404,27 +4383,6 @@ static int s_show(struct seq_file *m, void *p)
- 	return 0;
- }
- 
--/*
-- * slabinfo_op - iterator that generates /proc/slabinfo
-- *
-- * Output layout:
-- * cache-name
-- * num-active-objs
-- * total-objs
-- * object size
-- * num-active-slabs
-- * total-slabs
-- * num-pages-per-slab
-- * + further values on SMP and with statistics enabled
-- */
--
--static const struct seq_operations slabinfo_op = {
--	.start = s_start,
--	.next = s_next,
--	.stop = s_stop,
--	.show = s_show,
--};
--
- #define MAX_SLABINFO_WRITE 128
- /**
-  * slabinfo_write - Tuning for the slab allocator
-@@ -4433,7 +4391,7 @@ static const struct seq_operations slabinfo_op = {
-  * @count: data length
-  * @ppos: unused
-  */
--static ssize_t slabinfo_write(struct file *file, const char __user *buffer,
-+ssize_t slabinfo_write(struct file *file, const char __user *buffer,
- 		       size_t count, loff_t *ppos)
- {
- 	char kbuf[MAX_SLABINFO_WRITE + 1], *tmp;
-@@ -4476,19 +4434,6 @@ static ssize_t slabinfo_write(struct file *file, const char __user *buffer,
- 	return res;
- }
- 
--static int slabinfo_open(struct inode *inode, struct file *file)
--{
--	return seq_open(file, &slabinfo_op);
--}
--
--static const struct file_operations proc_slabinfo_operations = {
--	.open		= slabinfo_open,
--	.read		= seq_read,
--	.write		= slabinfo_write,
--	.llseek		= seq_lseek,
--	.release	= seq_release,
--};
--
- #ifdef CONFIG_DEBUG_SLAB_LEAK
- 
- static void *leaks_start(struct seq_file *m, loff_t *pos)
-@@ -4617,6 +4562,16 @@ static int leaks_show(struct seq_file *m, void *p)
- 	return 0;
- }
- 
-+static void *s_next(struct seq_file *m, void *p, loff_t *pos)
-+{
-+	return seq_list_next(p, &slab_caches, pos);
-+}
-+
-+static void s_stop(struct seq_file *m, void *p)
-+{
-+	mutex_unlock(&slab_mutex);
-+}
-+
- static const struct seq_operations slabstats_op = {
- 	.start = leaks_start,
- 	.next = s_next,
-@@ -4651,7 +4606,6 @@ static const struct file_operations proc_slabstats_operations = {
- 
- static int __init slab_proc_init(void)
- {
--	proc_create("slabinfo",S_IWUSR|S_IRUSR,NULL,&proc_slabinfo_operations);
- #ifdef CONFIG_DEBUG_SLAB_LEAK
- 	proc_create("slab_allocators", 0, NULL, &proc_slabstats_operations);
- #endif
-diff --git a/mm/slab.h b/mm/slab.h
-index 35b60b7..4156d21 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -72,4 +72,12 @@ static inline struct kmem_cache *__kmem_cache_alias(const char *name, size_t siz
- 
- int __kmem_cache_shutdown(struct kmem_cache *);
- 
-+struct seq_file;
-+struct file;
-+void print_slabinfo_header(struct seq_file *m);
-+
-+int slabinfo_show(struct seq_file *m, void *p);
-+
-+ssize_t slabinfo_write(struct file *file, const char __user *buffer,
-+		       size_t count, loff_t *ppos);
- #endif
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 0e2b8e3..11ecab4 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -13,6 +13,8 @@
- #include <linux/module.h>
- #include <linux/cpu.h>
- #include <linux/uaccess.h>
-+#include <linux/seq_file.h>
-+#include <linux/proc_fs.h>
- #include <asm/cacheflush.h>
- #include <asm/tlbflush.h>
- #include <asm/page.h>
-@@ -196,3 +198,71 @@ int slab_is_available(void)
- {
- 	return slab_state >= UP;
- }
-+
-+#ifdef CONFIG_SLABINFO
-+static void *s_start(struct seq_file *m, loff_t *pos)
-+{
-+	loff_t n = *pos;
-+
-+	mutex_lock(&slab_mutex);
-+	if (!n)
-+		print_slabinfo_header(m);
-+
-+	return seq_list_start(&slab_caches, *pos);
-+}
-+
-+static void *s_next(struct seq_file *m, void *p, loff_t *pos)
-+{
-+	return seq_list_next(p, &slab_caches, pos);
-+}
-+
-+static void s_stop(struct seq_file *m, void *p)
-+{
-+	mutex_unlock(&slab_mutex);
-+}
-+
-+static int s_show(struct seq_file *m, void *p)
-+{
-+	return slabinfo_show(m, p);
-+}
-+
-+/*
-+ * slabinfo_op - iterator that generates /proc/slabinfo
-+ *
-+ * Output layout:
-+ * cache-name
-+ * num-active-objs
-+ * total-objs
-+ * object size
-+ * num-active-slabs
-+ * total-slabs
-+ * num-pages-per-slab
-+ * + further values on SMP and with statistics enabled
-+ */
-+static const struct seq_operations slabinfo_op = {
-+	.start = s_start,
-+	.next = s_next,
-+	.stop = s_stop,
-+	.show = s_show,
-+};
-+
-+static int slabinfo_open(struct inode *inode, struct file *file)
-+{
-+	return seq_open(file, &slabinfo_op);
-+}
-+
-+static const struct file_operations proc_slabinfo_operations = {
-+	.open		= slabinfo_open,
-+	.read		= seq_read,
-+	.write          = slabinfo_write,
-+	.llseek		= seq_lseek,
-+	.release	= seq_release,
-+};
-+
-+static int __init slab_proc_init(void)
-+{
-+	proc_create("slabinfo", S_IRUSR, NULL, &proc_slabinfo_operations);
-+	return 0;
-+}
-+module_init(slab_proc_init);
-+#endif /* CONFIG_SLABINFO */
-diff --git a/mm/slub.c b/mm/slub.c
-index f50c5b2..55304ed 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -5394,7 +5394,7 @@ __initcall(slab_sysfs_init);
-  * The /proc/slabinfo ABI
-  */
- #ifdef CONFIG_SLABINFO
--static void print_slabinfo_header(struct seq_file *m)
-+void print_slabinfo_header(struct seq_file *m)
- {
- 	seq_puts(m, "slabinfo - version: 2.1\n");
- 	seq_puts(m, "# name            <active_objs> <num_objs> <object_size> "
-@@ -5404,28 +5404,7 @@ static void print_slabinfo_header(struct seq_file *m)
- 	seq_putc(m, '\n');
- }
- 
--static void *s_start(struct seq_file *m, loff_t *pos)
--{
--	loff_t n = *pos;
--
--	mutex_lock(&slab_mutex);
--	if (!n)
--		print_slabinfo_header(m);
--
--	return seq_list_start(&slab_caches, *pos);
--}
--
--static void *s_next(struct seq_file *m, void *p, loff_t *pos)
--{
--	return seq_list_next(p, &slab_caches, pos);
--}
--
--static void s_stop(struct seq_file *m, void *p)
--{
--	mutex_unlock(&slab_mutex);
--}
--
--static int s_show(struct seq_file *m, void *p)
-+int slabinfo_show(struct seq_file *m, void *p)
- {
- 	unsigned long nr_partials = 0;
- 	unsigned long nr_slabs = 0;
-@@ -5461,29 +5440,9 @@ static int s_show(struct seq_file *m, void *p)
- 	return 0;
- }
- 
--static const struct seq_operations slabinfo_op = {
--	.start = s_start,
--	.next = s_next,
--	.stop = s_stop,
--	.show = s_show,
--};
--
--static int slabinfo_open(struct inode *inode, struct file *file)
--{
--	return seq_open(file, &slabinfo_op);
--}
--
--static const struct file_operations proc_slabinfo_operations = {
--	.open		= slabinfo_open,
--	.read		= seq_read,
--	.llseek		= seq_lseek,
--	.release	= seq_release,
--};
--
--static int __init slab_proc_init(void)
-+ssize_t slabinfo_write(struct file *file, const char __user *buffer,
-+		       size_t count, loff_t *ppos)
- {
--	proc_create("slabinfo", S_IRUSR, NULL, &proc_slabinfo_operations);
--	return 0;
-+	return -EIO;
- }
--module_init(slab_proc_init);
- #endif /* CONFIG_SLABINFO */
--- 
-1.7.11.7
+Oleg, could you send Ack in this version, if it's ok for you.
 
+Thanks.
+
+2012/10/12 Andrew Vagin <avagin@openvz.org>:
+> 'struct pid' is a "variable sized struct" - a header with an array
+> of upids at the end.
+>
+> A size of the array depends on a level (depth) of pid namespaces. Now
+> a level of pidns is not limited, so 'struct pid' can be more than one
+> page.
+>
+> Looks reasonable, that it should be less than a page. MAX_PIS_NS_LEVEL
+> is not calculated from PAGE_SIZE, because in this case it depends on
+> architectures, config options and it will be reduced, if someone adds a
+> new fields in struct pid or struct upid.
+>
+> I suggest to set MAX_PIS_NS_LEVEL = 32, because it saves ability to
+> expand "struct pid" and it's more than enough for all known for me
+> use-cases.  When someone finds a reasonable use case, we can add a
+> config option or a sysctl parameter.
+>
+> In addition it will reduce effect of another problem, when we have many
+> nested namespaces and the oldest one starts dying.  zap_pid_ns_processe
+> will be called for each namespace and find_vpid will be called for each
+> process in a namespace. find_vpid will be called minimum max_level^2 / 2
+> times. The reason of that is that when we found a bit in pidmap, we
+> can't determine this pidns is top for this process or it isn't.
+>
+> vpid is a heavy operation, so a fork bomb, which create many nested
+> namespace, can do a system inaccessible for a long time.
+>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Signed-off-by: Andrew Vagin <avagin@openvz.org>
+> ---
+>  kernel/pid_namespace.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+>
+> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+> index b051fa6..598bfb3 100644
+> --- a/kernel/pid_namespace.c
+> +++ b/kernel/pid_namespace.c
+> @@ -70,12 +70,18 @@ err_alloc:
+>         return NULL;
+>  }
+>
+> +/* MAX_PID_NS_LEVEL is needed for limiting size of 'struct pid' */
+> +#define MAX_PID_NS_LEVEL 32
+> +
+>  static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_pid_ns)
+>  {
+>         struct pid_namespace *ns;
+>         unsigned int level = parent_pid_ns->level + 1;
+>         int i, err = -ENOMEM;
+>
+> +       if (level > MAX_PID_NS_LEVEL)
+> +               goto out;
+> +
+>         ns = kmem_cache_zalloc(pid_ns_cachep, GFP_KERNEL);
+>         if (ns == NULL)
+>                 goto out;
+> --
+> 1.7.1
+>
