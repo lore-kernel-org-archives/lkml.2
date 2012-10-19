@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab2JSCra (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:47:30 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51302 "EHLO mail.kernel.org"
+	id S1757370Ab2JSCre (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:47:34 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51468 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757193Ab2JSCrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:21 -0400
+	id S1757193Ab2JSCrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Daniel Drake <dsd@laptop.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [ 28/62] viafb: dont touch clock state on OLPC XO-1.5
-Date: Thu, 18 Oct 2012 19:44:56 -0700
-Message-Id: <20121019024300.512580573@linuxfoundation.org>
+        Oliver Smith <olipro@8.c.9.b.0.7.4.0.1.0.0.2.ip6.arpa>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        David Miller <davem@davemloft.net>
+Subject: [ 35/62] netfilter: nf_conntrack: fix racy timer handling with reliable events
+Date: Thu, 18 Oct 2012 19:45:03 -0700
+Message-Id: <20121019024301.660559712@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -26,71 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Drake <dsd@laptop.org>
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-commit 012a1211845eab69a5488d59eb87d24cc518c627 upstream.
+commit 5b423f6a40a0327f9d40bc8b97ce9be266f74368 upstream.
 
-As detailed in the thread titled "viafb PLL/clock tweaking causes XO-1.5
-instability," enabling or disabling the IGA1/IGA2 clocks causes occasional
-stability problems during suspend/resume cycles on this platform.
+Existing code assumes that del_timer returns true for alive conntrack
+entries. However, this is not true if reliable events are enabled.
+In that case, del_timer may return true for entries that were
+just inserted in the dying list. Note that packets / ctnetlink may
+hold references to conntrack entries that were just inserted to such
+list.
 
-This is rather odd, as the documentation suggests that clocks have two
-states (on/off) and the default (stable) configuration is configured to
-enable the clock only when it is needed. However, explicitly enabling *or*
-disabling the clock triggers this system instability, suggesting that there
-is a 3rd state at play here.
+This patch fixes the issue by adding an independent timer for
+event delivery. This increases the size of the ecache extension.
+Still we can revisit this later and use variable size extensions
+to allocate this area on demand.
 
-Leaving the clock enable/disable registers alone solves this problem.
-This fixes spurious reboots during suspend/resume behaviour introduced by
-commit b692a63a.
-
-Signed-off-by: Daniel Drake <dsd@laptop.org>
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Tested-by: Oliver Smith <olipro@8.c.9.b.0.7.4.0.1.0.0.2.ip6.arpa>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Acked-by: David Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/via/via_clock.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ include/net/netfilter/nf_conntrack_ecache.h |    1 +
+ net/netfilter/nf_conntrack_core.c           |   16 +++++++++++-----
+ 2 files changed, 12 insertions(+), 5 deletions(-)
 
---- a/drivers/video/via/via_clock.c
-+++ b/drivers/video/via/via_clock.c
-@@ -25,6 +25,7 @@
+--- a/include/net/netfilter/nf_conntrack_ecache.h
++++ b/include/net/netfilter/nf_conntrack_ecache.h
+@@ -18,6 +18,7 @@ struct nf_conntrack_ecache {
+ 	u16 ctmask;		/* bitmask of ct events to be delivered */
+ 	u16 expmask;		/* bitmask of expect events to be delivered */
+ 	u32 pid;		/* netlink pid of destroyer */
++	struct timer_list timeout;
+ };
  
- #include <linux/kernel.h>
- #include <linux/via-core.h>
-+#include <asm/olpc.h>
- #include "via_clock.h"
- #include "global.h"
- #include "debug.h"
-@@ -289,6 +290,10 @@ static void dummy_set_pll(struct via_pll
- 	printk(KERN_INFO "Using undocumented set PLL.\n%s", via_slap);
- }
- 
-+static void noop_set_clock_state(u8 state)
-+{
-+}
-+
- void via_clock_init(struct via_clock *clock, int gfx_chip)
+ static inline struct nf_conntrack_ecache *
+--- a/net/netfilter/nf_conntrack_core.c
++++ b/net/netfilter/nf_conntrack_core.c
+@@ -249,12 +249,15 @@ static void death_by_event(unsigned long
  {
- 	switch (gfx_chip) {
-@@ -346,4 +351,18 @@ void via_clock_init(struct via_clock *cl
- 		break;
- 
- 	}
+ 	struct nf_conn *ct = (void *)ul_conntrack;
+ 	struct net *net = nf_ct_net(ct);
++	struct nf_conntrack_ecache *ecache = nf_ct_ecache_find(ct);
 +
-+	if (machine_is_olpc()) {
-+		/* The OLPC XO-1.5 cannot suspend/resume reliably if the
-+		 * IGA1/IGA2 clocks are set as on or off (memory rot
-+		 * occasionally happens during suspend under such
-+		 * configurations).
-+		 *
-+		 * The only known stable scenario is to leave this bits as-is,
-+		 * which in their default states are documented to enable the
-+		 * clock only when it is needed.
-+		 */
-+		clock->set_primary_clock_state = noop_set_clock_state;
-+		clock->set_secondary_clock_state = noop_set_clock_state;
-+	}
++	BUG_ON(ecache == NULL);
+ 
+ 	if (nf_conntrack_event(IPCT_DESTROY, ct) < 0) {
+ 		/* bad luck, let's retry again */
+-		ct->timeout.expires = jiffies +
++		ecache->timeout.expires = jiffies +
+ 			(random32() % net->ct.sysctl_events_retry_timeout);
+-		add_timer(&ct->timeout);
++		add_timer(&ecache->timeout);
+ 		return;
+ 	}
+ 	/* we've got the event delivered, now it's dying */
+@@ -268,6 +271,9 @@ static void death_by_event(unsigned long
+ void nf_ct_insert_dying_list(struct nf_conn *ct)
+ {
+ 	struct net *net = nf_ct_net(ct);
++	struct nf_conntrack_ecache *ecache = nf_ct_ecache_find(ct);
++
++	BUG_ON(ecache == NULL);
+ 
+ 	/* add this conntrack to the dying list */
+ 	spin_lock_bh(&nf_conntrack_lock);
+@@ -275,10 +281,10 @@ void nf_ct_insert_dying_list(struct nf_c
+ 			     &net->ct.dying);
+ 	spin_unlock_bh(&nf_conntrack_lock);
+ 	/* set a new timer to retry event delivery */
+-	setup_timer(&ct->timeout, death_by_event, (unsigned long)ct);
+-	ct->timeout.expires = jiffies +
++	setup_timer(&ecache->timeout, death_by_event, (unsigned long)ct);
++	ecache->timeout.expires = jiffies +
+ 		(random32() % net->ct.sysctl_events_retry_timeout);
+-	add_timer(&ct->timeout);
++	add_timer(&ecache->timeout);
  }
+ EXPORT_SYMBOL_GPL(nf_ct_insert_dying_list);
+ 
 
 
