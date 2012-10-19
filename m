@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756386Ab2JSIZx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 04:25:53 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:42133 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751219Ab2JSIZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 04:25:51 -0400
-Message-ID: <50810E8C.5010806@imgtec.com>
-Date: Fri, 19 Oct 2012 09:25:48 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1756843Ab2JSI0h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 04:26:37 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:7071 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753155Ab2JSI0f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 04:26:35 -0400
+X-IronPort-AV: E=Sophos;i="4.80,612,1344211200"; 
+   d="scan'208";a="15269907"
+Message-ID: <50810EB8.3060801@citrix.com>
+Date: Fri, 19 Oct 2012 10:26:32 +0200
+From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [RESEND PATCH 4/4] net: smc91x: use io{read,write}*_rep accessors
- instead of string functions
-References: <1350488704-3711-1-git-send-email-will.deacon@arm.com> <1350488704-3711-5-git-send-email-will.deacon@arm.com>
-In-Reply-To: <1350488704-3711-5-git-send-email-will.deacon@arm.com>
-X-Enigmail-Version: 1.4.4
+To: James Harper <james.harper@bendigoit.com.au>
+CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Oliver Chick <oliver.chick@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH RFC] Persistent grant maps for xen blk drivers
+References: <1350559321-19066-1-git-send-email-roger.pau@citrix.com> <6035A0D088A63A46850C3988ED045A4B32C1043A@BITCOM1.int.sbss.com.au>
+In-Reply-To: <6035A0D088A63A46850C3988ED045A4B32C1043A@BITCOM1.int.sbss.com.au>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2012_10_19_09_25_49
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/10/12 16:45, Will Deacon wrote:
-> The {read,write}s{b,w,l} operations are not defined by all architectures
-> and are being removed from the asm-generic/io.h interface.
+On 19/10/12 03:34, James Harper wrote:
+>>
+>> This patch implements persistent grants for the xen-blk{front,back}
+>> mechanism. The effect of this change is to reduce the number of unmap
+>> operations performed, since they cause a (costly) TLB shootdown. This allows
+>> the I/O performance to scale better when a large number of VMs are
+>> performing I/O.
+>>
+>> Previously, the blkfront driver was supplied a bvec[] from the request
+>> queue. This was granted to dom0; dom0 performed the I/O and wrote
+>> directly into the grant-mapped memory and unmapped it; blkfront then
+>> removed foreign access for that grant. The cost of unmapping scales badly
+>> with the number of CPUs in Dom0. An experiment showed that when
+>> Dom0 has 24 VCPUs, and guests are performing parallel I/O to a ramdisk, the
+>> IPIs from performing unmap's is a bottleneck at 5 guests (at which point
+>> 650,000 IOPS are being performed in total). If more than 5 guests are used,
+>> the performance declines. By 10 guests, only
+>> 400,000 IOPS are being performed.
+>>
+>> This patch improves performance by only unmapping when the connection
+>> between blkfront and back is broken.
 > 
-> This patch replaces the usage of these string functions in the default
-> SMC accessors with io{read,write}{8,16,32}_rep calls instead, which are
-> defined for all architectures.
+> I assume network drivers would suffer from the same affliction... Would a more general persistent map solution be worth considering (or be possible)? So a common interface to this persistent mapping allowing the persistent pool to be shared between all drivers in the DomU?
 
-Hi,
+Yes, there are plans to implement the same for network drivers. I would
+generally avoid having a shared pool of grants for all the devices of a
+DomU, as said in the description of the patch:
 
-Should this patch (and the mmc one) precede patch 1?
+Blkback stores a mapping of grefs=>{page mapped to by gref} in
+a red-black tree. As the grefs are not known apriori, and provide no
+guarantees on their ordering, we have to perform a search
+through this tree to find the page, for every gref we receive. This
+operation takes O(log n) time in the worst case.
 
-Also there appear to be some other places that it's used (e.g.
-smsc911x.c and smc911x.h). I guess these should be fixed up first too?
+Having a shared pool with all grants would mean that n will become much
+higher, and so the search time for a grant would increase. Also, if the
+pool is shared some kind of concurrency control should be added, which
+will make it even slower.
 
-Cheers
-James
-
+What should be shared are the structures used to save the grants (struct
+grant and struct persistent_gnt for front and back drivers
+respectively), and the red-black tree implementation (foreach_grant,
+add_persistent_gnt and get_persistent_gnt). This functions should be
+moved to a common header for the net implementation.
