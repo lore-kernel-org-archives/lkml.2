@@ -1,96 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab2JSCdo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:33:44 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:17988 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048Ab2JSCdm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:33:42 -0400
-Message-ID: <5080BBF9.1080208@oracle.com>
-Date: Thu, 18 Oct 2012 22:33:29 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: vyasevich@gmail.com, sri@us.ibm.com, davem@davemloft.net
-CC: linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: net,sctp: oops in sctp_do_sm
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1752031Ab2JSCqp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:46:45 -0400
+Received: from mail.kernel.org ([198.145.19.201]:50967 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751096Ab2JSCqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:46:43 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 00/62] 3.4.15-stable review
+Date: Thu, 18 Oct 2012 19:44:28 -0700
+Message-Id: <20121019024255.944999470@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+This is the start of the stable review cycle for the 3.4.15 release.
+There are 62 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-While fuzzing with trinity inside a KVM tools (lkvm) guest running today's linux-next, I've
-stumbled on the following:
+Responses should be made by Sun Oct 21 02:42:38 UTC 2012.
+Anything received after that time might be too late.
 
-[  439.574039] BUG: unable to handle kernel paging request at ffff88001b9f40c8
-[  439.576486] IP: [<ffffffff83746fc3>] sctp_do_sm+0x293/0x310
-[  439.578128] PGD 4e27063 PUD 4e2b063 PMD 1fa57067 PTE 1b9f4160
-[  439.580796] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  439.581635] Dumping ftrace buffer:
-[  439.582171]    (ftrace buffer empty)
-[  439.582673] CPU 3
-[  439.582957] Pid: 7101, comm: trinity-child16 Tainted: G        W    3.7.0-rc1-next-20121018-sasha-00002-g60a870d-dirty #62
-[  439.582986] RIP: 0010:[<ffffffff83746fc3>]  [<ffffffff83746fc3>] sctp_do_sm+0x293/0x310
-[  439.582986] RSP: 0018:ffff880010c57988  EFLAGS: 00010286
-[  439.582986] RAX: 0000000000000003 RBX: 0000000000000001 RCX: 0000000000000006
-[  439.582986] RDX: 0000000000000003 RSI: 0000000000000001 RDI: ffff880010c579d0
-[  439.582986] RBP: ffff880010c57ae8 R08: 0000000000000000 R09: 0000000000000000
-[  439.582986] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000004
-[  439.582986] R13: ffff88001b9f4000 R14: ffff880065d22600 R15: 0000000000000003
-[  439.582986] FS:  00007f9a949c3700(0000) GS:ffff880067600000(0000) knlGS:0000000000000000
-[  439.582986] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  439.582986] CR2: ffff88001b9f40c8 CR3: 0000000015850000 CR4: 00000000000406e0
-[  439.582986] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  439.582986] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  439.582986] Process trinity-child16 (pid: 7101, threadinfo ffff880010c56000, task ffff880010a98000)
-[  439.582986] Stack:
-[  439.582986]  ffffffff000000d0 0000000000000000 ffffffff84c92d36 ffffffff84cc4b50
-[  439.582986]  ffffffff83763b30 0000000000000004 ffffffff842c0370 0000000181152f15
-[  439.582986]  ffff880010c579f8 0000000000000002 0000000000000015 0000000000000000
-[  439.582986] Call Trace:
-[  439.582986]  [<ffffffff83763b30>] ? sctp_cname+0x70/0x70
-[  439.582986]  [<ffffffff83761403>] sctp_primitive_SHUTDOWN+0x43/0x50
-[  439.582986]  [<ffffffff8375bd70>] sctp_close+0x150/0x310
-[  439.606533]  [<ffffffff8351bf22>] inet_release+0x1b2/0x1c0
-[  439.606533]  [<ffffffff8351bd8d>] ? inet_release+0x1d/0x1c0
-[  439.606533]  [<ffffffff83578b04>] inet6_release+0x34/0x60
-[  439.606533]  [<ffffffff833c17b8>] sock_release+0x18/0x80
-[  439.610261]  [<ffffffff833c1849>] sock_close+0x29/0x30
-[  439.610261]  [<ffffffff812773f2>] __fput+0x122/0x2d0
-[  439.610261]  [<ffffffff812775a9>] ____fput+0x9/0x10
-[  439.610261]  [<ffffffff81131afe>] task_work_run+0xbe/0x100
-[  439.610261]  [<ffffffff811107e2>] do_exit+0x432/0xbd0
-[  439.610261]  [<ffffffff811243d9>] ? get_signal_to_deliver+0x899/0x910
-[  439.610261]  [<ffffffff8117b2e2>] ? get_lock_stats+0x22/0x70
-[  439.610261]  [<ffffffff8117b36e>] ? put_lock_stats.isra.16+0xe/0x40
-[  439.610261]  [<ffffffff83a6802b>] ? _raw_spin_unlock_irq+0x2b/0x80
-[  439.610261]  [<ffffffff81111044>] do_group_exit+0x84/0xd0
-[  439.610261]  [<ffffffff8112433d>] get_signal_to_deliver+0x7fd/0x910
-[  439.610261]  [<ffffffff8117dffd>] ? trace_hardirqs_off+0xd/0x10
-[  439.620391]  [<ffffffff819fe7db>] ? debug_object_assert_init+0xbb/0x110
-[  439.620391]  [<ffffffff8106d59a>] do_signal+0x3a/0x950
-[  439.620391]  [<ffffffff811c62c3>] ? rcu_cleanup_after_idle+0x23/0x170
-[  439.620391]  [<ffffffff811ca824>] ? rcu_eqs_exit_common+0x64/0x270
-[  439.620391]  [<ffffffff811c90bd>] ? rcu_user_enter+0x10d/0x140
-[  439.620391]  [<ffffffff811cae05>] ? rcu_user_exit+0xc5/0xf0
-[  439.620391]  [<ffffffff8106df1f>] do_notify_resume+0x4f/0xa0
-[  439.620391]  [<ffffffff83a69bea>] int_signal+0x12/0x17
-[  439.620391] Code: e8 eb 48 2c 00 0f 0b 90 41 b8 f4 ff ff ff 66 2e 0f 1f 84 00 00 00 00 00 8b 35 5a 0a 06 02 85 f6 74 66 4d 85
-ed 75 04 31 c0 eb 2a <41> 8b b5 c8 00 00 00 44 89 85 b8 fe ff ff 49 8b 7e 20 e8 f6 51
-[  439.630251] RIP  [<ffffffff83746fc3>] sctp_do_sm+0x293/0x310
-[  439.630251]  RSP <ffff880010c57988>
-[  439.630251] CR2: ffff88001b9f40c8
-[  439.630251] ---[ end trace aa5ad9f036ee09dd ]---
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.15-rc1.gz
+and the diffstat can be found below.
 
-This points to the DEBUG_POST_SFX macro in sctp_do_sm().
+thanks,
+
+greg k-h
+
+-------------
+Pseudo-Shortlog of commits:
+
+Maxim Kachur <mcdebugger@duganet.ru>
+    ALSA: emu10k1: add chip details for E-mu 1010 PCIe card
+
+Takashi Iwai <tiwai@suse.de>
+    ALSA: ac97 - Fix missing NULL check in snd_ac97_cvol_new()
+
+Peter Ujfalusi <peter.ujfalusi@ti.com>
+    ASoC: omap-abe-twl6040: Fix typo of Vibrator
+
+Mark Brown <broonie@opensource.wolfsonmicro.com>
+    ASoC: wm2200: Fix non-inverted OUT2 mute control
+
+Mark Brown <broonie@opensource.wolfsonmicro.com>
+    ASoC: wm2200: Use rev A register patches on rev B
+
+Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+    ASoC: fsi: don't reschedule DMA from an atomic context
+
+David Henningsson <david.henningsson@canonical.com>
+    ALSA: hda - Always check array bounds in alc_get_line_out_pfx
+
+Fabio Porcedda <fabio.porcedda@gmail.com>
+    usb: gadget: at91_udc: fix dt support
+
+Tyler Hicks <tyhicks@canonical.com>
+    eCryptfs: Call lower ->flush() from ecryptfs_flush()
+
+Tyler Hicks <tyhicks@canonical.com>
+    eCryptfs: Write out all dirty pages just before releasing the lower file
+
+Tyler Hicks <tyhicks@canonical.com>
+    eCryptfs: Revert to a writethrough cache model
+
+Tyler Hicks <tyhicks@canonical.com>
+    eCryptfs: Initialize empty lower files when opening them
+
+Tyler Hicks <tyhicks@canonical.com>
+    eCryptfs: Unlink lower inode when ecryptfs_create() fails
+
+Peter Huewe <peter.huewe@infineon.com>
+    tpm: Propagate error from tpm_transmit to fix a timeout hang
+
+Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>
+    e1000e: Change wthresh to 1 to avoid possible Tx stalls
+
+Jan Kara <jack@suse.cz>
+    jbd: Fix assertion failure in commit code due to lacking transaction credits
+
+Jani Nikula <jani.nikula@intel.com>
+    drm/i915: use adjusted_mode instead of mode for checking the 6bpc force flag
+
+Egbert Eich <eich@suse.de>
+    drm/radeon: Don't destroy I2C Bus Rec in radeon_ext_tmds_enc_destroy().
+
+Jean-Christian de Rivaz <jc@eclis.ch>
+    Add CDC-ACM support for the CX93010-2x UCMxx USB Modem
+
+Jan Engelhardt <jengelh@inai.de>
+    netfilter: xt_limit: have r->cost != 0 case work
+
+Florian Westphal <fw@strlen.de>
+    netfilter: limit, hashlimit: avoid duplicated inline
+
+Pablo Neira Ayuso <pablo@netfilter.org>
+    netfilter: nf_ct_expect: fix possible access to uninitialized timer
+
+Patrick McHardy <kaber@trash.net>
+    netfilter: nf_nat_sip: fix via header translation with multiple parameters
+
+Pablo Neira Ayuso <pablo@netfilter.org>
+    netfilter: nf_nat_sip: fix incorrect handling of EBUSY for RTCP expectation
+
+Lin Ming <mlin@ss.pku.edu.cn>
+    ipvs: fix oops on NAT reply in br_nf context
+
+Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+    netfilter: ipset: timeout fixing bug broke SET target special timeout value
+
+Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+    netfilter: ipset: fix timeout value overflow bug
+
+Pablo Neira Ayuso <pablo@netfilter.org>
+    netfilter: nf_conntrack: fix racy timer handling with reliable events
+
+Julian Anastasov <ja@ssi.bg>
+    ipvs: fix oops in ip_vs_dst_event on rmmod
+
+Amerigo Wang <amwang@redhat.com>
+    pktgen: fix crash when generating IPv6 packets
+
+Jason Wessel <jason.wessel@windriver.com>
+    kdb,vt_console: Fix missed data due to pager overruns
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    md/raid10: use correct limit variable
+
+Felix Fietkau <nbd@openwrt.org>
+    ath9k: use ieee80211_free_txskb
+
+Hildner, Christian <christian.hildner@siemens.com>
+    timers: Fix endless looping between cascade() and internal_add_timer()
+
+Daniel Drake <dsd@laptop.org>
+    viafb: don't touch clock state on OLPC XO-1.5
+
+Alexander Holler <holler@ahsoftware.de>
+    video/udlfb: fix line counting in fb_write
+
+Matthew Garrett <mjg59@srcf.ucam.org>
+    module: taint kernel when lve module is loaded
+
+Ian Kent <raven@themaw.net>
+    autofs4 - fix reset pending flag on mount fail
+
+Tejun Heo <tj@kernel.org>
+    block: fix request_queue->flags initialization
+
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+    xen/bootup: allow read_tscp call for Xen PV guests.
+
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+    xen/bootup: allow {read|write}_cr8 pvops call.
+
+Peter Senna Tschudin <peter.senna@gmail.com>
+    target: fix return code in target_core_init_configfs error path
+
+Trond Myklebust <Trond.Myklebust@netapp.com>
+    SUNRPC: Ensure that the TCP socket is closed when in CLOSE_WAIT
+
+Stefan Richter <stefanr@s5r6.in-berlin.de>
+    firewire: cdev: fix user memory corruption (i386 userland on amd64 kernel)
+
+Simon Horman <horms@verge.net.au>
+    ARM: 7541/1: Add ARM ERRATA 775420 workaround
+
+Lukas Czerner <lczerner@redhat.com>
+    SCSI: scsi_debug: Fix off-by-one bug when unmapping region
+
+K. Y. Srinivasan <kys@microsoft.com>
+    SCSI: storvsc: Account for in-transit packets in the RESET path
+
+Nicholas Bellinger <nab@linux-iscsi.org>
+    iscsi-target: Bump defaults for nopin_timeout + nopin_response_timeout values
+
+Nicholas Bellinger <nab@linux-iscsi.org>
+    iscsi-target: Add explicit set of cache_dynamic_acls=1 for TPG demo-mode
+
+Christoph Hellwig <hch@infradead.org>
+    iscsit: remove incorrect unlock in iscsit_build_sendtargets_resp
+
+Nicholas Bellinger <nab@linux-iscsi.org>
+    iscsi-target: Correctly set 0xffffffff field within ISCSI_OP_REJECT PDU
+
+Stephen M. Cameron <scameron@beardog.cce.hp.com>
+    SCSI: hpsa: dial down lockup detection during firmware flash
+
+Hugh Dickins <hughd@google.com>
+    tmpfs,ceph,gfs2,isofs,reiserfs,xfs: fix fh_len checking
+
+Jason Wessel <jason.wessel@windriver.com>
+    mips,kgdb: fix recursive page fault with CONFIG_KPROBES
+
+Takashi Iwai <tiwai@suse.de>
+    ALSA: hda - Fix memory leaks at error path in patch_cirrus.c
+
+David Henningsson <david.henningsson@canonical.com>
+    ALSA: hda - do not detect jack on internal speakers for Realtek
+
+Feng Tang <feng.tang@intel.com>
+    ACPI: EC: Add a quirk for CLEVO M720T/M730T laptop
+
+Feng Tang <feng.tang@intel.com>
+    ACPI: EC: Make the GPE storm threshold a module parameter
+
+Stanislav Kinsbursky <skinsbursky@parallels.com>
+    lockd: use rpc client's cl_nodename for id encoding
+
+Malahal Naineni <malahal@us.ibm.com>
+    NFSD: pass null terminated buf to kstrtouint()
+
+J. Bruce Fields <bfields@redhat.com>
+    nfsd4: fix nfs4 stateid leak
+
+Russell King <rmk+kernel@arm.linux.org.uk>
+    ARM: vfp: fix saving d16-d31 vfp registers on v6+ kernels
 
 
-Thanks,
-Sasha
+-------------
+
+Diffstat:
+
+ Makefile                                        |   4 ++--
+ arch/arm/Kconfig                                |  10 ++++++++
+ arch/arm/include/asm/vfpmacros.h                |   4 ++--
+ arch/arm/mm/cache-v7.S                          |   3 +++
+ arch/mips/kernel/kgdb.c                         |   9 ++++++++
+ arch/x86/xen/enlighten.c                        |  18 ++++++++++++++-
+ block/blk-core.c                                |   2 +-
+ drivers/acpi/ec.c                               |  30 ++++++++++++++++++++----
+ drivers/char/tpm/tpm.c                          |  21 +++++++++++------
+ drivers/firewire/core-cdev.c                    |   4 ++--
+ drivers/gpu/drm/i915/intel_display.c            |   4 ++--
+ drivers/gpu/drm/radeon/radeon_legacy_encoders.c |   6 +----
+ drivers/md/raid10.c                             |   2 +-
+ drivers/net/ethernet/intel/e1000e/e1000.h       |   6 ++---
+ drivers/net/ethernet/intel/e1000e/netdev.c      |   2 +-
+ drivers/net/wireless/ath/ath9k/beacon.c         |   2 +-
+ drivers/net/wireless/ath/ath9k/main.c           |   2 +-
+ drivers/net/wireless/ath/ath9k/xmit.c           |  53 +++++++++++++++++++++++-------------------
+ drivers/scsi/hpsa.c                             |  39 +++++++++++++++++++++++++++----
+ drivers/scsi/hpsa.h                             |   2 ++
+ drivers/scsi/hpsa_cmd.h                         |   1 +
+ drivers/scsi/scsi_debug.c                       |   2 +-
+ drivers/scsi/storvsc_drv.c                      |   5 ++++
+ drivers/target/iscsi/iscsi_target.c             |   2 +-
+ drivers/target/iscsi/iscsi_target_core.h        |   4 ++--
+ drivers/target/iscsi/iscsi_target_tpg.c         |  12 ++++++++++
+ drivers/target/target_core_configfs.c           |   8 ++++++-
+ drivers/tty/vt/vt.c                             |  13 +++++++++++
+ drivers/usb/class/cdc-acm.c                     |   3 +++
+ drivers/usb/gadget/at91_udc.c                   |   2 +-
+ drivers/video/udlfb.c                           |   2 +-
+ drivers/video/via/via_clock.c                   |  19 +++++++++++++++
+ fs/autofs4/root.c                               |   6 +++--
+ fs/ceph/export.c                                |  18 +++++++++++----
+ fs/ecryptfs/ecryptfs_kernel.h                   |   2 ++
+ fs/ecryptfs/file.c                              | 100 ++++++++++++++++++++++++++++++++++++++-----------------------------------------
+ fs/ecryptfs/inode.c                             |  65 ++++++++++++++++++++++++++-------------------------
+ fs/ecryptfs/main.c                              |   1 +
+ fs/ecryptfs/mmap.c                              |  39 +++++++++++--------------------
+ fs/gfs2/export.c                                |   4 ++++
+ fs/isofs/export.c                               |   2 +-
+ fs/jbd/commit.c                                 |  45 +++++++++++++++++++++++++++---------
+ fs/jbd/transaction.c                            |  64 ++++++++++++++++++++++++++++++++++----------------
+ fs/lockd/mon.c                                  |   4 +++-
+ fs/nfsd/nfs4idmap.c                             |   2 +-
+ fs/nfsd/nfs4state.c                             |   1 +
+ fs/reiserfs/inode.c                             |   6 ++++-
+ fs/xfs/xfs_export.c                             |   3 +++
+ include/linux/netfilter/ipset/ip_set_timeout.h  |   4 ++++
+ include/net/ip_vs.h                             |   2 +-
+ include/net/netfilter/nf_conntrack_ecache.h     |   1 +
+ kernel/debug/kdb/kdb_io.c                       |  33 ++++++++++++++++++++++----
+ kernel/module.c                                 |   4 ++++
+ kernel/timer.c                                  |  10 ++++----
+ mm/shmem.c                                      |   6 +++--
+ net/core/pktgen.c                               |   2 +-
+ net/ipv4/netfilter/nf_nat_sip.c                 |  10 +++++---
+ net/netfilter/ipvs/ip_vs_ctl.c                  |   5 ++--
+ net/netfilter/nf_conntrack_core.c               |  16 +++++++++----
+ net/netfilter/nf_conntrack_expect.c             |  29 +++++------------------
+ net/netfilter/xt_hashlimit.c                    |   8 +++----
+ net/netfilter/xt_limit.c                        |  13 +++++------
+ net/netfilter/xt_set.c                          |  17 ++++++++++++--
+ net/sunrpc/xprtsock.c                           |  21 +++++++++++++----
+ sound/pci/ac97/ac97_codec.c                     |   2 ++
+ sound/pci/emu10k1/emu10k1_main.c                |   9 ++++++++
+ sound/pci/hda/patch_cirrus.c                    |   6 ++---
+ sound/pci/hda/patch_realtek.c                   |   6 ++++-
+ sound/soc/codecs/wm2200.c                       |   3 ++-
+ sound/soc/omap/omap-abe-twl6040.c               |   2 +-
+ sound/soc/sh/fsi.c                              |  15 ++++++------
+ 71 files changed, 584 insertions(+), 298 deletions(-)
+
+
