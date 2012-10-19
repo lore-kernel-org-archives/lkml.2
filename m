@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964953Ab2JSDEM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:04:12 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52045 "EHLO mail.kernel.org"
+	id S1161036Ab2JSDEL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:04:11 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52065 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964839Ab2JSCsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:48:42 -0400
+	id S964845Ab2JSCso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:48:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
+        "Richard W.M. Jones" <rjones@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 22/76] SCSI: storvsc: Account for in-transit packets in the RESET path
-Date: Thu, 18 Oct 2012 19:46:46 -0700
-Message-Id: <20121019024353.674251991@linuxfoundation.org>
+Subject: [ 24/76] SCSI: virtio-scsi: initialize scatterlist structure
+Date: Thu, 18 Oct 2012 19:46:48 -0700
+Message-Id: <20121019024353.991387879@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -26,38 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: "Richard W.M. Jones" <rjones@redhat.com>
 
-commit 5c1b10ab7f93d24f29b5630286e323d1c5802d5c upstream.
+commit 2e9c9dfde00a6466441e93033cf2c37f720bdacf upstream.
 
-Properly account for I/O in transit before returning from the RESET call.
-In the absense of this patch, we could have a situation where the host may
-respond to a command that was issued prior to the issuance of the RESET
-command at some arbitrary time after responding to the RESET command.
-Currently, the host does not do anything with the RESET command.
+The sg struct is used without being initialized, which breaks
+when CONFIG_DEBUG_SG is enabled.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Richard W.M. Jones <rjones@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/storvsc_drv.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/scsi/virtio_scsi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -1221,7 +1221,12 @@ static int storvsc_host_reset_handler(st
- 	/*
- 	 * At this point, all outstanding requests in the adapter
- 	 * should have been flushed out and return to us
-+	 * There is a potential race here where the host may be in
-+	 * the process of responding when we return from here.
-+	 * Just wait for all in-transit packets to be accounted for
-+	 * before we return from here.
- 	 */
-+	storvsc_wait_to_drain(stor_device);
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -219,7 +219,7 @@ static int virtscsi_kick_event(struct vi
+ 	struct scatterlist sg;
+ 	unsigned long flags;
  
- 	return SUCCESS;
- }
+-	sg_set_buf(&sg, &event_node->event, sizeof(struct virtio_scsi_event));
++	sg_init_one(&sg, &event_node->event, sizeof(struct virtio_scsi_event));
+ 
+ 	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
+ 
 
 
