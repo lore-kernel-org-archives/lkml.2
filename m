@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030421Ab2JSPsO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 11:48:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46650 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030220Ab2JSPsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 11:48:13 -0400
-Date: Fri, 19 Oct 2012 11:00:11 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Robin Dong <robin.k.dong@gmail.com>, linux-kernel@vger.kernel.org,
-        Robin Dong <sanbai@taobao.com>, Jens Axboe <axboe@kernel.dk>,
-        Tao Ma <boyu.mt@taobao.com>
-Subject: Re: [PATCH V3] block/throttle: Add IO throttled information in
- blkio.throttle
-Message-ID: <20121019150011.GE27052@redhat.com>
-References: <1349765625-4020-1-git-send-email-robin.k.dong@gmail.com>
- <20121016232706.GI16166@google.com>
- <20121017134945.GC31663@redhat.com>
- <20121018232404.GW13370@google.com>
+	id S1759221Ab2JSPtC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 11:49:02 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37324 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756022Ab2JSPs7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 11:48:59 -0400
+Message-ID: <50817668.6020709@wwwdotorg.org>
+Date: Fri, 19 Oct 2012 09:48:56 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121018232404.GW13370@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Zhang <markz@nvidia.com>
+CC: linux@arm.linux.org.uk, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: dt: tegra: ventana: define pinmux for ddc
+References: <1350626311-18131-1-git-send-email-markz@nvidia.com>
+In-Reply-To: <1350626311-18131-1-git-send-email-markz@nvidia.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 04:24:04PM -0700, Tejun Heo wrote:
-> Hello, Vivek.
-> 
-> On Wed, Oct 17, 2012 at 09:49:45AM -0400, Vivek Goyal wrote:
-> > Can you explain a bit more. Whe do you mean by "total number queued". I
-> > think throttle.io_queued will total number of bios queued in the cgroup
-> > at the time of query.
-> 
-> Instead of exposing the number that blk-throttle currently has
-> deferred, we can expose the number of bios that have been sent to
-> blk-throttle and the number of bios which left blk-throttle, both
-> monotically increasing and the difference indicating the number being
-> deferred.
+On 10/18/2012 11:58 PM, Mark Zhang wrote:
+> Define pinmux for DDC. The DDC pinmux in Ventana is 2 pins in I2C2.
 
-Ok, I see it now. So we currently already maintain the number of IOs
-dispatched from blk-throttle  in throttle.io_serviced. Now you are 
-suggesting that maintain another counter which keeps track of total
-number IOs submitted to blk-throttle, say throttle.io_submitted? I think
-using throttle.io_queued will be little confusing because in CFQ we
-already use blkio.io_queued to represent number of IOs currently queued
-and it is not monotonically increasing value.
+> +++ b/arch/arm/boot/dts/tegra20-ventana.dts
 
-> That way we can stick to the usual stats facility.
+> -			ddc {
+> -				nvidia,pins = "ddc", "owc", "spdi", "spdo",
+> -					"uac";
+> -				nvidia,function = "rsvd2";
+> -			};
 
-So how does this help? Because it is a monotonically increasing value
-we can use per cpu stats without extra locking? Or somthing else?
+So that removes the entries for 5 pin groups, yet below, entries are
+only added for the ddc and pta pingroups, so the other 4 pin groups
+become unconfigured.
 
-Thanks
-Vivek
+> +
+> +		state_i2cmux_ddc: pinmux_i2cmux_ddc {
+> +			ddc {
+> +				nvidia,pins = "ddc";
+> +				nvidia,function = "i2c2";
+> +			};
+> +			pta {
+> +				nvidia,pins = "pta";
+> +				nvidia,function = "rsvd4";
+> +			};
+
+Does this actually work? The pta pingroup is configured by the "hog"
+pinctrl state of the pinctrl node itself, so this state should fail to
+be applied since it attempts to touch the same pingroup.
+
+> +	i2cmux {
+...
+> +		i2c@1 {
+> +			reg = <1>;
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +
+> +			smart-battery@b {
+> +				compatible = "ti,bq24617", "smart-battery-1.1";
+> +				reg = <0xb>;
+> +				ti,i2c-retry-count = <2>;
+> +				ti,poll-retry-count = <10>;
+> +			};
+
+That wasn't there before. Does that device actually exist on Ventana?
+Adding it should be a separate patch if so, since this one is just about
+introducing the I2C mux, not adding an SBS device. Was this all just
+cut/paste from Seaboard without validation?
