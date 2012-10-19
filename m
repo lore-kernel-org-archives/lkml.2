@@ -1,100 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757949Ab2JSVX6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 17:23:58 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:59526 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754795Ab2JSVX4 (ORCPT
+	id S932917Ab2JSV0V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 17:26:21 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:37880 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753526Ab2JSV0U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 17:23:56 -0400
-Date: Fri, 19 Oct 2012 12:34:34 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: avi@redhat.com, gleb@redhat.com, mtosatti@redhat.com, davej@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] kvm, async_pf: exit idleness when handling
- KVM_PV_REASON_PAGE_NOT_PRESENT
-Message-ID: <20121019193434.GO2518@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1350663115-11373-1-git-send-email-sasha.levin@oracle.com>
+	Fri, 19 Oct 2012 17:26:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350663115-11373-1-git-send-email-sasha.levin@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12101921-5518-0000-0000-000008949A3B
+In-Reply-To: <1724445.dN2yMEzN6d@localhost>
+References: <1724445.dN2yMEzN6d@localhost>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 19 Oct 2012 14:25:59 -0700
+X-Google-Sender-Auth: Bn5hc3L0AfATWcDgdPdFiFya5Bo
+Message-ID: <CA+55aFy8Te9VFaZRZSDYMehbfg-qLDBYv6=EKncQ2=J2XaF+Vg@mail.gmail.com>
+Subject: Re: Linux 3.7-rc1 (nouveau_bios_score oops).
+To: =?ISO-8859-2?Q?Pawe=B3_Sikora?= <pawel.sikora@agmk.net>,
+        David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
+        Martin Peres <martin.peres@labri.fr>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        marcheu@chromium.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 12:11:55PM -0400, Sasha Levin wrote:
-> KVM_PV_REASON_PAGE_NOT_PRESENT kicks cpu out of idleness, but we haven't
-> marked that spot as an exit from idleness.
-> 
-> Not doing so can cause RCU warnings such as:
-> 
-> [  732.788386] ===============================
-> [  732.789803] [ INFO: suspicious RCU usage. ]
-> [  732.790032] 3.7.0-rc1-next-20121019-sasha-00002-g6d8d02d-dirty #63 Tainted: G        W
-> [  732.790032] -------------------------------
-> [  732.790032] include/linux/rcupdate.h:738 rcu_read_lock() used illegally while idle!
-> [  732.790032]
-> [  732.790032] other info that might help us debug this:
-> [  732.790032]
-> [  732.790032]
-> [  732.790032] RCU used illegally from idle CPU!
-> [  732.790032] rcu_scheduler_active = 1, debug_locks = 1
-> [  732.790032] RCU used illegally from extended quiescent state!
-> [  732.790032] 2 locks held by trinity-child31/8252:
-> [  732.790032]  #0:  (&rq->lock){-.-.-.}, at: [<ffffffff83a67528>] __schedule+0x178/0x8f0
-> [  732.790032]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff81152bde>] cpuacct_charge+0xe/0x200
-> [  732.790032]
-> [  732.790032] stack backtrace:
-> [  732.790032] Pid: 8252, comm: trinity-child31 Tainted: G        W    3.7.0-rc1-next-20121019-sasha-00002-g6d8d02d-dirty #63
-> [  732.790032] Call Trace:
-> [  732.790032]  [<ffffffff8118266b>] lockdep_rcu_suspicious+0x10b/0x120
-> [  732.790032]  [<ffffffff81152c60>] cpuacct_charge+0x90/0x200
-> [  732.790032]  [<ffffffff81152bde>] ? cpuacct_charge+0xe/0x200
-> [  732.790032]  [<ffffffff81158093>] update_curr+0x1a3/0x270
-> [  732.790032]  [<ffffffff81158a6a>] dequeue_entity+0x2a/0x210
-> [  732.790032]  [<ffffffff81158ea5>] dequeue_task_fair+0x45/0x130
-> [  732.790032]  [<ffffffff8114ae29>] dequeue_task+0x89/0xa0
-> [  732.790032]  [<ffffffff8114bb9e>] deactivate_task+0x1e/0x20
-> [  732.790032]  [<ffffffff83a67c29>] __schedule+0x879/0x8f0
-> [  732.790032]  [<ffffffff8117e20d>] ? trace_hardirqs_off+0xd/0x10
-> [  732.790032]  [<ffffffff810a37a5>] ? kvm_async_pf_task_wait+0x1d5/0x2b0
-> [  732.790032]  [<ffffffff83a67cf5>] schedule+0x55/0x60
-> [  732.790032]  [<ffffffff810a37c4>] kvm_async_pf_task_wait+0x1f4/0x2b0
-> [  732.790032]  [<ffffffff81139e50>] ? abort_exclusive_wait+0xb0/0xb0
-> [  732.790032]  [<ffffffff81139c25>] ? prepare_to_wait+0x25/0x90
-> [  732.790032]  [<ffffffff810a3a66>] do_async_page_fault+0x56/0xa0
-> [  732.790032]  [<ffffffff83a6a6e8>] async_page_fault+0x28/0x30
-> 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Added more appropriate people to this. Added both i915 and nouveau
+people, since apparently that fine piece of hardware has both.
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Guys, any ideas?
 
-> ---
->  arch/x86/kernel/kvm.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> index b3e5e51..4180a87 100644
-> --- a/arch/x86/kernel/kvm.c
-> +++ b/arch/x86/kernel/kvm.c
-> @@ -247,7 +247,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
->  		break;
->  	case KVM_PV_REASON_PAGE_NOT_PRESENT:
->  		/* page is swapped out by the host. */
-> +		rcu_irq_enter();
-> +		exit_idle();
->  		kvm_async_pf_task_wait((u32)read_cr2());
-> +		rcu_irq_exit();
->  		break;
->  	case KVM_PV_REASON_PAGE_READY:
->  		rcu_irq_enter();
-> -- 
-> 1.7.12.3
-> 
+Paweł, could you perhaps get a photo of the oops and post it
+somewhere? I'm assuming the oops happens early during boot and you
+never get a usable machine with dmesg - but if you do, then please do
+post the whole dmesg too.
 
+              Linus
+
+On Thu, Oct 18, 2012 at 12:32 AM, Paweł Sikora <pawel.sikora@agmk.net> wrote:
+> Hi,
+>
+> the new 3.7.0-rc1-00078-g8d2b6b3 kernel oopses during startup on my asus laptop
+> with nvidia optimius crap and the builtin core-i7 graphics doesn't start.
+> the 3.5/3.6 kernels work fine, so this looks like a fresh regression.
+>
+> BR,
+> Paweł.
