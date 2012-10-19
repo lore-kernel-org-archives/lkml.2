@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756463Ab2JSAjK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 20:39:10 -0400
-Received: from ozlabs.org ([203.10.76.45]:60016 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754809Ab2JSAjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 20:39:08 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Josh Boyer <jwboyer@redhat.com>
-Cc: David Howells <dhowells@redhat.com>, David Miller <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        pjones@redhat.com
-Subject: Re: RFC: sign the modules at install time
-In-Reply-To: <CA+55aFy677k6zvkc9n_2e6OEmOx-S1AYbOumkUOSkrE8Q+aUKw@mail.gmail.com>
-References: <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com> <3179.1350512382@warthog.procyon.org.uk> <CA+55aFzEH1jguw8NB90si2uxvyO63FuKPOc8wiEPRCYwruSzRg@mail.gmail.com> <87a9vko0z7.fsf@rustcorp.com.au> <20121018121154.GE2934@hansolo.jdub.homelinux.org> <CA+55aFy677k6zvkc9n_2e6OEmOx-S1AYbOumkUOSkrE8Q+aUKw@mail.gmail.com>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Fri, 19 Oct 2012 10:50:30 +1030
-Message-ID: <87txtrpb1t.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756925Ab2JSAnT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 20:43:19 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:33216 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751913Ab2JSAnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 20:43:18 -0400
+Message-ID: <1350607397.22385.11.camel@joe-AO722>
+Subject: Re: [PATCH 00/23] printk: refactoring
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org
+Date: Thu, 18 Oct 2012 17:43:17 -0700
+In-Reply-To: <20121018161601.c47c50c8.akpm@linux-foundation.org>
+References: <cover.1350449851.git.joe@perches.com>
+	 <20121018161601.c47c50c8.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
-> So signing is the nice flexible option, and technically the right
-> thing to do.
+On Thu, 2012-10-18 at 16:16 -0700, Andrew Morton wrote:
+> On Tue, 16 Oct 2012 23:06:04 -0700
+> Joe Perches <joe@perches.com> wrote:
+> 
+> > Make printk a bit more readable.
+[]
+> OK, nobody's allowed to change the printk code for two months.
 
-Meh.... It's 52k of extra text to get that 'nice flexible'; 1% of my
-kernel image.  That's a lot of bug free code.
+[filelist]
 
-> (Side note: I hope people realize that the random key is generated
-> with a 100-year lifespan. So if you build a kernel today, you do
-> potentially have a "year-2112 problem". I'm not horribly worried, but
-> I *am* a bit worried about 32-bit time_t overflow and I hope 32-bit
-> openssl doesn't do anything odd)
+> It wouldn't hurt to describe the design here a bit.  How was the code
+> partitioned and what is the role of each file?
 
-Yep, David's original patch had that problem; he fixed the kernel's x509
-handling to use struct tm, not time_t, and now it Just Works.
+Design?  Have you looked at printk recently?
 
-Cheers,
-Rusty.
+I think you called it something like "eye gouging"
+or maybe "burn it down".
+
+Dunno how anyone could consider what there anything
+other than accreted.
+
+I just tried to break it up into somewhat sensible blocks.
+
+> That's reasonably obvious from the names, but some might wonder about
+> the difference between printk_log and printk_syslog and how that
+> division was decided upon.
+
+None of the filenames are great.
+
+I still want to break out the console code from what's
+left of printk.c eventually.
+
+I think what would help most is a Documentation/printk.txt
+file explaining how it all works.
+
+cheers, Joe
+
