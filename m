@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932464Ab2JSCr5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:47:57 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51623 "EHLO mail.kernel.org"
+	id S932864Ab2JSDMt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:12:49 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51659 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757402Ab2JSCrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:49 -0400
+	id S932402Ab2JSCr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 56/62] ALSA: hda - Always check array bounds in alc_get_line_out_pfx
-Date: Thu, 18 Oct 2012 19:45:24 -0700
-Message-Id: <20121019024305.009473879@linuxfoundation.org>
+        Peter Huewe <peter.huewe@infineon.com>,
+        Kent Yoder <key@linux.vnet.ibm.com>
+Subject: [ 49/62] tpm: Propagate error from tpm_transmit to fix a timeout hang
+Date: Thu, 18 Oct 2012 19:45:17 -0700
+Message-Id: <20121019024303.889203015@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -26,35 +26,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Peter Huewe <peter.huewe@infineon.com>
 
-commit 71aa5ebe36a4e936eff281b375a4707b6a8320f2 upstream.
+commit abce9ac292e13da367bbd22c1f7669f988d931ac upstream.
 
-Even when CONFIG_SND_DEBUG is not enabled, we don't want to
-return an arbitrary memory location when the channel count is
-larger than we expected.
+tpm_write calls tpm_transmit without checking the return value and
+assigns the return value unconditionally to chip->pending_data, even if
+it's an error value.
+This causes three bugs.
 
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+So if we write to /dev/tpm0 with a tpm_param_size bigger than
+TPM_BUFSIZE=0x1000 (e.g. 0x100a)
+and a bufsize also bigger than TPM_BUFSIZE (e.g. 0x100a)
+tpm_transmit returns -E2BIG which is assigned to chip->pending_data as
+-7, but tpm_write returns that TPM_BUFSIZE bytes have been successfully
+been written to the TPM, altough this is not true (bug #1).
+
+As we did write more than than TPM_BUFSIZE bytes but tpm_write reports
+that only TPM_BUFSIZE bytes have been written the vfs tries to write
+the remaining bytes (in this case 10 bytes) to the tpm device driver via
+tpm_write which then blocks at
+
+ /* cannot perform a write until the read has cleared
+ either via tpm_read or a user_read_timer timeout */
+ while (atomic_read(&chip->data_pending) != 0)
+	 msleep(TPM_TIMEOUT);
+
+for 60 seconds, since data_pending is -7 and nobody is able to
+read it (since tpm_read luckily checks if data_pending is greater than
+0) (#bug 2).
+
+After that the remaining bytes are written to the TPM which are
+interpreted by the tpm as a normal command. (bug #3)
+So if the last bytes of the command stream happen to be a e.g.
+tpm_force_clear this gets accidentally sent to the TPM.
+
+This patch fixes all three bugs, by propagating the error code of
+tpm_write and returning -E2BIG if the input buffer is too big,
+since the response from the tpm for a truncated value is bogus anyway.
+Moreover it returns -EBUSY to userspace if there is a response ready to be
+read.
+
+Signed-off-by: Peter Huewe <peter.huewe@infineon.com>
+Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/char/tpm/tpm.c |   21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -2665,8 +2665,10 @@ static const char *alc_get_line_out_pfx(
- 			return "PCM";
- 		break;
- 	}
--	if (snd_BUG_ON(ch >= ARRAY_SIZE(channel_name)))
-+	if (ch >= ARRAY_SIZE(channel_name)) {
-+		snd_BUG();
- 		return "PCM";
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -1186,17 +1186,20 @@ ssize_t tpm_write(struct file *file, con
+ 		  size_t size, loff_t *off)
+ {
+ 	struct tpm_chip *chip = file->private_data;
+-	size_t in_size = size, out_size;
++	size_t in_size = size;
++	ssize_t out_size;
+ 
+ 	/* cannot perform a write until the read has cleared
+-	   either via tpm_read or a user_read_timer timeout */
+-	while (atomic_read(&chip->data_pending) != 0)
+-		msleep(TPM_TIMEOUT);
+-
+-	mutex_lock(&chip->buffer_mutex);
++	   either via tpm_read or a user_read_timer timeout.
++	   This also prevents splitted buffered writes from blocking here.
++	*/
++	if (atomic_read(&chip->data_pending) != 0)
++		return -EBUSY;
+ 
+ 	if (in_size > TPM_BUFSIZE)
+-		in_size = TPM_BUFSIZE;
++		return -E2BIG;
++
++	mutex_lock(&chip->buffer_mutex);
+ 
+ 	if (copy_from_user
+ 	    (chip->data_buffer, (void __user *) buf, in_size)) {
+@@ -1206,6 +1209,10 @@ ssize_t tpm_write(struct file *file, con
+ 
+ 	/* atomic tpm command send and result receive */
+ 	out_size = tpm_transmit(chip, chip->data_buffer, TPM_BUFSIZE);
++	if (out_size < 0) {
++		mutex_unlock(&chip->buffer_mutex);
++		return out_size;
 +	}
  
- 	return channel_name[ch];
- }
+ 	atomic_set(&chip->data_pending, out_size);
+ 	mutex_unlock(&chip->buffer_mutex);
 
 
