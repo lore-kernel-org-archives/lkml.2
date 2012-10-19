@@ -1,92 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964930Ab2JSQpb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 12:45:31 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:34193 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964856Ab2JSQp3 (ORCPT
+	id S1759495Ab2JSQqh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 12:46:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51961 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758293Ab2JSQqg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 12:45:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKohpok9PNEpvMeKJ0QRHN+pRQuZBEicb3DZgsyht77+wUmGWA@mail.gmail.com>
-References: <1350641746-14520-1-git-send-email-shiraz.hashim@st.com>
-	<CAKohpok9PNEpvMeKJ0QRHN+pRQuZBEicb3DZgsyht77+wUmGWA@mail.gmail.com>
-Date: Fri, 19 Oct 2012 22:15:27 +0530
-Message-ID: <CAPub14-ekG+ncJDPyt3Ef04CKJo5cjLDO32GMEaCLnmYiYL1Nw@mail.gmail.com>
-Subject: Re: [PATCH V2] PWM: Add SPEAr PWM chip driver support
-From: shiraz hashim <shiraz.linux.kernel@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com
-Content-Type: text/plain; charset=UTF-8
+	Fri, 19 Oct 2012 12:46:36 -0400
+Message-ID: <1350665152.2768.41.camel@twins>
+Subject: Re: [PATCH 2/2] perf: SNB exclusive PMU access for
+ INST_RETIRED:PREC_DIST
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Date: Fri, 19 Oct 2012 18:45:52 +0200
+In-Reply-To: <CABPqkBQ5kCyGByFS-D62RYg2VUf_W-rJKDH=AzyrcaBPVY-eFQ@mail.gmail.com>
+References: <1350658326-14715-1-git-send-email-eranian@google.com>
+	 <1350658326-14715-3-git-send-email-eranian@google.com>
+	 <1350664077.2768.32.camel@twins>
+	 <CABPqkBQ5kCyGByFS-D62RYg2VUf_W-rJKDH=AzyrcaBPVY-eFQ@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
+On Fri, 2012-10-19 at 18:31 +0200, Stephane Eranian wrote:
+> On Fri, Oct 19, 2012 at 6:27 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Fri, 2012-10-19 at 16:52 +0200, Stephane Eranian wrote:
+> >> +static int intel_pebs_aliases_snb(struct perf_event *event)
+> >> +{
+> >> +       u64 cfg = event->hw.config;
+> >> +       /*
+> >> +        * for INST_RETIRED.PREC_DIST to work correctly with PEBS, it must
+> >> +        * be measured alone on SNB (exclusive PMU access) as per Intel SDM.
+> >> +        */
+> >> +       if ((cfg & INTEL_ARCH_EVENT_MASK) == 0x01c0 && !event->attr.exclusive) {
+> >> +               pr_info("perf: INST_RETIRED.PREC_DIST only works in exclusive mode\n");
+> >> +               return -EINVAL;
+> >
+> > This isn't limited to admin, right? So the above turns into a DoS on the
+> > console.
+> >
+> Ok, so how about a WARN_ON_ONCE() instead?
 
-On Fri, Oct 19, 2012 at 7:14 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 19 October 2012 15:45, Shiraz Hashim <shiraz.hashim@st.com> wrote:
->> diff --git a/Documentation/devicetree/bindings/pwm/spear-pwm.txt b/Documentation/devicetree/bindings/pwm/spear-pwm.txt
->> +        pwm: pwm@a8000000 {
->> +            compatible ="st,spear320-pwm";
->> +            reg = <0xa8000000 0x1000>;
->> +            #pwm-cells = <2>;
->> +            status = "disabled";
->
-> Must remove disabled from here. Isn't it?
-
-yes, would remove it.
-
->> diff --git a/drivers/pwm/pwm-spear.c b/drivers/pwm/pwm-spear.c
->> +#include <linux/clk.h>
->> +#include <linux/err.h>
->> +#include <linux/io.h>
->> +#include <linux/ioport.h>
->> +#include <linux/kernel.h>
->> +#include <linux/math64.h>
->> +#include <linux/module.h>
->> +#include <linux/of.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/pwm.h>
->> +#include <linux/slab.h>
->> +#include <linux/types.h>
->> +
->> +#define NUM_PWM                4
->> +
->> +/* PWM registers and bits definitions */
->> +#define PWMCR                  0x00    /* Control Register */
->> +#define PWMCR_PWM_ENABLE       0x1
->> +#define PWMCR_PRESCALE_SHIFT   2
->> +#define PWMCR_MIN_PRESCALE     0x00
->> +#define PWMCR_MAX_PRESCALE     0x3FFF
->
-> I would do it as to make it more readable, your call:
->
-> #define PWMCR                  0x00    /* Control Register */
->         #define PWMCR_PWM_ENABLE       0x1
->         #define PWMCR_PRESCALE_SHIFT   2
->         #define PWMCR_MIN_PRESCALE     0x00
->         #define PWMCR_MAX_PRESCALE     0x3FFF
-
-There are some who don't like this (personally I see it quite clear),
-so it becomes a matter of choice. I intentionaly prefixed each
-bit definition by its register name to make association clear.
-
->
->> +static int spear_pwm_remove(struct platform_device *pdev)
->> +{
->> +       struct spear_pwm_chip *pc = platform_get_drvdata(pdev);
->> +       int i;
->> +
->> +       if (WARN_ON(!pc))
->> +               return -ENODEV;
->
-> Sorry for not asking earlier, how can this be true anytime?
-
-Probably never :), just copied from some other implementation.
-Would remove this in V3.
-
--- 
-regards
-Shiraz Hashim
+That should be fine I guess ;-)
