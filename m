@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932872Ab2JSD0n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:26:43 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54379 "EHLO mail.kernel.org"
+	id S1757495Ab2JSD05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:26:57 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54367 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752433Ab2JSDRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:17 -0400
+	id S1758011Ab2JSDRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Simon Kirby <sim@hostway.ca>
-Subject: [ 09/37] SUNRPC: Ensure that the TCP socket is closed when in CLOSE_WAIT
-Date: Thu, 18 Oct 2012 20:16:32 -0700
-Message-Id: <20121019031304.343241645@linuxfoundation.org>
+        Simon Kirby <sim@hostway.ca>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [ 08/37] firewire: cdev: fix user memory corruption (i386 userland on amd64 kernel)
+Date: Thu, 18 Oct 2012 20:16:31 -0700
+Message-Id: <20121019031304.172269545@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -26,86 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-commit a519fc7a70d1a918574bb826cc6905b87b482eb9 upstream.
+commit 790198f74c9d1b46b6a89504361b1a844670d050 upstream.
 
-Instead of doing a shutdown() call, we need to do an actual close().
-Ditto if/when the server is sending us junk RPC headers.
+Fix two bugs of the /dev/fw* character device concerning the
+FW_CDEV_IOC_GET_INFO ioctl with nonzero fw_cdev_get_info.bus_reset.
+(Practically all /dev/fw* clients issue this ioctl right after opening
+the device.)
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Tested-by: Simon Kirby <sim@hostway.ca>
+Both bugs are caused by sizeof(struct fw_cdev_event_bus_reset) being 36
+without natural alignment and 40 with natural alignment.
+
+ 1) Memory corruption, affecting i386 userland on amd64 kernel:
+    Userland reserves a 36 bytes large buffer, kernel writes 40 bytes.
+    This has been first found and reported against libraw1394 if
+    compiled with gcc 4.7 which happens to order libraw1394's stack such
+    that the bug became visible as data corruption.
+
+ 2) Information leak, affecting all kernel architectures except i386:
+    4 bytes of random kernel stack data were leaked to userspace.
+
+Hence limit the respective copy_to_user() to the 32-bit aligned size of
+struct fw_cdev_event_bus_reset.
+
+Reported-by: Simon Kirby <sim@hostway.ca>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/xprtsock.c |   21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
+ drivers/firewire/core-cdev.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -1015,6 +1015,16 @@ static void xs_udp_data_ready(struct soc
- 	read_unlock_bh(&sk->sk_callback_lock);
- }
- 
-+/*
-+ * Helper function to force a TCP close if the server is sending
-+ * junk and/or it has put us in CLOSE_WAIT
-+ */
-+static void xs_tcp_force_close(struct rpc_xprt *xprt)
-+{
-+	set_bit(XPRT_CONNECTION_CLOSE, &xprt->state);
-+	xprt_force_disconnect(xprt);
-+}
-+
- static inline void xs_tcp_read_fraghdr(struct rpc_xprt *xprt, struct xdr_skb_reader *desc)
- {
- 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
-@@ -1041,7 +1051,7 @@ static inline void xs_tcp_read_fraghdr(s
- 	/* Sanity check of the record length */
- 	if (unlikely(transport->tcp_reclen < 8)) {
- 		dprintk("RPC:       invalid TCP record fragment length\n");
--		xprt_force_disconnect(xprt);
-+		xs_tcp_force_close(xprt);
- 		return;
+--- a/drivers/firewire/core-cdev.c
++++ b/drivers/firewire/core-cdev.c
+@@ -471,8 +471,8 @@ static int ioctl_get_info(struct client
+ 	client->bus_reset_closure = a->bus_reset_closure;
+ 	if (a->bus_reset != 0) {
+ 		fill_bus_reset_event(&bus_reset, client);
+-		ret = copy_to_user(u64_to_uptr(a->bus_reset),
+-				   &bus_reset, sizeof(bus_reset));
++		/* unaligned size of bus_reset is 36 bytes */
++		ret = copy_to_user(u64_to_uptr(a->bus_reset), &bus_reset, 36);
  	}
- 	dprintk("RPC:       reading TCP record fragment of length %d\n",
-@@ -1122,7 +1132,7 @@ static inline void xs_tcp_read_calldir(s
- 		break;
- 	default:
- 		dprintk("RPC:       invalid request message type\n");
--		xprt_force_disconnect(&transport->xprt);
-+		xs_tcp_force_close(&transport->xprt);
- 	}
- 	xs_tcp_check_fraghdr(transport);
- }
-@@ -1445,6 +1455,8 @@ static void xs_tcp_cancel_linger_timeout
- static void xs_sock_mark_closed(struct rpc_xprt *xprt)
- {
- 	smp_mb__before_clear_bit();
-+	clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
-+	clear_bit(XPRT_CONNECTION_CLOSE, &xprt->state);
- 	clear_bit(XPRT_CLOSE_WAIT, &xprt->state);
- 	clear_bit(XPRT_CLOSING, &xprt->state);
- 	smp_mb__after_clear_bit();
-@@ -1502,8 +1514,8 @@ static void xs_tcp_state_change(struct s
- 		break;
- 	case TCP_CLOSE_WAIT:
- 		/* The server initiated a shutdown of the socket */
--		xprt_force_disconnect(xprt);
- 		xprt->connect_cookie++;
-+		xs_tcp_force_close(xprt);
- 	case TCP_CLOSING:
- 		/*
- 		 * If the server closed down the connection, make sure that
-@@ -2146,8 +2158,7 @@ static void xs_tcp_setup_socket(struct w
- 		/* We're probably in TIME_WAIT. Get rid of existing socket,
- 		 * and retry
- 		 */
--		set_bit(XPRT_CONNECTION_CLOSE, &xprt->state);
--		xprt_force_disconnect(xprt);
-+		xs_tcp_force_close(xprt);
- 		break;
- 	case -ECONNREFUSED:
- 	case -ECONNRESET:
+ 	if (ret == 0 && list_empty(&client->link))
+ 		list_add_tail(&client->link, &client->device->client_list);
 
 
