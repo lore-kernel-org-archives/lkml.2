@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab2JSGr5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 02:47:57 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:39659 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783Ab2JSGr4 (ORCPT
+	id S1753004Ab2JSGvv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 02:51:51 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:33489 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713Ab2JSGvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 02:47:56 -0400
-X-IronPort-AV: E=Sophos;i="4.80,610,1344211200"; 
-   d="scan'208";a="15268085"
-Message-ID: <1350629274.28188.48.camel@dagon.hellion.org.uk>
-Subject: Re: [Xen-devel] [PATCH V3 2/6]: PVH: use native irq, enable
- callback, use HVM ring ops, smp, ...
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 19 Oct 2012 07:47:54 +0100
-In-Reply-To: <20121018150359.794768d2@mantra.us.oracle.com>
-References: <20121017173005.73a03eec@mantra.us.oracle.com>
-	 <1350557077.2460.113.camel@zakaz.uk.xensource.com>
-	 <20121018150359.794768d2@mantra.us.oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.4.3-1 
+	Fri, 19 Oct 2012 02:51:50 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <507F86BD.7070201@jp.fujitsu.com>
+References: <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com>
+ <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com>
+ <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com>
+ <20121017040515.GA13505@redhat.com> <alpine.DEB.2.00.1210162222100.26279@chino.kir.corp.google.com>
+ <20121017181413.GA16805@redhat.com> <alpine.DEB.2.00.1210171219010.28214@chino.kir.corp.google.com>
+ <20121017193229.GC16805@redhat.com> <alpine.DEB.2.00.1210171237130.28214@chino.kir.corp.google.com>
+ <20121017194501.GA24400@redhat.com> <alpine.DEB.2.00.1210171318400.28214@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1210171428540.20712@chino.kir.corp.google.com>
+ <507F803A.8000900@jp.fujitsu.com> <507F86BD.7070201@jp.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Fri, 19 Oct 2012 02:51:29 -0400
+Message-ID: <CAHGf_=r9ynudaetANyEng64OSXOsLqdQ1SXHb0Z9AnAr23ahZw@mail.gmail.com>
+Subject: Re: [patch for-3.7 v2] mm, mempolicy: avoid taking mutex inside
+ spinlock when reading numa_maps
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, bhutchings@solarflare.com,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-18 at 23:03 +0100, Mukesh Rathor wrote:
-> On Thu, 18 Oct 2012 11:44:37 +0100
-> Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> 
-> > On Thu, 2012-10-18 at 01:30 +0100, Mukesh Rathor wrote:
-> > > PVH: make gdt_frames[]/gdt_ents into a union with {gdtaddr, gdtsz},
-> > > PVH only needs to send down gdtaddr and gdtsz. irq.c: PVH uses
-> > > native_irq_ops. vcpu hotplug is currently not available for PVH.
-> > > events.c: setup callback vector for PVH. smp.c: This pertains to
-> > > bringing up smp vcpus. PVH runs in ring 0, so syscalls are native.
-> > > Also, the vcpu context is send down via the hcall to be set in the
-> > > vmcs. gdtaddr and gdtsz are unionionized as PVH only needs to send
-> > > these two to be set in the vmcs. Finally, PVH ring ops uses HVM
-> > > paths for xenbus.
-> > > 
-> > > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > > ---
-> > >  arch/x86/include/asm/xen/interface.h |   11 +++++-
-> > >  arch/x86/xen/irq.c                   |    5 ++-
-> > >  arch/x86/xen/p2m.c                   |    2 +-
-> > >  arch/x86/xen/smp.c                   |   75
-> > > ++++++++++++++++++++++------------ drivers/xen/cpu_hotplug.c
-> > > |    4 +- drivers/xen/events.c                 |    9 ++++-
-> > >  drivers/xen/xenbus/xenbus_client.c   |    3 +-
-> > 
-> > This patch seems to have been horribly whitespace damaged.
-> 
-> Hmm.. not sure what happened. Resending. See another email.
-> 
-> > Have you seen "git send-email" ? It's very useful for avoiding this
-> > sort of thing and also takes a lot of the grunt work out of reposting
-> > a series.
-> 
-> > It also chains the patches as replies to the introductory zero-th mail
-> > -- which is something I've been meaning to ask you to do for a while.
-> > It's useful because it joins the series together in a thread which
-> > makes it easier to keep track of in my INBOX.
-> 
-> I prefer different thread-sets for different version. Otherwise too
-> many emails makes much harder to manage and figure. Besides, as
-> comments come in, path x of y,  may contain different files/changes in
-> a subsequent version.
+>> Can't we have another way to fix ? like this ? too ugly ?
+>> Again, I'm sorry if I misunderstand the points.
+>>
+> Sorry this patch itself may be buggy. please don't test..
+> I missed that kernel/exit.c sets task->mempolicy to be NULL.
+> fixed one here.
+>
+> --
+> From 5581c71e68a7f50e52fd67cca00148911023f9f5 Mon Sep 17 00:00:00 2001
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Thu, 18 Oct 2012 13:50:29 +0900
+>
+> Subject: [PATCH] hold task->mempolicy while numa_maps scans.
+>
+>  /proc/<pid>/numa_maps scans vma and show mempolicy under
+>  mmap_sem. It sometimes accesses task->mempolicy which can
+>  be freed without mmap_sem and numa_maps can show some
+>  garbage while scanning.
+>
+> This patch tries to take reference count of task->mempolicy at reading
+> numa_maps before calling get_vma_policy(). By this, task->mempolicy
+> will not be freed until numa_maps reaches its end.
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>
+> V1->V2
+>  -  access task->mempolicy only once and remember it.  Becase kernel/exit.c
+>     can overwrite it.
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-I meant one thread per posting, not one thread for all all them. Which
-seems to be what you are saying you prefer but not what you are doing.
-
-Ian.
-
-
+Ok, this is acceptable to me. go ahead.
