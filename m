@@ -1,107 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758049Ab2JSTU2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 15:20:28 -0400
-Received: from nm16-vm3.bullet.mail.gq1.yahoo.com ([98.137.177.251]:36346 "EHLO
-	nm16-vm3.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756843Ab2JSTU0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 15:20:26 -0400
-X-Greylist: delayed 353 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Oct 2012 15:20:26 EDT
-X-Yahoo-Newman-Id: 942086.78942.bm@smtp101.rog.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: hhEN0kIVM1loRJFNieR7sZKZEkQerlaZTJKnvA_nlTNqjr1
- Wy3IaIIE_Y_1nCWbxBMK0qrQ1hDrM5haPKxOATw1iqn67iG77IsSS_XrbeAy
- y4cCILv5On9jAKo_mXaUW8t7mVIvGhJccs0RSUaERbtiWzdUyJi.bK7cQZxH
- Ax6yFzBRgAzXPIXWYRJhWipWlH.m8BEpsqm7NhsZgUjMjTLSRj8hbHt2LgPj
- uxsZ8co6506h4vWodG1FAjLpzqgD15OP57c0FsK6uukuXB1EWTs5Zbu1LAr2
- S49zs1BBJ7J6sjfxOX7u1mlVZuhWe9DGTgax2GAeOdjNU2W4o48lUN9lqt2U
- DkgJukjWqUC6JpUnKQ1W2k4j6YcipqlC45csm5r_n7zAm6l0jMDG0BTN_sse
- gHHKx4JnKajta_3LfxNpEXMFGOxc3Zsbb1SLh41LbAQT8BYTOoeRkUXx28Zl
- n9fYXW7T1sn3ZnWVMUJoYN1qCZk8IIx7AFhDrLUtosQ44w.NVAw--
-X-Yahoo-SMTP: rZzhDImswBA_40COIyZI42.8nAz5YXic.zo1v550XQVtX7k-
-From: Shawn Starr <shawn.starr@rogers.com>
-To: linux-kernel@vger.kernel.org
-Subject: [3.6.x][e1000e] - Regression - Unable to receive packets if MTU == 1500
-Date: Fri, 19 Oct 2012 15:14:27 -0400
-Message-ID: <2991283.pW8E6b5cIe@segfault.sh0n.net>
-Organization: sh0n.net
-User-Agent: KMail/4.9.2 (Linux/3.6.2-2.fc18.x86_64; KDE/4.9.2; x86_64; ; )
+	id S1757984Ab2JST3U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 15:29:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49878 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757094Ab2JST3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 15:29:19 -0400
+Date: Fri, 19 Oct 2012 15:29:01 -0400
+From: Dave Jones <davej@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: MAX_LOCKDEP_ENTRIES too low  (called from ioc_release_fn)
+Message-ID: <20121019192901.GA8468@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Peter Zijlstra <peterz@infradead.org>, Jens Axboe <axboe@kernel.dk>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Ingo Molnar <mingo@elte.hu>
+References: <20121018015312.GA29865@redhat.com>
+ <507F9944.50505@kernel.dk>
+ <20121019052136.GA30852@redhat.com>
+ <1350650972.30157.34.camel@twins>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350650972.30157.34.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello kernel folks,
+On Fri, Oct 19, 2012 at 02:49:32PM +0200, Peter Zijlstra wrote:
 
-I recently decided to reinstall my Lenovo W500 laptop and found I wasn't able 
-to get DHCP leases, I wasn't able to install over PXE (when getting the IP a 
-second time within the OS)
+ > Of course, if you do run out of lock classes, the next thing to do is
+ > to find the offending lock classes.  First, the following command gives
+ > you the number of lock classes currently in use along with the maximum:
+ > 
+ >         grep "lock-classes" /proc/lockdep_stats
+ > 
+ > This command produces the following output on a modest system:
+ > 
+ >          lock-classes:                          748 [max: 8191]
 
-Fedora is currently using kernel-3.6.2-2.fc18.x86_64 (Pre-beta)
+After the BUG gets hit..
 
-The only difference I noticed was in my old install of Fedora, I had added 
-MTU=9000 to the interface config while using a 3.5 kernel, not knowing 3.6.x 
-seems to break things.
+ lock-classes:                         1726 [max: 8191]
 
-I have noticed tx unit hang errors sometimes, but not when MTU is above 1500.
+ > If the number allocated (748 above) increases continually over time,
+ > then there is likely a leak.  The following command can be used to
+ > identify the leaking lock classes:
+ > 
+ >         grep "BD" /proc/lockdep
+ > 
+ > Run the command and save the output, then compare against the output from
+ > a later run of this command to identify the leakers.  This same output
+ > can also help you find situations where runtime lock initialization has
+ > been omitted.
 
-PCI info:
+I've not had chance to do this, because after the BUG, lockdep turns itself off,
+and I've not rebooted. I'm probably not going to get to this until after the weekend.
 
-00:19.0 Ethernet controller: Intel Corporation 82567LM Gigabit Network 
-Connection (rev 03)
-        Subsystem: Lenovo Device 20ee
-        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR+ FastB2B- DisINTx+
-        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- 
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-        Latency: 0
-        Interrupt: pin A routed to IRQ 46
-        Region 0: Memory at fc000000 (32-bit, non-prefetchable) [size=128K]
-        Region 1: Memory at fc025000 (32-bit, non-prefetchable) [size=4K]
-        Region 2: I/O ports at 1840 [size=32]
-        Capabilities: [c8] Power Management version 2
-                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA 
-PME(D0+,D1-,D2-,D3hot+,D3cold+)
-                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
-        Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
-                Address: 00000000fee0100c  Data: 41a2
-        Capabilities: [e0] PCI Advanced Features
-                AFCap: TP+ FLR+
-                AFCtrl: FLR-
-                AFStatus: TP-
-        Kernel driver in use: e1000e
+There's just a *lot* of dependancies.
 
-e1000e conversation log:
+Here's the full output http://codemonkey.org.uk/junk/lockdep
 
-[   12.653816] e1000e: Intel(R) PRO/1000 Network Driver - 2.0.0-k
-[   12.653819] e1000e: Copyright(c) 1999 - 2012 Intel Corporation.
-[   12.653855] e1000e 0000:00:19.0: setting latency timer to 64
-[   12.653938] e1000e 0000:00:19.0: Interrupt Throttling Rate (ints/sec) set 
-to dynamic conservative mode
-[   12.653980] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-[   12.844121] e1000e 0000:00:19.0: eth0: (PCI Express:2.5GT/s:Width x1) 
-00:22:68:0c:96:e3
-[   12.844124] e1000e 0000:00:19.0: eth0: Intel(R) PRO/1000 Network Connection
-[   12.844150] e1000e 0000:00:19.0: eth0: MAC: 7, PHY: 8, PBA No: 1008FF-0FF
-[   17.459570] e1000e 0000:00:19.0: eth0: changing MTU from 1500 to 9000
-[   17.459577] e1000e 0000:00:19.0: Interrupt Throttle Rate turned off
-[   17.948121] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-[   18.049164] e1000e 0000:00:19.0: irq 46 for MSI/MSI-X
-[   20.442936] e1000e: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow 
-Control: Rx/Tx
+the top few backwards deps..
 
-When I set MTU = 1500 (2000 works), it will stop receiving packets, it also 
-disables Interrupt Throttling when MTU is set higher.
+ffffffff81c8f218 FD:    1 BD: 1201 -.-.-.: pool_lock
+ffffffff82ae1210 FD:    2 BD: 1200 -.-.-.: &obj_hash[i].lock
+ffffffff820677c1 FD:    1 BD: 1131 -.-.-.: &rt_rq->rt_runtime_lock
+ffffffff82066949 FD:    3 BD: 1131 -.-.-.: &cpu_base->lock
+ffffffff820221c0 FD:    1 BD: 1130 -.-.-.: &sig->cputimer.lock
+ffffffff820677b8 FD:    5 BD: 1129 -.-.-.: &rt_b->rt_runtime_lock
+ffffffff82067675 FD:    3 BD: 1129 ..-.-.: &rq->lock/1
+ffffffff82067674 FD:    8 BD: 1128 -.-.-.: &rq->lock
+ffffffff8298bbd0 FD:    1 BD: 1006 -.-.-.: &(&n->list_lock)->rlock
 
-After testing reasons why it wasn't get a DHCP lease, I decided to bump the 
-MTU to 9000 for Jumbo Frames and as soon as I did this, I was able to get a 
-lease and the network functioned.
-
-Can anyone else report regressions?
-
-Thanks,
-Shawn.
+	Dave
 
