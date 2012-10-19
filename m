@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757625Ab2JSCxs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:53:48 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52559 "EHLO mail.kernel.org"
+	id S965048Ab2JSCta (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:49:30 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52428 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965052Ab2JSCtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:49:33 -0400
+	id S964974Ab2JSCtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:49:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peter Huewe <peter.huewe@infineon.com>,
-        Kent Yoder <key@linux.vnet.ibm.com>
-Subject: [ 66/76] tpm: Propagate error from tpm_transmit to fix a timeout hang
-Date: Thu, 18 Oct 2012 19:47:30 -0700
-Message-Id: <20121019024400.747115973@linuxfoundation.org>
+        Egbert Eich <eich@suse.de>, Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 57/76] drm/radeon: Dont destroy I2C Bus Rec in radeon_ext_tmds_enc_destroy().
+Date: Thu, 18 Oct 2012 19:47:21 -0700
+Message-Id: <20121019024359.292554513@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -26,95 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Huewe <peter.huewe@infineon.com>
+From: Egbert Eich <eich@suse.de>
 
-commit abce9ac292e13da367bbd22c1f7669f988d931ac upstream.
+commit 082918471139b07964967cfe5f70230909c82ae1 upstream.
 
-tpm_write calls tpm_transmit without checking the return value and
-assigns the return value unconditionally to chip->pending_data, even if
-it's an error value.
-This causes three bugs.
+radeon_i2c_fini() walks thru the list of I2C bus recs rdev->i2c_bus[]
+to destroy each of them.
+radeon_ext_tmds_enc_destroy() however also has code to destroy it's
+associated I2C bus rec which has been obtained by radeon_i2c_lookup()
+and is therefore also in the i2c_bus[] list.
+This causes a double free resulting in a kernel panic when unloading
+the radeon driver.
+Removing destroy code from radeon_ext_tmds_enc_destroy() fixes this
+problem.
 
-So if we write to /dev/tpm0 with a tpm_param_size bigger than
-TPM_BUFSIZE=0x1000 (e.g. 0x100a)
-and a bufsize also bigger than TPM_BUFSIZE (e.g. 0x100a)
-tpm_transmit returns -E2BIG which is assigned to chip->pending_data as
--7, but tpm_write returns that TPM_BUFSIZE bytes have been successfully
-been written to the TPM, altough this is not true (bug #1).
+agd5f: fix compiler warning
 
-As we did write more than than TPM_BUFSIZE bytes but tpm_write reports
-that only TPM_BUFSIZE bytes have been written the vfs tries to write
-the remaining bytes (in this case 10 bytes) to the tpm device driver via
-tpm_write which then blocks at
-
- /* cannot perform a write until the read has cleared
- either via tpm_read or a user_read_timer timeout */
- while (atomic_read(&chip->data_pending) != 0)
-	 msleep(TPM_TIMEOUT);
-
-for 60 seconds, since data_pending is -7 and nobody is able to
-read it (since tpm_read luckily checks if data_pending is greater than
-0) (#bug 2).
-
-After that the remaining bytes are written to the TPM which are
-interpreted by the tpm as a normal command. (bug #3)
-So if the last bytes of the command stream happen to be a e.g.
-tpm_force_clear this gets accidentally sent to the TPM.
-
-This patch fixes all three bugs, by propagating the error code of
-tpm_write and returning -E2BIG if the input buffer is too big,
-since the response from the tpm for a truncated value is bogus anyway.
-Moreover it returns -EBUSY to userspace if there is a response ready to be
-read.
-
-Signed-off-by: Peter Huewe <peter.huewe@infineon.com>
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+Signed-off-by: Egbert Eich <eich@suse.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/tpm/tpm.c |   21 ++++++++++++++-------
- 1 file changed, 14 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -1186,17 +1186,20 @@ ssize_t tpm_write(struct file *file, con
- 		  size_t size, loff_t *off)
+--- a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
++++ b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
+@@ -974,11 +974,7 @@ static void radeon_legacy_tmds_ext_mode_
+ static void radeon_ext_tmds_enc_destroy(struct drm_encoder *encoder)
  {
- 	struct tpm_chip *chip = file->private_data;
--	size_t in_size = size, out_size;
-+	size_t in_size = size;
-+	ssize_t out_size;
- 
- 	/* cannot perform a write until the read has cleared
--	   either via tpm_read or a user_read_timer timeout */
--	while (atomic_read(&chip->data_pending) != 0)
--		msleep(TPM_TIMEOUT);
--
--	mutex_lock(&chip->buffer_mutex);
-+	   either via tpm_read or a user_read_timer timeout.
-+	   This also prevents splitted buffered writes from blocking here.
-+	*/
-+	if (atomic_read(&chip->data_pending) != 0)
-+		return -EBUSY;
- 
- 	if (in_size > TPM_BUFSIZE)
--		in_size = TPM_BUFSIZE;
-+		return -E2BIG;
-+
-+	mutex_lock(&chip->buffer_mutex);
- 
- 	if (copy_from_user
- 	    (chip->data_buffer, (void __user *) buf, in_size)) {
-@@ -1206,6 +1209,10 @@ ssize_t tpm_write(struct file *file, con
- 
- 	/* atomic tpm command send and result receive */
- 	out_size = tpm_transmit(chip, chip->data_buffer, TPM_BUFSIZE);
-+	if (out_size < 0) {
-+		mutex_unlock(&chip->buffer_mutex);
-+		return out_size;
-+	}
- 
- 	atomic_set(&chip->data_pending, out_size);
- 	mutex_unlock(&chip->buffer_mutex);
+ 	struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
+-	struct radeon_encoder_ext_tmds *tmds = radeon_encoder->enc_priv;
+-	if (tmds) {
+-		if (tmds->i2c_bus)
+-			radeon_i2c_destroy(tmds->i2c_bus);
+-	}
++	/* don't destroy the i2c bus record here, this will be done in radeon_i2c_fini */
+ 	kfree(radeon_encoder->enc_priv);
+ 	drm_encoder_cleanup(encoder);
+ 	kfree(radeon_encoder);
 
 
