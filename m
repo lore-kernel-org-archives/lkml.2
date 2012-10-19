@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964842Ab2JSCsm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:48:42 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51984 "EHLO mail.kernel.org"
+	id S964901Ab2JSCsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:48:50 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52100 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757551Ab2JSCsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:48:37 -0400
+	id S964870Ab2JSCsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:48:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sasha Levin <levinsasha928@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Sage Weil <sage@inktank.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: [ 17/76] tmpfs,ceph,gfs2,isofs,reiserfs,xfs: fix fh_len checking
-Date: Thu, 18 Oct 2012 19:46:41 -0700
-Message-Id: <20121019024352.876871241@linuxfoundation.org>
+        Simon Kirby <sim@hostway.ca>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [ 27/76] firewire: cdev: fix user memory corruption (i386 userland on amd64 kernel)
+Date: Thu, 18 Oct 2012 19:46:51 -0700
+Message-Id: <20121019024354.484885347@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -28,196 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-commit 35c2a7f4908d404c9124c2efc6ada4640ca4d5d5 upstream.
+commit 790198f74c9d1b46b6a89504361b1a844670d050 upstream.
 
-Fuzzing with trinity oopsed on the 1st instruction of shmem_fh_to_dentry(),
-	u64 inum = fid->raw[2];
-which is unhelpfully reported as at the end of shmem_alloc_inode():
+Fix two bugs of the /dev/fw* character device concerning the
+FW_CDEV_IOC_GET_INFO ioctl with nonzero fw_cdev_get_info.bus_reset.
+(Practically all /dev/fw* clients issue this ioctl right after opening
+the device.)
 
-BUG: unable to handle kernel paging request at ffff880061cd3000
-IP: [<ffffffff812190d0>] shmem_alloc_inode+0x40/0x40
-Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Call Trace:
- [<ffffffff81488649>] ? exportfs_decode_fh+0x79/0x2d0
- [<ffffffff812d77c3>] do_handle_open+0x163/0x2c0
- [<ffffffff812d792c>] sys_open_by_handle_at+0xc/0x10
- [<ffffffff83a5f3f8>] tracesys+0xe1/0xe6
+Both bugs are caused by sizeof(struct fw_cdev_event_bus_reset) being 36
+without natural alignment and 40 with natural alignment.
 
-Right, tmpfs is being stupid to access fid->raw[2] before validating that
-fh_len includes it: the buffer kmalloc'ed by do_sys_name_to_handle() may
-fall at the end of a page, and the next page not be present.
+ 1) Memory corruption, affecting i386 userland on amd64 kernel:
+    Userland reserves a 36 bytes large buffer, kernel writes 40 bytes.
+    This has been first found and reported against libraw1394 if
+    compiled with gcc 4.7 which happens to order libraw1394's stack such
+    that the bug became visible as data corruption.
 
-But some other filesystems (ceph, gfs2, isofs, reiserfs, xfs) are being
-careless about fh_len too, in fh_to_dentry() and/or fh_to_parent(), and
-could oops in the same way: add the missing fh_len checks to those.
+ 2) Information leak, affecting all kernel architectures except i386:
+    4 bytes of random kernel stack data were leaked to userspace.
 
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Sage Weil <sage@inktank.com>
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Hence limit the respective copy_to_user() to the 32-bit aligned size of
+struct fw_cdev_event_bus_reset.
+
+Reported-by: Simon Kirby <sim@hostway.ca>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ceph/export.c    |   18 ++++++++++++++----
- fs/gfs2/export.c    |    4 ++++
- fs/isofs/export.c   |    2 +-
- fs/reiserfs/inode.c |    6 +++++-
- fs/xfs/xfs_export.c |    3 +++
- mm/shmem.c          |    6 ++++--
- 6 files changed, 31 insertions(+), 8 deletions(-)
+ drivers/firewire/core-cdev.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/ceph/export.c
-+++ b/fs/ceph/export.c
-@@ -99,7 +99,7 @@ static int ceph_encode_fh(struct inode *
-  * FIXME: we should try harder by querying the mds for the ino.
-  */
- static struct dentry *__fh_to_dentry(struct super_block *sb,
--				     struct ceph_nfs_fh *fh)
-+				     struct ceph_nfs_fh *fh, int fh_len)
- {
- 	struct ceph_mds_client *mdsc = ceph_sb_to_client(sb)->mdsc;
- 	struct inode *inode;
-@@ -107,6 +107,9 @@ static struct dentry *__fh_to_dentry(str
- 	struct ceph_vino vino;
- 	int err;
- 
-+	if (fh_len < sizeof(*fh) / 4)
-+		return ERR_PTR(-ESTALE);
-+
- 	dout("__fh_to_dentry %llx\n", fh->ino);
- 	vino.ino = fh->ino;
- 	vino.snap = CEPH_NOSNAP;
-@@ -150,7 +153,7 @@ static struct dentry *__fh_to_dentry(str
-  * convert connectable fh to dentry
-  */
- static struct dentry *__cfh_to_dentry(struct super_block *sb,
--				      struct ceph_nfs_confh *cfh)
-+				      struct ceph_nfs_confh *cfh, int fh_len)
- {
- 	struct ceph_mds_client *mdsc = ceph_sb_to_client(sb)->mdsc;
- 	struct inode *inode;
-@@ -158,6 +161,9 @@ static struct dentry *__cfh_to_dentry(st
- 	struct ceph_vino vino;
- 	int err;
- 
-+	if (fh_len < sizeof(*cfh) / 4)
-+		return ERR_PTR(-ESTALE);
-+
- 	dout("__cfh_to_dentry %llx (%llx/%x)\n",
- 	     cfh->ino, cfh->parent_ino, cfh->parent_name_hash);
- 
-@@ -207,9 +213,11 @@ static struct dentry *ceph_fh_to_dentry(
- 					int fh_len, int fh_type)
- {
- 	if (fh_type == 1)
--		return __fh_to_dentry(sb, (struct ceph_nfs_fh *)fid->raw);
-+		return __fh_to_dentry(sb, (struct ceph_nfs_fh *)fid->raw,
-+								fh_len);
- 	else
--		return __cfh_to_dentry(sb, (struct ceph_nfs_confh *)fid->raw);
-+		return __cfh_to_dentry(sb, (struct ceph_nfs_confh *)fid->raw,
-+								fh_len);
- }
- 
- /*
-@@ -230,6 +238,8 @@ static struct dentry *ceph_fh_to_parent(
- 
- 	if (fh_type == 1)
- 		return ERR_PTR(-ESTALE);
-+	if (fh_len < sizeof(*cfh) / 4)
-+		return ERR_PTR(-ESTALE);
- 
- 	pr_debug("fh_to_parent %llx/%d\n", cfh->parent_ino,
- 		 cfh->parent_name_hash);
---- a/fs/gfs2/export.c
-+++ b/fs/gfs2/export.c
-@@ -161,6 +161,8 @@ static struct dentry *gfs2_fh_to_dentry(
- 	case GFS2_SMALL_FH_SIZE:
- 	case GFS2_LARGE_FH_SIZE:
- 	case GFS2_OLD_FH_SIZE:
-+		if (fh_len < GFS2_SMALL_FH_SIZE)
-+			return NULL;
- 		this.no_formal_ino = ((u64)be32_to_cpu(fh[0])) << 32;
- 		this.no_formal_ino |= be32_to_cpu(fh[1]);
- 		this.no_addr = ((u64)be32_to_cpu(fh[2])) << 32;
-@@ -180,6 +182,8 @@ static struct dentry *gfs2_fh_to_parent(
- 	switch (fh_type) {
- 	case GFS2_LARGE_FH_SIZE:
- 	case GFS2_OLD_FH_SIZE:
-+		if (fh_len < GFS2_LARGE_FH_SIZE)
-+			return NULL;
- 		parent.no_formal_ino = ((u64)be32_to_cpu(fh[4])) << 32;
- 		parent.no_formal_ino |= be32_to_cpu(fh[5]);
- 		parent.no_addr = ((u64)be32_to_cpu(fh[6])) << 32;
---- a/fs/isofs/export.c
-+++ b/fs/isofs/export.c
-@@ -175,7 +175,7 @@ static struct dentry *isofs_fh_to_parent
- {
- 	struct isofs_fid *ifid = (struct isofs_fid *)fid;
- 
--	if (fh_type != 2)
-+	if (fh_len < 2 || fh_type != 2)
- 		return NULL;
- 
- 	return isofs_export_iget(sb,
---- a/fs/reiserfs/inode.c
-+++ b/fs/reiserfs/inode.c
-@@ -1573,8 +1573,10 @@ struct dentry *reiserfs_fh_to_dentry(str
- 			reiserfs_warning(sb, "reiserfs-13077",
- 				"nfsd/reiserfs, fhtype=%d, len=%d - odd",
- 				fh_type, fh_len);
--		fh_type = 5;
-+		fh_type = fh_len;
+--- a/drivers/firewire/core-cdev.c
++++ b/drivers/firewire/core-cdev.c
+@@ -473,8 +473,8 @@ static int ioctl_get_info(struct client
+ 	client->bus_reset_closure = a->bus_reset_closure;
+ 	if (a->bus_reset != 0) {
+ 		fill_bus_reset_event(&bus_reset, client);
+-		ret = copy_to_user(u64_to_uptr(a->bus_reset),
+-				   &bus_reset, sizeof(bus_reset));
++		/* unaligned size of bus_reset is 36 bytes */
++		ret = copy_to_user(u64_to_uptr(a->bus_reset), &bus_reset, 36);
  	}
-+	if (fh_len < 2)
-+		return NULL;
- 
- 	return reiserfs_get_dentry(sb, fid->raw[0], fid->raw[1],
- 		(fh_type == 3 || fh_type >= 5) ? fid->raw[2] : 0);
-@@ -1583,6 +1585,8 @@ struct dentry *reiserfs_fh_to_dentry(str
- struct dentry *reiserfs_fh_to_parent(struct super_block *sb, struct fid *fid,
- 		int fh_len, int fh_type)
- {
-+	if (fh_type > fh_len)
-+		fh_type = fh_len;
- 	if (fh_type < 4)
- 		return NULL;
- 
---- a/fs/xfs/xfs_export.c
-+++ b/fs/xfs/xfs_export.c
-@@ -189,6 +189,9 @@ xfs_fs_fh_to_parent(struct super_block *
- 	struct xfs_fid64	*fid64 = (struct xfs_fid64 *)fid;
- 	struct inode		*inode = NULL;
- 
-+	if (fh_len < xfs_fileid_length(fileid_type))
-+		return NULL;
-+
- 	switch (fileid_type) {
- 	case FILEID_INO32_GEN_PARENT:
- 		inode = xfs_nfs_get_inode(sb, fid->i32.parent_ino,
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2366,12 +2366,14 @@ static struct dentry *shmem_fh_to_dentry
- {
- 	struct inode *inode;
- 	struct dentry *dentry = NULL;
--	u64 inum = fid->raw[2];
--	inum = (inum << 32) | fid->raw[1];
-+	u64 inum;
- 
- 	if (fh_len < 3)
- 		return NULL;
- 
-+	inum = fid->raw[2];
-+	inum = (inum << 32) | fid->raw[1];
-+
- 	inode = ilookup5(sb, (unsigned long)(inum + fid->raw[0]),
- 			shmem_match, fid->raw);
- 	if (inode) {
+ 	if (ret == 0 && list_empty(&client->link))
+ 		list_add_tail(&client->link, &client->device->client_list);
 
 
