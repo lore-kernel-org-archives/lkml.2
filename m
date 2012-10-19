@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030341Ab2JSD1i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:27:38 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54340 "EHLO mail.kernel.org"
+	id S1030477Ab2JSD2T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:28:19 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54296 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757998Ab2JSDRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:14 -0400
+	id S1757719Ab2JSDRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sasha Levin <levinsasha928@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Sage Weil <sage@inktank.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: [ 06/37] tmpfs,ceph,gfs2,isofs,reiserfs,xfs: fix fh_len checking
-Date: Thu, 18 Oct 2012 20:16:29 -0700
-Message-Id: <20121019031303.860355071@linuxfoundation.org>
+        Michael Olbrich <m.olbrich@pengutronix.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 01/37] ARM: vfp: fix saving d16-d31 vfp registers on v6+ kernels
+Date: Thu, 18 Oct 2012 20:16:24 -0700
+Message-Id: <20121019031303.006228182@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -28,196 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 35c2a7f4908d404c9124c2efc6ada4640ca4d5d5 upstream.
+commit 846a136881b8f73c1f74250bf6acfaa309cab1f2 upstream.
 
-Fuzzing with trinity oopsed on the 1st instruction of shmem_fh_to_dentry(),
-	u64 inum = fid->raw[2];
-which is unhelpfully reported as at the end of shmem_alloc_inode():
+Michael Olbrich reported that his test program fails when built with
+-O2 -mcpu=cortex-a8 -mfpu=neon, and a kernel which supports v6 and v7
+CPUs:
 
-BUG: unable to handle kernel paging request at ffff880061cd3000
-IP: [<ffffffff812190d0>] shmem_alloc_inode+0x40/0x40
-Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Call Trace:
- [<ffffffff81488649>] ? exportfs_decode_fh+0x79/0x2d0
- [<ffffffff812d77c3>] do_handle_open+0x163/0x2c0
- [<ffffffff812d792c>] sys_open_by_handle_at+0xc/0x10
- [<ffffffff83a5f3f8>] tracesys+0xe1/0xe6
+volatile int x = 2;
+volatile int64_t y = 2;
 
-Right, tmpfs is being stupid to access fid->raw[2] before validating that
-fh_len includes it: the buffer kmalloc'ed by do_sys_name_to_handle() may
-fall at the end of a page, and the next page not be present.
+int main() {
+	volatile int a = 0;
+	volatile int64_t b = 0;
+	while (1) {
+		a = (a + x) % (1 << 30);
+		b = (b + y) % (1 << 30);
+		assert(a == b);
+	}
+}
 
-But some other filesystems (ceph, gfs2, isofs, reiserfs, xfs) are being
-careless about fh_len too, in fh_to_dentry() and/or fh_to_parent(), and
-could oops in the same way: add the missing fh_len checks to those.
+and two instances are run.  When built for just v7 CPUs, this program
+works fine.  It uses the "vadd.i64 d19, d18, d16" VFP instruction.
 
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Sage Weil <sage@inktank.com>
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+It appears that we do not save the high-16 double VFP registers across
+context switches when the kernel is built for v6 CPUs.  Fix that.
+
+Tested-By: Michael Olbrich <m.olbrich@pengutronix.de>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ceph/export.c              |   18 ++++++++++++++----
- fs/gfs2/export.c              |    4 ++++
- fs/isofs/export.c             |    2 +-
- fs/reiserfs/inode.c           |    6 +++++-
- fs/xfs/linux-2.6/xfs_export.c |    3 +++
- mm/shmem.c                    |    6 ++++--
- 6 files changed, 31 insertions(+), 8 deletions(-)
+ arch/arm/include/asm/vfpmacros.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/ceph/export.c
-+++ b/fs/ceph/export.c
-@@ -84,7 +84,7 @@ static int ceph_encode_fh(struct dentry
-  * FIXME: we should try harder by querying the mds for the ino.
-  */
- static struct dentry *__fh_to_dentry(struct super_block *sb,
--				     struct ceph_nfs_fh *fh)
-+				     struct ceph_nfs_fh *fh, int fh_len)
- {
- 	struct ceph_mds_client *mdsc = ceph_sb_to_client(sb)->mdsc;
- 	struct inode *inode;
-@@ -92,6 +92,9 @@ static struct dentry *__fh_to_dentry(str
- 	struct ceph_vino vino;
- 	int err;
- 
-+	if (fh_len < sizeof(*fh) / 4)
-+		return ERR_PTR(-ESTALE);
-+
- 	dout("__fh_to_dentry %llx\n", fh->ino);
- 	vino.ino = fh->ino;
- 	vino.snap = CEPH_NOSNAP;
-@@ -136,7 +139,7 @@ static struct dentry *__fh_to_dentry(str
-  * convert connectable fh to dentry
-  */
- static struct dentry *__cfh_to_dentry(struct super_block *sb,
--				      struct ceph_nfs_confh *cfh)
-+				      struct ceph_nfs_confh *cfh, int fh_len)
- {
- 	struct ceph_mds_client *mdsc = ceph_sb_to_client(sb)->mdsc;
- 	struct inode *inode;
-@@ -144,6 +147,9 @@ static struct dentry *__cfh_to_dentry(st
- 	struct ceph_vino vino;
- 	int err;
- 
-+	if (fh_len < sizeof(*cfh) / 4)
-+		return ERR_PTR(-ESTALE);
-+
- 	dout("__cfh_to_dentry %llx (%llx/%x)\n",
- 	     cfh->ino, cfh->parent_ino, cfh->parent_name_hash);
- 
-@@ -193,9 +199,11 @@ static struct dentry *ceph_fh_to_dentry(
- 					int fh_len, int fh_type)
- {
- 	if (fh_type == 1)
--		return __fh_to_dentry(sb, (struct ceph_nfs_fh *)fid->raw);
-+		return __fh_to_dentry(sb, (struct ceph_nfs_fh *)fid->raw,
-+								fh_len);
- 	else
--		return __cfh_to_dentry(sb, (struct ceph_nfs_confh *)fid->raw);
-+		return __cfh_to_dentry(sb, (struct ceph_nfs_confh *)fid->raw,
-+								fh_len);
- }
- 
- /*
-@@ -216,6 +224,8 @@ static struct dentry *ceph_fh_to_parent(
- 
- 	if (fh_type == 1)
- 		return ERR_PTR(-ESTALE);
-+	if (fh_len < sizeof(*cfh) / 4)
-+		return ERR_PTR(-ESTALE);
- 
- 	pr_debug("fh_to_parent %llx/%d\n", cfh->parent_ino,
- 		 cfh->parent_name_hash);
---- a/fs/gfs2/export.c
-+++ b/fs/gfs2/export.c
-@@ -167,6 +167,8 @@ static struct dentry *gfs2_fh_to_dentry(
- 	case GFS2_SMALL_FH_SIZE:
- 	case GFS2_LARGE_FH_SIZE:
- 	case GFS2_OLD_FH_SIZE:
-+		if (fh_len < GFS2_SMALL_FH_SIZE)
-+			return NULL;
- 		this.no_formal_ino = ((u64)be32_to_cpu(fh[0])) << 32;
- 		this.no_formal_ino |= be32_to_cpu(fh[1]);
- 		this.no_addr = ((u64)be32_to_cpu(fh[2])) << 32;
-@@ -186,6 +188,8 @@ static struct dentry *gfs2_fh_to_parent(
- 	switch (fh_type) {
- 	case GFS2_LARGE_FH_SIZE:
- 	case GFS2_OLD_FH_SIZE:
-+		if (fh_len < GFS2_LARGE_FH_SIZE)
-+			return NULL;
- 		parent.no_formal_ino = ((u64)be32_to_cpu(fh[4])) << 32;
- 		parent.no_formal_ino |= be32_to_cpu(fh[5]);
- 		parent.no_addr = ((u64)be32_to_cpu(fh[6])) << 32;
---- a/fs/isofs/export.c
-+++ b/fs/isofs/export.c
-@@ -179,7 +179,7 @@ static struct dentry *isofs_fh_to_parent
- {
- 	struct isofs_fid *ifid = (struct isofs_fid *)fid;
- 
--	if (fh_type != 2)
-+	if (fh_len < 2 || fh_type != 2)
- 		return NULL;
- 
- 	return isofs_export_iget(sb,
---- a/fs/reiserfs/inode.c
-+++ b/fs/reiserfs/inode.c
-@@ -1568,8 +1568,10 @@ struct dentry *reiserfs_fh_to_dentry(str
- 			reiserfs_warning(sb, "reiserfs-13077",
- 				"nfsd/reiserfs, fhtype=%d, len=%d - odd",
- 				fh_type, fh_len);
--		fh_type = 5;
-+		fh_type = fh_len;
- 	}
-+	if (fh_len < 2)
-+		return NULL;
- 
- 	return reiserfs_get_dentry(sb, fid->raw[0], fid->raw[1],
- 		(fh_type == 3 || fh_type >= 5) ? fid->raw[2] : 0);
-@@ -1578,6 +1580,8 @@ struct dentry *reiserfs_fh_to_dentry(str
- struct dentry *reiserfs_fh_to_parent(struct super_block *sb, struct fid *fid,
- 		int fh_len, int fh_type)
- {
-+	if (fh_type > fh_len)
-+		fh_type = fh_len;
- 	if (fh_type < 4)
- 		return NULL;
- 
---- a/fs/xfs/linux-2.6/xfs_export.c
-+++ b/fs/xfs/linux-2.6/xfs_export.c
-@@ -195,6 +195,9 @@ xfs_fs_fh_to_parent(struct super_block *
- 	struct xfs_fid64	*fid64 = (struct xfs_fid64 *)fid;
- 	struct inode		*inode = NULL;
- 
-+	if (fh_len < xfs_fileid_length(fileid_type))
-+		return NULL;
-+
- 	switch (fileid_type) {
- 	case FILEID_INO32_GEN_PARENT:
- 		inode = xfs_nfs_get_inode(sb, fid->i32.parent_ino,
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2348,12 +2348,14 @@ static struct dentry *shmem_fh_to_dentry
- {
- 	struct inode *inode;
- 	struct dentry *dentry = NULL;
--	u64 inum = fid->raw[2];
--	inum = (inum << 32) | fid->raw[1];
-+	u64 inum;
- 
- 	if (fh_len < 3)
- 		return NULL;
- 
-+	inum = fid->raw[2];
-+	inum = (inum << 32) | fid->raw[1];
-+
- 	inode = ilookup5(sb, (unsigned long)(inum + fid->raw[0]),
- 			shmem_match, fid->raw);
- 	if (inode) {
+--- a/arch/arm/include/asm/vfpmacros.h
++++ b/arch/arm/include/asm/vfpmacros.h
+@@ -28,7 +28,7 @@
+ 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
+ 	ldr	\tmp, [\tmp, #0]
+ 	tst	\tmp, #HWCAP_VFPv3D16
+-	ldceq	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
++	ldceql	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
+ 	addne	\base, \base, #32*4		    @ step over unused register space
+ #else
+ 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
+@@ -52,7 +52,7 @@
+ 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
+ 	ldr	\tmp, [\tmp, #0]
+ 	tst	\tmp, #HWCAP_VFPv3D16
+-	stceq	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
++	stceql	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
+ 	addne	\base, \base, #32*4		    @ step over unused register space
+ #else
+ 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
 
 
