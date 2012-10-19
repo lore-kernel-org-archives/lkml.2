@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932905Ab2JSDWx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:22:53 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54511 "EHLO mail.kernel.org"
+	id S1030286Ab2JSDXN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:23:13 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54491 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964943Ab2JSDRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:30 -0400
+	id S964925Ab2JSDR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Matt Carlson <mcarlson@broadcom.com>,
-        Christian Kujau <lists@nerdbynature.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Mike Pagano <mpagano@gentoo.org>
-Subject: [ 19/37] tg3: Apply short DMA frag workaround to 5906
-Date: Thu, 18 Oct 2012 20:16:42 -0700
-Message-Id: <20121019031305.945763469@linuxfoundation.org>
+        Cong Wang <amwang@redhat.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 18/37] pktgen: fix crash when generating IPv6 packets
+Date: Thu, 18 Oct 2012 20:16:41 -0700
+Message-Id: <20121019031305.792752127@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -28,35 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Carlson <mcarlson@broadcom.com>
+From: Amerigo Wang <amwang@redhat.com>
 
-commit b7abee6ef888117f92db370620ebf116a38e3f4d upstream.
+commit 5aa8b572007c4bca1e6d3dd4c4820f1ae49d6bb2 upstream.
 
-5906 devices also need the short DMA fragment workaround.  This patch
-makes the necessary change.
+For IPv6, sizeof(struct ipv6hdr) = 40, thus the following
+expression will result negative:
 
-Signed-off-by: Matt Carlson <mcarlson@broadcom.com>
-Tested-by: Christian Kujau <lists@nerdbynature.de>
+        datalen = pkt_dev->cur_pkt_size - 14 -
+                  sizeof(struct ipv6hdr) - sizeof(struct udphdr) -
+                  pkt_dev->pkt_overhead;
+
+And,  the check "if (datalen < sizeof(struct pktgen_hdr))" will be
+passed as "datalen" is promoted to unsigned, therefore will cause
+a crash later.
+
+This is a quick fix by checking if "datalen" is negative. The following
+patch will increase the default value of 'min_pkt_size' for IPv6.
+
+This bug should exist for a long time, so Cc -stable too.
+
+Signed-off-by: Cong Wang <amwang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Mike Pagano <mpagano@gentoo.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/tg3.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ net/core/pktgen.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/tg3.c
-+++ b/drivers/net/tg3.c
-@@ -13689,8 +13689,9 @@ static int __devinit tg3_get_invariants(
- 	 */
- 	tg3_flag_set(tp, 4G_DMA_BNDRY_BUG);
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -2932,7 +2932,7 @@ static struct sk_buff *fill_packet_ipv6(
+ 		  sizeof(struct ipv6hdr) - sizeof(struct udphdr) -
+ 		  pkt_dev->pkt_overhead;
  
--	if (tg3_flag(tp, 5755_PLUS))
--		tg3_flag_set(tp, SHORT_DMA_BUG);
-+	if (tg3_flag(tp, 5755_PLUS) ||
-+		GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5906)
-+			tg3_flag_set(tp, SHORT_DMA_BUG);
- 	else
- 		tg3_flag_set(tp, 40BIT_DMA_LIMIT_BUG);
- 
+-	if (datalen < sizeof(struct pktgen_hdr)) {
++	if (datalen < 0 || datalen < sizeof(struct pktgen_hdr)) {
+ 		datalen = sizeof(struct pktgen_hdr);
+ 		if (net_ratelimit())
+ 			pr_info("increased datalen to %d\n", datalen);
 
 
