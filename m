@@ -1,46 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030225Ab2JSKIc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 06:08:32 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:33188 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671Ab2JSKIb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 06:08:31 -0400
+	id S1758449Ab2JSKIv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 06:08:51 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:56467 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753539Ab2JSKIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 06:08:49 -0400
+Message-ID: <5081269B.5000603@parallels.com>
+Date: Fri, 19 Oct 2012 14:08:27 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-In-Reply-To: <20121019100123.GD4185@localhost.localdomain>
-References: <1350559712-8514-1-git-send-email-shiraz.hashim@st.com>
-	<CAOh2x=mdtkW=a-xv1BeHxoGsgbF5s+4B8QmZBdvqnWHr30Ap2A@mail.gmail.com>
-	<20121019055943.GA4185@localhost.localdomain>
-	<20121019100123.GD4185@localhost.localdomain>
-Date: Fri, 19 Oct 2012 15:38:30 +0530
-Message-ID: <CAKohponBkH68sNCOt9RQWqLxWVoG0uLMcaxfJSfC-ANwxZ5W8Q@mail.gmail.com>
-Subject: Re: [PATCH] pwm: add spear pwm driver support
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Shiraz Hashim <shiraz.hashim@st.com>
-Cc: thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Rientjes <rientjes@google.com>
+CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        <devel@openvz.org>, <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v5 06/14] memcg: kmem controller infrastructure
+References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-7-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1210171515290.20712@chino.kir.corp.google.com> <507FCA90.8060307@parallels.com> <alpine.DEB.2.00.1210181454100.30894@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1210181454100.30894@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 October 2012 15:31, Shiraz Hashim <shiraz.hashim@st.com> wrote:
-> On Fri, Oct 19, 2012 at 11:29:43AM +0530, Shiraz HASHIM wrote:
->> On Thu, Oct 18, 2012 at 11:11:06PM +0530, viresh kumar wrote:
->> > On Thu, Oct 18, 2012 at 4:58 PM, Shiraz Hashim <shiraz.hashim@st.com> wrote:
->> > > +       pc->mmio_base = devm_request_and_ioremap(&pdev->dev, r);
->> > > +       if (!pc->mmio_base)
->> > > +               return -EADDRNOTAVAIL;
->> >
->> > Just check, i believe there is a routine which will do above two in a single
->> > call..
->> >
+On 10/19/2012 01:59 AM, David Rientjes wrote:
+> On Thu, 18 Oct 2012, Glauber Costa wrote:
+> 
+>>>> @@ -2630,6 +2634,171 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+>>>>  	memcg_check_events(memcg, page);
+>>>>  }
+>>>>  
+>>>> +#ifdef CONFIG_MEMCG_KMEM
+>>>> +static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
+>>>> +{
+>>>> +	return !mem_cgroup_disabled() && !mem_cgroup_is_root(memcg) &&
+>>>> +		(memcg->kmem_accounted & KMEM_ACCOUNTED_MASK);
+>>>> +}
+>>>> +
+>>>> +static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
+>>>> +{
+>>>> +	struct res_counter *fail_res;
+>>>> +	struct mem_cgroup *_memcg;
+>>>> +	int ret = 0;
+>>>> +	bool may_oom;
+>>>> +
+>>>> +	ret = res_counter_charge(&memcg->kmem, size, &fail_res);
+>>>> +	if (ret)
+>>>> +		return ret;
+>>>> +
+>>>> +	/*
+>>>> +	 * Conditions under which we can wait for the oom_killer.
+>>>> +	 * We have to be able to wait, but also, if we can't retry,
+>>>> +	 * we obviously shouldn't go mess with oom.
+>>>> +	 */
+>>>> +	may_oom = (gfp & __GFP_WAIT) && !(gfp & __GFP_NORETRY);
+>>>
+>>> What about gfp & __GFP_FS?
+>>>
 >>
->> I would cross check.
+>> Do you intend to prevent or allow OOM under that flag? I personally
+>> think that anything that accepts to be OOM-killed should have GFP_WAIT
+>> set, so that ought to be enough.
 >>
->
-> Couldn't find a suitable call.
+> 
+> The oom killer in the page allocator cannot trigger without __GFP_FS 
+> because direct reclaim has little chance of being very successful and 
+> thus we end up needlessly killing processes, and that tends to happen 
+> quite a bit if we dont check for it.  Seems like this would also happen 
+> with memcg if mem_cgroup_reclaim() has a large probability of failing?
+> 
 
-Even i couldn't :(
-But i remember there was something similar.. No issues, leave it.
+I can indeed see tests for GFP_FS in some key locations in mm/ before
+calling the OOM Killer.
+
+Should I test for GFP_IO as well? If the idea is preventing OOM to
+trigger for allocations that can write their pages back, how would you
+feel about the following test:
+
+may_oom = (gfp & GFP_KERNEL) && !(gfp & __GFP_NORETRY) ?
+
+Michal, what is your take in here?
+
+
+
