@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030269Ab2JSC4D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:56:03 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52452 "EHLO mail.kernel.org"
+	id S1030246Ab2JSC4A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:56:00 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52464 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756714Ab2JSCtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:49:23 -0400
+	id S1757425Ab2JSCtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:49:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Paul Menzel <paulepanter@users.sourceforge.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Oliver McFadden <oliver.mcfadden@linux.intel.com>,
-        Kenneth Graunke <kenneth@whitecape.org>,
-        Mika Kuoppala <mika.kuoppala@intel.com>
-Subject: [ 59/76] drm/i915: Set guardband clipping workaround bit in the right register.
-Date: Thu, 18 Oct 2012 19:47:23 -0700
-Message-Id: <20121019024359.614340035@linuxfoundation.org>
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [ 60/76] drm/nouveau/bios: fix shadowing of ACPI ROMs larger than 64KiB
+Date: Thu, 18 Oct 2012 19:47:24 -0700
+Message-Id: <20121019024359.774396402@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -29,62 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kenneth Graunke <kenneth@whitecape.org>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit 26b6e44afb58432a5e998da0343757404f9de9ee upstream.
+commit 9a334cd0de2f43b29c192548000692bad52edfc6 upstream.
 
-A previous patch, namely:
-
-commit bf97b276ca04cee9ab65ffd378fa8e6aedd71ff6
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Wed Apr 11 20:42:41 2012 +0200
-
-    drm/i915: implement w/a for incorrect guarband clipping
-
-accidentally set bit 5 in 3D_CHICKEN, which has nothing to do with
-clipping.  This patch changes it to be set in 3D_CHICKEN3, where it
-belongs.
-
-The game "Dante" demonstrates random clipping issues when guardband
-clipping is enabled and bit 5 of 3D_CHICKEN3 isn't set.  So the
-workaround is actually necessary.
-
-Acked-by: Paul Menzel <paulepanter@users.sourceforge.net>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Oliver McFadden <oliver.mcfadden@linux.intel.com>
-Signed-off-by: Kenneth Graunke <kenneth@whitecape.org>
-Reviewed-by: Mika Kuoppala <mika.kuoppala@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_reg.h |    2 +-
- drivers/gpu/drm/i915/intel_pm.c |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_bios.c |   22 ++++++++++------------
+ 1 file changed, 10 insertions(+), 12 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -513,7 +513,7 @@
-  */
- # define _3D_CHICKEN2_WM_READ_PIPELINED			(1 << 14)
- #define _3D_CHICKEN3	0x02090
--#define  _3D_CHICKEN_SF_DISABLE_FASTCLIP_CULL		(1 << 5)
-+#define  _3D_CHICKEN3_SF_DISABLE_FASTCLIP_CULL		(1 << 5)
+--- a/drivers/gpu/drm/nouveau/nouveau_bios.c
++++ b/drivers/gpu/drm/nouveau/nouveau_bios.c
+@@ -196,24 +196,22 @@ static void
+ bios_shadow_acpi(struct nvbios *bios)
+ {
+ 	struct pci_dev *pdev = bios->dev->pdev;
+-	int cnt = 65536 / ROM_BIOS_PAGE;
+-	int ret;
++	int ret, cnt, i;
++	u8  data[3];
  
- #define MI_MODE		0x0209c
- # define VS_TIMER_DISPATCH				(1 << 6)
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -3355,8 +3355,8 @@ static void gen6_init_clock_gating(struc
- 		   GEN6_RCCUNIT_CLOCK_GATE_DISABLE);
+ 	if (!nouveau_acpi_rom_supported(pdev))
+ 		return;
  
- 	/* Bspec says we need to always set all mask bits. */
--	I915_WRITE(_3D_CHICKEN, (0xFFFF << 16) |
--		   _3D_CHICKEN_SF_DISABLE_FASTCLIP_CULL);
-+	I915_WRITE(_3D_CHICKEN3, (0xFFFF << 16) |
-+		   _3D_CHICKEN3_SF_DISABLE_FASTCLIP_CULL);
+-	bios->data = kmalloc(cnt * ROM_BIOS_PAGE, GFP_KERNEL);
+-	if (!bios->data)
+-		return;
+-
+ 	bios->length = 0;
+-	while (cnt--) {
+-		ret = nouveau_acpi_get_bios_chunk(bios->data, bios->length,
+-						  ROM_BIOS_PAGE);
+-		if (ret != ROM_BIOS_PAGE)
+-			return;
++	if (nouveau_acpi_get_bios_chunk(data, 0, 3) == 3)
++		bios->length = data[2] * 512;
  
- 	/*
- 	 * According to the spec the following bits should be
+-		bios->length += ROM_BIOS_PAGE;
++	bios->data = kmalloc(bios->length, GFP_KERNEL);
++	for (i = 0; bios->data && i < bios->length; i += cnt) {
++		cnt = min((bios->length - i), (u32)4096);
++		ret = nouveau_acpi_get_bios_chunk(bios->data, i, cnt);
++		if (ret != cnt)
++			break;
+ 	}
+ }
+ 
 
 
