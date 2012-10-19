@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757554Ab2JSIfe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 04:35:34 -0400
-Received: from ra.se.axis.com ([195.60.68.13]:48126 "EHLO ra.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756296Ab2JSIfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 04:35:30 -0400
-Date: Fri, 19 Oct 2012 10:35:24 +0200
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: starvik@axis.com, yongjun_wei@trendmicro.com.cn,
-        linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] CRIS: locking: fix the return value of
- arch_read_trylock()
-Message-ID: <20121019083524.GH29793@axis.com>
-References: <CAPgLHd9enojK7tbCxWKyHnzgnSYZUGqAiAgevn6uamrw_3t4Mg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd9enojK7tbCxWKyHnzgnSYZUGqAiAgevn6uamrw_3t4Mg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757689Ab2JSIfr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 04:35:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49749 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756296Ab2JSIfn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 04:35:43 -0400
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Xiaotian Feng <xtfeng@gmail.com>, Xiaotian Feng <dannyfeng@tencent.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH] sched, autogroup: fix kernel crashes caused by runtime disable autogroup
+Date: Fri, 19 Oct 2012 16:36:10 +0800
+Message-Id: <1350635770-9189-1-git-send-email-xtfeng@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 10:54:27PM +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> arch_write_trylock() should return 'ret' instead of always
-> return 1.
-> 
-> dpatch engine is used to auto generate this patch.
-> (https://github.com/weiyj/dpatch)
+There's a regression from commit 800d4d30, in autogroup_move_group()
 
-I've taken this into the CRIS-tree, thanks!
+	p->signal->autogroup = autogroup_kref_get(ag);
 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  arch/cris/include/arch-v32/arch/spinlock.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/cris/include/arch-v32/arch/spinlock.h b/arch/cris/include/arch-v32/arch/spinlock.h
-> index f171a66..f132755 100644
-> --- a/arch/cris/include/arch-v32/arch/spinlock.h
-> +++ b/arch/cris/include/arch-v32/arch/spinlock.h
-> @@ -118,7 +118,7 @@ static  inline int arch_write_trylock(arch_rwlock_t *rw)
->  		ret = 1;
->  	}
->  	arch_spin_unlock(&rw->slock);
-> -	return 1;
-> +	return ret;
->  }
->  
->  #define _raw_read_lock_flags(lock, flags) _raw_read_lock(lock)
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+	if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
+		goto out;
+	...
+    out:
+	autogroup_kref_put(prev);
 
-/^JN - Jesper Nilsson
+So kernel changed p's autogroup to ag, but never sched_move_task(p).
+Then previous autogroup of p is released, which may release task_group
+related with p. After commit 8323f26ce, p->sched_task_group might point
+to this stale value, and thus caused kernel crashes.
+
+This is very easy to reproduce, add "kernel.sched_autogroup_enabled = 0"
+to your /etc/sysctl.conf, your system will never boot up. It is not reasonable
+to put the sysctl enabled check in autogroup_move_group(), kernel should check
+it before autogroup_create in sched_autogroup_create_attach().
+
+Reported-by: cwillu <cwillu@cwillu.com>
+Reported-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/sched/auto_group.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/sched/auto_group.c b/kernel/sched/auto_group.c
+index 0984a21..ac62415 100644
+--- a/kernel/sched/auto_group.c
++++ b/kernel/sched/auto_group.c
+@@ -143,15 +143,11 @@ autogroup_move_group(struct task_struct *p, struct autogroup *ag)
+ 
+ 	p->signal->autogroup = autogroup_kref_get(ag);
+ 
+-	if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
+-		goto out;
+-
+ 	t = p;
+ 	do {
+ 		sched_move_task(t);
+ 	} while_each_thread(p, t);
+ 
+-out:
+ 	unlock_task_sighand(p, &flags);
+ 	autogroup_kref_put(prev);
+ }
+@@ -159,8 +155,12 @@ out:
+ /* Allocates GFP_KERNEL, cannot be called under any spinlock */
+ void sched_autogroup_create_attach(struct task_struct *p)
+ {
+-	struct autogroup *ag = autogroup_create();
++	struct autogroup *ag;
++
++	if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
++		return;
+ 
++	ag = autogroup_create();
+ 	autogroup_move_group(p, ag);
+ 	/* drop extra reference added by autogroup_create() */
+ 	autogroup_kref_put(ag);
 -- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+1.7.9.5
+
