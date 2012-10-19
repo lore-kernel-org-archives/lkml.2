@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757157Ab2JSTL3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 15:11:29 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:60008 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754803Ab2JSTL2 (ORCPT
+	id S1757404Ab2JSTPN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 15:15:13 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:40669 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754787Ab2JSTPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 15:11:28 -0400
-Date: Fri, 19 Oct 2012 21:11:15 +0200
-From: Heinz Diehl <htd@fritha.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Heinz Diehl <htd@fancy-poultry.org>, Ben Skeggs <bskeggs@redhat.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [ 60/76] drm/nouveau/bios: fix shadowing of ACPI ROMs larger
- than 64KiB
-Message-ID: <20121019191115.GA1635@fritha.org>
-References: <20121019024350.087156547@linuxfoundation.org>
- <20121019024359.774396402@linuxfoundation.org>
- <20121019160103.GA1570@fritha.org>
- <20121019174807.GA3017@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121019174807.GA3017@kroah.com>
-Organization: private site
-OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.21+66 (70810a88ce9f) (2011-07-01)
-X-Provags-ID: V02:K0:7o1T8x948VKHY4XhOOvdsMccDuriGk2XQXzhl6zuB35
- OucMR+2N8/pTrbGc/bjFQcDMSgMdSalmrYpnRjq7zzRC9QgDzb
- /G1ohD7dql+1bjBVwCl+8dvEX3jgSJ99KwaT5ZMB3MEEMTutGK
- BQhwrOZ3JNPfvxOSIrqFfw6LGbZ474ebNMR07CupwzlW5ypDd4
- yepIKZpyFVvVrrCPoy0yhJAWPDyRGFGr5Rubhoy28Ui5aRuBW6
- Jhm6iOlU9CudNb7USQOKmB0orIgvmpYFkTafEL+ZrWeAmXZDq2
- fJIWaHQF+CGxloPfn444gNakV4RQmxEhGn0e6XWnk8lnd3IBok
- hFCYmQrs23E3AxQjEHPk=
+	Fri, 19 Oct 2012 15:15:12 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH] xen/hvm: If we fail to fetch an HVM parameter print out which flag it is.
+Date: Fri, 19 Oct 2012 15:03:01 -0400
+Message-Id: <1350673381-20342-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.6
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.10.2012, Greg Kroah-Hartman wrote: 
+Makes it easier to troubleshoot in the field.
 
-> Does Linus's 3.7 git tree also crash for you this way?
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ include/xen/hvm.h |   31 +++++++++++++++++++++++++++++--
+ 1 files changed, 29 insertions(+), 2 deletions(-)
 
-Yes, it crashes in the same way with latest linus git 3.7.
-Here's the screenshot:
-
-http://www.fritha.org/crash-linus-git.jpg
+diff --git a/include/xen/hvm.h b/include/xen/hvm.h
+index b193fa2..c2a4238 100644
+--- a/include/xen/hvm.h
++++ b/include/xen/hvm.h
+@@ -5,6 +5,33 @@
+ #include <xen/interface/hvm/params.h>
+ #include <asm/xen/hypercall.h>
+ 
++static const char *param_name(int op)
++{
++	static const char *const names[] = {
++		[HVM_PARAM_CALLBACK_IRQ] = "HVM_PARAM_CALLBACK_IRQ",
++		[HVM_PARAM_STORE_PFN] = "HVM_PARAM_STORE_PFN",
++		[HVM_PARAM_STORE_EVTCHN] = "HVM_PARAM_STORE_EVTCHN",
++		[HVM_PARAM_PAE_ENABLED] = "HVM_PARAM_PAE_ENABLED",
++		[HVM_PARAM_IOREQ_PFN] = "HVM_PARAM_IOREQ_PFN",
++		[HVM_PARAM_BUFIOREQ_PFN] = "HVM_PARAM_BUFIOREQ_PFN",
++		[HVM_PARAM_TIMER_MODE] = "HVM_PARAM_TIMER_MODE",
++		[HVM_PARAM_HPET_ENABLED] = "HVM_PARAM_HPET_ENABLED",
++		[HVM_PARAM_IDENT_PT] = "HVM_PARAM_IDENT_PT",
++		[HVM_PARAM_DM_DOMAIN] = "HVM_PARAM_DM_DOMAIN",
++		[HVM_PARAM_ACPI_S_STATE] = "HVM_PARAM_ACPI_S_STATE",
++		[HVM_PARAM_VM86_TSS] = "HVM_PARAM_VM86_TSS",
++		[HVM_PARAM_VPT_ALIGN] = "HVM_PARAM_VPT_ALIGN",
++		[HVM_PARAM_CONSOLE_PFN] = "HVM_PARAM_CONSOLE_PFN",
++		[HVM_PARAM_CONSOLE_EVTCHN] = "HVM_PARAM_CONSOLE_EVTCHN" };
++
++	if (op >= ARRAY_SIZE(names))
++		return "unknown";
++
++	if (!names[op])
++		return "reserved";
++
++	return names[op];
++}
+ static inline int hvm_get_parameter(int idx, uint64_t *value)
+ {
+ 	struct xen_hvm_param xhv;
+@@ -14,8 +41,8 @@ static inline int hvm_get_parameter(int idx, uint64_t *value)
+ 	xhv.index = idx;
+ 	r = HYPERVISOR_hvm_op(HVMOP_get_param, &xhv);
+ 	if (r < 0) {
+-		printk(KERN_ERR "Cannot get hvm parameter %d: %d!\n",
+-			idx, r);
++		printk(KERN_ERR "Cannot get hvm parameter %s (%d): %d!\n",
++			param_name(idx), idx, r);
+ 		return r;
+ 	}
+ 	*value = xhv.value;
+-- 
+1.7.7.6
 
