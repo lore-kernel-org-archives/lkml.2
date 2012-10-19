@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759313Ab2JSSK0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 14:10:26 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:19402 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752133Ab2JSSKZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 14:10:25 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/JBSPGpTJVpUGEi4XCo9Cp
-Date: Fri, 19 Oct 2012 11:10:19 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Jean Nicolas Graux <jean-nicolas.graux@stericsson.com>,
-        Loic Pallardy <loic.pallardy@st.com>
-Subject: Re: [PATCH v2] pinctrl: reserve pins when states are activated
-Message-ID: <20121019181019.GP4730@atomide.com>
-References: <1350651909-5337-1-git-send-email-linus.walleij@stericsson.com>
+	id S1759326Ab2JSSLP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 14:11:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52328 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757236Ab2JSSLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 14:11:14 -0400
+Date: Fri, 19 Oct 2012 14:11:03 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, tj@kernel.org, axboe@kernel.dk,
+        martin.petersen@oracle.com
+Subject: Re: [PATCH v4 2/2] block: Convert integrity to bvec_alloc_bs()
+Message-ID: <20121019181103.GH27052@redhat.com>
+References: <1350331769-14856-1-git-send-email-koverstreet@google.com>
+ <1350331769-14856-29-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1350651909-5337-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1350331769-14856-29-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Walleij <linus.walleij@stericsson.com> [121019 06:09]:
+On Mon, Oct 15, 2012 at 01:09:02PM -0700, Kent Overstreet wrote:
+> This adds a pointer to the bvec array to struct bio_integrity_payload,
+> instead of the bvecs always being inline; then the bvecs are allocated
+> with bvec_alloc_bs().
 > 
-> Instead: let use reserve the pins when the state is activated
-> and drop them when the state is disabled, i.e. when we move to
-> another state. This way different devices/functions can use the
-> same pins at different times.
+> Changed bvec_alloc_bs() and bvec_free_bs() to take a pointer to a
+> mempool instead of the bioset, so that bio integrity can use a different
+> mempool for its bvecs, and thus avoid a potential deadlock.
+> 
+> This is eventually for immutable bio vecs - immutable bvecs aren't
+> useful if we still have to copy them, hence the need for the pointer.
+> Less code is always nice too, though.
 
-Hmm doesn't this mean that we are now doing lots of extra
-reserving and dropping of pins? Performance is important from
-latency point of view for cases where we need to remux pins
-constantly runtime PM.
+I think this patch should be part of your immutable prep work series or
+later series. First patch is the stand alone fix for bio integrity for
+bio_split() case. I would say post that separately and hopefully martin
+likes it and acks it. It is simple enough and looks right to me though.
 
-Regards,
-
-Tony
+Thanks
+Vivek
