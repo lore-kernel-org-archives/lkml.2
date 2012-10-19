@@ -1,90 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932817Ab2JSWgc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 18:36:32 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:44735 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753694Ab2JSWga (ORCPT
+	id S1755237Ab2JSWhn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 18:37:43 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:63491 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752441Ab2JSWhm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 18:36:30 -0400
-Date: Sat, 20 Oct 2012 00:36:24 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
- (tip/s390 trees related)
-Message-ID: <20121019223624.GA12658@gmail.com>
-References: <20121018172201.b81dcc8fe40868256f532364@canb.auug.org.au>
- <20121018150209.GB17439@linux-mips.org>
- <1350683562.2768.78.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350683562.2768.78.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 19 Oct 2012 18:37:42 -0400
+Message-ID: <1350686261.17901.1.camel@gitbox>
+Subject: Re: [PATCH 1/3] ARM: dts: Update board files for pwm support
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Date: Sat, 20 Oct 2012 11:37:41 +1300
+In-Reply-To: <1350643135-13197-1-git-send-email-linux@prisktech.co.nz>
+References: <1350643135-13197-1-git-send-email-linux@prisktech.co.nz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Thu, 2012-10-18 at 17:02 +0200, Ralf Baechle wrote:
-> >   CC      mm/huge_memory.o
-> > mm/huge_memory.c: In function ???do_huge_pmd_prot_none???:
-> > mm/huge_memory.c:789:3: error: incompatible type for argument 3 of ???update_mmu_cache???
+On Fri, 2012-10-19 at 23:38 +1300, Tony Prisk wrote:
+> This patch adds pwm support to arch-vt8500 board files, and adds
+> the use-case of pwm-backlight.
 > 
-> That appears to have become update_mmu_cache_pmd(), which 
-> makes sense given that there's now architectures that care 
-> about it.
+> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+> ---
+>  arch/arm/boot/dts/vt8500-bv07.dts |    8 ++++++++
+>  arch/arm/boot/dts/vt8500.dtsi     |   29 +++++++++++++++++++++++++++++
+>  arch/arm/boot/dts/wm8505-ref.dts  |    8 ++++++++
+>  arch/arm/boot/dts/wm8505.dtsi     |   29 +++++++++++++++++++++++++++++
+>  arch/arm/boot/dts/wm8650-mid.dts  |    8 ++++++++
+>  arch/arm/boot/dts/wm8650.dtsi     |   17 +++++++++++++----
+>  6 files changed, 95 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/vt8500-bv07.dts b/arch/arm/boot/dts/vt8500-bv07.dts
+> index 567cf4e..3cba367 100644
+> --- a/arch/arm/boot/dts/vt8500-bv07.dts
+> +++ b/arch/arm/boot/dts/vt8500-bv07.dts
+> @@ -33,4 +33,12 @@
+>  			};
+>  		};
+>  	};
+> +
+> +	backlight {
+> +		compatible = "pwm-backlight";
+> +		pwms = <&pwm 0 50000>;
+> +
+> +		brightness-levels = <0 4 8 16 32 64 128 255>;
+> +		default-brightness-level = <5>;
+> +	};
+>  };
+> diff --git a/arch/arm/boot/dts/vt8500.dtsi b/arch/arm/boot/dts/vt8500.dtsi
+> index d8645e9..e196b2e 100644
+> --- a/arch/arm/boot/dts/vt8500.dtsi
+> +++ b/arch/arm/boot/dts/vt8500.dtsi
+> @@ -40,14 +40,43 @@
+>  				#address-cells = <1>;
+>  				#size-cells = <0>;
+>  
+> +				ref25: ref25M {
+> +					#clock-cells = <0>;
+> +					compatible = "fixed-clock";
+> +					clock-frequency = <25000000>;
+> +				};
+> +
+>  				ref24: ref24M {
+>  					#clock-cells = <0>;
+>  					compatible = "fixed-clock";
+>  					clock-frequency = <24000000>;
+>  				};
+> +
+> +				pllb: pllb {
+> +					#clock-cells = <0>;
+> +					compatible = "via,vt8500-pll-clock";
+> +					clocks = <&ref25>;
+> +					reg = <0x204>;
+> +				};
+> +
+> +				clkpwm: pwm {
+> +					#clock-cells = <0>;
+> +					compatible = "via,vt8500-device-clock";
+> +					clocks = <&pllb>;
+> +					divisor-reg = <0x348>;
+> +					enable-reg = <0x250>;
+> +					enable-bit = <14>;
+> +				};
+>  			};
+>  		};
+>  
+> +		pwm: pwm@d8220000 {
+> +			#pwm-cells = <2>;
+> +			compatible = "via,vt8500-pwm";
+> +			reg = <0xd8220000 0x100>;
+> +			clocks = <&clkpwm>;
+> +		};
+> +
+>  		timer@d8130100 {
+>  			compatible = "via,vt8500-timer";
+>  			reg = <0xd8130100 0x28>;
+> diff --git a/arch/arm/boot/dts/wm8505-ref.dts b/arch/arm/boot/dts/wm8505-ref.dts
+> index fd4e248..f51c0ed 100644
+> --- a/arch/arm/boot/dts/wm8505-ref.dts
+> +++ b/arch/arm/boot/dts/wm8505-ref.dts
+> @@ -33,4 +33,12 @@
+>  			};
+>  		};
+>  	};
+> +
+> +	backlight {
+> +		compatible = "pwm-backlight";
+> +		pwms = <&pwm 0 50000>;
+> +
+> +		brightness-levels = <0 4 8 16 32 64 128 255>;
+> +		default-brightness-level = <5>;
+> +	};
+>  };
+> diff --git a/arch/arm/boot/dts/wm8505.dtsi b/arch/arm/boot/dts/wm8505.dtsi
+> index b459691..83c8ec5 100644
+> --- a/arch/arm/boot/dts/wm8505.dtsi
+> +++ b/arch/arm/boot/dts/wm8505.dtsi
+> @@ -54,14 +54,43 @@
+>  				#address-cells = <1>;
+>  				#size-cells = <0>;
+>  
+> +				ref25: ref25M {
+> +					#clock-cells = <0>;
+> +					compatible = "fixed-clock";
+> +					clock-frequency = <25000000>;
+> +				};
+> +
+>  				ref24: ref24M {
+>  					#clock-cells = <0>;
+>  					compatible = "fixed-clock";
+>  					clock-frequency = <24000000>;
+>  				};
+> +
+> +				pllb: pllb {
+> +					#clock-cells = <0>;
+> +					compatible = "via,vt8500-pll-clock";
+> +					clocks = <&ref25>;
+> +					reg = <0x204>;
+> +				};
+> +
+> +				clkpwm: pwm {
+> +					#clock-cells = <0>;
+> +					compatible = "via,vt8500-device-clock";
+> +					clocks = <&pllb>;
+> +					divisor-reg = <0x348>;
+> +					enable-reg = <0x250>;
+> +					enable-bit = <10>;
+> +				};
+>  			};
+>  		};
+>  
+> +		pwm: pwm@d8220000 {
+> +			#pwm-cells = <2>;
+> +			compatible = "via,vt8500-pwm";
+> +			reg = <0xd8220000 0x100>;
+> +			clocks = <&clkpwm>;
+> +		};
+> +
+>  		timer@d8130100 {
+>  			compatible = "via,vt8500-timer";
+>  			reg = <0xd8130100 0x28>;
+> diff --git a/arch/arm/boot/dts/wm8650-mid.dts b/arch/arm/boot/dts/wm8650-mid.dts
+> index cefd938..7a05dd5 100644
+> --- a/arch/arm/boot/dts/wm8650-mid.dts
+> +++ b/arch/arm/boot/dts/wm8650-mid.dts
+> @@ -33,4 +33,12 @@
+>  			};
+>  		};
+>  	};
+> +
+> +	backlight {
+> +		compatible = "pwm-backlight";
+> +		pwms = <&pwm 0 50000>;
+> +
+> +		brightness-levels = <0 4 8 16 32 64 128 255>;
+> +		default-brightness-level = <5>;
+> +	};
+>  };
+> diff --git a/arch/arm/boot/dts/wm8650.dtsi b/arch/arm/boot/dts/wm8650.dtsi
+> index 83b9467..a25d240 100644
+> --- a/arch/arm/boot/dts/wm8650.dtsi
+> +++ b/arch/arm/boot/dts/wm8650.dtsi
+> @@ -75,14 +75,16 @@
+>  					reg = <0x204>;
+>  				};
+>  
+> -				arm: arm {
+> +				clkpwm: pwm {
+>  					#clock-cells = <0>;
+>  					compatible = "via,vt8500-device-clock";
+> -					clocks = <&plla>;
+> -					divisor-reg = <0x300>;
+> +					clocks = <&pllb>;
+> +					divisor-reg = <0x348>;
+> +					enable-reg = <0x250>;
+> +					enable-bit = <10>;
+>  				};
+>  
+> -				sdhc: sdhc {
+> +				clksdhc: sdhc {
+>  					#clock-cells = <0>;
+>  					compatible = "via,vt8500-device-clock";
+>  					clocks = <&pllb>;
+> @@ -94,6 +96,13 @@
+>  			};
+>  		};
+>  
+> +		pwm: pwm@d8220000 {
+> +			#pwm-cells = <2>;
+> +			compatible = "via,vt8500-pwm";
+> +			reg = <0xd8220000 0x100>;
+> +			clocks = <&clkpwm>;
+> +		};
+> +
+>  		timer@d8130100 {
+>  			compatible = "via,vt8500-timer";
+>  			reg = <0xd8130100 0x28>;
 
-Ok, I fixed it as per below. Does everyone agree?
+Please don't pull Patch 1/3 to any trees. I will include in a
+pull-request for arm-soc with other dts updates later on.
 
-Thanks,
+Patch 2/3 + 3/3 can be taken now or Ack'd and I'll do a pull-request
+later.
 
-	Ingo
-
----------------->
->From 6e683978132907ff339e8a01a4d901c75709e62c Mon Sep 17 00:00:00 2001
-From: Ingo Molnar <mingo@kernel.org>
-Date: Sat, 20 Oct 2012 00:33:01 +0200
-Subject: [PATCH] MIPS/thp: Fix update_mmu_cache() cache call
-
-As per recent upstream commit:
-
-  b113da65785d mm: Add and use update_mmu_cache_pmd() in transparent huge page code.
-
-The call in do_huge_pmd_prot_none() needs to call update_mmu_cache_pmd()
-as well.
-
-This resolves a MIPS build error triggered on linux-next.
-
-Reported-by: Ralf Baechle <ralf@linux-mips.org>
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20121018145101.GA17439@linux-mips.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- mm/huge_memory.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 8100c01..57c5018 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -770,7 +770,7 @@ fixup:
- 	/* change back to regular protection */
- 	entry = pmd_modify(entry, vma->vm_page_prot);
- 	set_pmd_at(mm, haddr, pmd, entry);
--	update_mmu_cache(vma, address, entry);
-+	update_mmu_cache_pmd(vma, address, entry);
- 
- unlock:
- 	spin_unlock(&mm->page_table_lock);
+Regards
+Tony P
 
