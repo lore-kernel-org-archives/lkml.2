@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757956Ab2JSDOo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:14:44 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51579 "EHLO mail.kernel.org"
+	id S964910Ab2JSDP3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:15:29 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51556 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757434Ab2JSCrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:45 -0400
+	id S1757411Ab2JSCrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jan Engelhardt <jengelh@inai.de>,
+        Rafal Fitt <rafalf@aplusc.com.pl>, Patrick McHardy <kaber@trash.net>,
         Pablo Neira Ayuso <pablo@netfilter.org>,
         David Miller <davem@davemloft.net>
-Subject: [ 43/62] netfilter: xt_limit: have r->cost != 0 case work
-Date: Thu, 18 Oct 2012 19:45:11 -0700
-Message-Id: <20121019024302.922952186@linuxfoundation.org>
+Subject: [ 41/62] netfilter: nf_ct_expect: fix possible access to uninitialized timer
+Date: Thu, 18 Oct 2012 19:45:09 -0700
+Message-Id: <20121019024302.605586681@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -27,42 +27,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Engelhardt <jengelh@inai.de>
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-commit 82e6bfe2fbc4d48852114c4f979137cd5bf1d1a8 upstream.
+commit 2614f86490122bf51eb7c12ec73927f1900f4e7d upstream.
 
-Commit v2.6.19-rc1~1272^2~41 tells us that r->cost != 0 can happen when
-a running state is saved to userspace and then reinstated from there.
+In __nf_ct_expect_check, the function refresh_timer returns 1
+if a matching expectation is found and its timer is successfully
+refreshed. This results in nf_ct_expect_related returning 0.
+Note that at this point:
 
-Make sure that private xt_limit area is initialized with correct values.
-Otherwise, random matchings due to use of uninitialized memory.
+- the passed expectation is not inserted in the expectation table
+  and its timer was not initialized, since we have refreshed one
+  matching/existing expectation.
 
-Signed-off-by: Jan Engelhardt <jengelh@inai.de>
+- nf_ct_expect_alloc uses kmem_cache_alloc, so the expectation
+  timer is in some undefined state just after the allocation,
+  until it is appropriately initialized.
+
+This can be a problem for the SIP helper during the expectation
+addition:
+
+ ...
+ if (nf_ct_expect_related(rtp_exp) == 0) {
+         if (nf_ct_expect_related(rtcp_exp) != 0)
+                 nf_ct_unexpect_related(rtp_exp);
+ ...
+
+Note that nf_ct_expect_related(rtp_exp) may return 0 for the timer refresh
+case that is detailed above. Then, if nf_ct_unexpect_related(rtcp_exp)
+returns != 0, nf_ct_unexpect_related(rtp_exp) is called, which does:
+
+ spin_lock_bh(&nf_conntrack_lock);
+ if (del_timer(&exp->timeout)) {
+         nf_ct_unlink_expect(exp);
+         nf_ct_expect_put(exp);
+ }
+ spin_unlock_bh(&nf_conntrack_lock);
+
+Note that del_timer always returns false if the timer has been
+initialized.  However, the timer was not initialized since setup_timer
+was not called, therefore, the expectation timer remains in some
+undefined state. If I'm not missing anything, this may lead to the
+removal an unexistent expectation.
+
+To fix this, the optimization that allows refreshing an expectation
+is removed. Now nf_conntrack_expect_related looks more consistent
+to me since it always add the expectation in case that it returns
+success.
+
+Thanks to Patrick McHardy for participating in the discussion of
+this patch.
+
+I think this may be the source of the problem described by:
+http://marc.info/?l=netfilter-devel&m=134073514719421&w=2
+
+Reported-by: Rafal Fitt <rafalf@aplusc.com.pl>
+Acked-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Acked-by: David Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/xt_limit.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ net/netfilter/nf_conntrack_expect.c |   29 ++++++-----------------------
+ 1 file changed, 6 insertions(+), 23 deletions(-)
 
---- a/net/netfilter/xt_limit.c
-+++ b/net/netfilter/xt_limit.c
-@@ -117,11 +117,11 @@ static int limit_mt_check(const struct x
- 
- 	/* For SMP, we only want to use one set of state. */
- 	r->master = priv;
-+	/* User avg in seconds * XT_LIMIT_SCALE: convert to jiffies *
-+	   128. */
-+	priv->prev = jiffies;
-+	priv->credit = user2credits(r->avg * r->burst); /* Credits full. */
- 	if (r->cost == 0) {
--		/* User avg in seconds * XT_LIMIT_SCALE: convert to jiffies *
--		   128. */
--		priv->prev = jiffies;
--		priv->credit = user2credits(r->avg * r->burst); /* Credits full. */
- 		r->credit_cap = priv->credit; /* Credits full. */
- 		r->cost = user2credits(r->avg);
+--- a/net/netfilter/nf_conntrack_expect.c
++++ b/net/netfilter/nf_conntrack_expect.c
+@@ -361,23 +361,6 @@ static void evict_oldest_expect(struct n
  	}
+ }
+ 
+-static inline int refresh_timer(struct nf_conntrack_expect *i)
+-{
+-	struct nf_conn_help *master_help = nfct_help(i->master);
+-	const struct nf_conntrack_expect_policy *p;
+-
+-	if (!del_timer(&i->timeout))
+-		return 0;
+-
+-	p = &rcu_dereference_protected(
+-		master_help->helper,
+-		lockdep_is_held(&nf_conntrack_lock)
+-		)->expect_policy[i->class];
+-	i->timeout.expires = jiffies + p->timeout * HZ;
+-	add_timer(&i->timeout);
+-	return 1;
+-}
+-
+ static inline int __nf_ct_expect_check(struct nf_conntrack_expect *expect)
+ {
+ 	const struct nf_conntrack_expect_policy *p;
+@@ -386,7 +369,7 @@ static inline int __nf_ct_expect_check(s
+ 	struct nf_conn_help *master_help = nfct_help(master);
+ 	struct nf_conntrack_helper *helper;
+ 	struct net *net = nf_ct_exp_net(expect);
+-	struct hlist_node *n;
++	struct hlist_node *n, *next;
+ 	unsigned int h;
+ 	int ret = 1;
+ 
+@@ -395,12 +378,12 @@ static inline int __nf_ct_expect_check(s
+ 		goto out;
+ 	}
+ 	h = nf_ct_expect_dst_hash(&expect->tuple);
+-	hlist_for_each_entry(i, n, &net->ct.expect_hash[h], hnode) {
++	hlist_for_each_entry_safe(i, n, next, &net->ct.expect_hash[h], hnode) {
+ 		if (expect_matches(i, expect)) {
+-			/* Refresh timer: if it's dying, ignore.. */
+-			if (refresh_timer(i)) {
+-				ret = 0;
+-				goto out;
++			if (del_timer(&i->timeout)) {
++				nf_ct_unlink_expect(i);
++				nf_ct_expect_put(i);
++				break;
+ 			}
+ 		} else if (expect_clash(i, expect)) {
+ 			ret = -EBUSY;
 
 
