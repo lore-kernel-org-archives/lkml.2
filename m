@@ -1,109 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758934Ab2JSNmj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 09:42:39 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49103 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754492Ab2JSNmh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 09:42:37 -0400
-Message-ID: <1350654126.2768.5.camel@twins>
-Subject: Re: [PATCH] sched, autogroup: fix kernel crashes caused by runtime
- disable autogroup
-From: Peter Zijlstra <peterz@infradead.org>
-To: Xiaotian Feng <xtfeng@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
-        Ingo Molnar <mingo@redhat.com>, Mike Galbraith <efault@gmx.de>
-Date: Fri, 19 Oct 2012 15:42:06 +0200
-In-Reply-To: <1350635770-9189-1-git-send-email-xtfeng@gmail.com>
-References: <1350635770-9189-1-git-send-email-xtfeng@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S932526Ab2JSNnA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 09:43:00 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:45950 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758773Ab2JSNm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 09:42:59 -0400
+Message-ID: <508158D6.4040806@linux.vnet.ibm.com>
+Date: Fri, 19 Oct 2012 06:42:46 -0700
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: wency@cn.fujitsu.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
+        benh@kernel.crashing.org, paulus@samba.org, minchan.kim@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH v2 2/5] memory-hotplug: update mce_bad_pages when removing
+ the memory
+References: <1350475735-26136-1-git-send-email-wency@cn.fujitsu.com> <1350475735-26136-3-git-send-email-wency@cn.fujitsu.com> <507ECA43.3070402@linux.vnet.ibm.com> <20121018152008.ada8fea5.akpm@linux-foundation.org>
+In-Reply-To: <20121018152008.ada8fea5.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101913-7182-0000-0000-000002E284CE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Always try and CC people who wrote the code..
-
-On Fri, 2012-10-19 at 16:36 +0800, Xiaotian Feng wrote:
-> There's a regression from commit 800d4d30, in autogroup_move_group()
+On 10/18/2012 03:20 PM, Andrew Morton wrote:
+> On Wed, 17 Oct 2012 08:09:55 -0700
+> Dave Hansen <dave@linux.vnet.ibm.com> wrote:
+>>> +#ifdef CONFIG_MEMORY_FAILURE
+>>> +static void clear_hwpoisoned_pages(struct page *memmap, int nr_pages)
+>>> +{
+>>> +	int i;
+>>> +
+>>> +	if (!memmap)
+>>> +		return;
+>>
+>> I guess free_section_usemap() does the same thing.
 > 
-> 	p->signal->autogroup = autogroup_kref_get(ag);
-> 
-> 	if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
-> 		goto out;
-> 	...
->     out:
-> 	autogroup_kref_put(prev);
-> 
-> So kernel changed p's autogroup to ag, but never sched_move_task(p).
-> Then previous autogroup of p is released, which may release task_group
-> related with p. After commit 8323f26ce, p->sched_task_group might point
-> to this stale value, and thus caused kernel crashes.
-> 
-> This is very easy to reproduce, add "kernel.sched_autogroup_enabled = 0"
-> to your /etc/sysctl.conf, your system will never boot up. It is not reasonable
-> to put the sysctl enabled check in autogroup_move_group(), kernel should check
-> it before autogroup_create in sched_autogroup_create_attach().
-> 
-> Reported-by: cwillu <cwillu@cwillu.com>
-> Reported-by: Luis Henriques <luis.henriques@canonical.com>
-> Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> ---
->  kernel/sched/auto_group.c |   10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/sched/auto_group.c b/kernel/sched/auto_group.c
-> index 0984a21..ac62415 100644
-> --- a/kernel/sched/auto_group.c
-> +++ b/kernel/sched/auto_group.c
-> @@ -143,15 +143,11 @@ autogroup_move_group(struct task_struct *p, struct autogroup *ag)
->  
->  	p->signal->autogroup = autogroup_kref_get(ag);
->  
-> -	if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
-> -		goto out;
-> -
->  	t = p;
->  	do {
->  		sched_move_task(t);
->  	} while_each_thread(p, t);
->  
-> -out:
->  	unlock_task_sighand(p, &flags);
->  	autogroup_kref_put(prev);
->  }
+> What does this observation mean?
 
-So I've looked at this for all of 1 minute, but why isn't moving that
-check up one line to be above the p->signal->autogroup assignment
-enough?
+sparse_remove_one_section() has an if(ms->section_mem_map) statement.
+Inside that if() block is the only place in the function where 'memmap'
+can get set.
 
-> @@ -159,8 +155,12 @@ out:
->  /* Allocates GFP_KERNEL, cannot be called under any spinlock */
->  void sched_autogroup_create_attach(struct task_struct *p)
->  {
-> -	struct autogroup *ag = autogroup_create();
-> +	struct autogroup *ag;
-> +
-> +	if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
-> +		return;
->  
-> +	ag = autogroup_create();
->  	autogroup_move_group(p, ag);
->  	/* drop extra reference added by autogroup_create() */
->  	autogroup_kref_put(ag);
+Currently, sparse_remove_one_section() calls in to free_section_usemap()
+ouside of that if() block.  With this patch new call to
+clear_hwpoisoned_pages() is done in the same place, both passing 'memmap'.
 
-Man,.. so on memory allocation fail we'll put the group in
-autogroup_default, which I think ends up being the root cgroup.
+However, both free_section_usemap() and clear_hwpoisoned_pages() check
+'memmap' for NULL and immediately return if so.  That's a bit silly
+since it could hide garbage coming back from sparse_decode_mem_map().
+Seems like we should just call them both inside that if() block, or
+reorganize sparse_remove_one_section(), maybe like this:
 
-But what happens when sysctl_sched_autogroup_enabled is false?
+void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
+{
+        struct page *memmap = NULL;
+        unsigned long *usemap = NULL;
 
-It looks like sched_autogroup_fork() is effective in that case, which
-would mean we'll stay in whatever group our parent is in, which is not
-the same as being disabled.
+        if (!ms->section_mem_map)
+		return;
 
+        usemap = ms->pageblock_flags;
+        memmap = sparse_decode_mem_map(ms->section_mem_map,
+                                                __section_nr(ms));
+        ms->section_mem_map = 0;
+        ms->pageblock_flags = NULL;
+
+        free_section_usemap(memmap, usemap);
+	clear_hwpoisoned_pages(usemap, ...);
+}
 
