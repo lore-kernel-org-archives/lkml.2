@@ -1,40 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757068Ab2JSI2l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 04:28:41 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62342 "EHLO
+	id S1757416Ab2JSI3z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 04:29:55 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53051 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756981Ab2JSI2k (ORCPT
+	with ESMTP id S1753718Ab2JSI3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 04:28:40 -0400
+	Fri, 19 Oct 2012 04:29:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <50810e61.688c320a.1baa.6cacSMTPIN_ADDED@mx.google.com>
-References: <1350568765-5723-1-git-send-email-weiyang@linux.vnet.ibm.com>
-	<CAFLxGvwfGc_4z1JM=pAb-U4tNVeMZR1zs-neQv7Vz2-6DQT+9Q@mail.gmail.com>
-	<1350624189.14741.1.camel@wall-e>
-	<5080f0b3.85712b0a.0d0f.ffff9dd2SMTPIN_ADDED@mx.google.com>
-	<CAFLxGvxdH=sx9+1y0Uw5gNWL9ZRbPTst3Fj2SgAimoUDbo_2PQ@mail.gmail.com>
-	<50810e61.688c320a.1baa.6cacSMTPIN_ADDED@mx.google.com>
-Date: Fri, 19 Oct 2012 10:28:38 +0200
-Message-ID: <CAFLxGvzRgysSGTibC+EKMZz9RpxSS4twGECp1MAmK1LjXSJwaQ@mail.gmail.com>
-Subject: Re: [PATCH] remove untouched code in kfifo_in
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Richard Yang <weiyang@linux.vnet.ibm.com>
-Cc: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
-        jkosina@suse.cz
+In-Reply-To: <20121015204217.GB2739@dastard>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+	<20121015204217.GB2739@dastard>
+Date: Fri, 19 Oct 2012 16:29:50 +0800
+Message-ID: <CAEH94LiWaaivc0-Xiq+WpS1cuHYV5jqnKMY756ZL8BW_LEWirw@mail.gmail.com>
+Subject: Re: [RFC v3 00/13] vfs: hot data tracking
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
+        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 10:24 AM, Richard Yang
-<weiyang@linux.vnet.ibm.com> wrote:
-> got it, thanks~
+On Tue, Oct 16, 2012 at 4:42 AM, Dave Chinner <david@fromorbit.com> wrote:
+> On Wed, Oct 10, 2012 at 06:07:22PM +0800, zwu.kernel@gmail.com wrote:
+>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>>
+>> NOTE:
+>>
+>>   The patchset is currently post out mainly to make sure
+>> it is going in the correct direction and hope to get some
+>> helpful comments from other guys.
+>>   For more infomation, please check hot_tracking.txt in Documentation
+>>
+>> TODO List:
+>
+> 1) Fix OOM issues - the hot inode tracking caches grow very large
+> and don't get trimmed under memory pressure. From slabtop, after
+> creating roughly 24 million single byte files(*) on a machine with
+> 8GB RAM:
+>
+>   OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
+> 23859510 23859476  99%    0.12K 795317       30   3181268K hot_range_item
+> 23859441 23859439  99%    0.16K 1037367       23   4149468K hot_inode_item
+> 572530 572530 100%    0.55K  81790        7    327160K radix_tree_node
+> 241706 241406  99%    0.22K  14218       17     56872K xfs_ili
+> 241206 241204  99%    1.06K  80402        3    321608K xfs_inode
+>
+> The inode tracking is trying to track all 24 million inodes even
+> though they have been written only once, and there are only 240,000
+> inodes in the cache at this point in time. That was the last update
+> that slabtop got, so it is indicative of the impending OOM situation
+> that occurred.
+>
+>> Changelog from v2:
+>>  1.) Converted to Radix trees, not RB-tree [Zhiyong, Dave Chinner]
+>>  2.) Added memory shrinker [Dave Chinner]
+>
+> I haven't looked at the shrinker, but clearly it is not working,
+HI, Dave,
+Some guys suggest that when inode slab cache is shrinked, the
+hot_inode[range]_item slab is accordingly also shrinked, this will
+make hot tracking don't need to register its own shrinker. Do you
+think of it?
+If you don't like above idea. Do you have any good suggestion on how
+to remove hot_inode_item and hot_range_item?
 
-BTW: The surrounding if (0) {} block could be removed in future.
-I'm sure Stefani added it to suppress a compiler warning.
-But the typeof() magic has to stay...
+> otherwise the above OOM situation would not be occurring.
+>
+> Cheers,
+>
+> Dave.
+>
+> (*) Tested on an empty 17TB XFS filesystem with:
+>
+> $ sudo mkfs.xfs -f -l size=131072b,sunit=8 /dev/vdc
+> meta-data=/dev/vdc               isize=256    agcount=17, agsize=268435455 blks
+>          =                       sectsz=512   attr=2, projid32bit=0
+> data     =                       bsize=4096   blocks=4563402735, imaxpct=5
+>          =                       sunit=0      swidth=0 blks
+> naming   =version 2              bsize=4096   ascii-ci=0
+> log      =internal log           bsize=4096   blocks=131072, version=2
+>          =                       sectsz=512   sunit=1 blks, lazy-count=1
+> realtime =none                   extsz=4096   blocks=0, rtextents=0
+> $ sudo mount -o logbsize=256k /dev/vdc /mnt/scratch
+> $ sudo chmod 777 /mnt/scratch
+> $ fs_mark  -D  10000  -S0  -n  100000  -s  1  -L  63  -d \
+> /mnt/scratch/0  -d  /mnt/scratch/1  -d  /mnt/scratch/2  -d \
+> /mnt/scratch/3  -d  /mnt/scratch/4  -d  /mnt/scratch/5  -d \
+> /mnt/scratch/6  -d  /mnt/scratch/7
+> .....
+>      0     21600000            1      16679.3         12552262
+>      0     22400000            1      15412.4         12588587
+>      0     23200000            1      16367.6         14199322
+>      0     24000000            1      15680.4         15741205
+> <hangs here w/ OOM>
+>
+> --
+> Dave Chinner
+> david@fromorbit.com
+
+
 
 -- 
-Thanks,
-//richard
+Regards,
+
+Zhi Yong Wu
