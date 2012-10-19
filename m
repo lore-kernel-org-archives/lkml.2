@@ -1,99 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758620Ab2JSKfU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 06:35:20 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:10925 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754267Ab2JSKfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 06:35:18 -0400
-X-IronPort-AV: E=Sophos;i="4.80,612,1344182400"; 
-   d="scan'208";a="6031206"
-Message-ID: <50812E34.5020802@cn.fujitsu.com>
-Date: Fri, 19 Oct 2012 18:40:52 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1758634Ab2JSKfe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 06:35:34 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:47207 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758605Ab2JSKfc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 06:35:32 -0400
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, liuj97@gmail.com, len.brown@intel.com,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-        muneda.takahiro@jp.fujitsu.com, rjw@sisk.pl
-Subject: Re: [PATCH v2 0/3] acpi,memory-hotplug : implement framework for
- hot removing memory
-References: <1350641040-19434-1-git-send-email-wency@cn.fujitsu.com> <50812949.6040005@jp.fujitsu.com>
-In-Reply-To: <50812949.6040005@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/19 18:34:50,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/19 18:34:51,
-	Serialize complete at 2012/10/19 18:34:51
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-2022-JP
+In-Reply-To: <507FD4EB.1080204@antcom.de>
+References: <1350477107-26512-1-git-send-email-stigge@antcom.de>
+	<1350477107-26512-3-git-send-email-stigge@antcom.de>
+	<20121017190520.GC25996@kroah.com>
+	<507FD4EB.1080204@antcom.de>
+Date: Fri, 19 Oct 2012 12:35:31 +0200
+Message-ID: <CACRpkda35jKs9YVNDAo96=0QzdMi+jkvJAzM=nX+HCK-d5+e9Q@mail.gmail.com>
+Subject: Re: [PATCH RFC 02/15 v5] gpio: Add sysfs support to block GPIO API
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Roland Stigge <stigge@antcom.de>, Greg KH <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        w.sang@pengutronix.de, jbe@pengutronix.de, plagnioj@jcrosoft.com,
+        highguy@gmail.com, broonie@opensource.wolfsonmicro.com,
+        daniel-gl@gmx.net, rmallon@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 10/19/2012 06:19 PM, Yasuaki Ishimatsu Wrote:
-> CCing Rafael, because he become ACPI Maintainer.
-> 
-> Hi Wen,
-> 
-> If you update the patch-set, please CCing Rafael from the next time.
+On Thu, Oct 18, 2012 at 12:07 PM, Roland Stigge <stigge@antcom.de> wrote:
+> On 10/17/2012 09:05 PM, Greg KH wrote:
+>>>
+>>> +    if (value != exported) {
+>>> +            if (value)
+>>> +                    status = gpio_block_value_export(block);
+>>> +            else
+>>> +                    status = gpio_block_value_unexport(block);
+>>
+>> That looks like a recipie for disaster.  Why do you allow userspace to
+>> do this?
+>
+> Exporting for gpio blocks is done as follows: writing "1" to the
+> "exported" _device_ attribute of the gpio block creates the "values"
+> attribute and at the same time requests the whole block (including all
+> of its gpios) as "sysfs".
 
-OK.
+To me it reads like Greg's comment is basically pinpointing a flaw
+in Brownell's initial design of gpio sysfs: that new sysfs files are
+created and destroyed by writing into sysfs */export files from
+userspace?
 
-Thanks
-Wen Congyang
+See commit: d8f388d8dc8d4f36539dd37c1fff62cc404ea0fc
 
-> 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
-> 2012/10/19 19:03, wency@cn.fujitsu.com wrote:
->> From: Wen Congyang <wency@cn.fujitsu.com>
->>
->> The patch-set implements a framework for hot removing memory.
->>
->> The memory device can be removed by 2 ways:
->> 1. send eject request by SCI
->> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
->>
->> In the 1st case, acpi_memory_disable_device() will be called.
->> In the 2nd case, acpi_memory_device_remove() will be called.
->> acpi_memory_device_remove() will also be called when we unbind the
->> memory device from the driver acpi_memhotplug or a driver initialization
->> fails.
->>
->> acpi_memory_disable_device() has already implemented a code which
->> offlines memory and releases acpi_memory_info struct . But
->> acpi_memory_device_remove() has not implemented it yet.
->>
->> So the patch prepares the framework for hot removing memory and
->> adds the framework into acpi_memory_device_remove().
->>
->> The last version of this patchset is here:
->> https://lkml.org/lkml/2012/10/3/126
->>
->> Changelos from v1 to v2:
->>    Patch1: use acpi_bus_trim() instead of acpi_bus_remove()
->>    Patch2: new patch, introduce a lock to protect the list
->>    Patch3: remove memory too when type is ACPI_BUS_REMOVAL_NORMAL
->>    Note: I don't send [Patch2-4 v1] in this series because they
->>    are no logical changes in these 3 patches.
->>
->> Wen Congyang (2):
->>    acpi,memory-hotplug: call acpi_bus_trim() to remove memory device
->>    acpi,memory-hotplug: introduce a mutex lock to protect the list in
->>      acpi_memory_device
->>
->> Yasuaki Ishimatsu (1):
->>    acpi,memory-hotplug : add memory offline code to
->>      acpi_memory_device_remove()
->>
->>   drivers/acpi/acpi_memhotplug.c |   51 ++++++++++++++++++++++++++++++++--------
->>   1 files changed, 41 insertions(+), 10 deletions(-)
->>
-> 
-> 
-> 
+The block GPIO stuff is just following that design pattern.
 
+Yours,
+Linus Walleij
