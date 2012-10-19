@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758133Ab2JSDSh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:18:37 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54725 "EHLO mail.kernel.org"
+	id S1030498Ab2JSDS6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:18:58 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54716 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758126Ab2JSDRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:55 -0400
+	id S1757614Ab2JSDRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Maxim Kachur <mcdebugger@duganet.ru>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 37/37] ALSA: emu10k1: add chip details for E-mu 1010 PCIe card
-Date: Thu, 18 Oct 2012 20:17:00 -0700
-Message-Id: <20121019031308.823926243@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 36/37] ALSA: ac97 - Fix missing NULL check in snd_ac97_cvol_new()
+Date: Thu, 18 Oct 2012 20:16:59 -0700
+Message-Id: <20121019031308.665359998@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -25,38 +25,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxim Kachur <mcdebugger@duganet.ru>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 10f571d09106c3eb85951896522c9650596eff2e upstream.
+commit 733a48e5ae5bf28b046fad984d458c747cbb8c21 upstream.
 
-Add chip details for E-mu 1010 PCIe card. It has the same
-chip as found in E-mu 1010b but it uses different PCI id.
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=44721
 
-Signed-off-by: Maxim Kachur <mcdebugger@duganet.ru>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/emu10k1/emu10k1_main.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ sound/pci/ac97/ac97_codec.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/pci/emu10k1/emu10k1_main.c
-+++ b/sound/pci/emu10k1/emu10k1_main.c
-@@ -1415,6 +1415,15 @@ static struct snd_emu_chip_details emu_c
- 	 .ca0108_chip = 1,
- 	 .spk71 = 1,
- 	 .emu_model = EMU_MODEL_EMU1010B}, /* EMU 1010 new revision */
-+	/* Tested by Maxim Kachur <mcdebugger@duganet.ru> 17th Oct 2012. */
-+	/* This is MAEM8986, 0202 is MAEM8980 */
-+	{.vendor = 0x1102, .device = 0x0008, .subsystem = 0x40071102,
-+	 .driver = "Audigy2", .name = "E-mu 1010 PCIe [MAEM8986]",
-+	 .id = "EMU1010",
-+	 .emu10k2_chip = 1,
-+	 .ca0108_chip = 1,
-+	 .spk71 = 1,
-+	 .emu_model = EMU_MODEL_EMU1010B}, /* EMU 1010 PCIe */
- 	/* Tested by James@superbug.co.uk 8th July 2005. */
- 	/* This is MAEM8810, 0202 is MAEM8820 */
- 	{.vendor = 0x1102, .device = 0x0004, .subsystem = 0x40011102,
+--- a/sound/pci/ac97/ac97_codec.c
++++ b/sound/pci/ac97/ac97_codec.c
+@@ -1271,6 +1271,8 @@ static int snd_ac97_cvol_new(struct snd_
+ 		tmp.index = ac97->num;
+ 		kctl = snd_ctl_new1(&tmp, ac97);
+ 	}
++	if (!kctl)
++		return -ENOMEM;
+ 	if (reg >= AC97_PHONE && reg <= AC97_PCM)
+ 		set_tlv_db_scale(kctl, db_scale_5bit_12db_max);
+ 	else
 
 
