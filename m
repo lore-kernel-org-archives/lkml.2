@@ -1,80 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758725Ab2JSRag (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 13:30:36 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35065 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753744Ab2JSRae (ORCPT
+	id S1758867Ab2JSReu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 13:34:50 -0400
+Received: from claranet-outbound-smtp01.uk.clara.net ([195.8.89.34]:46828 "EHLO
+	claranet-outbound-smtp01.uk.clara.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754044Ab2JSRes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 13:30:34 -0400
-Date: Fri, 19 Oct 2012 18:30:29 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linus-arch@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        David Howells <dhowells@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Michal Simek <monstr@monstr.eu>, Jonas Bonn <jonas@southpole.se>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Lennox Wu <lennox.wu@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Mundt <lethal@linux-sh.org>, Chris Zankel <chris@zankel.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>
-Subject: Re: new execve/kernel_thread design
-Message-ID: <20121019173029.GO2616@ZenIV.linux.org.uk>
-References: <20121016223508.GR2616@ZenIV.linux.org.uk>
- <20121019154901.GK2616@ZenIV.linux.org.uk>
- <3908561D78D1C84285E8C5FCA982C28F19D57A82@ORSMSX108.amr.corp.intel.com>
+	Fri, 19 Oct 2012 13:34:48 -0400
+X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Oct 2012 13:34:48 EDT
+From: Simon Farnsworth <simon.farnsworth@onelan.co.uk>
+To: linux-kernel@vger.kernel.org
+Cc: len.brown@intel.com, linux-pm@vger.kernel.org, lenb@kernel.org
+Subject: Re: pm_qos request for 0 cpu_dma_latency is ignored on Linus master
+Date: Fri, 19 Oct 2012 18:34:39 +0100
+Message-ID: <20490918.t8n8AcBcDM@f17simon>
+User-Agent: KMail/4.8.4 (Linux/3.4.6-2.fc17.x86_64; KDE/4.8.4; x86_64; ; )
+In-Reply-To: <2732999.VSJZov8CP4@f17simon>
+References: <2732999.VSJZov8CP4@f17simon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19D57A82@ORSMSX108.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="nextPart1687589.zAj9qJtm0m"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 05:16:50PM +0000, Luck, Tony wrote:
-> > Surprisingly enough, ia64 one seems to work on actual hardware; I have sent
-> > Tony an incremental patch cleaning copy_thread() up, waiting for results of
-> > testing that on SMP box.
+
+--nextPart1687589.zAj9qJtm0m
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+
+Sorry for the noise. I've just found it's my code at fault - we changed
+to a 10,000 usec PM request for most platforms a while ago.
+
+Simon
+
+On Friday 19 October 2012 18:28:18 Simon Farnsworth wrote:
+> (please cc me on replies - I'm not directly subscribed to linux-kernel or linux-pm)
 > 
-> Tiny bit faster than plain 3.7-rc1. lmbench3 reports fork+execve test at between
-> 558 to 567 usec with the new code, compared with 562-572 usec with the old.
+> I'm trying to track down why a Sandybridge system with a PCIe to PCI riser
+> has problems after enabling GPU RC6, and I've reduced my problem to the menu
+> cpuidle governor selecting high C-states from intel_idle, even though I've
+> given a cpu_dma_latency requirement of 0 usecs.
+> 
+> I have a TV capture card in the riser, and it appears that I get data lost
+> whenever the package enters a high C state. My userspace opens
+> /dev/cpu_dma_latency and writes (uint32_t)0 to this fd whenever we have things
+> on-screen, closing the fd when we put the screen into DPMS off states.
+> 
+> However, even with a userspace provided request of 0 usec, I'm seeing the CPU
+> cores (and hence the entire package when GPU RC6 is enabled) enter C6 state.
+> 
+> I've confirmed that forcing the governor to limit itself to C0 fixes my
+> problem with:
+> 
+> # for state in /sys/devices/system/cpu/cpu*/cpuidle/state[1-9]*/disable ; do echo 1 > $state ; done
+> 
+> What do I need to do to get the menu cpuidle governor and the intel_idle
+> cpuidle driver to respect the /dev/cpu_dma_latency pm_qos request of 0 usec
+> and keep the Sandybridge CPU package out of low C states? Note that a CPU
+> core in low C state is fine, as long as the DMA latency stays low.
+> 
+> My goal is to keep the system in high-performance state when we're rendering
+> digital signage on screen (as any glitching may upset viewers, and compared
+> to the screen's full power use, we're irrelevant), but to go into lower power
+> states when the screen is off (when we're only drawing power to keep the
+> administrator interface available).
+> 
+> My kernel is currently 3.7-rc1+, based on Linus git of Tuesday 16th October
+> 2012. I'm happy to try patches, even if all they get you is better debug
+> output to work out why the userspace request is ignored.
+> 
+Simon Farnsworth
+Software Engineer
+ONELAN Ltd
+http://www.onelan.com
 
-Are you OK with the state of comments in call_payload() in the current
-form of that sucker?  Right now in #arch-ia64 is looks so:
-ENTRY(call_payload)
-        .prologue ASM_UNW_PRLG_RP|ASM_UNW_PRLG_PFS, ASM_UNW_PRLG_GRSAVE(0)
-        /* call the kernel_thread payload; fn is in r4, arg - in r5 */
-        alloc loc1=ar.pfs,0,3,1,0
-        mov loc0=rp
-        mov loc2=gp
-        mov out0=r5             // arg
-        ld8 r14 = [r4], 8       // fn.address
-        ;;
-        mov b6 = r14
-        ld8 gp = [r4]           // fn.gp
-        ;;
-        br.call.sptk.many rp=b6 // fn(arg)
-.ret12: mov gp=loc2
-        mov rp=loc0
-        mov ar.pfs=loc1
-        /* ... and if it has returned, we are going to userland */
-        cmp.ne pKStk,pUStk=r0,r0
-        br.ret.sptk.many rp
-END(call_payload)
+--nextPart1687589.zAj9qJtm0m
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
 
-IIRC, the lack of comments on function with unusual calling conventions was
-the last remaining issue...
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAABAgAGBQJQgY8vAAoJEIKsye9/dtRW3gYH/2UgIJAWUPbOAjQ7fGJMsFja
+k0BiXi+LRMtShD6Z0i6h1EZdryV3TMeGmF7FKfYX7vd4al6+C+p/GT3n9E9y+Oh1
+0RjQO6azV01dcS50LKuaC76ouf0ZBn8cPtAzcWzRA5kVm0vqXB+ZFgPcwC6oFEun
+3T0yzWedcD2dtreqvOGFdAvVgKSljPS8gzrrFRCI+ceKv4gsSepdauA0057ojlSG
+vWwcGIh/sWpJxCwii4U8QbKK3IUfclDMOf+cx/w7XfZYvAJNWf24iKcfDOE2sOTp
+N5Z3MsVgc9XZNuhaQmxnBfEqg4V/P4zN1x+/qBjk5T5jjatFMfZXGARi3YGMlU0=
+=PRA9
+-----END PGP SIGNATURE-----
+
+--nextPart1687589.zAj9qJtm0m--
+
