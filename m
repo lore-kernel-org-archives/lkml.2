@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030466Ab2JSDC6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:02:58 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52124 "EHLO mail.kernel.org"
+	id S964886Ab2JSCss (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:48:48 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52081 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964888Ab2JSCst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:48:49 -0400
+	id S964859Ab2JSCsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:48:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 29/76] target: support zero allocation length in INQUIRY
-Date: Thu, 18 Oct 2012 19:46:53 -0700
-Message-Id: <20121019024354.833046111@linuxfoundation.org>
+        Kouei Abe <kouei.abe.cp@rms.renesas.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Simon Horman <horms@verge.net.au>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 25/76] ARM: 7541/1: Add ARM ERRATA 775420 workaround
+Date: Thu, 18 Oct 2012 19:46:49 -0700
+Message-Id: <20121019024354.155977757@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -26,79 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Simon Horman <horms@verge.net.au>
 
-commit ffe7b0e9326d9c68f5688bef691dd49f1e0d3651 upstream.
+commit 7253b85cc62d6ff84143d96fe6cd54f73736f4d7 upstream.
 
-INQUIRY processing already uses an on-heap bounce buffer for loopback,
-but not for other fabrics.  Switch this to a cheaper on-stack bounce
-buffer, similar to the one used by MODE SENSE and REQUEST SENSE, and
-use it unconditionally.  With this in place, zero allocation length is
-handled simply by checking the return address of transport_kmap_data_sg.
+arm: Add ARM ERRATA 775420 workaround
 
-Testcase: sg_raw /dev/sdb 12 00 83 00 00 00
-    should fail with ILLEGAL REQUEST / INVALID FIELD IN CDB sense
-    does not fail without the patch
-    fails correctly with the series
+Workaround for the 775420 Cortex-A9 (r2p2, r2p6,r2p8,r2p10,r3p0) erratum.
+In case a date cache maintenance operation aborts with MMU exception, it
+might cause the processor to deadlock. This workaround puts DSB before
+executing ISB if an abort may occur on cache maintenance.
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Based on work by Kouei Abe and feedback from Catalin Marinas.
+
+Signed-off-by: Kouei Abe <kouei.abe.cp@rms.renesas.com>
+[ horms@verge.net.au: Changed to implementation
+  suggested by catalin.marinas@arm.com ]
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Simon Horman <horms@verge.net.au>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_spc.c |   31 ++++++-------------------------
- 1 file changed, 6 insertions(+), 25 deletions(-)
+ arch/arm/Kconfig       |   10 ++++++++++
+ arch/arm/mm/cache-v7.S |    3 +++
+ 2 files changed, 13 insertions(+)
 
---- a/drivers/target/target_core_spc.c
-+++ b/drivers/target/target_core_spc.c
-@@ -600,30 +600,11 @@ static int spc_emulate_inquiry(struct se
- {
- 	struct se_device *dev = cmd->se_dev;
- 	struct se_portal_group *tpg = cmd->se_lun->lun_sep->sep_tpg;
--	unsigned char *buf, *map_buf;
-+	unsigned char *rbuf;
- 	unsigned char *cdb = cmd->t_task_cdb;
-+	unsigned char buf[SE_INQUIRY_BUF];
- 	int p, ret;
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1413,6 +1413,16 @@ config PL310_ERRATA_769419
+ 	  on systems with an outer cache, the store buffer is drained
+ 	  explicitly.
  
--	map_buf = transport_kmap_data_sg(cmd);
--	/*
--	 * If SCF_PASSTHROUGH_SG_TO_MEM_NOALLOC is not set, then we
--	 * know we actually allocated a full page.  Otherwise, if the
--	 * data buffer is too small, allocate a temporary buffer so we
--	 * don't have to worry about overruns in all our INQUIRY
--	 * emulation handling.
--	 */
--	if (cmd->data_length < SE_INQUIRY_BUF &&
--	    (cmd->se_cmd_flags & SCF_PASSTHROUGH_SG_TO_MEM_NOALLOC)) {
--		buf = kzalloc(SE_INQUIRY_BUF, GFP_KERNEL);
--		if (!buf) {
--			transport_kunmap_data_sg(cmd);
--			cmd->scsi_sense_reason = TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
--			return -ENOMEM;
--		}
--	} else {
--		buf = map_buf;
--	}
--
- 	if (dev == tpg->tpg_virt_lun0.lun_se_dev)
- 		buf[0] = 0x3f; /* Not connected */
- 	else
-@@ -655,11 +636,11 @@ static int spc_emulate_inquiry(struct se
- 	ret = -EINVAL;
++config ARM_ERRATA_775420
++       bool "ARM errata: A data cache maintenance operation which aborts, might lead to deadlock"
++       depends on CPU_V7
++       help
++	 This option enables the workaround for the 775420 Cortex-A9 (r2p2,
++	 r2p6,r2p8,r2p10,r3p0) erratum. In case a date cache maintenance
++	 operation aborts with MMU exception, it might cause the processor
++	 to deadlock. This workaround puts DSB before executing ISB if
++	 an abort may occur on cache maintenance.
++
+ endmenu
  
- out:
--	if (buf != map_buf) {
--		memcpy(map_buf, buf, cmd->data_length);
--		kfree(buf);
-+	rbuf = transport_kmap_data_sg(cmd);
-+	if (rbuf) {
-+		memcpy(rbuf, buf, min_t(u32, sizeof(buf), cmd->data_length));
-+		transport_kunmap_data_sg(cmd);
- 	}
--	transport_kunmap_data_sg(cmd);
- 
- 	if (!ret)
- 		target_complete_cmd(cmd, GOOD);
+ source "arch/arm/common/Kconfig"
+--- a/arch/arm/mm/cache-v7.S
++++ b/arch/arm/mm/cache-v7.S
+@@ -211,6 +211,9 @@ ENTRY(v7_coherent_user_range)
+  * isn't mapped, fail with -EFAULT.
+  */
+ 9001:
++#ifdef CONFIG_ARM_ERRATA_775420
++	dsb
++#endif
+ 	mov	r0, #-EFAULT
+ 	mov	pc, lr
+  UNWIND(.fnend		)
 
 
