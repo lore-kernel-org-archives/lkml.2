@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757195Ab2JSHGi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 03:06:38 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:34143 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757068Ab2JSHGf (ORCPT
+	id S932097Ab2JSHGa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 03:06:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:55185 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756871Ab2JSHG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 03:06:35 -0400
+	Fri, 19 Oct 2012 03:06:26 -0400
+From: AnilKumar Ch <anilkumar@ti.com>
+To: <dmitry.torokhov@gmail.com>, <grant.likely@secretlab.ca>
+CC: <rob.herring@calxeda.com>, <dgdunix@gmail.com>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, AnilKumar Ch <anilkumar@ti.com>
+Subject: [PATCH 0/2] Input: matrix-keypad - Add device tree support
+Date: Fri, 19 Oct 2012 12:36:11 +0530
+Message-ID: <1350630373-24279-1-git-send-email-anilkumar@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-In-Reply-To: <1350629202-9664-7-git-send-email-wency@cn.fujitsu.com>
-References: <1350629202-9664-1-git-send-email-wency@cn.fujitsu.com> <1350629202-9664-7-git-send-email-wency@cn.fujitsu.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Fri, 19 Oct 2012 03:06:14 -0400
-X-Google-Sender-Auth: UC7NjC5mlyBiyjfmHLCy2ZZBnHU
-Message-ID: <CAHGf_=oB5bDaw4JepMuKcEUM3=GaEuy8NZb+7G4uR3=-hYh8Dg@mail.gmail.com>
-Subject: Re: [PATCH v3 6/9] memory-hotplug: update mce_bad_pages when removing
- the memory
-To: wency@cn.fujitsu.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
-        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, minchan.kim@gmail.com, akpm@linux-foundation.org,
-        isimatu.yasuaki@jp.fujitsu.com, Christoph Lameter <cl@linux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 2:46 AM,  <wency@cn.fujitsu.com> wrote:
-> From: Wen Congyang <wency@cn.fujitsu.com>
->
-> When we hotremove a memory device, we will free the memory to store
-> struct page. If the page is hwpoisoned page, we should decrease
-> mce_bad_pages.
+Add device tree support to matrix keypad driver by adding all necessary
+DT parameters. Also added device tree bindings.
 
-I think [5/9] and [6/9] should be fold. Their two patches fix one
-issue. (current
-hwpoison doesn't support memory offline)
+These patches were tested on AM335x-EVM with DT patches, DT patches
+will be submitted once these are accepted.
+
+AnilKumar Ch (2):
+  Input: matrix-keypad - remove const from pointer to array of gpios
+  Input: matrix-keypad - Add device tree support
+
+ .../devicetree/bindings/input/matrix-keypad.txt    |   52 ++++++++++
+ drivers/input/keyboard/matrix_keypad.c             |  104 +++++++++++++++++++-
+ include/linux/input/matrix_keypad.h                |    4 +-
+ 3 files changed, 157 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/matrix-keypad.txt
+
+-- 
+1.7.9.5
+
