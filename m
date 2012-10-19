@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758820Ab2JSMvY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 08:51:24 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:46008 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758416Ab2JSMvW (ORCPT
+	id S1758835Ab2JSMxW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 08:53:22 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49516 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758416Ab2JSMxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 08:51:22 -0400
+	Fri, 19 Oct 2012 08:53:19 -0400
+Date: Fri, 19 Oct 2012 13:53:06 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [RESEND PATCH 2/4] asm-generic: io: don't perform swab during
+ {in,out} string functions
+Message-ID: <20121019125306.GJ4582@mudshark.cambridge.arm.com>
+References: <1350488704-3711-1-git-send-email-will.deacon@arm.com>
+ <1350488704-3711-3-git-send-email-will.deacon@arm.com>
+ <CAMuHMdXcQjDyen+o5aH=1zUOkNX-cfT3aXBOgCpyop=V67jk7w@mail.gmail.com>
+ <1350518655.4678.120.camel@pasglop>
+ <CAMuHMdWH3GXJ_dW-FCAX=LAkBuQmQtwRUtNpcqg_afm-UFK_2g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <508091C4.9080008@wwwdotorg.org>
-References: <1350554487-7914-1-git-send-email-linus.walleij@stericsson.com>
-	<508091C4.9080008@wwwdotorg.org>
-Date: Fri, 19 Oct 2012 14:51:21 +0200
-Message-ID: <CACRpkdbHLpkqGx4bGPxYN43QiQRedirRnf+tQ7avbQmd6k1kQQ@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: reserve pins when states are activated
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Jean Nicolas Graux <jean-nicolas.graux@stericsson.com>,
-        Loic Pallardy <loic.pallardy@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdWH3GXJ_dW-FCAX=LAkBuQmQtwRUtNpcqg_afm-UFK_2g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 1:33 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 10/18/2012 04:01 AM, Linus Walleij wrote:
->> This switches the way that pins are reserved for multiplexing:
->
-> The conceptual change makes perfect sense to me.
+On Thu, Oct 18, 2012 at 06:48:16AM +0100, Geert Uytterhoeven wrote:
+> On Thu, Oct 18, 2012 at 2:04 AM, Benjamin Herrenschmidt
+> <benh@kernel.crashing.org> wrote:
+> > The sort story is that endianness is not a property of the IO port but
+> > of the information that transit through it. If you're just going to copy
+> > it into memory, you want to preserve it's format and so do not byteswap.
+> >
+> > The byteswap we do on standard accessors is a "helper" because we assume
+> > that underneath those IO ports are registers that are Little Endian. But
+> > when using one as a window to a byte stream, we must not arbitrarily
+> > swap the byte stream. We copy it as-is to memory, and then one can work
+> > at interpreting the various fields that might or might not be present in
+> > that stream with the appropriate accessors for memory accesses.
+> 
+> So assume you have the bytestream "Hello, world!\n" in memory on the
+> PCI device.I.e.
+> 
+> 00000000  48 65 6c 6c 6f 2c 20 77  6f 72 6c 64 21 0a        |Hello, world!.|
+> 
+> You want to copy it to system RAM using readsl(), which does:
+> 
+>                u32 *buf = buffer;
+>                do {
+>                        u32 x = __raw_readl(addr + PCI_IOBASE);
+>                        *buf++ = x;
+>                 } while (--count);
+> 
+> On little endian, the first __raw_readl() should return "0x6c6c6548", so
+> it is stored correctly by "*buf = x ".
+> On big endian, the first __raw_readl() should return "0x48656c6c" instead,
+> else it's stored incorrectly by "*buf = x ".
 
-Thanks...
+So far so good...
 
->> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
->
->>  void pinmux_free_setting(struct pinctrl_setting const *setting)
-> ...
->> +     /*
->> +      * If a setting is active, disable it so that all pins are released
->> +      */
->> +     pinmux_disable_setting(setting);
->
-> "*If* a setting is active ..." implies there should be a C if statement
-> here to check if the setting is actually active before trying to disable it?
+> But the PCI bus is little endian, so I expect __raw_readl() would return
+> "0x6c6c6548", and thus needs swapping?
 
-Spot on.
+I think this would only happen if your busses are wired swapped, in which
+case you'll have to handle this in your arch code because reading from a
+device and then writing to memory will end up with the data in the wrong
+order (the data stream won't be affected by passing through the CPU).
 
-Actually in core.c we're already checking this:
-
-	case PIN_MAP_TYPE_MUX_GROUP:
-		if (state == p->state)
-			pinmux_disable_setting(setting);
-		pinmux_free_setting(setting);
-		break;
-
-So this is just buggy driving the refcount down to negative.
-(I think Jean-Nicolas noticed this phenomenon...)
-
-I should just delete pinmux_free_setting().
-
-Yours,
-Linus Walleij
-
-Yours,
-Linus Walleij
+Will
