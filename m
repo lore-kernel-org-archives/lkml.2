@@ -1,126 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756579Ab2JSBos (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 21:44:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59123 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754577Ab2JSBoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 21:44:46 -0400
-Date: Fri, 19 Oct 2012 12:44:54 +1100
-From: NeilBrown <neilb@suse.de>
-To: Jan Kara <jack@suse.cz>, "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Fabio Coatti <fabio.coatti@gmail.com>,
-        linux-kernel@vger.kernel.org, Jeff Layton <jlayton@redhat.com>
-Subject: Re: ext3 issue on 3.6.1
-Message-ID: <20121019124454.316ecfac@notabene.brown>
-In-Reply-To: <20121018220809.GD17646@quack.suse.cz>
-References: <CADpTngUPcX71qjE2QKhYqgDg7tZoz+pu8A6nE9DT-zbFKWGx1g@mail.gmail.com>
-	<20121018212357.GA17646@quack.suse.cz>
-	<1350596425.1366.15.camel@x61.thuisdomein>
-	<20121018220809.GD17646@quack.suse.cz>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/ffbc9QlNkBZq0r_4_/eT/mM"; protocol="application/pgp-signature"
+	id S1753997Ab2JSBt5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 21:49:57 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:36836 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751039Ab2JSBty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 21:49:54 -0400
+X-IronPort-AV: E=Sophos;i="4.80,610,1344182400"; 
+   d="scan'208";a="6026633"
+Message-ID: <5080B310.50608@cn.fujitsu.com>
+Date: Fri, 19 Oct 2012 09:55:28 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, x86@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 5/10] memory-hotplug : memory-hotplug: check page type
+ in get_page_bootmem
+References: <506E43E0.70507@jp.fujitsu.com> <506E46B6.3060502@jp.fujitsu.com> <CAHGf_=raSH5C8ye90F1PLZ8mGQUGggB=J0HYU8UhkKVDTV5JXQ@mail.gmail.com> <5080A394.2000409@jp.fujitsu.com>
+In-Reply-To: <5080A394.2000409@jp.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/19 09:49:28,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/19 09:49:29,
+	Serialize complete at 2012/10/19 09:49:29
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/ffbc9QlNkBZq0r_4_/eT/mM
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+At 10/19/2012 08:49 AM, Yasuaki Ishimatsu Wrote:
+> Hi Kosaki,
+> 
+> Sorry for late reply.
+> 
+> 2012/10/13 4:28, KOSAKI Motohiro wrote:
+>> On Thu, Oct 4, 2012 at 10:32 PM, Yasuaki Ishimatsu
+>> <isimatu.yasuaki@jp.fujitsu.com> wrote:
+>>> The function get_page_bootmem() may be called more than one time to
+>>> the same
+>>> page. There is no need to set page's type, private if the function is
+>>> not
+>>> the first time called to the page.
+>>>
+>>> Note: the patch is just optimization and does not fix any problem.
+>>>
+>>> CC: David Rientjes <rientjes@google.com>
+>>> CC: Jiang Liu <liuj97@gmail.com>
+>>> CC: Len Brown <len.brown@intel.com>
+>>> CC: Christoph Lameter <cl@linux.com>
+>>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>>> CC: Andrew Morton <akpm@linux-foundation.org>
+>>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>> CC: Wen Congyang <wency@cn.fujitsu.com>
+>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>> ---
+>>>   mm/memory_hotplug.c |   15 +++++++++++----
+>>>   1 file changed, 11 insertions(+), 4 deletions(-)
+>>>
+>>> Index: linux-3.6/mm/memory_hotplug.c
+>>> ===================================================================
+>>> --- linux-3.6.orig/mm/memory_hotplug.c  2012-10-04 18:29:58.284676075
+>>> +0900
+>>> +++ linux-3.6/mm/memory_hotplug.c       2012-10-04 18:30:03.454680542
+>>> +0900
+>>> @@ -95,10 +95,17 @@ static void release_memory_resource(stru
+>>>   static void get_page_bootmem(unsigned long info,  struct page *page,
+>>>                               unsigned long type)
+>>>   {
+>>> -       page->lru.next = (struct list_head *) type;
+>>> -       SetPagePrivate(page);
+>>> -       set_page_private(page, info);
+>>> -       atomic_inc(&page->_count);
+>>> +       unsigned long page_type;
+>>> +
+>>> +       page_type = (unsigned long)page->lru.next;
+>>
+>> If I understand correctly, page->lru.next might be uninitialized yet.
+> 
+> Ah yes. I was misunderstanding...
+> 
+> Hi Wen,
+> 
+> When you update the physical hot remove patch-set, please drop the patch.
 
-On Fri, 19 Oct 2012 00:08:09 +0200 Jan Kara <jack@suse.cz> wrote:
+OK
 
-> On Thu 18-10-12 23:40:25, Paul Bolle wrote:
-> > On Thu, 2012-10-18 at 23:23 +0200, Jan Kara wrote:
-> > > On Fri 12-10-12 14:57:55, Fabio Coatti wrote:
-> > > > [13031.051521] ------------[ cut here ]------------
-> > > > [13031.051576] WARNING: at fs/inode.c:280 drop_nlink+0x1b/0x35()
-> > > > [13031.051624] Hardware name: ProLiant BL465c G7
-> > > > [13031.051668] Pid: 3344, comm: php Tainted: G        W
-> > > > 3.6.1-1000hz-preempt #2
-> > > > [13031.051746] Call Trace:
-> > > > [13031.051787]  [<ffffffff810578c4>] ? warn_slowpath_common+0x73/0x=
-87
-> > > > [13031.051837]  [<ffffffff810ec628>] ? drop_nlink+0x1b/0x35
-> > > > [13031.051885]  [<ffffffff8118ad51>] ? nfs_dentry_iput+0x33/0x49
-> > > > [13031.051934]  [<ffffffff810ea920>] ? d_kill+0xe8/0x108
-> > > > [13031.051980]  [<ffffffff810eb001>] ? dput+0x147/0x154
-> > > > [13031.052027]  [<ffffffff810d9e46>] ? __fput+0x19a/0x1b2
-> > > > [13031.052073]  [<ffffffff8106bdf0>] ? task_work_run+0x4c/0x60
-> > > > [13031.052123]  [<ffffffff815ff5e8>] ? int_signal+0x12/0x17
-> > > > [13031.052169] ---[ end trace e60232a455c8e2dd ]---
-> > >   And this seems unrelated - likely an NFS problem... Let's sort this=
- out
-> > > if you still see it after ext3 issue is solved.
-> >=20
-> > Looks rather similar too https://lkml.org/lkml/2012/8/29/165 , doesn't
-> > it?
->   Yup. I wonder why that patch didn't get merged. Neil?
->=20
-> 								Honza
+Thanks
+Wen Congyang
 
-Don't know.  Maybe I slipped under Trond's radar some how.
+> 
+> Thanks,
+> Yasuaki Ishimatsu   
+>> Moreover, I have no seen any good effect in this patch. I don't
+>> understand
+>> why we need to increase code complexity.
+>>
+>>
+>>
+>>> +       if (page_type < MEMORY_HOTPLUG_MIN_BOOTMEM_TYPE ||
+>>> +           page_type > MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE){
+>>> +               page->lru.next = (struct list_head *)type;
+>>> +               SetPagePrivate(page);
+>>> +               set_page_private(page, info);
+>>> +               atomic_inc(&page->_count);
+>>> +       } else
+>>> +               atomic_inc(&page->_count);
+>>>   }
+>>>
+>>>   /* reference to __meminit __free_pages_bootmem is valid
+>>>
+>>> -- 
+>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>>> see: http://www.linux-mm.org/ .
+>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>> -- 
+>> To unsubscribe from this list: send the line "unsubscribe
+>> linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
+> 
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Trond:  can you comment on and hopefully apply this patch?
-
-Subject of original email was "WARNING: at fs/inode.c:280 drop_nlink+0x31/0=
-x33()
-
-
-Thanks,
-NeilBrown
-
-------
-Subject: NFS: avoid warning from nfs_drop_nlink
-
-If you remove a file which is open, NFS will 'silly-rename' it to a
-hidden file.
-If you then remove that hidden file, and then close the open file,
-then nfs_dentry_iput will perform an extra drop_nlink().
-Since 3.3-rc1, this has produced a warning.
-The simplest way to suppress it is to use "nfs_drop_nlink" which
-checks for i_nlink being zero.
-
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index 627f108..268af03 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1174,7 +1174,7 @@ static void nfs_dentry_iput(struct dentry *dentry,
-struct inode *inode) NFS_I(inode)->cache_validity |=3D NFS_INO_INVALID_DATA;
-=20
- 	if (dentry->d_flags & DCACHE_NFSFS_RENAMED) {
--		drop_nlink(inode);
-+		nfs_drop_nlink(inode);
- 		nfs_complete_unlink(dentry, inode);
- 	}
- 	iput(inode);
-
-
---Sig_/ffbc9QlNkBZq0r_4_/eT/mM
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUICwljnsnt1WYoG5AQI/QQ//RX427gIOs2BIiaa1zudiSV+3G9tJwAvW
-qqXb5FY8mj2+UOJh0/kheio+xwO+Q+uySztyIcBZIn9/uNBaTviziA8zvrOxyqpN
-IU4AADOnQkbLv1g7/pBgeIy9YuDdgtwyihOmYm1moo/lwMBz/zLFqEbDM0AMXWk9
-HhU2ip6O7QpNwRy/uHRwjp+1fFuc9kvR6slsDJoF/Cr/mbmszpkFB31TjWtm3PMw
-1mjS1sUo4u+35AEF5hOeC/vDHUj3IIHwj3com7WX3G0vHnSdw65d2mDxTsSRgzCQ
-vhuoJ/jTZJRWNTGeEagCNfdPDI+J/tfxcNTQGFKW5h7DKDBnjyjfuqDPOMwjY009
-vtPmWq3QPIMe46jHpiejLYmRbTjk/xWeVdh2g49RwbsfkDKqsKAdrnyVqGrlVlnf
-n6xLG6i9iGVK6cNmVx6E8Tn/ar6QkVZemds2/i4OzDS+VDGNM3VzMF1OtB79q3BX
-IWNQXDuMbCwYvFCaVS0oLe1XBczfl81dLb+Rcyf0jkF2voRCWhih0S5P3AmQQQOW
-wtiQXNri7kfXa6J6gVjdvbPJGnNbA1EO06qbKvneIYac3t4EpJMp8HMJ+z1R396E
-fwXfaheoDpXTYsWdYjZBXtMpKWQweH1A9J7yYLWw+ODnWSdnl7g0coNH9IVyJJt+
-f7x+tQLikoc=
-=1hYg
------END PGP SIGNATURE-----
-
---Sig_/ffbc9QlNkBZq0r_4_/eT/mM--
