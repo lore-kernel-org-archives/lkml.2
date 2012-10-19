@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053Ab2JSDRj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:17:39 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54550 "EHLO mail.kernel.org"
+	id S1161031Ab2JSDVi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:21:38 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54588 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964973Ab2JSDRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:33 -0400
+	id S1758055Ab2JSDRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Oliver Smith <olipro@8.c.9.b.0.7.4.0.1.0.0.2.ip6.arpa>,
+        Patrick McHardy <kaber@trash.net>,
         Pablo Neira Ayuso <pablo@netfilter.org>,
         David Miller <davem@davemloft.net>
-Subject: [ 21/37] netfilter: nf_conntrack: fix racy timer handling with reliable events
-Date: Thu, 18 Oct 2012 20:16:44 -0700
-Message-Id: <20121019031306.259370460@linuxfoundation.org>
+Subject: [ 25/37] netfilter: nf_nat_sip: fix via header translation with multiple parameters
+Date: Thu, 18 Oct 2012 20:16:48 -0700
+Message-Id: <20121019031306.903770211@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -27,85 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pablo Neira Ayuso <pablo@netfilter.org>
+From: Patrick McHardy <kaber@trash.net>
 
-commit 5b423f6a40a0327f9d40bc8b97ce9be266f74368 upstream.
+commit f22eb25cf5b1157b29ef88c793b71972efc47143 upstream.
 
-Existing code assumes that del_timer returns true for alive conntrack
-entries. However, this is not true if reliable events are enabled.
-In that case, del_timer may return true for entries that were
-just inserted in the dying list. Note that packets / ctnetlink may
-hold references to conntrack entries that were just inserted to such
-list.
+Via-headers are parsed beginning at the first character after the Via-address.
+When the address is translated first and its length decreases, the offset to
+start parsing at is incorrect and header parameters might be missed.
 
-This patch fixes the issue by adding an independent timer for
-event delivery. This increases the size of the ecache extension.
-Still we can revisit this later and use variable size extensions
-to allocate this area on demand.
+Update the offset after translating the Via-address to fix this.
 
-Tested-by: Oliver Smith <olipro@8.c.9.b.0.7.4.0.1.0.0.2.ip6.arpa>
+Signed-off-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Acked-by: David Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/net/netfilter/nf_conntrack_ecache.h |    1 +
- net/netfilter/nf_conntrack_core.c           |   16 +++++++++++-----
- 2 files changed, 12 insertions(+), 5 deletions(-)
+ net/ipv4/netfilter/nf_nat_sip.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/include/net/netfilter/nf_conntrack_ecache.h
-+++ b/include/net/netfilter/nf_conntrack_ecache.h
-@@ -18,6 +18,7 @@ struct nf_conntrack_ecache {
- 	u16 ctmask;		/* bitmask of ct events to be delivered */
- 	u16 expmask;		/* bitmask of expect events to be delivered */
- 	u32 pid;		/* netlink pid of destroyer */
-+	struct timer_list timeout;
- };
+--- a/net/ipv4/netfilter/nf_nat_sip.c
++++ b/net/ipv4/netfilter/nf_nat_sip.c
+@@ -148,7 +148,7 @@ static unsigned int ip_nat_sip(struct sk
+ 	if (ct_sip_parse_header_uri(ct, *dptr, NULL, *datalen,
+ 				    hdr, NULL, &matchoff, &matchlen,
+ 				    &addr, &port) > 0) {
+-		unsigned int matchend, poff, plen, buflen, n;
++		unsigned int olen, matchend, poff, plen, buflen, n;
+ 		char buffer[sizeof("nnn.nnn.nnn.nnn:nnnnn")];
  
- static inline struct nf_conntrack_ecache *
---- a/net/netfilter/nf_conntrack_core.c
-+++ b/net/netfilter/nf_conntrack_core.c
-@@ -247,12 +247,15 @@ static void death_by_event(unsigned long
- {
- 	struct nf_conn *ct = (void *)ul_conntrack;
- 	struct net *net = nf_ct_net(ct);
-+	struct nf_conntrack_ecache *ecache = nf_ct_ecache_find(ct);
-+
-+	BUG_ON(ecache == NULL);
+ 		/* We're only interested in headers related to this
+@@ -163,11 +163,12 @@ static unsigned int ip_nat_sip(struct sk
+ 				goto next;
+ 		}
  
- 	if (nf_conntrack_event(IPCT_DESTROY, ct) < 0) {
- 		/* bad luck, let's retry again */
--		ct->timeout.expires = jiffies +
-+		ecache->timeout.expires = jiffies +
- 			(random32() % net->ct.sysctl_events_retry_timeout);
--		add_timer(&ct->timeout);
-+		add_timer(&ecache->timeout);
- 		return;
- 	}
- 	/* we've got the event delivered, now it's dying */
-@@ -266,6 +269,9 @@ static void death_by_event(unsigned long
- void nf_ct_insert_dying_list(struct nf_conn *ct)
- {
- 	struct net *net = nf_ct_net(ct);
-+	struct nf_conntrack_ecache *ecache = nf_ct_ecache_find(ct);
-+
-+	BUG_ON(ecache == NULL);
++		olen = *datalen;
+ 		if (!map_addr(skb, dataoff, dptr, datalen, matchoff, matchlen,
+ 			      &addr, port))
+ 			return NF_DROP;
  
- 	/* add this conntrack to the dying list */
- 	spin_lock_bh(&nf_conntrack_lock);
-@@ -273,10 +279,10 @@ void nf_ct_insert_dying_list(struct nf_c
- 			     &net->ct.dying);
- 	spin_unlock_bh(&nf_conntrack_lock);
- 	/* set a new timer to retry event delivery */
--	setup_timer(&ct->timeout, death_by_event, (unsigned long)ct);
--	ct->timeout.expires = jiffies +
-+	setup_timer(&ecache->timeout, death_by_event, (unsigned long)ct);
-+	ecache->timeout.expires = jiffies +
- 		(random32() % net->ct.sysctl_events_retry_timeout);
--	add_timer(&ct->timeout);
-+	add_timer(&ecache->timeout);
- }
- EXPORT_SYMBOL_GPL(nf_ct_insert_dying_list);
+-		matchend = matchoff + matchlen;
++		matchend = matchoff + matchlen + *datalen - olen;
  
+ 		/* The maddr= parameter (RFC 2361) specifies where to send
+ 		 * the reply. */
 
 
