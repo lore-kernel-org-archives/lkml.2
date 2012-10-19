@@ -1,87 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab2JSIGk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 04:06:40 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39569 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456Ab2JSIGh (ORCPT
+	id S1752431Ab2JSIMP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 04:12:15 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58311 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916Ab2JSIMM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 04:06:37 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <508109F2.1080402@jp.fujitsu.com>
-Date: Fri, 19 Oct 2012 17:06:10 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Fri, 19 Oct 2012 04:12:12 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Richard Purdie <rpurdie@rpsys.net>, Bryan Wu <bryan.wu@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] lp855x_bl: remove unnecessary mutex code
+Thread-Topic: [PATCH 2/2] lp855x_bl: remove unnecessary mutex code
+Thread-Index: Ac2t0WsklGYQxw/yQJO27sQzEoDi7w==
+Date: Fri, 19 Oct 2012 08:12:02 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F64179175@DQHE02.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: <wency@cn.fujitsu.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>,
-        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH v3 0/9] bugfix for memory hotplug
-References: <1350629202-9664-1-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1350629202-9664-1-git-send-email-wency@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wen,
+ The mutex for accessing lp855x registers is used in case of
+ the user-space interaction.
+ When the brightness is changed via the sysfs, the mutex is required.
+ But the backlight class device already provides it.
+ Thus, the lp855x mutex is unnecessary.
 
-Some bug fix patches have been merged into linux-next.
-So the patches confuse me.
-Why did you send same patches again?
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ drivers/video/backlight/lp855x_bl.c |   14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
-Thanks,
-Yasuaki Ishimatsu
+diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
+index c4fd72f..ff86531 100644
+--- a/drivers/video/backlight/lp855x_bl.c
++++ b/drivers/video/backlight/lp855x_bl.c
+@@ -35,7 +35,6 @@ struct lp855x {
+ 	struct i2c_client *client;
+ 	struct backlight_device *bl;
+ 	struct device *dev;
+-	struct mutex xfer_lock;
+ 	struct lp855x_platform_data *pdata;
+ 	struct pwm_device *pwm;
+ };
+@@ -44,14 +43,11 @@ static int lp855x_read_byte(struct lp855x *lp, u8 reg, u8 *data)
+ {
+ 	int ret;
+ 
+-	mutex_lock(&lp->xfer_lock);
+ 	ret = i2c_smbus_read_byte_data(lp->client, reg);
+ 	if (ret < 0) {
+-		mutex_unlock(&lp->xfer_lock);
+ 		dev_err(lp->dev, "failed to read 0x%.2x\n", reg);
+ 		return ret;
+ 	}
+-	mutex_unlock(&lp->xfer_lock);
+ 
+ 	*data = (u8)ret;
+ 	return 0;
+@@ -59,13 +55,7 @@ static int lp855x_read_byte(struct lp855x *lp, u8 reg, u8 *data)
+ 
+ static int lp855x_write_byte(struct lp855x *lp, u8 reg, u8 data)
+ {
+-	int ret;
+-
+-	mutex_lock(&lp->xfer_lock);
+-	ret = i2c_smbus_write_byte_data(lp->client, reg, data);
+-	mutex_unlock(&lp->xfer_lock);
+-
+-	return ret;
++	return i2c_smbus_write_byte_data(lp->client, reg, data);
+ }
+ 
+ static bool lp855x_is_valid_rom_area(struct lp855x *lp, u8 addr)
+@@ -278,8 +268,6 @@ static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
+ 	lp->chip_id = id->driver_data;
+ 	i2c_set_clientdata(cl, lp);
+ 
+-	mutex_init(&lp->xfer_lock);
+-
+ 	ret = lp855x_init_registers(lp);
+ 	if (ret) {
+ 		dev_err(lp->dev, "i2c communication err: %d", ret);
+-- 
+1.7.9.5
 
-2012/10/19 15:46, wency@cn.fujitsu.com wrote:
-> From: Wen Congyang <wency@cn.fujitsu.com>
-> 
-> Changes from v2 to v3:
->    Merge the bug fix from ishimatsu to this patchset(Patch 1-3)
->    Patch 3: split it from patch as it fixes another bug.
->    Patch 4: new patch, and fix bad-page state when hotadding a memory
->             device after hotremoving it. I forgot to post this patch in v2.
->    Patch 6: update it according to Dave Hansen's comment.
-> 
-> Changes from v1 to v2:
->    Patch 1: updated according to kosaki's suggestion
-> 
->    Patch 2: new patch, and update mce_bad_pages when removing memory.
-> 
->    Patch 4: new patch, and fix a NR_FREE_PAGES mismatch, and this bug
->             cause oom in my test.
-> 
->    Patch 5: new patch, and fix a new bug. When repeating to online/offline
->             pages, the free pages will continue to decrease.
-> 
-> Wen Congyang (6):
->    clear the memory to store struct page
->    memory-hotplug: skip HWPoisoned page when offlining pages
->    memory-hotplug: update mce_bad_pages when removing the memory
->    memory-hotplug: auto offline page_cgroup when onlining memory block
->      failed
->    memory-hotplug: fix NR_FREE_PAGES mismatch
->    memory-hotplug: allocate zone's pcp before onlining pages
-> 
-> Yasuaki Ishimatsu (3):
->    suppress "Device memoryX does not have a release() function" warning
->    suppress "Device nodeX does not have a release() function" warning
->    memory-hotplug: flush the work for the node when the node is offlined
-> 
->   drivers/base/memory.c          |    9 ++++++++-
->   drivers/base/node.c            |   11 +++++++++++
->   include/linux/page-isolation.h |   10 ++++++----
->   mm/memory-failure.c            |    2 +-
->   mm/memory_hotplug.c            |   14 ++++++++------
->   mm/page_alloc.c                |   37 ++++++++++++++++++++++++++++---------
->   mm/page_cgroup.c               |    3 +++
->   mm/page_isolation.c            |   27 ++++++++++++++++++++-------
->   mm/sparse.c                    |   22 +++++++++++++++++++++-
->   9 files changed, 106 insertions(+), 29 deletions(-)
-> 
+
+Best Regards,
+Milo
 
 
