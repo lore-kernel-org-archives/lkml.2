@@ -1,46 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab2JSRJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 13:09:56 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35010 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753835Ab2JSRJy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 13:09:54 -0400
-Date: Fri, 19 Oct 2012 18:09:51 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: weird use-after-free bug in module_put
-Message-ID: <20121019170951.GM2616@ZenIV.linux.org.uk>
-References: <20121019144351.GA1532@redhat.com>
- <20121019153452.GB1532@redhat.com>
- <20121019163318.GA2152@core.coreip.homeip.net>
+	id S1757487Ab2JSRMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 13:12:34 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:32642 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752434Ab2JSRMc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 13:12:32 -0400
+X-Forefront-Antispam-Report: CIP:198.70.193.61;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub1.qlogic.com;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zcb8kz9371I1432Izz1202h1d1ah1d2ahzz8275bhz2fh2a8h668h839h944hd25hf0ah107ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1155h)
+From: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
+To: Joe Jin <joe.jin@oracle.com>, Ron Mercer <ron.mercer@qlogic.com>,
+        Dept-Eng Linux Driver <Linux-Driver@qlogic.com>
+CC: netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg Marsden <greg.marsden@oracle.com>
+Date: Fri, 19 Oct 2012 10:12:25 -0700
+Subject: RE: [PATCH] qla3xxx: Ensure request/response queue addr writes to
+ the registers
+Thread-Topic: [PATCH] qla3xxx: Ensure request/response queue addr writes to
+ the registers
+Thread-Index: Ac2tmIjRiUBG8TkRQ3m3G00LQHR1cgAgpT2w
+Message-ID: <5E4F49720D0BAD499EE1F01232234BA87744A9406C@AVEXMB1.qlogic.org>
+References: <5080ABD7.90006@oracle.com>
+In-Reply-To: <5080ABD7.90006@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121019163318.GA2152@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 09:33:18AM -0700, Dmitry Torokhov wrote:
 
-> We are now removing instance of character device corresponding to input
-> device when input device disappears.
-> 
-> Ah, I know... cdev is embedded in evdev, but lives longer.. I do want to
-> keep cdev embedded as it allows me to easily get to evdev in
-> evdev_open(), but I need to be able to add and then drop reference to
-> evdev from cdev's ->release() method. This means I need to override it.
-> 
-> Or I could have cdev separately allocated, but then I'd like to have a
-> void pointer in "struct cdev" so I could get from it back to
-> corresponding evdev.
 
-Your real problem is that you have two kobjects embedded into the same
-thing.  It can work, but you need to make the secondary (one that does
-*not* free in its ->release()) pin the primary.  Sigh...  Device model
-sucks, film at 11...
+>From: Joe Jin [mailto:joe.jin@oracle.com] 
+>Sent: Thursday, October 18, 2012 6:25 PM
+>To: Ron Mercer; Dept-Eng Linux Driver; Jitendra Kalsaria; Joe Jin
+>Cc: netdev; linux-kernel; Greg Marsden
+>Subject: [PATCH] qla3xxx: Ensure request/response queue addr writes to the registers
+>
+>Before use the request and response queue addr, make sure it has wrote
+>to the registers.
+>
+>Signed-off-by: Joe Jin <joe.jin@oracle.com>
+>Cc: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
+>Cc: Ron Mercer <ron.mercer@qlogic.com>
+>---
+> drivers/net/ethernet/qlogic/qla3xxx.c | 6 ++++++
+> 1 file changed, 6 insertions(+)
+>
+>diff --git a/drivers/net/ethernet/qlogic/qla3xxx.c b/drivers/net/ethernet/qlogic/qla3xxx.c
+>index df09b1c..f745ade 100644
+>--- a/drivers/net/ethernet/qlogic/qla3xxx.c
+>+++ b/drivers/net/ethernet/qlogic/qla3xxx.c
+>@@ -2525,6 +2525,12 @@ static int ql_alloc_net_req_rsp_queues(struct ql3_adapter *qdev)
+> 	qdev->req_q_size =
+> 	    (u32) (NUM_REQ_Q_ENTRIES * sizeof(struct ob_mac_iocb_req));
+> 
+>+	/*
+>+	 * The barrier is required to ensure request and response queue
+>+	 * addr writes to the registers.
+>+	 */
+>+	wmb();
+>+
+> 	qdev->req_q_virt_addr =
+> 	    pci_alloc_consistent(qdev->pdev,
+> 				 (size_t) qdev->req_q_size,
+
+Joe,
+
+You need to move below line above the write memory barrier to get response queue address write to register
+	qdev->rsp_q_size = NUM_RSP_Q_ENTRIES * sizeof(struct net_rsp_iocb);
+
+Your patch will be like below:
+<snip>
+	qdev->req_q_size =
+		(u32) (NUM_REQ_Q_ENTRIES * sizeof(struct ob_mac_iocb_req));
+
++	qdev->rsp_q_size = NUM_RSP_Q_ENTRIES * sizeof(struct net_rsp_iocb);
++
++	/*
++	 * The barrier is required to ensure request and response queue
++	 * addr writes to the registers.
++	 */
++	wmb();
++
+
+<\snip>
+
+
+thanks,
+	Jiten
+-- 
+1.7.11.7
+
+
+
