@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757942Ab2JSDO2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:14:28 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51589 "EHLO mail.kernel.org"
+	id S1757439Ab2JSCrp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:47:45 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51539 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757443Ab2JSCrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:47 -0400
+	id S1757193Ab2JSCrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jean-Christian de Rivaz <jc@eclis.ch>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 44/62] Add CDC-ACM support for the CX93010-2x UCMxx USB Modem
-Date: Thu, 18 Oct 2012 19:45:12 -0700
-Message-Id: <20121019024303.091743819@linuxfoundation.org>
+        Patrick McHardy <kaber@trash.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        David Miller <davem@davemloft.net>
+Subject: [ 40/62] netfilter: nf_nat_sip: fix via header translation with multiple parameters
+Date: Thu, 18 Oct 2012 19:45:08 -0700
+Message-Id: <20121019024302.449873352@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -26,36 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean-Christian de Rivaz <jc@eclis.ch>
+From: Patrick McHardy <kaber@trash.net>
 
-commit e7d491a19d3e3aac544070293891a2542ae0c565 upstream.
+commit f22eb25cf5b1157b29ef88c793b71972efc47143 upstream.
 
-This USB V.92/V.32bis Controllered Modem have the USB vendor ID 0x0572
-and device ID 0x1340. It need the NO_UNION_NORMAL quirk to be recognized.
+Via-headers are parsed beginning at the first character after the Via-address.
+When the address is translated first and its length decreases, the offset to
+start parsing at is incorrect and header parameters might be missed.
 
-Reference:
-http://www.conexant.com/servlets/DownloadServlet/DSH-201723-005.pdf?docid=1725&revid=5
-See idVendor and idProduct in table 6-1. Device Descriptors
+Update the offset after translating the Via-address to fix this.
 
-Signed-off-by: Jean-Christian de Rivaz <jc@eclis.ch>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Acked-by: David Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/ipv4/netfilter/nf_nat_sip.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1551,6 +1551,9 @@ static const struct usb_device_id acm_id
- 					   Maybe we should define a new
- 					   quirk for this. */
- 	},
-+	{ USB_DEVICE(0x0572, 0x1340), /* Conexant CX93010-2x UCMxx */
-+	.driver_info = NO_UNION_NORMAL,
-+	},
- 	{ USB_DEVICE(0x1bbb, 0x0003), /* Alcatel OT-I650 */
- 	.driver_info = NO_UNION_NORMAL, /* reports zero length descriptor */
- 	},
+--- a/net/ipv4/netfilter/nf_nat_sip.c
++++ b/net/ipv4/netfilter/nf_nat_sip.c
+@@ -148,7 +148,7 @@ static unsigned int ip_nat_sip(struct sk
+ 	if (ct_sip_parse_header_uri(ct, *dptr, NULL, *datalen,
+ 				    hdr, NULL, &matchoff, &matchlen,
+ 				    &addr, &port) > 0) {
+-		unsigned int matchend, poff, plen, buflen, n;
++		unsigned int olen, matchend, poff, plen, buflen, n;
+ 		char buffer[sizeof("nnn.nnn.nnn.nnn:nnnnn")];
+ 
+ 		/* We're only interested in headers related to this
+@@ -163,11 +163,12 @@ static unsigned int ip_nat_sip(struct sk
+ 				goto next;
+ 		}
+ 
++		olen = *datalen;
+ 		if (!map_addr(skb, dataoff, dptr, datalen, matchoff, matchlen,
+ 			      &addr, port))
+ 			return NF_DROP;
+ 
+-		matchend = matchoff + matchlen;
++		matchend = matchoff + matchlen + *datalen - olen;
+ 
+ 		/* The maddr= parameter (RFC 2361) specifies where to send
+ 		 * the reply. */
 
 
