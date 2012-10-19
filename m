@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030486Ab2JSDFh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:05:37 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52009 "EHLO mail.kernel.org"
+	id S964786Ab2JSCsc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:48:32 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51842 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964790Ab2JSCsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:48:38 -0400
+	id S1757504Ab2JSCsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:48:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Christoph Hellwig <hch@lst.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 19/76] iscsit: remove incorrect unlock in iscsit_build_sendtargets_resp
-Date: Thu, 18 Oct 2012 19:46:43 -0700
-Message-Id: <20121019024353.192954526@linuxfoundation.org>
+        Bryan Schumaker <bjschuma@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 04/76] NFS: Remove bad delegations during open recovery
+Date: Thu, 18 Oct 2012 19:46:28 -0700
+Message-Id: <20121019024350.793373325@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -26,31 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@infradead.org>
+From: Bryan Schumaker <bjschuma@netapp.com>
 
-commit 904753da183566c71211d23c169a80184648c121 upstream.
+commit 6938867edba929a65a167a97581231e76aeb10b4 upstream.
 
-Fix a potential multiple spin-unlock -> deadlock scenario during the
-overflow check within iscsit_build_sendtargets_resp() as found by
-sparse static checking.
+I put the client into an open recovery loop by:
+	Client: Open file
+		read half
+	Server: Expire client (echo 0 > /sys/kernel/debug/nfsd/forget_clients)
+	Client: Drop vm cache (echo 3 > /proc/sys/vm/drop_caches)
+		finish reading file
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+This causes a loop because the client never updates the nfs4_state after
+discovering that the delegation is invalid.  This means it will keep
+trying to read using the bad delegation rather than attempting to re-open
+the file.
+
+Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target.c |    1 -
- 1 file changed, 1 deletion(-)
+ fs/nfs/nfs4proc.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -3271,7 +3271,6 @@ static int iscsit_build_sendtargets_resp
- 		len += 1;
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1774,7 +1774,11 @@ static void nfs41_clear_delegation_state
+ 		 * informs us the stateid is unrecognized. */
+ 		if (status != -NFS4ERR_BAD_STATEID)
+ 			nfs41_free_stateid(server, stateid);
++		nfs_remove_bad_delegation(state->inode);
  
- 		if ((len + payload_len) > buffer_len) {
--			spin_unlock(&tiqn->tiqn_tpg_lock);
- 			end_of_buf = 1;
- 			goto eob;
- 		}
++		write_seqlock(&state->seqlock);
++		nfs4_stateid_copy(&state->stateid, &state->open_stateid);
++		write_sequnlock(&state->seqlock);
+ 		clear_bit(NFS_DELEGATED_STATE, &state->flags);
+ 	}
+ }
 
 
