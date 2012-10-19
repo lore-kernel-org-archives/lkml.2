@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758548Ab2JSQMt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 12:12:49 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60110 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532Ab2JSQMr (ORCPT
+	id S1758681Ab2JSQSF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 12:18:05 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45788 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab2JSQSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 12:12:47 -0400
-Message-ID: <50817BFC.9000106@wwwdotorg.org>
-Date: Fri, 19 Oct 2012 10:12:44 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 4/4 v2] gpio/tegra: convert to use linear irqdomain
-References: <1350644052-31926-1-git-send-email-linus.walleij@linaro.org>
-In-Reply-To: <1350644052-31926-1-git-send-email-linus.walleij@linaro.org>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Oct 2012 12:18:03 -0400
+From: Sangho Yi <antiroot@gmail.com>
+To: myungjoo.ham@samsung.com, kyungmin.park@samsung.com
+Cc: linux-kernel@vger.kernel.org, Sangho Yi <antiroot@gmail.com>
+Subject: [PATCH] devfreq: exynos4_bus.c: Fixed an alignment of the func call args.
+Date: Sat, 20 Oct 2012 01:16:34 +0900
+Message-Id: <1350663394-2711-1-git-send-email-antiroot@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <n>
+References: <n>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2012 04:54 AM, Linus Walleij wrote:
-> The Tegra driver tries to do the work of irq_domain_add_linear()
-> by reserving a bunch of descriptors somewhere and keeping track
-> of the base offset, then calling irq_domain_add_legacy(). Let's
-> stop doing that and simply use the linear IRQ domain.
-> 
-> For this to work: use irq_create_mapping() in the IRQ iterator
-> so that the descriptors get allocated here.
+I fixed the following check item (via checkpatch.pl --strict option):
+CHECK: Alignment should match open parenthesis
 
-Tested-by: Stephen Warren <swarren@nvidia.com>
-Acked-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Sangho Yi <antiroot@gmail.com>
+---
+ drivers/devfreq/exynos4_bus.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
+index 88ddc77..f4089c4 100644
+--- a/drivers/devfreq/exynos4_bus.c
++++ b/drivers/devfreq/exynos4_bus.c
+@@ -1034,7 +1034,7 @@ static __devinit int exynos4_busfreq_probe(struct platform_device *pdev)
+ 	opp = opp_find_freq_floor(dev, &exynos4_devfreq_profile.initial_freq);
+ 	if (IS_ERR(opp)) {
+ 		dev_err(dev, "Invalid initial frequency %lu kHz.\n",
+-		       exynos4_devfreq_profile.initial_freq);
++			exynos4_devfreq_profile.initial_freq);
+ 		err = PTR_ERR(opp);
+ 		goto err_opp_add;
+ 	}
+--
+1.7.9.5
+
