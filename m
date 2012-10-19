@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757387Ab2JSAEA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 20:04:00 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:35275 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab2JSAD7 (ORCPT
+	id S1757413Ab2JSAEr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 20:04:47 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:50895 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710Ab2JSAEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 20:03:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <1350141021.21172.14949.camel@edumazet-glaptop>
-References: <CALF0-+XGn5=QSE0bpa4RTag9CAJ63MKz1kvaYbpw34qUhViaZA@mail.gmail.com>
-	<m27gqwtyu9.fsf@firstfloor.org>
-	<alpine.DEB.2.00.1210111558290.6409@chino.kir.corp.google.com>
-	<m2391ktxjj.fsf@firstfloor.org>
-	<alpine.DEB.2.00.1210130249070.7462@chino.kir.corp.google.com>
-	<1350141021.21172.14949.camel@edumazet-glaptop>
-Date: Fri, 19 Oct 2012 09:03:58 +0900
-Message-ID: <CAAmzW4N1rAQLOE3QmeeTfsNH-7v-9RD8wT990RbZtYon3YfrLA@mail.gmail.com>
-Subject: Re: [Q] Default SLAB allocator
-From: JoonSoo Kim <js1304@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Ezequiel Garcia <elezegarcia@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Tim Bird <tim.bird@am.sony.com>,
-        celinux-dev@lists.celinuxforum.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 18 Oct 2012 20:04:46 -0400
+From: Fabio Estevam <festevam@gmail.com>
+To: rob.herring@calxeda.com
+Cc: shawn.guo@linaro.org, kernel@pengutronix.de,
+        broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH v2 1/2] ARM: multi_v7_defconfig: Add ARCH_MXC
+Date: Thu, 18 Oct 2012 21:04:05 -0300
+Message-Id: <1350605046-21358-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Eric.
-Thank you very much for a kind comment about my question.
-I have one more question related to network subsystem.
-Please let me know what I misunderstand.
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-2012/10/14 Eric Dumazet <eric.dumazet@gmail.com>:
-> In latest kernels, skb->head no longer use kmalloc()/kfree(), so SLAB vs
-> SLUB is less a concern for network loads.
->
-> In 3.7, (commit 69b08f62e17) we use fragments of order-3 pages to
-> populate skb->head.
+Let ARCH_MXC be covered by multi_v7_defconfig.
 
-You mentioned that in latest kernel skb->head no longer use kmalloc()/kfree().
-But, why result of David's "netperf RR" test on v3.6 is differentiated
-by choosing the allocator?
-As far as I know, __netdev_alloc_frag may be introduced in v3.5, so
-I'm just confused.
-Does this test use __netdev_alloc_skb with "__GFP_WAIT | GFP_DMA"?
+Allow booting mx6 via NFS.
 
-Does normal workload for network use __netdev_alloc_skb with
-"__GFP_WAIT | GFP_DMA"?
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+Changes since v1:
+- Provide a more complete config that allows booting mx6 via NFS
 
-Thanks!
+ arch/arm/configs/multi_v7_defconfig |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index 159f75f..df1e563 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -5,6 +5,8 @@ CONFIG_ARCH_MVEBU=y
+ CONFIG_MACH_ARMADA_370=y
+ CONFIG_MACH_ARMADA_XP=y
+ CONFIG_ARCH_HIGHBANK=y
++CONFIG_ARCH_MXC=y
++CONFIG_SOC_IMX6Q=y
+ CONFIG_ARCH_SOCFPGA=y
+ # CONFIG_ARCH_VEXPRESS_CORTEX_A5_A9_ERRATA is not set
+ CONFIG_ARM_ERRATA_754322=y
+@@ -17,18 +19,29 @@ CONFIG_ARM_APPENDED_DTB=y
+ CONFIG_VFP=y
+ CONFIG_NEON=y
+ CONFIG_NET=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_INET=y
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
+ CONFIG_ATA=y
+ CONFIG_SATA_HIGHBANK=y
+ CONFIG_NETDEVICES=y
+ CONFIG_NET_CALXEDA_XGMAC=y
+ CONFIG_SMSC911X=y
+ CONFIG_STMMAC_ETH=y
++CONFIG_NFS_FS=y
++CONFIG_NFS_V3_ACL=y
++CONFIG_NFS_V4=y
++CONFIG_ROOT_NFS=y
+ CONFIG_SERIO_AMBAKMI=y
+ CONFIG_SERIAL_8250=y
+ CONFIG_SERIAL_8250_CONSOLE=y
+ CONFIG_SERIAL_8250_DW=y
+ CONFIG_SERIAL_AMBA_PL011=y
+ CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
++CONFIG_SERIAL_IMX=y
++CONFIG_SERIAL_IMX_CONSOLE=y
+ CONFIG_SERIAL_OF_PLATFORM=y
+ CONFIG_IPMI_HANDLER=y
+ CONFIG_IPMI_SI=y
+-- 
+1.7.9.5
+
