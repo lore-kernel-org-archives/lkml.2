@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030362Ab2JSC7m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:59:42 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52284 "EHLO mail.kernel.org"
+	id S1030377Ab2JSC7z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:59:55 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52274 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964953Ab2JSCtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:49:06 -0400
+	id S964949Ab2JSCtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:49:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 44/76] timekeeping: Cast raw_interval to u64 to avoid shift overflow
-Date: Thu, 18 Oct 2012 19:47:08 -0700
-Message-Id: <20121019024357.192231019@linuxfoundation.org>
+        Daniel Drake <dsd@laptop.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [ 43/76] viafb: dont touch clock state on OLPC XO-1.5
+Date: Thu, 18 Oct 2012 19:47:07 -0700
+Message-Id: <20121019024357.032968217@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -27,33 +26,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Daniel Drake <dsd@laptop.org>
 
-commit 5b3900cd409466c0070b234d941650685ad0c791 upstream.
+commit 012a1211845eab69a5488d59eb87d24cc518c627 upstream.
 
-We fixed a bunch of integer overflows in timekeeping code during the 3.6
-cycle.  I did an audit based on that and found this potential overflow.
+As detailed in the thread titled "viafb PLL/clock tweaking causes XO-1.5
+instability," enabling or disabling the IGA1/IGA2 clocks causes occasional
+stability problems during suspend/resume cycles on this platform.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: John Stultz <johnstul@us.ibm.com>
-Link: http://lkml.kernel.org/r/20121009071823.GA19159@elgon.mountain
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+This is rather odd, as the documentation suggests that clocks have two
+states (on/off) and the default (stable) configuration is configured to
+enable the clock only when it is needed. However, explicitly enabling *or*
+disabling the clock triggers this system instability, suggesting that there
+is a 3rd state at play here.
+
+Leaving the clock enable/disable registers alone solves this problem.
+This fixes spurious reboots during suspend/resume behaviour introduced by
+commit b692a63a.
+
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/timekeeping.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/video/via/via_clock.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1111,7 +1111,7 @@ static cycle_t logarithmic_accumulation(
- 	accumulate_nsecs_to_secs(tk);
+--- a/drivers/video/via/via_clock.c
++++ b/drivers/video/via/via_clock.c
+@@ -25,6 +25,7 @@
  
- 	/* Accumulate raw time */
--	raw_nsecs = tk->raw_interval << shift;
-+	raw_nsecs = (u64)tk->raw_interval << shift;
- 	raw_nsecs += tk->raw_time.tv_nsec;
- 	if (raw_nsecs >= NSEC_PER_SEC) {
- 		u64 raw_secs = raw_nsecs;
+ #include <linux/kernel.h>
+ #include <linux/via-core.h>
++#include <asm/olpc.h>
+ #include "via_clock.h"
+ #include "global.h"
+ #include "debug.h"
+@@ -289,6 +290,10 @@ static void dummy_set_pll(struct via_pll
+ 	printk(KERN_INFO "Using undocumented set PLL.\n%s", via_slap);
+ }
+ 
++static void noop_set_clock_state(u8 state)
++{
++}
++
+ void via_clock_init(struct via_clock *clock, int gfx_chip)
+ {
+ 	switch (gfx_chip) {
+@@ -346,4 +351,18 @@ void via_clock_init(struct via_clock *cl
+ 		break;
+ 
+ 	}
++
++	if (machine_is_olpc()) {
++		/* The OLPC XO-1.5 cannot suspend/resume reliably if the
++		 * IGA1/IGA2 clocks are set as on or off (memory rot
++		 * occasionally happens during suspend under such
++		 * configurations).
++		 *
++		 * The only known stable scenario is to leave this bits as-is,
++		 * which in their default states are documented to enable the
++		 * clock only when it is needed.
++		 */
++		clock->set_primary_clock_state = noop_set_clock_state;
++		clock->set_secondary_clock_state = noop_set_clock_state;
++	}
+ }
 
 
