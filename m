@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab2JSTAJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 15:00:09 -0400
-Received: from claranet-outbound-smtp06.uk.clara.net ([195.8.89.39]:38547 "EHLO
-	claranet-outbound-smtp06.uk.clara.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752384Ab2JSTAH (ORCPT
+	id S1756274Ab2JSTBX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 15:01:23 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:30305 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694Ab2JSTBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 15:00:07 -0400
-From: Simon Farnsworth <simon.farnsworth@onelan.co.uk>
-To: linux-kernel@vger.kernel.org
-Cc: len.brown@intel.com, linux-pm@vger.kernel.org, lenb@kernel.org
-Subject: pm_qos request for 0 cpu_dma_latency is ignored on Linus master
-Date: Fri, 19 Oct 2012 18:28:18 +0100
-Message-ID: <2732999.VSJZov8CP4@f17simon>
-User-Agent: KMail/4.8.4 (Linux/3.4.6-2.fc17.x86_64; KDE/4.8.4; x86_64; ; )
+	Fri, 19 Oct 2012 15:01:21 -0400
+Date: Fri, 19 Oct 2012 14:49:08 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ben Guthro <ben@guthro.net>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        lenb@kernel.org, linux-acpi@vger.kernel.org, hpa@zytor.com,
+        x86@kernel.org
+Subject: Re: [RFC] ACPI S3 and Xen (suprisingly small\!).
+Message-ID: <20121019184908.GA19834@phenom.dumpdata.com>
+References: <1350481786-4969-1-git-send-email-konrad.wilk@oracle.com>
+ <CAOvdn6WBj_-=3Z=ZrD670Zup4H=pvjXknvHGgjs55k3LWJyDxQ@mail.gmail.com>
+ <20121017174317.GA25443@phenom.dumpdata.com>
+ <CAOvdn6Uubr8J0a5+nhDKrtMYebKkBTX6+-0v0J1BGMnU-ZkVRA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1894394.UJ754FPfpW"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOvdn6Uubr8J0a5+nhDKrtMYebKkBTX6+-0v0J1BGMnU-ZkVRA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 17, 2012 at 02:00:29PM -0400, Ben Guthro wrote:
+> I'm not sure it matters, but I'm testing against a changeset about a week old:
+> http://xenbits.xen.org/gitweb/?p=xen.git;a=commit;h=1c4a5b37b55c56e49135e65728137f54288d1fe6
 
---nextPart1894394.UJ754FPfpW
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+I was able to reproduce it with Xen 4.2 so found the culprit.
 
-(please cc me on replies - I'm not directly subscribed to linux-kernel or linux-pm)
+.. And then another issue :-(
 
-I'm trying to track down why a Sandybridge system with a PCIe to PCI riser
-has problems after enabling GPU RC6, and I've reduced my problem to the menu
-cpuidle governor selecting high C-states from intel_idle, even though I've
-given a cpu_dma_latency requirement of 0 usecs.
-
-I have a TV capture card in the riser, and it appears that I get data lost
-whenever the package enters a high C state. My userspace opens
-/dev/cpu_dma_latency and writes (uint32_t)0 to this fd whenever we have things
-on-screen, closing the fd when we put the screen into DPMS off states.
-
-However, even with a userspace provided request of 0 usec, I'm seeing the CPU
-cores (and hence the entire package when GPU RC6 is enabled) enter C6 state.
-
-I've confirmed that forcing the governor to limit itself to C0 fixes my
-problem with:
-
-# for state in /sys/devices/system/cpu/cpu*/cpuidle/state[1-9]*/disable ; do echo 1 > $state ; done
-
-What do I need to do to get the menu cpuidle governor and the intel_idle
-cpuidle driver to respect the /dev/cpu_dma_latency pm_qos request of 0 usec
-and keep the Sandybridge CPU package out of low C states? Note that a CPU
-core in low C state is fine, as long as the DMA latency stays low.
-
-My goal is to keep the system in high-performance state when we're rendering
-digital signage on screen (as any glitching may upset viewers, and compared
-to the screen's full power use, we're irrelevant), but to go into lower power
-states when the screen is off (when we're only drawing power to keep the
-administrator interface available).
-
-My kernel is currently 3.7-rc1+, based on Linus git of Tuesday 16th October
-2012. I'm happy to try patches, even if all they get you is better debug
-output to work out why the userspace request is ignored.
--- 
-Simon Farnsworth
-Software Engineer
-ONELAN Ltd
-http://www.onelan.com
-
---nextPart1894394.UJ754FPfpW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAABAgAGBQJQgY21AAoJEIKsye9/dtRWB3IH/RzsrDbNPLKFGIUkPGg79otI
-WN7GqhgJ1qqYKF8PsasH/Z2Yzi7J9EmePL55nMG8QdNHqXt1MK/qgc4OK847bcNQ
-AwksSuJFabZMoJMucmjwILTTH5M8mVk2gyBbiaEJsiPJJRQyL+n6d126pafdx8Og
-geXsDUeRxz7Pagm+ONyvz8W1oP9SJyvl7qiWIbGqhbc2HzuQwxVrXsJ6v/lQpTw/
-rmOHXqC9w0xfA02rZ/yxhKWUW4hlgS8pdZ0qW5Vzz1F3SxIzXX1dgkTgRpp8HveX
-sVLjp0vpBhuTPPUb4TAU8OSi0f0Kxh4T6a+nfGQUdCsgopgF2vlvNkVE4A8vj5k=
-=lhxn
------END PGP SIGNATURE-----
-
---nextPart1894394.UJ754FPfpW--
-
+> 
+> Plus patches specific to XenClient Enterprise.
+> 
+> 
+> On Wed, Oct 17, 2012 at 1:43 PM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+> > On Wed, Oct 17, 2012 at 01:46:09PM -0400, Ben Guthro wrote:
+> >> On Wed, Oct 17, 2012 at 9:49 AM, Konrad Rzeszutek Wilk
+> >> <konrad.wilk@oracle.com> wrote:
+> >> [...]
+> >>
+> >> > The end result is this is a nice set of patches where there is only
+> >> > _one_ change in the x86 code (and it is just more of dealing with
+> >> > error case) - and the rest are all done in Xen side.
+> >>
+> >> I'm sorry to report that this series doesn't seem to work in my setup
+> >> against xen-unstable.
+> >>
+> >> To verify that it was, in fact this patch series, and not another Xen
+> >> regression - I swapped out the kernel with this patch series, with an
+> >> identical one, replacing only this series with your acpi-s3.v9 branch
+> >> - and everything worked fine.
+> >
+> > Thanks for testing it!
+> >
+> > I had tested it with Xen 4.1.3, which could be doing something different.
+> > Will see what is up.
