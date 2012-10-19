@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932864Ab2JSDMt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:12:49 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51659 "EHLO mail.kernel.org"
+	id S1161055Ab2JSDNJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:13:09 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51645 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932402Ab2JSCr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:56 -0400
+	id S932318Ab2JSCrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peter Huewe <peter.huewe@infineon.com>,
-        Kent Yoder <key@linux.vnet.ibm.com>
-Subject: [ 49/62] tpm: Propagate error from tpm_transmit to fix a timeout hang
-Date: Thu, 18 Oct 2012 19:45:17 -0700
-Message-Id: <20121019024303.889203015@linuxfoundation.org>
+        Denys Fedoryshchenko <denys@visp.net.lb>,
+        Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        "David S. Miller" <davem@davemloft.net>, eric.dumazet@gmail.com,
+        therbert@google.com
+Subject: [ 48/62] e1000e: Change wthresh to 1 to avoid possible Tx stalls
+Date: Thu, 18 Oct 2012 19:45:16 -0700
+Message-Id: <20121019024303.733305316@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -26,95 +29,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Huewe <peter.huewe@infineon.com>
+From: Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>
 
-commit abce9ac292e13da367bbd22c1f7669f988d931ac upstream.
+commit 8edc0e624db3756783233e464879eb2e3b904c13 upstream.
 
-tpm_write calls tpm_transmit without checking the return value and
-assigns the return value unconditionally to chip->pending_data, even if
-it's an error value.
-This causes three bugs.
+This patch originated from Hiroaki SHIMODA but has been modified
+by Intel with some minor cleanups and additional commit log text.
 
-So if we write to /dev/tpm0 with a tpm_param_size bigger than
-TPM_BUFSIZE=0x1000 (e.g. 0x100a)
-and a bufsize also bigger than TPM_BUFSIZE (e.g. 0x100a)
-tpm_transmit returns -E2BIG which is assigned to chip->pending_data as
--7, but tpm_write returns that TPM_BUFSIZE bytes have been successfully
-been written to the TPM, altough this is not true (bug #1).
+Denys Fedoryshchenko and others reported Tx stalls on e1000e with
+BQL enabled.  Issue was root caused to hardware delays. They were
+introduced because some of the e1000e hardware with transmit
+writeback bursting enabled, waits until the driver does an
+explict flush OR there are WTHRESH descriptors to write back.
 
-As we did write more than than TPM_BUFSIZE bytes but tpm_write reports
-that only TPM_BUFSIZE bytes have been written the vfs tries to write
-the remaining bytes (in this case 10 bytes) to the tpm device driver via
-tpm_write which then blocks at
+Sometimes the delays in question were on the order of seconds,
+causing visible lag for ssh sessions and unacceptable tx
+completion latency, especially for BQL enabled kernels.
 
- /* cannot perform a write until the read has cleared
- either via tpm_read or a user_read_timer timeout */
- while (atomic_read(&chip->data_pending) != 0)
-	 msleep(TPM_TIMEOUT);
+To avoid possible Tx stalls, change WTHRESH back to 1.
 
-for 60 seconds, since data_pending is -7 and nobody is able to
-read it (since tpm_read luckily checks if data_pending is greater than
-0) (#bug 2).
+The current plan is to investigate a method for re-enabling
+WTHRESH while not harming BQL, but those patches will be later
+for net-next if they work.
 
-After that the remaining bytes are written to the TPM which are
-interpreted by the tpm as a normal command. (bug #3)
-So if the last bytes of the command stream happen to be a e.g.
-tpm_force_clear this gets accidentally sent to the TPM.
+please enqueue for stable since v3.3 as this bug was introduced in
+commit 3f0cfa3bc11e7f00c9994e0f469cbc0e7da7b00c
+Author: Tom Herbert <therbert@google.com>
+Date:   Mon Nov 28 16:33:16 2011 +0000
 
-This patch fixes all three bugs, by propagating the error code of
-tpm_write and returning -E2BIG if the input buffer is too big,
-since the response from the tpm for a truncated value is bogus anyway.
-Moreover it returns -EBUSY to userspace if there is a response ready to be
-read.
+    e1000e: Support for byte queue limits
 
-Signed-off-by: Peter Huewe <peter.huewe@infineon.com>
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+    Changes to e1000e to use byte queue limits.
+
+Reported-by: Denys Fedoryshchenko <denys@visp.net.lb>
+Tested-by: Denys Fedoryshchenko <denys@visp.net.lb>
+Signed-off-by: Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>
+CC: eric.dumazet@gmail.com
+CC: therbert@google.com
+Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/tpm/tpm.c |   21 ++++++++++++++-------
- 1 file changed, 14 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/intel/e1000e/e1000.h  |    6 +++---
+ drivers/net/ethernet/intel/e1000e/netdev.c |    2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -1186,17 +1186,20 @@ ssize_t tpm_write(struct file *file, con
- 		  size_t size, loff_t *off)
- {
- 	struct tpm_chip *chip = file->private_data;
--	size_t in_size = size, out_size;
-+	size_t in_size = size;
-+	ssize_t out_size;
+--- a/drivers/net/ethernet/intel/e1000e/e1000.h
++++ b/drivers/net/ethernet/intel/e1000e/e1000.h
+@@ -175,13 +175,13 @@ struct e1000_info;
+ /*
+  * in the case of WTHRESH, it appears at least the 82571/2 hardware
+  * writes back 4 descriptors when WTHRESH=5, and 3 descriptors when
+- * WTHRESH=4, and since we want 64 bytes at a time written back, set
+- * it to 5
++ * WTHRESH=4, so a setting of 5 gives the most efficient bus
++ * utilization but to avoid possible Tx stalls, set it to 1
+  */
+ #define E1000_TXDCTL_DMA_BURST_ENABLE                          \
+ 	(E1000_TXDCTL_GRAN | /* set descriptor granularity */  \
+ 	 E1000_TXDCTL_COUNT_DESC |                             \
+-	 (5 << 16) | /* wthresh must be +1 more than desired */\
++	 (1 << 16) | /* wthresh must be +1 more than desired */\
+ 	 (1 << 8)  | /* hthresh */                             \
+ 	 0x1f)       /* pthresh */
  
- 	/* cannot perform a write until the read has cleared
--	   either via tpm_read or a user_read_timer timeout */
--	while (atomic_read(&chip->data_pending) != 0)
--		msleep(TPM_TIMEOUT);
--
--	mutex_lock(&chip->buffer_mutex);
-+	   either via tpm_read or a user_read_timer timeout.
-+	   This also prevents splitted buffered writes from blocking here.
-+	*/
-+	if (atomic_read(&chip->data_pending) != 0)
-+		return -EBUSY;
- 
- 	if (in_size > TPM_BUFSIZE)
--		in_size = TPM_BUFSIZE;
-+		return -E2BIG;
-+
-+	mutex_lock(&chip->buffer_mutex);
- 
- 	if (copy_from_user
- 	    (chip->data_buffer, (void __user *) buf, in_size)) {
-@@ -1206,6 +1209,10 @@ ssize_t tpm_write(struct file *file, con
- 
- 	/* atomic tpm command send and result receive */
- 	out_size = tpm_transmit(chip, chip->data_buffer, TPM_BUFSIZE);
-+	if (out_size < 0) {
-+		mutex_unlock(&chip->buffer_mutex);
-+		return out_size;
-+	}
- 
- 	atomic_set(&chip->data_pending, out_size);
- 	mutex_unlock(&chip->buffer_mutex);
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@ -2806,7 +2806,7 @@ static void e1000_configure_tx(struct e1
+ 		 * set up some performance related parameters to encourage the
+ 		 * hardware to use the bus more efficiently in bursts, depends
+ 		 * on the tx_int_delay to be enabled,
+-		 * wthresh = 5 ==> burst write a cacheline (64 bytes) at a time
++		 * wthresh = 1 ==> burst write is disabled to avoid Tx stalls
+ 		 * hthresh = 1 ==> prefetch when one or more available
+ 		 * pthresh = 0x1f ==> prefetch if internal cache 31 or less
+ 		 * BEWARE: this seems to work but should be considered first if
 
 
