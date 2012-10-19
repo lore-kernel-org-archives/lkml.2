@@ -1,276 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758897Ab2JSNFs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 09:05:48 -0400
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:37338 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755995Ab2JSNFr (ORCPT
+	id S1757034Ab2JSNJE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 09:09:04 -0400
+Received: from woodbine.london.02.net ([87.194.255.145]:59450 "EHLO
+	woodbine.london.02.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754045Ab2JSNJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 09:05:47 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Jean Nicolas Graux <jean-nicolas.graux@stericsson.com>,
-        Loic Pallardy <loic.pallardy@st.com>
-Subject: [PATCH v2] pinctrl: reserve pins when states are activated
-Date: Fri, 19 Oct 2012 15:05:08 +0200
-Message-ID: <1350651909-5337-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 19 Oct 2012 09:09:03 -0400
+X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Oct 2012 09:09:02 EDT
+From: Matthew Leach <matthew@mattleach.net>
+To: linux-kernel@vger.kernel.org
+Cc: rusty@rustcorp.com.au, Matthew Leach <matthew@mattleach.net>
+Subject: [RFC PATCH] init: Use the stringify operator for the __define_initcall macro
+Date: Fri, 19 Oct 2012 13:58:56 +0100
+Message-Id: <1350651536-29834-1-git-send-email-matthew@mattleach.net>
+X-Mailer: git-send-email 1.7.12.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+Currently the __define_initcall macro takes three arguments, fn, id
+and level. The level argument is exactly the same as the id argument
+but wrapped in quotes. To overcome this need to specify three
+arguments to the __define_initcall macro, where one argument is the
+stringification of another, we can just use the stringification macro
+instead.
 
-This switches the way that pins are reserved for multiplexing:
-
-We used to do this when the map was parsed, at the creation of
-the settings inside the pinctrl handle, in pinmux_map_to_setting().
-
-However this does not work for us, because we want to use the
-same set of pins with different devices at different times: the
-current code assumes that the pin groups in a pinmux state will
-only be used with one single device, albeit different groups can
-be active at different times. For example if a single I2C driver
-block is used to drive two different busses located on two
-pin groups A and B, then the pins for all possible states of a
-function are reserved when fetching the pinctrl handle: the
-I2C bus can choose either set A or set B by a mux state at
-runtime, but all pins in both group A and B (the superset) are
-effectively reserved for that I2C function and mapped to the
-device. Another device can never get in and use the pins in
-group A, even if the device/function is using group B at the
-moment.
-
-Instead: let use reserve the pins when the state is activated
-and drop them when the state is disabled, i.e. when we move to
-another state. This way different devices/functions can use the
-same pins at different times.
-
-We know that this is an odd way of doing things, but we really
-need to switch e.g. an SD-card slot to become a tracing output
-sink at runtime: we plug in a special "tracing card" then mux
-the pins that used to be an SD slot around to the tracing
-unit and push out tracing data there instead of SD-card
-traffic.
-
-As a side effect pinmux_free_setting() is unused and gets
-deleted.
-
-Cc: Patrice Chotard <patrice.chotard@st.com>
-Cc: Jean Nicolas Graux <jean-nicolas.graux@stericsson.com>
-Cc: Loic Pallardy <loic.pallardy@st.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Matthew Leach <matthew@mattleach.net>
 ---
-ChangeLog v1->v2:
-- The code was already accounting for the case where the setting
-  was not active and called pinmux_disable_setting()
-  from the core, so skip this and delete the now empty
-  pinmux_free_setting() altogether.
----
- Documentation/pinctrl.txt |  4 ++-
- drivers/pinctrl/core.c    |  3 +-
- drivers/pinctrl/core.h    |  2 ++
- drivers/pinctrl/pinmux.c  | 70 ++++++++++++++---------------------------------
- drivers/pinctrl/pinmux.h  |  5 ----
- 5 files changed, 28 insertions(+), 56 deletions(-)
+ include/linux/init.h | 40 ++++++++++++++++++++--------------------
+ 1 file changed, 20 insertions(+), 20 deletions(-)
 
-diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-index 3b4ee53..a1cd2f9 100644
---- a/Documentation/pinctrl.txt
-+++ b/Documentation/pinctrl.txt
-@@ -1193,4 +1193,6 @@ foo_switch()
- 	...
- }
- 
--The above has to be done from process context.
-+The above has to be done from process context. The reservation of the pins
-+will be done when the state is activated, so in effect one specific pin
-+can be used by different functions at different times on a running system.
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index 0f1ec9e..bbd930e 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -563,6 +563,8 @@ static int add_setting(struct pinctrl *p, struct pinctrl_map const *map)
- 		return -EPROBE_DEFER;
- 	}
- 
-+	setting->dev_name = map->dev_name;
-+
- 	switch (map->type) {
- 	case PIN_MAP_TYPE_MUX_GROUP:
- 		ret = pinmux_map_to_setting(map, setting);
-@@ -689,7 +691,6 @@ static void pinctrl_put_locked(struct pinctrl *p, bool inlist)
- 			case PIN_MAP_TYPE_MUX_GROUP:
- 				if (state == p->state)
- 					pinmux_disable_setting(setting);
--				pinmux_free_setting(setting);
- 				break;
- 			case PIN_MAP_TYPE_CONFIGS_PIN:
- 			case PIN_MAP_TYPE_CONFIGS_GROUP:
-diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
-index 1f40ff6..12f5694 100644
---- a/drivers/pinctrl/core.h
-+++ b/drivers/pinctrl/core.h
-@@ -105,12 +105,14 @@ struct pinctrl_setting_configs {
-  * @type: the type of setting
-  * @pctldev: pin control device handling to be programmed. Not used for
-  *   PIN_MAP_TYPE_DUMMY_STATE.
-+ * @dev_name: the name of the device using this state
-  * @data: Data specific to the setting type
+diff --git a/include/linux/init.h b/include/linux/init.h
+index e59041e..eaa3851 100644
+--- a/include/linux/init.h
++++ b/include/linux/init.h
+@@ -186,16 +186,16 @@ extern bool initcall_debug;
+  * can point at the same handler without causing duplicate-symbol build errors.
   */
- struct pinctrl_setting {
- 	struct list_head node;
- 	enum pinctrl_map_type type;
- 	struct pinctrl_dev *pctldev;
-+	const char *dev_name;
- 	union {
- 		struct pinctrl_setting_mux mux;
- 		struct pinctrl_setting_configs configs;
-diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-index 9301a7a..0ecdf54 100644
---- a/drivers/pinctrl/pinmux.c
-+++ b/drivers/pinctrl/pinmux.c
-@@ -314,14 +314,11 @@ int pinmux_map_to_setting(struct pinctrl_map const *map,
- {
- 	struct pinctrl_dev *pctldev = setting->pctldev;
- 	const struct pinmux_ops *pmxops = pctldev->desc->pmxops;
--	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
- 	char const * const *groups;
- 	unsigned num_groups;
- 	int ret;
- 	const char *group;
- 	int i;
--	const unsigned *pins;
--	unsigned num_pins;
  
- 	if (!pmxops) {
- 		dev_err(pctldev->dev, "does not support mux function\n");
-@@ -376,55 +373,9 @@ int pinmux_map_to_setting(struct pinctrl_map const *map,
- 	}
- 	setting->data.mux.group = ret;
+-#define __define_initcall(level,fn,id) \
++#define __define_initcall(fn,id) \
+ 	static initcall_t __initcall_##fn##id __used \
+-	__attribute__((__section__(".initcall" level ".init"))) = fn
++	__attribute__((__section__(".initcall" #id ".init"))) = fn
  
--	ret = pctlops->get_group_pins(pctldev, setting->data.mux.group, &pins,
--				      &num_pins);
--	if (ret) {
--		dev_err(pctldev->dev,
--			"could not get pins for device %s group selector %d\n",
--			pinctrl_dev_get_name(pctldev), setting->data.mux.group);
--			return -ENODEV;
--	}
--
--	/* Try to allocate all pins in this group, one by one */
--	for (i = 0; i < num_pins; i++) {
--		ret = pin_request(pctldev, pins[i], map->dev_name, NULL);
--		if (ret) {
--			dev_err(pctldev->dev,
--				"could not request pin %d on device %s\n",
--				pins[i], pinctrl_dev_get_name(pctldev));
--			/* On error release all taken pins */
--			i--; /* this pin just failed */
--			for (; i >= 0; i--)
--				pin_free(pctldev, pins[i], NULL);
--			return -ENODEV;
--		}
--	}
--
- 	return 0;
- }
+ /*
+  * Early initcalls run before initializing SMP.
+  *
+  * Only for built-in code, not modules.
+  */
+-#define early_initcall(fn)		__define_initcall("early",fn,early)
++#define early_initcall(fn)		__define_initcall(fn,early)
  
--void pinmux_free_setting(struct pinctrl_setting const *setting)
--{
--	struct pinctrl_dev *pctldev = setting->pctldev;
--	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
--	const unsigned *pins;
--	unsigned num_pins;
--	int ret;
--	int i;
+ /*
+  * A "pure" initcall has no dependencies on anything else, and purely
+@@ -204,23 +204,23 @@ extern bool initcall_debug;
+  * This only exists for built-in code, not for modules.
+  * Keep main.c:initcall_level_names[] in sync.
+  */
+-#define pure_initcall(fn)		__define_initcall("0",fn,0)
 -
--	ret = pctlops->get_group_pins(pctldev, setting->data.mux.group,
--				      &pins, &num_pins);
--	if (ret) {
--		dev_err(pctldev->dev,
--			"could not get pins for device %s group selector %d\n",
--			pinctrl_dev_get_name(pctldev), setting->data.mux.group);
--		return;
--	}
--
--	for (i = 0; i < num_pins; i++)
--		pin_free(pctldev, pins[i], NULL);
--}
--
- int pinmux_enable_setting(struct pinctrl_setting const *setting)
- {
- 	struct pinctrl_dev *pctldev = setting->pctldev;
-@@ -446,6 +397,22 @@ int pinmux_enable_setting(struct pinctrl_setting const *setting)
- 		num_pins = 0;
- 	}
- 
-+	/* Try to allocate all pins in this group, one by one */
-+	for (i = 0; i < num_pins; i++) {
-+		ret = pin_request(pctldev, pins[i], setting->dev_name, NULL);
-+		if (ret) {
-+			dev_err(pctldev->dev,
-+				"could not request pin %d on device %s\n",
-+				pins[i], pinctrl_dev_get_name(pctldev));
-+			/* On error release all taken pins */
-+			i--; /* this pin just failed */
-+			for (; i >= 0; i--)
-+				pin_free(pctldev, pins[i], NULL);
-+			return -ENODEV;
-+		}
-+	}
+-#define core_initcall(fn)		__define_initcall("1",fn,1)
+-#define core_initcall_sync(fn)		__define_initcall("1s",fn,1s)
+-#define postcore_initcall(fn)		__define_initcall("2",fn,2)
+-#define postcore_initcall_sync(fn)	__define_initcall("2s",fn,2s)
+-#define arch_initcall(fn)		__define_initcall("3",fn,3)
+-#define arch_initcall_sync(fn)		__define_initcall("3s",fn,3s)
+-#define subsys_initcall(fn)		__define_initcall("4",fn,4)
+-#define subsys_initcall_sync(fn)	__define_initcall("4s",fn,4s)
+-#define fs_initcall(fn)			__define_initcall("5",fn,5)
+-#define fs_initcall_sync(fn)		__define_initcall("5s",fn,5s)
+-#define rootfs_initcall(fn)		__define_initcall("rootfs",fn,rootfs)
+-#define device_initcall(fn)		__define_initcall("6",fn,6)
+-#define device_initcall_sync(fn)	__define_initcall("6s",fn,6s)
+-#define late_initcall(fn)		__define_initcall("7",fn,7)
+-#define late_initcall_sync(fn)		__define_initcall("7s",fn,7s)
++#define pure_initcall(fn)		__define_initcall(fn,0)
 +
-+	/* Now that we have acquired the pins, encode the mux setting */
- 	for (i = 0; i < num_pins; i++) {
- 		desc = pin_desc_get(pctldev, pins[i]);
- 		if (desc == NULL) {
-@@ -482,6 +449,7 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
- 		num_pins = 0;
- 	}
++#define core_initcall(fn)		__define_initcall(fn,1)
++#define core_initcall_sync(fn)		__define_initcall(fn,1s)
++#define postcore_initcall(fn)		__define_initcall(fn,2)
++#define postcore_initcall_sync(fn)	__define_initcall(fn,2s)
++#define arch_initcall(fn)		__define_initcall(fn,3)
++#define arch_initcall_sync(fn)		__define_initcall(fn,3s)
++#define subsys_initcall(fn)		__define_initcall(fn,4)
++#define subsys_initcall_sync(fn)	__define_initcall(fn,4s)
++#define fs_initcall(fn)			__define_initcall(fn,5)
++#define fs_initcall_sync(fn)		__define_initcall(fn,5s)
++#define rootfs_initcall(fn)		__define_initcall(fn,rootfs)
++#define device_initcall(fn)		__define_initcall(fn,6)
++#define device_initcall_sync(fn)	__define_initcall(fn,6s)
++#define late_initcall(fn)		__define_initcall(fn,7)
++#define late_initcall_sync(fn)		__define_initcall(fn,7s)
  
-+	/* Flag the descs that no setting is active */
- 	for (i = 0; i < num_pins; i++) {
- 		desc = pin_desc_get(pctldev, pins[i]);
- 		if (desc == NULL) {
-@@ -493,6 +461,10 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
- 		desc->mux_setting = NULL;
- 	}
+ #define __initcall(fn) device_initcall(fn)
  
-+	/* And release the pins */
-+	for (i = 0; i < num_pins; i++)
-+		pin_free(pctldev, pins[i], NULL);
-+
- 	if (ops->disable)
- 		ops->disable(pctldev, setting->data.mux.func, setting->data.mux.group);
- }
-diff --git a/drivers/pinctrl/pinmux.h b/drivers/pinctrl/pinmux.h
-index d1a98b1..3c2aafa 100644
---- a/drivers/pinctrl/pinmux.h
-+++ b/drivers/pinctrl/pinmux.h
-@@ -27,7 +27,6 @@ int pinmux_gpio_direction(struct pinctrl_dev *pctldev,
- 
- int pinmux_map_to_setting(struct pinctrl_map const *map,
- 			  struct pinctrl_setting *setting);
--void pinmux_free_setting(struct pinctrl_setting const *setting);
- int pinmux_enable_setting(struct pinctrl_setting const *setting);
- void pinmux_disable_setting(struct pinctrl_setting const *setting);
- 
-@@ -69,10 +68,6 @@ static inline int pinmux_map_to_setting(struct pinctrl_map const *map,
- 	return 0;
- }
- 
--static inline void pinmux_free_setting(struct pinctrl_setting const *setting)
--{
--}
--
- static inline int pinmux_enable_setting(struct pinctrl_setting const *setting)
- {
- 	return 0;
 -- 
-1.7.11.3
+1.7.12.4
 
