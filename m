@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758887Ab2JSOWX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 10:22:23 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:9359 "EHLO relay.sw.ru"
+	id S1759046Ab2JSOWs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 10:22:48 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:38660 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751855Ab2JSOWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 10:22:22 -0400
+	id S1758889Ab2JSOWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 10:22:30 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
 Cc: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
@@ -18,9 +18,9 @@ Cc: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
         Glauber Costa <glommer@parallels.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>,
         Suleiman Souhlal <suleiman@google.com>
-Subject: [PATCH v5 10/18] sl[au]b: always get the cache from its page in kfree
-Date: Fri, 19 Oct 2012 18:20:34 +0400
-Message-Id: <1350656442-1523-11-git-send-email-glommer@parallels.com>
+Subject: [PATCH v5 09/18] memcg: skip memcg kmem allocations in specified code regions
+Date: Fri, 19 Oct 2012 18:20:33 +0400
+Message-Id: <1350656442-1523-10-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1350656442-1523-1-git-send-email-glommer@parallels.com>
 References: <1350656442-1523-1-git-send-email-glommer@parallels.com>
@@ -28,20 +28,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct page already have this information. If we start chaining
-caches, this information will always be more trustworthy than
-whatever is passed into the function
+This patch creates a mechanism that skip memcg allocations during
+certain pieces of our core code. It basically works in the same way
+as preempt_disable()/preempt_enable(): By marking a region under
+which all allocations will be accounted to the root memcg.
 
-A parent pointer is added to the slub structure, so we can make sure
-the freeing comes from either the right slab, or from its rightful
-parent.
+We need this to prevent races in early cache creation, when we
+allocate data using caches that are not necessarily created already.
 
-[ v3: added parent testing with VM_BUG_ON ]
-[ v4: make it faster when kmemcg not in use ]
+[ v2: wrap the whole enqueue process, INIT_WORK can alloc memory ]
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
 CC: Christoph Lameter <cl@linux.com>
 CC: Pekka Enberg <penberg@cs.helsinki.fi>
 CC: Michal Hocko <mhocko@suse.cz>
@@ -50,113 +47,125 @@ CC: Johannes Weiner <hannes@cmpxchg.org>
 CC: Suleiman Souhlal <suleiman@google.com>
 CC: Tejun Heo <tj@kernel.org>
 ---
- include/linux/memcontrol.h |  4 ++++
- mm/slab.c                  | 17 ++++++++++++++++-
- mm/slab.h                  | 13 +++++++++++++
- mm/slub.c                  | 14 ++++++++++++--
- 4 files changed, 45 insertions(+), 3 deletions(-)
+ include/linux/sched.h |  1 +
+ mm/memcontrol.c       | 63 +++++++++++++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 62 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 92fc47a..f1ecb4f 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -534,6 +534,10 @@ static inline void sock_release_memcg(struct sock *sk)
- {
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 0d907e1..9fad6c1 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1581,6 +1581,7 @@ struct task_struct {
+ 		unsigned long nr_pages;	/* uncharged usage */
+ 		unsigned long memsw_nr_pages; /* uncharged mem+swap usage */
+ 	} memcg_batch;
++	unsigned int memcg_kmem_skip_account;
+ #endif
+ #ifdef CONFIG_HAVE_HW_BREAKPOINT
+ 	atomic_t ptrace_bp_refcnt;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index ac2e621..3f46daa 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2950,6 +2950,41 @@ out:
+ 	kfree(s->memcg_params);
  }
  
-+static inline bool memcg_kmem_enabled(void)
++/*
++ * During the creation a new cache, we need to disable our accounting mechanism
++ * altogether. This is true even if we are not creating, but rather just
++ * enqueing new caches to be created.
++ *
++ * This is because that process will trigger allocations; some visible, like
++ * explicit kmallocs to auxiliary data structures, name strings and internal
++ * cache structures; some well concealed, like INIT_WORK() that can allocate
++ * objects during debug.
++ *
++ * If any allocation happens during memcg_kmem_get_cache, we will recurse back
++ * to it. This may not be a bounded recursion: since the first cache creation
++ * failed to complete (waiting on the allocation), we'll just try to create the
++ * cache again, failing at the same point.
++ *
++ * memcg_kmem_get_cache is prepared to abort after seeing a positive count of
++ * memcg_kmem_skip_account. So we enclose anything that might allocate memory
++ * inside the following two functions.
++ */
++static void memcg_stop_kmem_account(void)
 +{
-+	return false;
++	if (!current->mm)
++		return;
++
++	current->memcg_kmem_skip_account++;
 +}
- static inline bool
- memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **memcg, int order)
++
++static void memcg_resume_kmem_account(void)
++{
++	if (!current->mm)
++		return;
++
++	current->memcg_kmem_skip_account--;
++}
++
+ static char *memcg_cache_name(struct mem_cgroup *memcg, struct kmem_cache *cachep)
  {
-diff --git a/mm/slab.c b/mm/slab.c
-index 98b3460..6f22067 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3911,9 +3911,24 @@ EXPORT_SYMBOL(__kmalloc);
-  * Free an object which was previously allocated from this
-  * cache.
+ 	char *name;
+@@ -3009,7 +3044,10 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+ 	if (new_cachep)
+ 		goto out;
+ 
++	/* Don't block progress to enqueue caches for internal infrastructure */
++	memcg_stop_kmem_account();
+ 	new_cachep = kmem_cache_dup(memcg, cachep);
++	memcg_resume_kmem_account();
+ 
+ 	if (new_cachep == NULL) {
+ 		new_cachep = cachep;
+@@ -3047,8 +3085,8 @@ static void memcg_create_cache_work_func(struct work_struct *w)
+  * Enqueue the creation of a per-memcg kmem_cache.
+  * Called with rcu_read_lock.
   */
--void kmem_cache_free(struct kmem_cache *cachep, void *objp)
-+void kmem_cache_free(struct kmem_cache *s, void *objp)
+-static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
+-				       struct kmem_cache *cachep)
++static void __memcg_create_cache_enqueue(struct mem_cgroup *memcg,
++					 struct kmem_cache *cachep)
  {
- 	unsigned long flags;
-+	struct kmem_cache *cachep;
-+
-+	/*
-+	 * When kmemcg is not being used, both assignments should return the
-+	 * same value. but we don't want to pay the assignment price in that
-+	 * case. If it is not compiled in, the compiler should be smart enough
-+	 * to not do even the assignment. In that case, slab_equal_or_root
-+	 * will also be a constant.
-+	 */
-+	if (memcg_kmem_enabled()) {
-+		cachep = virt_to_cache(objp);
-+		VM_BUG_ON(!slab_equal_or_root(cachep, s));
-+	} else
-+		cachep = s;
-+
+ 	struct create_work *cw;
  
- 	local_irq_save(flags);
- 	debug_check_no_locks_freed(objp, cachep->object_size);
-diff --git a/mm/slab.h b/mm/slab.h
-index c35ecce..b9b5f1f 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -108,6 +108,13 @@ static inline bool cache_match_memcg(struct kmem_cache *cachep,
- 	return (is_root_cache(cachep) && !memcg) ||
- 		(cachep->memcg_params->memcg == memcg);
+@@ -3067,6 +3105,24 @@ static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
+ 	schedule_work(&cw->work);
  }
-+
-+static inline bool slab_equal_or_root(struct kmem_cache *s,
-+					struct kmem_cache *p)
-+{
-+	return (p == s) ||
-+		(s->memcg_params && (p == s->memcg_params->root_cache));
-+}
- #else
- static inline bool is_root_cache(struct kmem_cache *s)
- {
-@@ -119,5 +126,11 @@ static inline bool cache_match_memcg(struct kmem_cache *cachep,
- {
- 	return true;
- }
-+
-+static inline bool slab_equal_or_root(struct kmem_cache *s,
-+					struct kmem_cache *p)
-+{
-+	return true;
-+}
- #endif
- #endif
-diff --git a/mm/slub.c b/mm/slub.c
-index 05aefe2..6e1a90f 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2609,9 +2609,19 @@ redo:
  
- void kmem_cache_free(struct kmem_cache *s, void *x)
- {
--	struct page *page;
-+	struct page *page = virt_to_head_page(x);
- 
--	page = virt_to_head_page(x);
++static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
++				       struct kmem_cache *cachep)
++{
 +	/*
-+	 * When kmemcg is not being used, both assignments should return the
-+	 * same value. but we don't want to pay the assignment price in that
-+	 * case. If it is not compiled in, the compiler should be smart enough
-+	 * to not do even the assignment. In that case, slab_equal_or_root
-+	 * will also be a constant.
++	 * We need to stop accounting when we kmalloc, because if the
++	 * corresponding kmalloc cache is not yet created, the first allocation
++	 * in __memcg_create_cache_enqueue will recurse.
++	 *
++	 * However, it is better to enclose the whole function. Depending on
++	 * the debugging options enabled, INIT_WORK(), for instance, can
++	 * trigger an allocation. This too, will make us recurse. Because at
++	 * this point we can't allow ourselves back into memcg_kmem_get_cache,
++	 * the safest choice is to do it like this, wrapping the whole function.
 +	 */
-+	if (memcg_kmem_enabled()) {
-+		VM_BUG_ON(!slab_equal_or_root(page->slab, s));
-+		s = page->slab;
-+	}
++	memcg_stop_kmem_account();
++	__memcg_create_cache_enqueue(memcg, cachep);
++	memcg_resume_kmem_account();
++}
+ /*
+  * Return the kmem_cache we're supposed to use for a slab allocation.
+  * We try to use the current memcg's version of the cache.
+@@ -3086,6 +3142,9 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
+ 	struct mem_cgroup *memcg;
+ 	int idx;
  
- 	if (kmem_cache_debug(s) && page->slab != s) {
- 		pr_err("kmem_cache_free: Wrong slab cache. %s but object"
++	if (!current->mm || current->memcg_kmem_skip_account)
++		return cachep;
++
+ 	if (cachep->memcg_params && cachep->memcg_params->memcg)
+ 		return cachep;
+ 
 -- 
 1.7.11.7
 
