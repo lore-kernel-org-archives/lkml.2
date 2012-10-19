@@ -1,101 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758578Ab2JSL2x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 07:28:53 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:43847 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794Ab2JSL2w (ORCPT
+	id S1758608Ab2JSL26 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 07:28:58 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:56081 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794Ab2JSL2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 07:28:52 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: jkosina@suse.cz
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com
-Subject: [PATCH 1/1] HID: microsoft, fix invalid rdesc for 3k kbd
-Date: Fri, 19 Oct 2012 13:28:46 +0200
-Message-Id: <1350646126-28537-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.12.3
+	Fri, 19 Oct 2012 07:28:55 -0400
+Date: Fri, 19 Oct 2012 07:30:16 -0400
+From: Matt Porter <mporter@ti.com>
+To: Benoit Cousson <b-cousson@ti.com>
+Cc: "Philip, Avinash" <avinashphilip@ti.com>, linux@arm.linux.org.uk,
+        tony@atomide.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        nsekhar@ti.com, gururaja.hebbar@ti.com
+Subject: Re: [PATCH v2] arm/dts: AM33XX: Add SPI device tree data
+Message-ID: <20121019113016.GE25164@beef>
+References: <1347946228-25874-1-git-send-email-avinashphilip@ti.com>
+ <50810E2F.5@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50810E2F.5@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Microsoft Digital Media Keyboard 3000 has two interfaces, and the
-second one has a report descriptor with a bug. The second collection
-says:
-05 01 -- global; usage page -- 01 -- Generic Desktop Controls
-09 80 -- local; usage -- 80 -- System Control
-a1 01 -- main; collection -- 01 -- application
+On Fri, Oct 19, 2012 at 10:24:15AM +0200, Benoit Cousson wrote:
+> Hi Avinash,
+> 
+> This look good to me except the: status = "disabled".
+> 
+> The "disabled" should be reserved for variant that does not contain the IP.
+> Is it the case here?
 
-85 03 -- global; report ID -- 03
-19 00 -- local; Usage Minimum -- 00
-29 ff -- local; Usage Maximum -- ff
-15 00 -- global; Logical Minimum -- 0
-26 ff 00 -- global; Logical Maximum -- ff
-81 00 -- main; input
+http://comments.gmane.org/gmane.linux.drivers.devicetree/18968 is what
+I've been going by with the DTS support in the EDMA dmaengine series. It
+does make the most sense to only enable what you need in the
+<board>.dts.
 
-c0 -- main; End Collection
+-Matt
 
-I.e. it makes us think that there are all kinds of usages of system
-control. That the keyboard is a not only a keyboard, but also a
-joystick, mouse, gamepad, keypad, etc. The same as for the Wireless
-Desktop Receiver, this should be Physical Min/Max. So fix that
-appropriately.
-
-References: https://bugzilla.novell.com/show_bug.cgi?id=776834
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/hid/hid-microsoft.c | 18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/hid/hid-microsoft.c b/drivers/hid/hid-microsoft.c
-index 3acdcfc..f676c01 100644
---- a/drivers/hid/hid-microsoft.c
-+++ b/drivers/hid/hid-microsoft.c
-@@ -28,22 +28,30 @@
- #define MS_RDESC		0x08
- #define MS_NOGET		0x10
- #define MS_DUPLICATE_USAGES	0x20
-+#define MS_RDESC_3K		0x40
- 
--/*
-- * Microsoft Wireless Desktop Receiver (Model 1028) has
-- * 'Usage Min/Max' where it ought to have 'Physical Min/Max'
-- */
- static __u8 *ms_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int *rsize)
- {
- 	unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
- 
-+	/*
-+	 * Microsoft Wireless Desktop Receiver (Model 1028) has
-+	 * 'Usage Min/Max' where it ought to have 'Physical Min/Max'
-+	 */
- 	if ((quirks & MS_RDESC) && *rsize == 571 && rdesc[557] == 0x19 &&
- 			rdesc[559] == 0x29) {
- 		hid_info(hdev, "fixing up Microsoft Wireless Receiver Model 1028 report descriptor\n");
- 		rdesc[557] = 0x35;
- 		rdesc[559] = 0x45;
- 	}
-+	/* the same as above (s/usage/physical/) */
-+	if ((quirks & MS_RDESC_3K) && *rsize == 106 &&
-+			!memcmp((char []){ 0x19, 0x00, 0x29, 0xff },
-+				&rdesc[94], 4)) {
-+		rdesc[94] = 0x35;
-+		rdesc[96] = 0x45;
-+	}
- 	return rdesc;
- }
- 
-@@ -192,7 +200,7 @@ static const struct hid_device_id ms_devices[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_PRESENTER_8K_USB),
- 		.driver_data = MS_PRESENTER },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_DIGITAL_MEDIA_3K),
--		.driver_data = MS_ERGONOMY },
-+		.driver_data = MS_ERGONOMY | MS_RDESC_3K },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_WIRELESS_OPTICAL_DESKTOP_3_0),
- 		.driver_data = MS_NOGET },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_COMFORT_MOUSE_4500),
--- 
-1.7.12.3
-
-
+> On 09/18/2012 07:30 AM, Philip, Avinash wrote:
+> > Add McSPI data node to AM33XX device tree file. The McSPI module (and so
+> > as the driver) is reused from OMAP4.
+> > 
+> > Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+> > Tested-by: Matt Porter <mporter@ti.com>
+> > ---
+> > Changes since v1:
+> >         - Corrected reg offset in reg DT entry.
+> > 
+> > :100644 100644 ff3badb... 065fd54... M	arch/arm/boot/dts/am33xx.dtsi
+> >  arch/arm/boot/dts/am33xx.dtsi |   25 +++++++++++++++++++++++++
+> >  1 files changed, 25 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+> > index ff3badb..065fd54 100644
+> > --- a/arch/arm/boot/dts/am33xx.dtsi
+> > +++ b/arch/arm/boot/dts/am33xx.dtsi
+> > @@ -219,5 +219,30 @@
+> >  			interrupt-parent = <&intc>;
+> >  			interrupts = <91>;
+> >  		};
+> > +
+> > +		spi0: spi@48030000 {
+> > +			compatible = "ti,omap4-mcspi";
+> > +			#address-cells = <1>;
+> > +			#size-cells = <0>;
+> > +			reg = <0x48030000 0x400>;
+> > +			interrupt-parent = <&intc>;
+> > +			interrupt = <65>;
+> > +			ti,spi-num-cs = <2>;
+> > +			ti,hwmods = "spi0";
+> > +			status = "disabled";
+> > +
+> > +		};
+> > +
+> > +		spi1: spi@481a0000 {
+> > +			compatible = "ti,omap4-mcspi";
+> > +			#address-cells = <1>;
+> > +			#size-cells = <0>;
+> > +			reg = <0x481a0000 0x400>;
+> > +			interrupt-parent = <&intc>;
+> > +			interrupt = <125>;
+> > +			ti,spi-num-cs = <2>;
+> > +			ti,hwmods = "spi1";
+> > +			status = "disabled";
+> > +		};
+> >  	};
+> >  };
+> > 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
