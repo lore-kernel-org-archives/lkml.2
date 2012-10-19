@@ -1,74 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758767Ab2JSMLQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 08:11:16 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:63690 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051Ab2JSMLP (ORCPT
+	id S1030195Ab2JSMP1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 08:15:27 -0400
+Received: from smtp-out-125.synserver.de ([212.40.185.125]:1104 "EHLO
+	smtp-out-125.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128Ab2JSMP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 08:11:15 -0400
-X-Nat-Received: from [202.181.97.72]:63527 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1350648660.13887
-To: yann.morin.1998@free.fr, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: mmarek@suse.cz, bpoirier@suse.de, yselkowitz@gmail.com
-Subject: Re: [PATCH] kconfig/menuconfig: use TAILQ instead of CIRCLEQ
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <1350581625-23153-1-git-send-email-yann.morin.1998@free.fr>
-In-Reply-To: <1350581625-23153-1-git-send-email-yann.morin.1998@free.fr>
-Message-Id: <201210192110.CII57863.VOStFJQFMLHOFO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Fri, 19 Oct 2012 21:10:53 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 19102012 #8151499, status: clean
+	Fri, 19 Oct 2012 08:15:26 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 18914
+Message-ID: <50814454.5040603@metafoo.de>
+Date: Fri, 19 Oct 2012 14:15:16 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.9) Gecko/20121014 Icedove/10.0.9
+MIME-Version: 1.0
+To: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+CC: cbou@mail.ru, dwmw2@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] power/jz4740.c: Simplify exit of function
+References: <1350603664-18148-1-git-send-email-marcos.souza.org@gmail.com> <1350603664-18148-5-git-send-email-marcos.souza.org@gmail.com>
+In-Reply-To: <1350603664-18148-5-git-send-email-marcos.souza.org@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yann E. MORIN wrote:
-> Some systems (eg. Cygwin, FreeBSD) are missing the CIRCLEQ macros.
-> They were removed in Y2000 from FreeBSD:
->     http://svnweb.freebsd.org/base?view=revision&revision=70469
+On 10/19/2012 01:41 AM, Marcos Paulo de Souza wrote:
+> This commit simplifies the exit of probe function, by returning
+> directly when it don't need to release any resources.
 > 
-> The reason was that TAILQ are perfectly capable of doing the exact
-> same things:
->     http://www.mavetju.org/mail/view_thread.php?list=freebsd-arch&id=915145&thread=yes
-> 
-> (Thank Yaakov for the pointers!)
-> 
-> So, switch to using TAILQ instead, which are more portable.
-> 
-> Reported-by: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-> Reported-by: Benjamin Poirier <bpoirier@suse.de>
-> Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> Cc: Yaakov Selkowitz <yselkowitz@gmail.com>
+> Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+
+Looks good, but I'd just fold the relevant parts in the previous patches.
+
 > ---
->  scripts/kconfig/expr.h  |    4 ++--
->  scripts/kconfig/mconf.c |    4 ++--
->  scripts/kconfig/menu.c  |    6 +++---
->  3 files changed, 7 insertions(+), 7 deletions(-)
+>  drivers/power/jz4740-battery.c |   17 ++++++-----------
+>  1 file changed, 6 insertions(+), 11 deletions(-)
 > 
-Excuse me, but your patch does not solve my problem because kconfig started
-using macros which does not exist in "@(#)queue.h 8.3 (Berkeley) 12/13/93".
-Kconfig still fails after applying your patch:
+> diff --git a/drivers/power/jz4740-battery.c b/drivers/power/jz4740-battery.c
+> index b80f7ed..0d6c9e4 100644
+> --- a/drivers/power/jz4740-battery.c
+> +++ b/drivers/power/jz4740-battery.c
+> @@ -262,32 +262,28 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+>  
+>  	jz_battery->irq = platform_get_irq(pdev, 0);
+>  	if (jz_battery->irq < 0) {
+> -		ret = jz_battery->irq;
+>  		dev_err(&pdev->dev, "Failed to get platform irq: %d\n", ret);
+> -		goto err;
+> +		return jz_battery->irq;
+>  	}
+>  
+>  	jz_battery->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	if (!jz_battery->mem) {
+> -		ret = -ENOENT;
+>  		dev_err(&pdev->dev, "Failed to get platform mmio resource\n");
+> -		goto err;
+> +		return -ENOENT;
+>  	}
+>  
+>  	jz_battery->mem = devm_request_mem_region(&pdev->dev, jz_battery->mem->start,
+>  				resource_size(jz_battery->mem),	pdev->name);
+>  	if (!jz_battery->mem) {
+> -		ret = -EBUSY;
+>  		dev_err(&pdev->dev, "Failed to request mmio memory region\n");
+> -		goto err;
+> +		return -EBUSY;
+>  	}
+>  
+>  	jz_battery->base = devm_ioremap_nocache(&pdev->dev, jz_battery->mem->start,
+>  				resource_size(jz_battery->mem));
+>  	if (!jz_battery->base) {
+> -		ret = -EBUSY;
+>  		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
+> -		goto err;
+> +		return -EBUSY;
+>  	}
+>  
+>  	battery = &jz_battery->battery;
+> @@ -311,7 +307,7 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+>  				0, pdev->name, jz_battery);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "Failed to request irq %d\n", ret);
+> -		goto err;
+> +		return ret;
+>  	}
+>  	disable_irq(jz_battery->irq);
+>  
+> @@ -319,7 +315,7 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+>  		ret = gpio_request(pdata->gpio_charge, dev_name(&pdev->dev));
+>  		if (ret) {
+>  			dev_err(&pdev->dev, "charger state gpio request failed.\n");
+> -			goto err;
+> +			return ret;
+>  		}
+>  		ret = gpio_direction_input(pdata->gpio_charge);
+>  		if (ret) {
+> @@ -364,7 +360,6 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+>  err_free_gpio:
+>  	if (gpio_is_valid(pdata->gpio_charge))
+>  		gpio_free(jz_battery->pdata->gpio_charge);
+> -err:
+>  	platform_set_drvdata(pdev, NULL);
+>  	return ret;
+>  }
 
-  HOSTCC  scripts/kconfig/mconf.o
-scripts/kconfig/mconf.c: In function `update_text':
-scripts/kconfig/mconf.c:326: warning: implicit declaration of function `TAILQ_FOREACH'
-scripts/kconfig/mconf.c:326: error: `entries' undeclared (first use in this function)
-scripts/kconfig/mconf.c:326: error: (Each undeclared identifier is reported only once
-scripts/kconfig/mconf.c:326: error: for each function it appears in.)
-scripts/kconfig/mconf.c:326: error: syntax error before '{' token
-scripts/kconfig/mconf.c:333: error: `header' undeclared (first use in this function)
-scripts/kconfig/mconf.c: At top level:
-scripts/kconfig/mconf.c:343: error: syntax error before '}' token
-scripts/kconfig/mconf.c: In function `search_conf':
-scripts/kconfig/mconf.c:378: warning: implicit declaration of function `TAILQ_HEAD_INITIALIZER'
-scripts/kconfig/mconf.c:378: error: invalid initializer
-make[1]: *** [scripts/kconfig/mconf.o] Error 1
-make: *** [menuconfig] Error 2
-
-So, would you add something which looks like "sed -e 's/CIRCLEQ/TAILQ/g'" upon
-https://lkml.org/lkml/2012/10/16/274 ?
