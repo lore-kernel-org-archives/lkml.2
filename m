@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757623Ab2JSS03 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 14:26:29 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:44985 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756063Ab2JSS00 (ORCPT
+	id S932815Ab2JSS1E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 14:27:04 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:64631 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754187Ab2JSS1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 14:26:26 -0400
-Date: Fri, 19 Oct 2012 11:26:22 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jslaby@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: [GIT PATCH] TTY patches for 3.7-rc2
-Message-ID: <20121019182622.GA32140@kroah.com>
+	Fri, 19 Oct 2012 14:27:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1350641040-19434-2-git-send-email-wency@cn.fujitsu.com>
+References: <1350641040-19434-1-git-send-email-wency@cn.fujitsu.com> <1350641040-19434-2-git-send-email-wency@cn.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Fri, 19 Oct 2012 14:26:39 -0400
+X-Google-Sender-Auth: JjmgYywGCm-IeBHgrfFW2nysyyQ
+Message-ID: <CAHGf_=pHQKqL+uSsHbcBe5Jy_NqabUTWFauaPVwN_B6JUn+VBA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] acpi,memory-hotplug: call acpi_bus_trim() to
+ remove memory device
+To: wency@cn.fujitsu.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, liuj97@gmail.com, len.brown@intel.com,
+        akpm@linux-foundation.org, isimatu.yasuaki@jp.fujitsu.com,
+        muneda.takahiro@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>,
+        Minchan Kim <minchan.kim@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
+On Fri, Oct 19, 2012 at 6:03 AM,  <wency@cn.fujitsu.com> wrote:
+> From: Wen Congyang <wency@cn.fujitsu.com>
+>
+> The memory device has been ejected and powoffed, so we can call
+> acpi_bus_trim() to remove the memory device from acpi bus.
+>
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Paul Mackerras <paulus@samba.org>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+>  drivers/acpi/acpi_memhotplug.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> index 24c807f..1e90e8f 100644
+> --- a/drivers/acpi/acpi_memhotplug.c
+> +++ b/drivers/acpi/acpi_memhotplug.c
+> @@ -401,8 +401,9 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+>                 }
+>
+>                 /*
+> -                * TBD: Invoke acpi_bus_remove to cleanup data structures
+> +                * Invoke acpi_bus_trim() to remove memory device
+>                  */
+> +               acpi_bus_trim(device, 1);
 
-  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.7-rc1
-
-for you to fetch changes up to 178e485a0ebbfdb7165b4363d8fea2a07d650c0b:
-
-  staging: dgrp: check return value of alloc_tty_driver (2012-10-17 14:10:10 -0700)
-
-----------------------------------------------------------------
-TTY fixes for 3.7-rc2
-
-Here are some tty and serial driver fixes for your 3.7-rc1 tree.
-
-Again, the UABI header file fixes, and a number of build and runtime serial
-driver bugfixes that solve problems people have been reporting (the staging
-driver is a tty driver, hence the fixes coming in through this tree.)
-
-All of these have been in the linux-next tree for a while.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Alexander Shiyan (1):
-      serial: sccnxp: Allows the driver to be compiled as a module
-
-Bill Pemberton (2):
-      staging: dgrp: check for NULL pointer in (un)register_proc_table
-      staging: dgrp: check return value of alloc_tty_driver
-
-David Howells (1):
-      UAPI: (Scripted) Disintegrate include/linux/hsi
-
-Geert Uytterhoeven (2):
-      staging: serial: dgrp: Add missing #include <linux/uaccess.h>
-      serial/8250_hp300: Missing 8250 register interface conversion bits
-
-Greg Kroah-Hartman (3):
-      tty: serial: sccnxp: Fix bug with unterminated platform_id list
-      Merge 3.7-rc1 into tty-linus
-      Merge tag 'disintegrate-tty-20121009' of git://git.infradead.org/users/dhowells/linux-headers into tty-linus
-
-Markus Trippelsdorf (1):
-      tty: Fix bogus "callbacks suppressed" messages
-
-Sasha Levin (1):
-      net, TTY: initialize tty->driver_data before usage
-
- drivers/staging/dgrp/dgrp_mon_ops.c     |  1 +
- drivers/staging/dgrp/dgrp_specproc.c    |  7 +++++++
- drivers/staging/dgrp/dgrp_tty.c         | 10 ++++++++++
- drivers/tty/serial/8250/8250_hp300.c    | 20 ++++++++++----------
- drivers/tty/serial/Kconfig              |  4 ++--
- drivers/tty/serial/sccnxp.c             |  1 +
- include/linux/hsi/Kbuild                |  1 -
- include/linux/ratelimit.h               | 27 +++++++++------------------
- include/uapi/linux/hsi/Kbuild           |  1 +
- include/{ => uapi}/linux/hsi/hsi_char.h |  0
- net/irda/ircomm/ircomm_tty.c            |  2 ++
- 11 files changed, 43 insertions(+), 31 deletions(-)
- rename include/{ => uapi}/linux/hsi/hsi_char.h (100%)
+I'm happy we removed mysterious acpi_bus_remove().
