@@ -1,105 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab2JSRMe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 13:12:34 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:32642 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752434Ab2JSRMc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 13:12:32 -0400
-X-Forefront-Antispam-Report: CIP:198.70.193.61;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub1.qlogic.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zcb8kz9371I1432Izz1202h1d1ah1d2ahzz8275bhz2fh2a8h668h839h944hd25hf0ah107ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1155h)
-From: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
-To: Joe Jin <joe.jin@oracle.com>, Ron Mercer <ron.mercer@qlogic.com>,
-        Dept-Eng Linux Driver <Linux-Driver@qlogic.com>
-CC: netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg Marsden <greg.marsden@oracle.com>
-Date: Fri, 19 Oct 2012 10:12:25 -0700
-Subject: RE: [PATCH] qla3xxx: Ensure request/response queue addr writes to
- the registers
-Thread-Topic: [PATCH] qla3xxx: Ensure request/response queue addr writes to
- the registers
-Thread-Index: Ac2tmIjRiUBG8TkRQ3m3G00LQHR1cgAgpT2w
-Message-ID: <5E4F49720D0BAD499EE1F01232234BA87744A9406C@AVEXMB1.qlogic.org>
-References: <5080ABD7.90006@oracle.com>
-In-Reply-To: <5080ABD7.90006@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757781Ab2JSRNw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 13:13:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51273 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359Ab2JSRNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 13:13:51 -0400
+Message-ID: <50818A41.7030909@redhat.com>
+Date: Fri, 19 Oct 2012 13:13:37 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-X-OriginatorOrg: qlogic.com
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Mel Gorman <mel@csn.ul.ie>,
+        Linux kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: question on NUMA page migration
+References: <5081777A.8050104@redhat.com> <1350664742.2768.40.camel@twins>
+In-Reply-To: <1350664742.2768.40.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
->From: Joe Jin [mailto:joe.jin@oracle.com] 
->Sent: Thursday, October 18, 2012 6:25 PM
->To: Ron Mercer; Dept-Eng Linux Driver; Jitendra Kalsaria; Joe Jin
->Cc: netdev; linux-kernel; Greg Marsden
->Subject: [PATCH] qla3xxx: Ensure request/response queue addr writes to the registers
+On 10/19/2012 12:39 PM, Peter Zijlstra wrote:
+> On Fri, 2012-10-19 at 11:53 -0400, Rik van Riel wrote:
+>>
+>> If we do need the extra refcount, why is normal
+>> page migration safe? :)
 >
->Before use the request and response queue addr, make sure it has wrote
->to the registers.
+> Its mostly a matter of how convoluted you make the code, regular page
+> migration is about as bad as you can get
 >
->Signed-off-by: Joe Jin <joe.jin@oracle.com>
->Cc: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
->Cc: Ron Mercer <ron.mercer@qlogic.com>
->---
-> drivers/net/ethernet/qlogic/qla3xxx.c | 6 ++++++
-> 1 file changed, 6 insertions(+)
+> Normal does:
 >
->diff --git a/drivers/net/ethernet/qlogic/qla3xxx.c b/drivers/net/ethernet/qlogic/qla3xxx.c
->index df09b1c..f745ade 100644
->--- a/drivers/net/ethernet/qlogic/qla3xxx.c
->+++ b/drivers/net/ethernet/qlogic/qla3xxx.c
->@@ -2525,6 +2525,12 @@ static int ql_alloc_net_req_rsp_queues(struct ql3_adapter *qdev)
-> 	qdev->req_q_size =
-> 	    (u32) (NUM_REQ_Q_ENTRIES * sizeof(struct ob_mac_iocb_req));
-> 
->+	/*
->+	 * The barrier is required to ensure request and response queue
->+	 * addr writes to the registers.
->+	 */
->+	wmb();
->+
-> 	qdev->req_q_virt_addr =
-> 	    pci_alloc_consistent(qdev->pdev,
-> 				 (size_t) qdev->req_q_size,
+>    follow_page(FOLL_GET) +1
+>
+>    isolate_lru_page() +1
+>
+>    put_page() -1
+>
+> ending up with a page with a single reference (for anon, or one extra
+> each for the mapping and buffer).
 
-Joe,
+Would it make sense to have the normal page migration code always
+work with the extra refcount, so we do not have to introduce a new
+MIGRATE_FAULT migration mode?
 
-You need to move below line above the write memory barrier to get response queue address write to register
-	qdev->rsp_q_size = NUM_RSP_Q_ENTRIES * sizeof(struct net_rsp_iocb);
+On the other hand, compaction does not take the extra reference...
 
-Your patch will be like below:
-<snip>
-	qdev->req_q_size =
-		(u32) (NUM_REQ_Q_ENTRIES * sizeof(struct ob_mac_iocb_req));
+Another alternative might be to do the put_page inside
+do_prot_none_numa().  That would be analogous to do_wp_page
+disposing of the old page for the caller.
 
-+	qdev->rsp_q_size = NUM_RSP_Q_ENTRIES * sizeof(struct net_rsp_iocb);
-+
-+	/*
-+	 * The barrier is required to ensure request and response queue
-+	 * addr writes to the registers.
-+	 */
-+	wmb();
-+
+I am not real happy about NUMA migration introducing its own
+migration mode...
 
-<\snip>
-
-
-thanks,
-	Jiten
 -- 
-1.7.11.7
-
-
-
+All rights reversed
