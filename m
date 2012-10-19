@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964976Ab2JSCtL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:49:11 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52247 "EHLO mail.kernel.org"
+	id S964994Ab2JSCtP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:49:15 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52330 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964944Ab2JSCtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:49:03 -0400
+	id S964974Ab2JSCtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:49:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Alex Lyashkov <umka@cloudlinux.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 41/76] module: taint kernel when lve module is loaded
-Date: Thu, 18 Oct 2012 19:47:05 -0700
-Message-Id: <20121019024356.722673257@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 48/76] mac80211: use ieee80211_free_txskb to fix possible skb leaks
+Date: Thu, 18 Oct 2012 19:47:12 -0700
+Message-Id: <20121019024357.842227386@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -27,36 +26,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg59@srcf.ucam.org>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit c99af3752bb52ba3aece5315279a57a477edfaf1 upstream.
+commit c3e7724b6bc2f25e46c38dbe68f09d71fafeafb8 upstream.
 
-Cloudlinux have a product called lve that includes a kernel module. This
-was previously GPLed but is now under a proprietary license, but the
-module continues to declare MODULE_LICENSE("GPL") and makes use of some
-EXPORT_SYMBOL_GPL symbols. Forcibly taint it in order to avoid this.
+A few places free skbs using dev_kfree_skb even though they're called
+after ieee80211_subif_start_xmit might have cloned it for tracking tx
+status. Use ieee80211_free_txskb here to prevent skb leaks.
 
-Signed-off-by: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Alex Lyashkov <umka@cloudlinux.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/module.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/mac80211/status.c |    4 ++--
+ net/mac80211/tx.c     |   22 ++++++++++++----------
+ 2 files changed, 14 insertions(+), 12 deletions(-)
 
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2730,6 +2730,10 @@ static int check_module_license_and_vers
- 	if (strcmp(mod->name, "driverloader") == 0)
- 		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
+--- a/net/mac80211/status.c
++++ b/net/mac80211/status.c
+@@ -34,7 +34,7 @@ void ieee80211_tx_status_irqsafe(struct
+ 		skb_queue_len(&local->skb_queue_unreliable);
+ 	while (tmp > IEEE80211_IRQSAFE_QUEUE_LIMIT &&
+ 	       (skb = skb_dequeue(&local->skb_queue_unreliable))) {
+-		dev_kfree_skb_irq(skb);
++		ieee80211_free_txskb(hw, skb);
+ 		tmp--;
+ 		I802_DEBUG_INC(local->tx_status_drop);
+ 	}
+@@ -159,7 +159,7 @@ static void ieee80211_handle_filtered_fr
+ 			   "dropped TX filtered frame, queue_len=%d PS=%d @%lu\n",
+ 			   skb_queue_len(&sta->tx_filtered[ac]),
+ 			   !!test_sta_flag(sta, WLAN_STA_PS_STA), jiffies);
+-	dev_kfree_skb(skb);
++	ieee80211_free_txskb(&local->hw, skb);
+ }
  
-+	/* lve claims to be GPL but upstream won't provide source */
-+	if (strcmp(mod->name, "lve") == 0)
-+		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
-+
- #ifdef CONFIG_MODVERSIONS
- 	if ((mod->num_syms && !mod->crcs)
- 	    || (mod->num_gpl_syms && !mod->gpl_crcs)
+ static void ieee80211_check_pending_bar(struct sta_info *sta, u8 *addr, u8 tid)
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -354,7 +354,7 @@ static void purge_old_ps_buffers(struct
+ 			total += skb_queue_len(&sta->ps_tx_buf[ac]);
+ 			if (skb) {
+ 				purged++;
+-				dev_kfree_skb(skb);
++				ieee80211_free_txskb(&local->hw, skb);
+ 				break;
+ 			}
+ 		}
+@@ -466,7 +466,7 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
+ 			ps_dbg(tx->sdata,
+ 			       "STA %pM TX buffer for AC %d full - dropping oldest frame\n",
+ 			       sta->sta.addr, ac);
+-			dev_kfree_skb(old);
++			ieee80211_free_txskb(&local->hw, old);
+ 		} else
+ 			tx->local->total_ps_buffered++;
+ 
+@@ -1103,7 +1103,7 @@ static bool ieee80211_tx_prep_agg(struct
+ 		spin_unlock(&tx->sta->lock);
+ 
+ 		if (purge_skb)
+-			dev_kfree_skb(purge_skb);
++			ieee80211_free_txskb(&tx->local->hw, purge_skb);
+ 	}
+ 
+ 	/* reset session timer */
+@@ -1214,7 +1214,7 @@ static bool ieee80211_tx_frags(struct ie
+ #ifdef CONFIG_MAC80211_VERBOSE_DEBUG
+ 		if (WARN_ON_ONCE(q >= local->hw.queues)) {
+ 			__skb_unlink(skb, skbs);
+-			dev_kfree_skb(skb);
++			ieee80211_free_txskb(&local->hw, skb);
+ 			continue;
+ 		}
+ #endif
+@@ -1356,7 +1356,7 @@ static int invoke_tx_handlers(struct iee
+ 	if (unlikely(res == TX_DROP)) {
+ 		I802_DEBUG_INC(tx->local->tx_handlers_drop);
+ 		if (tx->skb)
+-			dev_kfree_skb(tx->skb);
++			ieee80211_free_txskb(&tx->local->hw, tx->skb);
+ 		else
+ 			__skb_queue_purge(&tx->skbs);
+ 		return -1;
+@@ -1393,7 +1393,7 @@ static bool ieee80211_tx(struct ieee8021
+ 	res_prepare = ieee80211_tx_prepare(sdata, &tx, skb);
+ 
+ 	if (unlikely(res_prepare == TX_DROP)) {
+-		dev_kfree_skb(skb);
++		ieee80211_free_txskb(&local->hw, skb);
+ 		goto out;
+ 	} else if (unlikely(res_prepare == TX_QUEUED)) {
+ 		goto out;
+@@ -1466,7 +1466,7 @@ void ieee80211_xmit(struct ieee80211_sub
+ 	headroom = max_t(int, 0, headroom);
+ 
+ 	if (ieee80211_skb_resize(sdata, skb, headroom, may_encrypt)) {
+-		dev_kfree_skb(skb);
++		ieee80211_free_txskb(&local->hw, skb);
+ 		rcu_read_unlock();
+ 		return;
+ 	}
+@@ -2060,8 +2060,10 @@ netdev_tx_t ieee80211_subif_start_xmit(s
+ 		head_need += IEEE80211_ENCRYPT_HEADROOM;
+ 		head_need += local->tx_headroom;
+ 		head_need = max_t(int, 0, head_need);
+-		if (ieee80211_skb_resize(sdata, skb, head_need, true))
+-			goto fail;
++		if (ieee80211_skb_resize(sdata, skb, head_need, true)) {
++			ieee80211_free_txskb(&local->hw, skb);
++			return NETDEV_TX_OK;
++		}
+ 	}
+ 
+ 	if (encaps_data) {
+@@ -2196,7 +2198,7 @@ void ieee80211_tx_pending(unsigned long
+ 			struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
+ 
+ 			if (WARN_ON(!info->control.vif)) {
+-				kfree_skb(skb);
++				ieee80211_free_txskb(&local->hw, skb);
+ 				continue;
+ 			}
+ 
 
 
