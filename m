@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030454Ab2JSDCa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:02:30 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52134 "EHLO mail.kernel.org"
+	id S964933Ab2JSDC2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:02:28 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52157 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964897Ab2JSCsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:48:50 -0400
+	id S964903Ab2JSCsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:48:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Paolo Bonzini <pbonzini@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 30/76] target: fix truncation of mode data, support zero allocation length
-Date: Thu, 18 Oct 2012 19:46:54 -0700
-Message-Id: <20121019024354.985523098@linuxfoundation.org>
+        Lukas Czerner <lczerner@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 23/76] SCSI: scsi_debug: Fix off-by-one bug when unmapping region
+Date: Thu, 18 Oct 2012 19:46:47 -0700
+Message-Id: <20121019024353.832966031@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -26,82 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Lukas Czerner <lczerner@redhat.com>
 
-commit 7a3f369ce31694017996524a1cdb08208a839077 upstream.
+commit bc977749e967daa56de1922cf4cb38525631c51c upstream.
 
-The offset was not bumped back to the full size after writing the
-header of the MODE SENSE response, so the last 1 or 2 bytes were
-not copied.
+Currently it is possible to unmap one more block than user requested to
+due to the off-by-one error in unmap_region(). This is probably due to
+the fact that the end variable despite its name actually points to the
+last block to unmap + 1. However in the condition it is handled as the
+last block of the region to unmap.
 
-On top of this, support zero-length requests by checking for the
-return value of transport_kmap_data_sg.
+The bug was not previously spotted probably due to the fact that the
+region was not zeroed, which has changed with commit
+be1dd78de5686c062bb3103f9e86d444a10ed783. With that commit we were able
+to corrupt the ext4 file system on 256M scsi_debug device with LBPRZ
+enabled using fstrim.
 
-Testcase: sg_raw -r20 /dev/sdb 5a 00 0a 00 00 00 00 00 14 00
-    last byte should be 0x1e
-    it is 0x00 without the patch
-    it is correct with the patch
+Since the 'end' semantic is the same in several functions there this
+commit just fixes the condition to use the 'end' variable correctly in
+that context.
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Acked-by: Douglas Gilbert <dgilbert@interlog.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_spc.c |   17 +++++++----------
- 1 file changed, 7 insertions(+), 10 deletions(-)
+ drivers/scsi/scsi_debug.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/target/target_core_spc.c
-+++ b/drivers/target/target_core_spc.c
-@@ -784,7 +784,7 @@ static int spc_emulate_modesense(struct
- 	unsigned char *rbuf;
- 	int type = dev->transport->get_device_type(dev);
- 	int ten = (cmd->t_task_cdb[0] == MODE_SENSE_10);
--	int offset = ten ? 8 : 4;
-+	u32 offset = ten ? 8 : 4;
- 	int length = 0;
- 	unsigned char buf[SE_MODE_PAGE_BUF];
+--- a/drivers/scsi/scsi_debug.c
++++ b/drivers/scsi/scsi_debug.c
+@@ -2054,7 +2054,7 @@ static void unmap_region(sector_t lba, u
+ 		block = lba + alignment;
+ 		rem = do_div(block, granularity);
  
-@@ -817,6 +817,7 @@ static int spc_emulate_modesense(struct
- 		offset -= 2;
- 		buf[0] = (offset >> 8) & 0xff;
- 		buf[1] = offset & 0xff;
-+		offset += 2;
- 
- 		if ((cmd->se_lun->lun_access & TRANSPORT_LUNFLAGS_READ_ONLY) ||
- 		    (cmd->se_deve &&
-@@ -826,13 +827,10 @@ static int spc_emulate_modesense(struct
- 		if ((dev->se_sub_dev->se_dev_attrib.emulate_write_cache > 0) &&
- 		    (dev->se_sub_dev->se_dev_attrib.emulate_fua_write > 0))
- 			spc_modesense_dpofua(&buf[3], type);
--
--		if ((offset + 2) > cmd->data_length)
--			offset = cmd->data_length;
--
- 	} else {
- 		offset -= 1;
- 		buf[0] = offset & 0xff;
-+		offset += 1;
- 
- 		if ((cmd->se_lun->lun_access & TRANSPORT_LUNFLAGS_READ_ONLY) ||
- 		    (cmd->se_deve &&
-@@ -842,14 +840,13 @@ static int spc_emulate_modesense(struct
- 		if ((dev->se_sub_dev->se_dev_attrib.emulate_write_cache > 0) &&
- 		    (dev->se_sub_dev->se_dev_attrib.emulate_fua_write > 0))
- 			spc_modesense_dpofua(&buf[2], type);
--
--		if ((offset + 1) > cmd->data_length)
--			offset = cmd->data_length;
- 	}
- 
- 	rbuf = transport_kmap_data_sg(cmd);
--	memcpy(rbuf, buf, offset);
--	transport_kunmap_data_sg(cmd);
-+	if (rbuf) {
-+		memcpy(rbuf, buf, min(offset, cmd->data_length));
-+		transport_kunmap_data_sg(cmd);
-+	}
- 
- 	target_complete_cmd(cmd, GOOD);
- 	return 0;
+-		if (rem == 0 && lba + granularity <= end && block < map_size) {
++		if (rem == 0 && lba + granularity < end && block < map_size) {
+ 			clear_bit(block, map_storep);
+ 			if (scsi_debug_lbprz)
+ 				memset(fake_storep +
 
 
