@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099Ab2JSRQy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 13:16:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3010 "EHLO mga09.intel.com"
+	id S1758199Ab2JSRUU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 13:20:20 -0400
+Received: from mga09.intel.com ([134.134.136.24]:14972 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754341Ab2JSRQx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 13:16:53 -0400
+	id S1754511Ab2JSRUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 13:20:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,613,1344236400"; 
-   d="scan'208";a="229790139"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "linus-arch@vger.kernel.org" <linus-arch@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        David Howells <dhowells@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Michal Simek <monstr@monstr.eu>, Jonas Bonn <jonas@southpole.se>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Richard Kuo <rkuo@codeaurora.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Lennox Wu <lennox.wu@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Mundt <lethal@linux-sh.org>, Chris Zankel <chris@zankel.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>
-Subject: RE: new execve/kernel_thread design
-Thread-Topic: new execve/kernel_thread design
-Thread-Index: AQHNq+6Tvf4Kwo9jKkmvR03nZz0CIJfBP/+A//+ia5A=
-Date: Fri, 19 Oct 2012 17:16:50 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D57A82@ORSMSX108.amr.corp.intel.com>
-References: <20121016223508.GR2616@ZenIV.linux.org.uk>
- <20121019154901.GK2616@ZenIV.linux.org.uk>
-In-Reply-To: <20121019154901.GK2616@ZenIV.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+   d="scan'208";a="229791467"
+Date: Fri, 19 Oct 2012 10:20:18 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 2/2] perf: SNB exclusive PMU access for
+ INST_RETIRED:PREC_DIST
+Message-ID: <20121019172018.GA2095@tassilo.jf.intel.com>
+References: <1350658326-14715-1-git-send-email-eranian@google.com>
+ <1350658326-14715-3-git-send-email-eranian@google.com>
+ <1350664077.2768.32.camel@twins>
+ <CABPqkBQ5kCyGByFS-D62RYg2VUf_W-rJKDH=AzyrcaBPVY-eFQ@mail.gmail.com>
+ <1350665152.2768.41.camel@twins>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350665152.2768.41.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Surprisingly enough, ia64 one seems to work on actual hardware; I have sent
-> Tony an incremental patch cleaning copy_thread() up, waiting for results of
-> testing that on SMP box.
+> > > This isn't limited to admin, right? So the above turns into a DoS on the
+> > > console.
+> > >
+> > Ok, so how about a WARN_ON_ONCE() instead?
+> 
+> That should be fine I guess ;-)
 
-Tiny bit faster than plain 3.7-rc1. lmbench3 reports fork+execve test at between
-558 to 567 usec with the new code, compared with 562-572 usec with the old.
+imho there is need for a generic mechanism to return an error string
+to the user program without such hacks.
 
--Tony
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
