@@ -1,96 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757445Ab2JSDZU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:25:20 -0400
-Received: from condef004-v.nifty.com ([210.131.4.241]:52318 "EHLO
-	condef004-v.nifty.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757217Ab2JSDZI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:25:08 -0400
-X-Nifty-SrcIP: [61.204.25.121]
-From: MITSUNARI Shigeo <herumi@nifty.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, MITSUNARI Shigeo <herumi@nifty.com>
-Subject: [PATCH 0/2] bd_invalidated shoud be cleared in revalidate_disk
-Date: Fri, 19 Oct 2012 12:16:40 +0900
-Message-Id: <1350616602-6892-1-git-send-email-herumi@nifty.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S964940Ab2JSD0J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:26:09 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54388 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758014Ab2JSDRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:18 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 10/37] xen/bootup: allow {read|write}_cr8 pvops call.
+Date: Thu, 18 Oct 2012 20:16:33 -0700
+Message-Id: <20121019031304.506514778@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
+References: <20121019031302.789593147@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rescan_partitions() and invalidate_partitions() in block/partition-generic.c
-set bdev->bd_invalidated = 0 after calling check_disk_size_change().
-But revalidate_disk() in fs/block_dev.c does not clear it.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-If bdev->bd_invalidated = 1 then rescan_partitions() is called when
-__blkdev_get() is called.
-So if revalidate_disk() is once called, all buffer cache pages will be
-cleared whenever the device is opened.
+------------------
 
-This bug causes the following problem.
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-mdadm monitor will clear file cache every 1000 seconds
-after mdadm resize is executed once.
-mdadm monitor only openes the device with O_RDONLY.
+commit 1a7bbda5b1ab0e02622761305a32dc38735b90b2 upstream.
 
-We verified the problem occurred at kernel 3.6.2 and mdadm v3.2.5 on
-ubuntu 12.04LTS x86_64 and the patch worked well.
---- 
-The following steps will reproduce the problem.
+We actually do not do anything about it. Just return a default
+value of zero and if the kernel tries to write anything but 0
+we BUG_ON.
 
-1. prepair a block device(ex. /dev/sdb).
-2. create two partitions.
+This fixes the case when an user tries to suspend the machine
+and it blows up in save_processor_state b/c 'read_cr8' is set
+to NULL and we get:
 
-sudo parted /dev/sdb
-mklabel gpt
-mkpart primary 0% 50%
-mkpart primary 50% 100% 
+kernel BUG at /home/konrad/ssd/linux/arch/x86/include/asm/paravirt.h:100!
+invalid opcode: 0000 [#1] SMP
+Pid: 2687, comm: init.late Tainted: G           O 3.6.0upstream-00002-gac264ac-dirty #4 Bochs Bochs
+RIP: e030:[<ffffffff814d5f42>]  [<ffffffff814d5f42>] save_processor_state+0x212/0x270
 
-3. create a md device.
+.. snip..
+Call Trace:
+ [<ffffffff810733bf>] do_suspend_lowlevel+0xf/0xac
+ [<ffffffff8107330c>] ? x86_acpi_suspend_lowlevel+0x10c/0x150
+ [<ffffffff81342ee2>] acpi_suspend_enter+0x57/0xd5
 
-sudo mdadm -C /dev/md/hoge -l 1 -n 2 -e 1.2 --assume-clean --auto=md \
- --symlink=no /dev/sdb1 /dev/sdb2
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-4. create file system and mount it
+---
+ arch/x86/xen/enlighten.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
-sudo mkfs.ext3 /dev/md/hoge
-sudo mkdir /mnt/test
-sudo mount /dev/md/hoge /mnt/test
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -803,7 +803,16 @@ static void xen_write_cr4(unsigned long
+ 
+ 	native_write_cr4(cr4);
+ }
+-
++#ifdef CONFIG_X86_64
++static inline unsigned long xen_read_cr8(void)
++{
++	return 0;
++}
++static inline void xen_write_cr8(unsigned long val)
++{
++	BUG_ON(val);
++}
++#endif
+ static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
+ {
+ 	int ret;
+@@ -968,6 +977,11 @@ static const struct pv_cpu_ops xen_cpu_o
+ 	.read_cr4_safe = native_read_cr4_safe,
+ 	.write_cr4 = xen_write_cr4,
+ 
++#ifdef CONFIG_X86_64
++	.read_cr8 = xen_read_cr8,
++	.write_cr8 = xen_write_cr8,
++#endif
++
+ 	.wbinvd = native_wbinvd,
+ 
+ 	.read_msr = native_read_msr_safe,
 
-5. try to resize the device
-
-sudo mdadm -G /dev/md/hoge --size=max
-
-6. create a file to fill file cache.
-
-sudo dd if=/dev/urandom of=/mnt/test/data bs=1M count=10
-and verity the current status of file by free command.
-
-7. mdadm monitor will open the md device every 1000 seconds
-and you will find all file cache on the device are cleared.
-
-The timing can be reduced by the following steps.
-
-a) kill mdadm and restart it with --delay option
-/sbin/mdadm --monitor --delay=30 --pid-file /var/run/mdadm/monitor.pid \
- --daemonise --scan --syslog
-
-or open the md device directly.
-
-sudo dd if=/dev/md/hoge of=/dev/null bs=4096 count=1
-
-MITSUNARI Shigeo (2):
-  block: fs: bd_invalidated should be cleared in revalidate_disk
-  block: fs: move 'bdev->bd_invalidated = 0' into
-    check_disk_size_change() instead of putting the code every time
-    after check_disk_size_change().
-
- block/partition-generic.c |    2 --
- fs/block_dev.c            |    1 +
- 2 files changed, 1 insertion(+), 2 deletions(-)
-
--- 
-1.7.9.5
 
