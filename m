@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546Ab2JSCqx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:46:53 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51022 "EHLO mail.kernel.org"
+	id S1161051Ab2JSDe0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:34:26 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51004 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752220Ab2JSCqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:46:50 -0400
+	id S1752137Ab2JSCqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:46:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [ 06/62] ACPI: EC: Add a quirk for CLEVO M720T/M730T laptop
-Date: Thu, 18 Oct 2012 19:44:34 -0700
-Message-Id: <20121019024256.939682783@linuxfoundation.org>
+        Michael Olbrich <m.olbrich@pengutronix.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 01/62] ARM: vfp: fix saving d16-d31 vfp registers on v6+ kernels
+Date: Thu, 18 Oct 2012 19:44:29 -0700
+Message-Id: <20121019024256.160904721@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -25,58 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Feng Tang <feng.tang@intel.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 67bfa9b60bd689601554526d144b21d529f78a09 upstream.
+commit 846a136881b8f73c1f74250bf6acfaa309cab1f2 upstream.
 
-By enlarging the GPE storm threshold back to 20, that laptop's
-EC works fine with interrupt mode instead of polling mode.
+Michael Olbrich reported that his test program fails when built with
+-O2 -mcpu=cortex-a8 -mfpu=neon, and a kernel which supports v6 and v7
+CPUs:
 
-https://bugzilla.kernel.org/show_bug.cgi?id=45151
+volatile int x = 2;
+volatile int64_t y = 2;
 
-Reported-and-Tested-by: Francesco <trentini@dei.unipd.it>
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+int main() {
+	volatile int a = 0;
+	volatile int64_t b = 0;
+	while (1) {
+		a = (a + x) % (1 << 30);
+		b = (b + y) % (1 << 30);
+		assert(a == b);
+	}
+}
+
+and two instances are run.  When built for just v7 CPUs, this program
+works fine.  It uses the "vadd.i64 d19, d18, d16" VFP instruction.
+
+It appears that we do not save the high-16 double VFP registers across
+context switches when the kernel is built for v6 CPUs.  Fix that.
+
+Tested-By: Michael Olbrich <m.olbrich@pengutronix.de>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/ec.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ arch/arm/include/asm/vfpmacros.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -930,6 +930,17 @@ static int ec_flag_msi(const struct dmi_
- 	return 0;
- }
- 
-+/*
-+ * Clevo M720 notebook actually works ok with IRQ mode, if we lifted
-+ * the GPE storm threshold back to 20
-+ */
-+static int ec_enlarge_storm_threshold(const struct dmi_system_id *id)
-+{
-+	pr_debug("Setting the EC GPE storm threshold to 20\n");
-+	ec_storm_threshold  = 20;
-+	return 0;
-+}
-+
- static struct dmi_system_id __initdata ec_dmi_table[] = {
- 	{
- 	ec_skip_dsdt_scan, "Compal JFL92", {
-@@ -961,10 +972,13 @@ static struct dmi_system_id __initdata e
- 	{
- 	ec_validate_ecdt, "ASUS hardware", {
- 	DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer Inc.") }, NULL},
-+	{
-+	ec_enlarge_storm_threshold, "CLEVO hardware", {
-+	DMI_MATCH(DMI_SYS_VENDOR, "CLEVO Co."),
-+	DMI_MATCH(DMI_PRODUCT_NAME, "M720T/M730T"),}, NULL},
- 	{},
- };
- 
--
- int __init acpi_ec_ecdt_probe(void)
- {
- 	acpi_status status;
+--- a/arch/arm/include/asm/vfpmacros.h
++++ b/arch/arm/include/asm/vfpmacros.h
+@@ -28,7 +28,7 @@
+ 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
+ 	ldr	\tmp, [\tmp, #0]
+ 	tst	\tmp, #HWCAP_VFPv3D16
+-	ldceq	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
++	ldceql	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
+ 	addne	\base, \base, #32*4		    @ step over unused register space
+ #else
+ 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
+@@ -52,7 +52,7 @@
+ 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
+ 	ldr	\tmp, [\tmp, #0]
+ 	tst	\tmp, #HWCAP_VFPv3D16
+-	stceq	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
++	stceql	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
+ 	addne	\base, \base, #32*4		    @ step over unused register space
+ #else
+ 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
 
 
