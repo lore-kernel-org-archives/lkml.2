@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030299Ab2JSDaj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:30:39 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51214 "EHLO mail.kernel.org"
+	id S1756946Ab2JSCrN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:47:13 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51177 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756959Ab2JSCrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:14 -0400
+	id S1756784Ab2JSCrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 22/62] xen/bootup: allow {read|write}_cr8 pvops call.
-Date: Thu, 18 Oct 2012 19:44:50 -0700
-Message-Id: <20121019024259.533953236@linuxfoundation.org>
+        Simon Kirby <sim@hostway.ca>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [ 19/62] firewire: cdev: fix user memory corruption (i386 userland on amd64 kernel)
+Date: Thu, 18 Oct 2012 19:44:47 -0700
+Message-Id: <20121019024259.062318664@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -25,67 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-commit 1a7bbda5b1ab0e02622761305a32dc38735b90b2 upstream.
+commit 790198f74c9d1b46b6a89504361b1a844670d050 upstream.
 
-We actually do not do anything about it. Just return a default
-value of zero and if the kernel tries to write anything but 0
-we BUG_ON.
+Fix two bugs of the /dev/fw* character device concerning the
+FW_CDEV_IOC_GET_INFO ioctl with nonzero fw_cdev_get_info.bus_reset.
+(Practically all /dev/fw* clients issue this ioctl right after opening
+the device.)
 
-This fixes the case when an user tries to suspend the machine
-and it blows up in save_processor_state b/c 'read_cr8' is set
-to NULL and we get:
+Both bugs are caused by sizeof(struct fw_cdev_event_bus_reset) being 36
+without natural alignment and 40 with natural alignment.
 
-kernel BUG at /home/konrad/ssd/linux/arch/x86/include/asm/paravirt.h:100!
-invalid opcode: 0000 [#1] SMP
-Pid: 2687, comm: init.late Tainted: G           O 3.6.0upstream-00002-gac264ac-dirty #4 Bochs Bochs
-RIP: e030:[<ffffffff814d5f42>]  [<ffffffff814d5f42>] save_processor_state+0x212/0x270
+ 1) Memory corruption, affecting i386 userland on amd64 kernel:
+    Userland reserves a 36 bytes large buffer, kernel writes 40 bytes.
+    This has been first found and reported against libraw1394 if
+    compiled with gcc 4.7 which happens to order libraw1394's stack such
+    that the bug became visible as data corruption.
 
-.. snip..
-Call Trace:
- [<ffffffff810733bf>] do_suspend_lowlevel+0xf/0xac
- [<ffffffff8107330c>] ? x86_acpi_suspend_lowlevel+0x10c/0x150
- [<ffffffff81342ee2>] acpi_suspend_enter+0x57/0xd5
+ 2) Information leak, affecting all kernel architectures except i386:
+    4 bytes of random kernel stack data were leaked to userspace.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Hence limit the respective copy_to_user() to the 32-bit aligned size of
+struct fw_cdev_event_bus_reset.
+
+Reported-by: Simon Kirby <sim@hostway.ca>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/enlighten.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ drivers/firewire/core-cdev.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -942,7 +942,16 @@ static void xen_write_cr4(unsigned long
- 
- 	native_write_cr4(cr4);
- }
--
-+#ifdef CONFIG_X86_64
-+static inline unsigned long xen_read_cr8(void)
-+{
-+	return 0;
-+}
-+static inline void xen_write_cr8(unsigned long val)
-+{
-+	BUG_ON(val);
-+}
-+#endif
- static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
- {
- 	int ret;
-@@ -1111,6 +1120,11 @@ static const struct pv_cpu_ops xen_cpu_o
- 	.read_cr4_safe = native_read_cr4_safe,
- 	.write_cr4 = xen_write_cr4,
- 
-+#ifdef CONFIG_X86_64
-+	.read_cr8 = xen_read_cr8,
-+	.write_cr8 = xen_write_cr8,
-+#endif
-+
- 	.wbinvd = native_wbinvd,
- 
- 	.read_msr = native_read_msr_safe,
+--- a/drivers/firewire/core-cdev.c
++++ b/drivers/firewire/core-cdev.c
+@@ -471,8 +471,8 @@ static int ioctl_get_info(struct client
+ 	client->bus_reset_closure = a->bus_reset_closure;
+ 	if (a->bus_reset != 0) {
+ 		fill_bus_reset_event(&bus_reset, client);
+-		ret = copy_to_user(u64_to_uptr(a->bus_reset),
+-				   &bus_reset, sizeof(bus_reset));
++		/* unaligned size of bus_reset is 36 bytes */
++		ret = copy_to_user(u64_to_uptr(a->bus_reset), &bus_reset, 36);
+ 	}
+ 	if (ret == 0 && list_empty(&client->link))
+ 		list_add_tail(&client->link, &client->device->client_list);
 
 
