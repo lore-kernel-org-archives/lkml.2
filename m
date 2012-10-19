@@ -1,119 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758049Ab2JSJDX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 05:03:23 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50999 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753531Ab2JSJDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 05:03:20 -0400
-X-IronPort-AV: E=Sophos;i="4.80,612,1344182400"; 
-   d="scan'208";a="6030382"
-Message-ID: <508118A6.80804@cn.fujitsu.com>
-Date: Fri, 19 Oct 2012 17:08:54 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1758149Ab2JSJFA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 05:05:00 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17940 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753531Ab2JSJE4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 05:04:56 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 19 Oct 2012 02:04:55 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Simon Glass <sjg@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>
+CC: Leela Krishna Amudala <l.krishna@samsung.com>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-pm@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v7 0/3] Runtime Interpreter Power Sequences
+Date: Fri, 19 Oct 2012 18:06:26 +0900
+Message-ID: <1350637589-7405-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.7.12.3
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/4] acpi,memory-hotplug : add memory offline code to
- acpi_memory_device_remove()
-References: <506C0AE8.40702@jp.fujitsu.com> <506C0C53.60205@jp.fujitsu.com> <CAHGf_=p7PaQs-kpnyB8uC1MntHQfL-CXhhq4QQP54mYiqOswqQ@mail.gmail.com> <50727984.20401@cn.fujitsu.com> <CAHGf_=pCrx8AkL9eiSYVgwvT1v0SW2__P_DW-1Wwj_zskqcLXw@mail.gmail.com> <507E77D1.3030709@cn.fujitsu.com> <CAHGf_=rxGeb0RsgEFF2FRRfdX0wiE9cDyVaftsG3E8AgyzYi1g@mail.gmail.com>
-In-Reply-To: <CAHGf_=rxGeb0RsgEFF2FRRfdX0wiE9cDyVaftsG3E8AgyzYi1g@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/19 17:02:53,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/19 17:02:54,
-	Serialize complete at 2012/10/19 17:02:54
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 10/19/2012 03:44 AM, KOSAKI Motohiro Wrote:
->>>>>> +       if (type == ACPI_BUS_REMOVAL_EJECT) {
->>>>>> +               /*
->>>>>> +                * offline and remove memory only when the memory device is
->>>>>> +                * ejected.
->>>>>> +                */
->>>>>
->>>>> This comment explain nothing. A comment should describe _why_ should we do.
->>>>> e.g. Why REMOVAL_NORMAL and REMOVEL_EJECT should be ignored. Why
->>>>> we need remove memory here instead of ACPI_NOTIFY_EJECT_REQUEST.
->>>>
->>>> Hmm, we have 2 ways to remove a memory:
->>>> 1. SCI
->>>> 2. echo 1 >/sys/bus/acpi/devices/PNP0C80:XX/eject
->>>>
->>>> In the 2nd case, there is no ACPI_NOTIFY_EJECT_REQUEST. We should offline
->>>> the memory and remove it from kernel in the release callback. We will poweroff
->>>> the memory device in acpi_bus_hot_remove_device(), so we must offline
->>>> and remove it if the type is ACPI_BUS_REMOVAL_EJECT.
->>>>
->>>> I guess we should not poweroff the memory device when we fail to offline it.
->>>> But device_release_driver() doesn't returns any error...
->>>
->>> 1) I think /sys/bus/acpi/devices/PNP0C80:XX/eject should emulate acpi
->>> eject. Can't
->>> you make a pseudo acpi eject event and detach device by acpi regular path?
->>
->> It is another issue. And we only can implement it here with current acpi
->> implemention. Some other acpi devices(for example: cpu) do it like this.
-> 
-> Hint: only cpu take like this.
-> 
-> 
->>> 2) Your explanation didn't explain why we should ignore REMOVAL_NORMAL
->>> and REMOVEL_EJECT. As far as reviewers can't track your intention, we
->>> can't maintain
->>> the code and can't ack them.
->>>
->>
->> REMOVAL_NORMAL means the user want to unbind the memory device from this driver.
->> It is no need to eject the device, and we can still use this device after unbinding.
->> So it can be ignored.
->>
->> REMOVAL_EJECT means the user want to eject and remove the device, and we should
->> not use the device. So we should offline and remove the memory here.
-> 
-> This is not exactly correct, IMHO. Usually, we must not touch unbinded
-> device because
-> they are out of OS control. If I understand is correct, the main
-> reason is to distinguish a
-> rollback of driver initialization failure and true ejection.
-> 
-> REMOVAL_NORMAL is usually used for rollback and REMOVAL_EJECT is used for
-> removal device eject. Typical device don't need to distinguish them
-> because we should
-> deallocate every resource even when driver initialization failure.
-> 
-> However, cpu and memory are exceptions. They are recognized from kernel before
-> driver initialization. Then even if machine have crappy acpi table and
-> make failure acpi
-> initialization, disabling memory make no sense.
+Quite a big redesign of the feature - both structures and code have been
+simplified and should be easier to read and understand, data duplication is
+avoided, and much less memory allocations take place at runtime. Usage
+interface is also simpler and IMHO more logical.
 
-Hmm, IIRC, if the memory is recognized from kerenl before driver initialization,
-the memory device is not managed by the driver acpi_memhotplug.
+What happened is that platform_power_seq and power_seq have been merged,
+and so power sequences declared as platform data are used "as-is". The
+"build" step is not needed anymore - resources are allocated when a
+power sequence is added into a set.
 
-I think we should also deal with REMOVAL_NORMAL here now. Otherwise it will cause
-some critical problem: we unbind the device from the driver but we still use
-it. If we eject it, we have no chance to offline and remove it. It is very dangerous.
+There is still one design flaw that I would like to solve: sequences are
+still tied to a device, i.e. if you have two devices that use the same
+powering scheme, you have to declare two identical power sequences and assign
+each of these to one device. It would be much more flexible if sequences could
+be shared across devices. The problem is that the resources structure,
+references by steps, cannot be shared. Actually we could share it by having
+a linked list of devices and resolved resources in the resource structure and
+thus share power sequences over devices. That would work for regulator and
+PWM resources, which have a get_regulator/pwm(dev, id) function that could
+return a different resource depending on the device that is passed.
+But there is no similar get_gpio() function for GPIOs which number is directly
+specified in the resource, and I don't know if such a function would make
+sense otherwise. Opinions on the subject are welcome.
 
-Thanks
-Wen Congyang
+Alexandre Courbot (3):
+  Runtime Interpreted Power Sequences
+  pwm_backlight: use power sequences
+  tegra: ventana: add PWM backlight to device tree
 
-> 
-> And, when you make _exceptional_ rule, you should comment verbosely in the code
-> the detail.  likes 1) why we need.  2) which
-> device/machine/environment suffer such exception. 2)  what affect
-> other subsys.
-> 
-> Even though cpu hotplug has crappy poor comment and document, please
-> don't follow
-> them.
-> 
+ .../devicetree/bindings/power/power_seq.txt        | 121 +++++++
+ .../bindings/video/backlight/pwm-backlight.txt     |  72 +++-
+ Documentation/power/power_seq.txt                  | 253 ++++++++++++++
+ arch/arm/boot/dts/tegra20-ventana.dts              |  59 +++-
+ drivers/power/Kconfig                              |   1 +
+ drivers/power/Makefile                             |   1 +
+ drivers/power/power_seq/Kconfig                    |   2 +
+ drivers/power/power_seq/Makefile                   |   1 +
+ drivers/power/power_seq/power_seq.c                | 376 +++++++++++++++++++++
+ drivers/power/power_seq/power_seq_delay.c          |  65 ++++
+ drivers/power/power_seq/power_seq_gpio.c           |  94 ++++++
+ drivers/power/power_seq/power_seq_pwm.c            |  82 +++++
+ drivers/power/power_seq/power_seq_regulator.c      |  83 +++++
+ drivers/video/backlight/Kconfig                    |   1 +
+ drivers/video/backlight/pwm_bl.c                   | 161 +++++++--
+ include/linux/power_seq.h                          | 203 +++++++++++
+ include/linux/pwm_backlight.h                      |  18 +-
+ 17 files changed, 1553 insertions(+), 40 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power/power_seq.txt
+ create mode 100644 Documentation/power/power_seq.txt
+ create mode 100644 drivers/power/power_seq/Kconfig
+ create mode 100644 drivers/power/power_seq/Makefile
+ create mode 100644 drivers/power/power_seq/power_seq.c
+ create mode 100644 drivers/power/power_seq/power_seq_delay.c
+ create mode 100644 drivers/power/power_seq/power_seq_gpio.c
+ create mode 100644 drivers/power/power_seq/power_seq_pwm.c
+ create mode 100644 drivers/power/power_seq/power_seq_regulator.c
+ create mode 100644 include/linux/power_seq.h
+
+-- 
+1.7.12.3
 
