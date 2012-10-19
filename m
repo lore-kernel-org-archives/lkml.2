@@ -1,49 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932906Ab2JSOaO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 10:30:14 -0400
-Received: from exprod6og112.obsmtp.com ([64.18.1.29]:60831 "HELO
-	exprod6og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1030382Ab2JSOaK (ORCPT
+	id S1030416Ab2JSOch (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 10:32:37 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:27279 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754283Ab2JSOcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 10:30:10 -0400
-X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Oct 2012 10:30:10 EDT
-From: Ben Collins <ben.c@servergy.com>
+	Fri, 19 Oct 2012 10:32:36 -0400
+Date: Fri, 19 Oct 2012 10:18:51 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>, Hillf Danton <dhillf@gmail.com>,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, rob@landley.net,
+        akpm@linux-foundation.org, joerg.roedel@amd.com, bhelgaas@google.com,
+        shuahkhan@gmail.com, fujita.tomonori@lab.ntt.co.jp,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH v2 1/7] swiotlb: Make io_tlb_end a physical address
+ instead of a virtual one
+Message-ID: <20121019141851.GM26830@phenom.dumpdata.com>
+References: <20121011203010.12444.15503.stgit@gitlad.jf.intel.com>
+ <20121011203421.12444.32871.stgit@gitlad.jf.intel.com>
+ <CAJd=RBApQjWBA8w0y7_FhVAOoi17FO=UkCKQqnAX_vbFikkEVA@mail.gmail.com>
+ <507C2F20.8000504@intel.com>
+ <20121018124143.GA13854@localhost.localdomain>
+ <508025FD.80703@intel.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Subject: [PATCH] USB: ehci-fsl: Return valid error in ehci_fsl_setup_phy
-Date: Fri, 19 Oct 2012 10:24:12 -0400
-Message-Id: <590BC180-2D2F-47C3-B15F-E7B7BF9B5895@servergy.com>
-Cc: Shengzhou Liu <Shengzhou.Liu@freescale.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Mac OS X Mail 6.1 \(1498\))
-X-Mailer: Apple Mail (2.1498)
+Content-Disposition: inline
+In-Reply-To: <508025FD.80703@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ehci_fsl_setup_phy is supposed to return an int, but had a void return
-value in the case of controller_ver being invalid.
+On Thu, Oct 18, 2012 at 08:53:33AM -0700, Alexander Duyck wrote:
+> On 10/18/2012 05:41 AM, Konrad Rzeszutek Wilk wrote:
+> > On Mon, Oct 15, 2012 at 08:43:28AM -0700, Alexander Duyck wrote:
+> >> On 10/13/2012 05:52 AM, Hillf Danton wrote:
+> >>> Hi Alexander,
+> >>>
+> >>> On Fri, Oct 12, 2012 at 4:34 AM, Alexander Duyck
+> >>> <alexander.h.duyck@intel.com> wrote:
+> >>>> This change replaces all references to the virtual address for io_tlb_end
+> >>>> with references to the physical address io_tlb_end.  The main advantage of
+> >>>> replacing the virtual address with a physical address is that we can avoid
+> >>>> having to do multiple translations from the virtual address to the physical
+> >>>> one needed for testing an existing DMA address.
+> >>>>
+> >>>> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+> >>>> ---
+> >>>>
+> >>>>  lib/swiotlb.c |   24 +++++++++++++-----------
+> >>>>  1 files changed, 13 insertions(+), 11 deletions(-)
+> >>>>
+> >>>> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+> >>>> index f114bf6..19aac9f 100644
+> >>>> --- a/lib/swiotlb.c
+> >>>> +++ b/lib/swiotlb.c
+> >>>> @@ -57,7 +57,8 @@ int swiotlb_force;
+> >>>>   * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
+> >>>>   * API.
+> >>>>   */
+> >>>> -static char *io_tlb_start, *io_tlb_end;
+> >>>> +static char *io_tlb_start;
+> >>>> +phys_addr_t io_tlb_end;
+> >>> If add io_tlb_start_phy and io_tlb_end_phy, could we get same results
+> >>> with less hunks?
+> >>>
+> >>> Hillf
+> >> What do you mean by less hunks?  Are you referring to the memory space? 
+> > As in less patch movements.
+> >> If so, then the patches I am submitting do not impact how much space is
+> >> used for the bounce buffer.  The only real result of these patches is
+> >> that the total code path is significantly reduced since we don't have to
+> >> perform any virtual to physical translations in the hot-path.
+> > No. He is referring that you can keep io_tlb_end still here. Just
+> > do the computation of the physical address in the init path (of the end).
+> > Then you don't need to do the shifting in the 'is-this-swiotlb-buffer'
+> > and can just do a simple:
+> > 	if (dma_addr >= io_tlb_start && dma_addr <= io_tlb_end)
+> >
+> 
+> That is how the code ends up.  The v2 and v3 version of these patches
+> leave the end value there.  As this patch says I am just changing the
 
-Signed-off-by: Ben Collins <ben.c@servergy.com>
-Cc: Shengzhou Liu <Shengzhou.Liu@freescale.com>
----
- drivers/usb/host/ehci-fsl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Great!
+> end to be physical instead of virtual.  I reviewed the code and realized
+> that I wasn't saving anything by removing it since the overall code was
+> larger as a result so I just converted it to a physical address.  There
+> are no users of io_tlb_end that are accessing it as a virtual value so
+> all I did is just change it to a physical one and drop the virt_to_phys
+> calls that were made on it.  If I am not mistaken by the second patch
+> the is_swiotlb_buffer call is literally what you have described above. 
+> Here is the snippet from the 2nd patch:
+> 
+> static int is_swiotlb_buffer(phys_addr_t paddr)
+>  {
+> -	return paddr >= virt_to_phys(io_tlb_start) && paddr < io_tlb_end;
+> +	return paddr >= io_tlb_start && paddr < io_tlb_end;
+>  }
+> 
+> 
+> As far as the number of patches I decided to do this incrementally
+> instead of trying to do it all at once.  That way it is clearer to the
+> reviewer what I am doing in each step and it can be more easily bisected
+> in case I messed up somewhere.  If you want fewer patches I can do that
+> but I don't see the point in combining patches since they are all just
+> going to result in the same total change anyway.
 
-diff --git a/drivers/usb/host/ehci-fsl.c b/drivers/usb/host/ehci-fsl.c
-index 9bfde82..0d2f35c 100644
---- a/drivers/usb/host/ehci-fsl.c
-+++ b/drivers/usb/host/ehci-fsl.c
-@@ -222,7 +222,7 @@ static int ehci_fsl_setup_phy(struct usb_hcd *hcd,
- 
- 	if (pdata->controller_ver < 0) {
- 		dev_warn(hcd->self.controller, "Could not get controller version\n");
--		return;
-+		return -ENODEV;
- 	}
- 
- 	portsc = ehci_readl(ehci, &ehci->regs->port_status[port_offset]);
--- 
-1.7.10.4
+No that is OK. BTW, I did a testing of your V2 patches with Xen-SWIOTLB
+and they worked. But it was on non-debug env. The debug one does such
+evil things as make the initial domain memory start at the end physical
+memory and put the underlaying MFNs (machine frame numbers, the real
+physical frames) in reverse order. So for example pfn 100, ends up being
+mfn 0xf00d, and pfn 101 ends up being oxf00c.
