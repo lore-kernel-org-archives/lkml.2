@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030200Ab2JSUYL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 16:24:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55926 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754399Ab2JSUYJ (ORCPT
+	id S932962Ab2JSUaW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 16:30:22 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:56533 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932922Ab2JSUaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 16:24:09 -0400
-Date: Fri, 19 Oct 2012 13:24:05 -0700
+	Fri, 19 Oct 2012 16:30:20 -0400
+Date: Fri, 19 Oct 2012 13:30:15 -0700
 From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH 4/6] cgroups: forbid pre_destroy callback to fail
-Message-ID: <20121019202405.GR13370@google.com>
-References: <1350480648-10905-1-git-send-email-mhocko@suse.cz>
- <1350480648-10905-5-git-send-email-mhocko@suse.cz>
- <20121018224148.GR13370@google.com>
- <20121019133244.GE799@dhcp22.suse.cz>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk, vgoyal@redhat.com,
+        martin.petersen@oracle.com
+Subject: Re: [PATCH v4 1/2] block: Fix a buffer overrun in
+ bio_integrity_split()
+Message-ID: <20121019203015.GS13370@google.com>
+References: <1350331769-14856-1-git-send-email-koverstreet@google.com>
+ <1350331769-14856-28-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121019133244.GE799@dhcp22.suse.cz>
+In-Reply-To: <1350331769-14856-28-git-send-email-koverstreet@google.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Michal.
-
-On Fri, Oct 19, 2012 at 03:32:45PM +0200, Michal Hocko wrote:
-> On Thu 18-10-12 15:41:48, Tejun Heo wrote:
-> > Hello, Michal.
-> > 
-> > On Wed, Oct 17, 2012 at 03:30:46PM +0200, Michal Hocko wrote:
-> > > Now that mem_cgroup_pre_destroy callback doesn't fail finally we can
-> > > safely move on and forbit all the callbacks to fail. The last missing
-> > > piece is moving cgroup_call_pre_destroy after cgroup_clear_css_refs so
-> > > that css_tryget fails so no new charges for the memcg can happen.
-> > > The callbacks are also called from within cgroup_lock to guarantee that
-> > > no new tasks show up. We could theoretically call them outside of the
-> > > lock but then we have to move after CGRP_REMOVED flag is set.
-> > > 
-> > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > 
-> > So, the plan is to do something like the following once memcg is
-> > ready.
-> > 
-> >   http://thread.gmane.org/gmane.linux.kernel.containers/22559/focus=75251
-> > 
-> > Note that the patch is broken in a couple places but it does show the
-> > general direction.  I'd prefer if patch #3 simply makes pre_destroy()
-> > return 0 and drop __DEPRECATED_clear_css_refs from mem_cgroup_subsys.
+On Mon, Oct 15, 2012 at 01:09:01PM -0700, Kent Overstreet wrote:
+> bio_integrity_split() seemed to be confusing pointers and arrays -
+> bip_vec in bio_integrity_payload was an array appended to the end of the
+> payload, so the bio_vecs in struct bio_pair should have come after the
+> bio_integrity_payload they're for.
 > 
-> We can still fail inn #3 without this patch becasuse there are is no
-> guarantee that a new task is attached to the group. And I wanted to keep
-> memcg and generic cgroup parts separated.
+> Fix it by making bip_vec a pointer to the inline vecs - a later patch is
+> going to make more use of this pointer.
+> 
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> CC: Jens Axboe <axboe@kernel.dk>
+> CC: Martin K. Petersen <martin.petersen@oracle.com>
 
-Yes, but all other controllers are broken that way too and the worst
-thing which will hapen is triggering WARN_ON_ONCE().  Let's note the
-failure in the commit and remove DEPREDATED_clear_css_refs in the
-previous patch.  Then, I can pull from you, clean up pre_destroy mess
-and then you can pull back for further cleanups.
+This being an apparent bug, I think it would be better to create a
+patch to simply reorder bio_pair fields to fix it and mark it w/ Cc:
+stable and introduce bip_vec pointer separately.
+
+Other than that, looks good.
 
 Thanks.
 
