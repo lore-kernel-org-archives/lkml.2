@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab2JSD1V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:27:21 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54355 "EHLO mail.kernel.org"
+	id S1030448Ab2JSD1k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:27:40 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54328 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758003Ab2JSDRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:15 -0400
+	id S1757996Ab2JSDRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Kouei Abe <kouei.abe.cp@rms.renesas.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Simon Horman <horms@verge.net.au>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 07/37] ARM: 7541/1: Add ARM ERRATA 775420 workaround
-Date: Thu, 18 Oct 2012 20:16:30 -0700
-Message-Id: <20121019031304.013691385@linuxfoundation.org>
+        Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [ 04/37] ACPI: EC: Add a quirk for CLEVO M720T/M730T laptop
+Date: Thu, 18 Oct 2012 20:16:27 -0700
+Message-Id: <20121019031303.487705314@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -28,62 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Horman <horms@verge.net.au>
+From: Feng Tang <feng.tang@intel.com>
 
-commit 7253b85cc62d6ff84143d96fe6cd54f73736f4d7 upstream.
+commit 67bfa9b60bd689601554526d144b21d529f78a09 upstream.
 
-arm: Add ARM ERRATA 775420 workaround
+By enlarging the GPE storm threshold back to 20, that laptop's
+EC works fine with interrupt mode instead of polling mode.
 
-Workaround for the 775420 Cortex-A9 (r2p2, r2p6,r2p8,r2p10,r3p0) erratum.
-In case a date cache maintenance operation aborts with MMU exception, it
-might cause the processor to deadlock. This workaround puts DSB before
-executing ISB if an abort may occur on cache maintenance.
+https://bugzilla.kernel.org/show_bug.cgi?id=45151
 
-Based on work by Kouei Abe and feedback from Catalin Marinas.
-
-Signed-off-by: Kouei Abe <kouei.abe.cp@rms.renesas.com>
-[ horms@verge.net.au: Changed to implementation
-  suggested by catalin.marinas@arm.com ]
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Simon Horman <horms@verge.net.au>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Reported-and-Tested-by: Francesco <trentini@dei.unipd.it>
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/Kconfig       |   10 ++++++++++
- arch/arm/mm/cache-v7.S |    3 +++
- 2 files changed, 13 insertions(+)
+ drivers/acpi/ec.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1260,6 +1260,16 @@ config PL310_ERRATA_769419
- 	  on systems with an outer cache, the store buffer is drained
- 	  explicitly.
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -920,6 +920,17 @@ static int ec_flag_msi(const struct dmi_
+ 	return 0;
+ }
  
-+config ARM_ERRATA_775420
-+       bool "ARM errata: A data cache maintenance operation which aborts, might lead to deadlock"
-+       depends on CPU_V7
-+       help
-+	 This option enables the workaround for the 775420 Cortex-A9 (r2p2,
-+	 r2p6,r2p8,r2p10,r3p0) erratum. In case a date cache maintenance
-+	 operation aborts with MMU exception, it might cause the processor
-+	 to deadlock. This workaround puts DSB before executing ISB if
-+	 an abort may occur on cache maintenance.
++/*
++ * Clevo M720 notebook actually works ok with IRQ mode, if we lifted
++ * the GPE storm threshold back to 20
++ */
++static int ec_enlarge_storm_threshold(const struct dmi_system_id *id)
++{
++	pr_debug("Setting the EC GPE storm threshold to 20\n");
++	ec_storm_threshold  = 20;
++	return 0;
++}
 +
- endmenu
+ static struct dmi_system_id __initdata ec_dmi_table[] = {
+ 	{
+ 	ec_skip_dsdt_scan, "Compal JFL92", {
+@@ -951,10 +962,13 @@ static struct dmi_system_id __initdata e
+ 	{
+ 	ec_validate_ecdt, "ASUS hardware", {
+ 	DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer Inc.") }, NULL},
++	{
++	ec_enlarge_storm_threshold, "CLEVO hardware", {
++	DMI_MATCH(DMI_SYS_VENDOR, "CLEVO Co."),
++	DMI_MATCH(DMI_PRODUCT_NAME, "M720T/M730T"),}, NULL},
+ 	{},
+ };
  
- source "arch/arm/common/Kconfig"
---- a/arch/arm/mm/cache-v7.S
-+++ b/arch/arm/mm/cache-v7.S
-@@ -211,6 +211,9 @@ ENTRY(v7_coherent_user_range)
-  * isn't mapped, just try the next page.
-  */
- 9001:
-+#ifdef CONFIG_ARM_ERRATA_775420
-+	dsb
-+#endif
- 	mov	r12, r12, lsr #12
- 	mov	r12, r12, lsl #12
- 	add	r12, r12, #4096
+-
+ int __init acpi_ec_ecdt_probe(void)
+ {
+ 	acpi_status status;
 
 
