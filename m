@@ -1,46 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab2JSHev (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 03:34:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41196 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752706Ab2JSHeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 03:34:50 -0400
-Date: Fri, 19 Oct 2012 09:34:43 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Wei Yang <weiyang@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] remove untouched code in kfifo_in
-In-Reply-To: <1350624189.14741.1.camel@wall-e>
-Message-ID: <alpine.LNX.2.00.1210190934010.7523@pobox.suse.cz>
-References: <1350568765-5723-1-git-send-email-weiyang@linux.vnet.ibm.com>  <CAFLxGvwfGc_4z1JM=pAb-U4tNVeMZR1zs-neQv7Vz2-6DQT+9Q@mail.gmail.com> <1350624189.14741.1.camel@wall-e>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754983Ab2JSHhp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 03:37:45 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:33755 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752926Ab2JSHho (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 03:37:44 -0400
+Message-ID: <5081033C.4060503@linux.vnet.ibm.com>
+Date: Fri, 19 Oct 2012 15:37:32 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH] KVM: x86: fix vcpu->mmio_fragments overflow
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12101907-9574-0000-0000-000004EEA9BB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Oct 2012, Stefani Seibold wrote:
+After commit b3356bf0dbb349 (KVM: emulator: optimize "rep ins" handling),
+the pieces of io data can be collected and write them to the guest memory
+or MMIO together.
 
-> > > In kfifo_in marco, one piece of code is arounded by if(0). This code in
-> > > introduced by Stefani Seibold <stefani@seibold.net> to suppress a compiler
-> > > warning. This warning is not there with the upgrade of gcc version.
-> > >
-> > > This patch just remove this code.
-> > 
-> > Are you sure?
-> > This code fragment looks like a compiler bomb to detect type mismatch to me...
-> 
-> Yes, you are great! That was the reason why i made this peace of code.
-> So don't remove it!
+Unfortunately, kvm splits the mmio access into 8 bytes and store them to
+vcpu->mmio_fragments. If the guest uses "rep ins" to move large data, it
+will cause vcpu->mmio_fragments overflow
 
-As even you, the author of the code, got confused by it for a while, 
-adding an explanatory comment seems appropriate.
+The bug can be exposed by isapc (-M isapc):
 
-Thanks,
+[23154.818733] general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
+[ ......]
+[23154.858083] Call Trace:
+[23154.859874]  [<ffffffffa04f0e17>] kvm_get_cr8+0x1d/0x28 [kvm]
+[23154.861677]  [<ffffffffa04fa6d4>] kvm_arch_vcpu_ioctl_run+0xcda/0xe45 [kvm]
+[23154.863604]  [<ffffffffa04f5a1a>] ? kvm_arch_vcpu_load+0x17b/0x180 [kvm]
 
+
+Actually, we can use one mmio_fragment to store a large mmio access for the
+mmio access is always continuous then split it when we pass the mmio-exit-info
+to userspace. After that, we only need two entries to store mmio info for
+the cross-mmio pages access
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/x86.c       |  127 +++++++++++++++++++++++++++++-----------------
+ include/linux/kvm_host.h |   16 +-----
+ 2 files changed, 84 insertions(+), 59 deletions(-)
+
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 8b90dd5..41ceb51 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3779,9 +3779,6 @@ static int read_exit_mmio(struct kvm_vcpu *vcpu, gpa_t gpa,
+ static int write_exit_mmio(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 			   void *val, int bytes)
+ {
+-	struct kvm_mmio_fragment *frag = &vcpu->mmio_fragments[0];
+-
+-	memcpy(vcpu->run->mmio.data, frag->data, frag->len);
+ 	return X86EMUL_CONTINUE;
+ }
+
+@@ -3799,6 +3796,64 @@ static const struct read_write_emulator_ops write_emultor = {
+ 	.write = true,
+ };
+
++static bool get_current_mmio_info(struct kvm_vcpu *vcpu, gpa_t *gpa,
++				  unsigned *len, void **data)
++{
++	struct kvm_mmio_fragment *frag;
++	int cur = vcpu->mmio_cur_fragment;
++
++	if (cur >= vcpu->mmio_nr_fragments)
++		return false;
++
++	frag = &vcpu->mmio_fragments[cur];
++	if (frag->pos >= frag->len) {
++		if (++vcpu->mmio_cur_fragment >= vcpu->mmio_nr_fragments)
++			return false;
++		frag++;
++	}
++
++	*gpa = frag->gpa + frag->pos;
++	*data = frag->data + frag->pos;
++	*len = min(8u, frag->len - frag->pos);
++	return true;
++}
++
++static void complete_current_mmio(struct kvm_vcpu *vcpu)
++{
++	struct kvm_mmio_fragment *frag;
++	gpa_t gpa;
++	unsigned len;
++	void *data;
++
++	get_current_mmio_info(vcpu, &gpa, &len, &data);
++
++	if (!vcpu->mmio_is_write)
++		memcpy(data, vcpu->run->mmio.data, len);
++
++	/* Increase frag->pos to switch to the next mmio. */
++	frag = &vcpu->mmio_fragments[vcpu->mmio_cur_fragment];
++	frag->pos += len;
++}
++
++static bool vcpu_fill_mmio_exit_info(struct kvm_vcpu *vcpu)
++{
++	gpa_t gpa;
++	unsigned len;
++	void *data;
++
++	if (!get_current_mmio_info(vcpu, &gpa, &len, &data))
++		return false;
++
++	vcpu->run->mmio.len = len;
++	vcpu->run->mmio.is_write = vcpu->mmio_is_write;
++	vcpu->run->exit_reason = KVM_EXIT_MMIO;
++	vcpu->run->mmio.phys_addr = gpa;
++
++	if (vcpu->mmio_is_write)
++		memcpy(vcpu->run->mmio.data, data, len);
++	return true;
++}
++
+ static int emulator_read_write_onepage(unsigned long addr, void *val,
+ 				       unsigned int bytes,
+ 				       struct x86_exception *exception,
+@@ -3834,18 +3889,12 @@ mmio:
+ 	bytes -= handled;
+ 	val += handled;
+
+-	while (bytes) {
+-		unsigned now = min(bytes, 8U);
+-
+-		frag = &vcpu->mmio_fragments[vcpu->mmio_nr_fragments++];
+-		frag->gpa = gpa;
+-		frag->data = val;
+-		frag->len = now;
+-
+-		gpa += now;
+-		val += now;
+-		bytes -= now;
+-	}
++	WARN_ON(vcpu->mmio_nr_fragments >= KVM_MAX_MMIO_FRAGMENTS);
++	frag = &vcpu->mmio_fragments[vcpu->mmio_nr_fragments++];
++	frag->pos = 0;
++	frag->gpa = gpa;
++	frag->data = val;
++	frag->len = bytes;
+ 	return X86EMUL_CONTINUE;
+ }
+
+@@ -3855,7 +3904,6 @@ int emulator_read_write(struct x86_emulate_ctxt *ctxt, unsigned long addr,
+ 			const struct read_write_emulator_ops *ops)
+ {
+ 	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
+-	gpa_t gpa;
+ 	int rc;
+
+ 	if (ops->read_write_prepare &&
+@@ -3887,17 +3935,13 @@ int emulator_read_write(struct x86_emulate_ctxt *ctxt, unsigned long addr,
+ 	if (!vcpu->mmio_nr_fragments)
+ 		return rc;
+
+-	gpa = vcpu->mmio_fragments[0].gpa;
+-
+ 	vcpu->mmio_needed = 1;
+ 	vcpu->mmio_cur_fragment = 0;
++	vcpu->mmio_is_write = ops->write;
+
+-	vcpu->run->mmio.len = vcpu->mmio_fragments[0].len;
+-	vcpu->run->mmio.is_write = vcpu->mmio_is_write = ops->write;
+-	vcpu->run->exit_reason = KVM_EXIT_MMIO;
+-	vcpu->run->mmio.phys_addr = gpa;
+-
+-	return ops->read_write_exit_mmio(vcpu, gpa, val, bytes);
++	vcpu_fill_mmio_exit_info(vcpu);
++	return ops->read_write_exit_mmio(vcpu, vcpu->mmio_fragments[0].gpa,
++					 val, bytes);
+ }
+
+ static int emulator_read_emulated(struct x86_emulate_ctxt *ctxt,
+@@ -5524,43 +5568,34 @@ static int complete_emulated_pio(struct kvm_vcpu *vcpu)
+  *
+  * read:
+  *   for each fragment
+- *     write gpa, len
+- *     exit
+- *     copy data
++ *      for each mmio piece in the fragment
++ *        write gpa, len
++ *        exit
++ *        copy data
+  *   execute insn
+  *
+  * write:
+  *   for each fragment
+- *      write gpa, len
+- *      copy data
+- *      exit
++ *      for each mmio piece in the fragment
++ *         write gpa, len
++ *         copy data
++ *   exit
+  */
+ static int complete_emulated_mmio(struct kvm_vcpu *vcpu)
+ {
+-	struct kvm_run *run = vcpu->run;
+-	struct kvm_mmio_fragment *frag;
+-
+ 	BUG_ON(!vcpu->mmio_needed);
+
+-	/* Complete previous fragment */
+-	frag = &vcpu->mmio_fragments[vcpu->mmio_cur_fragment++];
+-	if (!vcpu->mmio_is_write)
+-		memcpy(frag->data, run->mmio.data, frag->len);
+-	if (vcpu->mmio_cur_fragment == vcpu->mmio_nr_fragments) {
++	complete_current_mmio(vcpu);
++
++	/* Initiate next fragment */
++	if (!vcpu_fill_mmio_exit_info(vcpu)) {
+ 		vcpu->mmio_needed = 0;
+ 		if (vcpu->mmio_is_write)
+ 			return 1;
+ 		vcpu->mmio_read_completed = 1;
+ 		return complete_emulated_io(vcpu);
+ 	}
+-	/* Initiate next fragment */
+-	++frag;
+-	run->exit_reason = KVM_EXIT_MMIO;
+-	run->mmio.phys_addr = frag->gpa;
+-	if (vcpu->mmio_is_write)
+-		memcpy(run->mmio.data, frag->data, frag->len);
+-	run->mmio.len = frag->len;
+-	run->mmio.is_write = vcpu->mmio_is_write;
++
+ 	vcpu->arch.complete_userspace_io = complete_emulated_mmio;
+ 	return 0;
+ }
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index e235068..f6c3c2f 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -42,19 +42,8 @@
+  */
+ #define KVM_MEMSLOT_INVALID	(1UL << 16)
+
+-/*
+- * If we support unaligned MMIO, at most one fragment will be split into two:
+- */
+-#ifdef KVM_UNALIGNED_MMIO
+-#  define KVM_EXTRA_MMIO_FRAGMENTS 1
+-#else
+-#  define KVM_EXTRA_MMIO_FRAGMENTS 0
+-#endif
+-
+-#define KVM_USER_MMIO_SIZE 8
+-
+-#define KVM_MAX_MMIO_FRAGMENTS \
+-	(KVM_MMIO_SIZE / KVM_USER_MMIO_SIZE + KVM_EXTRA_MMIO_FRAGMENTS)
++/* Two fragments for cross MMIO pages. */
++#define KVM_MAX_MMIO_FRAGMENTS	2
+
+ /*
+  * For the normal pfn, the highest 12 bits should be zero,
+@@ -203,6 +192,7 @@ struct kvm_mmio_fragment {
+ 	gpa_t gpa;
+ 	void *data;
+ 	unsigned len;
++	unsigned pos;
+ };
+
+ struct kvm_vcpu {
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.7.6
+
