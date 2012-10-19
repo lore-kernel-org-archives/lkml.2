@@ -1,96 +1,839 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756559Ab2JSWzF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 18:55:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61977 "EHLO mx1.redhat.com"
+	id S1758267Ab2JSW4p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 18:56:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16888 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751625Ab2JSWzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 18:55:03 -0400
-Date: Fri, 19 Oct 2012 18:54:41 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/2] brw_mutex: big read-write mutex
-In-Reply-To: <1350668451.2768.60.camel@twins>
-Message-ID: <Pine.LNX.4.64.1210191758570.12753@file.rdu.redhat.com>
-References: <20121015190958.GA4799@redhat.com>   <20121015191018.GA4816@redhat.com>
-  <CA+55aFwV-WOUx8MSr145f+HSrtmZ=nXHq0VLhtPyH=FNBFwmQg@mail.gmail.com>  
- <20121017165902.GB9872@redhat.com>   <20121017224430.GC2518@linux.vnet.ibm.com>
-  <20121018162409.GA28504@redhat.com>   <20121018163833.GK2518@linux.vnet.ibm.com>
-  <20121018175747.GA30691@redhat.com>   <Pine.LNX.4.64.1210181525010.32376@file.rdu.redhat.com>
-  <1350650286.30157.28.camel@twins>  <Pine.LNX.4.64.1210191058060.13298@file.rdu.redhat.com>
- <1350668451.2768.60.camel@twins>
+	id S1752029Ab2JSW4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 18:56:44 -0400
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 1/2] MODSIGN: perlify sign-file and merge in x509keyid [ver #3]
+To: torvalds@linux-foundation.org, rusty@rustcorp.com.au
+Cc: dhowells@redhat.com, davem@davemloft.net, linux-kernel@vger.kernel.org
+Date: Fri, 19 Oct 2012 23:56:37 +0100
+Message-ID: <20121019225637.4319.14343.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Turn sign-file into perl and merge in x509keyid.  The latter doesn't need to be
+a separate script as it doesn't actually need to work out the SHA1 sum of the
+X.509 certificate itself, since it can get that from the X.509 certificate.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ Makefile          |    2 
+ scripts/sign-file |  477 ++++++++++++++++++++++++++++++++++++++++++++---------
+ scripts/x509keyid |  268 ------------------------------
+ 3 files changed, 400 insertions(+), 347 deletions(-)
+ mode change 100644 => 100755 scripts/sign-file
+ delete mode 100755 scripts/x509keyid
 
 
-On Fri, 19 Oct 2012, Peter Zijlstra wrote:
+diff --git a/Makefile b/Makefile
+index 4fd82f7..14b9874 100644
+--- a/Makefile
++++ b/Makefile
+@@ -723,7 +723,7 @@ ifeq ($(CONFIG_MODULE_SIG),y)
+ MODSECKEY = ./signing_key.priv
+ MODPUBKEY = ./signing_key.x509
+ export MODPUBKEY
+-mod_sign_cmd = sh $(srctree)/scripts/sign-file $(MODSECKEY) $(MODPUBKEY) $(srctree)/scripts/x509keyid
++mod_sign_cmd = perl $(srctree)/scripts/sign-file $(MODSECKEY) $(MODPUBKEY)
+ else
+ mod_sign_cmd = true
+ endif
+diff --git a/scripts/sign-file b/scripts/sign-file
+old mode 100644
+new mode 100755
+index d014abd..c8a2e7c
+--- a/scripts/sign-file
++++ b/scripts/sign-file
+@@ -1,108 +1,429 @@
+-#!/bin/bash
++#!/usr/bin/perl -w
+ #
+ # Sign a module file using the given key.
+ #
+-# Format: sign-file <key> <x509> <keyid-script> <module>
++# Format:
+ #
++#	./scripts/sign-file [-v] <key> <x509> <module> [<dest>]
++#
++#
++use strict;
++use FileHandle;
++use IPC::Open2;
++
++my $verbose = 0;
++if ($#ARGV >= 0 && $ARGV[0] eq "-v") {
++    $verbose = 1;
++    shift;
++}
++
++die "Format: ./scripts/sign-file [-v] <key> <x509> <module> [<dest>]\n"
++    if ($#ARGV != 2 && $#ARGV != 3);
++
++my $private_key = $ARGV[0];
++my $x509 = $ARGV[1];
++my $module = $ARGV[2];
++my $dest = ($#ARGV == 3) ? $ARGV[3] : $ARGV[2] . "~";
++
++die "Can't read private key\n" unless (-r $private_key);
++die "Can't read X.509 certificate\n" unless (-r $x509);
++die "Can't read module\n" unless (-r $module);
++
++#
++# Read the kernel configuration
++#
++my %config = (
++    CONFIG_MODULE_SIG_SHA512 => 1
++    );
++
++if (-r ".config") {
++    open(FD, "<.config") || die ".config";
++    while (<FD>) {
++	if ($_ =~ /^(CONFIG_.*)=[ym]/) {
++	    $config{$1} = 1;
++	}
++    }
++    close(FD);
++}
+ 
+-scripts=`dirname $0`
++#
++# Function to read the contents of a file into a variable.
++#
++sub read_file($)
++{
++    my ($file) = @_;
++    my $contents;
++    my $len;
++
++    open(FD, "<$file") || die $file;
++    binmode FD;
++    my @st = stat(FD);
++    die $file if (!@st);
++    $len = read(FD, $contents, $st[7]) || die $file;
++    close(FD) || die $file;
++    die "$file: Wanted length ", $st[7], ", got ", $len, "\n"
++	if ($len != $st[7]);
++    return $contents;
++}
++
++###############################################################################
++#
++# First of all, we have to parse the X.509 certificate to find certain details
++# about it.
++#
++# We read the DER-encoded X509 certificate and parse it to extract the Subject
++# name and Subject Key Identifier.  Theis provides the data we need to build
++# the certificate identifier.
++#
++# The signer's name part of the identifier is fabricated from the commonName,
++# the organizationName or the emailAddress components of the X.509 subject
++# name.
++#
++# The subject key ID is used to select which of that signer's certificates
++# we're intending to use to sign the module.
++#
++###############################################################################
++my $x509_certificate = read_file($x509);
+ 
+-CONFIG_MODULE_SIG_SHA512=y
+-if [ -r .config ]
+-then
+-    . ./.config
+-fi
++my $UNIV = 0 << 6;
++my $APPL = 1 << 6;
++my $CONT = 2 << 6;
++my $PRIV = 3 << 6;
+ 
+-key="$1"
+-x509="$2"
+-keyid_script="$3"
+-mod="$4"
++my $CONS = 0x20;
+ 
+-if [ ! -r "$key" ]
+-then
+-    echo "Can't read private key" >&2
+-    exit 2
+-fi
++my $BOOLEAN	= 0x01;
++my $INTEGER	= 0x02;
++my $BIT_STRING	= 0x03;
++my $OCTET_STRING = 0x04;
++my $NULL	= 0x05;
++my $OBJ_ID	= 0x06;
++my $UTF8String	= 0x0c;
++my $SEQUENCE	= 0x10;
++my $SET		= 0x11;
++my $UTCTime	= 0x17;
++my $GeneralizedTime = 0x18;
+ 
+-if [ ! -r "$x509" ]
+-then
+-    echo "Can't read X.509 certificate" >&2
+-    exit 2
+-fi
++my %OIDs = (
++    pack("CCC", 85, 4, 3)	=> "commonName",
++    pack("CCC", 85, 4, 6)	=> "countryName",
++    pack("CCC", 85, 4, 10)	=> "organizationName",
++    pack("CCC", 85, 4, 11)	=> "organizationUnitName",
++    pack("CCCCCCCCC", 42, 134, 72, 134, 247, 13, 1, 1, 1) => "rsaEncryption",
++    pack("CCCCCCCCC", 42, 134, 72, 134, 247, 13, 1, 1, 5) => "sha1WithRSAEncryption",
++    pack("CCCCCCCCC", 42, 134, 72, 134, 247, 13, 1, 9, 1) => "emailAddress",
++    pack("CCC", 85, 29, 35)	=> "authorityKeyIdentifier",
++    pack("CCC", 85, 29, 14)	=> "subjectKeyIdentifier",
++    pack("CCC", 85, 29, 19)	=> "basicConstraints"
++);
++
++###############################################################################
++#
++# Extract an ASN.1 element from a string and return information about it.
++#
++###############################################################################
++sub asn1_extract($$@)
++{
++    my ($cursor, $expected_tag, $optional) = @_;
++
++    return [ -1 ]
++	if ($cursor->[1] == 0 && $optional);
++
++    die $x509, ": ", $cursor->[0], ": ASN.1 data underrun (elem ", $cursor->[1], ")\n"
++	if ($cursor->[1] < 2);
++
++    my ($tag, $len) = unpack("CC", substr(${$cursor->[2]}, $cursor->[0], 2));
++
++    if ($expected_tag != -1 && $tag != $expected_tag) {
++	return [ -1 ]
++	    if ($optional);
++	die $x509, ": ", $cursor->[0], ": ASN.1 unexpected tag (", $tag,
++	" not ", $expected_tag, ")\n";
++    }
++
++    $cursor->[0] += 2;
++    $cursor->[1] -= 2;
++
++    die $x509, ": ", $cursor->[0], ": ASN.1 long tag\n"
++	if (($tag & 0x1f) == 0x1f);
++    die $x509, ": ", $cursor->[0], ": ASN.1 indefinite length\n"
++	if ($len == 0x80);
++
++    if ($len > 0x80) {
++	my $l = $len - 0x80;
++	die $x509, ": ", $cursor->[0], ": ASN.1 data underrun (len len $l)\n"
++	    if ($cursor->[1] < $l);
++
++	if ($l == 0x1) {
++	    $len = unpack("C", substr(${$cursor->[2]}, $cursor->[0], 1));
++	} elsif ($l = 0x2) {
++	    $len = unpack("n", substr(${$cursor->[2]}, $cursor->[0], 2));
++	} elsif ($l = 0x3) {
++	    $len = unpack("C", substr(${$cursor->[2]}, $cursor->[0], 1)) << 16;
++	    $len = unpack("n", substr(${$cursor->[2]}, $cursor->[0] + 1, 2));
++	} elsif ($l = 0x4) {
++	    $len = unpack("N", substr(${$cursor->[2]}, $cursor->[0], 4));
++	} else {
++	    die $x509, ": ", $cursor->[0], ": ASN.1 element too long (", $l, ")\n";
++	}
++
++	$cursor->[0] += $l;
++	$cursor->[1] -= $l;
++    }
++
++    die $x509, ": ", $cursor->[0], ": ASN.1 data underrun (", $len, ")\n"
++	if ($cursor->[1] < $len);
++
++    my $ret = [ $tag, [ $cursor->[0], $len, $cursor->[2] ] ];
++    $cursor->[0] += $len;
++    $cursor->[1] -= $len;
++
++    return $ret;
++}
++
++###############################################################################
++#
++# Retrieve the data referred to by a cursor
++#
++###############################################################################
++sub asn1_retrieve($)
++{
++    my ($cursor) = @_;
++    my ($offset, $len, $data) = @$cursor;
++    return substr($$data, $offset, $len);
++}
++
++###############################################################################
++#
++# Roughly parse the X.509 certificate
++#
++###############################################################################
++my $cursor = [ 0, length($x509_certificate), \$x509_certificate ];
++
++my $cert = asn1_extract($cursor, $UNIV | $CONS | $SEQUENCE);
++my $tbs = asn1_extract($cert->[1], $UNIV | $CONS | $SEQUENCE);
++my $version = asn1_extract($tbs->[1], $CONT | $CONS | 0, 1);
++my $serial_number = asn1_extract($tbs->[1], $UNIV | $INTEGER);
++my $sig_type = asn1_extract($tbs->[1], $UNIV | $CONS | $SEQUENCE);
++my $issuer = asn1_extract($tbs->[1], $UNIV | $CONS | $SEQUENCE);
++my $validity = asn1_extract($tbs->[1], $UNIV | $CONS | $SEQUENCE);
++my $subject = asn1_extract($tbs->[1], $UNIV | $CONS | $SEQUENCE);
++my $key = asn1_extract($tbs->[1], $UNIV | $CONS | $SEQUENCE);
++my $issuer_uid = asn1_extract($tbs->[1], $CONT | $CONS | 1, 1);
++my $subject_uid = asn1_extract($tbs->[1], $CONT | $CONS | 2, 1);
++my $extension_list = asn1_extract($tbs->[1], $CONT | $CONS | 3, 1);
++
++my $subject_key_id = ();
++my $authority_key_id = ();
++
++#
++# Parse the extension list
++#
++if ($extension_list->[0] != -1) {
++    my $extensions = asn1_extract($extension_list->[1], $UNIV | $CONS | $SEQUENCE);
++
++    while ($extensions->[1]->[1] > 0) {
++	my $ext = asn1_extract($extensions->[1], $UNIV | $CONS | $SEQUENCE);
++	my $x_oid = asn1_extract($ext->[1], $UNIV | $OBJ_ID);
++	my $x_crit = asn1_extract($ext->[1], $UNIV | $BOOLEAN, 1);
++	my $x_val = asn1_extract($ext->[1], $UNIV | $OCTET_STRING);
++
++	my $raw_oid = asn1_retrieve($x_oid->[1]);
++	next if (!exists($OIDs{$raw_oid}));
++	my $x_type = $OIDs{$raw_oid};
++
++	my $raw_value = asn1_retrieve($x_val->[1]);
++
++	if ($x_type eq "subjectKeyIdentifier") {
++	    my $vcursor = [ 0, length($raw_value), \$raw_value ];
++
++	    $subject_key_id = asn1_extract($vcursor, $UNIV | $OCTET_STRING);
++	}
++    }
++}
++
++###############################################################################
++#
++# Determine what we're going to use as the signer's name.  In order of
++# preference, take one of: commonName, organizationName or emailAddress.
++#
++###############################################################################
++my $org = "";
++my $cn = "";
++my $email = "";
++
++while ($subject->[1]->[1] > 0) {
++    my $rdn = asn1_extract($subject->[1], $UNIV | $CONS | $SET);
++    my $attr = asn1_extract($rdn->[1], $UNIV | $CONS | $SEQUENCE);
++    my $n_oid = asn1_extract($attr->[1], $UNIV | $OBJ_ID);
++    my $n_val = asn1_extract($attr->[1], -1);
++
++    my $raw_oid = asn1_retrieve($n_oid->[1]);
++    next if (!exists($OIDs{$raw_oid}));
++    my $n_type = $OIDs{$raw_oid};
++
++    my $raw_value = asn1_retrieve($n_val->[1]);
++
++    if ($n_type eq "organizationName") {
++	$org = $raw_value;
++    } elsif ($n_type eq "commonName") {
++	$cn = $raw_value;
++    } elsif ($n_type eq "emailAddress") {
++	$email = $raw_value;
++    }
++}
++
++my $signers_name = $email;
++
++if ($org && $cn) {
++    # Don't use the organizationName if the commonName repeats it
++    if (length($org) <= length($cn) &&
++	substr($cn, 0, length($org)) eq $org) {
++	$signers_name = $cn;
++	goto got_id_name;
++    }
++
++    # Or a signifcant chunk of it
++    if (length($org) >= 7 &&
++	length($cn) >= 7 &&
++	substr($cn, 0, 7) eq substr($org, 0, 7)) {
++	$signers_name = $cn;
++	goto got_id_name;
++    }
++
++    $signers_name = $org . ": " . $cn;
++} elsif ($org) {
++    $signers_name = $org;
++} elsif ($cn) {
++    $signers_name = $cn;
++}
++
++got_id_name:
++
++die $x509, ": ", "X.509: Couldn't find the Subject Key Identifier extension\n"
++    if (!$subject_key_id);
++
++my $key_identifier = asn1_retrieve($subject_key_id->[1]);
++
++###############################################################################
++#
++# Create and attach the module signature
++#
++###############################################################################
+ 
+ #
+ # Signature parameters
+ #
+-algo=1		# Public-key crypto algorithm: RSA
+-hash=		# Digest algorithm
+-id_type=1	# Identifier type: X.509
++my $algo = 1;		# Public-key crypto algorithm: RSA
++my $hash = 0;		# Digest algorithm
++my $id_type = 1;	# Identifier type: X.509
+ 
+ #
+ # Digest the data
+ #
+-dgst=
+-if [ "$CONFIG_MODULE_SIG_SHA1" = "y" ]
+-then
+-    prologue="0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00, 0x04, 0x14"
+-    dgst=-sha1
+-    hash=2
+-elif [ "$CONFIG_MODULE_SIG_SHA224" = "y" ]
+-then
+-    prologue="0x30, 0x2d, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x04, 0x05, 0x00, 0x04, 0x1C"
+-    dgst=-sha224
+-    hash=7
+-elif [ "$CONFIG_MODULE_SIG_SHA256" = "y" ]
+-then
+-    prologue="0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20"
+-    dgst=-sha256
+-    hash=4
+-elif [ "$CONFIG_MODULE_SIG_SHA384" = "y" ]
+-then
+-    prologue="0x30, 0x41, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, 0x05, 0x00, 0x04, 0x30"
+-    dgst=-sha384
+-    hash=5
+-elif [ "$CONFIG_MODULE_SIG_SHA512" = "y" ]
+-then
+-    prologue="0x30, 0x51, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04, 0x40"
+-    dgst=-sha512
+-    hash=6
+-else
+-    echo "$0: Can't determine hash algorithm" >&2
+-    exit 2
+-fi
+-
+-(
+-perl -e "binmode STDOUT; print pack(\"C*\", $prologue)" || exit $?
+-openssl dgst $dgst -binary $mod || exit $?
+-) >$mod.dig || exit $?
++my ($dgst, $prologue) = ();
++if (exists $config{"CONFIG_MODULE_SIG_SHA1"}) {
++    $prologue = pack("C*",
++		     0x30, 0x21, 0x30, 0x09, 0x06, 0x05,
++		     0x2B, 0x0E, 0x03, 0x02, 0x1A,
++		     0x05, 0x00, 0x04, 0x14);
++    $dgst = "-sha1";
++    $hash = 2;
++} elsif (exists $config{"CONFIG_MODULE_SIG_SHA224"}) {
++    $prologue = pack("C*",
++		     0x30, 0x2d, 0x30, 0x0d, 0x06, 0x09,
++		     0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x04,
++		     0x05, 0x00, 0x04, 0x1C);
++    $dgst = "-sha224";
++    $hash = 7;
++} elsif (exists $config{"CONFIG_MODULE_SIG_SHA256"}) {
++    $prologue = pack("C*",
++		     0x30, 0x31, 0x30, 0x0d, 0x06, 0x09,
++		     0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01,
++		     0x05, 0x00, 0x04, 0x20);
++    $dgst = "-sha256";
++    $hash = 4;
++} elsif (exists $config{"CONFIG_MODULE_SIG_SHA384"}) {
++    $prologue = pack("C*",
++		     0x30, 0x41, 0x30, 0x0d, 0x06, 0x09,
++		     0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02,
++		     0x05, 0x00, 0x04, 0x30);
++    $dgst = "-sha384";
++    $hash = 5;
++} elsif (exists $config{"CONFIG_MODULE_SIG_SHA512"}) {
++    $prologue = pack("C*",
++		     0x30, 0x51, 0x30, 0x0d, 0x06, 0x09,
++		     0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03,
++		     0x05, 0x00, 0x04, 0x40);
++    $dgst = "-sha512";
++    $hash = 6;
++} else {
++    die "Can't determine hash algorithm";
++}
++
++#
++# Generate the digest and read from openssl's stdout
++#
++my $digest;
++$digest = readpipe("openssl dgst $dgst -binary $module") || die "openssl dgst";
+ 
+ #
+ # Generate the binary signature, which will be just the integer that comprises
+ # the signature with no metadata attached.
+ #
+-openssl rsautl -sign -inkey $key -keyform PEM -in $mod.dig -out $mod.sig || exit $?
+-siglen=`stat -c %s $mod.sig`
++my $pid;
++$pid = open2(*read_from, *write_to,
++	     "openssl rsautl -sign -inkey $private_key -keyform PEM") ||
++    die "openssl rsautl";
++binmode write_to;
++print write_to $prologue . $digest || die "pipe to openssl rsautl";
++close(write_to) || die "pipe to openssl rsautl";
++
++binmode read_from;
++my $signature;
++read(read_from, $signature, 4096) || die "pipe from openssl rsautl";
++close(read_from) || die "pipe from openssl rsautl";
++$signature = pack("n", length($signature)) . $signature, 
+ 
+-SIGNER="`perl $keyid_script $x509 signer-name`"
+-KEYID="`perl $keyid_script $x509 keyid`"
+-keyidlen=$(echo -n "$KEYID" | wc -c)
+-signerlen=$(echo -n "$SIGNER" | wc -c)
++waitpid($pid, 0) || die;
++die "openssl rsautl died: $?" if ($? >> 8);
+ 
+ #
+ # Build the signed binary
+ #
+-(
+-    cat $mod || exit $?
+-    echo '~Module signature appended~' || exit $?
+-    echo -n "$SIGNER" || exit $?
+-    echo -n "$KEYID" || exit $?
++my $unsigned_module = read_file($module);
++
++my $magic_number = "~Module signature appended~\n";
++
++my $info = pack("CCCCCxxxN",
++		$algo, $hash, $id_type,
++		length($signers_name),
++		length($key_identifier),
++		length($signature));
+ 
+-    # Preface each signature integer with a 2-byte BE length
+-    perl -e "binmode STDOUT; print pack(\"n\", $siglen)" || exit $?
+-    cat $mod.sig || exit $?
++if ($verbose) {
++    print "Size of unsigned module: ", length($unsigned_module), "\n";
++    print "Size of magic number   : ", length($magic_number), "\n";
++    print "Size of signer's name  : ", length($signers_name), "\n";
++    print "Size of key identifier : ", length($key_identifier), "\n";
++    print "Size of signature      : ", length($signature), "\n";
++    print "Size of informaton     : ", length($info), "\n";
++    print "Signer's name          : '", $signers_name, "'\n";
++    print "Digest                 : $dgst\n";
++}
+ 
+-    # Generate the information block
+-    perl -e "binmode STDOUT; print pack(\"CCCCCxxxN\", $algo, $hash, $id_type, $signerlen, $keyidlen, $siglen + 2)" || exit $?
+-) >$mod~ || exit $?
++open(FD, ">$dest") || die $dest;
++binmode FD;
++print FD
++    $unsigned_module,
++    $magic_number,
++    $signers_name,
++    $key_identifier,
++    $signature,
++    $info
++    ;
++close FD || die $dest;
+ 
+-mv $mod~ $mod || exit $?
++if ($#ARGV != 3) {
++    rename($dest, $module) || die $module;
++}
+diff --git a/scripts/x509keyid b/scripts/x509keyid
+deleted file mode 100755
+index 4241ec6..0000000
+--- a/scripts/x509keyid
++++ /dev/null
+@@ -1,268 +0,0 @@
+-#!/usr/bin/perl -w
+-#
+-# Generate an identifier from an X.509 certificate that can be placed in a
+-# module signature to indentify the key to use.
+-#
+-# Format:
+-#
+-#	./scripts/x509keyid <x509-cert> <signer's-name> <key-id>
+-#
+-# We read the DER-encoded X509 certificate and parse it to extract the Subject
+-# name and Subject Key Identifier.  The provide the data we need to build the
+-# certificate identifier.
+-#
+-# The signer's name part of the identifier is fabricated from the commonName,
+-# the organizationName or the emailAddress components of the X.509 subject
+-# name and written to the second named file.
+-#
+-# The subject key ID to select which of that signer's certificates we're
+-# intending to use to sign the module is written to the third named file.
+-#
+-use strict;
+-
+-my $raw_data;
+-
+-die "Need a filename [keyid|signer-name]\n" if ($#ARGV != 1);
+-
+-my $src = $ARGV[0];
+-
+-open(FD, "<$src") || die $src;
+-binmode FD;
+-my @st = stat(FD);
+-die $src if (!@st);
+-read(FD, $raw_data, $st[7]) || die $src;
+-close(FD);
+-
+-my $UNIV = 0 << 6;
+-my $APPL = 1 << 6;
+-my $CONT = 2 << 6;
+-my $PRIV = 3 << 6;
+-
+-my $CONS = 0x20;
+-
+-my $BOOLEAN	= 0x01;
+-my $INTEGER	= 0x02;
+-my $BIT_STRING	= 0x03;
+-my $OCTET_STRING = 0x04;
+-my $NULL	= 0x05;
+-my $OBJ_ID	= 0x06;
+-my $UTF8String	= 0x0c;
+-my $SEQUENCE	= 0x10;
+-my $SET		= 0x11;
+-my $UTCTime	= 0x17;
+-my $GeneralizedTime = 0x18;
+-
+-my %OIDs = (
+-    pack("CCC", 85, 4, 3)	=> "commonName",
+-    pack("CCC", 85, 4, 6)	=> "countryName",
+-    pack("CCC", 85, 4, 10)	=> "organizationName",
+-    pack("CCC", 85, 4, 11)	=> "organizationUnitName",
+-    pack("CCCCCCCCC", 42, 134, 72, 134, 247, 13, 1, 1, 1) => "rsaEncryption",
+-    pack("CCCCCCCCC", 42, 134, 72, 134, 247, 13, 1, 1, 5) => "sha1WithRSAEncryption",
+-    pack("CCCCCCCCC", 42, 134, 72, 134, 247, 13, 1, 9, 1) => "emailAddress",
+-    pack("CCC", 85, 29, 35)	=> "authorityKeyIdentifier",
+-    pack("CCC", 85, 29, 14)	=> "subjectKeyIdentifier",
+-    pack("CCC", 85, 29, 19)	=> "basicConstraints"
+-);
+-
+-###############################################################################
+-#
+-# Extract an ASN.1 element from a string and return information about it.
+-#
+-###############################################################################
+-sub asn1_extract($$@)
+-{
+-    my ($cursor, $expected_tag, $optional) = @_;
+-
+-    return [ -1 ]
+-	if ($cursor->[1] == 0 && $optional);
+-
+-    die $src, ": ", $cursor->[0], ": ASN.1 data underrun (elem ", $cursor->[1], ")\n"
+-	if ($cursor->[1] < 2);
+-
+-    my ($tag, $len) = unpack("CC", substr(${$cursor->[2]}, $cursor->[0], 2));
+-
+-    if ($expected_tag != -1 && $tag != $expected_tag) {
+-	return [ -1 ]
+-	    if ($optional);
+-	die $src, ": ", $cursor->[0], ": ASN.1 unexpected tag (", $tag,
+-	" not ", $expected_tag, ")\n";
+-    }
+-
+-    $cursor->[0] += 2;
+-    $cursor->[1] -= 2;
+-
+-    die $src, ": ", $cursor->[0], ": ASN.1 long tag\n"
+-	if (($tag & 0x1f) == 0x1f);
+-    die $src, ": ", $cursor->[0], ": ASN.1 indefinite length\n"
+-	if ($len == 0x80);
+-
+-    if ($len > 0x80) {
+-	my $l = $len - 0x80;
+-	die $src, ": ", $cursor->[0], ": ASN.1 data underrun (len len $l)\n"
+-	    if ($cursor->[1] < $l);
+-
+-	if ($l == 0x1) {
+-	    $len = unpack("C", substr(${$cursor->[2]}, $cursor->[0], 1));
+-	} elsif ($l = 0x2) {
+-	    $len = unpack("n", substr(${$cursor->[2]}, $cursor->[0], 2));
+-	} elsif ($l = 0x3) {
+-	    $len = unpack("C", substr(${$cursor->[2]}, $cursor->[0], 1)) << 16;
+-	    $len = unpack("n", substr(${$cursor->[2]}, $cursor->[0] + 1, 2));
+-	} elsif ($l = 0x4) {
+-	    $len = unpack("N", substr(${$cursor->[2]}, $cursor->[0], 4));
+-	} else {
+-	    die $src, ": ", $cursor->[0], ": ASN.1 element too long (", $l, ")\n";
+-	}
+-
+-	$cursor->[0] += $l;
+-	$cursor->[1] -= $l;
+-    }
+-
+-    die $src, ": ", $cursor->[0], ": ASN.1 data underrun (", $len, ")\n"
+-	if ($cursor->[1] < $len);
+-
+-    my $ret = [ $tag, [ $cursor->[0], $len, $cursor->[2] ] ];
+-    $cursor->[0] += $len;
+-    $cursor->[1] -= $len;
+-
+-    return $ret;
+-}
+-
+-###############################################################################
+-#
+-# Retrieve the data referred to by a cursor
+-#
+-###############################################################################
+-sub asn1_retrieve($)
+-{
+-    my ($cursor) = @_;
+-    my ($offset, $len, $data) = @$cursor;
+-    return substr($$data, $offset, $len);
+-}
+-
+-###############################################################################
+-#
+-# Roughly parse the X.509 certificate
+-#
+-###############################################################################
+-my $cursor = [ 0, length($raw_data), \$raw_data ];
+-
+-my $cert = asn1_extract($cursor, $UNIV | $CONS | $SEQUENCE);
+-my $tbs = asn1_extract($cert->[1], $UNIV | $CONS | $SEQUENCE);
+-my $version = asn1_extract($tbs->[1], $CONT | $CONS | 0, 1);
+-my $serial_number = asn1_extract($tbs->[1], $UNIV | $INTEGER);
+-my $sig_type = asn1_extract($tbs->[1], $UNIV | $CONS | $SEQUENCE);
+-my $issuer = asn1_extract($tbs->[1], $UNIV | $CONS | $SEQUENCE);
+-my $validity = asn1_extract($tbs->[1], $UNIV | $CONS | $SEQUENCE);
+-my $subject = asn1_extract($tbs->[1], $UNIV | $CONS | $SEQUENCE);
+-my $key = asn1_extract($tbs->[1], $UNIV | $CONS | $SEQUENCE);
+-my $issuer_uid = asn1_extract($tbs->[1], $CONT | $CONS | 1, 1);
+-my $subject_uid = asn1_extract($tbs->[1], $CONT | $CONS | 2, 1);
+-my $extension_list = asn1_extract($tbs->[1], $CONT | $CONS | 3, 1);
+-
+-my $subject_key_id = ();
+-my $authority_key_id = ();
+-
+-#
+-# Parse the extension list
+-#
+-if ($extension_list->[0] != -1) {
+-    my $extensions = asn1_extract($extension_list->[1], $UNIV | $CONS | $SEQUENCE);
+-
+-    while ($extensions->[1]->[1] > 0) {
+-	my $ext = asn1_extract($extensions->[1], $UNIV | $CONS | $SEQUENCE);
+-	my $x_oid = asn1_extract($ext->[1], $UNIV | $OBJ_ID);
+-	my $x_crit = asn1_extract($ext->[1], $UNIV | $BOOLEAN, 1);
+-	my $x_val = asn1_extract($ext->[1], $UNIV | $OCTET_STRING);
+-
+-	my $raw_oid = asn1_retrieve($x_oid->[1]);
+-	next if (!exists($OIDs{$raw_oid}));
+-	my $x_type = $OIDs{$raw_oid};
+-
+-	my $raw_value = asn1_retrieve($x_val->[1]);
+-
+-	if ($x_type eq "subjectKeyIdentifier") {
+-	    my $vcursor = [ 0, length($raw_value), \$raw_value ];
+-
+-	    $subject_key_id = asn1_extract($vcursor, $UNIV | $OCTET_STRING);
+-	}
+-    }
+-}
+-
+-###############################################################################
+-#
+-# Determine what we're going to use as the signer's name.  In order of
+-# preference, take one of: commonName, organizationName or emailAddress.
+-#
+-###############################################################################
+-my $org = "";
+-my $cn = "";
+-my $email = "";
+-
+-while ($subject->[1]->[1] > 0) {
+-    my $rdn = asn1_extract($subject->[1], $UNIV | $CONS | $SET);
+-    my $attr = asn1_extract($rdn->[1], $UNIV | $CONS | $SEQUENCE);
+-    my $n_oid = asn1_extract($attr->[1], $UNIV | $OBJ_ID);
+-    my $n_val = asn1_extract($attr->[1], -1);
+-
+-    my $raw_oid = asn1_retrieve($n_oid->[1]);
+-    next if (!exists($OIDs{$raw_oid}));
+-    my $n_type = $OIDs{$raw_oid};
+-
+-    my $raw_value = asn1_retrieve($n_val->[1]);
+-
+-    if ($n_type eq "organizationName") {
+-	$org = $raw_value;
+-    } elsif ($n_type eq "commonName") {
+-	$cn = $raw_value;
+-    } elsif ($n_type eq "emailAddress") {
+-	$email = $raw_value;
+-    }
+-}
+-
+-my $id_name = $email;
+-
+-if ($org && $cn) {
+-    # Don't use the organizationName if the commonName repeats it
+-    if (length($org) <= length($cn) &&
+-	substr($cn, 0, length($org)) eq $org) {
+-	$id_name = $cn;
+-	goto got_id_name;
+-    }
+-
+-    # Or a signifcant chunk of it
+-    if (length($org) >= 7 &&
+-	length($cn) >= 7 &&
+-	substr($cn, 0, 7) eq substr($org, 0, 7)) {
+-	$id_name = $cn;
+-	goto got_id_name;
+-    }
+-
+-    $id_name = $org . ": " . $cn;
+-} elsif ($org) {
+-    $id_name = $org;
+-} elsif ($cn) {
+-    $id_name = $cn;
+-}
+-
+-got_id_name:
+-
+-###############################################################################
+-#
+-# Output the signer's name and the key identifier that we're going to include
+-# in module signatures.
+-#
+-###############################################################################
+-die $src, ": ", "X.509: Couldn't find the Subject Key Identifier extension\n"
+-    if (!$subject_key_id);
+-
+-my $id_key_id = asn1_retrieve($subject_key_id->[1]);
+-
+-if ($ARGV[1] eq "signer-name") {
+-    print $id_name;
+-} elsif ($ARGV[1] eq "keyid") {
+-    print $id_key_id;
+-} else {
+-    die "Unknown arg";
+-}
 
-> > Yes, I tried this approach - it involves doing LOCK instruction on read 
-> > lock, remembering the cpu and doing another LOCK instruction on read 
-> > unlock (which will hopefully be on the same CPU, so no cacheline bouncing 
-> > happens in the common case). It was slower than the approach without any 
-> > LOCK instructions (43.3 seconds seconds for the implementation with 
-> > per-cpu LOCKed access, 42.7 seconds for this implementation without atomic 
-> > instruction; the benchmark involved doing 512-byte direct-io reads and 
-> > writes on a ramdisk with 8 processes on 8-core machine).
-> 
-> So why is that a problem? Surely that's already tons better then what
-> you've currently got.
-
-Percpu rw-semaphores do not improve performance at all. I put them there 
-to avoid performance regression, not to improve performance.
-
-All Linux kernels have a race condition - when you change block size of a 
-block device and you read or write the device at the same time, a crash 
-may happen. This bug is there since ever. Recently, this bug started to 
-cause major trouble - multiple high profile business sites report crashes 
-because of this race condition.
-
-You can fix this race by using a read lock around I/O paths and write lock 
-around block size changing, but normal rw semaphore cause cache line 
-bouncing when taken for read by multiple processors and I/O performance 
-degradation because of it is measurable.
-
-So I put this percpu-rw-semaphore there to fix the crashes and minimize 
-performance impact - on x86 it doesn't take any interlocked instructions 
-in the read path.
-
-I don't quite understand why are people opposing to this and what do they 
-want to do instead? If you pull percpu-rw-semaphores out of the kernel, 
-you introduce a performance regression (raw device i/o will be slower on 
-3.7 than on 3.6, because on 3.6 it doesn't take any lock at all and on 3.7 
-it takes a read lock).
-
-So you have options:
-1) don't lock i/o just like on 3.6 and previous versions - you get a fast 
-	kernel that randomly crashes
-2) lock i/o with normal rw semaphore - you get a kernel that doesn't 
-	crash, but that is slower than previous versions
-3) lock i/o with percpu rw semaphore - you get kernel that is almost as 
-	fast as previous kernels and that doesn't crash
-
-For the users, the option 3) is the best. The users don't care whether it 
-looks ugly or not, they care about correctness and performance, that's 
-all.
-
-Obviously, you can improve rw semaphores by adding lockdep annotations, or 
-by other things (turning rcu_read_lock/sychronize_rcu into 
-preempt_disable/synchronize_sched, by using barrier()-synchronize_sched() 
-instead of smp_mb()...), but I don't see a reason why do you want to hurt 
-users' experience by pulling it out and reverting to state 1) or 2) and 
-then, two kernel cycles later, come up with percpu-rw-semaphores again.
-
-Mikulas
