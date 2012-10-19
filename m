@@ -1,137 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754359Ab2JSIUA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 04:20:00 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40175 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665Ab2JSIT5 (ORCPT
+	id S1752288Ab2JSIVS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 04:21:18 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:60746 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916Ab2JSIVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 04:19:57 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50810D14.8020609@jp.fujitsu.com>
-Date: Fri, 19 Oct 2012 17:19:32 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Fri, 19 Oct 2012 04:21:15 -0400
+Date: Fri, 19 Oct 2012 10:21:07 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Richard Purdie <rpurdie@rpsys.net>, Bryan Wu <bryan.wu@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] lp855x_bl: use generic PWM functions
+Message-ID: <20121019082107.GA20659@avionic-0098.mockup.avionic-design.de>
+References: <A874F61F95741C4A9BA573A70FE3998F6417916D@DQHE02.ent.ti.com>
 MIME-Version: 1.0
-To: <wency@cn.fujitsu.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>,
-        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
-        <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH v3 0/9] bugfix for memory hotplug
-References: <1350629202-9664-1-git-send-email-wency@cn.fujitsu.com> <508109F2.1080402@jp.fujitsu.com>
-In-Reply-To: <508109F2.1080402@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZGiS0Q5IWpPtfppv"
+Content-Disposition: inline
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F6417916D@DQHE02.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:NFbUdjsaPO/ehfU7NK5zubnr1WYKV2/bQlTx7S85hnQ
+ ymHLsST1NES4nfp0YhPFwpGSDIEu+Rdn1SZ4MF1XQlvi0n8DNu
+ 8vG+aL6RvXuMvahWzhRJf3gCyDygFK9ROnQruIG8ovTio3PmkL
+ h+VmNJV6/3TAJdeoKtGY7R11Q2jypnkWYMx0f4wqyVeDxJL+N4
+ aSQZFx36jBVPd+nKsakHtgO4yFDYESBJ4RiAJwrm1j7o+9dAlJ
+ u+cHipJGAWOC37fguMBVw2+t1whR1bnWJWzigMWoGQWcfrnoUZ
+ sAaE/LY7suqvZKQQTg/aIJqIdKM0MEKeGYI7XxFHr03swGjViw
+ 5Ee6Zhw83VEyO3ucmZNFp0vPmDZAHv1uwUO6/fee7dbD1unkd+
+ QmdnV4mhxPRmhmJq0allTRbuYLO5nD9Fbo6BtTqk6obyr28TpJ
+ 9VN/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/19 17:06, Yasuaki Ishimatsu wrote:
-> Hi Wen,
-> 
-> Some bug fix patches have been merged into linux-next.
-> So the patches confuse me.
 
-The following patches have been already merged into linux-next
-and mm-tree as long as I know. 
+--ZGiS0Q5IWpPtfppv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> Wen Congyang (6):
->>     clear the memory to store struct page
+On Fri, Oct 19, 2012 at 08:11:50AM +0000, Kim, Milo wrote:
+>  The LP855x family devices support the PWM input for the backlight contro=
+l.
+>  Period of the PWM is configurable in the platform side.
+>  Platform specific functions are unnecessary anymore because
+>  generic PWM functions are used inside the driver.
+>=20
+>  (PWM input mode)
+>  To set the brightness, new lp855x_pwm_ctrl() is used.
+>  If a PWM device is not allocated, devm_pwm_get() is called.
+>  The PWM consumer name is from the chip name such as 'lp8550' and 'lp8556=
+'.
+>  To get the brightness value, no additional handling is required.
+>  Just the value of 'props.brightness' is returned.
+>=20
+>  If the PWM driver is not ready while initializing the LP855x driver, it'=
+s OK.
+>  The PWM device can be retrieved later, when the brightness value is chan=
+ged.
+>=20
+>  Documentation is updated with an example.
+>=20
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 
+Generally this looks good. Obviously you'll need to update any users of
+this driver as well. It might make sense to include those changes in
+this patch to avoid interim build failures.
 
->>     memory-hotplug: skip HWPoisoned page when offlining pages
+Other than that I have just one smaller comment below.
 
-mm-tree
+> @@ -121,6 +123,25 @@ static int lp855x_init_registers(struct lp855x *lp)
+>  	return ret;
+>  }
+> =20
+> +static void lp855x_pwm_ctrl(struct lp855x *lp, int br, int max_br)
+> +{
+> +	unsigned int period =3D lp->pdata->period_ns;
+> +	unsigned int duty =3D br * period / max_br;
+> +	struct pwm_device *pwm;
+> +
+> +	/* request pwm device with the consumer name */
+> +	if (!lp->pwm) {
+> +		pwm =3D devm_pwm_get(lp->dev, lp->chipname);
+> +		if (IS_ERR(pwm))
+> +			return;
+> +
+> +		lp->pwm =3D pwm;
+> +	}
+> +
+> +	pwm_config(lp->pwm, duty, period);
+> +	duty =3D=3D 0 ? pwm_disable(lp->pwm) : pwm_enable(lp->pwm);
 
->>     memory-hotplug: update mce_bad_pages when removing the memory
+This is really ugly and should be written explicitly:
 
->>     memory-hotplug: auto offline page_cgroup when onlining memory block
->>       failed
+	if (duty =3D=3D 0)
+		pwm_disable(lp->pwm);
+	else
+		pwm_enable(lp->pwm);
 
-mm-tree
+Thierry
 
->>     memory-hotplug: fix NR_FREE_PAGES mismatch
+--ZGiS0Q5IWpPtfppv
+Content-Type: application/pgp-signature
 
-mm-tree
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
->>     memory-hotplug: allocate zone's pcp before onlining pages
+iQIcBAEBAgAGBQJQgQ1zAAoJEN0jrNd/PrOheUIQAIeqjlQMGQgJXl6/4Ca0gPXU
+wvVG0etq0s5C34yHbdp/WLJ0/RSfhH2Jhrv9c94X3uQTWa426EPPIgHihWahsSaw
+hIPOddpbUZ8eEHhz2mZ1gL6RTOsvRNUaq/0mjigCmqDutWxejisgVN19mX9tmhOm
+r3LG7GrAYr7kL6B6p7OPbMSlfIc/dSG5InRGgJuvr4PNE5LLB6l/cr3NK53hNyH3
+bymHtcUVOGnush2LrdI5dSiade9dI9pWr/oOwifVDJMq3uOiP3mdmqjEJtodGf3O
+/HDWhEHt6psSC8ipemw8X/FD83hYr1MgO97bgwTS/WfDwGN0vSKtStR0lMxImG5A
+zqTn0k/RRwZAj0oGtYVIK5HF9/kLuHjgiklGOoifjszZ4xR4MYR+jVKPKZBloJA5
+vID80lbrMy0M9ueJczJ3xfQ33m9UOrYV5QH1WCp4FYMj/f9OciLuBXYXW20FpSSp
+WWT6fPDV3SPooRtOdBoIN0ABhT0T9uspDTc4rslyCNX/XpWrLo4SYt5c0h5cePmr
+mF+4cL5tiZAa4KH7gknxs92OtR5JkO+SexawRiYZj/gzG1tB+uphG6+nfZdHHqaG
+AF8aR8Bxxd3pKijESAZdgMuxCRfQYjR9l8KfnllhPPLHdh2LxNYEBPzGDEyr+7g4
+cx/lb2f40eU/OvxXJv7Z
+=c22V
+-----END PGP SIGNATURE-----
 
-mm-tree
-
->>
->> Yasuaki Ishimatsu (3):
->>     suppress "Device memoryX does not have a release() function" warning
-
-linux-next
-
->>     suppress "Device nodeX does not have a release() function" warning
->>     memory-hotplug: flush the work for the node when the node is offlined
-
-linux-next
-
-Thanks,
-Yasuaki Ishimatsu
-
-> Why did you send same patches again?
-> 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
-> 2012/10/19 15:46, wency@cn.fujitsu.com wrote:
->> From: Wen Congyang <wency@cn.fujitsu.com>
->>
->> Changes from v2 to v3:
->>     Merge the bug fix from ishimatsu to this patchset(Patch 1-3)
->>     Patch 3: split it from patch as it fixes another bug.
->>     Patch 4: new patch, and fix bad-page state when hotadding a memory
->>              device after hotremoving it. I forgot to post this patch in v2.
->>     Patch 6: update it according to Dave Hansen's comment.
->>
->> Changes from v1 to v2:
->>     Patch 1: updated according to kosaki's suggestion
->>
->>     Patch 2: new patch, and update mce_bad_pages when removing memory.
->>
->>     Patch 4: new patch, and fix a NR_FREE_PAGES mismatch, and this bug
->>              cause oom in my test.
->>
->>     Patch 5: new patch, and fix a new bug. When repeating to online/offline
->>              pages, the free pages will continue to decrease.
->>
->> Wen Congyang (6):
->>     clear the memory to store struct page
->>     memory-hotplug: skip HWPoisoned page when offlining pages
->>     memory-hotplug: update mce_bad_pages when removing the memory
->>     memory-hotplug: auto offline page_cgroup when onlining memory block
->>       failed
->>     memory-hotplug: fix NR_FREE_PAGES mismatch
->>     memory-hotplug: allocate zone's pcp before onlining pages
->>
->> Yasuaki Ishimatsu (3):
->>     suppress "Device memoryX does not have a release() function" warning
->>     suppress "Device nodeX does not have a release() function" warning
->>     memory-hotplug: flush the work for the node when the node is offlined
->>
->>    drivers/base/memory.c          |    9 ++++++++-
->>    drivers/base/node.c            |   11 +++++++++++
->>    include/linux/page-isolation.h |   10 ++++++----
->>    mm/memory-failure.c            |    2 +-
->>    mm/memory_hotplug.c            |   14 ++++++++------
->>    mm/page_alloc.c                |   37 ++++++++++++++++++++++++++++---------
->>    mm/page_cgroup.c               |    3 +++
->>    mm/page_isolation.c            |   27 ++++++++++++++++++++-------
->>    mm/sparse.c                    |   22 +++++++++++++++++++++-
->>    9 files changed, 106 insertions(+), 29 deletions(-)
->>
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
+--ZGiS0Q5IWpPtfppv--
