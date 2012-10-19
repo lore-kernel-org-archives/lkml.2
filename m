@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758275Ab2JSLoy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 07:44:54 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:44801 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753376Ab2JSLox (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 07:44:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <87lif3p9rw.fsf@rustcorp.com.au>
-References: <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com>
-	<87txtso9xw.fsf@rustcorp.com.au>
-	<CA+55aFxZdtD51AVKLtKK95ooh8VB8-5Tt8nHsxSUT67CBRrp2g@mail.gmail.com>
-	<871ugwny1n.fsf@rustcorp.com.au>
-	<CA+55aFwTz6xadNL37H6Qb8+rWNefn0cQ0URFPfD=Ea=J54xzGg@mail.gmail.com>
-	<CA+5PVA4fE7uaxNobBMtUs7QUWA2XfM_2oKtLhb7DFRisJLy+4Q@mail.gmail.com>
-	<87lif3p9rw.fsf@rustcorp.com.au>
-Date: Fri, 19 Oct 2012 07:44:52 -0400
-Message-ID: <CA+5PVA6noOyUJBTCYyAHgtJun1DPRmNQ4NxpvVepAVY12vjiwQ@mail.gmail.com>
-Subject: Re: RFC: sign the modules at install time
-From: Josh Boyer <jwboyer@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        David Howells <dhowells@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758613Ab2JSLpG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 07:45:06 -0400
+Received: from plane.gmane.org ([80.91.229.3]:35852 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752090Ab2JSLpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 07:45:02 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Florian Fainelli <ffainelli@freebox.fr>
+Subject: Re: [PATCH] x86/dt: use linear irq domain for ioapic(s).
+Date: Fri, 19 Oct 2012 11:36:25 +0000 (UTC)
+Message-ID: <loom.20121019T133451-621@post.gmane.org>
+References: <1343890270-13007-1-git-send-email-thierry.reding@avionic-design.de> <20120806073811.GA3261@breakpoint.cc> <20120808104629.GA20296@avionic-0098.mockup.avionic-design.de> <502252C8.3090600@linutronix.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 213.36.7.13 (Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:16.0) Gecko/20100101 Firefox/16.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 8:48 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Josh Boyer <jwboyer@gmail.com> writes:
->> It might even be able to be moved entirely into scripts/Makefile.modinst
->> but I haven't gotten that far yet.
->
-> Thanks, I'll add this.
+Sebastian Andrzej Siewior <bigeasy <at> linutronix.de> writes:
+> 
+> No. You do have a compatible entry. It first appeared on the ce4100
+> CPU. If it happens to also work on the n450 then it seems to be
+> compatible with that one. "This" is documented somewhere…
+> Usually you add 'compatible = "your cpu", "generic binding"' in case
+> you need a fixup / errata whatever for "your cpu". Even if you compare
+> all hpets from Intel there is the one or other difference / errata.
 
-Excellent.
+Can we make sure that his hits the future 3.6 stable releases? We had to merge
+this back to your 3.6 kernel tree in order to have a functionnal CE4100 system.
 
-> Note it was word-wrapped here though :(
+Thank you!
+--
+Florian
 
-Sigh.  Sorry, Rusty.  I thought I had gmail's kinks worked out.
-
-josh
