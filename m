@@ -1,53 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030348Ab2JSNpj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 09:45:39 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:44718 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964837Ab2JSNpi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 09:45:38 -0400
+	id S1758815Ab2JSNti (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 09:49:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54768 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758726Ab2JSNth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 09:49:37 -0400
+Date: Fri, 19 Oct 2012 15:49:34 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-mm@kvack.org
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH 5/6] memcg: make mem_cgroup_reparent_charges non failing
+Message-ID: <20121019134934.GG799@dhcp22.suse.cz>
+References: <1350480648-10905-1-git-send-email-mhocko@suse.cz>
+ <1350480648-10905-6-git-send-email-mhocko@suse.cz>
 MIME-Version: 1.0
-Date: Fri, 19 Oct 2012 15:45:36 +0200
-Message-ID: <CAJK669Zg3+TR5i6jYDEcUzAyf79+Y41i3rs8dB=e_irqMWHEUQ@mail.gmail.com>
-Subject: remoteproc open issues (was [RFC 1/4] remoteproc: Bugfix assign
- device address to carveout (noiommu)
-From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>, Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Suman Anna <s-anna@ti.com>, Bhavin Shah <bshah@ti.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Loic Pallardy <loic.pallardy@stericsson.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350480648-10905-6-git-send-email-mhocko@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is an updated version of the patch. I have dropped
+.__DEPRECATED_clear_css_refs in this one as it makes the best sense to
+me. I didn't add Tejun's Reviewed-by because of this change. Could you
+recheck, please?
+---
+>From 6c1f2e76e254e7638ad8cc87f319e3492ac80c5b Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Wed, 17 Oct 2012 14:15:09 +0200
+Subject: [PATCH] memcg: make mem_cgroup_reparent_charges non failing
 
-On Fri, Aug 10, 2012 at 5:30 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> The general direction I have in mind is to put the resource table in
-> its final location while we do the first pass of fw parsing.
->
-> This will solve all sort of open issues we have (or going to have soon):
->
-> 1. dynamically-allocated address of the vrings can be communicated
-> 2. vdev statuses can be communicated
-> 3. virtio config space will finally become bi-directional as it should
-> 4. dynamically probed rproc-to-rproc IPC could then take place
->
-> It's the real deal :)
->
-> The only problem with this approach is that the resource table isn't
-> reloaded throughout cycles of power up/down, and that is insecure.
-> We'll have to manually reload it somewhere after the rproc is powered
-> down (or before it is powered up again).
->
-> This change will break existing firmwares, but it looks required and inevitable.
+Now that pre_destroy callbacks are called from within cgroup_lock and
+the cgroup has been checked to be empty without any children then there
+is no other way to fail.
+mem_cgroup_pre_destroy doesn't have to take a reference to memcg's css
+because all css' are marked dead already.
 
-Has anyone started looking into any of the open issues mentioned above?
+mem_cgroup_subsys.__DEPRECATED_clear_css_refs can be dropped as
+mem_cgroup_pre_destroy cannot fail now.
 
-Thanks,
-Sjur
+Changes since v1
+- drop __DEPRECATED_clear_css_refs
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |   19 ++++++-------------
+ 1 file changed, 6 insertions(+), 13 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index f57ba4c..b4d854e 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3738,14 +3738,12 @@ static void mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+  *
+  * Caller is responsible for holding css reference on the memcg.
+  */
+-static int mem_cgroup_reparent_charges(struct mem_cgroup *memcg)
++static void mem_cgroup_reparent_charges(struct mem_cgroup *memcg)
+ {
+ 	struct cgroup *cgrp = memcg->css.cgroup;
+ 	int node, zid;
+ 
+ 	do {
+-		if (cgroup_task_count(cgrp) || !list_empty(&cgrp->children))
+-			return -EBUSY;
+ 		/* This is for making all *used* pages to be on LRU. */
+ 		lru_add_drain_all();
+ 		drain_all_stock_sync(memcg);
+@@ -3771,8 +3769,6 @@ static int mem_cgroup_reparent_charges(struct mem_cgroup *memcg)
+ 		 * charge before adding to the LRU.
+ 		 */
+ 	} while (res_counter_read_u64(&memcg->res, RES_USAGE) > 0);
+-
+-	return 0;
+ }
+ 
+ /*
+@@ -3809,7 +3805,9 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
+ 
+ 	}
+ 	lru_add_drain();
+-	return mem_cgroup_reparent_charges(memcg);
++	mem_cgroup_reparent_charges(memcg);
++
++	return 0;
+ }
+ 
+ static int mem_cgroup_force_empty_write(struct cgroup *cont, unsigned int event)
+@@ -5013,13 +5011,9 @@ free_out:
+ static int mem_cgroup_pre_destroy(struct cgroup *cont)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+-	int ret;
+ 
+-	css_get(&memcg->css);
+-	ret = mem_cgroup_reparent_charges(memcg);
+-	css_put(&memcg->css);
+-
+-	return ret;
++	mem_cgroup_reparent_charges(memcg);
++	return 0;
+ }
+ 
+ static void mem_cgroup_destroy(struct cgroup *cont)
+@@ -5621,7 +5615,6 @@ struct cgroup_subsys mem_cgroup_subsys = {
+ 	.base_cftypes = mem_cgroup_files,
+ 	.early_init = 0,
+ 	.use_id = 1,
+-	.__DEPRECATED_clear_css_refs = true,
+ };
+ 
+ #ifdef CONFIG_MEMCG_SWAP
+-- 
+1.7.10.4
+
+-- 
+Michal Hocko
+SUSE Labs
