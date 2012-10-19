@@ -1,48 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758125Ab2JSJKs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 05:10:48 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:42946 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753881Ab2JSJKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 05:10:44 -0400
-Message-ID: <50811903.9000105@parallels.com>
-Date: Fri, 19 Oct 2012 13:10:27 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+	id S1758171Ab2JSJLW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 05:11:22 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6379 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752152Ab2JSJLT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 05:11:19 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 19 Oct 2012 02:11:18 -0700
+Message-ID: <5081190D.50200@nvidia.com>
+Date: Fri, 19 Oct 2012 14:40:37 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        <devel@openvz.org>, <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v5 06/14] memcg: kmem controller infrastructure
-References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-7-git-send-email-glommer@parallels.com> <20121017151214.e3d2aa3b.akpm@linux-foundation.org> <507FC8E3.8020006@parallels.com> <alpine.DEB.2.00.1210181502270.30894@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1210181502270.30894@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Vinod Koul <vinod.koul@linux.intel.com>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] ARM: tegra: dts: add slink controller dt entry
+References: <1350557795-31487-1-git-send-email-ldewangan@nvidia.com> <1350557795-31487-3-git-send-email-ldewangan@nvidia.com> <50808595.8070505@wwwdotorg.org>
+In-Reply-To: <50808595.8070505@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2012 02:06 AM, David Rientjes wrote:
-> On Thu, 18 Oct 2012, Glauber Costa wrote:
-> 
->>> Do we actually need to test PF_KTHREAD when current->mm == NULL? 
->>> Perhaps because of aio threads whcih temporarily adopt a userspace mm?
->>
->> I believe so. I remember I discussed this in the past with David
->> Rientjes and he advised me to test for both.
->>
-> 
-> PF_KTHREAD can do use_mm() to assume an ->mm but hopefully they aren't 
-> allocating slab while doing so.  Have you considered actually charging 
-> current->mm->owner for that memory, though, since the kthread will have 
-> freed the memory before unuse_mm() or otherwise have charged it on behalf 
-> of a user process, i.e. only exempting PF_KTHREAD?
-> 
-I always charge current->mm->owner.
+On Friday 19 October 2012 04:11 AM, Stephen Warren wrote:
+> On 10/18/2012 04:56 AM, Laxman Dewangan wrote:
+>> Add slink controller details in the dts file of
+>> Tegra20 and Tegra30.
+>> diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+>> +	slink@7000d400 {
+>> +		compatible = "nvidia,tegra20-slink";
+>> +		reg =<0x7000d400 0x200>;
+>> +		interrupts =<0 59 0x04>;
+>> +		nvidia,dma-req-sel =<15>;
+> I thought the common DT DMA bindings were going to be in 3.7, and hence
+> we could just use them here rather than inventing another custom
+> property for this purpose?
+Adding Vinod here.
+
+I looked the dma devicetree bingind document and did not found the 
+generic binding name. Howvere, for arm-pl330.txt, it is explained as
+Example:
+
+         pdma0: pdma@12680000 {
+                 compatible = "arm,pl330", "arm,primecell";
+                 reg = <0x12680000 0x1000>;
+                 interrupts = <99>;
+         };
+
+Client drivers (device nodes requiring dma transfers from dev-to-mem or
+mem-to-dev) should specify the DMA channel numbers using a two-value pair
+as shown below.
+
+   [property name]  = <[phandle of the dma controller] [dma request id]>;
+
+       where 'dma request id' is the dma request number which is connected
+       to the client controller. The 'property name' is recommended to be
+       of the form <name>-dma-channel.
+
+   Example:  tx-dma-channel = <&pdma0 12>;
+
+
+So here I can also add the name like same.
+
+Vinod,
+Do you see any issue in follow the above mechanism for Tegra dma client 
+driver?
+
+Thanks,
+Laxman
 
