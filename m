@@ -1,95 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757810Ab2JSKAN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 06:00:13 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37959 "EHLO arroyo.ext.ti.com"
+	id S1758442Ab2JSKCv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 06:02:51 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38731 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753086Ab2JSKAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 06:00:11 -0400
-From: Afzal Mohammed <afzal@ti.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <rtc-linux@googlegroups.com>,
-        Daniel Mack <zonque@gmail.com>, Afzal Mohammed <afzal@ti.com>
-Subject: [PATCH v4 0/5] rtc: omap dt support (for am33xx)
-Date: Fri, 19 Oct 2012 15:29:08 +0530
-Message-ID: <cover.1350633036.git.afzal@ti.com>
-X-Mailer: git-send-email 1.7.12
+	id S1753815Ab2JSKCt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 06:02:49 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+Subject: RE: [PATCH v2] arm/dts: AM33XX: Add SPI device tree data
+Thread-Topic: [PATCH v2] arm/dts: AM33XX: Add SPI device tree data
+Thread-Index: AQHNlWGG1yNOfoKWN0C6qlsopGsCgpfAH0mAgABx9NA=
+Date: Fri, 19 Oct 2012 10:01:39 +0000
+Deferred-Delivery: Fri, 19 Oct 2012 10:01:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3E9D18C6@DBDE01.ent.ti.com>
+References: <1347946228-25874-1-git-send-email-avinashphilip@ti.com>
+ <50810E2F.5@ti.com>
+In-Reply-To: <50810E2F.5@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Fri, Oct 19, 2012 at 13:54:15, Cousson, Benoit wrote:
+> Hi Avinash,
+> 
+> This look good to me except the: status = "disabled".
 
-This series enhances rtc-omap driver so as to be usable on
-am33xx SoC by adding DT support (Beagle Bone uses am33xx).
-This is a revised version of series that was posted on
-27th July 2012 with the subject,
-"omap-am33xx rtc dt support".
-It seems rtc maintainer in inactive and hence sending it you.
+status = "disabled" in soc .dtsi  file to make sure that IP driver
+won't loaded unless if IP used. 
+So from board .dts file status = "okay" should be set if IP being used.
 
-Please help this reach mainline.
+Follows the uart1 case in AM33xx dtsi.
 
-Brief:
-Enhance rtc-omap driver to make it DT capable. This is
-required to support boards that boot only with DT like
-Beagle Bone. rtc-omap driver is used in DaVinci platforms
-and they are also now going DT way, and these changes make
-their DT migration easier. rtc-omap driver is made
-intelligent enough to handle kicker mechanism. This also
-helps in removing kicker mechanism support done for DaVinci
-at platform level.
+uart1 also sets status = "disabled"; in am33xx.dtsi & set status = "okay";
+in am335x-evm.dts.
 
-This series has been made over 3.7-rc1
+Thanks
+Avinash
 
-This has been tested on Beaglebone (am33xx platform) and on
-DaVinci da850 evm.
-
-Regards
-Afzal
-
-v4:
- Resolve build error during module build
- Improve DT documentation
-
-v3:
- Remove unit address in DT node
- Use readb/writeb instead of __raw_* variants
- Remove unnecessary parens
-
-v2:
- Use device name da830-rtc instead of am1808-rtc, similar change in
- compatible for DT
- Newly added register name made similar to that existing in the driver
- Better commit message description
- Modify Kconfig help, resolve checkpatch warning
-
-
-Afzal Mohammed (4):
-  rtc: omap: kicker mechanism support
-  ARM: davinci: remove rtc kicker release
-  rtc: omap: dt support
-  rtc: omap: depend on am33xx
-
-Vaibhav Hiremath (1):
-  rtc: omap: Add runtime pm support
-
- Documentation/devicetree/bindings/rtc/rtc-omap.txt | 17 +++++
- arch/arm/mach-davinci/devices-da8xx.c              | 13 +---
- drivers/rtc/Kconfig                                | 10 +--
- drivers/rtc/rtc-omap.c                             | 80 +++++++++++++++++++++-
- 4 files changed, 101 insertions(+), 19 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/rtc/rtc-omap.txt
-
--- 
-1.7.12
+> 
+> The "disabled" should be reserved for variant that does not contain the IP.
+> Is it the case here?
+> 
+> Regards,
+> Benoit
+> 
+> On 09/18/2012 07:30 AM, Philip, Avinash wrote:
+> > Add McSPI data node to AM33XX device tree file. The McSPI module (and so
+> > as the driver) is reused from OMAP4.
+> > 
+> > Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+> > Tested-by: Matt Porter <mporter@ti.com>
+> > ---
+> > Changes since v1:
+> >         - Corrected reg offset in reg DT entry.
+> > 
+> > :100644 100644 ff3badb... 065fd54... M	arch/arm/boot/dts/am33xx.dtsi
+> >  arch/arm/boot/dts/am33xx.dtsi |   25 +++++++++++++++++++++++++
+> >  1 files changed, 25 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+> > index ff3badb..065fd54 100644
+> > --- a/arch/arm/boot/dts/am33xx.dtsi
+> > +++ b/arch/arm/boot/dts/am33xx.dtsi
+> > @@ -219,5 +219,30 @@
+> >  			interrupt-parent = <&intc>;
+> >  			interrupts = <91>;
+> >  		};
+> > +
+> > +		spi0: spi@48030000 {
+> > +			compatible = "ti,omap4-mcspi";
+> > +			#address-cells = <1>;
+> > +			#size-cells = <0>;
+> > +			reg = <0x48030000 0x400>;
+> > +			interrupt-parent = <&intc>;
+> > +			interrupt = <65>;
+> > +			ti,spi-num-cs = <2>;
+> > +			ti,hwmods = "spi0";
+> > +			status = "disabled";
+> > +
+> > +		};
+> > +
+> > +		spi1: spi@481a0000 {
+> > +			compatible = "ti,omap4-mcspi";
+> > +			#address-cells = <1>;
+> > +			#size-cells = <0>;
+> > +			reg = <0x481a0000 0x400>;
+> > +			interrupt-parent = <&intc>;
+> > +			interrupt = <125>;
+> > +			ti,spi-num-cs = <2>;
+> > +			ti,hwmods = "spi1";
+> > +			status = "disabled";
+> > +		};
+> >  	};
+> >  };
+> > 
+> 
+> 
 
