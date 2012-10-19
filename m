@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757222Ab2JSDbr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:31:47 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51150 "EHLO mail.kernel.org"
+	id S1756550Ab2JSCrG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:47:06 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51079 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754798Ab2JSCrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:07 -0400
+	id S1752238Ab2JSCq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:46:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Lukas Czerner <lczerner@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 17/62] SCSI: scsi_debug: Fix off-by-one bug when unmapping region
-Date: Thu, 18 Oct 2012 19:44:45 -0700
-Message-Id: <20121019024258.745872768@linuxfoundation.org>
+Subject: [ 11/62] SCSI: hpsa: dial down lockup detection during firmware flash
+Date: Thu, 18 Oct 2012 19:44:39 -0700
+Message-Id: <20121019024257.761753978@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -29,47 +26,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lukas Czerner <lczerner@redhat.com>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit bc977749e967daa56de1922cf4cb38525631c51c upstream.
+commit e85c59746957fd6e3595d02cf614370056b5816e upstream.
 
-Currently it is possible to unmap one more block than user requested to
-due to the off-by-one error in unmap_region(). This is probably due to
-the fact that the end variable despite its name actually points to the
-last block to unmap + 1. However in the condition it is handled as the
-last block of the region to unmap.
+Dial back the aggressiveness of the controller lockup detection thread.
+Currently it will declare the controller to be locked up if it goes
+for 10 seconds with no interrupts and no change in the heartbeat
+register.  Dial back this to 30 seconds with no heartbeat change, and
+also snoop the ioctl path and if a firmware flash command is detected,
+dial it back further to 4 minutes until the firmware flash command
+completes.  The reason for this is that during the firmware flash
+operation, the controller apparently doesn't update the heartbeat
+register as frequently as it is supposed to, and we can get a false
+positive.
 
-The bug was not previously spotted probably due to the fact that the
-region was not zeroed, which has changed with commit
-be1dd78de5686c062bb3103f9e86d444a10ed783. With that commit we were able
-to corrupt the ext4 file system on 256M scsi_debug device with LBPRZ
-enabled using fstrim.
-
-Since the 'end' semantic is the same in several functions there this
-commit just fixes the condition to use the 'end' variable correctly in
-that context.
-
-Reported-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
-Acked-by: Douglas Gilbert <dgilbert@interlog.com>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_debug.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/hpsa.c     |   39 ++++++++++++++++++++++++++++++++++-----
+ drivers/scsi/hpsa.h     |    2 ++
+ drivers/scsi/hpsa_cmd.h |    1 +
+ 3 files changed, 37 insertions(+), 5 deletions(-)
 
---- a/drivers/scsi/scsi_debug.c
-+++ b/drivers/scsi/scsi_debug.c
-@@ -2054,7 +2054,7 @@ static void unmap_region(sector_t lba, u
- 		block = lba + alignment;
- 		rem = do_div(block, granularity);
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -548,12 +548,42 @@ static void set_performant_mode(struct c
+ 		c->busaddr |= 1 | (h->blockFetchTable[c->Header.SGList] << 1);
+ }
  
--		if (rem == 0 && lba + granularity <= end && block < map_size) {
-+		if (rem == 0 && lba + granularity < end && block < map_size) {
- 			clear_bit(block, map_storep);
- 			if (scsi_debug_lbprz)
- 				memset(fake_storep +
++static int is_firmware_flash_cmd(u8 *cdb)
++{
++	return cdb[0] == BMIC_WRITE && cdb[6] == BMIC_FLASH_FIRMWARE;
++}
++
++/*
++ * During firmware flash, the heartbeat register may not update as frequently
++ * as it should.  So we dial down lockup detection during firmware flash. and
++ * dial it back up when firmware flash completes.
++ */
++#define HEARTBEAT_SAMPLE_INTERVAL_DURING_FLASH (240 * HZ)
++#define HEARTBEAT_SAMPLE_INTERVAL (30 * HZ)
++static void dial_down_lockup_detection_during_fw_flash(struct ctlr_info *h,
++		struct CommandList *c)
++{
++	if (!is_firmware_flash_cmd(c->Request.CDB))
++		return;
++	atomic_inc(&h->firmware_flash_in_progress);
++	h->heartbeat_sample_interval = HEARTBEAT_SAMPLE_INTERVAL_DURING_FLASH;
++}
++
++static void dial_up_lockup_detection_on_fw_flash_complete(struct ctlr_info *h,
++		struct CommandList *c)
++{
++	if (is_firmware_flash_cmd(c->Request.CDB) &&
++		atomic_dec_and_test(&h->firmware_flash_in_progress))
++		h->heartbeat_sample_interval = HEARTBEAT_SAMPLE_INTERVAL;
++}
++
+ static void enqueue_cmd_and_start_io(struct ctlr_info *h,
+ 	struct CommandList *c)
+ {
+ 	unsigned long flags;
+ 
+ 	set_performant_mode(h, c);
++	dial_down_lockup_detection_during_fw_flash(h, c);
+ 	spin_lock_irqsave(&h->lock, flags);
+ 	addQ(&h->reqQ, c);
+ 	h->Qdepth++;
+@@ -3049,6 +3079,7 @@ static inline int bad_tag(struct ctlr_in
+ static inline void finish_cmd(struct CommandList *c, u32 raw_tag)
+ {
+ 	removeQ(c);
++	dial_up_lockup_detection_on_fw_flash_complete(c->h, c);
+ 	if (likely(c->cmd_type == CMD_SCSI))
+ 		complete_scsi_command(c);
+ 	else if (c->cmd_type == CMD_IOCTL_PEND)
+@@ -4189,9 +4220,6 @@ static void controller_lockup_detected(s
+ 	spin_unlock_irqrestore(&h->lock, flags);
+ }
+ 
+-#define HEARTBEAT_SAMPLE_INTERVAL (10 * HZ)
+-#define HEARTBEAT_CHECK_MINIMUM_INTERVAL (HEARTBEAT_SAMPLE_INTERVAL / 2)
+-
+ static void detect_controller_lockup(struct ctlr_info *h)
+ {
+ 	u64 now;
+@@ -4202,7 +4230,7 @@ static void detect_controller_lockup(str
+ 	now = get_jiffies_64();
+ 	/* If we've received an interrupt recently, we're ok. */
+ 	if (time_after64(h->last_intr_timestamp +
+-				(HEARTBEAT_CHECK_MINIMUM_INTERVAL), now))
++				(h->heartbeat_sample_interval), now))
+ 		return;
+ 
+ 	/*
+@@ -4211,7 +4239,7 @@ static void detect_controller_lockup(str
+ 	 * otherwise don't care about signals in this thread.
+ 	 */
+ 	if (time_after64(h->last_heartbeat_timestamp +
+-				(HEARTBEAT_CHECK_MINIMUM_INTERVAL), now))
++				(h->heartbeat_sample_interval), now))
+ 		return;
+ 
+ 	/* If heartbeat has not changed since we last looked, we're not ok. */
+@@ -4253,6 +4281,7 @@ static void add_ctlr_to_lockup_detector_
+ {
+ 	unsigned long flags;
+ 
++	h->heartbeat_sample_interval = HEARTBEAT_SAMPLE_INTERVAL;
+ 	spin_lock_irqsave(&lockup_detector_lock, flags);
+ 	list_add_tail(&h->lockup_list, &hpsa_ctlr_list);
+ 	spin_unlock_irqrestore(&lockup_detector_lock, flags);
+--- a/drivers/scsi/hpsa.h
++++ b/drivers/scsi/hpsa.h
+@@ -123,6 +123,8 @@ struct ctlr_info {
+ 	u64 last_intr_timestamp;
+ 	u32 last_heartbeat;
+ 	u64 last_heartbeat_timestamp;
++	u32 heartbeat_sample_interval;
++	atomic_t firmware_flash_in_progress;
+ 	u32 lockup_detected;
+ 	struct list_head lockup_list;
+ };
+--- a/drivers/scsi/hpsa_cmd.h
++++ b/drivers/scsi/hpsa_cmd.h
+@@ -162,6 +162,7 @@ struct SenseSubsystem_info {
+ #define BMIC_WRITE 0x27
+ #define BMIC_CACHE_FLUSH 0xc2
+ #define HPSA_CACHE_FLUSH 0x01	/* C2 was already being used by HPSA */
++#define BMIC_FLASH_FIRMWARE 0xF7
+ 
+ /* Command List Structure */
+ union SCSI3Addr {
 
 
