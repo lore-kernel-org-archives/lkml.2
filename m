@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757822Ab2JSDaG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:30:06 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51284 "EHLO mail.kernel.org"
+	id S1030299Ab2JSDaj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:30:39 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51214 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757135Ab2JSCrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:20 -0400
+	id S1756959Ab2JSCrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexander Holler <holler@ahsoftware.de>,
-        Bernie Thompson <bernie@plugable.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [ 27/62] video/udlfb: fix line counting in fb_write
-Date: Thu, 18 Oct 2012 19:44:55 -0700
-Message-Id: <20121019024300.345981741@linuxfoundation.org>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 22/62] xen/bootup: allow {read|write}_cr8 pvops call.
+Date: Thu, 18 Oct 2012 19:44:50 -0700
+Message-Id: <20121019024259.533953236@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -27,33 +25,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Holler <holler@ahsoftware.de>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit b8c4321f3d194469007f5f5f2b34ec278c264a04 upstream.
+commit 1a7bbda5b1ab0e02622761305a32dc38735b90b2 upstream.
 
-Line 0 and 1 were both written to line 0 (on the display) and all subsequent
-lines had an offset of -1. The result was that the last line on the display
-was never overwritten by writes to /dev/fbN.
+We actually do not do anything about it. Just return a default
+value of zero and if the kernel tries to write anything but 0
+we BUG_ON.
 
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-Acked-by: Bernie Thompson <bernie@plugable.com>
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+This fixes the case when an user tries to suspend the machine
+and it blows up in save_processor_state b/c 'read_cr8' is set
+to NULL and we get:
+
+kernel BUG at /home/konrad/ssd/linux/arch/x86/include/asm/paravirt.h:100!
+invalid opcode: 0000 [#1] SMP
+Pid: 2687, comm: init.late Tainted: G           O 3.6.0upstream-00002-gac264ac-dirty #4 Bochs Bochs
+RIP: e030:[<ffffffff814d5f42>]  [<ffffffff814d5f42>] save_processor_state+0x212/0x270
+
+.. snip..
+Call Trace:
+ [<ffffffff810733bf>] do_suspend_lowlevel+0xf/0xac
+ [<ffffffff8107330c>] ? x86_acpi_suspend_lowlevel+0x10c/0x150
+ [<ffffffff81342ee2>] acpi_suspend_enter+0x57/0xd5
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/udlfb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/xen/enlighten.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
---- a/drivers/video/udlfb.c
-+++ b/drivers/video/udlfb.c
-@@ -647,7 +647,7 @@ static ssize_t dlfb_ops_write(struct fb_
- 	result = fb_sys_write(info, buf, count, ppos);
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -942,7 +942,16 @@ static void xen_write_cr4(unsigned long
  
- 	if (result > 0) {
--		int start = max((int)(offset / info->fix.line_length) - 1, 0);
-+		int start = max((int)(offset / info->fix.line_length), 0);
- 		int lines = min((u32)((result / info->fix.line_length) + 1),
- 				(u32)info->var.yres);
+ 	native_write_cr4(cr4);
+ }
+-
++#ifdef CONFIG_X86_64
++static inline unsigned long xen_read_cr8(void)
++{
++	return 0;
++}
++static inline void xen_write_cr8(unsigned long val)
++{
++	BUG_ON(val);
++}
++#endif
+ static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
+ {
+ 	int ret;
+@@ -1111,6 +1120,11 @@ static const struct pv_cpu_ops xen_cpu_o
+ 	.read_cr4_safe = native_read_cr4_safe,
+ 	.write_cr4 = xen_write_cr4,
  
++#ifdef CONFIG_X86_64
++	.read_cr8 = xen_read_cr8,
++	.write_cr8 = xen_write_cr8,
++#endif
++
+ 	.wbinvd = native_wbinvd,
+ 
+ 	.read_msr = native_read_msr_safe,
 
 
