@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965002Ab2JSDdE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:33:04 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51100 "EHLO mail.kernel.org"
+	id S965054Ab2JSDd0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:33:26 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51089 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755720Ab2JSCrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:02 -0400
+	id S1754696Ab2JSCrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Christoph Hellwig <hch@lst.de>,
+        Ronnie Sahlberg <ronniesahlberg@gmail.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 13/62] iscsit: remove incorrect unlock in iscsit_build_sendtargets_resp
-Date: Thu, 18 Oct 2012 19:44:41 -0700
-Message-Id: <20121019024258.089558529@linuxfoundation.org>
+Subject: [ 12/62] iscsi-target: Correctly set 0xffffffff field within ISCSI_OP_REJECT PDU
+Date: Thu, 18 Oct 2012 19:44:40 -0700
+Message-Id: <20121019024257.917393710@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -26,31 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@infradead.org>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 904753da183566c71211d23c169a80184648c121 upstream.
+commit f25590f39d543272f7ae7b00d533359c8d7ff331 upstream.
 
-Fix a potential multiple spin-unlock -> deadlock scenario during the
-overflow check within iscsit_build_sendtargets_resp() as found by
-sparse static checking.
+This patch adds a missing iscsi_reject->ffffffff assignment within
+iscsit_send_reject() code to properly follow RFC-3720 Section 10.17
+Bytes 16 -> 19 for the PDU format definition of ISCSI_OP_REJECT.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+We've not seen any initiators care about this bytes in practice, but
+as Ronnie reported this was causing trouble with wireshark packet
+decoding lets go ahead and fix this up now.
+
+Reported-by: Ronnie Sahlberg <ronniesahlberg@gmail.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/target/iscsi/iscsi_target.c |    1 +
+ 1 file changed, 1 insertion(+)
 
 --- a/drivers/target/iscsi/iscsi_target.c
 +++ b/drivers/target/iscsi/iscsi_target.c
-@@ -3196,7 +3196,6 @@ static int iscsit_build_sendtargets_resp
- 		len += 1;
- 
- 		if ((len + payload_len) > buffer_len) {
--			spin_unlock(&tiqn->tiqn_tpg_lock);
- 			end_of_buf = 1;
- 			goto eob;
- 		}
+@@ -3349,6 +3349,7 @@ static int iscsit_send_reject(
+ 	hdr->opcode		= ISCSI_OP_REJECT;
+ 	hdr->flags		|= ISCSI_FLAG_CMD_FINAL;
+ 	hton24(hdr->dlength, ISCSI_HDR_LEN);
++	hdr->ffffffff		= 0xffffffff;
+ 	cmd->stat_sn		= conn->stat_sn++;
+ 	hdr->statsn		= cpu_to_be32(cmd->stat_sn);
+ 	hdr->exp_cmdsn	= cpu_to_be32(conn->sess->exp_cmd_sn);
 
 
