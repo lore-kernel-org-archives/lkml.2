@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030271Ab2JSC5z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:57:55 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52361 "EHLO mail.kernel.org"
+	id S1030288Ab2JSC6S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:58:18 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52351 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964986Ab2JSCtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:49:14 -0400
+	id S964978Ab2JSCtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:49:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Cong Wang <amwang@redhat.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 51/76] pktgen: fix crash when generating IPv6 packets
-Date: Thu, 18 Oct 2012 19:47:15 -0700
-Message-Id: <20121019024358.329079972@linuxfoundation.org>
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [ 50/76] kdb,vt_console: Fix missed data due to pager overruns
+Date: Thu, 18 Oct 2012 19:47:14 -0700
+Message-Id: <20121019024358.169162419@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -25,44 +25,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amerigo Wang <amwang@redhat.com>
+From: Jason Wessel <jason.wessel@windriver.com>
 
-commit 5aa8b572007c4bca1e6d3dd4c4820f1ae49d6bb2 upstream.
+commit 17b572e82032bc246324ce136696656b66d4e3f1 upstream.
 
-For IPv6, sizeof(struct ipv6hdr) = 40, thus the following
-expression will result negative:
+It is possible to miss data when using the kdb pager.  The kdb pager
+does not pay attention to the maximum column constraint of the screen
+or serial terminal.  This result is not incrementing the shown lines
+correctly and the pager will print more lines that fit on the screen.
+Obviously that is less than useful when using a VGA console where you
+cannot scroll back.
 
-        datalen = pkt_dev->cur_pkt_size - 14 -
-                  sizeof(struct ipv6hdr) - sizeof(struct udphdr) -
-                  pkt_dev->pkt_overhead;
+The pager will now look at the kdb_buffer string to see how many
+characters are printed.  It might not be perfect considering you can
+output ASCII that might move the cursor position, but it is a
+substantially better approximation for viewing dmesg and trace logs.
 
-And,  the check "if (datalen < sizeof(struct pktgen_hdr))" will be
-passed as "datalen" is promoted to unsigned, therefore will cause
-a crash later.
+This also means that the vt screen needs to set the kdb COLUMNS
+variable.
 
-This is a quick fix by checking if "datalen" is negative. The following
-patch will increase the default value of 'min_pkt_size' for IPv6.
-
-This bug should exist for a long time, so Cc -stable too.
-
-Signed-off-by: Cong Wang <amwang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/core/pktgen.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/vt/vt.c       |   13 +++++++++++++
+ kernel/debug/kdb/kdb_io.c |   33 ++++++++++++++++++++++++++++-----
+ 2 files changed, 41 insertions(+), 5 deletions(-)
 
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -2927,7 +2927,7 @@ static struct sk_buff *fill_packet_ipv6(
- 		  sizeof(struct ipv6hdr) - sizeof(struct udphdr) -
- 		  pkt_dev->pkt_overhead;
- 
--	if (datalen < sizeof(struct pktgen_hdr)) {
-+	if (datalen < 0 || datalen < sizeof(struct pktgen_hdr)) {
- 		datalen = sizeof(struct pktgen_hdr);
- 		net_info_ratelimited("increased datalen to %d\n", datalen);
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -3475,6 +3475,19 @@ int con_debug_enter(struct vc_data *vc)
+ 			kdb_set(2, setargs);
+ 		}
  	}
++	if (vc->vc_cols < 999) {
++		int colcount;
++		char cols[4];
++		const char *setargs[3] = {
++			"set",
++			"COLUMNS",
++			cols,
++		};
++		if (kdbgetintenv(setargs[0], &colcount)) {
++			snprintf(cols, 4, "%i", vc->vc_cols);
++			kdb_set(2, setargs);
++		}
++	}
+ #endif /* CONFIG_KGDB_KDB */
+ 	return ret;
+ }
+--- a/kernel/debug/kdb/kdb_io.c
++++ b/kernel/debug/kdb/kdb_io.c
+@@ -552,6 +552,7 @@ int vkdb_printf(const char *fmt, va_list
+ {
+ 	int diag;
+ 	int linecount;
++	int colcount;
+ 	int logging, saved_loglevel = 0;
+ 	int saved_trap_printk;
+ 	int got_printf_lock = 0;
+@@ -584,6 +585,10 @@ int vkdb_printf(const char *fmt, va_list
+ 	if (diag || linecount <= 1)
+ 		linecount = 24;
+ 
++	diag = kdbgetintenv("COLUMNS", &colcount);
++	if (diag || colcount <= 1)
++		colcount = 80;
++
+ 	diag = kdbgetintenv("LOGGING", &logging);
+ 	if (diag)
+ 		logging = 0;
+@@ -690,7 +695,7 @@ kdb_printit:
+ 		gdbstub_msg_write(kdb_buffer, retlen);
+ 	} else {
+ 		if (dbg_io_ops && !dbg_io_ops->is_console) {
+-			len = strlen(kdb_buffer);
++			len = retlen;
+ 			cp = kdb_buffer;
+ 			while (len--) {
+ 				dbg_io_ops->write_char(*cp);
+@@ -709,11 +714,29 @@ kdb_printit:
+ 		printk(KERN_INFO "%s", kdb_buffer);
+ 	}
+ 
+-	if (KDB_STATE(PAGER) && strchr(kdb_buffer, '\n'))
+-		kdb_nextline++;
++	if (KDB_STATE(PAGER)) {
++		/*
++		 * Check printed string to decide how to bump the
++		 * kdb_nextline to control when the more prompt should
++		 * show up.
++		 */
++		int got = 0;
++		len = retlen;
++		while (len--) {
++			if (kdb_buffer[len] == '\n') {
++				kdb_nextline++;
++				got = 0;
++			} else if (kdb_buffer[len] == '\r') {
++				got = 0;
++			} else {
++				got++;
++			}
++		}
++		kdb_nextline += got / (colcount + 1);
++	}
+ 
+ 	/* check for having reached the LINES number of printed lines */
+-	if (kdb_nextline == linecount) {
++	if (kdb_nextline >= linecount) {
+ 		char buf1[16] = "";
+ 
+ 		/* Watch out for recursion here.  Any routine that calls
+@@ -765,7 +788,7 @@ kdb_printit:
+ 			kdb_grepping_flag = 0;
+ 			kdb_printf("\n");
+ 		} else if (buf1[0] == ' ') {
+-			kdb_printf("\n");
++			kdb_printf("\r");
+ 			suspend_grep = 1; /* for this recursion */
+ 		} else if (buf1[0] == '\n') {
+ 			kdb_nextline = linecount - 1;
 
 
