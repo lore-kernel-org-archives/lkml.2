@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932853Ab2JSDb0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:31:26 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51191 "EHLO mail.kernel.org"
+	id S1757222Ab2JSDbr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:31:47 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51150 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751482Ab2JSCrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:11 -0400
+	id S1754798Ab2JSCrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Simon Kirby <sim@hostway.ca>
-Subject: [ 20/62] SUNRPC: Ensure that the TCP socket is closed when in CLOSE_WAIT
-Date: Thu, 18 Oct 2012 19:44:48 -0700
-Message-Id: <20121019024259.228288948@linuxfoundation.org>
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Lukas Czerner <lczerner@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 17/62] SCSI: scsi_debug: Fix off-by-one bug when unmapping region
+Date: Thu, 18 Oct 2012 19:44:45 -0700
+Message-Id: <20121019024258.745872768@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -26,86 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Lukas Czerner <lczerner@redhat.com>
 
-commit a519fc7a70d1a918574bb826cc6905b87b482eb9 upstream.
+commit bc977749e967daa56de1922cf4cb38525631c51c upstream.
 
-Instead of doing a shutdown() call, we need to do an actual close().
-Ditto if/when the server is sending us junk RPC headers.
+Currently it is possible to unmap one more block than user requested to
+due to the off-by-one error in unmap_region(). This is probably due to
+the fact that the end variable despite its name actually points to the
+last block to unmap + 1. However in the condition it is handled as the
+last block of the region to unmap.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Tested-by: Simon Kirby <sim@hostway.ca>
+The bug was not previously spotted probably due to the fact that the
+region was not zeroed, which has changed with commit
+be1dd78de5686c062bb3103f9e86d444a10ed783. With that commit we were able
+to corrupt the ext4 file system on 256M scsi_debug device with LBPRZ
+enabled using fstrim.
+
+Since the 'end' semantic is the same in several functions there this
+commit just fixes the condition to use the 'end' variable correctly in
+that context.
+
+Reported-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Acked-by: Douglas Gilbert <dgilbert@interlog.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/xprtsock.c |   21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
+ drivers/scsi/scsi_debug.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -1028,6 +1028,16 @@ static void xs_udp_data_ready(struct soc
- 	read_unlock_bh(&sk->sk_callback_lock);
- }
+--- a/drivers/scsi/scsi_debug.c
++++ b/drivers/scsi/scsi_debug.c
+@@ -2054,7 +2054,7 @@ static void unmap_region(sector_t lba, u
+ 		block = lba + alignment;
+ 		rem = do_div(block, granularity);
  
-+/*
-+ * Helper function to force a TCP close if the server is sending
-+ * junk and/or it has put us in CLOSE_WAIT
-+ */
-+static void xs_tcp_force_close(struct rpc_xprt *xprt)
-+{
-+	set_bit(XPRT_CONNECTION_CLOSE, &xprt->state);
-+	xprt_force_disconnect(xprt);
-+}
-+
- static inline void xs_tcp_read_fraghdr(struct rpc_xprt *xprt, struct xdr_skb_reader *desc)
- {
- 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
-@@ -1054,7 +1064,7 @@ static inline void xs_tcp_read_fraghdr(s
- 	/* Sanity check of the record length */
- 	if (unlikely(transport->tcp_reclen < 8)) {
- 		dprintk("RPC:       invalid TCP record fragment length\n");
--		xprt_force_disconnect(xprt);
-+		xs_tcp_force_close(xprt);
- 		return;
- 	}
- 	dprintk("RPC:       reading TCP record fragment of length %d\n",
-@@ -1135,7 +1145,7 @@ static inline void xs_tcp_read_calldir(s
- 		break;
- 	default:
- 		dprintk("RPC:       invalid request message type\n");
--		xprt_force_disconnect(&transport->xprt);
-+		xs_tcp_force_close(&transport->xprt);
- 	}
- 	xs_tcp_check_fraghdr(transport);
- }
-@@ -1458,6 +1468,8 @@ static void xs_tcp_cancel_linger_timeout
- static void xs_sock_mark_closed(struct rpc_xprt *xprt)
- {
- 	smp_mb__before_clear_bit();
-+	clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
-+	clear_bit(XPRT_CONNECTION_CLOSE, &xprt->state);
- 	clear_bit(XPRT_CLOSE_WAIT, &xprt->state);
- 	clear_bit(XPRT_CLOSING, &xprt->state);
- 	smp_mb__after_clear_bit();
-@@ -1515,8 +1527,8 @@ static void xs_tcp_state_change(struct s
- 		break;
- 	case TCP_CLOSE_WAIT:
- 		/* The server initiated a shutdown of the socket */
--		xprt_force_disconnect(xprt);
- 		xprt->connect_cookie++;
-+		xs_tcp_force_close(xprt);
- 	case TCP_CLOSING:
- 		/*
- 		 * If the server closed down the connection, make sure that
-@@ -2159,8 +2171,7 @@ static void xs_tcp_setup_socket(struct w
- 		/* We're probably in TIME_WAIT. Get rid of existing socket,
- 		 * and retry
- 		 */
--		set_bit(XPRT_CONNECTION_CLOSE, &xprt->state);
--		xprt_force_disconnect(xprt);
-+		xs_tcp_force_close(xprt);
- 		break;
- 	case -ECONNREFUSED:
- 	case -ECONNRESET:
+-		if (rem == 0 && lba + granularity <= end && block < map_size) {
++		if (rem == 0 && lba + granularity < end && block < map_size) {
+ 			clear_bit(block, map_storep);
+ 			if (scsi_debug_lbprz)
+ 				memset(fake_storep +
 
 
