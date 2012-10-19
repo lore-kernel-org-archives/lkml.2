@@ -1,298 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861Ab2JSGm5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 02:42:57 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:3085 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752926Ab2JSGlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 02:41:11 -0400
-X-IronPort-AV: E=Sophos;i="4.80,612,1344182400"; 
-   d="scan'208";a="6029363"
-From: wency@cn.fujitsu.com
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, minchan.kim@gmail.com,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, Wen Congyang <wency@cn.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: [PATCH v3 5/9] memory-hotplug: skip HWPoisoned page when offlining pages
-Date: Fri, 19 Oct 2012 14:46:38 +0800
-Message-Id: <1350629202-9664-6-git-send-email-wency@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1350629202-9664-1-git-send-email-wency@cn.fujitsu.com>
-References: <1350629202-9664-1-git-send-email-wency@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/19 14:40:42,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/19 14:40:44,
-	Serialize complete at 2012/10/19 14:40:44
+	id S1752098Ab2JSGr5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 02:47:57 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:39659 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783Ab2JSGr4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 02:47:56 -0400
+X-IronPort-AV: E=Sophos;i="4.80,610,1344211200"; 
+   d="scan'208";a="15268085"
+Message-ID: <1350629274.28188.48.camel@dagon.hellion.org.uk>
+Subject: Re: [Xen-devel] [PATCH V3 2/6]: PVH: use native irq, enable
+ callback, use HVM ring ops, smp, ...
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 19 Oct 2012 07:47:54 +0100
+In-Reply-To: <20121018150359.794768d2@mantra.us.oracle.com>
+References: <20121017173005.73a03eec@mantra.us.oracle.com>
+	 <1350557077.2460.113.camel@zakaz.uk.xensource.com>
+	 <20121018150359.794768d2@mantra.us.oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.4.3-1 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wen Congyang <wency@cn.fujitsu.com>
+On Thu, 2012-10-18 at 23:03 +0100, Mukesh Rathor wrote:
+> On Thu, 18 Oct 2012 11:44:37 +0100
+> Ian Campbell <Ian.Campbell@citrix.com> wrote:
+> 
+> > On Thu, 2012-10-18 at 01:30 +0100, Mukesh Rathor wrote:
+> > > PVH: make gdt_frames[]/gdt_ents into a union with {gdtaddr, gdtsz},
+> > > PVH only needs to send down gdtaddr and gdtsz. irq.c: PVH uses
+> > > native_irq_ops. vcpu hotplug is currently not available for PVH.
+> > > events.c: setup callback vector for PVH. smp.c: This pertains to
+> > > bringing up smp vcpus. PVH runs in ring 0, so syscalls are native.
+> > > Also, the vcpu context is send down via the hcall to be set in the
+> > > vmcs. gdtaddr and gdtsz are unionionized as PVH only needs to send
+> > > these two to be set in the vmcs. Finally, PVH ring ops uses HVM
+> > > paths for xenbus.
+> > > 
+> > > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > > ---
+> > >  arch/x86/include/asm/xen/interface.h |   11 +++++-
+> > >  arch/x86/xen/irq.c                   |    5 ++-
+> > >  arch/x86/xen/p2m.c                   |    2 +-
+> > >  arch/x86/xen/smp.c                   |   75
+> > > ++++++++++++++++++++++------------ drivers/xen/cpu_hotplug.c
+> > > |    4 +- drivers/xen/events.c                 |    9 ++++-
+> > >  drivers/xen/xenbus/xenbus_client.c   |    3 +-
+> > 
+> > This patch seems to have been horribly whitespace damaged.
+> 
+> Hmm.. not sure what happened. Resending. See another email.
+> 
+> > Have you seen "git send-email" ? It's very useful for avoiding this
+> > sort of thing and also takes a lot of the grunt work out of reposting
+> > a series.
+> 
+> > It also chains the patches as replies to the introductory zero-th mail
+> > -- which is something I've been meaning to ask you to do for a while.
+> > It's useful because it joins the series together in a thread which
+> > makes it easier to keep track of in my INBOX.
+> 
+> I prefer different thread-sets for different version. Otherwise too
+> many emails makes much harder to manage and figure. Besides, as
+> comments come in, path x of y,  may contain different files/changes in
+> a subsequent version.
 
-hwpoisoned may be set when we offline a page by the sysfs interface
-/sys/devices/system/memory/soft_offline_page or
-/sys/devices/system/memory/hard_offline_page. We use __free_page() to put
-a page to buddy system when onlining pages. If the page is hwpoisoned page,
-we can't put it to buddy system, and the page is not in free list. Such
-page can't be isolated and offlined. So we should skip such pages when
-offlining pages.
+I meant one thread per posting, not one thread for all all them. Which
+seems to be what you are saying you prefer but not what you are doing.
 
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- include/linux/page-isolation.h |   10 ++++++----
- mm/memory-failure.c            |    2 +-
- mm/memory_hotplug.c            |    4 ++--
- mm/page_alloc.c                |   27 +++++++++++++++++++++++----
- mm/page_isolation.c            |   27 ++++++++++++++++++++-------
- 5 files changed, 52 insertions(+), 18 deletions(-)
+Ian.
 
-diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-index 76a9539..a92061e 100644
---- a/include/linux/page-isolation.h
-+++ b/include/linux/page-isolation.h
-@@ -2,7 +2,8 @@
- #define __LINUX_PAGEISOLATION_H
- 
- 
--bool has_unmovable_pages(struct zone *zone, struct page *page, int count);
-+bool has_unmovable_pages(struct zone *zone, struct page *page, int count,
-+			 bool skip_hwpoisoned_pages);
- void set_pageblock_migratetype(struct page *page, int migratetype);
- int move_freepages_block(struct zone *zone, struct page *page,
- 				int migratetype);
-@@ -21,7 +22,7 @@ int move_freepages(struct zone *zone,
-  */
- int
- start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
--			 unsigned migratetype);
-+			 unsigned migratetype, bool skip_hwpoisoned_pages);
- 
- /*
-  * Changes MIGRATE_ISOLATE to MIGRATE_MOVABLE.
-@@ -34,12 +35,13 @@ undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
- /*
-  * Test all pages in [start_pfn, end_pfn) are isolated or not.
-  */
--int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
-+int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn,
-+			bool skip_hwpoisoned_pages);
- 
- /*
-  * Internal functions. Changes pageblock's migrate type.
-  */
--int set_migratetype_isolate(struct page *page);
-+int set_migratetype_isolate(struct page *page, bool skip_hwpoisoned_pages);
- void unset_migratetype_isolate(struct page *page, unsigned migratetype);
- struct page *alloc_migrate_target(struct page *page, unsigned long private,
- 				int **resultp);
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 6c5899b..1abffee 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1385,7 +1385,7 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
- 	 * Isolate the page, so that it doesn't get reallocated if it
- 	 * was free.
- 	 */
--	set_migratetype_isolate(p);
-+	set_migratetype_isolate(p, true);
- 	/*
- 	 * When the target page is a free hugepage, just remove it
- 	 * from free hugepage list.
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 56b758a..ec899a2 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -854,7 +854,7 @@ check_pages_isolated_cb(unsigned long start_pfn, unsigned long nr_pages,
- {
- 	int ret;
- 	long offlined = *(long *)data;
--	ret = test_pages_isolated(start_pfn, start_pfn + nr_pages);
-+	ret = test_pages_isolated(start_pfn, start_pfn + nr_pages, true);
- 	offlined = nr_pages;
- 	if (!ret)
- 		*(long *)data += offlined;
-@@ -901,7 +901,7 @@ static int __ref __offline_pages(unsigned long start_pfn,
- 	nr_pages = end_pfn - start_pfn;
- 
- 	/* set above range as isolated */
--	ret = start_isolate_page_range(start_pfn, end_pfn, MIGRATE_MOVABLE);
-+	ret = start_isolate_page_range(start_pfn, end_pfn, MIGRATE_MOVABLE, true);
- 	if (ret)
- 		goto out;
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index bb90971..e33d0fb 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5575,7 +5575,8 @@ void set_pageblock_flags_group(struct page *page, unsigned long flags,
-  * MIGRATE_MOVABLE block might include unmovable pages. It means you can't
-  * expect this function should be exact.
-  */
--bool has_unmovable_pages(struct zone *zone, struct page *page, int count)
-+bool has_unmovable_pages(struct zone *zone, struct page *page, int count,
-+			 bool skip_hwpoisoned_pages)
- {
- 	unsigned long pfn, iter, found;
- 	int mt;
-@@ -5610,6 +5611,13 @@ bool has_unmovable_pages(struct zone *zone, struct page *page, int count)
- 			continue;
- 		}
- 
-+		/*
-+		 * The HWPoisoned page may be not in buddy system, and
-+		 * page_count() is not 0.
-+		 */
-+		if (skip_hwpoisoned_pages && PageHWPoison(page))
-+			continue;
-+
- 		if (!PageLRU(page))
- 			found++;
- 		/*
-@@ -5652,7 +5660,7 @@ bool is_pageblock_removable_nolock(struct page *page)
- 			zone->zone_start_pfn + zone->spanned_pages <= pfn)
- 		return false;
- 
--	return !has_unmovable_pages(zone, page, 0);
-+	return !has_unmovable_pages(zone, page, 0, true);
- }
- 
- #ifdef CONFIG_CMA
-@@ -5823,7 +5831,8 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 	 */
- 
- 	ret = start_isolate_page_range(pfn_max_align_down(start),
--				       pfn_max_align_up(end), migratetype);
-+				       pfn_max_align_up(end), migratetype,
-+				       false);
- 	if (ret)
- 		goto done;
- 
-@@ -5862,7 +5871,7 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 	}
- 
- 	/* Make sure the range is really isolated. */
--	if (test_pages_isolated(outer_start, end)) {
-+	if (test_pages_isolated(outer_start, end, false)) {
- 		pr_warn("alloc_contig_range test_pages_isolated(%lx, %lx) failed\n",
- 		       outer_start, end);
- 		ret = -EBUSY;
-@@ -5977,6 +5986,16 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
- 			continue;
- 		}
- 		page = pfn_to_page(pfn);
-+		/*
-+		 * The HWPoisoned page may be not in buddy system, and
-+		 * page_count() is not 0.
-+		 */
-+		if (unlikely(!PageBuddy(page) && PageHWPoison(page))) {
-+			pfn++;
-+			SetPageReserved(page);
-+			continue;
-+		}
-+
- 		BUG_ON(page_count(page));
- 		BUG_ON(!PageBuddy(page));
- 		order = page_order(page);
-diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-index f2f5b48..9d2264e 100644
---- a/mm/page_isolation.c
-+++ b/mm/page_isolation.c
-@@ -30,7 +30,7 @@ static void restore_pageblock_isolate(struct page *page, int migratetype)
- 	zone->nr_pageblock_isolate--;
- }
- 
--int set_migratetype_isolate(struct page *page)
-+int set_migratetype_isolate(struct page *page, bool skip_hwpoisoned_pages)
- {
- 	struct zone *zone;
- 	unsigned long flags, pfn;
-@@ -66,7 +66,8 @@ int set_migratetype_isolate(struct page *page)
- 	 * FIXME: Now, memory hotplug doesn't call shrink_slab() by itself.
- 	 * We just check MOVABLE pages.
- 	 */
--	if (!has_unmovable_pages(zone, page, arg.pages_found))
-+	if (!has_unmovable_pages(zone, page, arg.pages_found,
-+				 skip_hwpoisoned_pages))
- 		ret = 0;
- 
- 	/*
-@@ -134,7 +135,7 @@ __first_valid_page(unsigned long pfn, unsigned long nr_pages)
-  * Returns 0 on success and -EBUSY if any part of range cannot be isolated.
-  */
- int start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
--			     unsigned migratetype)
-+			     unsigned migratetype, bool skip_hwpoisoned_pages)
- {
- 	unsigned long pfn;
- 	unsigned long undo_pfn;
-@@ -147,7 +148,8 @@ int start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
- 	     pfn < end_pfn;
- 	     pfn += pageblock_nr_pages) {
- 		page = __first_valid_page(pfn, pageblock_nr_pages);
--		if (page && set_migratetype_isolate(page)) {
-+		if (page &&
-+		    set_migratetype_isolate(page, skip_hwpoisoned_pages)) {
- 			undo_pfn = pfn;
- 			goto undo;
- 		}
-@@ -190,7 +192,8 @@ int undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
-  * Returns 1 if all pages in the range are isolated.
-  */
- static int
--__test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
-+__test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
-+				  bool skip_hwpoisoned_pages)
- {
- 	struct page *page;
- 
-@@ -220,6 +223,14 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
- 		else if (page_count(page) == 0 &&
- 			get_freepage_migratetype(page) == MIGRATE_ISOLATE)
- 			pfn += 1;
-+		else if (skip_hwpoisoned_pages && PageHWPoison(page)) {
-+			/*
-+			 * The HWPoisoned page may be not in buddy
-+			 * system, and page_count() is not 0.
-+			 */
-+			pfn++;
-+			continue;
-+		}
- 		else
- 			break;
- 	}
-@@ -228,7 +239,8 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
- 	return 1;
- }
- 
--int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn)
-+int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn,
-+			bool skip_hwpoisoned_pages)
- {
- 	unsigned long pfn, flags;
- 	struct page *page;
-@@ -251,7 +263,8 @@ int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn)
- 	/* Check all pages are free or Marked as ISOLATED */
- 	zone = page_zone(page);
- 	spin_lock_irqsave(&zone->lock, flags);
--	ret = __test_page_isolated_in_pageblock(start_pfn, end_pfn);
-+	ret = __test_page_isolated_in_pageblock(start_pfn, end_pfn,
-+						skip_hwpoisoned_pages);
- 	spin_unlock_irqrestore(&zone->lock, flags);
- 	return ret ? 0 : -EBUSY;
- }
--- 
-1.7.1
 
