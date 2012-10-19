@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758268Ab2JSKzI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 06:55:08 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40924 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756042Ab2JSKzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 06:55:06 -0400
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: "Cousson, Benoit" <b-cousson@ti.com>
-CC: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Daniel Mack <zonque@gmail.com>
-Subject: RE: [PATCH] arm/dts: am33xx rtc node
-Thread-Topic: [PATCH] arm/dts: am33xx rtc node
-Thread-Index: AQHNreelpxDZ3lcDDk+S2Foc8WtVjpfAdBjQ
-Date: Fri, 19 Oct 2012 10:54:53 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EA00AFC@DBDE01.ent.ti.com>
-References: <1350643825-9657-1-git-send-email-afzal@ti.com>
-In-Reply-To: <1350643825-9657-1-git-send-email-afzal@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="utf-8"
+	id S1755987Ab2JSK4p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 06:56:45 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:37791 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028Ab2JSK4o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 06:56:44 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] mm: Simplify for_each_populated_zone()
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, kosaki.motohiro@gmail.com, akpm@linux-foundation.org,
+        hannes@cmpxchg.org, srivatsa.bhat@linux.vnet.ibm.com
+Date: Fri, 19 Oct 2012 16:25:47 +0530
+Message-ID: <20121019105546.9704.93446.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12101910-0260-0000-0000-00000201C255
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9JAtFC4017839
 
-+ linux-omap and Daniel
+Move the check for populated_zone() to the control statement of the
+'for' loop and get rid of the odd looking if/else block.
 
-On Fri, Oct 19, 2012 at 16:20:21, Mohammed, Afzal wrote:
-> add am33xx rtc node.
-> 
-> Signed-off-by: Afzal Mohammed <afzal@ti.com>
-> ---
-> 
-> Based on v3.7-rc1,
-> Dependent on series "rtc: omap dt support (for am33xx)",
-> (https://lkml.org/lkml/2012/10/19/163)
-> Tested on Beagle Bone.
-> 
->  arch/arm/boot/dts/am33xx.dtsi | 9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-> index bb31bff..356711e 100644
-> --- a/arch/arm/boot/dts/am33xx.dtsi
-> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> @@ -210,5 +210,14 @@
->  			interrupt-parent = <&intc>;
->  			interrupts = <91>;
->  		};
-> +
-> +		rtc {
-> +			compatible = "ti,da830-rtc";
-> +			ti,hwmods = "rtc";
-> +			reg = <0x44e3e000 0x1000>;
-> +			interrupt-parent = <&intc>;
-> +			interrupts = <75
-> +				      76>;
-> +		};
->  	};
->  };
-> -- 
-> 1.7.12
-> 
-> 
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+ include/linux/mmzone.h |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 50aaca8..5bdf02e 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -913,11 +913,8 @@ extern struct zone *next_zone(struct zone *zone);
+ 
+ #define for_each_populated_zone(zone)		        \
+ 	for (zone = (first_online_pgdat())->node_zones; \
+-	     zone;					\
+-	     zone = next_zone(zone))			\
+-		if (!populated_zone(zone))		\
+-			; /* do nothing */		\
+-		else
++	     zone && populated_zone(zone);		\
++	     zone = next_zone(zone))
+ 
+ static inline struct zone *zonelist_zone(struct zoneref *zoneref)
+ {
+
