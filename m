@@ -1,44 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932117Ab2JSFYC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 01:24:02 -0400
-Received: from www84.your-server.de ([213.133.104.84]:43751 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390Ab2JSFYA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 01:24:00 -0400
-Message-ID: <1350624189.14741.1.camel@wall-e>
-Subject: Re: [PATCH] remove untouched code in kfifo_in
-From: Stefani Seibold <stefani@seibold.net>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Wei Yang <weiyang@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        jkosina@suse.cz
-Date: Fri, 19 Oct 2012 07:23:09 +0200
-In-Reply-To: <CAFLxGvwfGc_4z1JM=pAb-U4tNVeMZR1zs-neQv7Vz2-6DQT+9Q@mail.gmail.com>
-References: <1350568765-5723-1-git-send-email-weiyang@linux.vnet.ibm.com>
-	 <CAFLxGvwfGc_4z1JM=pAb-U4tNVeMZR1zs-neQv7Vz2-6DQT+9Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
+	id S932307Ab2JSFg3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 01:36:29 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:5116 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751028Ab2JSFg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 01:36:28 -0400
+X-IronPort-AV: E=Sophos;i="4.80,611,1344182400"; 
+   d="scan'208";a="6028240"
+Message-ID: <5080E828.20109@cn.fujitsu.com>
+Date: Fri, 19 Oct 2012 13:42:00 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        minchan.kim@gmail.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 2/2]suppress "Device nodeX does not have a release() function"
+ warning
+References: <507656D1.5020703@jp.fujitsu.com> <50765896.4000300@jp.fujitsu.com> <CAHGf_=rvdU+TymYZSXvx1bz4xdp43bqnyjRMGEoiBizC5rP0sQ@mail.gmail.com> <507E4F0C.9040506@cn.fujitsu.com> <CAHGf_=obXYBGg9HK6d7AyAe7rjM_NyE6icr69aH-DNOp4tB+VA@mail.gmail.com>
+In-Reply-To: <CAHGf_=obXYBGg9HK6d7AyAe7rjM_NyE6icr69aH-DNOp4tB+VA@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/19 13:35:59,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/19 13:36:00,
+	Serialize complete at 2012/10/19 13:36:00
 Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Am Freitag, den 19.10.2012, 00:37 +0200 schrieb richard -rw- weinberger:
-> On Thu, Oct 18, 2012 at 3:59 PM, Wei Yang <weiyang@linux.vnet.ibm.com> wrote:
-> > In kfifo_in marco, one piece of code is arounded by if(0). This code in
-> > introduced by Stefani Seibold <stefani@seibold.net> to suppress a compiler
-> > warning. This warning is not there with the upgrade of gcc version.
-> >
-> > This patch just remove this code.
+At 10/17/2012 04:50 PM, KOSAKI Motohiro Wrote:
+> On Wed, Oct 17, 2012 at 2:24 AM, Wen Congyang <wency@cn.fujitsu.com> wrote:
+>> At 10/12/2012 06:33 AM, KOSAKI Motohiro Wrote:
+>>> On Thu, Oct 11, 2012 at 1:26 AM, Yasuaki Ishimatsu
+>>> <isimatu.yasuaki@jp.fujitsu.com> wrote:
+>>>> When calling unregister_node(), the function shows following message at
+>>>> device_release().
+>>>>
+>>>> "Device 'node2' does not have a release() function, it is broken and must
+>>>> be fixed."
+>>>>
+>>>> The reason is node's device struct does not have a release() function.
+>>>>
+>>>> So the patch registers node_device_release() to the device's release()
+>>>> function for suppressing the warning message. Additionally, the patch adds
+>>>> memset() to initialize a node struct into register_node(). Because the node
+>>>> struct is part of node_devices[] array and it cannot be freed by
+>>>> node_device_release(). So if system reuses the node struct, it has a garbage.
+>>>>
+>>>> CC: David Rientjes <rientjes@google.com>
+>>>> CC: Jiang Liu <liuj97@gmail.com>
+>>>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>>>> CC: Andrew Morton <akpm@linux-foundation.org>
+>>>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>>>> ---
+>>>>  drivers/base/node.c |   11 +++++++++++
+>>>>  1 file changed, 11 insertions(+)
+>>>>
+>>>> Index: linux-3.6/drivers/base/node.c
+>>>> ===================================================================
+>>>> --- linux-3.6.orig/drivers/base/node.c  2012-10-11 10:04:02.149758748 +0900
+>>>> +++ linux-3.6/drivers/base/node.c       2012-10-11 10:20:34.111806931 +0900
+>>>> @@ -252,6 +252,14 @@ static inline void hugetlb_register_node
+>>>>  static inline void hugetlb_unregister_node(struct node *node) {}
+>>>>  #endif
+>>>>
+>>>> +static void node_device_release(struct device *dev)
+>>>> +{
+>>>> +#if defined(CONFIG_MEMORY_HOTPLUG_SPARSE) && defined(CONFIG_HUGETLBFS)
+>>>> +       struct node *node_dev = to_node(dev);
+>>>> +
+>>>> +       flush_work(&node_dev->node_work);
+>>>> +#endif
+>>>> +}
+>>>
+>>> The patch description don't explain why this flush_work() is needed.
+>>
+>> If the node is onlined after it is offlined, we will clear the memory,
+>> so we should flush_work() before node_dev is set to 0.
 > 
-> Are you sure?
-> This code fragment looks like a compiler bomb to detect type mismatch to me...
+> So then, it is irrelevant from warning supressness. You should make an
+> another patch.
 > 
 
-Yes, you are great! That was the reason why i made this peace of code.
-So don't remove it!
+OK, I will update it soon.
+
+Thanks
+Wen Congyang
 
