@@ -1,158 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030343Ab2JSUgu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 16:36:50 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35715 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753723Ab2JSUgs (ORCPT
+	id S1422656Ab2JSUiy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 16:38:54 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:56096 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932915Ab2JSUix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 16:36:48 -0400
+	Fri, 19 Oct 2012 16:38:53 -0400
+Message-ID: <201210192038.q9JKcmfO003939@farm-0010.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Fri, 19 Oct 2012 16:25:12 -0400
+Subject: [PATCH] tile: support GENERIC_KERNEL_THREAD and GENERIC_KERNEL_EXECVE
+To: <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>
+CC: <linus-arch@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "David S. Miller" <davem@davemloft.net>
+In-Reply-To: <20121016223508.GR2616@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <50811428.7040001@cn.fujitsu.com>
-References: <1350444308-27102-1-git-send-email-tangchen@cn.fujitsu.com>
-	<CAE9FiQVFc9VVfWZpEfjPeGvo5pby3BQNzDei3VTXdoR048_SPg@mail.gmail.com>
-	<507E60C2.6010104@cn.fujitsu.com>
-	<CAE9FiQX60dOE7odBx4OC0kawesZW3w9yLHEhmLoOvASaZ7q8dw@mail.gmail.com>
-	<50811428.7040001@cn.fujitsu.com>
-Date: Fri, 19 Oct 2012 13:36:46 -0700
-X-Google-Sender-Auth: gcWlG6BBJp6z_VJImaGBtQD59no
-Message-ID: <CAE9FiQWOj2QcW9M6c8WZi-EJkUqUeSC4VsDfWUVch+wDLxTjEw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Update acpi_root_bridge_list in container hotplug path.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: jiang.liu@huawei.com, bhelgaas@google.com, lenb@kernel.org,
-        izumi.taku@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=0015175d0442666a6c04cc6f76f3
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0015175d0442666a6c04cc6f76f3
-Content-Type: text/plain; charset=ISO-8859-1
+Also provide an optimized current_pt_regs() while we're at it.
 
-On Fri, Oct 19, 2012 at 1:49 AM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/Kconfig                 |    2 +
+ arch/tile/include/asm/processor.h |    3 ++
+ arch/tile/include/asm/switch_to.h |    5 +-
+ arch/tile/kernel/entry.S          |   11 ----
+ arch/tile/kernel/intvec_32.S      |   15 ++++++
+ arch/tile/kernel/intvec_64.S      |   15 ++++++
+ arch/tile/kernel/process.c        |  103 ++++++++++++++-----------------------
+ 7 files changed, 78 insertions(+), 76 deletions(-)
 
-> Is it just container and pci_root_bridge hot-remove need to call
-> acpi_bus_trim() twice ? For normal device without sub-device, I think
-> it is OK to call acpi_bus_trim(device, 1).
->
-> The reason why I'm asking this question is:
->
-> I saw in acpi_bus_hot_remove_device(), it almost does the same things
-> you did in handle_root_bridge_removal(), except calling acpi_bus_trim()
-> twice. And there are more than one path could do container hot-remove.
->
-> If I add a container_device_remove() doing the similar things, it could
-> be duplicated. So, shall we just remove handle_root_bridge_removal(),
-> and only use acpi_bus_hot_remove_device() ?
->
-> Of course, we need to call acpi_bus_trim() twice in
-> acpi_bus_hot_remove_device().
+diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
+index 875d008..ea7f61e 100644
+--- a/arch/tile/Kconfig
++++ b/arch/tile/Kconfig
+@@ -21,6 +21,8 @@ config TILE
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select GENERIC_CLOCKEVENTS
+ 	select MODULES_USE_ELF_RELA
++	select GENERIC_KERNEL_THREAD
++	select GENERIC_KERNEL_EXECVE
+ 
+ # FIXME: investigate whether we need/want these options.
+ #	select HAVE_IOREMAP_PROT
+diff --git a/arch/tile/include/asm/processor.h b/arch/tile/include/asm/processor.h
+index 8c4dd9f..9a83e53 100644
+--- a/arch/tile/include/asm/processor.h
++++ b/arch/tile/include/asm/processor.h
+@@ -239,6 +239,9 @@ unsigned long get_wchan(struct task_struct *p);
+ #define KSTK_TOP(task)	(task_ksp0(task) - STACK_TOP_DELTA)
+ #define task_pt_regs(task) \
+   ((struct pt_regs *)(task_ksp0(task) - KSTK_PTREGS_GAP) - 1)
++#define current_pt_regs()                                   \
++  ((struct pt_regs *)((stack_pointer | (THREAD_SIZE - 1)) - \
++                      (KSTK_PTREGS_GAP - 1)) - 1)
+ #define task_sp(task)	(task_pt_regs(task)->sp)
+ #define task_pc(task)	(task_pt_regs(task)->pc)
+ /* Aliases for pc and sp (used in fs/proc/array.c) */
+diff --git a/arch/tile/include/asm/switch_to.h b/arch/tile/include/asm/switch_to.h
+index 1d48c5f..b8f888c 100644
+--- a/arch/tile/include/asm/switch_to.h
++++ b/arch/tile/include/asm/switch_to.h
+@@ -68,7 +68,10 @@ extern unsigned long get_switch_to_pc(void);
+ /* Support function for forking a new task. */
+ void ret_from_fork(void);
+ 
+-/* Called from ret_from_fork() when a new process starts up. */
++/* Support function for forking a new kernel thread. */
++void ret_from_kernel_thread(void *fn, void *arg);
++
++/* Called from ret_from_xxx() when a new process starts up. */
+ struct task_struct *sim_notify_fork(struct task_struct *prev);
+ 
+ #endif /* !__ASSEMBLY__ */
+diff --git a/arch/tile/kernel/entry.S b/arch/tile/kernel/entry.S
+index c31637b..f116cb0 100644
+--- a/arch/tile/kernel/entry.S
++++ b/arch/tile/kernel/entry.S
+@@ -28,17 +28,6 @@ STD_ENTRY(current_text_addr)
+ 	STD_ENDPROC(current_text_addr)
+ 
+ /*
+- * Implement execve().  The i386 code has a note that forking from kernel
+- * space results in no copy on write until the execve, so we should be
+- * careful not to write to the stack here.
+- */
+-STD_ENTRY(kernel_execve)
+-	moveli TREG_SYSCALL_NR_NAME, __NR_execve
+-	swint1
+-	jrp lr
+-	STD_ENDPROC(kernel_execve)
+-
+-/*
+  * We don't run this function directly, but instead copy it to a page
+  * we map into every user process.  See vdso_setup().
+  *
+diff --git a/arch/tile/kernel/intvec_32.S b/arch/tile/kernel/intvec_32.S
+index 6943515..58aad51 100644
+--- a/arch/tile/kernel/intvec_32.S
++++ b/arch/tile/kernel/intvec_32.S
+@@ -1291,6 +1291,21 @@ STD_ENTRY(ret_from_fork)
+ 	}
+ 	STD_ENDPROC(ret_from_fork)
+ 
++STD_ENTRY(ret_from_kernel_thread)
++	jal     sim_notify_fork
++	jal     schedule_tail
++	FEEDBACK_REENTER(ret_from_fork)
++	{
++	 move   r0, r31
++	 jalr   r30
++	}
++	FEEDBACK_REENTER(ret_from_kernel_thread)
++	{
++	 movei  r30, 0               /* not an NMI */
++	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
++	}
++	STD_ENDPROC(ret_from_kernel_thread)
++
+ 	/*
+ 	 * Code for ill interrupt.
+ 	 */
+diff --git a/arch/tile/kernel/intvec_64.S b/arch/tile/kernel/intvec_64.S
+index 7c06d59..a84911c 100644
+--- a/arch/tile/kernel/intvec_64.S
++++ b/arch/tile/kernel/intvec_64.S
+@@ -1150,6 +1150,21 @@ STD_ENTRY(ret_from_fork)
+ 	}
+ 	STD_ENDPROC(ret_from_fork)
+ 
++STD_ENTRY(ret_from_kernel_thread)
++	jal     sim_notify_fork
++	jal     schedule_tail
++	FEEDBACK_REENTER(ret_from_fork)
++	{
++	 move   r0, r31
++	 jalr   r30
++	}
++	FEEDBACK_REENTER(ret_from_kernel_thread)
++	{
++	 movei  r30, 0               /* not an NMI */
++	 j      .Lresume_userspace   /* jump into middle of interrupt_return */
++	}
++	STD_ENDPROC(ret_from_kernel_thread)
++
+ /* Various stub interrupt handlers and syscall handlers */
+ 
+ STD_ENTRY_LOCAL(_kernel_double_fault)
+diff --git a/arch/tile/kernel/process.c b/arch/tile/kernel/process.c
+index 307d010..ca6de8d 100644
+--- a/arch/tile/kernel/process.c
++++ b/arch/tile/kernel/process.c
+@@ -157,24 +157,44 @@ void arch_release_thread_info(struct thread_info *info)
+ static void save_arch_state(struct thread_struct *t);
+ 
+ int copy_thread(unsigned long clone_flags, unsigned long sp,
+-		unsigned long stack_size,
++		unsigned long arg,
+ 		struct task_struct *p, struct pt_regs *regs)
+ {
+-	struct pt_regs *childregs;
++	struct pt_regs *childregs = task_pt_regs(p);
+ 	unsigned long ksp;
++	unsigned long *callee_regs;
+ 
+ 	/*
+-	 * When creating a new kernel thread we pass sp as zero.
+-	 * Assign it to a reasonable value now that we have the stack.
++	 * Set up the stack and stack pointer appropriately for the
++	 * new child to find itself woken up in __switch_to().
++	 * The callee-saved registers must be on the stack to be read;
++	 * the new task will then jump to assembly support to handle
++	 * calling schedule_tail(), etc., and (for userspace tasks)
++	 * returning to the context set up in the pt_regs.
+ 	 */
+-	if (sp == 0 && regs->ex1 == PL_ICS_EX1(KERNEL_PL, 0))
+-		sp = KSTK_TOP(p);
++	ksp = (unsigned long) childregs;
++	ksp -= C_ABI_SAVE_AREA_SIZE;   /* interrupt-entry save area */
++	((long *)ksp)[0] = ((long *)ksp)[1] = 0;
++	ksp -= CALLEE_SAVED_REGS_COUNT * sizeof(unsigned long);
++	callee_regs = (unsigned long *)ksp;
++	ksp -= C_ABI_SAVE_AREA_SIZE;   /* __switch_to() save area */
++	((long *)ksp)[0] = ((long *)ksp)[1] = 0;
++	p->thread.ksp = ksp;
+ 
+-	/*
+-	 * Do not clone step state from the parent; each thread
+-	 * must make its own lazily.
+-	 */
+-	task_thread_info(p)->step_state = NULL;
++	/* Record the pid of the task that created this one. */
++	p->thread.creator_pid = current->pid;
++
++	if (unlikely(!regs)) {
++		/* kernel thread */
++		memset(childregs, 0, sizeof(struct pt_regs));
++		memset(&callee_regs[2], 0,
++		       (CALLEE_SAVED_REGS_COUNT - 2) * sizeof(unsigned long));
++		callee_regs[0] = sp;   /* r30 = function */
++		callee_regs[1] = arg;  /* r31 = arg */
++		childregs->ex1 = PL_ICS_EX1(KERNEL_PL, 0);
++		p->thread.pc = (unsigned long) ret_from_kernel_thread;
++		return 0;
++	}
+ 
+ 	/*
+ 	 * Start new thread in ret_from_fork so it schedules properly
+@@ -182,20 +202,24 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
+ 	 */
+ 	p->thread.pc = (unsigned long) ret_from_fork;
+ 
++	/*
++	 * Do not clone step state from the parent; each thread
++	 * must make its own lazily.
++	 */
++	task_thread_info(p)->step_state = NULL;
++
+ 	/* Save user stack top pointer so we can ID the stack vm area later. */
+ 	p->thread.usp0 = sp;
+ 
+-	/* Record the pid of the process that created this one. */
+-	p->thread.creator_pid = current->pid;
+-
+ 	/*
+ 	 * Copy the registers onto the kernel stack so the
+ 	 * return-from-interrupt code will reload it into registers.
+ 	 */
+-	childregs = task_pt_regs(p);
+ 	*childregs = *regs;
+ 	childregs->regs[0] = 0;         /* return value is zero */
+ 	childregs->sp = sp;  /* override with new user stack pointer */
++	memcpy(callee_regs, &regs->regs[CALLEE_SAVED_FIRST_REG],
++	       CALLEE_SAVED_REGS_COUNT * sizeof(unsigned long));
+ 
+ 	/*
+ 	 * If CLONE_SETTLS is set, set "tp" in the new task to "r4",
+@@ -204,24 +228,6 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
+ 	if (clone_flags & CLONE_SETTLS)
+ 		childregs->tp = regs->regs[4];
+ 
+-	/*
+-	 * Copy the callee-saved registers from the passed pt_regs struct
+-	 * into the context-switch callee-saved registers area.
+-	 * This way when we start the interrupt-return sequence, the
+-	 * callee-save registers will be correctly in registers, which
+-	 * is how we assume the compiler leaves them as we start doing
+-	 * the normal return-from-interrupt path after calling C code.
+-	 * Zero out the C ABI save area to mark the top of the stack.
+-	 */
+-	ksp = (unsigned long) childregs;
+-	ksp -= C_ABI_SAVE_AREA_SIZE;   /* interrupt-entry save area */
+-	((long *)ksp)[0] = ((long *)ksp)[1] = 0;
+-	ksp -= CALLEE_SAVED_REGS_COUNT * sizeof(unsigned long);
+-	memcpy((void *)ksp, &regs->regs[CALLEE_SAVED_FIRST_REG],
+-	       CALLEE_SAVED_REGS_COUNT * sizeof(unsigned long));
+-	ksp -= C_ABI_SAVE_AREA_SIZE;   /* __switch_to() save area */
+-	((long *)ksp)[0] = ((long *)ksp)[1] = 0;
+-	p->thread.ksp = ksp;
+ 
+ #if CHIP_HAS_TILE_DMA()
+ 	/*
+@@ -650,37 +656,6 @@ unsigned long get_wchan(struct task_struct *p)
+ 	return 0;
+ }
+ 
+-/*
+- * We pass in lr as zero (cleared in kernel_thread) and the caller
+- * part of the backtrace ABI on the stack also zeroed (in copy_thread)
+- * so that backtraces will stop with this function.
+- * Note that we don't use r0, since copy_thread() clears it.
+- */
+-static void start_kernel_thread(int dummy, int (*fn)(int), int arg)
+-{
+-	do_exit(fn(arg));
+-}
+-
+-/*
+- * Create a kernel thread
+- */
+-int kernel_thread(int (*fn)(void *), void * arg, unsigned long flags)
+-{
+-	struct pt_regs regs;
+-
+-	memset(&regs, 0, sizeof(regs));
+-	regs.ex1 = PL_ICS_EX1(KERNEL_PL, 0);  /* run at kernel PL, no ICS */
+-	regs.pc = (long) start_kernel_thread;
+-	regs.flags = PT_FLAGS_CALLER_SAVES;   /* need to restore r1 and r2 */
+-	regs.regs[1] = (long) fn;             /* function pointer */
+-	regs.regs[2] = (long) arg;            /* parameter register */
+-
+-	/* Ok, create the new process.. */
+-	return do_fork(flags | CLONE_VM | CLONE_UNTRACED, 0, &regs,
+-		       0, NULL, NULL);
+-}
+-EXPORT_SYMBOL(kernel_thread);
+-
+ /* Flush thread state. */
+ void flush_thread(void)
+ {
+-- 
+1.7.10.3
 
-yes.  we could use acpi_bus_hot_remove_device to simply
-acpi_bus_hot_remove_device()
-
-but that eject_event should have device instead of passing handle, and
-later check if that device is there or not.
-
-like attached two patches.
-
---0015175d0442666a6c04cc6f76f3
-Content-Type: application/octet-stream; name="root_bridge_remove_1.patch"
-Content-Disposition: attachment; filename="root_bridge_remove_1.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h8hre31c0
-
-U3ViamVjdDogW1BBVENIXSBBQ1BJOiB1cGRhdGUgZWpfZXZlbnQgaW50ZXJmYWNlIHRvIHRha2Ug
-YWNwaV9kZXZpY2UKClNob3VsZCB1c2UgYWNwaV9kZXZpY2UgcG9pbnRlciBkaXJlY3RseSBpbnN0
-ZWFkIG9mIHVzZSBoYW5kbGUgYW5kCmdldCB0aGUgZGV2aWNlIHBvaW50ZXIgYWdhaW4uCgpTaWdu
-ZWQtb2ZmLWJ5OiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CgotLS0KIGRyaXZlcnMv
-YWNwaS9zY2FuLmMgICAgIHwgICAxNCArKysrLS0tLS0tLS0tLQogaW5jbHVkZS9hY3BpL2FjcGlf
-YnVzLmggfCAgICAyICstCiAyIGZpbGVzIGNoYW5nZWQsIDUgaW5zZXJ0aW9ucygrKSwgMTEgZGVs
-ZXRpb25zKC0pCgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvYWNwaS9zY2FuLmMKPT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PQotLS0gbGludXgtMi42Lm9yaWcvZHJpdmVycy9hY3BpL3NjYW4uYworKysgbGludXgtMi42L2Ry
-aXZlcnMvYWNwaS9zY2FuLmMKQEAgLTk1LDE5ICs5NSwxMyBAQCBzdGF0aWMgREVWSUNFX0FUVFIo
-bW9kYWxpYXMsIDA0NDQsIGFjcGlfCiB2b2lkIGFjcGlfYnVzX2hvdF9yZW1vdmVfZGV2aWNlKHZv
-aWQgKmNvbnRleHQpCiB7CiAJc3RydWN0IGFjcGlfZWplY3RfZXZlbnQgKmVqX2V2ZW50ID0gKHN0
-cnVjdCBhY3BpX2VqZWN0X2V2ZW50ICopIGNvbnRleHQ7Ci0Jc3RydWN0IGFjcGlfZGV2aWNlICpk
-ZXZpY2U7Ci0JYWNwaV9oYW5kbGUgaGFuZGxlID0gZWpfZXZlbnQtPmhhbmRsZTsKKwlzdHJ1Y3Qg
-YWNwaV9kZXZpY2UgKmRldmljZSA9IGVqX2V2ZW50LT5kZXZpY2U7CisJYWNwaV9oYW5kbGUgaGFu
-ZGxlID0gZGV2aWNlLT5oYW5kbGU7CiAJc3RydWN0IGFjcGlfb2JqZWN0X2xpc3QgYXJnX2xpc3Q7
-CiAJdW5pb24gYWNwaV9vYmplY3QgYXJnOwogCWFjcGlfc3RhdHVzIHN0YXR1cyA9IEFFX09LOwog
-CXUzMiBvc3RfY29kZSA9IEFDUElfT1NUX1NDX05PTl9TUEVDSUZJQ19GQUlMVVJFOyAvKiBkZWZh
-dWx0ICovCiAKLQlpZiAoYWNwaV9idXNfZ2V0X2RldmljZShoYW5kbGUsICZkZXZpY2UpKQotCQln
-b3RvIGVycl9vdXQ7Ci0KLQlpZiAoIWRldmljZSkKLQkJZ290byBlcnJfb3V0OwotCiAJQUNQSV9E
-RUJVR19QUklOVCgoQUNQSV9EQl9JTkZPLAogCQkiSG90LXJlbW92aW5nIGRldmljZSAlcy4uLlxu
-IiwgZGV2X25hbWUoJmRldmljZS0+ZGV2KSkpOwogCkBAIC0xODksNyArMTgzLDcgQEAgYWNwaV9l
-amVjdF9zdG9yZShzdHJ1Y3QgZGV2aWNlICpkLCBzdHJ1YwogCQlnb3RvIGVycjsKIAl9CiAKLQll
-al9ldmVudC0+aGFuZGxlID0gYWNwaV9kZXZpY2UtPmhhbmRsZTsKKwllal9ldmVudC0+ZGV2aWNl
-ID0gYWNwaV9kZXZpY2U7CiAJaWYgKGFjcGlfZGV2aWNlLT5mbGFncy5lamVjdF9wZW5kaW5nKSB7
-CiAJCS8qIGV2ZW50IG9yaWdpbmF0ZWQgZnJvbSBBQ1BJIGVqZWN0IG5vdGlmaWNhdGlvbiAqLwog
-CQllal9ldmVudC0+ZXZlbnQgPSBBQ1BJX05PVElGWV9FSkVDVF9SRVFVRVNUOwpAQCAtMTk3LDcg
-KzE5MSw3IEBAIGFjcGlfZWplY3Rfc3RvcmUoc3RydWN0IGRldmljZSAqZCwgc3RydWMKIAl9IGVs
-c2UgewogCQkvKiBldmVudCBvcmlnaW5hdGVkIGZyb20gdXNlciAqLwogCQllal9ldmVudC0+ZXZl
-bnQgPSBBQ1BJX09TVF9FQ19PU1BNX0VKRUNUOwotCQkodm9pZCkgYWNwaV9ldmFsdWF0ZV9ob3Rw
-bHVnX29zdChlal9ldmVudC0+aGFuZGxlLAorCQkodm9pZCkgYWNwaV9ldmFsdWF0ZV9ob3RwbHVn
-X29zdChhY3BpX2RldmljZS0+aGFuZGxlLAogCQkJZWpfZXZlbnQtPmV2ZW50LCBBQ1BJX09TVF9T
-Q19FSkVDVF9JTl9QUk9HUkVTUywgTlVMTCk7CiAJfQogCkluZGV4OiBsaW51eC0yLjYvaW5jbHVk
-ZS9hY3BpL2FjcGlfYnVzLmgKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvaW5jbHVkZS9h
-Y3BpL2FjcGlfYnVzLmgKKysrIGxpbnV4LTIuNi9pbmNsdWRlL2FjcGkvYWNwaV9idXMuaApAQCAt
-MzA0LDcgKzMwNCw3IEBAIHN0cnVjdCBhY3BpX2J1c19ldmVudCB7CiB9OwogCiBzdHJ1Y3QgYWNw
-aV9lamVjdF9ldmVudCB7Ci0JYWNwaV9oYW5kbGUJaGFuZGxlOworCXN0cnVjdCBhY3BpX2Rldmlj
-ZQkqZGV2aWNlOwogCXUzMgkJZXZlbnQ7CiB9OwogCg==
---0015175d0442666a6c04cc6f76f3
-Content-Type: application/octet-stream; name="root_bridge_remove_2.patch"
-Content-Disposition: attachment; filename="root_bridge_remove_2.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h8hre31g1
-
-U3ViamVjdDogW1BBVENIXSBBQ1BJLCBQQ0k6IFNpbXBsaWZ5IGhhbmRsZV9yb290X2JyaWRnZV9y
-ZW1vdmFsKCkKClRhbmcgQ2hlbiBmb3VuZCBoYW5kbGVfcm9vdF9icmlkZ2VfcmVtb3ZhbCBpcyB2
-ZXJ5IHNpbWlsaWFyIHRvCmFjcGlfYnVzX2hvdF9yZW1vdmVfZGV2aWNlKCkuCk9ubHkgZGlmZmVy
-ZW5jZSBpcyB0aGF0IGl0IGNhbGwgdHJpbSB0d28gdGltZXMuCgpDaGFuZ2UgdG8gaGFuZGxlX3Jv
-b3RfYnJpZGdlX3JlbW92YWwgdG8gY2FsbCB0cmltIG9uZSB0aW1lIGFuZCB0aGVuIAp1c2UgYWNw
-aV9idXNfaG90X3JlbW92ZV9kZXZpY2UuIAoKU2lnbmVkLW9mZi1ieTogWWluZ2hhaSBMdSA8eWlu
-Z2hhaUBrZXJuZWwub3JnPgoKLS0tCiBkcml2ZXJzL2FjcGkvcGNpX3Jvb3RfaHAuYyB8ICAgNTEg
-KysrKysrKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiAxIGZpbGUgY2hh
-bmdlZCwgOSBpbnNlcnRpb25zKCspLCA0MiBkZWxldGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYv
-ZHJpdmVycy9hY3BpL3BjaV9yb290X2hwLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcv
-ZHJpdmVycy9hY3BpL3BjaV9yb290X2hwLmMKKysrIGxpbnV4LTIuNi9kcml2ZXJzL2FjcGkvcGNp
-X3Jvb3RfaHAuYwpAQCAtNTYsNTYgKzU2LDIzIEBAIHN0YXRpYyB2b2lkIGhhbmRsZV9yb290X2Jy
-aWRnZV9pbnNlcnRpb24KIAkJcHJpbnRrKEtFUk5fRVJSICJjYW5ub3Qgc3RhcnQgYnJpZGdlXG4i
-KTsKIH0KIAotc3RhdGljIGludCBhY3BpX3Jvb3RfZXZhbHVhdGVfb2JqZWN0KGFjcGlfaGFuZGxl
-IGhhbmRsZSwgY2hhciAqY21kLCBpbnQgdmFsKQotewotCWFjcGlfc3RhdHVzIHN0YXR1czsKLQlz
-dHJ1Y3QgYWNwaV9vYmplY3RfbGlzdCBhcmdfbGlzdDsKLQl1bmlvbiBhY3BpX29iamVjdCBhcmc7
-Ci0KLQlhcmdfbGlzdC5jb3VudCA9IDE7Ci0JYXJnX2xpc3QucG9pbnRlciA9ICZhcmc7Ci0JYXJn
-LnR5cGUgPSBBQ1BJX1RZUEVfSU5URUdFUjsKLQlhcmcuaW50ZWdlci52YWx1ZSA9IHZhbDsKLQot
-CXN0YXR1cyA9IGFjcGlfZXZhbHVhdGVfb2JqZWN0KGhhbmRsZSwgY21kLCAmYXJnX2xpc3QsIE5V
-TEwpOwotCWlmIChBQ1BJX0ZBSUxVUkUoc3RhdHVzKSkgewotCQlwcl93YXJuKCIlczogJXMgdG8g
-JWQgZmFpbGVkXG4iLAotCQkJCSBfX2Z1bmNfXywgY21kLCB2YWwpOwotCQlyZXR1cm4gLTE7Ci0J
-fQotCi0JcmV0dXJuIDA7Ci19Ci0KIHN0YXRpYyB2b2lkIGhhbmRsZV9yb290X2JyaWRnZV9yZW1v
-dmFsKHN0cnVjdCBhY3BpX2RldmljZSAqZGV2aWNlKQogewogCWludCByZXRfdmFsOwotCXUzMiBm
-bGFncyA9IDA7Ci0JYWNwaV9oYW5kbGUgZHVtbXlfaGFuZGxlOwotCWFjcGlfaGFuZGxlIGhhbmRs
-ZSA9IGRldmljZS0+aGFuZGxlOwotCi0JaWYgKEFDUElfU1VDQ0VTUyhhY3BpX2dldF9oYW5kbGUo
-aGFuZGxlLCAiX0VKMCIsICZkdW1teV9oYW5kbGUpKSkKLQkJZmxhZ3MgfD0gUk9PVF9CUklER0Vf
-SEFTX0VKMDsKLQlpZiAoQUNQSV9TVUNDRVNTKGFjcGlfZ2V0X2hhbmRsZShoYW5kbGUsICJfUFMz
-IiwgJmR1bW15X2hhbmRsZSkpKQotCQlmbGFncyB8PSBST09UX0JSSURHRV9IQVNfUFMzOworCXN0
-cnVjdCBhY3BpX2VqZWN0X2V2ZW50ICplal9ldmVudDsKKworCWVqX2V2ZW50ID0ga21hbGxvYyhz
-aXplb2YoKmVqX2V2ZW50KSwgR0ZQX0tFUk5FTCk7CisJaWYgKCFlal9ldmVudCkKKwkJcmV0dXJu
-OworCisJZWpfZXZlbnQtPmRldmljZSA9IGRldmljZTsKKwllal9ldmVudC0+ZXZlbnQgPSBBQ1BJ
-X05PVElGWV9FSkVDVF9SRVFVRVNUOwogCiAJLyogcmVtb3ZlIHBjaSBkZXZpY2VzIGF0IGZpcnN0
-ICovCiAJcmV0X3ZhbCA9IGFjcGlfYnVzX3RyaW0oZGV2aWNlLCAwKTsKIAlwcmludGsoS0VSTl9E
-RUJVRyAiYWNwaV9idXNfdHJpbSBzdG9wIHJldHVybiAleFxuIiwgcmV0X3ZhbCk7CiAKLQkvKiBy
-ZW1vdmUgYWNwaSBkZXZpY2VzICovCi0JcmV0X3ZhbCA9IGFjcGlfYnVzX3RyaW0oZGV2aWNlLCAx
-KTsKLQlwcmludGsoS0VSTl9ERUJVRyAiYWNwaV9idXNfdHJpbSByZW1vdmUgcmV0dXJuICV4XG4i
-LCByZXRfdmFsKTsKLQotCWlmIChmbGFncyAmIFJPT1RfQlJJREdFX0hBU19QUzMpIHsKLQkJYWNw
-aV9zdGF0dXMgc3RhdHVzOwotCi0JCXN0YXR1cyA9IGFjcGlfZXZhbHVhdGVfb2JqZWN0KGhhbmRs
-ZSwgIl9QUzMiLCBOVUxMLCBOVUxMKTsKLQkJaWYgKEFDUElfRkFJTFVSRShzdGF0dXMpKQotCQkJ
-cHJfd2FybigiJXM6IF9QUzMgZmFpbGVkXG4iLCBfX2Z1bmNfXyk7Ci0JfQotCWlmIChmbGFncyAm
-IFJPT1RfQlJJREdFX0hBU19FSjApCi0JCWFjcGlfcm9vdF9ldmFsdWF0ZV9vYmplY3QoaGFuZGxl
-LCAiX0VKMCIsIDEpOworCWFjcGlfYnVzX2hvdF9yZW1vdmVfZGV2aWNlKGVqX2V2ZW50KTsKIH0K
-IAogc3RhdGljIHZvaWQgX2hhbmRsZV9ob3RwbHVnX2V2ZW50X3Jvb3Qoc3RydWN0IHdvcmtfc3Ry
-dWN0ICp3b3JrKQo=
---0015175d0442666a6c04cc6f76f3--
