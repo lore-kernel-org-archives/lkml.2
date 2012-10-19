@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030433Ab2JSDQx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:16:53 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51446 "EHLO mail.kernel.org"
+	id S1757306Ab2JSCr1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:47:27 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51250 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757083Ab2JSCr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:28 -0400
+	id S1757083Ab2JSCrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Cong Wang <amwang@redhat.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 33/62] pktgen: fix crash when generating IPv6 packets
-Date: Thu, 18 Oct 2012 19:45:01 -0700
-Message-Id: <20121019024301.334795540@linuxfoundation.org>
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>
+Subject: [ 15/62] iscsi-target: Bump defaults for nopin_timeout + nopin_response_timeout values
+Date: Thu, 18 Oct 2012 19:44:43 -0700
+Message-Id: <20121019024258.423900422@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -25,44 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amerigo Wang <amwang@redhat.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 5aa8b572007c4bca1e6d3dd4c4820f1ae49d6bb2 upstream.
+commit cf0eb28d3ba60098865bf7dbcbfdd6b1cc483e3b upstream.
 
-For IPv6, sizeof(struct ipv6hdr) = 40, thus the following
-expression will result negative:
+This patch increases the default for nopin_timeout to 15 seconds (wait
+between sending a new NopIN ping) and nopin_response_timeout to 30 seconds
+(wait for NopOUT response before failing the connection) in order to avoid
+false positives by iSCSI Initiators who are not always able (under load) to
+respond to NopIN echo PING requests within the current 5 second window.
 
-        datalen = pkt_dev->cur_pkt_size - 14 -
-                  sizeof(struct ipv6hdr) - sizeof(struct udphdr) -
-                  pkt_dev->pkt_overhead;
+False positives have been observed recently using Open-iSCSI code on v3.3.x
+with heavy large-block READ workloads over small MTU 1 Gb/sec ports, and
+increasing these values to more reasonable defaults significantly reduces
+the possibility of false positive NopIN response timeout events under
+this specific workload.
 
-And,  the check "if (datalen < sizeof(struct pktgen_hdr))" will be
-passed as "datalen" is promoted to unsigned, therefore will cause
-a crash later.
+Historically these have been set low to initiate connection recovery as
+soon as possible if we don't hear a ping back, but for modern v3.x code
+on 1 -> 10 Gb/sec ports these new defaults make alot more sense.
 
-This is a quick fix by checking if "datalen" is negative. The following
-patch will increase the default value of 'min_pkt_size' for IPv6.
-
-This bug should exist for a long time, so Cc -stable too.
-
-Signed-off-by: Cong Wang <amwang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Andy Grover <agrover@redhat.com>
+Cc: Mike Christie <michaelc@cs.wisc.edu>
+Cc: Hannes Reinecke <hare@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/core/pktgen.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/iscsi/iscsi_target_core.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -2932,7 +2932,7 @@ static struct sk_buff *fill_packet_ipv6(
- 		  sizeof(struct ipv6hdr) - sizeof(struct udphdr) -
- 		  pkt_dev->pkt_overhead;
- 
--	if (datalen < sizeof(struct pktgen_hdr)) {
-+	if (datalen < 0 || datalen < sizeof(struct pktgen_hdr)) {
- 		datalen = sizeof(struct pktgen_hdr);
- 		if (net_ratelimit())
- 			pr_info("increased datalen to %d\n", datalen);
+--- a/drivers/target/iscsi/iscsi_target_core.h
++++ b/drivers/target/iscsi/iscsi_target_core.h
+@@ -25,10 +25,10 @@
+ #define NA_DATAOUT_TIMEOUT_RETRIES	5
+ #define NA_DATAOUT_TIMEOUT_RETRIES_MAX	15
+ #define NA_DATAOUT_TIMEOUT_RETRIES_MIN	1
+-#define NA_NOPIN_TIMEOUT		5
++#define NA_NOPIN_TIMEOUT		15
+ #define NA_NOPIN_TIMEOUT_MAX		60
+ #define NA_NOPIN_TIMEOUT_MIN		3
+-#define NA_NOPIN_RESPONSE_TIMEOUT	5
++#define NA_NOPIN_RESPONSE_TIMEOUT	30
+ #define NA_NOPIN_RESPONSE_TIMEOUT_MAX	60
+ #define NA_NOPIN_RESPONSE_TIMEOUT_MIN	3
+ #define NA_RANDOM_DATAIN_PDU_OFFSETS	0
 
 
