@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030397Ab2JSDJs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:09:48 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51817 "EHLO mail.kernel.org"
+	id S1757906Ab2JSDJr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:09:47 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51828 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752094Ab2JSCsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757491Ab2JSCsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Oct 2012 22:48:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peng Tao <tao.peng@emc.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 02/76] pnfsblock: fix partial page buffer wirte
-Date: Thu, 18 Oct 2012 19:46:26 -0700
-Message-Id: <20121019024350.466211922@linuxfoundation.org>
+        Michael Olbrich <m.olbrich@pengutronix.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 01/76] ARM: vfp: fix saving d16-d31 vfp registers on v6+ kernels
+Date: Thu, 18 Oct 2012 19:46:25 -0700
+Message-Id: <20121019024350.304313762@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -26,301 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peng Tao <bergwolf@gmail.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit fe6e1e8d9fad86873eb74a26e80a8f91f9e870b5 upstream.
+commit 846a136881b8f73c1f74250bf6acfaa309cab1f2 upstream.
 
-If applications use flock to protect its write range, generic NFS
-will not do read-modify-write cycle at page cache level. Therefore
-LD should know how to handle non-sector aligned writes. Otherwise
-there will be data corruption.
+Michael Olbrich reported that his test program fails when built with
+-O2 -mcpu=cortex-a8 -mfpu=neon, and a kernel which supports v6 and v7
+CPUs:
 
-Signed-off-by: Peng Tao <tao.peng@emc.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+volatile int x = 2;
+volatile int64_t y = 2;
+
+int main() {
+	volatile int a = 0;
+	volatile int64_t b = 0;
+	while (1) {
+		a = (a + x) % (1 << 30);
+		b = (b + y) % (1 << 30);
+		assert(a == b);
+	}
+}
+
+and two instances are run.  When built for just v7 CPUs, this program
+works fine.  It uses the "vadd.i64 d19, d18, d16" VFP instruction.
+
+It appears that we do not save the high-16 double VFP registers across
+context switches when the kernel is built for v6 CPUs.  Fix that.
+
+Tested-By: Michael Olbrich <m.olbrich@pengutronix.de>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/blocklayout/blocklayout.c |  177 ++++++++++++++++++++++++++++++++++++---
- fs/nfs/blocklayout/blocklayout.h |    1 
- 2 files changed, 166 insertions(+), 12 deletions(-)
+ arch/arm/include/asm/vfpmacros.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/nfs/blocklayout/blocklayout.c
-+++ b/fs/nfs/blocklayout/blocklayout.c
-@@ -162,25 +162,39 @@ static struct bio *bl_alloc_init_bio(int
- 	return bio;
- }
- 
--static struct bio *bl_add_page_to_bio(struct bio *bio, int npg, int rw,
-+static struct bio *do_add_page_to_bio(struct bio *bio, int npg, int rw,
- 				      sector_t isect, struct page *page,
- 				      struct pnfs_block_extent *be,
- 				      void (*end_io)(struct bio *, int err),
--				      struct parallel_io *par)
-+				      struct parallel_io *par,
-+				      unsigned int offset, int len)
- {
-+	isect = isect + (offset >> SECTOR_SHIFT);
-+	dprintk("%s: npg %d rw %d isect %llu offset %u len %d\n", __func__,
-+		npg, rw, (unsigned long long)isect, offset, len);
- retry:
- 	if (!bio) {
- 		bio = bl_alloc_init_bio(npg, isect, be, end_io, par);
- 		if (!bio)
- 			return ERR_PTR(-ENOMEM);
- 	}
--	if (bio_add_page(bio, page, PAGE_CACHE_SIZE, 0) < PAGE_CACHE_SIZE) {
-+	if (bio_add_page(bio, page, len, offset) < len) {
- 		bio = bl_submit_bio(rw, bio);
- 		goto retry;
- 	}
- 	return bio;
- }
- 
-+static struct bio *bl_add_page_to_bio(struct bio *bio, int npg, int rw,
-+				      sector_t isect, struct page *page,
-+				      struct pnfs_block_extent *be,
-+				      void (*end_io)(struct bio *, int err),
-+				      struct parallel_io *par)
-+{
-+	return do_add_page_to_bio(bio, npg, rw, isect, page, be,
-+				  end_io, par, 0, PAGE_CACHE_SIZE);
-+}
-+
- /* This is basically copied from mpage_end_io_read */
- static void bl_end_io_read(struct bio *bio, int err)
- {
-@@ -461,6 +475,106 @@ map_block(struct buffer_head *bh, sector
- 	return;
- }
- 
-+static void
-+bl_read_single_end_io(struct bio *bio, int error)
-+{
-+	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
-+	struct page *page = bvec->bv_page;
-+
-+	/* Only one page in bvec */
-+	unlock_page(page);
-+}
-+
-+static int
-+bl_do_readpage_sync(struct page *page, struct pnfs_block_extent *be,
-+		    unsigned int offset, unsigned int len)
-+{
-+	struct bio *bio;
-+	struct page *shadow_page;
-+	sector_t isect;
-+	char *kaddr, *kshadow_addr;
-+	int ret = 0;
-+
-+	dprintk("%s: offset %u len %u\n", __func__, offset, len);
-+
-+	shadow_page = alloc_page(GFP_NOFS | __GFP_HIGHMEM);
-+	if (shadow_page == NULL)
-+		return -ENOMEM;
-+
-+	bio = bio_alloc(GFP_NOIO, 1);
-+	if (bio == NULL)
-+		return -ENOMEM;
-+
-+	isect = (page->index << PAGE_CACHE_SECTOR_SHIFT) +
-+		(offset / SECTOR_SIZE);
-+
-+	bio->bi_sector = isect - be->be_f_offset + be->be_v_offset;
-+	bio->bi_bdev = be->be_mdev;
-+	bio->bi_end_io = bl_read_single_end_io;
-+
-+	lock_page(shadow_page);
-+	if (bio_add_page(bio, shadow_page,
-+			 SECTOR_SIZE, round_down(offset, SECTOR_SIZE)) == 0) {
-+		unlock_page(shadow_page);
-+		bio_put(bio);
-+		return -EIO;
-+	}
-+
-+	submit_bio(READ, bio);
-+	wait_on_page_locked(shadow_page);
-+	if (unlikely(!test_bit(BIO_UPTODATE, &bio->bi_flags))) {
-+		ret = -EIO;
-+	} else {
-+		kaddr = kmap_atomic(page);
-+		kshadow_addr = kmap_atomic(shadow_page);
-+		memcpy(kaddr + offset, kshadow_addr + offset, len);
-+		kunmap_atomic(kshadow_addr);
-+		kunmap_atomic(kaddr);
-+	}
-+	__free_page(shadow_page);
-+	bio_put(bio);
-+
-+	return ret;
-+}
-+
-+static int
-+bl_read_partial_page_sync(struct page *page, struct pnfs_block_extent *be,
-+			  unsigned int dirty_offset, unsigned int dirty_len,
-+			  bool full_page)
-+{
-+	int ret = 0;
-+	unsigned int start, end;
-+
-+	if (full_page) {
-+		start = 0;
-+		end = PAGE_CACHE_SIZE;
-+	} else {
-+		start = round_down(dirty_offset, SECTOR_SIZE);
-+		end = round_up(dirty_offset + dirty_len, SECTOR_SIZE);
-+	}
-+
-+	dprintk("%s: offset %u len %d\n", __func__, dirty_offset, dirty_len);
-+	if (!be) {
-+		zero_user_segments(page, start, dirty_offset,
-+				   dirty_offset + dirty_len, end);
-+		if (start == 0 && end == PAGE_CACHE_SIZE &&
-+		    trylock_page(page)) {
-+			SetPageUptodate(page);
-+			unlock_page(page);
-+		}
-+		return ret;
-+	}
-+
-+	if (start != dirty_offset)
-+		ret = bl_do_readpage_sync(page, be, start, dirty_offset - start);
-+
-+	if (!ret && (dirty_offset + dirty_len < end))
-+		ret = bl_do_readpage_sync(page, be, dirty_offset + dirty_len,
-+					  end - dirty_offset - dirty_len);
-+
-+	return ret;
-+}
-+
- /* Given an unmapped page, zero it or read in page for COW, page is locked
-  * by caller.
-  */
-@@ -494,7 +608,6 @@ init_page_for_write(struct page *page, s
- 	SetPageUptodate(page);
- 
- cleanup:
--	bl_put_extent(cow_read);
- 	if (bh)
- 		free_buffer_head(bh);
- 	if (ret) {
-@@ -566,6 +679,7 @@ bl_write_pagelist(struct nfs_write_data
- 	struct parallel_io *par = NULL;
- 	loff_t offset = wdata->args.offset;
- 	size_t count = wdata->args.count;
-+	unsigned int pg_offset, pg_len, saved_len;
- 	struct page **pages = wdata->args.pages;
- 	struct page *page;
- 	pgoff_t index;
-@@ -674,10 +788,11 @@ next_page:
- 		if (!extent_length) {
- 			/* We've used up the previous extent */
- 			bl_put_extent(be);
-+			bl_put_extent(cow_read);
- 			bio = bl_submit_bio(WRITE, bio);
- 			/* Get the next one */
- 			be = bl_find_get_extent(BLK_LSEG2EXT(header->lseg),
--					     isect, NULL);
-+					     isect, &cow_read);
- 			if (!be || !is_writable(be, isect)) {
- 				header->pnfs_error = -EINVAL;
- 				goto out;
-@@ -694,7 +809,26 @@ next_page:
- 			extent_length = be->be_length -
- 			    (isect - be->be_f_offset);
- 		}
--		if (be->be_state == PNFS_BLOCK_INVALID_DATA) {
-+
-+		dprintk("%s offset %lld count %Zu\n", __func__, offset, count);
-+		pg_offset = offset & ~PAGE_CACHE_MASK;
-+		if (pg_offset + count > PAGE_CACHE_SIZE)
-+			pg_len = PAGE_CACHE_SIZE - pg_offset;
-+		else
-+			pg_len = count;
-+
-+		saved_len = pg_len;
-+		if (be->be_state == PNFS_BLOCK_INVALID_DATA &&
-+		    !bl_is_sector_init(be->be_inval, isect)) {
-+			ret = bl_read_partial_page_sync(pages[i], cow_read,
-+							pg_offset, pg_len, true);
-+			if (ret) {
-+				dprintk("%s bl_read_partial_page_sync fail %d\n",
-+					__func__, ret);
-+				header->pnfs_error = ret;
-+				goto out;
-+			}
-+
- 			ret = bl_mark_sectors_init(be->be_inval, isect,
- 						       PAGE_CACHE_SECTORS);
- 			if (unlikely(ret)) {
-@@ -703,15 +837,35 @@ next_page:
- 				header->pnfs_error = ret;
- 				goto out;
- 			}
-+
-+			/* Expand to full page write */
-+			pg_offset = 0;
-+			pg_len = PAGE_CACHE_SIZE;
-+		} else if  ((pg_offset & (SECTOR_SIZE - 1)) ||
-+			    (pg_len & (SECTOR_SIZE - 1))){
-+			/* ahh, nasty case. We have to do sync full sector
-+			 * read-modify-write cycles.
-+			 */
-+			unsigned int saved_offset = pg_offset;
-+			ret = bl_read_partial_page_sync(pages[i], be, pg_offset,
-+							pg_len, false);
-+			pg_offset = round_down(pg_offset, SECTOR_SIZE);
-+			pg_len = round_up(saved_offset + pg_len, SECTOR_SIZE)
-+				 - pg_offset;
- 		}
--		bio = bl_add_page_to_bio(bio, wdata->pages.npages - i, WRITE,
-+
-+
-+		bio = do_add_page_to_bio(bio, wdata->pages.npages - i, WRITE,
- 					 isect, pages[i], be,
--					 bl_end_io_write, par);
-+					 bl_end_io_write, par,
-+					 pg_offset, pg_len);
- 		if (IS_ERR(bio)) {
- 			header->pnfs_error = PTR_ERR(bio);
- 			bio = NULL;
- 			goto out;
- 		}
-+		offset += saved_len;
-+		count -= saved_len;
- 		isect += PAGE_CACHE_SECTORS;
- 		last_isect = isect;
- 		extent_length -= PAGE_CACHE_SECTORS;
-@@ -729,17 +883,16 @@ next_page:
- 	}
- 
- write_done:
--	wdata->res.count = (last_isect << SECTOR_SHIFT) - (offset);
--	if (count < wdata->res.count) {
--		wdata->res.count = count;
--	}
-+	wdata->res.count = wdata->args.count;
- out:
- 	bl_put_extent(be);
-+	bl_put_extent(cow_read);
- 	bl_submit_bio(WRITE, bio);
- 	put_parallel(par);
- 	return PNFS_ATTEMPTED;
- out_mds:
- 	bl_put_extent(be);
-+	bl_put_extent(cow_read);
- 	kfree(par);
- 	return PNFS_NOT_ATTEMPTED;
- }
---- a/fs/nfs/blocklayout/blocklayout.h
-+++ b/fs/nfs/blocklayout/blocklayout.h
-@@ -41,6 +41,7 @@
- 
- #define PAGE_CACHE_SECTORS (PAGE_CACHE_SIZE >> SECTOR_SHIFT)
- #define PAGE_CACHE_SECTOR_SHIFT (PAGE_CACHE_SHIFT - SECTOR_SHIFT)
-+#define SECTOR_SIZE (1 << SECTOR_SHIFT)
- 
- struct block_mount_id {
- 	spinlock_t			bm_lock;    /* protects list */
+--- a/arch/arm/include/asm/vfpmacros.h
++++ b/arch/arm/include/asm/vfpmacros.h
+@@ -28,7 +28,7 @@
+ 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
+ 	ldr	\tmp, [\tmp, #0]
+ 	tst	\tmp, #HWCAP_VFPv3D16
+-	ldceq	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
++	ldceql	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
+ 	addne	\base, \base, #32*4		    @ step over unused register space
+ #else
+ 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
+@@ -52,7 +52,7 @@
+ 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
+ 	ldr	\tmp, [\tmp, #0]
+ 	tst	\tmp, #HWCAP_VFPv3D16
+-	stceq	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
++	stceql	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
+ 	addne	\base, \base, #32*4		    @ step over unused register space
+ #else
+ 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
 
 
