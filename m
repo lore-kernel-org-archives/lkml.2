@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964819Ab2JSCsk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:48:40 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51998 "EHLO mail.kernel.org"
+	id S1030481Ab2JSDFA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:05:00 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52018 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757552Ab2JSCsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:48:37 -0400
+	id S964812Ab2JSCsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:48:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Ronnie Sahlberg <ronniesahlberg@gmail.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 18/76] iscsi-target: Correctly set 0xffffffff field within ISCSI_OP_REJECT PDU
-Date: Thu, 18 Oct 2012 19:46:42 -0700
-Message-Id: <20121019024353.032902060@linuxfoundation.org>
+Subject: [ 20/76] iscsi-target: Add explicit set of cache_dynamic_acls=1 for TPG demo-mode
+Date: Thu, 18 Oct 2012 19:46:44 -0700
+Message-Id: <20121019024353.354622792@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -28,33 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit f25590f39d543272f7ae7b00d533359c8d7ff331 upstream.
+commit 38b11bae6ba02da352340aff12ee25755977b222 upstream.
 
-This patch adds a missing iscsi_reject->ffffffff assignment within
-iscsit_send_reject() code to properly follow RFC-3720 Section 10.17
-Bytes 16 -> 19 for the PDU format definition of ISCSI_OP_REJECT.
+We've had reports in the past about this specific case, so it's time to
+go ahead and explicitly set cache_dynamic_acls=1 for generate_node_acls=1
+(TPG demo-mode) operation.
 
-We've not seen any initiators care about this bytes in practice, but
-as Ronnie reported this was causing trouble with wireshark packet
-decoding lets go ahead and fix this up now.
+During normal generate_node_acls=0 operation with explicit NodeACLs ->
+se_node_acl memory is persistent to the configfs group located at
+/sys/kernel/config/target/$TARGETNAME/$TPGT/acls/$INITIATORNAME, so in
+the generate_node_acls=1 case we want the reservation logic to reference
+existing per initiator IQN se_node_acl memory (not to generate a new
+se_node_acl), so go ahead and always set cache_dynamic_acls=1 when
+TPG demo-mode is enabled.
 
 Reported-by: Ronnie Sahlberg <ronniesahlberg@gmail.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/target/iscsi/iscsi_target_tpg.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -3424,6 +3424,7 @@ static int iscsit_send_reject(
- 	hdr->opcode		= ISCSI_OP_REJECT;
- 	hdr->flags		|= ISCSI_FLAG_CMD_FINAL;
- 	hton24(hdr->dlength, ISCSI_HDR_LEN);
-+	hdr->ffffffff		= 0xffffffff;
- 	cmd->stat_sn		= conn->stat_sn++;
- 	hdr->statsn		= cpu_to_be32(cmd->stat_sn);
- 	hdr->exp_cmdsn	= cpu_to_be32(conn->sess->exp_cmd_sn);
+--- a/drivers/target/iscsi/iscsi_target_tpg.c
++++ b/drivers/target/iscsi/iscsi_target_tpg.c
+@@ -677,6 +677,12 @@ int iscsit_ta_generate_node_acls(
+ 	pr_debug("iSCSI_TPG[%hu] - Generate Initiator Portal Group ACLs: %s\n",
+ 		tpg->tpgt, (a->generate_node_acls) ? "Enabled" : "Disabled");
+ 
++	if (flag == 1 && a->cache_dynamic_acls == 0) {
++		pr_debug("Explicitly setting cache_dynamic_acls=1 when "
++			"generate_node_acls=1\n");
++		a->cache_dynamic_acls = 1;
++	}
++
+ 	return 0;
+ }
+ 
+@@ -716,6 +722,12 @@ int iscsit_ta_cache_dynamic_acls(
+ 		return -EINVAL;
+ 	}
+ 
++	if (a->generate_node_acls == 1 && flag == 0) {
++		pr_debug("Skipping cache_dynamic_acls=0 when"
++			" generate_node_acls=1\n");
++		return 0;
++	}
++
+ 	a->cache_dynamic_acls = flag;
+ 	pr_debug("iSCSI_TPG[%hu] - Cache Dynamic Initiator Portal Group"
+ 		" ACLs %s\n", tpg->tpgt, (a->cache_dynamic_acls) ?
 
 
