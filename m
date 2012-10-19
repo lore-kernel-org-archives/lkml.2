@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030273Ab2JSDQi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:16:38 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51456 "EHLO mail.kernel.org"
+	id S1030461Ab2JSDQz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:16:55 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51432 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757326Ab2JSCr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:29 -0400
+	id S1757307Ab2JSCr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        David Miller <davem@davemloft.net>
-Subject: [ 34/62] ipvs: fix oops in ip_vs_dst_event on rmmod
-Date: Thu, 18 Oct 2012 19:45:02 -0700
-Message-Id: <20121019024301.502441628@linuxfoundation.org>
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [ 32/62] kdb,vt_console: Fix missed data due to pager overruns
+Date: Thu, 18 Oct 2012 19:45:00 -0700
+Message-Id: <20121019024301.172251728@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -27,52 +25,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julian Anastasov <ja@ssi.bg>
+From: Jason Wessel <jason.wessel@windriver.com>
 
-commit 283283c4da91adc44b03519f434ee1e7e91d6fdb upstream.
+commit 17b572e82032bc246324ce136696656b66d4e3f1 upstream.
 
-	After commit 39f618b4fd95ae243d940ec64c961009c74e3333 (3.4)
-"ipvs: reset ipvs pointer in netns" we can oops in
-ip_vs_dst_event on rmmod ip_vs because ip_vs_control_cleanup
-is called after the ipvs_core_ops subsys is unregistered and
-net->ipvs is NULL. Fix it by exiting early from ip_vs_dst_event
-if ipvs is NULL. It is safe because all services and dests
-for the net are already freed.
+It is possible to miss data when using the kdb pager.  The kdb pager
+does not pay attention to the maximum column constraint of the screen
+or serial terminal.  This result is not incrementing the shown lines
+correctly and the pager will print more lines that fit on the screen.
+Obviously that is less than useful when using a VGA console where you
+cannot scroll back.
 
-Signed-off-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Simon Horman <horms@verge.net.au>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Acked-by: David Miller <davem@davemloft.net>
+The pager will now look at the kdb_buffer string to see how many
+characters are printed.  It might not be perfect considering you can
+output ASCII that might move the cursor position, but it is a
+substantially better approximation for viewing dmesg and trace logs.
+
+This also means that the vt screen needs to set the kdb COLUMNS
+variable.
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/ipvs/ip_vs_ctl.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/tty/vt/vt.c       |   13 +++++++++++++
+ kernel/debug/kdb/kdb_io.c |   33 ++++++++++++++++++++++++++++-----
+ 2 files changed, 41 insertions(+), 5 deletions(-)
 
---- a/net/netfilter/ipvs/ip_vs_ctl.c
-+++ b/net/netfilter/ipvs/ip_vs_ctl.c
-@@ -1521,11 +1521,12 @@ static int ip_vs_dst_event(struct notifi
- {
- 	struct net_device *dev = ptr;
- 	struct net *net = dev_net(dev);
-+	struct netns_ipvs *ipvs = net_ipvs(net);
- 	struct ip_vs_service *svc;
- 	struct ip_vs_dest *dest;
- 	unsigned int idx;
- 
--	if (event != NETDEV_UNREGISTER)
-+	if (event != NETDEV_UNREGISTER || !ipvs)
- 		return NOTIFY_DONE;
- 	IP_VS_DBG(3, "%s() dev=%s\n", __func__, dev->name);
- 	EnterFunction(2);
-@@ -1551,7 +1552,7 @@ static int ip_vs_dst_event(struct notifi
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -3475,6 +3475,19 @@ int con_debug_enter(struct vc_data *vc)
+ 			kdb_set(2, setargs);
  		}
  	}
++	if (vc->vc_cols < 999) {
++		int colcount;
++		char cols[4];
++		const char *setargs[3] = {
++			"set",
++			"COLUMNS",
++			cols,
++		};
++		if (kdbgetintenv(setargs[0], &colcount)) {
++			snprintf(cols, 4, "%i", vc->vc_cols);
++			kdb_set(2, setargs);
++		}
++	}
+ #endif /* CONFIG_KGDB_KDB */
+ 	return ret;
+ }
+--- a/kernel/debug/kdb/kdb_io.c
++++ b/kernel/debug/kdb/kdb_io.c
+@@ -552,6 +552,7 @@ int vkdb_printf(const char *fmt, va_list
+ {
+ 	int diag;
+ 	int linecount;
++	int colcount;
+ 	int logging, saved_loglevel = 0;
+ 	int saved_trap_printk;
+ 	int got_printf_lock = 0;
+@@ -584,6 +585,10 @@ int vkdb_printf(const char *fmt, va_list
+ 	if (diag || linecount <= 1)
+ 		linecount = 24;
  
--	list_for_each_entry(dest, &net_ipvs(net)->dest_trash, n_list) {
-+	list_for_each_entry(dest, &ipvs->dest_trash, n_list) {
- 		__ip_vs_dev_reset(dest, dev);
++	diag = kdbgetintenv("COLUMNS", &colcount);
++	if (diag || colcount <= 1)
++		colcount = 80;
++
+ 	diag = kdbgetintenv("LOGGING", &logging);
+ 	if (diag)
+ 		logging = 0;
+@@ -690,7 +695,7 @@ kdb_printit:
+ 		gdbstub_msg_write(kdb_buffer, retlen);
+ 	} else {
+ 		if (dbg_io_ops && !dbg_io_ops->is_console) {
+-			len = strlen(kdb_buffer);
++			len = retlen;
+ 			cp = kdb_buffer;
+ 			while (len--) {
+ 				dbg_io_ops->write_char(*cp);
+@@ -709,11 +714,29 @@ kdb_printit:
+ 		printk(KERN_INFO "%s", kdb_buffer);
  	}
- 	mutex_unlock(&__ip_vs_mutex);
+ 
+-	if (KDB_STATE(PAGER) && strchr(kdb_buffer, '\n'))
+-		kdb_nextline++;
++	if (KDB_STATE(PAGER)) {
++		/*
++		 * Check printed string to decide how to bump the
++		 * kdb_nextline to control when the more prompt should
++		 * show up.
++		 */
++		int got = 0;
++		len = retlen;
++		while (len--) {
++			if (kdb_buffer[len] == '\n') {
++				kdb_nextline++;
++				got = 0;
++			} else if (kdb_buffer[len] == '\r') {
++				got = 0;
++			} else {
++				got++;
++			}
++		}
++		kdb_nextline += got / (colcount + 1);
++	}
+ 
+ 	/* check for having reached the LINES number of printed lines */
+-	if (kdb_nextline == linecount) {
++	if (kdb_nextline >= linecount) {
+ 		char buf1[16] = "";
+ #if defined(CONFIG_SMP)
+ 		char buf2[32];
+@@ -776,7 +799,7 @@ kdb_printit:
+ 			kdb_grepping_flag = 0;
+ 			kdb_printf("\n");
+ 		} else if (buf1[0] == ' ') {
+-			kdb_printf("\n");
++			kdb_printf("\r");
+ 			suspend_grep = 1; /* for this recursion */
+ 		} else if (buf1[0] == '\n') {
+ 			kdb_nextline = linecount - 1;
 
 
