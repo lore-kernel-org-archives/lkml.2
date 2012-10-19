@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932808Ab2JSEP2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 00:15:28 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:47727 "EHLO
+	id S932930Ab2JSEPi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 00:15:38 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:52308 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932126Ab2JSEPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 00:15:23 -0400
+	id S932126Ab2JSEPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 00:15:32 -0400
 From: Joe Perches <joe@perches.com>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH net-next 12/21] uwb: Convert is_<foo>_ether_addr uses to eth_addr_<foo>
-Date: Thu, 18 Oct 2012 21:14:56 -0700
-Message-Id: <2b17c8139285b5da29d7a70b6d08318272e2d168.1350618011.git.joe@perches.com>
+Subject: [PATCH net-next 13/21] Documentation: networking: Convert is_<foo>_ether_addr uses to eth_addr_<foo>
+Date: Thu, 18 Oct 2012 21:14:57 -0700
+Message-Id: <a5d3882636abe2d2d5a05b0bbb11eeae3b143d79.1350618011.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 In-Reply-To: <cover.1350618006.git.joe@perches.com>
 References: <cover.1350618006.git.joe@perches.com>
@@ -24,22 +24,22 @@ Adds api consistency.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/uwb/address.c |    2 +-
+ Documentation/networking/driver.txt |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/uwb/address.c b/drivers/uwb/address.c
-index 8739c4f..ba4e4cf 100644
---- a/drivers/uwb/address.c
-+++ b/drivers/uwb/address.c
-@@ -343,7 +343,7 @@ static ssize_t uwb_rc_mac_addr_store(struct device *dev,
- 		result = -EINVAL;
- 		goto out;
- 	}
--	if (is_multicast_ether_addr(addr.data)) {
-+	if (eth_addr_multicast(addr.data)) {
- 		dev_err(&rc->uwb_dev.dev, "refusing to set multicast "
- 			"MAC address %s\n", buf);
- 		result = -EINVAL;
+diff --git a/Documentation/networking/driver.txt b/Documentation/networking/driver.txt
+index da59e28..4db39f4 100644
+--- a/Documentation/networking/driver.txt
++++ b/Documentation/networking/driver.txt
+@@ -80,7 +80,7 @@ Probing guidelines:
+ 
+ 1) Any hardware layer address you obtain for your device should
+    be verified.  For example, for ethernet check it with
+-   linux/etherdevice.h:is_valid_ether_addr()
++   linux/etherdevice.h:eth_addr_valid()
+ 
+ Close/stop guidelines:
+ 
 -- 
 1.7.8.111.gad25c.dirty
 
