@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758810Ab2JSMtw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 08:49:52 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48357 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab2JSMtv convert rfc822-to-8bit (ORCPT
+	id S1758820Ab2JSMvY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 08:51:24 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:46008 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758416Ab2JSMvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 08:49:51 -0400
-Message-ID: <1350650972.30157.34.camel@twins>
-Subject: Re: MAX_LOCKDEP_ENTRIES too low  (called from ioc_release_fn)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Date: Fri, 19 Oct 2012 14:49:32 +0200
-In-Reply-To: <20121019052136.GA30852@redhat.com>
-References: <20121018015312.GA29865@redhat.com> <507F9944.50505@kernel.dk>
-	 <20121019052136.GA30852@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 19 Oct 2012 08:51:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <508091C4.9080008@wwwdotorg.org>
+References: <1350554487-7914-1-git-send-email-linus.walleij@stericsson.com>
+	<508091C4.9080008@wwwdotorg.org>
+Date: Fri, 19 Oct 2012 14:51:21 +0200
+Message-ID: <CACRpkdbHLpkqGx4bGPxYN43QiQRedirRnf+tQ7avbQmd6k1kQQ@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: reserve pins when states are activated
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Jean Nicolas Graux <jean-nicolas.graux@stericsson.com>,
+        Loic Pallardy <loic.pallardy@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-19 at 01:21 -0400, Dave Jones wrote:
->  > Not sure why you are CC'ing a call site, rather than the maintainers of
->  > the code. Just looks like lockdep is using too small a static value.
->  > Though it is pretty darn large...
-> 
-> You're right, it's a huge chunk of memory.
-> It looks like I can trigger this from multiple callsites..
-> Another different trace below.
-> 
-> Not sure why this suddenly got a lot worse in 3.7 
+On Fri, Oct 19, 2012 at 1:33 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 10/18/2012 04:01 AM, Linus Walleij wrote:
+>> This switches the way that pins are reserved for multiplexing:
+>
+> The conceptual change makes perfect sense to me.
 
-Did we add a static array of structures with locks in somewhere? Doing
-that is a great way of blowing up the number of lock classes and the
-resulting amount of lock dependency chains.
+Thanks...
 
->From Documentation/lockdep-design.txt; it talks about overflowing
-MAX_LOCKDEP_KEYS, but I suppose its a good starts for overflowing the
-dependency entries too, more classes means more dependencies after all.
+>> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+>
+>>  void pinmux_free_setting(struct pinctrl_setting const *setting)
+> ...
+>> +     /*
+>> +      * If a setting is active, disable it so that all pins are released
+>> +      */
+>> +     pinmux_disable_setting(setting);
+>
+> "*If* a setting is active ..." implies there should be a C if statement
+> here to check if the setting is actually active before trying to disable it?
 
----
-Of course, if you do run out of lock classes, the next thing to do is
-to find the offending lock classes.  First, the following command gives
-you the number of lock classes currently in use along with the maximum:
+Spot on.
 
-        grep "lock-classes" /proc/lockdep_stats
+Actually in core.c we're already checking this:
 
-This command produces the following output on a modest system:
+	case PIN_MAP_TYPE_MUX_GROUP:
+		if (state == p->state)
+			pinmux_disable_setting(setting);
+		pinmux_free_setting(setting);
+		break;
 
-         lock-classes:                          748 [max: 8191]
+So this is just buggy driving the refcount down to negative.
+(I think Jean-Nicolas noticed this phenomenon...)
 
-If the number allocated (748 above) increases continually over time,
-then there is likely a leak.  The following command can be used to
-identify the leaking lock classes:
+I should just delete pinmux_free_setting().
 
-        grep "BD" /proc/lockdep
+Yours,
+Linus Walleij
 
-Run the command and save the output, then compare against the output from
-a later run of this command to identify the leakers.  This same output
-can also help you find situations where runtime lock initialization has
-been omitted.
-
+Yours,
+Linus Walleij
