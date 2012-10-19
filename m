@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757306Ab2JSCr1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:47:27 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51250 "EHLO mail.kernel.org"
+	id S932786Ab2JSD2y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:28:54 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51408 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757083Ab2JSCrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:18 -0400
+	id S1757277Ab2JSCr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>
-Subject: [ 15/62] iscsi-target: Bump defaults for nopin_timeout + nopin_response_timeout values
-Date: Thu, 18 Oct 2012 19:44:43 -0700
-Message-Id: <20121019024258.423900422@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>, NeilBrown <neilb@suse.de>
+Subject: [ 31/62] md/raid10: use correct limit variable
+Date: Thu, 18 Oct 2012 19:44:59 -0700
+Message-Id: <20121019024301.003315745@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -27,51 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit cf0eb28d3ba60098865bf7dbcbfdd6b1cc483e3b upstream.
+commit 91502f099dfc5a1e8812898e26ee280713e1d002 upstream.
 
-This patch increases the default for nopin_timeout to 15 seconds (wait
-between sending a new NopIN ping) and nopin_response_timeout to 30 seconds
-(wait for NopOUT response before failing the connection) in order to avoid
-false positives by iSCSI Initiators who are not always able (under load) to
-respond to NopIN echo PING requests within the current 5 second window.
+Clang complains that we are assigning a variable to itself.  This should
+be using bad_sectors like the similar earlier check does.
 
-False positives have been observed recently using Open-iSCSI code on v3.3.x
-with heavy large-block READ workloads over small MTU 1 Gb/sec ports, and
-increasing these values to more reasonable defaults significantly reduces
-the possibility of false positive NopIN response timeout events under
-this specific workload.
+Bug has been present since 3.1-rc1.  It is minor but could
+conceivably cause corruption or other bad behaviour.
 
-Historically these have been set low to initiate connection recovery as
-soon as possible if we don't hear a ping back, but for modern v3.x code
-on 1 -> 10 Gb/sec ports these new defaults make alot more sense.
-
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Andy Grover <agrover@redhat.com>
-Cc: Mike Christie <michaelc@cs.wisc.edu>
-Cc: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_core.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/raid10.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/target/iscsi/iscsi_target_core.h
-+++ b/drivers/target/iscsi/iscsi_target_core.h
-@@ -25,10 +25,10 @@
- #define NA_DATAOUT_TIMEOUT_RETRIES	5
- #define NA_DATAOUT_TIMEOUT_RETRIES_MAX	15
- #define NA_DATAOUT_TIMEOUT_RETRIES_MIN	1
--#define NA_NOPIN_TIMEOUT		5
-+#define NA_NOPIN_TIMEOUT		15
- #define NA_NOPIN_TIMEOUT_MAX		60
- #define NA_NOPIN_TIMEOUT_MIN		3
--#define NA_NOPIN_RESPONSE_TIMEOUT	5
-+#define NA_NOPIN_RESPONSE_TIMEOUT	30
- #define NA_NOPIN_RESPONSE_TIMEOUT_MAX	60
- #define NA_NOPIN_RESPONSE_TIMEOUT_MIN	3
- #define NA_RANDOM_DATAIN_PDU_OFFSETS	0
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -3019,7 +3019,7 @@ static sector_t sync_request(struct mdde
+ 				else {
+ 					bad_sectors -= (sector - first_bad);
+ 					if (max_sync > bad_sectors)
+-						max_sync = max_sync;
++						max_sync = bad_sectors;
+ 					continue;
+ 				}
+ 			}
 
 
