@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758746Ab2JSTx1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 15:53:27 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:7250 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758203Ab2JSTxZ (ORCPT
+	id S1758784Ab2JSTya (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 15:54:30 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:50019 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758306Ab2JSTy3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 15:53:25 -0400
-Message-ID: <1350676398.1169.6.camel@MikesLinux.fc.hp.com>
-Subject: Re: [PATCH] mm: memmap_init_zone() performance improvement
-From: Mike Yoknis <mike.yoknis@hp.com>
-Reply-To: mike.yoknis@hp.com
-To: Mel Gorman <mgorman@suse.de>
-Cc: mingo@redhat.com, akpm@linux-foundation.org, linux-arch@vger.kernel.org,
-        mmarek@suse.cz, tglx@linutronix.de, hpa@zytor.com, arnd@arndb.de,
-        sam@ravnborg.org, minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        mhocko@suse.cz, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Fri, 19 Oct 2012 13:53:18 -0600
-In-Reply-To: <1349794597.29752.10.camel@MikesLinux.fc.hp.com>
-References: <1349276174-8398-1-git-send-email-mike.yoknis@hp.com>
-	 <20121008151656.GM29125@suse.de>
-	 <1349794597.29752.10.camel@MikesLinux.fc.hp.com>
-Organization: Hewlett-Packard
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Oct 2012 15:54:29 -0400
+Date: Fri, 19 Oct 2012 12:54:21 -0700
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: joseph.salisbury@canonical.com
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        perex@perex.cz, tiwai@suse.de, david.henningsson@canonical.com,
+        alsa-devel@alsa-project.org, stable@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] ALSA: hda - add quirk for Thinkpad T430
+Message-ID: <20121019195421.GC4787@elie.Belkin>
+References: <cover.1350570761.git.joseph.salisbury@canonical.com>
+ <fe78ea8daff3d5a41b6e1c78fb527894da6ad71e.1350570761.git.joseph.salisbury@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <fe78ea8daff3d5a41b6e1c78fb527894da6ad71e.1350570761.git.joseph.salisbury@canonical.com>
+User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-09 at 08:56 -0600, Mike Yoknis wrote:
-> On Mon, 2012-10-08 at 16:16 +0100, Mel Gorman wrote:
-> > On Wed, Oct 03, 2012 at 08:56:14AM -0600, Mike Yoknis wrote:
-> > > memmap_init_zone() loops through every Page Frame Number (pfn),
-> > > including pfn values that are within the gaps between existing
-> > > memory sections.  The unneeded looping will become a boot
-> > > performance issue when machines configure larger memory ranges
-> > > that will contain larger and more numerous gaps.
-> > > 
-> > > The code will skip across invalid sections to reduce the
-> > > number of loops executed.
-> > > 
-> > > Signed-off-by: Mike Yoknis <mike.yoknis@hp.com>
-> > 
-> > I do not see the need for
-> > the additional complexity unless you can show it makes a big difference
-> > to boot times.
-> > 
-> 
-> Mel,
-> 
-> Let me pass along the numbers I have.  We have what we call an
-> "architectural simulator".  It is a computer program that pretends that
-> it is a computer system.  We use it to test the firmware before real
-> hardware is available.  We have booted Linux on our simulator.  As you
-> would expect it takes longer to boot on the simulator than it does on
-> real hardware.
-> 
-> With my patch - boot time 41 minutes
-> Without patch - boot time 94 minutes
-> 
-> These numbers do not scale linearly to real hardware.  But indicate to
-> me a place where Linux can be improved.
-> 
-> Mike Yoknis
-> 
-Mel,
-I finally got access to prototype hardware.  
-It is a relatively small machine with only 64GB of RAM.
- 
-I put in a time measurement by reading the TSC register.
-I booted both with and without my patch -
- 
-Without patch -
-[    0.000000]   Normal zone: 13400064 pages, LIFO batch:31
-[    0.000000] memmap_init_zone() enter 1404184834218
-[    0.000000] memmap_init_zone() exit  1411174884438  diff = 6990050220
- 
-With patch -
-[    0.000000]   Normal zone: 13400064 pages, LIFO batch:31
-[    0.000000] memmap_init_zone() enter 1555530050778
-[    0.000000] memmap_init_zone() exit  1559379204643  diff = 3849153865
- 
-This shows that without the patch the routine spends 45% 
-of its time spinning unnecessarily.
- 
-Mike Yoknis
+joseph.salisbury@canonical.com wrote:
 
+> This patch adds a quirk to enable headphone jack audio on T430 Thinkpads.
+>
+> Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+> Cc: <stable@vger.kernel.org>
 
+Thanks --- this is a little better.
+
+One more nit: it looks like this was reported, tested, and based on a
+patch by Stefan Freyr.  Takashi, could you amend the message to
+reflect that, or should the patch be resent?
+
+Something like
+
+-- >8 --
+From: Stefán Freyr <stefan.freyr@gmail.com>
+Subject: ALSA: hda - add dock support for Thinkpad T430
+
+I have a Lenovo ThinkPad T430 and an UltraBase Series 3 docking
+station.
+
+Without this patch, if I plug my headphones into the jack on the
+computer, everything works fine. The computer speakers mute and the
+audio is played in the headphones. However, if I plug into the docking
+station headphone jack the computer speakers are muted but there is no
+audio in the headphones.
+
+Addresses https://bugs.launchpad.net/bugs/1060372
+
+Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: stable@vger.kernel.org
