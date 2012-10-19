@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030245Ab2JSEPn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 00:15:43 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:52871 "EHLO
+	id S1161002Ab2JSEPv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 00:15:51 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:52424 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932126Ab2JSEPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 00:15:40 -0400
+	id S1757551Ab2JSEPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 00:15:48 -0400
 From: Joe Perches <joe@perches.com>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH net-next 14/21] llc_if.h: Convert is_<foo>_ether_addr uses to eth_addr_<foo>
-Date: Thu, 18 Oct 2012 21:14:58 -0700
-Message-Id: <1df2628a6da807939ee0a30c332bf0ec0a596a22.1350618011.git.joe@perches.com>
+Subject: [PATCH net-next 15/21] in.h: Rename ipv4_is_<foo> functions to ipv4_addr_<foo>
+Date: Thu, 18 Oct 2012 21:14:59 -0700
+Message-Id: <e7805590abcf76d60dc0cbeff63c824419726ab4.1350618011.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 In-Reply-To: <cover.1350618006.git.joe@perches.com>
 References: <cover.1350618006.git.joe@perches.com>
@@ -19,33 +19,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the old ether_addr tests to eth_addr_<foo>.
-Adds api consistency.
+Make the ipv4_is_<foo> tests use a similar style to ipv6_<foo> tests.
+Add backward compatibility #defines to keep current ipv4_is_<foo>
+code working until completely converted.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/net/llc_if.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ include/linux/in.h |   40 ++++++++++++++++++++++++++++------------
+ 1 files changed, 28 insertions(+), 12 deletions(-)
 
-diff --git a/include/net/llc_if.h b/include/net/llc_if.h
-index b595a00..cce2942 100644
---- a/include/net/llc_if.h
-+++ b/include/net/llc_if.h
-@@ -71,12 +71,12 @@
-  */
- static inline int llc_mac_null(const u8 *mac)
- {
--	return is_zero_ether_addr(mac);
-+	return eth_addr_zero(mac);
+diff --git a/include/linux/in.h b/include/linux/in.h
+index 31b4937..2116ce8 100644
+--- a/include/linux/in.h
++++ b/include/linux/in.h
+@@ -39,66 +39,82 @@ static inline int proto_ports_offset(int proto)
+ 	}
  }
  
- static inline int llc_mac_multicast(const u8 *mac)
+-static inline bool ipv4_is_loopback(__be32 addr)
++static inline bool ipv4_addr_loopback(__be32 addr)
  {
--	return is_multicast_ether_addr(mac);
-+	return eth_addr_multicast(mac);
+ 	return (addr & htonl(0xff000000)) == htonl(0x7f000000);
  }
- /**
-  *	llc_mac_match - determines if two mac addresses are the same
+ 
+-static inline bool ipv4_is_multicast(__be32 addr)
++static inline bool ipv4_addr_multicast(__be32 addr)
+ {
+ 	return (addr & htonl(0xf0000000)) == htonl(0xe0000000);
+ }
+ 
+-static inline bool ipv4_is_local_multicast(__be32 addr)
++static inline bool ipv4_addr_local_multicast(__be32 addr)
+ {
+ 	return (addr & htonl(0xffffff00)) == htonl(0xe0000000);
+ }
+ 
+-static inline bool ipv4_is_lbcast(__be32 addr)
++static inline bool ipv4_addr_lbcast(__be32 addr)
+ {
+ 	/* limited broadcast */
+ 	return addr == htonl(INADDR_BROADCAST);
+ }
+ 
+-static inline bool ipv4_is_zeronet(__be32 addr)
++static inline bool ipv4_addr_zeronet(__be32 addr)
+ {
+ 	return (addr & htonl(0xff000000)) == htonl(0x00000000);
+ }
+ 
+ /* Special-Use IPv4 Addresses (RFC3330) */
+ 
+-static inline bool ipv4_is_private_10(__be32 addr)
++static inline bool ipv4_addr_private_10(__be32 addr)
+ {
+ 	return (addr & htonl(0xff000000)) == htonl(0x0a000000);
+ }
+ 
+-static inline bool ipv4_is_private_172(__be32 addr)
++static inline bool ipv4_addr_private_172(__be32 addr)
+ {
+ 	return (addr & htonl(0xfff00000)) == htonl(0xac100000);
+ }
+ 
+-static inline bool ipv4_is_private_192(__be32 addr)
++static inline bool ipv4_addr_private_192(__be32 addr)
+ {
+ 	return (addr & htonl(0xffff0000)) == htonl(0xc0a80000);
+ }
+ 
+-static inline bool ipv4_is_linklocal_169(__be32 addr)
++static inline bool ipv4_addr_linklocal_169(__be32 addr)
+ {
+ 	return (addr & htonl(0xffff0000)) == htonl(0xa9fe0000);
+ }
+ 
+-static inline bool ipv4_is_anycast_6to4(__be32 addr)
++static inline bool ipv4_addr_anycast_6to4(__be32 addr)
+ {
+ 	return (addr & htonl(0xffffff00)) == htonl(0xc0586300);
+ }
+ 
+-static inline bool ipv4_is_test_192(__be32 addr)
++static inline bool ipv4_addr_test_192(__be32 addr)
+ {
+ 	return (addr & htonl(0xffffff00)) == htonl(0xc0000200);
+ }
+ 
+-static inline bool ipv4_is_test_198(__be32 addr)
++static inline bool ipv4_addr_test_198(__be32 addr)
+ {
+ 	return (addr & htonl(0xfffe0000)) == htonl(0xc6120000);
+ }
++
++/* Some #defines to make old ipv4_is_<foo> tests work for awhile */
++
++#define ipv4_is_loopback(addr)		ipv4_addr_loopback(addr)
++#define ipv4_is_multicast(addr)		ipv4_addr_multicast(addr)
++#define ipv4_is_local_multicast(addr)	ipv4_addr_local_multicast(addr)
++#define ipv4_is_lbcast(addr)		ipv4_addr_lbcast(addr)
++#define ipv4_is_zeronet(addr)		ipv4_addr_zeronet(addr)
++#define ipv4_is_private_10(addr)	ipv4_addr_private_10(addr)
++#define ipv4_is_private_172(addr)	ipv4_addr_private_172(addr)
++#define ipv4_is_private_192(addr)	ipv4_addr_private_192(addr)
++#define ipv4_is_linklocal_169(addr)	ipv4_addr_linklocal_169(addr)
++#define ipv4_is_anycast_6to4(addr)	ipv4_addr_anycast_6to4(addr)
++#define ipv4_is_test_192(addr)		ipv4_addr_test_192(addr)
++#define ipv4_is_test_198(addr)		ipv4_addr_test_198(addr)
++
+ #endif	/* _LINUX_IN_H */
 -- 
 1.7.8.111.gad25c.dirty
 
