@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933151Ab2JSXCN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 19:02:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:12627 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933108Ab2JSXCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 19:02:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,617,1344236400"; 
-   d="scan'208";a="208308036"
-Subject: Re: x2apic boot failure on recent sandy bridge system
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: rrl125@gmail.com
-Cc: fa.linux.kernel@googlegroups.com, "Berck E. Nash" <flyboy@gmail.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 19 Oct 2012 16:03:58 -0700
-In-Reply-To: <b0b75b2b-961b-487a-ab03-2362c65d6972@googlegroups.com>
-References: <fa.1zfuXwqYK6u81uBoo3IdpawcpWw@ifi.uio.no>
-	 <fa.p3cpkKIGUNv0/iot3o7KT9bb98M@ifi.uio.no>
-	 <fa.iPHW7usT23k+cCA19L3eXEDu91Q@ifi.uio.no>
-	 <fa.7eOK+XcsKUWU4ZXhBj2K6znxrvc@ifi.uio.no>
-	 <fa.VGxfKOh1Z07X1TXm5PxMIlV4xu8@ifi.uio.no>
-	 <fa.eH+BpYDdp4xIWE4V+wJu6hFrVxM@ifi.uio.no>
-	 <b0b75b2b-961b-487a-ab03-2362c65d6972@googlegroups.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1350687838.6017.10.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1759014Ab2JSXGl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 19:06:41 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59616 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758501Ab2JSXGj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 19:06:39 -0400
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: linux-kbuild@vger.kernel.org
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>
+Subject: [PATCH 3/3] kconfig: get CONFIG_ prefix from the environment
+Date: Sat, 20 Oct 2012 01:06:25 +0200
+Message-Id: <1350687985-21053-4-git-send-email-yann.morin.1998@free.fr>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1350687985-21053-1-git-send-email-yann.morin.1998@free.fr>
+References: <1350687985-21053-1-git-send-email-yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-19 at 13:42 -0700, rrl125@gmail.com wrote:
-> Any update? The messages just seem to have stopped months ago. A
-> fallback would be nice, I have been booting the kernel with noa2xpic
-> for since kernel 3.2, and currently I am working with 3.6.2.
-> 
-> If needed I can try to attempt modifying the patch to include
-> fallback, but I am probably not the best person to do it.
-> 
+Currently, the CONFIG_ prefix is hard-coded in the kconfig frontends
+executables. This means that two projects that use kconfig with
+different prefixes can not share the same kconfig frontends.
 
-Are you referring to this commit that made into the mainline tree
-already?
+Instead of hard-coding the prefix in the frontends, get it from the
+environment, and revert back to hard-coded value if not found.
 
-commit fb209bd891645bb87b9618b724f0b4928e0df3de
-Author: Yinghai Lu <yinghai@kernel.org>
-Date:   Wed Dec 21 17:45:17 2011 -0800
+Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+---
+ scripts/kconfig/gconf.c |    2 +-
+ scripts/kconfig/lkc.h   |    2 +-
+ scripts/kconfig/nconf.c |    1 +
+ 3 files changed, 3 insertions(+), 2 deletions(-)
 
-    x86, x2apic: Fallback to xapic when BIOS doesn't setup interrupt-remapping
-    
-    On some of the recent Intel SNB platforms, by default bios is pre-enabling
-    x2apic mode in the cpu with out setting up interrupt-remapping.
-    This case was resulting in the kernel to panic as the cpu is already in
-    x2apic mode but the OS was not able to enable interrupt-remapping (which
-    is a pre-req for using x2apic capability).
-    
-    On these platforms all the apic-ids are < 255 and the kernel can fallback to
-    xapic mode if the bios has not enabled interrupt-remapping (which is
-    mostly the case if the bios has not exported interrupt-remapping tables to the
-    OS).
-    
-    Reported-by: Berck E. Nash <flyboy@gmail.com>
-    Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-    Link: http://lkml.kernel.org/r/20111222014632.600418637@sbsiddha-desk.sc.intel.com
-    Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-    Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-
+diff --git a/scripts/kconfig/gconf.c b/scripts/kconfig/gconf.c
+index adc2306..f2bee70 100644
+--- a/scripts/kconfig/gconf.c
++++ b/scripts/kconfig/gconf.c
+@@ -10,6 +10,7 @@
+ #  include <config.h>
+ #endif
+ 
++#include <stdlib.h>
+ #include "lkc.h"
+ #include "images.c"
+ 
+@@ -22,7 +23,6 @@
+ #include <string.h>
+ #include <unistd.h>
+ #include <time.h>
+-#include <stdlib.h>
+ 
+ //#define DEBUG
+ 
+diff --git a/scripts/kconfig/lkc.h b/scripts/kconfig/lkc.h
+index 7aa9db0..7577a7f 100644
+--- a/scripts/kconfig/lkc.h
++++ b/scripts/kconfig/lkc.h
+@@ -41,7 +41,7 @@ extern "C" {
+ #endif
+ static inline const char *CONFIG_prefix(void)
+ {
+-	return CONFIG_;
++	return getenv( "CONFIG_" ) ?: CONFIG_;
+ }
+ #undef CONFIG_
+ #define CONFIG_ CONFIG_prefix()
+diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
+index 261f926..ce93e87 100644
+--- a/scripts/kconfig/nconf.c
++++ b/scripts/kconfig/nconf.c
+@@ -7,6 +7,7 @@
+  */
+ #define _GNU_SOURCE
+ #include <string.h>
++#include <stdlib.h>
+ 
+ #include "lkc.h"
+ #include "nconf.h"
+-- 
+1.7.2.5
 
