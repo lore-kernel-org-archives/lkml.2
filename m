@@ -1,95 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307Ab2JSFg3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 01:36:29 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:5116 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751028Ab2JSFg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 01:36:28 -0400
-X-IronPort-AV: E=Sophos;i="4.80,611,1344182400"; 
-   d="scan'208";a="6028240"
-Message-ID: <5080E828.20109@cn.fujitsu.com>
-Date: Fri, 19 Oct 2012 13:42:00 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 2/2]suppress "Device nodeX does not have a release() function"
- warning
-References: <507656D1.5020703@jp.fujitsu.com> <50765896.4000300@jp.fujitsu.com> <CAHGf_=rvdU+TymYZSXvx1bz4xdp43bqnyjRMGEoiBizC5rP0sQ@mail.gmail.com> <507E4F0C.9040506@cn.fujitsu.com> <CAHGf_=obXYBGg9HK6d7AyAe7rjM_NyE6icr69aH-DNOp4tB+VA@mail.gmail.com>
-In-Reply-To: <CAHGf_=obXYBGg9HK6d7AyAe7rjM_NyE6icr69aH-DNOp4tB+VA@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/19 13:35:59,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/19 13:36:00,
-	Serialize complete at 2012/10/19 13:36:00
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755588Ab2JSFho (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 01:37:44 -0400
+Received: from mga02.intel.com ([134.134.136.20]:26573 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751231Ab2JSFhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 01:37:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,610,1344236400"; 
+   d="scan'208";a="229566056"
+From: ling.ma.program@gmail.com
+To: mingo@elte.hu
+Cc: hpa@zytor.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        iant@google.com, Ma Ling <ling.ma.program@gmail.com>
+Subject: [PATCH RFC] [x86] Optimize small size memcpy by avoding long latency from decode stage
+Date: Fri, 19 Oct 2012 20:29:40 +0800
+Message-Id: <1350649780-3276-1-git-send-email-ling.ma.program@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 10/17/2012 04:50 PM, KOSAKI Motohiro Wrote:
-> On Wed, Oct 17, 2012 at 2:24 AM, Wen Congyang <wency@cn.fujitsu.com> wrote:
->> At 10/12/2012 06:33 AM, KOSAKI Motohiro Wrote:
->>> On Thu, Oct 11, 2012 at 1:26 AM, Yasuaki Ishimatsu
->>> <isimatu.yasuaki@jp.fujitsu.com> wrote:
->>>> When calling unregister_node(), the function shows following message at
->>>> device_release().
->>>>
->>>> "Device 'node2' does not have a release() function, it is broken and must
->>>> be fixed."
->>>>
->>>> The reason is node's device struct does not have a release() function.
->>>>
->>>> So the patch registers node_device_release() to the device's release()
->>>> function for suppressing the warning message. Additionally, the patch adds
->>>> memset() to initialize a node struct into register_node(). Because the node
->>>> struct is part of node_devices[] array and it cannot be freed by
->>>> node_device_release(). So if system reuses the node struct, it has a garbage.
->>>>
->>>> CC: David Rientjes <rientjes@google.com>
->>>> CC: Jiang Liu <liuj97@gmail.com>
->>>> Cc: Minchan Kim <minchan.kim@gmail.com>
->>>> CC: Andrew Morton <akpm@linux-foundation.org>
->>>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->>>> ---
->>>>  drivers/base/node.c |   11 +++++++++++
->>>>  1 file changed, 11 insertions(+)
->>>>
->>>> Index: linux-3.6/drivers/base/node.c
->>>> ===================================================================
->>>> --- linux-3.6.orig/drivers/base/node.c  2012-10-11 10:04:02.149758748 +0900
->>>> +++ linux-3.6/drivers/base/node.c       2012-10-11 10:20:34.111806931 +0900
->>>> @@ -252,6 +252,14 @@ static inline void hugetlb_register_node
->>>>  static inline void hugetlb_unregister_node(struct node *node) {}
->>>>  #endif
->>>>
->>>> +static void node_device_release(struct device *dev)
->>>> +{
->>>> +#if defined(CONFIG_MEMORY_HOTPLUG_SPARSE) && defined(CONFIG_HUGETLBFS)
->>>> +       struct node *node_dev = to_node(dev);
->>>> +
->>>> +       flush_work(&node_dev->node_work);
->>>> +#endif
->>>> +}
->>>
->>> The patch description don't explain why this flush_work() is needed.
->>
->> If the node is onlined after it is offlined, we will clear the memory,
->> so we should flush_work() before node_dev is set to 0.
-> 
-> So then, it is irrelevant from warning supressness. You should make an
-> another patch.
-> 
+From: Ma Ling <ling.ma.program@gmail.com>
 
-OK, I will update it soon.
+CISC code has higher instruction density, saving memory and
+improving i-cache hit rate. However decode become challenge,
+only one mulitple-uops(2~3)instruction could be decoded in one cycle,
+and instructions containing more 4 uops(rep movsq/b) have to be handled by MS-ROM,
+the process take long time and eat up the advantage from it for small size. 
 
-Thanks
-Wen Congyang
+In order to avoid this disavantage, we take use of general instruction code
+for small size copy. The result shows it can get 1~2x improvement
+on Core2, Nehalem, Sandy Bridge, Ivy Bridge, Atom, and Bulldozer as well.
+
+Signed-off-by: Ma Ling <ling.ma.program@gmail.com>
+---
+ arch/x86/lib/memcpy_64.S |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/lib/memcpy_64.S b/arch/x86/lib/memcpy_64.S
+index 1c273be..6a24c8c 100644
+--- a/arch/x86/lib/memcpy_64.S
++++ b/arch/x86/lib/memcpy_64.S
+@@ -5,7 +5,6 @@
+ #include <asm/cpufeature.h>
+ #include <asm/dwarf2.h>
+ #include <asm/alternative-asm.h>
+-
+ /*
+  * memcpy - Copy a memory block.
+  *
+@@ -19,6 +18,15 @@
+  */
+ 
+ /*
++ * memcpy_c() and memcpy_c_e() use rep movsq/movsb respectively,
++ * the instruction have to get micro ops from Microcode Sequencser Rom.
++ * And the decode  process take long latency, in order to avoid it, 
++ * we choose loop unrolling routine for small size.
++ * Could vary the warm up  distance.
++ */
++
++
++/*
+  * memcpy_c() - fast string ops (REP MOVSQ) based variant.
+  *
+  * This gets patched over the unrolled variant (below) via the
+@@ -26,6 +34,8 @@
+  */
+ 	.section .altinstr_replacement, "ax", @progbits
+ .Lmemcpy_c:
++	cmpq $512, %rdx
++	jbe  memcpy 	
+ 	movq %rdi, %rax
+ 	movq %rdx, %rcx
+ 	shrq $3, %rcx
+@@ -46,6 +56,8 @@
+  */
+ 	.section .altinstr_replacement, "ax", @progbits
+ .Lmemcpy_c_e:
++	cmpq $512, %rdx
++	jbe  memcpy
+ 	movq %rdi, %rax
+ 	movq %rdx, %rcx
+ 	rep movsb
+-- 
+1.6.5.2
 
