@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758019Ab2JSJKn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 05:10:43 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45369 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753881Ab2JSJKl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 05:10:41 -0400
-Date: Fri, 19 Oct 2012 10:10:16 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "mhocko@suse.cz" <mhocko@suse.cz>,
-        "kirill@shutemov.name" <kirill@shutemov.name>,
-        "aarcange@redhat.com" <aarcange@redhat.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        Steve Capper <Steve.Capper@arm.com>
-Subject: Re: [PATCH v2] mm: thp: Set the accessed flag for old pages on
- access fault.
-Message-ID: <20121019091016.GA4582@mudshark.cambridge.arm.com>
-References: <1349197151-19645-1-git-send-email-will.deacon@arm.com>
- <20121002150104.da57fa94.akpm@linux-foundation.org>
- <20121017130125.GH5973@mudshark.cambridge.arm.com>
- <20121017.112620.1865348978594874782.davem@davemloft.net>
- <20121017155401.GJ5973@mudshark.cambridge.arm.com>
- <20121018150502.3dee7899.akpm@linux-foundation.org>
+	id S1758125Ab2JSJKs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 05:10:48 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:42946 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753881Ab2JSJKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 05:10:44 -0400
+Message-ID: <50811903.9000105@parallels.com>
+Date: Fri, 19 Oct 2012 13:10:27 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121018150502.3dee7899.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        <devel@openvz.org>, <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v5 06/14] memcg: kmem controller infrastructure
+References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-7-git-send-email-glommer@parallels.com> <20121017151214.e3d2aa3b.akpm@linux-foundation.org> <507FC8E3.8020006@parallels.com> <alpine.DEB.2.00.1210181502270.30894@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1210181502270.30894@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 11:05:02PM +0100, Andrew Morton wrote:
-> On Wed, 17 Oct 2012 16:54:02 +0100
-> Will Deacon <will.deacon@arm.com> wrote:
+On 10/19/2012 02:06 AM, David Rientjes wrote:
+> On Thu, 18 Oct 2012, Glauber Costa wrote:
 > 
-> > On x86 memory accesses to pages without the ACCESSED flag set result in the
-> > ACCESSED flag being set automatically. With the ARM architecture a page access
-> > fault is raised instead (and it will continue to be raised until the ACCESSED
-> > flag is set for the appropriate PTE/PMD).
-> > 
-> > For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
-> > setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
-> > be called for a write fault.
-> > 
-> > This patch ensures that faults on transparent hugepages which do not result
-> > in a CoW update the access flags for the faulting pmd.
+>>> Do we actually need to test PF_KTHREAD when current->mm == NULL? 
+>>> Perhaps because of aio threads whcih temporarily adopt a userspace mm?
+>>
+>> I believe so. I remember I discussed this in the past with David
+>> Rientjes and he advised me to test for both.
+>>
 > 
-> Confused.  Where is the arm implementation of update_mmu_cache_pmd()?
+> PF_KTHREAD can do use_mm() to assume an ->mm but hopefully they aren't 
+> allocating slab while doing so.  Have you considered actually charging 
+> current->mm->owner for that memory, though, since the kthread will have 
+> freed the memory before unuse_mm() or otherwise have charged it on behalf 
+> of a user process, i.e. only exempting PF_KTHREAD?
+> 
+I always charge current->mm->owner.
 
-Right at the end of this patch, which was posted to the ARM list yesterday:
-
-  http://lists.infradead.org/pipermail/linux-arm-kernel/2012-October/126387.html
-
-Cheers,
-
-Will
