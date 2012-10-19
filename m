@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757439Ab2JSCrp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:47:45 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51539 "EHLO mail.kernel.org"
+	id S1161019Ab2JSDOr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:14:47 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51569 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757193Ab2JSCrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:41 -0400
+	id S1757431Ab2JSCro (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Patrick McHardy <kaber@trash.net>,
+        Florian Westphal <fw@strlen.de>,
         Pablo Neira Ayuso <pablo@netfilter.org>,
         David Miller <davem@davemloft.net>
-Subject: [ 40/62] netfilter: nf_nat_sip: fix via header translation with multiple parameters
-Date: Thu, 18 Oct 2012 19:45:08 -0700
-Message-Id: <20121019024302.449873352@linuxfoundation.org>
+Subject: [ 42/62] netfilter: limit, hashlimit: avoid duplicated inline
+Date: Thu, 18 Oct 2012 19:45:10 -0700
+Message-Id: <20121019024302.764086176@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -27,49 +27,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Patrick McHardy <kaber@trash.net>
+From: Florian Westphal <fw@strlen.de>
 
-commit f22eb25cf5b1157b29ef88c793b71972efc47143 upstream.
+commit 7a909ac70f6b0823d9f23a43f19598d4b57ac901 upstream.
 
-Via-headers are parsed beginning at the first character after the Via-address.
-When the address is translated first and its length decreases, the offset to
-start parsing at is incorrect and header parameters might be missed.
+credit_cap can be set to credit, which avoids inlining user2credits
+twice. Also, remove inline keyword and let compiler decide.
 
-Update the offset after translating the Via-address to fix this.
+old:
+    684     192       0     876     36c net/netfilter/xt_limit.o
+   4927     344      32    5303    14b7 net/netfilter/xt_hashlimit.o
+now:
+    668     192       0     860     35c net/netfilter/xt_limit.o
+   4793     344      32    5169    1431 net/netfilter/xt_hashlimit.o
 
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Florian Westphal <fw@strlen.de>
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Acked-by: David Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ipv4/netfilter/nf_nat_sip.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ net/netfilter/xt_hashlimit.c |    8 +++-----
+ net/netfilter/xt_limit.c     |    5 ++---
+ 2 files changed, 5 insertions(+), 8 deletions(-)
 
---- a/net/ipv4/netfilter/nf_nat_sip.c
-+++ b/net/ipv4/netfilter/nf_nat_sip.c
-@@ -148,7 +148,7 @@ static unsigned int ip_nat_sip(struct sk
- 	if (ct_sip_parse_header_uri(ct, *dptr, NULL, *datalen,
- 				    hdr, NULL, &matchoff, &matchlen,
- 				    &addr, &port) > 0) {
--		unsigned int matchend, poff, plen, buflen, n;
-+		unsigned int olen, matchend, poff, plen, buflen, n;
- 		char buffer[sizeof("nnn.nnn.nnn.nnn:nnnnn")];
+--- a/net/netfilter/xt_hashlimit.c
++++ b/net/netfilter/xt_hashlimit.c
+@@ -389,8 +389,7 @@ static void htable_put(struct xt_hashlim
+ #define CREDITS_PER_JIFFY POW2_BELOW32(MAX_CPJ)
  
- 		/* We're only interested in headers related to this
-@@ -163,11 +163,12 @@ static unsigned int ip_nat_sip(struct sk
- 				goto next;
- 		}
+ /* Precision saver. */
+-static inline u_int32_t
+-user2credits(u_int32_t user)
++static u32 user2credits(u32 user)
+ {
+ 	/* If multiplying would overflow... */
+ 	if (user > 0xFFFFFFFF / (HZ*CREDITS_PER_JIFFY))
+@@ -400,7 +399,7 @@ user2credits(u_int32_t user)
+ 	return (user * HZ * CREDITS_PER_JIFFY) / XT_HASHLIMIT_SCALE;
+ }
  
-+		olen = *datalen;
- 		if (!map_addr(skb, dataoff, dptr, datalen, matchoff, matchlen,
- 			      &addr, port))
- 			return NF_DROP;
+-static inline void rateinfo_recalc(struct dsthash_ent *dh, unsigned long now)
++static void rateinfo_recalc(struct dsthash_ent *dh, unsigned long now)
+ {
+ 	dh->rateinfo.credit += (now - dh->rateinfo.prev) * CREDITS_PER_JIFFY;
+ 	if (dh->rateinfo.credit > dh->rateinfo.credit_cap)
+@@ -535,8 +534,7 @@ hashlimit_mt(const struct sk_buff *skb,
+ 		dh->rateinfo.prev = jiffies;
+ 		dh->rateinfo.credit = user2credits(hinfo->cfg.avg *
+ 		                      hinfo->cfg.burst);
+-		dh->rateinfo.credit_cap = user2credits(hinfo->cfg.avg *
+-		                          hinfo->cfg.burst);
++		dh->rateinfo.credit_cap = dh->rateinfo.credit;
+ 		dh->rateinfo.cost = user2credits(hinfo->cfg.avg);
+ 	} else {
+ 		/* update expiration timeout */
+--- a/net/netfilter/xt_limit.c
++++ b/net/netfilter/xt_limit.c
+@@ -88,8 +88,7 @@ limit_mt(const struct sk_buff *skb, stru
+ }
  
--		matchend = matchoff + matchlen;
-+		matchend = matchoff + matchlen + *datalen - olen;
- 
- 		/* The maddr= parameter (RFC 2361) specifies where to send
- 		 * the reply. */
+ /* Precision saver. */
+-static u_int32_t
+-user2credits(u_int32_t user)
++static u32 user2credits(u32 user)
+ {
+ 	/* If multiplying would overflow... */
+ 	if (user > 0xFFFFFFFF / (HZ*CREDITS_PER_JIFFY))
+@@ -123,7 +122,7 @@ static int limit_mt_check(const struct x
+ 		   128. */
+ 		priv->prev = jiffies;
+ 		priv->credit = user2credits(r->avg * r->burst); /* Credits full. */
+-		r->credit_cap = user2credits(r->avg * r->burst); /* Credits full. */
++		r->credit_cap = priv->credit; /* Credits full. */
+ 		r->cost = user2credits(r->avg);
+ 	}
+ 	return 0;
 
 
