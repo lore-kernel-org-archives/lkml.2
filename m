@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030438Ab2JSDCH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:02:07 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52169 "EHLO mail.kernel.org"
+	id S1030454Ab2JSDCa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:02:30 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52134 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964907Ab2JSCsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:48:53 -0400
+	id S964897Ab2JSCsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:48:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Roland Dreier <roland@purestorage.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>, Arun Easi <arun.easi@qlogic.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 33/76] qla2xxx: Fix endianness of task management response code
-Date: Thu, 18 Oct 2012 19:46:57 -0700
-Message-Id: <20121019024355.454371648@linuxfoundation.org>
+Subject: [ 30/76] target: fix truncation of mode data, support zero allocation length
+Date: Thu, 18 Oct 2012 19:46:54 -0700
+Message-Id: <20121019024354.985523098@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -28,39 +26,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit e4b11b89f9039ca97b2ed1b6efeb6749fbdeb252 upstream.
+commit 7a3f369ce31694017996524a1cdb08208a839077 upstream.
 
-The qla2xxx firmware actually expects the task management response
-code in a CTIO IOCB with SCSI status mode 1 to be in little-endian
-byte order, ie the response code should be the first byte in the
-sense_data[] array.  The old code erroneously byte-swapped the
-response code, which puts it in the wrong place on the wire and leads
-to initiators thinking every task management request succeeds (since
-they see 0 in the byte where they look for the response code).
+The offset was not bumped back to the full size after writing the
+header of the MODE SENSE response, so the last 1 or 2 bytes were
+not copied.
 
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Cc: Chad Dupuis <chad.dupuis@qlogic.com>
-Cc: Arun Easi <arun.easi@qlogic.com>
-Acked-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+On top of this, support zero-length requests by checking for the
+return value of transport_kmap_data_sg.
+
+Testcase: sg_raw -r20 /dev/sdb 5a 00 0a 00 00 00 00 00 14 00
+    last byte should be 0x1e
+    it is 0x00 without the patch
+    it is correct with the patch
+
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla2xxx/qla_target.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/target_core_spc.c |   17 +++++++----------
+ 1 file changed, 7 insertions(+), 10 deletions(-)
 
---- a/drivers/scsi/qla2xxx/qla_target.c
-+++ b/drivers/scsi/qla2xxx/qla_target.c
-@@ -1403,7 +1403,7 @@ static void qlt_24xx_send_task_mgmt_ctio
- 	ctio->u.status1.scsi_status =
- 	    __constant_cpu_to_le16(SS_RESPONSE_INFO_LEN_VALID);
- 	ctio->u.status1.response_len = __constant_cpu_to_le16(8);
--	((uint32_t *)ctio->u.status1.sense_data)[0] = cpu_to_be32(resp_code);
-+	ctio->u.status1.sense_data[0] = resp_code;
+--- a/drivers/target/target_core_spc.c
++++ b/drivers/target/target_core_spc.c
+@@ -784,7 +784,7 @@ static int spc_emulate_modesense(struct
+ 	unsigned char *rbuf;
+ 	int type = dev->transport->get_device_type(dev);
+ 	int ten = (cmd->t_task_cdb[0] == MODE_SENSE_10);
+-	int offset = ten ? 8 : 4;
++	u32 offset = ten ? 8 : 4;
+ 	int length = 0;
+ 	unsigned char buf[SE_MODE_PAGE_BUF];
  
- 	qla2x00_start_iocbs(ha, ha->req);
- }
+@@ -817,6 +817,7 @@ static int spc_emulate_modesense(struct
+ 		offset -= 2;
+ 		buf[0] = (offset >> 8) & 0xff;
+ 		buf[1] = offset & 0xff;
++		offset += 2;
+ 
+ 		if ((cmd->se_lun->lun_access & TRANSPORT_LUNFLAGS_READ_ONLY) ||
+ 		    (cmd->se_deve &&
+@@ -826,13 +827,10 @@ static int spc_emulate_modesense(struct
+ 		if ((dev->se_sub_dev->se_dev_attrib.emulate_write_cache > 0) &&
+ 		    (dev->se_sub_dev->se_dev_attrib.emulate_fua_write > 0))
+ 			spc_modesense_dpofua(&buf[3], type);
+-
+-		if ((offset + 2) > cmd->data_length)
+-			offset = cmd->data_length;
+-
+ 	} else {
+ 		offset -= 1;
+ 		buf[0] = offset & 0xff;
++		offset += 1;
+ 
+ 		if ((cmd->se_lun->lun_access & TRANSPORT_LUNFLAGS_READ_ONLY) ||
+ 		    (cmd->se_deve &&
+@@ -842,14 +840,13 @@ static int spc_emulate_modesense(struct
+ 		if ((dev->se_sub_dev->se_dev_attrib.emulate_write_cache > 0) &&
+ 		    (dev->se_sub_dev->se_dev_attrib.emulate_fua_write > 0))
+ 			spc_modesense_dpofua(&buf[2], type);
+-
+-		if ((offset + 1) > cmd->data_length)
+-			offset = cmd->data_length;
+ 	}
+ 
+ 	rbuf = transport_kmap_data_sg(cmd);
+-	memcpy(rbuf, buf, offset);
+-	transport_kunmap_data_sg(cmd);
++	if (rbuf) {
++		memcpy(rbuf, buf, min(offset, cmd->data_length));
++		transport_kunmap_data_sg(cmd);
++	}
+ 
+ 	target_complete_cmd(cmd, GOOD);
+ 	return 0;
 
 
