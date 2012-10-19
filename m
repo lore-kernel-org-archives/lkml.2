@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030286Ab2JSDXN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:23:13 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54491 "EHLO mail.kernel.org"
+	id S964917Ab2JSDR2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:17:28 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54409 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964925Ab2JSDR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:29 -0400
+	id S1758029Ab2JSDRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Cong Wang <amwang@redhat.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 18/37] pktgen: fix crash when generating IPv6 packets
-Date: Thu, 18 Oct 2012 20:16:41 -0700
-Message-Id: <20121019031305.792752127@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [ 12/37] block: fix request_queue->flags initialization
+Date: Thu, 18 Oct 2012 20:16:35 -0700
+Message-Id: <20121019031304.836071629@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -25,44 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amerigo Wang <amwang@redhat.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 5aa8b572007c4bca1e6d3dd4c4820f1ae49d6bb2 upstream.
+commit 60ea8226cbd5c8301f9a39edc574ddabcb8150e0 upstream.
 
-For IPv6, sizeof(struct ipv6hdr) = 40, thus the following
-expression will result negative:
+A queue newly allocated with blk_alloc_queue_node() has only
+QUEUE_FLAG_BYPASS set.  For request-based drivers,
+blk_init_allocated_queue() is called and q->queue_flags is overwritten
+with QUEUE_FLAG_DEFAULT which doesn't include BYPASS even though the
+initial bypass is still in effect.
 
-        datalen = pkt_dev->cur_pkt_size - 14 -
-                  sizeof(struct ipv6hdr) - sizeof(struct udphdr) -
-                  pkt_dev->pkt_overhead;
+In blk_init_allocated_queue(), or QUEUE_FLAG_DEFAULT to q->queue_flags
+instead of overwriting.
 
-And,  the check "if (datalen < sizeof(struct pktgen_hdr))" will be
-passed as "datalen" is promoted to unsigned, therefore will cause
-a crash later.
-
-This is a quick fix by checking if "datalen" is negative. The following
-patch will increase the default value of 'min_pkt_size' for IPv6.
-
-This bug should exist for a long time, so Cc -stable too.
-
-Signed-off-by: Cong Wang <amwang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/core/pktgen.c |    2 +-
+ block/blk-core.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -2932,7 +2932,7 @@ static struct sk_buff *fill_packet_ipv6(
- 		  sizeof(struct ipv6hdr) - sizeof(struct udphdr) -
- 		  pkt_dev->pkt_overhead;
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -524,7 +524,7 @@ blk_init_allocated_queue(struct request_
+ 	q->request_fn		= rfn;
+ 	q->prep_rq_fn		= NULL;
+ 	q->unprep_rq_fn		= NULL;
+-	q->queue_flags		= QUEUE_FLAG_DEFAULT;
++	q->queue_flags		|= QUEUE_FLAG_DEFAULT;
  
--	if (datalen < sizeof(struct pktgen_hdr)) {
-+	if (datalen < 0 || datalen < sizeof(struct pktgen_hdr)) {
- 		datalen = sizeof(struct pktgen_hdr);
- 		if (net_ratelimit())
- 			pr_info("increased datalen to %d\n", datalen);
+ 	/* Override internal queue lock with supplied lock pointer */
+ 	if (lock)
 
 
