@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030246Ab2JSC4A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:56:00 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52464 "EHLO mail.kernel.org"
+	id S965015Ab2JSCtU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:49:20 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52381 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757425Ab2JSCtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:49:24 -0400
+	id S964974Ab2JSCtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:49:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 60/76] drm/nouveau/bios: fix shadowing of ACPI ROMs larger than 64KiB
-Date: Thu, 18 Oct 2012 19:47:24 -0700
-Message-Id: <20121019024359.774396402@linuxfoundation.org>
+        Jan Beulich <JBeulich@suse.com>, Michal Marek <mmarek@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 53/76] kbuild: Fix accidental revert in commit fe04ddf
+Date: Thu, 18 Oct 2012 19:47:17 -0700
+Message-Id: <20121019024358.644412596@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -25,53 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Michal Marek <mmarek@suse.cz>
 
-commit 9a334cd0de2f43b29c192548000692bad52edfc6 upstream.
+commit 3ce9e53e788881da0d5f3912f80e0dd6b501f304 upstream.
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Commit fe04ddf7c291 ("kbuild: Do not package /boot and /lib in make
+tar-pkg") accidentally reverted two previous kbuild commits.  I don't
+know what I was thinking.
+
+This brings back changes made by commits 24cc7fb69a5b ("x86/kbuild:
+archscripts depends on scripts_basic") and c1c1a59e37da ("firmware: fix
+directory creation rule matching with make 3.80")
+
+Reported-by: Jan Beulich <JBeulich@suse.com>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_bios.c |   22 ++++++++++------------
- 1 file changed, 10 insertions(+), 12 deletions(-)
+ arch/x86/Makefile       |    2 +-
+ scripts/Makefile.fwinst |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/nouveau_bios.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_bios.c
-@@ -196,24 +196,22 @@ static void
- bios_shadow_acpi(struct nvbios *bios)
- {
- 	struct pci_dev *pdev = bios->dev->pdev;
--	int cnt = 65536 / ROM_BIOS_PAGE;
--	int ret;
-+	int ret, cnt, i;
-+	u8  data[3];
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -142,7 +142,7 @@ KBUILD_CFLAGS += $(call cc-option,-mno-a
+ KBUILD_CFLAGS += $(mflags-y)
+ KBUILD_AFLAGS += $(mflags-y)
  
- 	if (!nouveau_acpi_rom_supported(pdev))
- 		return;
+-archscripts:
++archscripts: scripts_basic
+ 	$(Q)$(MAKE) $(build)=arch/x86/tools relocs
  
--	bios->data = kmalloc(cnt * ROM_BIOS_PAGE, GFP_KERNEL);
--	if (!bios->data)
--		return;
--
- 	bios->length = 0;
--	while (cnt--) {
--		ret = nouveau_acpi_get_bios_chunk(bios->data, bios->length,
--						  ROM_BIOS_PAGE);
--		if (ret != ROM_BIOS_PAGE)
--			return;
-+	if (nouveau_acpi_get_bios_chunk(data, 0, 3) == 3)
-+		bios->length = data[2] * 512;
+ ###
+--- a/scripts/Makefile.fwinst
++++ b/scripts/Makefile.fwinst
+@@ -27,7 +27,7 @@ endif
+ installed-mod-fw := $(addprefix $(INSTALL_FW_PATH)/,$(mod-fw))
  
--		bios->length += ROM_BIOS_PAGE;
-+	bios->data = kmalloc(bios->length, GFP_KERNEL);
-+	for (i = 0; bios->data && i < bios->length; i += cnt) {
-+		cnt = min((bios->length - i), (u32)4096);
-+		ret = nouveau_acpi_get_bios_chunk(bios->data, i, cnt);
-+		if (ret != cnt)
-+			break;
- 	}
- }
+ installed-fw := $(addprefix $(INSTALL_FW_PATH)/,$(fw-shipped-all))
+-installed-fw-dirs := $(sort $(dir $(installed-fw))) $(INSTALL_FW_PATH)/.
++installed-fw-dirs := $(sort $(dir $(installed-fw))) $(INSTALL_FW_PATH)/./
  
+ # Workaround for make < 3.81, where .SECONDEXPANSION doesn't work.
+ PHONY += $(INSTALL_FW_PATH)/$$(%) install-all-dirs
+@@ -42,7 +42,7 @@ quiet_cmd_install = INSTALL $(subst $(sr
+ $(installed-fw-dirs):
+ 	$(call cmd,mkdir)
+ 
+-$(installed-fw): $(INSTALL_FW_PATH)/%: $(obj)/% | $$(dir $(INSTALL_FW_PATH)/%)
++$(installed-fw): $(INSTALL_FW_PATH)/%: $(obj)/% | $(INSTALL_FW_PATH)/$$(dir %)
+ 	$(call cmd,install)
+ 
+ PHONY +=  __fw_install __fw_modinst FORCE
 
 
