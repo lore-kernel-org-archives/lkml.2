@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161047Ab2JSDEp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:04:45 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52030 "EHLO mail.kernel.org"
+	id S964819Ab2JSCsk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:48:40 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51998 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964823Ab2JSCsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:48:41 -0400
+	id S1757552Ab2JSCsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:48:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>
-Subject: [ 21/76] iscsi-target: Bump defaults for nopin_timeout + nopin_response_timeout values
-Date: Thu, 18 Oct 2012 19:46:45 -0700
-Message-Id: <20121019024353.514267178@linuxfoundation.org>
+        Ronnie Sahlberg <ronniesahlberg@gmail.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 18/76] iscsi-target: Correctly set 0xffffffff field within ISCSI_OP_REJECT PDU
+Date: Thu, 18 Oct 2012 19:46:42 -0700
+Message-Id: <20121019024353.032902060@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -29,49 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit cf0eb28d3ba60098865bf7dbcbfdd6b1cc483e3b upstream.
+commit f25590f39d543272f7ae7b00d533359c8d7ff331 upstream.
 
-This patch increases the default for nopin_timeout to 15 seconds (wait
-between sending a new NopIN ping) and nopin_response_timeout to 30 seconds
-(wait for NopOUT response before failing the connection) in order to avoid
-false positives by iSCSI Initiators who are not always able (under load) to
-respond to NopIN echo PING requests within the current 5 second window.
+This patch adds a missing iscsi_reject->ffffffff assignment within
+iscsit_send_reject() code to properly follow RFC-3720 Section 10.17
+Bytes 16 -> 19 for the PDU format definition of ISCSI_OP_REJECT.
 
-False positives have been observed recently using Open-iSCSI code on v3.3.x
-with heavy large-block READ workloads over small MTU 1 Gb/sec ports, and
-increasing these values to more reasonable defaults significantly reduces
-the possibility of false positive NopIN response timeout events under
-this specific workload.
+We've not seen any initiators care about this bytes in practice, but
+as Ronnie reported this was causing trouble with wireshark packet
+decoding lets go ahead and fix this up now.
 
-Historically these have been set low to initiate connection recovery as
-soon as possible if we don't hear a ping back, but for modern v3.x code
-on 1 -> 10 Gb/sec ports these new defaults make alot more sense.
-
+Reported-by: Ronnie Sahlberg <ronniesahlberg@gmail.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Andy Grover <agrover@redhat.com>
-Cc: Mike Christie <michaelc@cs.wisc.edu>
-Cc: Hannes Reinecke <hare@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_core.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/target/iscsi/iscsi_target.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/target/iscsi/iscsi_target_core.h
-+++ b/drivers/target/iscsi/iscsi_target_core.h
-@@ -25,10 +25,10 @@
- #define NA_DATAOUT_TIMEOUT_RETRIES	5
- #define NA_DATAOUT_TIMEOUT_RETRIES_MAX	15
- #define NA_DATAOUT_TIMEOUT_RETRIES_MIN	1
--#define NA_NOPIN_TIMEOUT		5
-+#define NA_NOPIN_TIMEOUT		15
- #define NA_NOPIN_TIMEOUT_MAX		60
- #define NA_NOPIN_TIMEOUT_MIN		3
--#define NA_NOPIN_RESPONSE_TIMEOUT	5
-+#define NA_NOPIN_RESPONSE_TIMEOUT	30
- #define NA_NOPIN_RESPONSE_TIMEOUT_MAX	60
- #define NA_NOPIN_RESPONSE_TIMEOUT_MIN	3
- #define NA_RANDOM_DATAIN_PDU_OFFSETS	0
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -3424,6 +3424,7 @@ static int iscsit_send_reject(
+ 	hdr->opcode		= ISCSI_OP_REJECT;
+ 	hdr->flags		|= ISCSI_FLAG_CMD_FINAL;
+ 	hton24(hdr->dlength, ISCSI_HDR_LEN);
++	hdr->ffffffff		= 0xffffffff;
+ 	cmd->stat_sn		= conn->stat_sn++;
+ 	hdr->statsn		= cpu_to_be32(cmd->stat_sn);
+ 	hdr->exp_cmdsn	= cpu_to_be32(conn->sess->exp_cmd_sn);
 
 
