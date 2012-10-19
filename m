@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756466Ab2JSTCa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 15:02:30 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:46604 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753506Ab2JSTC2 (ORCPT
+	id S1756933Ab2JSTJX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 15:09:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53272 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753166Ab2JSTJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 15:02:28 -0400
-X-Authenticated: #787645
-X-Provags-ID: V01U2FsdGVkX18nxaMuviQnPUUmPmryZgZ6FaL/pzVWIjWY6UIVRK
-	5b8K3AGHcBgHEa
-Message-ID: <5081A3BC.9050201@gmx.net>
-Date: Fri, 19 Oct 2012 21:02:20 +0200
-From: Witold Szczeponik <Witold.Szczeponik@gmx.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Fri, 19 Oct 2012 15:09:22 -0400
+Date: Fri, 19 Oct 2012 12:09:17 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: YAMANE Toshiaki <yamanetoshi@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] staging/sbe-2t3e3: Use netdev_ or dev_ or pr_
+ printks in module.c
+Message-ID: <20121019190917.GA18080@kroah.com>
+References: <1348754271-4987-1-git-send-email-yamanetoshi@gmail.com>
+ <1348754350-5022-1-git-send-email-yamanetoshi@gmail.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Borislav Petkov <bp@alien8.de>, bhelgaas@google.com, lenb@kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH V3 0/3] PNP: Allow PNP resources to be disabled (interface)
-References: <50158321.4030007@gmx.net> <201208022340.16948.rjw@sisk.pl> <5055DFB6.6070809@gmx.net> <201209182342.30244.rjw@sisk.pl>
-In-Reply-To: <201209182342.30244.rjw@sisk.pl>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1348754350-5022-1-git-send-email-yamanetoshi@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/09/12 23:42, Rafael J. Wysocki wrote:
+On Thu, Sep 27, 2012 at 10:59:10PM +0900, YAMANE Toshiaki wrote:
+> fixed below checkpatch warning.
+> - WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
+> 
+> and add pr_fmt.
+> 
+> Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+> ---
+>  drivers/staging/sbe-2t3e3/module.c |   12 ++++++++----
+>  1 file changed, 8 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/staging/sbe-2t3e3/module.c b/drivers/staging/sbe-2t3e3/module.c
+> index cd778b3..4547137 100644
+> --- a/drivers/staging/sbe-2t3e3/module.c
+> +++ b/drivers/staging/sbe-2t3e3/module.c
+> @@ -10,6 +10,8 @@
+>   * This code is based on a driver written by SBE Inc.
+>   */
+>  
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>  #include <linux/module.h>
+>  #include <linux/slab.h>
+>  #include <linux/delay.h>
+> @@ -66,7 +68,7 @@ static int __devinit t3e3_init_channel(struct channel *channel, struct pci_dev *
+>  
+>  	dev = alloc_hdlcdev(channel);
+>  	if (!dev) {
+> -		printk(KERN_ERR "SBE 2T3E3" ": Out of memory\n");
+> +		pr_err("SBE 2T3E3" ": Out of memory\n");
+>  		goto free_regions;
+>  	}
+>  
+> @@ -93,7 +95,8 @@ static int __devinit t3e3_init_channel(struct channel *channel, struct pci_dev *
+>  	t3e3_init(channel);
+>  
+>  	if (request_irq(dev->irq, &t3e3_intr, IRQF_SHARED, dev->name, dev)) {
+> -		printk(KERN_WARNING "%s: could not get irq: %d\n", dev->name, dev->irq);
+> +		netdev_warn(channel->dev, "%s: could not get irq: %d\n",
+> +			    dev->name, dev->irq);
+>  		goto free_regions;
+>  	}
+>  
+> @@ -137,7 +140,8 @@ static int __devinit t3e3_init_card(struct pci_dev *pdev, const struct pci_devic
+>  				break; /* found the second channel */
+>  
+>  		if (!pdev1) {
+> -			printk(KERN_ERR "SBE 2T3E3" ": Can't find the second channel\n");
+> +			dev_err(&pdev->dev,
+> +				"SBE 2T3E3" ": Can't find the second channel\n");
 
-> Hi,
-> 
-> On Sunday, September 16, 2012, Witold Szczeponik wrote:
->> Hi Rafael, 
->>
->> what about the patches 1 and 3 which do not make any changes to the ABI?
->> The first patch simplifies the code, while the third patch fixes a problem in
->> the PNP resource allocation.  Any chances to have them included in 3.7?
-> 
-> They would be fine as far as I'm concerned, but I'm not maintaining that part
-> of the kernel (at least at the moment).
-> 
-> I'm not sure who's the maintainer of it, to be honest.
+The "SBE 2T3E3" is no longer needed here, now that you set pr_info.
 
-Well, according to https://lkml.org/lkml/2012/10/19/375, that would be you
-(together with Bjorn and Len).  :-)  Hence I am resending the request for
-inclusion to you as well.  PNP code went, if I am not mistaken, traditionally
-through Len's tree.  
+Care to fix this up and resend it?
 
---- Witold
+thanks,
 
-> 
-> Thanks,
-> Rafael
-> 
+greg k-h
