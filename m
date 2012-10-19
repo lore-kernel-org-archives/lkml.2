@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758183Ab2JSLmP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 07:42:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47524 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969Ab2JSLmO convert rfc822-to-8bit (ORCPT
+	id S1758275Ab2JSLoy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 07:44:54 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:44801 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376Ab2JSLox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 07:42:14 -0400
-Message-ID: <1350646894.30157.14.camel@twins>
-Subject: Re: [PATCH 1/2] add credits for NUMA placement
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Rik van Riel <riel@redhat.com>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, aarcange@redhat.com
-Date: Fri, 19 Oct 2012 13:41:34 +0200
-In-Reply-To: <20121018171928.24d06af4@cuia.bos.redhat.com>
-References: <20121018171821.7f1b1683@cuia.bos.redhat.com>
-	 <20121018171928.24d06af4@cuia.bos.redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 19 Oct 2012 07:44:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <87lif3p9rw.fsf@rustcorp.com.au>
+References: <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com>
+	<87txtso9xw.fsf@rustcorp.com.au>
+	<CA+55aFxZdtD51AVKLtKK95ooh8VB8-5Tt8nHsxSUT67CBRrp2g@mail.gmail.com>
+	<871ugwny1n.fsf@rustcorp.com.au>
+	<CA+55aFwTz6xadNL37H6Qb8+rWNefn0cQ0URFPfD=Ea=J54xzGg@mail.gmail.com>
+	<CA+5PVA4fE7uaxNobBMtUs7QUWA2XfM_2oKtLhb7DFRisJLy+4Q@mail.gmail.com>
+	<87lif3p9rw.fsf@rustcorp.com.au>
+Date: Fri, 19 Oct 2012 07:44:52 -0400
+Message-ID: <CA+5PVA6noOyUJBTCYyAHgtJun1DPRmNQ4NxpvVepAVY12vjiwQ@mail.gmail.com>
+Subject: Re: RFC: sign the modules at install time
+From: Josh Boyer <jwboyer@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        David Howells <dhowells@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-18 at 17:19 -0400, Rik van Riel wrote:
-> The NUMA placement code has been rewritten several times, but
-> the basic ideas took a lot of work to develop. The people who
-> put in the work deserve credit for it. Thanks Andrea & Peter :)
-> 
-> The Documentation/scheduler/numa-problem.txt file should
-> probably be rewritten once we figure out the final details of
-> what the NUMA code needs to do, and why.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
+On Thu, Oct 18, 2012 at 8:48 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Josh Boyer <jwboyer@gmail.com> writes:
+>> It might even be able to be moved entirely into scripts/Makefile.modinst
+>> but I haven't gotten that far yet.
+>
+> Thanks, I'll add this.
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Excellent.
 
-Thanks Rik!
+> Note it was word-wrapped here though :(
+
+Sigh.  Sorry, Rusty.  I thought I had gmail's kinks worked out.
+
+josh
