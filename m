@@ -1,58 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758979Ab2JSQmj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 12:42:39 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:37079 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758490Ab2JSQmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 12:42:37 -0400
-Date: Fri, 19 Oct 2012 18:42:33 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>, Tony Luck <tony.luck@intel.com>
-Cc: stable@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, miaox@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        wency@cn.fujitsu.com, x86@kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH v2 2/2] Do not change worker's running cpu in
- cmci_rediscover().
-Message-ID: <20121019164233.GF11958@aftab.osrc.amd.com>
-References: <1350625528-1385-1-git-send-email-tangchen@cn.fujitsu.com>
- <1350625528-1385-3-git-send-email-tangchen@cn.fujitsu.com>
+	id S1759489Ab2JSQo5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 12:44:57 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:52747 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754323Ab2JSQox (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 12:44:53 -0400
+Date: Fri, 19 Oct 2012 12:46:15 -0400
+From: Matt Porter <mporter@ti.com>
+To: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
+Cc: Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH v3 00/16] DMA Engine support for AM33XX
+Message-ID: <20121019164615.GH25164@beef>
+References: <1350566815-409-1-git-send-email-mporter@ti.com>
+ <B5906170F1614E41A8A28DE3B8D121433EBD29FC@DBDE01.ent.ti.com>
+ <20121019111558.GD25164@beef>
+ <B5906170F1614E41A8A28DE3B8D121433EBD2CE1@DBDE01.ent.ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1350625528-1385-3-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <B5906170F1614E41A8A28DE3B8D121433EBD2CE1@DBDE01.ent.ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 01:45:28PM +0800, Tang Chen wrote:
-> cmci_rediscover() used set_cpus_allowed_ptr() to change the current process's
-> running cpu, and migrate itself to the dest cpu. But worker processes are not
-> allowed to be migrated. If current is a worker, the worker will be migrated to
-> another cpu, but the corresponding  worker_pool is still on the original cpu.
+On Fri, Oct 19, 2012 at 12:02:42PM +0000, Bedia, Vaibhav wrote:
+> On Fri, Oct 19, 2012 at 16:45:58, Porter, Matt wrote:
+> > On Fri, Oct 19, 2012 at 10:26:20AM +0000, Bedia, Vaibhav wrote:
+> [...]
+> > > 
+> > > I didn't see all the patches that you posted on edma-dmaengine-v3
+> > > but I do seem them on edma-dmaengine-am33xx-v3 branch.
+> > 
+> > I see I referenced the wrong branch in the cover letter. Thanks for
+> > testing and noticing this. Sorry to make you hunt for the correct
+> > branch in that repo. ;) 
+> > 
 > 
-> In this case, the following BUG_ON in try_to_wake_up_local() will be triggered:
-> BUG_ON(rq != this_rq());
+> No problem.
 > 
-> This will cause the kernel panic.
+> > https://github.com/ohporter/linux/tree/edma-dmaengine-am33xx-v3
+> > is indeed the correct branch for those wanting to pull this in or
+> > grab some of the not-to-be-merged drivers I used for testing.
+> > 
+> > > I added a couple of patches to enable earlyprintk and build the DTB
+> > > appended kernel image uImage-dtb.am335x-evm
+> > > 
+> > > Here's what i see
+> > > 
+> > > [...]
+> > 
+> > <snip>
+> > 
+> > > [    0.175354] edma: probe of 49000000.edma failed with error -16
+> > 
+> > I missed an uninitialized pdata case in the bug fixes mentioned in
+> > the changelog and the folks previously failing the same way didn't
+> > hit the case I suspect you are hitting. Can you try this and let me
+> > know how it works?
+> > 
 > 
-> This patch removes the set_cpus_allowed_ptr() call, and put the cmci rediscover
-> jobs onto all the other cpus using system_wq. This could bring some delay for
-> the jobs.
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
+> That doesn't help :(
 
-I guess this is ok. Tony?
+Ok, so I dumped my Linaro toolchain which was masking this issue that
+you got unlucky with on EVM, whereas I was lucky. Switching toolchains I
+was able to reproduce the problem. Pantelis Antoniou suggested some
+changes and the following fixes this issue for me...verified on both
+BeagleBone and EVM. Let me know if that works on your end and I'll
+incorporate some version of it in the next update.
 
--- 
-Regards/Gruss,
-Boris.
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index b761b7a..6ed394f 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -1598,6 +1598,8 @@ static struct of_dma_filter_info edma_filter_info = {
+ static int __init edma_probe(struct platform_device *pdev)
+ {
+ 	struct edma_soc_info	**info = pdev->dev.platform_data;
++	struct edma_soc_info	*ninfo[EDMA_MAX_CC] = {NULL, NULL};
++	struct edma_soc_info	tmpinfo;
+ 	s8			(*queue_priority_mapping)[2];
+ 	s8			(*queue_tc_mapping)[2];
+ 	int			i, j, off, ln, found = 0;
+@@ -1614,15 +1616,13 @@ static int __init edma_probe(struct platform_device *pdev)
+ 	char			irq_name[10];
+ 	struct device_node	*node = pdev->dev.of_node;
+ 	struct device		*dev = &pdev->dev;
+-	struct edma_soc_info	*pdata;
+ 	int			ret;
+ 
+ 	if (node) {
+-		pdata = devm_kzalloc(dev,
+-				     sizeof(struct edma_soc_info),
+-				     GFP_KERNEL);
+-		edma_of_parse_dt(dev, node, pdata);
+-		info = &pdata;
++		info = ninfo;
++		edma_of_parse_dt(dev, node, &tmpinfo);
++		info[0] = &tmpinfo;
++
+ 		dma_cap_set(DMA_SLAVE, edma_filter_info.dma_cap);
+ 		of_dma_controller_register(dev->of_node,
+ 					   of_dma_simple_xlate,
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+> Looking at the original crash log, I suspect something is not correct
+> with the irq portion, probably in the DT or the driver. 
+> 
+> "genirq: Flags mismatch irq 28. 00000000 (edma) vs. 00000000 (edma)"
+> 
+> The warning below that is coming due to fail case in edma_probe not tracking
+> the request_irq status properly and but IMO that's a separate issue.
+
+It is a separate issue, indeed. My ideal goal was to avoid changing
+anything in this existing davinci dma implementation, that's why the
+error paths were unmodified. Since I'm having to rework a few more things
+I'll look at those and generate an improved version.
+
+Russ Dill also made some good simplification/cleanup suggestions for the
+of parsing on irc which I'll incorporate in the next version.
+
+-Matt
