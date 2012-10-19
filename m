@@ -1,43 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757695Ab2JSJi5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 05:38:57 -0400
-Received: from relay.parallels.com ([195.214.232.42]:49722 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753802Ab2JSJi4 convert rfc822-to-8bit (ORCPT
+	id S1758003Ab2JSJkR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 05:40:17 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34438 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757806Ab2JSJkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 05:38:56 -0400
-Message-ID: <50811FA6.8000709@parallels.com>
-Date: Fri, 19 Oct 2012 13:38:46 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Fri, 19 Oct 2012 05:40:14 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50811FE1.4080606@jp.fujitsu.com>
+Date: Fri, 19 Oct 2012 18:39:45 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "devel@openvz.org" <devel@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>
-Subject: Re: [PATCH v4] posix timers: allocate timer id per process
-References: <20121019074912.10745.339.stgit@localhost.localdomain> <1350633401.2293.245.camel@edumazet-glaptop>
-In-Reply-To: <1350633401.2293.245.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>,
+        <minchan.kim@gmail.com>, <akpm@linux-foundation.org>,
+        <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH v3 0/9] bugfix for memory hotplug
+References: <1350629202-9664-1-git-send-email-wency@cn.fujitsu.com> <508109F2.1080402@jp.fujitsu.com> <50810D14.8020609@jp.fujitsu.com> <50811336.7070704@cn.fujitsu.com>
+In-Reply-To: <50811336.7070704@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-19.10.2012 11:56, Eric Dumazet пишет:
-> I wonder if some applications relied on our idr, assuming they would get
-> low values for their timer id.
-> (We could imagine some applications use a table indexed by the timer id)
+2012/10/19 17:45, Wen Congyang wrote:
+> At 10/19/2012 04:19 PM, Yasuaki Ishimatsu Wrote:
+>> 2012/10/19 17:06, Yasuaki Ishimatsu wrote:
+>>> Hi Wen,
+>>>
+>>> Some bug fix patches have been merged into linux-next.
+>>> So the patches confuse me.
+> 
+> Sorry, I don't check linux-next tree.
+> 
+>>
+>> The following patches have been already merged into linux-next
+>> and mm-tree as long as I know.
+>>
+>>>> Wen Congyang (6):
+>>>>      clear the memory to store struct page
+>>
+>>
+>>>>      memory-hotplug: skip HWPoisoned page when offlining pages
+>>
+>> mm-tree
+> 
+> Hmm, I don't find this patch in this URL:
+> http://www.ozlabs.org/~akpm/mmotm/broken-out/
+> 
+> Do I miss something?
 
-Hmm.
-Probably, this particular case can be optimised by tuning min_id to id of 
-releasing timer (if id of this timer is less than current->signal min_id).
-Does this approach solves the issue you mentioned above?
+But Andrew announced that the patch was merged in mm-tree.
+And you received the announcement.
 
--- 
-Best regards,
-Stanislav Kinsbursky
+>>
+>>>>      memory-hotplug: update mce_bad_pages when removing the memory
+>>
+>>>>      memory-hotplug: auto offline page_cgroup when onlining memory block
+>>>>        failed
+>>
+>> mm-tree
+>>
+>>>>      memory-hotplug: fix NR_FREE_PAGES mismatch
+>>
+>> mm-tree
+>>
+>>>>      memory-hotplug: allocate zone's pcp before onlining pages
+>>
+>> mm-tree
+>>
+>>>>
+>>>> Yasuaki Ishimatsu (3):
+>>>>      suppress "Device memoryX does not have a release() function" warning
+>>
+>> linux-next
+>>
+>>>>      suppress "Device nodeX does not have a release() function" warning
+>>>>      memory-hotplug: flush the work for the node when the node is offlined
+>>
+>> linux-next
+> 
+> I split this patch to two patches according to kosaki's comment.
+
+Yeah, I know. But is the patch really need now?
+
+Thanks,
+Yasuaki Ishimatsu
+
+> 
+> Thanks
+> Wen Congyang
+> 
+>>
+>> Thanks,
+>> Yasuaki Ishimatsu
+>>
+>>> Why did you send same patches again?
+>>>
+>>> Thanks,
+>>> Yasuaki Ishimatsu
+>>>
+>>> 2012/10/19 15:46, wency@cn.fujitsu.com wrote:
+>>>> From: Wen Congyang <wency@cn.fujitsu.com>
+>>>>
+>>>> Changes from v2 to v3:
+>>>>      Merge the bug fix from ishimatsu to this patchset(Patch 1-3)
+>>>>      Patch 3: split it from patch as it fixes another bug.
+>>>>      Patch 4: new patch, and fix bad-page state when hotadding a memory
+>>>>               device after hotremoving it. I forgot to post this patch in v2.
+>>>>      Patch 6: update it according to Dave Hansen's comment.
+>>>>
+>>>> Changes from v1 to v2:
+>>>>      Patch 1: updated according to kosaki's suggestion
+>>>>
+>>>>      Patch 2: new patch, and update mce_bad_pages when removing memory.
+>>>>
+>>>>      Patch 4: new patch, and fix a NR_FREE_PAGES mismatch, and this bug
+>>>>               cause oom in my test.
+>>>>
+>>>>      Patch 5: new patch, and fix a new bug. When repeating to online/offline
+>>>>               pages, the free pages will continue to decrease.
+>>>>
+>>>> Wen Congyang (6):
+>>>>      clear the memory to store struct page
+>>>>      memory-hotplug: skip HWPoisoned page when offlining pages
+>>>>      memory-hotplug: update mce_bad_pages when removing the memory
+>>>>      memory-hotplug: auto offline page_cgroup when onlining memory block
+>>>>        failed
+>>>>      memory-hotplug: fix NR_FREE_PAGES mismatch
+>>>>      memory-hotplug: allocate zone's pcp before onlining pages
+>>>>
+>>>> Yasuaki Ishimatsu (3):
+>>>>      suppress "Device memoryX does not have a release() function" warning
+>>>>      suppress "Device nodeX does not have a release() function" warning
+>>>>      memory-hotplug: flush the work for the node when the node is offlined
+>>>>
+>>>>     drivers/base/memory.c          |    9 ++++++++-
+>>>>     drivers/base/node.c            |   11 +++++++++++
+>>>>     include/linux/page-isolation.h |   10 ++++++----
+>>>>     mm/memory-failure.c            |    2 +-
+>>>>     mm/memory_hotplug.c            |   14 ++++++++------
+>>>>     mm/page_alloc.c                |   37 ++++++++++++++++++++++++++++---------
+>>>>     mm/page_cgroup.c               |    3 +++
+>>>>     mm/page_isolation.c            |   27 ++++++++++++++++++++-------
+>>>>     mm/sparse.c                    |   22 +++++++++++++++++++++-
+>>>>     9 files changed, 106 insertions(+), 29 deletions(-)
+>>>>
+>>>
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>
+>>
+>>
+> 
+
+
