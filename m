@@ -1,35 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab2JSC2W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:28:22 -0400
-Received: from ozlabs.org ([203.10.76.45]:60415 "EHLO ozlabs.org"
+	id S1752266Ab2JSC2Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:28:25 -0400
+Received: from ozlabs.org ([203.10.76.45]:58466 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751928Ab2JSC2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751953Ab2JSC2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Oct 2012 22:28:20 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Josh Boyer <jwboyer@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, David Howells <dhowells@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: sign the modules at install time
-In-Reply-To: <CA+5PVA4fE7uaxNobBMtUs7QUWA2XfM_2oKtLhb7DFRisJLy+4Q@mail.gmail.com>
-References: <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com> <87txtso9xw.fsf@rustcorp.com.au> <CA+55aFxZdtD51AVKLtKK95ooh8VB8-5Tt8nHsxSUT67CBRrp2g@mail.gmail.com> <871ugwny1n.fsf@rustcorp.com.au> <CA+55aFwTz6xadNL37H6Qb8+rWNefn0cQ0URFPfD=Ea=J54xzGg@mail.gmail.com> <CA+5PVA4fE7uaxNobBMtUs7QUWA2XfM_2oKtLhb7DFRisJLy+4Q@mail.gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, mtk.manpages@gmail.com
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        James Morris <james.l.morris@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
+In-Reply-To: <508011AD.5080307@zytor.com>
+References: <1348179300-11653-1-git-send-email-keescook@chromium.org> <CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com> <50749DE8.7010703@zytor.com> <CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com> <5074A0AB.8040207@zytor.com> <87d30o7iy6.fsf@rustcorp.com.au> <507F848F.50707@zytor.com> <CAKgNAki+KV=Nh8D3La50uXpWv7PA5T-oPYJwK-PkOv5vMg0AqA@mail.gmail.com> <508011AD.5080307@zytor.com>
 User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Fri, 19 Oct 2012 11:18:03 +1030
-Message-ID: <87lif3p9rw.fsf@rustcorp.com.au>
+Date: Fri, 19 Oct 2012 12:53:14 +1030
+Message-ID: <87a9vjp5d9.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Josh Boyer <jwboyer@gmail.com> writes:
-> It might even be able to be moved entirely into scripts/Makefile.modinst
-> but I haven't gotten that far yet.
+"H. Peter Anvin" <hpa@zytor.com> writes:
+> Given that, I have to say I now seriously question the value of 
+> finit_module().  The kernel can trivially discover if the pointed-to 
+> memory area is a MAP_SHARED mmap() of a file descriptor and if so which 
+> file descriptor... why can't we handle this behind the scenes?
 
-Thanks, I'll add this.
+It is a bit more indirect, but also in practice it's a bit trickier than
+that.  We need to ensure the memory doesn't change underneath us and
+stays attached to that fd.  I can easily see that code slipping and
+ending in an exploit.
 
-Note it was word-wrapped here though :(
+But that may be my irrational fear of the mm :)
 
 Cheers,
 Rusty.
