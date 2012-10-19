@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab2JSA6I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 20:58:08 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47830 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab2JSA6F (ORCPT
+	id S1756625Ab2JSBAU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 21:00:20 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:17001 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713Ab2JSBAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 20:58:05 -0400
-Date: Thu, 18 Oct 2012 17:58:01 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Is not locking task_lock in cgroup_fork() safe?
-Message-ID: <20121019005801.GF13370@google.com>
-References: <20121008020000.GB2575@localhost>
- <CAFTL4hzXWtzp7megsCAEuak5=_2SWmp9age-+wrpyQAU4BRZ0w@mail.gmail.com>
- <20121016193341.GD16166@google.com>
- <CAFTL4hzo_w7HTgC9ApTk113X8WdZSpV+D+VSEe=604YEJFmKsg@mail.gmail.com>
- <20121018200705.GG13370@google.com>
- <CAFTL4hy7g4e11OUOyoihrEU8hiVgZoV1=141UtUpj9a72SNs_Q@mail.gmail.com>
- <20121019003835.GE13370@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121019003835.GE13370@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 18 Oct 2012 21:00:18 -0400
+X-AuditID: cbfee61b-b7fd46d0000046e0-8e-5080a6217f8b
+Message-id: <5080A61F.1080206@samsung.com>
+Date: Fri, 19 Oct 2012 10:00:15 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [GIT PULL] extcon fixes for Linux 3.6
+References: <50762167.8060806@samsung.com> <20121018172403.GA29562@kroah.com>
+In-reply-to: <20121018172403.GA29562@kroah.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFLMWRmVeSWpSXmKPExsVy+t9jAV3FZQ0BBhdf8Ftc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6M170zGQsesFfse7yPpYFxEVsXIyeHhICJxPP2F+wQtpjEhXvr
+	geJcHEICixgl1k6cyAjhdDFJvOv9DlbFK6AlcXfFdDCbRUBVYsvBX2CT2IDi+1/cALI5OEQF
+	IiR+9XNAlAtK/Jh8jwXEFhHQkHh59BYLyExmgeWMEkevPgebIyxgJDH/ywGwIiEBX4l3XRuY
+	QWxOAX2Jl1eeMoLYzAI6Evtbp7FB2PISm9e8ZZ7AKDALyY5ZSMpmISlbwMi8ilE0tSC5oDgp
+	PddIrzgxt7g0L10vOT93EyM4BJ9J72Bc1WBxiFGAg1GJh/dyT32AEGtiWXFl7iFGCQ5mJRHe
+	lZuAQrwpiZVVqUX58UWlOanFhxilOViUxHmbPVIChATSE0tSs1NTC1KLYLJMHJxSDYwZfDd0
+	M6VuiYZUnGWaIm1zJNhUW/zrPab5Jm57tlvLf/DKsshJDzKvaPvDPdf26/L1z+4sPtXFsivo
+	2xKBrIV2X9nihIU3KN/PqrXZ9vzyj/YLszw1Em8cO3+xTTbu5sbTW7rvm3vOadefyDrBN7lY
+	v5ibTcXsw8Z9fce5p9Q5N5beO3V53lslluKMREMt5qLiRAA8CnZUPQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, again.
-
-On Thu, Oct 18, 2012 at 05:38:35PM -0700, Tejun Heo wrote:
-> Even if there isn't an actual race, the comment is dead wrong.  I'm
-> reverting the following three patches.  Let's try again later.
+On 10/19/2012 02:24 AM, Greg KH wrote:
+> On Thu, Oct 11, 2012 at 10:31:19AM +0900, Chanwoo Choi wrote:
+>> Hi Greg,
+>>
+>> Please pull extcon fixes for Linux 3.6 from:
+>>
+>>     git://git.infradead.org/users/kmpark/linux-samsung extcon-for-next
+>>
+>> I've been creating "extcon-for-next" tree at git.infradead.org
+>> and rebasing the branch base on your
+>> driver-core.git(branch:driver-core-next).
+>>
+>> This tree contains various small bugfixes and enhancements, fix typos.
+>> And extcon-max77693 initialize MUIC register during probe()
+>> to unmask internal interrupt of max77693 MUIC device.
 > 
->   7e381b0eb1 ("cgroup: Drop task_lock(parent) on cgroup_fork()")
->   7e3aa30ac8 ("cgroup: Remove task_lock() from cgroup_post_fork()")
+> Now that you have a kernel.org account, can you move this tree to
+> git.kernel.org, and provide me a signed tag to pull from for this set of
+> patches to go into 3.7?
+> 
 
-So, after some more looking, I think the following is correct and
-doesn't need to be reverted.  It's depending on threadgroup locking
-from migration path to synchronize against exit path which is always
-performed.
+OK, I will move extcon tree to git.kernel.org when extcon git repository is created
+and request pull extcon patches with a signed tag  from extcon tree to go into 3.7.
 
->   c84cdf75cc ("cgroup: Remove unnecessary task_lock before fetching css_set on migration")
-
-Frederic, were you trying to say that the above commit is correct?
-Li, do you agree?
-
-Thanks.
-
--- 
-tejun
+Best Regards,
+Chanwoo Choi
