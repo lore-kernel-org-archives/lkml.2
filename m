@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758068Ab2JSDRl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:17:41 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54545 "EHLO mail.kernel.org"
+	id S932888Ab2JSDVJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:21:09 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54599 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964969Ab2JSDRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:33 -0400
+	id S1758066Ab2JSDRl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>,
+        Rafal Fitt <rafalf@aplusc.com.pl>, Patrick McHardy <kaber@trash.net>,
         Pablo Neira Ayuso <pablo@netfilter.org>,
         David Miller <davem@davemloft.net>
-Subject: [ 20/37] ipvs: fix oops in ip_vs_dst_event on rmmod
-Date: Thu, 18 Oct 2012 20:16:43 -0700
-Message-Id: <20121019031306.102504876@linuxfoundation.org>
+Subject: [ 26/37] netfilter: nf_ct_expect: fix possible access to uninitialized timer
+Date: Thu, 18 Oct 2012 20:16:49 -0700
+Message-Id: <20121019031307.062451399@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -27,52 +27,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julian Anastasov <ja@ssi.bg>
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-commit 283283c4da91adc44b03519f434ee1e7e91d6fdb upstream.
+commit 2614f86490122bf51eb7c12ec73927f1900f4e7d upstream.
 
-	After commit 39f618b4fd95ae243d940ec64c961009c74e3333 (3.4)
-"ipvs: reset ipvs pointer in netns" we can oops in
-ip_vs_dst_event on rmmod ip_vs because ip_vs_control_cleanup
-is called after the ipvs_core_ops subsys is unregistered and
-net->ipvs is NULL. Fix it by exiting early from ip_vs_dst_event
-if ipvs is NULL. It is safe because all services and dests
-for the net are already freed.
+In __nf_ct_expect_check, the function refresh_timer returns 1
+if a matching expectation is found and its timer is successfully
+refreshed. This results in nf_ct_expect_related returning 0.
+Note that at this point:
 
-Signed-off-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Simon Horman <horms@verge.net.au>
+- the passed expectation is not inserted in the expectation table
+  and its timer was not initialized, since we have refreshed one
+  matching/existing expectation.
+
+- nf_ct_expect_alloc uses kmem_cache_alloc, so the expectation
+  timer is in some undefined state just after the allocation,
+  until it is appropriately initialized.
+
+This can be a problem for the SIP helper during the expectation
+addition:
+
+ ...
+ if (nf_ct_expect_related(rtp_exp) == 0) {
+         if (nf_ct_expect_related(rtcp_exp) != 0)
+                 nf_ct_unexpect_related(rtp_exp);
+ ...
+
+Note that nf_ct_expect_related(rtp_exp) may return 0 for the timer refresh
+case that is detailed above. Then, if nf_ct_unexpect_related(rtcp_exp)
+returns != 0, nf_ct_unexpect_related(rtp_exp) is called, which does:
+
+ spin_lock_bh(&nf_conntrack_lock);
+ if (del_timer(&exp->timeout)) {
+         nf_ct_unlink_expect(exp);
+         nf_ct_expect_put(exp);
+ }
+ spin_unlock_bh(&nf_conntrack_lock);
+
+Note that del_timer always returns false if the timer has been
+initialized.  However, the timer was not initialized since setup_timer
+was not called, therefore, the expectation timer remains in some
+undefined state. If I'm not missing anything, this may lead to the
+removal an unexistent expectation.
+
+To fix this, the optimization that allows refreshing an expectation
+is removed. Now nf_conntrack_expect_related looks more consistent
+to me since it always add the expectation in case that it returns
+success.
+
+Thanks to Patrick McHardy for participating in the discussion of
+this patch.
+
+I think this may be the source of the problem described by:
+http://marc.info/?l=netfilter-devel&m=134073514719421&w=2
+
+Reported-by: Rafal Fitt <rafalf@aplusc.com.pl>
+Acked-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Acked-by: David Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/ipvs/ip_vs_ctl.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ net/netfilter/nf_conntrack_expect.c |   29 ++++++-----------------------
+ 1 file changed, 6 insertions(+), 23 deletions(-)
 
---- a/net/netfilter/ipvs/ip_vs_ctl.c
-+++ b/net/netfilter/ipvs/ip_vs_ctl.c
-@@ -1520,11 +1520,12 @@ static int ip_vs_dst_event(struct notifi
+--- a/net/netfilter/nf_conntrack_expect.c
++++ b/net/netfilter/nf_conntrack_expect.c
+@@ -364,23 +364,6 @@ static void evict_oldest_expect(struct n
+ 	}
+ }
+ 
+-static inline int refresh_timer(struct nf_conntrack_expect *i)
+-{
+-	struct nf_conn_help *master_help = nfct_help(i->master);
+-	const struct nf_conntrack_expect_policy *p;
+-
+-	if (!del_timer(&i->timeout))
+-		return 0;
+-
+-	p = &rcu_dereference_protected(
+-		master_help->helper,
+-		lockdep_is_held(&nf_conntrack_lock)
+-		)->expect_policy[i->class];
+-	i->timeout.expires = jiffies + p->timeout * HZ;
+-	add_timer(&i->timeout);
+-	return 1;
+-}
+-
+ static inline int __nf_ct_expect_check(struct nf_conntrack_expect *expect)
  {
- 	struct net_device *dev = ptr;
- 	struct net *net = dev_net(dev);
-+	struct netns_ipvs *ipvs = net_ipvs(net);
- 	struct ip_vs_service *svc;
- 	struct ip_vs_dest *dest;
- 	unsigned int idx;
+ 	const struct nf_conntrack_expect_policy *p;
+@@ -388,7 +371,7 @@ static inline int __nf_ct_expect_check(s
+ 	struct nf_conn *master = expect->master;
+ 	struct nf_conn_help *master_help = nfct_help(master);
+ 	struct net *net = nf_ct_exp_net(expect);
+-	struct hlist_node *n;
++	struct hlist_node *n, *next;
+ 	unsigned int h;
+ 	int ret = 1;
  
--	if (event != NETDEV_UNREGISTER)
-+	if (event != NETDEV_UNREGISTER || !ipvs)
- 		return NOTIFY_DONE;
- 	IP_VS_DBG(3, "%s() dev=%s\n", __func__, dev->name);
- 	EnterFunction(2);
-@@ -1550,7 +1551,7 @@ static int ip_vs_dst_event(struct notifi
- 		}
+@@ -399,12 +382,12 @@ static inline int __nf_ct_expect_check(s
+ 		goto out;
  	}
- 
--	list_for_each_entry(dest, &net_ipvs(net)->dest_trash, n_list) {
-+	list_for_each_entry(dest, &ipvs->dest_trash, n_list) {
- 		__ip_vs_dev_reset(dest, dev);
- 	}
- 	mutex_unlock(&__ip_vs_mutex);
+ 	h = nf_ct_expect_dst_hash(&expect->tuple);
+-	hlist_for_each_entry(i, n, &net->ct.expect_hash[h], hnode) {
++	hlist_for_each_entry_safe(i, n, next, &net->ct.expect_hash[h], hnode) {
+ 		if (expect_matches(i, expect)) {
+-			/* Refresh timer: if it's dying, ignore.. */
+-			if (refresh_timer(i)) {
+-				ret = 0;
+-				goto out;
++			if (del_timer(&i->timeout)) {
++				nf_ct_unlink_expect(i);
++				nf_ct_expect_put(i);
++				break;
+ 			}
+ 		} else if (expect_clash(i, expect)) {
+ 			ret = -EBUSY;
 
 
