@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161061Ab2JSDfV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:35:21 -0400
-Received: from mail.kernel.org ([198.145.19.201]:50988 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751811Ab2JSCqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:46:45 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Malahal Naineni <malahal@us.ibm.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 03/62] NFSD: pass null terminated buf to kstrtouint()
-Date: Thu, 18 Oct 2012 19:44:31 -0700
-Message-Id: <20121019024256.474759759@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
-References: <20121019024255.944999470@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1752493Ab2JSDwX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:52:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59166 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab2JSDwW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:52:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121017165401.cc343861.akpm@linux-foundation.org>
+References: <1350403183-12650-1-git-send-email-ming.lei@canonical.com>
+	<1350403183-12650-2-git-send-email-ming.lei@canonical.com>
+	<20121016131933.c196457a.akpm@linux-foundation.org>
+	<CACVXFVPRsHTf85bTsHUWgHV2b7LBASGQ2s_9Kx9-ZCHv5WDuQQ@mail.gmail.com>
+	<20121017165401.cc343861.akpm@linux-foundation.org>
+Date: Fri, 19 Oct 2012 11:52:19 +0800
+Message-ID: <CACVXFVNwZp0e=5vu4NFePnU=y6TaSKs4qS7q7j1cfRuQ42Ms9g@mail.gmail.com>
+Subject: Re: [RFC PATCH v1 1/3] mm: teach mm by current context info to not do
+ I/O during memory allocation
+From: Ming Lei <ming.lei@canonical.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
+        Jiri Kosina <jiri.kosina@suse.com>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-mm <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Oct 18, 2012 at 7:54 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+>
+> local_irq_save() and local_irq_restore() were mistakes :( It's silly to
+> write what appears to be a C function and then have it operate like
+> Pascal (warning: I last wrote some Pascal in 66 B.C.).
 
-------------------
+Considered that spin_lock_irqsave/spin_unlock_irqrestore also follow
+the style, kernel guys have been accustomed to the usage, I am
+inclined to keep that as macro, :-)
 
-From: Malahal Naineni <malahal@us.ibm.com>
+>> IMO, renaming as memalloc_noio_set() might not be better than _save
+>> because the _set name doesn't indicate that the flag should be stored first.
+>
+> You could add __must_check to the function definition to ensure that
+> all callers save its return value.
 
-commit 9959ba0c241a71c7ed8133401cfbbee2720da0b5 upstream.
+Yes, we can do that, but the function name is not better than _save
+from readability.
 
-The 'buf' is prepared with null termination with intention of using it for
-this purpose, but 'name' is passed instead!
-
-Signed-off-by: Malahal Naineni <malahal@us.ibm.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/nfsd/nfs4idmap.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/fs/nfsd/nfs4idmap.c
-+++ b/fs/nfsd/nfs4idmap.c
-@@ -581,7 +581,7 @@ numeric_name_to_id(struct svc_rqst *rqst
- 	/* Just to make sure it's null-terminated: */
- 	memcpy(buf, name, namelen);
- 	buf[namelen] = '\0';
--	ret = kstrtouint(name, 10, id);
-+	ret = kstrtouint(buf, 10, id);
- 	return ret == 0;
- }
- 
-
-
+Thanks,
+--
+Ming Lei
