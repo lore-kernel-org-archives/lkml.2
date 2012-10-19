@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933071Ab2JSWHp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 18:07:45 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:55829 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932400Ab2JSWHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 18:07:43 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, arvind.chauhan@arm.com
-Subject: Re: [PATCH 1/2] cpufreq: return early from __cpufreq_driver_getavg()
-Date: Sat, 20 Oct 2012 00:11:29 +0200
-Message-ID: <2737823.2JYE7UmLRN@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <32e5bed743cc6cc4e614291a7080299f5f0d0933.1350677395.git.viresh.kumar@linaro.org>
-References: <32e5bed743cc6cc4e614291a7080299f5f0d0933.1350677395.git.viresh.kumar@linaro.org>
+	id S933082Ab2JSWIM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 18:08:12 -0400
+Received: from mail-da0-f56.google.com ([209.85.210.56]:61092 "EHLO
+	mail-da0-f56.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932400Ab2JSWIK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 18:08:10 -0400
+X-Greylist: delayed 5156 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Oct 2012 18:08:10 EDT
+Path: glegroupsg2000goo.googlegroups.com!not-for-mail
+Newsgroups: fa.linux.kernel
+Date: Fri, 19 Oct 2012 13:42:12 -0700 (PDT)
+In-Reply-To: <fa.eH+BpYDdp4xIWE4V+wJu6hFrVxM@ifi.uio.no>
+Complaints-To: groups-abuse@google.com
+Injection-Info: glegroupsg2000goo.googlegroups.com; posting-host=12.54.94.21; posting-account=xi0WOAoAAACnQKCn54iceAmaVmqGb9zN
+NNTP-Posting-Host: 12.54.94.21
+References: <fa.1zfuXwqYK6u81uBoo3IdpawcpWw@ifi.uio.no> <fa.p3cpkKIGUNv0/iot3o7KT9bb98M@ifi.uio.no>
+ <fa.iPHW7usT23k+cCA19L3eXEDu91Q@ifi.uio.no> <fa.7eOK+XcsKUWU4ZXhBj2K6znxrvc@ifi.uio.no>
+ <fa.VGxfKOh1Z07X1TXm5PxMIlV4xu8@ifi.uio.no> <fa.eH+BpYDdp4xIWE4V+wJu6hFrVxM@ifi.uio.no>
+User-Agent: G2/1.0
+X-Google-Web-Client: true
+X-Google-IP: 12.54.94.21
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Message-ID: <b0b75b2b-961b-487a-ab03-2362c65d6972@googlegroups.com>
+Subject: Re: x2apic boot failure on recent sandy bridge system
+From: rrl125@gmail.com
+To: fa.linux.kernel@googlegroups.com
+Cc: "Berck E. Nash" <flyboy@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 20 of October 2012 01:42:05 Viresh Kumar wrote:
-> There is no need to do cpufreq_get_cpu() and cpufreq_put_cpu() for drivers that
-> don't support getavg() routine.
+Any update? The messages just seem to have stopped months ago. A fallback would be nice, I have been booting the kernel with noa2xpic for since kernel 3.2, and currently I am working with 3.6.2.
+
+If needed I can try to attempt modifying the patch to include fallback, but I am probably not the best person to do it.
+
+On Sunday, December 18, 2011 3:49:27 AM UTC-5, Ingo Molnar wrote:
+> * Berck E. Nash <flyboy@gmail.com> wrote:
 > 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-
-The patch doesn't seem to follow the changelog or the other way around.
-
-Thanks,
-Rafael
-
-
-> ---
->  drivers/cpufreq/cpufreq.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 85df538..f552d5f 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1511,12 +1511,14 @@ int __cpufreq_driver_getavg(struct cpufreq_policy *policy, unsigned int cpu)
->  {
->  	int ret = 0;
->  
-> +	if (!(cpu_online(cpu) && cpufreq_driver->getavg))
-> +		return 0;
-> +
->  	policy = cpufreq_cpu_get(policy->cpu);
->  	if (!policy)
->  		return -EINVAL;
->  
-> -	if (cpu_online(cpu) && cpufreq_driver->getavg)
-> -		ret = cpufreq_driver->getavg(policy, cpu);
-> +	ret = cpufreq_driver->getavg(policy, cpu);
->  
->  	cpufreq_cpu_put(policy);
->  	return ret;
 > 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> > On 12/12/2011 10:13 PM, Yinghai Lu wrote:
+> 
+> > > please check -v7.
+> 
+> > 
+> 
+> > Works just fine for me.
+> 
+> 
+> 
+> That's interesting.
+> 
+> 
+> 
+> Now if this could be made completely automatic (no extra 
+> 
+> parameter passing), then we have a usable fallback mode - which 
+> 
+> is preferred to crashing the box.
+> 
+> 
+> 
+> Thanks,
+> 
+> 
+> 
+> 	Ingo
+> 
+> --
+> 
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> 
+> the body of a message to majordomo@vger.kernel.org
+> 
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> Please read the FAQ at  http://www.tux.org/lkml/
+
