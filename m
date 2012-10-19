@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab2JSBYr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 21:24:47 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32073 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222Ab2JSBYq (ORCPT
+	id S1756841Ab2JSB3w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 21:29:52 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:43126 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab2JSB3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 21:24:46 -0400
-Message-ID: <5080ABD7.90006@oracle.com>
-Date: Fri, 19 Oct 2012 09:24:39 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+	Thu, 18 Oct 2012 21:29:50 -0400
+Date: Thu, 18 Oct 2012 18:29:45 -0700
+From: Matt Helsley <matthltc@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Matt Helsley <matthltc@linux.vnet.ibm.com>, rjw@sisk.pl, oleg@redhat.com,
+        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.8] cgroup_freezer: allow migration
+ regardless of freezer state and update locking
+Message-ID: <20121019012945.GD6223@us.ibm.com>
+References: <1350426526-14254-1-git-send-email-tj@kernel.org>
+ <20121017191606.GA6223@us.ibm.com>
+ <20121018211434.GI13370@google.com>
+ <20121018222155.GB6223@us.ibm.com>
+ <20121018223517.GQ13370@google.com>
+ <20121018234726.GC6223@us.ibm.com>
+ <20121019000153.GZ13370@google.com>
 MIME-Version: 1.0
-To: Ron Mercer <ron.mercer@qlogic.com>, Linux-Driver@qlogic.com,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        Joe Jin <joe.jin@oracle.com>
-CC: netdev <netdev@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Greg Marsden <greg.marsden@oracle.com>
-Subject: [PATCH] qla3xxx: Ensure request/response queue addr writes to the
- registers
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121019000153.GZ13370@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101901-7606-0000-0000-0000049F7ECE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before use the request and response queue addr, make sure it has wrote
-to the registers.
+On Thu, Oct 18, 2012 at 05:01:53PM -0700, Tejun Heo wrote:
 
-Signed-off-by: Joe Jin <joe.jin@oracle.com>
-Cc: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
-Cc: Ron Mercer <ron.mercer@qlogic.com>
----
- drivers/net/ethernet/qlogic/qla3xxx.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+<snip>
+> I probably have chosen the wrong word.  I mean that it's a hierarchy
+> management feature implemented at the wrong layer.  If we want to
+> provide cgroup migration locking, it should be implemented at the
+> cgroup core layer as a controller independent feature.  It's kinda
+> interesting the incorrect layering here almost directly caused messy
+> locking problem too.  I hope we don't need it with (the imaginary)
+> proper userland arbitration but even if we do implementing it in
+> cgroup proper as a separate feature would be a lot less messy.
 
-diff --git a/drivers/net/ethernet/qlogic/qla3xxx.c b/drivers/net/ethernet/qlogic/qla3xxx.c
-index df09b1c..f745ade 100644
---- a/drivers/net/ethernet/qlogic/qla3xxx.c
-+++ b/drivers/net/ethernet/qlogic/qla3xxx.c
-@@ -2525,6 +2525,12 @@ static int ql_alloc_net_req_rsp_queues(struct ql3_adapter *qdev)
- 	qdev->req_q_size =
- 	    (u32) (NUM_REQ_Q_ENTRIES * sizeof(struct ob_mac_iocb_req));
- 
-+	/*
-+	 * The barrier is required to ensure request and response queue
-+	 * addr writes to the registers.
-+	 */
-+	wmb();
-+
- 	qdev->req_q_virt_addr =
- 	    pci_alloc_consistent(qdev->pdev,
- 				 (size_t) qdev->req_q_size,
--- 
-1.7.11.7
+Yeah, that would be a nice cleanup too. I guess the ultra-careful way to
+remove this feature would be something like:
+
+	Add an internal migration restriction (which may or may not be
+		exported as a userspace interface in a subsequent
+		patch).
+
+	Make the cgroup freezer use it.
+
+	Make the cgroup freezer WARN_ONCE() when the subsystem is first
+		mounted. Indicates that the behavior is going to
+		change.
+
+	... time passes ...
+
+	Remove the use of the migration "lock" from the cgroup freezer
+		and the WARN_ONCE().
+
+Which would also make the feature more obvious.
+
+Cheers,
+	-Matt
 
