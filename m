@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569Ab2JSCwq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:52:46 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52644 "EHLO mail.kernel.org"
+	id S965077Ab2JSCtj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:49:39 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52486 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030183Ab2JSCtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:49:41 -0400
+	id S965033Ab2JSCt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:49:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Adam Jackson <ajax@redhat.com>, Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 61/76] drm/i915: use adjusted_mode instead of mode for checking the 6bpc force flag
-Date: Thu, 18 Oct 2012 19:47:25 -0700
-Message-Id: <20121019024359.935160053@linuxfoundation.org>
+        Ondrej Zary <linux@rainbow-software.org>,
+        Michael Leun <lkml20120218@newton.leun.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 62/76] mcs7830: Fix link state detection
+Date: Thu, 18 Oct 2012 19:47:26 -0700
+Message-Id: <20121019024400.104361357@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -26,65 +27,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Ondrej Zary <linux@rainbow-software.org>
 
-commit 0c96c65b48fba3ffe9822a554cbc0cd610765cd5 upstream.
+commit dabdaf0caa3af520dbc1df87b2fb4e77224037bd upstream.
 
-The dithering introduced in
+The device had an undocumented "feature": it can provide a sequence of
+spurious link-down status data even if the link is up all the time.
+A sequence of 10 was seen so update the link state only after the device
+reports the same link state 20 times.
 
-commit 3b5c78a35cf7511c15e09a9b0ffab290a42d9bcf
-Author: Adam Jackson <ajax@redhat.com>
-Date:   Tue Dec 13 15:41:00 2011 -0800
-
-    drm/i915/dp: Dither down to 6bpc if it makes the mode fit
-
-stores the INTEL_MODE_DP_FORCE_6BPC flag in the private_flags of the
-adjusted mode, while i9xx_crtc_mode_set() and ironlake_crtc_mode_set() use
-the original mode, without the flag, so it would never have any
-effect. However, the BPC was clamped by VBT settings, making things work by
-coincidence, until that part was removed in
-
-commit 4344b813f105a19f793f1fd93ad775b784648b95
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Fri Aug 10 11:10:20 2012 +0200
-
-Use adjusted_mode instead of mode when checking for
-INTEL_MODE_DP_FORCE_6BPC to make the flag have effect.
-
-v2: Don't forget to fix this in i9xx_crtc_mode_set() also, pointed out by
-Daniel both before and after sending the first patch.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=47621
-CC: Adam Jackson <ajax@redhat.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Reviewed-by: Adam Jackson <ajax@redhat.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Reported-by: Michael Leun <lkml20120218@newton.leun.net>
+Tested-by: Michael Leun <lkml20120218@newton.leun.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/gpu/drm/i915/intel_display.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/usb/mcs7830.c |   30 +++++++++++++++++++++---------
+ 1 file changed, 21 insertions(+), 9 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4351,7 +4351,7 @@ static int i9xx_crtc_mode_set(struct drm
- 	/* default to 8bpc */
- 	pipeconf &= ~(PIPECONF_BPP_MASK | PIPECONF_DITHER_EN);
- 	if (is_dp) {
--		if (mode->private_flags & INTEL_MODE_DP_FORCE_6BPC) {
-+		if (adjusted_mode->private_flags & INTEL_MODE_DP_FORCE_6BPC) {
- 			pipeconf |= PIPECONF_BPP_6 |
- 				    PIPECONF_DITHER_EN |
- 				    PIPECONF_DITHER_TYPE_SP;
-@@ -4705,7 +4705,7 @@ static int ironlake_crtc_mode_set(struct
- 	/* determine panel color depth */
- 	temp = I915_READ(PIPECONF(pipe));
- 	temp &= ~PIPE_BPC_MASK;
--	dither = intel_choose_pipe_bpp_dither(crtc, &pipe_bpp, mode);
-+	dither = intel_choose_pipe_bpp_dither(crtc, &pipe_bpp, adjusted_mode);
- 	switch (pipe_bpp) {
- 	case 18:
- 		temp |= PIPE_6BPC;
+--- a/drivers/net/usb/mcs7830.c
++++ b/drivers/net/usb/mcs7830.c
+@@ -117,6 +117,7 @@ enum {
+ struct mcs7830_data {
+ 	u8 multi_filter[8];
+ 	u8 config;
++	u8 link_counter;
+ };
+ 
+ static const char driver_name[] = "MOSCHIP usb-ethernet driver";
+@@ -632,20 +633,31 @@ static int mcs7830_rx_fixup(struct usbne
+ static void mcs7830_status(struct usbnet *dev, struct urb *urb)
+ {
+ 	u8 *buf = urb->transfer_buffer;
+-	bool link;
++	bool link, link_changed;
++	struct mcs7830_data *data = mcs7830_get_data(dev);
+ 
+ 	if (urb->actual_length < 16)
+ 		return;
+ 
+ 	link = !(buf[1] & 0x20);
+-	if (netif_carrier_ok(dev->net) != link) {
+-		if (link) {
+-			netif_carrier_on(dev->net);
+-			usbnet_defer_kevent(dev, EVENT_LINK_RESET);
+-		} else
+-			netif_carrier_off(dev->net);
+-		netdev_dbg(dev->net, "Link Status is: %d\n", link);
+-	}
++	link_changed = netif_carrier_ok(dev->net) != link;
++	if (link_changed) {
++		data->link_counter++;
++		/*
++		   track link state 20 times to guard against erroneous
++		   link state changes reported sometimes by the chip
++		 */
++		if (data->link_counter > 20) {
++			data->link_counter = 0;
++			if (link) {
++				netif_carrier_on(dev->net);
++				usbnet_defer_kevent(dev, EVENT_LINK_RESET);
++			} else
++				netif_carrier_off(dev->net);
++			netdev_dbg(dev->net, "Link Status is: %d\n", link);
++		}
++	} else
++		data->link_counter = 0;
+ }
+ 
+ static const struct driver_info moschip_info = {
 
 
