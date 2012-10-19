@@ -1,121 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759167Ab2JSRnE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 13:43:04 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60459 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759078Ab2JSRnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 13:43:00 -0400
-Date: Fri, 19 Oct 2012 20:37:19 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Simon Haggett <simon.haggett@realvnc.com>
-CC: Li Yang <leoli@freescale.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCH 1/1] usb: gadget: Don't attempt to dequeue requests for a
- disabled USB endpoint on Freescale hardware
-Message-ID: <20121019173718.GA2738@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1350667166-3559-1-git-send-email-simon.haggett@realvnc.com>
+	id S932673Ab2JSRnh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 13:43:37 -0400
+Received: from e24smtp05.br.ibm.com ([32.104.18.26]:50808 "EHLO
+	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932260Ab2JSRnf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 13:43:35 -0400
+Message-ID: <50819140.8030806@linux.vnet.ibm.com>
+Date: Fri, 19 Oct 2012 14:43:28 -0300
+From: Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AqsLC8rIMeq19msA"
-Content-Disposition: inline
-In-Reply-To: <1350667166-3559-1-git-send-email-simon.haggett@realvnc.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: dri-devel@lists.freedesktop.org
+CC: David Airlie <airlied@linux.ie>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@au1.ibm.com>,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+Subject: radeon: RFC speed cap detection on ppc64
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101917-2362-0000-0000-000008BCBB16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---AqsLC8rIMeq19msA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The radeon driver does speed cap detection on the root PCI device for 
+the maximum speed with which the adapter can communicate. On ppc64 
+systems, however, the root device belongs to the Hypervisor, so the 
+current code would case a null pointer dereference.
 
-Hi,
+I propose to look for the outmost bus with a parent node and get speed 
+caps from it, though I suppose the cleaner way would be to inspect all 
+devices along the way and choose the smallest speed cap.
 
-On Fri, Oct 19, 2012 at 06:19:26PM +0100, Simon Haggett wrote:
-> Some gadget drivers may attempt to dequeue requests for an endpoint that =
-has
-> already been disabled. For example, in the UVC gadget driver, uvc_functio=
-n_set_alt()
-> will call usb_ep_disable() when alt setting 0 is selected. When the users=
-pace
-> application subsequently issues the VIDIOC_STREAMOFF ioctl, uvc_video_ena=
-ble()
-> invokes usb_ep_dequeue() to ensure that all requests have been cancelled.
+Does anyone have suggestions for this?
 
-bug is on uvc gadget, then. Laurent ?
+Thanks
 
-Also, fsl should be removed from the tree, I'm trying to persuade iMX
-folks to use drivers/usb/chipidea instead.
+--
+--- 
+/home/lucaskt/work/devdrivers/kernel/linux/drivers/gpu/drm/drm_pci.c 
+2012-09-26 10:06:00.280549928 -0300
++++ drm_pci.c	2012-09-26 15:38:51.121786353 -0300
+@@ -466,6 +466,19 @@
+  }
+  EXPORT_SYMBOL(drm_pci_exit);
 
-> For the Freescale High Speed Dual-Role USB controller, fsl_ep_dequeue() p=
-rovides
-> the implementation of usb_ep_dequeue(). If this is called for a disabled =
-endpoint,
-> a kernel oops will occur when the ep->ep.desc field is dereferenced (by e=
-p_index()).
-> fsl_ep_disable() sets this field to NULL, as well as deleting all pending=
- requests
-> for the endpoint.
->=20
-> This patch adds an additional check to fsl_ep_dequeue() to ensure that the
-> endpoint has not already been disabled before attempting to dequeue reque=
-sts.
->=20
-> Signed-off-by: Simon Haggett <simon.haggett@realvnc.com>
-> ---
->  drivers/usb/gadget/fsl_udc_core.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
->=20
-> diff --git a/drivers/usb/gadget/fsl_udc_core.c b/drivers/usb/gadget/fsl_u=
-dc_core.c
-> index 6ae70cb..acd513b 100644
-> --- a/drivers/usb/gadget/fsl_udc_core.c
-> +++ b/drivers/usb/gadget/fsl_udc_core.c
-> @@ -955,7 +955,10 @@ static int fsl_ep_dequeue(struct usb_ep *_ep, struct=
- usb_request *_req)
->  	int ep_num, stopped, ret =3D 0;
->  	u32 epctrl;
-> =20
-> -	if (!_ep || !_req)
-> +	/* Ensure that the ep and request are valid, and the ep is not
-> +	 * disabled
-> +	 */
-> +	if (!_ep || !_req || !ep->ep.desc)
->  		return -EINVAL;
-> =20
->  	spin_lock_irqsave(&ep->udc->lock, flags);
-> --=20
-> 1.7.4.1
->=20
++static struct pci_dev *drm_get_pcie_root_dev(struct pci_dev *dev)
++{
++	// Go up through all possible busses to get the info for the outmost bus
++	while (!pci_is_root_bus(dev->bus))
++		dev = dev->bus->parent->self;
++	
++	// In POWER architectures there's no PCI root device, so it should 
+just read
++	// the caps from the device itself
++	if (dev->bus->self != NULL)
++		return dev->bus->self;
++	else
++		return dev;
++}
++
+  int drm_pcie_get_speed_cap_mask(struct drm_device *dev, u32 *mask)
+  {
+  	struct pci_dev *root;
+@@ -479,7 +492,7 @@
+  	if (!pci_is_pcie(dev->pdev))
+  		return -EINVAL;
 
---=20
-balbi
+-	root = dev->pdev->bus->self;
++	root = drm_get_pcie_root_dev(dev->pdev);
 
---AqsLC8rIMeq19msA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+  	pos = pci_pcie_cap(root);
+  	if (!pos)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQgY/OAAoJEIaOsuA1yqRE9eMP+wUsM1/1Gfw+t5rlLkUsJlJL
-fygKxCgyQ+ZZKfkH3R7jzByWE3rs54sBwduB0HBaGT5bGeWaSgAoUs96UY78DiAC
-eLDl78iL8rMGkYhU4pRYWuZewue/dlmIkd84c5f9lQ5hg/6guD721aT7gaaC+nzb
-PnluAUizkD5hYt5ixv3I7DlXAyw0OwrCOBVwByHSKScQp1a2KBL8L75vCMK2YkFZ
-ssI5NfW18k/8XcjkMw22MyeCfaTuuwAl+Pv1v5eBZbhinFvdhpe75IxvwO867d6J
-EHw3p2UI3YP8c8SYHACIqW8a70eC8ESLLN42ObslUe8EcK8/j+pb0Xqu9yA/NbbL
-LG1ApoebAmRsKuZ55NgztZS9SG1Vrfk+qdO7s8nG5E6B3I0TCsxmL5LpovZc8tIQ
-uLERkGwdNfQq4QdViIYDy7iwLTOzwomNos4rMrlHwIdtmKPPf5TphhiISGd099co
-mIIFiYJXWfeiEZfEQHETnuithA7oqhPm3p1EnOAdQ8xxzzxoArEgJ2c71zM3HFUF
-JbHTzJGB59xoKZvMrwtX+GzINbUN2qup5AdTjN3cunxVQzJdd8QsJH7uhNRy928e
-I65LRfEGOmDDbaNjqNJ5Z/s/wTzAYgCh4r2TyyIIMR3c9TsDwZhcr92qx1dFCbZ2
-M+LmoCOGHmg3bV3gHbvI
-=1zoX
------END PGP SIGNATURE-----
+-- 
+Lucas Kannebley Tavares
+Software Engineer
+IBM Linux Technology Center
 
---AqsLC8rIMeq19msA--
