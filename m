@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758513Ab2JSW4v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 18:56:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59835 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758322Ab2JSW4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 18:56:50 -0400
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 2/2] MODSIGN: Cleanup .gitignore [ver #3]
-To: torvalds@linux-foundation.org, rusty@rustcorp.com.au
-Cc: dhowells@redhat.com, davem@davemloft.net, linux-kernel@vger.kernel.org
-Date: Fri, 19 Oct 2012 23:56:45 +0100
-Message-ID: <20121019225645.4319.65377.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20121019225637.4319.14343.stgit@warthog.procyon.org.uk>
-References: <20121019225637.4319.14343.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1758776Ab2JSW7T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 18:59:19 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61925 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758670Ab2JSW7S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 18:59:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20121019225140.31460.32873.stgit@warthog.procyon.org.uk>
+References: <20121019225140.31460.32873.stgit@warthog.procyon.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 19 Oct 2012 15:58:57 -0700
+X-Google-Sender-Auth: a1AUzfFgacFgnM7kO_3Od_I0XWw
+Message-ID: <CA+55aFyauaYYe=C1PAbhjHUECXSefPncv_COQ05J-zpF6-H7Zg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] MODSIGN: perlify sign-file and merge in x509keyid
+ [ver #2]
+To: David Howells <dhowells@redhat.com>
+Cc: rusty@rustcorp.com.au, davem@davemloft.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The module build process no longer creates intermediate files for module
-signing, so remove them from .gitignore.
+This version still seems to have some debug turds in it:
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+On Fri, Oct 19, 2012 at 3:51 PM, David Howells <dhowells@redhat.com> wrote:
+>
+> +       printk("Check for sig\n");
+> +
+...
+> +                       printk("Found sig\n");
+...
+> +#define DEBUG
 
- .gitignore |    6 ------
- 1 file changed, 6 deletions(-)
+Also, I wonder how standard this /usr/bin/perl is:
 
+> +#!/usr/bin/perl -w
 
-diff --git a/.gitignore b/.gitignore
-index 0f2f40f..92bd0e4 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -14,10 +14,6 @@
- *.o.*
- *.a
- *.s
--*.ko.unsigned
--*.ko.stripped
--*.ko.stripped.dig
--*.ko.stripped.sig
- *.ko
- *.so
- *.so.dbg
-@@ -95,6 +91,4 @@ GTAGS
- extra_certificates
- signing_key.priv
- signing_key.x509
--signing_key.x509.keyid
--signing_key.x509.signer
- x509.genkey
+and maybe we should use Unix best practices and make it do
 
+    #!/usr/bin/env perl
+
+instead?
+
+But I dunno, maybe /usr/bin/perl has become sufficiently standardized..
+
+              Linus
