@@ -1,59 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933062Ab2JSVwO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 17:52:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38737 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932972Ab2JSVwN (ORCPT
+	id S1945917Ab2JSVxe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 17:53:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55638 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932972Ab2JSVxd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 17:52:13 -0400
-From: Julius Werner <jwerner@chromium.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-kernel@vger.kernel.org, len.brown@intel.com, khilman@ti.com,
-        rjw@sisk.pl, deepthi@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        g.trinabh@gmail.com, snanda@chromium.org,
-        Lists Linaro-dev <linaro-dev@lists.linaro.org>,
-        Julius Werner <jwerner@chromium.org>
-Subject: [PATCH] acpi/cpuidle: reinitialize power_usage values when adding/removing C-states
-Date: Fri, 19 Oct 2012 14:50:46 -0700
-Message-Id: <1350683446-8244-1-git-send-email-jwerner@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <507FBC20.50004@linaro.org>
-References: <507FBC20.50004@linaro.org>
+	Fri, 19 Oct 2012 17:53:33 -0400
+Message-ID: <1350683562.2768.78.camel@twins>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (tip/s390 trees related)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 19 Oct 2012 23:52:42 +0200
+In-Reply-To: <20121018150209.GB17439@linux-mips.org>
+References: <20121018172201.b81dcc8fe40868256f532364@canb.auug.org.au>
+	 <20121018150209.GB17439@linux-mips.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When cpuidle drivers do not supply explicit power_usage values,
-cpuidle/driver.c inserts dummy values instead. When a running processor
-dynamically gains new C-states (e.g. after ACPI events), the power_usage
-values of those states will stay uninitialized, and cpuidle governors
-will never choose to enter them.
+On Thu, 2012-10-18 at 17:02 +0200, Ralf Baechle wrote:
+>   CC      mm/huge_memory.o
+> mm/huge_memory.c: In function ‘do_huge_pmd_prot_none’:
+> mm/huge_memory.c:789:3: error: incompatible type for argument 3 of ‘update_mmu_cache’
 
-This patch ensures that the ACPI cpuidle driver sets those dummy power
-values itself whenever it (re-)initializes its idle states.
-Tested and verified on an Acer AC700 Chromebook, which supports the C3
-state only when it switches from AC to battery power.
-
-Signed-off-by: Julius Werner <jwerner@chromium.org>
----
- drivers/acpi/processor_idle.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index e8086c7..078e22f 100644
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -1090,6 +1090,9 @@ static int acpi_processor_setup_cpuidle_states(struct acpi_processor *pr)
- 		state->exit_latency = cx->latency;
- 		state->target_residency = cx->latency * latency_factor;
- 
-+		/* reinitialize this in case new states are added after boot */
-+		state->power_usage = -1 - count;
-+
- 		state->flags = 0;
- 		switch (cx->type) {
- 			case ACPI_STATE_C1:
--- 
-1.7.8.6
-
+That appears to have become update_mmu_cache_pmd(), which makes sense
+given that there's now architectures that care about it.
