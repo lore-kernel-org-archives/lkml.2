@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030456Ab2JSDYo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:24:44 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54441 "EHLO mail.kernel.org"
+	id S965075Ab2JSDY7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:24:59 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54397 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757851Ab2JSDRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:23 -0400
+	id S1758021Ab2JSDRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexander Holler <holler@ahsoftware.de>,
-        Bernie Thompson <bernie@plugable.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [ 15/37] video/udlfb: fix line counting in fb_write
-Date: Thu, 18 Oct 2012 20:16:38 -0700
-Message-Id: <20121019031305.311573968@linuxfoundation.org>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 11/37] xen/bootup: allow read_tscp call for Xen PV guests.
+Date: Thu, 18 Oct 2012 20:16:34 -0700
+Message-Id: <20121019031304.675393314@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -27,33 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Holler <holler@ahsoftware.de>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit b8c4321f3d194469007f5f5f2b34ec278c264a04 upstream.
+commit cd0608e71e9757f4dae35bcfb4e88f4d1a03a8ab upstream.
 
-Line 0 and 1 were both written to line 0 (on the display) and all subsequent
-lines had an offset of -1. The result was that the last line on the display
-was never overwritten by writes to /dev/fbN.
+The hypervisor will trap it. However without this patch,
+we would crash as the .read_tscp is set to NULL. This patch
+fixes it and sets it to the native_read_tscp call.
 
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-Acked-by: Bernie Thompson <bernie@plugable.com>
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/udlfb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/xen/enlighten.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/video/udlfb.c
-+++ b/drivers/video/udlfb.c
-@@ -613,7 +613,7 @@ static ssize_t dlfb_ops_write(struct fb_
- 	result = fb_sys_write(info, buf, count, ppos);
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -989,6 +989,8 @@ static const struct pv_cpu_ops xen_cpu_o
+ 	.read_tsc = native_read_tsc,
+ 	.read_pmc = native_read_pmc,
  
- 	if (result > 0) {
--		int start = max((int)(offset / info->fix.line_length) - 1, 0);
-+		int start = max((int)(offset / info->fix.line_length), 0);
- 		int lines = min((u32)((result / info->fix.line_length) + 1),
- 				(u32)info->var.yres);
- 
++	.read_tscp = native_read_tscp,
++
+ 	.iret = xen_iret,
+ 	.irq_enable_sysexit = xen_sysexit,
+ #ifdef CONFIG_X86_64
 
 
