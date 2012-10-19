@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606Ab2JSAW5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 20:22:57 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42944 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836Ab2JSAWz (ORCPT
+	id S1751934Ab2JSAeN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 20:34:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54396 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674Ab2JSAeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 20:22:55 -0400
-Date: Thu, 18 Oct 2012 17:22:50 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>, Ric Wheeler <rwheeler@redhat.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH v2 0/3] block: add queue-private command filter,
- editable via sysfs
-Message-ID: <20121019002250.GB13370@google.com>
-References: <1348587009-22400-1-git-send-email-pbonzini@redhat.com>
- <506D60FC.7090801@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <506D60FC.7090801@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 18 Oct 2012 20:34:11 -0400
+From: Daniel J Blueman <daniel@numascale-asia.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel J Blueman <daniel@numascale-asia.com>
+Subject: [PATCH] Fix printing when no interrupt is allocated
+Date: Fri, 19 Oct 2012 08:33:41 +0800
+Message-Id: <1350606821-29813-1-git-send-email-daniel@numascale-asia.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Paolo.
+Previously a new line is implicitly added in the no GSI case:
 
-Sorry about the delay.  -EWASTRAVELING and it seems Jens was too.
+[    7.185182] pci 0001:00:12.0: can't derive routing for PCI INT A
+[    7.191352] pci 0001:00:12.0: PCI INT A: no GSI
+[    7.195956]  - using ISA IRQ 10
 
-On Thu, Oct 04, 2012 at 12:12:12PM +0200, Paolo Bonzini wrote:
-> Il 25/09/2012 17:30, Paolo Bonzini ha scritto:
-> > The set of use cases for SG_IO is quite variable that no single filter can
-> > accomodate all of them.  The current filter is tailored very much to
-> > CD burning, and includes many MMC-specific commands that may have
-> > other meanings in different standards.  Someone may want to remove
-> > those commands; at the same time, people that trust their users may
-> > want to add persistent reservations, trim/discard, or even access to
-> > vendor-specific commands.
-> > 
-> > Filters used to be mutable via sysfs, but the implementation was
-> > never enabled.  Add it back, and let the admin set this up per device.
-> > 
-> > A simple bitmap does not let you do things like enabling command A with
-> > option B on a specific device for a certain block range.  However, the
-> > question is really whether this is needed---in fact, neither of the known
-> > uses for the filtering need it.
-> > 
-> > In one use case, the administrator then needs the ability to configure
-> > devices easily, for example to be much more restrictive on non-MMC
-> > devices.  It must be done with the same tools it uses for other aspects
-> > of the policy---which will be a combination of DAC (Unix permissions and
-> > ACLs) and sysfs.  Different SCSI standards may give different meanings
-> > for the same byte value, but a simple bitmap is enough for this.
-> > 
-> > In the virtualization case, the problem is really that you want to
-> > pass through everything or almost everything, while still running as
-> > confined as possible (i.e. CAP_SYS_RAWIO is not a choice).  But in this
-> > case a more complex filtering can be done just as easily in userspace,
-> > in the virtual machine monitor.  While the userspace filter can be
-> > subverted if the guest can escape the QEMU jail, the bitmap still lets
-> > you block some commands at the kernel level if really necessary.
-> > 
-> > One alternative is a ioctl to disable the filter altogether, to be
-> > used together with SCM_RIGHTS file descriptor passing.  This works in
-> > the virtualization case but not for policy decisions.  So this patch
-> > series provides the sysfs knob.  It is a tweaked revert of commit 018e044
-> > (block: get rid of queue-private command filter, 2009-06-26).
+The code thus prints a blank line where no legacy IRQ is available:
 
-If your use case at hand is mostly virtualization, I personally would
-prefer the latter solution instead of extending in-kernel SG_IO
-filter.  It could be that I'm just not aware but I don't think there
-have been too many complaints regarding other use cases.  This type of
-deep inspection and filtering has fairly strong tendency to be
-unpopular.  Userland configurable one is even scarier and I don't
-think too many would know and make use of it in the end.
+[    1.650124] pci 0000:00:14.0: can't derive routing for PCI INT A
+[    1.650126] pci 0000:00:14.0: PCI INT A: no GSI
+[    1.650126] 
+[    1.650180] pci 0000:00:14.0: can't derive routing for PCI INT A
 
-Jens, what are your thoughts?
+Fix this by making the newline explicit and removing the superfluous
+one.
 
-Thanks.
+Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+---
+ drivers/acpi/pci_irq.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+index 0eefa12..2c37996 100644
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -459,7 +459,7 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
+ 	 */
+ 	if (gsi < 0) {
+ 		u32 dev_gsi;
+-		dev_warn(&dev->dev, "PCI INT %c: no GSI", pin_name(pin));
++		dev_warn(&dev->dev, "PCI INT %c: no GSI\n", pin_name(pin));
+ 		/* Interrupt Line values above 0xF are forbidden */
+ 		if (dev->irq > 0 && (dev->irq <= 0xF) &&
+ 		    (acpi_isa_irq_to_gsi(dev->irq, &dev_gsi) == 0)) {
+@@ -467,11 +467,9 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
+ 			acpi_register_gsi(&dev->dev, dev_gsi,
+ 					  ACPI_LEVEL_SENSITIVE,
+ 					  ACPI_ACTIVE_LOW);
+-			return 0;
+-		} else {
+-			printk("\n");
+-			return 0;
+ 		}
++
++		return 0;
+ 	}
+ 
+ 	rc = acpi_register_gsi(&dev->dev, gsi, triggering, polarity);
 -- 
-tejun
+1.7.9.5
+
