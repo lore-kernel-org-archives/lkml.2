@@ -1,213 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756859Ab2JSHFq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 03:05:46 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:51979 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab2JSHFp (ORCPT
+	id S932175Ab2JSHGb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 03:06:31 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:55186 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756889Ab2JSHG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 03:05:45 -0400
-X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 2BFBC82097
-Date: Fri, 19 Oct 2012 09:05:37 +0200
-From: Andrea Righi <andrea@betterlinux.com>
-To: Gavin Shan <shangw@linux.vnet.ibm.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: mm/mmu_notifier: inconsistent lock state in
- mmu_notifier_register()
-Message-ID: <20121019070537.GA2014@thinkpad>
-References: <20121017215338.GA3577@thinkpad>
- <20121018122416.GA29797@shangw.(null)>
+	Fri, 19 Oct 2012 03:06:26 -0400
+From: AnilKumar Ch <anilkumar@ti.com>
+To: <dmitry.torokhov@gmail.com>, <grant.likely@secretlab.ca>
+CC: <rob.herring@calxeda.com>, <dgdunix@gmail.com>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, AnilKumar Ch <anilkumar@ti.com>
+Subject: [PATCH 2/2] Input: matrix-keypad - Add device tree support
+Date: Fri, 19 Oct 2012 12:36:13 +0530
+Message-ID: <1350630373-24279-3-git-send-email-anilkumar@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1350630373-24279-1-git-send-email-anilkumar@ti.com>
+References: <1350630373-24279-1-git-send-email-anilkumar@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121018122416.GA29797@shangw.(null)>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 08:24:17PM +0800, Gavin Shan wrote:
-> Hi Andrea,
-> 
-> Do you have chance to have a try on the attached patch?
-> 
-> Thanks,
-> Gavin
+Add device tree support to matrix keypad driver and usage details
+are added to device tree documentation. Driver was tested on AM335x
+EVM.
 
-Gavin, the patch looks good to me and I confirm that the lockdep splat
-disappeared with it. Feel free to add my:
+Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
+---
+ .../devicetree/bindings/input/matrix-keypad.txt    |   52 ++++++++++
+ drivers/input/keyboard/matrix_keypad.c             |  104 +++++++++++++++++++-
+ 2 files changed, 155 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/input/matrix-keypad.txt
 
-Tested-by: Andrea Righi <andrea@betterlinux.com>
+diff --git a/Documentation/devicetree/bindings/input/matrix-keypad.txt b/Documentation/devicetree/bindings/input/matrix-keypad.txt
+new file mode 100644
+index 0000000..50aaa6e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/matrix-keypad.txt
+@@ -0,0 +1,52 @@
++* GPIO driven matrix keypad device tree bindings
++
++GPIO driven matrix keypad is used to interface a SoC with a matrix keypad.
++The matrix keypad supports multiple row and column lines, a key can be
++placed at each intersection of a unique row and a unique column. The matrix
++keypad can sense a key-press and key-release by means of GPIO lines and
++report the event using GPIO interrupts to the cpu.
++
++Required Properties:
++- compatible:		Should be "matix-keypad"
++- keypad,num-row-gpios:	Number of row lines connected to the keypad
++			controller.
++- keypad,num-col-gpios:	Number of column lines connected to the keypad
++			controller.
++- row-gpios:		List of gpios used as row lines. The gpio specifier
++			for this property depends on the gpio controller to
++			which these row lines are connected.
++- col-gpios:		List of gpios used as column lines. The gpio specifier
++			for this property depends on the gpio controller to
++			which these column lines are connected.
++
++Optional Properties:
++- linux,no-autorepeat:	do no enable autorepeat feature.
++- linux,wakeup:		use any event on keypad as wakeup event.
++- debounce-delay-ms:	debounce interval in milliseconds
++- col-scan-delay-us:	delay, measured in microseconds, that is needed
++			before we can scan keypad after activating column gpio
++- clustered-irq:	have clustered irq number
++- clustered-irq-flags:	have clustered irq flags
++
++Example:
++	matrix-keypad {
++		compatible = "matrix-keypad";
++		keypad,num-row-gpios = <3>;
++		keypad,num-col-gpios = <2>;
++		debounce-delay-ms = <5>;
++		col-scan-delay-us = <2>;
++
++		row-gpios = <&gpio2 25 0
++			     &gpio2 26 0
++			     &gpio2 27 0>;
++
++		col-gpios = <&gpio2 21 0
++			     &gpio2 22 0>;
++
++		linux,keymap = <0x0000008B
++				0x0100009E
++				0x02000069
++				0x0001006A
++				0x0101001C
++				0x0201006C>;
++	};
+diff --git a/drivers/input/keyboard/matrix_keypad.c b/drivers/input/keyboard/matrix_keypad.c
+index 18b7237..39e480d 100644
+--- a/drivers/input/keyboard/matrix_keypad.c
++++ b/drivers/input/keyboard/matrix_keypad.c
+@@ -23,6 +23,9 @@
+ #include <linux/gpio.h>
+ #include <linux/input/matrix_keypad.h>
+ #include <linux/slab.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/of_platform.h>
+ 
+ struct matrix_keypad {
+ 	const struct matrix_keypad_platform_data *pdata;
+@@ -394,6 +397,91 @@ static void matrix_keypad_free_gpio(struct matrix_keypad *keypad)
+ 		gpio_free(pdata->col_gpios[i]);
+ }
+ 
++#ifdef CONFIG_OF
++static
++struct matrix_keypad_platform_data *matrix_keypad_parse_dt(struct device *dev)
++{
++	struct matrix_keypad_platform_data *pdata;
++	struct matrix_keymap_data *keymap_data;
++	struct device_node *np = dev->of_node;
++	struct property *prop;
++	int key_count = 0, length, row, col;
++	uint32_t *keymap;
++
++	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata) {
++		dev_err(dev, "could not allocate memory for platform data\n");
++		return NULL;
++	}
++
++	of_property_read_u32(np, "keypad,num-row-gpios", &pdata->num_row_gpios);
++	of_property_read_u32(np, "keypad,num-col-gpios", &pdata->num_col_gpios);
++	if (!pdata->num_row_gpios || !pdata->num_col_gpios) {
++		dev_err(dev, "number of keypad rows/columns not specified\n");
++		return NULL;
++	}
++
++	keymap_data = devm_kzalloc(dev, sizeof(*keymap_data), GFP_KERNEL);
++	if (!keymap_data) {
++		dev_err(dev, "could not allocate memory for keymap data\n");
++		return NULL;
++	}
++	pdata->keymap_data = keymap_data;
++
++	prop = of_find_property(np, "linux,keymap", &length);
++	if (!prop)
++		return NULL;
++
++	key_count = length / sizeof(u32);
++	keymap_data->keymap_size = key_count;
++	keymap = devm_kzalloc(dev, sizeof(uint32_t) * key_count, GFP_KERNEL);
++	if (!keymap) {
++		dev_err(dev, "could not allocate memory for keymap\n");
++		return NULL;
++	}
++	keymap_data->keymap = keymap;
++
++	of_property_read_u32_array(np, "linux,keymap", keymap, key_count);
++
++	if (of_get_property(np, "linux,no-autorepeat", NULL))
++		pdata->no_autorepeat = true;
++	if (of_get_property(np, "linux,wakeup", NULL))
++		pdata->wakeup = true;
++	if (of_get_property(np, "gpio-activelow", NULL))
++		pdata->active_low = true;
++
++	of_property_read_u32(np, "debounce-delay-ms", &pdata->debounce_ms);
++	of_property_read_u32(np, "col-scan-delay-us",
++						&pdata->col_scan_delay_us);
++	of_property_read_u32(np, "clustered-irq", &pdata->clustered_irq);
++	of_property_read_u32(np, "clustered-irq-flags",
++						&pdata->clustered_irq_flags);
++
++	pdata->row_gpios = devm_kzalloc(dev, sizeof(unsigned int) *
++					pdata->num_row_gpios, GFP_KERNEL);
++	pdata->col_gpios = devm_kzalloc(dev, sizeof(unsigned int) *
++					pdata->num_col_gpios, GFP_KERNEL);
++	if (!pdata->row_gpios || !pdata->col_gpios) {
++		dev_err(dev, "could not allocate memory for gpios\n");
++		return NULL;
++	}
++
++	for (row = 0; row < pdata->num_row_gpios; row++)
++		pdata->row_gpios[row] = of_get_named_gpio(np, "row-gpios", row);
++
++	for (col = 0; col < pdata->num_col_gpios; col++)
++		pdata->col_gpios[col] = of_get_named_gpio(np, "col-gpios", col);
++
++	return pdata;
++}
++#else
++static
++struct matrix_keypad_platform_data *matrix_keypad_parse_dt(struct device *dev)
++{
++	return NULL;
++}
++#endif
++
+ static int __devinit matrix_keypad_probe(struct platform_device *pdev)
+ {
+ 	const struct matrix_keypad_platform_data *pdata;
+@@ -404,7 +492,10 @@ static int __devinit matrix_keypad_probe(struct platform_device *pdev)
+ 	size_t keymap_size;
+ 	int err;
+ 
+-	pdata = pdev->dev.platform_data;
++	if (pdev->dev.of_node)
++		pdata = matrix_keypad_parse_dt(&pdev->dev);
++	else
++		pdata = pdev->dev.platform_data;
+ 	if (!pdata) {
+ 		dev_err(&pdev->dev, "no platform data defined\n");
+ 		return -EINVAL;
+@@ -488,6 +579,16 @@ static int __devexit matrix_keypad_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id matrix_keypad_dt_match[] = {
++	{ .compatible = "matrix-keypad" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, matrix_keypad_dt_match);
++#else
++#define matrix_keypad_dt_match NULL
++#endif
++
+ static struct platform_driver matrix_keypad_driver = {
+ 	.probe		= matrix_keypad_probe,
+ 	.remove		= __devexit_p(matrix_keypad_remove),
+@@ -495,6 +596,7 @@ static struct platform_driver matrix_keypad_driver = {
+ 		.name	= "matrix-keypad",
+ 		.owner	= THIS_MODULE,
+ 		.pm	= &matrix_keypad_pm_ops,
++		.of_match_table = matrix_keypad_dt_match,
+ 	},
+ };
+ module_platform_driver(matrix_keypad_driver);
+-- 
+1.7.9.5
 
-Thanks,
--Andrea
-
-> 
-> On Wed, Oct 17, 2012 at 11:53:38PM +0200, Andrea Righi wrote:
-> >Just got this on 3.7.0-rc1 (last git commit 1867353):
-> >
-> >[49048.262912] =================================
-> >[49048.262913] [ INFO: inconsistent lock state ]
-> >[49048.262916] 3.7.0-rc1+ #518 Not tainted
-> >[49048.262918] ---------------------------------
-> >[49048.262919] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-> >[49048.262922] kswapd0/35 [HC0[0]:SC0[0]:HE1:SE1] takes:
-> >[49048.262924]  (&mapping->i_mmap_mutex){+.+.?.}, at: [<ffffffff81192fbc>] page_referenced+0x9c/0x2e0
-> >[49048.262933] {RECLAIM_FS-ON-W} state was registered at:
-> >[49048.262935]   [<ffffffff810ed5d6>] mark_held_locks+0x86/0x150
-> >[49048.262938]   [<ffffffff810edce7>] lockdep_trace_alloc+0x67/0xc0
-> >[49048.262942]   [<ffffffff811a9323>] kmem_cache_alloc_trace+0x33/0x230
-> >[49048.262945]   [<ffffffff811a1a27>] do_mmu_notifier_register+0x87/0x180
-> >[49048.262948]   [<ffffffff811a1b53>] mmu_notifier_register+0x13/0x20
-> >[49048.262951]   [<ffffffff81006738>] kvm_dev_ioctl+0x428/0x510
-> >[49048.262955]   [<ffffffff811c7ce8>] do_vfs_ioctl+0x98/0x570
-> >[49048.262959]   [<ffffffff811c8251>] sys_ioctl+0x91/0xb0
-> >[49048.262962]   [<ffffffff815df302>] system_call_fastpath+0x16/0x1b
-> >[49048.262966] irq event stamp: 825
-> >[49048.262968] hardirqs last  enabled at (825): [<ffffffff815d6fa0>] _raw_spin_unlock_irq+0x30/0x60
-> >[49048.262971] hardirqs last disabled at (824): [<ffffffff815d6659>] _raw_spin_lock_irq+0x19/0x80
-> >[49048.262975] softirqs last  enabled at (0): [<ffffffff81082170>] copy_process+0x630/0x17c0
-> >[49048.262979] softirqs last disabled at (0): [<          (null)>]           (null)
-> >[49048.262981] 
-> >[49048.262981] other info that might help us debug this:
-> >[49048.262983]  Possible unsafe locking scenario:
-> >[49048.262983] 
-> >[49048.262984]        CPU0
-> >[49048.262986]        ----
-> >[49048.262987]   lock(&mapping->i_mmap_mutex);
-> >[49048.262989]   <Interrupt>
-> >[49048.262991]     lock(&mapping->i_mmap_mutex);
-> >[49048.262993] 
-> >[49048.262993]  *** DEADLOCK ***
-> >[49048.262993] 
-> >[49048.262995] no locks held by kswapd0/35.
-> >[49048.262996] 
-> >[49048.262996] stack backtrace:
-> >[49048.262999] Pid: 35, comm: kswapd0 Not tainted 3.7.0-rc1+ #518
-> >[49048.263000] Call Trace:
-> >[49048.263005]  [<ffffffff815cd988>] print_usage_bug+0x1f5/0x206
-> >[49048.263008]  [<ffffffff8105a21f>] ? save_stack_trace+0x2f/0x50
-> >[49048.263011]  [<ffffffff810ea865>] mark_lock+0x295/0x2f0
-> >[49048.263014]  [<ffffffff810e9c70>] ? print_irq_inversion_bug.part.42+0x1f0/0x1f0
-> >[49048.263017]  [<ffffffff810eae5d>] __lock_acquire+0x59d/0x1c20
-> >[49048.263020]  [<ffffffff815cf163>] ? put_cpu_partial+0x65/0xbd
-> >[49048.263024]  [<ffffffff81052d06>] ? native_sched_clock+0x26/0x90
-> >[49048.263028]  [<ffffffff810c5555>] ? sched_clock_cpu+0xc5/0x120
-> >[49048.263031]  [<ffffffff810ecbe0>] lock_acquire+0x90/0x210
-> >[49048.263034]  [<ffffffff81192fbc>] ? page_referenced+0x9c/0x2e0
-> >[49048.263038]  [<ffffffff815d2ea3>] mutex_lock_nested+0x73/0x3d0
-> >[49048.263041]  [<ffffffff81192fbc>] ? page_referenced+0x9c/0x2e0
-> >[49048.263044]  [<ffffffff81192fbc>] ? page_referenced+0x9c/0x2e0
-> >[49048.263047]  [<ffffffff810e764e>] ? put_lock_stats.isra.26+0xe/0x40
-> >[49048.263051]  [<ffffffff810e7a84>] ? lock_release_holdtime.part.27+0xd4/0x150
-> >[49048.263055]  [<ffffffff8116edab>] ? __remove_mapping+0xab/0x120
-> >[49048.263058]  [<ffffffff81192fbc>] page_referenced+0x9c/0x2e0
-> >[49048.263061]  [<ffffffff81171b94>] shrink_page_list+0x3e4/0xa20
-> >[49048.263064]  [<ffffffff81052d06>] ? native_sched_clock+0x26/0x90
-> >[49048.263068]  [<ffffffff811726f5>] ? shrink_inactive_list+0x165/0x4b0
-> >[49048.263071]  [<ffffffff815d6fa0>] ? _raw_spin_unlock_irq+0x30/0x60
-> >[49048.263075]  [<ffffffff81172787>] shrink_inactive_list+0x1f7/0x4b0
-> >[49048.263079]  [<ffffffff81172e8d>] shrink_lruvec+0x44d/0x550
-> >[49048.263082]  [<ffffffff81173693>] kswapd+0x703/0xdf0
-> >[49048.263086]  [<ffffffff810af470>] ? __init_waitqueue_head+0x60/0x60
-> >[49048.263090]  [<ffffffff81172f90>] ? shrink_lruvec+0x550/0x550
-> >[49048.263093]  [<ffffffff810ae98d>] kthread+0xed/0x100
-> >[49048.263097]  [<ffffffff810ae8a0>] ? flush_kthread_worker+0x190/0x190
-> >[49048.263100]  [<ffffffff815df25c>] ret_from_fork+0x7c/0xb0
-> >[49048.263103]  [<ffffffff810ae8a0>] ? flush_kthread_worker+0x190/0x190
-> >
-> >Should we use a GFP_NOFS allocation in mmu_notifier_register() or is
-> >there a better way to fix/avoid this?
-> >
-> >Thanks,
-> >-Andrea
-> >
-> >--
-> >To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >the body to majordomo@kvack.org.  For more info on Linux MM,
-> >see: http://www.linux-mm.org/ .
-> >Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >
-
-> >From 8b7dcc6afd617e8b52ed1b10221195cce0c8f442 Mon Sep 17 00:00:00 2001
-> From: Gavin Shan <shangw@linux.vnet.ibm.com>
-> Date: Thu, 18 Oct 2012 20:14:06 +0800
-> Subject: [PATCH] mm/mmu_notifier: allocate mmu_notifier in advance
-> 
-> While allocating mmu_notifier with parameter GFP_KERNEL, swap would
-> start to work in case of tight available memory. Eventually, that
-> would lead to dead-lock while swap deamon does swapping anonymous
-> pages. It was caused by commit e0f3c3f78da29b114e7c1c68019036559f715948
-> ("mm/mmu_notifier: init notifier if necessary").
-> 
-> The patch simply back out the above commit.
-> 
-> Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-> ---
->  mm/mmu_notifier.c |   26 +++++++++++++-------------
->  1 files changed, 13 insertions(+), 13 deletions(-)
-> 
-> diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
-> index 479a1e7..8a5ac8c 100644
-> --- a/mm/mmu_notifier.c
-> +++ b/mm/mmu_notifier.c
-> @@ -196,28 +196,28 @@ static int do_mmu_notifier_register(struct mmu_notifier *mn,
->  	BUG_ON(atomic_read(&mm->mm_users) <= 0);
->  
->  	/*
-> -	* Verify that mmu_notifier_init() already run and the global srcu is
-> -	* initialized.
-> -	*/
-> +	 * Verify that mmu_notifier_init() already run and the global srcu is
-> +	 * initialized.
-> +	 */
->  	BUG_ON(!srcu.per_cpu_ref);
->  
-> +	ret = -ENOMEM;
-> +	mmu_notifier_mm = kmalloc(sizeof(struct mmu_notifier_mm), GFP_KERNEL);
-> +	if (unlikely(!mmu_notifier_mm))
-> +		goto out;
-> +
->  	if (take_mmap_sem)
->  		down_write(&mm->mmap_sem);
->  	ret = mm_take_all_locks(mm);
->  	if (unlikely(ret))
-> -		goto out;
-> +		goto out_clean;
->  
->  	if (!mm_has_notifiers(mm)) {
-> -		mmu_notifier_mm = kmalloc(sizeof(struct mmu_notifier_mm),
-> -					GFP_KERNEL);
-> -		if (unlikely(!mmu_notifier_mm)) {
-> -			ret = -ENOMEM;
-> -			goto out_of_mem;
-> -		}
->  		INIT_HLIST_HEAD(&mmu_notifier_mm->list);
->  		spin_lock_init(&mmu_notifier_mm->lock);
->  
->  		mm->mmu_notifier_mm = mmu_notifier_mm;
-> +		mmu_notifier_mm = NULL;
->  	}
->  	atomic_inc(&mm->mm_count);
->  
-> @@ -233,12 +233,12 @@ static int do_mmu_notifier_register(struct mmu_notifier *mn,
->  	hlist_add_head(&mn->hlist, &mm->mmu_notifier_mm->list);
->  	spin_unlock(&mm->mmu_notifier_mm->lock);
->  
-> -out_of_mem:
->  	mm_drop_all_locks(mm);
-> -out:
-> +out_clean:
->  	if (take_mmap_sem)
->  		up_write(&mm->mmap_sem);
-> -
-> +	kfree(mmu_notifier_mm);
-> +out:
->  	BUG_ON(atomic_read(&mm->mm_users) <= 0);
->  	return ret;
->  }
-> -- 
-> 1.7.5.4
