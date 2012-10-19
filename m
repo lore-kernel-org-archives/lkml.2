@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758115Ab2JSDRv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:17:51 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54623 "EHLO mail.kernel.org"
+	id S1030484Ab2JSDSA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:18:00 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54737 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758084Ab2JSDRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:44 -0400
+	id S1161025Ab2JSDR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jan Engelhardt <jengelh@inai.de>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        David Miller <davem@davemloft.net>
-Subject: [ 28/37] netfilter: xt_limit: have r->cost != 0 case work
-Date: Thu, 18 Oct 2012 20:16:51 -0700
-Message-Id: <20121019031307.381417622@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@linux.intel.com>, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 32/37] x86, random: Architectural inlines to get random integers with RDRAND
+Date: Thu, 18 Oct 2012 20:16:55 -0700
+Message-Id: <20121019031308.005024817@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -27,42 +27,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Engelhardt <jengelh@inai.de>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-commit 82e6bfe2fbc4d48852114c4f979137cd5bf1d1a8 upstream.
+commit 628c6246d47b85f5357298601df2444d7f4dd3fd upstream.
 
-Commit v2.6.19-rc1~1272^2~41 tells us that r->cost != 0 can happen when
-a running state is saved to userspace and then reinstated from there.
+Architectural inlines to get random ints and longs using the RDRAND
+instruction.
 
-Make sure that private xt_limit area is initialized with correct values.
-Otherwise, random matchings due to use of uninitialized memory.
+Intel has introduced a new RDRAND instruction, a Digital Random Number
+Generator (DRNG), which is functionally an high bandwidth entropy
+source, cryptographic whitener, and integrity monitor all built into
+hardware.  This enables RDRAND to be used directly, bypassing the
+kernel random number pool.
 
-Signed-off-by: Jan Engelhardt <jengelh@inai.de>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Acked-by: David Miller <davem@davemloft.net>
+For technical documentation, see:
+
+http://software.intel.com/en-us/articles/download-the-latest-bull-mountain-software-implementation-guide/
+
+In this patch, this is *only* used for the nonblocking random number
+pool.  RDRAND is a nonblocking source, similar to our /dev/urandom,
+and is therefore not a direct replacement for /dev/random.  The
+architectural hooks presented in the previous patch only feed the
+kernel internal users, which only use the nonblocking pool, and so
+this is not a problem.
+
+Since this instruction is available in userspace, there is no reason
+to have a /dev/hw_rng device driver for the purpose of feeding rngd.
+This is especially so since RDRAND is a nonblocking source, and needs
+additional whitening and reduction (see the above technical
+documentation for details) in order to be of "pure entropy source"
+quality.
+
+The CONFIG_EXPERT compile-time option can be used to disable this use
+of RDRAND.
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Originally-by: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/xt_limit.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/Kconfig                  |    9 ++++
+ arch/x86/include/asm/archrandom.h |   73 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 82 insertions(+)
 
---- a/net/netfilter/xt_limit.c
-+++ b/net/netfilter/xt_limit.c
-@@ -117,11 +117,11 @@ static int limit_mt_check(const struct x
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1451,6 +1451,15 @@ config ARCH_USES_PG_UNCACHED
+ 	def_bool y
+ 	depends on X86_PAT
  
- 	/* For SMP, we only want to use one set of state. */
- 	r->master = priv;
-+	/* User avg in seconds * XT_LIMIT_SCALE: convert to jiffies *
-+	   128. */
-+	priv->prev = jiffies;
-+	priv->credit = user2credits(r->avg * r->burst); /* Credits full. */
- 	if (r->cost == 0) {
--		/* User avg in seconds * XT_LIMIT_SCALE: convert to jiffies *
--		   128. */
--		priv->prev = jiffies;
--		priv->credit = user2credits(r->avg * r->burst); /* Credits full. */
- 		r->credit_cap = priv->credit; /* Credits full. */
- 		r->cost = user2credits(r->avg);
- 	}
++config ARCH_RANDOM
++	def_bool y
++	prompt "x86 architectural random number generator" if EXPERT
++	---help---
++	  Enable the x86 architectural RDRAND instruction
++	  (Intel Bull Mountain technology) to generate random numbers.
++	  If supported, this is a high bandwidth, cryptographically
++	  secure hardware random number generator.
++
+ config EFI
+ 	bool "EFI runtime service support"
+ 	depends on ACPI
+--- /dev/null
++++ b/arch/x86/include/asm/archrandom.h
+@@ -0,0 +1,73 @@
++/*
++ * This file is part of the Linux kernel.
++ *
++ * Copyright (c) 2011, Intel Corporation
++ * Authors: Fenghua Yu <fenghua.yu@intel.com>,
++ *          H. Peter Anvin <hpa@linux.intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ */
++
++#ifndef ASM_X86_ARCHRANDOM_H
++#define ASM_X86_ARCHRANDOM_H
++
++#include <asm/processor.h>
++#include <asm/cpufeature.h>
++#include <asm/alternative.h>
++#include <asm/nops.h>
++
++#define RDRAND_RETRY_LOOPS	10
++
++#define RDRAND_INT	".byte 0x0f,0xc7,0xf0"
++#ifdef CONFIG_X86_64
++# define RDRAND_LONG	".byte 0x48,0x0f,0xc7,0xf0"
++#else
++# define RDRAND_LONG	RDRAND_INT
++#endif
++
++#ifdef CONFIG_ARCH_RANDOM
++
++#define GET_RANDOM(name, type, rdrand, nop)			\
++static inline int name(type *v)					\
++{								\
++	int ok;							\
++	alternative_io("movl $0, %0\n\t"			\
++		       nop,					\
++		       "\n1: " rdrand "\n\t"			\
++		       "jc 2f\n\t"				\
++		       "decl %0\n\t"                            \
++		       "jnz 1b\n\t"                             \
++		       "2:",                                    \
++		       X86_FEATURE_RDRAND,                      \
++		       ASM_OUTPUT2("=r" (ok), "=a" (*v)),       \
++		       "0" (RDRAND_RETRY_LOOPS));		\
++	return ok;						\
++}
++
++#ifdef CONFIG_X86_64
++
++GET_RANDOM(arch_get_random_long, unsigned long, RDRAND_LONG, ASM_NOP5);
++GET_RANDOM(arch_get_random_int, unsigned int, RDRAND_INT, ASM_NOP4);
++
++#else
++
++GET_RANDOM(arch_get_random_long, unsigned long, RDRAND_LONG, ASM_NOP3);
++GET_RANDOM(arch_get_random_int, unsigned int, RDRAND_INT, ASM_NOP3);
++
++#endif /* CONFIG_X86_64 */
++
++#endif  /* CONFIG_ARCH_RANDOM */
++
++#endif /* ASM_X86_ARCHRANDOM_H */
 
 
