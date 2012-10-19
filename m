@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030198Ab2JSCtn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:49:43 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52622 "EHLO mail.kernel.org"
+	id S1030265Ab2JSCt6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:49:58 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52757 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965079Ab2JSCtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:49:39 -0400
+	id S1030200Ab2JSCtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:49:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        David Henningsson <david.henningsson@canonical.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [ 69/76] ALSA: hda - Stop LPIB delay counting on broken hardware
-Date: Thu, 18 Oct 2012 19:47:33 -0700
-Message-Id: <20121019024401.214626796@linuxfoundation.org>
+Subject: [ 70/76] ALSA: hda - Always check array bounds in alc_get_line_out_pfx
+Date: Thu, 18 Oct 2012 19:47:34 -0700
+Message-Id: <20121019024401.371745449@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -25,40 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 1f04661fde9deda4a2cd5845258715a22d8af197 upstream.
+commit 71aa5ebe36a4e936eff281b375a4707b6a8320f2 upstream.
 
-If LPIB reports a pretty bad value, we can't trust such hardware for
-calculating the PCM delay.  Automatically turn off the delay counting
-when such a problem is encountered.
+Even when CONFIG_SND_DEBUG is not enabled, we don't want to
+return an arbitrary memory location when the channel count is
+larger than we expected.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=48911
-
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_intel.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_realtek.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -2136,9 +2136,12 @@ static unsigned int azx_get_position(str
- 		if (delay < 0)
- 			delay += azx_dev->bufsize;
- 		if (delay >= azx_dev->period_bytes) {
--			snd_printdd("delay %d > period_bytes %d\n",
--				delay, azx_dev->period_bytes);
--			delay = 0; /* something is wrong */
-+			snd_printk(KERN_WARNING SFX
-+				   "Unstable LPIB (%d >= %d); "
-+				   "disabling LPIB delay counting\n",
-+				   delay, azx_dev->period_bytes);
-+			delay = 0;
-+			chip->driver_caps &= ~AZX_DCAPS_COUNT_LPIB_DELAY;
- 		}
- 		azx_dev->substream->runtime->delay =
- 			bytes_to_frames(azx_dev->substream->runtime, delay);
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -2629,8 +2629,10 @@ static const char *alc_get_line_out_pfx(
+ 			return "PCM";
+ 		break;
+ 	}
+-	if (snd_BUG_ON(ch >= ARRAY_SIZE(channel_name)))
++	if (ch >= ARRAY_SIZE(channel_name)) {
++		snd_BUG();
+ 		return "PCM";
++	}
+ 
+ 	return channel_name[ch];
+ }
 
 
