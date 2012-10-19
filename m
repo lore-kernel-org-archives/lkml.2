@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965077Ab2JSCtj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:49:39 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52486 "EHLO mail.kernel.org"
+	id S965063Ab2JSCtf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:49:35 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52439 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965033Ab2JSCt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:49:28 -0400
+	id S965017Ab2JSCtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:49:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ondrej Zary <linux@rainbow-software.org>,
-        Michael Leun <lkml20120218@newton.leun.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 62/76] mcs7830: Fix link state detection
-Date: Thu, 18 Oct 2012 19:47:26 -0700
-Message-Id: <20121019024400.104361357@linuxfoundation.org>
+        Willy Tarreau <w@1wt.eu>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 58/76] drm/i915: remove useless BUG_ON which caused a regression in 3.5.
+Date: Thu, 18 Oct 2012 19:47:22 -0700
+Message-Id: <20121019024359.459170261@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -27,75 +26,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ondrej Zary <linux@rainbow-software.org>
+From: Willy Tarreau <w@1wt.eu>
 
-commit dabdaf0caa3af520dbc1df87b2fb4e77224037bd upstream.
+commit c77d7162a7ae451c2e895d7ef7fbeb0906107472 upstream.
 
-The device had an undocumented "feature": it can provide a sequence of
-spurious link-down status data even if the link is up all the time.
-A sequence of 10 was seen so update the link state only after the device
-reports the same link state 20 times.
+starting an old X server causes a kernel BUG since commit 1b50247a8d:
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-Reported-by: Michael Leun <lkml20120218@newton.leun.net>
-Tested-by: Michael Leun <lkml20120218@newton.leun.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+------------[ cut here ]------------
+kernel BUG at drivers/gpu/drm/i915/i915_gem.c:3661!
+invalid opcode: 0000 [#1] SMP
+Modules linked in: snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss uvcvideo
++videobuf2_core videodev videobuf2_vmalloc videobuf2_memops uhci_hcd ath9k mac80211 snd_hda_codec_realtek ath9k_common microcode
++ath9k_hw psmouse serio_raw sg ath cfg80211 atl1c lpc_ich mfd_core ehci_hcd snd_hda_intel snd_hda_codec snd_hwdep snd_pcm rtc_cmos
++snd_timer snd evdev eeepc_laptop snd_page_alloc sparse_keymap
+
+Pid: 2866, comm: X Not tainted 3.5.6-rc1-eeepc #1 ASUSTeK Computer INC. 1005HA/1005HA
+EIP: 0060:[<c12dc291>] EFLAGS: 00013297 CPU: 0
+EIP is at i915_gem_entervt_ioctl+0xf1/0x110
+EAX: f5941df4 EBX: f5940000 ECX: 00000000 EDX: 00020000
+ESI: f5835400 EDI: 00000000 EBP: f51d7e38 ESP: f51d7e20
+ DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+CR0: 8005003b CR2: b760e0a0 CR3: 351b6000 CR4: 000007d0
+DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+DR6: ffff0ff0 DR7: 00000400
+Process X (pid: 2866, ti=f51d6000 task=f61af8d0 task.ti=f51d6000)
+Stack:
+ 00000001 00000000 f5835414 f51d7e84 f5835400 f54f85c0 f51d7f10 c12b530b
+ 00000001 c151b139 c14751b6 c152e030 00000b32 00006459 00000059 0000e200
+ 00000001 00000000 00006459 c159ddd0 c12dc1a0 ffffffea 00000000 00000000
+Call Trace:
+ [<c12b530b>] drm_ioctl+0x2eb/0x440
+ [<c12dc1a0>] ? i915_gem_init+0xe0/0xe0
+ [<c1052b2b>] ? enqueue_hrtimer+0x1b/0x50
+ [<c1053321>] ? __hrtimer_start_range_ns+0x161/0x330
+ [<c10530b3>] ? lock_hrtimer_base+0x23/0x50
+ [<c1053163>] ? hrtimer_try_to_cancel+0x33/0x70
+ [<c12b5020>] ? drm_version+0x90/0x90
+ [<c10ca171>] vfs_ioctl+0x31/0x50
+ [<c10ca2e4>] do_vfs_ioctl+0x64/0x510
+ [<c10535de>] ? hrtimer_nanosleep+0x8e/0x100
+ [<c1052c20>] ? update_rmtp+0x80/0x80
+ [<c10ca7c9>] sys_ioctl+0x39/0x60
+ [<c1433949>] syscall_call+0x7/0xb
+Code: 83 c4 0c 5b 5e 5f 5d c3 c7 44 24 04 2c 05 53 c1 c7 04 24 6f ef 47 c1 e8 6e e0 fd ff c7 83 38 1e 00 00 00 00 00 00 e9 3f ff ff
++ff <0f> 0b eb fe 0f 0b eb fe 8d b4 26 00 00 00 00 0f 0b eb fe 8d b6
+EIP: [<c12dc291>] i915_gem_entervt_ioctl+0xf1/0x110 SS:ESP 0068:f51d7e20
+---[ end trace dd332ec083cbd513 ]---
+
+The crash happens here in i915_gem_entervt_ioctl() :
+
+    3659          BUG_ON(!list_empty(&dev_priv->mm.active_list));
+    3660          BUG_ON(!list_empty(&dev_priv->mm.flushing_list));
+ -> 3661          BUG_ON(!list_empty(&dev_priv->mm.inactive_list));
+    3662          mutex_unlock(&dev->struct_mutex);
+
+Quoting Chris :
+  "That BUG_ON there is silly and can simply be removed. The check is to
+   verify that no batches were submitted to the kernel whilst the UMS/GEM
+   client was suspended - to which the BUG_ONs are a crude approximation.
+   Furthermore, the checks are too late, since it means we attempted to
+   program the hardware whilst it was in an invalid state, the BUG_ONs are
+   the least of your concerns at that point."
+
+Note that this regression has been introduced in
+
+commit 1b50247a8ddde4af5aaa0e6bc125615372ce6c16
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Tue Apr 24 15:47:30 2012 +0100
+
+    drm/i915: Remove the list of pinned inactive objects
+
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+[danvet: Added note about the regressing commit and cc: stable.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/mcs7830.c |   30 +++++++++++++++++++++---------
- 1 file changed, 21 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/net/usb/mcs7830.c
-+++ b/drivers/net/usb/mcs7830.c
-@@ -117,6 +117,7 @@ enum {
- struct mcs7830_data {
- 	u8 multi_filter[8];
- 	u8 config;
-+	u8 link_counter;
- };
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -3893,7 +3893,6 @@ i915_gem_entervt_ioctl(struct drm_device
  
- static const char driver_name[] = "MOSCHIP usb-ethernet driver";
-@@ -632,20 +633,31 @@ static int mcs7830_rx_fixup(struct usbne
- static void mcs7830_status(struct usbnet *dev, struct urb *urb)
- {
- 	u8 *buf = urb->transfer_buffer;
--	bool link;
-+	bool link, link_changed;
-+	struct mcs7830_data *data = mcs7830_get_data(dev);
+ 	BUG_ON(!list_empty(&dev_priv->mm.active_list));
+ 	BUG_ON(!list_empty(&dev_priv->mm.flushing_list));
+-	BUG_ON(!list_empty(&dev_priv->mm.inactive_list));
+ 	mutex_unlock(&dev->struct_mutex);
  
- 	if (urb->actual_length < 16)
- 		return;
- 
- 	link = !(buf[1] & 0x20);
--	if (netif_carrier_ok(dev->net) != link) {
--		if (link) {
--			netif_carrier_on(dev->net);
--			usbnet_defer_kevent(dev, EVENT_LINK_RESET);
--		} else
--			netif_carrier_off(dev->net);
--		netdev_dbg(dev->net, "Link Status is: %d\n", link);
--	}
-+	link_changed = netif_carrier_ok(dev->net) != link;
-+	if (link_changed) {
-+		data->link_counter++;
-+		/*
-+		   track link state 20 times to guard against erroneous
-+		   link state changes reported sometimes by the chip
-+		 */
-+		if (data->link_counter > 20) {
-+			data->link_counter = 0;
-+			if (link) {
-+				netif_carrier_on(dev->net);
-+				usbnet_defer_kevent(dev, EVENT_LINK_RESET);
-+			} else
-+				netif_carrier_off(dev->net);
-+			netdev_dbg(dev->net, "Link Status is: %d\n", link);
-+		}
-+	} else
-+		data->link_counter = 0;
- }
- 
- static const struct driver_info moschip_info = {
+ 	ret = drm_irq_install(dev);
 
 
