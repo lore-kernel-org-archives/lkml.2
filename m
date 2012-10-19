@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161051Ab2JSDe0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:34:26 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51004 "EHLO mail.kernel.org"
+	id S1757697Ab2JSDeY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:34:24 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51009 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752137Ab2JSCqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752195Ab2JSCqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Oct 2012 22:46:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Michael Olbrich <m.olbrich@pengutronix.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 01/62] ARM: vfp: fix saving d16-d31 vfp registers on v6+ kernels
-Date: Thu, 18 Oct 2012 19:44:29 -0700
-Message-Id: <20121019024256.160904721@linuxfoundation.org>
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 04/62] lockd: use rpc clients cl_nodename for id encoding
+Date: Thu, 18 Oct 2012 19:44:32 -0700
+Message-Id: <20121019024256.632046418@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -26,60 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-commit 846a136881b8f73c1f74250bf6acfaa309cab1f2 upstream.
+commit 303a7ce92064c285a04c870f2dc0192fdb2968cb upstream.
 
-Michael Olbrich reported that his test program fails when built with
--O2 -mcpu=cortex-a8 -mfpu=neon, and a kernel which supports v6 and v7
-CPUs:
+Taking hostname from uts namespace if not safe, because this cuold be
+performind during umount operation on child reaper death. And in this case
+current->nsproxy is NULL already.
 
-volatile int x = 2;
-volatile int64_t y = 2;
-
-int main() {
-	volatile int a = 0;
-	volatile int64_t b = 0;
-	while (1) {
-		a = (a + x) % (1 << 30);
-		b = (b + y) % (1 << 30);
-		assert(a == b);
-	}
-}
-
-and two instances are run.  When built for just v7 CPUs, this program
-works fine.  It uses the "vadd.i64 d19, d18, d16" VFP instruction.
-
-It appears that we do not save the high-16 double VFP registers across
-context switches when the kernel is built for v6 CPUs.  Fix that.
-
-Tested-By: Michael Olbrich <m.olbrich@pengutronix.de>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/vfpmacros.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/lockd/mon.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/arm/include/asm/vfpmacros.h
-+++ b/arch/arm/include/asm/vfpmacros.h
-@@ -28,7 +28,7 @@
- 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
- 	ldr	\tmp, [\tmp, #0]
- 	tst	\tmp, #HWCAP_VFPv3D16
--	ldceq	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
-+	ldceql	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
- 	addne	\base, \base, #32*4		    @ step over unused register space
- #else
- 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
-@@ -52,7 +52,7 @@
- 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
- 	ldr	\tmp, [\tmp, #0]
- 	tst	\tmp, #HWCAP_VFPv3D16
--	stceq	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
-+	stceql	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
- 	addne	\base, \base, #32*4		    @ step over unused register space
- #else
- 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
+--- a/fs/lockd/mon.c
++++ b/fs/lockd/mon.c
+@@ -40,6 +40,7 @@ struct nsm_args {
+ 	u32			proc;
+ 
+ 	char			*mon_name;
++	char			*nodename;
+ };
+ 
+ struct nsm_res {
+@@ -94,6 +95,7 @@ static int nsm_mon_unmon(struct nsm_hand
+ 		.vers		= 3,
+ 		.proc		= NLMPROC_NSM_NOTIFY,
+ 		.mon_name	= nsm->sm_mon_name,
++		.nodename	= utsname()->nodename,
+ 	};
+ 	struct rpc_message msg = {
+ 		.rpc_argp	= &args,
+@@ -430,7 +432,7 @@ static void encode_my_id(struct xdr_stre
+ {
+ 	__be32 *p;
+ 
+-	encode_nsm_string(xdr, utsname()->nodename);
++	encode_nsm_string(xdr, argp->nodename);
+ 	p = xdr_reserve_space(xdr, 4 + 4 + 4);
+ 	*p++ = cpu_to_be32(argp->prog);
+ 	*p++ = cpu_to_be32(argp->vers);
 
 
