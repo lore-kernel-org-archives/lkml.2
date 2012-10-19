@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757965Ab2JSDPs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:15:48 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51513 "EHLO mail.kernel.org"
+	id S1757977Ab2JSDQW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:16:22 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51480 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757384Ab2JSCri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:38 -0400
+	id S1757344Ab2JSCrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Lin Ming <mlin@ss.pku.edu.cn>, Julian Anastasov <ja@ssi.bg>,
-        Simon Horman <horms@verge.net.au>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        David Miller <davem@davemloft.net>
-Subject: [ 38/62] ipvs: fix oops on NAT reply in br_nf context
-Date: Thu, 18 Oct 2012 19:45:06 -0700
-Message-Id: <20121019024302.135031748@linuxfoundation.org>
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Alex Lyashkov <umka@cloudlinux.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 26/62] module: taint kernel when lve module is loaded
+Date: Thu, 18 Oct 2012 19:44:54 -0700
+Message-Id: <20121019024300.183823614@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -28,111 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lin Ming <mlin@ss.pku.edu.cn>
+From: Matthew Garrett <mjg59@srcf.ucam.org>
 
-commit 9e33ce453f8ac8452649802bee1f410319408f4b upstream.
+commit c99af3752bb52ba3aece5315279a57a477edfaf1 upstream.
 
-IPVS should not reset skb->nf_bridge in FORWARD hook
-by calling nf_reset for NAT replies. It triggers oops in
-br_nf_forward_finish.
+Cloudlinux have a product called lve that includes a kernel module. This
+was previously GPLed but is now under a proprietary license, but the
+module continues to declare MODULE_LICENSE("GPL") and makes use of some
+EXPORT_SYMBOL_GPL symbols. Forcibly taint it in order to avoid this.
 
-[  579.781508] BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
-[  579.781669] IP: [<ffffffff817b1ca5>] br_nf_forward_finish+0x58/0x112
-[  579.781792] PGD 218f9067 PUD 0
-[  579.781865] Oops: 0000 [#1] SMP
-[  579.781945] CPU 0
-[  579.781983] Modules linked in:
-[  579.782047]
-[  579.782080]
-[  579.782114] Pid: 4644, comm: qemu Tainted: G        W    3.5.0-rc5-00006-g95e69f9 #282 Hewlett-Packard  /30E8
-[  579.782300] RIP: 0010:[<ffffffff817b1ca5>]  [<ffffffff817b1ca5>] br_nf_forward_finish+0x58/0x112
-[  579.782455] RSP: 0018:ffff88007b003a98  EFLAGS: 00010287
-[  579.782541] RAX: 0000000000000008 RBX: ffff8800762ead00 RCX: 000000000001670a
-[  579.782653] RDX: 0000000000000000 RSI: 000000000000000a RDI: ffff8800762ead00
-[  579.782845] RBP: ffff88007b003ac8 R08: 0000000000016630 R09: ffff88007b003a90
-[  579.782957] R10: ffff88007b0038e8 R11: ffff88002da37540 R12: ffff88002da01a02
-[  579.783066] R13: ffff88002da01a80 R14: ffff88002d83c000 R15: ffff88002d82a000
-[  579.783177] FS:  0000000000000000(0000) GS:ffff88007b000000(0063) knlGS:00000000f62d1b70
-[  579.783306] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
-[  579.783395] CR2: 0000000000000004 CR3: 00000000218fe000 CR4: 00000000000027f0
-[  579.783505] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  579.783684] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  579.783795] Process qemu (pid: 4644, threadinfo ffff880021b20000, task ffff880021aba760)
-[  579.783919] Stack:
-[  579.783959]  ffff88007693cedc ffff8800762ead00 ffff88002da01a02 ffff8800762ead00
-[  579.784110]  ffff88002da01a02 ffff88002da01a80 ffff88007b003b18 ffffffff817b26c7
-[  579.784260]  ffff880080000000 ffffffff81ef59f0 ffff8800762ead00 ffffffff81ef58b0
-[  579.784477] Call Trace:
-[  579.784523]  <IRQ>
-[  579.784562]
-[  579.784603]  [<ffffffff817b26c7>] br_nf_forward_ip+0x275/0x2c8
-[  579.784707]  [<ffffffff81704b58>] nf_iterate+0x47/0x7d
-[  579.784797]  [<ffffffff817ac32e>] ? br_dev_queue_push_xmit+0xae/0xae
-[  579.784906]  [<ffffffff81704bfb>] nf_hook_slow+0x6d/0x102
-[  579.784995]  [<ffffffff817ac32e>] ? br_dev_queue_push_xmit+0xae/0xae
-[  579.785175]  [<ffffffff8187fa95>] ? _raw_write_unlock_bh+0x19/0x1b
-[  579.785179]  [<ffffffff817ac417>] __br_forward+0x97/0xa2
-[  579.785179]  [<ffffffff817ad366>] br_handle_frame_finish+0x1a6/0x257
-[  579.785179]  [<ffffffff817b2386>] br_nf_pre_routing_finish+0x26d/0x2cb
-[  579.785179]  [<ffffffff817b2cf0>] br_nf_pre_routing+0x55d/0x5c1
-[  579.785179]  [<ffffffff81704b58>] nf_iterate+0x47/0x7d
-[  579.785179]  [<ffffffff817ad1c0>] ? br_handle_local_finish+0x44/0x44
-[  579.785179]  [<ffffffff81704bfb>] nf_hook_slow+0x6d/0x102
-[  579.785179]  [<ffffffff817ad1c0>] ? br_handle_local_finish+0x44/0x44
-[  579.785179]  [<ffffffff81551525>] ? sky2_poll+0xb35/0xb54
-[  579.785179]  [<ffffffff817ad62a>] br_handle_frame+0x213/0x229
-[  579.785179]  [<ffffffff817ad417>] ? br_handle_frame_finish+0x257/0x257
-[  579.785179]  [<ffffffff816e3b47>] __netif_receive_skb+0x2b4/0x3f1
-[  579.785179]  [<ffffffff816e69fc>] process_backlog+0x99/0x1e2
-[  579.785179]  [<ffffffff816e6800>] net_rx_action+0xdf/0x242
-[  579.785179]  [<ffffffff8107e8a8>] __do_softirq+0xc1/0x1e0
-[  579.785179]  [<ffffffff8135a5ba>] ? trace_hardirqs_off_thunk+0x3a/0x6c
-[  579.785179]  [<ffffffff8188812c>] call_softirq+0x1c/0x30
-
-The steps to reproduce as follow,
-
-1. On Host1, setup brige br0(192.168.1.106)
-2. Boot a kvm guest(192.168.1.105) on Host1 and start httpd
-3. Start IPVS service on Host1
-   ipvsadm -A -t 192.168.1.106:80 -s rr
-   ipvsadm -a -t 192.168.1.106:80 -r 192.168.1.105:80 -m
-4. Run apache benchmark on Host2(192.168.1.101)
-   ab -n 1000 http://192.168.1.106/
-
-ip_vs_reply4
-  ip_vs_out
-    handle_response
-      ip_vs_notrack
-        nf_reset()
-        {
-          skb->nf_bridge = NULL;
-        }
-
-Actually, IPVS wants in this case just to replace nfct
-with untracked version. So replace the nf_reset(skb) call
-in ip_vs_notrack() with a nf_conntrack_put(skb->nfct) call.
-
-Signed-off-by: Lin Ming <mlin@ss.pku.edu.cn>
-Signed-off-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Simon Horman <horms@verge.net.au>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Acked-by: David Miller <davem@davemloft.net>
+Signed-off-by: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Alex Lyashkov <umka@cloudlinux.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/net/ip_vs.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/module.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/include/net/ip_vs.h
-+++ b/include/net/ip_vs.h
-@@ -1356,7 +1356,7 @@ static inline void ip_vs_notrack(struct
- 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2729,6 +2729,10 @@ static int check_module_license_and_vers
+ 	if (strcmp(mod->name, "driverloader") == 0)
+ 		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
  
- 	if (!ct || !nf_ct_is_untracked(ct)) {
--		nf_reset(skb);
-+		nf_conntrack_put(skb->nfct);
- 		skb->nfct = &nf_ct_untracked_get()->ct_general;
- 		skb->nfctinfo = IP_CT_NEW;
- 		nf_conntrack_get(skb->nfct);
++	/* lve claims to be GPL but upstream won't provide source */
++	if (strcmp(mod->name, "lve") == 0)
++		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
++
+ #ifdef CONFIG_MODVERSIONS
+ 	if ((mod->num_syms && !mod->crcs)
+ 	    || (mod->num_gpl_syms && !mod->gpl_crcs)
 
 
