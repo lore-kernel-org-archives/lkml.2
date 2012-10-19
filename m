@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964910Ab2JSDP3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:15:29 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51556 "EHLO mail.kernel.org"
+	id S1757965Ab2JSDPs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:15:48 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51513 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757411Ab2JSCrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:42 -0400
+	id S1757384Ab2JSCri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Rafal Fitt <rafalf@aplusc.com.pl>, Patrick McHardy <kaber@trash.net>,
+        Lin Ming <mlin@ss.pku.edu.cn>, Julian Anastasov <ja@ssi.bg>,
+        Simon Horman <horms@verge.net.au>,
         Pablo Neira Ayuso <pablo@netfilter.org>,
         David Miller <davem@davemloft.net>
-Subject: [ 41/62] netfilter: nf_ct_expect: fix possible access to uninitialized timer
-Date: Thu, 18 Oct 2012 19:45:09 -0700
-Message-Id: <20121019024302.605586681@linuxfoundation.org>
+Subject: [ 38/62] ipvs: fix oops on NAT reply in br_nf context
+Date: Thu, 18 Oct 2012 19:45:06 -0700
+Message-Id: <20121019024302.135031748@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -27,122 +28,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pablo Neira Ayuso <pablo@netfilter.org>
+From: Lin Ming <mlin@ss.pku.edu.cn>
 
-commit 2614f86490122bf51eb7c12ec73927f1900f4e7d upstream.
+commit 9e33ce453f8ac8452649802bee1f410319408f4b upstream.
 
-In __nf_ct_expect_check, the function refresh_timer returns 1
-if a matching expectation is found and its timer is successfully
-refreshed. This results in nf_ct_expect_related returning 0.
-Note that at this point:
+IPVS should not reset skb->nf_bridge in FORWARD hook
+by calling nf_reset for NAT replies. It triggers oops in
+br_nf_forward_finish.
 
-- the passed expectation is not inserted in the expectation table
-  and its timer was not initialized, since we have refreshed one
-  matching/existing expectation.
+[  579.781508] BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+[  579.781669] IP: [<ffffffff817b1ca5>] br_nf_forward_finish+0x58/0x112
+[  579.781792] PGD 218f9067 PUD 0
+[  579.781865] Oops: 0000 [#1] SMP
+[  579.781945] CPU 0
+[  579.781983] Modules linked in:
+[  579.782047]
+[  579.782080]
+[  579.782114] Pid: 4644, comm: qemu Tainted: G        W    3.5.0-rc5-00006-g95e69f9 #282 Hewlett-Packard  /30E8
+[  579.782300] RIP: 0010:[<ffffffff817b1ca5>]  [<ffffffff817b1ca5>] br_nf_forward_finish+0x58/0x112
+[  579.782455] RSP: 0018:ffff88007b003a98  EFLAGS: 00010287
+[  579.782541] RAX: 0000000000000008 RBX: ffff8800762ead00 RCX: 000000000001670a
+[  579.782653] RDX: 0000000000000000 RSI: 000000000000000a RDI: ffff8800762ead00
+[  579.782845] RBP: ffff88007b003ac8 R08: 0000000000016630 R09: ffff88007b003a90
+[  579.782957] R10: ffff88007b0038e8 R11: ffff88002da37540 R12: ffff88002da01a02
+[  579.783066] R13: ffff88002da01a80 R14: ffff88002d83c000 R15: ffff88002d82a000
+[  579.783177] FS:  0000000000000000(0000) GS:ffff88007b000000(0063) knlGS:00000000f62d1b70
+[  579.783306] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
+[  579.783395] CR2: 0000000000000004 CR3: 00000000218fe000 CR4: 00000000000027f0
+[  579.783505] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  579.783684] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  579.783795] Process qemu (pid: 4644, threadinfo ffff880021b20000, task ffff880021aba760)
+[  579.783919] Stack:
+[  579.783959]  ffff88007693cedc ffff8800762ead00 ffff88002da01a02 ffff8800762ead00
+[  579.784110]  ffff88002da01a02 ffff88002da01a80 ffff88007b003b18 ffffffff817b26c7
+[  579.784260]  ffff880080000000 ffffffff81ef59f0 ffff8800762ead00 ffffffff81ef58b0
+[  579.784477] Call Trace:
+[  579.784523]  <IRQ>
+[  579.784562]
+[  579.784603]  [<ffffffff817b26c7>] br_nf_forward_ip+0x275/0x2c8
+[  579.784707]  [<ffffffff81704b58>] nf_iterate+0x47/0x7d
+[  579.784797]  [<ffffffff817ac32e>] ? br_dev_queue_push_xmit+0xae/0xae
+[  579.784906]  [<ffffffff81704bfb>] nf_hook_slow+0x6d/0x102
+[  579.784995]  [<ffffffff817ac32e>] ? br_dev_queue_push_xmit+0xae/0xae
+[  579.785175]  [<ffffffff8187fa95>] ? _raw_write_unlock_bh+0x19/0x1b
+[  579.785179]  [<ffffffff817ac417>] __br_forward+0x97/0xa2
+[  579.785179]  [<ffffffff817ad366>] br_handle_frame_finish+0x1a6/0x257
+[  579.785179]  [<ffffffff817b2386>] br_nf_pre_routing_finish+0x26d/0x2cb
+[  579.785179]  [<ffffffff817b2cf0>] br_nf_pre_routing+0x55d/0x5c1
+[  579.785179]  [<ffffffff81704b58>] nf_iterate+0x47/0x7d
+[  579.785179]  [<ffffffff817ad1c0>] ? br_handle_local_finish+0x44/0x44
+[  579.785179]  [<ffffffff81704bfb>] nf_hook_slow+0x6d/0x102
+[  579.785179]  [<ffffffff817ad1c0>] ? br_handle_local_finish+0x44/0x44
+[  579.785179]  [<ffffffff81551525>] ? sky2_poll+0xb35/0xb54
+[  579.785179]  [<ffffffff817ad62a>] br_handle_frame+0x213/0x229
+[  579.785179]  [<ffffffff817ad417>] ? br_handle_frame_finish+0x257/0x257
+[  579.785179]  [<ffffffff816e3b47>] __netif_receive_skb+0x2b4/0x3f1
+[  579.785179]  [<ffffffff816e69fc>] process_backlog+0x99/0x1e2
+[  579.785179]  [<ffffffff816e6800>] net_rx_action+0xdf/0x242
+[  579.785179]  [<ffffffff8107e8a8>] __do_softirq+0xc1/0x1e0
+[  579.785179]  [<ffffffff8135a5ba>] ? trace_hardirqs_off_thunk+0x3a/0x6c
+[  579.785179]  [<ffffffff8188812c>] call_softirq+0x1c/0x30
 
-- nf_ct_expect_alloc uses kmem_cache_alloc, so the expectation
-  timer is in some undefined state just after the allocation,
-  until it is appropriately initialized.
+The steps to reproduce as follow,
 
-This can be a problem for the SIP helper during the expectation
-addition:
+1. On Host1, setup brige br0(192.168.1.106)
+2. Boot a kvm guest(192.168.1.105) on Host1 and start httpd
+3. Start IPVS service on Host1
+   ipvsadm -A -t 192.168.1.106:80 -s rr
+   ipvsadm -a -t 192.168.1.106:80 -r 192.168.1.105:80 -m
+4. Run apache benchmark on Host2(192.168.1.101)
+   ab -n 1000 http://192.168.1.106/
 
- ...
- if (nf_ct_expect_related(rtp_exp) == 0) {
-         if (nf_ct_expect_related(rtcp_exp) != 0)
-                 nf_ct_unexpect_related(rtp_exp);
- ...
+ip_vs_reply4
+  ip_vs_out
+    handle_response
+      ip_vs_notrack
+        nf_reset()
+        {
+          skb->nf_bridge = NULL;
+        }
 
-Note that nf_ct_expect_related(rtp_exp) may return 0 for the timer refresh
-case that is detailed above. Then, if nf_ct_unexpect_related(rtcp_exp)
-returns != 0, nf_ct_unexpect_related(rtp_exp) is called, which does:
+Actually, IPVS wants in this case just to replace nfct
+with untracked version. So replace the nf_reset(skb) call
+in ip_vs_notrack() with a nf_conntrack_put(skb->nfct) call.
 
- spin_lock_bh(&nf_conntrack_lock);
- if (del_timer(&exp->timeout)) {
-         nf_ct_unlink_expect(exp);
-         nf_ct_expect_put(exp);
- }
- spin_unlock_bh(&nf_conntrack_lock);
-
-Note that del_timer always returns false if the timer has been
-initialized.  However, the timer was not initialized since setup_timer
-was not called, therefore, the expectation timer remains in some
-undefined state. If I'm not missing anything, this may lead to the
-removal an unexistent expectation.
-
-To fix this, the optimization that allows refreshing an expectation
-is removed. Now nf_conntrack_expect_related looks more consistent
-to me since it always add the expectation in case that it returns
-success.
-
-Thanks to Patrick McHardy for participating in the discussion of
-this patch.
-
-I think this may be the source of the problem described by:
-http://marc.info/?l=netfilter-devel&m=134073514719421&w=2
-
-Reported-by: Rafal Fitt <rafalf@aplusc.com.pl>
-Acked-by: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Lin Ming <mlin@ss.pku.edu.cn>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Simon Horman <horms@verge.net.au>
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Acked-by: David Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/nf_conntrack_expect.c |   29 ++++++-----------------------
- 1 file changed, 6 insertions(+), 23 deletions(-)
+ include/net/ip_vs.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/netfilter/nf_conntrack_expect.c
-+++ b/net/netfilter/nf_conntrack_expect.c
-@@ -361,23 +361,6 @@ static void evict_oldest_expect(struct n
- 	}
- }
+--- a/include/net/ip_vs.h
++++ b/include/net/ip_vs.h
+@@ -1356,7 +1356,7 @@ static inline void ip_vs_notrack(struct
+ 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
  
--static inline int refresh_timer(struct nf_conntrack_expect *i)
--{
--	struct nf_conn_help *master_help = nfct_help(i->master);
--	const struct nf_conntrack_expect_policy *p;
--
--	if (!del_timer(&i->timeout))
--		return 0;
--
--	p = &rcu_dereference_protected(
--		master_help->helper,
--		lockdep_is_held(&nf_conntrack_lock)
--		)->expect_policy[i->class];
--	i->timeout.expires = jiffies + p->timeout * HZ;
--	add_timer(&i->timeout);
--	return 1;
--}
--
- static inline int __nf_ct_expect_check(struct nf_conntrack_expect *expect)
- {
- 	const struct nf_conntrack_expect_policy *p;
-@@ -386,7 +369,7 @@ static inline int __nf_ct_expect_check(s
- 	struct nf_conn_help *master_help = nfct_help(master);
- 	struct nf_conntrack_helper *helper;
- 	struct net *net = nf_ct_exp_net(expect);
--	struct hlist_node *n;
-+	struct hlist_node *n, *next;
- 	unsigned int h;
- 	int ret = 1;
- 
-@@ -395,12 +378,12 @@ static inline int __nf_ct_expect_check(s
- 		goto out;
- 	}
- 	h = nf_ct_expect_dst_hash(&expect->tuple);
--	hlist_for_each_entry(i, n, &net->ct.expect_hash[h], hnode) {
-+	hlist_for_each_entry_safe(i, n, next, &net->ct.expect_hash[h], hnode) {
- 		if (expect_matches(i, expect)) {
--			/* Refresh timer: if it's dying, ignore.. */
--			if (refresh_timer(i)) {
--				ret = 0;
--				goto out;
-+			if (del_timer(&i->timeout)) {
-+				nf_ct_unlink_expect(i);
-+				nf_ct_expect_put(i);
-+				break;
- 			}
- 		} else if (expect_clash(i, expect)) {
- 			ret = -EBUSY;
+ 	if (!ct || !nf_ct_is_untracked(ct)) {
+-		nf_reset(skb);
++		nf_conntrack_put(skb->nfct);
+ 		skb->nfct = &nf_ct_untracked_get()->ct_general;
+ 		skb->nfctinfo = IP_CT_NEW;
+ 		nf_conntrack_get(skb->nfct);
 
 
