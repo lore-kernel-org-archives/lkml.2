@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102Ab2JSDRt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:17:49 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54636 "EHLO mail.kernel.org"
+	id S932735Ab2JSDTm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:19:42 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54667 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757862Ab2JSDRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:45 -0400
+	id S1758099Ab2JSDRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jean-Christian de Rivaz <jc@eclis.ch>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 29/37] Add CDC-ACM support for the CX93010-2x UCMxx USB Modem
-Date: Thu, 18 Oct 2012 20:16:52 -0700
-Message-Id: <20121019031307.545726559@linuxfoundation.org>
+        Rafal Fitt <rafalf@aplusc.com.pl>, David Miller <davem@davemloft.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [ 23/37] netfilter: nf_nat_sip: fix incorrect handling of EBUSY for RTCP expectation
+Date: Thu, 18 Oct 2012 20:16:46 -0700
+Message-Id: <20121019031306.577236590@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -26,36 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean-Christian de Rivaz <jc@eclis.ch>
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-commit e7d491a19d3e3aac544070293891a2542ae0c565 upstream.
+commit 3f509c689a07a4aa989b426893d8491a7ffcc410 upstream.
 
-This USB V.92/V.32bis Controllered Modem have the USB vendor ID 0x0572
-and device ID 0x1340. It need the NO_UNION_NORMAL quirk to be recognized.
+We're hitting bug while trying to reinsert an already existing
+expectation:
 
-Reference:
-http://www.conexant.com/servlets/DownloadServlet/DSH-201723-005.pdf?docid=1725&revid=5
-See idVendor and idProduct in table 6-1. Device Descriptors
+kernel BUG at kernel/timer.c:895!
+invalid opcode: 0000 [#1] SMP
+[...]
+Call Trace:
+ <IRQ>
+ [<ffffffffa0069563>] nf_ct_expect_related_report+0x4a0/0x57a [nf_conntrack]
+ [<ffffffff812d423a>] ? in4_pton+0x72/0x131
+ [<ffffffffa00ca69e>] ip_nat_sdp_media+0xeb/0x185 [nf_nat_sip]
+ [<ffffffffa00b5b9b>] set_expected_rtp_rtcp+0x32d/0x39b [nf_conntrack_sip]
+ [<ffffffffa00b5f15>] process_sdp+0x30c/0x3ec [nf_conntrack_sip]
+ [<ffffffff8103f1eb>] ? irq_exit+0x9a/0x9c
+ [<ffffffffa00ca738>] ? ip_nat_sdp_media+0x185/0x185 [nf_nat_sip]
 
-Signed-off-by: Jean-Christian de Rivaz <jc@eclis.ch>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+We have to remove the RTP expectation if the RTCP expectation hits EBUSY
+since we keep trying with other ports until we succeed.
+
+Reported-by: Rafal Fitt <rafalf@aplusc.com.pl>
+Acked-by: David Miller <davem@davemloft.net>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/ipv4/netfilter/nf_nat_sip.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1496,6 +1496,9 @@ static const struct usb_device_id acm_id
- 					   Maybe we should define a new
- 					   quirk for this. */
- 	},
-+	{ USB_DEVICE(0x0572, 0x1340), /* Conexant CX93010-2x UCMxx */
-+	.driver_info = NO_UNION_NORMAL,
-+	},
- 	{ USB_DEVICE(0x1bbb, 0x0003), /* Alcatel OT-I650 */
- 	.driver_info = NO_UNION_NORMAL, /* reports zero length descriptor */
- 	},
+--- a/net/ipv4/netfilter/nf_nat_sip.c
++++ b/net/ipv4/netfilter/nf_nat_sip.c
+@@ -501,7 +501,10 @@ static unsigned int ip_nat_sdp_media(str
+ 		ret = nf_ct_expect_related(rtcp_exp);
+ 		if (ret == 0)
+ 			break;
+-		else if (ret != -EBUSY) {
++		else if (ret == -EBUSY) {
++			nf_ct_unexpect_related(rtp_exp);
++			continue;
++		} else if (ret < 0) {
+ 			nf_ct_unexpect_related(rtp_exp);
+ 			port = 0;
+ 			break;
 
 
