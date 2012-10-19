@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759226Ab2JST6m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 15:58:42 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:37727 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758898Ab2JST6i (ORCPT
+	id S1758426Ab2JSUCl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 16:02:41 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:56009 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754768Ab2JSUCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 15:58:38 -0400
+	Fri, 19 Oct 2012 16:02:39 -0400
+Date: Fri, 19 Oct 2012 13:02:35 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Matt Helsley <matthltc@linux.vnet.ibm.com>
+Cc: rjw@sisk.pl, oleg@redhat.com, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.8] cgroup_freezer: allow migration
+ regardless of freezer state and update locking
+Message-ID: <20121019200235.GN13370@google.com>
+References: <1350426526-14254-1-git-send-email-tj@kernel.org>
+ <20121017191606.GA6223@us.ibm.com>
+ <20121018211434.GI13370@google.com>
+ <20121018222155.GB6223@us.ibm.com>
+ <20121018223517.GQ13370@google.com>
+ <20121018234726.GC6223@us.ibm.com>
+ <20121019000153.GZ13370@google.com>
+ <20121019012945.GD6223@us.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <87fw5bp858.fsf@rustcorp.com.au>
-References: <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com>
- <87txtso9xw.fsf@rustcorp.com.au> <CA+55aFxZdtD51AVKLtKK95ooh8VB8-5Tt8nHsxSUT67CBRrp2g@mail.gmail.com>
- <871ugwny1n.fsf@rustcorp.com.au> <CA+55aFwTz6xadNL37H6Qb8+rWNefn0cQ0URFPfD=Ea=J54xzGg@mail.gmail.com>
- <87fw5bp858.fsf@rustcorp.com.au>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 19 Oct 2012 12:58:16 -0700
-X-Google-Sender-Auth: 6E3OraatNkJQtVW2prRD9TgMFrc
-Message-ID: <CA+55aFx339WquJEjijeRQ+12Aw0sa+MoL+kFttjbJLJ6S1Jy+Q@mail.gmail.com>
-Subject: Re: RFC: sign the modules at install time
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: David Miller <davem@davemloft.net>, David Howells <dhowells@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121019012945.GD6223@us.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 6:23 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->
-> Smerged them together: no point moving the x509keyid script now.
-> I dropped the optional dst arg, since we don't use it.
->
-> Thanks,
-> Rusty.
-> ===
-> From: Rusty Russell <rusty@rustcorp.com.au>
-> Subject: [PATCH] kbuild: sign the modules at install time
->
-> Linus deleted the old code and put signing on the install command,
-> I fixed it to extract the keyid and signer-name within sign-file
-> and cleaned up that script now it always signs in-place.
+Hey, Matt.
 
-Ugh. That was horribly broken, and sadly I didn't notice until several
-pulls later (I tend to try to compile-test much more often, but do
-boot-tests only a couple of times a day).
+On Thu, Oct 18, 2012 at 06:29:45PM -0700, Matt Helsley wrote:
+> Yeah, that would be a nice cleanup too. I guess the ultra-careful way to
+> remove this feature would be something like:
+> 
+> 	Add an internal migration restriction (which may or may not be
+> 		exported as a userspace interface in a subsequent
+> 		patch).
+> 
+> 	Make the cgroup freezer use it.
+> 
+> 	Make the cgroup freezer WARN_ONCE() when the subsystem is first
+> 		mounted. Indicates that the behavior is going to
+> 		change.
+> 
+> 	... time passes ...
+> 
+> 	Remove the use of the migration "lock" from the cgroup freezer
+> 		and the WARN_ONCE().
+> 
+> Which would also make the feature more obvious.
 
-You clearly hadn't tested that patch at all, the resulting signature
-was broken in two independent and totally different ways.
+I don't think I'm gonna go that far for this.  I don't think we need
+cgroup migration locking after all.
 
-Tssk. I fixed it up, and now it works-for-me(tm), but some perl person
-probably really should try to make that sign-file and x509keyid merge.
-My fix made the thing even slower, doing two extra "wc -c" invocations
-since it can't do "${#..}" expansion due to the locale problem.
+Thanks.
 
-             Linus
+-- 
+tejun
