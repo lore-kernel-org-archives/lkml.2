@@ -1,157 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab2JSEZD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 00:25:03 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:55352 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751750Ab2JSEY7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 00:24:59 -0400
-From: Robin Dong <robin.k.dong@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Robin Dong <sanbai@taobao.com>, Tejun Heo <tj@kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Tao Ma <boyu.mt@taobao.com>
-Subject: [PATCH 2/2 v4] block/throttle: Add IO queued information in blkio.throttle
-Date: Fri, 19 Oct 2012 12:24:46 +0800
-Message-Id: <1350620686-12846-2-git-send-email-robin.k.dong@gmail.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1350620686-12846-1-git-send-email-robin.k.dong@gmail.com>
-References: <1350620686-12846-1-git-send-email-robin.k.dong@gmail.com>
+	id S1757149Ab2JSE0J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 00:26:09 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:54424 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756430Ab2JSE0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 00:26:07 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        toshi.kani@hp.com, lenb@kernel.org, wency@cn.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com
+Subject: Re: [PATCH v2] acpi : acpi_bus_trim() stops removing devices when failing to remove the device
+Date: Fri, 19 Oct 2012 06:29:52 +0200
+Message-ID: <1846185.MSykHDcMmb@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <50769B8C.2060901@jp.fujitsu.com>
+References: <50769B8C.2060901@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robin Dong <sanbai@taobao.com>
+On Thursday 11 of October 2012 19:12:28 Yasuaki Ishimatsu wrote:
+> acpi_bus_trim() stops removing devices, when acpi_bus_remove() return error
+> number. But acpi_bus_remove() cannot return error number correctly.
+> acpi_bus_remove() only return -EINVAL, when dev argument is NULL. Thus even if
+> device cannot be removed correctly, acpi_bus_trim() ignores and continues to
+> remove devices. acpi_bus_hot_remove_device() uses acpi_bus_trim() for removing
+> devices. Therefore acpi_bus_hot_remove_device() can send "_EJ0" to firmware,
+> even if the device is running on the system. In this case, the system cannot
+> work well.
+> 
+> Vasilis hit the bug at memory hotplug and reported it as follow:
+> https://lkml.org/lkml/2012/9/26/318
+> 
+> So acpi_bus_trim() should check whether device was removed or not correctly.
+> The patch adds error check into some functions to remove the device.
+> 
+> Applying the patch, acpi_bus_trim() stops removing devices when failing
+> to remove the device. But I think there is no impact with the
+> exceptionof CPU and Memory hotplug path. Because other device also fails
+> but the fail is an irregular case like device is NULL.
+> 
+> v1->v2
+> - add a rollback for reinstalling a notify handler.
+> 
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Currently, if the IO is throttled by io-throttle, the system admin has no idea
-of the situation and can't report it to the real application user about that
-he/she has to do something.
+Greg, do you think there may be any problems with the changes in dd.c?
 
-So this patch adds a new interface named blkio.throttle.io_queued which
-exposes the number of bios that have been sent to blk-throttle therefore the
-user could calculate the difference from throttle.io_serviced to see how many
-IOs are currently throttled.
+Rafael
 
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
-Signed-off-by: Robin Dong <sanbai@taobao.com>
----
-v3 <-- v2:
- - Use nr-queued[] of struct throtl_grp for stats instaed of adding new blkg_rwstat.
 
-v4 <-- v3:
- - Add two new blkg_rwstat arguments to count total bios be sent in blk_throttle.
-
- block/blk-throttle.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 44 insertions(+), 0 deletions(-)
-
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 46ddeff..b122b0c 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -70,6 +70,10 @@ struct throtl_grp {
- 	/* Number of queued bios on READ and WRITE lists */
- 	unsigned int nr_queued[2];
- 
-+	/* The stats of total number queued in blk-throtlle */
-+	struct blkg_rwstat io_queue_bytes;
-+	struct blkg_rwstat io_queued;
-+
- 	/* bytes per second rate limits */
- 	uint64_t bps[2];
- 
-@@ -267,6 +271,8 @@ static void throtl_pd_reset_stats(struct blkcg_gq *blkg)
- 		blkg_rwstat_reset(&sc->service_bytes);
- 		blkg_rwstat_reset(&sc->serviced);
- 	}
-+	blkg_rwstat_reset(&tg->io_queued);
-+	blkg_rwstat_reset(&tg->io_queue_bytes);
- }
- 
- static struct throtl_grp *throtl_lookup_tg(struct throtl_data *td,
-@@ -699,6 +705,12 @@ static void throtl_update_dispatch_stats(struct throtl_grp *tg, u64 bytes,
- 	local_irq_restore(flags);
- }
- 
-+static void throtl_update_queued_stats(struct throtl_grp *tg, u64 bytes, int rw)
-+{
-+	blkg_rwstat_add(&tg->io_queued, rw, 1);
-+	blkg_rwstat_add(&tg->io_queue_bytes, rw, bytes);
-+}
-+
- static void throtl_charge_bio(struct throtl_grp *tg, struct bio *bio)
- {
- 	bool rw = bio_data_dir(bio);
-@@ -952,6 +964,15 @@ static u64 tg_prfill_cpu_rwstat(struct seq_file *sf,
- 	return __blkg_prfill_rwstat(sf, pd, &rwstat);
- }
- 
-+static u64 tg_prfill_io_queued(struct seq_file *sf,
-+				struct blkg_policy_data *pd, int off)
-+{
-+	struct throtl_grp *tg = pd_to_tg(pd);
-+	struct blkg_rwstat *rwstat = (void *)tg + off;
-+
-+	return __blkg_prfill_rwstat(sf, pd, rwstat);
-+}
-+
- static int tg_print_cpu_rwstat(struct cgroup *cgrp, struct cftype *cft,
- 			       struct seq_file *sf)
- {
-@@ -962,6 +983,16 @@ static int tg_print_cpu_rwstat(struct cgroup *cgrp, struct cftype *cft,
- 	return 0;
- }
- 
-+static int tg_print_io_queued(struct cgroup *cgrp, struct cftype *cft,
-+			       struct seq_file *sf)
-+{
-+	struct blkcg *blkcg = cgroup_to_blkcg(cgrp);
-+
-+	blkcg_print_blkgs(sf, blkcg, tg_prfill_io_queued, &blkcg_policy_throtl,
-+			  cft->private, true);
-+	return 0;
-+}
-+
- static u64 tg_prfill_conf_u64(struct seq_file *sf, struct blkg_policy_data *pd,
- 			      int off)
- {
-@@ -1084,6 +1115,16 @@ static struct cftype throtl_files[] = {
- 		.private = offsetof(struct tg_stats_cpu, serviced),
- 		.read_seq_string = tg_print_cpu_rwstat,
- 	},
-+	{
-+		.name = "throttle.io_queue_bytes",
-+		.private = offsetof(struct throtl_grp, io_queue_bytes),
-+		.read_seq_string = tg_print_io_queued,
-+	},
-+	{
-+		.name = "throttle.io_queued",
-+		.private = offsetof(struct throtl_grp, io_queued),
-+		.read_seq_string = tg_print_io_queued,
-+	},
- 	{ }	/* terminate */
- };
- 
-@@ -1128,6 +1169,8 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
- 		if (tg_no_rule_group(tg, rw)) {
- 			throtl_update_dispatch_stats(tg,
- 						     bio->bi_size, bio->bi_rw);
-+			throtl_update_queued_stats(tg,
-+					bio->bi_size, bio->bi_rw);
- 			goto out_unlock_rcu;
- 		}
- 	}
-@@ -1141,6 +1184,7 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
- 	if (unlikely(!tg))
- 		goto out_unlock;
- 
-+	throtl_update_queued_stats(tg, bio->bi_size, bio->bi_rw);
- 	if (tg->nr_queued[rw]) {
- 		/*
- 		 * There is already another bio queued in same dir. No
+> ---
+>  drivers/acpi/scan.c    |   21 ++++++++++++++++++---
+>  drivers/base/dd.c      |   22 +++++++++++++++++-----
+>  include/linux/device.h |    2 +-
+>  3 files changed, 36 insertions(+), 9 deletions(-)
+> 
+> Index: linux-3.6/drivers/acpi/scan.c
+> ===================================================================
+> --- linux-3.6.orig/drivers/acpi/scan.c	2012-10-11 18:31:40.189019503 +0900
+> +++ linux-3.6/drivers/acpi/scan.c	2012-10-11 18:42:35.669041641 +0900
+> @@ -445,18 +445,29 @@ static int acpi_device_remove(struct dev
+>  {
+>  	struct acpi_device *acpi_dev = to_acpi_device(dev);
+>  	struct acpi_driver *acpi_drv = acpi_dev->driver;
+> +	int ret;
+>  
+>  	if (acpi_drv) {
+>  		if (acpi_drv->ops.notify)
+>  			acpi_device_remove_notify_handler(acpi_dev);
+> -		if (acpi_drv->ops.remove)
+> -			acpi_drv->ops.remove(acpi_dev, acpi_dev->removal_type);
+> +		if (acpi_drv->ops.remove) {
+> +			ret = acpi_drv->ops.remove(acpi_dev,
+> +						   acpi_dev->removal_type);
+> +			if (ret)
+> +				goto rollback;
+> +		}
+>  	}
+>  	acpi_dev->driver = NULL;
+>  	acpi_dev->driver_data = NULL;
+>  
+>  	put_device(dev);
+>  	return 0;
+> +
+> +rollback:
+> +	if (acpi_drv->ops.notify)
+> +		acpi_device_install_notify_handler(acpi_dev);
+> +
+> +	return ret;
+>  }
+>  
+>  struct bus_type acpi_bus_type = {
+> @@ -1226,11 +1237,15 @@ static int acpi_device_set_context(struc
+>  
+>  static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
+>  {
+> +	int ret;
+> +
+>  	if (!dev)
+>  		return -EINVAL;
+>  
+>  	dev->removal_type = ACPI_BUS_REMOVAL_EJECT;
+> -	device_release_driver(&dev->dev);
+> +	ret = device_release_driver(&dev->dev);
+> +	if (ret)
+> +		return ret;
+>  
+>  	if (!rmdevice)
+>  		return 0;
+> Index: linux-3.6/drivers/base/dd.c
+> ===================================================================
+> --- linux-3.6.orig/drivers/base/dd.c	2012-10-11 18:31:40.191019505 +0900
+> +++ linux-3.6/drivers/base/dd.c	2012-10-11 18:31:46.873020548 +0900
+> @@ -475,9 +475,10 @@ EXPORT_SYMBOL_GPL(driver_attach);
+>   * __device_release_driver() must be called with @dev lock held.
+>   * When called for a USB interface, @dev->parent lock must be held as well.
+>   */
+> -static void __device_release_driver(struct device *dev)
+> +static int __device_release_driver(struct device *dev)
+>  {
+>  	struct device_driver *drv;
+> +	int ret = 0;
+>  
+>  	drv = dev->driver;
+>  	if (drv) {
+> @@ -493,9 +494,11 @@ static void __device_release_driver(stru
+>  		pm_runtime_put_sync(dev);
+>  
+>  		if (dev->bus && dev->bus->remove)
+> -			dev->bus->remove(dev);
+> +			ret = dev->bus->remove(dev);
+>  		else if (drv->remove)
+> -			drv->remove(dev);
+> +			ret = drv->remove(dev);
+> +		if (ret)
+> +			goto rollback;
+>  		devres_release_all(dev);
+>  		dev->driver = NULL;
+>  		dev_set_drvdata(dev, NULL);
+> @@ -506,6 +509,12 @@ static void __device_release_driver(stru
+>  						     dev);
+>  
+>  	}
+> +
+> +	return ret;
+> +
+> +rollback:
+> +	driver_sysfs_add(dev);
+> +	return ret;
+>  }
+>  
+>  /**
+> @@ -515,16 +524,19 @@ static void __device_release_driver(stru
+>   * Manually detach device from driver.
+>   * When called for a USB interface, @dev->parent lock must be held.
+>   */
+> -void device_release_driver(struct device *dev)
+> +int device_release_driver(struct device *dev)
+>  {
+> +	int ret;
+>  	/*
+>  	 * If anyone calls device_release_driver() recursively from
+>  	 * within their ->remove callback for the same device, they
+>  	 * will deadlock right here.
+>  	 */
+>  	device_lock(dev);
+> -	__device_release_driver(dev);
+> +	ret = __device_release_driver(dev);
+>  	device_unlock(dev);
+> +
+> +	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(device_release_driver);
+>  
+> Index: linux-3.6/include/linux/device.h
+> ===================================================================
+> --- linux-3.6.orig/include/linux/device.h	2012-10-11 18:31:40.194019508 +0900
+> +++ linux-3.6/include/linux/device.h	2012-10-11 18:31:46.881020556 +0900
+> @@ -834,7 +834,7 @@ static inline void *dev_get_platdata(con
+>   * for information on use.
+>   */
+>  extern int __must_check device_bind_driver(struct device *dev);
+> -extern void device_release_driver(struct device *dev);
+> +extern int device_release_driver(struct device *dev);
+>  extern int  __must_check device_attach(struct device *dev);
+>  extern int __must_check driver_attach(struct device_driver *drv);
+>  extern int __must_check device_reprobe(struct device *dev);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 -- 
-1.7.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
