@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030498Ab2JSDS6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:18:58 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54716 "EHLO mail.kernel.org"
+	id S1030530Ab2JSDTT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:19:19 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54681 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757614Ab2JSDRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:54 -0400
+	id S1758107Ab2JSDRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 36/37] ALSA: ac97 - Fix missing NULL check in snd_ac97_cvol_new()
-Date: Thu, 18 Oct 2012 20:16:59 -0700
-Message-Id: <20121019031308.665359998@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@linux.intel.com>, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 33/37] x86, random: Verify RDRAND functionality and allow it to be disabled
+Date: Thu, 18 Oct 2012 20:16:56 -0700
+Message-Id: <20121019031308.165629105@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -25,29 +27,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-commit 733a48e5ae5bf28b046fad984d458c747cbb8c21 upstream.
+commit 49d859d78c5aeb998b6936fcb5f288f78d713489 upstream.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=44721
+If the CPU declares that RDRAND is available, go through a guranteed
+reseed sequence, and make sure that it is actually working (producing
+data.)   If it does not, disable the CPU feature flag.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Allow RDRAND to be disabled on the command line (as opposed to at
+compile time) for a user who has special requirements with regards to
+random numbers.
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/ac97/ac97_codec.c |    2 ++
- 1 file changed, 2 insertions(+)
+ Documentation/kernel-parameters.txt |    5 ++
+ arch/x86/include/asm/archrandom.h   |    2 
+ arch/x86/kernel/cpu/Makefile        |    1 
+ arch/x86/kernel/cpu/common.c        |    2 
+ arch/x86/kernel/cpu/rdrand.c        |   73 ++++++++++++++++++++++++++++++++++++
+ 5 files changed, 83 insertions(+)
 
---- a/sound/pci/ac97/ac97_codec.c
-+++ b/sound/pci/ac97/ac97_codec.c
-@@ -1271,6 +1271,8 @@ static int snd_ac97_cvol_new(struct snd_
- 		tmp.index = ac97->num;
- 		kctl = snd_ctl_new1(&tmp, ac97);
- 	}
-+	if (!kctl)
-+		return -ENOMEM;
- 	if (reg >= AC97_PHONE && reg <= AC97_PCM)
- 		set_tlv_db_scale(kctl, db_scale_5bit_12db_max);
- 	else
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1764,6 +1764,11 @@ bytes respectively. Such letter suffixes
+ 
+ 	noresidual	[PPC] Don't use residual data on PReP machines.
+ 
++	nordrand	[X86] Disable the direct use of the RDRAND
++			instruction even if it is supported by the
++			processor.  RDRAND is still available to user
++			space applications.
++
+ 	noresume	[SWSUSP] Disables resume and restores original swap
+ 			space.
+ 
+--- a/arch/x86/include/asm/archrandom.h
++++ b/arch/x86/include/asm/archrandom.h
+@@ -70,4 +70,6 @@ GET_RANDOM(arch_get_random_int, unsigned
+ 
+ #endif  /* CONFIG_ARCH_RANDOM */
+ 
++extern void x86_init_rdrand(struct cpuinfo_x86 *c);
++
+ #endif /* ASM_X86_ARCHRANDOM_H */
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -15,6 +15,7 @@ CFLAGS_common.o		:= $(nostackp)
+ obj-y			:= intel_cacheinfo.o scattered.o topology.o
+ obj-y			+= proc.o capflags.o powerflags.o common.o
+ obj-y			+= vmware.o hypervisor.o sched.o mshyperv.o
++obj-y			+= rdrand.o
+ 
+ obj-$(CONFIG_X86_32)	+= bugs.o
+ obj-$(CONFIG_X86_64)	+= bugs_64.o
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -15,6 +15,7 @@
+ #include <asm/stackprotector.h>
+ #include <asm/perf_event.h>
+ #include <asm/mmu_context.h>
++#include <asm/archrandom.h>
+ #include <asm/hypervisor.h>
+ #include <asm/processor.h>
+ #include <asm/sections.h>
+@@ -852,6 +853,7 @@ static void __cpuinit identify_cpu(struc
+ #endif
+ 
+ 	init_hypervisor(c);
++	x86_init_rdrand(c);
+ 
+ 	/*
+ 	 * Clear/Set all flags overriden by options, need do it
+--- /dev/null
++++ b/arch/x86/kernel/cpu/rdrand.c
+@@ -0,0 +1,73 @@
++/*
++ * This file is part of the Linux kernel.
++ *
++ * Copyright (c) 2011, Intel Corporation
++ * Authors: Fenghua Yu <fenghua.yu@intel.com>,
++ *          H. Peter Anvin <hpa@linux.intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ */
++
++#include <asm/processor.h>
++#include <asm/archrandom.h>
++#include <asm/sections.h>
++
++static int __init x86_rdrand_setup(char *s)
++{
++	setup_clear_cpu_cap(X86_FEATURE_RDRAND);
++	return 1;
++}
++__setup("nordrand", x86_rdrand_setup);
++
++/* We can't use arch_get_random_long() here since alternatives haven't run */
++static inline int rdrand_long(unsigned long *v)
++{
++	int ok;
++	asm volatile("1: " RDRAND_LONG "\n\t"
++		     "jc 2f\n\t"
++		     "decl %0\n\t"
++		     "jnz 1b\n\t"
++		     "2:"
++		     : "=r" (ok), "=a" (*v)
++		     : "0" (RDRAND_RETRY_LOOPS));
++	return ok;
++}
++
++/*
++ * Force a reseed cycle; we are architecturally guaranteed a reseed
++ * after no more than 512 128-bit chunks of random data.  This also
++ * acts as a test of the CPU capability.
++ */
++#define RESEED_LOOP ((512*128)/sizeof(unsigned long))
++
++void __cpuinit x86_init_rdrand(struct cpuinfo_x86 *c)
++{
++#ifdef CONFIG_ARCH_RANDOM
++	unsigned long tmp;
++	int i, count, ok;
++
++	if (!cpu_has(c, X86_FEATURE_RDRAND))
++		return;		/* Nothing to do */
++
++	for (count = i = 0; i < RESEED_LOOP; i++) {
++		ok = rdrand_long(&tmp);
++		if (ok)
++			count++;
++	}
++
++	if (count != RESEED_LOOP)
++		clear_cpu_cap(c, X86_FEATURE_RDRAND);
++#endif
++}
 
 
