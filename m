@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030288Ab2JSC6S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:58:18 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52351 "EHLO mail.kernel.org"
+	id S1030302Ab2JSC6d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:58:33 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52341 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964978Ab2JSCtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S964944Ab2JSCtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Oct 2012 22:49:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: [ 50/76] kdb,vt_console: Fix missed data due to pager overruns
-Date: Thu, 18 Oct 2012 19:47:14 -0700
-Message-Id: <20121019024358.169162419@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>, NeilBrown <neilb@suse.de>
+Subject: [ 49/76] md/raid10: use correct limit variable
+Date: Thu, 18 Oct 2012 19:47:13 -0700
+Message-Id: <20121019024358.002734440@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -25,126 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wessel <jason.wessel@windriver.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 17b572e82032bc246324ce136696656b66d4e3f1 upstream.
+commit 91502f099dfc5a1e8812898e26ee280713e1d002 upstream.
 
-It is possible to miss data when using the kdb pager.  The kdb pager
-does not pay attention to the maximum column constraint of the screen
-or serial terminal.  This result is not incrementing the shown lines
-correctly and the pager will print more lines that fit on the screen.
-Obviously that is less than useful when using a VGA console where you
-cannot scroll back.
+Clang complains that we are assigning a variable to itself.  This should
+be using bad_sectors like the similar earlier check does.
 
-The pager will now look at the kdb_buffer string to see how many
-characters are printed.  It might not be perfect considering you can
-output ASCII that might move the cursor position, but it is a
-substantially better approximation for viewing dmesg and trace logs.
+Bug has been present since 3.1-rc1.  It is minor but could
+conceivably cause corruption or other bad behaviour.
 
-This also means that the vt screen needs to set the kdb COLUMNS
-variable.
-
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/vt/vt.c       |   13 +++++++++++++
- kernel/debug/kdb/kdb_io.c |   33 ++++++++++++++++++++++++++++-----
- 2 files changed, 41 insertions(+), 5 deletions(-)
+ drivers/md/raid10.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -3475,6 +3475,19 @@ int con_debug_enter(struct vc_data *vc)
- 			kdb_set(2, setargs);
- 		}
- 	}
-+	if (vc->vc_cols < 999) {
-+		int colcount;
-+		char cols[4];
-+		const char *setargs[3] = {
-+			"set",
-+			"COLUMNS",
-+			cols,
-+		};
-+		if (kdbgetintenv(setargs[0], &colcount)) {
-+			snprintf(cols, 4, "%i", vc->vc_cols);
-+			kdb_set(2, setargs);
-+		}
-+	}
- #endif /* CONFIG_KGDB_KDB */
- 	return ret;
- }
---- a/kernel/debug/kdb/kdb_io.c
-+++ b/kernel/debug/kdb/kdb_io.c
-@@ -552,6 +552,7 @@ int vkdb_printf(const char *fmt, va_list
- {
- 	int diag;
- 	int linecount;
-+	int colcount;
- 	int logging, saved_loglevel = 0;
- 	int saved_trap_printk;
- 	int got_printf_lock = 0;
-@@ -584,6 +585,10 @@ int vkdb_printf(const char *fmt, va_list
- 	if (diag || linecount <= 1)
- 		linecount = 24;
- 
-+	diag = kdbgetintenv("COLUMNS", &colcount);
-+	if (diag || colcount <= 1)
-+		colcount = 80;
-+
- 	diag = kdbgetintenv("LOGGING", &logging);
- 	if (diag)
- 		logging = 0;
-@@ -690,7 +695,7 @@ kdb_printit:
- 		gdbstub_msg_write(kdb_buffer, retlen);
- 	} else {
- 		if (dbg_io_ops && !dbg_io_ops->is_console) {
--			len = strlen(kdb_buffer);
-+			len = retlen;
- 			cp = kdb_buffer;
- 			while (len--) {
- 				dbg_io_ops->write_char(*cp);
-@@ -709,11 +714,29 @@ kdb_printit:
- 		printk(KERN_INFO "%s", kdb_buffer);
- 	}
- 
--	if (KDB_STATE(PAGER) && strchr(kdb_buffer, '\n'))
--		kdb_nextline++;
-+	if (KDB_STATE(PAGER)) {
-+		/*
-+		 * Check printed string to decide how to bump the
-+		 * kdb_nextline to control when the more prompt should
-+		 * show up.
-+		 */
-+		int got = 0;
-+		len = retlen;
-+		while (len--) {
-+			if (kdb_buffer[len] == '\n') {
-+				kdb_nextline++;
-+				got = 0;
-+			} else if (kdb_buffer[len] == '\r') {
-+				got = 0;
-+			} else {
-+				got++;
-+			}
-+		}
-+		kdb_nextline += got / (colcount + 1);
-+	}
- 
- 	/* check for having reached the LINES number of printed lines */
--	if (kdb_nextline == linecount) {
-+	if (kdb_nextline >= linecount) {
- 		char buf1[16] = "";
- 
- 		/* Watch out for recursion here.  Any routine that calls
-@@ -765,7 +788,7 @@ kdb_printit:
- 			kdb_grepping_flag = 0;
- 			kdb_printf("\n");
- 		} else if (buf1[0] == ' ') {
--			kdb_printf("\n");
-+			kdb_printf("\r");
- 			suspend_grep = 1; /* for this recursion */
- 		} else if (buf1[0] == '\n') {
- 			kdb_nextline = linecount - 1;
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -3158,7 +3158,7 @@ static sector_t sync_request(struct mdde
+ 				else {
+ 					bad_sectors -= (sector - first_bad);
+ 					if (max_sync > bad_sectors)
+-						max_sync = max_sync;
++						max_sync = bad_sectors;
+ 					continue;
+ 				}
+ 			}
 
 
