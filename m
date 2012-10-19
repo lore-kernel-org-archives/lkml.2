@@ -1,81 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932824Ab2JSD00 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:26:26 -0400
-Received: from condef007-v.nifty.com ([210.131.4.244]:34327 "EHLO
-	condef007-v.nifty.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964825Ab2JSD0X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:26:23 -0400
-X-Nifty-SrcIP: [61.204.25.121]
-From: MITSUNARI Shigeo <herumi@nifty.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, MITSUNARI Shigeo <herumi@nifty.com>
-Subject: [PATCH 2/2] block: fs: move 'bdev->bd_invalidated = 0' into check_disk_size_change() instead of putting the code every time after check_disk_size_change().
-Date: Fri, 19 Oct 2012 12:16:42 +0900
-Message-Id: <1350616602-6892-3-git-send-email-herumi@nifty.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350616602-6892-1-git-send-email-herumi@nifty.com>
-References: <1350616602-6892-1-git-send-email-herumi@nifty.com>
+	id S932872Ab2JSD0n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:26:43 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54379 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752433Ab2JSDRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:17 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Simon Kirby <sim@hostway.ca>
+Subject: [ 09/37] SUNRPC: Ensure that the TCP socket is closed when in CLOSE_WAIT
+Date: Thu, 18 Oct 2012 20:16:32 -0700
+Message-Id: <20121019031304.343241645@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
+In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
+References: <20121019031302.789593147@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following code appeares in invalidate_partitions(), rescan_partitions() and revalidate_disk().
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
->check_disk_size_change(disk, bdev);
->bdev->bd_invalidted = 0;
+------------------
 
-check_disk_size_change() is called from only those three functions.
-so how about setting bdev->bd_invalidated = 0 in check_disk_size_change()?
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-Signed-off-by: MITSUNARI Shigeo <herumi@nifty.com>
+commit a519fc7a70d1a918574bb826cc6905b87b482eb9 upstream.
+
+Instead of doing a shutdown() call, we need to do an actual close().
+Ditto if/when the server is sending us junk RPC headers.
+
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Tested-by: Simon Kirby <sim@hostway.ca>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- block/partition-generic.c |    2 --
- fs/block_dev.c            |    2 +-
- 2 files changed, 1 insertion(+), 3 deletions(-)
+ net/sunrpc/xprtsock.c |   21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
 
-diff --git a/block/partition-generic.c b/block/partition-generic.c
-index f1d1451..6a65169 100644
---- a/block/partition-generic.c
-+++ b/block/partition-generic.c
-@@ -429,7 +429,6 @@ rescan:
- 	if (disk->fops->revalidate_disk)
- 		disk->fops->revalidate_disk(disk);
- 	check_disk_size_change(disk, bdev);
--	bdev->bd_invalidated = 0;
- 	if (!get_capacity(disk) || !(state = check_partition(disk, bdev)))
- 		return 0;
- 	if (IS_ERR(state)) {
-@@ -542,7 +541,6 @@ int invalidate_partitions(struct gendisk *disk, struct block_device *bdev)
- 
- 	set_capacity(disk, 0);
- 	check_disk_size_change(disk, bdev);
--	bdev->bd_invalidated = 0;
- 	/* tell userspace that the media / partition table may have changed */
- 	kobject_uevent(&disk_to_dev(disk)->kobj, KOBJ_CHANGE);
- 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 2577cf4..ef0189b 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1022,6 +1022,7 @@ void check_disk_size_change(struct gendisk *disk, struct block_device *bdev)
- 		i_size_write(bdev->bd_inode, disk_size);
- 		flush_disk(bdev, false);
- 	}
-+	bdev->bd_invalidated = 0;
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -1015,6 +1015,16 @@ static void xs_udp_data_ready(struct soc
+ 	read_unlock_bh(&sk->sk_callback_lock);
  }
- EXPORT_SYMBOL(check_disk_size_change);
  
-@@ -1047,7 +1048,6 @@ int revalidate_disk(struct gendisk *disk)
- 
- 	mutex_lock(&bdev->bd_mutex);
- 	check_disk_size_change(disk, bdev);
--	bdev->bd_invalidated = 0;
- 	mutex_unlock(&bdev->bd_mutex);
- 	bdput(bdev);
- 	return ret;
--- 
-1.7.9.5
++/*
++ * Helper function to force a TCP close if the server is sending
++ * junk and/or it has put us in CLOSE_WAIT
++ */
++static void xs_tcp_force_close(struct rpc_xprt *xprt)
++{
++	set_bit(XPRT_CONNECTION_CLOSE, &xprt->state);
++	xprt_force_disconnect(xprt);
++}
++
+ static inline void xs_tcp_read_fraghdr(struct rpc_xprt *xprt, struct xdr_skb_reader *desc)
+ {
+ 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
+@@ -1041,7 +1051,7 @@ static inline void xs_tcp_read_fraghdr(s
+ 	/* Sanity check of the record length */
+ 	if (unlikely(transport->tcp_reclen < 8)) {
+ 		dprintk("RPC:       invalid TCP record fragment length\n");
+-		xprt_force_disconnect(xprt);
++		xs_tcp_force_close(xprt);
+ 		return;
+ 	}
+ 	dprintk("RPC:       reading TCP record fragment of length %d\n",
+@@ -1122,7 +1132,7 @@ static inline void xs_tcp_read_calldir(s
+ 		break;
+ 	default:
+ 		dprintk("RPC:       invalid request message type\n");
+-		xprt_force_disconnect(&transport->xprt);
++		xs_tcp_force_close(&transport->xprt);
+ 	}
+ 	xs_tcp_check_fraghdr(transport);
+ }
+@@ -1445,6 +1455,8 @@ static void xs_tcp_cancel_linger_timeout
+ static void xs_sock_mark_closed(struct rpc_xprt *xprt)
+ {
+ 	smp_mb__before_clear_bit();
++	clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
++	clear_bit(XPRT_CONNECTION_CLOSE, &xprt->state);
+ 	clear_bit(XPRT_CLOSE_WAIT, &xprt->state);
+ 	clear_bit(XPRT_CLOSING, &xprt->state);
+ 	smp_mb__after_clear_bit();
+@@ -1502,8 +1514,8 @@ static void xs_tcp_state_change(struct s
+ 		break;
+ 	case TCP_CLOSE_WAIT:
+ 		/* The server initiated a shutdown of the socket */
+-		xprt_force_disconnect(xprt);
+ 		xprt->connect_cookie++;
++		xs_tcp_force_close(xprt);
+ 	case TCP_CLOSING:
+ 		/*
+ 		 * If the server closed down the connection, make sure that
+@@ -2146,8 +2158,7 @@ static void xs_tcp_setup_socket(struct w
+ 		/* We're probably in TIME_WAIT. Get rid of existing socket,
+ 		 * and retry
+ 		 */
+-		set_bit(XPRT_CONNECTION_CLOSE, &xprt->state);
+-		xprt_force_disconnect(xprt);
++		xs_tcp_force_close(xprt);
+ 		break;
+ 	case -ECONNREFUSED:
+ 	case -ECONNRESET:
+
 
