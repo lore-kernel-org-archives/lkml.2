@@ -1,190 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758703Ab2JSKjJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 06:39:09 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:57847 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757454Ab2JSKjD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758690Ab2JSKjI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 06:39:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:14527 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751150Ab2JSKjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Oct 2012 06:39:03 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Thierry Reding <thierry.reding@avionic-design.de>, arm@kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH 2/3] PWM: vt8500: Update vt8500 PWM driver support
-Date: Fri, 19 Oct 2012 23:38:54 +1300
-Message-Id: <1350643135-13197-2-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350643135-13197-1-git-send-email-linux@prisktech.co.nz>
-References: <1350643135-13197-1-git-send-email-linux@prisktech.co.nz>
+X-IronPort-AV: E=Sophos;i="4.80,612,1344182400"; 
+   d="scan'208";a="6031215"
+Message-ID: <50812F13.20503@cn.fujitsu.com>
+Date: Fri, 19 Oct 2012 18:44:35 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/10] memory-hotplug : check whether memory is offline
+ or not when removing memory
+References: <506E43E0.70507@jp.fujitsu.com> <506E451E.1050403@jp.fujitsu.com> <CAHGf_=rVDm-JygjPoLHbmF28Dgd52HFc4-b5KCxhEieG60okuw@mail.gmail.com>
+In-Reply-To: <CAHGf_=rVDm-JygjPoLHbmF28Dgd52HFc4-b5KCxhEieG60okuw@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/19 18:38:33,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/19 18:38:35,
+	Serialize complete at 2012/10/19 18:38:35
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch updates pwm-vt8500.c to support devicetree probing and
-make use of the common clock subsystem.
+At 10/06/2012 03:27 AM, KOSAKI Motohiro Wrote:
+> On Thu, Oct 4, 2012 at 10:25 PM, Yasuaki Ishimatsu
+> <isimatu.yasuaki@jp.fujitsu.com> wrote:
+>> When calling remove_memory(), the memory should be offline. If the function
+>> is used to online memory, kernel panic may occur.
+>>
+>> So the patch checks whether memory is offline or not.
+> 
+> You don't explain WHY we need the check.
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
- drivers/pwm/pwm-vt8500.c |   79 ++++++++++++++++++++++++++++++----------------
- 1 file changed, 51 insertions(+), 28 deletions(-)
+This patch is no necessary now, because the newest kernel has checked
+it.
 
-diff --git a/drivers/pwm/pwm-vt8500.c b/drivers/pwm/pwm-vt8500.c
-index ad14389..c2a71ee 100644
---- a/drivers/pwm/pwm-vt8500.c
-+++ b/drivers/pwm/pwm-vt8500.c
-@@ -1,7 +1,8 @@
- /*
-  * drivers/pwm/pwm-vt8500.c
-  *
-- *  Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
-+ * Copyright (C) 2012 Tony Prisk <linux@prisktech.co.nz>
-+ * Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
-  *
-  * This software is licensed under the terms of the GNU General Public
-  * License version 2, as published by the Free Software Foundation, and
-@@ -21,14 +22,24 @@
- #include <linux/io.h>
- #include <linux/pwm.h>
- #include <linux/delay.h>
-+#include <linux/clk.h>
- 
- #include <asm/div64.h>
- 
--#define VT8500_NR_PWMS 4
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/of_address.h>
-+
-+/*
-+ * SoC architecture allocates register space for 4 PWMs but only
-+ * 2 are currently implemented.
-+ */
-+#define VT8500_NR_PWMS	2
- 
- struct vt8500_chip {
- 	struct pwm_chip chip;
- 	void __iomem *base;
-+	struct clk *clk;
- };
- 
- #define to_vt8500_chip(chip)	container_of(chip, struct vt8500_chip, chip)
-@@ -52,7 +63,7 @@ static int vt8500_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 	unsigned long long c;
- 	unsigned long period_cycles, prescale, pv, dc;
- 
--	c = 25000000/2; /* wild guess --- need to implement clocks */
-+	c = clk_get_rate(vt8500->clk);
- 	c = c * period_ns;
- 	do_div(c, 1000000000);
- 	period_cycles = c;
-@@ -107,12 +118,22 @@ static struct pwm_ops vt8500_pwm_ops = {
- 	.owner = THIS_MODULE,
- };
- 
--static int __devinit pwm_probe(struct platform_device *pdev)
-+static const struct of_device_id vt8500_pwm_dt_ids[] = {
-+	{ .compatible = "via,vt8500-pwm", },
-+	{ /* Sentinel */ }
-+};
-+
-+static int __devinit vt8500_pwm_probe(struct platform_device *pdev)
- {
- 	struct vt8500_chip *chip;
--	struct resource *r;
-+	struct device_node *np = pdev->dev.of_node;
- 	int ret;
- 
-+	if (!np) {
-+		dev_err(&pdev->dev, "invalid devicetree node\n");
-+		return -EINVAL;
-+	}
-+
- 	chip = devm_kzalloc(&pdev->dev, sizeof(*chip), GFP_KERNEL);
- 	if (chip == NULL) {
- 		dev_err(&pdev->dev, "failed to allocate memory\n");
-@@ -123,26 +144,32 @@ static int __devinit pwm_probe(struct platform_device *pdev)
- 	chip->chip.ops = &vt8500_pwm_ops;
- 	chip->chip.base = -1;
- 	chip->chip.npwm = VT8500_NR_PWMS;
-+	chip->clk = of_clk_get(np, 0);
- 
--	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (r == NULL) {
--		dev_err(&pdev->dev, "no memory resource defined\n");
--		return -ENODEV;
-+	if (!chip->clk) {
-+		dev_err(&pdev->dev, "clock source not specified\n");
-+		return -EINVAL;
- 	}
- 
--	chip->base = devm_request_and_ioremap(&pdev->dev, r);
--	if (chip->base == NULL)
-+	chip->base = of_iomap(np, 0);
-+	if (!chip->base) {
-+		dev_err(&pdev->dev, "memory resource not available\n");
- 		return -EADDRNOTAVAIL;
-+	}
-+
-+	clk_prepare_enable(chip->clk);
- 
- 	ret = pwmchip_add(&chip->chip);
--	if (ret < 0)
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to add pwmchip\n");
- 		return ret;
-+	}
- 
- 	platform_set_drvdata(pdev, chip);
- 	return ret;
- }
- 
--static int __devexit pwm_remove(struct platform_device *pdev)
-+static int __devexit vt8500_pwm_remove(struct platform_device *pdev)
- {
- 	struct vt8500_chip *chip;
- 
-@@ -150,28 +177,24 @@ static int __devexit pwm_remove(struct platform_device *pdev)
- 	if (chip == NULL)
- 		return -ENODEV;
- 
-+	clk_disable_unprepare(chip->clk);
-+
- 	return pwmchip_remove(&chip->chip);
- }
- 
--static struct platform_driver pwm_driver = {
-+static struct platform_driver vt8500_pwm_driver = {
-+	.probe		= vt8500_pwm_probe,
-+	.remove		= __devexit_p(vt8500_pwm_remove),
- 	.driver		= {
- 		.name	= "vt8500-pwm",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = vt8500_pwm_dt_ids,
- 	},
--	.probe		= pwm_probe,
--	.remove		= __devexit_p(pwm_remove),
- };
- 
--static int __init pwm_init(void)
--{
--	return platform_driver_register(&pwm_driver);
--}
--arch_initcall(pwm_init);
--
--static void __exit pwm_exit(void)
--{
--	platform_driver_unregister(&pwm_driver);
--}
--module_exit(pwm_exit);
-+module_platform_driver(vt8500_pwm_driver);
- 
--MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("VT8500 PWM Driver");
-+MODULE_AUTHOR("Tony Prisk <linux@prisktech.co.nz>");
-+MODULE_LICENSE("GPL v2");
-+MODULE_DEVICE_TABLE(of, vt8500_pwm_dt_ids);
--- 
-1.7.9.5
+Thanks
+Wen Congyang
+
+> 
+> 
+>> CC: David Rientjes <rientjes@google.com>
+>> CC: Jiang Liu <liuj97@gmail.com>
+>> CC: Len Brown <len.brown@intel.com>
+>> CC: Christoph Lameter <cl@linux.com>
+>> Cc: Minchan Kim <minchan.kim@gmail.com>
+>> CC: Andrew Morton <akpm@linux-foundation.org>
+>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>
+>> ---
+>>  drivers/base/memory.c  |   39 +++++++++++++++++++++++++++++++++++++++
+>>  include/linux/memory.h |    5 +++++
+>>  mm/memory_hotplug.c    |   17 +++++++++++++++--
+>>  3 files changed, 59 insertions(+), 2 deletions(-)
+>>
+>> Index: linux-3.6/drivers/base/memory.c
+>> ===================================================================
+>> --- linux-3.6.orig/drivers/base/memory.c        2012-10-04 14:22:57.000000000 +0900
+>> +++ linux-3.6/drivers/base/memory.c     2012-10-04 14:45:46.653585860 +0900
+>> @@ -70,6 +70,45 @@ void unregister_memory_isolate_notifier(
+>>  }
+>>  EXPORT_SYMBOL(unregister_memory_isolate_notifier);
+>>
+>> +bool is_memblk_offline(unsigned long start, unsigned long size)
+> 
+> Don't use memblk. Usually memblk mean struct numa_meminfo for x86/numa.
+> Maybe memory_range_offlined() is better.
+> 
+> And, this function don't take struct memory_block, then this file may be no good
+> place.
+> 
+> And you need to write down function comment.
+> 
+> 
+>> +{
+>> +       struct memory_block *mem = NULL;
+>> +       struct mem_section *section;
+>> +       unsigned long start_pfn, end_pfn;
+>> +       unsigned long pfn, section_nr;
+>> +
+>> +       start_pfn = PFN_DOWN(start);
+>> +       end_pfn = PFN_UP(start + size);
+>> +
+>> +       for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+>> +               section_nr = pfn_to_section_nr(pfn);
+>> +               if (!present_section_nr(section_nr))
+>> +                       continue;
+>> +
+>> +               section = __nr_to_section(section_nr);
+>> +               /* same memblock? */
+>> +               if (mem)
+>> +                       if ((section_nr >= mem->start_section_nr) &&
+>> +                           (section_nr <= mem->end_section_nr))
+>> +                               continue;
+>> +
+>> +               mem = find_memory_block_hinted(section, mem);
+>> +               if (!mem)
+>> +                       continue;
+>> +               if (mem->state == MEM_OFFLINE)
+>> +                       continue;
+>> +
+>> +               kobject_put(&mem->dev.kobj);
+>> +               return false;
+>> +       }
+>> +
+>> +       if (mem)
+>> +               kobject_put(&mem->dev.kobj);
+>> +
+>> +       return true;
+>> +}
+>> +EXPORT_SYMBOL(is_memblk_offline);
+>> +
+>>  /*
+>>   * register_memory - Setup a sysfs device for a memory block
+>>   */
+>> Index: linux-3.6/include/linux/memory.h
+>> ===================================================================
+>> --- linux-3.6.orig/include/linux/memory.h       2012-10-02 18:00:22.000000000 +0900
+>> +++ linux-3.6/include/linux/memory.h    2012-10-04 14:44:40.902581028 +0900
+>> @@ -106,6 +106,10 @@ static inline int memory_isolate_notify(
+>>  {
+>>         return 0;
+>>  }
+>> +static inline bool is_memblk_offline(unsigned long start, unsigned long size)
+>> +{
+>> +       return false;
+>> +}
+>>  #else
+>>  extern int register_memory_notifier(struct notifier_block *nb);
+>>  extern void unregister_memory_notifier(struct notifier_block *nb);
+>> @@ -120,6 +124,7 @@ extern int memory_isolate_notify(unsigne
+>>  extern struct memory_block *find_memory_block_hinted(struct mem_section *,
+>>                                                         struct memory_block *);
+>>  extern struct memory_block *find_memory_block(struct mem_section *);
+>> +extern bool is_memblk_offline(unsigned long start, unsigned long size);
+>>  #define CONFIG_MEM_BLOCK_SIZE  (PAGES_PER_SECTION<<PAGE_SHIFT)
+>>  enum mem_add_context { BOOT, HOTPLUG };
+>>  #endif /* CONFIG_MEMORY_HOTPLUG_SPARSE */
+>> Index: linux-3.6/mm/memory_hotplug.c
+>> ===================================================================
+>> --- linux-3.6.orig/mm/memory_hotplug.c  2012-10-04 14:31:08.000000000 +0900
+>> +++ linux-3.6/mm/memory_hotplug.c       2012-10-04 14:58:22.449687986 +0900
+>> @@ -1045,8 +1045,21 @@ int offline_memory(u64 start, u64 size)
+>>
+>>  int remove_memory(int nid, u64 start, u64 size)
+>>  {
+> 
+> Your remove_memory() don't remove anything. that's strange.
+> 
+> 
+>> -       /* It is not implemented yet*/
+>> -       return 0;
+>> +       int ret = 0;
+>> +       lock_memory_hotplug();
+>> +       /*
+>> +        * The memory might become online by other task, even if you offine it.
+>> +        * So we check whether the memory has been onlined or not.
+>> +        */
+>> +       if (!is_memblk_offline(start, size)) {
+>> +               pr_warn("memory removing [mem %#010llx-%#010llx] failed, "
+>> +                       "because the memmory range is online\n",
+>> +                       start, start + size);
+> 
+> No good warning. You should output which memory block can't be
+> offlined, I think.
+> 
+> 
+>> +               ret = -EAGAIN;
+>> +       }
+>> +
+>> +       unlock_memory_hotplug();
+>> +       return ret;
+>>  }
+>>  EXPORT_SYMBOL_GPL(remove_memory);
+>>  #else
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
