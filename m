@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965081Ab2JSC5L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:57:11 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52371 "EHLO mail.kernel.org"
+	id S965045Ab2JSC5K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:57:10 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52394 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964992Ab2JSCtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:49:15 -0400
+	id S964999Ab2JSCtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:49:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexander Holler <holler@ahsoftware.de>,
-        Bernie Thompson <bernie@plugable.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [ 42/76] video/udlfb: fix line counting in fb_write
-Date: Thu, 18 Oct 2012 19:47:06 -0700
-Message-Id: <20121019024356.876550295@linuxfoundation.org>
+        Jean-Christian de Rivaz <jc@eclis.ch>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 54/76] Add CDC-ACM support for the CX93010-2x UCMxx USB Modem
+Date: Thu, 18 Oct 2012 19:47:18 -0700
+Message-Id: <20121019024358.810173227@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -27,33 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Holler <holler@ahsoftware.de>
+From: Jean-Christian de Rivaz <jc@eclis.ch>
 
-commit b8c4321f3d194469007f5f5f2b34ec278c264a04 upstream.
+commit e7d491a19d3e3aac544070293891a2542ae0c565 upstream.
 
-Line 0 and 1 were both written to line 0 (on the display) and all subsequent
-lines had an offset of -1. The result was that the last line on the display
-was never overwritten by writes to /dev/fbN.
+This USB V.92/V.32bis Controllered Modem have the USB vendor ID 0x0572
+and device ID 0x1340. It need the NO_UNION_NORMAL quirk to be recognized.
 
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-Acked-by: Bernie Thompson <bernie@plugable.com>
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Reference:
+http://www.conexant.com/servlets/DownloadServlet/DSH-201723-005.pdf?docid=1725&revid=5
+See idVendor and idProduct in table 6-1. Device Descriptors
+
+Signed-off-by: Jean-Christian de Rivaz <jc@eclis.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/udlfb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/class/cdc-acm.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/video/udlfb.c
-+++ b/drivers/video/udlfb.c
-@@ -647,7 +647,7 @@ static ssize_t dlfb_ops_write(struct fb_
- 	result = fb_sys_write(info, buf, count, ppos);
- 
- 	if (result > 0) {
--		int start = max((int)(offset / info->fix.line_length) - 1, 0);
-+		int start = max((int)(offset / info->fix.line_length), 0);
- 		int lines = min((u32)((result / info->fix.line_length) + 1),
- 				(u32)info->var.yres);
- 
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1551,6 +1551,9 @@ static const struct usb_device_id acm_id
+ 					   Maybe we should define a new
+ 					   quirk for this. */
+ 	},
++	{ USB_DEVICE(0x0572, 0x1340), /* Conexant CX93010-2x UCMxx */
++	.driver_info = NO_UNION_NORMAL,
++	},
+ 	{ USB_DEVICE(0x1bbb, 0x0003), /* Alcatel OT-I650 */
+ 	.driver_info = NO_UNION_NORMAL, /* reports zero length descriptor */
+ 	},
 
 
