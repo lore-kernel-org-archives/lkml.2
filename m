@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030306Ab2JSDHn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:07:43 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51900 "EHLO mail.kernel.org"
+	id S1757873Ab2JSDHl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:07:41 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51912 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932581Ab2JSCs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:48:26 -0400
+	id S932656Ab2JSCs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:48:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 10/76] lockd: create and use per-net NSM RPC clients on MON/UNMON requests
-Date: Thu, 18 Oct 2012 19:46:34 -0700
-Message-Id: <20121019024351.743658599@linuxfoundation.org>
+        Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [ 11/76] ACPI: EC: Make the GPE storm threshold a module parameter
+Date: Thu, 18 Oct 2012 19:46:35 -0700
+Message-Id: <20121019024351.907532387@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -26,143 +25,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+From: Feng Tang <feng.tang@intel.com>
 
-commit cb7323fffa85df37161f4d3be45e1f787808309c upstream.
+commit a520d52e99b14ba7db135e916348f12f2a6e09be upstream.
 
-NSM RPC client can be required on NFSv3 umount, when child reaper is dying
-(and destroying it's mount namespace). It means, that current nsproxy is set
-to NULL already, but creation of RPC client requires UTS namespace for gaining
-hostname string.
+The Linux EC driver includes a mechanism to detect GPE storms,
+and switch from interrupt-mode to polling mode.  However, polling
+mode sometimes doesn't work, so the workaround is problematic.
+Also, different systems seem to need the threshold for detecting
+the GPE storm at different levels.
 
-This patch creates reference-counted per-net NSM client on first monitor
-request and destroys it after last unmonitor request.
+ACPI_EC_STORM_THRESHOLD was initially 20 when it's created, and
+was changed to 8 in 2.6.28 commit 06cf7d3c7 "ACPI: EC: lower interrupt storm
+threshold" to fix kernel bug 11892 by forcing the laptop in that bug to
+work in polling mode. However in bug 45151, it works fine in interrupt
+mode if we lift the threshold back to 20.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+This patch makes the threshold a module parameter so that user has a
+flexible option to debug/workaround this issue.
+
+The default is unchanged.
+
+This is also a preparation patch to fix specific systems:
+	https://bugzilla.kernel.org/show_bug.cgi?id=45151
+
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/mon.c |   37 ++++++++++++++++++++-----------------
- 1 file changed, 20 insertions(+), 17 deletions(-)
+ drivers/acpi/ec.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/fs/lockd/mon.c
-+++ b/fs/lockd/mon.c
-@@ -7,7 +7,6 @@
-  */
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -71,9 +71,6 @@ enum ec_command {
+ #define ACPI_EC_UDELAY_GLK	1000	/* Wait 1ms max. to get global lock */
+ #define ACPI_EC_MSI_UDELAY	550	/* Wait 550us for MSI EC */
  
- #include <linux/types.h>
--#include <linux/utsname.h>
- #include <linux/kernel.h>
- #include <linux/ktime.h>
- #include <linux/slab.h>
-@@ -86,7 +85,7 @@ static struct rpc_clnt *nsm_create(struc
- 	return rpc_create(&args);
- }
+-#define ACPI_EC_STORM_THRESHOLD 8	/* number of false interrupts
+-					   per one transaction */
+-
+ enum {
+ 	EC_FLAGS_QUERY_PENDING,		/* Query is pending */
+ 	EC_FLAGS_GPE_STORM,		/* GPE storm detected */
+@@ -87,6 +84,15 @@ static unsigned int ec_delay __read_most
+ module_param(ec_delay, uint, 0644);
+ MODULE_PARM_DESC(ec_delay, "Timeout(ms) waited until an EC command completes");
  
--__maybe_unused static struct rpc_clnt *nsm_client_get(struct net *net)
-+static struct rpc_clnt *nsm_client_get(struct net *net)
- {
- 	static DEFINE_MUTEX(nsm_create_mutex);
- 	struct rpc_clnt	*clnt;
-@@ -113,7 +112,7 @@ out:
- 	return clnt;
- }
- 
--__maybe_unused static void nsm_client_put(struct net *net)
-+static void nsm_client_put(struct net *net)
- {
- 	struct lockd_net *ln = net_generic(net, lockd_net_id);
- 	struct rpc_clnt	*clnt = ln->nsm_clnt;
-@@ -132,9 +131,8 @@ __maybe_unused static void nsm_client_pu
- }
- 
- static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
--			 struct net *net)
-+			 struct rpc_clnt *clnt)
- {
--	struct rpc_clnt	*clnt;
- 	int		status;
- 	struct nsm_args args = {
- 		.priv		= &nsm->sm_priv,
-@@ -142,20 +140,14 @@ static int nsm_mon_unmon(struct nsm_hand
- 		.vers		= 3,
- 		.proc		= NLMPROC_NSM_NOTIFY,
- 		.mon_name	= nsm->sm_mon_name,
--		.nodename	= utsname()->nodename,
-+		.nodename	= clnt->cl_nodename,
- 	};
- 	struct rpc_message msg = {
- 		.rpc_argp	= &args,
- 		.rpc_resp	= res,
- 	};
- 
--	clnt = nsm_create(net);
--	if (IS_ERR(clnt)) {
--		status = PTR_ERR(clnt);
--		dprintk("lockd: failed to create NSM upcall transport, "
--				"status=%d\n", status);
--		goto out;
--	}
-+	BUG_ON(clnt == NULL);
- 
- 	memset(res, 0, sizeof(*res));
- 
-@@ -166,8 +158,6 @@ static int nsm_mon_unmon(struct nsm_hand
- 				status);
- 	else
- 		status = 0;
--	rpc_shutdown_client(clnt);
-- out:
- 	return status;
- }
- 
-@@ -187,6 +177,7 @@ int nsm_monitor(const struct nlm_host *h
- 	struct nsm_handle *nsm = host->h_nsmhandle;
- 	struct nsm_res	res;
- 	int		status;
-+	struct rpc_clnt *clnt;
- 
- 	dprintk("lockd: nsm_monitor(%s)\n", nsm->sm_name);
- 
-@@ -199,7 +190,15 @@ int nsm_monitor(const struct nlm_host *h
- 	 */
- 	nsm->sm_mon_name = nsm_use_hostnames ? nsm->sm_name : nsm->sm_addrbuf;
- 
--	status = nsm_mon_unmon(nsm, NSMPROC_MON, &res, host->net);
-+	clnt = nsm_client_get(host->net);
-+	if (IS_ERR(clnt)) {
-+		status = PTR_ERR(clnt);
-+		dprintk("lockd: failed to create NSM upcall transport, "
-+				"status=%d, net=%p\n", status, host->net);
-+		return status;
-+	}
++/*
++ * If the number of false interrupts per one transaction exceeds
++ * this threshold, will think there is a GPE storm happened and
++ * will disable the GPE for normal transaction.
++ */
++static unsigned int ec_storm_threshold  __read_mostly = 8;
++module_param(ec_storm_threshold, uint, 0644);
++MODULE_PARM_DESC(ec_storm_threshold, "Maxim false GPE numbers not considered as GPE storm");
 +
-+	status = nsm_mon_unmon(nsm, NSMPROC_MON, &res, clnt);
- 	if (unlikely(res.status != 0))
- 		status = -EIO;
- 	if (unlikely(status < 0)) {
-@@ -231,9 +230,11 @@ void nsm_unmonitor(const struct nlm_host
- 
- 	if (atomic_read(&nsm->sm_count) == 1
- 	 && nsm->sm_monitored && !nsm->sm_sticky) {
-+		struct lockd_net *ln = net_generic(host->net, lockd_net_id);
-+
- 		dprintk("lockd: nsm_unmonitor(%s)\n", nsm->sm_name);
- 
--		status = nsm_mon_unmon(nsm, NSMPROC_UNMON, &res, host->net);
-+		status = nsm_mon_unmon(nsm, NSMPROC_UNMON, &res, ln->nsm_clnt);
- 		if (res.status != 0)
- 			status = -EIO;
- 		if (status < 0)
-@@ -241,6 +242,8 @@ void nsm_unmonitor(const struct nlm_host
- 					nsm->sm_name);
- 		else
- 			nsm->sm_monitored = 0;
-+
-+		nsm_client_put(host->net);
- 	}
- }
- 
+ /* If we find an EC via the ECDT, we need to keep a ptr to its context */
+ /* External interfaces use first EC only, so remember */
+ typedef int (*acpi_ec_query_func) (void *data);
+@@ -319,7 +325,7 @@ static int acpi_ec_transaction(struct ac
+ 		msleep(1);
+ 		/* It is safe to enable the GPE outside of the transaction. */
+ 		acpi_enable_gpe(NULL, ec->gpe);
+-	} else if (t->irq_count > ACPI_EC_STORM_THRESHOLD) {
++	} else if (t->irq_count > ec_storm_threshold) {
+ 		pr_info(PREFIX "GPE storm detected, "
+ 			"transactions will use polling mode\n");
+ 		set_bit(EC_FLAGS_GPE_STORM, &ec->flags);
 
 
