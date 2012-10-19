@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964959Ab2JSCtH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:49:07 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52207 "EHLO mail.kernel.org"
+	id S1030347Ab2JSC71 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:59:27 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52296 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964928Ab2JSCs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:48:58 -0400
+	id S964960Ab2JSCtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:49:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 37/76] xen/bootup: allow {read|write}_cr8 pvops call.
-Date: Thu, 18 Oct 2012 19:47:01 -0700
-Message-Id: <20121019024356.093698327@linuxfoundation.org>
+        Christian Hildner <christian.hildner@siemens.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 45/76] timers: Fix endless looping between cascade() and internal_add_timer()
+Date: Thu, 18 Oct 2012 19:47:09 -0700
+Message-Id: <20121019024357.358267233@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -25,67 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: "Hildner, Christian" <christian.hildner@siemens.com>
 
-commit 1a7bbda5b1ab0e02622761305a32dc38735b90b2 upstream.
+commit 26cff4e2aa4d666dc6a120ea34336b5057e3e187 upstream.
 
-We actually do not do anything about it. Just return a default
-value of zero and if the kernel tries to write anything but 0
-we BUG_ON.
+Adding two (or more) timers with large values for "expires" (they have
+to reside within tv5 in the same list) leads to endless looping
+between cascade() and internal_add_timer() in case CONFIG_BASE_SMALL
+is one and jiffies are crossing the value 1 << 18. The bug was
+introduced between 2.6.11 and 2.6.12 (and survived for quite some
+time).
 
-This fixes the case when an user tries to suspend the machine
-and it blows up in save_processor_state b/c 'read_cr8' is set
-to NULL and we get:
+This patch ensures that when cascade() is called timers within tv5 are
+not added endlessly to their own list again, instead they are added to
+the next lower tv level tv4 (as expected).
 
-kernel BUG at /home/konrad/ssd/linux/arch/x86/include/asm/paravirt.h:100!
-invalid opcode: 0000 [#1] SMP
-Pid: 2687, comm: init.late Tainted: G           O 3.6.0upstream-00002-gac264ac-dirty #4 Bochs Bochs
-RIP: e030:[<ffffffff814d5f42>]  [<ffffffff814d5f42>] save_processor_state+0x212/0x270
-
-.. snip..
-Call Trace:
- [<ffffffff810733bf>] do_suspend_lowlevel+0xf/0xac
- [<ffffffff8107330c>] ? x86_acpi_suspend_lowlevel+0x10c/0x150
- [<ffffffff81342ee2>] acpi_suspend_enter+0x57/0xd5
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Christian Hildner <christian.hildner@siemens.com>
+Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
+Link: http://lkml.kernel.org/r/98673C87CB31274881CFFE0B65ECC87B0F5FC1963E@DEFTHW99EA4MSX.ww902.siemens.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/enlighten.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ kernel/timer.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -984,7 +984,16 @@ static void xen_write_cr4(unsigned long
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -63,6 +63,7 @@ EXPORT_SYMBOL(jiffies_64);
+ #define TVR_SIZE (1 << TVR_BITS)
+ #define TVN_MASK (TVN_SIZE - 1)
+ #define TVR_MASK (TVR_SIZE - 1)
++#define MAX_TVAL ((unsigned long)((1ULL << (TVR_BITS + 4*TVN_BITS)) - 1))
  
- 	native_write_cr4(cr4);
- }
--
-+#ifdef CONFIG_X86_64
-+static inline unsigned long xen_read_cr8(void)
-+{
-+	return 0;
-+}
-+static inline void xen_write_cr8(unsigned long val)
-+{
-+	BUG_ON(val);
-+}
-+#endif
- static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
- {
- 	int ret;
-@@ -1153,6 +1162,11 @@ static const struct pv_cpu_ops xen_cpu_o
- 	.read_cr4_safe = native_read_cr4_safe,
- 	.write_cr4 = xen_write_cr4,
- 
-+#ifdef CONFIG_X86_64
-+	.read_cr8 = xen_read_cr8,
-+	.write_cr8 = xen_write_cr8,
-+#endif
-+
- 	.wbinvd = native_wbinvd,
- 
- 	.read_msr = native_read_msr_safe,
+ struct tvec {
+ 	struct list_head vec[TVN_SIZE];
+@@ -358,11 +359,12 @@ __internal_add_timer(struct tvec_base *b
+ 		vec = base->tv1.vec + (base->timer_jiffies & TVR_MASK);
+ 	} else {
+ 		int i;
+-		/* If the timeout is larger than 0xffffffff on 64-bit
+-		 * architectures then we use the maximum timeout:
++		/* If the timeout is larger than MAX_TVAL (on 64-bit
++		 * architectures or with CONFIG_BASE_SMALL=1) then we
++		 * use the maximum timeout.
+ 		 */
+-		if (idx > 0xffffffffUL) {
+-			idx = 0xffffffffUL;
++		if (idx > MAX_TVAL) {
++			idx = MAX_TVAL;
+ 			expires = idx + base->timer_jiffies;
+ 		}
+ 		i = (expires >> (TVR_BITS + 3 * TVN_BITS)) & TVN_MASK;
 
 
