@@ -1,112 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758694Ab2JSMpf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 08:45:35 -0400
-Received: from smtp-out-125.synserver.de ([212.40.185.125]:1058 "EHLO
-	smtp-out-125.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758459Ab2JSMpe (ORCPT
+	id S1758810Ab2JSMtw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 08:49:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48357 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754237Ab2JSMtv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 08:45:34 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 12750
-Message-ID: <50814B6A.6010000@metafoo.de>
-Date: Fri, 19 Oct 2012 14:45:30 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.9) Gecko/20121014 Icedove/10.0.9
-MIME-Version: 1.0
-To: "Kim, Milo" <Milo.Kim@ti.com>
-CC: "cbou@mail.ru" <cbou@mail.ru>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Jonathan Cameron <jic23@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/3] lp8788-charger: fix wrong ADC conversion
-References: <A874F61F95741C4A9BA573A70FE3998F64179109@DQHE02.ent.ti.com>
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F64179109@DQHE02.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Oct 2012 08:49:51 -0400
+Message-ID: <1350650972.30157.34.camel@twins>
+Subject: Re: MAX_LOCKDEP_ENTRIES too low  (called from ioc_release_fn)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Date: Fri, 19 Oct 2012 14:49:32 +0200
+In-Reply-To: <20121019052136.GA30852@redhat.com>
+References: <20121018015312.GA29865@redhat.com> <507F9944.50505@kernel.dk>
+	 <20121019052136.GA30852@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2012 02:12 AM, Kim, Milo wrote:
->  To get the battery voltage and temperature, IIO ADC functions are used.
->  LP8788 ADC driver provides RAW and SCALE channel information.
->  This patch fixes wrong ADC result.
+On Fri, 2012-10-19 at 01:21 -0400, Dave Jones wrote:
+>  > Not sure why you are CC'ing a call site, rather than the maintainers of
+>  > the code. Just looks like lockdep is using too small a static value.
+>  > Though it is pretty darn large...
 > 
->  Patch v2.
->  Use simple iio_read_channel_processed() function rather than
->  iio_read_channel_raw() and _scale().
+> You're right, it's a huge chunk of memory.
+> It looks like I can trigger this from multiple callsites..
+> Another different trace below.
 > 
->  Fix the result type of ADC function as a signed integer.
->  Because power_supply_propval.intval and the return value of
->  iio_read_channel_processed() are a signed integer,
->  'unsigned int' are replaced with 'int'.
-> 
->  Patch v1.
->  Fix wrong ADC results using iio_read_channel_raw() and _scale().
-> 
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> Not sure why this suddenly got a lot worse in 3.7 
 
-Looks good to me, fwiw:
+Did we add a static array of structures with locks in somewhere? Doing
+that is a great way of blowing up the number of lock classes and the
+resulting amount of lock dependency chains.
 
-Reviewed-by Lars-Peter Clausen <lars@metafoo.de>
+>From Documentation/lockdep-design.txt; it talks about overflowing
+MAX_LOCKDEP_KEYS, but I suppose its a good starts for overflowing the
+dependency entries too, more classes means more dependencies after all.
 
-But there is one issue, but this is not necessarily related to this patch,
-more inline.
+---
+Of course, if you do run out of lock classes, the next thing to do is
+to find the offending lock classes.  First, the following command gives
+you the number of lock classes currently in use along with the maximum:
 
-> ---
->  drivers/power/lp8788-charger.c |   26 +++++++-------------------
->  1 file changed, 7 insertions(+), 19 deletions(-)
-> 
-> diff --git a/drivers/power/lp8788-charger.c b/drivers/power/lp8788-charger.c
-> index 02fc9ab..f18ec8f 100644
-> --- a/drivers/power/lp8788-charger.c
-> +++ b/drivers/power/lp8788-charger.c
-> @@ -235,25 +235,14 @@ static int lp8788_get_battery_present(struct lp8788_charger *pchg,
->  	return 0;
->  }
->  
-[...]
->  static int lp8788_get_battery_voltage(struct lp8788_charger *pchg,
-> @@ -268,7 +257,7 @@ static int lp8788_get_battery_capacity(struct lp8788_charger *pchg,
->  	struct lp8788 *lp = pchg->lp;
->  	struct lp8788_charger_platform_data *pdata = pchg->pdata;
->  	unsigned int max_vbatt;
-> -	unsigned int vbatt;
-> +	int vbatt;
->  	enum lp8788_charging_state state;
->  	u8 data;
->  	int ret;
-> @@ -304,19 +293,18 @@ static int lp8788_get_battery_temperature(struct lp8788_charger *pchg,
->  				union power_supply_propval *val)
->  {
->  	struct iio_channel *channel = pchg->chan[LP8788_BATT_TEMP];
-> -	int scaleint;
-> -	int scalepart;
-> +	int result;
->  	int ret;
->  
->  	if (!channel)
->  		return -EINVAL;
->  
-> -	ret = iio_read_channel_scale(channel, &scaleint, &scalepart);
-> -	if (ret != IIO_VAL_INT_PLUS_MICRO)
-> +	ret = iio_read_channel_processed(channel, &result);
-> +	if (ret < 0)
->  		return -EINVAL;
->  
->  	/* unit: 0.1 'C */
-> -	val->intval = (scaleint + scalepart * 1000000) / 100;
-> +	val->intval = result * 10;
+        grep "lock-classes" /proc/lockdep_stats
 
-IIO reports temperatures in milli degree Celsius. So it should be multiplied
-by 100 to get tenth degree like the power supply framework expects it. But
-this might be a issue in your IIO driver reporting the wrong scale.
+This command produces the following output on a modest system:
 
-- Lars
+         lock-classes:                          748 [max: 8191]
 
->  
->  	return 0;
->  }
+If the number allocated (748 above) increases continually over time,
+then there is likely a leak.  The following command can be used to
+identify the leaking lock classes:
+
+        grep "BD" /proc/lockdep
+
+Run the command and save the output, then compare against the output from
+a later run of this command to identify the leakers.  This same output
+can also help you find situations where runtime lock initialization has
+been omitted.
 
