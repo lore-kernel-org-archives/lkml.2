@@ -1,322 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab2JSC26 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:28:58 -0400
-Received: from ozlabs.org ([203.10.76.45]:54734 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751954Ab2JSC2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:28:20 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, David Howells <dhowells@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: sign the modules at install time
-In-Reply-To: <CA+55aFwTz6xadNL37H6Qb8+rWNefn0cQ0URFPfD=Ea=J54xzGg@mail.gmail.com>
-References: <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com> <87txtso9xw.fsf@rustcorp.com.au> <CA+55aFxZdtD51AVKLtKK95ooh8VB8-5Tt8nHsxSUT67CBRrp2g@mail.gmail.com> <871ugwny1n.fsf@rustcorp.com.au> <CA+55aFwTz6xadNL37H6Qb8+rWNefn0cQ0URFPfD=Ea=J54xzGg@mail.gmail.com>
-User-Agent: Notmuch/0.13.2 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Fri, 19 Oct 2012 11:53:15 +1030
-Message-ID: <87fw5bp858.fsf@rustcorp.com.au>
+	id S1752000Ab2JSCdo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:33:44 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:17988 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048Ab2JSCdm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:33:42 -0400
+Message-ID: <5080BBF9.1080208@oracle.com>
+Date: Thu, 18 Oct 2012 22:33:29 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120913 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: vyasevich@gmail.com, sri@us.ibm.com, davem@davemloft.net
+CC: linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: net,sctp: oops in sctp_do_sm
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
-> On Wed, Oct 17, 2012 at 10:34 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>
->> Hacking the keyid and signer-name to be extracted every time by
->> sign-file takes my modules_install time from 18.6 seconds to 19.1.  We'd
->> get that back easily by making sign-file a perl script anyway; it calls
->> out to perl 3 times already.
->
-> Ok, that tiny slowdown seems worth the cleanup, especially if we'd get
-> it back from somebody re-writing it in perl.
->
-> Want to sign off on the two patches, or put them in your git tree?
+Hi all,
 
-Smerged them together: no point moving the x509keyid script now.
-I dropped the optional dst arg, since we don't use it.
+While fuzzing with trinity inside a KVM tools (lkvm) guest running today's linux-next, I've
+stumbled on the following:
+
+[  439.574039] BUG: unable to handle kernel paging request at ffff88001b9f40c8
+[  439.576486] IP: [<ffffffff83746fc3>] sctp_do_sm+0x293/0x310
+[  439.578128] PGD 4e27063 PUD 4e2b063 PMD 1fa57067 PTE 1b9f4160
+[  439.580796] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[  439.581635] Dumping ftrace buffer:
+[  439.582171]    (ftrace buffer empty)
+[  439.582673] CPU 3
+[  439.582957] Pid: 7101, comm: trinity-child16 Tainted: G        W    3.7.0-rc1-next-20121018-sasha-00002-g60a870d-dirty #62
+[  439.582986] RIP: 0010:[<ffffffff83746fc3>]  [<ffffffff83746fc3>] sctp_do_sm+0x293/0x310
+[  439.582986] RSP: 0018:ffff880010c57988  EFLAGS: 00010286
+[  439.582986] RAX: 0000000000000003 RBX: 0000000000000001 RCX: 0000000000000006
+[  439.582986] RDX: 0000000000000003 RSI: 0000000000000001 RDI: ffff880010c579d0
+[  439.582986] RBP: ffff880010c57ae8 R08: 0000000000000000 R09: 0000000000000000
+[  439.582986] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000004
+[  439.582986] R13: ffff88001b9f4000 R14: ffff880065d22600 R15: 0000000000000003
+[  439.582986] FS:  00007f9a949c3700(0000) GS:ffff880067600000(0000) knlGS:0000000000000000
+[  439.582986] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  439.582986] CR2: ffff88001b9f40c8 CR3: 0000000015850000 CR4: 00000000000406e0
+[  439.582986] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  439.582986] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  439.582986] Process trinity-child16 (pid: 7101, threadinfo ffff880010c56000, task ffff880010a98000)
+[  439.582986] Stack:
+[  439.582986]  ffffffff000000d0 0000000000000000 ffffffff84c92d36 ffffffff84cc4b50
+[  439.582986]  ffffffff83763b30 0000000000000004 ffffffff842c0370 0000000181152f15
+[  439.582986]  ffff880010c579f8 0000000000000002 0000000000000015 0000000000000000
+[  439.582986] Call Trace:
+[  439.582986]  [<ffffffff83763b30>] ? sctp_cname+0x70/0x70
+[  439.582986]  [<ffffffff83761403>] sctp_primitive_SHUTDOWN+0x43/0x50
+[  439.582986]  [<ffffffff8375bd70>] sctp_close+0x150/0x310
+[  439.606533]  [<ffffffff8351bf22>] inet_release+0x1b2/0x1c0
+[  439.606533]  [<ffffffff8351bd8d>] ? inet_release+0x1d/0x1c0
+[  439.606533]  [<ffffffff83578b04>] inet6_release+0x34/0x60
+[  439.606533]  [<ffffffff833c17b8>] sock_release+0x18/0x80
+[  439.610261]  [<ffffffff833c1849>] sock_close+0x29/0x30
+[  439.610261]  [<ffffffff812773f2>] __fput+0x122/0x2d0
+[  439.610261]  [<ffffffff812775a9>] ____fput+0x9/0x10
+[  439.610261]  [<ffffffff81131afe>] task_work_run+0xbe/0x100
+[  439.610261]  [<ffffffff811107e2>] do_exit+0x432/0xbd0
+[  439.610261]  [<ffffffff811243d9>] ? get_signal_to_deliver+0x899/0x910
+[  439.610261]  [<ffffffff8117b2e2>] ? get_lock_stats+0x22/0x70
+[  439.610261]  [<ffffffff8117b36e>] ? put_lock_stats.isra.16+0xe/0x40
+[  439.610261]  [<ffffffff83a6802b>] ? _raw_spin_unlock_irq+0x2b/0x80
+[  439.610261]  [<ffffffff81111044>] do_group_exit+0x84/0xd0
+[  439.610261]  [<ffffffff8112433d>] get_signal_to_deliver+0x7fd/0x910
+[  439.610261]  [<ffffffff8117dffd>] ? trace_hardirqs_off+0xd/0x10
+[  439.620391]  [<ffffffff819fe7db>] ? debug_object_assert_init+0xbb/0x110
+[  439.620391]  [<ffffffff8106d59a>] do_signal+0x3a/0x950
+[  439.620391]  [<ffffffff811c62c3>] ? rcu_cleanup_after_idle+0x23/0x170
+[  439.620391]  [<ffffffff811ca824>] ? rcu_eqs_exit_common+0x64/0x270
+[  439.620391]  [<ffffffff811c90bd>] ? rcu_user_enter+0x10d/0x140
+[  439.620391]  [<ffffffff811cae05>] ? rcu_user_exit+0xc5/0xf0
+[  439.620391]  [<ffffffff8106df1f>] do_notify_resume+0x4f/0xa0
+[  439.620391]  [<ffffffff83a69bea>] int_signal+0x12/0x17
+[  439.620391] Code: e8 eb 48 2c 00 0f 0b 90 41 b8 f4 ff ff ff 66 2e 0f 1f 84 00 00 00 00 00 8b 35 5a 0a 06 02 85 f6 74 66 4d 85
+ed 75 04 31 c0 eb 2a <41> 8b b5 c8 00 00 00 44 89 85 b8 fe ff ff 49 8b 7e 20 e8 f6 51
+[  439.630251] RIP  [<ffffffff83746fc3>] sctp_do_sm+0x293/0x310
+[  439.630251]  RSP <ffff880010c57988>
+[  439.630251] CR2: ffff88001b9f40c8
+[  439.630251] ---[ end trace aa5ad9f036ee09dd ]---
+
+This points to the DEBUG_POST_SFX macro in sctp_do_sm().
+
 
 Thanks,
-Rusty.
-===
-From: Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH] kbuild: sign the modules at install time
-
-Linus deleted the old code and put signing on the install command,
-I fixed it to extract the keyid and signer-name within sign-file
-and cleaned up that script now it always signs in-place.
-
-Some enthusiast should convert sign-key to perl and pull
-x509keyid into it.
-
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-
-diff --git a/Makefile b/Makefile
-index 5be2ee8..8efe41d 100644
---- a/Makefile
-+++ b/Makefile
-@@ -717,6 +717,17 @@ endif # INSTALL_MOD_STRIP
- export mod_strip_cmd
- 
- 
-+ifeq ($(CONFIG_MODULE_SIG),y)
-+MODSECKEY = ./signing_key.priv
-+MODPUBKEY = ./signing_key.x509
-+export MODPUBKEY
-+mod_sign_cmd = sh $(srctree)/scripts/sign-file $(MODSECKEY) $(MODPUBKEY) $(srctree)/scripts/x509keyid
-+else
-+mod_sign_cmd = true
-+endif
-+export mod_sign_cmd
-+
-+
- ifeq ($(KBUILD_EXTMOD),)
- core-y		+= kernel/ mm/ fs/ ipc/ security/ crypto/ block/
- 
-diff --git a/scripts/Makefile.modinst b/scripts/Makefile.modinst
-index 3d13d3a..dda4b2b 100644
---- a/scripts/Makefile.modinst
-+++ b/scripts/Makefile.modinst
-@@ -17,7 +17,7 @@ __modinst: $(modules)
- 	@:
- 
- quiet_cmd_modules_install = INSTALL $@
--      cmd_modules_install = mkdir -p $(2); cp $@ $(2) ; $(mod_strip_cmd) $(2)/$(notdir $@)
-+      cmd_modules_install = mkdir -p $(2); cp $@ $(2) ; $(mod_strip_cmd) $(2)/$(notdir $@) ; $(mod_sign_cmd) $(2)/$(notdir $@)
- 
- # Modules built outside the kernel source tree go into extra by default
- INSTALL_MOD_DIR ?= extra
-diff --git a/scripts/Makefile.modpost b/scripts/Makefile.modpost
-index 0020891..a1cb022 100644
---- a/scripts/Makefile.modpost
-+++ b/scripts/Makefile.modpost
-@@ -14,8 +14,7 @@
- # 3)  create one <module>.mod.c file pr. module
- # 4)  create one Module.symvers file with CRC for all exported symbols
- # 5) compile all <module>.mod.c files
--# 6) final link of the module to a <module.ko> (or <module.unsigned>) file
--# 7) signs the modules to a <module.ko> file
-+# 6) final link of the module to a <module.ko> file
- 
- # Step 3 is used to place certain information in the module's ELF
- # section, including information such as:
-@@ -33,8 +32,6 @@
- # Step 4 is solely used to allow module versioning in external modules,
- # where the CRC of each module is retrieved from the Module.symvers file.
- 
--# Step 7 is dependent on CONFIG_MODULE_SIG being enabled.
--
- # KBUILD_MODPOST_WARN can be set to avoid error out in case of undefined
- # symbols in the final module linking stage
- # KBUILD_MODPOST_NOFINAL can be set to skip the final link of modules.
-@@ -119,7 +116,6 @@ $(modules:.ko=.mod.o): %.mod.o: %.mod.c FORCE
- targets += $(modules:.ko=.mod.o)
- 
- # Step 6), final link of the modules
--ifneq ($(CONFIG_MODULE_SIG),y)
- quiet_cmd_ld_ko_o = LD [M]  $@
-       cmd_ld_ko_o = $(LD) -r $(LDFLAGS)                                 \
-                              $(KBUILD_LDFLAGS_MODULE) $(LDFLAGS_MODULE) \
-@@ -129,78 +125,7 @@ $(modules): %.ko :%.o %.mod.o FORCE
- 	$(call if_changed,ld_ko_o)
- 
- targets += $(modules)
--else
--quiet_cmd_ld_ko_unsigned_o = LD [M]  $@
--      cmd_ld_ko_unsigned_o =						\
--		$(LD) -r $(LDFLAGS)					\
--			 $(KBUILD_LDFLAGS_MODULE) $(LDFLAGS_MODULE)	\
--			 -o $@ $(filter-out FORCE,$^)			\
--		$(if $(AFTER_LINK),; $(AFTER_LINK))
--
--$(modules:.ko=.ko.unsigned): %.ko.unsigned :%.o %.mod.o FORCE
--	$(call if_changed,ld_ko_unsigned_o)
--
--targets += $(modules:.ko=.ko.unsigned)
--
--# Step 7), sign the modules
--MODSECKEY = ./signing_key.priv
--MODPUBKEY = ./signing_key.x509
--
--ifeq ($(wildcard $(MODSECKEY))+$(wildcard $(MODPUBKEY)),$(MODSECKEY)+$(MODPUBKEY))
--ifeq ($(KBUILD_SRC),)
--	# no O= is being used
--	SCRIPTS_DIR := scripts
--else
--	SCRIPTS_DIR := $(KBUILD_SRC)/scripts
--endif
--SIGN_MODULES := 1
--else
--SIGN_MODULES := 0
--endif
--
--# only sign if it's an in-tree module
--ifneq ($(KBUILD_EXTMOD),)
--SIGN_MODULES := 0
--endif
- 
--# We strip the module as best we can - note that using both strip and eu-strip
--# results in a smaller module than using either alone.
--EU_STRIP = $(shell which eu-strip || echo true)
--
--quiet_cmd_sign_ko_stripped_ko_unsigned = STRIP [M] $@
--      cmd_sign_ko_stripped_ko_unsigned = \
--		cp $< $@ && \
--		strip -x -g $@ && \
--		$(EU_STRIP) $@
--
--ifeq ($(SIGN_MODULES),1)
--
--quiet_cmd_genkeyid = GENKEYID $@
--      cmd_genkeyid = \
--		perl $(SCRIPTS_DIR)/x509keyid $< $<.signer $<.keyid
--
--%.signer %.keyid: %
--	$(call if_changed,genkeyid)
--
--KEYRING_DEP := $(MODSECKEY) $(MODPUBKEY) $(MODPUBKEY).signer $(MODPUBKEY).keyid
--quiet_cmd_sign_ko_ko_stripped = SIGN [M] $@
--      cmd_sign_ko_ko_stripped = \
--		sh $(SCRIPTS_DIR)/sign-file $(MODSECKEY) $(MODPUBKEY) $< $@
--else
--KEYRING_DEP :=
--quiet_cmd_sign_ko_ko_unsigned = NO SIGN [M] $@
--      cmd_sign_ko_ko_unsigned = \
--		cp $< $@
--endif
--
--$(modules): %.ko :%.ko.stripped $(KEYRING_DEP) FORCE
--	$(call if_changed,sign_ko_ko_stripped)
--
--$(patsubst %.ko,%.ko.stripped,$(modules)): %.ko.stripped :%.ko.unsigned FORCE
--	$(call if_changed,sign_ko_stripped_ko_unsigned)
--
--targets += $(modules)
--endif
- 
- # Add FORCE to the prequisites of a target to force it to be always rebuilt.
- # ---------------------------------------------------------------------------
-diff --git a/scripts/sign-file b/scripts/sign-file
-index e58e34e..095a953 100644
---- a/scripts/sign-file
-+++ b/scripts/sign-file
-@@ -1,8 +1,8 @@
--#!/bin/sh
-+#!/bin/bash
- #
- # Sign a module file using the given key.
- #
--# Format: sign-file <key> <x509> <src-file> <dst-file>
-+# Format: sign-file <key> <x509> <keyid-script> <module>
- #
- 
- scripts=`dirname $0`
-@@ -15,8 +15,8 @@ fi
- 
- key="$1"
- x509="$2"
--src="$3"
--dst="$4"
-+keyid_script="$3"
-+mod="$4"
- 
- if [ ! -r "$key" ]
- then
-@@ -29,16 +29,6 @@ then
-     echo "Can't read X.509 certificate" >&2
-     exit 2
- fi
--if [ ! -r "$x509.signer" ]
--then
--    echo "Can't read Signer name" >&2
--    exit 2;
--fi
--if [ ! -r "$x509.keyid" ]
--then
--    echo "Can't read Key identifier" >&2
--    exit 2;
--fi
- 
- #
- # Signature parameters
-@@ -83,33 +73,35 @@ fi
- 
- (
- perl -e "binmode STDOUT; print pack(\"C*\", $prologue)" || exit $?
--openssl dgst $dgst -binary $src || exit $?
--) >$src.dig || exit $?
-+openssl dgst $dgst -binary $mod || exit $?
-+) >$mod.dig || exit $?
- 
- #
- # Generate the binary signature, which will be just the integer that comprises
- # the signature with no metadata attached.
- #
--openssl rsautl -sign -inkey $key -keyform PEM -in $src.dig -out $src.sig || exit $?
--signerlen=`stat -c %s $x509.signer`
--keyidlen=`stat -c %s $x509.keyid`
--siglen=`stat -c %s $src.sig`
-+openssl rsautl -sign -inkey $key -keyform PEM -in $mod.dig -out $mod.sig || exit $?
-+
-+SIGNER="`perl $keyid_script $x509 signer-name`"
-+KEYID="`perl $keyid_script $x509 keyid`"
-+keyidlen=${#KEYID}
-+siglen=${#SIGNER}
- 
- #
- # Build the signed binary
- #
- (
--    cat $src || exit $?
-+    cat $mod || exit $?
-     echo '~Module signature appended~' || exit $?
--    cat $x509.signer $x509.keyid || exit $?
-+    echo -n "$SIGNER" || exit $?
-+    echo -n "$KEYID" || exit $?
- 
-     # Preface each signature integer with a 2-byte BE length
-     perl -e "binmode STDOUT; print pack(\"n\", $siglen)" || exit $?
--    cat $src.sig || exit $?
-+    cat $mod.sig || exit $?
- 
-     # Generate the information block
-     perl -e "binmode STDOUT; print pack(\"CCCCCxxxN\", $algo, $hash, $id_type, $signerlen, $keyidlen, $siglen + 2)" || exit $?
--) >$dst~ || exit $?
-+) >$mod~ || exit $?
- 
--# Permit in-place signing
--mv $dst~ $dst || exit $?
-+mv $mod~ $mod || exit $?
-diff --git a/scripts/x509keyid b/scripts/x509keyid
-index c8e91a4..4241ec6 100755
---- a/scripts/x509keyid
-+++ b/scripts/x509keyid
-@@ -22,7 +22,7 @@ use strict;
- 
- my $raw_data;
- 
--die "Need three filenames\n" if ($#ARGV != 2);
-+die "Need a filename [keyid|signer-name]\n" if ($#ARGV != 1);
- 
- my $src = $ARGV[0];
- 
-@@ -259,10 +259,10 @@ die $src, ": ", "X.509: Couldn't find the Subject Key Identifier extension\n"
- 
- my $id_key_id = asn1_retrieve($subject_key_id->[1]);
- 
--open(OUTFD, ">$ARGV[1]") || die $ARGV[1];
--print OUTFD $id_name;
--close OUTFD || die $ARGV[1];
--
--open(OUTFD, ">$ARGV[2]") || die $ARGV[2];
--print OUTFD $id_key_id;
--close OUTFD || die $ARGV[2];
-+if ($ARGV[1] eq "signer-name") {
-+    print $id_name;
-+} elsif ($ARGV[1] eq "keyid") {
-+    print $id_key_id;
-+} else {
-+    die "Unknown arg";
-+}
+Sasha
