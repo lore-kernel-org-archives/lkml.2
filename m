@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964939Ab2JSCtA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:49:00 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52187 "EHLO mail.kernel.org"
+	id S964976Ab2JSCtL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:49:11 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52247 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964870Ab2JSCs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:48:56 -0400
+	id S964944Ab2JSCtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:49:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: [ 35/76] vfio: Fix PCI INTx disable consistency
-Date: Thu, 18 Oct 2012 19:46:59 -0700
-Message-Id: <20121019024355.778895474@linuxfoundation.org>
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Alex Lyashkov <umka@cloudlinux.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 41/76] module: taint kernel when lve module is loaded
+Date: Thu, 18 Oct 2012 19:47:05 -0700
+Message-Id: <20121019024356.722673257@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -25,54 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Matthew Garrett <mjg59@srcf.ucam.org>
 
-commit 899649b7d4ead76c19e39251ca886eebe3f811a8 upstream.
+commit c99af3752bb52ba3aece5315279a57a477edfaf1 upstream.
 
-The virq_disabled flag tracks the userspace view of INTx masking
-across interrupt mode changes, but we're not consistently applying
-this to the interrupt and masking handler notion of the device.
-Currently if the user sets DisINTx while in MSI or MSIX mode, then
-returns to INTx mode (ex. rebooting a qemu guest), the hardware has
-DisINTx+, but the management of INTx thinks it's enabled, making it
-impossible to actually clear DisINTx.  Fix this by updating the
-handler state when INTx is re-enabled.
+Cloudlinux have a product called lve that includes a kernel module. This
+was previously GPLed but is now under a proprietary license, but the
+module continues to declare MODULE_LICENSE("GPL") and makes use of some
+EXPORT_SYMBOL_GPL symbols. Forcibly taint it in order to avoid this.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Alex Lyashkov <umka@cloudlinux.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/vfio/pci/vfio_pci_intrs.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ kernel/module.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/vfio/pci/vfio_pci_intrs.c
-+++ b/drivers/vfio/pci/vfio_pci_intrs.c
-@@ -366,6 +366,17 @@ static int vfio_intx_enable(struct vfio_
- 		return -ENOMEM;
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2730,6 +2730,10 @@ static int check_module_license_and_vers
+ 	if (strcmp(mod->name, "driverloader") == 0)
+ 		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
  
- 	vdev->num_ctx = 1;
++	/* lve claims to be GPL but upstream won't provide source */
++	if (strcmp(mod->name, "lve") == 0)
++		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
 +
-+	/*
-+	 * If the virtual interrupt is masked, restore it.  Devices
-+	 * supporting DisINTx can be masked at the hardware level
-+	 * here, non-PCI-2.3 devices will have to wait until the
-+	 * interrupt is enabled.
-+	 */
-+	vdev->ctx[0].masked = vdev->virq_disabled;
-+	if (vdev->pci_2_3)
-+		pci_intx(vdev->pdev, !vdev->ctx[0].masked);
-+
- 	vdev->irq_type = VFIO_PCI_INTX_IRQ_INDEX;
- 
- 	return 0;
-@@ -419,7 +430,7 @@ static int vfio_intx_set_signal(struct v
- 	 * disable_irq won't.
- 	 */
- 	spin_lock_irqsave(&vdev->irqlock, flags);
--	if (!vdev->pci_2_3 && (vdev->ctx[0].masked || vdev->virq_disabled))
-+	if (!vdev->pci_2_3 && vdev->ctx[0].masked)
- 		disable_irq_nosync(pdev->irq);
- 	spin_unlock_irqrestore(&vdev->irqlock, flags);
- 
+ #ifdef CONFIG_MODVERSIONS
+ 	if ((mod->num_syms && !mod->crcs)
+ 	    || (mod->num_gpl_syms && !mod->gpl_crcs)
 
 
