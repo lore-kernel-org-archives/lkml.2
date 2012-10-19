@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab2JSSsi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 14:48:38 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55087 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384Ab2JSSsg (ORCPT
+	id S1754401Ab2JSStw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 14:49:52 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:4988 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752679Ab2JSStv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 14:48:36 -0400
+	Fri, 19 Oct 2012 14:49:51 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6870"; a="606478"
+Date: Fri, 19 Oct 2012 13:49:35 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-hexagon@vger.kernel.org
+Subject: Re: [GIT PULL] Please pull the Hexagon branch
+Message-ID: <20121019184935.GB24832@codeaurora.org>
+References: <20121019001619.GA24832@codeaurora.org>
+ <CA+55aFwqB7KcPTLuiirTS9rSz1YiUfxJQ6BNbLR2SupfBt5UWg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1210181132430.22996@file.rdu.redhat.com>
-References: <Pine.LNX.4.64.1210151716310.10685@file.rdu.redhat.com>
- <Pine.LNX.4.64.1210161924350.20581@file.rdu.redhat.com> <CA+55aFyZ9uq_yfHn9PwpmM77X3xVd+xseEbjJmeCCqbFddtjWA@mail.gmail.com>
- <Pine.LNX.4.64.1210181132430.22996@file.rdu.redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 19 Oct 2012 11:48:13 -0700
-X-Google-Sender-Auth: rcbzTYjikuKG6tT2YtHC74r2Ozc
-Message-ID: <CA+55aFzyP8OFJGWB5nZduzqMMwuAwy+1Ed5TBCpdBSOpC1ketw@mail.gmail.com>
-Subject: Re: [PATCH] percpu-rwsem: use barrier in unlock path
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwqB7KcPTLuiirTS9rSz1YiUfxJQ6BNbLR2SupfBt5UWg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 9:00 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
->
-> What is the procedure for making changes that require support of
-> architectures? It is trivial to make a patch that moves this into
-> arch-specific includes, the problem is that the patch break all the
-> architectures - I wrote support for x86, sparc, parisc, alpha (I can test
-> those) but not the others.
+On Fri, Oct 19, 2012 at 11:08:40AM -0700, Linus Torvalds wrote:
+> On Thu, Oct 18, 2012 at 5:16 PM, Richard Kuo <rkuo@codeaurora.org> wrote:
+> >
+> > Please pull the following small changes for the Hexagon arch.  It includes
+> > the Hexagon UAPI changes from David Howells and some CR marking changes for
+> > the transition from Code Aurora to Linux Foundation.
+> 
+> Can you please also check Al Viro's email titled "new
+> execve/kernel_thread design". He has hexagon changes he'd like tested,
+> and you were cc'd on the emails. There's a "arch-hexagon" branch in
+> his tree that needs testing and then fixing-or-acking.
+> 
+>              Linus
 
-We'd need to add it to everybody.
+Yes, I will give it a shot ASAP.
 
-It shouldn't need per-architecture testing - since "smp_mb()" is
-always safe. So we could just make all architectures default to that,
-and then for x86 (and potentially others that have cheaper models for
-release-consistency) just do the optimized one.
 
-We *could* also simply do something like
+Thanks,
+Richard Kuo
 
-   #ifndef smp_release_before_store
-     #define smp_release_before_store() smp_mb()
-   #endif
 
-and basically make the rule be that only architectures that have a
-cheaper one need to define it at all. That may be the correct
-short-term fix, since there initially would be only a single user.
 
-                  Linus
+-- 
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
