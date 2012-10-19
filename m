@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757743Ab2JSIvX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 04:51:23 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:19877 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab2JSIvU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 04:51:20 -0400
-Message-ID: <5081145A.2010307@huawei.com>
-Date: Fri, 19 Oct 2012 16:50:34 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Is not locking task_lock in cgroup_fork() safe?
-References: <20121008020000.GB2575@localhost> <CAFTL4hzXWtzp7megsCAEuak5=_2SWmp9age-+wrpyQAU4BRZ0w@mail.gmail.com> <20121016193341.GD16166@google.com> <CAFTL4hzo_w7HTgC9ApTk113X8WdZSpV+D+VSEe=604YEJFmKsg@mail.gmail.com> <20121018200705.GG13370@google.com> <CAFTL4hy7g4e11OUOyoihrEU8hiVgZoV1=141UtUpj9a72SNs_Q@mail.gmail.com> <20121019003835.GE13370@google.com> <20121019005801.GF13370@google.com>
-In-Reply-To: <20121019005801.GF13370@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+	id S1757963Ab2JSIxz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 04:53:55 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:51557 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751951Ab2JSIxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 04:53:51 -0400
+X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Oct 2012 04:53:50 EDT
+From: Florian Fainelli <ffainelli@freebox.fr>
+To: alan@linux.intel.com
+Cc: linux-serial@vger.kernel.org, gregkh@linuxfoundation.org,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org, mbizon@freebox.fr,
+        Florian Fainelli <ffainelli@freebox.fr>
+Subject: [PATCH tty-next] x86: ce4100: allow second UART usage
+Date: Fri, 19 Oct 2012 10:45:07 +0200
+Message-Id: <1350636307-23476-1-git-send-email-ffainelli@freebox.fr>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/10/19 8:58, Tejun Heo wrote:
-> Hello, again.
-> 
-> On Thu, Oct 18, 2012 at 05:38:35PM -0700, Tejun Heo wrote:
->> Even if there isn't an actual race, the comment is dead wrong.  I'm
->> reverting the following three patches.  Let's try again later.
->>
->>   7e381b0eb1 ("cgroup: Drop task_lock(parent) on cgroup_fork()")
->>   7e3aa30ac8 ("cgroup: Remove task_lock() from cgroup_post_fork()")
-> 
-> So, after some more looking, I think the following is correct and
-> doesn't need to be reverted.  It's depending on threadgroup locking
-> from migration path to synchronize against exit path which is always
-> performed.
-> 
->>   c84cdf75cc ("cgroup: Remove unnecessary task_lock before fetching css_set on migration")
-> 
-> Frederic, were you trying to say that the above commit is correct?
-> Li, do you agree?
-> 
+From: Maxime Bizon <mbizon@freebox.fr>
 
-This one does look innocent.
+The current CE4100 and 8250_pci code have both a limitation preventing the
+registration and usage of CE4100's second UART. This patch changes the
+platform code fixing up the UART port to work on a relative UART port
+base address, as well as the 8250_pci code to make it register 2 UART ports
+for CE4100 and pass the port index down to all consumers.
+
+Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
+---
+ arch/x86/platform/ce4100/ce4100.c  |    3 +++
+ drivers/tty/serial/8250/8250_pci.c |    6 +++---
+ 2 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
+index 4c61b52..0dcc30e 100644
+--- a/arch/x86/platform/ce4100/ce4100.c
++++ b/arch/x86/platform/ce4100/ce4100.c
+@@ -92,8 +92,11 @@ static void ce4100_serial_fixup(int port, struct uart_port *up,
+ 		up->membase =
+ 			(void __iomem *)__fix_to_virt(FIX_EARLYCON_MEM_BASE);
+ 		up->membase += up->mapbase & ~PAGE_MASK;
++		up->mapbase += port * 0x100;
++		up->membase += port * 0x100;
+ 		up->iotype   = UPIO_MEM32;
+ 		up->regshift = 2;
++		up->irq = 4;
+ 	}
+ #endif
+ 	up->iobase = 0;
+diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
+index 17b7d26..cec8852 100644
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -1068,7 +1068,7 @@ ce4100_serial_setup(struct serial_private *priv,
+ {
+ 	int ret;
+ 
+-	ret = setup_port(priv, port, 0, 0, board->reg_shift);
++	ret = setup_port(priv, port, idx, 0, board->reg_shift);
+ 	port->port.iotype = UPIO_MEM32;
+ 	port->port.type = PORT_XSCALE;
+ 	port->port.flags = (port->port.flags | UPF_FIXED_PORT | UPF_FIXED_TYPE);
+@@ -2658,8 +2658,8 @@ static struct pciserial_board pci_boards[] __devinitdata = {
+ 		.first_offset	= 0x1000,
+ 	},
+ 	[pbn_ce4100_1_115200] = {
+-		.flags		= FL_BASE0,
+-		.num_ports	= 1,
++		.flags		= FL_BASE_BARS,
++		.num_ports	= 2,
+ 		.base_baud	= 921600,
+ 		.reg_shift      = 2,
+ 	},
+-- 
+1.7.9.5
 
