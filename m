@@ -1,119 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758641Ab2JSMlL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 08:41:11 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45412 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751920Ab2JSMlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 08:41:09 -0400
-Message-ID: <50814A5A.8070206@ti.com>
-Date: Fri, 19 Oct 2012 14:40:58 +0200
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1758694Ab2JSMpf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 08:45:35 -0400
+Received: from smtp-out-125.synserver.de ([212.40.185.125]:1058 "EHLO
+	smtp-out-125.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758459Ab2JSMpe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 08:45:34 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 12750
+Message-ID: <50814B6A.6010000@metafoo.de>
+Date: Fri, 19 Oct 2012 14:45:30 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.9) Gecko/20121014 Icedove/10.0.9
 MIME-Version: 1.0
-To: Matt Porter <mporter@ti.com>
-CC: "Philip, Avinash" <avinashphilip@ti.com>, <linux@arm.linux.org.uk>,
-        <tony@atomide.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>
-Subject: Re: [PATCH v2] arm/dts: AM33XX: Add SPI device tree data
-References: <1347946228-25874-1-git-send-email-avinashphilip@ti.com> <50810E2F.5@ti.com> <20121019113016.GE25164@beef>
-In-Reply-To: <20121019113016.GE25164@beef>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: "Kim, Milo" <Milo.Kim@ti.com>
+CC: "cbou@mail.ru" <cbou@mail.ru>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Jonathan Cameron <jic23@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 3/3] lp8788-charger: fix wrong ADC conversion
+References: <A874F61F95741C4A9BA573A70FE3998F64179109@DQHE02.ent.ti.com>
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F64179109@DQHE02.ent.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matt,
-
-On 10/19/2012 01:30 PM, Matt Porter wrote:
-> On Fri, Oct 19, 2012 at 10:24:15AM +0200, Benoit Cousson wrote:
->> Hi Avinash,
->>
->> This look good to me except the: status = "disabled".
->>
->> The "disabled" should be reserved for variant that does not contain the IP.
->> Is it the case here?
+On 10/19/2012 02:12 AM, Kim, Milo wrote:
+>  To get the battery voltage and temperature, IIO ADC functions are used.
+>  LP8788 ADC driver provides RAW and SCALE channel information.
+>  This patch fixes wrong ADC result.
 > 
-> http://comments.gmane.org/gmane.linux.drivers.devicetree/18968 is what
-> I've been going by with the DTS support in the EDMA dmaengine series. It
-> does make the most sense to only enable what you need in the
-> <board>.dts.
-
-Thanks, I missed that thread. That being said, there is no real rational
-:-)
-It seems to be a preference more than anything else.
-I'm curious now, why powerpc was not really using that approach?
-
-I'd rather explicitly disable an IP than assuming than it is disabled by
-default and then enabling it in the board file. But again it is just a
-different view point, since at the end it will have the same effect.
-
-If we really want the disabled state to be the default state, why is it
-not disabled in the DT fmwk by default?
-
-Regards,
-Benoit
-
+>  Patch v2.
+>  Use simple iio_read_channel_processed() function rather than
+>  iio_read_channel_raw() and _scale().
 > 
-> -Matt
+>  Fix the result type of ADC function as a signed integer.
+>  Because power_supply_propval.intval and the return value of
+>  iio_read_channel_processed() are a signed integer,
+>  'unsigned int' are replaced with 'int'.
 > 
->> On 09/18/2012 07:30 AM, Philip, Avinash wrote:
->>> Add McSPI data node to AM33XX device tree file. The McSPI module (and so
->>> as the driver) is reused from OMAP4.
->>>
->>> Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
->>> Tested-by: Matt Porter <mporter@ti.com>
->>> ---
->>> Changes since v1:
->>>         - Corrected reg offset in reg DT entry.
->>>
->>> :100644 100644 ff3badb... 065fd54... M	arch/arm/boot/dts/am33xx.dtsi
->>>  arch/arm/boot/dts/am33xx.dtsi |   25 +++++++++++++++++++++++++
->>>  1 files changed, 25 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
->>> index ff3badb..065fd54 100644
->>> --- a/arch/arm/boot/dts/am33xx.dtsi
->>> +++ b/arch/arm/boot/dts/am33xx.dtsi
->>> @@ -219,5 +219,30 @@
->>>  			interrupt-parent = <&intc>;
->>>  			interrupts = <91>;
->>>  		};
->>> +
->>> +		spi0: spi@48030000 {
->>> +			compatible = "ti,omap4-mcspi";
->>> +			#address-cells = <1>;
->>> +			#size-cells = <0>;
->>> +			reg = <0x48030000 0x400>;
->>> +			interrupt-parent = <&intc>;
->>> +			interrupt = <65>;
->>> +			ti,spi-num-cs = <2>;
->>> +			ti,hwmods = "spi0";
->>> +			status = "disabled";
->>> +
->>> +		};
->>> +
->>> +		spi1: spi@481a0000 {
->>> +			compatible = "ti,omap4-mcspi";
->>> +			#address-cells = <1>;
->>> +			#size-cells = <0>;
->>> +			reg = <0x481a0000 0x400>;
->>> +			interrupt-parent = <&intc>;
->>> +			interrupt = <125>;
->>> +			ti,spi-num-cs = <2>;
->>> +			ti,hwmods = "spi1";
->>> +			status = "disabled";
->>> +		};
->>>  	};
->>>  };
->>>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+>  Patch v1.
+>  Fix wrong ADC results using iio_read_channel_raw() and _scale().
+> 
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+
+Looks good to me, fwiw:
+
+Reviewed-by Lars-Peter Clausen <lars@metafoo.de>
+
+But there is one issue, but this is not necessarily related to this patch,
+more inline.
+
+> ---
+>  drivers/power/lp8788-charger.c |   26 +++++++-------------------
+>  1 file changed, 7 insertions(+), 19 deletions(-)
+> 
+> diff --git a/drivers/power/lp8788-charger.c b/drivers/power/lp8788-charger.c
+> index 02fc9ab..f18ec8f 100644
+> --- a/drivers/power/lp8788-charger.c
+> +++ b/drivers/power/lp8788-charger.c
+> @@ -235,25 +235,14 @@ static int lp8788_get_battery_present(struct lp8788_charger *pchg,
+>  	return 0;
+>  }
+>  
+[...]
+>  static int lp8788_get_battery_voltage(struct lp8788_charger *pchg,
+> @@ -268,7 +257,7 @@ static int lp8788_get_battery_capacity(struct lp8788_charger *pchg,
+>  	struct lp8788 *lp = pchg->lp;
+>  	struct lp8788_charger_platform_data *pdata = pchg->pdata;
+>  	unsigned int max_vbatt;
+> -	unsigned int vbatt;
+> +	int vbatt;
+>  	enum lp8788_charging_state state;
+>  	u8 data;
+>  	int ret;
+> @@ -304,19 +293,18 @@ static int lp8788_get_battery_temperature(struct lp8788_charger *pchg,
+>  				union power_supply_propval *val)
+>  {
+>  	struct iio_channel *channel = pchg->chan[LP8788_BATT_TEMP];
+> -	int scaleint;
+> -	int scalepart;
+> +	int result;
+>  	int ret;
+>  
+>  	if (!channel)
+>  		return -EINVAL;
+>  
+> -	ret = iio_read_channel_scale(channel, &scaleint, &scalepart);
+> -	if (ret != IIO_VAL_INT_PLUS_MICRO)
+> +	ret = iio_read_channel_processed(channel, &result);
+> +	if (ret < 0)
+>  		return -EINVAL;
+>  
+>  	/* unit: 0.1 'C */
+> -	val->intval = (scaleint + scalepart * 1000000) / 100;
+> +	val->intval = result * 10;
+
+IIO reports temperatures in milli degree Celsius. So it should be multiplied
+by 100 to get tenth degree like the power supply framework expects it. But
+this might be a issue in your IIO driver reporting the wrong scale.
+
+- Lars
+
+>  
+>  	return 0;
+>  }
 
