@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161055Ab2JSDNJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:13:09 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51645 "EHLO mail.kernel.org"
+	id S932293Ab2JSCry (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:47:54 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51614 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932318Ab2JSCrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:47:55 -0400
+	id S1757462Ab2JSCrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:47:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Denys Fedoryshchenko <denys@visp.net.lb>,
-        Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        "David S. Miller" <davem@davemloft.net>, eric.dumazet@gmail.com,
-        therbert@google.com
-Subject: [ 48/62] e1000e: Change wthresh to 1 to avoid possible Tx stalls
-Date: Thu, 18 Oct 2012 19:45:16 -0700
-Message-Id: <20121019024303.733305316@linuxfoundation.org>
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        David Miller <davem@davemloft.net>
+Subject: [ 36/62] netfilter: ipset: fix timeout value overflow bug
+Date: Thu, 18 Oct 2012 19:45:04 -0700
+Message-Id: <20121019024301.821049466@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -29,81 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>
+From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
 
-commit 8edc0e624db3756783233e464879eb2e3b904c13 upstream.
+commit 127f559127f5175e4bec3dab725a34845d956591 upstream.
 
-This patch originated from Hiroaki SHIMODA but has been modified
-by Intel with some minor cleanups and additional commit log text.
+Large timeout parameters could result wrong timeout values due to
+an overflow at msec to jiffies conversion (reported by Andreas Herz)
 
-Denys Fedoryshchenko and others reported Tx stalls on e1000e with
-BQL enabled.  Issue was root caused to hardware delays. They were
-introduced because some of the e1000e hardware with transmit
-writeback bursting enabled, waits until the driver does an
-explict flush OR there are WTHRESH descriptors to write back.
+[ This patch was mangled by Pablo Neira Ayuso since David Laight and
+  Eric Dumazet noticed that we were using hardcoded 1000 instead of
+  MSEC_PER_SEC to calculate the timeout ]
 
-Sometimes the delays in question were on the order of seconds,
-causing visible lag for ssh sessions and unacceptable tx
-completion latency, especially for BQL enabled kernels.
-
-To avoid possible Tx stalls, change WTHRESH back to 1.
-
-The current plan is to investigate a method for re-enabling
-WTHRESH while not harming BQL, but those patches will be later
-for net-next if they work.
-
-please enqueue for stable since v3.3 as this bug was introduced in
-commit 3f0cfa3bc11e7f00c9994e0f469cbc0e7da7b00c
-Author: Tom Herbert <therbert@google.com>
-Date:   Mon Nov 28 16:33:16 2011 +0000
-
-    e1000e: Support for byte queue limits
-
-    Changes to e1000e to use byte queue limits.
-
-Reported-by: Denys Fedoryshchenko <denys@visp.net.lb>
-Tested-by: Denys Fedoryshchenko <denys@visp.net.lb>
-Signed-off-by: Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>
-CC: eric.dumazet@gmail.com
-CC: therbert@google.com
-Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Acked-by: David Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/e1000e/e1000.h  |    6 +++---
- drivers/net/ethernet/intel/e1000e/netdev.c |    2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ include/linux/netfilter/ipset/ip_set_timeout.h |    4 ++++
+ net/netfilter/xt_set.c                         |   15 +++++++++++++--
+ 2 files changed, 17 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/intel/e1000e/e1000.h
-+++ b/drivers/net/ethernet/intel/e1000e/e1000.h
-@@ -175,13 +175,13 @@ struct e1000_info;
- /*
-  * in the case of WTHRESH, it appears at least the 82571/2 hardware
-  * writes back 4 descriptors when WTHRESH=5, and 3 descriptors when
-- * WTHRESH=4, and since we want 64 bytes at a time written back, set
-- * it to 5
-+ * WTHRESH=4, so a setting of 5 gives the most efficient bus
-+ * utilization but to avoid possible Tx stalls, set it to 1
-  */
- #define E1000_TXDCTL_DMA_BURST_ENABLE                          \
- 	(E1000_TXDCTL_GRAN | /* set descriptor granularity */  \
- 	 E1000_TXDCTL_COUNT_DESC |                             \
--	 (5 << 16) | /* wthresh must be +1 more than desired */\
-+	 (1 << 16) | /* wthresh must be +1 more than desired */\
- 	 (1 << 8)  | /* hthresh */                             \
- 	 0x1f)       /* pthresh */
+--- a/include/linux/netfilter/ipset/ip_set_timeout.h
++++ b/include/linux/netfilter/ipset/ip_set_timeout.h
+@@ -30,6 +30,10 @@ ip_set_timeout_uget(struct nlattr *tb)
+ {
+ 	unsigned int timeout = ip_set_get_h32(tb);
  
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -2806,7 +2806,7 @@ static void e1000_configure_tx(struct e1
- 		 * set up some performance related parameters to encourage the
- 		 * hardware to use the bus more efficiently in bursts, depends
- 		 * on the tx_int_delay to be enabled,
--		 * wthresh = 5 ==> burst write a cacheline (64 bytes) at a time
-+		 * wthresh = 1 ==> burst write is disabled to avoid Tx stalls
- 		 * hthresh = 1 ==> prefetch when one or more available
- 		 * pthresh = 0x1f ==> prefetch if internal cache 31 or less
- 		 * BEWARE: this seems to work but should be considered first if
++	/* Normalize to fit into jiffies */
++	if (timeout > UINT_MAX/MSEC_PER_SEC)
++		timeout = UINT_MAX/MSEC_PER_SEC;
++
+ 	/* Userspace supplied TIMEOUT parameter: adjust crazy size */
+ 	return timeout == IPSET_NO_TIMEOUT ? IPSET_NO_TIMEOUT - 1 : timeout;
+ }
+--- a/net/netfilter/xt_set.c
++++ b/net/netfilter/xt_set.c
+@@ -44,6 +44,14 @@ const struct ip_set_adt_opt n = {	\
+ 	.cmdflags = cfs,		\
+ 	.timeout = t,			\
+ }
++#define ADT_MOPT(n, f, d, fs, cfs, t)	\
++struct ip_set_adt_opt n = {		\
++	.family	= f,			\
++	.dim = d,			\
++	.flags = fs,			\
++	.cmdflags = cfs,		\
++	.timeout = t,			\
++}
+ 
+ /* Revision 0 interface: backward compatible with netfilter/iptables */
+ 
+@@ -296,11 +304,14 @@ static unsigned int
+ set_target_v2(struct sk_buff *skb, const struct xt_action_param *par)
+ {
+ 	const struct xt_set_info_target_v2 *info = par->targinfo;
+-	ADT_OPT(add_opt, par->family, info->add_set.dim,
+-		info->add_set.flags, info->flags, info->timeout);
++	ADT_MOPT(add_opt, par->family, info->add_set.dim,
++		 info->add_set.flags, info->flags, info->timeout);
+ 	ADT_OPT(del_opt, par->family, info->del_set.dim,
+ 		info->del_set.flags, 0, UINT_MAX);
+ 
++	/* Normalize to fit into jiffies */
++	if (add_opt.timeout > UINT_MAX/MSEC_PER_SEC)
++		add_opt.timeout = UINT_MAX/MSEC_PER_SEC;
+ 	if (info->add_set.index != IPSET_INVALID_ID)
+ 		ip_set_add(info->add_set.index, skb, par, &add_opt);
+ 	if (info->del_set.index != IPSET_INVALID_ID)
 
 
