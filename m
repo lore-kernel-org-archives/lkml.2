@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945928Ab2JSP7K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 11:59:10 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56918 "EHLO
+	id S964896Ab2JSQA3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 12:00:29 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39367 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945913Ab2JSP7J (ORCPT
+	with ESMTP id S964851Ab2JSQA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 11:59:09 -0400
-Message-ID: <508178C9.9090504@wwwdotorg.org>
-Date: Fri, 19 Oct 2012 09:59:05 -0600
+	Fri, 19 Oct 2012 12:00:26 -0400
+Message-ID: <50817916.2060409@wwwdotorg.org>
+Date: Fri, 19 Oct 2012 10:00:22 -0600
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/5] ARM: tegra: fix clock entry of slink controller
-References: <1350557795-31487-1-git-send-email-ldewangan@nvidia.com> <1350557795-31487-4-git-send-email-ldewangan@nvidia.com> <5080862C.9030203@wwwdotorg.org> <508119CE.9070408@nvidia.com>
-In-Reply-To: <508119CE.9070408@nvidia.com>
+To: Tony Prisk <linux@prisktech.co.nz>
+CC: Alexandre Courbot <acourbot@nvidia.com>, linux-fbdev@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Warren <swarren@nvidia.com>, linux-pm@vger.kernel.org,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, Anton Vorontsov <cbou@mail.ru>,
+        linux-tegra@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v7 2/3] pwm_backlight: use power sequences
+References: <1350637589-7405-1-git-send-email-acourbot@nvidia.com> <1350637589-7405-3-git-send-email-acourbot@nvidia.com> <1350638436.3339.2.camel@gitbox>
+In-Reply-To: <1350638436.3339.2.camel@gitbox>
 X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -28,25 +31,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2012 03:13 AM, Laxman Dewangan wrote:
-> On Friday 19 October 2012 04:13 AM, Stephen Warren wrote:
+On 10/19/2012 03:20 AM, Tony Prisk wrote:
+> On Fri, 2012-10-19 at 18:06 +0900, Alexandre Courbot wrote:
+>> Make use of the power sequences specified in the device tree or platform
+>> data to control how the backlight is powered on and off.
 
->>> +    OF_DEV_AUXDATA("nvidia,tegra20-slink", TEGRA_SLINK1_BASE,
->>> "spi-tegra-slink.0", NULL),
->> Here, can't we just use the existing device names in the clock files...
->>
->> So we can completely drop the changes to these two files:
->
-> I want to name the driver as spi-tegra-slink. When we add the sflash spi
-> driver for tegra20, the driver name will be spi-tegra-sflash.
-> Also current name is "spi_tegra" I do not want to name with "_". So it
-> is require to convert as "-".
-
-The driver name is whatever you put into the driver file. The AUXDATA
-only affects the device name. There should be no conflict with the
-"sflash" driver, since that clock is set up to expect driver name "spi"
-which doesn't conflict with "spi_tegra.*".
-
-So, there's really no point in churning the clock names any more,
-especially since it's temporary. If you feel strongly about this, the
-best thing to do is help push Tegra's support of DT clock bindings forward.
+Tony, please do cut down the amount of the patch that you quote. If you
+don't, it's impossible to find your comments. Thanks.
