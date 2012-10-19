@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757697Ab2JSDeY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:34:24 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51009 "EHLO mail.kernel.org"
+	id S1161038Ab2JSDeV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:34:21 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51044 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752195Ab2JSCqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:46:48 -0400
+	id S1752285Ab2JSCqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:46:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 04/62] lockd: use rpc clients cl_nodename for id encoding
-Date: Thu, 18 Oct 2012 19:44:32 -0700
-Message-Id: <20121019024256.632046418@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 08/62] ALSA: hda - Fix memory leaks at error path in patch_cirrus.c
+Date: Thu, 18 Oct 2012 19:44:36 -0700
+Message-Id: <20121019024257.295532635@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024255.944999470@linuxfoundation.org>
 References: <20121019024255.944999470@linuxfoundation.org>
@@ -26,48 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 303a7ce92064c285a04c870f2dc0192fdb2968cb upstream.
+commit c5e0b6dbad9b4d18c561af90b384d02373f1c994 upstream.
 
-Taking hostname from uts namespace if not safe, because this cuold be
-performind during umount operation on child reaper death. And in this case
-current->nsproxy is NULL already.
+The proper destructor should be called at the error path.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/mon.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_cirrus.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/lockd/mon.c
-+++ b/fs/lockd/mon.c
-@@ -40,6 +40,7 @@ struct nsm_args {
- 	u32			proc;
+--- a/sound/pci/hda/patch_cirrus.c
++++ b/sound/pci/hda/patch_cirrus.c
+@@ -1427,7 +1427,7 @@ static int patch_cs420x(struct hda_codec
+ 	return 0;
  
- 	char			*mon_name;
-+	char			*nodename;
- };
+  error:
+-	kfree(codec->spec);
++	cs_free(codec);
+ 	codec->spec = NULL;
+ 	return err;
+ }
+@@ -1984,7 +1984,7 @@ static int patch_cs4210(struct hda_codec
+ 	return 0;
  
- struct nsm_res {
-@@ -94,6 +95,7 @@ static int nsm_mon_unmon(struct nsm_hand
- 		.vers		= 3,
- 		.proc		= NLMPROC_NSM_NOTIFY,
- 		.mon_name	= nsm->sm_mon_name,
-+		.nodename	= utsname()->nodename,
- 	};
- 	struct rpc_message msg = {
- 		.rpc_argp	= &args,
-@@ -430,7 +432,7 @@ static void encode_my_id(struct xdr_stre
- {
- 	__be32 *p;
+  error:
+-	kfree(codec->spec);
++	cs_free(codec);
+ 	codec->spec = NULL;
+ 	return err;
+ }
+@@ -2009,7 +2009,7 @@ static int patch_cs4213(struct hda_codec
+ 	return 0;
  
--	encode_nsm_string(xdr, utsname()->nodename);
-+	encode_nsm_string(xdr, argp->nodename);
- 	p = xdr_reserve_space(xdr, 4 + 4 + 4);
- 	*p++ = cpu_to_be32(argp->prog);
- 	*p++ = cpu_to_be32(argp->vers);
+  error:
+-	kfree(codec->spec);
++	cs_free(codec);
+ 	codec->spec = NULL;
+ 	return err;
+ }
 
 
