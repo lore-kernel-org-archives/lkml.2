@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751447Ab2JSByZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 21:54:25 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:62496 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815Ab2JSByY (ORCPT
+	id S1751787Ab2JSB4z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 21:56:55 -0400
+Received: from mail.bendigoit.com.au ([203.16.207.99]:52908 "EHLO
+	smtp2.bendigoit.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584Ab2JSB4y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 21:54:24 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ming Lei <ming.lei@canonical.com>, Joerg Roedel <joerg.roedel@amd.com>,
-        Shuah Khan <shuah.khan@hp.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jakub Kicinski <kubakici@wp.pl>, Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PATCH v1] lib/dma-debug.c: fix __hash_bucket_find
-Date: Fri, 19 Oct 2012 09:54:07 +0800
-Message-Id: <1350611647-15023-1-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 18 Oct 2012 21:56:54 -0400
+X-Greylist: delayed 1312 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Oct 2012 21:56:53 EDT
+From: James Harper <james.harper@bendigoit.com.au>
+To: Roger Pau Monne <roger.pau@citrix.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+CC: Oliver Chick <oliver.chick@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [Xen-devel] [PATCH RFC] Persistent grant maps for xen blk
+ drivers
+Thread-Topic: [Xen-devel] [PATCH RFC] Persistent grant maps for xen blk
+ drivers
+Thread-Index: AQHNrSPHQ3cOVHsv2Ui1q3f+GnpWRpe+90Qg
+Date: Fri, 19 Oct 2012 01:34:40 +0000
+Message-ID: <6035A0D088A63A46850C3988ED045A4B32C1043A@BITCOM1.int.sbss.com.au>
+References: <1350559321-19066-1-git-send-email-roger.pau@citrix.com>
+In-Reply-To: <1350559321-19066-1-git-send-email-roger.pau@citrix.com>
+Accept-Language: en-AU, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.222.114]
+x-tm-as-product-ver: SMEX-10.2.0.2087-7.000.1014-19286.001
+x-tm-as-result: No--39.354100-0.000000-31
+x-tm-as-user-approved-sender: Yes
+x-tm-as-user-blocked-sender: No
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Really-From-Bendigo-IT: magichashvalue
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If there is only one match, the unique matched entry should be returned.
+> 
+> This patch implements persistent grants for the xen-blk{front,back}
+> mechanism. The effect of this change is to reduce the number of unmap
+> operations performed, since they cause a (costly) TLB shootdown. This allows
+> the I/O performance to scale better when a large number of VMs are
+> performing I/O.
+> 
+> Previously, the blkfront driver was supplied a bvec[] from the request
+> queue. This was granted to dom0; dom0 performed the I/O and wrote
+> directly into the grant-mapped memory and unmapped it; blkfront then
+> removed foreign access for that grant. The cost of unmapping scales badly
+> with the number of CPUs in Dom0. An experiment showed that when
+> Dom0 has 24 VCPUs, and guests are performing parallel I/O to a ramdisk, the
+> IPIs from performing unmap's is a bottleneck at 5 guests (at which point
+> 650,000 IOPS are being performed in total). If more than 5 guests are used,
+> the performance declines. By 10 guests, only
+> 400,000 IOPS are being performed.
+> 
+> This patch improves performance by only unmapping when the connection
+> between blkfront and back is broken.
 
-Without the fix, the commit f62566214fe31c9f9b3218a42f1b19e6a9e6844a
+I assume network drivers would suffer from the same affliction... Would a more general persistent map solution be worth considering (or be possible)? So a common interface to this persistent mapping allowing the persistent pool to be shared between all drivers in the DomU?
 
-	dma-debug: new interfaces to debug dma mapping errors
-
-can't work reliably because only device and dma_addr are passed to
-dma_mapping_error().
-
-Cc: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Shuah Khan <shuah.khan@hp.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jakub Kicinski <kubakici@wp.pl>
-Cc: Fengguang Wu <fengguang.wu@intel.com>
-Tested-by: Shuah Khan <shuah.khan@hp.com>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
-v1:
-	- initialize 'last_lvl' as -1 to simplify the fix
-
- lib/dma-debug.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/lib/dma-debug.c b/lib/dma-debug.c
-index 94aa94e..59f4a1a 100644
---- a/lib/dma-debug.c
-+++ b/lib/dma-debug.c
-@@ -277,7 +277,7 @@ static struct dma_debug_entry *__hash_bucket_find(struct hash_bucket *bucket,
- 						  match_fn match)
- {
- 	struct dma_debug_entry *entry, *ret = NULL;
--	int matches = 0, match_lvl, last_lvl = 0;
-+	int matches = 0, match_lvl, last_lvl = -1;
- 
- 	list_for_each_entry(entry, &bucket->list, list) {
- 		if (!match(ref, entry))
-@@ -306,7 +306,7 @@ static struct dma_debug_entry *__hash_bucket_find(struct hash_bucket *bucket,
- 		} else if (match_lvl > last_lvl) {
- 			/*
- 			 * We found an entry that fits better then the
--			 * previous one
-+			 * previous one or it is the 1st match.
- 			 */
- 			last_lvl = match_lvl;
- 			ret      = entry;
--- 
-1.7.9.5
+James
 
