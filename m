@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965049Ab2JSDYF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:24:05 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54461 "EHLO mail.kernel.org"
+	id S932921Ab2JSDY3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:24:29 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54453 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758040Ab2JSDRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:25 -0400
+	id S1758032Ab2JSDRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Alex Lyashkov <umka@cloudlinux.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 14/37] module: taint kernel when lve module is loaded
-Date: Thu, 18 Oct 2012 20:16:37 -0700
-Message-Id: <20121019031305.151580551@linuxfoundation.org>
+        Daniel Drake <dsd@laptop.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [ 16/37] viafb: dont touch clock state on OLPC XO-1.5
+Date: Thu, 18 Oct 2012 20:16:39 -0700
+Message-Id: <20121019031305.473629170@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -27,36 +26,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg59@srcf.ucam.org>
+From: Daniel Drake <dsd@laptop.org>
 
-commit c99af3752bb52ba3aece5315279a57a477edfaf1 upstream.
+commit 012a1211845eab69a5488d59eb87d24cc518c627 upstream.
 
-Cloudlinux have a product called lve that includes a kernel module. This
-was previously GPLed but is now under a proprietary license, but the
-module continues to declare MODULE_LICENSE("GPL") and makes use of some
-EXPORT_SYMBOL_GPL symbols. Forcibly taint it in order to avoid this.
+As detailed in the thread titled "viafb PLL/clock tweaking causes XO-1.5
+instability," enabling or disabling the IGA1/IGA2 clocks causes occasional
+stability problems during suspend/resume cycles on this platform.
 
-Signed-off-by: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Alex Lyashkov <umka@cloudlinux.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+This is rather odd, as the documentation suggests that clocks have two
+states (on/off) and the default (stable) configuration is configured to
+enable the clock only when it is needed. However, explicitly enabling *or*
+disabling the clock triggers this system instability, suggesting that there
+is a 3rd state at play here.
+
+Leaving the clock enable/disable registers alone solves this problem.
+This fixes spurious reboots during suspend/resume behaviour introduced by
+commit b692a63a.
+
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/module.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/video/via/via_clock.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2605,6 +2605,10 @@ static int check_module_license_and_vers
- 	if (strcmp(mod->name, "driverloader") == 0)
- 		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
+--- a/drivers/video/via/via_clock.c
++++ b/drivers/video/via/via_clock.c
+@@ -25,6 +25,7 @@
  
-+	/* lve claims to be GPL but upstream won't provide source */
-+	if (strcmp(mod->name, "lve") == 0)
-+		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
+ #include <linux/kernel.h>
+ #include <linux/via-core.h>
++#include <asm/olpc.h>
+ #include "via_clock.h"
+ #include "global.h"
+ #include "debug.h"
+@@ -289,6 +290,10 @@ static void dummy_set_pll(struct via_pll
+ 	printk(KERN_INFO "Using undocumented set PLL.\n%s", via_slap);
+ }
+ 
++static void noop_set_clock_state(u8 state)
++{
++}
 +
- #ifdef CONFIG_MODVERSIONS
- 	if ((mod->num_syms && !mod->crcs)
- 	    || (mod->num_gpl_syms && !mod->gpl_crcs)
+ void via_clock_init(struct via_clock *clock, int gfx_chip)
+ {
+ 	switch (gfx_chip) {
+@@ -346,4 +351,18 @@ void via_clock_init(struct via_clock *cl
+ 		break;
+ 
+ 	}
++
++	if (machine_is_olpc()) {
++		/* The OLPC XO-1.5 cannot suspend/resume reliably if the
++		 * IGA1/IGA2 clocks are set as on or off (memory rot
++		 * occasionally happens during suspend under such
++		 * configurations).
++		 *
++		 * The only known stable scenario is to leave this bits as-is,
++		 * which in their default states are documented to enable the
++		 * clock only when it is needed.
++		 */
++		clock->set_primary_clock_state = noop_set_clock_state;
++		clock->set_secondary_clock_state = noop_set_clock_state;
++	}
+ }
 
 
