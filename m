@@ -1,127 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288Ab2JSIVS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 04:21:18 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60746 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916Ab2JSIVP (ORCPT
+	id S1755683Ab2JSIWA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 04:22:00 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57173 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab2JSIV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 04:21:15 -0400
-Date: Fri, 19 Oct 2012 10:21:07 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Richard Purdie <rpurdie@rpsys.net>, Bryan Wu <bryan.wu@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] lp855x_bl: use generic PWM functions
-Message-ID: <20121019082107.GA20659@avionic-0098.mockup.avionic-design.de>
-References: <A874F61F95741C4A9BA573A70FE3998F6417916D@DQHE02.ent.ti.com>
+	Fri, 19 Oct 2012 04:21:56 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZGiS0Q5IWpPtfppv"
-Content-Disposition: inline
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F6417916D@DQHE02.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:NFbUdjsaPO/ehfU7NK5zubnr1WYKV2/bQlTx7S85hnQ
- ymHLsST1NES4nfp0YhPFwpGSDIEu+Rdn1SZ4MF1XQlvi0n8DNu
- 8vG+aL6RvXuMvahWzhRJf3gCyDygFK9ROnQruIG8ovTio3PmkL
- h+VmNJV6/3TAJdeoKtGY7R11Q2jypnkWYMx0f4wqyVeDxJL+N4
- aSQZFx36jBVPd+nKsakHtgO4yFDYESBJ4RiAJwrm1j7o+9dAlJ
- u+cHipJGAWOC37fguMBVw2+t1whR1bnWJWzigMWoGQWcfrnoUZ
- sAaE/LY7suqvZKQQTg/aIJqIdKM0MEKeGYI7XxFHr03swGjViw
- 5Ee6Zhw83VEyO3ucmZNFp0vPmDZAHv1uwUO6/fee7dbD1unkd+
- QmdnV4mhxPRmhmJq0allTRbuYLO5nD9Fbo6BtTqk6obyr28TpJ
- 9VN/N
+In-Reply-To: <20121016031710.GD2864@dastard>
+References: <1349863655-29320-1-git-send-email-zwu.kernel@gmail.com>
+	<1349863655-29320-12-git-send-email-zwu.kernel@gmail.com>
+	<20121016031710.GD2864@dastard>
+Date: Fri, 19 Oct 2012 16:21:54 +0800
+Message-ID: <CAEH94LjWqh3q29AnQpmedLjjxY66WxcNueiprXkzGkceBxHPkQ@mail.gmail.com>
+Subject: Re: [RFC v3 11/13] vfs: add 3 new ioctl interfaces
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, dave@jikos.cz,
+        tytso@mit.edu, cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 16, 2012 at 11:17 AM, Dave Chinner <david@fromorbit.com> wrote:
+> On Wed, Oct 10, 2012 at 06:07:33PM +0800, zwu.kernel@gmail.com wrote:
+>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>>
+>>   FS_IOC_GET_HEAT_INFO: return a struct containing the various
+>> metrics collected in btrfs_freq_data structs, and also return a
+>
+> I think you mean hot_freq_data :P
+>
+>> calculated data temperature based on those metrics. Optionally, retrieve
+>> the temperature from the hot data hash list instead of recalculating it.
+>
+> To get the heat info for a specific file you have to know what file
+> you want to get that info for, right?  I can see the usefulness of
+> asking for the heat data on a specific file, but how do you find the
+> hot files in the first place? i.e. the big question the user
+> interface needs to answer is "what files are hot?".
+>
+> Once userspace knows what the hottest files are, it can open them
+> and query the data via the above ioctl, but expecting userspace to
+> iterate millions of inodes in a filesystem to find hot files is very
+> inefficient.
+>
+> FWIW, if you were to return file handles to the hottest files, then
+Good idea. I am not very clear about how to implement it. file handles
+mean file_handle??  How to return them to the application? via
+debugfs? How many hottest files should be returned?? Top 100?
 
---ZGiS0Q5IWpPtfppv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> the application could open and query them without even needing to
+> know the path name to them. This woul dbe exceedingly useful for
+> defragmentation programs, especially as that is the way xfs_fsr
+> already operates on candidate files.(*)
+>
+> IOWs, sometimes the pathname is irrelevant to the operations that
+> applications want to perform - all they care about having an
+> efficient method of finding the inode they want and getting a file
+> descriptor that points to the file. Given the heat map info fits
+> right in to the sort of operations defrag and data mover tools
+> already do, it kind of makes sense to optimise the interface towards
+> those uses....
+>
+> (*) i.e. finds them via bulkstat which returns handle information
+> along with all the other inode data, then opens the file by handle
+> to do the defrag work....
+>
+>>   FS_IOC_GET_HEAT_OPTS: return an integer representing the current
+>> state of hot data tracking and migration:
+>>
+>> 0 = do nothing
+>> 1 = track frequency of access
+>>
+>>   FS_IOC_SET_HEAT_OPTS: change the state of hot data tracking and
+>> migration, as described above.
+>
+> I can't see how this is a manageable interface. It is not
+> persistent, so after every filesystem mount you'd have to set the
+> flag on all your inodes again. Hence, for the moment, I'd suggest
+> that dropping per-inode tracking control until all the core issues
+> are sorted out....
+>
+> Cheers,
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-On Fri, Oct 19, 2012 at 08:11:50AM +0000, Kim, Milo wrote:
->  The LP855x family devices support the PWM input for the backlight contro=
-l.
->  Period of the PWM is configurable in the platform side.
->  Platform specific functions are unnecessary anymore because
->  generic PWM functions are used inside the driver.
->=20
->  (PWM input mode)
->  To set the brightness, new lp855x_pwm_ctrl() is used.
->  If a PWM device is not allocated, devm_pwm_get() is called.
->  The PWM consumer name is from the chip name such as 'lp8550' and 'lp8556=
-'.
->  To get the brightness value, no additional handling is required.
->  Just the value of 'props.brightness' is returned.
->=20
->  If the PWM driver is not ready while initializing the LP855x driver, it'=
-s OK.
->  The PWM device can be retrieved later, when the brightness value is chan=
-ged.
->=20
->  Documentation is updated with an example.
->=20
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 
-Generally this looks good. Obviously you'll need to update any users of
-this driver as well. It might make sense to include those changes in
-this patch to avoid interim build failures.
 
-Other than that I have just one smaller comment below.
+-- 
+Regards,
 
-> @@ -121,6 +123,25 @@ static int lp855x_init_registers(struct lp855x *lp)
->  	return ret;
->  }
-> =20
-> +static void lp855x_pwm_ctrl(struct lp855x *lp, int br, int max_br)
-> +{
-> +	unsigned int period =3D lp->pdata->period_ns;
-> +	unsigned int duty =3D br * period / max_br;
-> +	struct pwm_device *pwm;
-> +
-> +	/* request pwm device with the consumer name */
-> +	if (!lp->pwm) {
-> +		pwm =3D devm_pwm_get(lp->dev, lp->chipname);
-> +		if (IS_ERR(pwm))
-> +			return;
-> +
-> +		lp->pwm =3D pwm;
-> +	}
-> +
-> +	pwm_config(lp->pwm, duty, period);
-> +	duty =3D=3D 0 ? pwm_disable(lp->pwm) : pwm_enable(lp->pwm);
-
-This is really ugly and should be written explicitly:
-
-	if (duty =3D=3D 0)
-		pwm_disable(lp->pwm);
-	else
-		pwm_enable(lp->pwm);
-
-Thierry
-
---ZGiS0Q5IWpPtfppv
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQgQ1zAAoJEN0jrNd/PrOheUIQAIeqjlQMGQgJXl6/4Ca0gPXU
-wvVG0etq0s5C34yHbdp/WLJ0/RSfhH2Jhrv9c94X3uQTWa426EPPIgHihWahsSaw
-hIPOddpbUZ8eEHhz2mZ1gL6RTOsvRNUaq/0mjigCmqDutWxejisgVN19mX9tmhOm
-r3LG7GrAYr7kL6B6p7OPbMSlfIc/dSG5InRGgJuvr4PNE5LLB6l/cr3NK53hNyH3
-bymHtcUVOGnush2LrdI5dSiade9dI9pWr/oOwifVDJMq3uOiP3mdmqjEJtodGf3O
-/HDWhEHt6psSC8ipemw8X/FD83hYr1MgO97bgwTS/WfDwGN0vSKtStR0lMxImG5A
-zqTn0k/RRwZAj0oGtYVIK5HF9/kLuHjgiklGOoifjszZ4xR4MYR+jVKPKZBloJA5
-vID80lbrMy0M9ueJczJ3xfQ33m9UOrYV5QH1WCp4FYMj/f9OciLuBXYXW20FpSSp
-WWT6fPDV3SPooRtOdBoIN0ABhT0T9uspDTc4rslyCNX/XpWrLo4SYt5c0h5cePmr
-mF+4cL5tiZAa4KH7gknxs92OtR5JkO+SexawRiYZj/gzG1tB+uphG6+nfZdHHqaG
-AF8aR8Bxxd3pKijESAZdgMuxCRfQYjR9l8KfnllhPPLHdh2LxNYEBPzGDEyr+7g4
-cx/lb2f40eU/OvxXJv7Z
-=c22V
------END PGP SIGNATURE-----
-
---ZGiS0Q5IWpPtfppv--
+Zhi Yong Wu
