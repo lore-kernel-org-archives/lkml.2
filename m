@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030530Ab2JSDTT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:19:19 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54681 "EHLO mail.kernel.org"
+	id S1758102Ab2JSDRt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:17:49 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54636 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758107Ab2JSDRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:50 -0400
+	id S1757862Ab2JSDRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 33/37] x86, random: Verify RDRAND functionality and allow it to be disabled
-Date: Thu, 18 Oct 2012 20:16:56 -0700
-Message-Id: <20121019031308.165629105@linuxfoundation.org>
+        Jean-Christian de Rivaz <jc@eclis.ch>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 29/37] Add CDC-ACM support for the CX93010-2x UCMxx USB Modem
+Date: Thu, 18 Oct 2012 20:16:52 -0700
+Message-Id: <20121019031307.545726559@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -27,158 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+From: Jean-Christian de Rivaz <jc@eclis.ch>
 
-commit 49d859d78c5aeb998b6936fcb5f288f78d713489 upstream.
+commit e7d491a19d3e3aac544070293891a2542ae0c565 upstream.
 
-If the CPU declares that RDRAND is available, go through a guranteed
-reseed sequence, and make sure that it is actually working (producing
-data.)   If it does not, disable the CPU feature flag.
+This USB V.92/V.32bis Controllered Modem have the USB vendor ID 0x0572
+and device ID 0x1340. It need the NO_UNION_NORMAL quirk to be recognized.
 
-Allow RDRAND to be disabled on the command line (as opposed to at
-compile time) for a user who has special requirements with regards to
-random numbers.
+Reference:
+http://www.conexant.com/servlets/DownloadServlet/DSH-201723-005.pdf?docid=1725&revid=5
+See idVendor and idProduct in table 6-1. Device Descriptors
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Jean-Christian de Rivaz <jc@eclis.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/kernel-parameters.txt |    5 ++
- arch/x86/include/asm/archrandom.h   |    2 
- arch/x86/kernel/cpu/Makefile        |    1 
- arch/x86/kernel/cpu/common.c        |    2 
- arch/x86/kernel/cpu/rdrand.c        |   73 ++++++++++++++++++++++++++++++++++++
- 5 files changed, 83 insertions(+)
+ drivers/usb/class/cdc-acm.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1764,6 +1764,11 @@ bytes respectively. Such letter suffixes
- 
- 	noresidual	[PPC] Don't use residual data on PReP machines.
- 
-+	nordrand	[X86] Disable the direct use of the RDRAND
-+			instruction even if it is supported by the
-+			processor.  RDRAND is still available to user
-+			space applications.
-+
- 	noresume	[SWSUSP] Disables resume and restores original swap
- 			space.
- 
---- a/arch/x86/include/asm/archrandom.h
-+++ b/arch/x86/include/asm/archrandom.h
-@@ -70,4 +70,6 @@ GET_RANDOM(arch_get_random_int, unsigned
- 
- #endif  /* CONFIG_ARCH_RANDOM */
- 
-+extern void x86_init_rdrand(struct cpuinfo_x86 *c);
-+
- #endif /* ASM_X86_ARCHRANDOM_H */
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -15,6 +15,7 @@ CFLAGS_common.o		:= $(nostackp)
- obj-y			:= intel_cacheinfo.o scattered.o topology.o
- obj-y			+= proc.o capflags.o powerflags.o common.o
- obj-y			+= vmware.o hypervisor.o sched.o mshyperv.o
-+obj-y			+= rdrand.o
- 
- obj-$(CONFIG_X86_32)	+= bugs.o
- obj-$(CONFIG_X86_64)	+= bugs_64.o
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -15,6 +15,7 @@
- #include <asm/stackprotector.h>
- #include <asm/perf_event.h>
- #include <asm/mmu_context.h>
-+#include <asm/archrandom.h>
- #include <asm/hypervisor.h>
- #include <asm/processor.h>
- #include <asm/sections.h>
-@@ -852,6 +853,7 @@ static void __cpuinit identify_cpu(struc
- #endif
- 
- 	init_hypervisor(c);
-+	x86_init_rdrand(c);
- 
- 	/*
- 	 * Clear/Set all flags overriden by options, need do it
---- /dev/null
-+++ b/arch/x86/kernel/cpu/rdrand.c
-@@ -0,0 +1,73 @@
-+/*
-+ * This file is part of the Linux kernel.
-+ *
-+ * Copyright (c) 2011, Intel Corporation
-+ * Authors: Fenghua Yu <fenghua.yu@intel.com>,
-+ *          H. Peter Anvin <hpa@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-+ *
-+ */
-+
-+#include <asm/processor.h>
-+#include <asm/archrandom.h>
-+#include <asm/sections.h>
-+
-+static int __init x86_rdrand_setup(char *s)
-+{
-+	setup_clear_cpu_cap(X86_FEATURE_RDRAND);
-+	return 1;
-+}
-+__setup("nordrand", x86_rdrand_setup);
-+
-+/* We can't use arch_get_random_long() here since alternatives haven't run */
-+static inline int rdrand_long(unsigned long *v)
-+{
-+	int ok;
-+	asm volatile("1: " RDRAND_LONG "\n\t"
-+		     "jc 2f\n\t"
-+		     "decl %0\n\t"
-+		     "jnz 1b\n\t"
-+		     "2:"
-+		     : "=r" (ok), "=a" (*v)
-+		     : "0" (RDRAND_RETRY_LOOPS));
-+	return ok;
-+}
-+
-+/*
-+ * Force a reseed cycle; we are architecturally guaranteed a reseed
-+ * after no more than 512 128-bit chunks of random data.  This also
-+ * acts as a test of the CPU capability.
-+ */
-+#define RESEED_LOOP ((512*128)/sizeof(unsigned long))
-+
-+void __cpuinit x86_init_rdrand(struct cpuinfo_x86 *c)
-+{
-+#ifdef CONFIG_ARCH_RANDOM
-+	unsigned long tmp;
-+	int i, count, ok;
-+
-+	if (!cpu_has(c, X86_FEATURE_RDRAND))
-+		return;		/* Nothing to do */
-+
-+	for (count = i = 0; i < RESEED_LOOP; i++) {
-+		ok = rdrand_long(&tmp);
-+		if (ok)
-+			count++;
-+	}
-+
-+	if (count != RESEED_LOOP)
-+		clear_cpu_cap(c, X86_FEATURE_RDRAND);
-+#endif
-+}
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1496,6 +1496,9 @@ static const struct usb_device_id acm_id
+ 					   Maybe we should define a new
+ 					   quirk for this. */
+ 	},
++	{ USB_DEVICE(0x0572, 0x1340), /* Conexant CX93010-2x UCMxx */
++	.driver_info = NO_UNION_NORMAL,
++	},
+ 	{ USB_DEVICE(0x1bbb, 0x0003), /* Alcatel OT-I650 */
+ 	.driver_info = NO_UNION_NORMAL, /* reports zero length descriptor */
+ 	},
 
 
