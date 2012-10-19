@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932884Ab2JSDUu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:20:50 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54612 "EHLO mail.kernel.org"
+	id S1758068Ab2JSDRl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:17:41 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54545 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758075Ab2JSDRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:43 -0400
+	id S964969Ab2JSDRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Florian Westphal <fw@strlen.de>,
+        Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>,
         Pablo Neira Ayuso <pablo@netfilter.org>,
         David Miller <davem@davemloft.net>
-Subject: [ 27/37] netfilter: limit, hashlimit: avoid duplicated inline
-Date: Thu, 18 Oct 2012 20:16:50 -0700
-Message-Id: <20121019031307.225190088@linuxfoundation.org>
+Subject: [ 20/37] ipvs: fix oops in ip_vs_dst_event on rmmod
+Date: Thu, 18 Oct 2012 20:16:43 -0700
+Message-Id: <20121019031306.102504876@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -27,81 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Julian Anastasov <ja@ssi.bg>
 
-commit 7a909ac70f6b0823d9f23a43f19598d4b57ac901 upstream.
+commit 283283c4da91adc44b03519f434ee1e7e91d6fdb upstream.
 
-credit_cap can be set to credit, which avoids inlining user2credits
-twice. Also, remove inline keyword and let compiler decide.
+	After commit 39f618b4fd95ae243d940ec64c961009c74e3333 (3.4)
+"ipvs: reset ipvs pointer in netns" we can oops in
+ip_vs_dst_event on rmmod ip_vs because ip_vs_control_cleanup
+is called after the ipvs_core_ops subsys is unregistered and
+net->ipvs is NULL. Fix it by exiting early from ip_vs_dst_event
+if ipvs is NULL. It is safe because all services and dests
+for the net are already freed.
 
-old:
-    684     192       0     876     36c net/netfilter/xt_limit.o
-   4927     344      32    5303    14b7 net/netfilter/xt_hashlimit.o
-now:
-    668     192       0     860     35c net/netfilter/xt_limit.o
-   4793     344      32    5169    1431 net/netfilter/xt_hashlimit.o
-
-Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Simon Horman <horms@verge.net.au>
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Acked-by: David Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/xt_hashlimit.c |    8 +++-----
- net/netfilter/xt_limit.c     |    5 ++---
- 2 files changed, 5 insertions(+), 8 deletions(-)
+ net/netfilter/ipvs/ip_vs_ctl.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/net/netfilter/xt_hashlimit.c
-+++ b/net/netfilter/xt_hashlimit.c
-@@ -392,8 +392,7 @@ static void htable_put(struct xt_hashlim
- #define CREDITS_PER_JIFFY POW2_BELOW32(MAX_CPJ)
- 
- /* Precision saver. */
--static inline u_int32_t
--user2credits(u_int32_t user)
-+static u32 user2credits(u32 user)
+--- a/net/netfilter/ipvs/ip_vs_ctl.c
++++ b/net/netfilter/ipvs/ip_vs_ctl.c
+@@ -1520,11 +1520,12 @@ static int ip_vs_dst_event(struct notifi
  {
- 	/* If multiplying would overflow... */
- 	if (user > 0xFFFFFFFF / (HZ*CREDITS_PER_JIFFY))
-@@ -403,7 +402,7 @@ user2credits(u_int32_t user)
- 	return (user * HZ * CREDITS_PER_JIFFY) / XT_HASHLIMIT_SCALE;
- }
+ 	struct net_device *dev = ptr;
+ 	struct net *net = dev_net(dev);
++	struct netns_ipvs *ipvs = net_ipvs(net);
+ 	struct ip_vs_service *svc;
+ 	struct ip_vs_dest *dest;
+ 	unsigned int idx;
  
--static inline void rateinfo_recalc(struct dsthash_ent *dh, unsigned long now)
-+static void rateinfo_recalc(struct dsthash_ent *dh, unsigned long now)
- {
- 	dh->rateinfo.credit += (now - dh->rateinfo.prev) * CREDITS_PER_JIFFY;
- 	if (dh->rateinfo.credit > dh->rateinfo.credit_cap)
-@@ -534,8 +533,7 @@ hashlimit_mt(const struct sk_buff *skb,
- 		dh->rateinfo.prev = jiffies;
- 		dh->rateinfo.credit = user2credits(hinfo->cfg.avg *
- 		                      hinfo->cfg.burst);
--		dh->rateinfo.credit_cap = user2credits(hinfo->cfg.avg *
--		                          hinfo->cfg.burst);
-+		dh->rateinfo.credit_cap = dh->rateinfo.credit;
- 		dh->rateinfo.cost = user2credits(hinfo->cfg.avg);
- 	} else {
- 		/* update expiration timeout */
---- a/net/netfilter/xt_limit.c
-+++ b/net/netfilter/xt_limit.c
-@@ -88,8 +88,7 @@ limit_mt(const struct sk_buff *skb, stru
- }
- 
- /* Precision saver. */
--static u_int32_t
--user2credits(u_int32_t user)
-+static u32 user2credits(u32 user)
- {
- 	/* If multiplying would overflow... */
- 	if (user > 0xFFFFFFFF / (HZ*CREDITS_PER_JIFFY))
-@@ -123,7 +122,7 @@ static int limit_mt_check(const struct x
- 		   128. */
- 		priv->prev = jiffies;
- 		priv->credit = user2credits(r->avg * r->burst); /* Credits full. */
--		r->credit_cap = user2credits(r->avg * r->burst); /* Credits full. */
-+		r->credit_cap = priv->credit; /* Credits full. */
- 		r->cost = user2credits(r->avg);
+-	if (event != NETDEV_UNREGISTER)
++	if (event != NETDEV_UNREGISTER || !ipvs)
+ 		return NOTIFY_DONE;
+ 	IP_VS_DBG(3, "%s() dev=%s\n", __func__, dev->name);
+ 	EnterFunction(2);
+@@ -1550,7 +1551,7 @@ static int ip_vs_dst_event(struct notifi
+ 		}
  	}
- 	return 0;
+ 
+-	list_for_each_entry(dest, &net_ipvs(net)->dest_trash, n_list) {
++	list_for_each_entry(dest, &ipvs->dest_trash, n_list) {
+ 		__ip_vs_dev_reset(dest, dev);
+ 	}
+ 	mutex_unlock(&__ip_vs_mutex);
 
 
