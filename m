@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932841Ab2JSOWq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 10:22:46 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:30515 "EHLO relay.sw.ru"
+	id S932813Ab2JSOWp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 10:22:45 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:27500 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758894Ab2JSOWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 10:22:30 -0400
+	id S1758900Ab2JSOWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 10:22:31 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
 Cc: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
@@ -16,11 +16,10 @@ Cc: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
         David Rientjes <rientjes@google.com>,
         Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
         Glauber Costa <glommer@parallels.com>,
-        Suleiman Souhlal <suleiman@google.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v5 05/18] slab/slub: struct memcg_params
-Date: Fri, 19 Oct 2012 18:20:29 +0400
-Message-Id: <1350656442-1523-6-git-send-email-glommer@parallels.com>
+Subject: [PATCH v5 02/18] move print_slabinfo_header to slab_common.c
+Date: Fri, 19 Oct 2012 18:20:26 +0400
+Message-Id: <1350656442-1523-3-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1350656442-1523-1-git-send-email-glommer@parallels.com>
 References: <1350656442-1523-1-git-send-email-glommer@parallels.com>
@@ -28,110 +27,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the kmem slab controller, we need to record some extra
-information in the kmem_cache structure.
+The header format is highly similar between slab and slub. The main
+difference lays in the fact that slab may optionally have statistics
+added here in case of CONFIG_SLAB_DEBUG, while the slub will stick them
+somewhere else.
+
+By making sure that information conditionally lives inside a
+globally-visible CONFIG_DEBUG_SLAB switch, we can move the header
+printing to a common location.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-Signed-off-by: Suleiman Souhlal <suleiman@google.com>
-CC: Christoph Lameter <cl@linux.com>
+Acked-by: Christoph Lameter <cl@linux.com>
 CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Michal Hocko <mhocko@suse.cz>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>
-CC: Tejun Heo <tj@kernel.org>
+CC: David Rientjes <rientjes@google.com>
 ---
- include/linux/slab.h     | 25 +++++++++++++++++++++++++
- include/linux/slab_def.h |  3 +++
- include/linux/slub_def.h |  3 +++
- mm/slab.h                | 13 +++++++++++++
- 4 files changed, 44 insertions(+)
+ mm/slab.c        | 24 ------------------------
+ mm/slab.h        |  2 --
+ mm/slab_common.c | 23 +++++++++++++++++++++++
+ mm/slub.c        | 10 ----------
+ 4 files changed, 23 insertions(+), 36 deletions(-)
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 0dd2dfa..e4ea48a 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -177,6 +177,31 @@ unsigned int kmem_cache_size(struct kmem_cache *);
- #define ARCH_SLAB_MINALIGN __alignof__(unsigned long long)
- #endif
+diff --git a/mm/slab.c b/mm/slab.c
+index e35970a..864a9e9 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -4262,30 +4262,6 @@ out:
+ }
  
-+#include <linux/workqueue.h>
-+/*
-+ * This is the main placeholder for memcg-related information in kmem caches.
-+ * struct kmem_cache will hold a pointer to it, so the memory cost while
-+ * disabled is 1 pointer. The runtime cost while enabled, gets bigger than it
-+ * would otherwise be if that would be bundled in kmem_cache: we'll need an
-+ * extra pointer chase. But the trade off clearly lays in favor of not
-+ * penalizing non-users.
-+ *
-+ * Both the root cache and the child caches will have it. For the root cache,
-+ * this will hold a dynamically allocated array large enough to hold
-+ * information about the currently limited memcgs in the system.
-+ *
-+ * Child caches will hold extra metadata needed for its operation. Fields are:
-+ *
-+ * @memcg: pointer to the memcg this cache belongs to
-+ */
-+struct memcg_cache_params {
-+	bool is_root_cache;
-+	union {
-+		struct kmem_cache *memcg_caches[0];
-+		struct mem_cgroup *memcg;
-+	};
-+};
-+
- /*
-  * Common kmalloc functions provided by all allocators
-  */
-diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
-index 36d7031..665afa4 100644
---- a/include/linux/slab_def.h
-+++ b/include/linux/slab_def.h
-@@ -81,6 +81,9 @@ struct kmem_cache {
- 	 */
- 	int obj_offset;
- #endif /* CONFIG_DEBUG_SLAB */
-+#ifdef CONFIG_MEMCG_KMEM
-+	struct memcg_cache_params *memcg_params;
-+#endif
- 
- /* 6) per-cpu/per-node data, touched during every alloc/free */
- 	/*
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index df448ad..961e72e 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -101,6 +101,9 @@ struct kmem_cache {
- #ifdef CONFIG_SYSFS
- 	struct kobject kobj;	/* For sysfs */
- #endif
-+#ifdef CONFIG_MEMCG_KMEM
-+	struct memcg_cache_params *memcg_params;
-+#endif
- 
- #ifdef CONFIG_NUMA
- 	/*
+ #ifdef CONFIG_SLABINFO
+-
+-void print_slabinfo_header(struct seq_file *m)
+-{
+-	/*
+-	 * Output format version, so at least we can change it
+-	 * without _too_ many complaints.
+-	 */
+-#if STATS
+-	seq_puts(m, "slabinfo - version: 2.1 (statistics)\n");
+-#else
+-	seq_puts(m, "slabinfo - version: 2.1\n");
+-#endif
+-	seq_puts(m, "# name            <active_objs> <num_objs> <objsize> "
+-		 "<objperslab> <pagesperslab>");
+-	seq_puts(m, " : tunables <limit> <batchcount> <sharedfactor>");
+-	seq_puts(m, " : slabdata <active_slabs> <num_slabs> <sharedavail>");
+-#if STATS
+-	seq_puts(m, " : globalstat <listallocs> <maxobjs> <grown> <reaped> "
+-		 "<error> <maxfreeable> <nodeallocs> <remotefrees> <alienoverflow>");
+-	seq_puts(m, " : cpustat <allochit> <allocmiss> <freehit> <freemiss>");
+-#endif
+-	seq_putc(m, '\n');
+-}
+-
+ int slabinfo_show(struct seq_file *m, void *p)
+ {
+ 	struct kmem_cache *cachep = list_entry(p, struct kmem_cache, list);
 diff --git a/mm/slab.h b/mm/slab.h
-index 66a62d3..5ee1851 100644
+index 4156d21..e9ba23f 100644
 --- a/mm/slab.h
 +++ b/mm/slab.h
-@@ -92,4 +92,17 @@ void get_slabinfo(struct kmem_cache *s, struct slabinfo *sinfo);
- void slabinfo_show_stats(struct seq_file *m, struct kmem_cache *s);
+@@ -74,8 +74,6 @@ int __kmem_cache_shutdown(struct kmem_cache *);
+ 
+ struct seq_file;
+ struct file;
+-void print_slabinfo_header(struct seq_file *m);
+-
+ int slabinfo_show(struct seq_file *m, void *p);
+ 
  ssize_t slabinfo_write(struct file *file, const char __user *buffer,
- 		       size_t count, loff_t *ppos);
-+
-+#ifdef CONFIG_MEMCG_KMEM
-+static inline bool is_root_cache(struct kmem_cache *s)
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 11ecab4..bb4d751 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -200,6 +200,29 @@ int slab_is_available(void)
+ }
+ 
+ #ifdef CONFIG_SLABINFO
++static void print_slabinfo_header(struct seq_file *m)
 +{
-+	return !s->memcg_params || s->memcg_params->is_root_cache;
-+}
++	/*
++	 * Output format version, so at least we can change it
++	 * without _too_ many complaints.
++	 */
++#ifdef CONFIG_DEBUG_SLAB
++	seq_puts(m, "slabinfo - version: 2.1 (statistics)\n");
 +#else
-+static inline bool is_root_cache(struct kmem_cache *s)
-+{
-+	return true;
++	seq_puts(m, "slabinfo - version: 2.1\n");
++#endif
++	seq_puts(m, "# name            <active_objs> <num_objs> <objsize> "
++		 "<objperslab> <pagesperslab>");
++	seq_puts(m, " : tunables <limit> <batchcount> <sharedfactor>");
++	seq_puts(m, " : slabdata <active_slabs> <num_slabs> <sharedavail>");
++#ifdef CONFIG_DEBUG_SLAB
++	seq_puts(m, " : globalstat <listallocs> <maxobjs> <grown> <reaped> "
++		 "<error> <maxfreeable> <nodeallocs> <remotefrees> <alienoverflow>");
++	seq_puts(m, " : cpustat <allochit> <allocmiss> <freehit> <freemiss>");
++#endif
++	seq_putc(m, '\n');
 +}
 +
-+#endif
- #endif
+ static void *s_start(struct seq_file *m, loff_t *pos)
+ {
+ 	loff_t n = *pos;
+diff --git a/mm/slub.c b/mm/slub.c
+index 55304ed..91e1f3b 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -5394,16 +5394,6 @@ __initcall(slab_sysfs_init);
+  * The /proc/slabinfo ABI
+  */
+ #ifdef CONFIG_SLABINFO
+-void print_slabinfo_header(struct seq_file *m)
+-{
+-	seq_puts(m, "slabinfo - version: 2.1\n");
+-	seq_puts(m, "# name            <active_objs> <num_objs> <object_size> "
+-		 "<objperslab> <pagesperslab>");
+-	seq_puts(m, " : tunables <limit> <batchcount> <sharedfactor>");
+-	seq_puts(m, " : slabdata <active_slabs> <num_slabs> <sharedavail>");
+-	seq_putc(m, '\n');
+-}
+-
+ int slabinfo_show(struct seq_file *m, void *p)
+ {
+ 	unsigned long nr_partials = 0;
 -- 
 1.7.11.7
 
