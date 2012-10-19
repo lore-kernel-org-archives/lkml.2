@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758080Ab2JSTet (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 15:34:49 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:53431 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757133Ab2JSTes (ORCPT
+	id S1758097Ab2JSTgH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 15:36:07 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:44394 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757544Ab2JSTgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 15:34:48 -0400
+	Fri, 19 Oct 2012 15:36:04 -0400
+Date: Fri, 19 Oct 2012 12:36:00 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Robin Dong <robin.k.dong@gmail.com>, linux-kernel@vger.kernel.org,
+        Robin Dong <sanbai@taobao.com>, Jens Axboe <axboe@kernel.dk>,
+        Tao Ma <boyu.mt@taobao.com>
+Subject: Re: [PATCH V3] block/throttle: Add IO throttled information in
+ blkio.throttle
+Message-ID: <20121019193600.GK13370@google.com>
+References: <1349765625-4020-1-git-send-email-robin.k.dong@gmail.com>
+ <20121016232706.GI16166@google.com>
+ <20121017134945.GC31663@redhat.com>
+ <20121018232404.GW13370@google.com>
+ <20121019150011.GE27052@redhat.com>
 MIME-Version: 1.0
-X-Originating-IP: [91.205.155.63]
-In-Reply-To: <20121019191944.GA27699@alpha.arachsys.com>
-References: <1350235151-11146-1-git-send-email-dmitry@daynix.com>
-	<1350235151-11146-2-git-send-email-dmitry@daynix.com>
-	<1350280341.2152.12.camel@jtkirshe-mobl>
-	<20121019191944.GA27699@alpha.arachsys.com>
-Date: Fri, 19 Oct 2012 21:34:47 +0200
-Message-ID: <CAGHCxheg1eWHEipfArACSCHyB59H0k+3o4ZpMKxUKZXgBAZSuw@mail.gmail.com>
-Subject: Re: [E1000-devel] [PATCH] RX initialization sequence fixed - enable
- RX after corresponding ring initialization only
-From: Dmitry Fleytman <dmitry@daynix.com>
-To: Richard Davies <richard.davies@elastichosts.com>
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>, linux-kernel@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net,
-        Chris Webb <chris.webb@elastichosts.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121019150011.GE27052@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exactly. This patch is incorrect and should be ignored.
+Hello, Vivek.
 
-Dmitry.
+On Fri, Oct 19, 2012 at 11:00:11AM -0400, Vivek Goyal wrote:
+> > That way we can stick to the usual stats facility.
+> 
+> So how does this help? Because it is a monotonically increasing value
+> we can use per cpu stats without extra locking? Or somthing else?
 
-On Fri, Oct 19, 2012 at 9:19 PM, Richard Davies
-<richard.davies@elastichosts.com> wrote:
-> Jeff Kirsher wrote:
->> Dmitry Fleytman wrote:
->> > Reported-by: Chris Webb <chris.webb@elastichosts.com>
->> > Reported-by: Richard Davies <richard.davies@elastichosts.com>
->> >
->> > Signed-off-by: Dmitry Fleytman <dmitry@daynix.com>
->> > ---
->> >  drivers/net/ethernet/intel/e1000/e1000_ethtool.c |    9 +++++----
->> >  drivers/net/ethernet/intel/e1000/e1000_main.c    |   18
->> > ++++++++++++++++--
->> >  2 files changed, 21 insertions(+), 6 deletions(-)
->>
->> I will add it to my queue.  Thanks!
->
-> Hi Jeff,
->
-> I hope it was already clear from the following discussion - this patch
-> turned out to be a qemu-kvm bug and you do not need to apply it.
->
-> Dmitry - please confirm.
->
-> Richard.
+It's generally much simpler to expose dumb increasing counters.  You
+don't have to worry about mismatching decrements (for whatever reason,
+percpu or segmented counters), so unless there's a pretty good reason
+to deviate, why deviate?
 
-
+Thanks.
 
 -- 
-Dmitry Fleytman
-Technology Expert and Consultant,
-
-Daynix Computing Ltd.
-
-Cell: +972-54-2819481
-
-Skype: dmitry.fleytman
+tejun
