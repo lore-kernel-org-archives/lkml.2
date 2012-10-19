@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757495Ab2JSD05 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:26:57 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54367 "EHLO mail.kernel.org"
+	id S1757533Ab2JSD1V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:27:21 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54355 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758011Ab2JSDRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:16 -0400
+	id S1758003Ab2JSDRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Simon Kirby <sim@hostway.ca>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [ 08/37] firewire: cdev: fix user memory corruption (i386 userland on amd64 kernel)
-Date: Thu, 18 Oct 2012 20:16:31 -0700
-Message-Id: <20121019031304.172269545@linuxfoundation.org>
+        Kouei Abe <kouei.abe.cp@rms.renesas.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Simon Horman <horms@verge.net.au>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 07/37] ARM: 7541/1: Add ARM ERRATA 775420 workaround
+Date: Thu, 18 Oct 2012 20:16:30 -0700
+Message-Id: <20121019031304.013691385@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -26,50 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: Simon Horman <horms@verge.net.au>
 
-commit 790198f74c9d1b46b6a89504361b1a844670d050 upstream.
+commit 7253b85cc62d6ff84143d96fe6cd54f73736f4d7 upstream.
 
-Fix two bugs of the /dev/fw* character device concerning the
-FW_CDEV_IOC_GET_INFO ioctl with nonzero fw_cdev_get_info.bus_reset.
-(Practically all /dev/fw* clients issue this ioctl right after opening
-the device.)
+arm: Add ARM ERRATA 775420 workaround
 
-Both bugs are caused by sizeof(struct fw_cdev_event_bus_reset) being 36
-without natural alignment and 40 with natural alignment.
+Workaround for the 775420 Cortex-A9 (r2p2, r2p6,r2p8,r2p10,r3p0) erratum.
+In case a date cache maintenance operation aborts with MMU exception, it
+might cause the processor to deadlock. This workaround puts DSB before
+executing ISB if an abort may occur on cache maintenance.
 
- 1) Memory corruption, affecting i386 userland on amd64 kernel:
-    Userland reserves a 36 bytes large buffer, kernel writes 40 bytes.
-    This has been first found and reported against libraw1394 if
-    compiled with gcc 4.7 which happens to order libraw1394's stack such
-    that the bug became visible as data corruption.
+Based on work by Kouei Abe and feedback from Catalin Marinas.
 
- 2) Information leak, affecting all kernel architectures except i386:
-    4 bytes of random kernel stack data were leaked to userspace.
-
-Hence limit the respective copy_to_user() to the 32-bit aligned size of
-struct fw_cdev_event_bus_reset.
-
-Reported-by: Simon Kirby <sim@hostway.ca>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Signed-off-by: Kouei Abe <kouei.abe.cp@rms.renesas.com>
+[ horms@verge.net.au: Changed to implementation
+  suggested by catalin.marinas@arm.com ]
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Simon Horman <horms@verge.net.au>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firewire/core-cdev.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/Kconfig       |   10 ++++++++++
+ arch/arm/mm/cache-v7.S |    3 +++
+ 2 files changed, 13 insertions(+)
 
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -471,8 +471,8 @@ static int ioctl_get_info(struct client
- 	client->bus_reset_closure = a->bus_reset_closure;
- 	if (a->bus_reset != 0) {
- 		fill_bus_reset_event(&bus_reset, client);
--		ret = copy_to_user(u64_to_uptr(a->bus_reset),
--				   &bus_reset, sizeof(bus_reset));
-+		/* unaligned size of bus_reset is 36 bytes */
-+		ret = copy_to_user(u64_to_uptr(a->bus_reset), &bus_reset, 36);
- 	}
- 	if (ret == 0 && list_empty(&client->link))
- 		list_add_tail(&client->link, &client->device->client_list);
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1260,6 +1260,16 @@ config PL310_ERRATA_769419
+ 	  on systems with an outer cache, the store buffer is drained
+ 	  explicitly.
+ 
++config ARM_ERRATA_775420
++       bool "ARM errata: A data cache maintenance operation which aborts, might lead to deadlock"
++       depends on CPU_V7
++       help
++	 This option enables the workaround for the 775420 Cortex-A9 (r2p2,
++	 r2p6,r2p8,r2p10,r3p0) erratum. In case a date cache maintenance
++	 operation aborts with MMU exception, it might cause the processor
++	 to deadlock. This workaround puts DSB before executing ISB if
++	 an abort may occur on cache maintenance.
++
+ endmenu
+ 
+ source "arch/arm/common/Kconfig"
+--- a/arch/arm/mm/cache-v7.S
++++ b/arch/arm/mm/cache-v7.S
+@@ -211,6 +211,9 @@ ENTRY(v7_coherent_user_range)
+  * isn't mapped, just try the next page.
+  */
+ 9001:
++#ifdef CONFIG_ARM_ERRATA_775420
++	dsb
++#endif
+ 	mov	r12, r12, lsr #12
+ 	mov	r12, r12, lsl #12
+ 	add	r12, r12, #4096
 
 
