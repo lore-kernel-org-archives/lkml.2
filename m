@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758255Ab2JSKyU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 06:54:20 -0400
-Received: from mail.df.lth.se ([194.47.250.12]:21817 "EHLO mail.df.lth.se"
+	id S1758268Ab2JSKzI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 06:55:08 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40924 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757502Ab2JSKyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 06:54:15 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@linaro.org>,
+	id S1756042Ab2JSKzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 06:55:06 -0400
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+CC: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
         Rob Herring <rob.herring@calxeda.com>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
         Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 4/4 v2] gpio/tegra: convert to use linear irqdomain
-Date: Fri, 19 Oct 2012 12:54:12 +0200
-Message-Id: <1350644052-31926-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.7.2.5
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Daniel Mack <zonque@gmail.com>
+Subject: RE: [PATCH] arm/dts: am33xx rtc node
+Thread-Topic: [PATCH] arm/dts: am33xx rtc node
+Thread-Index: AQHNreelpxDZ3lcDDk+S2Foc8WtVjpfAdBjQ
+Date: Fri, 19 Oct 2012 10:54:53 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EA00AFC@DBDE01.ent.ti.com>
+References: <1350643825-9657-1-git-send-email-afzal@ti.com>
+In-Reply-To: <1350643825-9657-1-git-send-email-afzal@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9JAtFC4017839
 
-The Tegra driver tries to do the work of irq_domain_add_linear()
-by reserving a bunch of descriptors somewhere and keeping track
-of the base offset, then calling irq_domain_add_legacy(). Let's
-stop doing that and simply use the linear IRQ domain.
++ linux-omap and Daniel
 
-For this to work: use irq_create_mapping() in the IRQ iterator
-so that the descriptors get allocated here.
+On Fri, Oct 19, 2012 at 16:20:21, Mohammed, Afzal wrote:
+> add am33xx rtc node.
+> 
+> Signed-off-by: Afzal Mohammed <afzal@ti.com>
+> ---
+> 
+> Based on v3.7-rc1,
+> Dependent on series "rtc: omap dt support (for am33xx)",
+> (https://lkml.org/lkml/2012/10/19/163)
+> Tested on Beagle Bone.
+> 
+>  arch/arm/boot/dts/am33xx.dtsi | 9 +++++++++
+>  1 file changed, 9 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+> index bb31bff..356711e 100644
+> --- a/arch/arm/boot/dts/am33xx.dtsi
+> +++ b/arch/arm/boot/dts/am33xx.dtsi
+> @@ -210,5 +210,14 @@
+>  			interrupt-parent = <&intc>;
+>  			interrupts = <91>;
+>  		};
+> +
+> +		rtc {
+> +			compatible = "ti,da830-rtc";
+> +			ti,hwmods = "rtc";
+> +			reg = <0x44e3e000 0x1000>;
+> +			interrupt-parent = <&intc>;
+> +			interrupts = <75
+> +				      76>;
+> +		};
+>  	};
+>  };
+> -- 
+> 1.7.12
+> 
+> 
 
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-ChangeLog v1->v2:
-- Make sure that irq_create_mapping() is called for every IRQ
-  on probe() and update the commit message.
----
- drivers/gpio/gpio-tegra.c | 14 +++++---------
- 1 file changed, 5 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
-index d982593..c7c175a 100644
---- a/drivers/gpio/gpio-tegra.c
-+++ b/drivers/gpio/gpio-tegra.c
-@@ -380,7 +380,6 @@ static int __devinit tegra_gpio_probe(struct platform_device *pdev)
- {
- 	const struct of_device_id *match;
- 	struct tegra_gpio_soc_config *config;
--	int irq_base;
- 	struct resource *res;
- 	struct tegra_gpio_bank *bank;
- 	int gpio;
-@@ -417,14 +416,11 @@ static int __devinit tegra_gpio_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	irq_base = irq_alloc_descs(-1, 0, tegra_gpio_chip.ngpio, 0);
--	if (irq_base < 0) {
--		dev_err(&pdev->dev, "Couldn't allocate IRQ numbers\n");
--		return -ENODEV;
--	}
--	irq_domain = irq_domain_add_legacy(pdev->dev.of_node,
--					   tegra_gpio_chip.ngpio, irq_base, 0,
-+	irq_domain = irq_domain_add_linear(pdev->dev.of_node,
-+					   tegra_gpio_chip.ngpio,
- 					   &irq_domain_simple_ops, NULL);
-+	if (!irq_domain)
-+		return -ENODEV;
- 
- 	for (i = 0; i < tegra_gpio_bank_count; i++) {
- 		res = platform_get_resource(pdev, IORESOURCE_IRQ, i);
-@@ -464,7 +460,7 @@ static int __devinit tegra_gpio_probe(struct platform_device *pdev)
- 	gpiochip_add(&tegra_gpio_chip);
- 
- 	for (gpio = 0; gpio < tegra_gpio_chip.ngpio; gpio++) {
--		int irq = irq_find_mapping(irq_domain, gpio);
-+		int irq = irq_create_mapping(irq_domain, gpio);
- 		/* No validity check; all Tegra GPIOs are valid IRQs */
- 
- 		bank = &tegra_gpio_banks[GPIO_BANK(gpio)];
--- 
-1.7.11.7
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
