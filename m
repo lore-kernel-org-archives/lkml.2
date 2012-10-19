@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964917Ab2JSDR2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:17:28 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54409 "EHLO mail.kernel.org"
+	id S965027Ab2JSDXi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:23:38 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54476 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758029Ab2JSDRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:20 -0400
+	id S964891Ab2JSDR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [ 12/37] block: fix request_queue->flags initialization
-Date: Thu, 18 Oct 2012 20:16:35 -0700
-Message-Id: <20121019031304.836071629@linuxfoundation.org>
+        Christian Hildner <christian.hildner@siemens.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 17/37] timers: Fix endless looping between cascade() and internal_add_timer()
+Date: Thu, 18 Oct 2012 20:16:40 -0700
+Message-Id: <20121019031305.633030822@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -26,38 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: "Hildner, Christian" <christian.hildner@siemens.com>
 
-commit 60ea8226cbd5c8301f9a39edc574ddabcb8150e0 upstream.
+commit 26cff4e2aa4d666dc6a120ea34336b5057e3e187 upstream.
 
-A queue newly allocated with blk_alloc_queue_node() has only
-QUEUE_FLAG_BYPASS set.  For request-based drivers,
-blk_init_allocated_queue() is called and q->queue_flags is overwritten
-with QUEUE_FLAG_DEFAULT which doesn't include BYPASS even though the
-initial bypass is still in effect.
+Adding two (or more) timers with large values for "expires" (they have
+to reside within tv5 in the same list) leads to endless looping
+between cascade() and internal_add_timer() in case CONFIG_BASE_SMALL
+is one and jiffies are crossing the value 1 << 18. The bug was
+introduced between 2.6.11 and 2.6.12 (and survived for quite some
+time).
 
-In blk_init_allocated_queue(), or QUEUE_FLAG_DEFAULT to q->queue_flags
-instead of overwriting.
+This patch ensures that when cascade() is called timers within tv5 are
+not added endlessly to their own list again, instead they are added to
+the next lower tv level tv4 (as expected).
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Christian Hildner <christian.hildner@siemens.com>
+Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
+Link: http://lkml.kernel.org/r/98673C87CB31274881CFFE0B65ECC87B0F5FC1963E@DEFTHW99EA4MSX.ww902.siemens.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/blk-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/timer.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -524,7 +524,7 @@ blk_init_allocated_queue(struct request_
- 	q->request_fn		= rfn;
- 	q->prep_rq_fn		= NULL;
- 	q->unprep_rq_fn		= NULL;
--	q->queue_flags		= QUEUE_FLAG_DEFAULT;
-+	q->queue_flags		|= QUEUE_FLAG_DEFAULT;
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -63,6 +63,7 @@ EXPORT_SYMBOL(jiffies_64);
+ #define TVR_SIZE (1 << TVR_BITS)
+ #define TVN_MASK (TVN_SIZE - 1)
+ #define TVR_MASK (TVR_SIZE - 1)
++#define MAX_TVAL ((unsigned long)((1ULL << (TVR_BITS + 4*TVN_BITS)) - 1))
  
- 	/* Override internal queue lock with supplied lock pointer */
- 	if (lock)
+ struct tvec {
+ 	struct list_head vec[TVN_SIZE];
+@@ -356,11 +357,12 @@ static void internal_add_timer(struct tv
+ 		vec = base->tv1.vec + (base->timer_jiffies & TVR_MASK);
+ 	} else {
+ 		int i;
+-		/* If the timeout is larger than 0xffffffff on 64-bit
+-		 * architectures then we use the maximum timeout:
++		/* If the timeout is larger than MAX_TVAL (on 64-bit
++		 * architectures or with CONFIG_BASE_SMALL=1) then we
++		 * use the maximum timeout.
+ 		 */
+-		if (idx > 0xffffffffUL) {
+-			idx = 0xffffffffUL;
++		if (idx > MAX_TVAL) {
++			idx = MAX_TVAL;
+ 			expires = idx + base->timer_jiffies;
+ 		}
+ 		i = (expires >> (TVR_BITS + 3 * TVN_BITS)) & TVN_MASK;
 
 
