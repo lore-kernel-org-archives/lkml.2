@@ -1,114 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075Ab2JSCCL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:02:11 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:9765 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482Ab2JSCCJ (ORCPT
+	id S1751880Ab2JSC2B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:28:01 -0400
+Received: from mxsmtp1.mxic.com.tw ([220.228.149.226]:37524 "EHLO
+	twhmllg3.macronix.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751710Ab2JSC2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:02:09 -0400
-X-AuditID: cbfee611-b7fae6d0000045f0-d1-5080b49ffe7d
-Date: Fri, 19 Oct 2012 02:02:07 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: Re: [GIT PULL] extcon fixes for Linux 3.6
-To: Greg KH <gregkh@linuxfoundation.org>,
-        =?euc-kr?Q?=C3=D6=C2=F9=BF=EC?= <cw00.choi@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20121019013540507@myungjoo.ham
-Msgkey: 20121019013540507@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20121019013540507@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <24564518.187951350612127085.JavaMail.weblogic@epml28>
-DLP-Filter: Pass
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIKsWRmVeSWpSXmKPExsVy+t8zLd35WxoCDE7sMrW4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZd69LFKziqeg54NHA+Ie7i5GTQ0hAXWLRkpNsILaEgIlEx6p+
-	RghbTOLCvfVsEDWzGCWezU2HqWl+dhGohgsoPp9RYsWR2ewgCRYBVYkJE94B2RwcbAJ6EjM/
-	J4OEhQXMJCZ8OwIWFhFIl5j3rgaklVmgiVHi6M6t7BDzlSTW7HvFAmLzCghKnJz5hAVil6pE
-	/98uVoi4msS//fuhbpOQmDX9AiuEzSsxo/0pVL2cxLSva5ghbGmJ87M2wP2y+PtjqDi/xLHb
-	O5hA7gHpfXI/GGbM7s1foMEgIDH1zEFGiBItiYvHvSDCfBJrFr5lgZmy69RyZpjW+1vmMoHY
-	zAKKElO6H7JD2FoSX37sY0P3Fa+Ak8SVp19YJzAqz0KSmoWkfRaSdmQ1CxhZVjGKphYkFxQn
-	paea6xUn5haX5qXrJefnbmKEpAPBHYxLGywOMQpwMCrx8F7qqQ8QYk0sK67MPcQowcGsJMK7
-	chNQiDclsbIqtSg/vqg0J7X4EKMPMPomMkuJJucDU1VeSbyhsYGxoaGloZmppakBDmElcd5y
-	j5QAIYH0xJLU7NTUgtQimHFMHJxSDYyMWd8nc168rTm98jTnq/8fS+OUf9spaxfPviDv1/2g
-	uuUBa/QyWfacAMMX2kESc6Ym9Rv/Xvxo+y/+kxsnbKn+KyhTJH1D8+BENUUl0TdV/8wfPMiJ
-	+3bh5EIBAbl3Jz813wsLvrx190qXP5Mm/3geVm/pk5LMseBhek2Zb0ZJmO7a3cLvHVmUWIoz
-	Eg21mIuKEwHBM789NAMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOKsWRmVeSWpSXmKPExsVy+t/tmbrztzQEGBxaY2hxedccNgdGj8+b
-	5AIYozJsMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4CG
-	KimUJeaUAoUCEouLlfTtbIryS0tSFTLyi0tslaKNDIz1jExN9IyMDfRMDGKtDA0MjEyBqhIy
-	Mu5elyhYxVPRc8CjgfEPdxcjJ4eQgLrEoiUn2UBsCQETieZnFxkhbDGJC/fWA8W5gGrmM0qs
-	ODKbHSTBIqAqMWHCOyCbg4NNQE9i5udkkLCwgJnEhG9HwMIiAukS897VgLQyCzQxShzduZUd
-	YpeSxJp9r1hAbF4BQYmTM5+wQOxSlej/28UKEVeT+Ld/P9QNEhKzpl9ghbB5JWa0P4Wql5OY
-	9nUNM4QtLXF+1ga4mxd/fwwV55c4dnsHE8g9IL1P7gfDjNm9+QvUuwISU88cZIQo0ZK4eNwL
-	IswnsWbhWxaYKbtOLWeGab2/ZS4TiM0soCgxpfshO4StJfHlxz42dF/xCjhJXHn6hXUCo9ws
-	JKlZSNpnIWlHVrOAkWUVo2hqQXJBcVJ6qrlecWJucWleul5yfu4mRnBqeia4g3Fpg8UhRgEO
-	RiUe3ks99QFCrIllxZW5hxglOJiVRHhXbgIK8aYkVlalFuXHF5XmpBYfYvQBRt9EZinR5Hxg
-	2swriTc0NjA2NLQ0NzA1NLLAIawkzlvukRIgJJCeWJKanZpakFoEM46Jg1OqgfH5/GwrIb+J
-	dZPP3HrhVc8feWXHwVs2dSwtjQ2+DcGrb1zcdf0yO8s8TTfuXTtXONjGOb5znn/uKFuwq1iB
-	Y8M6UaEPPzbd1Wx6rf343P/ni/8VC7sYpKZYpj9rXrRG4IG8fSy3VOyvaz8yP6bkMwUbLW/K
-	4jx+/d9vPbMfOwQ6n7THiRY6ViixFGckGmoxFxUnAgCkt50DegMAAA==
-X-CFilter-Loop: Reflected
+	Thu, 18 Oct 2012 22:28:00 -0400
+Subject: [PATCH v2] m25p80: Add support of Macronix SPI flash
+To: linux-kernel@vger.kernel.org
+X-Mailer: Lotus Notes Release 7.0.3 September 26, 2007
+Message-ID: <OF1E89886E.8C80DE01-ON48257A9C.000D4C08-48257A9C.000D8A63@mxic.com.tw>
+From: jimkuo@mxic.com.tw
+Date: Fri, 19 Oct 2012 10:27:59 +0800
+X-MIMETrack: Serialize by Router on MXML01A/TAIWAN/MXIC(Release 7.0.4FP2|June 06, 2010) at
+ 2012/10/19 10:27:52
+MIME-Version: 1.0
+Content-type: text/plain; charset=US-ASCII
+X-MAIL: twhmllg3.macronix.com q9J2RrD8081503
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9J22GmJ014419
 
-Sender : Greg KH<gregkh@linuxfoundation.org>
-Date : 2012-10-19 02:24 (GMT+09:00)
-> On Thu, Oct 11, 2012 at 10:31:19AM +0900, Chanwoo Choi wrote:
-> > Hi Greg,
-> > 
-> > Please pull extcon fixes for Linux 3.6 from:
-> > 
-> >     git://git.infradead.org/users/kmpark/linux-samsung extcon-for-next
-> > 
-> > I've been creating "extcon-for-next" tree at git.infradead.org
-> > and rebasing the branch base on your
-> > driver-core.git(branch:driver-core-next).
-> > 
-> > This tree contains various small bugfixes and enhancements, fix typos.
-> > And extcon-max77693 initialize MUIC register during probe()
-> > to unmask internal interrupt of max77693 MUIC device.
-> 
-> Now that you have a kernel.org account, can you move this tree to
-> git.kernel.org, and provide me a signed tag to pull from for this set of
-> patches to go into 3.7?
-> 
-> thanks,
-> 
-> greg k-h
-> 
-> 
 
 Hello,
+I'm an engineer of Macronix. I have sent you a m25p80 patch few weeks ago.
+This is an update version of that one.
+
+I replaced the old jedec id with our new product's. And add "write enable"
+feature to our chips.
+Two of our products have different page size, so I add an "if statement"
+before page size assignment.
+The following is m25p80 patch "diff" from Linux-3.6 kernel:
+--
+
+--- drivers/mtd/devices/m25p80.c.orig     2012-10-19 10:10:36.017581000
++0800
++++ drivers/mtd/devices/m25p80.c    2012-10-19 10:14:55.294198000 +0800
+@@ -648,13 +648,31 @@ static const struct spi_device_id m25p_i
+      { "640s33b",  INFO(0x898913, 0, 64 * 1024, 128, 0) },
+
+      /* Macronix */
+-     { "mx25l2005a",  INFO(0xc22012, 0, 64 * 1024,   4, SECT_4K) },
+-     { "mx25l4005a",  INFO(0xc22013, 0, 64 * 1024,   8, SECT_4K) },
+-     { "mx25l8005",   INFO(0xc22014, 0, 64 * 1024,  16, 0) },
+-     { "mx25l1606e",  INFO(0xc22015, 0, 64 * 1024,  32, SECT_4K) },
+-     { "mx25l3205d",  INFO(0xc22016, 0, 64 * 1024,  64, 0) },
+-     { "mx25l6405d",  INFO(0xc22017, 0, 64 * 1024, 128, 0) },
+-     { "mx25l12805d", INFO(0xc22018, 0, 64 * 1024, 256, 0) },
++     { "mx25l512e",   INFO(0xc22010, 0, 64 * 1024,   1, SECT_4K) },
++     { "mx25l5121e",  INFO(0xc22210, 0, 64 * 1024,   1, SECT_4K) },
++     { "mx25l1006e",  INFO(0xc22011, 0, 64 * 1024,   2, SECT_4K) },
++     { "mx25l1021e",  INFO(0xc22211, 0, 64 * 1024,   2, SECT_4K) },
++     { "mx25l2006e",  INFO(0xc22012, 0, 64 * 1024,   4, SECT_4K) },
++     { "mx25l4006e",  INFO(0xc22013, 0, 64 * 1024,   8, SECT_4K) },
++     { "mx25u4035",   INFO(0xc22533, 0, 64 * 1024,   8, SECT_4K) },
++     { "mx25v4035",   INFO(0xc22553, 0, 64 * 1024,   8, SECT_4K) },
++     { "mx25l8006e",  INFO(0xc22014, 0, 64 * 1024,  16, 0) },
++     { "mx25u8035",   INFO(0xc22534, 0, 64 * 1024,  16, 0) },
++     { "mx25v8035",   INFO(0xc22554, 0, 64 * 1024,  16, 0) },
++     { "mx25l1606e",  INFO(0xc22015, 0, 64 * 1024,  32, 0) },
++     { "mx25l1633e",  INFO(0xc22415, 0, 64 * 1024,  32, 0) },
++     { "mx25l1635e",  INFO(0xc22515, 0, 64 * 1024,  32, 0) },
++     { "mx25u1635e",  INFO(0xc22535, 0, 64 * 1024,  32, 0) },
++     { "mx25l1655d",  INFO(0xc22615, 0, 64 * 1024,  32, 0) },
++     { "mx25l3206e",  INFO(0xc22016, 0, 64 * 1024,  64, 0) },
++     { "mx25l3239e",  INFO(0xc22536, 0, 64 * 1024,  64, 0) },
++     { "mx25l3225d",  INFO(0xc25e16, 0, 64 * 1024,  64, 0) },
++     { "mx25l3255d",  INFO(0xc29e16, 0, 64 * 1024,  64, 0) },
++     { "mx25l6406e",  INFO(0xc22017, 0, 64 * 1024, 128, 0) },
++     { "mx25l6439e",  INFO(0xc22537, 0, 64 * 1024, 128, 0) },
++     { "mx25l6455e",  INFO(0xc22617, 0, 64 * 1024, 128, 0) },
++     { "mx25l12806e", INFO(0xc22018, 0, 64 * 1024, 256, 0) },
++     { "mx25u12835f", INFO(0xc22538, 0, 64 * 1024, 256, 0) },
+      { "mx25l12855e", INFO(0xc22618, 0, 64 * 1024, 256, 0) },
+      { "mx25l25635e", INFO(0xc22019, 0, 64 * 1024, 512, 0) },
+      { "mx25l25655e", INFO(0xc22619, 0, 64 * 1024, 512, 0) },
+@@ -868,7 +886,8 @@ static int __devinit m25p_probe(struct s
+
+      if (JEDEC_MFR(info->jedec_id) == CFI_MFR_ATMEL ||
+          JEDEC_MFR(info->jedec_id) == CFI_MFR_INTEL ||
+-         JEDEC_MFR(info->jedec_id) == CFI_MFR_SST) {
++         JEDEC_MFR(info->jedec_id) == CFI_MFR_SST ||
++         JEDEC_MFR(info->jedec_id) == CFI_MFR_MACRONIX) {
+            write_enable(flash);
+            write_sr(flash, 0);
+      }
+@@ -905,7 +924,11 @@ static int __devinit m25p_probe(struct s
+
+      ppdata.of_node = spi->dev.of_node;
+      flash->mtd.dev.parent = &spi->dev;
+-     flash->page_size = info->page_size;
++     /* small size page of Macronix chip */
++     if (info->jedec_id == 0xc22210 || info->jedec_id == 0xc22211)
++           flash->page_size = 32;
++     else
++           flash->page_size = info->page_size;
+      flash->mtd.writebufsize = flash->page_size;
+
+      if (info->addr_width)
+
+--
 
 
-Unfortunately, the corporate security managers have been blocking
-accessing ssh of *.kernel.org and I'm still dealing with them.
-I'll try my best to resolve the issue and move the tree to kernel.org
-today.
 
-Thank you.
+============================================================================
 
-Cheers!
-MyungJoo
+CONFIDENTIALITY NOTE:
 
+This e-mail and any attachments may contain confidential information and may be protected by legal privilege. If you are not the intended addressee (or authorized to receive for the addressee), be aware that any disclosure, copying, distribution or use of this e-mail or any attachment is prohibited. If you have received this e-mail in error, please notify us immediately by returning it to the sender and delete this copy from your system. Thank you for your cooperation.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Macronix International Co., Ltd.
+
+=====================================================================
+
