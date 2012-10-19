@@ -1,65 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758263Ab2JSKAy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 06:00:54 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:53863 "EHLO mx2.parallels.com"
+	id S1030190Ab2JSKBA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 06:01:00 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39220 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758338Ab2JSKAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 06:00:36 -0400
-Message-ID: <508124B7.2050002@parallels.com>
-Date: Fri, 19 Oct 2012 14:00:23 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+	id S1758398Ab2JSKA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 06:00:56 -0400
+From: Afzal Mohammed <afzal@ti.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <rtc-linux@googlegroups.com>,
+        Daniel Mack <zonque@gmail.com>, Vaibhav Hiremath <hvaibhav@ti.com>,
+        Afzal Mohammed <afzal@ti.com>
+Subject: [PATCH v4 5/5] rtc: omap: Add runtime pm support
+Date: Fri, 19 Oct 2012 15:29:50 +0530
+Message-ID: <85f1737925191eb340f294e1564aa9fe996dfb31.1350633036.git.afzal@ti.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <cover.1350633036.git.afzal@ti.com>
+References: <cover.1350633036.git.afzal@ti.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        <devel@openvz.org>, <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v5 06/14] memcg: kmem controller infrastructure
-References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-7-git-send-email-glommer@parallels.com> <20121017151214.e3d2aa3b.akpm@linux-foundation.org> <507FC8E3.8020006@parallels.com> <alpine.DEB.2.00.1210181502270.30894@chino.kir.corp.google.com> <50811903.9000105@parallels.com> <alpine.DEB.2.00.1210190229450.26815@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1210190229450.26815@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2012 01:31 PM, David Rientjes wrote:
-> On Fri, 19 Oct 2012, Glauber Costa wrote:
-> 
->>>>> Do we actually need to test PF_KTHREAD when current->mm == NULL? 
->>>>> Perhaps because of aio threads whcih temporarily adopt a userspace mm?
->>>>
->>>> I believe so. I remember I discussed this in the past with David
->>>> Rientjes and he advised me to test for both.
->>>>
->>>
->>> PF_KTHREAD can do use_mm() to assume an ->mm but hopefully they aren't 
->>> allocating slab while doing so.  Have you considered actually charging 
->>> current->mm->owner for that memory, though, since the kthread will have 
->>> freed the memory before unuse_mm() or otherwise have charged it on behalf 
->>> of a user process, i.e. only exempting PF_KTHREAD?
->>>
->> I always charge current->mm->owner.
->>
-> 
-> Yeah, I'm asking have you considered charging current->mm->owner for the 
-> memory when a kthread (current) assumes the mm of a user process via 
-> use_mm()?  It may free the memory before calling unuse_mm(), but it's also 
-> allocating the memory on behalf of a user so this exemption might be 
-> dangerous if use_mm() becomes more popular.  I don't think there's 
-> anything that prevents that charge, I'm just wondering if you considered 
-> doing it even for kthreads with an mm.
-> 
-Well, I thought about it.
+From: Vaibhav Hiremath <hvaibhav@ti.com>
 
-And I personally don't like it. I think all kthreads should be treated
-the same. We have control over it, unlike any userspace application. We
-never expect its memory consumption to explode.
+OMAP1 RTC driver is used in multiple devices like,
+OMAPL138 and AM33XX. Driver currently doesn't handle any clocks,
+which may be right for OMAP1 architecture but in case of AM33XX,
+the clock/module needs to be enabled in order to access the registers.
 
-Specially considering that those allocations are supposed to be
-short-lived, we are only paying the res_counters count for no reason.
+So covert this driver to runtime pm, which internally handles rest.
+
+afzal@ti.com: handle error path
+
+Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
+Signed-off-by: Afzal Mohammed <afzal@ti.com>
+Acked-by: Sekhar Nori <nsekhar@ti.com>
+---
+ drivers/rtc/rtc-omap.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+index dff9ff4..6009714 100644
+--- a/drivers/rtc/rtc-omap.c
++++ b/drivers/rtc/rtc-omap.c
+@@ -22,6 +22,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
++#include <linux/pm_runtime.h>
+ 
+ #include <asm/io.h>
+ 
+@@ -364,6 +365,10 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 		goto fail;
+ 	}
+ 
++	/* Enable the clock/module so that we can access the registers */
++	pm_runtime_enable(&pdev->dev);
++	pm_runtime_get_sync(&pdev->dev);
++
+ 	id_entry = platform_get_device_id(pdev);
+ 	if (id_entry && (id_entry->driver_data & OMAP_RTC_HAS_KICKER)) {
+ 		rtc_writel(KICK0_VALUE, OMAP_RTC_KICK0_REG);
+@@ -448,6 +453,8 @@ fail1:
+ fail0:
+ 	if (id_entry && (id_entry->driver_data & OMAP_RTC_HAS_KICKER))
+ 		rtc_writel(0, OMAP_RTC_KICK0_REG);
++	pm_runtime_put_sync(&pdev->dev);
++	pm_runtime_disable(&pdev->dev);
+ 	iounmap(rtc_base);
+ fail:
+ 	release_mem_region(mem->start, resource_size(mem));
+@@ -474,6 +481,11 @@ static int __exit omap_rtc_remove(struct platform_device *pdev)
+ 	rtc_device_unregister(rtc);
+ 	if (id_entry && (id_entry->driver_data & OMAP_RTC_HAS_KICKER))
+ 		rtc_writel(0, OMAP_RTC_KICK0_REG);
++
++	/* Disable the clock/module */
++	pm_runtime_put_sync(&pdev->dev);
++	pm_runtime_disable(&pdev->dev);
++
+ 	iounmap(rtc_base);
+ 	release_mem_region(mem->start, resource_size(mem));
+ 	return 0;
+@@ -496,11 +508,17 @@ static int omap_rtc_suspend(struct platform_device *pdev, pm_message_t state)
+ 	else
+ 		rtc_write(0, OMAP_RTC_INTERRUPTS_REG);
+ 
++	/* Disable the clock/module */
++	pm_runtime_put_sync(&pdev->dev);
++
+ 	return 0;
+ }
+ 
+ static int omap_rtc_resume(struct platform_device *pdev)
+ {
++	/* Enable the clock/module so that we can access the registers */
++	pm_runtime_get_sync(&pdev->dev);
++
+ 	if (device_may_wakeup(&pdev->dev))
+ 		disable_irq_wake(omap_rtc_alarm);
+ 	else
+-- 
+1.7.12
+
