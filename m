@@ -1,154 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758305Ab2JSLJy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 07:09:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48947 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754062Ab2JSLJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 07:09:53 -0400
-Date: Fri, 19 Oct 2012 13:09:49 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH 4/6] cgroups: forbid pre_destroy callback to fail
-Message-ID: <20121019110949.GC799@dhcp22.suse.cz>
-References: <1350480648-10905-1-git-send-email-mhocko@suse.cz>
- <1350480648-10905-5-git-send-email-mhocko@suse.cz>
- <50811E5E.1090205@huawei.com>
+	id S1758387Ab2JSLOk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 07:14:40 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:64180 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754026Ab2JSLOh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 07:14:37 -0400
+Date: Fri, 19 Oct 2012 07:15:58 -0400
+From: Matt Porter <mporter@ti.com>
+To: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Dan Williams <djbw@fb.com>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH v3 00/16] DMA Engine support for AM33XX
+Message-ID: <20121019111558.GD25164@beef>
+References: <1350566815-409-1-git-send-email-mporter@ti.com>
+ <B5906170F1614E41A8A28DE3B8D121433EBD29FC@DBDE01.ent.ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50811E5E.1090205@huawei.com>
+In-Reply-To: <B5906170F1614E41A8A28DE3B8D121433EBD29FC@DBDE01.ent.ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 19-10-12 17:33:18, Li Zefan wrote:
-> On 2012/10/17 21:30, Michal Hocko wrote:
-> > Now that mem_cgroup_pre_destroy callback doesn't fail finally we can
-> > safely move on and forbit all the callbacks to fail. The last missing
-> > piece is moving cgroup_call_pre_destroy after cgroup_clear_css_refs so
-> > that css_tryget fails so no new charges for the memcg can happen.
+On Fri, Oct 19, 2012 at 10:26:20AM +0000, Bedia, Vaibhav wrote:
+> Hi Matt,
 > 
-> > The callbacks are also called from within cgroup_lock to guarantee that
-> > no new tasks show up. 
+> On Thu, Oct 18, 2012 at 18:56:39, Porter, Matt wrote:
+> > Changes since v2:
+> > 	- Rebased on 3.7-rc1
+> > 	- Fixed bug in DT/pdata parsing first found by Gururaja
+> > 	  that turned out to be masked by some toolchains
+> > 	- Dropped unused mach-omap2/devices.c hsmmc patch
+> > 	- Added AM33XX crossbar DMA event mux support
+> > 	- Added am335x-evm support
+> > 
+> > Changes since v1:
+> > 	- Rebased on top of mainline from 12250d8
+> > 	- Dropped the feature removal schedule patch
+> > 	- Implemented dma_request_slave_channel_compat() and
+> > 	  converted the mmc and spi drivers to use it
+> > 	- Dropped unneeded #address-cells and #size-cells from
+> > 	  EDMA DT support
+> > 	- Moved private EDMA header to linux/platform_data/ and
+> > 	  removed some unneeded definitions
+> > 	- Fixed parsing of optional properties
+> > 
+> > TODO:
+> > 	- Add dmaengine support for per-channel caps so the
+> > 	  hack to set the maximum segments can be replaced with
+> > 	  a query to the dmaengine driver
+> > 
+> > This series adds DMA Engine support for AM33xx, which uses
+> > an EDMA DMAC. The EDMA DMAC has been previously supported by only
+> > a private API implementation (much like the situation with OMAP
+> > DMA) found on the DaVinci family of SoCs.
+> > 
+> > The series applies on top of 3.7-rc1 and the following patches:
+> > 
+> > 	- GPMC fails to reserve memory fix:
+> > 	  http://www.spinics.net/lists/linux-omap/msg79675.html
+> > 	- TPS65910 regulator fix:
+> > 	  https://patchwork.kernel.org/patch/1593651/
+> > 	- dmaengine DT support from Vinod's dmaengine_dt branch in
+> > 	  git://git.infradead.org/users/vkoul/slave-dma.git since
+> > 	  027478851791df751176398be02a3b1c5f6aa824
+> > 
+> > The approach taken is similar to how OMAP DMA is being converted to
+> > DMA Engine support. With the functional EDMA private API already
+> > existing in mach-davinci/dma.c, we first move that to an ARM common
+> > area so it can be shared. Adding DT and runtime PM support to the
+> > private EDMA API implementation allows it to run on AM33xx. AM33xx
+> > *only* boots using DT so we leverage Jon's generic DT DMA helpers to
+> > register EDMA DMAC with the of_dma framework and then add support
+> > for calling the dma_request_slave_channel() API to both the mmc
+> > and spi drivers.
+> > 
+> > With this series both BeagleBone and the AM335x EVM have working
+> > MMC and SPI support.
+> > 
+> > This is tested on BeagleBone with a SPI framebuffer driver and MMC
+> > rootfs. A trivial gpio DMA event misc driver was used to test the
+> > crossbar DMA event support. It is also tested on the AM335x EVM
+> > with the onboard SPI flash and MMC rootfs. The branch at
+> > https://github.com/ohporter/linux/tree/edma-dmaengine-v3 has the
+> > complete series, dependencies, and some test drivers/defconfigs.
+> > 
 > 
-> I'm afraid this won't work. See commit 3fa59dfbc3b223f02c26593be69ce6fc9a940405
-> ("cgroup: fix potential deadlock in pre_destroy")
+> I didn't see all the patches that you posted on edma-dmaengine-v3
+> but I do seem them on edma-dmaengine-am33xx-v3 branch.
 
-Very good point. Thanks for poiting this out. So we should call
-pre_destroy at the very end? What about the following?
-Or should be rather drop the lock after check_for_release(parent) or
-sooner but after CGRP_REMOVED is set?
----
->From 70ea8718aba1c1784b94bfb26aa2307195c07c0b Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Wed, 17 Oct 2012 13:42:06 +0200
-Subject: [PATCH] cgroups: forbid pre_destroy callback to fail
+I see I referenced the wrong branch in the cover letter. Thanks for
+testing and noticing this. Sorry to make you hunt for the correct
+branch in that repo. ;) 
 
-Now that mem_cgroup_pre_destroy callback doesn't fail finally we can
-safely move on and forbit all the callbacks to fail. The last missing
-piece is moving cgroup_call_pre_destroy after cgroup_clear_css_refs so
-that css_tryget fails so no new charges for the memcg can happen.
-We cannot, however, move cgroup_call_pre_destroy right after because we
-cannot call mem_cgroup_pre_destroy with the cgroup_lock held (see
-3fa59dfb cgroup: fix potential deadlock in pre_destroy) so we have to
-move it after the lock is released.
+https://github.com/ohporter/linux/tree/edma-dmaengine-am33xx-v3
+is indeed the correct branch for those wanting to pull this in or
+grab some of the not-to-be-merged drivers I used for testing.
 
-Changes since v1
-- Li Zefan pointed out that mem_cgroup_pre_destroy cannot be called with
-  cgroup_lock held
+> I added a couple of patches to enable earlyprintk and build the DTB
+> appended kernel image uImage-dtb.am335x-evm
+> 
+> Here's what i see
+> 
+> [...]
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- kernel/cgroup.c |   30 +++++++++---------------------
- 1 file changed, 9 insertions(+), 21 deletions(-)
+<snip>
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index b7d9606..4c6adbd 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -855,7 +855,7 @@ static struct inode *cgroup_new_inode(umode_t mode, struct super_block *sb)
-  * Call subsys's pre_destroy handler.
-  * This is called before css refcnt check.
-  */
--static int cgroup_call_pre_destroy(struct cgroup *cgrp)
-+static void cgroup_call_pre_destroy(struct cgroup *cgrp)
- {
- 	struct cgroup_subsys *ss;
- 	int ret = 0;
-@@ -864,15 +864,8 @@ static int cgroup_call_pre_destroy(struct cgroup *cgrp)
- 		if (!ss->pre_destroy)
- 			continue;
+> [    0.175354] edma: probe of 49000000.edma failed with error -16
+
+I missed an uninitialized pdata case in the bug fixes mentioned in
+the changelog and the folks previously failing the same way didn't
+hit the case I suspect you are hitting. Can you try this and let me
+know how it works?
+
+Thanks,
+Matt
+
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index b761b7a..b43b327 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -1619,7 +1619,7 @@ static int __init edma_probe(struct platform_device *pdev)
  
--		ret = ss->pre_destroy(cgrp);
--		if (ret) {
--			/* ->pre_destroy() failure is being deprecated */
--			WARN_ON_ONCE(!ss->__DEPRECATED_clear_css_refs);
--			break;
--		}
-+		BUG_ON(ss->pre_destroy(cgrp));
- 	}
--
--	return ret;
- }
- 
- static void cgroup_diput(struct dentry *dentry, struct inode *inode)
-@@ -4161,7 +4154,6 @@ again:
- 		mutex_unlock(&cgroup_mutex);
- 		return -EBUSY;
- 	}
--	mutex_unlock(&cgroup_mutex);
- 
- 	/*
- 	 * In general, subsystem has no css->refcnt after pre_destroy(). But
-@@ -4174,17 +4166,6 @@ again:
- 	 */
- 	set_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
- 
--	/*
--	 * Call pre_destroy handlers of subsys. Notify subsystems
--	 * that rmdir() request comes.
--	 */
--	ret = cgroup_call_pre_destroy(cgrp);
--	if (ret) {
--		clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
--		return ret;
--	}
--
--	mutex_lock(&cgroup_mutex);
- 	parent = cgrp->parent;
- 	if (atomic_read(&cgrp->count) || !list_empty(&cgrp->children)) {
- 		clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
-@@ -4206,6 +4187,7 @@ again:
- 			return -EINTR;
- 		goto again;
- 	}
-+
- 	/* NO css_tryget() can success after here. */
- 	finish_wait(&cgroup_rmdir_waitq, &wait);
- 	clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
-@@ -4244,6 +4226,12 @@ again:
- 	spin_unlock(&cgrp->event_list_lock);
- 
- 	mutex_unlock(&cgroup_mutex);
-+
-+	/*
-+	 * Call pre_destroy handlers of subsys. Notify subsystems
-+	 * that rmdir() request comes.
-+	 */
-+	cgroup_call_pre_destroy(cgrp);
- 	return 0;
- }
- 
--- 
-1.7.10.4
-
-
--- 
-Michal Hocko
-SUSE Labs
+ 	if (node) {
+ 		pdata = devm_kzalloc(dev,
+-				     sizeof(struct edma_soc_info),
++				     EDMA_MAX_CC*sizeof(struct edma_soc_info),
+ 				     GFP_KERNEL);
+ 		edma_of_parse_dt(dev, node, pdata);
+ 		info = &pdata;
