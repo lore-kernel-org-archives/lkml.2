@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759282Ab2JSPxv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 11:53:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12768 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932856Ab2JSPxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 11:53:48 -0400
-Message-ID: <5081777A.8050104@redhat.com>
-Date: Fri, 19 Oct 2012 11:53:30 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1759292Ab2JSPyR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 11:54:17 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:3522 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754300Ab2JSPyP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 11:54:15 -0400
+X-IronPort-AV: E=Sophos;i="4.80,613,1344211200"; 
+   d="scan'208";a="15280622"
+Date: Fri, 19 Oct 2012 16:53:49 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Mukesh Rathor <mukesh.rathor@oracle.com>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3 1/6]: PVH: basic and header changes, elfnote changes,
+ ...
+In-Reply-To: <20121019131707.GG26830@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1210191651510.2689@kaball.uk.xensource.com>
+References: <20121017172642.349b2aae@mantra.us.oracle.com> <alpine.DEB.2.02.1210181150250.2689@kaball.uk.xensource.com> <20121019131707.GG26830@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Mel Gorman <mel@csn.ul.ie>,
-        Linux kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: question on NUMA page migration
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrea, Peter,
+On Fri, 19 Oct 2012, Konrad Rzeszutek Wilk wrote:
+> > > diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
+> > > index 9ce788d..3b9d5b6 100644
+> > > --- a/include/xen/interface/physdev.h
+> > > +++ b/include/xen/interface/physdev.h
+> > > @@ -258,6 +258,16 @@ struct physdev_pci_device {
+> > >      uint8_t devfn;
+> > >  };
+> > >  
+> > > +#define PHYSDEVOP_pvh_map_iomem        30
+> > 
+> > I would just call this PHYSDEVOP_map_iomem, we might use it on non-PVH
+> > guests as well one day.
+> 
+> I completely lost track of the naming now :-( Isn't the ARM version
+> called range something?
 
-I have a question on page refcounting in your NUMA
-page migration code.
-
-In Peter's case, I wonder why you introduce a new
-MIGRATE_FAULT migration mode. If the normal page
-migration / compaction logic can do without taking
-an extra reference count, why does your code need it?
-
-In Andrea's case, we have a comment suggesting an
-extra refcount is needed, immediately followed by
-a put_page:
-
-         /*
-          * Pin the head subpage at least until the first
-          * __isolate_lru_page succeeds (__isolate_lru_page pins it
-          * again when it succeeds). If we unpin before
-          * __isolate_lru_page successd, the page could be freed and
-          * reallocated out from under us. Thus our previous checks on
-          * the page, and the split_huge_page, would be worthless.
-          *
-          * We really only need to do this if "ret > 0" but it doesn't
-          * hurt to do it unconditionally as nobody can reference
-          * "page" anymore after this and so we can avoid an "if (ret >
-          * 0)" branch here.
-          */
-         put_page(page);
-
-This also confuses me.
-
-If we do not need the extra refcount (and I do not
-understand why NUMA migrate-on-fault needs one more
-refcount than normal page migration), we can get
-rid of the MIGRATE_FAULT mode.
-
-If we do need the extra refcount, why is normal
-page migration safe? :)
-
--- 
-All rights reversed
+That is XENMEM_add_to_physmap_range, a different hypercall.
