@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758673Ab2JSKjF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 06:39:05 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:51027 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757793Ab2JSKjD (ORCPT
+	id S1754187Ab2JSKnI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 06:43:08 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:64433 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab2JSKnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 06:39:03 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Thierry Reding <thierry.reding@avionic-design.de>, arm@kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH 3/3] DOC: PWM: Adding binding document for via,vt8500-pwm
-Date: Fri, 19 Oct 2012 23:38:55 +1300
-Message-Id: <1350643135-13197-3-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350643135-13197-1-git-send-email-linux@prisktech.co.nz>
-References: <1350643135-13197-1-git-send-email-linux@prisktech.co.nz>
+	Fri, 19 Oct 2012 06:43:06 -0400
+Subject: Re: [PATCH v4] posix timers: allocate timer id per process
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "devel@openvz.org" <devel@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>
+In-Reply-To: <50811FA6.8000709@parallels.com>
+References: <20121019074912.10745.339.stgit@localhost.localdomain>
+	 <1350633401.2293.245.camel@edumazet-glaptop>
+	 <50811FA6.8000709@parallels.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 19 Oct 2012 12:43:03 +0200
+Message-ID: <1350643383.2293.436.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a binding document describing the PWM controller found
-on arch-vt8500 supported SoCs.
+On Fri, 2012-10-19 at 13:38 +0400, Stanislav Kinsbursky wrote:
+> 19.10.2012 11:56, Eric Dumazet пишет:
+> > I wonder if some applications relied on our idr, assuming they would get
+> > low values for their timer id.
+> > (We could imagine some applications use a table indexed by the timer id)
+> 
+> Hmm.
+> Probably, this particular case can be optimised by tuning min_id to id of 
+> releasing timer (if id of this timer is less than current->signal min_id).
+> Does this approach solves the issue you mentioned above?
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
- .../devicetree/bindings/pwm/vt8500-pwm.txt         |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pwm/vt8500-pwm.txt
+Not generally, but I am not sure we want a per signal_struct idr ;)
 
-diff --git a/Documentation/devicetree/bindings/pwm/vt8500-pwm.txt b/Documentation/devicetree/bindings/pwm/vt8500-pwm.txt
-new file mode 100644
-index 0000000..e8ba133
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/vt8500-pwm.txt
-@@ -0,0 +1,17 @@
-+VIA/Wondermedia VT8500/WM8xxx series SoC PWM controller
-+
-+Required properties:
-+- compatible: should be "via,vt8500-pwm"
-+- reg: physical base address and length of the controller's registers
-+- #pwm-cells: should be 2.  The first cell specifies the per-chip index
-+  of the PWM to use and the second cell is the period in nanoseconds.
-+- clocks: pHandle to the PWM source clock
-+
-+Example:
-+
-+pwm1: pwm@d8220000 {
-+	#pwm-cells = <2>;
-+	compatible = "via,vt8500-pwm";
-+	reg = <0xd8220000 0x1000>;
-+	clocks = <&clkpwm>;
-+};
--- 
-1.7.9.5
+Really that should be clearly explained in the changelog, so that buggy
+applications can have a clue of what happened.
+
+When we changed UDP source port selection being random instead of
+sequential, maybe this broke some applications. That was an
+implementation choice (with security impact).
+
+
 
