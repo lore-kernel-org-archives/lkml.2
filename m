@@ -1,67 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab2JSNgR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 09:36:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29202 "EHLO mx1.redhat.com"
+	id S1757297Ab2JSNhH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 09:37:07 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:36031 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276Ab2JSNgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 09:36:16 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20121014085617.GA22544@gmail.com>
-References: <20121014085617.GA22544@gmail.com> <11002.1350125310@warthog.procyon.org.uk> <CA+55aFzu83ktX=ereRACNa6stEU0H5vNxKObUN9bymYCCaHyew@mail.gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        paulus@samba.org, davem@davemloft.net, jaxboe@fusionio.com,
-        tj@kernel.org, viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] perf: Fix UAPI fallout
-Date: Fri, 19 Oct 2012 14:35:37 +0100
-Message-ID: <30780.1350653737@warthog.procyon.org.uk>
+	id S1754074Ab2JSNhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 09:37:06 -0400
+Date: Fri, 19 Oct 2012 15:37:01 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Tony Luck <tony.luck@intel.com>, x86 <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] RAS fix for tip/x86/urgent
+Message-ID: <20121019133701.GA5923@aftab.osrc.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo Molnar <mingo@kernel.org> wrote:
+Hi guys,
 
-> What we want in .c files are not ../.. inclusions but the 
-> 'seemless' <linux/abc.h> inclusions. Which is the overwhelming 
-> majority, gladly. Do we want to make that the 100% majority?
+below is a RAS fix which reverts the addition of a sysfs attribute
+which we agreed is not needed, post-factum. And this should go in now
+because that sysfs attribute is going to end up in 3.7 otherwise and
+thus exposed to userspace; removing it then would be a lot harder.
 
-I think this is going to be necessary for when x86 gets merged.  x86's
-asm/unistd.h #includes uapi/asm/unistd.h, so you can't manually specify the
-header without also specifying a -I flag.
+Thanks.
 
-I've been having a prod at it, and this seems to partially work:
+The following changes since commit c9623de4fc2f8320fe94316b46171683be3b1d59:
 
-	-BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)util -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
-	+$(info XXX $(srctree))
-	+
-	+BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I../../arch/$(ARCH)/include -I$(OUTPUT)util -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+  Merge branch 'v4l_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media (2012-10-18 16:10:42 -0700)
 
-However, I'm trying to work out what will happen if this is run in a separate
-output dir, but if I do:
+are available in the git repository at:
 
-	make tools/perf O=build_dir
 
-from the bottom directory, I get:
+  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/cmci_threshold
 
-	scripts/Makefile.include:2: *** O=build_dir does not exist.  Stop.
+for you to fetch changes up to 5bc66170dc486556a1e36fd384463536573f4b82:
 
-The problem is that the bottom-level Makefile does this:
+  x86, MCE: Remove bios_cmci_threshold sysfs attribute (2012-10-19 15:22:29 +0200)
 
-	tools/: FORCE
-		$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= -C $(src)/tools/
-	tools/%: FORCE
-		$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= -C $(src)/tools/ $*
+----------------------------------------------------------------
+Remove a useless sysfs attribute added during this merge window before
+it becomes a public interface.
 
-which changes the directory, rendering a relative O= that would be good for
-building the normal kernel useless for building a tool.  Should these rules
-respecify the O= flag here, or should we give an error if someone tries it?
+----------------------------------------------------------------
+Borislav Petkov (1):
+      x86, MCE: Remove bios_cmci_threshold sysfs attribute
 
-David
+ arch/x86/kernel/cpu/mcheck/mce.c | 6 ------
+ 1 file changed, 6 deletions(-)
+
+---
+Actual commit:
+
+commit 5bc66170dc486556a1e36fd384463536573f4b82
+Author: Borislav Petkov <borislav.petkov@amd.com>
+Date:   Thu Oct 18 15:10:56 2012 +0200
+
+    x86, MCE: Remove bios_cmci_threshold sysfs attribute
+    
+    450cc201038f3 ("x86/mce: Provide boot argument to honour bios-set CMCI
+    threshold") added the bios_cmci_threshold sysfs attribute which was
+    supposed to communicate to userspace tools that BIOS CMCI threshold has
+    been honoured.
+    
+    However, this info is not of any importance to userspace - it should
+    rather get the actual error count it has been thresholded already from
+    MCi_STATUS[38:52].
+    
+    So drop this before it becomes a used interface (good thing we caught
+    this early in 3.7-rc1, right after the merge window closed).
+    
+    Cc: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+    Acked-by: Tony Luck <tony.luck@intel.com>
+    Link: http://lkml.kernel.org/r/20121017105940.GA14590@x1.osrc.amd.com
+    Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 29e87d3b2843..46cbf8689692 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -2209,11 +2209,6 @@ static struct dev_ext_attribute dev_attr_cmci_disabled = {
+        &mce_cmci_disabled
+ };
+ 
+-static struct dev_ext_attribute dev_attr_bios_cmci_threshold = {
+-       __ATTR(bios_cmci_threshold, 0444, device_show_int, NULL),
+-       &mce_bios_cmci_threshold
+-};
+-
+ static struct device_attribute *mce_device_attrs[] = {
+        &dev_attr_tolerant.attr,
+        &dev_attr_check_interval.attr,
+@@ -2222,7 +2217,6 @@ static struct device_attribute *mce_device_attrs[] = {
+        &dev_attr_dont_log_ce.attr,
+        &dev_attr_ignore_ce.attr,
+        &dev_attr_cmci_disabled.attr,
+-       &dev_attr_bios_cmci_threshold.attr,
+        NULL
+ };
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
