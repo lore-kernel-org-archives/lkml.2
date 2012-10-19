@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758873Ab2JSPX4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 11:23:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39818 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756022Ab2JSPXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 11:23:54 -0400
-Date: Fri, 19 Oct 2012 17:23:37 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 1/2] perf tools: add event modifier to request exclusive
- PMU access
-Message-ID: <20121019152337.GC980@krava.brq.redhat.com>
-References: <1350658326-14715-1-git-send-email-eranian@google.com>
- <1350658326-14715-2-git-send-email-eranian@google.com>
- <1350659619.2768.30.camel@twins>
- <CABPqkBSzwNYHS22xaw2zP0e3QAROSRL0v-K29qxjW1By1iK6pw@mail.gmail.com>
+	id S933011Ab2JSP3V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 11:29:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13945 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364Ab2JSP3U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 11:29:20 -0400
+X-Authority-Analysis: v=2.0 cv=PucRnnw3 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=B91VBO2a_qwA:10 a=LNLIg6nQSpYA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=g8XX_L_LDKoA:10 a=snv08Ws5mTa4Q6OXkcsA:9 a=CjuIK1q_8ugA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Date: Fri, 19 Oct 2012 11:29:17 -0400 (EDT)
+From: Steven Rostedt <rostedt@goodmis.org>
+X-X-Sender: rostedt@localhost.localdomain
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
+Subject: Re: [PATCH RT] slab: Fix up stable merge of slab init_lock_keys()
+In-Reply-To: <1350656961.2768.20.camel@twins>
+Message-ID: <alpine.DEB.2.02.1210191127320.9958@localhost.localdomain>
+References: <1350567601.19292.69.camel@pippen.local.home> <1350656961.2768.20.camel@twins>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBSzwNYHS22xaw2zP0e3QAROSRL0v-K29qxjW1By1iK6pw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 05:17:57PM +0200, Stephane Eranian wrote:
-> On Fri, Oct 19, 2012 at 5:13 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Fri, 2012-10-19 at 16:52 +0200, Stephane Eranian wrote:
-> >> -modifier_event [ukhpGH]{1,8}
-> >> +modifier_event [ukhpGHx]{1,8}
-> >
-> > wouldn't the max modifier sting length grow by adding another possible
-> > modifier?
-> 
-> That's what I thought too, but then I don't understand why it was at
-> eight before and not
-> seven: One instance of each letter, + a second for pp (precise=2). Or
-> am I missing
-> something here?
 
-hm, I think I assumed for some reason that 'ppp' is valid as well
 
-jirka
+On Fri, 19 Oct 2012, Peter Zijlstra wrote:
+
+>> Could you just confirm that my fix is correct.
+>
+> We forever keep getting that issue wrong it seems.. so I'd not put too
+> much trust into whatever my sleep addled brain thinks today :/
+
+I wasn't expecting a reply till next week ;-)
+
+>
+> Looks about right, but who knows ;-)
+>
+
+Heh, OK, the worse thing that can happen is that I revert it for the next 
+-rt stable release. I wont hold off the releases to 3.2-rt and 3.4-rt over 
+this.
+
+Thanks,
+
+-- Steve
+
