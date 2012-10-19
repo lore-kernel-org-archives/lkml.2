@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161021Ab2JSDDo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:03:44 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52089 "EHLO mail.kernel.org"
+	id S964865Ab2JSCsp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:48:45 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52057 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964867Ab2JSCsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:48:46 -0400
+	id S964844Ab2JSCsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:48:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Colin Cross <ccross@android.com>, R Sricharan <r.sricharan@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [ 26/76] ARM: OMAP: counter: add locking to read_persistent_clock
-Date: Thu, 18 Oct 2012 19:46:50 -0700
-Message-Id: <20121019024354.313574630@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 13/76] ALSA: hda - Add missing hda_gen_spec to struct via_spec
+Date: Thu, 18 Oct 2012 19:46:37 -0700
+Message-Id: <20121019024352.234090591@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -26,61 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Cross <ccross@android.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 9d7d6e363b06934221b81a859d509844c97380df upstream.
+commit 7819d1c70eb6a57e43554d86e10b39d1e106ed65 upstream.
 
-read_persistent_clock uses a global variable, use a spinlock to
-ensure non-atomic updates to the variable don't overlap and cause
-time to move backwards.
+The commit [4b527b65 ALSA: hda - limit internal mic boost for Asus
+X202E] introduced the use of auto-parser code, but it forgot to add
+struct hda_gen_spec at the head of codec->spec which the auto-parser
+assumes silently.  Without this record, it may result in memory
+corruption.
 
-Signed-off-by: Colin Cross <ccross@android.com>
-Signed-off-by: R Sricharan <r.sricharan@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+This patch adds the missing piece.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/plat-omap/counter_32k.c |   21 ++++++++++++++-------
- 1 file changed, 14 insertions(+), 7 deletions(-)
+ sound/pci/hda/patch_via.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/arm/plat-omap/counter_32k.c
-+++ b/arch/arm/plat-omap/counter_32k.c
-@@ -55,22 +55,29 @@ static u32 notrace omap_32k_read_sched_c
-  * nsecs and adds to a monotonically increasing timespec.
-  */
- static struct timespec persistent_ts;
--static cycles_t cycles, last_cycles;
-+static cycles_t cycles;
- static unsigned int persistent_mult, persistent_shift;
-+static DEFINE_SPINLOCK(read_persistent_clock_lock);
-+
- static void omap_read_persistent_clock(struct timespec *ts)
- {
- 	unsigned long long nsecs;
--	cycles_t delta;
--	struct timespec *tsp = &persistent_ts;
-+	cycles_t last_cycles;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&read_persistent_clock_lock, flags);
+--- a/sound/pci/hda/patch_via.c
++++ b/sound/pci/hda/patch_via.c
+@@ -118,6 +118,8 @@ enum {
+ };
  
- 	last_cycles = cycles;
- 	cycles = sync32k_cnt_reg ? __raw_readl(sync32k_cnt_reg) : 0;
--	delta = cycles - last_cycles;
- 
--	nsecs = clocksource_cyc2ns(delta, persistent_mult, persistent_shift);
-+	nsecs = clocksource_cyc2ns(cycles - last_cycles,
-+					persistent_mult, persistent_shift);
+ struct via_spec {
++	struct hda_gen_spec gen;
 +
-+	timespec_add_ns(&persistent_ts, nsecs);
-+
-+	*ts = persistent_ts;
- 
--	timespec_add_ns(tsp, nsecs);
--	*ts = *tsp;
-+	spin_unlock_irqrestore(&read_persistent_clock_lock, flags);
+ 	/* codec parameterization */
+ 	const struct snd_kcontrol_new *mixers[6];
+ 	unsigned int num_mixers;
+@@ -246,6 +248,7 @@ static struct via_spec * via_new_spec(st
+ 	/* VT1708BCE & VT1708S are almost same */
+ 	if (spec->codec_type == VT1708BCE)
+ 		spec->codec_type = VT1708S;
++	snd_hda_gen_init(&spec->gen);
+ 	return spec;
  }
  
- /**
+@@ -1628,6 +1631,7 @@ static void via_free(struct hda_codec *c
+ 	vt1708_stop_hp_work(spec);
+ 	kfree(spec->bind_cap_vol);
+ 	kfree(spec->bind_cap_sw);
++	snd_hda_gen_free(&spec->gen);
+ 	kfree(spec);
+ }
+ 
 
 
