@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932955Ab2JSOzd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 10:55:33 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:43587 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073Ab2JSOz3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757888Ab2JSOz3 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 19 Oct 2012 10:55:29 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:50579 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758612Ab2JSOz1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 10:55:27 -0400
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com
-Subject: [PATCH 2/2] perf: SNB exclusive PMU access for INST_RETIRED:PREC_DIST
-Date: Fri, 19 Oct 2012 16:52:06 +0200
-Message-Id: <1350658326-14715-3-git-send-email-eranian@google.com>
+Subject: [PATCH 1/2] perf tools: add event modifier to request exclusive PMU access
+Date: Fri, 19 Oct 2012 16:52:05 +0200
+Message-Id: <1350658326-14715-2-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1350658326-14715-1-git-send-email-eranian@google.com>
 References: <1350658326-14715-1-git-send-email-eranian@google.com>
@@ -21,106 +21,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On all Intel SandyBridge processors, the INST_RETIRED:PREC_DIST
-when used with PEBS must be measured alone. That means no other
-event can be active on the PMU at the same time as per Intel SDM
-Vol3b. This is what the exclusive mode of perf_events provides.
-However, it was not enforced for that event.
+This patch adds the x modifier for events. It allows users to
+request exclusive PMU access (attr->exclusive):
 
-This patch forces the INST_RETIRED:PREC_DIST event to have
-the attr->exclusive bit set in order to be used with PEBS
-on SNB. On Intel Ivybridge, that restriction is gone.
+perf stat -e cycles:x ......
+or
+perf stat -e cpu/cycles/x ....
+
+Exclusive mode is a feature of perf_events which was not yet
+supported by the perf tool. Some events may require exclusive
+PMU access (like on Intel SandyBridge).
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/cpu/perf_event.h       |    2 +-
- arch/x86/kernel/cpu/perf_event_intel.c |   30 +++++++++++++++++++++++++-----
- 2 files changed, 26 insertions(+), 6 deletions(-)
+ tools/perf/util/parse-events.c |    7 +++++++
+ tools/perf/util/parse-events.l |    2 +-
+ 2 files changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 271d257..722ab12 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -382,7 +382,7 @@ struct x86_pmu {
- 	int		pebs_record_size;
- 	void		(*drain_pebs)(struct pt_regs *regs);
- 	struct event_constraint *pebs_constraints;
--	void		(*pebs_aliases)(struct perf_event *event);
-+	int		(*pebs_aliases)(struct perf_event *event);
- 	int 		max_pebs_events;
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index aed38e4..aa73392 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -642,6 +642,7 @@ struct event_modifier {
+ 	int eG;
+ 	int precise;
+ 	int exclude_GH;
++	int exclusive;
+ };
+ 
+ static int get_event_modifier(struct event_modifier *mod, char *str,
+@@ -656,6 +657,7 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
+ 
+ 	int exclude = eu | ek | eh;
+ 	int exclude_GH = evsel ? evsel->exclude_GH : 0;
++	int exclusive = evsel ? evsel->attr.exclusive : 0;
  
  	/*
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 324bb52..d7546dc 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1416,7 +1416,7 @@ static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
- 	intel_put_shared_regs_event_constraints(cpuc, event);
- }
+ 	 * We are here for group and 'GH' was not set as event
+@@ -690,6 +692,8 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
+ 			eH = 0;
+ 		} else if (*str == 'p') {
+ 			precise++;
++		} else if (*str == 'x') {
++			exclusive = 1;
+ 		} else
+ 			break;
  
--static void intel_pebs_aliases_core2(struct perf_event *event)
-+static int intel_pebs_aliases_core2(struct perf_event *event)
- {
- 	if ((event->hw.config & X86_RAW_EVENT_MASK) == 0x003c) {
- 		/*
-@@ -1442,9 +1442,10 @@ static void intel_pebs_aliases_core2(struct perf_event *event)
- 		alt_config |= (event->hw.config & ~X86_RAW_EVENT_MASK);
- 		event->hw.config = alt_config;
- 	}
-+	return 0;
- }
- 
--static void intel_pebs_aliases_snb(struct perf_event *event)
-+static int intel_pebs_aliases_ivb(struct perf_event *event)
- {
- 	if ((event->hw.config & X86_RAW_EVENT_MASK) == 0x003c) {
- 		/*
-@@ -1470,6 +1471,22 @@ static void intel_pebs_aliases_snb(struct perf_event *event)
- 		alt_config |= (event->hw.config & ~X86_RAW_EVENT_MASK);
- 		event->hw.config = alt_config;
- 	}
-+	return 0;
-+}
+@@ -716,6 +720,8 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
+ 	mod->eG = eG;
+ 	mod->precise = precise;
+ 	mod->exclude_GH = exclude_GH;
++	mod->exclusive = exclusive;
 +
-+static int intel_pebs_aliases_snb(struct perf_event *event)
-+{
-+	u64 cfg = event->hw.config;
-+	/*
-+	 * for INST_RETIRED.PREC_DIST to work correctly with PEBS, it must
-+	 * be measured alone on SNB (exclusive PMU access) as per Intel SDM.
-+	 */
-+	if ((cfg & INTEL_ARCH_EVENT_MASK) == 0x01c0 && !event->attr.exclusive) {
-+		pr_info("perf: INST_RETIRED.PREC_DIST only works in exclusive mode\n");
-+		return -EINVAL;
-+	}
-+
-+	return intel_pebs_aliases_ivb(event);
+ 	return 0;
  }
  
- static int intel_pmu_hw_config(struct perf_event *event)
-@@ -1479,8 +1496,11 @@ static int intel_pmu_hw_config(struct perf_event *event)
- 	if (ret)
- 		return ret;
+@@ -741,6 +747,7 @@ int parse_events__modifier_event(struct list_head *list, char *str, bool add)
+ 		evsel->attr.precise_ip     = mod.precise;
+ 		evsel->attr.exclude_host   = mod.eH;
+ 		evsel->attr.exclude_guest  = mod.eG;
++		evsel->attr.exclusive	   = mod.exclusive;
+ 		evsel->exclude_GH          = mod.exclude_GH;
+ 	}
  
--	if (event->attr.precise_ip && x86_pmu.pebs_aliases)
--		x86_pmu.pebs_aliases(event);
-+	if (event->attr.precise_ip && x86_pmu.pebs_aliases) {
-+		ret = x86_pmu.pebs_aliases(event);
-+		if (ret)
-+			return ret;
-+	}
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index c87efc1..9c8a06d 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -81,7 +81,7 @@ num_dec		[0-9]+
+ num_hex		0x[a-fA-F0-9]+
+ num_raw_hex	[a-fA-F0-9]+
+ name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
+-modifier_event	[ukhpGH]{1,8}
++modifier_event	[ukhpGHx]{1,8}
+ modifier_bp	[rwx]{1,3}
  
- 	if (intel_pmu_needs_lbr_smpl(event)) {
- 		ret = intel_pmu_setup_lbr_filter(event);
-@@ -2084,7 +2104,7 @@ __init int intel_pmu_init(void)
- 
- 		x86_pmu.event_constraints = intel_snb_event_constraints;
- 		x86_pmu.pebs_constraints = intel_ivb_pebs_event_constraints;
--		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
-+		x86_pmu.pebs_aliases = intel_pebs_aliases_ivb;
- 		x86_pmu.extra_regs = intel_snb_extra_regs;
- 		/* all extra regs are per-cpu when HT is on */
- 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
+ %%
 -- 
 1.7.9.5
 
