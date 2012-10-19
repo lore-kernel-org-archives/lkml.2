@@ -1,89 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030492Ab2JSQel (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 12:34:41 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42747 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754496Ab2JSQek (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 12:34:40 -0400
-Date: Fri, 19 Oct 2012 09:34:36 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 5/5] xen-kbdfront: handle backend CLOSED without CLOSING
-Message-ID: <20121019163436.GB2152@core.coreip.homeip.net>
-References: <507FD39F.4060601@citrix.com>
- <1350554618-14582-5-git-send-email-david.vrabel@citrix.com>
- <20121019130059.GE26830@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121019130059.GE26830@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1945935Ab2JSQjP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 12:39:15 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:55486 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752296Ab2JSQjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 12:39:14 -0400
+Message-ID: <1350664752.16440.3.camel@joe-AO722>
+Subject: Re: [ath9k-devel] [PATCH net-next 00/21] treewide: Use consistent
+ api style for address testing
+From: Joe Perches <joe@perches.com>
+To: Pavel Roskin <proski@gnu.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, ath9k-devel <ath9k-devel@venema.h4ckr.net>
+Date: Fri, 19 Oct 2012 09:39:12 -0700
+In-Reply-To: <20121019115517.7b8514a8@mj>
+References: <cover.1350618006.git.joe@perches.com>
+	 <1350630254.2293.183.camel@edumazet-glaptop> <20121019115517.7b8514a8@mj>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 09:00:59AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Thu, Oct 18, 2012 at 11:03:38AM +0100, David Vrabel wrote:
-> > From: David Vrabel <david.vrabel@citrix.com>
-> > 
-> > Backend drivers shouldn't transistion to CLOSED unless the frontend is
-> > CLOSED.  If a backend does transition to CLOSED too soon then the
-> > frontend may not see the CLOSING state and will not properly shutdown.
-> > 
-> > So, treat an unexpected backend CLOSED state the same as CLOSING.
-> > 
-> > Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> > Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> > Cc: linux-input@vger.kernel.org
-> > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+(cc list trimmed)
+
+On Fri, 2012-10-19 at 11:55 -0400, Pavel Roskin wrote:
+> On Fri, 19 Oct 2012 09:04:14 +0200
+> Eric Dumazet <eric.dumazet@gmail.com> wrote:
 > 
-> Hey Dmitry,
-> 
-> Should I prep a git pull for you for this or are you OK giving
-> an Ack for me to put this patch in my git pull for Linus?
-
-Sure, please merge with the rest through your tree.
-
-Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-
-Thanks!
-
-> 
-> Thx.
-> > ---
-> >  drivers/input/misc/xen-kbdfront.c |    5 ++++-
-> >  1 files changed, 4 insertions(+), 1 deletions(-)
+> > Yes they are some names discrepancies, thats a big deal.
 > > 
-> > diff --git a/drivers/input/misc/xen-kbdfront.c b/drivers/input/misc/xen-kbdfront.c
-> > index 02ca868..6f7d990 100644
-> > --- a/drivers/input/misc/xen-kbdfront.c
-> > +++ b/drivers/input/misc/xen-kbdfront.c
-> > @@ -311,7 +311,6 @@ static void xenkbd_backend_changed(struct xenbus_device *dev,
-> >  	case XenbusStateReconfiguring:
-> >  	case XenbusStateReconfigured:
-> >  	case XenbusStateUnknown:
-> > -	case XenbusStateClosed:
-> >  		break;
-> >  
-> >  	case XenbusStateInitWait:
-> > @@ -350,6 +349,10 @@ InitWait:
-> >  
-> >  		break;
-> >  
-> > +	case XenbusStateClosed:
-> > +		if (dev->state == XenbusStateClosed)
-> > +			break;
-> > +		/* Missed the backend's CLOSING state -- fallthrough */
-> >  	case XenbusStateClosing:
-> >  		xenbus_frontend_closed(dev);
-> >  		break;
-> > -- 
-> > 1.7.2.5
+> > And we have alloc_skb() / kfree_skb() / skb_clone() 
+> > 
+> > Why not skb_alloc() / skb_free() / skb_clone() ?
+> > 
+> > Some people actually know current code by name of functions, they dont
+> > want to change their mind and having to grep include files and git log
+> > to learn the new names of an old function, especially when traveling
+> > and using a laptop.
+> 
+> I agree.
+> 
+> Also, it makes sense to introduce a more consistent name for a function
+> when it's improved in some way and the callers need to be adjusted or
+> re-checked.
+> 
+> That way, the old name can be phased out as the code is made compatible
+> with the new function.
 
--- 
-Dmitry
+That can also be done, as was done with this series, with backward
+compatible #defines.
+
+
+
