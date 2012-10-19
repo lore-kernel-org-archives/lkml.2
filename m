@@ -1,55 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758215Ab2JSJSi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 05:18:38 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45555 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753795Ab2JSJSg (ORCPT
+	id S1758233Ab2JSJU2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 05:20:28 -0400
+Received: from smtp-out-125.synserver.de ([212.40.185.125]:1103 "EHLO
+	smtp-out-125.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755542Ab2JSJU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 05:18:36 -0400
-Date: Fri, 19 Oct 2012 10:18:11 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Thomas Meyer <thomas@m3y3r.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        airlied <airlied@linux.ie>, "David S. Miller" <davem@davemloft.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: "read_current_timer" undefined!
-Message-ID: <20121019091811.GB4582@mudshark.cambridge.arm.com>
-References: <1350562575.1270.3.camel@localhost.localdomain>
- <5080F0EF.5040100@ahsoftware.de>
+	Fri, 19 Oct 2012 05:20:26 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 29443
+Message-ID: <50811BA5.8000004@metafoo.de>
+Date: Fri, 19 Oct 2012 11:21:41 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120922 Icedove/10.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5080F0EF.5040100@ahsoftware.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+CC: cbou@mail.ru, dwmw2@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] Use devm_kzalloc instead of kzalloc/kfree
+References: <1350603664-18148-1-git-send-email-marcos.souza.org@gmail.com> <1350603664-18148-2-git-send-email-marcos.souza.org@gmail.com>
+In-Reply-To: <1350603664-18148-2-git-send-email-marcos.souza.org@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 07:19:27AM +0100, Alexander Holler wrote:
-> Hello,
+On 10/19/2012 01:41 AM, Marcos Paulo de Souza wrote:
+> This does not chnange the rationale, just a cleanup
 > 
-> Am 18.10.2012 14:16, schrieb Thomas Meyer:
-> 
-> > ERROR: "read_current_timer" [drivers/gpu/drm/udl/udl.ko] undefined!
-> > ERROR: "read_current_timer" [crypto/tcrypt.ko] undefined!
-> 
-> There is already a long thread about that, along with patches:
-> 
-> https://lkml.org/lkml/2012/10/9/393
-> 
-> If you need a patch for 3.6, here is what I did before I found the above 
-> thread:
-
-Arnd sent an updated pull request here:
-
-  http://lists.infradead.org/pipermail/linux-arm-kernel/2012-October/124756.html
-
-but it was a reply to a previous pull, so it may have been missed. Could you
-pull that for -rc2 please Russell?
+> Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
 
 Thanks,
 
-Will
+Acked-by: Lars-Peter Clausen <lars@metafoo.de?
+
+> ---
+>  drivers/power/jz4740-battery.c |   12 +++++-------
+>  1 file changed, 5 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/power/jz4740-battery.c b/drivers/power/jz4740-battery.c
+> index 8dbc7bf..72f6335 100644
+> --- a/drivers/power/jz4740-battery.c
+> +++ b/drivers/power/jz4740-battery.c
+> @@ -252,7 +252,7 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+>  		return -ENXIO;
+>  	}
+>  
+> -	jz_battery = kzalloc(sizeof(*jz_battery), GFP_KERNEL);
+> +	jz_battery = devm_kzalloc(&pdev->dev, sizeof(*jz_battery), GFP_KERNEL);
+>  	if (!jz_battery) {
+>  		dev_err(&pdev->dev, "Failed to allocate driver structure\n");
+>  		return -ENOMEM;
+> @@ -264,14 +264,14 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+>  	if (jz_battery->irq < 0) {
+>  		ret = jz_battery->irq;
+>  		dev_err(&pdev->dev, "Failed to get platform irq: %d\n", ret);
+> -		goto err_free;
+> +		goto err;
+>  	}
+>  
+>  	jz_battery->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	if (!jz_battery->mem) {
+>  		ret = -ENOENT;
+>  		dev_err(&pdev->dev, "Failed to get platform mmio resource\n");
+> -		goto err_free;
+> +		goto err;
+>  	}
+>  
+>  	jz_battery->mem = request_mem_region(jz_battery->mem->start,
+> @@ -279,7 +279,7 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+>  	if (!jz_battery->mem) {
+>  		ret = -EBUSY;
+>  		dev_err(&pdev->dev, "Failed to request mmio memory region\n");
+> -		goto err_free;
+> +		goto err;
+>  	}
+>  
+>  	jz_battery->base = ioremap_nocache(jz_battery->mem->start,
+> @@ -373,8 +373,7 @@ err_iounmap:
+>  	iounmap(jz_battery->base);
+>  err_release_mem_region:
+>  	release_mem_region(jz_battery->mem->start, resource_size(jz_battery->mem));
+> -err_free:
+> -	kfree(jz_battery);
+> +err:
+>  	return ret;
+>  }
+>  
+> @@ -396,7 +395,6 @@ static int __devexit jz_battery_remove(struct platform_device *pdev)
+>  
+>  	iounmap(jz_battery->base);
+>  	release_mem_region(jz_battery->mem->start, resource_size(jz_battery->mem));
+> -	kfree(jz_battery);
+>  
+>  	return 0;
+>  }
+
