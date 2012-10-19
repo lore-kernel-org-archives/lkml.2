@@ -1,95 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758867Ab2JSReu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 13:34:50 -0400
-Received: from claranet-outbound-smtp01.uk.clara.net ([195.8.89.34]:46828 "EHLO
-	claranet-outbound-smtp01.uk.clara.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754044Ab2JSRes (ORCPT
+	id S1758942Ab2JSRgz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 13:36:55 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60945 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753363Ab2JSRgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 13:34:48 -0400
-X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Oct 2012 13:34:48 EDT
-From: Simon Farnsworth <simon.farnsworth@onelan.co.uk>
-To: linux-kernel@vger.kernel.org
-Cc: len.brown@intel.com, linux-pm@vger.kernel.org, lenb@kernel.org
-Subject: Re: pm_qos request for 0 cpu_dma_latency is ignored on Linus master
-Date: Fri, 19 Oct 2012 18:34:39 +0100
-Message-ID: <20490918.t8n8AcBcDM@f17simon>
-User-Agent: KMail/4.8.4 (Linux/3.4.6-2.fc17.x86_64; KDE/4.8.4; x86_64; ; )
-In-Reply-To: <2732999.VSJZov8CP4@f17simon>
-References: <2732999.VSJZov8CP4@f17simon>
+	Fri, 19 Oct 2012 13:36:54 -0400
+Date: Fri, 19 Oct 2012 10:36:39 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: weird use-after-free bug in module_put
+Message-ID: <20121019173639.GD2152@core.coreip.homeip.net>
+References: <20121019144351.GA1532@redhat.com>
+ <20121019153452.GB1532@redhat.com>
+ <20121019163318.GA2152@core.coreip.homeip.net>
+ <20121019170951.GM2616@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1687589.zAj9qJtm0m"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121019170951.GM2616@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---nextPart1687589.zAj9qJtm0m
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-
-Sorry for the noise. I've just found it's my code at fault - we changed
-to a 10,000 usec PM request for most platforms a while ago.
-
-Simon
-
-On Friday 19 October 2012 18:28:18 Simon Farnsworth wrote:
-> (please cc me on replies - I'm not directly subscribed to linux-kernel or linux-pm)
+On Fri, Oct 19, 2012 at 06:09:51PM +0100, Al Viro wrote:
+> On Fri, Oct 19, 2012 at 09:33:18AM -0700, Dmitry Torokhov wrote:
 > 
-> I'm trying to track down why a Sandybridge system with a PCIe to PCI riser
-> has problems after enabling GPU RC6, and I've reduced my problem to the menu
-> cpuidle governor selecting high C-states from intel_idle, even though I've
-> given a cpu_dma_latency requirement of 0 usecs.
+> > We are now removing instance of character device corresponding to input
+> > device when input device disappears.
+> > 
+> > Ah, I know... cdev is embedded in evdev, but lives longer.. I do want to
+> > keep cdev embedded as it allows me to easily get to evdev in
+> > evdev_open(), but I need to be able to add and then drop reference to
+> > evdev from cdev's ->release() method. This means I need to override it.
+> > 
+> > Or I could have cdev separately allocated, but then I'd like to have a
+> > void pointer in "struct cdev" so I could get from it back to
+> > corresponding evdev.
 > 
-> I have a TV capture card in the riser, and it appears that I get data lost
-> whenever the package enters a high C state. My userspace opens
-> /dev/cpu_dma_latency and writes (uint32_t)0 to this fd whenever we have things
-> on-screen, closing the fd when we put the screen into DPMS off states.
-> 
-> However, even with a userspace provided request of 0 usec, I'm seeing the CPU
-> cores (and hence the entire package when GPU RC6 is enabled) enter C6 state.
-> 
-> I've confirmed that forcing the governor to limit itself to C0 fixes my
-> problem with:
-> 
-> # for state in /sys/devices/system/cpu/cpu*/cpuidle/state[1-9]*/disable ; do echo 1 > $state ; done
-> 
-> What do I need to do to get the menu cpuidle governor and the intel_idle
-> cpuidle driver to respect the /dev/cpu_dma_latency pm_qos request of 0 usec
-> and keep the Sandybridge CPU package out of low C states? Note that a CPU
-> core in low C state is fine, as long as the DMA latency stays low.
-> 
-> My goal is to keep the system in high-performance state when we're rendering
-> digital signage on screen (as any glitching may upset viewers, and compared
-> to the screen's full power use, we're irrelevant), but to go into lower power
-> states when the screen is off (when we're only drawing power to keep the
-> administrator interface available).
-> 
-> My kernel is currently 3.7-rc1+, based on Linus git of Tuesday 16th October
-> 2012. I'm happy to try patches, even if all they get you is better debug
-> output to work out why the userspace request is ignored.
-> 
-Simon Farnsworth
-Software Engineer
-ONELAN Ltd
-http://www.onelan.com
+> Your real problem is that you have two kobjects embedded into the same
+> thing.  It can work, but you need to make the secondary (one that does
+> *not* free in its ->release()) pin the primary.  Sigh...  Device model
+> sucks, film at 11...
 
---nextPart1687589.zAj9qJtm0m
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
+Right, but "cdev" is currently "sealed": it does not allow specifying a
+custom release function from which I could unpin primary (evdev). You
+are the author/owner of cdev code, so that is why I was asking for
+your opinion as to what is the best way to proceed:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+1. Allocate cdev separately and add void * to struct cdev so that it is
+   easy to get to corresponding structure on evdev_open.
 
-iQEcBAABAgAGBQJQgY8vAAoJEIKsye9/dtRW3gYH/2UgIJAWUPbOAjQ7fGJMsFja
-k0BiXi+LRMtShD6Z0i6h1EZdryV3TMeGmF7FKfYX7vd4al6+C+p/GT3n9E9y+Oh1
-0RjQO6azV01dcS50LKuaC76ouf0ZBn8cPtAzcWzRA5kVm0vqXB+ZFgPcwC6oFEun
-3T0yzWedcD2dtreqvOGFdAvVgKSljPS8gzrrFRCI+ceKv4gsSepdauA0057ojlSG
-vWwcGIh/sWpJxCwii4U8QbKK3IUfclDMOf+cx/w7XfZYvAJNWf24iKcfDOE2sOTp
-N5Z3MsVgc9XZNuhaQmxnBfEqg4V/P4zN1x+/qBjk5T5jjatFMfZXGARi3YGMlU0=
-=PRA9
------END PGP SIGNATURE-----
+2. Keep cdev embedded in evdev but export cdev's cleanup method and
+   have evdev override ->release with its own version that calls
+   cdev_default_release() and then unpins evdev stucture.
 
---nextPart1687589.zAj9qJtm0m--
+3. Add struct device *parent to struct cdev and have it pin and unpin it
+   for us (if it is set up).
 
+Thanks.
+
+-- 
+Dmitry
