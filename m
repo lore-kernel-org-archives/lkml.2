@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030332Ab2JSC6x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:58:53 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52306 "EHLO mail.kernel.org"
+	id S1030318Ab2JSC6v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:58:51 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52319 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964928Ab2JSCtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:49:09 -0400
+	id S964966Ab2JSCtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:49:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [ 46/76] nohz: Fix one jiffy count too far in idle cputime
-Date: Thu, 18 Oct 2012 19:47:10 -0700
-Message-Id: <20121019024357.525266666@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 47/76] ath9k: use ieee80211_free_txskb
+Date: Thu, 18 Oct 2012 19:47:11 -0700
+Message-Id: <20121019024357.681793651@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -26,68 +26,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 2b17c545a4cdbbbadcd7f1e9684c2d7db8f085a6 upstream.
+commit 249ee72249140fe5b9adc988f97298f0aa5db2fc upstream.
 
-When we stop the tick in idle, we save the current jiffies value
-in ts->idle_jiffies. This snapshot is substracted from the later
-value of jiffies when the tick is restarted and the resulting
-delta is accounted as idle cputime. This is how we handle the
-idle cputime accounting without the tick.
+Using ieee80211_free_txskb for tx frames is required, since mac80211 clones
+skbs for which socket tx status is requested.
 
-But sometimes we need to schedule the next tick to some time in
-the future instead of completely stopping it. In this case, a
-tick may happen before we restart the periodic behaviour and
-from that tick we account one jiffy to idle cputime as usual but
-we also increment the ts->idle_jiffies snapshot by one so that
-when we compute the delta to account, we substract the one jiffy
-we just accounted.
-
-To prepare for stopping the tick outside idle, we introduced a
-check that prevents from fixing up that ts->idle_jiffies if we
-are not running the idle task. But we use idle_cpu() for that
-and this is a problem if we run the tick while another CPU
-remotely enqueues a ttwu to our runqueue:
-
-CPU 0:                            CPU 1:
-
-tick_sched_timer() {              ttwu_queue_remote()
-       if (idle_cpu(CPU 0))
-           ts->idle_jiffies++;
-}
-
-Here, idle_cpu() notes that &rq->wake_list is not empty and
-hence won't consider the CPU as idle. As a result,
-ts->idle_jiffies won't be incremented. But this is wrong because
-we actually account the current jiffy to idle cputime. And that
-jiffy won't get substracted from the nohz time delta. So in the
-end, this jiffy is accounted twice.
-
-Fix this by changing idle_cpu(smp_processor_id()) with
-is_idle_task(current). This way the jiffy is substracted
-correctly even if a ttwu operation is enqueued on the CPU.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1349308004-3482-1-git-send-email-fweisbec@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/tick-sched.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/beacon.c |    2 -
+ drivers/net/wireless/ath/ath9k/main.c   |    2 -
+ drivers/net/wireless/ath/ath9k/xmit.c   |   53 +++++++++++++++++---------------
+ 3 files changed, 31 insertions(+), 26 deletions(-)
 
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -835,7 +835,7 @@ static enum hrtimer_restart tick_sched_t
+--- a/drivers/net/wireless/ath/ath9k/beacon.c
++++ b/drivers/net/wireless/ath/ath9k/beacon.c
+@@ -120,7 +120,7 @@ static void ath9k_tx_cabq(struct ieee802
+ 
+ 	if (ath_tx_start(hw, skb, &txctl) != 0) {
+ 		ath_dbg(common, XMIT, "CABQ TX failed\n");
+-		dev_kfree_skb_any(skb);
++		ieee80211_free_txskb(hw, skb);
+ 	}
+ }
+ 
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -767,7 +767,7 @@ static void ath9k_tx(struct ieee80211_hw
+ 
+ 	return;
+ exit:
+-	dev_kfree_skb_any(skb);
++	ieee80211_free_txskb(hw, skb);
+ }
+ 
+ static void ath9k_stop(struct ieee80211_hw *hw)
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -66,8 +66,7 @@ static void ath_tx_update_baw(struct ath
+ static struct ath_buf *ath_tx_setup_buffer(struct ath_softc *sc,
+ 					   struct ath_txq *txq,
+ 					   struct ath_atx_tid *tid,
+-					   struct sk_buff *skb,
+-					   bool dequeue);
++					   struct sk_buff *skb);
+ 
+ enum {
+ 	MCS_HT20,
+@@ -176,7 +175,15 @@ static void ath_tx_flush_tid(struct ath_
+ 		fi = get_frame_info(skb);
+ 		bf = fi->bf;
+ 
+-		if (bf && fi->retries) {
++		if (!bf) {
++			bf = ath_tx_setup_buffer(sc, txq, tid, skb);
++			if (!bf) {
++				ieee80211_free_txskb(sc->hw, skb);
++				continue;
++			}
++		}
++
++		if (fi->retries) {
+ 			list_add_tail(&bf->list, &bf_head);
+ 			ath_tx_update_baw(sc, tid, bf->bf_state.seqno);
+ 			ath_tx_complete_buf(sc, bf, txq, &bf_head, &ts, 0);
+@@ -785,10 +792,13 @@ static enum ATH_AGGR_STATUS ath_tx_form_
+ 		fi = get_frame_info(skb);
+ 		bf = fi->bf;
+ 		if (!fi->bf)
+-			bf = ath_tx_setup_buffer(sc, txq, tid, skb, true);
++			bf = ath_tx_setup_buffer(sc, txq, tid, skb);
+ 
+-		if (!bf)
++		if (!bf) {
++			__skb_unlink(skb, &tid->buf_q);
++			ieee80211_free_txskb(sc->hw, skb);
+ 			continue;
++		}
+ 
+ 		bf->bf_state.bf_type = BUF_AMPDU | BUF_AGGR;
+ 		seqno = bf->bf_state.seqno;
+@@ -1731,9 +1741,11 @@ static void ath_tx_send_ampdu(struct ath
+ 		return;
+ 	}
+ 
+-	bf = ath_tx_setup_buffer(sc, txctl->txq, tid, skb, false);
+-	if (!bf)
++	bf = ath_tx_setup_buffer(sc, txctl->txq, tid, skb);
++	if (!bf) {
++		ieee80211_free_txskb(sc->hw, skb);
+ 		return;
++	}
+ 
+ 	bf->bf_state.bf_type = BUF_AMPDU;
+ 	INIT_LIST_HEAD(&bf_head);
+@@ -1757,11 +1769,6 @@ static void ath_tx_send_normal(struct at
+ 	struct ath_buf *bf;
+ 
+ 	bf = fi->bf;
+-	if (!bf)
+-		bf = ath_tx_setup_buffer(sc, txq, tid, skb, false);
+-
+-	if (!bf)
+-		return;
+ 
+ 	INIT_LIST_HEAD(&bf_head);
+ 	list_add_tail(&bf->list, &bf_head);
+@@ -1834,8 +1841,7 @@ u8 ath_txchainmask_reduction(struct ath_
+ static struct ath_buf *ath_tx_setup_buffer(struct ath_softc *sc,
+ 					   struct ath_txq *txq,
+ 					   struct ath_atx_tid *tid,
+-					   struct sk_buff *skb,
+-					   bool dequeue)
++					   struct sk_buff *skb)
+ {
+ 	struct ath_common *common = ath9k_hw_common(sc->sc_ah);
+ 	struct ath_frame_info *fi = get_frame_info(skb);
+@@ -1847,7 +1853,7 @@ static struct ath_buf *ath_tx_setup_buff
+ 	bf = ath_tx_get_buffer(sc);
+ 	if (!bf) {
+ 		ath_dbg(common, XMIT, "TX buffers are full\n");
+-		goto error;
++		return NULL;
+ 	}
+ 
+ 	ATH_TXBUF_RESET(bf);
+@@ -1876,18 +1882,12 @@ static struct ath_buf *ath_tx_setup_buff
+ 		ath_err(ath9k_hw_common(sc->sc_ah),
+ 			"dma_mapping_error() on TX\n");
+ 		ath_tx_return_buffer(sc, bf);
+-		goto error;
++		return NULL;
+ 	}
+ 
+ 	fi->bf = bf;
+ 
+ 	return bf;
+-
+-error:
+-	if (dequeue)
+-		__skb_unlink(skb, &tid->buf_q);
+-	dev_kfree_skb_any(skb);
+-	return NULL;
+ }
+ 
+ /* FIXME: tx power */
+@@ -1916,9 +1916,14 @@ static void ath_tx_start_dma(struct ath_
  		 */
- 		if (ts->tick_stopped) {
- 			touch_softlockup_watchdog();
--			if (idle_cpu(cpu))
-+			if (is_idle_task(current))
- 				ts->idle_jiffies++;
- 		}
- 		update_process_times(user_mode(regs));
+ 		ath_tx_send_ampdu(sc, tid, skb, txctl);
+ 	} else {
+-		bf = ath_tx_setup_buffer(sc, txctl->txq, tid, skb, false);
+-		if (!bf)
++		bf = ath_tx_setup_buffer(sc, txctl->txq, tid, skb);
++		if (!bf) {
++			if (txctl->paprd)
++				dev_kfree_skb_any(skb);
++			else
++				ieee80211_free_txskb(sc->hw, skb);
+ 			return;
++		}
+ 
+ 		bf->bf_state.bfs_paprd = txctl->paprd;
+ 
 
 
