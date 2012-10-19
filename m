@@ -1,205 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757149Ab2JSE0J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 00:26:09 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:54424 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756430Ab2JSE0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 00:26:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        toshi.kani@hp.com, lenb@kernel.org, wency@cn.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Subject: Re: [PATCH v2] acpi : acpi_bus_trim() stops removing devices when failing to remove the device
-Date: Fri, 19 Oct 2012 06:29:52 +0200
-Message-ID: <1846185.MSykHDcMmb@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <50769B8C.2060901@jp.fujitsu.com>
-References: <50769B8C.2060901@jp.fujitsu.com>
+	id S1757827Ab2JSEkt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 00:40:49 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45830 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757689Ab2JSEks (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 00:40:48 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5080D9AA.8070801@jp.fujitsu.com>
+Date: Fri, 19 Oct 2012 13:40:10 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: <srivatsa.bhat@linux.vnet.ibm.com>, <toshi.kani@hp.com>, <lenb@kernel.org>,
+        <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] acpi : cpu hot-remove returns error when cpu_down()
+ fails
+References: <50657D92.3010106@jp.fujitsu.com> <4180255.BSUqs0l2F5@vostro.rjw.lan>
+In-Reply-To: <4180255.BSUqs0l2F5@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 11 of October 2012 19:12:28 Yasuaki Ishimatsu wrote:
-> acpi_bus_trim() stops removing devices, when acpi_bus_remove() return error
-> number. But acpi_bus_remove() cannot return error number correctly.
-> acpi_bus_remove() only return -EINVAL, when dev argument is NULL. Thus even if
-> device cannot be removed correctly, acpi_bus_trim() ignores and continues to
-> remove devices. acpi_bus_hot_remove_device() uses acpi_bus_trim() for removing
-> devices. Therefore acpi_bus_hot_remove_device() can send "_EJ0" to firmware,
-> even if the device is running on the system. In this case, the system cannot
-> work well.
-> 
-> Vasilis hit the bug at memory hotplug and reported it as follow:
-> https://lkml.org/lkml/2012/9/26/318
-> 
-> So acpi_bus_trim() should check whether device was removed or not correctly.
-> The patch adds error check into some functions to remove the device.
-> 
-> Applying the patch, acpi_bus_trim() stops removing devices when failing
-> to remove the device. But I think there is no impact with the
-> exceptionof CPU and Memory hotplug path. Because other device also fails
-> but the fail is an irregular case like device is NULL.
-> 
-> v1->v2
-> - add a rollback for reinstalling a notify handler.
-> 
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Hi Rafael,
 
-Greg, do you think there may be any problems with the changes in dd.c?
+2012/10/19 10:06, Rafael J. Wysocki wrote:
+> On Friday 28 of September 2012 19:36:02 Yasuaki Ishimatsu wrote:
+>> Even if cpu_down() fails, acpi_processor_remove() continues to remove the cpu.
+>> But in this case, it should return error number since some process may run on
+>> the cpu. If the cpu has a running process and the cpu is turned the power off,
+>> the system may not work well.
+>>
+>> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>> Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>
+>> ---
+>>   drivers/acpi/processor_driver.c |   18 ++++++++++++------
+>>   1 file changed, 12 insertions(+), 6 deletions(-)
+>>
+>> Index: linux-3.6-rc7/drivers/acpi/processor_driver.c
+>> ===================================================================
+>> --- linux-3.6-rc7.orig/drivers/acpi/processor_driver.c	2012-09-24 10:10:57.000000000 +0900
+>> +++ linux-3.6-rc7/drivers/acpi/processor_driver.c	2012-09-28 19:16:33.207858261 +0900
+>> @@ -605,7 +605,7 @@ err_free_pr:
+>>   static int acpi_processor_remove(struct acpi_device *device, int type)
+>>   {
+>>   	struct acpi_processor *pr = NULL;
+>> -
+>> +	int ret;
+>>
+>>   	if (!device || !acpi_driver_data(device))
+>>   		return -EINVAL;
+>> @@ -616,8 +616,9 @@ static int acpi_processor_remove(struct
+>>   		goto free;
+>>
+>>   	if (type == ACPI_BUS_REMOVAL_EJECT) {
+>> -		if (acpi_processor_handle_eject(pr))
+>> -			return -EINVAL;
+>> +		ret = acpi_processor_handle_eject(pr);
+>> +		if (ret)
+>> +			return ret;
+>>   	}
+>>
+>>   	acpi_processor_power_exit(pr, device);
+>> @@ -848,12 +849,17 @@ static acpi_status acpi_processor_hotadd
+>>
+>>   static int acpi_processor_handle_eject(struct acpi_processor *pr)
+>>   {
+>> -	if (cpu_online(pr->id))
+>> -		cpu_down(pr->id);
+>> +	int ret = 0;
+>> +
+>> +	if (cpu_online(pr->id)) {
+>> +		ret = cpu_down(pr->id);
+>
+> If you defined ret here ...
+>
+>> +		if (ret)
+>> +			return ret;
+>> +	}
+>>
 
-Rafael
+>>   	arch_unregister_cpu(pr->id);
+>>   	acpi_unmap_lsapic(pr->id);
+>> -	return (0);
+>> +	return ret;
+>
+> ... this line wouldn't need to be changed.
+
+Thank you for your review.
+O.K. I'll put the return code back.
+
+Thanks,
+Yasuaki Ishimatsu
+
+>
+>>   }
+>>   #else
+>>   static acpi_status acpi_processor_hotadd_init(struct acpi_processor *pr)
+>
+> Thanks,
+> Rafael
+>
+>
 
 
-> ---
->  drivers/acpi/scan.c    |   21 ++++++++++++++++++---
->  drivers/base/dd.c      |   22 +++++++++++++++++-----
->  include/linux/device.h |    2 +-
->  3 files changed, 36 insertions(+), 9 deletions(-)
-> 
-> Index: linux-3.6/drivers/acpi/scan.c
-> ===================================================================
-> --- linux-3.6.orig/drivers/acpi/scan.c	2012-10-11 18:31:40.189019503 +0900
-> +++ linux-3.6/drivers/acpi/scan.c	2012-10-11 18:42:35.669041641 +0900
-> @@ -445,18 +445,29 @@ static int acpi_device_remove(struct dev
->  {
->  	struct acpi_device *acpi_dev = to_acpi_device(dev);
->  	struct acpi_driver *acpi_drv = acpi_dev->driver;
-> +	int ret;
->  
->  	if (acpi_drv) {
->  		if (acpi_drv->ops.notify)
->  			acpi_device_remove_notify_handler(acpi_dev);
-> -		if (acpi_drv->ops.remove)
-> -			acpi_drv->ops.remove(acpi_dev, acpi_dev->removal_type);
-> +		if (acpi_drv->ops.remove) {
-> +			ret = acpi_drv->ops.remove(acpi_dev,
-> +						   acpi_dev->removal_type);
-> +			if (ret)
-> +				goto rollback;
-> +		}
->  	}
->  	acpi_dev->driver = NULL;
->  	acpi_dev->driver_data = NULL;
->  
->  	put_device(dev);
->  	return 0;
-> +
-> +rollback:
-> +	if (acpi_drv->ops.notify)
-> +		acpi_device_install_notify_handler(acpi_dev);
-> +
-> +	return ret;
->  }
->  
->  struct bus_type acpi_bus_type = {
-> @@ -1226,11 +1237,15 @@ static int acpi_device_set_context(struc
->  
->  static int acpi_bus_remove(struct acpi_device *dev, int rmdevice)
->  {
-> +	int ret;
-> +
->  	if (!dev)
->  		return -EINVAL;
->  
->  	dev->removal_type = ACPI_BUS_REMOVAL_EJECT;
-> -	device_release_driver(&dev->dev);
-> +	ret = device_release_driver(&dev->dev);
-> +	if (ret)
-> +		return ret;
->  
->  	if (!rmdevice)
->  		return 0;
-> Index: linux-3.6/drivers/base/dd.c
-> ===================================================================
-> --- linux-3.6.orig/drivers/base/dd.c	2012-10-11 18:31:40.191019505 +0900
-> +++ linux-3.6/drivers/base/dd.c	2012-10-11 18:31:46.873020548 +0900
-> @@ -475,9 +475,10 @@ EXPORT_SYMBOL_GPL(driver_attach);
->   * __device_release_driver() must be called with @dev lock held.
->   * When called for a USB interface, @dev->parent lock must be held as well.
->   */
-> -static void __device_release_driver(struct device *dev)
-> +static int __device_release_driver(struct device *dev)
->  {
->  	struct device_driver *drv;
-> +	int ret = 0;
->  
->  	drv = dev->driver;
->  	if (drv) {
-> @@ -493,9 +494,11 @@ static void __device_release_driver(stru
->  		pm_runtime_put_sync(dev);
->  
->  		if (dev->bus && dev->bus->remove)
-> -			dev->bus->remove(dev);
-> +			ret = dev->bus->remove(dev);
->  		else if (drv->remove)
-> -			drv->remove(dev);
-> +			ret = drv->remove(dev);
-> +		if (ret)
-> +			goto rollback;
->  		devres_release_all(dev);
->  		dev->driver = NULL;
->  		dev_set_drvdata(dev, NULL);
-> @@ -506,6 +509,12 @@ static void __device_release_driver(stru
->  						     dev);
->  
->  	}
-> +
-> +	return ret;
-> +
-> +rollback:
-> +	driver_sysfs_add(dev);
-> +	return ret;
->  }
->  
->  /**
-> @@ -515,16 +524,19 @@ static void __device_release_driver(stru
->   * Manually detach device from driver.
->   * When called for a USB interface, @dev->parent lock must be held.
->   */
-> -void device_release_driver(struct device *dev)
-> +int device_release_driver(struct device *dev)
->  {
-> +	int ret;
->  	/*
->  	 * If anyone calls device_release_driver() recursively from
->  	 * within their ->remove callback for the same device, they
->  	 * will deadlock right here.
->  	 */
->  	device_lock(dev);
-> -	__device_release_driver(dev);
-> +	ret = __device_release_driver(dev);
->  	device_unlock(dev);
-> +
-> +	return ret;
->  }
->  EXPORT_SYMBOL_GPL(device_release_driver);
->  
-> Index: linux-3.6/include/linux/device.h
-> ===================================================================
-> --- linux-3.6.orig/include/linux/device.h	2012-10-11 18:31:40.194019508 +0900
-> +++ linux-3.6/include/linux/device.h	2012-10-11 18:31:46.881020556 +0900
-> @@ -834,7 +834,7 @@ static inline void *dev_get_platdata(con
->   * for information on use.
->   */
->  extern int __must_check device_bind_driver(struct device *dev);
-> -extern void device_release_driver(struct device *dev);
-> +extern int device_release_driver(struct device *dev);
->  extern int  __must_check device_attach(struct device *dev);
->  extern int __must_check driver_attach(struct device_driver *drv);
->  extern int __must_check device_reprobe(struct device *dev);
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
