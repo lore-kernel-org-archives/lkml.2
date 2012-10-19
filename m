@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759318Ab2JSQBI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 12:01:08 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:49269 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759127Ab2JSQBG (ORCPT
+	id S1759331Ab2JSQBV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 12:01:21 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:54562 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758817Ab2JSQBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 12:01:06 -0400
-Date: Fri, 19 Oct 2012 11:48:55 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, linux-acpi@vger.kernel.org,
-        x86@kernel.org, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, lenb@kernel.org
-Subject: Is: Xen architecture document. Was: Re: [Xen-devel] Is: axe
- read_tscp pvops call. Was: Re: [RFC] ACPI S3 and Xen (suprisingly small\!).
-Message-ID: <20121019154854.GO26830@phenom.dumpdata.com>
-References: <1350481786-4969-1-git-send-email-konrad.wilk@oracle.com>
- <507ED6C0.4020503@zytor.com>
- <20121017161036.GA10691@phenom.dumpdata.com>
- <507EE1C3.7070300@zytor.com>
- <20121017165452.GA22740@phenom.dumpdata.com>
- <507EEC53.1010309@zytor.com>
- <84b3cbf9-7c84-4d7e-a2d7-46b0d1cc5975@default>
- <50802030.8070107@zytor.com>
- <dd8748de-4715-499a-8c7e-745af37fa6c4@default>
- <50803057.5000307@zytor.com>
+	Fri, 19 Oct 2012 12:01:17 -0400
+Date: Fri, 19 Oct 2012 18:01:03 +0200
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        alan@lxorguk.ukuu.org.uk, Ben Skeggs <bskeggs@redhat.com>
+Subject: Re: [ 60/76] drm/nouveau/bios: fix shadowing of ACPI ROMs larger
+ than 64KiB
+Message-ID: <20121019160103.GA1570@fritha.org>
+References: <20121019024350.087156547@linuxfoundation.org>
+ <20121019024359.774396402@linuxfoundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50803057.5000307@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <20121019024359.774396402@linuxfoundation.org>
+Organization: private site
+OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.21+66 (70810a88ce9f) (2011-07-01)
+X-Provags-ID: V02:K0:YlBfVv4+MQ7zKtTxVZ0vGExFFs7iMJBHjgcY+h0Q8ID
+ cXsq9APZRJu02XzX9/hMHhrcEFDY6hMNjyOOJD/hxiwNSDCApI
+ Yj4J4co+Z7VJXp0BnoycSX0UnORly7pCcrQuIpKcT5Tmb50aFF
+ SOoycFur2g1dNjGbe5jgr+YJaXKKiQYRuAcdrN7/1G5OqdRRpT
+ r0jKncNAW+WoESvMf2OoQ5zi+WJ9t3SYv06XV5HjqXLAOEOxej
+ s4d/1ryfWO8s7CK7u2QoEoDAylh//D2VsASS5cBml4MRyXkAmY
+ 0Fu+KOqj28lgnpG8lU7Ps8gB8ttlxbUWT83VqxdS1r5/HOULsy
+ DEgQsvSSPyWMvVVNZIx4jBUue/GpMh88gEIogr5YN
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> paravirtualized architectures out there which are perfectly well
-> documented and supportable, but Xen has resisted doing that for
-> years, and all we ever get are vague future promises.
+On 19.10.2012, Greg Kroah-Hartman wrote: 
 
-There is no resistance - and it is being done. Every month we document
-various APIs, man-pages, etc so that knowledge won't be lost. The
-end-result of that is to create a PDF similar to the PowerPC architecture
-document.
+> 3.6-stable review patch.  If anyone has any objections, please let me know.
 
-I have not been pointing you to it, b/c as of right what we have is
-raw data (various header files growing in size) that keep on growing.
-I need to hire/cajole an editor to help us get from the "raw" brain
-dump to a book and some sense of milestones/schedule or whatever one
-does in the book-world.
+While 3.6.2 is fine. 3.6.3-rc1 crashes my machine (Asus U45-JC) at
+boot. A screenshot of the output is here:
 
-And Peter, just in case it is not clear, every suggestion you make is
-appreciated and taken seriously. If there are things that have been
-dropped or forgotten by me - please remind me.
+http://www.fritha.org/crash.jpg
+
+Reverting this one fixes it:
+
+> Ben Skeggs <bskeggs@redhat.com>
+>     drm/nouveau/bios: fix shadowing of ACPI ROMs larger than 64KiB
+
+
