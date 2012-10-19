@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758824Ab2JSXQL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 19:16:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41838 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755090Ab2JSXQJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 19:16:09 -0400
-Date: Sat, 20 Oct 2012 00:16:04 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>
-Message-ID: <20121019231604.GF13292@decadent.org.uk>
-References: <20121019031302.789593147@linuxfoundation.org>
- <20121019031304.836071629@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121019031304.836071629@linuxfoundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [ 12/37] block: fix request_queue->flags initialization
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	id S1759196Ab2JSX2D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 19:28:03 -0400
+Received: from smtp.getmail.no ([84.208.15.66]:36976 "EHLO smtp.getmail.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755402Ab2JSX2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 19:28:00 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
+In-reply-to: <op.wmbjpvqe6426ze@localhost.localdomain>
+References: <op.wmbjpvqe6426ze@localhost.localdomain>
+Subject: re: Optimizing scheduling policies for Ubuntu (desktop),
+ for low-jitter.
+To: linux-kernel@vger.kernel.org
+Date: Sat, 20 Oct 2012 01:27:57 +0200
+From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
+Message-id: <op.wmf8svxp6426ze@localhost.localdomain>
+User-Agent: Opera Mail/12.02 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 08:16:35PM -0700, Greg Kroah-Hartman wrote:
-> 3.0-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Tejun Heo <tj@kernel.org>
-> 
-> commit 60ea8226cbd5c8301f9a39edc574ddabcb8150e0 upstream.
-> 
-> A queue newly allocated with blk_alloc_queue_node() has only
-> QUEUE_FLAG_BYPASS set.  For request-based drivers,
-> blk_init_allocated_queue() is called and q->queue_flags is overwritten
-> with QUEUE_FLAG_DEFAULT which doesn't include BYPASS even though the
-> initial bypass is still in effect.
-> 
-> In blk_init_allocated_queue(), or QUEUE_FLAG_DEFAULT to q->queue_flags
-> instead of overwriting.
-[...]
+Not many are discussing this.
 
-This is not needed, as there is no QUEUE_FLAG_BYPASS in 3.0.y.
+So odd since an overloaded computer, looks like a computer with jitter. So  
+removing jitter = higher performance.
 
-Ben.
+I changed X to nice -20 though instead. It is hard to predict jitter, and  
+maybe some measure of fairness is good.
+Still daemons wouldn`t mind running sequentially as simple round robin,  
+or? I would like to see a lowpriority round-robin, and not just the  
+realtime one. Maybe a modification on "idle" pri. I just want to know  
+daemons can be made transparent to jitter. Or atleast some measure of  
+fairness to sequentialness that keeps the lowest jitter.
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+Anyone following ? :)
+
+Peace Be With You.
