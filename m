@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965027Ab2JSDXi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:23:38 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54476 "EHLO mail.kernel.org"
+	id S1758047Ab2JSDRZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:17:25 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54420 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964891Ab2JSDR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:28 -0400
+	id S1757831Ab2JSDRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Christian Hildner <christian.hildner@siemens.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 17/37] timers: Fix endless looping between cascade() and internal_add_timer()
-Date: Thu, 18 Oct 2012 20:16:40 -0700
-Message-Id: <20121019031305.633030822@linuxfoundation.org>
+        Ian Kent <ikent@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 13/37] autofs4 - fix reset pending flag on mount fail
+Date: Thu, 18 Oct 2012 20:16:36 -0700
+Message-Id: <20121019031304.996092357@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -27,57 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Hildner, Christian" <christian.hildner@siemens.com>
+From: Ian Kent <raven@themaw.net>
 
-commit 26cff4e2aa4d666dc6a120ea34336b5057e3e187 upstream.
+commit 49999ab27eab6289a8e4f450e148bdab521361b2 upstream.
 
-Adding two (or more) timers with large values for "expires" (they have
-to reside within tv5 in the same list) leads to endless looping
-between cascade() and internal_add_timer() in case CONFIG_BASE_SMALL
-is one and jiffies are crossing the value 1 << 18. The bug was
-introduced between 2.6.11 and 2.6.12 (and survived for quite some
-time).
+In autofs4_d_automount(), if a mount fail occurs the AUTOFS_INF_PENDING
+mount pending flag is not cleared.
 
-This patch ensures that when cascade() is called timers within tv5 are
-not added endlessly to their own list again, instead they are added to
-the next lower tv level tv4 (as expected).
+One effect of this is when using the "browse" option, directory entry
+attributes show up with all "?"s due to the incorrect callback and
+subsequent failure return (when in fact no callback should be made).
 
-Signed-off-by: Christian Hildner <christian.hildner@siemens.com>
-Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
-Link: http://lkml.kernel.org/r/98673C87CB31274881CFFE0B65ECC87B0F5FC1963E@DEFTHW99EA4MSX.ww902.siemens.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Ian Kent <ikent@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/timer.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ fs/autofs4/root.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -63,6 +63,7 @@ EXPORT_SYMBOL(jiffies_64);
- #define TVR_SIZE (1 << TVR_BITS)
- #define TVN_MASK (TVN_SIZE - 1)
- #define TVR_MASK (TVR_SIZE - 1)
-+#define MAX_TVAL ((unsigned long)((1ULL << (TVR_BITS + 4*TVN_BITS)) - 1))
- 
- struct tvec {
- 	struct list_head vec[TVN_SIZE];
-@@ -356,11 +357,12 @@ static void internal_add_timer(struct tv
- 		vec = base->tv1.vec + (base->timer_jiffies & TVR_MASK);
- 	} else {
- 		int i;
--		/* If the timeout is larger than 0xffffffff on 64-bit
--		 * architectures then we use the maximum timeout:
-+		/* If the timeout is larger than MAX_TVAL (on 64-bit
-+		 * architectures or with CONFIG_BASE_SMALL=1) then we
-+		 * use the maximum timeout.
- 		 */
--		if (idx > 0xffffffffUL) {
--			idx = 0xffffffffUL;
-+		if (idx > MAX_TVAL) {
-+			idx = MAX_TVAL;
- 			expires = idx + base->timer_jiffies;
- 		}
- 		i = (expires >> (TVR_BITS + 3 * TVN_BITS)) & TVN_MASK;
+--- a/fs/autofs4/root.c
++++ b/fs/autofs4/root.c
+@@ -392,10 +392,12 @@ static struct vfsmount *autofs4_d_automo
+ 		ino->flags |= AUTOFS_INF_PENDING;
+ 		spin_unlock(&sbi->fs_lock);
+ 		status = autofs4_mount_wait(dentry);
+-		if (status)
+-			return ERR_PTR(status);
+ 		spin_lock(&sbi->fs_lock);
+ 		ino->flags &= ~AUTOFS_INF_PENDING;
++		if (status) {
++			spin_unlock(&sbi->fs_lock);
++			return ERR_PTR(status);
++		}
+ 	}
+ done:
+ 	if (!(ino->flags & AUTOFS_INF_EXPIRING)) {
 
 
