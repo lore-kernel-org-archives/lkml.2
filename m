@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758667Ab2JSLt0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 07:49:26 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:37502 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757478Ab2JSLtZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 07:49:25 -0400
+	id S1030237Ab2JSLvR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 07:51:17 -0400
+Received: from antcom.de ([188.40.178.216]:57742 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754053Ab2JSLvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 07:51:16 -0400
+Message-ID: <50813EB0.9040102@antcom.de>
+Date: Fri, 19 Oct 2012 13:51:12 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
 MIME-Version: 1.0
-In-Reply-To: <87ipa7p8h7.fsf@rustcorp.com.au>
-References: <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com>
-	<87txtso9xw.fsf@rustcorp.com.au>
-	<CA+55aFxZdtD51AVKLtKK95ooh8VB8-5Tt8nHsxSUT67CBRrp2g@mail.gmail.com>
-	<871ugwny1n.fsf@rustcorp.com.au>
-	<CA+55aFwTz6xadNL37H6Qb8+rWNefn0cQ0URFPfD=Ea=J54xzGg@mail.gmail.com>
-	<CA+5PVA4fE7uaxNobBMtUs7QUWA2XfM_2oKtLhb7DFRisJLy+4Q@mail.gmail.com>
-	<87ipa7p8h7.fsf@rustcorp.com.au>
-Date: Fri, 19 Oct 2012 07:49:24 -0400
-Message-ID: <CA+5PVA6q67PYagXD7WmSHjqPs2eF-oLWHFEWoXiugMQW8_ZUdg@mail.gmail.com>
-Subject: Re: RFC: sign the modules at install time
-From: Josh Boyer <jwboyer@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        David Howells <dhowells@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
+        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
+        rmallon@gmail.com
+Subject: Re: [PATCH RFC 02/15 v5] gpio: Add sysfs support to block GPIO API
+References: <1350477107-26512-1-git-send-email-stigge@antcom.de> <1350477107-26512-3-git-send-email-stigge@antcom.de> <20121017190520.GC25996@kroah.com> <507FD4EB.1080204@antcom.de> <CACRpkda35jKs9YVNDAo96=0QzdMi+jkvJAzM=nX+HCK-d5+e9Q@mail.gmail.com>
+In-Reply-To: <CACRpkda35jKs9YVNDAo96=0QzdMi+jkvJAzM=nX+HCK-d5+e9Q@mail.gmail.com>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 9:16 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Josh Boyer <jwboyer@gmail.com> writes:
->> On Thu, Oct 18, 2012 at 2:46 PM, Linus Torvalds
->> <torvalds@linux-foundation.org> wrote:
->>> On Wed, Oct 17, 2012 at 10:34 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+On 10/19/2012 12:35 PM, Linus Walleij wrote:
+> On Thu, Oct 18, 2012 at 12:07 PM, Roland Stigge <stigge@antcom.de> wrote:
+>> On 10/17/2012 09:05 PM, Greg KH wrote:
 >>>>
->>>> Hacking the keyid and signer-name to be extracted every time by
->>>> sign-file takes my modules_install time from 18.6 seconds to 19.1.  We'd
->>>> get that back easily by making sign-file a perl script anyway; it calls
->>>> out to perl 3 times already.
+>>>> +    if (value != exported) {
+>>>> +            if (value)
+>>>> +                    status = gpio_block_value_export(block);
+>>>> +            else
+>>>> +                    status = gpio_block_value_unexport(block);
 >>>
->>> Ok, that tiny slowdown seems worth the cleanup, especially if we'd get
->>> it back from somebody re-writing it in perl.
->>>
->>> Want to sign off on the two patches, or put them in your git tree?
+>>> That looks like a recipie for disaster.  Why do you allow userspace to
+>>> do this?
 >>
->> I tested Rusty's version of the 'sign modules at module_install time'
->> patch in a Fedora kernel build today.  It seems to work well enough,
->> even if we wind up signing things twice.  A brief cleanup of my patch
->> to add a modules_sign target on top of that is below.
->
-> I'm surprised.  Only the first signature (create on the unstripped
-> module) will be used by the kernel; this should fail to verify the
-> stripped module.  A quick and dirty check is:
->
-> grep -abo '~Module' /tmp/mod/lib/modules/3.7.0-rc1+/kernel/sound/pci/snd-intel8x0.ko
-> 39828:~Module
-> 40432:~Module
->
-> Perhaps eu-strip actually strips the appended signature?
+>> Exporting for gpio blocks is done as follows: writing "1" to the
+>> "exported" _device_ attribute of the gpio block creates the "values"
+>> attribute and at the same time requests the whole block (including all
+>> of its gpios) as "sysfs".
+> 
+> To me it reads like Greg's comment is basically pinpointing a flaw
+> in Brownell's initial design of gpio sysfs: that new sysfs files are
+> created and destroyed by writing into sysfs */export files from
+> userspace?
+> 
+> See commit: d8f388d8dc8d4f36539dd37c1fff62cc404ea0fc
+> 
+> The block GPIO stuff is just following that design pattern.
 
-Yes.  The abbreviated flow chart is:
+So what do you think about my just proposed idea of always having the
+"value" argument present, but only useable when "exported" is "1"? Now
+only talking about the block gpios, but later maybe also for gpios?
 
-build
-install (signed at install time now)
-find-debuginfo.sh (eu-strip) which strips off the signature from above
-modules_sign to put it back
+But I would only do this if you and Greg consider it reasonable.
 
-You are certainly correct in that if I am building outside of RPM and
-run modules_install followed by modules_sign, it will append a second
-signature.
+Thanks in advance,
 
-A further check could be done in scripts/Makefile.modsign to see if each
-module is already signed and skip it if so.  I can take a look at doing
-that next week if people think it would be worthwhile.
-
-josh
+Roland
