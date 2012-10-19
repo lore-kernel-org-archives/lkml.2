@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758445Ab2JSLSW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 07:18:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47345 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab2JSLSV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 07:18:21 -0400
-Message-ID: <1350645484.30157.3.camel@twins>
-Subject: Re: [PATCH] Do not use cpu_to_node() to find an offlined cpu's node.
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, mingo@redhat.com,
-        miaox@cn.fujitsu.com, wency@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org, linux-numa@vger.kernel.org
-Date: Fri, 19 Oct 2012 13:18:04 +0200
-In-Reply-To: <alpine.DEB.2.00.1210172027210.32271@chino.kir.corp.google.com>
-References: <1349665183-11718-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1349780256.7880.12.camel@twins>
-	 <alpine.DEB.2.00.1210091328030.32588@chino.kir.corp.google.com>
-	 <1349815676.7880.85.camel@twins>
-	 <alpine.DEB.2.00.1210091617260.10143@chino.kir.corp.google.com>
-	 <1349860216.7880.105.camel@twins>
-	 <alpine.DEB.2.00.1210101324000.28583@chino.kir.corp.google.com>
-	 <20121010133709.7eaefcdb.akpm@linux-foundation.org>
-	 <alpine.DEB.2.00.1210101351050.31237@chino.kir.corp.google.com>
-	 <alpine.DEB.2.00.1210171749150.20813@chino.kir.corp.google.com>
-	 <507F6EB3.7030705@cn.fujitsu.com>
-	 <alpine.DEB.2.00.1210172027210.32271@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1758513Ab2JSLWB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 07:22:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54731 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751032Ab2JSLWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 07:22:00 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <87txtrpb1t.fsf@rustcorp.com.au>
+References: <87txtrpb1t.fsf@rustcorp.com.au> <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com> <3179.1350512382@warthog.procyon.org.uk> <CA+55aFzEH1jguw8NB90si2uxvyO63FuKPOc8wiEPRCYwruSzRg@mail.gmail.com> <87a9vko0z7.fsf@rustcorp.com.au> <20121018121154.GE2934@hansolo.jdub.homelinux.org> <CA+55aFy677k6zvkc9n_2e6OEmOx-S1AYbOumkUOSkrE8Q+aUKw@mail.gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        Josh Boyer <jwboyer@redhat.com>, David Miller <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        pjones@redhat.com
+Subject: Re: RFC: sign the modules at install time
+Date: Fri, 19 Oct 2012 12:21:46 +0100
+Message-ID: <2140.1350645706@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-17 at 20:29 -0700, David Rientjes wrote:
+Rusty Russell <rusty@rustcorp.com.au> wrote:
+
+> > (Side note: I hope people realize that the random key is generated
+> > with a 100-year lifespan. So if you build a kernel today, you do
+> > potentially have a "year-2112 problem". I'm not horribly worried, but
+> > I *am* a bit worried about 32-bit time_t overflow and I hope 32-bit
+> > openssl doesn't do anything odd)
 > 
-> Ok, thanks for the update.  I agree that we should be clearing the mapping 
-> at node hot-remove since any cpu that would subsequently get onlined and 
-> assume one of the previous cpu's ids is not guaranteed to have the same 
-> affinity.
+> Yep, David's original patch had that problem; he fixed the kernel's x509
+> handling to use struct tm, not time_t, and now it Just Works.
 
-Would this mean we have to remap (and memcpy) per-cpu memory on
-node-plug?
+That's assuming that 32-bit *openssl* gets it right when generating the key.
+Trying it on my 32-bit laptop, I see:
 
-> I'm just really hoping that we don't touch the acpi code and that we can 
-> remove both cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved.patch 
-> and cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved-fix.patch from 
-> -mm.
+  154:d=3  hl=2 l=  15 prim: GENERALIZEDTIME   :21120925112014Z
 
-Yeah, none of this should be anywhere near ACPI, its got nothing to do
-with ACPI. Furthermore it should be be same across all archs, not just
-be weird and wonderful for x86.
+so I guess it does.
 
-
+David
