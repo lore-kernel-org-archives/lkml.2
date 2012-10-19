@@ -1,118 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab2JSFpu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 01:45:50 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:65307 "EHLO song.cn.fujitsu.com"
+	id S1752581Ab2JSFqh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 01:46:37 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:37401 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750783Ab2JSFps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 01:45:48 -0400
+	id S1751991Ab2JSFqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 01:46:35 -0400
 X-IronPort-AV: E=Sophos;i="4.80,611,1344182400"; 
-   d="scan'208";a="6028331"
-Message-ID: <5080E8BF.3020506@cn.fujitsu.com>
-Date: Fri, 19 Oct 2012 13:44:31 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: x86@kernel.org, kexec@lists.infradead.org, Avi Kivity <avi@redhat.com>,
-        mtosatti@redhat.com
-CC: linux-kernel@vger.kernel.org, "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: [PATCH 1/2] x86/kexec: VMCLEAR vmcss on all cpus if necessary
-References: <5080E813.7030302@cn.fujitsu.com>
-In-Reply-To: <5080E813.7030302@cn.fujitsu.com>
+   d="scan'208";a="6028348"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: stable@vger.kernel.org, tony.luck@intel.com, bp@amd64.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        miaox@cn.fujitsu.com, laijs@cn.fujitsu.com, wency@cn.fujitsu.com,
+        x86@kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/2] Do not change worker's running cpu in cmci_rediscover().
+Date: Fri, 19 Oct 2012 13:45:26 +0800
+Message-Id: <1350625528-1385-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/19 13:45:23,
+ 2012/10/19 13:46:09,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/19 13:45:24,
-	Serialize complete at 2012/10/19 13:45:24
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+ 2012/10/19 13:46:10,
+	Serialize complete at 2012/10/19 13:46:10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides a way to VMCLEAR vmcss related to guests
-on all cpus before executing the VMXOFF when doing kdump. This
-is used to ensure the VMCSs in the vmcore updated and
-non-corrupted.
+1. cmci_rediscover() is only called by the CPU_POST_DEAD event handler, which
+means the corresponding cpu has already dead. As a result, it won't be accessed
+in the for_each_online_cpu loop.
+So, we could change the if(cpu == dying) statement into a WARN_ON_ONCE().
 
-Signed-off-by: zhangyanfei <zhangyanfei@cn.fujitsu.com>
----
- arch/x86/include/asm/kexec.h |    2 ++
- arch/x86/kernel/crash.c      |   27 +++++++++++++++++++++++++++
- 2 files changed, 29 insertions(+), 0 deletions(-)
+2. cmci_rediscover() used set_cpus_allowed_ptr() to change the current process's
+running cpu, and migrate itself to the dest cpu. But worker processes are not
+allowed to be migrated. If current is a worker, the worker will be migrated to
+another cpu, but the corresponding  worker_pool is still on the original cpu.
 
-diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
-index 317ff17..fc05440 100644
---- a/arch/x86/include/asm/kexec.h
-+++ b/arch/x86/include/asm/kexec.h
-@@ -163,6 +163,8 @@ struct kimage_arch {
- };
- #endif
- 
-+extern void (*crash_clear_loaded_vmcss)(void);
-+
- #endif /* __ASSEMBLY__ */
- 
- #endif /* _ASM_X86_KEXEC_H */
-diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-index 13ad899..7289976 100644
---- a/arch/x86/kernel/crash.c
-+++ b/arch/x86/kernel/crash.c
-@@ -16,6 +16,7 @@
- #include <linux/delay.h>
- #include <linux/elf.h>
- #include <linux/elfcore.h>
-+#include <linux/module.h>
- 
- #include <asm/processor.h>
- #include <asm/hardirq.h>
-@@ -30,6 +31,22 @@
- 
- int in_crash_kexec;
- 
-+/*
-+ * This is used to VMCLEAR vmcss loaded on all
-+ * cpus. And when loading kvm_intel module, the
-+ * function pointer will be made valid.
-+ */
-+void (*crash_clear_loaded_vmcss)(void) = NULL;
-+EXPORT_SYMBOL_GPL(crash_clear_loaded_vmcss);
-+
-+static void cpu_emergency_clear_loaded_vmcss(void)
-+{
-+	if (crash_clear_loaded_vmcss &&
-+	    cpu_has_vmx() && cpu_vmx_enabled()) {
-+		crash_clear_loaded_vmcss();
-+	}
-+}
-+
- #if defined(CONFIG_SMP) && defined(CONFIG_X86_LOCAL_APIC)
- 
- static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
-@@ -46,6 +63,11 @@ static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
- #endif
- 	crash_save_cpu(regs, cpu);
- 
-+	/*
-+	 * VMCLEAR vmcss loaded on all cpus if needed.
-+	 */
-+	cpu_emergency_clear_loaded_vmcss();
-+
- 	/* Disable VMX or SVM if needed.
- 	 *
- 	 * We need to disable virtualization on all CPUs.
-@@ -88,6 +110,11 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
- 
- 	kdump_nmi_shootdown_cpus();
- 
-+	/*
-+	 * VMCLEAR vmcss loaded on this cpu if needed.
-+	 */
-+	cpu_emergency_clear_loaded_vmcss();
-+
- 	/* Booting kdump kernel with VMX or SVM enabled won't work,
- 	 * because (among other limitations) we can't disable paging
- 	 * with the virt flags.
--- 
-1.7.1
+In this case, the following BUG_ON in try_to_wake_up_local() will be triggered:
+BUG_ON(rq != this_rq());
+
+This will cause the kernel panic.
+
+This patch removes the set_cpus_allowed_ptr() call, and put the cmci rediscover
+jobs onto all the other cpus using system_wq. This could bring some delay for
+the jobs.
+
+The following is call trace.
+
+[ 6155.451107] ------------[ cut here ]------------
+[ 6155.452019] kernel BUG at kernel/sched/core.c:1654!
+......
+[ 6155.452019] RIP: 0010:[<ffffffff810add15>]  [<ffffffff810add15>] try_to_wake_up_local+0x115/0x130
+......
+[ 6155.452019] Call Trace:
+[ 6155.452019]  [<ffffffff8166fc14>] __schedule+0x764/0x880
+[ 6155.452019]  [<ffffffff81670059>] schedule+0x29/0x70
+[ 6155.452019]  [<ffffffff8166de65>] schedule_timeout+0x235/0x2d0
+[ 6155.452019]  [<ffffffff810db57d>] ? mark_held_locks+0x8d/0x140
+[ 6155.452019]  [<ffffffff810dd463>] ? __lock_release+0x133/0x1a0
+[ 6155.452019]  [<ffffffff81671c50>] ? _raw_spin_unlock_irq+0x30/0x50
+[ 6155.452019]  [<ffffffff810db8f5>] ? trace_hardirqs_on_caller+0x105/0x190
+[ 6155.452019]  [<ffffffff8166fefb>] wait_for_common+0x12b/0x180
+[ 6155.452019]  [<ffffffff810b0b30>] ? try_to_wake_up+0x2f0/0x2f0
+[ 6155.452019]  [<ffffffff8167002d>] wait_for_completion+0x1d/0x20
+[ 6155.452019]  [<ffffffff8110008a>] stop_one_cpu+0x8a/0xc0
+[ 6155.452019]  [<ffffffff810abd40>] ? __migrate_task+0x1a0/0x1a0
+[ 6155.452019]  [<ffffffff810a6ab8>] ? complete+0x28/0x60
+[ 6155.452019]  [<ffffffff810b0fd8>] set_cpus_allowed_ptr+0x128/0x130
+[ 6155.452019]  [<ffffffff81036785>] cmci_rediscover+0xf5/0x140
+[ 6155.452019]  [<ffffffff816643c0>] mce_cpu_callback+0x18d/0x19d
+[ 6155.452019]  [<ffffffff81676187>] notifier_call_chain+0x67/0x150
+[ 6155.452019]  [<ffffffff810a03de>] __raw_notifier_call_chain+0xe/0x10
+[ 6155.452019]  [<ffffffff81070470>] __cpu_notify+0x20/0x40
+[ 6155.452019]  [<ffffffff810704a5>] cpu_notify_nofail+0x15/0x30
+[ 6155.452019]  [<ffffffff81655182>] _cpu_down+0x262/0x2e0
+[ 6155.452019]  [<ffffffff81655236>] cpu_down+0x36/0x50
+[ 6155.452019]  [<ffffffff813d3eaa>] acpi_processor_remove+0x50/0x11e
+[ 6155.452019]  [<ffffffff813a6978>] acpi_device_remove+0x90/0xb2
+[ 6155.452019]  [<ffffffff8143cbec>] __device_release_driver+0x7c/0xf0
+[ 6155.452019]  [<ffffffff8143cd6f>] device_release_driver+0x2f/0x50
+[ 6155.452019]  [<ffffffff813a7870>] acpi_bus_remove+0x32/0x6d
+[ 6155.452019]  [<ffffffff813a7932>] acpi_bus_trim+0x87/0xee
+[ 6155.452019]  [<ffffffff813a7a21>] acpi_bus_hot_remove_device+0x88/0x16b
+[ 6155.452019]  [<ffffffff813a33ee>] acpi_os_execute_deferred+0x27/0x34
+[ 6155.452019]  [<ffffffff81090589>] process_one_work+0x219/0x680
+[ 6155.452019]  [<ffffffff81090528>] ? process_one_work+0x1b8/0x680
+[ 6155.452019]  [<ffffffff813a33c7>] ? acpi_os_wait_events_complete+0x23/0x23
+[ 6155.452019]  [<ffffffff810923be>] worker_thread+0x12e/0x320
+[ 6155.452019]  [<ffffffff81092290>] ? manage_workers+0x110/0x110
+[ 6155.452019]  [<ffffffff81098396>] kthread+0xc6/0xd0
+[ 6155.452019]  [<ffffffff8167c4c4>] kernel_thread_helper+0x4/0x10
+[ 6155.452019]  [<ffffffff81671f30>] ? retint_restore_args+0x13/0x13
+[ 6155.452019]  [<ffffffff810982d0>] ? __init_kthread_worker+0x70/0x70
+[ 6155.452019]  [<ffffffff8167c4c0>] ? gs_change+0x13/0x13
+
+
+Tang Chen (2):
+  Replace if statement with WARN_ON_ONCE() in cmci_rediscover().
+  Do not change worker's running cpu in cmci_rediscover().
+
+ arch/x86/kernel/cpu/mcheck/mce_intel.c |   34 +++++++++++++++++--------------
+ 1 files changed, 19 insertions(+), 15 deletions(-)
 
