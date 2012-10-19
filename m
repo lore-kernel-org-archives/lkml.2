@@ -1,41 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759206Ab2JSVQm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 17:16:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51320 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754584Ab2JSVQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 17:16:39 -0400
-Message-Id: <20121019211626.219447423@napanee.usersys.redhat.com>
-User-Agent: quilt/0.48-1
-Date: Fri, 19 Oct 2012 17:16:26 -0400
-From: Aristeu Rozanski <aris@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        James Morris <jmorris@namei.org>, Pavel Emelyanov <xemul@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>, Jiri Slaby <jslaby@suse.cz>,
-        cgroups@vger.kernel.org
-Subject: [PATCH 0/3] Rebase device_cgroup v2 patchset
+	id S1757949Ab2JSVX6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 17:23:58 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:59526 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754795Ab2JSVX4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 17:23:56 -0400
+Date: Fri, 19 Oct 2012 12:34:34 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: avi@redhat.com, gleb@redhat.com, mtosatti@redhat.com, davej@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] kvm, async_pf: exit idleness when handling
+ KVM_PV_REASON_PAGE_NOT_PRESENT
+Message-ID: <20121019193434.GO2518@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1350663115-11373-1-git-send-email-sasha.levin@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350663115-11373-1-git-send-email-sasha.levin@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101921-5518-0000-0000-000008949A3B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset rebases the v2 of the patchset since the v1 was pushed into -rc1
-instead. The last patch, not present on previous patchset, fixes the
-permission check when allowing everything in a cgroup.
+On Fri, Oct 19, 2012 at 12:11:55PM -0400, Sasha Levin wrote:
+> KVM_PV_REASON_PAGE_NOT_PRESENT kicks cpu out of idleness, but we haven't
+> marked that spot as an exit from idleness.
+> 
+> Not doing so can cause RCU warnings such as:
+> 
+> [  732.788386] ===============================
+> [  732.789803] [ INFO: suspicious RCU usage. ]
+> [  732.790032] 3.7.0-rc1-next-20121019-sasha-00002-g6d8d02d-dirty #63 Tainted: G        W
+> [  732.790032] -------------------------------
+> [  732.790032] include/linux/rcupdate.h:738 rcu_read_lock() used illegally while idle!
+> [  732.790032]
+> [  732.790032] other info that might help us debug this:
+> [  732.790032]
+> [  732.790032]
+> [  732.790032] RCU used illegally from idle CPU!
+> [  732.790032] rcu_scheduler_active = 1, debug_locks = 1
+> [  732.790032] RCU used illegally from extended quiescent state!
+> [  732.790032] 2 locks held by trinity-child31/8252:
+> [  732.790032]  #0:  (&rq->lock){-.-.-.}, at: [<ffffffff83a67528>] __schedule+0x178/0x8f0
+> [  732.790032]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff81152bde>] cpuacct_charge+0xe/0x200
+> [  732.790032]
+> [  732.790032] stack backtrace:
+> [  732.790032] Pid: 8252, comm: trinity-child31 Tainted: G        W    3.7.0-rc1-next-20121019-sasha-00002-g6d8d02d-dirty #63
+> [  732.790032] Call Trace:
+> [  732.790032]  [<ffffffff8118266b>] lockdep_rcu_suspicious+0x10b/0x120
+> [  732.790032]  [<ffffffff81152c60>] cpuacct_charge+0x90/0x200
+> [  732.790032]  [<ffffffff81152bde>] ? cpuacct_charge+0xe/0x200
+> [  732.790032]  [<ffffffff81158093>] update_curr+0x1a3/0x270
+> [  732.790032]  [<ffffffff81158a6a>] dequeue_entity+0x2a/0x210
+> [  732.790032]  [<ffffffff81158ea5>] dequeue_task_fair+0x45/0x130
+> [  732.790032]  [<ffffffff8114ae29>] dequeue_task+0x89/0xa0
+> [  732.790032]  [<ffffffff8114bb9e>] deactivate_task+0x1e/0x20
+> [  732.790032]  [<ffffffff83a67c29>] __schedule+0x879/0x8f0
+> [  732.790032]  [<ffffffff8117e20d>] ? trace_hardirqs_off+0xd/0x10
+> [  732.790032]  [<ffffffff810a37a5>] ? kvm_async_pf_task_wait+0x1d5/0x2b0
+> [  732.790032]  [<ffffffff83a67cf5>] schedule+0x55/0x60
+> [  732.790032]  [<ffffffff810a37c4>] kvm_async_pf_task_wait+0x1f4/0x2b0
+> [  732.790032]  [<ffffffff81139e50>] ? abort_exclusive_wait+0xb0/0xb0
+> [  732.790032]  [<ffffffff81139c25>] ? prepare_to_wait+0x25/0x90
+> [  732.790032]  [<ffffffff810a3a66>] do_async_page_fault+0x56/0xa0
+> [  732.790032]  [<ffffffff83a6a6e8>] async_page_fault+0x28/0x30
+> 
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 
- device_cgroup.c |   87 +++++++++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 61 insertions(+), 26 deletions(-)
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Cc: Dave Jones <davej@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: James Morris <jmorris@namei.org>
-Cc: Pavel Emelyanov <xemul@openvz.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+> ---
+>  arch/x86/kernel/kvm.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> index b3e5e51..4180a87 100644
+> --- a/arch/x86/kernel/kvm.c
+> +++ b/arch/x86/kernel/kvm.c
+> @@ -247,7 +247,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
+>  		break;
+>  	case KVM_PV_REASON_PAGE_NOT_PRESENT:
+>  		/* page is swapped out by the host. */
+> +		rcu_irq_enter();
+> +		exit_idle();
+>  		kvm_async_pf_task_wait((u32)read_cr2());
+> +		rcu_irq_exit();
+>  		break;
+>  	case KVM_PV_REASON_PAGE_READY:
+>  		rcu_irq_enter();
+> -- 
+> 1.7.12.3
+> 
 
--- 
-Aristeu
