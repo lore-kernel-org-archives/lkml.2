@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832Ab2JSBVz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 21:21:55 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:46082 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751026Ab2JSBVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 21:21:53 -0400
-Message-ID: <1350609711.22385.21.camel@joe-AO722>
-Subject: Re: [PATCH] Fix printing when no interrupt is allocated
-From: Joe Perches <joe@perches.com>
-To: Daniel J Blueman <daniel@numascale-asia.com>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 18 Oct 2012 18:21:51 -0700
-In-Reply-To: <1350606821-29813-1-git-send-email-daniel@numascale-asia.com>
-References: <1350606821-29813-1-git-send-email-daniel@numascale-asia.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756075Ab2JSBWl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 21:22:41 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:51246 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572Ab2JSBWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 21:22:40 -0400
+Message-ID: <5080AB55.9010609@oracle.com>
+Date: Fri, 19 Oct 2012 09:22:29 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+MIME-Version: 1.0
+To: Ron Mercer <ron.mercer@qlogic.com>, Linux-Driver@qlogic.com,
+        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
+        Joe Jin <joe.jin@oracle.com>
+CC: netdev <netdev@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        Greg Marsden <greg.marsden@oracle.com>
+Subject: [PATCH] qla3xxx: Ensure request/response queue addr writes to the
+ registers
+Content-Type: multipart/mixed;
+ boundary="------------080607040200060605000903"
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-19 at 08:33 +0800, Daniel J Blueman wrote:
-> Previously a new line is implicitly added in the no GSI case:
-> 
-> [    7.185182] pci 0001:00:12.0: can't derive routing for PCI INT A
-> [    7.191352] pci 0001:00:12.0: PCI INT A: no GSI
-> [    7.195956]  - using ISA IRQ 10
-> 
-> The code thus prints a blank line where no legacy IRQ is available:
-> 
-> [    1.650124] pci 0000:00:14.0: can't derive routing for PCI INT A
-> [    1.650126] pci 0000:00:14.0: PCI INT A: no GSI
-> [    1.650126] 
-> [    1.650180] pci 0000:00:14.0: can't derive routing for PCI INT A
-> 
-> Fix this by making the newline explicit and removing the superfluous
-> one.
+This is a multi-part message in MIME format.
+--------------080607040200060605000903
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
+Before use the request and response queue addr, make sure it has wrote
+to the registers.
 
-I think this is a better fix:
+Signed-off-by: Joe Jin <joe.jin@oracle.com>
+Cc: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
+Cc: Ron Mercer <ron.mercer@qlogic.com>
+---
+ drivers/net/ethernet/qlogic/qla3xxx.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
- drivers/acpi/pci_irq.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
-index 0eefa12..9b98f9f 100644
---- a/drivers/acpi/pci_irq.c
-+++ b/drivers/acpi/pci_irq.c
-@@ -459,19 +459,20 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
- 	 */
- 	if (gsi < 0) {
- 		u32 dev_gsi;
--		dev_warn(&dev->dev, "PCI INT %c: no GSI", pin_name(pin));
- 		/* Interrupt Line values above 0xF are forbidden */
- 		if (dev->irq > 0 && (dev->irq <= 0xF) &&
- 		    (acpi_isa_irq_to_gsi(dev->irq, &dev_gsi) == 0)) {
--			printk(" - using ISA IRQ %d\n", dev->irq);
-+			dev_warn(&dev->dev,
-+				 "PCI INT %c: no GSI - using ISA IRQ %d\n",
-+				 pin_name(pin), dev->irq);
- 			acpi_register_gsi(&dev->dev, dev_gsi,
- 					  ACPI_LEVEL_SENSITIVE,
- 					  ACPI_ACTIVE_LOW);
--			return 0;
- 		} else {
--			printk("\n");
--			return 0;
-+			dev_warn(&dev->dev, "PCI INT %c: no GSI\n",
-+				 pin_name(pin));
- 		}
-+		return 0;
- 	}
+diff --git a/drivers/net/ethernet/qlogic/qla3xxx.c b/drivers/net/ethernet/qlogic/qla3xxx.c
+index df09b1c..f745ade 100644
+--- a/drivers/net/ethernet/qlogic/qla3xxx.c
++++ b/drivers/net/ethernet/qlogic/qla3xxx.c
+@@ -2525,6 +2525,12 @@ static int ql_alloc_net_req_rsp_queues(struct ql3_adapter *qdev)
+ 	qdev->req_q_size =
+ 	    (u32) (NUM_REQ_Q_ENTRIES * sizeof(struct ob_mac_iocb_req));
  
- 	rc = acpi_register_gsi(&dev->dev, gsi, triggering, polarity);
++	/*
++	 * The barrier is required to ensure request and response queue
++	 * addr writes to the registers.
++	 */
++	wmb();
++
+ 	qdev->req_q_virt_addr =
+ 	    pci_alloc_consistent(qdev->pdev,
+ 				 (size_t) qdev->req_q_size,
+-- 
+1.7.11.7
 
 
+--------------080607040200060605000903
+Content-Type: text/plain; charset=us-ascii;
+ name="Attached Message Part"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="Attached Message Part"
+
+
+--------------080607040200060605000903--
