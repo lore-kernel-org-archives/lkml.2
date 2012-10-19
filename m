@@ -1,103 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758567Ab2JSOHI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 10:07:08 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:56587 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754535Ab2JSOHG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 10:07:06 -0400
-Message-ID: <50815E85.8080600@gmail.com>
-Date: Fri, 19 Oct 2012 09:07:01 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1758709Ab2JSOH1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 10:07:27 -0400
+Received: from mail.kernel.org ([198.145.19.201]:41797 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758587Ab2JSOHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 10:07:21 -0400
+Date: Fri, 19 Oct 2012 07:07:20 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: stable@vger.kernel.org, tony.luck@intel.com, bp@amd64.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        miaox@cn.fujitsu.com, laijs@cn.fujitsu.com, wency@cn.fujitsu.com,
+        x86@kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] Replace if statement with WARN_ON_ONCE() in
+ cmci_rediscover().
+Message-ID: <20121019140720.GA27454@kroah.com>
+References: <1350625528-1385-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1350625528-1385-2-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Fabio Estevam <festevam@gmail.com>
-CC: Fabio Estevam <fabio.estevam@freescale.com>, sameo@linux.intel.com,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, shawn.guo@linaro.org,
-        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v2 1/2] ARM: multi_v7_defconfig: Add ARCH_MXC
-References: <1350605046-21358-1-git-send-email-festevam@gmail.com>
-In-Reply-To: <1350605046-21358-1-git-send-email-festevam@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350625528-1385-2-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding Arnd and Olof.
-
-On 10/18/2012 07:04 PM, Fabio Estevam wrote:
-> From: Fabio Estevam <fabio.estevam@freescale.com>
+On Fri, Oct 19, 2012 at 01:45:27PM +0800, Tang Chen wrote:
+> cmci_rediscover() is only called by the CPU_POST_DEAD event handler,
+> which means the corresponding cpu has already dead. As a result, it
+> won't be accessed in the for_each_online_cpu loop.
+> So, we could change the if(cpu == dying) statement into a WARN_ON_ONCE().
 > 
-> Let ARCH_MXC be covered by multi_v7_defconfig.
-> 
-> Allow booting mx6 via NFS.
-
-Now we can start debating what should or shouldn't be in shared
-defconfigs. :)
-
-My intent with this defconfig was to only enable required options and
-all drivers for platforms and leave features to their defaults. I don't
-feel that strongly about it. We should have some general guideline here
-so it's not a free for all. You can still have a defconfig for your
-platform as well.
-
-Rob
-
-> 
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 > ---
-> Changes since v1:
-> - Provide a more complete config that allows booting mx6 via NFS
-> 
->  arch/arm/configs/multi_v7_defconfig |   13 +++++++++++++
->  1 file changed, 13 insertions(+)
-> 
-> diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-> index 159f75f..df1e563 100644
-> --- a/arch/arm/configs/multi_v7_defconfig
-> +++ b/arch/arm/configs/multi_v7_defconfig
-> @@ -5,6 +5,8 @@ CONFIG_ARCH_MVEBU=y
->  CONFIG_MACH_ARMADA_370=y
->  CONFIG_MACH_ARMADA_XP=y
->  CONFIG_ARCH_HIGHBANK=y
-> +CONFIG_ARCH_MXC=y
-> +CONFIG_SOC_IMX6Q=y
->  CONFIG_ARCH_SOCFPGA=y
->  # CONFIG_ARCH_VEXPRESS_CORTEX_A5_A9_ERRATA is not set
->  CONFIG_ARM_ERRATA_754322=y
-> @@ -17,18 +19,29 @@ CONFIG_ARM_APPENDED_DTB=y
->  CONFIG_VFP=y
->  CONFIG_NEON=y
->  CONFIG_NET=y
-> +CONFIG_PACKET=y
-> +CONFIG_UNIX=y
-> +CONFIG_INET=y
-> +CONFIG_IP_PNP=y
-> +CONFIG_IP_PNP_DHCP=y
->  CONFIG_ATA=y
->  CONFIG_SATA_HIGHBANK=y
->  CONFIG_NETDEVICES=y
->  CONFIG_NET_CALXEDA_XGMAC=y
->  CONFIG_SMSC911X=y
->  CONFIG_STMMAC_ETH=y
-> +CONFIG_NFS_FS=y
-> +CONFIG_NFS_V3_ACL=y
-> +CONFIG_NFS_V4=y
-> +CONFIG_ROOT_NFS=y
->  CONFIG_SERIO_AMBAKMI=y
->  CONFIG_SERIAL_8250=y
->  CONFIG_SERIAL_8250_CONSOLE=y
->  CONFIG_SERIAL_8250_DW=y
->  CONFIG_SERIAL_AMBA_PL011=y
->  CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
-> +CONFIG_SERIAL_IMX=y
-> +CONFIG_SERIAL_IMX_CONSOLE=y
->  CONFIG_SERIAL_OF_PLATFORM=y
->  CONFIG_IPMI_HANDLER=y
->  CONFIG_IPMI_SI=y
-> 
+>  arch/x86/kernel/cpu/mcheck/mce_intel.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 
+<formletter>
+
+This is not the correct way to submit patches for inclusion in the
+stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+for how to do this properly.
+
+</formletter>
