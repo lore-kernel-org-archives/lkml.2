@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab2JSRBX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 13:01:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33507 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754060Ab2JSRBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 13:01:22 -0400
-Message-ID: <5081875D.90105@suse.cz>
-Date: Fri, 19 Oct 2012 19:01:17 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1757016Ab2JSRFN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 13:05:13 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:54316 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab2JSRFL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 13:05:11 -0400
+Date: Fri, 19 Oct 2012 10:05:39 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Robert Richter <robert.richter@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Anton Blanchard <anton@au1.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>, linuxppc-dev@ozlabs.org,
+        Paul Mackerras <paulus@samba.org>, mpjohn@us.ibm.com,
+        Ingo Molnar <mingo@kernel.org>, Arun Sharma <asharma@fb.com>
+Subject: Re: [RFC][PATCH] perf: Add a few generic stalled-cycles events
+Message-ID: <20121019170538.GB28183@us.ibm.com>
+References: <20121012012839.GA15348@us.ibm.com>
+ <20121015155534.GR8285@erda.amd.com>
+ <20121016100809.GS8285@erda.amd.com>
+ <CABPqkBRd2wfjd1ObCkM+TSSwt7C9WP65dEE9POSyDK1ccvNL8A@mail.gmail.com>
 MIME-Version: 1.0
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] kconfig: add a function to get the CONFIG_ prefix
-References: <1350589816-20447-1-git-send-email-yann.morin.1998@free.fr> <1350589816-20447-3-git-send-email-yann.morin.1998@free.fr>
-In-Reply-To: <1350589816-20447-3-git-send-email-yann.morin.1998@free.fr>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBRd2wfjd1ObCkM+TSSwt7C9WP65dEE9POSyDK1ccvNL8A@mail.gmail.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12101917-2876-0000-0000-0000012F92C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.10.2012 21:50, Yann E. MORIN wrote:
-> -#ifndef CONFIG_
-> -#define CONFIG_ "CONFIG_"
-> +/* Those two defines copied from include/linux/stringify.h */
-> +#define __stringify_1(x...)	#x
-> +#define __stringify(x...)	__stringify_1(x)
-> +static inline const char *CONFIG_prefix(void)
-> +{
-> +	return __stringify(CONFIG_);
+Stephane Eranian [eranian@google.com] wrote:
+| So all in all, I think this is not a very good idea. You have to put
+| this into the tool or a library that auto-detects the
+| host CPU and programs the right set of events.
+| 
+| We've had that discussion many times. Just reiterating my personal
+| opinion on this.
 
-This changes the semantics of the CONFIG_ macro. Previously, a
-double-quoted string was accepted, now you have to define it to a token
-that is turned into a string. Why don't you keep it as before and just do a
+Yes that would work too. One drawback is that the hardware events
+will be in the tool, while the software/tracepoint events in the
+kernel sysfs representation.
 
-return CONFIG_;
+Or is that the reason we want all events in one place (sysfs) ?
 
-in the function?
+Sukadev
 
-Michal
