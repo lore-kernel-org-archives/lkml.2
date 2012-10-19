@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab2JSGxK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 02:53:10 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:33092 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976Ab2JSGxJ (ORCPT
+	id S1754095Ab2JSGyS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 02:54:18 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:63514 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752876Ab2JSGyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 02:53:09 -0400
+	Fri, 19 Oct 2012 02:54:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <20121019055943.GA4185@localhost.localdomain>
-References: <1350559712-8514-1-git-send-email-shiraz.hashim@st.com>
-	<CAOh2x=mdtkW=a-xv1BeHxoGsgbF5s+4B8QmZBdvqnWHr30Ap2A@mail.gmail.com>
-	<20121019055943.GA4185@localhost.localdomain>
-Date: Fri, 19 Oct 2012 12:23:08 +0530
-X-Google-Sender-Auth: L0HTjR0qbputBtkHP-9b8avNvEo
-Message-ID: <CAOh2x=kXu2EG4GFaW8HpSi=VFLvGEMEyeN_3L74wU2sfe1Z=uQ@mail.gmail.com>
-Subject: Re: [PATCH] pwm: add spear pwm driver support
-From: viresh kumar <viresh.kumar@linaro.org>
-To: Shiraz Hashim <shiraz.hashim@st.com>
-Cc: thierry.reding@avionic-design.de, spear--sw-devel@lists.codex.cro.st.com,
-        linux-kernel@vger.kernel.org, spear-devel@list.st.com
+In-Reply-To: <1350629202-9664-3-git-send-email-wency@cn.fujitsu.com>
+References: <1350629202-9664-1-git-send-email-wency@cn.fujitsu.com> <1350629202-9664-3-git-send-email-wency@cn.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Fri, 19 Oct 2012 02:53:56 -0400
+X-Google-Sender-Auth: xGqSXfui-uk97YQBoMZ5-ZLEReI
+Message-ID: <CAHGf_=r017AX=mcTNj=XEnTReuwpJgyKWz-f4i=2bVOt7E0udQ@mail.gmail.com>
+Subject: Re: [PATCH v3 2/9] suppress "Device nodeX does not have a release()
+ function" warning
+To: wency@cn.fujitsu.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
+        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, minchan.kim@gmail.com, akpm@linux-foundation.org,
+        isimatu.yasuaki@jp.fujitsu.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 11:29 AM, Shiraz Hashim <shiraz.hashim@st.com> wrote:
-> On Thu, Oct 18, 2012 at 11:11:06PM +0530, viresh kumar wrote:
->> On Thu, Oct 18, 2012 at 4:58 PM, Shiraz Hashim <shiraz.hashim@st.com> wrote:
-
->> > +static int __devexit spear_pwm_remove(struct platform_device *pdev)
->> > +{
->> > +       struct spear_pwm_chip *pc = platform_get_drvdata(pdev);
->> > +       int i;
->> > +
->> > +       if (WARN_ON(!pc))
->> > +               return -ENODEV;
->> > +
->> > +       for (i = 0; i < NUM_PWM; i++) {
->> > +               struct pwm_device *pwmd = &pc->chip.pwms[i];
->> > +
->> > +               if (!test_bit(PWMF_ENABLED, &pwmd->flags))
-
-One point here: If i am not wrong you want to disable pwmd if it is enabled.
-Shouldn't you check for if (test_bit(PWMF_ENABLED, &pwmd->flags)) instead?
-
->> > +                       if (clk_prepare_enable(pc->clk) < 0)
->> > +                               continue;
->> > +
->> > +               spear_pwm_writel(pc, i, PWMCR, 0);
->> > +               clk_disable_unprepare(pc->clk);
->> > +       }
->>
->> You are enabling/disabling clock N times here and each of these will
->> write to an register. Do something better.
->>
+On Fri, Oct 19, 2012 at 2:46 AM,  <wency@cn.fujitsu.com> wrote:
+> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 >
-> I need to shut down all active pwms, how else would you suggest that ?
+> When calling unregister_node(), the function shows following message at
+> device_release().
+>
+> "Device 'node2' does not have a release() function, it is broken and must
+> be fixed."
+>
+> The reason is node's device struct does not have a release() function.
+>
+> So the patch registers node_device_release() to the device's release()
+> function for suppressing the warning message. Additionally, the patch adds
+> memset() to initialize a node struct into register_node(). Because the node
+> struct is part of node_devices[] array and it cannot be freed by
+> node_device_release(). So if system reuses the node struct, it has a garbage.
+>
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 
-Sorry, i misread the code on the second go :(
+I still think node array should be converted node pointer array and
+node_device_release() free memory as other typical drivers.
+However, this is acceptable as first step.
 
-I am proposing something like:
-
-static int __devexit spear_pwm_remove(struct platform_device *pdev)
-{
-       struct spear_pwm_chip *pc = platform_get_drvdata(pdev);
-       int i, clk_enabled = 0;
-
-       if (WARN_ON(!pc))
-               return -ENODEV;
-
-       for (i = 0; i < NUM_PWM; i++) {
-               struct pwm_device *pwmd = &pc->chip.pwms[i];
-
-               if (!test_bit(PWMF_ENABLED, &pwmd->flags) && !clk_enabled)
-                       if (clk_prepare_enable(pc->clk) < 0)
-                               continue;
-		       else
-			       clk_enabled++;
-
-               spear_pwm_writel(pc, i, PWMCR, 0);
-       }
-
-       if (clk_enabled)
-	       clk_disable_unprepare(pc->clk);
-       ...
-}
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
