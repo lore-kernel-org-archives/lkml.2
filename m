@@ -1,224 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030309Ab2JSMSO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 08:18:14 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:52191 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030253Ab2JSMSM (ORCPT
+	id S1758506Ab2JSMTj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 08:19:39 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:37797 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754155Ab2JSMTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 08:18:12 -0400
+	Fri, 19 Oct 2012 08:19:37 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: [RFC] linux/time.h vs. sys/time.h mess (was [PATCH 1/2] [media] remove include/linux/dvb/dmx.h)
+Date: Fri, 19 Oct 2012 14:20:25 +0200
+Message-ID: <1866001.vORa2QqSgB@avalon>
+User-Agent: KMail/4.9.2 (Linux/3.4.9-gentoo; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20121019082116.145ebe92@redhat.com>
+References: <1350643392-2193-1-git-send-email-mchehab@redhat.com> <20121019082116.145ebe92@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20120823141507.356715836@google.com>
-References: <20120823141422.444396696@google.com>
-	<20120823141507.356715836@google.com>
-Date: Fri, 19 Oct 2012 14:18:12 +0200
-Message-ID: <CAKfTPtDjzvNXKi_yNZJR6T9jix2ZyUYu=fGqmNufAK01anam5A@mail.gmail.com>
-Subject: Re: [patch 15/16] sched: implement usage tracking
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: pjt@google.com
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Venki Pallipadi <venki@google.com>, Ben Segall <bsegall@google.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Hi Mauro,
 
-I think that you have forgot to reset .usage_avg_sum in the
-__sched_fork as it's already done for .runnable_avg_sum and
-.usage_avg_sum
+(CC'ing LKML)
 
-And it seems that this reset is not corrected in the latest version in
-your git repo:
-http://git.kernel.org/?p=linux/kernel/git/pjt/sched.git;a=blob;f=kernel/sched/core.c;h=df55e2ecdd2398648c7d01e318070d06b845a5b0;hb=refs/heads/load_tracking#l1535
+On Friday 19 October 2012 08:21:16 Mauro Carvalho Chehab wrote:
+> Em Fri, 19 Oct 2012 07:43:11 -0300
+> 
+> Mauro Carvalho Chehab <mchehab@redhat.com> escreveu:
+> > -#include <linux/time.h>
+> > -#include <uapi/linux/dvb/dmx.h>
+> > -
+> > -#endif /*_DVBDMX_H_*/
+> 
+> Just to not discard a valid comment on IRC, Laurent proposed that we
+> should investigate if we can, instead, move:
+> 
+> 	#include <linux/time.h>
+> 
+> to both dmx.h and videodev2.h, letting it to be included by both userspace
+> and Kernelspace.
+> 
+> I remember this used to cause compilation breakage in the past, as some
+> userspace programs need to include <sys/time.h> and this used to conflict
+> with <linux/time.h>.
+> 
+> I'm not sure if this got fixed there. if so, Laurent has a point.
 
+It's still not solved, but that's what the proper fix should be.
+
+Several UAPI headers use struct timeval or struct timespec. Kernel code and 
+user space code thus need to include the header(s) that define those 
+structures, either directly or indirectly.
+
+In kernel space struct timeval and struct timespec are defined in 
+include/uapi/linux/time.h. In user space they're defined in <sys/time.h>. No 
+proper conditional compilation exists in those headers to guard against 
+multiple definitions, so they can't be included together.
+
+On the kernel side <sys/time.h> isn't available, so we can include 
+<linux/time.h> in the headers that use the timeval and timespec structures. 
+This "self-contained" headers mechanism avoids forcing all users of those 
+headers to explicitly include <linux/time.h>.
+
+However, this then breaks user space applications that include both 
+<sys/time.h> and a kernel header that includes <linux/time.h>. The way we've 
+dealt with that until now is by including either <linux/time.h> or 
+<sys/time.h> depending on __KERNEL__
+
+#ifdef __KERNEL__
+#include <linux/time.h>
+#else
+#include <sys/kernel.h>
+#endif
+
+in our user-facing headers. The recent UAPI disintegration patches resulted in 
+nearly empty headers in include/linux/ that just #include both <linux/time.h> 
+and the corresponding UAPI header. For instance include/linux/videodev2.h is 
+now just
+
+#ifndef __LINUX_VIDEODEV2_H
+#define __LINUX_VIDEODEV2_H
+
+#include <linux/time.h>     /* need struct timeval */
+#include <uapi/linux/videodev2.h>
+
+#endif /* __LINUX_VIDEODEV2_H */
+
+Patches have been posted to remove those headers and push the #include 
+<linux/time.h> one level up, which breaks the "self-contained" headers 
+concept.
+
+How could we fix this ? Are there legitimate users of <linux/time.h> in user 
+space ? A quick grep in glibc doesn't reveal anything.
+
+-- 
 Regards,
-Vincent
 
-On 23 August 2012 16:14,  <pjt@google.com> wrote:
-> From: Paul Turner <pjt@google.com>
->
-> With the frame-work for runnable tracking now fully in place.  Per-entity usage
-> tracking is a simple and low-overhead addition.
->
-> Signed-off-by: Paul Turner <pjt@google.com>
-> Reviewed-by: Ben Segall <bsegall@google.com>
-> ---
->  include/linux/sched.h |    1 +
->  kernel/sched/debug.c  |    3 +++
->  kernel/sched/fair.c   |   33 ++++++++++++++++++++++++++++-----
->  kernel/sched/sched.h  |    4 ++--
->  4 files changed, 34 insertions(+), 7 deletions(-)
->
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 93e27c0..2a4be1f 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1150,6 +1150,7 @@ struct sched_avg {
->         u64 last_runnable_update;
->         s64 decay_count;
->         unsigned long load_avg_contrib;
-> +       u32 usage_avg_sum;
->  };
->
->  #ifdef CONFIG_SCHEDSTATS
-> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-> index 2cd3c1b..b9d54d0 100644
-> --- a/kernel/sched/debug.c
-> +++ b/kernel/sched/debug.c
-> @@ -94,6 +94,7 @@ static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group
->  #ifdef CONFIG_SMP
->         P(se->avg.runnable_avg_sum);
->         P(se->avg.runnable_avg_period);
-> +       P(se->avg.usage_avg_sum);
->         P(se->avg.load_avg_contrib);
->         P(se->avg.decay_count);
->  #endif
-> @@ -230,6 +231,8 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
->                         cfs_rq->tg_runnable_contrib);
->         SEQ_printf(m, "  .%-30s: %d\n", "tg->runnable_avg",
->                         atomic_read(&cfs_rq->tg->runnable_avg));
-> +       SEQ_printf(m, "  .%-30s: %d\n", "tg->usage_avg",
-> +                       atomic_read(&cfs_rq->tg->usage_avg));
->  #endif
->
->         print_cfs_group_stats(m, cpu, cfs_rq->tg);
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index b249371..44a9a11 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -994,7 +994,8 @@ static u32 __compute_runnable_contrib(u64 n)
->   */
->  static __always_inline int __update_entity_runnable_avg(u64 now,
->                                                         struct sched_avg *sa,
-> -                                                       int runnable)
-> +                                                       int runnable,
-> +                                                       int running)
->  {
->         u64 delta, periods;
->         u32 runnable_contrib;
-> @@ -1033,6 +1034,8 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
->                 delta_w = 1024 - delta_w;
->                 if (runnable)
->                         sa->runnable_avg_sum += delta_w;
-> +               if (running)
-> +                       sa->usage_avg_sum += delta_w;
->                 sa->runnable_avg_period += delta_w;
->
->                 delta -= delta_w;
-> @@ -1045,17 +1048,22 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
->                                                   periods + 1);
->                 sa->runnable_avg_period = decay_load(sa->runnable_avg_period,
->                                                      periods + 1);
-> +               sa->usage_avg_sum = decay_load(sa->usage_avg_sum, periods + 1);
->
->                 /* Efficiently calculate \sum (1..n_period) 1024*y^i */
->                 runnable_contrib = __compute_runnable_contrib(periods);
->                 if (runnable)
->                         sa->runnable_avg_sum += runnable_contrib;
-> +               if (running)
-> +                       sa->usage_avg_sum += runnable_contrib;
->                 sa->runnable_avg_period += runnable_contrib;
->         }
->
->         /* Remainder of delta accrued against u_0` */
->         if (runnable)
->                 sa->runnable_avg_sum += delta;
-> +       if (running)
-> +               sa->usage_avg_sum += delta;
->         sa->runnable_avg_period += delta;
->
->         return decayed;
-> @@ -1101,16 +1109,28 @@ static inline void __update_tg_runnable_avg(struct sched_avg *sa,
->                                                   struct cfs_rq *cfs_rq)
->  {
->         struct task_group *tg = cfs_rq->tg;
-> -       long contrib;
-> +       long contrib, usage_contrib;
->
->         /* The fraction of a cpu used by this cfs_rq */
->         contrib = div_u64(sa->runnable_avg_sum << NICE_0_SHIFT,
->                           sa->runnable_avg_period + 1);
->         contrib -= cfs_rq->tg_runnable_contrib;
->
-> -       if (abs(contrib) > cfs_rq->tg_runnable_contrib / 64) {
-> +       usage_contrib = div_u64(sa->usage_avg_sum << NICE_0_SHIFT,
-> +                               sa->runnable_avg_period + 1);
-> +       usage_contrib -= cfs_rq->tg_usage_contrib;
-> +
-> +       /*
-> +        * contrib/usage at this point represent deltas, only update if they
-> +        * are substantive.
-> +        */
-> +       if ((abs(contrib) > cfs_rq->tg_runnable_contrib / 64) ||
-> +           (abs(usage_contrib) > cfs_rq->tg_usage_contrib / 64)) {
->                 atomic_add(contrib, &tg->runnable_avg);
->                 cfs_rq->tg_runnable_contrib += contrib;
-> +
-> +               atomic_add(usage_contrib, &tg->usage_avg);
-> +               cfs_rq->tg_usage_contrib += usage_contrib;
->         }
->  }
->
-> @@ -1216,7 +1236,8 @@ static inline void update_entity_load_avg(struct sched_entity *se,
->         else
->                 now = cfs_rq_clock_task(group_cfs_rq(se));
->
-> -       if (!__update_entity_runnable_avg(now, &se->avg, se->on_rq))
-> +       if (!__update_entity_runnable_avg(now, &se->avg, se->on_rq,
-> +                                         cfs_rq->curr == se))
->                 return;
->
->         contrib_delta = __update_entity_load_avg_contrib(se);
-> @@ -1261,7 +1282,8 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
->
->  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
->  {
-> -       __update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
-> +       __update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable,
-> +                                    runnable);
->         __update_tg_runnable_avg(&rq->avg, &rq->cfs);
->  }
->
-> @@ -1629,6 +1651,7 @@ set_next_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
->                  */
->                 update_stats_wait_end(cfs_rq, se);
->                 __dequeue_entity(cfs_rq, se);
-> +               update_entity_load_avg(se, 1);
->         }
->
->         update_stats_curr_start(cfs_rq, se);
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 89a0e38..e14601e 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -113,7 +113,7 @@ struct task_group {
->
->         atomic_t load_weight;
->         atomic64_t load_avg;
-> -       atomic_t runnable_avg;
-> +       atomic_t runnable_avg, usage_avg;
->  #endif
->
->  #ifdef CONFIG_RT_GROUP_SCHED
-> @@ -236,7 +236,7 @@ struct cfs_rq {
->         u64 last_decay;
->
->  #ifdef CONFIG_FAIR_GROUP_SCHED
-> -       u32 tg_runnable_contrib;
-> +       u32 tg_runnable_contrib, tg_usage_contrib;
->         u64 tg_load_contrib;
->  #endif /* CONFIG_FAIR_GROUP_SCHED */
->
->
->
+Laurent Pinchart
+
