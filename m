@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965075Ab2JSDY7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:24:59 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54397 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758021Ab2JSDRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:19 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 11/37] xen/bootup: allow read_tscp call for Xen PV guests.
-Date: Thu, 18 Oct 2012 20:16:34 -0700
-Message-Id: <20121019031304.675393314@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
-In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
-References: <20121019031302.789593147@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1757367Ab2JSDZI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:25:08 -0400
+Received: from condef003-v.nifty.com ([210.131.4.240]:47057 "EHLO
+	condef003-v.nifty.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965085Ab2JSDZB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:25:01 -0400
+X-Greylist: delayed 315 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Oct 2012 23:25:01 EDT
+X-Nifty-SrcIP: [61.204.25.121]
+From: MITSUNARI Shigeo <herumi@nifty.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, MITSUNARI Shigeo <herumi@nifty.com>
+Subject: [PATCH 1/2] block: fs: bd_invalidated should be cleared in revalidate_disk
+Date: Fri, 19 Oct 2012 12:16:41 +0900
+Message-Id: <1350616602-6892-2-git-send-email-herumi@nifty.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1350616602-6892-1-git-send-email-herumi@nifty.com>
+References: <1350616602-6892-1-git-send-email-herumi@nifty.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+rescan_partitions() and invalidate_partitions() in block/partition-generic.c
+set bdev->bd_invalidated = 0 after calling check_disk_size_change().
+But revalidate_disk() in fs/block_dev.c does not clear it.
 
-------------------
+If bdev->bd_invalidated = 1 then rescan_partitions() is called when
+__blkdev_get() is called.
+So if revalidate_disk() is once called, all buffer cache pages will be
+cleared whenever the device is opened.
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+This patch fixes the bug.
+I add bdev->bd_invalidated = 0; after calling check_disk_size_change().
 
-commit cd0608e71e9757f4dae35bcfb4e88f4d1a03a8ab upstream.
-
-The hypervisor will trap it. However without this patch,
-we would crash as the .read_tscp is set to NULL. This patch
-fixes it and sets it to the native_read_tscp call.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: MITSUNARI Shigeo <herumi@nifty.com>
 ---
- arch/x86/xen/enlighten.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/block_dev.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -989,6 +989,8 @@ static const struct pv_cpu_ops xen_cpu_o
- 	.read_tsc = native_read_tsc,
- 	.read_pmc = native_read_pmc,
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 38e721b..2577cf4 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1047,6 +1047,7 @@ int revalidate_disk(struct gendisk *disk)
  
-+	.read_tscp = native_read_tscp,
-+
- 	.iret = xen_iret,
- 	.irq_enable_sysexit = xen_sysexit,
- #ifdef CONFIG_X86_64
-
+ 	mutex_lock(&bdev->bd_mutex);
+ 	check_disk_size_change(disk, bdev);
++	bdev->bd_invalidated = 0;
+ 	mutex_unlock(&bdev->bd_mutex);
+ 	bdput(bdev);
+ 	return ret;
+-- 
+1.7.9.5
 
