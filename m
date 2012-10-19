@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757684Ab2JSCyD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:54:03 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52511 "EHLO mail.kernel.org"
+	id S1757665Ab2JSCyB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:54:01 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52537 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965047Ab2JSCta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:49:30 -0400
+	id S965050Ab2JSCtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:49:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Brian Norris <computersforpeace@gmail.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 64/76] mtd: nand: allow NAND_NO_SUBPAGE_WRITE to be set from driver
-Date: Thu, 18 Oct 2012 19:47:28 -0700
-Message-Id: <20121019024400.424982142@linuxfoundation.org>
+        Denys Fedoryshchenko <denys@visp.net.lb>,
+        Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        "David S. Miller" <davem@davemloft.net>, eric.dumazet@gmail.com,
+        therbert@google.com
+Subject: [ 65/76] e1000e: Change wthresh to 1 to avoid possible Tx stalls
+Date: Thu, 18 Oct 2012 19:47:29 -0700
+Message-Id: <20121019024400.583943010@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -28,71 +29,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Norris <computersforpeace@gmail.com>
+From: Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>
 
-commit bf7a01bf7987b63b121d572b240c132ec44129c4 upstream.
+commit 8edc0e624db3756783233e464879eb2e3b904c13 upstream.
 
-The NAND_CHIPOPTIONS_MSK has limited utility and is causing real bugs. It
-silently masks off at least one flag that might be set by the driver
-(NAND_NO_SUBPAGE_WRITE). This breaks the GPMI NAND driver and possibly
-others.
+This patch originated from Hiroaki SHIMODA but has been modified
+by Intel with some minor cleanups and additional commit log text.
 
-Really, as long as driver writers exercise a small amount of care with
-NAND_* options, this mask is not necessary at all; it was only here to
-prevent certain options from accidentally being set by the driver. But the
-original thought turns out to be a bad idea occasionally. Thus, kill it.
+Denys Fedoryshchenko and others reported Tx stalls on e1000e with
+BQL enabled.  Issue was root caused to hardware delays. They were
+introduced because some of the e1000e hardware with transmit
+writeback bursting enabled, waits until the driver does an
+explict flush OR there are WTHRESH descriptors to write back.
 
-Note, this patch fixes some major gpmi-nand breakage.
+Sometimes the delays in question were on the order of seconds,
+causing visible lag for ssh sessions and unacceptable tx
+completion latency, especially for BQL enabled kernels.
 
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Tested-by: Huang Shijie <shijie8@gmail.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+To avoid possible Tx stalls, change WTHRESH back to 1.
+
+The current plan is to investigate a method for re-enabling
+WTHRESH while not harming BQL, but those patches will be later
+for net-next if they work.
+
+please enqueue for stable since v3.3 as this bug was introduced in
+commit 3f0cfa3bc11e7f00c9994e0f469cbc0e7da7b00c
+Author: Tom Herbert <therbert@google.com>
+Date:   Mon Nov 28 16:33:16 2011 +0000
+
+    e1000e: Support for byte queue limits
+
+    Changes to e1000e to use byte queue limits.
+
+Reported-by: Denys Fedoryshchenko <denys@visp.net.lb>
+Tested-by: Denys Fedoryshchenko <denys@visp.net.lb>
+Signed-off-by: Hiroaki SHIMODA <shimoda.hiroaki@gmail.com>
+CC: eric.dumazet@gmail.com
+CC: therbert@google.com
+Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
-index a11253a..c429abd 100644
 ---
- drivers/mtd/nand/nand_base.c |    8 +++-----
- include/linux/mtd/nand.h     |    3 ---
- 2 files changed, 3 insertions(+), 8 deletions(-)
+ drivers/net/ethernet/intel/e1000e/e1000.h  |    6 +++---
+ drivers/net/ethernet/intel/e1000e/netdev.c |    2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2914,8 +2914,7 @@ static int nand_flash_detect_onfi(struct
- 	if (le16_to_cpu(p->features) & 1)
- 		*busw = NAND_BUSWIDTH_16;
+--- a/drivers/net/ethernet/intel/e1000e/e1000.h
++++ b/drivers/net/ethernet/intel/e1000e/e1000.h
+@@ -175,13 +175,13 @@ struct e1000_info;
+ /*
+  * in the case of WTHRESH, it appears at least the 82571/2 hardware
+  * writes back 4 descriptors when WTHRESH=5, and 3 descriptors when
+- * WTHRESH=4, and since we want 64 bytes at a time written back, set
+- * it to 5
++ * WTHRESH=4, so a setting of 5 gives the most efficient bus
++ * utilization but to avoid possible Tx stalls, set it to 1
+  */
+ #define E1000_TXDCTL_DMA_BURST_ENABLE                          \
+ 	(E1000_TXDCTL_GRAN | /* set descriptor granularity */  \
+ 	 E1000_TXDCTL_COUNT_DESC |                             \
+-	 (5 << 16) | /* wthresh must be +1 more than desired */\
++	 (1 << 16) | /* wthresh must be +1 more than desired */\
+ 	 (1 << 8)  | /* hthresh */                             \
+ 	 0x1f)       /* pthresh */
  
--	chip->options &= ~NAND_CHIPOPTIONS_MSK;
--	chip->options |= NAND_NO_READRDY & NAND_CHIPOPTIONS_MSK;
-+	chip->options |= NAND_NO_READRDY;
- 
- 	pr_info("ONFI flash detected\n");
- 	return 1;
-@@ -3080,9 +3079,8 @@ static struct nand_flash_dev *nand_get_f
- 			mtd->erasesize <<= ((id_data[3] & 0x03) << 1);
- 		}
- 	}
--	/* Get chip options, preserve non chip based options */
--	chip->options &= ~NAND_CHIPOPTIONS_MSK;
--	chip->options |= type->options & NAND_CHIPOPTIONS_MSK;
-+	/* Get chip options */
-+	chip->options |= type->options;
- 
- 	/*
- 	 * Check if chip is not a Samsung device. Do not clear the
---- a/include/linux/mtd/nand.h
-+++ b/include/linux/mtd/nand.h
-@@ -212,9 +212,6 @@ typedef enum {
- #define NAND_SUBPAGE_READ(chip) ((chip->ecc.mode == NAND_ECC_SOFT) \
- 					&& (chip->page_shift > 9))
- 
--/* Mask to zero out the chip options, which come from the id table */
--#define NAND_CHIPOPTIONS_MSK	0x0000ffff
--
- /* Non chip related options */
- /* This option skips the bbt scan during initialization. */
- #define NAND_SKIP_BBTSCAN	0x00010000
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@ -2831,7 +2831,7 @@ static void e1000_configure_tx(struct e1
+ 		 * set up some performance related parameters to encourage the
+ 		 * hardware to use the bus more efficiently in bursts, depends
+ 		 * on the tx_int_delay to be enabled,
+-		 * wthresh = 5 ==> burst write a cacheline (64 bytes) at a time
++		 * wthresh = 1 ==> burst write is disabled to avoid Tx stalls
+ 		 * hthresh = 1 ==> prefetch when one or more available
+ 		 * pthresh = 0x1f ==> prefetch if internal cache 31 or less
+ 		 * BEWARE: this seems to work but should be considered first if
 
 
