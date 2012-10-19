@@ -1,45 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758912Ab2JSPaV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 11:30:21 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:59494 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758190Ab2JSPaT (ORCPT
+	id S1758932Ab2JSPa2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 11:30:28 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:40717 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758914Ab2JSPaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 11:30:19 -0400
-Date: Fri, 19 Oct 2012 16:30:15 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Randy Wright <rwright@hp.com>
-Cc: linux-kernel@vger.kernel.org, Thavatchai Makphaibulchoke <tmac@hp.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH RFC] function probe_roms accessing improper addresses
-Message-ID: <20121019153015.GD28212@srcf.ucam.org>
-References: <jQZho-4fF-13@gated-at.bofh.it>
- <jSWfn-7B6-3@gated-at.bofh.it>
- <50816FC9.5080108@hp.com>
+	Fri, 19 Oct 2012 11:30:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50816FC9.5080108@hp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <CACRpkdaNK5+5oQNmmyyF+bD=jJYXbHAJF6e8Xn3jtcR4hoXwrw@mail.gmail.com>
+References: <1350415376-3217-1-git-send-email-linus.walleij@linaro.org>
+	<20121018062208.GB4513@S2101-09.ap.freescale.net>
+	<CACRpkdaNK5+5oQNmmyyF+bD=jJYXbHAJF6e8Xn3jtcR4hoXwrw@mail.gmail.com>
+Date: Fri, 19 Oct 2012 23:30:23 +0800
+Message-ID: <CAAQ0ZWRpgVLcXLygKgeAONC1Yd2UOJu14c7LtF=PtTSbtck_6g@mail.gmail.com>
+Subject: Re: [PATCH 4/7] gpio/mxs: convert to use linear irqdomain
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't think DMI checking is going to work, since (a) as you say, 
-there's a risk that the ID will inadvertantly change over the lifecycle 
-of the machine, and (b) there may be other machines. So if it's not 
-possible to handle this by catching the MCE, I think we have two 
-options:
+On 19 October 2012 18:22, Linus Walleij <linus.walleij@linaro.org> wrote:
+> No, which defconfig shall I use for this driver?
+>
+mxs_defconfig
 
-1) Declare that any x86 hardware supported by Linux *must* support 
-probing in this address region
-
-2) Don't call probe_roms() by default, but leave it up to the graphics 
-drivers. If they can get the rom by any other means then don't call it.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Shawn
