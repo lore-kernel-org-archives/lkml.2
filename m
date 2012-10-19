@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759256Ab2JSRy2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 13:54:28 -0400
-Received: from realvnc.com ([146.101.60.83]:48602 "EHLO realvnc.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752532Ab2JSRy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 13:54:26 -0400
-X-Greylist: delayed 2083 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Oct 2012 13:54:26 EDT
-From: Simon Haggett <simon.haggett@realvnc.com>
-To: Li Yang <leoli@freescale.com>, Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Simon Haggett <simon.haggett@realvnc.com>
-Subject: [PATCH 1/1] usb: gadget: Don't attempt to dequeue requests for a disabled USB endpoint on Freescale hardware
-Date: Fri, 19 Oct 2012 18:19:26 +0100
-Message-Id: <1350667166-3559-1-git-send-email-simon.haggett@realvnc.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S932260Ab2JSRyo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 13:54:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53064 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292Ab2JSRym convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 13:54:42 -0400
+Message-ID: <1350669236.2768.66.camel@twins>
+Subject: Re: question on NUMA page migration
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Mel Gorman <mel@csn.ul.ie>,
+        Linux kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Fri, 19 Oct 2012 19:53:56 +0200
+In-Reply-To: <50818A41.7030909@redhat.com>
+References: <5081777A.8050104@redhat.com> <1350664742.2768.40.camel@twins>
+	 <50818A41.7030909@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some gadget drivers may attempt to dequeue requests for an endpoint that has
-already been disabled. For example, in the UVC gadget driver, uvc_function_set_alt()
-will call usb_ep_disable() when alt setting 0 is selected. When the userspace
-application subsequently issues the VIDIOC_STREAMOFF ioctl, uvc_video_enable()
-invokes usb_ep_dequeue() to ensure that all requests have been cancelled.
+On Fri, 2012-10-19 at 13:13 -0400, Rik van Riel wrote:
 
-For the Freescale High Speed Dual-Role USB controller, fsl_ep_dequeue() provides
-the implementation of usb_ep_dequeue(). If this is called for a disabled endpoint,
-a kernel oops will occur when the ep->ep.desc field is dereferenced (by ep_index()).
-fsl_ep_disable() sets this field to NULL, as well as deleting all pending requests
-for the endpoint.
+> Would it make sense to have the normal page migration code always
+> work with the extra refcount, so we do not have to introduce a new
+> MIGRATE_FAULT migration mode?
+> 
+> On the other hand, compaction does not take the extra reference...
 
-This patch adds an additional check to fsl_ep_dequeue() to ensure that the
-endpoint has not already been disabled before attempting to dequeue requests.
+Right, it appears to not do this, it gets pages from the pfn and
+zone->lock and the isolate_lru_page() call is the first reference.
 
-Signed-off-by: Simon Haggett <simon.haggett@realvnc.com>
----
- drivers/usb/gadget/fsl_udc_core.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+> Another alternative might be to do the put_page inside
+> do_prot_none_numa().  That would be analogous to do_wp_page
+> disposing of the old page for the caller.
 
-diff --git a/drivers/usb/gadget/fsl_udc_core.c b/drivers/usb/gadget/fsl_udc_core.c
-index 6ae70cb..acd513b 100644
---- a/drivers/usb/gadget/fsl_udc_core.c
-+++ b/drivers/usb/gadget/fsl_udc_core.c
-@@ -955,7 +955,10 @@ static int fsl_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
- 	int ep_num, stopped, ret = 0;
- 	u32 epctrl;
- 
--	if (!_ep || !_req)
-+	/* Ensure that the ep and request are valid, and the ep is not
-+	 * disabled
-+	 */
-+	if (!_ep || !_req || !ep->ep.desc)
- 		return -EINVAL;
- 
- 	spin_lock_irqsave(&ep->udc->lock, flags);
--- 
-1.7.4.1
+It'd have to be inside migrate_misplaced_page(), can't do before
+isolate_lru_page() or the page might disappear. Doing it after is
+(obviously) too late.
 
+> I am not real happy about NUMA migration introducing its own
+> migration mode...
+
+You didn't seem to mind too much earlier, but I can remove it if you
+want.
