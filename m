@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab2JSAB7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 20:01:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50569 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757333Ab2JSAB6 (ORCPT
+	id S1757374Ab2JSACc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 20:02:32 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:18059 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757333Ab2JSACb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 20:01:58 -0400
-Date: Thu, 18 Oct 2012 17:01:53 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Matt Helsley <matthltc@linux.vnet.ibm.com>
-Cc: rjw@sisk.pl, oleg@redhat.com, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.8] cgroup_freezer: allow migration
- regardless of freezer state and update locking
-Message-ID: <20121019000153.GZ13370@google.com>
-References: <1350426526-14254-1-git-send-email-tj@kernel.org>
- <20121017191606.GA6223@us.ibm.com>
- <20121018211434.GI13370@google.com>
- <20121018222155.GB6223@us.ibm.com>
- <20121018223517.GQ13370@google.com>
- <20121018234726.GC6223@us.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121018234726.GC6223@us.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 18 Oct 2012 20:02:31 -0400
+Date: Thu, 18 Oct 2012 17:02:23 -0700
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH V3 6/6]: PVH:privcmd changes.
+Message-ID: <20121018170223.03ef0913@mantra.us.oracle.com>
+In-Reply-To: <1350556553.2460.108.camel@zakaz.uk.xensource.com>
+References: <20121017173448.7ef4c0b1@mantra.us.oracle.com>
+	<1350556553.2460.108.camel@zakaz.uk.xensource.com>
+Organization: Oracle Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Matt.
+On Thu, 18 Oct 2012 11:35:53 +0100
+Ian Campbell <Ian.Campbell@citrix.com> wrote:
 
-On Thu, Oct 18, 2012 at 04:47:26PM -0700, Matt Helsley wrote:
-> > I think the only sane way would be having a userland arbitrator which
-> > owns the kernel interface to itself and makes policy decisions from
-> > userland clients and configures cgroup accordingly.
 > 
-> OK -- yeah, solving the arbitration issue in userspace might be best.
-
-Yeah, I think we need that but there currently isn't any concrete (or
-even floppy) plan for it.  If anyone is interested, beer is on me. :)
-
-> > I think that should be solved via userland policies rather than
-> > depending on this accidental cgroup_freezer feature.
+> > @@ -439,6 +490,19 @@ static long privcmd_ioctl(struct file *file,
+> >  	return ret;
+> >  }
+> >  
+> > +static void privcmd_close(struct vm_area_struct *vma)
+> > +{
+> > +	struct page **pages = vma ? vma->vm_private_data : NULL;
 > 
-> It's not accidental -- it *was an intended feature*:
-> 
->   22 # This bash script tests freezer code by starting a long sleep process.
->   23 # The sleep process is frozen. We then move the sleep process to a THAWED
->   24 # cgroup. We expect moving the sleep process to fail.
-> 
-> ( This atrocious link is the easiest way to see the testcase:
-> http://ltp.git.sourceforge.net/git/gitweb.cgi?p=ltp/ltp.git;a=blob;f=testcases/kernel/controllers/freezer/freeze_move_thaw.sh;h=b2d5a83506a8425b117be9ff775d9f73d2d58393;hb=0436176dbfe6fdaaf97590d2356eb23d2739b2c2
-> )
-> 
-> It was intended for something very much like the CRIU case I mentioned
-> :).
+> Can VMA really be NULL?...
 
-I probably have chosen the wrong word.  I mean that it's a hierarchy
-management feature implemented at the wrong layer.  If we want to
-provide cgroup migration locking, it should be implemented at the
-cgroup core layer as a controller independent feature.  It's kinda
-interesting the incorrect layering here almost directly caused messy
-locking problem too.  I hope we don't need it with (the imaginary)
-proper userland arbitration but even if we do implementing it in
-cgroup proper as a separate feature would be a lot less messy.
+Good programming I thought!
 
-Thanks.
+> > +	int numpgs = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+> 
+> ...I assume not since you unconditionally dereference it here.
 
--- 
-tejun
+Added this later, and just didn't change the earlier part.
+
+> > +	if (!pages || !numpgs
+> > || !xen_feature(XENFEAT_auto_translated_physmap))
+> 
+> In the non-xlat case pages will (or should!) be 1 here which will pass
+> the first clause of the test.
+> 
+> Although the later clauses will catch this I think it would be worth
+> ordering the checks such that they are each valid, perhaps by pulling
+> the feature check to the front or by separating the !xlat case from
+> the other two which are valid iff xlat == True.
+> 
+
