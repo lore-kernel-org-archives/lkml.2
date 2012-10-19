@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030423Ab2JSDUd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 23:20:33 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54646 "EHLO mail.kernel.org"
+	id S932884Ab2JSDUu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 23:20:50 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54612 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758086Ab2JSDRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 23:17:46 -0400
+	id S1758075Ab2JSDRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 23:17:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Egbert Eich <eich@suse.de>, Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 30/37] drm/radeon: Dont destroy I2C Bus Rec in radeon_ext_tmds_enc_destroy().
-Date: Thu, 18 Oct 2012 20:16:53 -0700
-Message-Id: <20121019031307.698131894@linuxfoundation.org>
+        Florian Westphal <fw@strlen.de>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        David Miller <davem@davemloft.net>
+Subject: [ 27/37] netfilter: limit, hashlimit: avoid duplicated inline
+Date: Thu, 18 Oct 2012 20:16:50 -0700
+Message-Id: <20121019031307.225190088@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019031302.789593147@linuxfoundation.org>
 References: <20121019031302.789593147@linuxfoundation.org>
@@ -25,44 +27,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Egbert Eich <eich@suse.de>
+From: Florian Westphal <fw@strlen.de>
 
-commit 082918471139b07964967cfe5f70230909c82ae1 upstream.
+commit 7a909ac70f6b0823d9f23a43f19598d4b57ac901 upstream.
 
-radeon_i2c_fini() walks thru the list of I2C bus recs rdev->i2c_bus[]
-to destroy each of them.
-radeon_ext_tmds_enc_destroy() however also has code to destroy it's
-associated I2C bus rec which has been obtained by radeon_i2c_lookup()
-and is therefore also in the i2c_bus[] list.
-This causes a double free resulting in a kernel panic when unloading
-the radeon driver.
-Removing destroy code from radeon_ext_tmds_enc_destroy() fixes this
-problem.
+credit_cap can be set to credit, which avoids inlining user2credits
+twice. Also, remove inline keyword and let compiler decide.
 
-agd5f: fix compiler warning
+old:
+    684     192       0     876     36c net/netfilter/xt_limit.o
+   4927     344      32    5303    14b7 net/netfilter/xt_hashlimit.o
+now:
+    668     192       0     860     35c net/netfilter/xt_limit.o
+   4793     344      32    5169    1431 net/netfilter/xt_hashlimit.o
 
-Signed-off-by: Egbert Eich <eich@suse.de>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Acked-by: David Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ net/netfilter/xt_hashlimit.c |    8 +++-----
+ net/netfilter/xt_limit.c     |    5 ++---
+ 2 files changed, 5 insertions(+), 8 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-+++ b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
-@@ -973,11 +973,7 @@ static void radeon_legacy_tmds_ext_mode_
- static void radeon_ext_tmds_enc_destroy(struct drm_encoder *encoder)
+--- a/net/netfilter/xt_hashlimit.c
++++ b/net/netfilter/xt_hashlimit.c
+@@ -392,8 +392,7 @@ static void htable_put(struct xt_hashlim
+ #define CREDITS_PER_JIFFY POW2_BELOW32(MAX_CPJ)
+ 
+ /* Precision saver. */
+-static inline u_int32_t
+-user2credits(u_int32_t user)
++static u32 user2credits(u32 user)
  {
- 	struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
--	struct radeon_encoder_ext_tmds *tmds = radeon_encoder->enc_priv;
--	if (tmds) {
--		if (tmds->i2c_bus)
--			radeon_i2c_destroy(tmds->i2c_bus);
--	}
-+	/* don't destroy the i2c bus record here, this will be done in radeon_i2c_fini */
- 	kfree(radeon_encoder->enc_priv);
- 	drm_encoder_cleanup(encoder);
- 	kfree(radeon_encoder);
+ 	/* If multiplying would overflow... */
+ 	if (user > 0xFFFFFFFF / (HZ*CREDITS_PER_JIFFY))
+@@ -403,7 +402,7 @@ user2credits(u_int32_t user)
+ 	return (user * HZ * CREDITS_PER_JIFFY) / XT_HASHLIMIT_SCALE;
+ }
+ 
+-static inline void rateinfo_recalc(struct dsthash_ent *dh, unsigned long now)
++static void rateinfo_recalc(struct dsthash_ent *dh, unsigned long now)
+ {
+ 	dh->rateinfo.credit += (now - dh->rateinfo.prev) * CREDITS_PER_JIFFY;
+ 	if (dh->rateinfo.credit > dh->rateinfo.credit_cap)
+@@ -534,8 +533,7 @@ hashlimit_mt(const struct sk_buff *skb,
+ 		dh->rateinfo.prev = jiffies;
+ 		dh->rateinfo.credit = user2credits(hinfo->cfg.avg *
+ 		                      hinfo->cfg.burst);
+-		dh->rateinfo.credit_cap = user2credits(hinfo->cfg.avg *
+-		                          hinfo->cfg.burst);
++		dh->rateinfo.credit_cap = dh->rateinfo.credit;
+ 		dh->rateinfo.cost = user2credits(hinfo->cfg.avg);
+ 	} else {
+ 		/* update expiration timeout */
+--- a/net/netfilter/xt_limit.c
++++ b/net/netfilter/xt_limit.c
+@@ -88,8 +88,7 @@ limit_mt(const struct sk_buff *skb, stru
+ }
+ 
+ /* Precision saver. */
+-static u_int32_t
+-user2credits(u_int32_t user)
++static u32 user2credits(u32 user)
+ {
+ 	/* If multiplying would overflow... */
+ 	if (user > 0xFFFFFFFF / (HZ*CREDITS_PER_JIFFY))
+@@ -123,7 +122,7 @@ static int limit_mt_check(const struct x
+ 		   128. */
+ 		priv->prev = jiffies;
+ 		priv->credit = user2credits(r->avg * r->burst); /* Credits full. */
+-		r->credit_cap = user2credits(r->avg * r->burst); /* Credits full. */
++		r->credit_cap = priv->credit; /* Credits full. */
+ 		r->cost = user2credits(r->avg);
+ 	}
+ 	return 0;
 
 
