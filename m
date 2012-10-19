@@ -1,132 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758080Ab2JSJnW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 05:43:22 -0400
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:39069 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757806Ab2JSJnU (ORCPT
+	id S932768Ab2JSJne (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 05:43:34 -0400
+Received: from smtp-out-125.synserver.de ([212.40.185.125]:1048 "EHLO
+	smtp-out-125.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753876Ab2JSJnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 05:43:20 -0400
-Date: Fri, 19 Oct 2012 15:13:09 +0530
-From: Shiraz Hashim <shiraz.hashim@st.com>
-To: viresh kumar <viresh.kumar@linaro.org>
-Cc: <thierry.reding@avionic-design.de>,
-        <spear--sw-devel@lists.codex.cro.st.com>,
-        <linux-kernel@vger.kernel.org>, <spear-devel@list.st.com>
-Subject: Re: [PATCH] pwm: add spear pwm driver support
-Message-ID: <20121019094308.GC4185@localhost.localdomain>
-References: <1350559712-8514-1-git-send-email-shiraz.hashim@st.com>
- <CAOh2x=mdtkW=a-xv1BeHxoGsgbF5s+4B8QmZBdvqnWHr30Ap2A@mail.gmail.com>
- <20121019055943.GA4185@localhost.localdomain>
- <CAOh2x=kXu2EG4GFaW8HpSi=VFLvGEMEyeN_3L74wU2sfe1Z=uQ@mail.gmail.com>
+	Fri, 19 Oct 2012 05:43:33 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 12997
+Message-ID: <50812112.2020709@metafoo.de>
+Date: Fri, 19 Oct 2012 11:44:50 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120922 Icedove/10.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAOh2x=kXu2EG4GFaW8HpSi=VFLvGEMEyeN_3L74wU2sfe1Z=uQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+CC: cbou@mail.ru, dwmw2@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] Use devm_request_irq to avoid some checks
+References: <1350603664-18148-1-git-send-email-marcos.souza.org@gmail.com> <1350603664-18148-4-git-send-email-marcos.souza.org@gmail.com>
+In-Reply-To: <1350603664-18148-4-git-send-email-marcos.souza.org@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
-
-On Fri, Oct 19, 2012 at 12:23:08PM +0530, viresh kumar wrote:
-> On Fri, Oct 19, 2012 at 11:29 AM, Shiraz Hashim <shiraz.hashim@st.com> wrote:
-> > On Thu, Oct 18, 2012 at 11:11:06PM +0530, viresh kumar wrote:
-> >> On Thu, Oct 18, 2012 at 4:58 PM, Shiraz Hashim <shiraz.hashim@st.com> wrote:
+On 10/19/2012 01:41 AM, Marcos Paulo de Souza wrote:
+> With this we can remove a lot of checks.
 > 
-> >> > +static int __devexit spear_pwm_remove(struct platform_device *pdev)
-> >> > +{
-> >> > +       struct spear_pwm_chip *pc = platform_get_drvdata(pdev);
-> >> > +       int i;
-> >> > +
-> >> > +       if (WARN_ON(!pc))
-> >> > +               return -ENODEV;
-> >> > +
-> >> > +       for (i = 0; i < NUM_PWM; i++) {
-> >> > +               struct pwm_device *pwmd = &pc->chip.pwms[i];
-> >> > +
-> >> > +               if (!test_bit(PWMF_ENABLED, &pwmd->flags))
+> Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+
+This one is a bit more tricky and the driver currently gets it (partially
+wrong). The issue is that since the power supply is referenced in the
+interrupt handler, the IRQs should be requested after the power supply has
+been registered and be freed before the power supply is unregistered.
+
+So devm can't really be used here. But as I said the current driver already
+gets it wrong.
+
+- Lars
+
+> ---
+>  drivers/power/jz4740-battery.c |   25 ++++++++-----------------
+>  1 file changed, 8 insertions(+), 17 deletions(-)
 > 
-> One point here: If i am not wrong you want to disable pwmd if it is enabled.
-> Shouldn't you check for if (test_bit(PWMF_ENABLED, &pwmd->flags)) instead?
-> 
+> diff --git a/drivers/power/jz4740-battery.c b/drivers/power/jz4740-battery.c
+> index 9d9b2a8..b80f7ed 100644
+> --- a/drivers/power/jz4740-battery.c
+> +++ b/drivers/power/jz4740-battery.c
+> @@ -307,8 +307,8 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+>  
+>  	INIT_DELAYED_WORK(&jz_battery->work, jz_battery_work);
+>  
+> -	ret = request_irq(jz_battery->irq, jz_battery_irq_handler, 0, pdev->name,
+> -			jz_battery);
+> +	ret = devm_request_irq(&pdev->dev, jz_battery->irq, jz_battery_irq_handler, 
+> +				0, pdev->name, jz_battery);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "Failed to request irq %d\n", ret);
+>  		goto err;
+> @@ -319,7 +319,7 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+>  		ret = gpio_request(pdata->gpio_charge, dev_name(&pdev->dev));
+>  		if (ret) {
+>  			dev_err(&pdev->dev, "charger state gpio request failed.\n");
+> -			goto err_free_irq;
+> +			goto err;
+>  		}
+>  		ret = gpio_direction_input(pdata->gpio_charge);
+>  		if (ret) {
+> @@ -330,7 +330,8 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+>  		jz_battery->charge_irq = gpio_to_irq(pdata->gpio_charge);
+>  
+>  		if (jz_battery->charge_irq >= 0) {
+> -			ret = request_irq(jz_battery->charge_irq,
+> +			ret = devm_request_irq(&pdev->dev,
+> +				    jz_battery->charge_irq,
+>  				    jz_battery_charge_irq,
+>  				    IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+>  				    dev_name(&pdev->dev), jz_battery);
+> @@ -352,7 +353,7 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+>  	ret = power_supply_register(&pdev->dev, &jz_battery->battery);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "power supply battery register failed.\n");
+> -		goto err_free_charge_irq;
+> +		goto err_free_gpio;
+>  	}
+>  
+>  	platform_set_drvdata(pdev, jz_battery);
+> @@ -360,16 +361,11 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+>  
+>  	return 0;
+>  
+> -err_free_charge_irq:
+> -	if (jz_battery->charge_irq >= 0)
+> -		free_irq(jz_battery->charge_irq, jz_battery);
+>  err_free_gpio:
+>  	if (gpio_is_valid(pdata->gpio_charge))
+>  		gpio_free(jz_battery->pdata->gpio_charge);
+> -err_free_irq:
+> -	free_irq(jz_battery->irq, jz_battery);
+> -	platform_set_drvdata(pdev, NULL);
+>  err:
+> +	platform_set_drvdata(pdev, NULL);
+>  	return ret;
+>  }
+>  
+> @@ -379,16 +375,11 @@ static int __devexit jz_battery_remove(struct platform_device *pdev)
+>  
+>  	cancel_delayed_work_sync(&jz_battery->work);
+>  
+> -	if (gpio_is_valid(jz_battery->pdata->gpio_charge)) {
+> -		if (jz_battery->charge_irq >= 0)
+> -			free_irq(jz_battery->charge_irq, jz_battery);
+> +	if (gpio_is_valid(jz_battery->pdata->gpio_charge))
+>  		gpio_free(jz_battery->pdata->gpio_charge);
+> -	}
+>  
+>  	power_supply_unregister(&jz_battery->battery);
+>  
+> -	free_irq(jz_battery->irq, jz_battery);
+> -
+>  	return 0;
+>  }
+>  
 
-You are right. The code is un-necessarily disabling all pwms while trying to
-enable the clock for those which are not enabled also.
-
-
-> >> > +                       if (clk_prepare_enable(pc->clk) < 0)
-> >> > +                               continue;
-> >> > +
-> >> > +               spear_pwm_writel(pc, i, PWMCR, 0);
-> >> > +               clk_disable_unprepare(pc->clk);
-> >> > +       }
-> >>
-> >> You are enabling/disabling clock N times here and each of these will
-> >> write to an register. Do something better.
-> >>
-> >
-> > I need to shut down all active pwms, how else would you suggest that ?
-> 
-> Sorry, i misread the code on the second go :(
-> 
-> I am proposing something like:
-> 
-> static int __devexit spear_pwm_remove(struct platform_device *pdev)
-> {
->        struct spear_pwm_chip *pc = platform_get_drvdata(pdev);
->        int i, clk_enabled = 0;
-> 
->        if (WARN_ON(!pc))
->                return -ENODEV;
-> 
->        for (i = 0; i < NUM_PWM; i++) {
->                struct pwm_device *pwmd = &pc->chip.pwms[i];
-> 
->                if (!test_bit(PWMF_ENABLED, &pwmd->flags) && !clk_enabled)
->                        if (clk_prepare_enable(pc->clk) < 0)
->                                continue;
-> 		       else
-> 			       clk_enabled++;
-> 
->                spear_pwm_writel(pc, i, PWMCR, 0);
->        }
-> 
->        if (clk_enabled)
-> 	       clk_disable_unprepare(pc->clk);
->        ...
-> }
-
-
-It may not be required as pwms which are not enabled do not have
-their clocks enabled. Hence, perhaps we can do following,
-
-8<---------------------------
-static int spear_pwm_remove(struct platform_device *pdev)
-{
-        struct spear_pwm_chip *pc = platform_get_drvdata(pdev);
-        int i;
-
-        if (WARN_ON(!pc))
-                return -ENODEV;
-
-        for (i = 0; i < NUM_PWM; i++) {
-                struct pwm_device *pwm = &pc->chip.pwms[i];
-
-                if (test_bit(PWMF_ENABLED, &pwm->flags)) {
-                        spear_pwm_writel(pc, i, PWMCR, 0);
-                        clk_disable(pc->clk);
-                }
-        }
-
-        /* clk was prepared in probe, hence unprepare it here */
-        clk_unprepare(pc->clk);
-        return pwmchip_remove(&pc->chip);
-}
-
----------------------------->8
-
---
-regards
-Shiraz 
