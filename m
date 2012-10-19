@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757848Ab2JSC4u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Oct 2012 22:56:50 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52404 "EHLO mail.kernel.org"
+	id S965081Ab2JSC5L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Oct 2012 22:57:11 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52371 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965004Ab2JSCtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Oct 2012 22:49:19 -0400
+	id S964992Ab2JSCtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Oct 2012 22:49:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Dave Jones <davej@redhat.com>
-Subject: [ 55/76] fs: handle failed audit_log_start properly
-Date: Thu, 18 Oct 2012 19:47:19 -0700
-Message-Id: <20121019024358.977576495@linuxfoundation.org>
+        Alexander Holler <holler@ahsoftware.de>,
+        Bernie Thompson <bernie@plugable.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [ 42/76] video/udlfb: fix line counting in fb_write
+Date: Thu, 18 Oct 2012 19:47:06 -0700
+Message-Id: <20121019024356.876550295@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc0.18.gf84667d
 In-Reply-To: <20121019024350.087156547@linuxfoundation.org>
 References: <20121019024350.087156547@linuxfoundation.org>
@@ -26,34 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Alexander Holler <holler@ahsoftware.de>
 
-commit d1c7d97ad58836affde6e39980b96527510b572e upstream.
+commit b8c4321f3d194469007f5f5f2b34ec278c264a04 upstream.
 
-audit_log_start() may return NULL, this is unchecked by the caller in
-audit_log_link_denied() and could cause a NULL ptr deref.
+Line 0 and 1 were both written to line 0 (on the display) and all subsequent
+lines had an offset of -1. The result was that the last line on the display
+was never overwritten by writes to /dev/fbN.
 
-Introduced by commit a51d9eaa ("fs: add link restriction audit reporting").
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Dave Jones <davej@redhat.com>
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+Acked-by: Bernie Thompson <bernie@plugable.com>
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/audit.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/video/udlfb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1466,6 +1466,8 @@ void audit_log_link_denied(const char *o
+--- a/drivers/video/udlfb.c
++++ b/drivers/video/udlfb.c
+@@ -647,7 +647,7 @@ static ssize_t dlfb_ops_write(struct fb_
+ 	result = fb_sys_write(info, buf, count, ppos);
  
- 	ab = audit_log_start(current->audit_context, GFP_KERNEL,
- 			     AUDIT_ANOM_LINK);
-+	if (!ab)
-+		return;
- 	audit_log_format(ab, "op=%s action=denied", operation);
- 	audit_log_format(ab, " pid=%d comm=", current->pid);
- 	audit_log_untrustedstring(ab, current->comm);
+ 	if (result > 0) {
+-		int start = max((int)(offset / info->fix.line_length) - 1, 0);
++		int start = max((int)(offset / info->fix.line_length), 0);
+ 		int lines = min((u32)((result / info->fix.line_length) + 1),
+ 				(u32)info->var.yres);
+ 
 
 
