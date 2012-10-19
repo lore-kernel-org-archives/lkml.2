@@ -1,188 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757048Ab2JSNTu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 09:19:50 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:40643 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751780Ab2JSNTt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 09:19:49 -0400
-Date: Fri, 19 Oct 2012 09:07:39 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-Cc: "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 1/6]: PVH: basic and header changes, elfnote changes,
- ...
-Message-ID: <20121019130739.GF26830@phenom.dumpdata.com>
-References: <20121017172642.349b2aae@mantra.us.oracle.com>
+	id S1758227Ab2JSNYn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 09:24:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53786 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755544Ab2JSNYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 09:24:42 -0400
+Date: Fri, 19 Oct 2012 15:24:38 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH 3/6] memcg: Simplify mem_cgroup_force_empty_list error
+ handling
+Message-ID: <20121019132438.GD799@dhcp22.suse.cz>
+References: <1350480648-10905-1-git-send-email-mhocko@suse.cz>
+ <1350480648-10905-4-git-send-email-mhocko@suse.cz>
+ <20121018221654.GP13370@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121017172642.349b2aae@mantra.us.oracle.com>
+In-Reply-To: <20121018221654.GP13370@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 05:26:42PM -0700, Mukesh Rathor wrote:
-> [PATCH 1/6] PVH: is a PV linux guest that has extended capabilities. This patch allows it to be configured and enabled. Also, basic header file changes to add new subcalls to physmap hypercall. Lastly, mfn_to_local_pfn must return mfn for paging mode translate.
-
-Usually one splits that description. So you have:
-
-(for title)
-"xen/pvh: Introduce ParaVirtualized Hardware support."
-
-And then in the body do (and split it in 80 lines for
-easier readability):
-
-ParaVirtualized Hardware (PVH) support allows a PV linux guest that has extended capabilities.
-
-[Q:Like what kind of extended capabilities? Can you explain
-what they are?]
-
-This patch allows it to be configured and enabled. Also, basic header file changes to
-add new subcalls to physmap hypercall. 
-
-Lastly, mfn_to_local_pfn must return mfn for paging mode translate.
-
-[Q: You should explain why. There is nothing in this description
-saying why we do not need the PV MMU anymore]
-
-[note: the verb tense is wrong since I meshed your description
-with mine, so it would have to be fixed]
+On Thu 18-10-12 15:16:54, Tejun Heo wrote:
+> Hello, Michal.
 > 
-> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> ---
->  arch/x86/include/asm/xen/page.h |    3 +++
->  arch/x86/xen/Kconfig            |   10 ++++++++++
->  arch/x86/xen/xen-head.S         |   11 ++++++++++-
->  include/xen/interface/memory.h  |   24 +++++++++++++++++++++++-
->  include/xen/interface/physdev.h |   10 ++++++++++
->  5 files changed, 56 insertions(+), 2 deletions(-)
+> On Wed, Oct 17, 2012 at 03:30:45PM +0200, Michal Hocko wrote:
+> > mem_cgroup_force_empty_list currently tries to remove all pages from
+> > the given LRU. To prevent from temoporary failures (EBUSY returned by
+> > mem_cgroup_move_parent) it uses a margin to the current LRU pages and
+> > returns the true if there are still some pages left on the list.
+> > 
+> > If we consider that mem_cgroup_move_parent fails only when we are racing
+> > with somebody else removing the page (resp. uncharging it) or when the
+> > page is migrated then it is obvious that all those failures are only
+> > temporal and so we can safely retry later.
+> > Let's get rid of the safety margin and make the loop really wait for the
+> > empty LRU. The caller should still make sure that all charges have been
+> > removed from the res_counter because mem_cgroup_replace_page_cache might
+> > add a page to the LRU after the check (it doesn't touch res_counter
+> > though).
+> > This catches most of the cases except for shmem which might call
+> > mem_cgroup_replace_page_cache with a page which is not charged and on
+> > the LRU yet but this was the case also without this patch. In order to
+> > fix this we need a guarantee that try_get_mem_cgroup_from_page falls
+> > back to the current mm's cgroup so it needs css_tryget to fail. This
+> > will be fixed up in a later patch because it nees a help from cgroup
+> > core.
+> > 
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
 > 
-> diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-> index 472b9b7..6af440d 100644
-> --- a/arch/x86/include/asm/xen/page.h
-> +++ b/arch/x86/include/asm/xen/page.h
-> @@ -159,6 +159,9 @@ static inline xpaddr_t machine_to_phys(xmaddr_t machine)
->  static inline unsigned long mfn_to_local_pfn(unsigned long mfn)
->  {
->  	unsigned long pfn = mfn_to_pfn(mfn);
-> +
-> +	if (xen_feature(XENFEAT_auto_translated_physmap))
-> +		return mfn;
->  	if (get_phys_to_machine(pfn) != mfn)
->  		return -1; /* force !pfn_valid() */
->  	return pfn;
-> diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
-> index fdce49c..822c5a0 100644
-> --- a/arch/x86/xen/Kconfig
-> +++ b/arch/x86/xen/Kconfig
-> @@ -50,3 +50,13 @@ config XEN_DEBUG_FS
->  	  Enable statistics output and various tuning options in debugfs.
->  	  Enabling this option may incur a significant performance overhead.
->  
-> +config XEN_X86_PVH
-> +	bool "Support for running as a PVH guest (EXPERIMENTAL)"
-> +	depends on X86_64 && XEN && EXPERIMENTAL
-> +	default n
-> +	help
-> +	   This option enables support for running as a PVH guest (PV guest
-> +	   using hardware extensions) under a suitably capable hypervisor.
-> +	   This option is EXPERIMENTAL because the hypervisor interfaces
-> +	   which it uses are not yet considered stable therefore backwards and
-> +	   forwards compatibility is not yet guaranteed.  If unsure, say N.
-> diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
-> index 7faed58..1a6bca1 100644
-> --- a/arch/x86/xen/xen-head.S
-> +++ b/arch/x86/xen/xen-head.S
-> @@ -13,6 +13,15 @@
->  #include <xen/interface/elfnote.h>
->  #include <asm/xen/interface.h>
->  
-> +#ifdef CONFIG_XEN_X86_PVH
-> +#define FEATURES_PVH "|writable_descriptor_tables" \
-> +		     "|auto_translated_physmap" \
-> +		     "|supervisor_mode_kernel" \
-> +		     "|hvm_callback_vector"
-> +#else
-> +#define FEATURES_PVH /* Not supported */
-> +#endif
-> +
->  	__INIT
->  ENTRY(startup_xen)
->  	cld
-> @@ -95,7 +104,7 @@ NEXT_HYPERCALL(arch_6)
->  #endif
->  	ELFNOTE(Xen, XEN_ELFNOTE_ENTRY,          _ASM_PTR startup_xen)
->  	ELFNOTE(Xen, XEN_ELFNOTE_HYPERCALL_PAGE, _ASM_PTR hypercall_page)
-> -	ELFNOTE(Xen, XEN_ELFNOTE_FEATURES,       .asciz "!writable_page_tables|pae_pgdir_above_4gb")
-> +	ELFNOTE(Xen, XEN_ELFNOTE_FEATURES,       .asciz "!writable_page_tables|pae_pgdir_above_4gb"FEATURES_PVH)
->  	ELFNOTE(Xen, XEN_ELFNOTE_PAE_MODE,       .asciz "yes")
->  	ELFNOTE(Xen, XEN_ELFNOTE_LOADER,         .asciz "generic")
->  	ELFNOTE(Xen, XEN_ELFNOTE_L1_MFN_VALID,
-> diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-> index d8e33a9..425911f 100644
-> --- a/include/xen/interface/memory.h
-> +++ b/include/xen/interface/memory.h
-> @@ -169,7 +169,13 @@ struct xen_add_to_physmap {
->      /* Source mapping space. */
->  #define XENMAPSPACE_shared_info 0 /* shared info page */
->  #define XENMAPSPACE_grant_table 1 /* grant table page */
-> -    unsigned int space;
-> +#define XENMAPSPACE_gmfn        2 /* GMFN */
-> +#define XENMAPSPACE_gmfn_range  3 /* GMFN range */
-> +#define XENMAPSPACE_gmfn_foreign 4 /* GMFN from another guest */
-> +    uint16_t space;
-> +    domid_t foreign_domid;         /* IFF XENMAPSPACE_gmfn_foreign */
-> +
-> +#define XENMAPIDX_grant_table_status 0x80000000
->  
->      /* Index into source mapping space. */
->      unsigned long idx;
-> @@ -237,4 +243,20 @@ DEFINE_GUEST_HANDLE_STRUCT(xen_memory_map);
->   * during a driver critical region.
->   */
->  extern spinlock_t xen_reservation_lock;
-> +
-> +/*
-> + * Unmaps the page appearing at a particular GPFN from the specified guest's
-> + * pseudophysical address space.
-> + * arg == addr of xen_remove_from_physmap_t.
-> + */
-> +#define XENMEM_remove_from_physmap      15
-> +struct xen_remove_from_physmap {
-> +    /* Which domain to change the mapping for. */
-> +    domid_t domid;
-> +
-> +    /* GPFN of the current mapping of the page. */
-> +    xen_pfn_t gpfn;
-> +};
-> +DEFINE_GUEST_HANDLE_STRUCT(xen_remove_from_physmap);
-> +
->  #endif /* __XEN_PUBLIC_MEMORY_H__ */
-> diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
-> index 9ce788d..3b9d5b6 100644
-> --- a/include/xen/interface/physdev.h
-> +++ b/include/xen/interface/physdev.h
-> @@ -258,6 +258,16 @@ struct physdev_pci_device {
->      uint8_t devfn;
->  };
->  
-> +#define PHYSDEVOP_pvh_map_iomem        30
-> +struct physdev_map_iomem {
-> +    /* IN */
-> +    uint64_t first_gfn;
-> +    uint64_t first_mfn;
-> +    uint32_t nr_mfns;
-> +    uint32_t add_mapping;        /* 1 == add mapping;  0 == unmap */
-> +
-> +};
-> +
->  /*
->   * Notify that some PIRQ-bound event channels have been unmasked.
->   * ** This command is obsolete since interface version 0x00030202 and is **
-> -- 
-> 1.7.2.3
+> In the sense that "I looked at it and nothing seemed too scary".
+> 
+>  Reviewed-by: Tejun Heo <tj@kernel.org>
+
+Thanks
+
+> 
+> Some nitpicks below.
+> 
+> >  /*
+> > - * move charges to its parent.
+> > + * move charges to its parent or the root cgroup if the group
+> > + * has no parent (aka use_hierarchy==0).
+> > + * Although this might fail the failure is always temporary and it
+> > + * signals a race with a page removal/uncharge or migration. In the
+> > + * first case the page will vanish from the LRU on the next attempt
+> > + * and the call should be retried later.
+> >   */
+> > -
+> 
+> Maybe convert to proper /** function comment while at it?  
+
+these are internal functions and we usually do not create kerneldoc for
+them. But I can surely change it - it would deserve a bigger clean up
+then.
+
+> I also think it would be helpful to actually comment on each possible
+> failure case explaining why the failure condition is temporal.
+
+What about:
+"
+ * Although this might fail (get_page_unless_zero, isolate_lru_page or
+ * mem_cgroup_move_account fails) the failure is always temporary and
+ * it signals a race with a page removal/uncharge or migration. In the
+ * first case the page is on the way out and it will vanish from the LRU
+ * on the next attempt and the call should be retried later.
+ * Isolation from the LRU fails only if page has been isolated from
+ * the LRU since we looked at it and that usually means either global
+ * reclaim or migration going on. The page will either get back to the
+ * LRU or vanish.
+ * Finaly mem_cgroup_move_account fails only if the page got uncharged
+ * (!PageCgroupUsed) or moved to a different group. The page will
+ * disappear in the next attempt.
+"
+
+Better? Or should it rather be in the changelog?
+
+> 
+> >  /*
+> >   * Traverse a specified page_cgroup list and try to drop them all.  This doesn't
+> > - * reclaim the pages page themselves - it just removes the page_cgroups.
+> > - * Returns true if some page_cgroups were not freed, indicating that the caller
+> > - * must retry this operation.
+> > + * reclaim the pages page themselves - pages are moved to the parent (or root)
+> > + * group.
+> >   */
+> 
+> Ditto.
+> 
+> > -static bool mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+> > +static void mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+> >  				int node, int zid, enum lru_list lru)
+> >  {
+> >  	struct mem_cgroup_per_zone *mz;
+> > -	unsigned long flags, loop;
+> > +	unsigned long flags;
+> >  	struct list_head *list;
+> >  	struct page *busy;
+> >  	struct zone *zone;
+> > @@ -3696,11 +3701,8 @@ static bool mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+> >  	mz = mem_cgroup_zoneinfo(memcg, node, zid);
+> >  	list = &mz->lruvec.lists[lru];
+> >  
+> > -	loop = mz->lru_size[lru];
+> > -	/* give some margin against EBUSY etc...*/
+> > -	loop += 256;
+> >  	busy = NULL;
+> > -	while (loop--) {
+> > +	do {
+> >  		struct page_cgroup *pc;
+> >  		struct page *page;
+> >  
+> > @@ -3726,8 +3728,7 @@ static bool mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+> >  			cond_resched();
+> >  		} else
+> >  			busy = NULL;
+> > -	}
+> > -	return !list_empty(list);
+> > +	} while (!list_empty(list));
+> >  }
+> 
+> Is there anything which can keep failing until migration to another
+> cgroup is complete?  
+
+This is not about migration to another cgroup. Remember there are no
+tasks in the group so we have no origin for the migration. I was talking
+about migrate_pages.
+
+> I think there is, e.g., if mmap_sem is busy or memcg is co-mounted
+> with other controllers and another controller's ->attach() is blocking
+> on something.
+
+I am not sure I understand your concern. There are no tasks and we will
+break out the loop if some appear. And yes we can retry a lot in
+pathological cases. But this is a group removal path which is not hot.
+
+> If so, busy-looping blindly probably isn't a good idea and we would
+> want at least msleep between retries (e.g. have two lists, throw
+> failed ones to the other and sleep shortly when switching the front
+> and back lists).
+
+we do cond_resched if we fail.
+
+> > +		/*
+> > +		 * This is a safety check because mem_cgroup_force_empty_list
+> > +		 * could have raced with mem_cgroup_replace_page_cache callers
+> > +		 * so the lru seemed empty but the page could have been added
+> > +		 * right after the check. RES_USAGE should be safe as we always
+> > +		 * charge before adding to the LRU.
+> > +		 */
+> > +	} while (res_counter_read_u64(&memcg->res, RES_USAGE) > 0);
+> 
+> Maybe we want to trigger some warning if retry count gets too high?
+> At least for now?
+
+We can but is this really worth it?
+-- 
+Michal Hocko
+SUSE Labs
