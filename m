@@ -1,114 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab2JTVhz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 17:37:55 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:46156 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab2JTVhx (ORCPT
+	id S1752710Ab2JTVl4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 17:41:56 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:48747 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626Ab2JTVlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 17:37:53 -0400
-Date: Sat, 20 Oct 2012 14:37:48 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Dipankar Sarma <dipankar@in.ibm.com>,
-        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] RCU: update docs to include kfree_rcu()
-Message-ID: <20121020213748.GQ2518@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20121019164830.GA4896@www.outflux.net>
+	Sat, 20 Oct 2012 17:41:55 -0400
+Date: Sat, 20 Oct 2012 23:42:17 +0200
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: Heinz Diehl <htd@fritha.org>
+Cc: Martin Peres <martin.peres@labri.fr>, Heinz Diehl <htd@fancy-poultry.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>,
+        David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        marcheu@chromium.org
+Subject: Re: Linux 3.7-rc1 (nouveau_bios_score oops).
+Message-ID: <20121020214217.GC5826@joi.lan>
+References: <1724445.dN2yMEzN6d@localhost>
+ <CA+55aFy8Te9VFaZRZSDYMehbfg-qLDBYv6=EKncQ2=J2XaF+Vg@mail.gmail.com>
+ <20121020092647.GA3186@fancy-poultry.org>
+ <50827174.7070109@labri.fr>
+ <20121020104238.GA1539@fritha.org>
+ <20121020202846.GA5826@joi.lan>
+ <20121020212036.GA1698@fritha.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121019164830.GA4896@www.outflux.net>
+In-Reply-To: <20121020212036.GA1698@fritha.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12102021-2398-0000-0000-00000CA47309
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000197; KW=3.00000007;
- PH=3.00000001; SC=3.00000008; SDB=6.00184210; UDB=6.00041728; UTC=2012-10-20
- 21:37:52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 09:48:30AM -0700, Kees Cook wrote:
-> Mention kfree_rcu() in the call_rcu() section. Additionally fix the
-> example code for list replacement that used the wrong structure element.
+On Sat, Oct 20, 2012 at 11:20:36PM +0200, Heinz Diehl wrote:
+> On 20.10.2012, Marcin Slusarz wrote: 
+> 
+> > Try this one.
+> 
+> It works, now I can boot again. However, nouveau seems to be dead now.
+> The dmesg output with your patch on top of 3.7-rc1 is:
+> 
+> [    3.685909] [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
+> [    3.687784] nouveau  [  DEVICE][0000:01:00.0] BOOT0  : 0x0a8800b1
+> [    3.689960] nouveau  [  DEVICE][0000:01:00.0] Chipset: GT218 (NVA8)
+> [    3.692471] nouveau  [  DEVICE][0000:01:00.0] Family : NV50
+> [    3.695716] nouveau  [   VBIOS][0000:01:00.0] checking PRAMIN for image...
+> [    3.697087] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
+> [    3.698471] nouveau  [   VBIOS][0000:01:00.0] checking PROM for image...
+> [    3.699838] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
+> [    3.701223] nouveau  [   VBIOS][0000:01:00.0] checking ACPI for image...
+> [    3.702684] ACPI Error: Field [ROMI] Base+Offset+Width 0+24+1 is beyond end of region [VROM] (length 24) (20120913/exfldio-210)
+> [    3.704139] ACPI Error: Method parse/execution failed[\_SB_.PCI0.PEG1.GFX0._ROM] (Node ffff880142e85cf8), AE_AML_REGION_LIMIT (20120913/psparse-536)
+> [    3.716183] failed to evaluate ROM got AE_AML_REGION_LIMIT
+> [    3.718776] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
+> [    3.721349] nouveau  [   VBIOS][0000:01:00.0] checking PCIROM for image...
+> [    3.724111] nouveau 0000:01:00.0: Invalid ROM contents
+> [    3.726663] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
+> [    3.729159] nouveau E[   VBIOS][0000:01:00.0] unable to locate usable image
+> [    3.731677] nouveau E[  DEVICE][0000:01:00.0] failed to create 0x10000001, -22
+> [    3.734231] nouveau E[     DRM] failed to create 0x80000080, -22
+> [    3.736097] nouveau: probe of 0000:01:00.0 failed with error -22
+> [    3.740523] dracut: Starting plymouth daemon
+> 
+> And here's the same output with plain vanilla 3.6.2:
+> 
+> [    3.588791] [drm] nouveau 0000:01:00.0: Detected an NV50 generation card (0x0a8800b1)
+> [    3.599783] vga_switcheroo: enabled
+> [    3.601303] [drm] nouveau 0000:01:00.0: Checking PRAMIN for VBIOS
+> [    3.602817] [drm] nouveau 0000:01:00.0: ... BIOS signature not found
+> [    3.604294] [drm] nouveau 0000:01:00.0: Checking PROM for VBIOS
+> [    3.605822] [drm] nouveau 0000:01:00.0: ... BIOS signature not found
+> [    3.607310] [drm] nouveau 0000:01:00.0: Checking ACPI for VBIOS
+> [    3.856854] [drm] nouveau 0000:01:00.0: ... appears to be valid
+> [    3.859409] [drm] nouveau 0000:01:00.0: Using VBIOS from ACPI
+> [    3.861907] [drm] nouveau 0000:01:00.0: BIT BIOS found
+> [    3.864369] [drm] nouveau 0000:01:00.0: Bios version 70.18.5d.00
+> [    3.866829] [drm] nouveau 0000:01:00.0: TMDS table version 2.0
+> [    3.869479] [drm] nouveau 0000:01:00.0: MXM: no VBIOS data, nothing to do
+> [    3.870871] [drm] nouveau 0000:01:00.0: DCB version 4.0
+> [    3.872220] [drm] nouveau 0000:01:00.0: DCB outp 00: 02014300 00000000
+> [    3.873611] [drm] nouveau 0000:01:00.0: DCB conn 00: 00000040
+> [    3.874994] [drm] nouveau 0000:01:00.0: DCB conn 01: 00410146
+> [    3.876367] [drm] nouveau 0000:01:00.0: DCB conn 02: 00001261
+> [    3.877719] [drm] nouveau 0000:01:00.0: DCB conn 03: 00002330
+> [    3.879043] [drm] nouveau 0000:01:00.0: DCB conn 04: 00000400
+> [    3.880355] [drm] nouveau 0000:01:00.0: DCB conn 05: 00000560
+> [    3.881662] [drm] nouveau 0000:01:00.0: Adaptor not initialised, running VBIOS init tables.
+> [    3.882961] [drm] nouveau 0000:01:00.0: Parsing VBIOS init table 0 at offset 0xDECD
+> [    3.936538] [drm] nouveau 0000:01:00.0: 0xDE34: i2c wr fail: -6
+> [    3.957932] [drm] nouveau 0000:01:00.0: Parsing VBIOS init table 1 at offset 0xE378
+> [    3.987046] [drm] nouveau 0000:01:00.0: Parsing VBIOS init table 2 at offset 0xEF4B
+> [    3.988396] [drm] nouveau 0000:01:00.0: Parsing VBIOS init table 3 at offset 0xEF64
+> [    3.990741] [drm] nouveau 0000:01:00.0: Parsing VBIOS init table 4 at offset 0xF04B
+> [    3.992020] [drm] nouveau 0000:01:00.0: Parsing VBIOS init table at offset 0xF0B0
+> [    4.018084] [TTM] Zone  kernel: Available graphics memory: 1917766 kiB
+> [    4.019438] [TTM] Initializing pool allocator
+> [    4.020694] [TTM] Initializing DMA pool allocator
+> [    4.021914] [drm] nouveau 0000:01:00.0: Detected 1024MiB VRAM (DDR3)
+> [    4.024515] [drm] nouveau 0000:01:00.0: 512 MiB GART (aperture)
+> [    4.083748] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+> [    4.084909] [drm] No driver support for vblank timestamp query.
+> [    4.085985] [drm] nouveau 0000:01:00.0: ACPI backlight interface available, not registering our own
+> [    4.246449] [drm] nouveau 0000:01:00.0: 3 available performance level(s)
+> [    4.247560] [drm] nouveau 0000:01:00.0: 0: core 135MHz shader 270MHz memory 135MHz voltage 850mV
+> [    4.248707] [drm] nouveau 0000:01:00.0: 1: core 405MHz shader 810MHz memory 405MHz voltage 850mV
+> [    4.249807] [drm] nouveau 0000:01:00.0: 3: core 606MHz shader 1468MHz memory 667MHz voltage 1000mV
+> [    4.250946] [drm] nouveau 0000:01:00.0: c: core 405MHz shader 810MHz memory 405MHz
+> [    4.289382] [drm] nouveau 0000:01:00.0: MM: using COPY for buffer copies
+> [    4.668174] No connectors reported connected with modes
+> [    4.669252] [drm] Cannot find any crtc or sizes - going 1024x768
+> [    4.683844] [drm] nouveau 0000:01:00.0: allocated 1024x768 fb: 0x2c0000, bo ffff88013ab53400
+> [    4.685057] fb1: nouveaufb frame buffer device
+> [    4.686244] [drm] Initialized nouveau 1.0.0 20120316 for 0000:01:00.0 on minor 1
+> [    4.691233] dracut: Starting plymouth daemon
+>
+> > Now, the question is: could 3.6 kernel get VBIOS by ACPI?
+> > If yes, please mount debugfs and send vbios.rom to me please.
+> > (cat /sys/kernel/debug/dri/0/vbios.rom > vbios.rom)
+> 
+> There's no such file on my machine (with mounted debugfs, of course).
 
-Good catch!  Queued, and thank you for your review and feedback!  ;-)
+On 3.6 kernel? (It doesn't exist on 3.7)
+Note that it may be in other directory than "0".
 
-							Thanx, Paul
-
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  Documentation/RCU/listRCU.txt   |    2 +-
->  Documentation/RCU/whatisRCU.txt |   13 +++++++++++--
->  2 files changed, 12 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/RCU/listRCU.txt b/Documentation/RCU/listRCU.txt
-> index 4349c14..adb5a37 100644
-> --- a/Documentation/RCU/listRCU.txt
-> +++ b/Documentation/RCU/listRCU.txt
-> @@ -205,7 +205,7 @@ RCU ("read-copy update") its name.  The RCU code is as follows:
->  				audit_copy_rule(&ne->rule, &e->rule);
->  				ne->rule.action = newaction;
->  				ne->rule.file_count = newfield_count;
-> -				list_replace_rcu(e, ne);
-> +				list_replace_rcu(&e->list, &ne->list);
->  				call_rcu(&e->rcu, audit_free_rule);
->  				return 0;
->  			}
-> diff --git a/Documentation/RCU/whatisRCU.txt b/Documentation/RCU/whatisRCU.txt
-> index bf0f6de..160ac55 100644
-> --- a/Documentation/RCU/whatisRCU.txt
-> +++ b/Documentation/RCU/whatisRCU.txt
-> @@ -499,6 +499,8 @@ The foo_reclaim() function might appear as follows:
->  	{
->  		struct foo *fp = container_of(rp, struct foo, rcu);
-> 
-> +		foo_cleanup(fp->a);
-> +
->  		kfree(fp);
->  	}
-> 
-> @@ -521,6 +523,12 @@ o	Use call_rcu() -after- removing a data element from an
->  	read-side critical sections that might be referencing that
->  	data item.
-> 
-> +If the callback for call_rcu() is not doing anything more than calling
-> +kfree() on the structure, you can use kfree_rcu() instead of call_rcu()
-> +to avoid having to write your own callback:
-> +
-> +	kfree_rcu(old_fp, rcu);
-> +
->  Again, see checklist.txt for additional rules governing the use of RCU.
-> 
-> 
-> @@ -773,8 +781,8 @@ a single atomic update, converting to RCU will require special care.
-> 
->  Also, the presence of synchronize_rcu() means that the RCU version of
->  delete() can now block.  If this is a problem, there is a callback-based
-> -mechanism that never blocks, namely call_rcu(), that can be used in
-> -place of synchronize_rcu().
-> +mechanism that never blocks, namely call_rcu() or kfree_rcu(), that can
-> +be used in place of synchronize_rcu().
-> 
-> 
->  7.  FULL LIST OF RCU APIs
-> @@ -813,6 +821,7 @@ RCU:	Critical sections	Grace period		Barrier
->  	rcu_read_unlock		synchronize_rcu
->  	rcu_dereference		synchronize_rcu_expedited
->  				call_rcu
-> +				kfree_rcu
-> 
-> 
->  bh:	Critical sections	Grace period		Barrier
-> -- 
-> 1.7.9.5
-> 
-> 
-> -- 
-> Kees Cook
-> Chrome OS Security
-> 
-
+Marcin
