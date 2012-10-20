@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933299Ab2JTBaY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 21:30:24 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:18150 "EHLO
+	id S933287Ab2JTBaX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 21:30:23 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:18149 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932505Ab2JTBaT (ORCPT
+	with ESMTP id S932258Ab2JTBaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Oct 2012 21:30:19 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         mukesh.rathor@oracle.com, Ian.Campbell@citrix.com,
         stefano.stabellini@eu.citrix.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/6] xen/pvh: Support ParaVirtualized Hardware extensions.
-Date: Fri, 19 Oct 2012 21:17:57 -0400
-Message-Id: <1350695882-12820-2-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 5/6] xen/pvh: balloon and grant changes.
+Date: Fri, 19 Oct 2012 21:18:01 -0400
+Message-Id: <1350695882-12820-6-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1350695882-12820-1-git-send-email-konrad.wilk@oracle.com>
 References: <1350695882-12820-1-git-send-email-konrad.wilk@oracle.com>
@@ -25,147 +25,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mukesh Rathor <mukesh.rathor@oracle.com>
 
-PVH allows PV linux guest to utilize hardware extended capabilities, such
-as running MMU updates in a HVM container.
-
-This patch allows it to be configured and enabled. Also, basic header file
-changes to add new subcalls to physmap hypercall.
-
-Lastly, mfn_to_local_pfn must return mfn for paging mode translate
-(since we let the hypervisor - or CPU - do them for us).
+For balloon changes we skip setting of local P2M as it's updated
+in Xen. For grant, the shared grant frame is the pfn and not mfn,
+hence its mapped via the same code path as HVM.
 
 Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/include/asm/xen/page.h |    3 +++
- arch/x86/xen/Kconfig            |   10 ++++++++++
- arch/x86/xen/xen-head.S         |   11 ++++++++++-
- include/xen/interface/memory.h  |   24 +++++++++++++++++++++++-
- include/xen/interface/physdev.h |   10 ++++++++++
- 5 files changed, 56 insertions(+), 2 deletions(-)
+ drivers/xen/balloon.c     |   15 +++++++++------
+ drivers/xen/gntdev.c      |    3 ++-
+ drivers/xen/grant-table.c |   26 ++++++++++++++++++++++----
+ 3 files changed, 33 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index 472b9b7..6af440d 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -159,6 +159,9 @@ static inline xpaddr_t machine_to_phys(xmaddr_t machine)
- static inline unsigned long mfn_to_local_pfn(unsigned long mfn)
+diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+index 31ab82f..c825b63 100644
+--- a/drivers/xen/balloon.c
++++ b/drivers/xen/balloon.c
+@@ -361,7 +361,9 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
+ 		set_phys_to_machine(pfn, frame_list[i]);
+ 
+ 		/* Link back into the page tables if not highmem. */
+-		if (xen_pv_domain() && !PageHighMem(page)) {
++		if (xen_pv_domain() && !PageHighMem(page) &&
++		    !xen_feature(XENFEAT_auto_translated_physmap)) {
++
+ 			int ret;
+ 			ret = HYPERVISOR_update_va_mapping(
+ 				(unsigned long)__va(pfn << PAGE_SHIFT),
+@@ -418,12 +420,13 @@ static enum bp_state decrease_reservation(unsigned long nr_pages, gfp_t gfp)
+ 		scrub_page(page);
+ 
+ 		if (xen_pv_domain() && !PageHighMem(page)) {
+-			ret = HYPERVISOR_update_va_mapping(
+-				(unsigned long)__va(pfn << PAGE_SHIFT),
+-				__pte_ma(0), 0);
+-			BUG_ON(ret);
++			if (!xen_feature(XENFEAT_auto_translated_physmap)) {
++				ret = HYPERVISOR_update_va_mapping(
++					(unsigned long)__va(pfn << PAGE_SHIFT),
++					__pte_ma(0), 0);
++				BUG_ON(ret);
++			}
+ 		}
+-
+ 	}
+ 
+ 	/* Ensure that ballooned highmem pages don't have kmaps. */
+diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+index 610bfc6..d39d54e 100644
+--- a/drivers/xen/gntdev.c
++++ b/drivers/xen/gntdev.c
+@@ -803,7 +803,8 @@ static int __init gntdev_init(void)
+ 	if (!xen_domain())
+ 		return -ENODEV;
+ 
+-	use_ptemod = xen_pv_domain();
++	use_ptemod = xen_pv_domain() &&
++		     !xen_feature(XENFEAT_auto_translated_physmap);
+ 
+ 	err = misc_register(&gntdev_miscdev);
+ 	if (err != 0) {
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index b2b0a37..9c0019d 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -1029,14 +1029,19 @@ static void gnttab_unmap_frames_v2(void)
+ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
  {
- 	unsigned long pfn = mfn_to_pfn(mfn);
-+
-+	if (xen_feature(XENFEAT_auto_translated_physmap))
-+		return mfn;
- 	if (get_phys_to_machine(pfn) != mfn)
- 		return -1; /* force !pfn_valid() */
- 	return pfn;
-diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
-index fdce49c..822c5a0 100644
---- a/arch/x86/xen/Kconfig
-+++ b/arch/x86/xen/Kconfig
-@@ -50,3 +50,13 @@ config XEN_DEBUG_FS
- 	  Enable statistics output and various tuning options in debugfs.
- 	  Enabling this option may incur a significant performance overhead.
+ 	struct gnttab_setup_table setup;
+-	unsigned long *frames;
++	unsigned long *frames, start_gpfn;
+ 	unsigned int nr_gframes = end_idx + 1;
+ 	int rc;
  
-+config XEN_X86_PVH
-+	bool "Support for running as a PVH guest (EXPERIMENTAL)"
-+	depends on X86_64 && XEN && EXPERIMENTAL
-+	default n
-+	help
-+	   This option enables support for running as a PVH guest (PV guest
-+	   using hardware extensions) under a suitably capable hypervisor.
-+	   This option is EXPERIMENTAL because the hypervisor interfaces
-+	   which it uses are not yet considered stable therefore backwards and
-+	   forwards compatibility is not yet guaranteed.  If unsure, say N.
-diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
-index 7faed58..1a6bca1 100644
---- a/arch/x86/xen/xen-head.S
-+++ b/arch/x86/xen/xen-head.S
-@@ -13,6 +13,15 @@
- #include <xen/interface/elfnote.h>
- #include <asm/xen/interface.h>
+-	if (xen_hvm_domain()) {
++	if (xen_hvm_domain() || xen_feature(XENFEAT_auto_translated_physmap)) {
+ 		struct xen_add_to_physmap xatp;
+ 		unsigned int i = end_idx;
+ 		rc = 0;
++
++		if (xen_hvm_domain())
++			start_gpfn = xen_hvm_resume_frames >> PAGE_SHIFT;
++		else
++			start_gpfn = virt_to_pfn(gnttab_shared.addr);
+ 		/*
+ 		 * Loop backwards, so that the first hypercall has the largest
+ 		 * index, ensuring that the table will grow only once.
+@@ -1045,7 +1050,7 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
+ 			xatp.domid = DOMID_SELF;
+ 			xatp.idx = i;
+ 			xatp.space = XENMAPSPACE_grant_table;
+-			xatp.gpfn = (xen_hvm_resume_frames >> PAGE_SHIFT) + i;
++			xatp.gpfn = start_gpfn + i;
+ 			rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp);
+ 			if (rc != 0) {
+ 				printk(KERN_WARNING
+@@ -1108,7 +1113,7 @@ static void gnttab_request_version(void)
+ 	int rc;
+ 	struct gnttab_set_version gsv;
  
-+#ifdef CONFIG_XEN_X86_PVH
-+#define FEATURES_PVH "|writable_descriptor_tables" \
-+		     "|auto_translated_physmap" \
-+		     "|supervisor_mode_kernel" \
-+		     "|hvm_callback_vector"
-+#else
-+#define FEATURES_PVH /* Not supported */
-+#endif
-+
- 	__INIT
- ENTRY(startup_xen)
- 	cld
-@@ -95,7 +104,7 @@ NEXT_HYPERCALL(arch_6)
- #endif
- 	ELFNOTE(Xen, XEN_ELFNOTE_ENTRY,          _ASM_PTR startup_xen)
- 	ELFNOTE(Xen, XEN_ELFNOTE_HYPERCALL_PAGE, _ASM_PTR hypercall_page)
--	ELFNOTE(Xen, XEN_ELFNOTE_FEATURES,       .asciz "!writable_page_tables|pae_pgdir_above_4gb")
-+	ELFNOTE(Xen, XEN_ELFNOTE_FEATURES,       .asciz "!writable_page_tables|pae_pgdir_above_4gb"FEATURES_PVH)
- 	ELFNOTE(Xen, XEN_ELFNOTE_PAE_MODE,       .asciz "yes")
- 	ELFNOTE(Xen, XEN_ELFNOTE_LOADER,         .asciz "generic")
- 	ELFNOTE(Xen, XEN_ELFNOTE_L1_MFN_VALID,
-diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-index b66d04c..8beebdb 100644
---- a/include/xen/interface/memory.h
-+++ b/include/xen/interface/memory.h
-@@ -169,7 +169,13 @@ struct xen_add_to_physmap {
-     /* Source mapping space. */
- #define XENMAPSPACE_shared_info 0 /* shared info page */
- #define XENMAPSPACE_grant_table 1 /* grant table page */
--    unsigned int space;
-+#define XENMAPSPACE_gmfn        2 /* GMFN */
-+#define XENMAPSPACE_gmfn_range  3 /* GMFN range */
-+#define XENMAPSPACE_gmfn_foreign 4 /* GMFN from another guest */
-+    uint16_t space;
-+    domid_t foreign_domid;         /* IFF XENMAPSPACE_gmfn_foreign */
-+
-+#define XENMAPIDX_grant_table_status 0x80000000
+-	if (xen_hvm_domain())
++	if (xen_hvm_domain() || xen_feature(XENFEAT_auto_translated_physmap))
+ 		gsv.version = 1;
+ 	else
+ 		gsv.version = 2;
+@@ -1136,12 +1141,25 @@ static void gnttab_request_version(void)
+ int gnttab_resume(void)
+ {
+ 	unsigned int max_nr_gframes;
++	char *kmsg = "Failed to kmalloc pages for pv in hvm grant frames\n";
  
-     /* Index into source mapping space. */
-     xen_ulong_t idx;
-@@ -237,4 +243,20 @@ DEFINE_GUEST_HANDLE_STRUCT(xen_memory_map);
-  * during a driver critical region.
-  */
- extern spinlock_t xen_reservation_lock;
-+
-+/*
-+ * Unmaps the page appearing at a particular GPFN from the specified guest's
-+ * pseudophysical address space.
-+ * arg == addr of xen_remove_from_physmap_t.
-+ */
-+#define XENMEM_remove_from_physmap      15
-+struct xen_remove_from_physmap {
-+    /* Which domain to change the mapping for. */
-+    domid_t domid;
-+
-+    /* GPFN of the current mapping of the page. */
-+    xen_pfn_t gpfn;
-+};
-+DEFINE_GUEST_HANDLE_STRUCT(xen_remove_from_physmap);
-+
- #endif /* __XEN_PUBLIC_MEMORY_H__ */
-diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
-index 1844d31..83050d3 100644
---- a/include/xen/interface/physdev.h
-+++ b/include/xen/interface/physdev.h
-@@ -274,6 +274,16 @@ struct physdev_dbgp_op {
-     } u;
- };
+ 	gnttab_request_version();
+ 	max_nr_gframes = gnttab_max_grant_frames();
+ 	if (max_nr_gframes < nr_grant_frames)
+ 		return -ENOSYS;
  
-+#define PHYSDEVOP_map_iomem        30
-+struct physdev_map_iomem {
-+    /* IN */
-+    uint64_t first_gfn;
-+    uint64_t first_mfn;
-+    uint32_t nr_mfns;
-+    uint32_t add_mapping; /* 1 == add mapping;  0 == unmap */
-+
-+};
-+
- /*
-  * Notify that some PIRQ-bound event channels have been unmasked.
-  * ** This command is obsolete since interface version 0x00030202 and is **
++	/* PVH note: xen will free existing kmalloc'd mfn in
++	 * XENMEM_add_to_physmap. TBD/FIXME: use xen ballooning instead of
++	 * kmalloc(). */
++	if (xen_pv_domain() && xen_feature(XENFEAT_auto_translated_physmap) &&
++	    !gnttab_shared.addr) {
++		gnttab_shared.addr =
++			kmalloc(max_nr_gframes * PAGE_SIZE, GFP_KERNEL);
++		if (!gnttab_shared.addr) {
++			pr_warn("%s", kmsg);
++			return -ENOMEM;
++		}
++	}
+ 	if (xen_pv_domain())
+ 		return gnttab_map(0, nr_grant_frames - 1);
+ 
 -- 
 1.7.7.6
 
