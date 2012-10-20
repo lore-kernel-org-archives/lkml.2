@@ -1,266 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029Ab2JTGkR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 02:40:17 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55049 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750945Ab2JTGkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 02:40:15 -0400
-Message-ID: <5082473D.9080306@ti.com>
-Date: Sat, 20 Oct 2012 12:09:57 +0530
-From: Prabhakar Lad <prabhakar.lad@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1753351Ab2JTGnB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 02:43:01 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53670 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab2JTGm7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Oct 2012 02:42:59 -0400
 MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>
-CC: <mchehab@infradead.org>, <laurent.pinchart@ideasonboard.com>,
-        <manjunath.hadli@ti.com>, <linux-media@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux-davincidsp.com>
-Subject: Re: [PATCH] media:davinci: clk - {prepare/unprepare} for common clk
- framework
-References: <1350670341-18982-1-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1350670341-18982-1-git-send-email-m-karicheri2@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1350654126.2768.5.camel@twins>
+References: <1350635770-9189-1-git-send-email-xtfeng@gmail.com>
+	<1350654126.2768.5.camel@twins>
+Date: Sat, 20 Oct 2012 14:42:58 +0800
+Message-ID: <CAJn8CcE5McFB-FH981Pj+eahNOt8ck3ncJwD4xocU_LrAtjBHA@mail.gmail.com>
+Subject: Re: [PATCH] sched, autogroup: fix kernel crashes caused by runtime
+ disable autogroup
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
+        Ingo Molnar <mingo@redhat.com>, Mike Galbraith <efault@gmx.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Murali,
+On Fri, Oct 19, 2012 at 9:42 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> Always try and CC people who wrote the code..
+>
+> On Fri, 2012-10-19 at 16:36 +0800, Xiaotian Feng wrote:
+>> There's a regression from commit 800d4d30, in autogroup_move_group()
+>>
+>>       p->signal->autogroup = autogroup_kref_get(ag);
+>>
+>>       if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
+>>               goto out;
+>>       ...
+>>     out:
+>>       autogroup_kref_put(prev);
+>>
+>> So kernel changed p's autogroup to ag, but never sched_move_task(p).
+>> Then previous autogroup of p is released, which may release task_group
+>> related with p. After commit 8323f26ce, p->sched_task_group might point
+>> to this stale value, and thus caused kernel crashes.
+>>
+>> This is very easy to reproduce, add "kernel.sched_autogroup_enabled = 0"
+>> to your /etc/sysctl.conf, your system will never boot up. It is not reasonable
+>> to put the sysctl enabled check in autogroup_move_group(), kernel should check
+>> it before autogroup_create in sched_autogroup_create_attach().
+>>
+>> Reported-by: cwillu <cwillu@cwillu.com>
+>> Reported-by: Luis Henriques <luis.henriques@canonical.com>
+>> Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+>> Cc: Ingo Molnar <mingo@redhat.com>
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>> ---
+>>  kernel/sched/auto_group.c |   10 +++++-----
+>>  1 file changed, 5 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/kernel/sched/auto_group.c b/kernel/sched/auto_group.c
+>> index 0984a21..ac62415 100644
+>> --- a/kernel/sched/auto_group.c
+>> +++ b/kernel/sched/auto_group.c
+>> @@ -143,15 +143,11 @@ autogroup_move_group(struct task_struct *p, struct autogroup *ag)
+>>
+>>       p->signal->autogroup = autogroup_kref_get(ag);
+>>
+>> -     if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
+>> -             goto out;
+>> -
+>>       t = p;
+>>       do {
+>>               sched_move_task(t);
+>>       } while_each_thread(p, t);
+>>
+>> -out:
+>>       unlock_task_sighand(p, &flags);
+>>       autogroup_kref_put(prev);
+>>  }
+>
+> So I've looked at this for all of 1 minute, but why isn't moving that
+> check up one line to be above the p->signal->autogroup assignment
+> enough?
 
-On Friday 19 October 2012 11:42 PM, Murali Karicheri wrote:
-> As a first step towards migrating davinci platforms to use common clock
-> framework, replace all instances of clk_enable() with clk_prepare_enable()
-> and clk_disable() with clk_disable_unprepare().
-> 
-> Also fixes some issues related to clk clean up in the driver
-> 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> ---
->  drivers/media/video/davinci/dm355_ccdc.c  |    8 ++++++--
->  drivers/media/video/davinci/dm644x_ccdc.c |   16 ++++++++++------
->  drivers/media/video/davinci/isif.c        |    5 ++++-
->  drivers/media/video/davinci/vpbe.c        |   10 +++++++---
->  drivers/media/video/davinci/vpif.c        |    8 ++++----
->  5 files changed, 31 insertions(+), 16 deletions(-)
-> 
-Thanks for the patch. Can you rebase this patch on 3.7, Since
-the folder structure for media drivers has been reorganised.
-And for some reason this patch hasn't reached any mailing list.
+I think if autogroup is disabled, we don't need to use
+autogroup_create() to create a new ag and tg, kernel will not use it.
 
-Thanks And Regards,
---Prabhakar Lad
+>
+>> @@ -159,8 +155,12 @@ out:
+>>  /* Allocates GFP_KERNEL, cannot be called under any spinlock */
+>>  void sched_autogroup_create_attach(struct task_struct *p)
+>>  {
+>> -     struct autogroup *ag = autogroup_create();
+>> +     struct autogroup *ag;
+>> +
+>> +     if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
+>> +             return;
+>>
+>> +     ag = autogroup_create();
+>>       autogroup_move_group(p, ag);
+>>       /* drop extra reference added by autogroup_create() */
+>>       autogroup_kref_put(ag);
+>
+> Man,.. so on memory allocation fail we'll put the group in
+> autogroup_default, which I think ends up being the root cgroup.
+>
+> But what happens when sysctl_sched_autogroup_enabled is false?
+>
 
-> diff --git a/drivers/media/video/davinci/dm355_ccdc.c b/drivers/media/video/davinci/dm355_ccdc.c
-> index 5b68847..af88cce 100644
-> --- a/drivers/media/video/davinci/dm355_ccdc.c
-> +++ b/drivers/media/video/davinci/dm355_ccdc.c
-> @@ -1003,7 +1003,7 @@ static int __init dm355_ccdc_probe(struct platform_device *pdev)
->  		status = PTR_ERR(ccdc_cfg.mclk);
->  		goto fail_nomap;
->  	}
-> -	if (clk_enable(ccdc_cfg.mclk)) {
-> +	if (clk_prepare_enable(ccdc_cfg.mclk)) {
->  		status = -ENODEV;
->  		goto fail_mclk;
->  	}
-> @@ -1014,7 +1014,7 @@ static int __init dm355_ccdc_probe(struct platform_device *pdev)
->  		status = PTR_ERR(ccdc_cfg.sclk);
->  		goto fail_mclk;
->  	}
-> -	if (clk_enable(ccdc_cfg.sclk)) {
-> +	if (clk_prepare_enable(ccdc_cfg.sclk)) {
->  		status = -ENODEV;
->  		goto fail_sclk;
->  	}
-> @@ -1034,8 +1034,10 @@ static int __init dm355_ccdc_probe(struct platform_device *pdev)
->  	printk(KERN_NOTICE "%s is registered with vpfe.\n", ccdc_hw_dev.name);
->  	return 0;
->  fail_sclk:
-> +	clk_disable_unprepare(ccdc_cfg.sclk);
->  	clk_put(ccdc_cfg.sclk);
->  fail_mclk:
-> +	clk_disable_unprepare(ccdc_cfg.mclk);
->  	clk_put(ccdc_cfg.mclk);
->  fail_nomap:
->  	iounmap(ccdc_cfg.base_addr);
-> @@ -1050,6 +1052,8 @@ static int dm355_ccdc_remove(struct platform_device *pdev)
->  {
->  	struct resource	*res;
->  
-> +	clk_disable_unprepare(ccdc_cfg.sclk);
-> +	clk_disable_unprepare(ccdc_cfg.mclk);
->  	clk_put(ccdc_cfg.mclk);
->  	clk_put(ccdc_cfg.sclk);
->  	iounmap(ccdc_cfg.base_addr);
-> diff --git a/drivers/media/video/davinci/dm644x_ccdc.c b/drivers/media/video/davinci/dm644x_ccdc.c
-> index 9303fe5..24388fa 100644
-> --- a/drivers/media/video/davinci/dm644x_ccdc.c
-> +++ b/drivers/media/video/davinci/dm644x_ccdc.c
-> @@ -994,7 +994,7 @@ static int __init dm644x_ccdc_probe(struct platform_device *pdev)
->  		status = PTR_ERR(ccdc_cfg.mclk);
->  		goto fail_nomap;
->  	}
-> -	if (clk_enable(ccdc_cfg.mclk)) {
-> +	if (clk_prepare_enable(ccdc_cfg.mclk)) {
->  		status = -ENODEV;
->  		goto fail_mclk;
->  	}
-> @@ -1005,7 +1005,7 @@ static int __init dm644x_ccdc_probe(struct platform_device *pdev)
->  		status = PTR_ERR(ccdc_cfg.sclk);
->  		goto fail_mclk;
->  	}
-> -	if (clk_enable(ccdc_cfg.sclk)) {
-> +	if (clk_prepare_enable(ccdc_cfg.sclk)) {
->  		status = -ENODEV;
->  		goto fail_sclk;
->  	}
-> @@ -1013,8 +1013,10 @@ static int __init dm644x_ccdc_probe(struct platform_device *pdev)
->  	printk(KERN_NOTICE "%s is registered with vpfe.\n", ccdc_hw_dev.name);
->  	return 0;
->  fail_sclk:
-> +	clk_disable_unprepare(ccdc_cfg.sclk);
->  	clk_put(ccdc_cfg.sclk);
->  fail_mclk:
-> +	clk_disable_unprepare(ccdc_cfg.mclk);
->  	clk_put(ccdc_cfg.mclk);
->  fail_nomap:
->  	iounmap(ccdc_cfg.base_addr);
-> @@ -1029,6 +1031,8 @@ static int dm644x_ccdc_remove(struct platform_device *pdev)
->  {
->  	struct resource	*res;
->  
-> +	clk_disable_unprepare(ccdc_cfg.mclk);
-> +	clk_disable_unprepare(ccdc_cfg.sclk);
->  	clk_put(ccdc_cfg.mclk);
->  	clk_put(ccdc_cfg.sclk);
->  	iounmap(ccdc_cfg.base_addr);
-> @@ -1046,8 +1050,8 @@ static int dm644x_ccdc_suspend(struct device *dev)
->  	/* Disable CCDC */
->  	ccdc_enable(0);
->  	/* Disable both master and slave clock */
-> -	clk_disable(ccdc_cfg.mclk);
-> -	clk_disable(ccdc_cfg.sclk);
-> +	clk_disable_unprepare(ccdc_cfg.mclk);
-> +	clk_disable_unprepare(ccdc_cfg.sclk);
->  
->  	return 0;
->  }
-> @@ -1055,8 +1059,8 @@ static int dm644x_ccdc_suspend(struct device *dev)
->  static int dm644x_ccdc_resume(struct device *dev)
->  {
->  	/* Enable both master and slave clock */
-> -	clk_enable(ccdc_cfg.mclk);
-> -	clk_enable(ccdc_cfg.sclk);
-> +	clk_prepare_enable(ccdc_cfg.mclk);
-> +	clk_prepare_enable(ccdc_cfg.sclk);
->  	/* Restore CCDC context */
->  	ccdc_restore_context();
->  
-> diff --git a/drivers/media/video/davinci/isif.c b/drivers/media/video/davinci/isif.c
-> index 5278fe7..d9c3116 100644
-> --- a/drivers/media/video/davinci/isif.c
-> +++ b/drivers/media/video/davinci/isif.c
-> @@ -1053,7 +1053,7 @@ static int __init isif_probe(struct platform_device *pdev)
->  		status = PTR_ERR(isif_cfg.mclk);
->  		goto fail_mclk;
->  	}
-> -	if (clk_enable(isif_cfg.mclk)) {
-> +	if (clk_prepare_enable(isif_cfg.mclk)) {
->  		status = -ENODEV;
->  		goto fail_mclk;
->  	}
-> @@ -1125,6 +1125,7 @@ fail_nobase_res:
->  		i--;
->  	}
->  fail_mclk:
-> +	clk_disable_unprepare(isif_cfg.mclk);
->  	clk_put(isif_cfg.mclk);
->  	vpfe_unregister_ccdc_device(&isif_hw_dev);
->  	return status;
-> @@ -1145,6 +1146,8 @@ static int isif_remove(struct platform_device *pdev)
->  		i++;
->  	}
->  	vpfe_unregister_ccdc_device(&isif_hw_dev);
-> +	clk_disable_unprepare(isif_cfg.mclk);
-> +	clk_put(isif_cfg.mclk);
->  	return 0;
->  }
->  
-> diff --git a/drivers/media/video/davinci/vpbe.c b/drivers/media/video/davinci/vpbe.c
-> index c4a82a1..7cfbc1e 100644
-> --- a/drivers/media/video/davinci/vpbe.c
-> +++ b/drivers/media/video/davinci/vpbe.c
-> @@ -628,7 +628,7 @@ static int vpbe_initialize(struct device *dev, struct vpbe_device *vpbe_dev)
->  			ret =  PTR_ERR(vpbe_dev->dac_clk);
->  			goto vpbe_unlock;
->  		}
-> -		if (clk_enable(vpbe_dev->dac_clk)) {
-> +		if (clk_prepare_enable(vpbe_dev->dac_clk)) {
->  			ret =  -ENODEV;
->  			goto vpbe_unlock;
->  		}
-> @@ -777,8 +777,10 @@ vpbe_fail_sd_register:
->  vpbe_fail_v4l2_device:
->  	v4l2_device_unregister(&vpbe_dev->v4l2_dev);
->  vpbe_fail_clock:
-> -	if (strcmp(vpbe_dev->cfg->module_name, "dm644x-vpbe-display") != 0)
-> +	if (strcmp(vpbe_dev->cfg->module_name, "dm644x-vpbe-display") != 0) {
-> +		clk_disable_unprepare(vpbe_dev->dac_clk);
->  		clk_put(vpbe_dev->dac_clk);
-> +	}
->  vpbe_unlock:
->  	mutex_unlock(&vpbe_dev->lock);
->  	return ret;
-> @@ -795,8 +797,10 @@ vpbe_unlock:
->  static void vpbe_deinitialize(struct device *dev, struct vpbe_device *vpbe_dev)
->  {
->  	v4l2_device_unregister(&vpbe_dev->v4l2_dev);
-> -	if (strcmp(vpbe_dev->cfg->module_name, "dm644x-vpbe-display") != 0)
-> +	if (strcmp(vpbe_dev->cfg->module_name, "dm644x-vpbe-display") != 0) {
-> +		clk_disable_unprepare(vpbe_dev->dac_clk);
->  		clk_put(vpbe_dev->dac_clk);
-> +	}
->  
->  	kfree(vpbe_dev->amp);
->  	kfree(vpbe_dev->encoders);
-> diff --git a/drivers/media/video/davinci/vpif.c b/drivers/media/video/davinci/vpif.c
-> index b3637af..2857ced 100644
-> --- a/drivers/media/video/davinci/vpif.c
-> +++ b/drivers/media/video/davinci/vpif.c
-> @@ -442,7 +442,7 @@ static int __init vpif_probe(struct platform_device *pdev)
->  		status = PTR_ERR(vpif_clk);
->  		goto clk_fail;
->  	}
-> -	clk_enable(vpif_clk);
-> +	clk_prepare_enable(vpif_clk);
->  
->  	spin_lock_init(&vpif_lock);
->  	dev_info(&pdev->dev, "vpif probe success\n");
-> @@ -458,7 +458,7 @@ fail:
->  static int __devexit vpif_remove(struct platform_device *pdev)
->  {
->  	if (vpif_clk) {
-> -		clk_disable(vpif_clk);
-> +		clk_disable_unprepare(vpif_clk);
->  		clk_put(vpif_clk);
->  	}
->  
-> @@ -470,13 +470,13 @@ static int __devexit vpif_remove(struct platform_device *pdev)
->  #ifdef CONFIG_PM
->  static int vpif_suspend(struct device *dev)
->  {
-> -	clk_disable(vpif_clk);
-> +	clk_disable_unprepare(vpif_clk);
->  	return 0;
->  }
->  
->  static int vpif_resume(struct device *dev)
->  {
-> -	clk_enable(vpif_clk);
-> +	clk_prepare_enable(vpif_clk);
->  	return 0;
->  }
->  
-> 
+autogroup runtime disable is very nasty, as it might happen at any
+place of sched_move_group() for any setsid task.
+After sysctl_sched_autogroup_enabled is changed to false,
+autogroup_task_group(p, tg) will return tg, which is from its cpu
+cgroup.
 
+> It looks like sched_autogroup_fork() is effective in that case, which
+> would mean we'll stay in whatever group our parent is in, which is not
+> the same as being disabled.
+
+It's true, but after autogroup is disabled, p->signal->autogroup will
+never be used then, as autogroup_task_group() will not use it. But
+after autogroup is enabled again, it might be a disaster....
+
+I think we'd better delete the runtime enable/disable support for
+autogroup, because it might mess up the group scheduler....
+
+>
+>
