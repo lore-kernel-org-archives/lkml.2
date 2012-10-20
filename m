@@ -1,267 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab2JTR5D (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 13:57:03 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:37916 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756460Ab2JTR5A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 13:57:00 -0400
-From: Benjamin Poirier <benjamin.poirier@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Jean Sacren <sakiwit@gmail.com>, Arnaud Lacombe <lacombar@gmail.com>,
-        Wang YanQing <udknight@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Davidlohr Bueso <dave@gnu.org>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Yaakov Selkowitz <yselkowitz@gmail.com>
-Subject: [PATCH] menuconfig: Replace CIRCLEQ by list_head-style lists.
-Date: Sat, 20 Oct 2012 13:56:32 -0400
-Message-Id: <1350755792-21217-1-git-send-email-benjamin.poirier@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1350581625-23153-1-git-send-email-yann.morin.1998@free.fr>
-References: <1350581625-23153-1-git-send-email-yann.morin.1998@free.fr>
+	id S1756577Ab2JTSEr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 14:04:47 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50762 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756453Ab2JTSEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Oct 2012 14:04:46 -0400
+Date: Sat, 20 Oct 2012 20:04:37 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Re: A reliable kernel panic (3.6.2) and system crash when
+ visiting a particular website
+Message-ID: <20121020180437.GA9301@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Artem S. Tashkinov" <t.artem@lycos.com>,
+	linux-kernel@vger.kernel.org
+References: <2104474742.26357.1350734815286.JavaMail.mail@webmail05>
+ <20121020162759.GA12551@liondog.tnic>
+ <966148591.30347.1350754909449.JavaMail.mail@webmail08>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <966148591.30347.1350754909449.JavaMail.mail@webmail08>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Poirier <bpoirier@suse.de>
+On Sat, Oct 20, 2012 at 05:41:49PM +0000, Artem S. Tashkinov wrote:
+> On Oct 20, 2012, Borislav Petkov wrote: 
+> 
+> > Yeah, your kernel is tainted with a proprietary module (vbox*, etc). Can
+> > you reproduce your corruptions (this is what it looks like) without that
+> > module?
+> 
+> Yes, I can reproduce this panic with zero proprietary/non-free modules loaded.
+> 
+> The problem is the kernel doesn't even print a kernel panic - the
+> system just freezes completely - cursor in a text console stops blinking.
+> 
+> I have no means to debug it using a serial console - what can I do?
 
-sys/queue.h and CIRCLEQ in particular have proven to cause portability
-problems (reported on Debian Sarge, Cygwin and FreeBSD)
+Ok, here's what you can try:
 
-Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
----
- scripts/kconfig/expr.h      |    5 +--
- scripts/kconfig/list.h      |   90 +++++++++++++++++++++++++++++++++++++++++++
- scripts/kconfig/lkc_proto.h |    4 +-
- scripts/kconfig/mconf.c     |    6 +--
- scripts/kconfig/menu.c      |   14 ++++---
- 5 files changed, 105 insertions(+), 14 deletions(-)
- create mode 100644 scripts/kconfig/list.h
+* You say this happens with google chrome. Does it happen if you use
+another browser: firefox, etc?
 
-diff --git a/scripts/kconfig/expr.h b/scripts/kconfig/expr.h
-index bd2e098..cdd4860 100644
---- a/scripts/kconfig/expr.h
-+++ b/scripts/kconfig/expr.h
-@@ -12,7 +12,7 @@ extern "C" {
- 
- #include <assert.h>
- #include <stdio.h>
--#include <sys/queue.h>
-+#include "list.h"
- #ifndef __cplusplus
- #include <stdbool.h>
- #endif
-@@ -175,12 +175,11 @@ struct menu {
- #define MENU_ROOT		0x0002
- 
- struct jump_key {
--	CIRCLEQ_ENTRY(jump_key) entries;
-+	struct list_head entries;
- 	size_t offset;
- 	struct menu *target;
- 	int index;
- };
--CIRCLEQ_HEAD(jk_head, jump_key);
- 
- #define JUMP_NB			9
- 
-diff --git a/scripts/kconfig/list.h b/scripts/kconfig/list.h
-new file mode 100644
-index 0000000..934bdba
---- /dev/null
-+++ b/scripts/kconfig/list.h
-@@ -0,0 +1,90 @@
-+#ifndef LIST_H
-+#define LIST_H
-+
-+/*
-+ * Copied from include/linux/...
-+ */
-+
-+#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
-+
-+/**
-+ * container_of - cast a member of a structure out to the containing structure
-+ * @ptr:        the pointer to the member.
-+ * @type:       the type of the container struct this is embedded in.
-+ * @member:     the name of the member within the struct.
-+ *
-+ */
-+#define container_of(ptr, type, member) ({                      \
-+	const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
-+	(type *)( (char *)__mptr - offsetof(type,member) );})
-+
-+
-+struct list_head {
-+	struct list_head *next, *prev;
-+};
-+
-+
-+#define LIST_HEAD_INIT(name) { &(name), &(name) }
-+
-+#define LIST_HEAD(name) \
-+	struct list_head name = LIST_HEAD_INIT(name)
-+
-+/**
-+ * list_entry - get the struct for this entry
-+ * @ptr:	the &struct list_head pointer.
-+ * @type:	the type of the struct this is embedded in.
-+ * @member:	the name of the list_struct within the struct.
-+ */
-+#define list_entry(ptr, type, member) \
-+	container_of(ptr, type, member)
-+
-+/**
-+ * list_for_each_entry	-	iterate over list of given type
-+ * @pos:	the type * to use as a loop cursor.
-+ * @head:	the head for your list.
-+ * @member:	the name of the list_struct within the struct.
-+ */
-+#define list_for_each_entry(pos, head, member)				\
-+	for (pos = list_entry((head)->next, typeof(*pos), member);	\
-+	     &pos->member != (head); 	\
-+	     pos = list_entry(pos->member.next, typeof(*pos), member))
-+
-+#endif
-+
-+/**
-+ * list_empty - tests whether a list is empty
-+ * @head: the list to test.
-+ */
-+static inline int list_empty(const struct list_head *head)
-+{
-+	return head->next == head;
-+}
-+
-+/*
-+ * Insert a new entry between two known consecutive entries.
-+ *
-+ * This is only for internal list manipulation where we know
-+ * the prev/next entries already!
-+ */
-+static inline void __list_add(struct list_head *new,
-+			      struct list_head *prev,
-+			      struct list_head *next)
-+{
-+	next->prev = new;
-+	new->next = next;
-+	new->prev = prev;
-+	prev->next = new;
-+}
-+
-+/**
-+ * list_add_tail - add a new entry
-+ * @new: new entry to be added
-+ * @head: list head to add it before
-+ *
-+ * Insert a new entry before the specified head.
-+ * This is useful for implementing queues.
-+ */
-+static inline void list_add_tail(struct list_head *new, struct list_head *head)
-+{
-+	__list_add(new, head->prev, head);
-+}
-diff --git a/scripts/kconfig/lkc_proto.h b/scripts/kconfig/lkc_proto.h
-index 1d1c085..ef1a738 100644
---- a/scripts/kconfig/lkc_proto.h
-+++ b/scripts/kconfig/lkc_proto.h
-@@ -21,9 +21,9 @@ P(menu_get_root_menu,struct menu *,(struct menu *menu));
- P(menu_get_parent_menu,struct menu *,(struct menu *menu));
- P(menu_has_help,bool,(struct menu *menu));
- P(menu_get_help,const char *,(struct menu *menu));
--P(get_symbol_str, void, (struct gstr *r, struct symbol *sym, struct jk_head
-+P(get_symbol_str, void, (struct gstr *r, struct symbol *sym, struct list_head
- 			 *head));
--P(get_relations_str, struct gstr, (struct symbol **sym_arr, struct jk_head
-+P(get_relations_str, struct gstr, (struct symbol **sym_arr, struct list_head
- 				   *head));
- P(menu_get_ext_help,void,(struct menu *menu, struct gstr *help));
- 
-diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
-index 48f6744..53975cf 100644
---- a/scripts/kconfig/mconf.c
-+++ b/scripts/kconfig/mconf.c
-@@ -312,7 +312,7 @@ static void set_config_filename(const char *config_filename)
- 
- 
- struct search_data {
--	struct jk_head *head;
-+	struct list_head *head;
- 	struct menu **targets;
- 	int *keys;
- };
-@@ -323,7 +323,7 @@ static void update_text(char *buf, size_t start, size_t end, void *_data)
- 	struct jump_key *pos;
- 	int k = 0;
- 
--	CIRCLEQ_FOREACH(pos, data->head, entries) {
-+	list_for_each_entry(pos, data->head, entries) {
- 		if (pos->offset >= start && pos->offset < end) {
- 			char header[4];
- 
-@@ -375,7 +375,7 @@ again:
- 
- 	sym_arr = sym_re_search(dialog_input);
- 	do {
--		struct jk_head head = CIRCLEQ_HEAD_INITIALIZER(head);
-+		LIST_HEAD(head);
- 		struct menu *targets[JUMP_NB];
- 		int keys[JUMP_NB + 1], i;
- 		struct search_data data = {
-diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
-index a3cade6..e98a05c 100644
---- a/scripts/kconfig/menu.c
-+++ b/scripts/kconfig/menu.c
-@@ -508,7 +508,7 @@ const char *menu_get_help(struct menu *menu)
- }
- 
- static void get_prompt_str(struct gstr *r, struct property *prop,
--			   struct jk_head *head)
-+			   struct list_head *head)
- {
- 	int i, j;
- 	struct menu *submenu[8], *menu, *location = NULL;
-@@ -544,12 +544,13 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
- 		} else
- 			jump->target = location;
- 
--		if (CIRCLEQ_EMPTY(head))
-+		if (list_empty(head))
- 			jump->index = 0;
- 		else
--			jump->index = CIRCLEQ_LAST(head)->index + 1;
-+			jump->index = list_entry(head->prev, struct jump_key,
-+						 entries)->index + 1;
- 
--		CIRCLEQ_INSERT_TAIL(head, jump, entries);
-+		list_add_tail(&jump->entries, head);
- 	}
- 
- 	if (i > 0) {
-@@ -573,7 +574,8 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
- /*
-  * head is optional and may be NULL
-  */
--void get_symbol_str(struct gstr *r, struct symbol *sym, struct jk_head *head)
-+void get_symbol_str(struct gstr *r, struct symbol *sym,
-+		    struct list_head *head)
- {
- 	bool hit;
- 	struct property *prop;
-@@ -612,7 +614,7 @@ void get_symbol_str(struct gstr *r, struct symbol *sym, struct jk_head *head)
- 	str_append(r, "\n\n");
- }
- 
--struct gstr get_relations_str(struct symbol **sym_arr, struct jk_head *head)
-+struct gstr get_relations_str(struct symbol **sym_arr, struct list_head *head)
- {
- 	struct symbol *sym;
- 	struct gstr res = str_new();
+* Can you build a 64-bit kernel and try the same with it? The 32-bit
+userspace should work in compat mode just fine.
+
+* Can you run memtest on your machine and check whether your DIMMs
+aren't generating ECC errors? Are your DIMMs ECC, btw?
+
+* What about netconsole? You only need another machine on the same
+network: Documentation/networking/netconsole.txt.
+
+* boot with "pause_on_oops=600" on the kernel command line to stop the
+machine for 600 secs after the first oops happens. Then try to make a
+photo of the screen. Make sure to disable X or to be on a text console
+so that you can see the oops.
+
+* Try enabling a bunch of debugging options in "Kernel hacking". More
+specifically,
+
+CONFIG_DETECT_HUNG_TASK
+CONFIG_DEBUG_PREEMPT
+CONFIG_DEBUG_SPINLOCK
+CONFIG_DEBUG_MUTEXES
+CONFIG_DEBUG_LOCK_ALLOC
+CONFIG_PROVE_LOCKING
+CONFIG_PROVE_RCU
+CONFIG_DEBUG_ATOMIC_SLEEP
+CONFIG_DEBUG_BUGVERBOSE
+CONFIG_DEBUG_INFO
+CONFIG_DEBUG_VM
+CONFIG_DEBUG_VIRTUAL
+CONFIG_DEBUG_MEMORY_INIT
+CONFIG_DEBUG_LIST
+CONFIG_X86_VERBOSE_BOOTUP
+CONFIG_DEBUG_RODATA
+...
+
+I hope those should scream in case something goes awry.
+
+HTH.
+
 -- 
-1.7.10.4
-
+Regards/Gruss,
+    Boris.
