@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239Ab2JTQX0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 12:23:26 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:36196 "EHLO
+	id S1756178Ab2JTQXY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 12:23:24 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:36853 "EHLO
 	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264Ab2JTQXE (ORCPT
+	with ESMTP id S1756090Ab2JTQXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 12:23:04 -0400
+	Sat, 20 Oct 2012 12:23:03 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -15,9 +15,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [RFC PATCH 8/8] printk: Wake up klogd using irq_work
-Date: Sat, 20 Oct 2012 12:22:47 -0400
-Message-Id: <1350750167-14263-9-git-send-email-fweisbec@gmail.com>
+Subject: [RFC PATCH 7/8] irq_work: Remove CONFIG_HAVE_IRQ_WORK
+Date: Sat, 20 Oct 2012 12:22:46 -0400
+Message-Id: <1350750167-14263-8-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1350750167-14263-1-git-send-email-fweisbec@gmail.com>
 References: <1350750167-14263-1-git-send-email-fweisbec@gmail.com>
@@ -25,16 +25,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-klogd is woken up asynchronously from the tick in order
-to do it safely.
+irq work is supposed to work everywhere because of the irq work
+hook in the generic timer tick function.
 
-However if printk is called when the tick is stopped, the reader
-won't be woken up until the next interrupt, which might not fire
-before a while. As a result, the user may miss some message.
-
-To fix this, lets implement the printk tick using irq work.
-This subsystem takes care of the timer tick state and can
-fix up accordingly.
+I might be missing something though...
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -44,108 +38,208 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/printk.h   |    3 ---
- init/Kconfig             |    1 +
- kernel/printk.c          |   14 +++++++-------
- kernel/time/tick-sched.c |    2 +-
- kernel/timer.c           |    1 -
- 5 files changed, 9 insertions(+), 12 deletions(-)
+ arch/alpha/Kconfig                  |    1 -
+ arch/arm/Kconfig                    |    1 -
+ arch/arm64/Kconfig                  |    1 -
+ arch/blackfin/Kconfig               |    1 -
+ arch/frv/Kconfig                    |    1 -
+ arch/hexagon/Kconfig                |    1 -
+ arch/mips/Kconfig                   |    1 -
+ arch/parisc/Kconfig                 |    1 -
+ arch/powerpc/Kconfig                |    1 -
+ arch/s390/Kconfig                   |    1 -
+ arch/sh/Kconfig                     |    1 -
+ arch/sparc/Kconfig                  |    1 -
+ arch/x86/Kconfig                    |    1 -
+ drivers/staging/iio/trigger/Kconfig |    1 -
+ init/Kconfig                        |    4 ----
+ 15 files changed, 0 insertions(+), 18 deletions(-)
 
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 9afc01e..86c4b62 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -98,9 +98,6 @@ int no_printk(const char *fmt, ...)
- extern asmlinkage __printf(1, 2)
- void early_printk(const char *fmt, ...);
- 
--extern int printk_needs_cpu(int cpu);
--extern void printk_tick(void);
--
- #ifdef CONFIG_PRINTK
- asmlinkage __printf(5, 0)
- int vprintk_emit(int facility, int level,
+diff --git a/arch/alpha/Kconfig b/arch/alpha/Kconfig
+index 7da9124..ea86275 100644
+--- a/arch/alpha/Kconfig
++++ b/arch/alpha/Kconfig
+@@ -5,7 +5,6 @@ config ALPHA
+ 	select HAVE_IDE
+ 	select HAVE_OPROFILE
+ 	select HAVE_SYSCALL_WRAPPERS
+-	select HAVE_IRQ_WORK
+ 	select HAVE_PCSPKR_PLATFORM
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_DMA_ATTRS
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 767aae8..44bdbfe 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -30,7 +30,6 @@ config ARM
+ 	select HAVE_KERNEL_LZO
+ 	select HAVE_KERNEL_LZMA
+ 	select HAVE_KERNEL_XZ
+-	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
+ 	select PERF_USE_VMALLOC
+ 	select HAVE_REGS_AND_STACK_ACCESS_API
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 7ff68c9..efa0627 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -17,7 +17,6 @@ config ARM64
+ 	select HAVE_GENERIC_DMA_COHERENT
+ 	select HAVE_GENERIC_HARDIRQS
+ 	select HAVE_HW_BREAKPOINT if PERF_EVENTS
+-	select HAVE_IRQ_WORK
+ 	select HAVE_MEMBLOCK
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_SPARSE_IRQ
+diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
+index ccd9193..9c588f7 100644
+--- a/arch/blackfin/Kconfig
++++ b/arch/blackfin/Kconfig
+@@ -24,7 +24,6 @@ config BLACKFIN
+ 	select HAVE_FUNCTION_TRACER
+ 	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
+ 	select HAVE_IDE
+-	select HAVE_IRQ_WORK
+ 	select HAVE_KERNEL_GZIP if RAMKERNEL
+ 	select HAVE_KERNEL_BZIP2 if RAMKERNEL
+ 	select HAVE_KERNEL_LZMA if RAMKERNEL
+diff --git a/arch/frv/Kconfig b/arch/frv/Kconfig
+index 9d26264..17df48f 100644
+--- a/arch/frv/Kconfig
++++ b/arch/frv/Kconfig
+@@ -3,7 +3,6 @@ config FRV
+ 	default y
+ 	select HAVE_IDE
+ 	select HAVE_ARCH_TRACEHOOK
+-	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_UID16
+ 	select HAVE_GENERIC_HARDIRQS
+diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
+index b2fdfb7..8a902a7 100644
+--- a/arch/hexagon/Kconfig
++++ b/arch/hexagon/Kconfig
+@@ -14,7 +14,6 @@ config HEXAGON
+ 	# select HAVE_CLK
+ 	# select IRQ_PER_CPU
+ 	# select GENERIC_PENDING_IRQ if SMP
+-	select HAVE_IRQ_WORK
+ 	select GENERIC_ATOMIC64
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_GENERIC_HARDIRQS
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 35453ea..045bf4d 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -4,7 +4,6 @@ config MIPS
+ 	select HAVE_GENERIC_DMA_COHERENT
+ 	select HAVE_IDE
+ 	select HAVE_OPROFILE
+-	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
+ 	select PERF_USE_VMALLOC
+ 	select HAVE_ARCH_KGDB
+diff --git a/arch/parisc/Kconfig b/arch/parisc/Kconfig
+index b87438b..abbdb7a 100644
+--- a/arch/parisc/Kconfig
++++ b/arch/parisc/Kconfig
+@@ -9,7 +9,6 @@ config PARISC
+ 	select RTC_DRV_GENERIC
+ 	select INIT_ALL_POSSIBLE
+ 	select BUG
+-	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
+ 	select GENERIC_ATOMIC64 if !64BIT
+ 	select HAVE_GENERIC_HARDIRQS
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index df7edb8..c071bcb 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -118,7 +118,6 @@ config PPC
+ 	select HAVE_SYSCALL_WRAPPERS if PPC64
+ 	select GENERIC_ATOMIC64 if PPC32
+ 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
+-	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_REGS_AND_STACK_ACCESS_API
+ 	select HAVE_HW_BREAKPOINT if PERF_EVENTS && PPC_BOOK3S_64
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index 99d2d79..d3e251b 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -78,7 +78,6 @@ config S390
+ 	select HAVE_KVM if 64BIT
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select INIT_ALL_POSSIBLE
+-	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select HAVE_DEBUG_KMEMLEAK
+diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
+index 3b3e27a..8dc67fd 100644
+--- a/arch/sh/Kconfig
++++ b/arch/sh/Kconfig
+@@ -11,7 +11,6 @@ config SUPERH
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select HAVE_DMA_API_DEBUG
+ 	select HAVE_DMA_ATTRS
+-	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_DEBUG_BUGVERBOSE
+ 	select ARCH_HAVE_CUSTOM_GPIO_H
+diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+index 91c780c..17b3c9f 100644
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -22,7 +22,6 @@ config SPARC
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select RTC_CLASS
+ 	select RTC_DRV_M48T59
+-	select HAVE_IRQ_WORK
+ 	select HAVE_DMA_ATTRS
+ 	select HAVE_DMA_API_DEBUG
+ 	select HAVE_ARCH_JUMP_LABEL
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 42d2c35..bf1821b 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -26,7 +26,6 @@ config X86
+ 	select HAVE_OPROFILE
+ 	select HAVE_PCSPKR_PLATFORM
+ 	select HAVE_PERF_EVENTS
+-	select HAVE_IRQ_WORK
+ 	select HAVE_IOREMAP_PROT
+ 	select HAVE_KPROBES
+ 	select HAVE_MEMBLOCK
+diff --git a/drivers/staging/iio/trigger/Kconfig b/drivers/staging/iio/trigger/Kconfig
+index 7d32075..d44d3ad 100644
+--- a/drivers/staging/iio/trigger/Kconfig
++++ b/drivers/staging/iio/trigger/Kconfig
+@@ -21,7 +21,6 @@ config IIO_GPIO_TRIGGER
+ config IIO_SYSFS_TRIGGER
+ 	tristate "SYSFS trigger"
+ 	depends on SYSFS
+-	depends on HAVE_IRQ_WORK
+ 	select IRQ_WORK
+ 	help
+ 	  Provides support for using SYSFS entry as IIO triggers.
 diff --git a/init/Kconfig b/init/Kconfig
-index 8ba9fc3..9c42e6a 100644
+index 4c93533..8ba9fc3 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
-@@ -1184,6 +1184,7 @@ config HOTPLUG
- config PRINTK
- 	default y
- 	bool "Enable support for printk" if EXPERT
-+	select IRQ_WORK
- 	help
- 	  This option enables normal printk support. Removing it
- 	  eliminates most of the message strings from the kernel image
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 66a2ea3..721f760 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -42,6 +42,7 @@
- #include <linux/notifier.h>
- #include <linux/rculist.h>
- #include <linux/poll.h>
-+#include <linux/irq_work.h>
+@@ -20,12 +20,8 @@ config CONSTRUCTORS
+ 	bool
+ 	depends on !UML
  
- #include <asm/uaccess.h>
+-config HAVE_IRQ_WORK
+-	bool
+-
+ config IRQ_WORK
+ 	bool
+-	depends on HAVE_IRQ_WORK
  
-@@ -1956,7 +1957,7 @@ int is_console_locked(void)
- static DEFINE_PER_CPU(int, printk_pending);
- static DEFINE_PER_CPU(char [PRINTK_BUF_SIZE], printk_sched_buf);
- 
--void printk_tick(void)
-+static void wake_up_klogd_work_func(struct irq_work *irq_work)
- {
- 	if (__this_cpu_read(printk_pending)) {
- 		int pending = __this_cpu_xchg(printk_pending, 0);
-@@ -1969,17 +1970,16 @@ void printk_tick(void)
- 	}
- }
- 
--int printk_needs_cpu(int cpu)
--{
--	if (cpu_is_offline(cpu))
--		printk_tick();
--	return __this_cpu_read(printk_pending);
--}
-+static struct irq_work wake_up_klogd_work = {
-+		.func = wake_up_klogd_work_func
-+};
- 
- void wake_up_klogd(void)
- {
- 	if (waitqueue_active(&log_wait))
- 		this_cpu_or(printk_pending, PRINTK_PENDING_WAKEUP);
-+
-+	irq_work_queue(&wake_up_klogd_work, false);
- }
- 
- static void console_cont_flush(char *text, size_t size)
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 5f87bb5..04dd027 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -288,7 +288,7 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
- 		time_delta = timekeeping_max_deferment();
- 	} while (read_seqretry(&xtime_lock, seq));
- 
--	if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) || printk_needs_cpu(cpu) ||
-+	if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) ||
- 	    arch_needs_cpu(cpu) || irq_work_needs_cpu()) {
- 		next_jiffies = last_jiffies + 1;
- 		delta_jiffies = 1;
-diff --git a/kernel/timer.c b/kernel/timer.c
-index d5de1b2..5d6d0f1 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1349,7 +1349,6 @@ void update_process_times(int user_tick)
- 	account_process_tick(p, user_tick);
- 	run_local_timers();
- 	rcu_check_callbacks(cpu, user_tick);
--	printk_tick();
- #ifdef CONFIG_IRQ_WORK
- 	if (in_irq())
- 		irq_work_run();
+ config BUILDTIME_EXTABLE_SORT
+ 	bool
 -- 
 1.7.5.4
 
