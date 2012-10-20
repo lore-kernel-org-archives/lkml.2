@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933278Ab2JTBKf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 21:10:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36384 "EHLO
+	id S1759526Ab2JTBTq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 21:19:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36428 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932137Ab2JTBKe (ORCPT
+	with ESMTP id S1759513Ab2JTBTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 21:10:34 -0400
-Date: Fri, 19 Oct 2012 18:10:16 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@infradead.org>
-Message-ID: <tip-45bff41a9a6f22af28e4ba22f83c87f619e573a8@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, acme@infradead.org, tglx@linutronix.de,
-        namhyung@kernel.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, acme@infradead.org, tglx@linutronix.de,
-        namhyung@kernel.org
+	Fri, 19 Oct 2012 21:19:45 -0400
+Date: Fri, 19 Oct 2012 18:19:24 -0700
+From: tip-bot for Ingo Molnar <mingo@kernel.org>
+Message-ID: <tip-9744d7978477bddc141284876b6544f3d8f7dbd8@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, riel@redhat.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf python: Properly link with libtraceevent
-Git-Commit-ID: 45bff41a9a6f22af28e4ba22f83c87f619e573a8
+Subject: [tip:numa/core] sched: Fix !CONFIG_SCHED_NUMA account_numa_enqueue
+ () variant
+Git-Commit-ID: 9744d7978477bddc141284876b6544f3d8f7dbd8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,117 +27,47 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 19 Oct 2012 18:10:22 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 19 Oct 2012 18:19:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  45bff41a9a6f22af28e4ba22f83c87f619e573a8
-Gitweb:     http://git.kernel.org/tip/45bff41a9a6f22af28e4ba22f83c87f619e573a8
-Author:     Arnaldo Carvalho de Melo <acme@infradead.org>
-AuthorDate: Thu, 18 Oct 2012 11:38:35 -0300
+Commit-ID:  9744d7978477bddc141284876b6544f3d8f7dbd8
+Gitweb:     http://git.kernel.org/tip/9744d7978477bddc141284876b6544f3d8f7dbd8
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Sat, 20 Oct 2012 02:22:53 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 20 Oct 2012 02:43:08 +0200
+CommitDate: Sat, 20 Oct 2012 03:12:17 +0200
 
-perf python: Properly link with libtraceevent
+sched: Fix !CONFIG_SCHED_NUMA account_numa_enqueue() variant
 
-Namhyung Kim reported that the build fails with:
+This build warning:
 
-  GEN python/perf.so
-  gcc: error: python_ext_build/tmp//../../libtraceevent.a: No such file or directory
-  error: command 'gcc' failed with exit status 1
-  cp: cannot stat `python_ext_build/lib/perf.so': No such file or directory
-  make: *** [python/perf.so] Error 1
+  kernel/sched/fair.c:1015:1: warning: no return statement in function returning non-void
 
-We need to propagate the TE_PATH variable to the setup.py file.
+Triggers because the dummy account_numa_enqueue() should return the
+rq's task list.
 
-Reported-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Link: http://lkml.kernel.org/n/tip-8umiPbm4sxpknKivbjgykhut@git.kernel.org
-[ Fixed superfluous variable build error. ]
+It's not possible to trigger this bug runtime, nevertheless fix the
+warning.
+
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Rik van Riel <riel@redhat.com>
+Link: http://lkml.kernel.org/n/tip-qauskiJfwddwtkf5pivzht5U@git.kernel.org
 ---
- tools/perf/Makefile      |   24 +++++++++++++-----------
- tools/perf/util/python.c |    2 --
- tools/perf/util/setup.py |    3 ++-
- 3 files changed, 15 insertions(+), 14 deletions(-)
+ kernel/sched/fair.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index f7c968a..00deed4d 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -184,9 +184,22 @@ SCRIPT_SH += perf-archive.sh
- grep-libs = $(filter -l%,$(1))
- strip-libs = $(filter-out -l%,$(1))
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index e93032d..a66a1b6 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -967,6 +967,7 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ #else
+ static struct list_head *account_numa_enqueue(struct rq *rq, struct task_struct *p)
+ {
++	return NULL;
+ }
  
-+TRACE_EVENT_DIR = ../lib/traceevent/
-+
-+ifneq ($(OUTPUT),)
-+	TE_PATH=$(OUTPUT)
-+else
-+	TE_PATH=$(TRACE_EVENT_DIR)
-+endif
-+
-+LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
-+TE_LIB := -L$(TE_PATH) -ltraceevent
-+
- PYTHON_EXT_SRCS := $(shell grep -v ^\# util/python-ext-sources)
- PYTHON_EXT_DEPS := util/python-ext-sources util/setup.py
- 
-+export LIBTRACEEVENT
-+
- $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
- 	$(QUIET_GEN)CFLAGS='$(BASIC_CFLAGS)' $(PYTHON_WORD) util/setup.py \
- 	  --quiet build_ext; \
-@@ -198,17 +211,6 @@ $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
- 
- SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
- 
--TRACE_EVENT_DIR = ../lib/traceevent/
--
--ifneq ($(OUTPUT),)
--	TE_PATH=$(OUTPUT)
--else
--	TE_PATH=$(TRACE_EVENT_DIR)
--endif
--
--LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
--TE_LIB := -L$(TE_PATH) -ltraceevent
--
- #
- # Single 'perf' binary right now:
- #
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index a2657fd..9181bf2 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -1015,8 +1015,6 @@ PyMODINIT_FUNC initperf(void)
- 	    pyrf_cpu_map__setup_types() < 0)
- 		return;
- 
--	page_size = sysconf(_SC_PAGE_SIZE);
--
- 	Py_INCREF(&pyrf_evlist__type);
- 	PyModule_AddObject(module, "evlist", (PyObject*)&pyrf_evlist__type);
- 
-diff --git a/tools/perf/util/setup.py b/tools/perf/util/setup.py
-index 09c3cea..73d5102 100644
---- a/tools/perf/util/setup.py
-+++ b/tools/perf/util/setup.py
-@@ -23,6 +23,7 @@ cflags += getenv('CFLAGS', '').split()
- 
- build_lib = getenv('PYTHON_EXTBUILD_LIB')
- build_tmp = getenv('PYTHON_EXTBUILD_TMP')
-+libtraceevent = getenv('LIBTRACEEVENT')
- 
- ext_sources = [f.strip() for f in file('util/python-ext-sources')
- 				if len(f.strip()) > 0 and f[0] != '#']
-@@ -31,7 +32,7 @@ perf = Extension('perf',
- 		  sources = ext_sources,
- 		  include_dirs = ['util/include'],
- 		  extra_compile_args = cflags,
--		  extra_objects = [build_tmp + '/../../libtraceevent.a'],
-+		  extra_objects = [libtraceevent],
-                  )
- 
- setup(name='perf',
+ static void account_numa_dequeue(struct rq *rq, struct task_struct *p)
