@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933231Ab2JTBFk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 21:05:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36298 "EHLO
+	id S1759497Ab2JTBGq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 21:06:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36319 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933137Ab2JTBFi (ORCPT
+	with ESMTP id S1755490Ab2JTBGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 21:05:38 -0400
-Date: Fri, 19 Oct 2012 18:05:16 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-w3lcbx0fx1fnh3l2cbq40q2e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+	Fri, 19 Oct 2012 21:06:44 -0400
+Date: Fri, 19 Oct 2012 18:06:16 -0700
+From: tip-bot for Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Message-ID: <tip-ca6cfbe6d25cdf9ed81cbf26c2146eda17a70472@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, schwidefsky@de.ibm.com,
+        gerald.schaefer@de.ibm.com, ralf@linux-mips.org,
+        heiko.carstens@de.ibm.com, tglx@linutronix.de, sfr@canb.auug.org.au
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        schwidefsky@de.ibm.com, peterz@infradead.org,
+        gerald.schaefer@de.ibm.com, ralf@linux-mips.org,
+        heiko.carstens@de.ibm.com, sfr@canb.auug.org.au, tglx@linutronix.de
+In-Reply-To: <20121018182642.2a541275@thinkpad>
+References: <20121018182642.2a541275@thinkpad>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf hists browser:
-  Add back callchain folding symbol
-Git-Commit-ID: 88a21d2f07d2a4bec2e3e03dd50a39683b938b10
+Subject: [tip:numa/core] s390/thp: implement pmd_pgprot() for s390
+Git-Commit-ID: ca6cfbe6d25cdf9ed81cbf26c2146eda17a70472
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,52 +31,60 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 19 Oct 2012 18:05:22 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 19 Oct 2012 18:06:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  88a21d2f07d2a4bec2e3e03dd50a39683b938b10
-Gitweb:     http://git.kernel.org/tip/88a21d2f07d2a4bec2e3e03dd50a39683b938b10
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Wed, 17 Oct 2012 13:54:08 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 17 Oct 2012 13:54:08 -0300
+Commit-ID:  ca6cfbe6d25cdf9ed81cbf26c2146eda17a70472
+Gitweb:     http://git.kernel.org/tip/ca6cfbe6d25cdf9ed81cbf26c2146eda17a70472
+Author:     Gerald Schaefer <gerald.schaefer@de.ibm.com>
+AuthorDate: Thu, 18 Oct 2012 18:26:42 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 19 Oct 2012 23:38:48 +0200
 
-perf hists browser: Add back callchain folding symbol
+s390/thp: implement pmd_pgprot() for s390
 
-The commit 5395a04841fc ("perf hists: Separate overhead and baseline
-columns") makes the "Overhead" column no more the first one, this
-caused the test that checks if it is time to show if a histogram
-entry has callchains never hits.
+Git commit "mm/thp: Preserve pgprot across huge page split"
+introduced a pmd_pgprot() function, which is missing
+on s390, resulting in a compile error in linux-next where
+THP is enabled on s390 as well.
 
-Fix it by checking if the 'i' variable is equal to PERF_HPP__OVERHEAD
-instead of 0.
+This patch adds an implementation of pmd_pgprot() for s390.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-w3lcbx0fx1fnh3l2cbq40q2e@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Link: http://lkml.kernel.org/r/20121018182642.2a541275@thinkpad
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- tools/perf/ui/browsers/hists.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/s390/include/asm/pgtable.h |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index fe4430a..ef2f93c 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -647,7 +647,7 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
+index dd647c9..098fc5a 100644
+--- a/arch/s390/include/asm/pgtable.h
++++ b/arch/s390/include/asm/pgtable.h
+@@ -1240,6 +1240,19 @@ static inline void set_pmd_at(struct mm_struct *mm, unsigned long addr,
+ 	*pmdp = entry;
+ }
  
- 				ui_browser__set_percent_color(&browser->b, percent, current_entry);
- 
--				if (i == 0 && symbol_conf.use_callchain) {
-+				if (i == PERF_HPP__OVERHEAD && symbol_conf.use_callchain) {
- 					slsmg_printf("%c ", folded_sign);
- 					width -= 2;
- 				}
++static inline pgprot_t pmd_pgprot(pmd_t pmd)
++{
++	pgprot_t prot = PAGE_RW;
++
++	if (pmd_val(pmd) & _SEGMENT_ENTRY_RO) {
++		if (pmd_val(pmd) & _SEGMENT_ENTRY_INV)
++			prot = PAGE_NONE;
++		else
++			prot = PAGE_RO;
++	}
++	return prot;
++}
++
+ static inline unsigned long massage_pgprot_pmd(pgprot_t pgprot)
+ {
+ 	unsigned long pgprot_pmd = 0;
