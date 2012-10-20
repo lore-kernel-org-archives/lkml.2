@@ -1,257 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab2JTQYt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 12:24:49 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:32808 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755223Ab2JTQW5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 12:22:57 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [RFC PATCH 1/8] irq_work: Move irq_work_raise() declaration/default definition to arch headers
-Date: Sat, 20 Oct 2012 12:22:40 -0400
-Message-Id: <1350750167-14263-2-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1350750167-14263-1-git-send-email-fweisbec@gmail.com>
-References: <1350750167-14263-1-git-send-email-fweisbec@gmail.com>
+	id S1756166Ab2JTQ2F (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 12:28:05 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58153 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752235Ab2JTQ2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Oct 2012 12:28:04 -0400
+Date: Sat, 20 Oct 2012 18:27:59 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: A reliable kernel panic (3.6.2) and system crash when visiting a
+ particular website
+Message-ID: <20121020162759.GA12551@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Artem S. Tashkinov" <t.artem@lycos.com>,
+	linux-kernel@vger.kernel.org
+References: <2104474742.26357.1350734815286.JavaMail.mail@webmail05>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <2104474742.26357.1350734815286.JavaMail.mail@webmail05>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This optimization doesn't matter much. But this prepares the
-arch headers that we need to add a new API in order to detect
-when the arch can trigger self IPIs to implement the irq work.
+On Sat, Oct 20, 2012 at 12:06:55PM +0000, Artem S. Tashkinov wrote:
+> Hello,
+> 
+> I'm running vanilla Linux 3.6.2 x86 on top of CentOS 6.3 userspace.
+> 
+> Every time when I enter the chat roulette website, right click anywhere and choose "Settings",
+>  my PC crashes (with or without NVIDIA drivers running, it happens even when I'm running Vesa).
+> 
+> Web browser: google-chrome-stable-22.0.1229.94-161065.i386.rpm
+> OS: Linux 3.6.2 vanilla x86
+> CPU: Intel Core i5 2500 (non-overclocked)
+> GCC: 4.7.2 vanilla
+> 
+> The latest crash:
+> 
+> Oct 20 07:15:22 localhost kernel: [  224.293756] Modules linked in: pppoe pppox ppp_synctty ppp_async crc_ccitt ppp_generic slhc ipv6 nf_conntrack_ftp nf_conntrack_netbios_ns nf_conntrack_broadcast xt_LOG xt_limit nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack xt_tcpudp xt_pkttype ipt_ULOG xt_owner xt_multiport iptable_filter ip_tables x_tables w83627ehf adt7475 hwmon_vid vboxpci(O) 
+> vboxnetadp(O) vboxnetflt(O) vboxdrv(O) binfmt_misc fuse hid_generic snd_usb_audio snd_hwdep snd_usbmidi_lib snd_rawmidi uvcvideo videobuf2_core videodev 
+> videobuf2_vmalloc videobuf2_memops usbhid hid sr_mod cdrom coretemp aesni_intel ablk_helper cryptd aes_i586 aes_generic microcode agpgart pcspkr snd_hda_codec_realtek 
+> snd_hda_intel snd_hda_codec snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss snd_pcm snd_timer snd snd_page_alloc i2c_i801 sg xhci_hcd fan ehci_hcd e1000e evdev [last unloaded: nvidia]
+> 
+> Oct 20 07:15:22 localhost kernel: [  224.293811] Pid: 2569, comm: console-kit-dae Tainted: P           O 3.6.2-ic #2
 
-This is necessary later to make printk working in nohz CPUs.
+Yeah, your kernel is tainted with a proprietary module (vbox*, etc). Can
+you reproduce your corruptions (this is what it looks like) without that
+module?
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- arch/alpha/include/asm/irq_work.h    |    6 ++++++
- arch/arm/include/asm/irq_work.h      |    1 +
- arch/arm64/include/asm/irq_work.h    |    1 +
- arch/blackfin/include/asm/irq_work.h |    1 +
- arch/frv/include/asm/irq_work.h      |    1 +
- arch/hexagon/include/asm/irq_work.h  |    1 +
- arch/mips/include/asm/irq_work.h     |    1 +
- arch/parisc/include/asm/irq_work.h   |    1 +
- arch/powerpc/include/asm/irq_work.h  |    6 ++++++
- arch/s390/include/asm/irq_work.h     |    1 +
- arch/sh/include/asm/irq_work.h       |    1 +
- arch/sparc/include/asm/irq_work.h    |    6 ++++++
- arch/x86/include/asm/irq_work.h      |   10 ++++++++++
- arch/x86/kernel/irq_work.c           |    4 ++--
- include/asm-generic/irq_work.h       |    9 +++++++++
- include/linux/irq_work.h             |    1 +
- kernel/irq_work.c                    |    7 -------
- 17 files changed, 49 insertions(+), 9 deletions(-)
- create mode 100644 arch/alpha/include/asm/irq_work.h
- create mode 100644 arch/arm/include/asm/irq_work.h
- create mode 100644 arch/arm64/include/asm/irq_work.h
- create mode 100644 arch/blackfin/include/asm/irq_work.h
- create mode 100644 arch/frv/include/asm/irq_work.h
- create mode 100644 arch/hexagon/include/asm/irq_work.h
- create mode 100644 arch/mips/include/asm/irq_work.h
- create mode 100644 arch/parisc/include/asm/irq_work.h
- create mode 100644 arch/powerpc/include/asm/irq_work.h
- create mode 100644 arch/s390/include/asm/irq_work.h
- create mode 100644 arch/sh/include/asm/irq_work.h
- create mode 100644 arch/sparc/include/asm/irq_work.h
- create mode 100644 arch/x86/include/asm/irq_work.h
- create mode 100644 include/asm-generic/irq_work.h
+Thanks.
 
-diff --git a/arch/alpha/include/asm/irq_work.h b/arch/alpha/include/asm/irq_work.h
-new file mode 100644
-index 0000000..814ff3d
---- /dev/null
-+++ b/arch/alpha/include/asm/irq_work.h
-@@ -0,0 +1,6 @@
-+#ifndef _ALPHA_IRQ_WORK_H
-+#define _ALPHA_IRQ_WORK_H
-+
-+extern void arch_irq_work_raise(void);
-+
-+#endif
-diff --git a/arch/arm/include/asm/irq_work.h b/arch/arm/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/arm/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/arm64/include/asm/irq_work.h b/arch/arm64/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/arm64/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/blackfin/include/asm/irq_work.h b/arch/blackfin/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/blackfin/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/frv/include/asm/irq_work.h b/arch/frv/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/frv/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/hexagon/include/asm/irq_work.h b/arch/hexagon/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/hexagon/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/mips/include/asm/irq_work.h b/arch/mips/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/mips/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/parisc/include/asm/irq_work.h b/arch/parisc/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/parisc/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/powerpc/include/asm/irq_work.h b/arch/powerpc/include/asm/irq_work.h
-new file mode 100644
-index 0000000..8b9927f
---- /dev/null
-+++ b/arch/powerpc/include/asm/irq_work.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_POWERPC_IRQ_WORK_H
-+#define _ASM_POWERPC_IRQ_WORK_H
-+
-+extern void arch_irq_work_raise(void);
-+
-+#endif
-diff --git a/arch/s390/include/asm/irq_work.h b/arch/s390/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/s390/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/sh/include/asm/irq_work.h b/arch/sh/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/sh/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/sparc/include/asm/irq_work.h b/arch/sparc/include/asm/irq_work.h
-new file mode 100644
-index 0000000..1d062a6
---- /dev/null
-+++ b/arch/sparc/include/asm/irq_work.h
-@@ -0,0 +1,6 @@
-+#ifndef ___ASM_SPARC_IRQ_H
-+#define ___ASM_SPARC_IRQ_H
-+
-+extern void arch_irq_work_raise(void);
-+
-+#endif
-diff --git a/arch/x86/include/asm/irq_work.h b/arch/x86/include/asm/irq_work.h
-new file mode 100644
-index 0000000..38eed96
---- /dev/null
-+++ b/arch/x86/include/asm/irq_work.h
-@@ -0,0 +1,10 @@
-+#ifndef _ASM_X86_IRQ_WORK_H
-+#define _ASM_X86_IRQ_WORK_H
-+
-+#ifndef CONFIG_X86_LOCAL_APIC
-+#include <asm-generic/irq_work.h>
-+# else
-+extern void arch_irq_work_raise(void);
-+#endif
-+
-+#endif
-diff --git a/arch/x86/kernel/irq_work.c b/arch/x86/kernel/irq_work.c
-index ca8f703..95f5d4e 100644
---- a/arch/x86/kernel/irq_work.c
-+++ b/arch/x86/kernel/irq_work.c
-@@ -18,13 +18,13 @@ void smp_irq_work_interrupt(struct pt_regs *regs)
- 	irq_exit();
- }
- 
-+#ifdef CONFIG_X86_LOCAL_APIC
- void arch_irq_work_raise(void)
- {
--#ifdef CONFIG_X86_LOCAL_APIC
- 	if (!cpu_has_apic)
- 		return;
- 
- 	apic->send_IPI_self(IRQ_WORK_VECTOR);
- 	apic_wait_icr_idle();
--#endif
- }
-+#endif
-diff --git a/include/asm-generic/irq_work.h b/include/asm-generic/irq_work.h
-new file mode 100644
-index 0000000..a2d4108
---- /dev/null
-+++ b/include/asm-generic/irq_work.h
-@@ -0,0 +1,9 @@
-+#ifndef __ASM_GENERIC_ATOMIC_H
-+#define __ASM_GENERIC_ATOMIC_H
-+
-+/*
-+ * Lame architectures will get the timer tick callback
-+ */
-+static inline void arch_irq_work_raise(void) { }
-+
-+#endif
-diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
-index 6a9e8f5..b39ea0b 100644
---- a/include/linux/irq_work.h
-+++ b/include/linux/irq_work.h
-@@ -2,6 +2,7 @@
- #define _LINUX_IRQ_WORK_H
- 
- #include <linux/llist.h>
-+#include <asm/irq_work.h>
- 
- struct irq_work {
- 	unsigned long flags;
-diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index 1588e3b..44a5b19 100644
---- a/kernel/irq_work.c
-+++ b/kernel/irq_work.c
-@@ -49,13 +49,6 @@ static bool irq_work_claim(struct irq_work *work)
- 	return true;
- }
- 
--void __weak arch_irq_work_raise(void)
--{
--	/*
--	 * Lame architectures will get the timer tick callback
--	 */
--}
--
- /*
-  * Queue the entry and raise the IPI if needed.
-  */
 -- 
-1.7.5.4
-
+Regards/Gruss,
+    Boris.
