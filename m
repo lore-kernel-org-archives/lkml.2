@@ -1,98 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793Ab2JTWT0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 18:19:26 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45731 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756666Ab2JTWTZ (ORCPT
+	id S1753593Ab2JTWbY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 18:31:24 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41521 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753211Ab2JTWbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 18:19:25 -0400
-Date: Sun, 21 Oct 2012 00:19:48 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Heinz Diehl <htd@fritha.org>
-Cc: Martin Peres <martin.peres@labri.fr>, Heinz Diehl <htd@fancy-poultry.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>,
-        David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        marcheu@chromium.org
-Subject: Re: Linux 3.7-rc1 (nouveau_bios_score oops).
-Message-ID: <20121020221948.GE5826@joi.lan>
-References: <1724445.dN2yMEzN6d@localhost>
- <CA+55aFy8Te9VFaZRZSDYMehbfg-qLDBYv6=EKncQ2=J2XaF+Vg@mail.gmail.com>
- <20121020092647.GA3186@fancy-poultry.org>
- <50827174.7070109@labri.fr>
- <20121020104238.GA1539@fritha.org>
- <20121020202846.GA5826@joi.lan>
- <20121020212036.GA1698@fritha.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121020212036.GA1698@fritha.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 20 Oct 2012 18:31:23 -0400
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: Benjamin Poirier <benjamin.poirier@gmail.com>
+Cc: Jean Sacren <sakiwit@gmail.com>, Arnaud Lacombe <lacombar@gmail.com>,
+        Wang YanQing <udknight@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Davidlohr Bueso <dave@gnu.org>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Yaakov Selkowitz <yselkowitz@gmail.com>, Michal Marek <mmarek@suse.cz>,
+        Benjamin Poirier <benjamin.poirier@gmail.com>
+Subject: [PATCH] kconfig: fix building the qconf frontend
+Date: Sun, 21 Oct 2012 00:31:13 +0200
+Message-Id: <1350772273-3958-1-git-send-email-yann.morin.1998@free.fr>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 20, 2012 at 11:20:36PM +0200, Heinz Diehl wrote:
-> On 20.10.2012, Marcin Slusarz wrote: 
-> 
-> > Try this one.
-> 
-> It works, now I can boot again. However, nouveau seems to be dead now.
-> The dmesg output with your patch on top of 3.7-rc1 is:
-> 
-> [    3.685909] [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
-> [    3.687784] nouveau  [  DEVICE][0000:01:00.0] BOOT0  : 0x0a8800b1
-> [    3.689960] nouveau  [  DEVICE][0000:01:00.0] Chipset: GT218 (NVA8)
-> [    3.692471] nouveau  [  DEVICE][0000:01:00.0] Family : NV50
-> [    3.695716] nouveau  [   VBIOS][0000:01:00.0] checking PRAMIN for image...
-> [    3.697087] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
-> [    3.698471] nouveau  [   VBIOS][0000:01:00.0] checking PROM for image...
-> [    3.699838] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
-> [    3.701223] nouveau  [   VBIOS][0000:01:00.0] checking ACPI for image...
-> [    3.702684] ACPI Error: Field [ROMI] Base+Offset+Width 0+24+1 is beyond end of region [VROM] (length 24) (20120913/exfldio-210)
-> [    3.704139] ACPI Error: Method parse/execution failed[\_SB_.PCI0.PEG1.GFX0._ROM] (Node ffff880142e85cf8), AE_AML_REGION_LIMIT (20120913/psparse-536)
-> [    3.716183] failed to evaluate ROM got AE_AML_REGION_LIMIT
-> [    3.718776] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
-> [    3.721349] nouveau  [   VBIOS][0000:01:00.0] checking PCIROM for image...
-> [    3.724111] nouveau 0000:01:00.0: Invalid ROM contents
-> [    3.726663] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
-> [    3.729159] nouveau E[   VBIOS][0000:01:00.0] unable to locate usable image
-> [    3.731677] nouveau E[  DEVICE][0000:01:00.0] failed to create 0x10000001, -22
-> [    3.734231] nouveau E[     DRM] failed to create 0x80000080, -22
-> [    3.736097] nouveau: probe of 0000:01:00.0 failed with error -22
-> [    3.740523] dracut: Starting plymouth daemon
+ - 'offsetof' is already defined in stddef
+    - to avoid issues with old systems still missing offsetof, just protect
+      our definition between #ifndef...#endif
 
-Hmm, maybe we can't fetch 3 bytes only...
+ - 'new' is a reserved keyword in C++:
+    - rename the variable
+    - protect the whole file with the usual #ifdef __cplusplus construct
 
-Let's check this:
+Also, protect the whole file with the #ifdenf LIST_H, not only the macros
+defintions.
 
+Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Benjamin Poirier <benjamin.poirier@gmail.com>
 ---
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/bios/base.c b/drivers/gpu/drm/nouveau/core/subdev/bios/base.c
-index 824eea0..8bd71aa 100644
---- a/drivers/gpu/drm/nouveau/core/subdev/bios/base.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/bios/base.c
-@@ -192,14 +192,16 @@ nouveau_bios_shadow_acpi(struct nouveau_bios *bios)
+ scripts/kconfig/list.h |   30 ++++++++++++++++++++----------
+ 1 files changed, 20 insertions(+), 10 deletions(-)
+
+diff --git a/scripts/kconfig/list.h b/scripts/kconfig/list.h
+index 934bdba..c4fc349 100644
+--- a/scripts/kconfig/list.h
++++ b/scripts/kconfig/list.h
+@@ -5,7 +5,13 @@
+  * Copied from include/linux/...
+  */
+ 
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#ifndef offsetof
+ #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
++#endif
+ 
+ /**
+  * container_of - cast a member of a structure out to the containing structure
+@@ -49,8 +55,6 @@ struct list_head {
+ 	     &pos->member != (head); 	\
+ 	     pos = list_entry(pos->member.next, typeof(*pos), member))
+ 
+-#endif
+-
+ /**
+  * list_empty - tests whether a list is empty
+  * @head: the list to test.
+@@ -66,25 +70,31 @@ static inline int list_empty(const struct list_head *head)
+  * This is only for internal list manipulation where we know
+  * the prev/next entries already!
+  */
+-static inline void __list_add(struct list_head *new,
++static inline void __list_add(struct list_head *new_e,
+ 			      struct list_head *prev,
+ 			      struct list_head *next)
  {
- 	struct pci_dev *pdev = nv_device(bios)->pdev;
- 	int ret, cnt, i;
--	u8  data[3];
-+	u8  *data;
+-	next->prev = new;
+-	new->next = next;
+-	new->prev = prev;
+-	prev->next = new;
++	next->prev = new_e;
++	new_e->next = next;
++	new_e->prev = prev;
++	prev->next = new_e;
+ }
  
- 	if (!nouveau_acpi_rom_supported(pdev))
- 		return;
- 
- 	bios->size = 0;
--	if (nouveau_acpi_get_bios_chunk(data, 0, 3) == 3)
-+	data = kmalloc(4096, GFP_KERNEL);
-+	if (data && nouveau_acpi_get_bios_chunk(data, 0, 4096) >= 3)
- 		bios->size = data[2] * 512;
-+	kfree(data);
- 	if (!bios->size)
- 		return;
- 
----
+ /**
+  * list_add_tail - add a new entry
+- * @new: new entry to be added
++ * @new_e: new entry to be added
+  * @head: list head to add it before
+  *
+  * Insert a new entry before the specified head.
+  * This is useful for implementing queues.
+  */
+-static inline void list_add_tail(struct list_head *new, struct list_head *head)
++static inline void list_add_tail(struct list_head *new_e, struct list_head *head)
+ {
+-	__list_add(new, head->prev, head);
++	__list_add(new_e, head->prev, head);
+ }
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* LIST_H */
+-- 
+1.7.2.5
 
-Please attach acpidump output.
