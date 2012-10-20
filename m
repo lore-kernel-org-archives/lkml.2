@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab2JTPEr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 11:04:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34025 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755665Ab2JTPEq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 11:04:46 -0400
-Date: Sat, 20 Oct 2012 08:04:29 -0700
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 09/11] perf python: Link with libtraceevent
-Message-ID: <20121020150429.GA27221@ghostprotocols.net>
-References: <1350494387-10987-1-git-send-email-acme@infradead.org>
- <1350494387-10987-10-git-send-email-acme@infradead.org>
- <87y5j41rw5.fsf@sejong.aot.lge.com>
- <20121018140033.GC2057@infradead.org>
- <20121018143835.GE2057@infradead.org>
- <1350574827.1610.8.camel@leonhard>
- <20121020003556.GA15567@gmail.com>
+	id S1755893Ab2JTPTr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 11:19:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58972 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751484Ab2JTPTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Oct 2012 11:19:46 -0400
+Date: Sat, 20 Oct 2012 17:21:00 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [PATCH] pidns: limit the nesting depth of pid namespaces
+Message-ID: <20121020152100.GA28039@redhat.com>
+References: <1350045042-1369134-1-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121020003556.GA15567@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1350045042-1369134-1-git-send-email-avagin@openvz.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Oct 20, 2012 at 02:35:57AM +0200, Ingo Molnar escreveu:
-> Even with that I'm getting:
-> 
-> util/python.c: In function ‘initperf’:
-> util/python.c:1018:2: error: ‘page_size’ undeclared 
-> (first use in this function)
-> util/python.c:1018:2: note: each undeclared identifier is 
-> reported only once for each function it appears in
-> error: command 'gcc' failed with exit status 1
+On 10/12, Andrew Vagin wrote:
+>
+> 'struct pid' is a "variable sized struct" - a header with an array
+> of upids at the end.
+>
+> A size of the array depends on a level (depth) of pid namespaces. Now
+> a level of pidns is not limited, so 'struct pid' can be more than one
+> page.
+>
+> Looks reasonable, that it should be less than a page. MAX_PIS_NS_LEVEL
+> is not calculated from PAGE_SIZE, because in this case it depends on
+> architectures, config options and it will be reduced, if someone adds a
+> new fields in struct pid or struct upid.
+>
+> I suggest to set MAX_PIS_NS_LEVEL = 32, because it saves ability to
+> expand "struct pid" and it's more than enough for all known for me
+> use-cases.  When someone finds a reasonable use case, we can add a
+> config option or a sysctl parameter.
+>
+> In addition it will reduce effect of another problem, when we have many
+> nested namespaces and the oldest one starts dying.  zap_pid_ns_processe
+> will be called for each namespace and find_vpid will be called for each
+> process in a namespace. find_vpid will be called minimum max_level^2 / 2
+> times. The reason of that is that when we found a bit in pidmap, we
+> can't determine this pidns is top for this process or it isn't.
+>
+> vpid is a heavy operation, so a fork bomb, which create many nested
+> namespace, can do a system inaccessible for a long time.
+>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Signed-off-by: Andrew Vagin <avagin@openvz.org>
 
-Yeah, there was another problem, a patch that makes sense only for
-perf/core was added, I reverted it after Namhyung reported the same
-problem:
 
-commit 9cd938a4c3b908a3ff7ef65bdc432f1915361e87
-Author: Arnaldo Carvalho de Melo <acme@redhat.com>
-Date:   Thu Oct 18 10:51:08 2012 -0300
+Acked-by: Oleg Nesterov <oleg@redhat.com>
 
-    Revert "perf python: Initialize 'page_size' variable"
-    
-    The commit that added the page_size variable is only in the perf/core
-    branch, not needed for perf/urgent. Brown paper bag grade, sigh.
-    
-    This reverts commit 356712f6e296fdae1edae51b96b485ed830bdc0c.
-    
-    Reported-by: Namhyung Kim <namhyung@kernel.org>
-    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+
+> ---
+>  kernel/pid_namespace.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+>
+> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+> index b051fa6..598bfb3 100644
+> --- a/kernel/pid_namespace.c
+> +++ b/kernel/pid_namespace.c
+> @@ -70,12 +70,18 @@ err_alloc:
+>  	return NULL;
+>  }
+>
+> +/* MAX_PID_NS_LEVEL is needed for limiting size of 'struct pid' */
+> +#define MAX_PID_NS_LEVEL 32
+> +
+>  static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_pid_ns)
+>  {
+>  	struct pid_namespace *ns;
+>  	unsigned int level = parent_pid_ns->level + 1;
+>  	int i, err = -ENOMEM;
+>
+> +	if (level > MAX_PID_NS_LEVEL)
+> +		goto out;
+> +
+>  	ns = kmem_cache_zalloc(pid_ns_cachep, GFP_KERNEL);
+>  	if (ns == NULL)
+>  		goto out;
+> --
+> 1.7.1
+>
+
