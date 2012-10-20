@@ -1,128 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351Ab2JTGnB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 02:43:01 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53670 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640Ab2JTGm7 (ORCPT
+	id S1752957Ab2JTHCl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 03:02:41 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:38409 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab2JTHCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 02:42:59 -0400
+	Sat, 20 Oct 2012 03:02:39 -0400
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: Manjunath Hadli <manjunath.hadli@ti.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux-davincidsp.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>
+Subject: [PATCH] media: davinci: vpbe: fix build warning
+Date: Sat, 20 Oct 2012 12:32:20 +0530
+Message-Id: <1350716540-10638-1-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-In-Reply-To: <1350654126.2768.5.camel@twins>
-References: <1350635770-9189-1-git-send-email-xtfeng@gmail.com>
-	<1350654126.2768.5.camel@twins>
-Date: Sat, 20 Oct 2012 14:42:58 +0800
-Message-ID: <CAJn8CcE5McFB-FH981Pj+eahNOt8ck3ncJwD4xocU_LrAtjBHA@mail.gmail.com>
-Subject: Re: [PATCH] sched, autogroup: fix kernel crashes caused by runtime
- disable autogroup
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
-        Ingo Molnar <mingo@redhat.com>, Mike Galbraith <efault@gmx.de>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 9:42 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> Always try and CC people who wrote the code..
->
-> On Fri, 2012-10-19 at 16:36 +0800, Xiaotian Feng wrote:
->> There's a regression from commit 800d4d30, in autogroup_move_group()
->>
->>       p->signal->autogroup = autogroup_kref_get(ag);
->>
->>       if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
->>               goto out;
->>       ...
->>     out:
->>       autogroup_kref_put(prev);
->>
->> So kernel changed p's autogroup to ag, but never sched_move_task(p).
->> Then previous autogroup of p is released, which may release task_group
->> related with p. After commit 8323f26ce, p->sched_task_group might point
->> to this stale value, and thus caused kernel crashes.
->>
->> This is very easy to reproduce, add "kernel.sched_autogroup_enabled = 0"
->> to your /etc/sysctl.conf, your system will never boot up. It is not reasonable
->> to put the sysctl enabled check in autogroup_move_group(), kernel should check
->> it before autogroup_create in sched_autogroup_create_attach().
->>
->> Reported-by: cwillu <cwillu@cwillu.com>
->> Reported-by: Luis Henriques <luis.henriques@canonical.com>
->> Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
->> Cc: Ingo Molnar <mingo@redhat.com>
->> Cc: Peter Zijlstra <peterz@infradead.org>
->> ---
->>  kernel/sched/auto_group.c |   10 +++++-----
->>  1 file changed, 5 insertions(+), 5 deletions(-)
->>
->> diff --git a/kernel/sched/auto_group.c b/kernel/sched/auto_group.c
->> index 0984a21..ac62415 100644
->> --- a/kernel/sched/auto_group.c
->> +++ b/kernel/sched/auto_group.c
->> @@ -143,15 +143,11 @@ autogroup_move_group(struct task_struct *p, struct autogroup *ag)
->>
->>       p->signal->autogroup = autogroup_kref_get(ag);
->>
->> -     if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
->> -             goto out;
->> -
->>       t = p;
->>       do {
->>               sched_move_task(t);
->>       } while_each_thread(p, t);
->>
->> -out:
->>       unlock_task_sighand(p, &flags);
->>       autogroup_kref_put(prev);
->>  }
->
-> So I've looked at this for all of 1 minute, but why isn't moving that
-> check up one line to be above the p->signal->autogroup assignment
-> enough?
+From: Lad, Prabhakar <prabhakar.lad@ti.com>
 
-I think if autogroup is disabled, we don't need to use
-autogroup_create() to create a new ag and tg, kernel will not use it.
+Warnings were generated because of the following commit changed data type for
+address pointer
 
->
->> @@ -159,8 +155,12 @@ out:
->>  /* Allocates GFP_KERNEL, cannot be called under any spinlock */
->>  void sched_autogroup_create_attach(struct task_struct *p)
->>  {
->> -     struct autogroup *ag = autogroup_create();
->> +     struct autogroup *ag;
->> +
->> +     if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
->> +             return;
->>
->> +     ag = autogroup_create();
->>       autogroup_move_group(p, ag);
->>       /* drop extra reference added by autogroup_create() */
->>       autogroup_kref_put(ag);
->
-> Man,.. so on memory allocation fail we'll put the group in
-> autogroup_default, which I think ends up being the root cgroup.
->
-> But what happens when sysctl_sched_autogroup_enabled is false?
->
+195bbca ARM: 7500/1: io: avoid writeback addressing modes for __raw_ accessors
+add  __iomem annotation to fix following warnings
 
-autogroup runtime disable is very nasty, as it might happen at any
-place of sched_move_group() for any setsid task.
-After sysctl_sched_autogroup_enabled is changed to false,
-autogroup_task_group(p, tg) will return tg, which is from its cpu
-cgroup.
+drivers/media/platform/davinci/vpbe_osd.c: In function ‘osd_read’:
+drivers/media/platform/davinci/vpbe_osd.c:49:2: warning: passing
+ argument 1 of ‘__raw_readl’ makes pointer from integer without a cast [enabled by default]
+arch/arm/include/asm/io.h:104:19: note: expected ‘const volatile
+ void *’ but argument is of type ‘long unsigned int’
 
-> It looks like sched_autogroup_fork() is effective in that case, which
-> would mean we'll stay in whatever group our parent is in, which is not
-> the same as being disabled.
+Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+---
+ drivers/media/platform/davinci/vpbe_osd.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
-It's true, but after autogroup is disabled, p->signal->autogroup will
-never be used then, as autogroup_task_group() will not use it. But
-after autogroup is enabled again, it might be a disaster....
+diff --git a/drivers/media/platform/davinci/vpbe_osd.c b/drivers/media/platform/davinci/vpbe_osd.c
+index bba299d..9ab9280 100644
+--- a/drivers/media/platform/davinci/vpbe_osd.c
++++ b/drivers/media/platform/davinci/vpbe_osd.c
+@@ -46,14 +46,14 @@ static inline u32 osd_read(struct osd_state *sd, u32 offset)
+ {
+ 	struct osd_state *osd = sd;
+ 
+-	return readl(osd->osd_base + offset);
++	return readl(IOMEM(osd->osd_base + offset));
+ }
+ 
+ static inline u32 osd_write(struct osd_state *sd, u32 val, u32 offset)
+ {
+ 	struct osd_state *osd = sd;
+ 
+-	writel(val, osd->osd_base + offset);
++	writel(val, IOMEM(osd->osd_base + offset));
+ 
+ 	return val;
+ }
+@@ -63,9 +63,9 @@ static inline u32 osd_set(struct osd_state *sd, u32 mask, u32 offset)
+ 	struct osd_state *osd = sd;
+ 
+ 	u32 addr = osd->osd_base + offset;
+-	u32 val = readl(addr) | mask;
++	u32 val = readl(IOMEM(addr)) | mask;
+ 
+-	writel(val, addr);
++	writel(val, IOMEM(addr));
+ 
+ 	return val;
+ }
+@@ -75,9 +75,9 @@ static inline u32 osd_clear(struct osd_state *sd, u32 mask, u32 offset)
+ 	struct osd_state *osd = sd;
+ 
+ 	u32 addr = osd->osd_base + offset;
+-	u32 val = readl(addr) & ~mask;
++	u32 val = readl(IOMEM(addr)) & ~mask;
+ 
+-	writel(val, addr);
++	writel(val, IOMEM(addr));
+ 
+ 	return val;
+ }
+@@ -88,9 +88,9 @@ static inline u32 osd_modify(struct osd_state *sd, u32 mask, u32 val,
+ 	struct osd_state *osd = sd;
+ 
+ 	u32 addr = osd->osd_base + offset;
+-	u32 new_val = (readl(addr) & ~mask) | (val & mask);
++	u32 new_val = (readl(IOMEM(addr)) & ~mask) | (val & mask);
+ 
+-	writel(new_val, addr);
++	writel(new_val, IOMEM(addr));
+ 
+ 	return new_val;
+ }
+-- 
+1.7.4.1
 
-I think we'd better delete the runtime enable/disable support for
-autogroup, because it might mess up the group scheduler....
-
->
->
