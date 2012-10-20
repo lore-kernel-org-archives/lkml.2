@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945939Ab2JTBp5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 21:45:57 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:42208 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933203Ab2JTBp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 21:45:56 -0400
-Date: Fri, 19 Oct 2012 18:45:53 -0700
-From: Kees Cook <keescook@chromium.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] use clamp_t in UNAME26 fix
-Message-ID: <20121020014553.GA6785@www.outflux.net>
+	id S933281Ab2JTBrk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 21:47:40 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:16920 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S933203Ab2JTBrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 21:47:39 -0400
+X-IronPort-AV: E=Sophos;i="4.80,618,1344182400"; 
+   d="scan'208";a="6033513"
+Message-ID: <5081F5B0.7000707@cn.fujitsu.com>
+Date: Sat, 20 Oct 2012 08:52:00 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org, rob@landley.net,
+        tglx@linutronix.de, mingo@redhat.com, bhelgaas@google.com,
+        hpa@zytor.com, isimatu.yasuaki@jp.fujitsu.com,
+        muneda.takahiro@jp.fujitsu.com
+Subject: Re: [RESEND PATCH v2 1/2] update mem= option's spec according to
+ its implementation
+References: <1350641777-19605-1-git-send-email-wency@cn.fujitsu.com> <1350641777-19605-2-git-send-email-wency@cn.fujitsu.com> <CAHGf_=oDTLC8ebNgwCbT7NyxLre9c8ZokEKgjrORgzaHfZsTqQ@mail.gmail.com>
+In-Reply-To: <CAHGf_=oDTLC8ebNgwCbT7NyxLre9c8ZokEKgjrORgzaHfZsTqQ@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/20 08:45:57,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/20 08:46:06,
+	Serialize complete at 2012/10/20 08:46:06
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The min/max call needed to have explicit types on some architectures
-(e.g. mn10300). Use clamp_t instead to avoid the warning.
+At 10/20/2012 02:11 AM, KOSAKI Motohiro Wrote:
+> On Fri, Oct 19, 2012 at 6:16 AM,  <wency@cn.fujitsu.com> wrote:
+>> From: Wen Congyang <wency@cn.fujitsu.com>
+>>
+>> Current mem= implementation seems buggy because specification and
+>> implementation doesn't match. Current mem= has been working
+>> for many years and it's not buggy, it works as expected. So
+>> we should update the specification.
+>>
+>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>> Sort-of-tentatively-acked-by: Rob Landley <rob@landley.net>
+>> ---
+>>  Documentation/kernel-parameters.txt |    7 ++++---
+>>  1 files changed, 4 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>> index 9776f06..85b911a 100644
+>> --- a/Documentation/kernel-parameters.txt
+>> +++ b/Documentation/kernel-parameters.txt
+>> @@ -1481,9 +1481,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>>         mem=nn[KMG]     [KNL,BOOT] Force usage of a specific amount of memory
+>>                         Amount of memory to be used when the kernel is not able
+>>                         to see the whole system memory or for test.
+>> -                       [X86-32] Use together with memmap= to avoid physical
+>> -                       address space collisions. Without memmap= PCI devices
+>> -                       could be placed at addresses belonging to unused RAM.
+>> +                       [X86-32] Work as limiting max address. Use together
+>> +                       with memmap= to avoid physical address space collisions.
+>> +                       Without memmap= PCI devices could be placed at addresses
+>> +                       belonging to unused RAM.
+> 
+> If my remember is correct, x86-64 also specify maximum address.
+> but my remember is not clear.
+> 
 
-kernel/sys.c: In function 'override_release':
-kernel/sys.c:1287:10: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+Do you mean max_addr option? It is only for ia64 box.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- kernel/sys.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 01865c6..e6e0ece 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1284,7 +1284,7 @@ static int override_release(char __user *release, size_t len)
- 			rest++;
- 		}
- 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
--		copy = min(sizeof(buf), max_t(size_t, 1, len));
-+		copy = clamp_t(size_t, len, 1, sizeof(buf));
- 		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
- 		ret = copy_to_user(release, buf, copy + 1);
- 	}
--- 
-1.7.9.5
-
-
--- 
-Kees Cook
-Chrome OS Security
+Thanks
+Wen Congyang
