@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933307Ab2JTBrp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 21:47:45 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:16924 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933234Ab2JTBrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 21:47:41 -0400
-X-IronPort-AV: E=Sophos;i="4.80,618,1344182400"; 
-   d="scan'208";a="6033514"
-Message-ID: <5081F565.8020605@cn.fujitsu.com>
-Date: Sat, 20 Oct 2012 08:50:45 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Wen Congyang <wencongyang@gmail.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/10] memory-hotplug : check whether memory is offline
- or not when removing memory
-References: <506E43E0.70507@jp.fujitsu.com> <506E451E.1050403@jp.fujitsu.com> <CAHGf_=rVDm-JygjPoLHbmF28Dgd52HFc4-b5KCxhEieG60okuw@mail.gmail.com> <50812F13.20503@cn.fujitsu.com> <5081609C.9080702@gmail.com> <CAHGf_=q=Agidyj_j6jhBdhNmJBy2u1dP+UMAoXbM=_=DyZJs_w@mail.gmail.com>
-In-Reply-To: <CAHGf_=q=Agidyj_j6jhBdhNmJBy2u1dP+UMAoXbM=_=DyZJs_w@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/20 08:44:41,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/20 08:45:29,
-	Serialize complete at 2012/10/20 08:45:29
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933284Ab2JTB5U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 21:57:20 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:56086 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759443Ab2JTB5T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 21:57:19 -0400
+X-AuditID: cbfee61a-b7f976d000001eb9-f7-508204fde86a
+Message-id: <508204FC.4030802@samsung.com>
+Date: Sat, 20 Oct 2012 10:57:16 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: anish kumar <anish198519851985@gmail.com>
+Cc: gregkh@linuxfoundation.org, myungjoo.ham@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [PATCH] extcon: driver model release call not needed
+References: <1350580326-1574-1-git-send-email-anish198519851985@gmail.com>
+In-reply-to: <1350580326-1574-1-git-send-email-anish198519851985@gmail.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGLMWRmVeSWpSXmKPExsVy+t9jAd2/LE0BBncaRS0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGx3X3mAsWcldsn7iKrYFxKWcXIweHhICJxMzDbl2MnECmmMSF
+	e+vZuhi5OIQEFjFKfGw7wwzhdDFJbJ7xkx2kildAS+L45rNMIM0sAqoSnQ/0QcJsQOH9L26w
+	gYRFBSIkfvVzQFQLSvyYfI8FJCwioCuxaWEKSJgZqGLSq8UsILawgKfEnkvHwYYLCXhJHN7x
+	lg3E5hTwlvg9+wcLRL2OxP7WaWwQtrzE5jVvmScwCsxCsmEWkrJZSMoWMDKvYhRNLUguKE5K
+	zzXUK07MLS7NS9dLzs/dxAgOvWdSOxhXNlgcYhTgYFTi4ZXoawwQYk0sK67MPcQowcGsJMK7
+	dBFQiDclsbIqtSg/vqg0J7X4EKM0B4uSOG+zR0qAkEB6YklqdmpqQWoRTJaJg1OqgdGGv5bx
+	fpjv3jdH7XUOvGMybvjixRjCuDuvqP6VqEkTd2Fc8UnzlX2u0216pBy+XpRaPSk23/WttpKv
+	M8PHk/EnC/+H7nZxnpvQel99wcb79RX/6zSq7jCf6Lnvc1Vyr2vRzKCttvwVOyboqzWu39ih
+	tTX59fRjR3tnCqbrPy05U/yrobg4SYmlOCPRUIu5qDgRAFs0BP05AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 10/20/2012 02:33 AM, KOSAKI Motohiro Wrote:
->> I think it again, and found that this check is necessary. Because we only
->> lock memory hotplug when offlining pages. Here is the steps to offline and
->> remove memory:
->>
->> 1. lock memory hotplug
->> 2. offline a memory section
->> 3. unlock memory hotplug
->> 4. repeat 1-3 to offline all memory sections
->> 5. lock memory hotplug
->> 6. remove memory
->> 7. unlock memory hotplug
->>
->> All memory sections must be offlined before removing memory. But we don't
->> hold
->> the lock in the whole operation. So we should check whether all memory
->> sections
->> are offlined before step6.
+On 10/19/2012 02:12 AM, anish kumar wrote:
+> From: anish kumar <anish198519851985@gmail.com>
 > 
-> You should describe the race scenario in the patch description. OK?
+> We don't need a release call in this file as we are doing
+> everything needed in unregister call and we don't have any
+> more pointer to free up.
 > 
+> Signed-off-by: anish kumar <anish198519851985@gmail.com>
+> ---
+>  drivers/extcon/extcon-class.c |    4 +---
+>  1 files changed, 1 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+> index 946a318..cf30eb1 100644
+> --- a/drivers/extcon/extcon-class.c
+> +++ b/drivers/extcon/extcon-class.c
+> @@ -585,9 +585,7 @@ static void extcon_cleanup(struct extcon_dev *edev, bool skip)
+>  
+>  static void extcon_dev_release(struct device *dev)
+>  {
+> -	struct extcon_dev *edev = (struct extcon_dev *) dev_get_drvdata(dev);
+> -
+> -	extcon_cleanup(edev, true);
+> +	/* We don't have any thing to free here */
+>  }
+>  
+>  static const char *muex_name = "mutually_exclusive";
 
-OK
+I can't agree this patch. The extcon_dev_release() function is used
+for dev->release. If some case without calling extcon_dev_unregister(),
+I think dev->release function is needed to free memory of edev->dev.
 
-Thanks
-Wen Congyang
+The edev->dev->release store the function pointer of extcon_dev_release()
+in extcon_dev_register().
+edev->dev->parent = dev;
+edev->dev->class = extcon_class;
+edev->dev->release = extcon_dev_release;
+
+
+Thanks,
+Chanwoo Choi
