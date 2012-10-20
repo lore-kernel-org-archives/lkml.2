@@ -1,132 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab2JTUe7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 16:34:59 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:52700 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab2JTUe6 (ORCPT
+	id S1754940Ab2JTUok (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 16:44:40 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48948 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab2JTUoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 16:34:58 -0400
-Date: Sat, 20 Oct 2012 22:35:20 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Heinz Diehl <htd@fritha.org>
-Cc: Martin Peres <martin.peres@labri.fr>, Heinz Diehl <htd@fancy-poultry.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>,
-        David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        marcheu@chromium.org
-Subject: Re: Linux 3.7-rc1 (nouveau_bios_score oops).
-Message-ID: <20121020203520.GB5826@joi.lan>
-References: <1724445.dN2yMEzN6d@localhost>
- <CA+55aFy8Te9VFaZRZSDYMehbfg-qLDBYv6=EKncQ2=J2XaF+Vg@mail.gmail.com>
- <20121020092647.GA3186@fancy-poultry.org>
- <50827174.7070109@labri.fr>
- <20121020104238.GA1539@fritha.org>
- <20121020202846.GA5826@joi.lan>
+	Sat, 20 Oct 2012 16:44:39 -0400
+Message-ID: <50830D33.5050807@ursulin.net>
+Date: Sat, 20 Oct 2012 21:44:35 +0100
+From: Tvrtko Ursulin <tvrtko@ursulin.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121020202846.GA5826@joi.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: dm-crypt@saout.de
+CC: linux-kernel@vger.kernel.org
+Subject: cryptsetup not working under 3.6  - regression from 3.4?
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 20, 2012 at 10:28:46PM +0200, Marcin Slusarz wrote:
-> On Sat, Oct 20, 2012 at 12:42:38PM +0200, Heinz Diehl wrote:
-> > On 20.10.2012, Martin Peres wrote: 
-> > 
-> > > Can you test the attached patch too ? I rebased the previous one I sent on
-> > > top on 3.7-rc1 as I accidentally used an older version.
-> > 
-> > Yes, of course.
-> > 
-> > Tried it. Unfortunately, the crash remains the same as reported.
-> 
-> Try this one.
-> 
-> Now, the question is: could 3.6 kernel get VBIOS by ACPI?
-> If yes, please mount debugfs and send vbios.rom to me please.
-> (cat /sys/kernel/debug/dri/0/vbios.rom > vbios.rom)
-> 
-> ---
-> From: Marcin Slusarz <marcin.slusarz@gmail.com>
-> Subject: [PATCH] drm/nouveau: validate vbios size
-> 
-> Without checking, we could detect vbios size as 0, allocate 0-byte array
-> (kmalloc returns invalid pointer for such allocation) and crash in
-> nouveau_bios_score while checking for vbios signature.
-> 
-> Reported-by: Heinz Diehl <htd@fritha.org>
 
-And of course:
-Reported-by: Paweł Sikora <pawel.sikora@agmk.net>
+Hi all,
 
-> Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-> ---
->  drivers/gpu/drm/nouveau/core/subdev/bios/base.c | 16 +++++++++++++---
->  1 file changed, 13 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/nouveau/core/subdev/bios/base.c b/drivers/gpu/drm/nouveau/core/subdev/bios/base.c
-> index dcb5c2b..824eea0 100644
-> --- a/drivers/gpu/drm/nouveau/core/subdev/bios/base.c
-> +++ b/drivers/gpu/drm/nouveau/core/subdev/bios/base.c
-> @@ -72,7 +72,7 @@ nouveau_bios_shadow_of(struct nouveau_bios *bios)
->  	}
->  
->  	data = of_get_property(dn, "NVDA,BMP", &size);
-> -	if (data) {
-> +	if (data && size) {
->  		bios->size = size;
->  		bios->data = kmalloc(bios->size, GFP_KERNEL);
->  		if (bios->data)
-> @@ -104,6 +104,9 @@ nouveau_bios_shadow_pramin(struct nouveau_bios *bios)
->  		goto out;
->  
->  	bios->size = nv_rd08(bios, 0x700002) * 512;
-> +	if (!bios->size)
-> +		goto out;
-> +
->  	bios->data = kmalloc(bios->size, GFP_KERNEL);
->  	if (bios->data) {
->  		for (i = 0; i < bios->size; i++)
-> @@ -155,6 +158,9 @@ nouveau_bios_shadow_prom(struct nouveau_bios *bios)
->  
->  	/* read entire bios image to system memory */
->  	bios->size = nv_rd08(bios, 0x300002) * 512;
-> +	if (!bios->size)
-> +		goto out;
-> +
->  	bios->data = kmalloc(bios->size, GFP_KERNEL);
->  	if (bios->data) {
->  		for (i = 0; i < bios->size; i++)
-> @@ -194,6 +200,8 @@ nouveau_bios_shadow_acpi(struct nouveau_bios *bios)
->  	bios->size = 0;
->  	if (nouveau_acpi_get_bios_chunk(data, 0, 3) == 3)
->  		bios->size = data[2] * 512;
-> +	if (!bios->size)
-> +		return;
->  
->  	bios->data = kmalloc(bios->size, GFP_KERNEL);
->  	for (i = 0; bios->data && i < bios->size; i += cnt) {
-> @@ -229,12 +237,14 @@ nouveau_bios_shadow_pci(struct nouveau_bios *bios)
->  static int
->  nouveau_bios_score(struct nouveau_bios *bios, const bool writeable)
->  {
-> -	if (!bios->data || bios->data[0] != 0x55 || bios->data[1] != 0xAA) {
-> +	if (bios->size < 3 || !bios->data || bios->data[0] != 0x55 ||
-> +			bios->data[1] != 0xAA) {
->  		nv_info(bios, "... signature not found\n");
->  		return 0;
->  	}
->  
-> -	if (nvbios_checksum(bios->data, bios->data[2] * 512)) {
-> +	if (nvbios_checksum(bios->data,
-> +			min_t(u32, bios->data[2] * 512, bios->size))) {
->  		nv_info(bios, "... checksum invalid\n");
->  		/* if a ro image is somewhat bad, it's probably all rubbish */
->  		return writeable ? 2 : 1;
-> -- 
+I can't open my LUKS formatted crypto files in 3.6 any more while 3.4 
+works fine.
+
+Error is:
+
+# cryptsetup --key-file=- luksOpen /luks.file target
+Enter passphrase:
+device-mapper: reload ioctl on  failed: No such file or directory
+Failed to setup dm-crypt key mapping for device /dev/loop0.
+Check that kernel supports aes-cbc-essiv:sha256 cipher (check syslog for 
+more info).
+Failed to read from key storage.
+
+I don't think kernel misses any modules because:
+
+a) I built 3.6 from 3.4 config via make oldconfig, and,
+b) I checked what crypto modules get loaded under 3.4 and loaded them 
+under 3.6 before attempting to run cryptsetup. Those are:
+
+Module                  Size  Used by
+sha256_generic         10207  0
+cryptd                  8665  0
+aes_x86_64              7614  0
+aes_generic            26764  1 aes_x86_64
+
+I am not sure module auto-loading for crypto works under 3.6 because if 
+I just run the cryptsetup command none of the above gets loaded.
+
+But I repeat, even if I load the required modules before hand things do 
+not work.
+
+Kernel says this:
+  device-mapper: table: 252:1: crypt: Error allocating crypto tfm
+  device-mapper: ioctl: error adding target to table
+
+And strace on cryptsetup says there DM ioctls are issued:
+  ioctl(3, DM_VERSION, 0x1d65db0) = 0
+  ioctl(3, DM_LIST_VERSIONS, 0x1d65d20) = 0
+  ioctl(3, DM_TABLE_STATUS, 0x1d66730) = -1 ENXIO (No such device or 
+address)
+  ioctl(3, DM_DEV_CREATE, 0x1d78290) = 0
+  ioctl(3, DM_TABLE_LOAD, 0x1d78290) = -1 ENOENT (No such file or directory)
+  ioctl(3, DM_DEV_REMOVE, 0x1d781d0) = 0
+
+Perhaps I am missing something obvious?
+
+Thanks,
+
+Tvrtko
