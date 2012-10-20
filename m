@@ -1,88 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759431Ab2JTAgF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 20:36:05 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:59667 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754415Ab2JTAgD (ORCPT
+	id S933135Ab2JTAlw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 20:41:52 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36495 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754601Ab2JTAlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 20:36:03 -0400
-Date: Sat, 20 Oct 2012 02:35:57 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 09/11] perf python: Link with libtraceevent
-Message-ID: <20121020003556.GA15567@gmail.com>
-References: <1350494387-10987-1-git-send-email-acme@infradead.org>
- <1350494387-10987-10-git-send-email-acme@infradead.org>
- <87y5j41rw5.fsf@sejong.aot.lge.com>
- <20121018140033.GC2057@infradead.org>
- <20121018143835.GE2057@infradead.org>
- <1350574827.1610.8.camel@leonhard>
+	Fri, 19 Oct 2012 20:41:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=unknown-8bit
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1350574827.1610.8.camel@leonhard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1350691333.6017.23.camel@sbsiddha-desk.sc.intel.com>
+References: <fa.1zfuXwqYK6u81uBoo3IdpawcpWw@ifi.uio.no>
+	<fa.p3cpkKIGUNv0/iot3o7KT9bb98M@ifi.uio.no>
+	<fa.iPHW7usT23k+cCA19L3eXEDu91Q@ifi.uio.no>
+	<fa.7eOK+XcsKUWU4ZXhBj2K6znxrvc@ifi.uio.no>
+	<fa.VGxfKOh1Z07X1TXm5PxMIlV4xu8@ifi.uio.no>
+	<fa.eH+BpYDdp4xIWE4V+wJu6hFrVxM@ifi.uio.no>
+	<b0b75b2b-961b-487a-ab03-2362c65d6972@googlegroups.com>
+	<1350687838.6017.10.camel@sbsiddha-desk.sc.intel.com>
+	<CAE9FiQUmTnhCzvaxaHbwWbcxDrjYix91Yf8TZN6ob0W_Yz1csQ@mail.gmail.com>
+	<5081E414.6080004@zytor.com>
+	<1350691333.6017.23.camel@sbsiddha-desk.sc.intel.com>
+Date: Fri, 19 Oct 2012 17:41:49 -0700
+X-Google-Sender-Auth: Tmr3ab7pjXT8EQyReDUY-C4MJOY
+Message-ID: <CAE9FiQWFqo89oe30broBU5mwPoxudkVhVrUiY+3+HL9Kp0fvSw@mail.gmail.com>
+Subject: Re: x2apic boot failure on recent sandy bridge system
+From: Yinghai Lu <yinghai@kernel.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, rrl125@gmail.com,
+        fa.linux.kernel@googlegroups.com, "Berck E. Nash" <flyboy@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Oct 19, 2012 at 5:02 PM, Suresh Siddha
+<suresh.b.siddha@intel.com> wrote:
+> On Fri, 2012-10-19 at 16:36 -0700, H. Peter Anvin wrote:
+>> On 10/19/2012 04:32 PM, Yinghai Lu wrote:
+>> > On Fri, Oct 19, 2012 at 4:03 PM, Suresh Siddha
+>> > <suresh.b.siddha@intel.com> wrote:
+>> >> On Fri, 2012-10-19 at 13:42 -0700, rrl125@gmail.com wrote:
+>> >>> Any update? The messages just seem to have stopped months ago. A
+>> >>> fallback would be nice, I have been booting the kernel with noa2xpic
+>> >>> for since kernel 3.2, and currently I am working with 3.6.2.
+>> >>>
+>> >>> If needed I can try to attempt modifying the patch to include
+>> >>> fallback, but I am probably not the best person to do it.
+>> >>>
+>> >>
+>> >> Are you referring to this commit that made into the mainline tree
+>> >> already?
+>> >>
+>> >> commit fb209bd891645bb87b9618b724f0b4928e0df3de
+>> >> Author: Yinghai Lu <yinghai@kernel.org>
+>> >> Date:   Wed Dec 21 17:45:17 2011 -0800
+>> >>
+>> >>      x86, x2apic: Fallback to xapic when BIOS doesn't setup interrupt-remapping
+>> >
+>> > I think his system has DMAR table and cpu support x2apic, So kernel
+>> > will switch to x2apic,
+>> >
+>> > but somehow BIOS SMI handler has problem with x2apic. should be thinkpad W520?
+>> >
+>>
+>> Right, StinkPad W520 needs a quirk.
+>
+> yes. Yinghai, if you remember you had a T420 that didn't show the
+> problem. And someone in the bugzilla with T420 had the problem. And
+> their dmidecode is
+> https://launchpadlibrarian.net/109393850/dmidecode.txt
+>
+> What is the difference with your system? Bios I think is the same.
 
-* Namhyung Kim <namhyung@kernel.org> wrote:
+1.37 was working too, i updated it to 1.39 and it is still working.
 
-> 2012-10-18 (???), 11:38 -0300, Arnaldo Carvalho de Melo:
-> > Em Thu, Oct 18, 2012 at 11:00:33AM -0300, Arnaldo Carvalho de Melo escreveu:
-> > > Em Thu, Oct 18, 2012 at 10:38:18AM +0900, Namhyung Kim escreveu:
-> > > > On Wed, 17 Oct 2012 14:19:45 -0300, Arnaldo Carvalho de Melo wrote:
-> > > > I got a build error after adding 'extern unsigned int page_size' to
-> > > > util/python.c - please see my previous reply.
-> > > > 
-> > > >   namhyung@sejong:perf$ make
-> > > >       SUBDIR ../lib/traceevent/
-> > > >       LINK perf
-> > > >       GEN python/perf.so
-> > > >   gcc: error: python_ext_build/tmp//../../libtraceevent.a: No such file or directory
-> > > >   error: command 'gcc' failed with exit status 1
-> > > >   cp: cannot stat `python_ext_build/lib/perf.so': No such file or directory
-> > > >   make: *** [python/perf.so] Error 1
-> > > >   TRACE_EVENT_DIR = ../lib/traceevent/
-> >    
-> > > >   ifneq ($(OUTPUT),)
-> > > >   	TE_PATH=$(OUTPUT)
-> > > >   else
-> > > >   	TE_PATH=$(TRACE_EVENT_DIR)
-> > > >   endif
-> > > >   
-> > > >   LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
-> > > 
-> > > I see, so we need to somehow propagate this TE_PATH variable to the setup.py file...
-> > 
-> > Can you try with the attached patch? I tested it here and works with:
-> > 
-> >  make -C tools/perf
-> > 
-> > and with O=
-> 
-> It works well for me too:
-> 
-> Tested-by: Namhyung Kim <namhyung@kernel.org>
+>
+> Can you see what we should check for in the dmi tables to black list
+> these systems? Can you post your T420's dmidecode to see the difference.
+>
+> https://bugzilla.kernel.org/show_bug.cgi?id=43054
 
-Even with that I'm getting:
+post dmesg and dmidecode to that bug report.
 
-util/python.c: In function ‘initperf’:
-util/python.c:1018:2: error: ‘page_size’ undeclared 
-(first use in this function)
-util/python.c:1018:2: note: each undeclared identifier is 
-reported only once for each function it appears in
-error: command 'gcc' failed with exit status 1
+Thanks
 
-Thanks,
-
-	Ingo
+Yinghai
