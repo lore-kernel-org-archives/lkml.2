@@ -1,74 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758211Ab2JTDjy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 23:39:54 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:35183 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751604Ab2JTDjx (ORCPT
+	id S1758882Ab2JTDqw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 23:46:52 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:38405 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752455Ab2JTDqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 23:39:53 -0400
+	Fri, 19 Oct 2012 23:46:50 -0400
+Date: Sat, 20 Oct 2012 06:46:39 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] gpio-timberdale: fix a potential wrapping issue
+Message-ID: <20121020034639.GU5685@mwanda>
+References: <20121011065635.GD31607@elgon.mountain>
+ <CACRpkdZ0EfjMi8i9_bFYwscQVPCPGUFiJwv_FCTMfLbWwsUKZw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1350665289-7288-1-git-send-email-andi@firstfloor.org>
-References: <1350665289-7288-1-git-send-email-andi@firstfloor.org>
-Date: Sat, 20 Oct 2012 11:39:52 +0800
-Message-ID: <CAJd=RBAABS5Vt7pquAxfbhPZzAb1n-qM_VRTwXUc0uQRU1Ky0A@mail.gmail.com>
-Subject: Re: [PATCH] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB v6
-From: Hillf Danton <dhillf@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZ0EfjMi8i9_bFYwscQVPCPGUFiJwv_FCTMfLbWwsUKZw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 20, 2012 at 12:48 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> There was some desire in large applications using MAP_HUGETLB/SHM_HUGETLB
-> to use 1GB huge pages on some mappings, and stay with 2MB on others. This
-> is useful together with NUMA policy: use 2MB interleaving on some mappings,
-> but 1GB on local mappings.
->
-> This patch extends the IPC/SHM syscall interfaces slightly to allow specifying
-> the page size.
->
-> It borrows some upper bits in the existing flag arguments and allows encoding
-> the log of the desired page size in addition to the *_HUGETLB flag.
-> When 0 is specified the default size is used, this makes the change fully
-> compatible.
->
-> Extending the internal hugetlb code to handle this is straight forward. Instead
-> of a single mount it just keeps an array of them and selects the right
-> mount based on the specified page size. When no page size is specified
-> it uses the mount of the default page size.
->
-> The change is not visible in /proc/mounts because internal mounts
-> don't appear there. It also has very little overhead: the additional
-> mounts just consume a super block, but not more memory when not used.
->
-> I also exported the new flags to the user headers
-> (they were previously under __KERNEL__). Right now only symbols
-> for x86 and some other architecture for 1GB and 2MB are defined.
-> The interface should already work for all other architectures
-> though.  Only architectures that define multiple hugetlb sizes
-> actually need it (that is currently x86, tile, powerpc). However
-> tile and powerpc have user configurable hugetlb sizes, so it's
-> not easy to add defines. A program on those architectures would
-> need to query sysfs and use the appropiate log2.
->
-> v2: Port to new tree. Fix unmount.
-> v3: Ported to latest tree.
-> v4: Ported to latest tree. Minor changes for review feedback. Updated
-> description.
-> v5: Remove unnecessary prototypes to fix merge error (Hillf Danton)
-> v6: Rebased. Fix some unlikely error paths (Hillf Danton)
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Hillf Danton <dhillf@gmail.com>
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
+On Fri, Oct 12, 2012 at 11:01:08PM +0200, Linus Walleij wrote:
+> On Thu, Oct 11, 2012 at 8:56 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> 
+> > ->last_ier is an unsigned long but the high bits can't be used int the
+> > original code because the shift wraps.
+> >
+> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> Applied, thanks!
+> Should we send this to stable? (I assume so ...)
 
-Thanks:)
+This was a static checker fix.  I guess the answer would depend on
+if there are over 30 IRQs.
 
-Acked-by: Hillf Danton <dhillf@gmail.com>
+regards,
+dan carpenter
+
