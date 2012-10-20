@@ -1,58 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755712Ab2JTNcD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 09:32:03 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53737 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755537Ab2JTNcA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 09:32:00 -0400
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: LAK <linux-arm-kernel@lists.infradead.org>
-Cc: Manjunath Hadli <manjunath.hadli@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        LMML <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux-davincidsp.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>, Sekhar Nori <nsekhar@ti.com>
-Subject: [PATCH] ARM: dm365: replace V4L2_OUT_CAP_CUSTOM_TIMINGS with V4L2_OUT_CAP_DV_TIMINGS
-Date: Sat, 20 Oct 2012 19:01:40 +0530
-Message-Id: <1350739900-25065-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755176Ab2JTOdp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 10:33:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22089 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753646Ab2JTOdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Oct 2012 10:33:42 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [PATCH 03/11] perf tool: Use PERF_EVENT_IOC_ID perf ioctl to read event id
+Date: Sat, 20 Oct 2012 16:33:11 +0200
+Message-Id: <1350743599-4805-4-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
+References: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+Changing the way we retrieve the event ID. Instead of parsing out
+the ID out of the read data, using the PERF_EVENT_IOC_ID ioctl.
 
-This patch replaces V4L2_OUT_CAP_CUSTOM_TIMINGS macro with
-V4L2_OUT_CAP_DV_TIMINGS. As V4L2_OUT_CAP_CUSTOM_TIMINGS is being phased
-out.
+Keeping the old way in place to support kernels without
+PERF_EVENT_IOC_ID ioctl support.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Cc: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
 ---
- This patch is based on the following patch series,
- ARM: davinci: dm365 EVM: add support for VPBE display
- (https://patchwork.kernel.org/patch/1295071/)
+ tools/perf/util/evlist.c | 34 ++++++++++++++++++++++++----------
+ 1 file changed, 24 insertions(+), 10 deletions(-)
 
- arch/arm/mach-davinci/board-dm365-evm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
-index 2924d61..771abb5 100644
---- a/arch/arm/mach-davinci/board-dm365-evm.c
-+++ b/arch/arm/mach-davinci/board-dm365-evm.c
-@@ -514,7 +514,7 @@ static struct vpbe_output dm365evm_vpbe_outputs[] = {
- 			.index		= 1,
- 			.name		= "Component",
- 			.type		= V4L2_OUTPUT_TYPE_ANALOG,
--			.capabilities	= V4L2_OUT_CAP_CUSTOM_TIMINGS,
-+			.capabilities	=  V4L2_OUT_CAP_DV_TIMINGS,
- 		},
- 		.subdev_name	= VPBE_VENC_SUBDEV_NAME,
- 		.default_mode	= "480p59_94",
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 561bdfb..ef13aab 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -290,19 +290,33 @@ static int perf_evlist__id_add_fd(struct perf_evlist *evlist,
+ 				  struct perf_evsel *evsel,
+ 				  int cpu, int thread, int fd)
+ {
+-	u64 read_data[4] = { 0, };
+-	int id_idx = 1; /* The first entry is the counter value */
++	u64 id;
++	int ret;
+ 
+-	if (!(evsel->attr.read_format & PERF_FORMAT_ID) ||
+-	    read(fd, &read_data, sizeof(read_data)) == -1)
+-		return -1;
++	ret = ioctl(fd, PERF_EVENT_IOC_ID, &id);
++	if (!ret)
++		goto add;
++
++	/* Legacy way to get event id.. All hail to old kernels! */
++	if (errno == ENOTTY) {
++		u64 read_data[4] = { 0, };
++		int id_idx = 1; /* The first entry is the counter value */
++
++		if (!(evsel->attr.read_format & PERF_FORMAT_ID) ||
++		    read(fd, &read_data, sizeof(read_data)) == -1)
++			return -1;
+ 
+-	if (evsel->attr.read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
+-		++id_idx;
+-	if (evsel->attr.read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
+-		++id_idx;
++		if (evsel->attr.read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
++			++id_idx;
++		if (evsel->attr.read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
++			++id_idx;
++
++		id = read_data[id_idx];
++	} else if (errno)
++		return -1;
+ 
+-	perf_evlist__id_add(evlist, evsel, cpu, thread, read_data[id_idx]);
++ add:
++	perf_evlist__id_add(evlist, evsel, cpu, thread, id);
+ 	return 0;
+ }
+ 
 -- 
-1.7.4.1
+1.7.11.4
 
