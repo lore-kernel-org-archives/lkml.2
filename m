@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab2JTSUO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 14:20:14 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:35190 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756490Ab2JTSUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 14:20:12 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>, Joerg Roedel <joro@8bytes.org>,
-        Avi Kivity <avi@redhat.com>
-Subject: [PATCH] kvm, svm: Cleanup error statements
-Date: Sat, 20 Oct 2012 20:20:04 +0200
-Message-Id: <1350757204-14547-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.0.rc2
+	id S1756606Ab2JTSVq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 14:21:46 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:32974 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850Ab2JTSVo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Oct 2012 14:21:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121019210738.GA1180@google.com>
+References: <20121008020000.GB2575@localhost>
+	<20121019005922.GG13370@google.com>
+	<CAFTL4hz82==b3ioSMhbKzh0CN1ivR7RQMKKMFFWu5PHPjg=Bfg@mail.gmail.com>
+	<20121019193808.GL13370@google.com>
+	<CAFTL4hwQ6Ntn5GJwj=jiO2p3GdwhEMp0MyR8dgUj_Lx0U4kNqg@mail.gmail.com>
+	<20121019210738.GA1180@google.com>
+Date: Sat, 20 Oct 2012 14:21:43 -0400
+Message-ID: <CAFTL4hy+vrvJKrc1Y2FW44k=LBi72H=34337xALpbtG_3u5O7w@mail.gmail.com>
+Subject: Re: [PATCH cgroup/for-3.7-fixes 1/2] Revert "cgroup: Remove
+ task_lock() from cgroup_post_fork()"
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use __func__ instead of the function name in svm_hardware_enable since
-those things tend to get out of sync. This also slims down printk line
-length in conjunction with using pr_err.
+2012/10/19 Tejun Heo <tj@kernel.org>:
+> Hello, Frederic.
+>
+> On Fri, Oct 19, 2012 at 03:44:20PM -0400, Frederic Weisbecker wrote:
+>> > For -stable, I think it's better to revert.  If you want to remove
+>> > task_lock, let's do it for 3.8.
+>>
+>> I don't think that a wrong comment justifies a patch to stable.
+>
+> I'm not really sure whether it's safe or not.  It seems all usages are
+> protected by write locking css_set_lock but maybe I'm missing
+> something and as the commit is born out of confusion, I'm very
+> inclined to revert it by default.  Are you sure this one is safe?
 
-No functionality change.
+Thinking about it further, one scenario is worrying me but it
+eventually looks safe but by accident.
 
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Avi Kivity <avi@redhat.com>
-Signed-off-by: Borislav Petkov <bp@alien8.de>
----
- arch/x86/kvm/svm.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+CPU 0
+                    CPU 1
 
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index d017df3899ef..e93908fabf46 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -630,15 +630,12 @@ static int svm_hardware_enable(void *garbage)
- 		return -EBUSY;
- 
- 	if (!has_svm()) {
--		printk(KERN_ERR "svm_hardware_enable: err EOPNOTSUPP on %d\n",
--		       me);
-+		pr_err("%s: err EOPNOTSUPP on %d\n", __func__, me);
- 		return -EINVAL;
- 	}
- 	sd = per_cpu(svm_data, me);
--
- 	if (!sd) {
--		printk(KERN_ERR "svm_hardware_enable: svm_data is NULL on %d\n",
--		       me);
-+		pr_err("%s: svm_data is NULL on %d\n", __func__, me);
- 		return -EINVAL;
- 	}
- 
--- 
-1.8.0.rc2
+cgroup_task_migrate {
+        task_lock(p)
+        rcu_assign_pointer(tsk->cgroups, newcg);
+        task_unlock(tsk);
 
+        write_lock(&css_set_lock);
+        if (!list_empty(&tsk->cg_list))
+            list_move(&tsk->cg_list, &newcg->tasks);
+        write_unlock(&css_set_lock);
+
+                          write_lock(&css_set_lock);
+	put_css_set(oldcg);
+         list_add(&child->cg_list, &child->cgroups->tasks); (1)
+
+On (1), child->cgroups should have the value of newcg and not oldcg
+due to the memory ordering implied by the locking of css_set_lock. Now
+I can't guarantee that because I'm no memory ordering expert. And even
+if it's safe, it's so very non obvious that I now agree with you:
+let's revert  the patch and restart with a better base by gathering
+all the cgroup fork code in the current cgroup_post_fork place.
+
+Thanks.
