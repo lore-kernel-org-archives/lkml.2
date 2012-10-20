@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759472Ab2JTBCr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 21:02:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36233 "EHLO
+	id S933217Ab2JTBDl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 21:03:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36251 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755122Ab2JTBCp (ORCPT
+	with ESMTP id S1755490Ab2JTBDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 21:02:45 -0400
-Date: Fri, 19 Oct 2012 18:02:23 -0700
+	Fri, 19 Oct 2012 21:03:40 -0400
+Date: Fri, 19 Oct 2012 18:03:20 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-vrvp3azmbfzexnpmkhmvtzzc@git.kernel.org>
+Message-ID: <tip-j3o4v7jyvp9ke9n230l96a1m@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
@@ -19,8 +19,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
         fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf python: Initialize 'page_size' variable
-Git-Commit-ID: 356712f6e296fdae1edae51b96b485ed830bdc0c
+Subject: [tip:perf/urgent] perf python: Link with libtraceevent
+Git-Commit-ID: f8de2885eba35d20a062325bcdfe5d71e9dc2222
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,30 +29,22 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 19 Oct 2012 18:02:29 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 19 Oct 2012 18:03:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  356712f6e296fdae1edae51b96b485ed830bdc0c
-Gitweb:     http://git.kernel.org/tip/356712f6e296fdae1edae51b96b485ed830bdc0c
+Commit-ID:  f8de2885eba35d20a062325bcdfe5d71e9dc2222
+Gitweb:     http://git.kernel.org/tip/f8de2885eba35d20a062325bcdfe5d71e9dc2222
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 16 Oct 2012 14:51:04 -0300
+AuthorDate: Tue, 16 Oct 2012 14:53:24 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 17 Oct 2012 11:45:38 -0300
+CommitDate: Wed, 17 Oct 2012 11:45:46 -0300
 
-perf python: Initialize 'page_size' variable
+perf python: Link with libtraceevent
 
-The commit 0c1fe6b:
-
- 'perf tools: Have the page size value available for all tools'
-
-Broke the python binding because the global variable 'page_size' is
-initialized on the main() routine, that is not called when using
-just the python binding, causing evlist.mmap() to fail because it
-expects that variable to be initialized to the system's page size.
-
-Fix it by initializing it on the binding init routine.
+The evsel methods to read tracepoint fields uses libtraceevent
+functions, becoming needed by the python binding as well.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -62,22 +54,21 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-vrvp3azmbfzexnpmkhmvtzzc@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-j3o4v7jyvp9ke9n230l96a1m@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/python.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ tools/perf/util/setup.py |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index 9181bf2..a2657fd 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -1015,6 +1015,8 @@ PyMODINIT_FUNC initperf(void)
- 	    pyrf_cpu_map__setup_types() < 0)
- 		return;
+diff --git a/tools/perf/util/setup.py b/tools/perf/util/setup.py
+index d0f9f29..09c3cea 100644
+--- a/tools/perf/util/setup.py
++++ b/tools/perf/util/setup.py
+@@ -31,6 +31,7 @@ perf = Extension('perf',
+ 		  sources = ext_sources,
+ 		  include_dirs = ['util/include'],
+ 		  extra_compile_args = cflags,
++		  extra_objects = [build_tmp + '/../../libtraceevent.a'],
+                  )
  
-+	page_size = sysconf(_SC_PAGE_SIZE);
-+
- 	Py_INCREF(&pyrf_evlist__type);
- 	PyModule_AddObject(module, "evlist", (PyObject*)&pyrf_evlist__type);
- 
+ setup(name='perf',
