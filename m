@@ -1,88 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933135Ab2JTAlw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 20:41:52 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36495 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754601Ab2JTAlv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 20:41:51 -0400
+	id S933208Ab2JTAox (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 20:44:53 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:65294 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755233Ab2JTAov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 20:44:51 -0400
+X-IronPort-AV: E=Sophos;i="4.80,617,1344182400"; 
+   d="scan'208";a="6033354"
+Message-ID: <5081F552.9060008@cn.fujitsu.com>
+Date: Sat, 20 Oct 2012 08:50:26 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1350691333.6017.23.camel@sbsiddha-desk.sc.intel.com>
-References: <fa.1zfuXwqYK6u81uBoo3IdpawcpWw@ifi.uio.no>
-	<fa.p3cpkKIGUNv0/iot3o7KT9bb98M@ifi.uio.no>
-	<fa.iPHW7usT23k+cCA19L3eXEDu91Q@ifi.uio.no>
-	<fa.7eOK+XcsKUWU4ZXhBj2K6znxrvc@ifi.uio.no>
-	<fa.VGxfKOh1Z07X1TXm5PxMIlV4xu8@ifi.uio.no>
-	<fa.eH+BpYDdp4xIWE4V+wJu6hFrVxM@ifi.uio.no>
-	<b0b75b2b-961b-487a-ab03-2362c65d6972@googlegroups.com>
-	<1350687838.6017.10.camel@sbsiddha-desk.sc.intel.com>
-	<CAE9FiQUmTnhCzvaxaHbwWbcxDrjYix91Yf8TZN6ob0W_Yz1csQ@mail.gmail.com>
-	<5081E414.6080004@zytor.com>
-	<1350691333.6017.23.camel@sbsiddha-desk.sc.intel.com>
-Date: Fri, 19 Oct 2012 17:41:49 -0700
-X-Google-Sender-Auth: Tmr3ab7pjXT8EQyReDUY-C4MJOY
-Message-ID: <CAE9FiQWFqo89oe30broBU5mwPoxudkVhVrUiY+3+HL9Kp0fvSw@mail.gmail.com>
-Subject: Re: x2apic boot failure on recent sandy bridge system
-From: Yinghai Lu <yinghai@kernel.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, rrl125@gmail.com,
-        fa.linux.kernel@googlegroups.com, "Berck E. Nash" <flyboy@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, liuj97@gmail.com, len.brown@intel.com,
+        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, muneda.takahiro@jp.fujitsu.com
+Subject: Re: [PATCH v2 0/3] acpi,memory-hotplug : implement framework for
+ hot removing memory
+References: <1350641040-19434-1-git-send-email-wency@cn.fujitsu.com> <10485269.ao9A69hu9S@vostro.rjw.lan>
+In-Reply-To: <10485269.ao9A69hu9S@vostro.rjw.lan>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/20 08:44:23,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/20 08:44:24,
+	Serialize complete at 2012/10/20 08:44:24
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 5:02 PM, Suresh Siddha
-<suresh.b.siddha@intel.com> wrote:
-> On Fri, 2012-10-19 at 16:36 -0700, H. Peter Anvin wrote:
->> On 10/19/2012 04:32 PM, Yinghai Lu wrote:
->> > On Fri, Oct 19, 2012 at 4:03 PM, Suresh Siddha
->> > <suresh.b.siddha@intel.com> wrote:
->> >> On Fri, 2012-10-19 at 13:42 -0700, rrl125@gmail.com wrote:
->> >>> Any update? The messages just seem to have stopped months ago. A
->> >>> fallback would be nice, I have been booting the kernel with noa2xpic
->> >>> for since kernel 3.2, and currently I am working with 3.6.2.
->> >>>
->> >>> If needed I can try to attempt modifying the patch to include
->> >>> fallback, but I am probably not the best person to do it.
->> >>>
->> >>
->> >> Are you referring to this commit that made into the mainline tree
->> >> already?
->> >>
->> >> commit fb209bd891645bb87b9618b724f0b4928e0df3de
->> >> Author: Yinghai Lu <yinghai@kernel.org>
->> >> Date:   Wed Dec 21 17:45:17 2011 -0800
->> >>
->> >>      x86, x2apic: Fallback to xapic when BIOS doesn't setup interrupt-remapping
->> >
->> > I think his system has DMAR table and cpu support x2apic, So kernel
->> > will switch to x2apic,
->> >
->> > but somehow BIOS SMI handler has problem with x2apic. should be thinkpad W520?
->> >
+At 10/20/2012 12:32 AM, Rafael J. Wysocki Wrote:
+> On Friday 19 of October 2012 18:03:57 wency@cn.fujitsu.com wrote:
+>> From: Wen Congyang <wency@cn.fujitsu.com>
 >>
->> Right, StinkPad W520 needs a quirk.
->
-> yes. Yinghai, if you remember you had a T420 that didn't show the
-> problem. And someone in the bugzilla with T420 had the problem. And
-> their dmidecode is
-> https://launchpadlibrarian.net/109393850/dmidecode.txt
->
-> What is the difference with your system? Bios I think is the same.
+>> The patch-set implements a framework for hot removing memory.
+>>
+>> The memory device can be removed by 2 ways:
+>> 1. send eject request by SCI
+>> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+>>
+>> In the 1st case, acpi_memory_disable_device() will be called.
+>> In the 2nd case, acpi_memory_device_remove() will be called.
+>> acpi_memory_device_remove() will also be called when we unbind the
+>> memory device from the driver acpi_memhotplug or a driver initialization
+>> fails.
+>>
+>> acpi_memory_disable_device() has already implemented a code which
+>> offlines memory and releases acpi_memory_info struct . But
+>> acpi_memory_device_remove() has not implemented it yet.
+>>
+>> So the patch prepares the framework for hot removing memory and
+>> adds the framework into acpi_memory_device_remove().
+>>
+>> The last version of this patchset is here:
+>> https://lkml.org/lkml/2012/10/3/126
+>>
+>> Changelos from v1 to v2:
+>>   Patch1: use acpi_bus_trim() instead of acpi_bus_remove()
+>>   Patch2: new patch, introduce a lock to protect the list
+>>   Patch3: remove memory too when type is ACPI_BUS_REMOVAL_NORMAL
+>>   Note: I don't send [Patch2-4 v1] in this series because they
+>>   are no logical changes in these 3 patches.
+>>
+>> Wen Congyang (2):
+>>   acpi,memory-hotplug: call acpi_bus_trim() to remove memory device
+>>   acpi,memory-hotplug: introduce a mutex lock to protect the list in
+>>     acpi_memory_device
+>>
+>> Yasuaki Ishimatsu (1):
+>>   acpi,memory-hotplug : add memory offline code to
+>>     acpi_memory_device_remove()
+>>
+>>  drivers/acpi/acpi_memhotplug.c |   51 ++++++++++++++++++++++++++++++++--------
+>>  1 files changed, 41 insertions(+), 10 deletions(-)
+>>
+>> --
+> 
+> Can you please tell me what kernel is the series supposed to apply to?
+> Is it the current Linus' tree, or linux-next, or something else?
 
-1.37 was working too, i updated it to 1.39 and it is still working.
-
->
-> Can you see what we should check for in the dmi tables to black list
-> these systems? Can you post your T420's dmidecode to see the difference.
->
-> https://bugzilla.kernel.org/show_bug.cgi?id=43054
-
-post dmesg and dmidecode to that bug report.
+Current Linux's tree.
 
 Thanks
+Wen Congyang
 
-Yinghai
+> 
+> Thanks,
+> Rafael
+> 
+> 
+
