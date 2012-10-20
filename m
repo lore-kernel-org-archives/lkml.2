@@ -1,148 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932977Ab2JTMhy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 08:37:54 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:49176 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932242Ab2JTMhw (ORCPT
+	id S1161056Ab2JTMh7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 08:37:59 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:60408 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932242Ab2JTMhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 08:37:52 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/r5j4hFdzrOjMr9YXgDP7TCqQv0hwmrg6rQYuRZJ
-	P5+UoqzQcprG7d
-Message-ID: <1350736696.5123.24.camel@maggy.simpson.net>
-Subject: Re: [PATCH] sched, autogroup: fix kernel crashes caused by runtime
- disable autogroup
-From: Mike Galbraith <efault@gmx.de>
-To: Xiaotian Feng <xtfeng@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Xiaotian Feng <dannyfeng@tencent.com>, Ingo Molnar <mingo@redhat.com>
-Date: Sat, 20 Oct 2012 08:38:16 -0400
-In-Reply-To: <CAJn8CcE5McFB-FH981Pj+eahNOt8ck3ncJwD4xocU_LrAtjBHA@mail.gmail.com>
-References: <1350635770-9189-1-git-send-email-xtfeng@gmail.com>
-	 <1350654126.2768.5.camel@twins>
-	 <CAJn8CcE5McFB-FH981Pj+eahNOt8ck3ncJwD4xocU_LrAtjBHA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Sat, 20 Oct 2012 08:37:55 -0400
+Message-ID: <50829995.4080006@gmail.com>
+Date: Sat, 20 Oct 2012 14:31:17 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120825 Thunderbird/15.0
+MIME-Version: 1.0
+To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
+CC: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 21/21] Documentation: drop vmtruncate
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-10-20 at 14:42 +0800, Xiaotian Feng wrote: 
-> On Fri, Oct 19, 2012 at 9:42 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > Always try and CC people who wrote the code..
-> >
-> > On Fri, 2012-10-19 at 16:36 +0800, Xiaotian Feng wrote:
-> >> There's a regression from commit 800d4d30, in autogroup_move_group()
-> >>
-> >>       p->signal->autogroup = autogroup_kref_get(ag);
-> >>
-> >>       if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
-> >>               goto out;
-> >>       ...
-> >>     out:
-> >>       autogroup_kref_put(prev);
-> >>
-> >> So kernel changed p's autogroup to ag, but never sched_move_task(p).
-> >> Then previous autogroup of p is released, which may release task_group
-> >> related with p. After commit 8323f26ce, p->sched_task_group might point
-> >> to this stale value, and thus caused kernel crashes.
-> >>
-> >> This is very easy to reproduce, add "kernel.sched_autogroup_enabled = 0"
-> >> to your /etc/sysctl.conf, your system will never boot up. It is not reasonable
-> >> to put the sysctl enabled check in autogroup_move_group(), kernel should check
-> >> it before autogroup_create in sched_autogroup_create_attach().
-> >>
-> >> Reported-by: cwillu <cwillu@cwillu.com>
-> >> Reported-by: Luis Henriques <luis.henriques@canonical.com>
-> >> Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
-> >> Cc: Ingo Molnar <mingo@redhat.com>
-> >> Cc: Peter Zijlstra <peterz@infradead.org>
-> >> ---
-> >>  kernel/sched/auto_group.c |   10 +++++-----
-> >>  1 file changed, 5 insertions(+), 5 deletions(-)
-> >>
-> >> diff --git a/kernel/sched/auto_group.c b/kernel/sched/auto_group.c
-> >> index 0984a21..ac62415 100644
-> >> --- a/kernel/sched/auto_group.c
-> >> +++ b/kernel/sched/auto_group.c
-> >> @@ -143,15 +143,11 @@ autogroup_move_group(struct task_struct *p, struct autogroup *ag)
-> >>
-> >>       p->signal->autogroup = autogroup_kref_get(ag);
-> >>
-> >> -     if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
-> >> -             goto out;
-> >> -
-> >>       t = p;
-> >>       do {
-> >>               sched_move_task(t);
-> >>       } while_each_thread(p, t);
-> >>
-> >> -out:
-> >>       unlock_task_sighand(p, &flags);
-> >>       autogroup_kref_put(prev);
-> >>  }
-> >
-> > So I've looked at this for all of 1 minute, but why isn't moving that
-> > check up one line to be above the p->signal->autogroup assignment
-> > enough?
-> 
-> I think if autogroup is disabled, we don't need to use
-> autogroup_create() to create a new ag and tg, kernel will not use it.
-> 
-> >
-> >> @@ -159,8 +155,12 @@ out:
-> >>  /* Allocates GFP_KERNEL, cannot be called under any spinlock */
-> >>  void sched_autogroup_create_attach(struct task_struct *p)
-> >>  {
-> >> -     struct autogroup *ag = autogroup_create();
-> >> +     struct autogroup *ag;
-> >> +
-> >> +     if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
-> >> +             return;
-> >>
-> >> +     ag = autogroup_create();
-> >>       autogroup_move_group(p, ag);
-> >>       /* drop extra reference added by autogroup_create() */
-> >>       autogroup_kref_put(ag);
-> >
-> > Man,.. so on memory allocation fail we'll put the group in
-> > autogroup_default, which I think ends up being the root cgroup.
-> >
-> > But what happens when sysctl_sched_autogroup_enabled is false?
-> >
-> 
-> autogroup runtime disable is very nasty, as it might happen at any
-> place of sched_move_group() for any setsid task.
-> After sysctl_sched_autogroup_enabled is changed to false,
-> autogroup_task_group(p, tg) will return tg, which is from its cpu
-> cgroup.
-> 
-> > It looks like sched_autogroup_fork() is effective in that case, which
-> > would mean we'll stay in whatever group our parent is in, which is not
-> > the same as being disabled.
-> 
-> It's true, but after autogroup is disabled, p->signal->autogroup will
-> never be used then, as autogroup_task_group() will not use it. But
-> after autogroup is enabled again, it might be a disaster....
+Removed vmtruncate
 
-autogroups are intended to always exist, enable/disable only a choice of
-whether you use it or not.
+Signed-off-by: Marco <marco.stornelli@gmail.com>
+---
+ Documentation/filesystems/Locking |    6 ------
+ Documentation/filesystems/porting |    2 +-
+ Documentation/filesystems/vfs.txt |   11 -----------
+ 3 files changed, 1 insertions(+), 18 deletions(-)
 
-> I think we'd better delete the runtime enable/disable support for
-> autogroup, because it might mess up the group scheduler....
-
-Disabling runtime on/off sounds good to me too.  Not because it will
-mess up the scheduler, it doesn't, but the on/off switch does not take
-effect instantly, and in some cases doesn't ever take effect (fully
-functional on/off was shot down, so doing that now won't fly either).
-
-So what I would do is either let the user decide once at boot, in which
-case if off, creating groups would be stupid), or, just rip autogroup
-completely out, since systemd is taking over the known universe anyway.
-
--Mike
-
+diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+index e540a24..f48e0c6 100644
+--- a/Documentation/filesystems/Locking
++++ b/Documentation/filesystems/Locking
+@@ -80,7 +80,6 @@ rename:		yes (all)	(see below)
+ readlink:	no
+ follow_link:	no
+ put_link:	no
+-truncate:	yes		(see below)
+ setattr:	yes
+ permission:	no (may not block if called in rcu-walk mode)
+ get_acl:	no
+@@ -96,11 +95,6 @@ atomic_open:	yes
+ 	Additionally, ->rmdir(), ->unlink() and ->rename() have ->i_mutex on
+ victim.
+ 	cross-directory ->rename() has (per-superblock) ->s_vfs_rename_sem.
+-	->truncate() is never called directly - it's a callback, not a
+-method. It's called by vmtruncate() - deprecated library function used by
+-->setattr(). Locking information above applies to that call (i.e. is
+-inherited from ->setattr() - vmtruncate() is used when ATTR_SIZE had been
+-passed).
+ 
+ See Documentation/filesystems/directory-locking for more detailed discussion
+ of the locking scheme for directory operations.
+diff --git a/Documentation/filesystems/porting b/Documentation/filesystems/porting
+index 0742fee..0472c31 100644
+--- a/Documentation/filesystems/porting
++++ b/Documentation/filesystems/porting
+@@ -281,7 +281,7 @@ ext2_write_failed and callers for an example.
+ 
+ [mandatory]
+ 
+-	->truncate is going away.  The whole truncate sequence needs to be
++	->truncate is gone.  The whole truncate sequence needs to be
+ implemented in ->setattr, which is now mandatory for filesystems
+ implementing on-disk size changes.  Start with a copy of the old inode_setattr
+ and vmtruncate, and the reorder the vmtruncate + foofs_vmtruncate sequence to
+diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
+index 2ee133e..e386909 100644
+--- a/Documentation/filesystems/vfs.txt
++++ b/Documentation/filesystems/vfs.txt
+@@ -350,7 +350,6 @@ struct inode_operations {
+ 	int (*readlink) (struct dentry *, char __user *,int);
+         void * (*follow_link) (struct dentry *, struct nameidata *);
+         void (*put_link) (struct dentry *, struct nameidata *, void *);
+-	void (*truncate) (struct inode *);
+ 	int (*permission) (struct inode *, int);
+ 	int (*get_acl)(struct inode *, int);
+ 	int (*setattr) (struct dentry *, struct iattr *);
+@@ -431,16 +430,6 @@ otherwise noted.
+   	started might not be in the page cache at the end of the
+   	walk).
+ 
+-  truncate: Deprecated. This will not be called if ->setsize is defined.
+-	Called by the VFS to change the size of a file.  The
+- 	i_size field of the inode is set to the desired size by the
+- 	VFS before this method is called.  This method is called by
+- 	the truncate(2) system call and related functionality.
+-
+-	Note: ->truncate and vmtruncate are deprecated. Do not add new
+-	instances/calls of these. Filesystems should be converted to do their
+-	truncate sequence via ->setattr().
+-
+   permission: called by the VFS to check for access rights on a POSIX-like
+   	filesystem.
+ 
+-- 
+1.7.3.4
