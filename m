@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755713Ab2JTOdw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 10:33:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1040 "EHLO mx1.redhat.com"
+	id S1753801Ab2JTOdn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 10:33:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63111 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753691Ab2JTOdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 10:33:49 -0400
+	id S1753618Ab2JTOdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Oct 2012 10:33:42 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -15,18 +15,26 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 06/11] perf tool: Add perf_evlist__id2sid function to get event ID related data
-Date: Sat, 20 Oct 2012 16:33:14 +0200
-Message-Id: <1350743599-4805-7-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 01/11] perf: Add PERF_EVENT_IOC_ID ioctl to return event ID
+Date: Sat, 20 Oct 2012 16:33:09 +0200
+Message-Id: <1350743599-4805-2-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
 References: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding perf_evlist__id2sid function to be able to get ID related
-data. This will be helpful for PERF_FORMAT_GROUP samples where
-we need to store ID related period value for each event.
+The only way to get the event ID is by reading the event fd,
+followed by parsing the ID value out of the returned data.
+
+While this is ok for current read format used by perf tool,
+it is not ok when we use PERF_FORMAT_GROUP format.
+
+With this format the data are returned for the whole group
+and there's no way to find out what ID belongs to our fd
+(if we are not group leader event).
+
+Adding a simple ioctl that returns event primary ID for given fd.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -37,66 +45,42 @@ Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/evlist.c | 21 ++++++++++++++++-----
- tools/perf/util/evlist.h |  2 ++
- 2 files changed, 18 insertions(+), 5 deletions(-)
+ include/linux/perf_event.h | 1 +
+ kernel/events/core.c       | 9 +++++++++
+ 2 files changed, 10 insertions(+)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index b7c64c3..71064d0 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -327,22 +327,33 @@ static int perf_evlist__id_add_fd(struct perf_evlist *evlist,
- 	return 0;
- }
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 28f9cee..f11c967 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -314,6 +314,7 @@ struct perf_event_attr {
+ #define PERF_EVENT_IOC_PERIOD		_IOW('$', 4, __u64)
+ #define PERF_EVENT_IOC_SET_OUTPUT	_IO ('$', 5)
+ #define PERF_EVENT_IOC_SET_FILTER	_IOW('$', 6, char *)
++#define PERF_EVENT_IOC_ID		_IOR('$', 7, u64 *)
  
--struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id)
-+struct perf_sample_id *perf_evlist__id2sid(struct perf_evlist *evlist, u64 id)
- {
- 	struct hlist_head *head;
- 	struct hlist_node *pos;
- 	struct perf_sample_id *sid;
- 	int hash;
+ enum perf_event_ioc_flags {
+ 	PERF_IOC_FLAG_GROUP		= 1U << 0,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 2ba8904..32aec40 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3272,6 +3272,15 @@ static long perf_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	case PERF_EVENT_IOC_PERIOD:
+ 		return perf_event_period(event, (u64 __user *)arg);
  
--	if (evlist->nr_entries == 1)
--		return perf_evlist__first(evlist);
--
- 	hash = hash_64(id, PERF_EVLIST__HLIST_BITS);
- 	head = &evlist->heads[hash];
- 
- 	hlist_for_each_entry(sid, pos, head, node)
- 		if (sid->id == id)
--			return sid->evsel;
-+			return sid;
++	case PERF_EVENT_IOC_ID:
++	{
++		u64 id = primary_event_id(event);
 +
-+	return NULL;
-+}
++		if (copy_to_user((void __user *)arg, &id, sizeof(id)))
++			return -EFAULT;
++		return 0;
++	}
 +
-+struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id)
-+{
-+	struct perf_sample_id *sid;
-+
-+	if (evlist->nr_entries == 1)
-+		return perf_evlist__first(evlist);
-+
-+	sid = perf_evlist__id2sid(evlist, id);
-+	if (sid)
-+		return sid->evsel;
- 
- 	if (!perf_evlist__sample_id_all(evlist))
- 		return perf_evlist__first(evlist);
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index a6c74bd..ae443ef 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -73,6 +73,8 @@ void perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd);
- 
- struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id);
- 
-+struct perf_sample_id *perf_evlist__id2sid(struct perf_evlist *evlist, u64 id);
-+
- union perf_event *perf_evlist__mmap_read(struct perf_evlist *self, int idx);
- 
- int perf_evlist__open(struct perf_evlist *evlist);
+ 	case PERF_EVENT_IOC_SET_OUTPUT:
+ 	{
+ 		struct perf_event *output_event = NULL;
 -- 
 1.7.11.4
 
