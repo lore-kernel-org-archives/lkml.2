@@ -1,119 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756592Ab2JTWTK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 18:19:10 -0400
+	id S1756793Ab2JTWT0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 18:19:26 -0400
 Received: from mail-wg0-f44.google.com ([74.125.82.44]:45731 "EHLO
 	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753285Ab2JTWTI convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756666Ab2JTWTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 18:19:08 -0400
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Organization: BZH lan
-To: linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] menuconfig: Replace CIRCLEQ by list_head-style lists.
-Date: Sun, 21 Oct 2012 00:19:03 +0200
-User-Agent: KMail/1.13.5 (Linux/3.6.2-treguer; KDE/4.4.5; x86_64; ; )
-Cc: Benjamin Poirier <benjamin.poirier@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, Jean Sacren <sakiwit@gmail.com>,
-        Arnaud Lacombe <lacombar@gmail.com>, Wang YanQing <udknight@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Davidlohr Bueso <dave@gnu.org>, linux-kernel@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Yaakov Selkowitz <yselkowitz@gmail.com>
-References: <1350581625-23153-1-git-send-email-yann.morin.1998@free.fr> <1350755792-21217-1-git-send-email-benjamin.poirier@gmail.com>
-In-Reply-To: <1350755792-21217-1-git-send-email-benjamin.poirier@gmail.com>
+	Sat, 20 Oct 2012 18:19:25 -0400
+Date: Sun, 21 Oct 2012 00:19:48 +0200
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: Heinz Diehl <htd@fritha.org>
+Cc: Martin Peres <martin.peres@labri.fr>, Heinz Diehl <htd@fancy-poultry.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>,
+        David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        marcheu@chromium.org
+Subject: Re: Linux 3.7-rc1 (nouveau_bios_score oops).
+Message-ID: <20121020221948.GE5826@joi.lan>
+References: <1724445.dN2yMEzN6d@localhost>
+ <CA+55aFy8Te9VFaZRZSDYMehbfg-qLDBYv6=EKncQ2=J2XaF+Vg@mail.gmail.com>
+ <20121020092647.GA3186@fancy-poultry.org>
+ <50827174.7070109@labri.fr>
+ <20121020104238.GA1539@fritha.org>
+ <20121020202846.GA5826@joi.lan>
+ <20121020212036.GA1698@fritha.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201210210019.04263.yann.morin.1998@free.fr>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121020212036.GA1698@fritha.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin, All,
-
-On Saturday 20 October 2012 Benjamin Poirier wrote:
-> From: Benjamin Poirier <bpoirier@suse.de>
+On Sat, Oct 20, 2012 at 11:20:36PM +0200, Heinz Diehl wrote:
+> On 20.10.2012, Marcin Slusarz wrote: 
 > 
-> sys/queue.h and CIRCLEQ in particular have proven to cause portability
-> problems (reported on Debian Sarge, Cygwin and FreeBSD)
+> > Try this one.
 > 
-> Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+> It works, now I can boot again. However, nouveau seems to be dead now.
+> The dmesg output with your patch on top of 3.7-rc1 is:
+> 
+> [    3.685909] [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
+> [    3.687784] nouveau  [  DEVICE][0000:01:00.0] BOOT0  : 0x0a8800b1
+> [    3.689960] nouveau  [  DEVICE][0000:01:00.0] Chipset: GT218 (NVA8)
+> [    3.692471] nouveau  [  DEVICE][0000:01:00.0] Family : NV50
+> [    3.695716] nouveau  [   VBIOS][0000:01:00.0] checking PRAMIN for image...
+> [    3.697087] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
+> [    3.698471] nouveau  [   VBIOS][0000:01:00.0] checking PROM for image...
+> [    3.699838] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
+> [    3.701223] nouveau  [   VBIOS][0000:01:00.0] checking ACPI for image...
+> [    3.702684] ACPI Error: Field [ROMI] Base+Offset+Width 0+24+1 is beyond end of region [VROM] (length 24) (20120913/exfldio-210)
+> [    3.704139] ACPI Error: Method parse/execution failed[\_SB_.PCI0.PEG1.GFX0._ROM] (Node ffff880142e85cf8), AE_AML_REGION_LIMIT (20120913/psparse-536)
+> [    3.716183] failed to evaluate ROM got AE_AML_REGION_LIMIT
+> [    3.718776] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
+> [    3.721349] nouveau  [   VBIOS][0000:01:00.0] checking PCIROM for image...
+> [    3.724111] nouveau 0000:01:00.0: Invalid ROM contents
+> [    3.726663] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
+> [    3.729159] nouveau E[   VBIOS][0000:01:00.0] unable to locate usable image
+> [    3.731677] nouveau E[  DEVICE][0000:01:00.0] failed to create 0x10000001, -22
+> [    3.734231] nouveau E[     DRM] failed to create 0x80000080, -22
+> [    3.736097] nouveau: probe of 0000:01:00.0 failed with error -22
+> [    3.740523] dracut: Starting plymouth daemon
 
-Sorry for my earlier optimistic reply, but...
+Hmm, maybe we can't fetch 3 bytes only...
 
-While menuconfig got fixed with this patch, xconfig is now broken:
+Let's check this:
 
-First issue:
-In file included from /home/ymorin/dev/linux/scripts/kconfig/expr.h:15,
-                 from /home/ymorin/dev/linux/scripts/kconfig/lkc.h:9,
-                 from /home/ymorin/dev/linux/scripts/kconfig/qconf.cc:45:
-/home/ymorin/dev/linux/scripts/kconfig/list.h:8:1: warning: "offsetof"
-redefined
-In file included from /usr/include/_G_config.h:15,
-                 from /usr/include/libio.h:32,
-                 from /usr/include/stdio.h:75,
-                 from /usr/include/qt4/QtCore/qtextstream.h:57,
-                 from /usr/include/qt4/Qt3Support/q3mainwindow.h:47,
-                 from /home/ymorin/dev/linux/scripts/kconfig/qconf.cc:19:
-/usr/lib/gcc/x86_64-linux-gnu/4.4.5/include/stddef.h:411:1: warning: this
-is the location of the previous definition
+---
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/bios/base.c b/drivers/gpu/drm/nouveau/core/subdev/bios/base.c
+index 824eea0..8bd71aa 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/bios/base.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/bios/base.c
+@@ -192,14 +192,16 @@ nouveau_bios_shadow_acpi(struct nouveau_bios *bios)
+ {
+ 	struct pci_dev *pdev = nv_device(bios)->pdev;
+ 	int ret, cnt, i;
+-	u8  data[3];
++	u8  *data;
+ 
+ 	if (!nouveau_acpi_rom_supported(pdev))
+ 		return;
+ 
+ 	bios->size = 0;
+-	if (nouveau_acpi_get_bios_chunk(data, 0, 3) == 3)
++	data = kmalloc(4096, GFP_KERNEL);
++	if (data && nouveau_acpi_get_bios_chunk(data, 0, 4096) >= 3)
+ 		bios->size = data[2] * 512;
++	kfree(data);
+ 	if (!bios->size)
+ 		return;
+ 
+---
 
-[--SNIP--]
-> diff --git a/scripts/kconfig/list.h b/scripts/kconfig/list.h
-> new file mode 100644
-> index 0000000..934bdba
-> --- /dev/null
-> +++ b/scripts/kconfig/list.h
-> @@ -0,0 +1,90 @@
-> +#ifndef LIST_H
-> +#define LIST_H
-> +
-> +/*
-> + * Copied from include/linux/...
-> + */
-> +
-> +#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
-
-We could #include <stddef.h>, but then we may end up with issues with
-old systems (which we are trying to fix!). I suggest we enclose the
-definition between a 
-    #ifndef offsetof
-    ...
-    #endif
-
-
-Second issue:
-We have further issues with some variable names:
-/home/ymorin/dev/linux/scripts/kconfig/list.h:69: error: expected ‘,’ or
-‘...’ before ‘new’
-
-[--SNIP--]
-> +static inline void __list_add(struct list_head *new,
-
-'new' is a reserved key-word in C++, and xconfig is using qconf, which is
-written in C++.
-
-I 'd suggest to:
- 1- rename the variable
- 2- enclose the whole header in:
-    #ifdef __cplusplus
-    extern "C" {
-    #endif
-    [.....]
-    #ifdef __cplusplus
-    }
-    #endif
-
-Regards,
-Yann E. MORIN.
-
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+Please attach acpidump output.
