@@ -1,197 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933257Ab2JTBbl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 21:31:41 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:18154 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933202Ab2JTBaU (ORCPT
+	id S933228Ab2JTBkb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 21:40:31 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:46523 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759515Ab2JTBk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 21:30:20 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        mukesh.rathor@oracle.com, Ian.Campbell@citrix.com,
-        stefano.stabellini@eu.citrix.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 6/6] xen/pvh: /dev/xen/privcmd changes.
-Date: Fri, 19 Oct 2012 21:18:02 -0400
-Message-Id: <1350695882-12820-7-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1350695882-12820-1-git-send-email-konrad.wilk@oracle.com>
-References: <1350695882-12820-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Fri, 19 Oct 2012 21:40:29 -0400
+X-AuditID: cbfee61a-b7f976d000001eb9-ee-5082010b9c3a
+Message-id: <5082010B.4040102@samsung.com>
+Date: Sat, 20 Oct 2012 10:40:27 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: "Tc, Jenny" <jenny.tc@intel.com>
+Cc: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        anish kumar <anish198519851985@gmail.com>
+Subject: Re: [PATCH] extcon : callback function to read cable property
+References: <18312556.138071350457714044.JavaMail.weblogic@epml24>
+ <20ADAB092842284E95860F279283C5643BD887@BGSMSX101.gar.corp.intel.com>
+In-reply-to: <20ADAB092842284E95860F279283C5643BD887@BGSMSX101.gar.corp.intel.com>
+Content-type: text/plain; charset=EUC-KR
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJLMWRmVeSWpSXmKPExsVy+t9jAV1uxqYAg3VLjSwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGir3LWAvuaFXsfDOXtYHxpVIXIyeHhICJxMuLFxghbDGJC/fW
+	s3UxcnEICSxilHg+ewk7SEJIoItJor0/EMTmFdCS2DBpNUsXIwcHi4CqRHeTNUiYDSi8/8UN
+	NpCwqECExK9+DohqQYkfk++xgNgiAioSU1u+M4GMZxZYzijR2HQbLCEs4CbRcOQ7M8TeLkaJ
+	o7f/sIIkOAVCJObu+g5WxCygITH19WlGCFteYvOat8wTGAVmIVkyC0nZLCRlCxiZVzGKphYk
+	FxQnpeca6hUn5haX5qXrJefnbmIEB+AzqR2MKxssDjEKcDAq8fBK9DUGCLEmlhVX5h5ilOBg
+	VhLhXboIKMSbklhZlVqUH19UmpNafIhRmoNFSZy32SMlQEggPbEkNTs1tSC1CCbLxMEp1cDY
+	caFvdtHtnqSdIhq2j0/a71/kIjhPIcjIQHjVacG7s7Q6LHveFn0zjZb+uav3eKv085+PAt03
+	NzEvZHiU9Z9ZYeXUN7L+n7TuHTuc+pxHWbi+xerfwrfMt1O19vFlTSg5YdRq0cT/hO27oFag
+	NpfF4tRwvtTN/41i3rIHHLgX2eX8hGu10EUlluKMREMt5qLiRABOEND9PAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
+On 10/19/2012 12:13 PM, Tc, Jenny wrote:
+> 
+> 
+>>>>>> Subject: Re: [PATCH] extcon : callback function to read cable
+>>>>>> property
+>>>>>>
+>>>>>> I think the reason why we have extcon is in first place is to
+>>>>>> only notify the clients of cable connection and disconnection
+>>>>>> and it is up to the client to decide what else to do with the
+>>>>>> cable such as finding which state it is in and other details.
+>>>>>> So I feel this should not be handled in the extcon.
+>>>>>>
+>>>>>> However it is up to the maintainer to decide.
+>>>>>
+>>>>> Once the consumer gets the notification, it needs to take some action.
+>>>>> One of the action is to read the cable properties. This can be
+>>>>> done by proprietary calls which is known both to the consumer and the
+>> provider.
+>>>>> My intention is to avoid this proprietary calls. Since both the
+>>>>> provider and consumer are communicating with the extcon subsystem
+>>>>> , I feel having a callback function of this kind would help to
+>>>>> avoid the use of proprietary calls. Also I agree that extcon
+>>>>> notifier chains are used to notify the cable state
+>>>>> (attach/detach). But if a cable has more than two states (like the
+>>>>> charger cable) how do we support it without
+>>>> having a callback function like this?
+>>>>> Let the maintainer take the final decision.
+>>>> Well this use case will keep on growing if we start factor in this
+>>>> kind of changes and that is why I am opposed to adding any other state.
+>>>> Maintainer?
+>>>>>
+>>>>>
+>>>>
+>>
+>> Hello,
+>>
+>>
+>> I don't think it's appropriate to declare the charger specific properties in
+>> extcon.h. The status of a charger should be and can be represented by an
+>> instance of regulator, power-supply-class, or charger-manager.
+>>
+> Agreed. We can move this to power supply subsystem.
+> 
+>> Thus, we may (I'm still not sure) need to let extcon to relay the instance
+>> (struct device? or char *devname?) with some callback similar with
+>> get_cable_device().  However, allowing (and encouraging) to pass void
+>> pointer of cable_props to extcon users from extcon device appears not
+>> adequete. If the both parties can use their own "private"
+>> data structure, why they cannot simply pass their own data witht the
+>> "private" data channel?
+>>
+>>
+>> Recap:
+>> - The later part of patch: NACK
+>> - The first part of patch (callback): need to reconsider the data type.
+>> We may get device pointer or device name that is correspondant to the
+>> cable, which in turn, guides us to the corresponding data structure (charger-
+>> manager, regulator, or something) However, I'm still not sure which should
+>> be appropriate for this.
+>>
+> 
+> The requirement for this feature came from the implementation of the
+> power supply charging framework (http://www.spinics.net/lists/kernel/msg1420500.html 
+> refer charger_cable_event_worker function). The charging framework is not a driver. It can
+> be compiled with the power supply class driver to support charging. Also the
+> private data structure may not provide a generic method for this implementation
+> since the extcon provider drivers will be different in different platforms. So it's not
+> necessary that the framework knows the private data structure of the provider.
+> Basically the requirement is to have a generic method to retrieve the cable properties without
+> knowing the extcon provider driver internal implementation. Can you suggest a generic approach
+> for this problem?
+> 
+The rold of extcon inform only attached/detached state of extcon consumer driver
+from extcon provider driver. After extcon consumer driver detect the state of cable
+through extcon, extcon consumer driver or framework should get the additional information of cable
+from other device driver except of extcon.
 
-PVH only supports the batch interface. To map a foreign page to a process,
-the PFN must be allocated and PVH path uses ballooning for that purpose.
+Also, extcon manage various cables (e.g., USB, TA, MHL, JIG-USB-ON, JIG-USB-OFF, Dock)
+What are common properties among many cables expect attached or detached state?
 
-The returned PFN is then mapped to the foreign page.
-xen_unmap_domain_mfn_range() is introduced to unmap these pages via the
-privcmd close call.
+> Also the cable states we support in extcon (attach/detach) is not sufficient
+> to support the cable states of a charger cable which can have more than 2 states. The charger cable 
+> states can be (1)attach/(2)detach, (3)suspend - host suspend (different from detach since it's possible to charge
+> in this state but with a different charge current than the attached state),(4)resume - resume after the suspend,
+> (5)update - update the cable properties after USB enumeration (USB cable supports 100(USB2.0)/150(USB3.0)
+> in an un configured state. But after enumeration it can support up to 500mA(USB 2.0)/900(USB 3.0))
+> 
+> Since extcon is basically intended to support the cable states, how do we support cables with
+> more than two states?
 
-Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-[v1: Fix up privcmd_close]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/xen/privcmd.c |   69 +++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 67 insertions(+), 2 deletions(-)
+You explained about charger cable for charging framework. I think that extcon consumer driver
+can detect the chagne of system state from idle to suspend, then extcon consumer driver change
+charge current according to system state(idle or suspend).  Also, I think that the main of charging
+is regulator and the regulator for charging defines max or min limitation of charge current with
+H/W dependency. The extcon provider driver haven't decided the charge current according to cable type.
 
-diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
-index b612267..b9d0898 100644
---- a/drivers/xen/privcmd.c
-+++ b/drivers/xen/privcmd.c
-@@ -33,11 +33,14 @@
- #include <xen/features.h>
- #include <xen/page.h>
- #include <xen/xen-ops.h>
-+#include <xen/balloon.h>
- 
- #include "privcmd.h"
- 
- MODULE_LICENSE("GPL");
- 
-+#define PRIV_VMA_LOCKED ((void *)1)
-+
- #ifndef HAVE_ARCH_PRIVCMD_MMAP
- static int privcmd_enforce_singleshot_mapping(struct vm_area_struct *vma);
- #endif
-@@ -199,6 +202,10 @@ static long privcmd_ioctl_mmap(void __user *udata)
- 	if (!xen_initial_domain())
- 		return -EPERM;
- 
-+	/* We only support privcmd_ioctl_mmap_batch for auto translated. */
-+	if (xen_feature(XENFEAT_auto_translated_physmap))
-+		return -ENOSYS;
-+
- 	if (copy_from_user(&mmapcmd, udata, sizeof(mmapcmd)))
- 		return -EFAULT;
- 
-@@ -246,6 +253,7 @@ struct mmap_batch_state {
- 	domid_t domain;
- 	unsigned long va;
- 	struct vm_area_struct *vma;
-+	int index;
- 	/* A tristate:
- 	 *      0 for no errors
- 	 *      1 if at least one error has happened (and no
-@@ -260,15 +268,24 @@ struct mmap_batch_state {
- 	xen_pfn_t __user *user_mfn;
- };
- 
-+/* auto translated dom0 note: if domU being created is PV, then mfn is
-+ * mfn(addr on bus). If it's auto xlated, then mfn is pfn (input to HAP).
-+ */
- static int mmap_batch_fn(void *data, void *state)
- {
- 	xen_pfn_t *mfnp = data;
- 	struct mmap_batch_state *st = state;
-+	struct vm_area_struct *vma = st->vma;
-+	struct page **pages = vma->vm_private_data;
-+	struct page *cur_page = NULL;
- 	int ret;
- 
-+	if (xen_feature(XENFEAT_auto_translated_physmap))
-+		cur_page = pages[st->index++];
-+
- 	ret = xen_remap_domain_mfn_range(st->vma, st->va & PAGE_MASK, *mfnp, 1,
- 					 st->vma->vm_page_prot, st->domain,
--					 NULL);
-+					 &cur_page);
- 
- 	/* Store error code for second pass. */
- 	*(st->err++) = ret;
-@@ -304,6 +321,32 @@ static int mmap_return_errors_v1(void *data, void *state)
- 	return __put_user(*mfnp, st->user_mfn++);
- }
- 
-+/* Allocate pfns that are then mapped with gmfns from foreign domid. Update
-+ * the vma with the page info to use later.
-+ * Returns: 0 if success, otherwise -errno
-+ */
-+static int alloc_empty_pages(struct vm_area_struct *vma, int numpgs)
-+{
-+	int rc;
-+	struct page **pages;
-+
-+	pages = kcalloc(numpgs, sizeof(pages[0]), GFP_KERNEL);
-+	if (pages == NULL)
-+		return -ENOMEM;
-+
-+	rc = alloc_xenballooned_pages(numpgs, pages, 0);
-+	if (rc != 0) {
-+		pr_warn("%s Could not alloc %d pfns rc:%d\n", __func__,
-+			numpgs, rc);
-+		kfree(pages);
-+		return -ENOMEM;
-+	}
-+	BUG_ON(vma->vm_private_data != PRIV_VMA_LOCKED);
-+	vma->vm_private_data = pages;
-+
-+	return 0;
-+}
-+
- static struct vm_operations_struct privcmd_vm_ops;
- 
- static long privcmd_ioctl_mmap_batch(void __user *udata, int version)
-@@ -371,10 +414,18 @@ static long privcmd_ioctl_mmap_batch(void __user *udata, int version)
- 		up_write(&mm->mmap_sem);
- 		goto out;
- 	}
-+	if (xen_feature(XENFEAT_auto_translated_physmap)) {
-+		ret = alloc_empty_pages(vma, m.num);
-+		if (ret < 0) {
-+			up_write(&mm->mmap_sem);
-+			goto out;
-+		}
-+	}
- 
- 	state.domain        = m.dom;
- 	state.vma           = vma;
- 	state.va            = m.addr;
-+	state.index         = 0;
- 	state.global_error  = 0;
- 	state.err           = err_array;
- 
-@@ -439,6 +490,19 @@ static long privcmd_ioctl(struct file *file,
- 	return ret;
- }
- 
-+static void privcmd_close(struct vm_area_struct *vma)
-+{
-+	struct page **pages = vma->vm_private_data;
-+	int numpgs = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
-+
-+	if (!xen_feature(XENFEAT_auto_translated_physmap || !numpgs || !pages))
-+		return;
-+
-+	xen_unmap_domain_mfn_range(vma, numpgs, pages);
-+	free_xenballooned_pages(numpgs, pages);
-+	kfree(pages);
-+}
-+
- static int privcmd_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- {
- 	printk(KERN_DEBUG "privcmd_fault: vma=%p %lx-%lx, pgoff=%lx, uv=%p\n",
-@@ -449,6 +513,7 @@ static int privcmd_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- }
- 
- static struct vm_operations_struct privcmd_vm_ops = {
-+	.close = privcmd_close,
- 	.fault = privcmd_fault
- };
- 
-@@ -466,7 +531,7 @@ static int privcmd_mmap(struct file *file, struct vm_area_struct *vma)
- 
- static int privcmd_enforce_singleshot_mapping(struct vm_area_struct *vma)
- {
--	return (xchg(&vma->vm_private_data, (void *)1) == NULL);
-+	return !cmpxchg(&vma->vm_private_data, NULL, PRIV_VMA_LOCKED);
- }
- 
- const struct file_operations xen_privcmd_fops = {
--- 
-1.7.7.6
+Now that extcon-max77693 MUIC device driver can detect difference between "MHL" and "MHL-TA"
+when MHL/MHL-TA cable is attached/detached and define two type cable of MHL cable.
 
+Thanks,
+Chanwoo Choi
