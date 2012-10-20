@@ -1,96 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933208Ab2JTAox (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 20:44:53 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:65294 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755233Ab2JTAov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 20:44:51 -0400
-X-IronPort-AV: E=Sophos;i="4.80,617,1344182400"; 
-   d="scan'208";a="6033354"
-Message-ID: <5081F552.9060008@cn.fujitsu.com>
-Date: Sat, 20 Oct 2012 08:50:26 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1759428Ab2JTA4N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 20:56:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36123 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755594Ab2JTA4M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 20:56:12 -0400
+Date: Fri, 19 Oct 2012 17:55:38 -0700
+From: tip-bot for David Ahern <dsahern@gmail.com>
+Message-ID: <tip-1342798cc13e3b48d9b5738f0c8fa812ccea8101@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, gleb@redhat.com,
+        robert.richter@amd.com, dsahern@gmail.com, tglx@linutronix.de,
+        avi@redhat.com
+Reply-To: gleb@redhat.com, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, robert.richter@amd.com,
+        peterz@infradead.org, dsahern@gmail.com, tglx@linutronix.de,
+        avi@redhat.com
+In-Reply-To: <1347569955-54626-2-git-send-email-dsahern@gmail.com>
+References: <1347569955-54626-2-git-send-email-dsahern@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf tool: Precise mode requires exclude_guest
+Git-Commit-ID: 1342798cc13e3b48d9b5738f0c8fa812ccea8101
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, liuj97@gmail.com, len.brown@intel.com,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, muneda.takahiro@jp.fujitsu.com
-Subject: Re: [PATCH v2 0/3] acpi,memory-hotplug : implement framework for
- hot removing memory
-References: <1350641040-19434-1-git-send-email-wency@cn.fujitsu.com> <10485269.ao9A69hu9S@vostro.rjw.lan>
-In-Reply-To: <10485269.ao9A69hu9S@vostro.rjw.lan>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/20 08:44:23,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/20 08:44:24,
-	Serialize complete at 2012/10/20 08:44:24
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 19 Oct 2012 17:55:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 10/20/2012 12:32 AM, Rafael J. Wysocki Wrote:
-> On Friday 19 of October 2012 18:03:57 wency@cn.fujitsu.com wrote:
->> From: Wen Congyang <wency@cn.fujitsu.com>
->>
->> The patch-set implements a framework for hot removing memory.
->>
->> The memory device can be removed by 2 ways:
->> 1. send eject request by SCI
->> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
->>
->> In the 1st case, acpi_memory_disable_device() will be called.
->> In the 2nd case, acpi_memory_device_remove() will be called.
->> acpi_memory_device_remove() will also be called when we unbind the
->> memory device from the driver acpi_memhotplug or a driver initialization
->> fails.
->>
->> acpi_memory_disable_device() has already implemented a code which
->> offlines memory and releases acpi_memory_info struct . But
->> acpi_memory_device_remove() has not implemented it yet.
->>
->> So the patch prepares the framework for hot removing memory and
->> adds the framework into acpi_memory_device_remove().
->>
->> The last version of this patchset is here:
->> https://lkml.org/lkml/2012/10/3/126
->>
->> Changelos from v1 to v2:
->>   Patch1: use acpi_bus_trim() instead of acpi_bus_remove()
->>   Patch2: new patch, introduce a lock to protect the list
->>   Patch3: remove memory too when type is ACPI_BUS_REMOVAL_NORMAL
->>   Note: I don't send [Patch2-4 v1] in this series because they
->>   are no logical changes in these 3 patches.
->>
->> Wen Congyang (2):
->>   acpi,memory-hotplug: call acpi_bus_trim() to remove memory device
->>   acpi,memory-hotplug: introduce a mutex lock to protect the list in
->>     acpi_memory_device
->>
->> Yasuaki Ishimatsu (1):
->>   acpi,memory-hotplug : add memory offline code to
->>     acpi_memory_device_remove()
->>
->>  drivers/acpi/acpi_memhotplug.c |   51 ++++++++++++++++++++++++++++++++--------
->>  1 files changed, 41 insertions(+), 10 deletions(-)
->>
->> --
-> 
-> Can you please tell me what kernel is the series supposed to apply to?
-> Is it the current Linus' tree, or linux-next, or something else?
+Commit-ID:  1342798cc13e3b48d9b5738f0c8fa812ccea8101
+Gitweb:     http://git.kernel.org/tip/1342798cc13e3b48d9b5738f0c8fa812ccea8101
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Thu, 13 Sep 2012 14:59:13 -0600
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 16 Oct 2012 12:43:31 -0300
 
-Current Linux's tree.
+perf tool: Precise mode requires exclude_guest
 
-Thanks
-Wen Congyang
+Summary of events per Peter:
 
-> 
-> Thanks,
-> Rafael
-> 
-> 
+  "Intel PEBS in VT-x context uses the DS address as a guest linear address,
+  even though its programmed by the host as a host linear address. This
+  either results in guest memory corruption and or the hardware faulting and
+  'crashing' the virtual machine.  Therefore we have to disable PEBS on VT-x
+  enter and re-enable on VT-x exit, enforcing a strict exclude_guest.
 
+  AMB IBS does work but doesn't currently support exclude_* at all,
+  setting an exclude_* bit will make it fail."
+
+This patch handles userspace perf command, setting the exclude_guest
+attribute if precise mode is requested, but only if a user has not
+specified a request for guest or host only profiling (G or H attribute).
+
+Kernel side AMD currently ignores all exclude_* bits, so there is no impact
+to existing IBS code paths. Robert Richter has a patch where IBS code will
+return EINVAL if an exclude_* bit is set. When this goes in it means use
+of :p on AMD with IBS will first fail with EINVAL (because exclude_guest
+will be set). Then the existing fallback code within perf will unset
+exclude_guest and try again. The second attempt will succeed if the CPU
+supports IBS profiling.
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Acked-by: Robert Richter <robert.richter@amd.com>
+Tested-by: Robert Richter <robert.richter@amd.com>
+Reviewed-by: Robert Richter <robert.richter@amd.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Robert Richter <robert.richter@amd.com>
+Link: http://lkml.kernel.org/r/1347569955-54626-2-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/parse-events.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index aed38e4..75c7b0f 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -690,6 +690,9 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
+ 			eH = 0;
+ 		} else if (*str == 'p') {
+ 			precise++;
++			/* use of precise requires exclude_guest */
++			if (!exclude_GH)
++				eG = 1;
+ 		} else
+ 			break;
+ 
