@@ -1,87 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758904Ab2JTAA2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 20:00:28 -0400
-Received: from mga14.intel.com ([143.182.124.37]:61655 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755215Ab2JTAA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 20:00:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,617,1344236400"; 
-   d="scan'208";a="206753930"
-Subject: Re: x2apic boot failure on recent sandy bridge system
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, rrl125@gmail.com,
-        fa.linux.kernel@googlegroups.com, "Berck E. Nash" <flyboy@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 19 Oct 2012 17:02:13 -0700
-In-Reply-To: <5081E414.6080004@zytor.com>
-References: <fa.1zfuXwqYK6u81uBoo3IdpawcpWw@ifi.uio.no>
-	 <fa.p3cpkKIGUNv0/iot3o7KT9bb98M@ifi.uio.no>
-	 <fa.iPHW7usT23k+cCA19L3eXEDu91Q@ifi.uio.no>
-	 <fa.7eOK+XcsKUWU4ZXhBj2K6znxrvc@ifi.uio.no>
-	 <fa.VGxfKOh1Z07X1TXm5PxMIlV4xu8@ifi.uio.no>
-	 <fa.eH+BpYDdp4xIWE4V+wJu6hFrVxM@ifi.uio.no>
-	 <b0b75b2b-961b-487a-ab03-2362c65d6972@googlegroups.com>
-	 <1350687838.6017.10.camel@sbsiddha-desk.sc.intel.com>
-	 <CAE9FiQUmTnhCzvaxaHbwWbcxDrjYix91Yf8TZN6ob0W_Yz1csQ@mail.gmail.com>
-	 <5081E414.6080004@zytor.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1350691333.6017.23.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1758568Ab2JTAJK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 20:09:10 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:62136 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754972Ab2JTAJH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 20:09:07 -0400
+Date: Fri, 19 Oct 2012 17:09:05 -0700
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ARM: soc fixes for -rc2
+Message-ID: <20121020000905.GA29057@quad.lixom.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-19 at 16:36 -0700, H. Peter Anvin wrote:
-> On 10/19/2012 04:32 PM, Yinghai Lu wrote:
-> > On Fri, Oct 19, 2012 at 4:03 PM, Suresh Siddha
-> > <suresh.b.siddha@intel.com> wrote:
-> >> On Fri, 2012-10-19 at 13:42 -0700, rrl125@gmail.com wrote:
-> >>> Any update? The messages just seem to have stopped months ago. A
-> >>> fallback would be nice, I have been booting the kernel with noa2xpic
-> >>> for since kernel 3.2, and currently I am working with 3.6.2.
-> >>>
-> >>> If needed I can try to attempt modifying the patch to include
-> >>> fallback, but I am probably not the best person to do it.
-> >>>
-> >>
-> >> Are you referring to this commit that made into the mainline tree
-> >> already?
-> >>
-> >> commit fb209bd891645bb87b9618b724f0b4928e0df3de
-> >> Author: Yinghai Lu <yinghai@kernel.org>
-> >> Date:   Wed Dec 21 17:45:17 2011 -0800
-> >>
-> >>      x86, x2apic: Fallback to xapic when BIOS doesn't setup interrupt-remapping
-> >
-> > I think his system has DMAR table and cpu support x2apic, So kernel
-> > will switch to x2apic,
-> >
-> > but somehow BIOS SMI handler has problem with x2apic. should be thinkpad W520?
-> >
-> 
-> Right, StinkPad W520 needs a quirk.
+Hi Linus,
 
-yes. Yinghai, if you remember you had a T420 that didn't show the
-problem. And someone in the bugzilla with T420 had the problem. And
-their dmidecode is
-https://launchpadlibrarian.net/109393850/dmidecode.txt
+The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
 
-What is the difference with your system? Bios I think is the same.
+  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
 
-Can you see what we should check for in the dmi tables to black list
-these systems? Can you post your T420's dmidecode to see the difference.
+are available in the git repository at:
 
-Bugs I have on this are:
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/776999
-https://bugzilla.kernel.org/show_bug.cgi?id=43054
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
 
-thanks,
-suresh
+for you to fetch changes up to 70f3900ee5c78d498dbbf880ec409f4b8f4da21e:
 
+  Merge tag 'kirkwood_fixes_for_v3.7' of git://git.infradead.org/users/jcooper/linux into fixes (2012-10-19 16:17:51 -0700)
+
+----------------------------------------------------------------
+
+ARM: soc: Fixes for 3.7-rc2
+
+A set of fixes and some minor cleanups for -rc2:
+
+- A series from Arnd that fixes warnings in drivers and other code
+  included by ARM defconfigs. Most have been acked by corresponding
+  maintainers (and seem quite hard to argue not picking up anyway in the
+  few exception cases).
+- A few misc patches from the list for integrator/vt8500/i.MX
+- A batch of fixes to OMAP platforms, fixing:
+  - boot problems on beaglebone,
+  - regression fixes for local timers
+  - clockdomain locking fixes
+  - a few boot/sparse warnings
+- For Tegra:
+  - Clock rate calculation overflow fix
+  - Revert a change that removed timer clocks and a fix for symbol name clashes
+- For Renesas:
+  - IO accessor / annotation cleanups to remove warnings
+- For Kirkwood/Dove/mvebu:
+  - Fixes for device trees for Dove (some minor cleanups, some fixes)
+  - Fixes for the mvebu gpio driver
+  - Fix build problem for Feroceon due to missing ifdefs
+  - Fix lsxl DTS files
+
+----------------------------------------------------------------
+Arnd Bergmann (7):
+      SCSI: ARM: ncr5380/oak uses no interrupts
+      SCSI: ARM: make fas216_dumpinfo function conditional
+      mm/slob: use min_t() to compare ARCH_SLAB_MINALIGN
+      USB: EHCI: mark ehci_orion_conf_mbus_windows __devinit
+      pcmcia: sharpsl: don't discard sharpsl_pcmcia_ops
+      spi/s3c64xx: use correct dma_transfer_direction type
+      ARM: s3c: mark s3c2440_clk_add as __init_refok
+
+Axel Lin (1):
+      gpio: mvebu: Add missing breaks in mvebu_gpio_irq_set_type
+
+Benoit Cousson (1):
+      ARM: OMAP2+: clock data: Add dev-id for the omap-gpmc dummy fck
+
+Jason Gunthorpe (1):
+      ARM: Kirkwood: fix disabling CACHE_FEROCEON_L2
+
+Jon Hunter (1):
+      ARM: OMAP2+: Allow kernel to boot even if GPMC fails to reserve memory
+
+Kuninori Morimoto (2):
+      ARM: shmobile: armadillo800eva: __io abuse cleanup
+      ARM: shmobile: r8a7779: use __iomem pointers for MMIO
+
+Linus Walleij (1):
+      ARM: dts: compile Integrator device trees
+
+Mark Zhang (1):
+      ARM: tegra30: clk: Fix output_rate overflow
+
+Michael Walle (2):
+      ARM: kirkwood: fix LEDs names for lsxl boards
+      ARM: kirkwood: fix buttons on lsxl boards
+
+Olof Johansson (7):
+      Merge branch 'fixes' of git://git.kernel.org/.../horms/renesas into fixes
+      Merge tag 'tegra-for-3.7-fixes-for-rc2' of git://git.kernel.org/.../swarren/linux-tegra into fixes
+      Merge tag 'omap-for-v3.7-rc1/fixes-take5-signed' of git://git.kernel.org/.../tmlind/linux-omap into fixes
+      Merge tag 'mvebu_dove_late_fixes_for_v3.7' of git://git.infradead.org/users/jcooper/linux into fixes
+      Merge tag 'mvebu_gpio_fixes_for_v3.7' of git://git.infradead.org/users/jcooper/linux into fixes
+      Merge branch 'testing/driver-warnings' of git://git.kernel.org/.../arm/arm-soc into fixes
+      Merge tag 'kirkwood_fixes_for_v3.7' of git://git.infradead.org/users/jcooper/linux into fixes
+
+Paul Walmsley (1):
+      ARM: OMAP: resolve sparse warning concerning debug_card_init()
+
+Sebastian Hesselbarth (6):
+      ARM: dove: Add pcie clock support
+      ARM: dove: Fix tauros2 device tree init
+      ARM: dove: Fix clock names of sata and gbe
+      ARM: dove: Restructure SoC device tree descriptor
+      ARM: dove: Remove watchdog from DT
+      ARM: dove: Add crypto engine to DT
+
+Sebastien Guiriec (1):
+      ARM: OMAP4: devices: fixup OMAP4 DMIC platform device error message
+
+Shawn Guo (1):
+      ARM: dts: imx6q-arm2: move NANDF_CS pins out of 'hog'
+
+Sivaram Nair (2):
+      ARM: tegra: rename tegra system timer
+      ARM: tegra: add tegra_timer clock
+
+Tero Kristo (1):
+      ARM: OMAP: clockdomain: Fix locking on _clkdm_clk_hwmod_enable / disable
+
+Tony Lindgren (1):
+      ARM: OMAP4: Fix twd_local_timer_register regression
+
+Tony Prisk (1):
+      dtb: fix interrupt assignment for ehci/uhci on wm8505
+
+ arch/arm/boot/dts/Makefile                     |  2 ++
+ arch/arm/boot/dts/dove.dtsi                    | 49 +++++++++++++++++---------
+ arch/arm/boot/dts/imx6q-arm2.dts               | 10 +++++-
+ arch/arm/boot/dts/kirkwood-lsxl.dtsi           | 18 +++++-----
+ arch/arm/boot/dts/wm8505.dtsi                  |  4 +--
+ arch/arm/mach-dove/common.c                    |  8 ++---
+ arch/arm/mach-dove/pcie.c                      |  5 +++
+ arch/arm/mach-kirkwood/board-dt.c              |  2 --
+ arch/arm/mach-kirkwood/common.c                |  4 +--
+ arch/arm/mach-omap2/clock44xx_data.c           |  2 +-
+ arch/arm/mach-omap2/clockdomain.c              | 15 +++++---
+ arch/arm/mach-omap2/devices.c                  |  2 +-
+ arch/arm/mach-omap2/gpmc.c                     | 24 ++++++++++---
+ arch/arm/mach-omap2/timer.c                    |  2 +-
+ arch/arm/mach-s3c24xx/clock-s3c2440.c          |  2 +-
+ arch/arm/mach-shmobile/board-armadillo800eva.c |  2 +-
+ arch/arm/mach-shmobile/clock-r8a7779.c         | 22 ++++++------
+ arch/arm/mach-tegra/board-dt-tegra20.c         |  2 +-
+ arch/arm/mach-tegra/board-dt-tegra30.c         |  2 +-
+ arch/arm/mach-tegra/board.h                    |  2 +-
+ arch/arm/mach-tegra/tegra20_clocks_data.c      |  1 +
+ arch/arm/mach-tegra/tegra30_clocks.c           |  2 +-
+ arch/arm/mach-tegra/tegra30_clocks_data.c      |  1 +
+ arch/arm/mach-tegra/timer.c                    |  2 +-
+ arch/arm/plat-omap/debug-devices.c             |  1 +
+ drivers/gpio/gpio-mvebu.c                      |  3 ++
+ drivers/pcmcia/pxa2xx_sharpsl.c                |  2 +-
+ drivers/scsi/arm/fas216.c                      |  2 +-
+ drivers/scsi/arm/oak.c                         |  1 +
+ drivers/spi/spi-s3c64xx.c                      |  6 ++--
+ drivers/usb/host/ehci-orion.c                  |  2 +-
+ mm/slob.c                                      |  6 ++--
+ 32 files changed, 133 insertions(+), 75 deletions(-)
