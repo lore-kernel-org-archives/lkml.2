@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933255Ab2JTBIi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 21:08:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36350 "EHLO
+	id S933267Ab2JTBJd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 21:09:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36363 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933240Ab2JTBIh (ORCPT
+	with ESMTP id S1759421Ab2JTBJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 21:08:37 -0400
-Date: Fri, 19 Oct 2012 18:08:16 -0700
+	Fri, 19 Oct 2012 21:09:32 -0400
+Date: Fri, 19 Oct 2012 18:09:16 -0700
 From: tip-bot for Ingo Molnar <mingo@kernel.org>
-Message-ID: <tip-7fc4d49214dba401f4b92ed62da60a5b257a653a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        ralf@linux-mips.org, peterz@infradead.org, sfr@canb.auug.org.au,
+Message-ID: <tip-aacc9ac4dc832613f12e4022f4a51f5d0d5136a7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, riel@redhat.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, peterz@infradead.org, tglx@linutronix.de,
-        sfr@canb.auug.org.au
-In-Reply-To: <20121018145101.GA17439@linux-mips.org>
-References: <20121018145101.GA17439@linux-mips.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:numa/core] MIPS/thp: Fix update_mmu_cache() cache call
-Git-Commit-ID: 7fc4d49214dba401f4b92ed62da60a5b257a653a
+Subject: [tip:numa/core] sched: Fix !CONFIG_SCHED_NUMA account_numa_enqueue
+ () variant
+Git-Commit-ID: aacc9ac4dc832613f12e4022f4a51f5d0d5136a7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,57 +27,47 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 19 Oct 2012 18:08:22 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 19 Oct 2012 18:09:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7fc4d49214dba401f4b92ed62da60a5b257a653a
-Gitweb:     http://git.kernel.org/tip/7fc4d49214dba401f4b92ed62da60a5b257a653a
+Commit-ID:  aacc9ac4dc832613f12e4022f4a51f5d0d5136a7
+Gitweb:     http://git.kernel.org/tip/aacc9ac4dc832613f12e4022f4a51f5d0d5136a7
 Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Sat, 20 Oct 2012 00:33:01 +0200
+AuthorDate: Sat, 20 Oct 2012 02:22:53 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 20 Oct 2012 00:39:02 +0200
+CommitDate: Sat, 20 Oct 2012 02:22:53 +0200
 
-MIPS/thp: Fix update_mmu_cache() cache call
+sched: Fix !CONFIG_SCHED_NUMA account_numa_enqueue() variant
 
-As per recent upstream commit:
+This build warning:
 
-  b113da65785d mm: Add and use update_mmu_cache_pmd() in transparent huge page code.
+  kernel/sched/fair.c:1015:1: warning: no return statement in function returning non-void
 
-The call in do_huge_pmd_prot_none() needs to call update_mmu_cache_pmd()
-as well.
+Triggers because the dummy account_numa_enqueue() should return the
+rq's task list.
 
-This resolves a MIPS build error triggered on linux-next.
+It's not possible to trigger this bug runtime, nevertheless fix the
+warning.
 
-Reported-by: Ralf Baechle <ralf@linux-mips.org>
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20121018145101.GA17439@linux-mips.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Rik van Riel <riel@redhat.com>
+Link: http://lkml.kernel.org/n/tip-qauskiJfwddwtkf5pivzht5U@git.kernel.org
 ---
- mm/huge_memory.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched/fair.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 8100c01..1068e78 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -770,7 +770,7 @@ fixup:
- 	/* change back to regular protection */
- 	entry = pmd_modify(entry, vma->vm_page_prot);
- 	set_pmd_at(mm, haddr, pmd, entry);
--	update_mmu_cache(vma, address, entry);
-+	update_mmu_cache_pmd(vma, address, entry);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index e93032d..05d568f 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -967,6 +967,7 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ #else
+ static struct list_head *account_numa_enqueue(struct rq *rq, struct task_struct *p)
+ {
++	return &rq->cfs_tasks;
+ }
  
- unlock:
- 	spin_unlock(&mm->page_table_lock);
-@@ -846,7 +846,7 @@ migrate:
- 	page_add_new_anon_rmap(new_page, vma, haddr);
- 
- 	set_pmd_at(mm, haddr, pmd, entry);
--	update_mmu_cache(vma, address, entry);
-+	update_mmu_cache_pmd(vma, address, entry);
- 	page_remove_rmap(page);
- 	spin_unlock(&mm->page_table_lock);
- 
+ static void account_numa_dequeue(struct rq *rq, struct task_struct *p)
