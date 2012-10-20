@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab2JTKJk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 06:09:40 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:40274 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616Ab2JTKJi (ORCPT
+	id S1753589Ab2JTKPb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 06:15:31 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:50828 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917Ab2JTKPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 06:09:38 -0400
-Message-ID: <508276D3.5000708@gmail.com>
-Date: Sat, 20 Oct 2012 12:02:59 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120825 Thunderbird/15.0
+	Sat, 20 Oct 2012 06:15:30 -0400
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: Jeff Dike <jdike@addtoit.com>, user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH] hostfs: fix a not needed double check
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1350646863.30157.13.camel@twins>
+References: <20121018171821.7f1b1683@cuia.bos.redhat.com>
+	<20121018172021.0b1f6e3d@cuia.bos.redhat.com>
+	<1350646863.30157.13.camel@twins>
+Date: Sat, 20 Oct 2012 03:15:28 -0700
+Message-ID: <CANN689G1EpuUMYj6c2iKf4Qoyo1ooDhQecm-Qgih5_f3S=Gd-w@mail.gmail.com>
+Subject: Re: [PATCH 2/2] rename NUMA fault handling functions
+From: Michel Lespinasse <walken@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Rik van Riel <riel@redhat.com>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, aarcange@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the commit 3be2be0a32c18b0fd6d623cda63174a332ca0de1 we removed vmtruncate,
-but actaully there is no need to call inode_newsize_ok() because the checks are
-already done in inode_change_ok() at the begin of the function.
+On Fri, Oct 19, 2012 at 4:41 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Thu, 2012-10-18 at 17:20 -0400, Rik van Riel wrote:
+>> Having the function name indicate what the function is used
+>> for makes the code a little easier to read.  Furthermore,
+>> the fault handling code largely consists of do_...._page
+>> functions.
+>
+> I don't much care either way, but I was thinking walken might want to
+> use something similar to do WSS estimation, in which case the NUMA name
+> is just as wrong.
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
----
- fs/hostfs/hostfs_kern.c |    9 +--------
- 1 files changed, 1 insertions(+), 8 deletions(-)
+Right now my working set estimation only uses A bits, so let's not
+make that a concern here.
 
-diff --git a/fs/hostfs/hostfs_kern.c b/fs/hostfs/hostfs_kern.c
-index 457addc..c9d5254 100644
---- a/fs/hostfs/hostfs_kern.c
-+++ b/fs/hostfs/hostfs_kern.c
-@@ -845,15 +845,8 @@ int hostfs_setattr(struct dentry *dentry, struct iattr *attr)
- 		return err;
- 
- 	if ((attr->ia_valid & ATTR_SIZE) &&
--	    attr->ia_size != i_size_read(inode)) {
--		int error;
--
--		error = inode_newsize_ok(inode, attr->ia_size);
--		if (error)
--			return error;
--
-+	    attr->ia_size != i_size_read(inode))
- 		truncate_setsize(inode, attr->ia_size);
--	}
- 
- 	setattr_copy(inode, attr);
- 	mark_inode_dirty(inode);
+I think the _numa names are a bit better than _prot_none, but still a
+bit confusing. I don't have any great suggestions but I think there
+should at least be a comment above pte_numa() that explains what the
+numa ptes are (the comment within the function doesn't qualify as it
+only explains how the numa ptes are different from the ones in
+PROT_NONE vmas...)
+
 -- 
-1.7.3.4
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
