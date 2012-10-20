@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107Ab2JTOgM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 10:36:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49336 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753655Ab2JTOdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 10:33:42 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 02/11] perf: Do not get values from disabled counters in group format read
-Date: Sat, 20 Oct 2012 16:33:10 +0200
-Message-Id: <1350743599-4805-3-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
-References: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
+	id S1755662Ab2JTOoH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 10:44:07 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:65015 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753681Ab2JTOoF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Oct 2012 10:44:05 -0400
+X-Nat-Received: from [202.181.97.72]:63934 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1350744227.3729
+To: mmarek@suse.cz
+Cc: yann.morin.1998@free.fr, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bpoirier@suse.de, yselkowitz@gmail.com
+Subject: Re: [PATCH] kconfig/menuconfig: use TAILQ instead of CIRCLEQ
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <1350581625-23153-1-git-send-email-yann.morin.1998@free.fr>
+	<201210192110.CII57863.VOStFJQFMLHOFO@I-love.SAKURA.ne.jp>
+	<5081699B.4020203@suse.cz>
+In-Reply-To: <5081699B.4020203@suse.cz>
+Message-Id: <201210202343.IED90702.SFHOJFOVMtQFLO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sat, 20 Oct 2012 23:43:40 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 20102012 #8157510, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's possible some of the counters in the group could be
-disabled when sampling member of the event group is reading
-the rest via PERF_SAMPLE_READ sample type processing. Disabled
-counters could then produce wrong numbers.
+Michal Marek wrote:
+> On 19.10.2012 14:10, Tetsuo Handa wrote:
+> > Yann E. MORIN wrote:
+> >> So, switch to using TAILQ instead, which are more portable.
+> [...]
+> > Excuse me, but your patch does not solve my problem because kconfig started
+> > using macros which does not exist in "@(#)queue.h 8.3 (Berkeley) 12/13/93".
+> > Kconfig still fails after applying your patch:
+> > 
+> >   HOSTCC  scripts/kconfig/mconf.o
+> > scripts/kconfig/mconf.c: In function `update_text':
+> > scripts/kconfig/mconf.c:326: warning: implicit declaration of function `TAILQ_FOREACH'
+> [...]
+> > scripts/kconfig/mconf.c:378: warning: implicit declaration of function `TAILQ_HEAD_INITIALIZER'
+> > 
+> > So, would you add something which looks like "sed -e 's/CIRCLEQ/TAILQ/g'" upon
+> > https://lkml.org/lkml/2012/10/16/274 ?
+> 
+> Could you reduce that patch to not copy all of queue.h?
+> TAILQ_HEAD_INITIALIZER can be replaced by a TAILQ_INIT() call after
+> variable definitions, and we do not need stuff like
+> TAILQ_FOREACH_REVERSE. The other option is to reimplement the needed
+> operations under a different name, so that people don't accidentally use
+> other macros that are missing in old queue.h revisions.
+> 
+> Michal
+> 
 
-Fixing that by reading only enabled counters for PERF_SAMPLE_READ
-sample type processing.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
----
- kernel/events/core.c | 18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 32aec40..5220d01 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4012,12 +4012,24 @@ static void perf_output_read_group(struct perf_output_handle *handle,
- 	__output_copy(handle, values, n * sizeof(u64));
- 
- 	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
-+		u64 value = 0;
- 		n = 0;
- 
--		if (sub != event)
--			sub->pmu->read(sub);
-+		/*
-+		 * We are NOT interested in disabled counters,
-+		 * giving us strange values and keeping us from
-+		 * good night sleep!!!
-+		 */
-+		if (sub->state > PERF_EVENT_STATE_OFF) {
-+
-+			if (sub != event)
-+				sub->pmu->read(sub);
-+
-+			value = perf_event_count(sub);
-+		}
-+
-+		values[n++] = value;
- 
--		values[n++] = perf_event_count(sub);
- 		if (read_format & PERF_FORMAT_ID)
- 			values[n++] = primary_event_id(sub);
- 
--- 
-1.7.11.4
-
+I'm fine to manually add missing macros to /usr/include/sys/queue.h of
+"@(#)queue.h 8.3 (Berkeley) 12/13/93" in my environment instead of adding
+define-as-needed lines to scripts/kconfig/expr.h, for missing macros are
+available with that of "@(#)queue.h 8.5 (Berkeley) 8/20/94".
