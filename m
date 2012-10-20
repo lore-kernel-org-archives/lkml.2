@@ -1,41 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834Ab2JTJwa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 05:52:30 -0400
-Received: from asav4.lyse.net ([81.167.36.150]:34553 "EHLO asav4.lyse.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754617Ab2JTJw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 05:52:29 -0400
-X-Greylist: delayed 1879 seconds by postgrey-1.27 at vger.kernel.org; Sat, 20 Oct 2012 05:52:29 EDT
-Date: Sat, 20 Oct 2012 11:24:02 +0200
-From: Helge Hafting <helge.hafting@ntebb.no>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Daniel Mack <zonque@gmail.com>, alsa-devel <alsa-devel@alsa-project.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] 3.6.0 regression, distorted sound failure while
- using jack and hd-audio
-Message-ID: <20121020112402.0f1119e5@tenkende-august.homelinux.net>
-In-Reply-To: <s5h626ljgc7.wl%tiwai@suse.de>
-References: <20121007213452.08e29880@tenkende-august.homelinux.net>
-	<5071F3CF.8070907@gmail.com>
-	<s5h626ljgc7.wl%tiwai@suse.de>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752996Ab2JTJ6k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 05:58:40 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:39014 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996Ab2JTJ6j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Oct 2012 05:58:39 -0400
+Message-ID: <508275CB.3000603@gmail.com>
+Date: Sat, 20 Oct 2012 11:58:35 +0200
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Jesper Juhl <jj@chaosbits.net>
+CC: linux-kernel@vger.kernel.org,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH] [media] s5p-tv: don't include linux/version.h in mixer_video.c
+References: <alpine.LNX.2.00.1210182125380.17217@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1210182125380.17217@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 08 Oct 2012 14:31:04 +0200
-Takashi Iwai <tiwai@suse.de> wrote:
+On 10/18/2012 09:28 PM, Jesper Juhl wrote:
+> The header is not needed, so remove it.
 
-
-> This sounds like a known issue that has been fixed for 3.7-rc1.
-> As a workaround, try to pass position_fix=2 option to snd-hda-intel
-> module.
-
-Thanks a lot, that parameter fixed it for me. It was not necessary before,
-and I'll try to remove it again for 3.7
-
-Helge Hafting
+I have applied it to my tree, thanks!
