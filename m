@@ -1,155 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab2JTQWm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 12:22:42 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:38692 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751912Ab2JTQWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 12:22:40 -0400
-Message-ID: <1350750159.10791.3.camel@joe-AO722>
-Subject: [PATCH] ixgbe: Use is_valid_ether_addr
-From: Joe Perches <joe@perches.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 20 Oct 2012 09:22:39 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755993Ab2JTQW7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 12:22:59 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:38940 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752058Ab2JTQW4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Oct 2012 12:22:56 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [RFC PATCH 0/8] printk: Make it usable on nohz CPUs v2
+Date: Sat, 20 Oct 2012 12:22:39 -0400
+Message-Id: <1350750167-14263-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the normal kernel test instead of a module specific one.
+Hi,
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
-found when doing that larger style conversion,
-might as well submit it.
+So the design is not quite the same here. Instead of using the ad hoc
+printk_tick() in periodic mode and irq_work on nohz mode, printk
+is now always using irq_work.
 
- drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c  |  2 +-
- drivers/net/ethernet/intel/ixgbe/ixgbe_common.c | 27 +------------------------
- drivers/net/ethernet/intel/ixgbe/ixgbe_common.h |  1 -
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c   |  2 +-
- drivers/net/ethernet/intel/ixgbe/ixgbe_type.h   |  9 ---------
- drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c   |  2 +-
- 6 files changed, 4 insertions(+), 39 deletions(-)
+In turn, irq_work subsystem is able to let enqueuers choose between IPI
+or lazy tick hook to execute works, and that in order to avoid IPI storm
+when we have lots of enqueuing of non-urgent works like klogd wakeup
+in short period of time so this keeps the old printk_tick behaviour.
 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c
-index 1077cb2..89fe00d 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c
-@@ -1022,7 +1022,7 @@ mac_reset_top:
- 	hw->mac.ops.get_san_mac_addr(hw, hw->mac.san_addr);
- 
- 	/* Add the SAN MAC address to the RAR only if it's a valid address */
--	if (ixgbe_validate_mac_addr(hw->mac.san_addr) == 0) {
-+	if (is_valid_ether_addr(hw->mac.san_addr)) {
- 		hw->mac.ops.set_rar(hw, hw->mac.num_rar_entries - 1,
- 		                    hw->mac.san_addr, 0, IXGBE_RAH_AV);
- 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
-index dbf37e4..2d8f76d 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
-@@ -1762,30 +1762,6 @@ s32 ixgbe_update_eeprom_checksum_generic(struct ixgbe_hw *hw)
- }
- 
- /**
-- *  ixgbe_validate_mac_addr - Validate MAC address
-- *  @mac_addr: pointer to MAC address.
-- *
-- *  Tests a MAC address to ensure it is a valid Individual Address
-- **/
--s32 ixgbe_validate_mac_addr(u8 *mac_addr)
--{
--	s32 status = 0;
--
--	/* Make sure it is not a multicast address */
--	if (IXGBE_IS_MULTICAST(mac_addr))
--		status = IXGBE_ERR_INVALID_MAC_ADDR;
--	/* Not a broadcast address */
--	else if (IXGBE_IS_BROADCAST(mac_addr))
--		status = IXGBE_ERR_INVALID_MAC_ADDR;
--	/* Reject the zero address */
--	else if (mac_addr[0] == 0 && mac_addr[1] == 0 && mac_addr[2] == 0 &&
--	         mac_addr[3] == 0 && mac_addr[4] == 0 && mac_addr[5] == 0)
--		status = IXGBE_ERR_INVALID_MAC_ADDR;
--
--	return status;
--}
--
--/**
-  *  ixgbe_set_rar_generic - Set Rx address register
-  *  @hw: pointer to hardware structure
-  *  @index: Receive address register to write
-@@ -1889,8 +1865,7 @@ s32 ixgbe_init_rx_addrs_generic(struct ixgbe_hw *hw)
- 	 * to the permanent address.
- 	 * Otherwise, use the permanent address from the eeprom.
- 	 */
--	if (ixgbe_validate_mac_addr(hw->mac.addr) ==
--	    IXGBE_ERR_INVALID_MAC_ADDR) {
-+	if (!is_valid_ether_addr(hw->mac.addr)) {
- 		/* Get the MAC address from the RAR0 for later reference */
- 		hw->mac.ops.get_mac_addr(hw, hw->mac.addr);
- 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
-index d813d11..f49ca84 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
-@@ -80,7 +80,6 @@ s32 ixgbe_enable_rx_dma_generic(struct ixgbe_hw *hw, u32 regval);
- s32 ixgbe_fc_enable_generic(struct ixgbe_hw *hw);
- void ixgbe_fc_autoneg(struct ixgbe_hw *hw);
- 
--s32 ixgbe_validate_mac_addr(u8 *mac_addr);
- s32 ixgbe_acquire_swfw_sync(struct ixgbe_hw *hw, u16 mask);
- void ixgbe_release_swfw_sync(struct ixgbe_hw *hw, u16 mask);
- s32 ixgbe_get_san_mac_addr_generic(struct ixgbe_hw *hw, u8 *san_mac_addr);
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index e2a6691..3bb3485 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -7345,7 +7345,7 @@ static int __devinit ixgbe_probe(struct pci_dev *pdev,
- 	memcpy(netdev->dev_addr, hw->mac.perm_addr, netdev->addr_len);
- 	memcpy(netdev->perm_addr, hw->mac.perm_addr, netdev->addr_len);
- 
--	if (ixgbe_validate_mac_addr(netdev->perm_addr)) {
-+	if (!is_valid_ether_addr(netdev->perm_addr)) {
- 		e_dev_err("invalid MAC address\n");
- 		err = -EIO;
- 		goto err_sw_init;
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
-index 0722f33..9ddac64 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
-@@ -1833,15 +1833,6 @@ enum {
- /* Number of 100 microseconds we wait for PCI Express master disable */
- #define IXGBE_PCI_MASTER_DISABLE_TIMEOUT 800
- 
--/* Check whether address is multicast.  This is little-endian specific check.*/
--#define IXGBE_IS_MULTICAST(Address) \
--                (bool)(((u8 *)(Address))[0] & ((u8)0x01))
--
--/* Check whether an address is broadcast. */
--#define IXGBE_IS_BROADCAST(Address)                      \
--                ((((u8 *)(Address))[0] == ((u8)0xff)) && \
--                (((u8 *)(Address))[1] == ((u8)0xff)))
--
- /* RAH */
- #define IXGBE_RAH_VIND_MASK     0x003C0000
- #define IXGBE_RAH_VIND_SHIFT    18
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c
-index de4da52..c73b929 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c
-@@ -152,7 +152,7 @@ mac_reset_top:
- 	hw->mac.ops.get_san_mac_addr(hw, hw->mac.san_addr);
- 
- 	/* Add the SAN MAC address to the RAR only if it's a valid address */
--	if (ixgbe_validate_mac_addr(hw->mac.san_addr) == 0) {
-+	if (is_valid_ether_addr(hw->mac.san_addr)) {
- 		hw->mac.ops.set_rar(hw, hw->mac.num_rar_entries - 1,
- 		                    hw->mac.san_addr, 0, IXGBE_RAH_AV);
- 
+It also teaches irq_work to handle nohz mode.
 
+Warning: only compile tested in x86 for now.
+
+Frederic Weisbecker (8):
+  irq_work: Move irq_work_raise() declaration/default definition to
+    arch headers
+  irq_work: Let the arch tell us about self-IPI support
+  x86: Implement arch_irq_work_has_ipi()
+  nohz: Add API to check tick state
+  irq_work: Make self-IPIs optable
+  irq_work: Handle queuing without IPI support in dyntick idle mode
+  irq_work: Remove CONFIG_HAVE_IRQ_WORK
+  printk: Wake up klogd using irq_work
+
+ arch/alpha/Kconfig                           |    1 -
+ arch/alpha/include/asm/irq_work.h            |    9 +++++
+ arch/alpha/kernel/time.c                     |    2 +-
+ arch/arm/Kconfig                             |    1 -
+ arch/arm/include/asm/irq_work.h              |    1 +
+ arch/arm64/Kconfig                           |    1 -
+ arch/arm64/include/asm/irq_work.h            |    1 +
+ arch/blackfin/Kconfig                        |    1 -
+ arch/blackfin/include/asm/irq_work.h         |    1 +
+ arch/frv/Kconfig                             |    1 -
+ arch/frv/include/asm/irq_work.h              |    1 +
+ arch/hexagon/Kconfig                         |    1 -
+ arch/hexagon/include/asm/irq_work.h          |    1 +
+ arch/mips/Kconfig                            |    1 -
+ arch/mips/include/asm/irq_work.h             |    1 +
+ arch/parisc/Kconfig                          |    1 -
+ arch/parisc/include/asm/irq_work.h           |    1 +
+ arch/powerpc/Kconfig                         |    1 -
+ arch/powerpc/include/asm/irq_work.h          |    8 ++++
+ arch/powerpc/kernel/time.c                   |    2 +-
+ arch/s390/Kconfig                            |    1 -
+ arch/s390/include/asm/irq_work.h             |    1 +
+ arch/sh/Kconfig                              |    1 -
+ arch/sh/include/asm/irq_work.h               |    1 +
+ arch/sparc/Kconfig                           |    1 -
+ arch/sparc/include/asm/irq_work.h            |    8 ++++
+ arch/sparc/kernel/pcr.c                      |    2 +-
+ arch/x86/Kconfig                             |    1 -
+ arch/x86/include/asm/irq_work.h              |   15 ++++++++
+ arch/x86/kernel/cpu/mcheck/mce.c             |    2 +-
+ arch/x86/kernel/irq_work.c                   |    6 ++--
+ arch/x86/kvm/pmu.c                           |    2 +-
+ drivers/acpi/apei/ghes.c                     |    2 +-
+ drivers/staging/iio/trigger/Kconfig          |    1 -
+ drivers/staging/iio/trigger/iio-trig-sysfs.c |    2 +-
+ include/asm-generic/irq_work.h               |   23 ++++++++++++
+ include/linux/irq_work.h                     |    9 ++++-
+ include/linux/printk.h                       |    3 --
+ include/linux/tick.h                         |   17 ++++++++-
+ init/Kconfig                                 |    5 +--
+ kernel/events/core.c                         |    4 +-
+ kernel/events/ring_buffer.c                  |    2 +-
+ kernel/irq_work.c                            |   48 +++++++++++++++++++------
+ kernel/printk.c                              |   14 ++++----
+ kernel/time/tick-sched.c                     |    6 ++--
+ kernel/timer.c                               |    1 -
+ 46 files changed, 156 insertions(+), 59 deletions(-)
+ create mode 100644 arch/alpha/include/asm/irq_work.h
+ create mode 100644 arch/arm/include/asm/irq_work.h
+ create mode 100644 arch/arm64/include/asm/irq_work.h
+ create mode 100644 arch/blackfin/include/asm/irq_work.h
+ create mode 100644 arch/frv/include/asm/irq_work.h
+ create mode 100644 arch/hexagon/include/asm/irq_work.h
+ create mode 100644 arch/mips/include/asm/irq_work.h
+ create mode 100644 arch/parisc/include/asm/irq_work.h
+ create mode 100644 arch/powerpc/include/asm/irq_work.h
+ create mode 100644 arch/s390/include/asm/irq_work.h
+ create mode 100644 arch/sh/include/asm/irq_work.h
+ create mode 100644 arch/sparc/include/asm/irq_work.h
+ create mode 100644 arch/x86/include/asm/irq_work.h
+ create mode 100644 include/asm-generic/irq_work.h
+
+-- 
+1.7.5.4
 
