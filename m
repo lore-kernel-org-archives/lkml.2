@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758724Ab2JSX6U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Oct 2012 19:58:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55933 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215Ab2JSX6T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Oct 2012 19:58:19 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Barry Song <21cnbao@gmail.com>
-Cc: Colin Cross <ccross@android.com>, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Krzysztof Halasa <khc@pm.waw.pl>, Felipe Balbi <balbi@ti.com>
-Subject: Re: [RFC] ARM: sched_clock: update epoch_cyc on resume
-Organization: Deep Root Systems, LLC
-References: <1342567672-29071-1-git-send-email-ccross@android.com>
-	<CAGsJ_4z_tF3LKy-vygr=kwah7q7U03Y2K2XKAkZTB1QC2pSYmw@mail.gmail.com>
-Date: Fri, 19 Oct 2012 16:58:36 -0700
-In-Reply-To: <CAGsJ_4z_tF3LKy-vygr=kwah7q7U03Y2K2XKAkZTB1QC2pSYmw@mail.gmail.com>
-	(Barry Song's message of "Tue, 24 Jul 2012 14:43:28 +0800")
-Message-ID: <87r4ouggk3.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1758904Ab2JTAA2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Oct 2012 20:00:28 -0400
+Received: from mga14.intel.com ([143.182.124.37]:61655 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755215Ab2JTAA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Oct 2012 20:00:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,617,1344236400"; 
+   d="scan'208";a="206753930"
+Subject: Re: x2apic boot failure on recent sandy bridge system
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, rrl125@gmail.com,
+        fa.linux.kernel@googlegroups.com, "Berck E. Nash" <flyboy@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 19 Oct 2012 17:02:13 -0700
+In-Reply-To: <5081E414.6080004@zytor.com>
+References: <fa.1zfuXwqYK6u81uBoo3IdpawcpWw@ifi.uio.no>
+	 <fa.p3cpkKIGUNv0/iot3o7KT9bb98M@ifi.uio.no>
+	 <fa.iPHW7usT23k+cCA19L3eXEDu91Q@ifi.uio.no>
+	 <fa.7eOK+XcsKUWU4ZXhBj2K6znxrvc@ifi.uio.no>
+	 <fa.VGxfKOh1Z07X1TXm5PxMIlV4xu8@ifi.uio.no>
+	 <fa.eH+BpYDdp4xIWE4V+wJu6hFrVxM@ifi.uio.no>
+	 <b0b75b2b-961b-487a-ab03-2362c65d6972@googlegroups.com>
+	 <1350687838.6017.10.camel@sbsiddha-desk.sc.intel.com>
+	 <CAE9FiQUmTnhCzvaxaHbwWbcxDrjYix91Yf8TZN6ob0W_Yz1csQ@mail.gmail.com>
+	 <5081E414.6080004@zytor.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1350691333.6017.23.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Barry Song <21cnbao@gmail.com> writes:
+On Fri, 2012-10-19 at 16:36 -0700, H. Peter Anvin wrote:
+> On 10/19/2012 04:32 PM, Yinghai Lu wrote:
+> > On Fri, Oct 19, 2012 at 4:03 PM, Suresh Siddha
+> > <suresh.b.siddha@intel.com> wrote:
+> >> On Fri, 2012-10-19 at 13:42 -0700, rrl125@gmail.com wrote:
+> >>> Any update? The messages just seem to have stopped months ago. A
+> >>> fallback would be nice, I have been booting the kernel with noa2xpic
+> >>> for since kernel 3.2, and currently I am working with 3.6.2.
+> >>>
+> >>> If needed I can try to attempt modifying the patch to include
+> >>> fallback, but I am probably not the best person to do it.
+> >>>
+> >>
+> >> Are you referring to this commit that made into the mainline tree
+> >> already?
+> >>
+> >> commit fb209bd891645bb87b9618b724f0b4928e0df3de
+> >> Author: Yinghai Lu <yinghai@kernel.org>
+> >> Date:   Wed Dec 21 17:45:17 2011 -0800
+> >>
+> >>      x86, x2apic: Fallback to xapic when BIOS doesn't setup interrupt-remapping
+> >
+> > I think his system has DMAR table and cpu support x2apic, So kernel
+> > will switch to x2apic,
+> >
+> > but somehow BIOS SMI handler has problem with x2apic. should be thinkpad W520?
+> >
+> 
+> Right, StinkPad W520 needs a quirk.
 
-> 2012/7/18 Colin Cross <ccross@android.com>:
->> Many clocks that are used to provide sched_clock will reset during
->> suspend.  If read_sched_clock returns 0 after suspend, sched_clock will
->> appear to jump forward.  This patch resets cd.epoch_cyc to the current
->> value of read_sched_clock during resume, which causes sched_clock() just
->> after suspend to return the same value as sched_clock() just before
->> suspend.
->>
->> In addition, during the window where epoch_ns has been updated before
->> suspend, but epoch_cyc has not been updated after suspend, it is unknown
->> whether the clock has reset or not, and sched_clock() could return a
->> bogus value.  Add a suspended flag, and return the pre-suspend epoch_ns
->> value during this period.
->
-> Acked-by: Barry Song <21cnbao@gmail.com>
->
-> this patch should also fix the issue that:
-> 1. launch some rt threads, rt threads sleep before suspend
-> 2. repeat to suspend/resume
-> 3. after resuming, waking up rt threads
->
-> repeat 1-3 again and again, sometimes all rt threads will hang after
-> resuming due to wrong sched_clock will make sched_rt think rt_time is
-> much more than rt_runtime (default 950ms in 1s). then rt threads will
-> lost cpu timeslot to run since the 95% threshold is there.
+yes. Yinghai, if you remember you had a T420 that didn't show the
+problem. And someone in the bugzilla with T420 had the problem. And
+their dmidecode is
+https://launchpadlibrarian.net/109393850/dmidecode.txt
 
-Re-visiting this in light of a related problem.
+What is the difference with your system? Bios I think is the same.
 
-I've run into a similar issue where IRQ threads are prevented from
-running during resume becase the RT throttling kicks because RT
-runtime is accumulated during suspend.  Using the 'needs_suspend'
-version fixes this problem too.
+Can you see what we should check for in the dmi tables to black list
+these systems? Can you post your T420's dmidecode to see the difference.
 
-However, because of the RT throttling issue, it seems like *all*
-platforms should be using the 'needs_suspend' version always.  But, as
-already pointed out, that makes the timed printk output during
-suspend/resume rather unhelpful.
+Bugs I have on this are:
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/776999
+https://bugzilla.kernel.org/show_bug.cgi?id=43054
 
-Having to choose between useful printk times during suspend/resume and
-functioning IRQ threads during suspend/resume isn't a choice I want to
-make.   I'd rather have both.  Any ideas?
+thanks,
+suresh
 
-Kevin
