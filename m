@@ -1,46 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab2JUB7j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 21:59:39 -0400
-Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:38719 "HELO
-	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753073Ab2JUB7h (ORCPT
+	id S1754611Ab2JUCFb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 22:05:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43159 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab2JUCFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 21:59:37 -0400
-Message-ID: <50835703.30608@xenotime.net>
-Date: Sat, 20 Oct 2012 18:59:31 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: David Howells <dhowells@redhat.com>
-Subject: [PATCH] module_signing: fix printk format warning
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 20 Oct 2012 22:05:30 -0400
+Message-ID: <1350785121.12361.2.camel@CruzBishop-ASPIRE>
+Subject: Re: [PATCH 1/2] staging: android: checkpatch.pl fixes
+From: Cruz Julian Bishop <cruzjbishop@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: "Ken O'Brien" <kernel@kenobrien.org>, gregkh@linuxfoundation.org,
+        swetland@google.com, arve@android.com, viro@zeniv.linux.org.uk,
+        dhowells@redhat.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 21 Oct 2012 12:05:21 +1000
+In-Reply-To: <1350781512.16706.3.camel@joe-AO722>
+References: <1350772400-12347-1-git-send-email-kernel@kenobrien.org>
+	 <1350781512.16706.3.camel@joe-AO722>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Sat, 2012-10-20 at 18:05 -0700, Joe Perches wrote:
+> On Sat, 2012-10-20 at 23:33 +0100, Ken O'Brien wrote:
+> > Fixed all instances of strings spanning multiple lines from checkpatch.pl.
+> []
+> > diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+> []
+> > @@ -556,7 +556,7 @@ static int binder_update_page_range(struct binder_proc *proc, int allocate,
+> >  		goto free_range;
+> >  
+> >  	if (vma == NULL) {
+> > -		pr_err("binder: %d: binder_alloc_buf failed to "
+> > +		pr_err("binder: %d: binder_alloc_buf failed to " \
+> >  		       "map pages in userspace, no vma\n", proc->pid);
+> 
+> Hi Ken.
+> 
+> Nice try, but the "right" way to do this is to coalesce formats like:
+> 
+> 		pr_err("binder: %d: binder_alloc_buf failed to map pages in userspace, no vma\n",
+> 		       proc->pid);
+> 
+> and ignore 80 column line lengths for these coalesced formats.
 
-kernel/module_signing.c:195:2: warning: format '%lu' expects type 'long unsigned int', but argument 3 has type 'size_t'
+Going off that, is there currently any way to insert, say,
+a comment that filters out the next line for checkpatch
+errors?
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: David Howells <dhowells@redhat.com>
----
- kernel/module_signing.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+For example,
 
---- lnx-37-rc2.orig/kernel/module_signing.c
-+++ lnx-37-rc2/kernel/module_signing.c
-@@ -192,7 +192,7 @@ int mod_verify_sig(const void *mod, unsi
- 	size_t modlen = *_modlen, sig_len;
- 	int ret;
- 
--	pr_devel("==>%s(,%lu)\n", __func__, modlen);
-+	pr_devel("==>%s(,%zu)\n", __func__, modlen);
- 
- 	if (modlen <= sizeof(ms))
- 		return -EBADMSG;
+/* checkpatch_ignore_(rulename) */
+(Long line that can't be broken here)
+
+
+> 
+> An even better way is to add
+> 
+> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> 
+> before any #include and change the format to:
+> 
+> 		pr_err("%d: binder_alloc_buf failed to map pages in userspace, no vma\n",
+> 		       proc->pid);
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
