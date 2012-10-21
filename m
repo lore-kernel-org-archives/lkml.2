@@ -1,58 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751239Ab2JUESM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 00:18:12 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:46566 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1749667Ab2JUESK convert rfc822-to-8bit (ORCPT
+	id S1751415Ab2JUETK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 00:19:10 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59508 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913Ab2JUETI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 00:18:10 -0400
+	Sun, 21 Oct 2012 00:19:08 -0400
+Date: Sat, 20 Oct 2012 21:19:30 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Roland Stigge <stigge@antcom.de>
+Cc: grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        w.sang@pengutronix.de, jbe@pengutronix.de, plagnioj@jcrosoft.com,
+        highguy@gmail.com, broonie@opensource.wolfsonmicro.com,
+        daniel-gl@gmx.net, rmallon@gmail.com
+Subject: Re: [PATCH 2/5 v6] gpio: Add sysfs support to block GPIO API
+Message-ID: <20121021041930.GA7027@kroah.com>
+References: <1350728508-22508-1-git-send-email-stigge@antcom.de>
+ <1350728508-22508-3-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
-In-Reply-To: <5081B7F8.7040302@draigBrady.com>
-References: <CAMjzKwXZLGX7EM7dVOHWcN-8Ay40bbhiR4v5M352Xd2g2uHY1g@mail.gmail.com>
-	<5081B7F8.7040302@draigBrady.com>
-Date: Sun, 21 Oct 2012 09:48:09 +0530
-Message-ID: <CAMjzKwVn4Y+ocZ7Ud_CSM34KP=zO1N84ZApG1s6CG6onSP_x-g@mail.gmail.com>
-Subject: Re: [Perf] Adding timeout option
-From: abhishek agarwal <abhigem.126@gmail.com>
-To: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigbrady.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350728508-22508-3-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sleep does not offer a good timeout resolution and it is not a good
-option (according to me) either.
-perfmon had "timeout" option and i guess, same do oprofile.
+On Sat, Oct 20, 2012 at 12:21:45PM +0200, Roland Stigge wrote:
+> This patch adds sysfs support to the block GPIO API.
+> 
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-On Sat, Oct 20, 2012 at 1:58 AM, Pádraig Brady <P@draigbrady.com> wrote:
-> On 10/13/2012 08:54 AM, abhishek agarwal wrote:
->>
->> Hi folks..
->>
->> I was thinking that why cant we have a timeout option in perf stat
->> command.  The timeout feature will help us to profile a process for a
->> stipulated time (preferably in millisecs) and make perf stat return
->> after that time.
->> Eg:
->>
->> perf stat --timeout=10 sleep 100
->>
->> This will make perf return and report stats after 10 ms...
->>
->> Hope anyone can shed some more light on the idea
->
->
-> It seems preferable to use the timeout program to do this.
-> Either sending a handled signal to the perf process like:
->
->     timeout -s HUP 10 perf stat sleep 100
->
-> Or even better, just use that to kill the monitored process itself
->
->     perf stat timeout 10 sleep 100
->
-> cheers,
-> Pádraig.
+Thanks for the updates, looks good to me:
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
