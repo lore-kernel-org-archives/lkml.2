@@ -1,105 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932498Ab2JUSKm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 14:10:42 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:42179 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932461Ab2JUSKg (ORCPT
+	id S932525Ab2JUSQQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 14:16:16 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:36376 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932132Ab2JUSQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 14:10:36 -0400
-Date: Sun, 21 Oct 2012 20:10:31 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Borislav Petkov <bp@alien8.de>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, Dave Airlie <airlied@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Linux KVM tool for v3.7-rc0
-Message-ID: <20121021181031.GB4465@gmail.com>
-References: <CAPM=9twcHxUGgYUc27DV1AcYZbzKSbA1Bru8vK1kcWvcG0Jpkw@mail.gmail.com>
- <20121021110329.GA7024@infradead.org>
- <20121021125933.GC19535@gmail.com>
- <CAFLxGvzLOa-BibZ39_yMEC70AseEPbtjcNGk6jLwaAVsU2ujwA@mail.gmail.com>
- <20121021150305.GA26108@gmail.com>
- <20121021171543.GC20642@liondog.tnic>
- <20121021174041.GA240@x4>
- <20121021175108.GA3820@gmail.com>
- <20121021175422.GB240@x4>
- <20121021180458.GC240@x4>
+	Sun, 21 Oct 2012 14:16:14 -0400
+Date: Sun, 21 Oct 2012 20:15:53 +0200
+From: Rabin Vincent <rabin@rab.in>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [PATCH 3/9] uprobes: allow ignoring of probe hits
+Message-ID: <20121021181504.GA4840@ubuntu>
+References: <1350242593-17761-1-git-send-email-rabin@rab.in>
+ <1350242593-17761-3-git-send-email-rabin@rab.in>
+ <20121015165218.GA10239@redhat.com>
+ <CAH+eYFBHXAWTinnVO8vEnEhFDQLibwo+BtxYJJYdPcG9__n5OQ@mail.gmail.com>
+ <20121017173510.GA11019@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121021180458.GC240@x4>
+In-Reply-To: <20121017173510.GA11019@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
-
-> On 2012.10.21 at 19:54 +0200, Markus Trippelsdorf wrote:
-> > On 2012.10.21 at 19:51 +0200, Ingo Molnar wrote:
-> > > 
-> > > * Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
-> > > 
-> > > > On 2012.10.21 at 19:15 +0200, Borislav Petkov wrote:
-> > > > > On Sun, Oct 21, 2012 at 05:03:05PM +0200, Ingo Molnar wrote:
-> > > > > > The best way to compare them would be a script that gives exactly the
-> > > > > > same test environment that 'vm run' / 'vm sandbox' does out of box,
-> > > > > > but using qemu.
-> > > > > >
-> > > > > > If such a script is available then that would certainly be a useful
-> > > > > > testing option to kernel developers.
-> > > > > 
-> > > > > Right,
-> > > > > 
-> > > > > I gotta say, I've mucked around with qemu/kvm net options as a novice
-> > > > > user and haven't always been successfu. If you get host networking
-> > > > > straight away in lkvm then that's another clear point for tools/kvm.
-> > > > > 
-> > > > > Same holds true for copying data back and forth between host and guest.
-> > > > 
-> > > > I'm agnostic about lkvm, but the following command does all the above:
-> > > > 
-> > > > qemu-system-x86_64 -enable-kvm -net nic,vlan=0,model=virtio 
-> > > > -net user -fsdev 
-> > > > local,security_model=passthrough,id=root,path=/ -device 
-> > > > virtio-9p-pci,id=root,fsdev=root,mount_tag=/dev/root -m 512 
-> > > > -smp 2 -kernel /usr/src/linux/arch/x86/boot/bzImage -nographic 
-> > > > -append "init=/bin/zsh root=/dev/root console=ttyS0 
-> > > > kgdboc=ttyS0 rootflags=rw,trans=virtio rootfstype=9p ip=dhcp"
-> > > > 
-> > > > If you want your host root-fs to be mounted rw (to copy data
-> > > > back and forth) you need to run to above as root and add "rw"
-> > > > to the kernel options.
-> > > 
-> > > Why does it have to run as root? I run 'vm' unprivileged (other 
-> > > than /dev/kvm access).
-> > 
-> > From the qemu man page:
-> > 
-> >  security_model=security_model
-> > 
-> >   Specifies the security model to be used for this export 
-> > path.  Supported security models are "passthrough", "mapped- 
-> > xattr", "mapped-file" and "none". In "passthrough" security 
-> > model, files are stored using the same credentials as they 
-> > are created on the guest. This requires QEMU to run as root.
+On Wed, Oct 17, 2012 at 07:35:10PM +0200, Oleg Nesterov wrote:
+> On 10/16, Rabin Vincent wrote:
+> > 2012/10/15 Oleg Nesterov <oleg@redhat.com>:
+> > > Not sure I understand why we shouldn't call handlers in this case,
+> > > but OK, I know nothing about arm.
+> >
+> > This old discussion about kprobes should be useful:
+> >
+> > http://lists.infradead.org/pipermail/linux-arm-kernel/2011-March/045755.html
 > 
-> But you can use security_model=none as an unprivileged user. 
-> With this option you can only change files for which you have 
-> permission (like in your home directory).
+> Thanks... Not sure I understand this discussion...
+> 
+> And, to clarify, I am not arguing. Just curious.
+> 
+> So, is this like cmov on x86? And this patch allows to not report if
+> the condition is not true? Or there are other issues on arm?
 
-That's very much desired for testing anyway.
+Yes, I guess this is like CMOV on x86.  In the ARM instruction set most
+instructions can be conditionally executed.
 
-Ok, looks useful - will someone on the Qemu side script this up 
-and integrate it into the kernel in a useful form?
-
-Thanks,
-
-	Ingo
+In order to set the probe on a conditional instruction, we use an
+undefined instruction with the same condition as the instruction we
+replace.  However, it is implementation defined whether an undefined
+instruction with a failing condition code will trigger an undefined
+instruction exception or just be executed as a NOP.  So for those
+processor implementations where we do get the undefined instruction
+exception even for a failing condition code, we have to ignore it in
+order to provide consistent behaviour.
