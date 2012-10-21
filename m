@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab2JUQiz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 12:38:55 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:36471 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030Ab2JUQiy (ORCPT
+	id S932367Ab2JUQz3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 12:55:29 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35075 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932337Ab2JUQz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 12:38:54 -0400
-Date: Sun, 21 Oct 2012 18:38:49 +0200
+	Sun, 21 Oct 2012 12:55:28 -0400
+Date: Sun, 21 Oct 2012 18:55:23 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH 00/11] perf tool: Add PERF_SAMPLE_READ sample read support
-Message-ID: <20121021163848.GB28726@gmail.com>
-References: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 2/2] perf: SNB exclusive PMU access for
+ INST_RETIRED:PREC_DIST
+Message-ID: <20121021165523.GA29247@gmail.com>
+References: <1350658326-14715-1-git-send-email-eranian@google.com>
+ <1350658326-14715-3-git-send-email-eranian@google.com>
+ <1350664077.2768.32.camel@twins>
+ <CABPqkBQ5kCyGByFS-D62RYg2VUf_W-rJKDH=AzyrcaBPVY-eFQ@mail.gmail.com>
+ <1350665152.2768.41.camel@twins>
+ <20121019172018.GA2095@tassilo.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <20121019172018.GA2095@tassilo.jf.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Jiri Olsa <jolsa@redhat.com> wrote:
+* Andi Kleen <ak@linux.intel.com> wrote:
 
-> hi,
-> adding support to read sample values through the PERF_SAMPLE_READ
-> sample type. It's now possible to specify 'S' modifier for an event
-> and get its sample value by PERF_SAMPLE_READ.
+> > > > This isn't limited to admin, right? So the above turns into a DoS on the
+> > > > console.
+> > > >
+> > > Ok, so how about a WARN_ON_ONCE() instead?
+> > 
+> > That should be fine I guess ;-)
 > 
-> For group the 'S' modifier will enable sampling only for the leader
-> and read all the group member by PERF_SAMPLE_READ smple type with
-> PERF_FORMAT_GROUP read format.
-> 
-> This patchset is based on group report patches by Namhyung Kim:
-> http://lwn.net/Articles/518569/
-> 
-> Example:
-> (making sample on cycles, reading both cycles and cache-misses
->  by PERF_SAMPLE_READ/PERF_FORMAT_GROUP)
-> 
->   # ./perf record -e '{cycles,cache-misses}:S' ls
->   ...
-> 
->   # ./perf report --group --show-total-period --stdio
->   # ========
->   # captured on: Sat Oct 20 16:53:39 2012
->   ...
->   # group: {cycles,cache-misses}
->   # ========
->   #
->   # Samples: 86  of event 'anon group { cycles, cache-misses }'
->   # Event count (approx.): 34863674
->   #
->   #         Overhead                    Period  Command      Shared Object                            Symbol
->   # ................  ........................  .......  .................  ................................
+> imho there is need for a generic mechanism to return an error 
+> string to the user program without such hacks.
 
-Might make sense to consider this column enumeration:
+Agreed - we could return an 'extended errno' long error return 
+value, which in reality is a pointer to an error string (in 
+perf_attr::error_str), and copy that string to user-space at 
+perf syscall return time.
 
-    #
-    #   cycles
-    #   |       cache-misses
-    #   |       |
->   #   v       v
->   #
->       16.56%  19.47%       5773450         475       ls  [kernel.kallsyms]  [k] native_sched_clock          
->       10.87%   0.74%       3789088          18       ls  [kernel.kallsyms]  [k] rtl8169_interrupt           
->        9.82%  15.86%       3423364         387       ls  [kernel.kallsyms]  [k] mark_lock                   
->        8.43%  17.75%       2938384         433       ls  ld-2.14.90.so      [.] do_lookup_x                 
->        6.79%  20.86%       2365622         509       ls  ls                 [.] calculate_columns           
->        6.36%   0.61%       2216808          15       ls  [kernel.kallsyms]  [k] lock_release                
->   ...
+Thus error-string aware tooling could print the error string.
 
-/me wants this feature ASAP :-)
+So PMU drivers could do something obvious like:
 
-This should probably be the out of box default for perf record 
-and perf top as well - the cache miss rate is probably one of 
-the least appreciated aspects of overhead analysis.
+	return (long)"perf: INST_RETIRED.PREC_DIST only works in exclusive mode";
 
-Does it have sane output if the cache-misses event is not 
-supported? The cache-misses column should probably stay empty in 
-that case - basically falling back to today's default output.
+The perf syscall notices these pointers by noticing that the 
+error code returned is outside the errno range.
+
+Old userspace will get a -EINVAL and no string copied into the 
+error string buffer.
+
+New userspace would get the error string copied into 
+perf_attr::error_str, plus a 'normal' -EINVAL error code.
+
+The only cost on the kernel side is to make sure all "string 
+errors" are returned as long.
 
 Thanks,
 
