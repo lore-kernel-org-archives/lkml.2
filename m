@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab2JUMAP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 08:00:15 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:62488 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796Ab2JUMAN (ORCPT
+	id S1753293Ab2JUMD6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 08:03:58 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:47072 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab2JUMD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 08:00:13 -0400
-Date: Sun, 21 Oct 2012 14:00:04 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: caiyuqing <yuqingcaik@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: question about context switch on arm Linux
-Message-ID: <20121021120003.GA8689@netboy.at.omicron.at>
-References: <50839002.8020305@gmail.com>
- <20121021074434.GB4735@netboy.at.omicron.at>
- <5083B026.1030307@gmail.com>
+	Sun, 21 Oct 2012 08:03:56 -0400
+Message-ID: <5083E4A8.3060501@ursulin.net>
+Date: Sun, 21 Oct 2012 13:03:52 +0100
+From: Tvrtko Ursulin <tvrtko@ursulin.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5083B026.1030307@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Milan Broz <gmazyland@gmail.com>
+CC: dm-crypt@saout.de, linux-kernel@vger.kernel.org
+Subject: Re: [dm-crypt] cryptsetup not working under 3.6 - regression from
+ 3.4?
+References: <50830D33.5050807@ursulin.net> <5083C61C.5090807@gmail.com>
+In-Reply-To: <5083C61C.5090807@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 21, 2012 at 04:19:50PM +0800, caiyuqing wrote:
-> Richard, thanks for your reply.
-> mainline Linux doesn't support FCSE, if so, when kernel switch a
-> process to another(these two process share the same virtual memory
-> space), that means the vitrual-to-physical address should be
-> remaped, TLB shuold be invalid, CACHE should be flushed, right?
 
-Yes, and that is why you can measure quite a long context switching
-time when running Linux on ARMv4/5.
+Hi,
 
-Thanks,
-Richard
+On 21/10/12 10:53, Milan Broz wrote:
+> On 10/20/2012 10:44 PM, Tvrtko Ursulin wrote:
+>> But I repeat, even if I load the required modules before hand things do
+>> not work.
+>
+> I would say you are still missing some modules.
+>
+>> Kernel says this:
+>>    device-mapper: table: 252:1: crypt: Error allocating crypto tfm
+>>    device-mapper: ioctl: error adding target to table
+>
+> It complains about aes-cbc-essiv:sha256.
+>
+> It can be missing CBC od SHA256, but according the message I bet
+> you have no "cbc" block cipher mode module compiled.
+>
+> Can you grep your final .config for CONFIG_CRYPTO_CBC and
+> CONFIG_CRYPTO_SHA256 a paste it here?
+
+I both working 3.4 and non-working 3.6 situation is the same:
+
+CONFIG_CRYPTO_CBC=y
+CONFIG_CRYPTO_SHA256=m
+
+Tvrtko
+
