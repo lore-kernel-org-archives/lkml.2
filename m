@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348Ab2JUCJI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 22:09:08 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:39943 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754175Ab2JUCJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 22:09:06 -0400
-Message-ID: <1350785344.16706.6.camel@joe-AO722>
-Subject: Re: [PATCH 1/2] staging: android: checkpatch.pl fixes
-From: Joe Perches <joe@perches.com>
-To: Cruz Julian Bishop <cruzjbishop@gmail.com>
-Cc: "Ken O'Brien" <kernel@kenobrien.org>, gregkh@linuxfoundation.org,
-        swetland@google.com, arve@android.com, viro@zeniv.linux.org.uk,
-        dhowells@redhat.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 20 Oct 2012 19:09:04 -0700
-In-Reply-To: <1350785121.12361.2.camel@CruzBishop-ASPIRE>
-References: <1350772400-12347-1-git-send-email-kernel@kenobrien.org>
-	 <1350781512.16706.3.camel@joe-AO722>
-	 <1350785121.12361.2.camel@CruzBishop-ASPIRE>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755522Ab2JUCTL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 22:19:11 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:48162 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754523Ab2JUCTJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Oct 2012 22:19:09 -0400
+Date: Sat, 20 Oct 2012 22:19:08 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+cc: bp@alien8.de, <pavel@ucw.cz>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <security@kernel.org>,
+        <linux-media@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: Re: Re: A reliable kernel panic (3.6.2) and system crash when
+ visiting a particular website
+In-Reply-To: <1781795634.31179.1350774917965.JavaMail.mail@webmail04>
+Message-ID: <Pine.LNX.4.44L0.1210202215350.5948-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-10-21 at 12:05 +1000, Cruz Julian Bishop wrote:
-> is there currently any way to insert, say,
-> a comment that filters out the next line for checkpatch
-> errors?
-> 
-> For example,
-> 
-> /* checkpatch_ignore_(rulename) */
-> (Long line that can't be broken here)
+On Sat, 20 Oct 2012, Artem S. Tashkinov wrote:
 
-Nope.  checkpatch is a stupid little tool.
-It has its place, but it's a very limited one.
+> You don't get me - I have *no* VirtualBox (or any proprietary) modules running
+> - but I can reproduce this problem using *the same system running under* VirtualBox
+> in Windows 7 64.
+> 
+> It's almost definitely either a USB driver bug or video4linux driver bug:
 
-If you want to extend it, knock your self out...
+Does the same thing happen with earlier kernel versions?
+
+What about if you unload snd-usb-audio or ehci-hcd?
+
+Alan Stern
 
