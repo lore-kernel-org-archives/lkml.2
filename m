@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab2JUSFD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 14:05:03 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:42457 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397Ab2JUSFA (ORCPT
+	id S1754269Ab2JUSJj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 14:09:39 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:48602 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397Ab2JUSJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 14:05:00 -0400
-Date: Sun, 21 Oct 2012 20:04:58 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Ingo Molnar <mingo@kernel.org>
+	Sun, 21 Oct 2012 14:09:38 -0400
+Date: Sun, 21 Oct 2012 20:09:33 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
 Cc: Borislav Petkov <bp@alien8.de>,
         richard -rw- weinberger <richard.weinberger@gmail.com>,
         Christoph Hellwig <hch@infradead.org>, Dave Airlie <airlied@gmail.com>,
@@ -19,7 +19,7 @@ Cc: Borislav Petkov <bp@alien8.de>,
         Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
         linux-kernel@vger.kernel.org
 Subject: Re: [GIT PULL] Linux KVM tool for v3.7-rc0
-Message-ID: <20121021180458.GC240@x4>
+Message-ID: <20121021180933.GA4465@gmail.com>
 References: <20121020181425.GA11191@liondog.tnic>
  <CAPM=9twcHxUGgYUc27DV1AcYZbzKSbA1Bru8vK1kcWvcG0Jpkw@mail.gmail.com>
  <20121021110329.GA7024@infradead.org>
@@ -34,11 +34,14 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <20121021175422.GB240@x4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012.10.21 at 19:54 +0200, Markus Trippelsdorf wrote:
+
+* Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
+
 > On 2012.10.21 at 19:51 +0200, Ingo Molnar wrote:
 > > 
 > > * Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
@@ -81,14 +84,14 @@ On 2012.10.21 at 19:54 +0200, Markus Trippelsdorf wrote:
 > 
 >  security_model=security_model
 > 
->   Specifies the security model to be used for this export path.  Supported
-> security models are "passthrough", "mapped- xattr", "mapped-file" and "none".
-> In "passthrough" security model, files are stored using the same credentials as
-> they are created on the guest. This requires QEMU to run as root.
+>   Specifies the security model to be used for this export 
+> path.  Supported security models are "passthrough", "mapped- 
+> xattr", "mapped-file" and "none". In "passthrough" security 
+> model, files are stored using the same credentials as they are 
+> created on the guest. This requires QEMU to run as root.
 
-But you can use security_model=none as an unprivileged user. With this
-option you can only change files for which you have permission (like
-in your home directory).
+So I guess running it with 'none' can be used unprivileged?
 
--- 
-Markus
+Thanks,
+
+	Ingo
