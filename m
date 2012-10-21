@@ -1,32 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864Ab2JUGCt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 02:02:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36637 "EHLO
+	id S1751739Ab2JUGUE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 02:20:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60007 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489Ab2JUGCs (ORCPT
+	with ESMTP id S1751457Ab2JUGUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 02:02:48 -0400
-Message-ID: <50839002.8020305@gmail.com>
-Date: Sun, 21 Oct 2012 14:02:42 +0800
-From: caiyuqing <yuqingcaik@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Sun, 21 Oct 2012 02:20:02 -0400
+Date: Sat, 20 Oct 2012 23:19:57 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
+Cc: Mathieu Poirier <mathieu.poirier@linaro.org>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, rdunlap@xenotime.net,
+        kernel-team@android.com, john.stultz@linaro.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [PATCH] drivers/tty: Folding Android's keyreset driver in sysRQ
+Message-ID: <20121021061957.GA25464@core.coreip.homeip.net>
+References: <1349459969-17473-1-git-send-email-mathieu.poirier@linaro.org>
+ <20121005181608.GA24356@core.coreip.homeip.net>
+ <506F3987.9020902@linaro.org>
+ <CAMP5XgdtYQxu2cp6LC0Asi5ZyGL-ARnh0pvKDi7uNeZertaHSQ@mail.gmail.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: question about context switch on arm Linux
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMP5XgdtYQxu2cp6LC0Asi5ZyGL-ARnh0pvKDi7uNeZertaHSQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi, all.
-I have some questions about context switch on arm Linux (my target is
-ARMv7-a).
-1. Does arm linux support FCSE to handle the context switch?
-2. If using FCSE, that means the processes number limit is 128 and the
-memory limit is 32MB per process, is that right?
+On Tue, Oct 16, 2012 at 08:35:56PM -0700, Arve Hjønnevåg wrote:
+> On Fri, Oct 5, 2012 at 12:48 PM, Mathieu Poirier
+> <mathieu.poirier@linaro.org> wrote:
+> > On 12-10-05 12:16 PM, Dmitry Torokhov wrote:
+> >> On Fri, Oct 05, 2012 at 11:59:29AM -0600, mathieu.poirier@linaro.org wrote:
+> >>> From: "Mathieu J. Poirier" <mathieu.poirier@linaro.org>
+> >>>
+> >>> Andrew,
+> >>>
+> >>> After requesting a number of changes that, to my understanding
+> >>> have been implemented, I have not been able to get the attention
+> >>> of the subsystem maintainer on this patch.
+> >>>
+> >>> If there are still issues, I'm open to making changes but I want
+> >>> to make sure it doesn't get forgotten.  If there no objections,
+> >>> would you consider queuint it ?
+> >>
+> >> Mathieu,
+> >>
+> >> I have the same objection as before: using platform device solely for
+> >> the purpose of passing some data from board code to the driver. Surely
+> >> there are other ways of passing this bit of data... What about, for
+> >> example, making it an empty weak symbol so that board code could
+> >> override it with strong one?
+> >
+> > Thanks for the comments - I will implement a weak function in the
+> > keyreset driver.
+> >
+> 
+> A weak symbol does not work. A single kernel can support multiple
+> devices that have unique reset key combinations.
 
-Thanks
-qing
+Such kernels will surely require device tree and I think everyone have
+already agreed that DT is the proper way of supplying this data on newer
+boards. So the weak symbol is for legacy boards that do not export
+device tree data and thus require per-board kernels.
 
+Thanks.
+
+-- 
+Dmitry
