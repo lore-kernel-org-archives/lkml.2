@@ -1,134 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab2JUGk3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 02:40:29 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:35817 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224Ab2JUGk2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 02:40:28 -0400
+	id S1751945Ab2JUG6R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 02:58:17 -0400
+Received: from mail.agmk.net ([91.192.224.71]:35630 "EHLO mail.agmk.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751713Ab2JUG6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Oct 2012 02:58:16 -0400
+From: =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>
+To: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Heinz Diehl <htd@fritha.org>, Martin Peres <martin.peres@labri.fr>,
+        Heinz Diehl <htd@fancy-poultry.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        marcheu@chromium.org
+Subject: Re: Linux 3.7-rc1 (nouveau_bios_score oops).
+Date: Sun, 21 Oct 2012 08:58:07 +0200
+Message-ID: <2155889.FOmdXlva7q@localhost>
+User-Agent: KMail/4.9.1 (Linux/3.7.0-rc2-dirty; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20121020221948.GE5826@joi.lan>
+References: <1724445.dN2yMEzN6d@localhost> <20121020212036.GA1698@fritha.org> <20121020221948.GE5826@joi.lan>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Sun, 21 Oct 2012 08:40:05 +0200
-Message-ID: <CAKgNAkjN-MaGyCKANvM7E-_H2Ct323tc6E=nAEX=gyrzLvbpTw@mail.gmail.com>
-Subject: man-pages-3.43 is released
-To: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gidday,
+On Sunday 21 of October 2012 00:19:48 Marcin Slusarz wrote:
+> On Sat, Oct 20, 2012 at 11:20:36PM +0200, Heinz Diehl wrote:
+> > On 20.10.2012, Marcin Slusarz wrote: 
+> > 
+> > > Try this one.
+> > 
+> > It works, now I can boot again. However, nouveau seems to be dead now.
+> > The dmesg output with your patch on top of 3.7-rc1 is:
+> > 
+> > [    3.685909] [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
+> > [    3.687784] nouveau  [  DEVICE][0000:01:00.0] BOOT0  : 0x0a8800b1
+> > [    3.689960] nouveau  [  DEVICE][0000:01:00.0] Chipset: GT218 (NVA8)
+> > [    3.692471] nouveau  [  DEVICE][0000:01:00.0] Family : NV50
+> > [    3.695716] nouveau  [   VBIOS][0000:01:00.0] checking PRAMIN for image...
+> > [    3.697087] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
+> > [    3.698471] nouveau  [   VBIOS][0000:01:00.0] checking PROM for image...
+> > [    3.699838] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
+> > [    3.701223] nouveau  [   VBIOS][0000:01:00.0] checking ACPI for image...
+> > [    3.702684] ACPI Error: Field [ROMI] Base+Offset+Width 0+24+1 is beyond end of region [VROM] (length 24) (20120913/exfldio-210)
+> > [    3.704139] ACPI Error: Method parse/execution failed[\_SB_.PCI0.PEG1.GFX0._ROM] (Node ffff880142e85cf8), AE_AML_REGION_LIMIT (20120913/psparse-536)
+> > [    3.716183] failed to evaluate ROM got AE_AML_REGION_LIMIT
+> > [    3.718776] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
+> > [    3.721349] nouveau  [   VBIOS][0000:01:00.0] checking PCIROM for image...
+> > [    3.724111] nouveau 0000:01:00.0: Invalid ROM contents
+> > [    3.726663] nouveau  [   VBIOS][0000:01:00.0] ... signature not found
+> > [    3.729159] nouveau E[   VBIOS][0000:01:00.0] unable to locate usable image
+> > [    3.731677] nouveau E[  DEVICE][0000:01:00.0] failed to create 0x10000001, -22
+> > [    3.734231] nouveau E[     DRM] failed to create 0x80000080, -22
+> > [    3.736097] nouveau: probe of 0000:01:00.0 failed with error -22
+> > [    3.740523] dracut: Starting plymouth daemon
+> 
+> Hmm, maybe we can't fetch 3 bytes only...
+> 
+> Let's check this:
+> 
+> ---
+> diff --git a/drivers/gpu/drm/nouveau/core/subdev/bios/base.c b/drivers/gpu/drm/nouveau/core/subdev/bios/base.c
+> index 824eea0..8bd71aa 100644
+> --- a/drivers/gpu/drm/nouveau/core/subdev/bios/base.c
+> +++ b/drivers/gpu/drm/nouveau/core/subdev/bios/base.c
+> @@ -192,14 +192,16 @@ nouveau_bios_shadow_acpi(struct nouveau_bios *bios)
+>  {
+>  	struct pci_dev *pdev = nv_device(bios)->pdev;
+>  	int ret, cnt, i;
+> -	u8  data[3];
+> +	u8  *data;
+>  
+>  	if (!nouveau_acpi_rom_supported(pdev))
+>  		return;
+>  
+>  	bios->size = 0;
+> -	if (nouveau_acpi_get_bios_chunk(data, 0, 3) == 3)
+> +	data = kmalloc(4096, GFP_KERNEL);
+> +	if (data && nouveau_acpi_get_bios_chunk(data, 0, 4096) >= 3)
+>  		bios->size = data[2] * 512;
+> +	kfree(data);
+>  	if (!bios->size)
+>  		return;
 
-I've released man-pages-3.43.tar.gz - man pages for Linux.
+with these both patches applied my laptop boots and gui works fine.
+here's dmesg:
 
-Tarball download:
-    http://www.kernel.org/doc/man-pages/download.html
-Git repository:
-    http://git.kernel.org/pub/scm/docs/man-pages/man-pages.git
-Online changelog:
-    http://man7.org/linux/man-pages/changelog.html#release_3.43
+(...)
+[    8.751795] nouveau  [   VBIOS][0000:01:00.0] ... appears to be valid
+[    8.751798] nouveau  [   VBIOS][0000:01:00.0] using image from ACPI
+[    8.751895] nouveau  [   VBIOS][0000:01:00.0] BIT signature found
+[    8.751898] nouveau  [   VBIOS][0000:01:00.0] version 70.08.45.00
+[    8.752366] nouveau  [ DEVINIT][0000:01:00.0] adaptor not initialised
+[    8.752368] nouveau  [   VBIOS][0000:01:00.0] running init tables
+[    8.867660] nouveau  [     MXM][0000:01:00.0] no VBIOS data, nothing to do
+[    8.867690] nouveau  [     PFB][0000:01:00.0] RAM type: DDR3
+[    8.867692] nouveau  [     PFB][0000:01:00.0] RAM size: 512 MiB
+[    8.901523] vga_switcheroo: enabled
+[    8.901979] [TTM] Zone  kernel: Available graphics memory: 6104282 kiB
+[    8.901980] [TTM] Zone   dma32: Available graphics memory: 2097152 kiB
+[    8.901982] [TTM] Initializing pool allocator
+[    8.902014] [TTM] Initializing DMA pool allocator
+[    8.902180] mtrr: type mismatch for c0000000,10000000 old: write-back new: write-combining
+[    8.902184] nouveau  [     DRM] VRAM: 512 MiB
+[    8.902185] nouveau  [     DRM] GART: 512 MiB
+[    8.902188] nouveau  [     DRM] BIT BIOS found
+[    8.902190] nouveau  [     DRM] Bios version 70.08.45.00
+[    8.902192] nouveau  [     DRM] TMDS table version 2.0
+[    8.902194] nouveau  [     DRM] DCB version 4.0
+[    8.902196] nouveau  [     DRM] DCB outp 00: 02011300 00000000
+[    8.902198] nouveau  [     DRM] DCB conn 01: 00000100
+[    8.903540] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+[    8.903541] [drm] No driver support for vblank timestamp query.
+[    8.903545] nouveau  [     DRM] ACPI backlight interface available, not registering our own
+[    8.903938] nouveau  [     DRM] 3 available performance level(s)
+[    8.903941] nouveau  [     DRM] 0: core 50MHz shader 101MHz memory 135MHz voltage 830mV
+[    8.903943] nouveau  [     DRM] 1: core 202MHz shader 405MHz memory 324MHz voltage 830mV
+[    8.903946] nouveau  [     DRM] 3: core 672MHz shader 1344MHz memory 900MHz voltage 980mV
+[    8.903948] nouveau  [     DRM] c: core 202MHz shader 405MHz memory 324MHz voltage 980mV
+[    8.908895] nouveau  [     DRM] MM: using COPY1 for buffer copies
+[    8.988695] nouveau  [     DRM] allocated 1024x768 fb: 0x60000, bo ffff88033b5f1800
+[    8.988955] fb1: nouveaufb frame buffer device
+[    8.988959] [drm] Initialized nouveau 1.1.0 20120801 for 0000:01:00.0 on minor 1
+(...)
 
-A short summary of the release is blogged at:
-linux-man-pages.blogspot.com/2012/10/man-pages-343-is-released.html
+> Please attach acpidump output.
 
-The current version of the pages is browsable at:
-http://man7.org/linux/man-pages/
+http://pluto.agmk.net/nv/acpidump.txt
 
-A few changes in this release that may be of interest to readers of
-this list are given below.
-
-Cheers,
-
-Michael
-
-==================== Changes in man-pages-3.43 ====================
-
-
-Newly documented interfaces in existing pages
----------------------------------------------
-
-getenv.3
-    Michael Kerrisk  [Florian Weimer, Andreas Schwab]
-        Document secure_getenv(3)
-
-
-Changes to individual pages
----------------------------
-
-epoll_wait.2
-    Michael Kerrisk  [Fredrik Arnerup]
-        Describe timeout limitation in kernels < 2.6.37
-            The timeout argument has an upper limit. Any values above that
-            limit are treated the same as -1, i.e. to wait indefinitely.
-            The limit is given by:
-
-                #define EP_MAX_MSTIMEO min(1000ULL *
-MAX_SCHEDULE_TIMEOUT / HZ, \
-                (LONG_MAX - 999ULL) / HZ)
-
-            That is, the limit depends on the size of a long and the timer
-            frequency.  Assuming the a long is never smaller than 32 bits
-            and HZ never larger than 1000, the worst case is 35 minutes.
-            I think this should be mentioned under "BUGS".
-
-            Although this is likely to be fixed in the future
-            (http://lkml.org/lkml/2010/8/8/144), the problem exists in
-            at least 2.6.14 - 2.6.35. I don't know if select(2) and poll(2)
-            are affected.
-
-            https://bugzilla.kernel.org/show_bug.cgi?id=20762
-    Michael Kerrisk
-        Add pointer to select(2) for discussion of close in another thread
-
-getitimer.2
-    Michael Kerrisk  [Trevor Woerner]
-        Note Linux's odd handling of the new_value==NULL case
-
-select.2
-    Michael Kerrisk  [Stephane Fillod]
-        Note behavior if monitored file descriptor is closed in another thread
-            Executive summary: a sane application can't rely on any
-            particular behavior if another thread closes a file descriptor
-            being monitored by select().
-
-            See https://bugzilla.kernel.org/show_bug.cgi?id=40852
-
-syslog.3
-    Simon Josefsson
-        Remove (apparently bogus) text claiming LOG_AUTH is deprecated
-            LOG_AUTH is in POSIX, and widely available. There
-            seems to be no basis to the claim it is deprecated.
-
-            See https://bugzilla.kernel.org/show_bug.cgi?id=46091
-
-proc.5
-    Michael Kerrisk
-        Document /proc/sys/kernel/kptr_restrict
-    Michael Kerrisk [Kees Cook]
-        Document /proc/sys/fs/protected_symlinks
-            Based on text in Documentation/sysctl/fs.txt by Kees Cook
-    Michael Kerrisk [Kees Cook]
-        Document /proc/sys/fs/protected_hardlinks
-            Based on text in Documentation/sysctl/fs.txt by Kees Cook
-
-capabilities.7
-    Michael Kerrisk
-        Document interaction of CAP_SYSLOG and /proc/sys/kernel/kptr_restrict
-
-ld.so.8
-    Michael Kerrisk
-        Describe interpretation of slashes in dependency strings
-    Michael Kerrisk
-        Repeat note that LD_LIBRARY_PATH is ignored in privileged programs
-            This point is already noted when discussing search order for
-            libraries, but it's worth repeating under the specific discussion
-            of LD_LIBRARY_PATH further down the page.
-    Michael Kerrisk
-        Add some details for LD_PRELOAD
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
