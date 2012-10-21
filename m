@@ -1,107 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033Ab2JUHYg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 03:24:36 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:63694 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466Ab2JUHYf (ORCPT
+	id S1752039Ab2JUH3a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 03:29:30 -0400
+Received: from smtprelay-h31.telenor.se ([213.150.131.4]:38312 "EHLO
+	smtprelay-h31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751709Ab2JUH33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 03:24:35 -0400
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>, Dave Jones <davej@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH 1/2] char_dev: allow setting up and pinning parent devices
-Date: Sun, 21 Oct 2012 00:24:30 -0700
-Message-Id: <1350804271-2449-1-git-send-email-dmitry.torokhov@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <20121019175046.GP2616@ZenIV.linux.org.uk>
-References: <20121019175046.GP2616@ZenIV.linux.org.uk>
+	Sun, 21 Oct 2012 03:29:29 -0400
+X-Greylist: delayed 1366 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Oct 2012 03:29:29 EDT
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aml+ACieg1BV5h1yPGdsb2JhbABFhSsihQG1OgSBAhkBAQEBODSCIAEBBTocIxAIAw4GBC4UJQoaE4gIulAUi0s5hVZgA5VwhXSNN4FYIw
+X-IronPort-AV: E=Sophos;i="4.80,625,1344204000"; 
+   d="scan'208";a="214445548"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Sun, 21 Oct 2012 09:10:24 +0200
+To: Ben Skeggs <bskeggs@redhat.com>
+Cc: Dave Airlie <airlied@gmail.com>, nouveau@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] nouveau: Severe screen corruption on (0xaf, nv50)
+Message-ID: <20121021071024.GA731@polaris.bitmath.org>
+References: <20121018095809.GA336@polaris.bitmath.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121018095809.GA336@polaris.bitmath.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In certain cases (for example when a cdev structure is embedded into
-another object whose lifetime is controlled by a separate device object)
-it is beneficial to tie lifetime of another struct device to the lifetime
-of character device so that related object is not freed until after
-char_dev object is freed. To achieve this allow setting a "parent" device
-for character devices and pin them when doing cdev_add() and unpin when
-last reference to cdev structure is being released.
+On Thu, Oct 18, 2012 at 11:58:09AM +0200, Henrik Rydberg wrote:
+> Hi Ben,
+> 
+> 3.7-rc1 messed up the screen on my MacBookAir3,1 (nv50, 0xaf) pretty
+> badly. Not surprisingly,
+> 
+> commit 3863c9bc887e9638a9d905d55f6038641ece78d6
+> Author: Ben Skeggs <bskeggs@redhat.com>
+> Date:   Sat Jul 14 19:09:17 2012 +1000
+> 
+>     drm/nouveau/instmem: completely new implementation, as a subdev module
+> 
+> is the first bad commit. Standing on that commit, booting and then
+> starting X yields the output below. Hints are especially appreciated,
+> considering the patch is almost 8000 lines.
 
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
+Going through one suspend/resume cycle makes the corruption go away,
+and there are no more errors in dmesg. Oddly enough, I have seen
+something very similar when using i915 on the MBP10. Builtin modules
+and systemd in both cases. Maybe this is a general drm issue. Any
+thoughts?
 
-Sorry, messed up the first attempt to send...
-
-So, how about these 2? I enabled kmemleak and added some debug printks and
-it looks like we dropping references and freeing object at right times and
-in proper order.
-
-Thanks!
-
- fs/char_dev.c        | 18 +++++++++++++++++-
- include/linux/cdev.h |  1 +
- 2 files changed, 18 insertions(+), 1 deletion(-)
-
-diff --git a/fs/char_dev.c b/fs/char_dev.c
-index 3f152b9..f8c44cc 100644
---- a/fs/char_dev.c
-+++ b/fs/char_dev.c
-@@ -471,9 +471,19 @@ static int exact_lock(dev_t dev, void *data)
-  */
- int cdev_add(struct cdev *p, dev_t dev, unsigned count)
- {
-+	int error;
-+
- 	p->dev = dev;
- 	p->count = count;
--	return kobj_map(cdev_map, dev, count, NULL, exact_match, exact_lock, p);
-+
-+	error = kobj_map(cdev_map, dev, count, NULL,
-+			 exact_match, exact_lock, p);
-+	if (error)
-+		return error;
-+
-+	get_device(p->parent);
-+
-+	return 0;
- }
- 
- static void cdev_unmap(dev_t dev, unsigned count)
-@@ -498,14 +508,20 @@ void cdev_del(struct cdev *p)
- static void cdev_default_release(struct kobject *kobj)
- {
- 	struct cdev *p = container_of(kobj, struct cdev, kobj);
-+	struct device *parent = p->parent;
-+
- 	cdev_purge(p);
-+	put_device(parent);
- }
- 
- static void cdev_dynamic_release(struct kobject *kobj)
- {
- 	struct cdev *p = container_of(kobj, struct cdev, kobj);
-+	struct device *parent = p->parent;
-+
- 	cdev_purge(p);
- 	kfree(p);
-+	put_device(parent);
- }
- 
- static struct kobj_type ktype_cdev_default = {
-diff --git a/include/linux/cdev.h b/include/linux/cdev.h
-index fb45919..eba8251 100644
---- a/include/linux/cdev.h
-+++ b/include/linux/cdev.h
-@@ -12,6 +12,7 @@ struct module;
- struct cdev {
- 	struct kobject kobj;
- 	struct module *owner;
-+	struct device *parent;
- 	const struct file_operations *ops;
- 	struct list_head list;
- 	dev_t dev;
--- 
-1.7.11.7
-
+Thanks,
+Henrik
