@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932324Ab2JUQ3r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 12:29:47 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53387 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab2JUQ3p (ORCPT
+	id S932331Ab2JUQbO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 12:31:14 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:51688 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754079Ab2JUQbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 12:29:45 -0400
-Date: Sun, 21 Oct 2012 18:29:40 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: linux-next: manual merge of the tip tree with Linus' tree
-Message-ID: <20121021162940.GE27429@gmail.com>
-References: <20121016120041.57f0bb718ca0389707dc3083@canb.auug.org.au>
+	Sun, 21 Oct 2012 12:31:13 -0400
+Date: Sun, 21 Oct 2012 09:31:35 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Heinz Diehl <htd@fritha.org>
+Cc: Heinz Diehl <htd@fancy-poultry.org>, Ben Skeggs <bskeggs@redhat.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [ 60/76] drm/nouveau/bios: fix shadowing of ACPI ROMs larger
+ than 64KiB
+Message-ID: <20121021163135.GA27797@kroah.com>
+References: <20121019024350.087156547@linuxfoundation.org>
+ <20121019024359.774396402@linuxfoundation.org>
+ <20121019160103.GA1570@fritha.org>
+ <20121019174807.GA3017@kroah.com>
+ <20121019191115.GA1635@fritha.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121016120041.57f0bb718ca0389707dc3083@canb.auug.org.au>
+In-Reply-To: <20121019191115.GA1635@fritha.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-
-> Hi all,
+On Fri, Oct 19, 2012 at 09:11:15PM +0200, Heinz Diehl wrote:
+> On 19.10.2012, Greg Kroah-Hartman wrote: 
 > 
-> Today's linux-next merge of the tip tree got a conflict in
-> mm/huge_memory.c between commit 325adeb55e32 ("mm: huge_memory: Fix build
-> error") from Linus' tree and commit 39d6cb39a817 ("mm/mpol: Use special
-> PROT_NONE to migrate pages") from the tip tree.
+> > Does Linus's 3.7 git tree also crash for you this way?
 > 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+> Yes, it crashes in the same way with latest linus git 3.7.
+> Here's the screenshot:
+> 
+> http://www.fritha.org/crash-linus-git.jpg
 
-Ok, this conflict should go away the next time you integrate 
-linux-next.
+Ok, I've dropped it from the 3.6-stable release.  Ben, when you all have
+a fix for this in Linus's tree, feel free to send me the two git commit
+ids and I'll queue them up.
 
-Thanks,
+thanks,
 
-	Ingo
+greg k-h
