@@ -1,43 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932678Ab2JUWUu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 18:20:50 -0400
-Received: from smtprelay0100.b.hostedemail.com ([64.98.42.100]:35942 "EHLO
-	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932634Ab2JUWUt (ORCPT
+	id S932694Ab2JUWWu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 18:22:50 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39353 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932626Ab2JUWWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 18:20:49 -0400
-X-Panda: scanned!
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,t.artem@lycos.com,:::,RULES_HIT:152:355:379:541:582:945:967:973:988:989:1152:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2108:2194:2199:2378:2379:2393:2525:2560:2563:2682:2685:2857:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3868:3871:3872:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:5007:6261:7679:7875:7903:9025:9108:10004:10400:10848:11658:11914:12043:12050:12517:12519:12698:12737,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-Session-Marker: 742E617274656D406C79636F732E636F6D
-X-Filterd-Recvd-Size: 1225
-Date: Sun, 21 Oct 2012 22:20:06 +0000 (GMT)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: linux-kernel@vger.kernel.org
-Message-ID: <1497554942.41660.1350858006886.JavaMail.mail@webmail04>
-References: <Pine.LNX.4.44L0.1210211121370.14867-100000@netrider.rowland.org>
-Subject: A strange Linux 3.6 bug: corrupted page table
+	Sun, 21 Oct 2012 18:22:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Mailer: Webmail
-X-Originating-IP: [46.146.1.245]
+In-Reply-To: <0861696a510e833409520496cfe84d3c.squirrel@www.codeaurora.org>
+References: <1349192378-1676-1-git-send-email-kdorfman@codeaurora.org>
+	<1349192378-1676-2-git-send-email-kdorfman@codeaurora.org>
+	<CAFEEs1=zU88dwY1K0+Q9PxdqyOpsNMtj6mZ3YkwebPugofyEEw@mail.gmail.com>
+	<0861696a510e833409520496cfe84d3c.squirrel@www.codeaurora.org>
+Date: Mon, 22 Oct 2012 00:22:46 +0200
+Message-ID: <CAFEEs1=yA3NO23amyc0X5-4NUUDJp-xAMw6OwdmTQeWdAWc-Ew@mail.gmail.com>
+Subject: Re: [PATCH] mmc: fix async request mechanism for sequential read scenarios
+From: Per Forlin <per.lkml@gmail.com>
+To: Konstantin Dorfman <kdorfman@codeaurora.org>
+Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sun, Oct 14, 2012 at 6:17 PM, Konstantin Dorfman
+<kdorfman@codeaurora.org> wrote:
+> On Thu, 11 Oct 2012 17:19:01 +0200, Per Forlin <per.lkml@gmail.com>
+> wrote:
+> Hello Per,
+>
+>>I would like to start with some basic comments.
+>>
+>>1. Is this read sequential issue specific to MMC?
+>>2. Or is it common with all other block-drivers that gets data from
+>>the block layer (SCSI/SATA etc) ?
+>>If (#2) can the issue be addressed inside the block layer instead?
+>>
+>>BR
+>>Per
+> This issue specific to MMC, others block drivers probably not using
+> MMC mechanism for async request (or have more kernel threads for
+> processing incoming blk requests).
+> I think, since MMC actively fetches requests from block layer queue,
+> the solution has nothing to do with block layer context.
+>
+>>
+>>On Tue, Oct 2, 2012 at 5:39 PM, Konstantin Dorfman
+>><kdorfman@codeaurora.org> wrote:
+>>> The main assumption of the async request design is that the file
+>>> system adds block requests to the block device queue asynchronously
+>>> without waiting for completion (see the Rationale section of
+>>> https://wiki.linaro.org/WorkingGroups/Kernel/Specs
+>>> /StoragePerfMMC-async-req).
+>>>
+>>> We found out that in case of sequential read operations this is not
+>>> the case, due to the read ahead mechanism.
+>>Would it be possible to improve this mechanism to achieve the same result?
+>>Allow an outstanding read ahead request on top of the current ongoing one.
+>>
+>
+> I need to look on this mechanism,  but from first glance such
+> behaviour may be result of libc/vfs/fs decisions and too complex
+> comparing to the patch we are talking about.
+One observation I have made is that if setting the mmc_req_size to
+half READ_AHEAD changes the way block layer adds request to the MMC
+queue.
 
-There's something strange going on with kernel 3.6.x:
+Extract from https://wiki.linaro.org/WorkingGroups/Kernel/Specs/StoragePerfMMC-async-req#Unresolved_issues
+--------------------------------
+Forcing mmc host driver to set mmc_req_size 64k results in this behaviour.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=859188
+dd if=/dev/mmcblk0 of=/dev/null bs=4k count=256
+ [mmc_queue_thread] req d955f9b0 blocks 32
+ [mmc_queue_thread] req   (null) blocks 0
+ [mmc_queue_thread] req   (null) blocks 0
+ [mmc_queue_thread] req d955f9b0 blocks 64
+ [mmc_queue_thread] req   (null) blocks 0
+ [mmc_queue_thread] req d955f8d8 blocks 128
+ [mmc_queue_thread] req   (null) blocks 0
+ [mmc_queue_thread] req d955f9b0 blocks 128
+ [mmc_queue_thread] req d955f800 blocks 128
+ [mmc_queue_thread] req d955f8d8 blocks 128
+ [mmc_queue_thread] req d955fec0 blocks 128
+ [mmc_queue_thread] req d955f800 blocks 128
+ [mmc_queue_thread] req d955f9b0 blocks 128
+ [mmc_queue_thread] req d967cd30 blocks 128
+--------------------------------
 
-My RAM is heavily tested - some time ago I ran memtest86 for 2 hours straight and
-it showed no errors, besides neither my RAM, nor my CPU are overclocked.
+This shows that the block layer can add request in a more asynchronous
+manner. I have not investigate that mechanism enough to say what can
+be done.
+Do you have an explanation to why the block layer behaves like this?
 
-All three people who experience this problem have Linux 3.6.x installed and this bug
-didn't affect them when they ran Linux 3.5.x.
+BR
+Per
 
-Best wishes,
-
-Artem
+>
+>
+> --
+> Konstantin Dorfman,
+> QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+> of Code Aurora Forum, hosted by The Linux Foundation
+>
