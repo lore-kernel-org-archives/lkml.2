@@ -1,100 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932476Ab2JUSDr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 14:03:47 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54685 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932420Ab2JUSDq (ORCPT
+	id S932462Ab2JUSFD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 14:05:03 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:42457 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397Ab2JUSFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 14:03:46 -0400
-Date: Sun, 21 Oct 2012 20:03:41 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <ak@linux.intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 2/2] perf: SNB exclusive PMU access for
- INST_RETIRED:PREC_DIST
-Message-ID: <20121021180341.GA4128@gmail.com>
-References: <1350658326-14715-1-git-send-email-eranian@google.com>
- <1350658326-14715-3-git-send-email-eranian@google.com>
- <1350664077.2768.32.camel@twins>
- <CABPqkBQ5kCyGByFS-D62RYg2VUf_W-rJKDH=AzyrcaBPVY-eFQ@mail.gmail.com>
- <1350665152.2768.41.camel@twins>
- <20121019172018.GA2095@tassilo.jf.intel.com>
- <20121021165523.GA29247@gmail.com>
- <CABPqkBR_BSf6Akzxn+2gOrksUMXmAgPi3xY0KJUbhT0Eddo3Kw@mail.gmail.com>
+	Sun, 21 Oct 2012 14:05:00 -0400
+Date: Sun, 21 Oct 2012 20:04:58 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, Dave Airlie <airlied@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Pekka Enberg <penberg@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Linux KVM tool for v3.7-rc0
+Message-ID: <20121021180458.GC240@x4>
+References: <20121020181425.GA11191@liondog.tnic>
+ <CAPM=9twcHxUGgYUc27DV1AcYZbzKSbA1Bru8vK1kcWvcG0Jpkw@mail.gmail.com>
+ <20121021110329.GA7024@infradead.org>
+ <20121021125933.GC19535@gmail.com>
+ <CAFLxGvzLOa-BibZ39_yMEC70AseEPbtjcNGk6jLwaAVsU2ujwA@mail.gmail.com>
+ <20121021150305.GA26108@gmail.com>
+ <20121021171543.GC20642@liondog.tnic>
+ <20121021174041.GA240@x4>
+ <20121021175108.GA3820@gmail.com>
+ <20121021175422.GB240@x4>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBR_BSf6Akzxn+2gOrksUMXmAgPi3xY0KJUbhT0Eddo3Kw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121021175422.GB240@x4>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Stephane Eranian <eranian@google.com> wrote:
-
-> On Sun, Oct 21, 2012 at 6:55 PM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > * Andi Kleen <ak@linux.intel.com> wrote:
-> >
-> >> > > > This isn't limited to admin, right? So the above turns into a DoS on the
-> >> > > > console.
-> >> > > >
-> >> > > Ok, so how about a WARN_ON_ONCE() instead?
-> >> >
-> >> > That should be fine I guess ;-)
-> >>
-> >> imho there is need for a generic mechanism to return an error
-> >> string to the user program without such hacks.
-> >
-> > Agreed - we could return an 'extended errno' long error return
-> > value, which in reality is a pointer to an error string (in
-> > perf_attr::error_str), and copy that string to user-space at
-> > perf syscall return time.
-> >
-> I assume by perf_attr:error_str, you actually mean:
+On 2012.10.21 at 19:54 +0200, Markus Trippelsdorf wrote:
+> On 2012.10.21 at 19:51 +0200, Ingo Molnar wrote:
+> > 
+> > * Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
+> > 
+> > > On 2012.10.21 at 19:15 +0200, Borislav Petkov wrote:
+> > > > On Sun, Oct 21, 2012 at 05:03:05PM +0200, Ingo Molnar wrote:
+> > > > > The best way to compare them would be a script that gives exactly the
+> > > > > same test environment that 'vm run' / 'vm sandbox' does out of box,
+> > > > > but using qemu.
+> > > > >
+> > > > > If such a script is available then that would certainly be a useful
+> > > > > testing option to kernel developers.
+> > > > 
+> > > > Right,
+> > > > 
+> > > > I gotta say, I've mucked around with qemu/kvm net options as a novice
+> > > > user and haven't always been successfu. If you get host networking
+> > > > straight away in lkvm then that's another clear point for tools/kvm.
+> > > > 
+> > > > Same holds true for copying data back and forth between host and guest.
+> > > 
+> > > I'm agnostic about lkvm, but the following command does all the above:
+> > > 
+> > > qemu-system-x86_64 -enable-kvm -net nic,vlan=0,model=virtio 
+> > > -net user -fsdev 
+> > > local,security_model=passthrough,id=root,path=/ -device 
+> > > virtio-9p-pci,id=root,fsdev=root,mount_tag=/dev/root -m 512 
+> > > -smp 2 -kernel /usr/src/linux/arch/x86/boot/bzImage -nographic 
+> > > -append "init=/bin/zsh root=/dev/root console=ttyS0 
+> > > kgdboc=ttyS0 rootflags=rw,trans=virtio rootfstype=9p ip=dhcp"
+> > > 
+> > > If you want your host root-fs to be mounted rw (to copy data
+> > > back and forth) you need to run to above as root and add "rw"
+> > > to the kernel options.
+> > 
+> > Why does it have to run as root? I run 'vm' unprivileged (other 
+> > than /dev/kvm access).
 > 
-> struct perf_event_attr {
->    char error_str[PERF_ERR_LEN];
-> };
+> From the qemu man page:
 > 
-> Right?
+>  security_model=security_model
+> 
+>   Specifies the security model to be used for this export path.  Supported
+> security models are "passthrough", "mapped- xattr", "mapped-file" and "none".
+> In "passthrough" security model, files are stored using the same credentials as
+> they are created on the guest. This requires QEMU to run as root.
 
-I don't think we should allocate space in the attr, instead we 
-should use something like:
+But you can use security_model=none as an unprivileged user. With this
+option you can only change files for which you have permission (like
+in your home directory).
 
-	u8 __user	*err_str;
-	u32		 err_str_len;
-
-which would be filled in by tooling with a string and a max_len 
-value, and strncpy_to_user() could do the rest on the kernel 
-side. [ A minor complication is that we don't have a 
-strncpy_to_user() method at the moment. ]
-
-Static strings could be handled this way.
-
-[ Dynamic strings could be supported too with a few tricks, 
-  although I doubt it matters in practice. ]
-
-> > Thus error-string aware tooling could print the error string.
-> >
-> > So PMU drivers could do something obvious like:
-> >
-> >         return (long)"perf: INST_RETIRED.PREC_DIST only works in exclusive mode";
-> >
-> > The perf syscall notices these pointers by noticing that the
-> > error code returned is outside the errno range.
->
-> Is that always the case on all archs?
-
-I think yes - and if not then it can be solved via some trivial 
-offset value added to it on such an architecture, without 
-complicating the code on normal architectures.
-
-Thanks,
-
-	Ingo
+-- 
+Markus
