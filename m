@@ -1,74 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932517Ab2JUSnl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 14:43:41 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:52431 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932405Ab2JUSnj (ORCPT
+	id S932553Ab2JUSrf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 14:47:35 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:58823 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932461Ab2JUSrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 14:43:39 -0400
-Date: Sun, 21 Oct 2012 20:43:30 +0200
-From: Rabin Vincent <rabin@rab.in>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: Dave Martin <dave.martin@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, oleg@redhat.com
-Subject: Re: [PATCH 9/9] ARM: add uprobes support
-Message-ID: <20121021184324.GC4840@ubuntu>
-References: <1350242593-17761-1-git-send-email-rabin@rab.in>
- <1350242593-17761-9-git-send-email-rabin@rab.in>
- <20121015111443.GA2006@linaro.org>
- <CAH+eYFC1fr0vpK2T4hz9LK=Nz5bzQBQ4O-o0f9tsnj-_D9ZEJg@mail.gmail.com>
- <20121015174450.GB18614@linaro.org>
- <1350485448.3206.146.camel@linaro1.home>
+	Sun, 21 Oct 2012 14:47:33 -0400
+Date: Sun, 21 Oct 2012 20:47:28 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [git pull] m68k updates for 3.7 (take 2)
+Message-ID: <alpine.DEB.2.00.1210212039120.6767@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350485448.3206.146.camel@linaro1.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 03:50:48PM +0100, Jon Medhurst (Tixy) wrote:
-> I just been looking at the decoding changes in patch 8 and had similar
-> thoughts. The patch as it stands looks rather bolted on the side and
-> makes the resulting code rather messy.
+	Hi Linus,
 
-I agree.
+The following changes since commit 6f0c0580b70c89094b3422ba81118c7b959c7556:
+  Linus Torvalds (1):
+        Linux 3.7-rc2
 
-> a) uprobes is similar enough to kprobes that the existing code can be
-> morphed into something that cleanly supports both, or
-> 
-> b) the similarities aren't close enough and that we should factor out
-> the similarities into a more generalised decoding base, which the
-> {u,k}probe code can then build on.
-> 
-> c) some mix of a) and b)
-> 
-> I can't help but think of the various calls over the past year or so for
-> a general ARM/Thumb instruction decoding framework (the last one only a
-> few weeks ago on the linux-arm-kernel list). Perhaps b) would be a small
-> step towards that.
-> 
-> I hope to find some time to understand the uprobe patches in more
-> detail, so I can try and come up with some sensible suggestions on a
-> cleaner solution; because I feel that as they stand they aren't really
-> suitable for inclusion in the kernel.
+are available in the git repository at:
 
-I contemplated sending the decoding patch with [RFC] but finally went
-with [PATCH] since they mostly mean the same thing :-).
+  ra.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
 
-Suggestions welcome.  For one thing, the creation of a fake struct
-kprobe from within the uprobes and the dependency on kprobes because of
-that is not very nice, we probably need a "struct probe" of some sort
-perhaps.
+David Howells (1):
+      UAPI: (Scripted) Disintegrate arch/m68k/include/asm
 
-> Rabin, what tree/commit are your patches based on? (They don't seem to
-> apply cleanly to 3.6 or 3.7-rc1.) I want to apply them locally so I can
-> use my favourite visualisation tool and to play with them.
+Geert Uytterhoeven (3):
+      Merge tag 'disintegrate-m68k-20121009' of git://git.infradead.org/users/dhowells/linux-headers into for-linus
+      m68k: Remove empty #ifdef/#else/#endif block
+      m68k: Wire up kcmp
 
-The patches are based on next-20121012.  The uprobes core is seeing
-quite a few changes in linux-next so the series will probably not apply
-on later linux-next trees.
+Just the expected UAPI disintegration and the "new" kcmp syscall.
+
+Thanks for pulling!
+
+ arch/m68k/include/asm/Kbuild                   |    2 -
+ arch/m68k/include/asm/ptrace.h                 |   75 +-----
+ arch/m68k/include/asm/setup.h                  |   82 +------
+ arch/m68k/include/asm/signal.h                 |  118 +--------
+ arch/m68k/include/asm/termios.h                |   44 +---
+ arch/m68k/include/asm/unistd.h                 |  356 +-----------------------
+ arch/m68k/include/uapi/asm/Kbuild              |   23 ++
+ arch/m68k/include/{ => uapi}/asm/a.out.h       |    0
+ arch/m68k/include/{ => uapi}/asm/auxvec.h      |    0
+ arch/m68k/include/{ => uapi}/asm/byteorder.h   |    0
+ arch/m68k/include/{ => uapi}/asm/cachectl.h    |    0
+ arch/m68k/include/{ => uapi}/asm/fcntl.h       |    0
+ arch/m68k/include/{ => uapi}/asm/ioctls.h      |    0
+ arch/m68k/include/{ => uapi}/asm/msgbuf.h      |    0
+ arch/m68k/include/{ => uapi}/asm/param.h       |    0
+ arch/m68k/include/{ => uapi}/asm/poll.h        |    0
+ arch/m68k/include/{ => uapi}/asm/posix_types.h |    0
+ arch/m68k/include/uapi/asm/ptrace.h            |   79 ++++++
+ arch/m68k/include/{ => uapi}/asm/sembuf.h      |    0
+ arch/m68k/include/uapi/asm/setup.h             |  103 +++++++
+ arch/m68k/include/{ => uapi}/asm/shmbuf.h      |    0
+ arch/m68k/include/{ => uapi}/asm/sigcontext.h  |    0
+ arch/m68k/include/uapi/asm/signal.h            |  118 ++++++++
+ arch/m68k/include/{ => uapi}/asm/socket.h      |    0
+ arch/m68k/include/{ => uapi}/asm/sockios.h     |    0
+ arch/m68k/include/{ => uapi}/asm/stat.h        |    0
+ arch/m68k/include/{ => uapi}/asm/swab.h        |    0
+ arch/m68k/include/{ => uapi}/asm/termbits.h    |    0
+ arch/m68k/include/uapi/asm/termios.h           |   44 +++
+ arch/m68k/include/uapi/asm/unistd.h            |  357 ++++++++++++++++++++++++
+ arch/m68k/kernel/syscalltable.S                |    1 +
+ 31 files changed, 731 insertions(+), 671 deletions(-)
+ rename arch/m68k/include/{ => uapi}/asm/a.out.h (100%)
+ rename arch/m68k/include/{ => uapi}/asm/auxvec.h (100%)
+ rename arch/m68k/include/{ => uapi}/asm/byteorder.h (100%)
+ rename arch/m68k/include/{ => uapi}/asm/cachectl.h (100%)
+ rename arch/m68k/include/{ => uapi}/asm/fcntl.h (100%)
+ rename arch/m68k/include/{ => uapi}/asm/ioctls.h (100%)
+ rename arch/m68k/include/{ => uapi}/asm/msgbuf.h (100%)
+ rename arch/m68k/include/{ => uapi}/asm/param.h (100%)
+ rename arch/m68k/include/{ => uapi}/asm/poll.h (100%)
+ rename arch/m68k/include/{ => uapi}/asm/posix_types.h (100%)
+ create mode 100644 arch/m68k/include/uapi/asm/ptrace.h
+ rename arch/m68k/include/{ => uapi}/asm/sembuf.h (100%)
+ create mode 100644 arch/m68k/include/uapi/asm/setup.h
+ rename arch/m68k/include/{ => uapi}/asm/shmbuf.h (100%)
+ rename arch/m68k/include/{ => uapi}/asm/sigcontext.h (100%)
+ create mode 100644 arch/m68k/include/uapi/asm/signal.h
+ rename arch/m68k/include/{ => uapi}/asm/socket.h (100%)
+ rename arch/m68k/include/{ => uapi}/asm/sockios.h (100%)
+ rename arch/m68k/include/{ => uapi}/asm/stat.h (100%)
+ rename arch/m68k/include/{ => uapi}/asm/swab.h (100%)
+ rename arch/m68k/include/{ => uapi}/asm/termbits.h (100%)
+ create mode 100644 arch/m68k/include/uapi/asm/termios.h
+ create mode 100644 arch/m68k/include/uapi/asm/unistd.h
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
