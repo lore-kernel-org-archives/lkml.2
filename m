@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756371Ab2JUCk2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 22:40:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40237 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755088Ab2JUCk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 22:40:27 -0400
-Message-ID: <5083608E.6040209@redhat.com>
-Date: Sat, 20 Oct 2012 22:40:14 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1751498Ab2JUDHd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Oct 2012 23:07:33 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:48609 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab2JUDHc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Oct 2012 23:07:32 -0400
 MIME-Version: 1.0
-To: Ni zhan Chen <nizhan.chen@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Mel Gorman <mel@csn.ul.ie>,
-        Linux kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: question on NUMA page migration
-References: <5081777A.8050104@redhat.com> <50836060.4050408@gmail.com>
-In-Reply-To: <50836060.4050408@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20121020181425.GA11191@liondog.tnic>
+References: <alpine.LFD.2.02.1210121434140.10531@tux.localdomain>
+	<20121016134129.2fcd7c8ebe1235065aea929e@canb.auug.org.au>
+	<CA+55aFzz66Y1MtOoqEMrQCVzdL-2pgr43e1sXUa=eM5GXL9XSA@mail.gmail.com>
+	<20121020180436.c42b7325431fe87104b008fa@canb.auug.org.au>
+	<20121020181425.GA11191@liondog.tnic>
+Date: Sun, 21 Oct 2012 13:07:31 +1000
+Message-ID: <CAPM=9twcHxUGgYUc27DV1AcYZbzKSbA1Bru8vK1kcWvcG0Jpkw@mail.gmail.com>
+Subject: Re: [GIT PULL] Linux KVM tool for v3.7-rc0
+From: Dave Airlie <airlied@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Pekka Enberg <penberg@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2012 10:39 PM, Ni zhan Chen wrote:
-> On 10/19/2012 11:53 PM, Rik van Riel wrote:
->> Hi Andrea, Peter,
->>
->> I have a question on page refcounting in your NUMA
->> page migration code.
->>
->> In Peter's case, I wonder why you introduce a new
->> MIGRATE_FAULT migration mode. If the normal page
->> migration / compaction logic can do without taking
->> an extra reference count, why does your code need it?
+On Sun, Oct 21, 2012 at 4:14 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Sat, Oct 20, 2012 at 06:04:36PM +1100, Stephen Rothwell wrote:
+>> So are there any compelling arguments from the proponents, or can
+>> I remove this from linux-next (and have it removed from the tip
+>> auto-latest branch)?
 >
-> Hi Rik van Riel,
+> FWIW, I gave this a run and I have to say, it works as advertized: I
+> built it and ran it with the latest kernel and the thing simply boots
+> the kernel. Even without a disk image - the simplest command is:
 >
-> This is which part of codes? Why I can't find MIGRATE_FAULT in latest
-> v3.7-rc2?
+> $ ./lkvm run --kernel ../../arch/x86/boot/bzImage
+>
+> and it gets me a shell in the vm after a second.
+>
+> So the absolute advantage it gives kernel devs is that they can
+> smoke-test whether their stuff boots in seconds.
+>
+> This is probably not helpful when enabling specific hw features but
+> should be pretty helpful for generic arch stuff.
 
-It is in tip.git in the numa/core branch.
+Why couldn't this script just be a wrapper around qemu?
 
+I get the kvm developers developing features that isn't ideal, but for
+the quick boot a kernel tests, I don't see why a well maintained qemu
+wrapper isn't superior. I hate constructing qemu command lines, but a
+script in the kernel repo seems like a good idea.
 
--- 
-All rights reversed
+Dave.
