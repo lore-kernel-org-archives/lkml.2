@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab2JUQZE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 12:25:04 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:61531 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab2JUQZC (ORCPT
+	id S1754220Ab2JUQZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 12:25:57 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47931 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376Ab2JUQZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 12:25:02 -0400
-Date: Sun, 21 Oct 2012 18:24:57 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Irina Tirdea <irina.tirdea@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: Re: [PATCH v4 1/6] perf tools: configure tmp path at build time
-Message-ID: <20121021162457.GC27429@gmail.com>
-References: <1350344020-8071-1-git-send-email-irina.tirdea@gmail.com>
- <1350344020-8071-2-git-send-email-irina.tirdea@gmail.com>
- <20121016151817.GB6807@ghostprotocols.net>
- <20121016164801.GA8020@infradead.org>
+	Sun, 21 Oct 2012 12:25:55 -0400
+Date: Sun, 21 Oct 2012 09:26:18 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: [ 02/37] lockd: use rpc clients cl_nodename for id encoding
+Message-ID: <20121021162618.GB25856@kroah.com>
+References: <20121019031302.789593147@linuxfoundation.org>
+ <20121019031303.167008948@linuxfoundation.org>
+ <20121019231518.GE13292@decadent.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121016164801.GA8020@infradead.org>
+In-Reply-To: <20121019231518.GE13292@decadent.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Oct 20, 2012 at 12:15:18AM +0100, Ben Hutchings wrote:
+> On Thu, Oct 18, 2012 at 08:16:25PM -0700, Greg Kroah-Hartman wrote:
+> > 3.0-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> > 
+> > commit 303a7ce92064c285a04c870f2dc0192fdb2968cb upstream.
+> > 
+> > Taking hostname from uts namespace if not safe, because this cuold be
+> > performind during umount operation on child reaper death. And in this case
+> > current->nsproxy is NULL already.
+>  
+> In this case (3.0.y) you haven't included the following change
+> (commit cb7323fffa85 'lockd: create and use per-net NSM RPC clients on
+> MON/UNMON requests') that makes lockd actually use cl_nodename.  I
+> think this patch alone won't fix the bug, as nsm_args::nodename can
+> end up pointing to freed memory.
+> 
+> (I also wonder whether clients should really be per-net or per UTS
+> namespace, and whether those should be orthogonal namespaces at all.)
 
-* Christoph Hellwig <hch@infradead.org> wrote:
+Hm, Trond, should I also include the other commit above in the next
+3.0-stable release?
 
-> A system that doesn't have /bin/sh is fundamentally broken.
+Or should this one be dropped?
 
-No, such a system is simply different.
+thanks,
 
-> How about just creating it as a symlink in a simple unix 
-> compatibility layer for Android.  That'd help with /tmp as 
-> well.
-
-That might make sense to pursue, are you volunteering for it?
-
-Meanwhile here on earth we are making stuff work, regardless of 
-dogmatic declarations.
-
-Thanks,
-
-	Ingo
+greg k-h
