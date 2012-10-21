@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753802Ab2JUNbT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 09:31:19 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:55544 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522Ab2JUNbS (ORCPT
+	id S1753834Ab2JUNeF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 09:34:05 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:36675 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753572Ab2JUNeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 09:31:18 -0400
-Date: Sun, 21 Oct 2012 15:31:01 +0200
-From: Heinz Diehl <htd@fritha.org>
-To: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        Martin Peres <martin.peres@labri.fr>,
-        Heinz Diehl <htd@fancy-poultry.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>
-Subject: Re: Linux 3.7-rc1 (nouveau_bios_score oops).
-Message-ID: <20121021133101.GA23022@fritha.org>
-References: <1724445.dN2yMEzN6d@localhost>
- <20121020212036.GA1698@fritha.org>
- <20121020221948.GE5826@joi.lan>
- <2155889.FOmdXlva7q@localhost>
- <20121021120901.GA22587@joi.lan>
+	Sun, 21 Oct 2012 09:34:02 -0400
+Date: Sun, 21 Oct 2012 15:33:57 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 09/11] perf python: Link with libtraceevent
+Message-ID: <20121021133356.GB23425@gmail.com>
+References: <1350494387-10987-1-git-send-email-acme@infradead.org>
+ <1350494387-10987-10-git-send-email-acme@infradead.org>
+ <87y5j41rw5.fsf@sejong.aot.lge.com>
+ <20121018140033.GC2057@infradead.org>
+ <20121018143835.GE2057@infradead.org>
+ <1350574827.1610.8.camel@leonhard>
+ <20121020003556.GA15567@gmail.com>
+ <20121020150429.GA27221@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121021120901.GA22587@joi.lan>
-Organization: private site
-OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.21+66 (70810a88ce9f) (2011-07-01)
-X-Provags-ID: V02:K0:oyG+K2llj88h6coLeo7H4dVo4owaKCWMux2bjl1jsNM
- X91isK05ya1mIxSCSCq049g5JuVPlohFLiPPpvjexKxVPqWCUf
- H+q2vV9lViunO0oGy4ixApMiCip8a5z0wL3LegOjLvZfzZv9Et
- YqZYfTpePZMgk8zNOx9ngKSTGDZjwWDHYuadT3ivbkIc5LVq+A
- rPOFUK/zB2A4id5A4dJm6slgJUB71oau0bpKFv/OvwVVbzugcy
- Khk0aDzCjNObpH78ZGhb6rxNAH9Vyg69jcfAz5rZrhImYlKw7x
- Leks+64Yn6WnT1gycpR9Aw+HfA6DjdpWbfcvc0nhjIMhjDnbSQ
- t6K+EfBu3+xHn+T3bQOE=
+In-Reply-To: <20121020150429.GA27221@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.10.2012, Marcin Slusarz wrote: 
 
-> > > Please attach acpidump output.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> Em Sat, Oct 20, 2012 at 02:35:57AM +0200, Ingo Molnar escreveu:
+> > Even with that I'm getting:
 > > 
-> > http://pluto.agmk.net/nv/acpidump.txt
-> > 
+> > util/python.c: In function ???initperf???:
+> > util/python.c:1018:2: error: ???page_size??? undeclared 
+> > (first use in this function)
+> > util/python.c:1018:2: note: each undeclared identifier is 
+> > reported only once for each function it appears in
+> > error: command 'gcc' failed with exit status 1
 > 
-> This looks like ACPI bug...
+> Yeah, there was another problem, a patch that makes sense only 
+> for perf/core was added, I reverted it after Namhyung reported 
+> the same problem:
 
-I guess my acpidump didn't make it to the list. Anyway, here it is:
+Yeah.
 
-http://www.fritha.org/acpidump.gz
+So, you being on conference and me trying to not miss -rc2 with 
+a couple of high-profile perf fixes I ended up resolving this 
+bug in the merge commit, the almost-evil merge a448a03 and such.
 
+That's now upstream - mind checking whether anything is still 
+amiss?
+
+Thanks,
+
+	Ingo
