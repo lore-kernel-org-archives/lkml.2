@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932529Ab2JUShr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 14:37:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50988 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932405Ab2JUShp (ORCPT
+	id S932517Ab2JUSnl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 14:43:41 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:52431 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932405Ab2JUSnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 14:37:45 -0400
-Date: Sun, 21 Oct 2012 11:37:24 -0700
-From: tip-bot for Vaibhav Nagarnaik <vnagarnaik@google.com>
-Message-ID: <tip-8e49f418c9632790bf456634742d34d97120a784@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, vnagarnaik@google.com, hpa@zytor.com,
-        mingo@kernel.org, rostedt@goodmis.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, vnagarnaik@google.com,
-        linux-kernel@vger.kernel.org, rostedt@goodmis.org, tglx@linutronix.de
-In-Reply-To: <1349912427-6486-1-git-send-email-vnagarnaik@google.com>
-References: <1349912427-6486-1-git-send-email-vnagarnaik@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] ring-buffer:
-  Check for uninitialized cpu buffer before resizing
-Git-Commit-ID: 8e49f418c9632790bf456634742d34d97120a784
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 21 Oct 2012 14:43:39 -0400
+Date: Sun, 21 Oct 2012 20:43:30 +0200
+From: Rabin Vincent <rabin@rab.in>
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+Cc: Dave Martin <dave.martin@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, oleg@redhat.com
+Subject: Re: [PATCH 9/9] ARM: add uprobes support
+Message-ID: <20121021184324.GC4840@ubuntu>
+References: <1350242593-17761-1-git-send-email-rabin@rab.in>
+ <1350242593-17761-9-git-send-email-rabin@rab.in>
+ <20121015111443.GA2006@linaro.org>
+ <CAH+eYFC1fr0vpK2T4hz9LK=Nz5bzQBQ4O-o0f9tsnj-_D9ZEJg@mail.gmail.com>
+ <20121015174450.GB18614@linaro.org>
+ <1350485448.3206.146.camel@linaro1.home>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 21 Oct 2012 11:37:30 -0700 (PDT)
+In-Reply-To: <1350485448.3206.146.camel@linaro1.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8e49f418c9632790bf456634742d34d97120a784
-Gitweb:     http://git.kernel.org/tip/8e49f418c9632790bf456634742d34d97120a784
-Author:     Vaibhav Nagarnaik <vnagarnaik@google.com>
-AuthorDate: Wed, 10 Oct 2012 16:40:27 -0700
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Thu, 11 Oct 2012 12:21:48 -0400
+On Wed, Oct 17, 2012 at 03:50:48PM +0100, Jon Medhurst (Tixy) wrote:
+> I just been looking at the decoding changes in patch 8 and had similar
+> thoughts. The patch as it stands looks rather bolted on the side and
+> makes the resulting code rather messy.
 
-ring-buffer: Check for uninitialized cpu buffer before resizing
+I agree.
 
-With a system where, num_present_cpus < num_possible_cpus, even if all
-CPUs are online, non-present CPUs don't have per_cpu buffers allocated.
-If per_cpu/<cpu>/buffer_size_kb is modified for such a CPU, it can cause
-a panic due to NULL dereference in ring_buffer_resize().
+> a) uprobes is similar enough to kprobes that the existing code can be
+> morphed into something that cleanly supports both, or
+> 
+> b) the similarities aren't close enough and that we should factor out
+> the similarities into a more generalised decoding base, which the
+> {u,k}probe code can then build on.
+> 
+> c) some mix of a) and b)
+> 
+> I can't help but think of the various calls over the past year or so for
+> a general ARM/Thumb instruction decoding framework (the last one only a
+> few weeks ago on the linux-arm-kernel list). Perhaps b) would be a small
+> step towards that.
+> 
+> I hope to find some time to understand the uprobe patches in more
+> detail, so I can try and come up with some sensible suggestions on a
+> cleaner solution; because I feel that as they stand they aren't really
+> suitable for inclusion in the kernel.
 
-To fix this, resize operation is allowed only if the per-cpu buffer has
-been initialized.
+I contemplated sending the decoding patch with [RFC] but finally went
+with [PATCH] since they mostly mean the same thing :-).
 
-Link: http://lkml.kernel.org/r/1349912427-6486-1-git-send-email-vnagarnaik@google.com
+Suggestions welcome.  For one thing, the creation of a fake struct
+kprobe from within the uprobes and the dependency on kprobes because of
+that is not very nice, we probably need a "struct probe" of some sort
+perhaps.
 
-Cc: stable@vger.kernel.org # 3.5+
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/ring_buffer.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+> Rabin, what tree/commit are your patches based on? (They don't seem to
+> apply cleanly to 3.6 or 3.7-rc1.) I want to apply them locally so I can
+> use my favourite visualisation tool and to play with them.
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index b32ed0e..b979426 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1567,6 +1567,10 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size,
- 
- 		put_online_cpus();
- 	} else {
-+		/* Make sure this CPU has been intitialized */
-+		if (!cpumask_test_cpu(cpu_id, buffer->cpumask))
-+			goto out;
-+
- 		cpu_buffer = buffer->buffers[cpu_id];
- 
- 		if (nr_pages == cpu_buffer->nr_pages)
+The patches are based on next-20121012.  The uprobes core is seeing
+quite a few changes in linux-next so the series will probably not apply
+on later linux-next trees.
