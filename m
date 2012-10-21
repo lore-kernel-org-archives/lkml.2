@@ -1,115 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab2JUMaQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 08:30:16 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:65376 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228Ab2JUMaO (ORCPT
+	id S1753537Ab2JUMa0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 08:30:26 -0400
+Received: from smtprelay0062.b.hostedemail.com ([64.98.42.62]:54634 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753228Ab2JUMaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 08:30:14 -0400
-Date: Sun, 21 Oct 2012 14:30:08 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Mel Gorman <mel@csn.ul.ie>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: question on NUMA page migration
-Message-ID: <20121021123008.GA19229@gmail.com>
-References: <5081777A.8050104@redhat.com>
- <1350664742.2768.40.camel@twins>
- <50818A41.7030909@redhat.com>
- <1350669236.2768.66.camel@twins>
- <50819CED.30803@redhat.com>
- <20121020012345.GA24667@gmail.com>
- <5082CB18.6060300@redhat.com>
+	Sun, 21 Oct 2012 08:30:17 -0400
+X-Panda: scanned!
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,t.artem@lycos.com,:::::::::::::::,RULES_HIT:152:355:379:541:582:599:601:857:945:946:967:973:988:989:1152:1260:1277:1311:1313:1314:1345:1358:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2525:2553:2561:2564:2682:2685:2857:2859:2892:2933:2937:2939:2942:2945:2947:2951:2954:3022:3027:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3869:3870:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:5007:6261:7679:7689:7903:9025:10004:10400:10848:11658:11914:12043:12350:12517:12519:12679:12698:12737,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-Session-Marker: 742E617274656D406C79636F732E636F6D
+X-Filterd-Recvd-Size: 2340
+Date: Sun, 21 Oct 2012 12:30:15 +0000 (GMT)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: zonque@gmail.com
+Cc: bp@alien8.de, pavel@ucw.cz, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, security@kernel.org,
+        linux-media@vger.kernel.org, linux-usb@vger.kernel.org
+Message-ID: <317435358.100327.1350822615555.JavaMail.mail@webmail20>
+References: <2104474742.26357.1350734815286.JavaMail.mail@webmail05>
+ <20121020162759.GA12551@liondog.tnic>
+ <966148591.30347.1350754909449.JavaMail.mail@webmail08>
+ <20121020203227.GC555@elf.ucw.cz> <20121020225849.GA8976@liondog.tnic>
+ <1781795634.31179.1350774917965.JavaMail.mail@webmail04>
+ <20121021002424.GA16247@liondog.tnic>
+ <1798605268.19162.1350784641831.JavaMail.mail@webmail17>
+ <20121021110851.GA6504@liondog.tnic>
+ <121566322.100103.1350820776893.JavaMail.mail@webmail20>
+ <5083E4AA.3060807@gmail.com>
+Subject: Re: Re: A reliable kernel panic (3.6.2) and system crash when
+ visiting a particular website
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5082CB18.6060300@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Mailer: Webmail
+X-Originating-IP: [46.146.77.234]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Oct 21, 2012, Daniel Mack wrote: 
 
-* Rik van Riel <riel@redhat.com> wrote:
-
-> On 10/19/2012 09:23 PM, Ingo Molnar wrote:
-> >
-> >* Rik van Riel <riel@redhat.com> wrote:
-> >
-> >>On 10/19/2012 01:53 PM, Peter Zijlstra wrote:
-> >>>On Fri, 2012-10-19 at 13:13 -0400, Rik van Riel wrote:
-> >>
-> >>>>Another alternative might be to do the put_page inside
-> >>>>do_prot_none_numa().  That would be analogous to do_wp_page
-> >>>>disposing of the old page for the caller.
-> >>>
-> >>>It'd have to be inside migrate_misplaced_page(), can't do before
-> >>>isolate_lru_page() or the page might disappear. Doing it after is
-> >>>(obviously) too late.
-> >>
-> >>Keeping an extra refcount on the page might _still_
-> >>result in it disappearing from the process by some
-> >>other means, in-between you grabbing the refcount
-> >>and invoking migration of the page.
-> >>
-> >>>>I am not real happy about NUMA migration introducing its own
-> >>>>migration mode...
-> >>>
-> >>>You didn't seem to mind too much earlier, but I can remove it if you
-> >>>want.
-> >>
-> >>Could have been reviewing fatigue :)
-> >
-> >:-)
-> >
-> >>And yes, it would have been nice to not have a special
-> >>migration mode for sched/numa.
-> >>
-> >>Speaking of, when do you guys plan to submit a (cleaned up)
-> >>version of the sched/numa patch series for review on lkml?
-> >
-> >Which commit(s) worry you specifically?
+> A hint at least. How did you enable the audio record exactly? Can you
+> reproduce this with arecord?
 > 
-> One of them would be the commit that introduces MIGRATE_FAULT.
+> What chipset are you on? Please provide both "lspci -v" and "lsusb -v"
+> dumps. As I said, I fail to reproduce that issue on any of my machines.
 
-MIGRATE_FAULT is still used.
+All other applications can read from the USB audio without problems, it's
+just something in the way Adobe Flash polls my audio input which causes
+a crash.
 
-> Adding it in one patch, and removing it into a next just makes
-> things harder on the reviewers.
+Just video capture (without audio) works just fine in Adobe Flash.
 
-Yes.
+Only and only when I choose to use 
 
-> 03a040f6c17ab81659579ba6abe267c0562097e4
+USB Device 0x46d:0x81d my system crashes in Adobe Flash.
 
-It's still used:
+See the screenshot:
 
-comet:~/tip> git grep MIGRATE_FAULT
-include/linux/migrate_mode.h: * MIGRATE_FAULT called from the fault path to migrate-on-fault for mempolicy
-include/linux/migrate_mode.h:	MIGRATE_FAULT,
-mm/migrate.c:	if (mode != MIGRATE_ASYNC && mode != MIGRATE_FAULT) {
-mm/migrate.c:	if (mode == MIGRATE_FAULT) {
-mm/migrate.c:		 * MIGRATE_FAULT has an extra reference on the page and
-mm/migrate.c:	if ((mode == MIGRATE_ASYNC || mode == MIGRATE_FAULT) && head &&
-mm/migrate.c:	if (mode != MIGRATE_ASYNC && mode != MIGRATE_FAULT)
-mm/migrate.c:		if (!force || mode == MIGRATE_ASYNC || mode == MIGRATE_FAULT)
-mm/migrate.c:	ret = __unmap_and_move(page, newpage, 0, 0, MIGRATE_FAULT);
+https://bugzilla.kernel.org/attachment.cgi?id=84151
 
-> If the changesets with NUMA syscalls are still in your tree's 
-> history, they should not be submitted as part of the patch 
-> series, either.
+My hardware information can be fetched from here:
 
-No, the syscalls have not been there for quite some time.
+https://bugzilla.kernel.org/show_bug.cgi?id=49181
 
-If you have trouble with any specific commit, please quote the 
-specific SHA1 so that I can have a look and resolve any specific 
-concerns.
-
-Otherwise, lets continue with the integration?
-
-Thanks,
-
-	Ingo
+On a second thought that can be even an ALSA crash or pretty much
+anything else.
