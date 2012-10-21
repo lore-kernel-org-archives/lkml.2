@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156Ab2J2AEq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 20:04:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52783 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756038Ab2J2AEp (ORCPT
+	id S1756199Ab2J2AJP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 20:09:15 -0400
+Received: from mailserver6.natinst.com ([130.164.80.6]:59709 "EHLO
+	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756038Ab2J2AJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 20:04:45 -0400
-Date: Sun, 28 Oct 2012 17:04:40 -0700
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: Re: [ 026/105] ACPI: EC: Make the GPE storm threshold a module
- parameter
-Message-ID: <20121029000440.GE6083@elie.Belkin>
-References: <20121028231536.970033833@decadent.org.uk>
- <20121028231545.002108441@decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121028231545.002108441@decadent.org.uk>
-User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
+	Sun, 28 Oct 2012 20:09:13 -0400
+Message-Id: <f0cf58bc8f8a34d226cccb6f89d3cd49a2620015.1351466765.git.josh.cartwright@ni.com>
+In-Reply-To: <cover.1351466765.git.josh.cartwright@ni.com>
+References: <cover.1351466765.git.josh.cartwright@ni.com>
+From: Josh Cartwright <josh.cartwright@ni.com>
+Date: Sun, 21 Oct 2012 18:33:59 -0500
+Subject: [PATCH v4 4/5] ARM: annotate VMALLOC_END definition with _AC
+To: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Linn <john.linn@xilinx.com>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Michal Simek <michal.simek@xilinx.com>
+X-MIMETrack: Itemize by SMTP Server on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/28/2012 07:08:53 PM,
+	Serialize by Router on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/28/2012 07:08:53 PM,
+	Serialize complete at 10/28/2012 07:08:53 PM
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-28_05:2012-10-26,2012-10-28,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Hutchings wrote:
+This makes the definition of VMALLOC_END suitable for use within
+assembly code.  This is necessary to allow the use of VMALLOC_END in
+defining where the early uart is mapped for use with DEBUG_LL.
 
-> 3.2-stable review patch.  If anyone has any objections, please let me know.
-[...]
-> commit a520d52e99b14ba7db135e916348f12f2a6e09be upstream.
->
-> The Linux EC driver includes a mechanism to detect GPE storms,
-> and switch from interrupt-mode to polling mode.  However, polling
-> mode sometimes doesn't work, so the workaround is problematic.
-> Also, different systems seem to need the threshold for detecting
-> the GPE storm at different levels.
+Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+ arch/arm/include/asm/pgtable.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Not an objection, but this is a weird parameter.  How many false
-interrupts per transaction should be expected?  Is there some fact
-about the hardware or firmware that makes this a well defined number
-on each machine?
+diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+index 08c1231..72904a2 100644
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -40,7 +40,7 @@
+  */
+ #define VMALLOC_OFFSET		(8*1024*1024)
+ #define VMALLOC_START		(((unsigned long)high_memory + VMALLOC_OFFSET) & ~(VMALLOC_OFFSET-1))
+-#define VMALLOC_END		0xff000000UL
++#define VMALLOC_END		_AC(0xff000000,UL)
+ 
+ #define LIBRARY_TEXT_START	0x0c000000
+ 
+-- 
+1.8.0
 
-Thanks,
-Jonathan
+
