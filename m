@@ -1,34 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932700Ab2JUWgB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 18:36:01 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:42898 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932642Ab2JUWgA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 18:36:00 -0400
-Message-ID: <1350858942.2547.2.camel@CruzBishop-ASPIRE>
-Subject: Quick question: Maintainers for scripts
-From: Cruz Julian Bishop <cruzjbishop@gmail.com>
-To: linux-kernel@vger.kernel.org
-Date: Mon, 22 Oct 2012 08:35:42 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932704Ab2JUXPS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 19:15:18 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:51093 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932575Ab2JUXPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Oct 2012 19:15:17 -0400
+Date: Mon, 22 Oct 2012 01:15:00 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Matt Porter <mporter@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Sekhar Nori <nsekhar@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Ben Gardiner <bengardiner@nanometrics.ca>
+Subject: Re: [PATCH v4 1/7] uio: uio_pruss: replace private SRAM API with
+ genalloc
+Message-ID: <20121021231500.GB7208@local>
+References: <1349456686-22736-1-git-send-email-mporter@ti.com>
+ <1349456686-22736-2-git-send-email-mporter@ti.com>
+ <20121018145338.GA25164@beef>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121018145338.GA25164@beef>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On Thu, Oct 18, 2012 at 10:53:38AM -0400, Matt Porter wrote:
+> On Fri, Oct 05, 2012 at 01:04:40PM -0400, Matt Porter wrote:
+> > Remove the use of the private DaVinci SRAM API in favor
+> > of genalloc. The pool to be used is provided by platform
+> > data.
+> > 
+> > Signed-off-by: Matt Porter <mporter@ti.com>
+> 
+> Hans,
+> 
+> Any additional concerns on this patch?
 
-I was just wondering - Since (last time I looked, anyway),
-/scripts/* has no maintainer, who would I send patches to?
+Not from my side. I was waiting for your discussion to calm down.
 
-Would I just send them to the mailing list, or is there a
-sort of catch-all maintainer for things like this?
+> Sekhar is holding off on applying
+> parts 4,5,7 for davinci until this is accepted.
 
-Thanks in advance, and sorry if this is already answered :)
+You can add my
 
-~Cruz
+Signed-off-by: "Hans J. Koch" <hjk@hansjkoch.de>
 
+Thanks,
+Hans
+
+> 
+> Thanks,
+> Matt
+> 
+> > ---
+> >  drivers/uio/Kconfig                     |    1 +
+> >  drivers/uio/uio_pruss.c                 |   24 +++++++++++++++++-------
+> >  include/linux/platform_data/uio_pruss.h |    3 ++-
+> >  3 files changed, 20 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/drivers/uio/Kconfig b/drivers/uio/Kconfig
+> > index 6f3ea9b..c48b938 100644
+> > --- a/drivers/uio/Kconfig
+> > +++ b/drivers/uio/Kconfig
+> > @@ -97,6 +97,7 @@ config UIO_NETX
+> >  config UIO_PRUSS
+> >  	tristate "Texas Instruments PRUSS driver"
+> >  	depends on ARCH_DAVINCI_DA850
+> > +	select GENERIC_ALLOCATOR
+> >  	help
+> >  	  PRUSS driver for OMAPL138/DA850/AM18XX devices
+> >  	  PRUSS driver requires user space components, examples and user space
+> > diff --git a/drivers/uio/uio_pruss.c b/drivers/uio/uio_pruss.c
+> > index 33a7a27..f8738de 100644
+> > --- a/drivers/uio/uio_pruss.c
+> > +++ b/drivers/uio/uio_pruss.c
+> > @@ -25,7 +25,7 @@
+> >  #include <linux/clk.h>
+> >  #include <linux/dma-mapping.h>
+> >  #include <linux/slab.h>
+> > -#include <mach/sram.h>
+> > +#include <linux/genalloc.h>
+> >  
+> >  #define DRV_NAME "pruss_uio"
+> >  #define DRV_VERSION "1.0"
+> > @@ -65,10 +65,11 @@ struct uio_pruss_dev {
+> >  	dma_addr_t sram_paddr;
+> >  	dma_addr_t ddr_paddr;
+> >  	void __iomem *prussio_vaddr;
+> > -	void *sram_vaddr;
+> > +	unsigned long sram_vaddr;
+> >  	void *ddr_vaddr;
+> >  	unsigned int hostirq_start;
+> >  	unsigned int pintc_base;
+> > +	struct gen_pool *sram_pool;
+> >  };
+> >  
+> >  static irqreturn_t pruss_handler(int irq, struct uio_info *info)
+> > @@ -106,7 +107,9 @@ static void pruss_cleanup(struct platform_device *dev,
+> >  			gdev->ddr_paddr);
+> >  	}
+> >  	if (gdev->sram_vaddr)
+> > -		sram_free(gdev->sram_vaddr, sram_pool_sz);
+> > +		gen_pool_free(gdev->sram_pool,
+> > +			      gdev->sram_vaddr,
+> > +			      sram_pool_sz);
+> >  	kfree(gdev->info);
+> >  	clk_put(gdev->pruss_clk);
+> >  	kfree(gdev);
+> > @@ -152,10 +155,17 @@ static int __devinit pruss_probe(struct platform_device *dev)
+> >  		goto out_free;
+> >  	}
+> >  
+> > -	gdev->sram_vaddr = sram_alloc(sram_pool_sz, &(gdev->sram_paddr));
+> > -	if (!gdev->sram_vaddr) {
+> > -		dev_err(&dev->dev, "Could not allocate SRAM pool\n");
+> > -		goto out_free;
+> > +	if (pdata->sram_pool) {
+> > +		gdev->sram_pool = pdata->sram_pool;
+> > +		gdev->sram_vaddr =
+> > +			gen_pool_alloc(gdev->sram_pool, sram_pool_sz);
+> > +		if (!gdev->sram_vaddr) {
+> > +			dev_err(&dev->dev, "Could not allocate SRAM pool\n");
+> > +			goto out_free;
+> > +		}
+> > +		gdev->sram_paddr =
+> > +			gen_pool_virt_to_phys(gdev->sram_pool,
+> > +					      gdev->sram_vaddr);
+> >  	}
+> >  
+> >  	gdev->ddr_vaddr = dma_alloc_coherent(&dev->dev, extram_pool_sz,
+> > diff --git a/include/linux/platform_data/uio_pruss.h b/include/linux/platform_data/uio_pruss.h
+> > index f39140a..3d47d21 100644
+> > --- a/include/linux/platform_data/uio_pruss.h
+> > +++ b/include/linux/platform_data/uio_pruss.h
+> > @@ -20,6 +20,7 @@
+> >  
+> >  /* To configure the PRUSS INTC base offset for UIO driver */
+> >  struct uio_pruss_pdata {
+> > -	u32	pintc_base;
+> > +	u32		pintc_base;
+> > +	struct gen_pool *sram_pool;
+> >  };
+> >  #endif /* _UIO_PRUSS_H_ */
+> > -- 
+> > 1.7.9.5
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
