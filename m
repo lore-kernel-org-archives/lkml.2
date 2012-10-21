@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932597Ab2JUU1F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 16:27:05 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:26885 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754393Ab2JUU1E (ORCPT
+	id S1754604Ab2JUUeA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 16:34:00 -0400
+Received: from mail-wi0-f194.google.com ([209.85.212.194]:33637 "EHLO
+	mail-wi0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754468Ab2JUUd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 16:27:04 -0400
-Message-ID: <50845A95.1000200@hp.com>
-Date: Sun, 21 Oct 2012 13:27:01 -0700
-From: Craig Hada <craig.hada@hp.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Tom Mingarelli <thomas.mingarelli@hp.com>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
-        iommu@lists.linux-foundation.org, Shuah Khan <shuah.khan@hp.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] Prevent devices with RMRRs from being placed into
- SI Domain
-References: <20121018021735.23962.51639.sendpatchset@RHEL63BL460c>
-In-Reply-To: <20121018021735.23962.51639.sendpatchset@RHEL63BL460c>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 21 Oct 2012 16:33:59 -0400
+From: Anna Leuschner <anna.m.leuschner@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Anna Leuschner <anna.m.leuschner@gmail.com>
+Subject: [PATCH] vfs: fix: don't increase bio_slab_max if krealloc() fails
+Date: Sun, 21 Oct 2012 22:33:29 +0200
+Message-Id: <1350851609-10541-1-git-send-email-anna.m.leuschner@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2012 2:17 PM, Tom Mingarelli wrote:
-> This patch is to prevent devices that have RMRRs associated with them to
-> not be placed into the SI Domain during init. We don't put USB devices
-> into this category, however. This fixes the issue where the RMRR info
-> for devices being placed in and out of the SI Domain gets lost.
->
-> Signed-off-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
-> Tested-by: Shuah Khan <shuah.khan@hp.com>
-> ----
-> PATCH v1: https://lkml.org/lkml/2012/6/15/204
-> PATCH v2: https://lkml.org/lkml/2012/9/18/354
->
->
-> drivers/iommu/intel-iommu.c |   30 ++++++++++++++++++++++++++++++
->   1 files changed, 30 insertions(+), 0 deletions(-)
->
-> diff -up ./drivers/iommu/intel-iommu.c.ORIG ./drivers/iommu/intel-iommu.c
-> --- ./drivers/iommu/intel-iommu.c.ORIG	2012-10-16 09:34:23.148089944 -0500
-> +++ ./drivers/iommu/intel-iommu.c	2012-10-17 20:41:40.509642356 -0500
-> @@ -2320,8 +2320,38 @@ static int domain_add_dev_info(struct dm
->   	return 0;
->   }
->   
-> +static bool device_has_rmrr(struct pci_dev *dev)
-> +{
-> +	struct dmar_rmrr_unit *rmrr;
-> +	int i;
-> +
-> +	for_each_rmrr_units(rmrr) {
-> +		for (i = 0; i < rmrr->devices_cnt; i++) {
-> +			/*
-> +			 * Here we are just concerned with checking each device
-> +			 * that has an RMRR associated with it and not allow it
-> +			 * to be placed into the SI Domain during startup.
-> +			*/
-> +			if (rmrr->devices[i] == dev)
-> +				return true;
-> +		}
-> +	}
-> +	return false;
-> +}
-> +
->   static int iommu_should_identity_map(struct pci_dev *pdev, int startup)
->   {
-> +
-> +	/*
-> +	 * This is where we will refuse any device that has an
-> +	 * RMRR associated with it and is not a USB device and
-> +	 * NOT allow it to be placed into the SI Domain. We don't
-> +	 * need a separate bit for this because it could be ANY device.
-> +	 */
-> +	if (device_has_rmrr(pdev) &&
-> +		(pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
-> +			return 0;
-> +
->   	if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
->   		return 1;
->   
-> _______________________________________________
-> iommu mailing list
-> iommu@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/iommu
-> .
->
-I applied this patch to my system and booted with IOMMU pass through 
-mode enabled. Without the patch my system would panic or wedge. I also 
-applied a be2net patch I'm working on and was able to get successful 
-netperf runs with IOMMU pass through mode enabled.
+bio.c: fix: don't increase bio_slab_max if krealloc() of bio_slabs fails
 
--Craig
+Signed-off-by: Anna Leuschner <anna.m.leuschner@gmail.com>
+---
+ fs/bio.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/fs/bio.c b/fs/bio.c
+index 9298c65..b96fc6c 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -75,6 +75,7 @@ static struct kmem_cache *bio_find_or_create_slab(unsigned int extra_size)
+ 	unsigned int sz = sizeof(struct bio) + extra_size;
+ 	struct kmem_cache *slab = NULL;
+ 	struct bio_slab *bslab, *new_bio_slabs;
++	unsigned int new_bio_slab_max;
+ 	unsigned int i, entry = -1;
+ 
+ 	mutex_lock(&bio_slab_lock);
+@@ -97,12 +98,13 @@ static struct kmem_cache *bio_find_or_create_slab(unsigned int extra_size)
+ 		goto out_unlock;
+ 
+ 	if (bio_slab_nr == bio_slab_max && entry == -1) {
+-		bio_slab_max <<= 1;
++		new_bio_slab_max = bio_slab_max << 1;
+ 		new_bio_slabs = krealloc(bio_slabs,
+-					 bio_slab_max * sizeof(struct bio_slab),
++					 new_bio_slab_max * sizeof(struct bio_slab),
+ 					 GFP_KERNEL);
+ 		if (!new_bio_slabs)
+ 			goto out_unlock;
++		bio_slab_max = new_bio_slab_max;
+ 		bio_slabs = new_bio_slabs;
+ 	}
+ 	if (entry == -1)
+-- 
+1.7.10.4
+
