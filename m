@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab2JUKwY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 06:52:24 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:62022
+	id S1752995Ab2JUKwW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 06:52:22 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:61600
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752401Ab2JUKwO (ORCPT
+	by vger.kernel.org with ESMTP id S1752683Ab2JUKwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 21 Oct 2012 06:52:14 -0400
 X-IronPort-AV: E=Sophos;i="4.80,625,1344204000"; 
-   d="scan'208";a="159799681"
+   d="scan'208";a="159799680"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: kernel-janitors@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] arch/powerpc/kernel/rtas_flash.c: eliminate possible double free
-Date: Sun, 21 Oct 2012 12:52:05 +0200
-Message-Id: <1350816727-1381-4-git-send-email-Julia.Lawall@lip6.fr>
+To: Luciano Coelho <coelho@ti.com>
+Cc: kernel-janitors@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] drivers/net/wireless/ti/wlcore/main.c: eliminate possible double power off
+Date: Sun, 21 Oct 2012 12:52:04 +0200
+Message-Id: <1350816727-1381-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1350816727-1381-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1350816727-1381-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -25,13 +27,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-The function initialize_flash_pde_data is only called four times.  All four
-calls are in the function rtas_flash_init, and on the failure of any of the
-calls, remove_flash_pde is called on the third argument of each of the
-calls.  There is thus no need for initialize_flash_pde_data to call
-remove_flash_pde on the same argument.  remove_flash_pde kfrees the data
-field of its argument, and does not clear that field, so this amounts ot a
-possible double free.
+The function wl12xx_set_power_on is only called twice, once in
+wl12xx_chip_wakeup and once in wl12xx_get_hw_info.  On the failure of the
+call in wl12xx_chip_wakeup, the containing function just returns, but on
+the failure of the call in wl12xx_get_hw_info, the containing function
+calls wl1271_power_off.  This does not seem necessary, because if
+wl12xx_set_power_on has set the power on and then fails, it has already
+turned the power off.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -64,25 +66,23 @@ expression list[r.n] xs;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
-Not tested.
+wl1271_power_off seems to be resistent to being called when the power is
+not on, so this should not change the behavior.  Not tested.
 
- arch/powerpc/kernel/rtas_flash.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/net/wireless/ti/wlcore/main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/kernel/rtas_flash.c b/arch/powerpc/kernel/rtas_flash.c
-index 20b0120..8329190 100644
---- a/arch/powerpc/kernel/rtas_flash.c
-+++ b/arch/powerpc/kernel/rtas_flash.c
-@@ -650,10 +650,8 @@ static int initialize_flash_pde_data(const char *rtas_call_name,
- 	int token;
+diff --git a/drivers/net/wireless/ti/wlcore/main.c b/drivers/net/wireless/ti/wlcore/main.c
+index 25530c8..0eb739b 100644
+--- a/drivers/net/wireless/ti/wlcore/main.c
++++ b/drivers/net/wireless/ti/wlcore/main.c
+@@ -5116,7 +5116,7 @@ static int wl12xx_get_hw_info(struct wl1271 *wl)
  
- 	dp->data = kzalloc(buf_size, GFP_KERNEL);
--	if (dp->data == NULL) {
--		remove_flash_pde(dp);
-+	if (dp->data == NULL)
- 		return -ENOMEM;
--	}
+ 	ret = wl12xx_set_power_on(wl);
+ 	if (ret < 0)
+-		goto out;
++		return ret;
  
- 	/*
- 	 * This code assumes that the status int is the first member of the
+ 	ret = wlcore_read_reg(wl, REG_CHIP_ID_B, &wl->chip.id);
+ 	if (ret < 0)
 
