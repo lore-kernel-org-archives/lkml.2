@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab2JUKw1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 06:52:27 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:61600
+	id S1753142Ab2JUKwY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 06:52:24 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:62022
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752745Ab2JUKwP (ORCPT
+	by vger.kernel.org with ESMTP id S1752401Ab2JUKwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 06:52:15 -0400
+	Sun, 21 Oct 2012 06:52:14 -0400
 X-IronPort-AV: E=Sophos;i="4.80,625,1344204000"; 
-   d="scan'208";a="159799685"
+   d="scan'208";a="159799681"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: kernel-janitors@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] drivers/iio/industrialio-event.c: eliminate possible double free
-Date: Sun, 21 Oct 2012 12:52:07 +0200
-Message-Id: <1350816727-1381-6-git-send-email-Julia.Lawall@lip6.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: kernel-janitors@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/5] arch/powerpc/kernel/rtas_flash.c: eliminate possible double free
+Date: Sun, 21 Oct 2012 12:52:05 +0200
+Message-Id: <1350816727-1381-4-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1350816727-1381-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1350816727-1381-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -25,11 +25,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-The function __iio_add_event_config_attrs is only called once, by the
-function iio_device_register_eventset.  If the call fails,
-iio_device_register_eventset calls __iio_remove_event_config_attrs.  There
-is thus no need for __iio_add_event_config_attrs to also call
-__iio_remove_event_config_attrs on failure.
+The function initialize_flash_pde_data is only called four times.  All four
+calls are in the function rtas_flash_init, and on the failure of any of the
+calls, remove_flash_pde is called on the third argument of each of the
+calls.  There is thus no need for initialize_flash_pde_data to call
+remove_flash_pde on the same argument.  remove_flash_pde kfrees the data
+field of its argument, and does not clear that field, so this amounts ot a
+possible double free.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -62,32 +64,25 @@ expression list[r.n] xs;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
-__iio_remove_event_config_attrs kfrees the elements of a list, but doesn't
-actually remove them from the list.  Perhaps for safety this should be
-cleaned up as well.  Not tested.
+Not tested.
 
- drivers/iio/industrialio-event.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ arch/powerpc/kernel/rtas_flash.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/iio/industrialio-event.c b/drivers/iio/industrialio-event.c
-index fa6543b..78570c7 100644
---- a/drivers/iio/industrialio-event.c
-+++ b/drivers/iio/industrialio-event.c
-@@ -350,15 +350,10 @@ static inline int __iio_add_event_config_attrs(struct iio_dev *indio_dev)
- 		ret = iio_device_add_event_sysfs(indio_dev,
- 						 &indio_dev->channels[j]);
- 		if (ret < 0)
--			goto error_clear_attrs;
-+			return ret;
- 		attrcount += ret;
- 	}
- 	return attrcount;
--
--error_clear_attrs:
--	__iio_remove_event_config_attrs(indio_dev);
--
--	return ret;
- }
+diff --git a/arch/powerpc/kernel/rtas_flash.c b/arch/powerpc/kernel/rtas_flash.c
+index 20b0120..8329190 100644
+--- a/arch/powerpc/kernel/rtas_flash.c
++++ b/arch/powerpc/kernel/rtas_flash.c
+@@ -650,10 +650,8 @@ static int initialize_flash_pde_data(const char *rtas_call_name,
+ 	int token;
  
- static bool iio_check_for_dynamic_events(struct iio_dev *indio_dev)
+ 	dp->data = kzalloc(buf_size, GFP_KERNEL);
+-	if (dp->data == NULL) {
+-		remove_flash_pde(dp);
++	if (dp->data == NULL)
+ 		return -ENOMEM;
+-	}
+ 
+ 	/*
+ 	 * This code assumes that the status int is the first member of the
 
