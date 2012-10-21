@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab2JUKwW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 06:52:22 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:61600
+	id S1752886Ab2JUKwT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 06:52:19 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:62022
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752683Ab2JUKwO (ORCPT
+	by vger.kernel.org with ESMTP id S1752584Ab2JUKwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 06:52:14 -0400
+	Sun, 21 Oct 2012 06:52:13 -0400
 X-IronPort-AV: E=Sophos;i="4.80,625,1344204000"; 
-   d="scan'208";a="159799680"
+   d="scan'208";a="159799679"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Luciano Coelho <coelho@ti.com>
-Cc: kernel-janitors@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] drivers/net/wireless/ti/wlcore/main.c: eliminate possible double power off
-Date: Sun, 21 Oct 2012 12:52:04 +0200
-Message-Id: <1350816727-1381-3-git-send-email-Julia.Lawall@lip6.fr>
+To: Jaroslav Kysela <perex@perex.cz>
+Cc: kernel-janitors@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] sound/isa/opti9xx/miro.c: eliminate possible double free
+Date: Sun, 21 Oct 2012 12:52:03 +0200
+Message-Id: <1350816727-1381-2-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1350816727-1381-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1350816727-1381-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -27,13 +25,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-The function wl12xx_set_power_on is only called twice, once in
-wl12xx_chip_wakeup and once in wl12xx_get_hw_info.  On the failure of the
-call in wl12xx_chip_wakeup, the containing function just returns, but on
-the failure of the call in wl12xx_get_hw_info, the containing function
-calls wl1271_power_off.  This does not seem necessary, because if
-wl12xx_set_power_on has set the power on and then fails, it has already
-turned the power off.
+snd_miro_probe is a static function that is only called twice in the file
+that defines it.  At each call site, its argument is freed using
+snd_card_free.  Thus, there is no need for snd_miro_probe to call
+snd_card_free on its argument on any of its error exit paths.
+
+Because snd_card_free both reads the fields of its argument and kfrees its
+argments, the results of the second snd_card_free should be unpredictable.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -66,23 +64,21 @@ expression list[r.n] xs;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
-wl1271_power_off seems to be resistent to being called when the power is
-not on, so this should not change the behavior.  Not tested.
+Not tested.
 
- drivers/net/wireless/ti/wlcore/main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/isa/opti9xx/miro.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/net/wireless/ti/wlcore/main.c b/drivers/net/wireless/ti/wlcore/main.c
-index 25530c8..0eb739b 100644
---- a/drivers/net/wireless/ti/wlcore/main.c
-+++ b/drivers/net/wireless/ti/wlcore/main.c
-@@ -5116,7 +5116,7 @@ static int wl12xx_get_hw_info(struct wl1271 *wl)
+diff --git a/sound/isa/opti9xx/miro.c b/sound/isa/opti9xx/miro.c
+index 3d1afb6..4a7ff4e 100644
+--- a/sound/isa/opti9xx/miro.c
++++ b/sound/isa/opti9xx/miro.c
+@@ -1286,7 +1286,6 @@ static int __devinit snd_miro_probe(struct snd_card *card)
  
- 	ret = wl12xx_set_power_on(wl);
- 	if (ret < 0)
--		goto out;
-+		return ret;
- 
- 	ret = wlcore_read_reg(wl, REG_CHIP_ID_B, &wl->chip.id);
- 	if (ret < 0)
+ 	error = snd_card_miro_aci_detect(card, miro);
+ 	if (error < 0) {
+-		snd_card_free(card);
+ 		snd_printk(KERN_ERR "unable to detect aci chip\n");
+ 		return -ENODEV;
+ 	}
 
