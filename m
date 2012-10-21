@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab2JULSg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 07:18:36 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37415 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752464Ab2JULSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 07:18:35 -0400
-Date: Sun, 21 Oct 2012 13:18:32 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Avi Kivity <avi@redhat.com>,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Subject: Re: [GIT PULL] Linux KVM tool for v3.7-rc0
-Message-ID: <20121021111832.GB6504@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Dave Airlie <airlied@gmail.com>,
-	Stephen Rothwell <sfr@canb.auug.org.au>,
-	Pekka Enberg <penberg@kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Ingo Molnar <mingo@kernel.org>, Avi Kivity <avi@redhat.com>,
-	linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-References: <alpine.LFD.2.02.1210121434140.10531@tux.localdomain>
- <20121016134129.2fcd7c8ebe1235065aea929e@canb.auug.org.au>
- <CA+55aFzz66Y1MtOoqEMrQCVzdL-2pgr43e1sXUa=eM5GXL9XSA@mail.gmail.com>
- <20121020180436.c42b7325431fe87104b008fa@canb.auug.org.au>
- <20121020181425.GA11191@liondog.tnic>
- <CAPM=9twcHxUGgYUc27DV1AcYZbzKSbA1Bru8vK1kcWvcG0Jpkw@mail.gmail.com>
+	id S1752828Ab2JULWz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 07:22:55 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:47200 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752557Ab2JULWy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Oct 2012 07:22:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAPM=9twcHxUGgYUc27DV1AcYZbzKSbA1Bru8vK1kcWvcG0Jpkw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121021104217.GE14031@elf.ucw.cz>
+References: <1350059835-5408-1-git-send-email-mujeeb.adil@gmail.com>
+	<20121021104217.GE14031@elf.ucw.cz>
+Date: Sun, 21 Oct 2012 16:52:52 +0530
+Message-ID: <CANBXnMnqPMR7fQ0MwaK71K5rAVN56U6_oR2=cr4ss6kOxtgtsg@mail.gmail.com>
+Subject: Re: [PATCH 0/9] Staging: winbond: Fixed coding style issues
+From: Adil Mujeeb <mujeeb.adil@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 21, 2012 at 01:07:31PM +1000, Dave Airlie wrote:
-> Why couldn't this script just be a wrapper around qemu?
+Hi Pavel,
+
+On Sun, Oct 21, 2012 at 4:12 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> On Fri 2012-10-12 22:07:06, Adil Mujeeb wrote:
+>>
+>> winbond directory files have lots of coding style issues. The patch
+> set tries to remove *most* (if not all) of the coding style
+> issues. checkpatch.pl script is still complaining (like 80 characters
+> limit) but major part of the serious coding style issues have been
+> rectified.
 >
-> I get the kvm developers developing features that isn't ideal, but for
-> the quick boot a kernel tests, I don't see why a well maintained qemu
-> wrapper isn't superior. I hate constructing qemu command lines, but a
-> script in the kernel repo seems like a good idea.
+> ACK on patches except 2 and 5. Plus if you could keep the printks,
+> that would be great. When the driver is debugged and in wide use, we
+> can remove them, but now they are useful...
 
-Well, Alex Graf had exactly that but I don't know what happened to it -
-I can't find it upstream at least.
+Thanks Pavel for acknowledgement.
 
-http://lists.gnu.org/archive/html/qemu-devel/2011-08/msg02728.html
+I removed printk's as Joe and Greg recommended to remove "tracing"
+type debug calls. Let me know if I need to resubmit the patch.
 
--- 
-Regards/Gruss,
-    Boris.
+Regards,
+Adil
+
+>
+> Thanks,
+>                                                                         Pavel
+>
+> --
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
