@@ -1,69 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab2JUMED (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 08:04:03 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46945 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796Ab2JUMD7 (ORCPT
+	id S1753336Ab2JUMFj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 08:05:39 -0400
+Received: from xvm-169-183.ghst.net ([95.142.169.183]:42932 "EHLO
+	photon.sigxcpu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab2JUMFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 08:03:59 -0400
-Message-ID: <5083E4AA.3060807@gmail.com>
-Date: Sun, 21 Oct 2012 14:03:54 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	Sun, 21 Oct 2012 08:05:38 -0400
+X-Greylist: delayed 548 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Oct 2012 08:05:37 EDT
+Date: Sun, 21 Oct 2012 13:56:25 +0200
+From: Guido =?iso-8859-1?Q?G=FCnther?= <agx@sigxcpu.org>
+To: linux-kernel@vger.kernel.org
+Subject: Black screen with gma500_gfx on 3.6.2
+Message-ID: <20121021115625.GA2535@bogon.sigxcpu.org>
 MIME-Version: 1.0
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-CC: bp@alien8.de, pavel@ucw.cz, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, security@kernel.org,
-        linux-media@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: A reliable kernel panic (3.6.2) and system crash when visiting
- a particular website
-References: <2104474742.26357.1350734815286.JavaMail.mail@webmail05> <20121020162759.GA12551@liondog.tnic> <966148591.30347.1350754909449.JavaMail.mail@webmail08> <20121020203227.GC555@elf.ucw.cz> <20121020225849.GA8976@liondog.tnic> <1781795634.31179.1350774917965.JavaMail.mail@webmail04> <20121021002424.GA16247@liondog.tnic> <1798605268.19162.1350784641831.JavaMail.mail@webmail17> <20121021110851.GA6504@liondog.tnic> <121566322.100103.1350820776893.JavaMail.mail@webmail20>
-In-Reply-To: <121566322.100103.1350820776893.JavaMail.mail@webmail20>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.10.2012 13:59, Artem S. Tashkinov wrote:
-> On Oct 21, 2012, Borislav Petkov wrote:
->>
->> On Sun, Oct 21, 2012 at 01:57:21AM +0000, Artem S. Tashkinov wrote:
->>> The freeze happens on my *host* Linux PC. For an experiment I decided
->>> to check if I could reproduce the freeze under a virtual machine - it
->>> turns out the Linux kernel running under it also freezes.
->>
->> I know that - but a freeze != oops - at least not necessarily. Which
->> means it could very well be a different issue now that vbox is gone.
->>
->> Or, it could be the same issue with different incarnations: with vbox
->> you get the corruptions and without it, you get the freezes. I'm
->> assuming you do the same flash player thing in both cases?
->>
->> Here's a crazy idea: can you try to reproduce it in KVM?
-> 
-> OK, dismiss VBox altogether - it has a very buggy USB implementation, thus
-> it just hangs when trying to access my webcam.
+Hi,
+when switching from psb_gfx (3.2) to 3.6.2 (or 3.7 as of
+2474542f64432398f503373f53bdf620491bcfa8) I'm getting a black screen on
+a Axiomtek SBC84826 board with a HP 2310ti attached via VGA.
 
-Ok.
+When using CONFIG_STUB_POULSBO=y I do get a console but when I unbind
+the driver and attach gma500_gfx like 
 
-> What I've found out is that my system crashes *only* when I try to enable
-> usb-audio (from the same webcam) - I still have no idea how to capture a
-> panic message, but I ran
-> 
-> "while :; do dmesg -c; done" in xterm, then I got like thousands of messages
-> and I photographed my monitor:
-> 
-> http://imageshack.us/a/img685/9452/panicz.jpg
+echo 0000\:02\:00.0 > /sys/bus/pci/devices/0000\:02\:00.0/driver/unbind
+echo 0000\:02\:00.0 > /sys/bus/pci/drivers/gma500/bind 
 
-A hint at least. How did you enable the audio record exactly? Can you
-reproduce this with arecord?
+the display stays black. dmesg has:
 
-What chipset are you on? Please provide both "lspci -v" and "lsusb -v"
-dumps. As I said, I fail to reproduce that issue on any of my machines.
+[  688.779860] gma500 0000:00:02.0: setting latency timer to 64
+[  688.805968] acpi device:04: registered as cooling_device0
+[  688.806976] acpi device:05: registered as cooling_device1
+[  688.807140] ACPI: Video Device [GFX0] (multi-head: yes  rom: no  post: no)
+[  688.807553] input: Video Bus as /devices/LNXSYSTM:00/device:00/PNP0A08:00/LNXVIDEO:00/input/input13
+[  688.809053] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+[  688.809065] [drm] No driver support for vblank timestamp query.
+[  689.950596] gma500 0000:00:02.0: Backlight lvds set brightness 7a127a12
+[  689.950627] [drm] Initialized gma500 1.0.0 2011-06-06 for 0000:00:02.0 on minor 0
 
+Besides the VGA the driver detects a LVDS as well although there's none
+attached (the board does have a connector for it though):
 
-Daniel
+# grep -l ^connected /sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-*/status
+/sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-LVDS-1/status
+/sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-VGA-1/status
+
+It also states that both ports are disabled:
+
+# cat   /sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-*/enabled
+disabled
+disabled
+
+I didn't find a way to enable any of these ports via sysfs and X.org's
+modesetting driver fails either. Any pointers on howto debug this
+further are greatly appreciated.
+Cheers,
+ -- Guido
+
+P.S.: This is the cards lspci information:
+
+00:02.0 VGA compatible controller: Intel Corporation System Controller Hub (SCH Poulsbo) Graphics Controller (rev 07) (prog-if 00 [VGA controller])
+        Subsystem: Device 8100:8086
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0
+        Interrupt: pin A routed to IRQ 16
+        Region 0: Memory at fdf00000 (32-bit, non-prefetchable) [size=512K]
+        Region 1: I/O ports at ff00 [size=8]
+        Region 2: Memory at d0000000 (32-bit, non-prefetchable) [size=256M]
+        Region 3: Memory at fdf80000 (32-bit, non-prefetchable) [size=256K]
+        Expansion ROM at <unassigned> [disabled]
+        Capabilities: [d0] Power Management version 2
+                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [b0] Vendor Specific Information: Len=07 <?>
+        Capabilities: [90] MSI: Enable- Count=1/1 Maskable- 64bit-
+                Address: 00000000  Data: 0000
+        Kernel driver in use: gma500
 
