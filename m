@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705Ab2JUN31 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 09:29:27 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:61226 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437Ab2JUN30 (ORCPT
+	id S1753802Ab2JUNbT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 09:31:19 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:55544 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753522Ab2JUNbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 09:29:26 -0400
-Date: Sun, 21 Oct 2012 15:29:21 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, aarcange@redhat.com,
-        Michel Lespinasse <walken@google.com>
-Subject: Re: [PATCH 4/2] numa, mm: Rename the PROT_NONE fault handling
- functions
-Message-ID: <20121021132921.GA23425@gmail.com>
-References: <20121018171821.7f1b1683@cuia.bos.redhat.com>
- <20121018172021.0b1f6e3d@cuia.bos.redhat.com>
- <1350646863.30157.13.camel@twins>
- <50815EA5.5080502@redhat.com>
- <20121019205407.GA9132@gmail.com>
- <20121021125007.GB19535@gmail.com>
- <5083F720.2030003@redhat.com>
+	Sun, 21 Oct 2012 09:31:18 -0400
+Date: Sun, 21 Oct 2012 15:31:01 +0200
+From: Heinz Diehl <htd@fritha.org>
+To: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        Martin Peres <martin.peres@labri.fr>,
+        Heinz Diehl <htd@fancy-poultry.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>
+Subject: Re: Linux 3.7-rc1 (nouveau_bios_score oops).
+Message-ID: <20121021133101.GA23022@fritha.org>
+References: <1724445.dN2yMEzN6d@localhost>
+ <20121020212036.GA1698@fritha.org>
+ <20121020221948.GE5826@joi.lan>
+ <2155889.FOmdXlva7q@localhost>
+ <20121021120901.GA22587@joi.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5083F720.2030003@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121021120901.GA22587@joi.lan>
+Organization: private site
+OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.21+66 (70810a88ce9f) (2011-07-01)
+X-Provags-ID: V02:K0:oyG+K2llj88h6coLeo7H4dVo4owaKCWMux2bjl1jsNM
+ X91isK05ya1mIxSCSCq049g5JuVPlohFLiPPpvjexKxVPqWCUf
+ H+q2vV9lViunO0oGy4ixApMiCip8a5z0wL3LegOjLvZfzZv9Et
+ YqZYfTpePZMgk8zNOx9ngKSTGDZjwWDHYuadT3ivbkIc5LVq+A
+ rPOFUK/zB2A4id5A4dJm6slgJUB71oau0bpKFv/OvwVVbzugcy
+ Khk0aDzCjNObpH78ZGhb6rxNAH9Vyg69jcfAz5rZrhImYlKw7x
+ Leks+64Yn6WnT1gycpR9Aw+HfA6DjdpWbfcvc0nhjIMhjDnbSQ
+ t6K+EfBu3+xHn+T3bQOE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 21.10.2012, Marcin Slusarz wrote: 
 
-* Rik van Riel <riel@redhat.com> wrote:
-
-> On 10/21/2012 08:50 AM, Ingo Molnar wrote:
-> >
-> >* Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> >>>>I don't much care either way, but I was thinking walken
-> >>>>might want to use something similar to do WSS estimation,
-> >>>>in which case the NUMA name is just as wrong.
-> >>>
-> >>>That's a good point. I had not considered other uses of the
-> >>>same code.
-> >>
-> >>Renaming the functions for more clarity still makes sense IMO:
-> >>we could give it a _wss or _working_set prefix/postfix?
-> >
-> >So, to not drop your patch on the floor I've modified it as per
-> >the patch below.
-> >
-> >The _wss() names signal that these handlers are used for a
-> >specific purpose, they are not related to the regular PROT_NONE
-> >handling code.
+> > > Please attach acpidump output.
+> > 
+> > http://pluto.agmk.net/nv/acpidump.txt
+> > 
 > 
-> Michel indicated that he does not use PROT_NONE for his 
-> working set estimation code, but instead checks the accessed 
-> bits in the page tables.
+> This looks like ACPI bug...
 
-The pte_young() WSS method has a couple of fundamental 
-limitations:
+I guess my acpidump didn't make it to the list. Anyway, here it is:
 
- - it doesn't work with shared memory very well, the pte is per
-   mapping, not per page. The PROT_NONE method instruments the
-   physical page in essence.
+http://www.fritha.org/acpidump.gz
 
- - it does not tell us which task touched the pte, in a
-   multi-threaded program
-
-So like Peter I'd too expect these new WSS methods to eventually 
-be picked up for any serious WSS work.
-
-Thanks,
-
-	Ingo
