@@ -1,82 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932520Ab2JUSWB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 14:22:01 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50909 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932132Ab2JUSV7 (ORCPT
+	id S932501Ab2JUS2K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 14:28:10 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:64707 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932387Ab2JUS2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 14:21:59 -0400
-Date: Sun, 21 Oct 2012 11:21:30 -0700
-From: tip-bot for Jean Delvare <khali@linux-fr.org>
-Message-ID: <tip-fd0587339d80dd2fea5ead7f734676c9c618eace@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rdunlap@xenotime.net, khali@linux-fr.org, fernando@oss.ntt.co.jp,
-        tglx@linutronix.de, dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fernando@oss.ntt.co.jp, khali@linux-fr.org, tglx@linutronix.de,
-        rdunlap@xenotime.net, dzickus@redhat.com
-In-Reply-To: <20121021120551.4656d99b@endymion.delvare>
-References: <20121021120551.4656d99b@endymion.delvare>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/urgent] Documentation:
-  Reflect the new location of the NMI watchdog info
-Git-Commit-ID: fd0587339d80dd2fea5ead7f734676c9c618eace
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 21 Oct 2012 14:28:08 -0400
+Date: Sun, 21 Oct 2012 20:27:56 +0200
+From: Rabin Vincent <rabin@rab.in>
+To: Dave Martin <dave.martin@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>, oleg@redhat.com
+Subject: Re: [PATCH 9/9] ARM: add uprobes support
+Message-ID: <20121021182742.GB4840@ubuntu>
+References: <1350242593-17761-1-git-send-email-rabin@rab.in>
+ <1350242593-17761-9-git-send-email-rabin@rab.in>
+ <20121015173147.GA18614@linaro.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 21 Oct 2012 11:21:37 -0700 (PDT)
+In-Reply-To: <20121015173147.GA18614@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fd0587339d80dd2fea5ead7f734676c9c618eace
-Gitweb:     http://git.kernel.org/tip/fd0587339d80dd2fea5ead7f734676c9c618eace
-Author:     Jean Delvare <khali@linux-fr.org>
-AuthorDate: Sun, 21 Oct 2012 12:05:51 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 21 Oct 2012 19:03:35 +0200
+On Mon, Oct 15, 2012 at 06:31:47PM +0100, Dave Martin wrote:
+> On Sun, Oct 14, 2012 at 09:23:13PM +0200, Rabin Vincent wrote:
+> > +static int uprobe_trap_handler(struct pt_regs *regs, unsigned int instr)
+> > +{
+> > +	unsigned long flags;
+> > +
+> > +	local_irq_save(flags);
+> > +	if ((instr & 0x0fffffff) == UPROBE_SWBP_INSN)
+> 
+> Is the check unnecessary here?  I think the same comparison will
+> happen as a result of evaluating the associated undef_hook.
 
-Documentation: Reflect the new location of the NMI watchdog info
-
-Commit 9919cba7 ("watchdog: Update documentation") moved the
-NMI watchdog documentation from nmi_watchdog.txt to
-lockup-watchdogs.txt. Update the index file accordingly.
-
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Don Zickus <dzickus@redhat.com>
-Link: http://lkml.kernel.org/r/20121021120551.4656d99b@endymion.delvare
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- Documentation/00-INDEX |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
-index 49c0513..fec55dc 100644
---- a/Documentation/00-INDEX
-+++ b/Documentation/00-INDEX
-@@ -210,6 +210,8 @@ local_ops.txt
- 	- semantics and behavior of local atomic operations.
- lockdep-design.txt
- 	- documentation on the runtime locking correctness validator.
-+lockup-watchdogs.txt
-+	- info on soft and hard lockup detectors (aka nmi_watchdog).
- logo.gif
- 	- full colour GIF image of Linux logo (penguin - Tux).
- logo.txt
-@@ -240,8 +242,6 @@ netlabel/
- 	- directory with information on the NetLabel subsystem.
- networking/
- 	- directory with info on various aspects of networking with Linux.
--nmi_watchdog.txt
--	- info on NMI watchdog for SMP systems.
- nommu-mmap.txt
- 	- documentation about no-mmu memory mapping support.
- numastat.txt
+The check is there because this uprobe_trap_handler() is registered for
+two different undefined instructions: UPROBE_SWBP_INSN (the one which is
+used to insert the probe) and UPROBE_SS_INSN (the one placed in the XOL
+area for simulating single-stepping).
