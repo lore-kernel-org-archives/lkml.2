@@ -1,75 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751473Ab2JUEUR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 00:20:17 -0400
-Received: from [216.32.180.187] ([216.32.180.187]:8597 "EHLO
-	co1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1750991Ab2JUEUP (ORCPT
+	id S1751493Ab2JUErJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 00:47:09 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57040 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106Ab2JUErH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 00:20:15 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 6
-X-BigFish: VPS6(zzbb2dI98dI9371I103dK1432Izz1202h1d1ah1d2ahzz177df4h17326ah8275bh8275dhf73b6uz2dh668h839h944hd25hd2bhf0ah107ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1155h)
-X-WSS-ID: 0MC86NM-02-A12-02
-X-M-MSG: 
-Date: Sat, 20 Oct 2012 23:18:58 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Tom Rini <trini@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: BUG: 1bbbbe7 (x86: Exclude E820_RESERVED regions...) PANIC on
- boot
-Message-ID: <20121021041858.GA14809@jshin-Toonie>
-References: <903a3ead-98b5-4afa-88a4-3dc723895e82@blur>
- <d556fc0f-da5d-4531-b331-6dc086461f34@blur>
- <50833F30.4020802@ti.com>
- <CAE9FiQWpSvKp=Oh+4Y8OpdOjdRnkYVL2HvNNXc29ESpNsMC0AQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQWpSvKp=Oh+4Y8OpdOjdRnkYVL2HvNNXc29ESpNsMC0AQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Sun, 21 Oct 2012 00:47:07 -0400
+From: anish kumar <anish198519851985@gmail.com>
+To: gregkh@linuxfoundation.org, myungjoo.ham@samsung.com,
+        cw00.choi@samsung.com
+Cc: linux-kernel@vger.kernel.org, anish kumar <anish198519851985@gmail.com>
+Subject: [PATCH] extcon: driver model release call not needed
+Date: Sun, 21 Oct 2012 13:46:51 +0900
+Message-Id: <1350794811-12388-1-git-send-email-anish198519851985@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 20, 2012 at 09:01:43PM -0700, Yinghai Lu wrote:
-> On Sat, Oct 20, 2012 at 5:17 PM, Tom Rini <trini@ti.com> wrote:
-> > On 10/20/12 17:11, Shin, Jacob wrote:
-> >> Hi could you please attach the dmesg output? Before rc2 is fine as well.
-> >> I would like to see the E820 table. Thank you,
-> >
-> > dmesg is quite long so I've put it on pastebin: http://pastebin.com/4eSPEAvB
-> >
-> > --
-> 
-> [    0.000000] BIOS-e820: [mem 0x0000000100001000-0x000000042fffffff] usable
-> 
-> pre-calculate table size is too small, so it crashes.
+From: anish kumar <anish198519851985@gmail.com>
 
-Right,
+There was a case where free and list_del can be called twice
+on the same pointer.So fixed it by re-arranging the code and
+removing a function which was not needed.
 
-I think just this one patch 3/6 on top of -rc2 should work:
+Signed-off-by: anish kumar <anish198519851985@gmail.com>
+---
+ drivers/extcon/extcon-class.c |   71 ++++++++++++++++++-----------------------
+ 1 files changed, 31 insertions(+), 40 deletions(-)
 
-https://lkml.org/lkml/2012/8/29/223
-
-That would be a simpler path for 3.7,
-
-Thanks!
-
-> 
-> can you please try
-> 
-> 	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-> for-x86-mm
-> 
-> and post bootlog?
-> 
-> Thanks
-> 
-> Yinghai
-> 
+diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+index 754f133..347db10 100644
+--- a/drivers/extcon/extcon-class.c
++++ b/drivers/extcon/extcon-class.c
+@@ -544,47 +544,10 @@ static int create_extcon_class(void)
+ 	return 0;
+ }
+ 
+-static void extcon_cleanup(struct extcon_dev *edev, bool skip)
+-{
+-	mutex_lock(&extcon_dev_list_lock);
+-	list_del(&edev->entry);
+-	mutex_unlock(&extcon_dev_list_lock);
+-
+-	if (!skip && get_device(edev->dev)) {
+-		int index;
+-
+-		if (edev->mutually_exclusive && edev->max_supported) {
+-			for (index = 0; edev->mutually_exclusive[index];
+-			     index++)
+-				kfree(edev->d_attrs_muex[index].attr.name);
+-			kfree(edev->d_attrs_muex);
+-			kfree(edev->attrs_muex);
+-		}
+-
+-		for (index = 0; index < edev->max_supported; index++)
+-			kfree(edev->cables[index].attr_g.name);
+-
+-		if (edev->max_supported) {
+-			kfree(edev->extcon_dev_type.groups);
+-			kfree(edev->cables);
+-		}
+-
+-#if defined(CONFIG_ANDROID)
+-		if (switch_class)
+-			class_compat_remove_link(switch_class, edev->dev, NULL);
+-#endif
+-		device_unregister(edev->dev);
+-		put_device(edev->dev);
+-	}
+-
+-	kfree(edev->dev);
+-}
+-
+ static void extcon_dev_release(struct device *dev)
+ {
+-	struct extcon_dev *edev = (struct extcon_dev *) dev_get_drvdata(dev);
+-
+-	extcon_cleanup(edev, true);
++	struct extcon_dev *edev = dev_get_drvdata(dev);
++	kfree(edev->dev);
+ }
+ 
+ static const char *muex_name = "mutually_exclusive";
+@@ -810,7 +773,35 @@ EXPORT_SYMBOL_GPL(extcon_dev_register);
+  */
+ void extcon_dev_unregister(struct extcon_dev *edev)
+ {
+-	extcon_cleanup(edev, false);
++	mutex_lock(&extcon_dev_list_lock);
++	list_del(&edev->entry);
++	mutex_unlock(&extcon_dev_list_lock);
++
++	if (get_device(edev->dev) != NULL) {
++		int index;
++		if (edev->mutually_exclusive && edev->max_supported) {
++			for (index = 0; edev->mutually_exclusive[index];
++					index++)
++				kfree(edev->d_attrs_muex[index].attr.name);
++			kfree(edev->d_attrs_muex);
++			kfree(edev->attrs_muex);
++		}
++
++		for (index = 0; index < edev->max_supported; index++)
++			kfree(edev->cables[index].attr_g.name);
++
++		if (edev->max_supported) {
++			kfree(edev->extcon_dev_type.groups);
++			kfree(edev->cables);
++		}
++
++#if defined(CONFIG_ANDROID)
++		if (switch_class)
++			class_compat_remove_link(switch_class, edev->dev, NULL);
++#endif
++		device_unregister(edev->dev);
++		put_device(edev->dev);
++	}
+ }
+ EXPORT_SYMBOL_GPL(extcon_dev_unregister);
+ 
+-- 
+1.7.1
 
