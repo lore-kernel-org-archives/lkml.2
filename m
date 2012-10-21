@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab2JUM7k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 08:59:40 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:64415 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab2JUM7j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 08:59:39 -0400
-Date: Sun, 21 Oct 2012 14:59:33 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Dave Airlie <airlied@gmail.com>, Borislav Petkov <bp@alien8.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Linux KVM tool for v3.7-rc0
-Message-ID: <20121021125933.GC19535@gmail.com>
-References: <alpine.LFD.2.02.1210121434140.10531@tux.localdomain>
- <20121016134129.2fcd7c8ebe1235065aea929e@canb.auug.org.au>
- <CA+55aFzz66Y1MtOoqEMrQCVzdL-2pgr43e1sXUa=eM5GXL9XSA@mail.gmail.com>
- <20121020180436.c42b7325431fe87104b008fa@canb.auug.org.au>
- <20121020181425.GA11191@liondog.tnic>
- <CAPM=9twcHxUGgYUc27DV1AcYZbzKSbA1Bru8vK1kcWvcG0Jpkw@mail.gmail.com>
- <20121021110329.GA7024@infradead.org>
+	id S932079Ab2JUNXO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 09:23:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45641 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753796Ab2JUNXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Oct 2012 09:23:13 -0400
+Message-ID: <5083F720.2030003@redhat.com>
+Date: Sun, 21 Oct 2012 09:22:40 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121021110329.GA7024@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, aarcange@redhat.com,
+        Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH 4/2] numa, mm: Rename the PROT_NONE fault handling functions
+References: <20121018171821.7f1b1683@cuia.bos.redhat.com> <20121018172021.0b1f6e3d@cuia.bos.redhat.com> <1350646863.30157.13.camel@twins> <50815EA5.5080502@redhat.com> <20121019205407.GA9132@gmail.com> <20121021125007.GB19535@gmail.com>
+In-Reply-To: <20121021125007.GB19535@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/21/2012 08:50 AM, Ingo Molnar wrote:
+>
+> * Ingo Molnar <mingo@kernel.org> wrote:
+>
+>>>> I don't much care either way, but I was thinking walken
+>>>> might want to use something similar to do WSS estimation,
+>>>> in which case the NUMA name is just as wrong.
+>>>
+>>> That's a good point. I had not considered other uses of the
+>>> same code.
+>>
+>> Renaming the functions for more clarity still makes sense IMO:
+>> we could give it a _wss or _working_set prefix/postfix?
+>
+> So, to not drop your patch on the floor I've modified it as per
+> the patch below.
+>
+> The _wss() names signal that these handlers are used for a
+> specific purpose, they are not related to the regular PROT_NONE
+> handling code.
 
-* Christoph Hellwig <hch@infradead.org> wrote:
+Michel indicated that he does not use PROT_NONE for his
+working set estimation code, but instead checks the
+accessed bits in the page tables.
 
-> On Sun, Oct 21, 2012 at 01:07:31PM +1000, Dave Airlie wrote:
-> > Why couldn't this script just be a wrapper around qemu
-> 
-> It can be.  Here is my ususual one:
-> 
-> #!/bin/sh
-> 
-> /opt/qemu/bin/qemu-system-x86_64 \
-> 	-m 1500 \
-> 	-enable-kvm \
-> 	-drive if=none,file=/home/hch/qemu-root.img,cache=none,id=root \
+Since NUMA migration is the only user of PROT_NONE ptes
+in normal vmas, maybe _numa is the right suffix after all?
 
-You are wrong on three counts:
-
- - As I mentioned it in my first mail to you this is not the 
-   same as 'vm run': you still have a qemu-root.img while 
-   tools/kvm does not ...
-
-   'vm run' works without having any disk image around, it just 
-   uses the existing distro binaries and boots them, sharing the 
-   host file system.
-
- - automatic, transparent host filesystem sharing is another 
-   useful feature: I can copy files in/out of the virtual 
-   machine using the host filesystem.
-
- - transparent networking is up and running straight away
-
-But yeah, I guess if you ignore enough key tools/kvm/ features 
-then you will eventually be right: it's really just the same as 
-Qemu and has no place in the kernel repo ;-)
-
-Thanks,
-
-	Ingo
+-- 
+All rights reversed
