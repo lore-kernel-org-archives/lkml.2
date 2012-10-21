@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751438Ab2JUDq1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Oct 2012 23:46:27 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35395 "EHLO
+	id S1751091Ab2JUEBq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 00:01:46 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56405 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab2JUDq0 (ORCPT
+	with ESMTP id S1749667Ab2JUEBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Oct 2012 23:46:26 -0400
+	Sun, 21 Oct 2012 00:01:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAPM=9twcHxUGgYUc27DV1AcYZbzKSbA1Bru8vK1kcWvcG0Jpkw@mail.gmail.com>
-References: <alpine.LFD.2.02.1210121434140.10531@tux.localdomain>
-	<20121016134129.2fcd7c8ebe1235065aea929e@canb.auug.org.au>
-	<CA+55aFzz66Y1MtOoqEMrQCVzdL-2pgr43e1sXUa=eM5GXL9XSA@mail.gmail.com>
-	<20121020180436.c42b7325431fe87104b008fa@canb.auug.org.au>
-	<20121020181425.GA11191@liondog.tnic>
-	<CAPM=9twcHxUGgYUc27DV1AcYZbzKSbA1Bru8vK1kcWvcG0Jpkw@mail.gmail.com>
-Date: Sat, 20 Oct 2012 20:46:24 -0700
-X-Google-Sender-Auth: qMsGzVcyByWNUJ91Oj-YoUvCyug
-Message-ID: <CAE9FiQUBRVgkJ=18TGtr=2UCq+xYceUsppr9Xth0LOq-37g-Eg@mail.gmail.com>
-Subject: Re: [GIT PULL] Linux KVM tool for v3.7-rc0
+In-Reply-To: <50833F30.4020802@ti.com>
+References: <903a3ead-98b5-4afa-88a4-3dc723895e82@blur>
+	<d556fc0f-da5d-4531-b331-6dc086461f34@blur>
+	<50833F30.4020802@ti.com>
+Date: Sat, 20 Oct 2012 21:01:43 -0700
+X-Google-Sender-Auth: gQlsy5EqxN7kOBKdCftGApgznO4
+Message-ID: <CAE9FiQWpSvKp=Oh+4Y8OpdOjdRnkYVL2HvNNXc29ESpNsMC0AQ@mail.gmail.com>
+Subject: Re: BUG: 1bbbbe7 (x86: Exclude E820_RESERVED regions...) PANIC on boot
 From: Yinghai Lu <yinghai@kernel.org>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Avi Kivity <avi@redhat.com>,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+To: Tom Rini <trini@ti.com>
+Cc: "Shin, Jacob" <Jacob.Shin@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "stable@kernel.org" <stable@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 20, 2012 at 8:07 PM, Dave Airlie <airlied@gmail.com> wrote:
+On Sat, Oct 20, 2012 at 5:17 PM, Tom Rini <trini@ti.com> wrote:
+> On 10/20/12 17:11, Shin, Jacob wrote:
+>> Hi could you please attach the dmesg output? Before rc2 is fine as well.
+>> I would like to see the E820 table. Thank you,
 >
-> Why couldn't this script just be a wrapper around qemu?
+> dmesg is quite long so I've put it on pastebin: http://pastebin.com/4eSPEAvB
 >
-> I get the kvm developers developing features that isn't ideal, but for
-> the quick boot a kernel tests, I don't see why a well maintained qemu
-> wrapper isn't superior. I hate constructing qemu command lines, but a
-> script in the kernel repo seems like a good idea.
+> --
 
-you can build one iso like:
+[    0.000000] BIOS-e820: [mem 0x0000000100001000-0x000000042fffffff] usable
 
-make isoimage FDARGS="ignore_loglevel debug initcall_debug
-acpi.debug_layer=0xffff0000 pci=routeirq apic=debug
-ramdisk_size=262144 root=/dev/ram0 rw ip=dhcp
-console=uart8250,io,0x3f8,115200"
-FDINITRD=/home/yhlu/xx/xx/rootfs/mydisk14_x86_64_xz.xz
+pre-calculate table size is too small, so it crashes.
 
-then use kvm to load that iso
+can you please try
 
-/usr/local/kvm/bin/qemu-system-x86_64 -L /usr/local/kvm/share/qemu -m
-6144 -net nic,model=e1000,macaddr=00:1c:25:1c:13:e9 -net user -smp 2
--cdrom /home/yhlu/xx/xx/kernel/tip/linux-2.6/arch/x86/boot/image.iso
--boot d -serial telnet:127.0.0.1:4444,server -monitor stdio
+	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+for-x86-mm
 
-later could use
-  telnet 127.0.0.1 4444
-in another terminal to get serial console.
-
-and initrd is converted from opensuse rescue initrd.
-
-hope we can have scripts to create standalone initrd with updated user
-program etc.
+and post bootlog?
 
 Thanks
 
