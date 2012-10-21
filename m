@@ -1,46 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599Ab2JUE7R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 00:59:17 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38223 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab2JUE7Q (ORCPT
+	id S1751864Ab2JUGCt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 02:02:49 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36637 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489Ab2JUGCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 00:59:16 -0400
-From: anish kumar <anish198519851985@gmail.com>
-To: gregkh@linuxfoundation.org, myungjoo.ham@samsung.com,
-        cw00.choi@samsung.com
-Cc: linux-kernel@vger.kernel.org, anish kumar <anish198519851985@gmail.com>
-Subject: [PATCH] extcon: trivial: kfree missed from remove path
-Date: Sun, 21 Oct 2012 13:58:59 +0900
-Message-Id: <1350795539-13206-1-git-send-email-anish198519851985@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Sun, 21 Oct 2012 02:02:48 -0400
+Message-ID: <50839002.8020305@gmail.com>
+Date: Sun, 21 Oct 2012 14:02:42 +0800
+From: caiyuqing <yuqingcaik@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: question about context switch on arm Linux
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: anish kumar <anish198519851985@gmail.com>
+hi, all.
+I have some questions about context switch on arm Linux (my target is
+ARMv7-a).
+1. Does arm linux support FCSE to handle the context switch?
+2. If using FCSE, that means the processes number limit is 128 and the
+memory limit is 32MB per process, is that right?
 
-Extcon core doesn't free the memory when we do unregister.
-Kfree is added in the remove path as it was missing.
-
-Signed-off-by: anish kumar <anish198519851985@gmail.com>
----
- drivers/extcon/extcon-max77693.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-index e21387e..67bc9ab 100644
---- a/drivers/extcon/extcon-max77693.c
-+++ b/drivers/extcon/extcon-max77693.c
-@@ -762,6 +762,7 @@ static int __devexit max77693_muic_remove(struct platform_device *pdev)
- 		free_irq(muic_irqs[i].virq, info);
- 	cancel_work_sync(&info->irq_work);
- 	extcon_dev_unregister(info->edev);
-+	kfree(info->edev);
- 	kfree(info);
- 
- 	return 0;
--- 
-1.7.1
+Thanks
+qing
 
