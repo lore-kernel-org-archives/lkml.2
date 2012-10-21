@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157Ab2JUINf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 04:13:35 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:40860 "EHLO
+	id S1752162Ab2JUIT4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 04:19:56 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:65286 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751766Ab2JUINd (ORCPT
+	with ESMTP id S1751766Ab2JUITy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 04:13:33 -0400
-Date: Sun, 21 Oct 2012 01:13:29 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 1/2] char_dev: allow setting up and pinning parent devices
-Message-ID: <20121021081329.GA1959@core.coreip.homeip.net>
-References: <20121019175046.GP2616@ZenIV.linux.org.uk>
- <1350804271-2449-1-git-send-email-dmitry.torokhov@gmail.com>
- <20121021073928.GV2616@ZenIV.linux.org.uk>
+	Sun, 21 Oct 2012 04:19:54 -0400
+Message-ID: <5083B026.1030307@gmail.com>
+Date: Sun, 21 Oct 2012 16:19:50 +0800
+From: caiyuqing <yuqingcaik@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121021073928.GV2616@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Cochran <richardcochran@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: question about context switch on arm Linux
+References: <50839002.8020305@gmail.com> <20121021074434.GB4735@netboy.at.omicron.at>
+In-Reply-To: <20121021074434.GB4735@netboy.at.omicron.at>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 21, 2012 at 08:39:28AM +0100, Al Viro wrote:
-> On Sun, Oct 21, 2012 at 12:24:30AM -0700, Dmitry Torokhov wrote:
-> > In certain cases (for example when a cdev structure is embedded into
-> > another object whose lifetime is controlled by a separate device object)
-> > it is beneficial to tie lifetime of another struct device to the lifetime
-> > of character device so that related object is not freed until after
-> > char_dev object is freed. To achieve this allow setting a "parent" device
-> > for character devices and pin them when doing cdev_add() and unpin when
-> > last reference to cdev structure is being released.
-> 
-> Why struct device and not simply struct kobject?
+于 2012年10月21日 15:44, Richard Cochran 写道:
+> On Sun, Oct 21, 2012 at 02:02:42PM +0800, caiyuqing wrote:
+>> hi, all.
+>> I have some questions about context switch on arm Linux (my target is
+>> ARMv7-a).
+>> 1. Does arm linux support FCSE to handle the context switch?
+> No, mainline Linux does not support FCSE. However, you can use Gilles'
+> unoffical (but working) FCSE branches at
+>
+>    http://git.xenomai.org/?p=ipipe-gch.git;a=summary
+>
+>> 2. If using FCSE, that means the processes number limit is 128 and the
+>> memory limit is 32MB per process, is that right?
+> Yes and no.
+>
+> Gilles' patches offer a "strict mode" and a "best effort" mode. The
+> strict mode does have the limitation, but the best effort mode does
+> not.
+>
+> HTH,
+> Richard
+Richard, thanks for your reply.
+mainline Linux doesn't support FCSE, if so, when kernel switch a process 
+to another(these two process share the same virtual memory space), that 
+means the vitrual-to-physical address should be remaped, TLB shuold be 
+invalid, CACHE should be flushed, right?
 
-It was more convenient for my uses and I also think that parents of
-character devices will be struct devices... I however will not insist
-and if you prefer using more generic kobject I can change it,
+qing
 
-Thanks.
 
--- 
-Dmitry
+
+
+
