@@ -1,79 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932667Ab2JUWSL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 18:18:11 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:56717 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932626Ab2JUWSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 18:18:10 -0400
-Date: Sun, 21 Oct 2012 18:16:40 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>, Dave Airlie <airlied@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Avi Kivity <avi@redhat.com>,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Subject: Re: [GIT PULL] Linux KVM tool for v3.7-rc0
-Message-ID: <20121021221640.GA2027@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	richard -rw- weinberger <richard.weinberger@gmail.com>,
-	Borislav Petkov <bp@alien8.de>, Dave Airlie <airlied@gmail.com>,
-	Stephen Rothwell <sfr@canb.auug.org.au>,
-	Pekka Enberg <penberg@kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Ingo Molnar <mingo@kernel.org>, Avi Kivity <avi@redhat.com>,
-	linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-References: <alpine.LFD.2.02.1210121434140.10531@tux.localdomain>
- <20121016134129.2fcd7c8ebe1235065aea929e@canb.auug.org.au>
- <CA+55aFzz66Y1MtOoqEMrQCVzdL-2pgr43e1sXUa=eM5GXL9XSA@mail.gmail.com>
- <20121020180436.c42b7325431fe87104b008fa@canb.auug.org.au>
- <20121020181425.GA11191@liondog.tnic>
- <CAPM=9twcHxUGgYUc27DV1AcYZbzKSbA1Bru8vK1kcWvcG0Jpkw@mail.gmail.com>
- <20121021111832.GB6504@liondog.tnic>
- <CAFLxGvzz4eS5Rd3b4mX4wef-2mnh-aNVrjty6F6vSmwkgdqWaA@mail.gmail.com>
+	id S932678Ab2JUWUu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 18:20:50 -0400
+Received: from smtprelay0100.b.hostedemail.com ([64.98.42.100]:35942 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932634Ab2JUWUt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Oct 2012 18:20:49 -0400
+X-Panda: scanned!
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,t.artem@lycos.com,:::,RULES_HIT:152:355:379:541:582:945:967:973:988:989:1152:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2108:2194:2199:2378:2379:2393:2525:2560:2563:2682:2685:2857:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3868:3871:3872:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:5007:6261:7679:7875:7903:9025:9108:10004:10400:10848:11658:11914:12043:12050:12517:12519:12698:12737,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-Session-Marker: 742E617274656D406C79636F732E636F6D
+X-Filterd-Recvd-Size: 1225
+Date: Sun, 21 Oct 2012 22:20:06 +0000 (GMT)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: linux-kernel@vger.kernel.org
+Message-ID: <1497554942.41660.1350858006886.JavaMail.mail@webmail04>
+References: <Pine.LNX.4.44L0.1210211121370.14867-100000@netrider.rowland.org>
+Subject: A strange Linux 3.6 bug: corrupted page table
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFLxGvzz4eS5Rd3b4mX4wef-2mnh-aNVrjty6F6vSmwkgdqWaA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Mailer: Webmail
+X-Originating-IP: [46.146.1.245]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 21, 2012 at 01:29:35PM +0200, richard -rw- weinberger wrote:
-> Every kernel developer has his own wrapper script to make qemu usable.
-> IMHO it's time to add such a script to the kernel tree.
+Hello,
 
-One observation I'll make is that for many people, what you want to do
-is a *lot* more than just simply create a wrapper script to fire up
-qemu.  For me to do my testing, I want to build a kernel on the host
-OS, and then fire up a script which fires up xfstests and runs it with
-a collection of different file system mount options to do my ext4
-testing.   I've shared that here:
+There's something strange going on with kernel 3.6.x:
 
-	git://git.kernel.org/pub/scm/fs/ext2/xfstests-bld.git
+https://bugzilla.redhat.com/show_bug.cgi?id=859188
 
-where the host-side scripts are in the kvm-xfstests directory, and the
-guest-side scripts are in the kvm-autorun directory.  I can pass in a
-set of fs configurations and xfstest test numbers via the command line
-on the host os, i.e., "kvm-xfstests -c 4k,ext4,nojournal
-13,225,245,246".  And then afterwards the scripts parse out the test
-output and summarizes so it's easy to see what passed and what failed.
+My RAM is heavily tested - some time ago I ran memtest86 for 2 hours straight and
+it showed no errors, besides neither my RAM, nor my CPU are overclocked.
 
-So the bottom line is that for me at least, starting up qemu is a very
-tiny part of what I need to do in order to do my testing.  If you want
-to really encourage good testing, what would be better is to encourage
-more people to create standardized testing and benchmarking scripts
-that many kernel developers can easily run.  And those are going to be
-complex enough that I don't think it makes sense for them to live in
-the kernel tree.
+All three people who experience this problem have Linux 3.6.x installed and this bug
+didn't affect them when they ran Linux 3.5.x.
 
-    	     	    	       	  	   - Ted
+Best wishes,
 
+Artem
