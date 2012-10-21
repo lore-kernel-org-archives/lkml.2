@@ -1,122 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150Ab2JUO6A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 10:58:00 -0400
-Received: from smtprelay0043.b.hostedemail.com ([64.98.42.43]:46575 "EHLO
-	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753875Ab2JUO56 (ORCPT
+	id S932171Ab2JUO7K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 10:59:10 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:34726 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932069Ab2JUO7I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 10:57:58 -0400
-X-Panda: scanned!
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,t.artem@lycos.com,:::::::::::::::::,RULES_HIT:152:355:379:541:582:599:601:857:945:946:967:973:982:988:989:1152:1260:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2525:2553:2561:2564:2682:2685:2693:2857:2859:2892:2901:2933:2937:2939:2942:2945:2947:2951:2954:3022:3027:3138:3139:3140:3141:3142:3355:3571:3865:3866:3867:3868:3869:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4362:5007:6119:6261:7679:7689:7875:7903:8957:9010:9025:9040:9163:10004:10394:10400:10450:10455:10471:10848:11473:11658:11914:12043:12350:12517:12519:12679:12698:12737:omf11|3682477824|F94BCEC
-X-Session-Marker: 742E617274656D406C79636F732E636F6D
-X-Filterd-Recvd-Size: 4292
-Date: Sun, 21 Oct 2012 14:57:56 +0000 (GMT)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: zonque@gmail.com
-Cc: bp@alien8.de, pavel@ucw.cz, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, security@kernel.org,
-        linux-media@vger.kernel.org, linux-usb@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Message-ID: <901486978.101922.1350831476734.JavaMail.mail@webmail20>
-References: <2104474742.26357.1350734815286.JavaMail.mail@webmail05>
- <20121020162759.GA12551@liondog.tnic>
- <966148591.30347.1350754909449.JavaMail.mail@webmail08>
- <20121020203227.GC555@elf.ucw.cz> <20121020225849.GA8976@liondog.tnic>
- <1781795634.31179.1350774917965.JavaMail.mail@webmail04>
- <20121021002424.GA16247@liondog.tnic>
- <1798605268.19162.1350784641831.JavaMail.mail@webmail17>
- <20121021110851.GA6504@liondog.tnic>
- <121566322.100103.1350820776893.JavaMail.mail@webmail20>
- <5083E4AA.3060807@gmail.com>
- <317435358.100327.1350822615555.JavaMail.mail@webmail20>
- <508404F5.2010502@gmail.com>
-Subject: Re: Re: was: Re: A reliable kernel panic (3.6.2) and system crash
- when visiting a particular website
-MIME-Version: 1.0
+	Sun, 21 Oct 2012 10:59:08 -0400
+Date: Sun, 21 Oct 2012 16:58:02 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: dmarkh@cfl.rr.com
+Cc: linux-kernel@vger.kernel.org,
+        "markh@compro.net >> Mark Hounschell" <markh@compro.net>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Subject: Re: [Intel-gfx] drm_kms_helper problems
+Message-ID: <20121021165802.578d6d6b@neptune.home>
+In-Reply-To: <508409FC.6080805@cfl.rr.com>
+References: <508409FC.6080805@cfl.rr.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.12; i686-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Mailer: Webmail
-X-Originating-IP: [46.146.77.234]
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Oct 21, 2012, Daniel Mack  wrote: 
+Hi mark,
+
+On Sun, 21 October 2012 Mark Hounschell <dmarkh@cfl.rr.com> wrote:
+> I have a TV that appears to not provide proper EDID info to the HDMI or DVI 
+> ports of my Intel DH77DF motherboard. I received some pointers from this 
+> list that pointed me in the direction of creating my own EDID file and I 
+> now have a binary blob that matches what the service manual says is the 
+> proper EDID info.
 > 
-> [Cc: alsa-devel]
+> But I am unable to get the drm_kms_helper module to load and use this file. 
+> My relevant kernel config options are.
 > 
-> On 21.10.2012 14:30, Artem S. Tashkinov wrote:
-> > On Oct 21, 2012, Daniel Mack wrote: 
-> > 
-> >> A hint at least. How did you enable the audio record exactly? Can you
-> >> reproduce this with arecord?
-> >>
-> >> What chipset are you on? Please provide both "lspci -v" and "lsusb -v"
-> >> dumps. As I said, I fail to reproduce that issue on any of my machines.
-> > 
-> > All other applications can read from the USB audio without problems, it's
-> > just something in the way Adobe Flash polls my audio input which causes
-> > a crash.
-> > 
-> > Just video capture (without audio) works just fine in Adobe Flash.
+> CONFIG_DRM_KMS_HELPER=m
+> CONFIG_DRM_LOAD_EDID_FIRMWARE=y
 > 
-> Ok, so that pretty much rules out the host controller. I just wonder why
-> I still don't see it here, and I haven't heard of any such problem from
-> anyone else.
+> my relevant kernel command line contains:
 > 
-> Some more questions:
+> video=card0-HDMI-A-1:e 
+> drm_kms_helper.edid_firmware=card0-HDMI-A-1:edid/lg42lb9df_hdmi1.edid
+
+The variant without card0- should be the right one.
+
+> The edid file:
+> # ls -al /lib/firmware/edid/lg42lb9df_hdmi1.edid
+> -rw-r--r-- 1 root root 256 Oct 16 05:46 /lib/firmware/edid/lg42lb9df_hdmi1.edid
 > 
-> - Which version of Flash are you running?
-
-Google Chrome has its own version of Adobe Flash:
-
-Name:	Shockwave Flash
-Description:	Shockwave Flash 11.4 r31
-Version:	11.4.31.110
-
-> - Does this also happen with Firefox?
-
-No, Adobe Flash in Firefox is an older version (Shockwave Flash 11.1 r102), it shows
-just two input devices instead of three which the newer Flash players sees.
-
-* HDA Intel PCH
-* USB Device 0x46d:0x81d
-
-> - Does flash access the device directly or via PulseAudio?
-
-PA is not installed on my computer, so Flash accesses it directly via ALSA calls.
-
-> - Could you please apply the attached patch and see what it spits out to
-> dmesg once Flash opens the device? It returns -EINVAL in the hw_params
-> callback to prevent the actual streaming. On my machine with Flash
-> 11.4.31.110, I get values of 2/44800/1/32768/2048/0, which seems sane.
-> Or does your machine still crash before anything is written to the logs?
-
-I will try it a bit later.
-
-> > Only and only when I choose to use 
-> > 
-> > USB Device 0x46d:0x81d my system crashes in Adobe Flash.
-> >
-> > See the screenshot:
-> > 
-> > https://bugzilla.kernel.org/attachment.cgi?id=84151
+> connector info from /sys/class/drm/
 > 
-> When exactly does the crash happen? Right after you selected that entry
-> from the list? There's a little recording level meter in that dialog.
-> Does that show any input from the microphone?
-
-Yes, right after I select it and move the mouse cursor away from this combobox
-so that this selection becomes active.
-
-> > My hardware information can be fetched from here:
-> > 
-> > https://bugzilla.kernel.org/show_bug.cgi?id=49181
-> > 
-> > On a second thought that can be even an ALSA crash or pretty much
-> > anything else.
+> card0  card0-DP-1  card0-DP-2  card0-DP-3  card0-HDMI-A-1  card0-HDMI-A-2 
+> card0-HDMI-A-3  card0-VGA-1  controlD64  version
 > 
-> We'll see. Thanks for your help to sort this out!
+> And I don't really understand why I have 3 entries for the one hdmi port? 
+> Nor do I really understand _exactly_ how to define the connector in my 
+> kernel command line or which of the 3 connectors from /sys I should be 
+> using. I've tried different variants. Ie. card0-HDMI-A-1and HDMI-A-1.
+> 
+> The results in the kernel log file remain:
+> 
+> [    1.879654] drm_kms_helper: Unknown parameter `edid'
 
-Thank you for your assistance!
+As your drm_kms_helper is built modular, did you try not putting that
+parameter on kernel cmdline but rather put it in modprobe's configuration
+for that module? (may doing the whole loading manually).
+
+# modprobe drm_kms_helper edid_firmware=HDMI-A-1:edid/lg42lb9df_hdmi1.edid
+
+I have no idea why it fails for you, here on the systems I have it works
+fine (on one where everything is built into the kernel I did set the cmdline
+arguments via CONFIG_CMDLINE="..." (having CONFIG_CMDLINE_BOOL=y).
+
+> I assume I am doing something wrong but I have put some debug printks in 
+> kernel/params.c that shows me every call made to it and it's params. It is 
+> entered many times and I see a sequence to in the log file. As an example, 
+> the last one to call with params before drm_kms_helper is "late" and here 
+> are my debug prints for it:
+
+Did you check that your bootloader get things right, e.g. if results are the
+same no matter in which order you put the kernel parameters (and if there are
+some non-ASCII values in there).
+As you have quite some length of parameters there could be some buffer size
+issue.
+(take this as just wild guessing)
+
+Bruno
+
+
+> [    0.840206] parse_args: Entered for late
+> [    0.840207] parse_args: doing = late
+> [    0.840208] parse_args: args  = 
+> root=/dev/disk/by-id/ata-INTEL_SSDSC2CW060A3_CVCV205106EB060AGN-part4 
+> video=1024x768 
+> resume=/dev/disk/by-id/ata-INTEL_SSDSC2CW060A3_CVCV205106EB060AGN-part3 
+> splash=silent quiet vga=0x37e irqpoll video=card0-HDMI-A-1:e 
+> drm_kms_helper.edid_firmware=card0-HDMI-A-1:edid/lg42lb9df_hdmi1.edid
+> [    0.840209] parse_args: params =
+> [    0.840210] parse_args: num = 174
+> [    0.840210] parse_args: min_level = 7
+> [    0.840211] parse_args: max_level = 7
+> 
+> Now when it gets to drm_kms_helper this is what I get and this is certainly 
+> screwed up, I just don't know why.
+> 
+> [    1.879648] parse_args: Entered for drm_kms_helper
+> [    1.879648] parse_args: doing = drm_kms_helper
+> [    1.879649] parse_args: args  = edid
+> \xffffff86\xffffffe2\xfffffff8h\xffffff89\xffffff86\xffffffc0\xffffff80\xffffffff\xffffffffԒ\xffffffe2\xfffffff8T\xffffff86\xffffffe2\xfffffff88\xffffff89\xffffff86\xffffffc0\xffffffa4\xffffffff\xffffffffd\xffffff86\xffffffe2\xfffffff8
+> [    1.879650] parse_args: num = 2
+> [    1.879651] parse_args: min_level = -32768
+> [    1.879651] parse_args: max_level = 32767
+> [    1.879653]
+> \xffffff86\xffffffe2\xfffffff8h\xffffff89\xffffff86\xffffffc0\xffffff80\xffffffff\xffffffffԒ\xffffffe2\xfffffff8T\xffffff86\xffffffe2\xfffffff88\xffffff89\xffffff86\xffffffc0\xffffffa4\xffffffff\xffffffffd\xffffff86\xffffffe2\xfffffff8, 
+> num=2, min_level=-32768, max_level=32767
+> 
+> Then finally:
+> 
+> [    1.879654] drm_kms_helper: Unknown parameter `edid'
+> 
+> The additional printks I inserted into kernel/params.c:
+> 
+>          if (*args)
+>                  pr_debug("doing %s, parsing ARGS: '%s'\n", doing, args);
+> 
+> +      if (*args) {
+> +              printk("\nparse_args: Entered for %s\n", doing);
+> +              printk("parse_args: doing = %s\n", doing);
+> +              printk("parse_args: args  = %s\n", args);
+> +              printk("parse_args: params = %s\n", params);
+> +              printk("parse_args: num = %d\n", num);
+> +              printk("parse_args: min_level = %d\n",min_level);
+> +              printk("parse_args: max_level = %d\n", max_level);
+> +       }
+> 
+>          while (*args) {
+> 
+> This is using a vanilla 3.6.2 kernel. Any help would be appreciated.
+> 
+> Regards
+> Mark
