@@ -1,73 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739Ab2JUGUE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 02:20:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60007 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab2JUGUC (ORCPT
+	id S1751897Ab2JUGk3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 02:40:29 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:35817 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224Ab2JUGk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 02:20:02 -0400
-Date: Sat, 20 Oct 2012 23:19:57 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
-Cc: Mathieu Poirier <mathieu.poirier@linaro.org>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, rdunlap@xenotime.net,
-        kernel-team@android.com, john.stultz@linaro.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH] drivers/tty: Folding Android's keyreset driver in sysRQ
-Message-ID: <20121021061957.GA25464@core.coreip.homeip.net>
-References: <1349459969-17473-1-git-send-email-mathieu.poirier@linaro.org>
- <20121005181608.GA24356@core.coreip.homeip.net>
- <506F3987.9020902@linaro.org>
- <CAMP5XgdtYQxu2cp6LC0Asi5ZyGL-ARnh0pvKDi7uNeZertaHSQ@mail.gmail.com>
+	Sun, 21 Oct 2012 02:40:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMP5XgdtYQxu2cp6LC0Asi5ZyGL-ARnh0pvKDi7uNeZertaHSQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: mtk.manpages@gmail.com
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Sun, 21 Oct 2012 08:40:05 +0200
+Message-ID: <CAKgNAkjN-MaGyCKANvM7E-_H2Ct323tc6E=nAEX=gyrzLvbpTw@mail.gmail.com>
+Subject: man-pages-3.43 is released
+To: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 08:35:56PM -0700, Arve Hjønnevåg wrote:
-> On Fri, Oct 5, 2012 at 12:48 PM, Mathieu Poirier
-> <mathieu.poirier@linaro.org> wrote:
-> > On 12-10-05 12:16 PM, Dmitry Torokhov wrote:
-> >> On Fri, Oct 05, 2012 at 11:59:29AM -0600, mathieu.poirier@linaro.org wrote:
-> >>> From: "Mathieu J. Poirier" <mathieu.poirier@linaro.org>
-> >>>
-> >>> Andrew,
-> >>>
-> >>> After requesting a number of changes that, to my understanding
-> >>> have been implemented, I have not been able to get the attention
-> >>> of the subsystem maintainer on this patch.
-> >>>
-> >>> If there are still issues, I'm open to making changes but I want
-> >>> to make sure it doesn't get forgotten.  If there no objections,
-> >>> would you consider queuint it ?
-> >>
-> >> Mathieu,
-> >>
-> >> I have the same objection as before: using platform device solely for
-> >> the purpose of passing some data from board code to the driver. Surely
-> >> there are other ways of passing this bit of data... What about, for
-> >> example, making it an empty weak symbol so that board code could
-> >> override it with strong one?
-> >
-> > Thanks for the comments - I will implement a weak function in the
-> > keyreset driver.
-> >
-> 
-> A weak symbol does not work. A single kernel can support multiple
-> devices that have unique reset key combinations.
+Gidday,
 
-Such kernels will surely require device tree and I think everyone have
-already agreed that DT is the proper way of supplying this data on newer
-boards. So the weak symbol is for legacy boards that do not export
-device tree data and thus require per-board kernels.
+I've released man-pages-3.43.tar.gz - man pages for Linux.
 
-Thanks.
+Tarball download:
+    http://www.kernel.org/doc/man-pages/download.html
+Git repository:
+    http://git.kernel.org/pub/scm/docs/man-pages/man-pages.git
+Online changelog:
+    http://man7.org/linux/man-pages/changelog.html#release_3.43
+
+A short summary of the release is blogged at:
+linux-man-pages.blogspot.com/2012/10/man-pages-343-is-released.html
+
+The current version of the pages is browsable at:
+http://man7.org/linux/man-pages/
+
+A few changes in this release that may be of interest to readers of
+this list are given below.
+
+Cheers,
+
+Michael
+
+==================== Changes in man-pages-3.43 ====================
+
+
+Newly documented interfaces in existing pages
+---------------------------------------------
+
+getenv.3
+    Michael Kerrisk  [Florian Weimer, Andreas Schwab]
+        Document secure_getenv(3)
+
+
+Changes to individual pages
+---------------------------
+
+epoll_wait.2
+    Michael Kerrisk  [Fredrik Arnerup]
+        Describe timeout limitation in kernels < 2.6.37
+            The timeout argument has an upper limit. Any values above that
+            limit are treated the same as -1, i.e. to wait indefinitely.
+            The limit is given by:
+
+                #define EP_MAX_MSTIMEO min(1000ULL *
+MAX_SCHEDULE_TIMEOUT / HZ, \
+                (LONG_MAX - 999ULL) / HZ)
+
+            That is, the limit depends on the size of a long and the timer
+            frequency.  Assuming the a long is never smaller than 32 bits
+            and HZ never larger than 1000, the worst case is 35 minutes.
+            I think this should be mentioned under "BUGS".
+
+            Although this is likely to be fixed in the future
+            (http://lkml.org/lkml/2010/8/8/144), the problem exists in
+            at least 2.6.14 - 2.6.35. I don't know if select(2) and poll(2)
+            are affected.
+
+            https://bugzilla.kernel.org/show_bug.cgi?id=20762
+    Michael Kerrisk
+        Add pointer to select(2) for discussion of close in another thread
+
+getitimer.2
+    Michael Kerrisk  [Trevor Woerner]
+        Note Linux's odd handling of the new_value==NULL case
+
+select.2
+    Michael Kerrisk  [Stephane Fillod]
+        Note behavior if monitored file descriptor is closed in another thread
+            Executive summary: a sane application can't rely on any
+            particular behavior if another thread closes a file descriptor
+            being monitored by select().
+
+            See https://bugzilla.kernel.org/show_bug.cgi?id=40852
+
+syslog.3
+    Simon Josefsson
+        Remove (apparently bogus) text claiming LOG_AUTH is deprecated
+            LOG_AUTH is in POSIX, and widely available. There
+            seems to be no basis to the claim it is deprecated.
+
+            See https://bugzilla.kernel.org/show_bug.cgi?id=46091
+
+proc.5
+    Michael Kerrisk
+        Document /proc/sys/kernel/kptr_restrict
+    Michael Kerrisk [Kees Cook]
+        Document /proc/sys/fs/protected_symlinks
+            Based on text in Documentation/sysctl/fs.txt by Kees Cook
+    Michael Kerrisk [Kees Cook]
+        Document /proc/sys/fs/protected_hardlinks
+            Based on text in Documentation/sysctl/fs.txt by Kees Cook
+
+capabilities.7
+    Michael Kerrisk
+        Document interaction of CAP_SYSLOG and /proc/sys/kernel/kptr_restrict
+
+ld.so.8
+    Michael Kerrisk
+        Describe interpretation of slashes in dependency strings
+    Michael Kerrisk
+        Repeat note that LD_LIBRARY_PATH is ignored in privileged programs
+            This point is already noted when discussing search order for
+            libraries, but it's worth repeating under the specific discussion
+            of LD_LIBRARY_PATH further down the page.
+    Michael Kerrisk
+        Add some details for LD_PRELOAD
 
 -- 
-Dmitry
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
