@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab2JVJSf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 05:18:35 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:51162
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750815Ab2JVJSe (ORCPT
+	id S1752750Ab2JVJUW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 05:20:22 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:39053 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751451Ab2JVJUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 05:18:34 -0400
-X-IronPort-AV: E=Sophos;i="4.80,628,1344204000"; 
-   d="scan'208";a="159892772"
-Date: Mon, 22 Oct 2012 11:18:26 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Jean Delvare <khali@linux-fr.org>
-cc: Julia Lawall <Julia.Lawall@lip6.fr>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>, ben-linux@fluff.org,
-        w.sang@pengutronix.de, linux-i2c@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, rmallon@gmail.com,
-        shubhrajyoti@ti.com, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/11] introduce macros for i2c_msg initialization
-In-Reply-To: <20121009173237.7c1a49e9@endymion.delvare>
-Message-ID: <alpine.DEB.2.02.1210221059100.2026@hadrien>
-References: <1349624323-15584-1-git-send-email-Julia.Lawall@lip6.fr> <20121009173237.7c1a49e9@endymion.delvare>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 22 Oct 2012 05:20:21 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 22 Oct 2012 17:20:20 +0800
+Message-ID: <CAPgLHd8spXSn7D6EppZEr2=8+7idUYa_+Qvb+mzmB3Hw2KWDdg@mail.gmail.com>
+Subject: [PATCH] Drivers: hv: remove unused variable from channel_mgmt.c
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: kys@microsoft.com, haiyangz@microsoft.com
+Cc: yongjun_wei@trendmicro.com.cn, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have been looking at this again, with the macros
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-#define I2C_MSG_OP(_addr, _buf, _len, _flags) \
-        { .addr = _addr, .buf = _buf, .len = _len, .flags = _flags }
+The variables guidtype, guidinstance and initiate are initialized but
+never used otherwise, so remove the unused variables.
 
-#define I2C_MSG_WRITE(addr, buf, len) \
-        I2C_MSG_OP(addr, buf, len, 0)
-#define I2C_MSG_READ(addr, buf, len) \
-        I2C_MSG_OP(addr, buf, len, I2C_M_RD)
-#define I2C_MSG_WRITE_OP(addr, buf, len, op) \
-        I2C_MSG_OP(addr, buf, len, 0 | op)
-#define I2C_MSG_READ_OP(addr, buf, len, op) \
-        I2C_MSG_OP(addr, buf, len, I2C_M_RD | op)
+dpatch engine is used to auto generate this patch.
+(https://github.com/weiyj/dpatch)
 
-and the tuners files as a random first example.  This time I haven't made
-any adjustments for arrays of size 1.
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/hv/channel_mgmt.c | 8 --------
+ 1 file changed, 8 deletions(-)
 
-The following file is a bit unfortunate, because a single structure is
-mostly used for writing, but sometimes used for reading, in the function
-tda827xa_set_params.  That is, there are explicit assignments to
-msg.flags.
+diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
+index 2b8b8d4..2f84c5c 100644
+--- a/drivers/hv/channel_mgmt.c
++++ b/drivers/hv/channel_mgmt.c
+@@ -265,14 +265,9 @@ static void vmbus_onoffer(struct vmbus_channel_message_header *hdr)
+ {
+ 	struct vmbus_channel_offer_channel *offer;
+ 	struct vmbus_channel *newchannel;
+-	uuid_le *guidtype;
+-	uuid_le *guidinstance;
+ 
+ 	offer = (struct vmbus_channel_offer_channel *)hdr;
+ 
+-	guidtype = &offer->offer.if_type;
+-	guidinstance = &offer->offer.if_instance;
+-
+ 	/* Allocate the channel object and save this offer. */
+ 	newchannel = alloc_channel();
+ 	if (!newchannel) {
+@@ -470,7 +465,6 @@ static void vmbus_onversion_response(
+ {
+ 	struct vmbus_channel_msginfo *msginfo;
+ 	struct vmbus_channel_message_header *requestheader;
+-	struct vmbus_channel_initiate_contact *initiate;
+ 	struct vmbus_channel_version_response *version_response;
+ 	unsigned long flags;
+ 
+@@ -484,8 +478,6 @@ static void vmbus_onversion_response(
+ 
+ 		if (requestheader->msgtype ==
+ 		    CHANNELMSG_INITIATE_CONTACT) {
+-			initiate =
+-			(struct vmbus_channel_initiate_contact *)requestheader;
+ 			memcpy(&msginfo->response.version_response,
+ 			      version_response,
+ 			      sizeof(struct vmbus_channel_version_response));
 
-drivers/media/tuners/tda827x.c
 
-Currently, this is done in 8 files across the entire kernel.  Would it be
-a problem to use a READ or WRITE macro to initialize such a structure,
-give that the type is going to change?  Maybe the I2C_MSG_OP macro could
-be used, with an explicit flag argument?
-
-julia
