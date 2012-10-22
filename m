@@ -1,56 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab2JVIHg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 04:07:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57230 "EHLO mx2.suse.de"
+	id S1752104Ab2JVIJP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 04:09:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57279 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750848Ab2JVIHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 04:07:34 -0400
+	id S1750848Ab2JVIJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 04:09:13 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>
 Cc: Peter Zijlstra <peterz@infradead.org>,
         Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
         Mel Gorman <mgorman@suse.de>, LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH 0/5] vmstats for compaction, migration and autonuma
-Date: Mon, 22 Oct 2012 08:59:46 +0100
-Message-Id: <1350892791-2682-1-git-send-email-mgorman@suse.de>
+Subject: [PATCH 2/5] mm: migrate: Add a tracepoint for migrate_pages
+Date: Mon, 22 Oct 2012 08:59:48 +0100
+Message-Id: <1350892791-2682-3-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1350892791-2682-1-git-send-email-mgorman@suse.de>
+References: <1350892791-2682-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm travelling for a conference at the moment so these patches are not
-tested but with the ongoing NUMA migration work I figured it was best to
-post these sooner rather than later.
+The pgmigrate_success and pgmigrate_fail vmstat counters tells the user
+about migration activity but not the type or the reason. This patch adds
+a tracepoint to identify the type of page migration and why the page is
+being migrated.
 
-This series adds vmstat counters and tracepoints for migration, compaction
-and autonuma. Using them it's possible to create a basic cost model to
-estimate the overhead due to compaction or autonuma. Using the stats it
-is also possible to measure if a workload is converging on autonuma or
-not and potentially measure how quickly it is converging.
-
-Ideally the same stats would be available for schednuma but I did not
-review the series when it was last posted in July and had not seen a
-recent posting. I only recently heard they were in the -tip tree but will
-not get the chance to look at them until I've finished travelling in a
-weeks time.  If schednuma had similar stats it would then be possible to
-compare schednuma and autonuma in terms of how quickly a workload converges
-with either approach.
-
- include/linux/migrate.h        |   14 +++++++++-
- include/linux/vm_event_item.h  |   12 ++++++++-
- include/trace/events/migrate.h |   52 ++++++++++++++++++++++++++++++++++++++++
- mm/autonuma.c                  |   22 +++++++++++++----
- mm/compaction.c                |   15 +++++++----
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/migrate.h        |   13 ++++++++-
+ include/trace/events/migrate.h |   51 ++++++++++++++++++++++++++++++++++++++++
+ mm/compaction.c                |    3 +-
  mm/memory-failure.c            |    3 +-
  mm/memory_hotplug.c            |    3 +-
  mm/mempolicy.c                 |    6 +++-
- mm/migrate.c                   |   16 ++++++++++-
+ mm/migrate.c                   |   10 ++++++-
  mm/page_alloc.c                |    3 +-
- mm/vmstat.c                    |   16 ++++++++++--
- 11 files changed, 139 insertions(+), 23 deletions(-)
+ 8 files changed, 82 insertions(+), 10 deletions(-)
  create mode 100644 include/trace/events/migrate.h
 
+diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+index ce7e667..9d1c159 100644
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -7,6 +7,15 @@
+ 
+ typedef struct page *new_page_t(struct page *, unsigned long private, int **);
+ 
++enum migrate_reason {
++	MR_COMPACTION,
++	MR_MEMORY_FAILURE,
++	MR_MEMORY_HOTPLUG,
++	MR_SYSCALL,		/* also applies to cpusets */
++	MR_MEMPOLICY_MBIND,
++	MR_CMA
++};
++
+ #ifdef CONFIG_MIGRATION
+ 
+ extern void putback_lru_pages(struct list_head *l);
+@@ -14,7 +23,7 @@ extern int migrate_page(struct address_space *,
+ 			struct page *, struct page *, enum migrate_mode);
+ extern int migrate_pages(struct list_head *l, new_page_t x,
+ 			unsigned long private, bool offlining,
+-			enum migrate_mode mode);
++			enum migrate_mode mode, int reason);
+ extern int migrate_huge_page(struct page *, new_page_t x,
+ 			unsigned long private, bool offlining,
+ 			enum migrate_mode mode);
+@@ -35,7 +44,7 @@ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
+ static inline void putback_lru_pages(struct list_head *l) {}
+ static inline int migrate_pages(struct list_head *l, new_page_t x,
+ 		unsigned long private, bool offlining,
+-		enum migrate_mode mode) { return -ENOSYS; }
++		enum migrate_mode mode, int reason) { return -ENOSYS; }
+ static inline int migrate_huge_page(struct page *page, new_page_t x,
+ 		unsigned long private, bool offlining,
+ 		enum migrate_mode mode) { return -ENOSYS; }
+diff --git a/include/trace/events/migrate.h b/include/trace/events/migrate.h
+new file mode 100644
+index 0000000..ec2a6cc
+--- /dev/null
++++ b/include/trace/events/migrate.h
+@@ -0,0 +1,51 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM migrate
++
++#if !defined(_TRACE_MIGRATE_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_MIGRATE_H
++
++#define MIGRATE_MODE						\
++	{MIGRATE_ASYNC,		"MIGRATE_ASYNC"},		\
++	{MIGRATE_SYNC_LIGHT,	"MIGRATE_SYNC_LIGHT"},		\
++	{MIGRATE_SYNC,		"MIGRATE_SYNC"}		
++
++#define MIGRATE_REASON						\
++	{MR_COMPACTION,		"compaction"},			\
++	{MR_MEMORY_FAILURE,	"memory_failure"},		\
++	{MR_MEMORY_HOTPLUG,	"memory_hotplug"},		\
++	{MR_SYSCALL,		"syscall_or_cpuset"},		\
++	{MR_MEMPOLICY_MBIND,	"mempolicy_mbind"},		\
++	{MR_CMA,		"cma"}
++
++TRACE_EVENT(mm_migrate_pages,
++
++	TP_PROTO(unsigned long succeeded, unsigned long failed,
++		 enum migrate_mode mode, int reason),
++
++	TP_ARGS(succeeded, failed, mode, reason),
++
++	TP_STRUCT__entry(
++		__field(	unsigned long,		succeeded)
++		__field(	unsigned long,		failed)
++		__field(	enum migrate_mode,	mode)
++		__field(	int,			reason)
++	),
++
++	TP_fast_assign(
++		__entry->succeeded	= succeeded;
++		__entry->failed		= failed;
++		__entry->mode		= mode;
++		__entry->reason		= reason;
++	),
++
++	TP_printk("nr_succeeded=%lu nr_failed=%lu mode=%s reason=%s",
++		__entry->succeeded,
++		__entry->failed,
++		__print_symbolic(__entry->mode, MIGRATE_MODE),
++		__print_symbolic(__entry->reason, MIGRATE_REASON))
++);
++
++#endif /* _TRACE_MIGRATE_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 8c1a53a..11b455b 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -797,7 +797,8 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 		nr_migrate = cc->nr_migratepages;
+ 		err = migrate_pages(&cc->migratepages, compaction_alloc,
+ 				(unsigned long)cc, false,
+-				cc->sync ? MIGRATE_SYNC_LIGHT : MIGRATE_ASYNC);
++				cc->sync ? MIGRATE_SYNC_LIGHT : MIGRATE_ASYNC,
++				MR_COMPACTION);
+ 		update_nr_listpages(cc);
+ 		nr_remaining = cc->nr_migratepages;
+ 
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index a6e2141..9d4489c 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1556,7 +1556,8 @@ int soft_offline_page(struct page *page, int flags)
+ 					    page_is_file_cache(page));
+ 		list_add(&page->lru, &pagelist);
+ 		ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
+-							false, MIGRATE_SYNC);
++							false, MIGRATE_SYNC,
++							MR_MEMORY_FAILURE);
+ 		if (ret) {
+ 			putback_lru_pages(&pagelist);
+ 			pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 6a5b90d..b299e83 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -815,7 +815,8 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
+ 		}
+ 		/* this function returns # of failed pages */
+ 		ret = migrate_pages(&source, hotremove_migrate_alloc, 0,
+-							true, MIGRATE_SYNC);
++							true, MIGRATE_SYNC,
++							MR_MEMORY_HOTPLUG);
+ 		if (ret)
+ 			putback_lru_pages(&source);
+ 	}
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 5cffcb6..bd4fc4c 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -936,7 +936,8 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
+ 
+ 	if (!list_empty(&pagelist)) {
+ 		err = migrate_pages(&pagelist, new_node_page, dest,
+-							false, MIGRATE_SYNC);
++							false, MIGRATE_SYNC,
++							MR_SYSCALL);
+ 		if (err)
+ 			putback_lru_pages(&pagelist);
+ 	}
+@@ -1177,7 +1178,8 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 		if (!list_empty(&pagelist)) {
+ 			nr_failed = migrate_pages(&pagelist, new_vma_page,
+ 						(unsigned long)vma,
+-						false, MIGRATE_SYNC);
++						false, MIGRATE_SYNC,
++						MR_MEMPOLICY_MBIND);
+ 			if (nr_failed)
+ 				putback_lru_pages(&pagelist);
+ 		}
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 04687f6..27be9c9 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -38,6 +38,9 @@
+ 
+ #include <asm/tlbflush.h>
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/migrate.h>
++
+ #include "internal.h"
+ 
+ /*
+@@ -958,7 +961,7 @@ out:
+  */
+ int migrate_pages(struct list_head *from,
+ 		new_page_t get_new_page, unsigned long private, bool offlining,
+-		enum migrate_mode mode)
++		enum migrate_mode mode, int reason)
+ {
+ 	int retry = 1;
+ 	int nr_failed = 0;
+@@ -1004,6 +1007,8 @@ out:
+ 		count_vm_events(PGMIGRATE_SUCCESS, nr_succeeded);
+ 	if (nr_failed)
+ 		count_vm_events(PGMIGRATE_FAIL, nr_failed);
++	trace_mm_migrate_pages(nr_succeeded, nr_failed, mode, reason);
++
+ 	if (!swapwrite)
+ 		current->flags &= ~PF_SWAPWRITE;
+ 
+@@ -1145,7 +1150,8 @@ set_status:
+ 	err = 0;
+ 	if (!list_empty(&pagelist)) {
+ 		err = migrate_pages(&pagelist, new_page_node,
+-				(unsigned long)pm, 0, MIGRATE_SYNC);
++				(unsigned long)pm, 0, MIGRATE_SYNC,
++				MR_SYSCALL);
+ 		if (err)
+ 			putback_lru_pages(&pagelist);
+ 	}
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 55df691..3d361f6 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5677,7 +5677,8 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
+ 
+ 		ret = migrate_pages(&cc.migratepages,
+ 				    __alloc_contig_migrate_alloc,
+-				    0, false, MIGRATE_SYNC);
++				    0, false, MIGRATE_SYNC,
++				    MR_CMA);
+ 	}
+ 
+ 	putback_lru_pages(&cc.migratepages);
 -- 
 1.7.7
 
