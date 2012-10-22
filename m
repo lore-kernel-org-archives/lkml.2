@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab2JVNIS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 09:08:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51459 "EHLO mx1.redhat.com"
+	id S1753998Ab2JVNLt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 09:11:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13744 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753279Ab2JVNIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 09:08:17 -0400
-Date: Mon, 22 Oct 2012 15:08:10 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Avi Kivity <avi@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: x86: fix vcpu->mmio_fragments overflow
-Message-ID: <20121022130810.GW29310@redhat.com>
-References: <20121022112314.GO29310@redhat.com>
- <50852F9C.9020808@siemens.com>
- <20121022114311.GQ29310@redhat.com>
- <508531E1.2030307@siemens.com>
- <508539A8.40404@redhat.com>
- <50853FF1.8010809@siemens.com>
- <20121022125301.GS29310@redhat.com>
- <50854232.8090309@siemens.com>
- <508542EF.5050401@redhat.com>
- <508544B6.6070301@siemens.com>
+	id S1752334Ab2JVNLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 09:11:48 -0400
+Date: Mon, 22 Oct 2012 15:11:42 +0200
+From: Andrew Jones <drjones@redhat.com>
+To: namhyung@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: perf: header: Regression
+Message-ID: <20121022131141.GA11455@turtle.usersys.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <508544B6.6070301@siemens.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 03:05:58PM +0200, Jan Kiszka wrote:
-> On 2012-10-22 14:58, Avi Kivity wrote:
-> > On 10/22/2012 02:55 PM, Jan Kiszka wrote:
-> >>> Since the userspace change is needed the idea is dead, but if we could
-> >>> implement it I do not see how it can hurt the latency if it would be the
-> >>> only mechanism to use coalesced mmio buffer. Checking that the ring buffer
-> >>> is empty is cheap and if it is not empty it means that kernel just saved
-> >>> you a lot of 8 bytes exists so even after iterating over all the entries there
-> >>> you still saved a lot of time.
-> >>
-> >> When taking an exit for A, I'm not interesting in flushing stuff for B
-> >> unless I have a dependency. Thus, buffers would have to be per device
-> >> before extending their use.
-> > 
-> > Any mmio exit has to flush everything.  For example a DMA caused by an
-> > e1000 write has to see any writes to the framebuffer, in case the guest
-> > is transmitting its framebuffer to the outside world.
-> 
-> We already flush when that crazy guest actually accesses the region, no
-> need to do this unconditionally.
-> 
-What if framebuffer is accessed from inside the kernel? Is this case handled?
 
---
-			Gleb.
+The patch series that contains 7e94cfcc9d20 regresses the
+header output. Below is a diff of info from before and
+after the series
+
+58,64c58,59
+< # node1 meminfo  : total = 16777216 kB, free = 15712440 kB
+< # node1 cpu list : 2,6,10,14,18,22,26,30
+< # node2 meminfo  : total = 16777216 kB, free = 16299132 kB
+< # node2 cpu list : 1,5,9,13,17,21,25,29
+< # node3 meminfo  : total = 16777216 kB, free = 16217192 kB
+< # node3 cpu list : 3,7,11,15,19,23,27,31
+< # pmu mappings: cpu = 4, software = 1, tracepoint = 2, uncore_bbox_0 =
+15, uncore_bbox_1 = 16, uncore_cbox_0 = 7, uncore_cbox_1 = 8,
+uncore_cbox_2 = 9, uncore_cbox_3 = 10, uncore_cbox_4 = 11, uncore_cbox_5 =
+12, uncore_cbox_6 = 13, uncore_cbox_7 = 14, uncore_mbox_0 = 19,
+uncore_mbox_1 = 20, uncore_rbox_0 = 21, uncore_rbox_1 = 22, uncore_sbox_0
+= 17, uncore_sbox_1 = 18, breakpoint = 5, uncore_ubox = 6, uncore_wbox =
+23
+---
+> # numa topology : not available
+> # pmu mappings: cpu = 4, software = 1, tracepoint = 2, uncore_bbox_0 =
+15, uncore_bbox_1 = 16, uncore_cbox_0 = 7, uncore_cbox_1 = 8,
+uncore_cbox_2 = 9, uncore_cbox_3 = 10, uncore_cbox_4 = 11, uncore_cbox_5 =
+12, uncore_cbox_6 = 13, uncore_cbox_7 = 14, uncore_mbox_0 = 19# pmu
+mappings: unable to read
+
+As can be seen in the diff, before the series we had complete
+numa info and pmu mappings info. After we get 
+
+"# numa topology : not available" and "# pmu
+mappings: unable to read"
+
+Drew
