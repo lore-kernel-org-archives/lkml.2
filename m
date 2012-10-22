@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755834Ab2JVRNE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 13:13:04 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:57371 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755566Ab2JVRNC (ORCPT
+	id S1755816Ab2JVROG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 13:14:06 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:47175 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755334Ab2JVROE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 13:13:02 -0400
+	Mon, 22 Oct 2012 13:14:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <50831CA3.2020602@linaro.org>
-References: <507FBC20.50004@linaro.org>
-	<1350683446-8244-1-git-send-email-jwerner@chromium.org>
-	<50831CA3.2020602@linaro.org>
-Date: Mon, 22 Oct 2012 10:13:01 -0700
-X-Google-Sender-Auth: agWaCgLdgApCzpOErUpJvb71Gsk
-Message-ID: <CAODwPW-bnECEawh9sOwhydDodD+J4x2s4f5uHpeLusuBx-itxw@mail.gmail.com>
-Subject: Re: [PATCH] acpi/cpuidle: reinitialize power_usage values when
- adding/removing C-states
-From: Julius Werner <jwerner@chromium.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-kernel@vger.kernel.org, len.brown@intel.com, khilman@ti.com,
-        rjw@sisk.pl, deepthi@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        Trinabh Gupta <g.trinabh@gmail.com>, snanda@chromium.org,
-        Lists Linaro-dev <linaro-dev@lists.linaro.org>
+In-Reply-To: <0000013a88ebfa65-af0fc24b-13fd-400f-b7fc-32230ca70620-000000@email.amazonses.com>
+References: <1350907434-2202-1-git-send-email-elezegarcia@gmail.com>
+	<0000013a88ebfa65-af0fc24b-13fd-400f-b7fc-32230ca70620-000000@email.amazonses.com>
+Date: Mon, 22 Oct 2012 14:14:03 -0300
+Message-ID: <CALF0-+VqGrcjw16rNPH459YAj7dubQnruzV-zOzYn6feOtQ4tQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mm/slob: Mark zone page state to get slab usage at /proc/meminfo
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Tim Bird <tim.bird@am.sony.com>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Could we just say this is always true because state[i+1] consumes less
-> than state[i] ?
->
-> And then just remove the 'set_power_state' function, and the field
-> 'driver->power_specified' ?
->
-> That will cleanup the code and fix this problem, no ?
+Hi Christoph,
 
-I totally agree with your analysis. Even if a driver were to set
-proper usage values (and the power_specified bit), none of the
-existing governors would care about those actual numbers (and since
-the vast majority of drivers uses fake values anyway, this is not
-likely to change in the future). This seems to be a classic example of
-unnecessary over-engineering.
+On Mon, Oct 22, 2012 at 11:41 AM, Christoph Lameter <cl@linux.com> wrote:
+> On Mon, 22 Oct 2012, Ezequiel Garcia wrote:
+>
+>> On page allocations, SLAB and SLUB modify zone page state counters
+>> NR_SLAB_UNRECLAIMABLE or NR_SLAB_RECLAIMABLE.
+>> This allows to obtain slab usage information at /proc/meminfo.
+>>
+>> Without this patch, /proc/meminfo will show zero Slab usage for SLOB.
+>>
+>> Since SLOB discards SLAB_RECLAIM_ACCOUNT flag, we always use
+>> NR_SLAB_UNRECLAIMABLE zone state item.
+>
 
-I am mostly interested in getting that bug fixed right now, but
-removing unnecessary code is always a good thing. If you think it
-would have a good chance of getting merged, I would be happy to draft
-up a larger patch that refactors power_usage away completely.
+... and I have a question about this.
+
+SLUB handles large kmalloc allocations falling back
+to page-size allocations (kmalloc_large, etc).
+This path doesn't touch NR_SLAB_XXRECLAIMABLE zone item state.
+
+Without fully understanding it, I've decided to implement the same
+behavior for SLOB,
+leaving page-size allocations unaccounted on /proc/meminfo.
+
+Is this expected / wanted ?
+
+SLAB, on the other side, handles every allocation through some slab cache,
+so it always set the zone state.
+
+Thanks!
+
+    Ezequiel
