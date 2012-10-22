@@ -1,195 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017Ab2JVPQM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 11:16:12 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:34086 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754848Ab2JVPQH (ORCPT
+	id S1755323Ab2JVPRf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 11:17:35 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46942 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755203Ab2JVPR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 11:16:07 -0400
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        v9fs-developer@lists.sourceforge.net, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        jfs-discussion@lists.sourceforge.net, linux-nilfs@vger.kernel.org,
-        reiserfs-devel@vger.kernel.org
-Subject: [PATCH 17/22] fs: add read_iter and write_iter to several file systems
-Date: Mon, 22 Oct 2012 10:15:17 -0500
-Message-Id: <1350918922-6096-18-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.7.12.4
-In-Reply-To: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Mon, 22 Oct 2012 11:17:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <1350897568-14262-1-git-send-email-ffainelli@freebox.fr>
+References: <1350647942-5260-1-git-send-email-ffainelli@freebox.fr>
+	<1350897568-14262-1-git-send-email-ffainelli@freebox.fr>
+Date: Mon, 22 Oct 2012 08:17:27 -0700
+X-Google-Sender-Auth: _WLcM4VkjLbRBQ7euROSOaNHnaw
+Message-ID: <CAGXu5jJhsQ+yGgNRd-sitsusGsuyTjc_Q3DcoSDg4Q=MnJ4agw@mail.gmail.com>
+Subject: Re: [PATCH v2] pstore/ram: fix undefined usage of rounddown_pow_of_two(0)
+From: Kees Cook <keescook@chromium.org>
+To: Florian Fainelli <ffainelli@freebox.fr>
+Cc: cbouatmailru@gmail.com, ccross@android.com, tony.luck@intel.com,
+        linux-kernel@vger.kernel.org, Maxime Bizon <mbizon@freebox.fr>,
+        stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are the simple ones.
+On Mon, Oct 22, 2012 at 2:19 AM, Florian Fainelli <ffainelli@freebox.fr> wrote:
+> From: Maxime Bizon <mbizon@freebox.fr>
+>
+> record_size / console_size / ftrace_size can be 0 (this is how you
+> disable the feature), but rounddown_pow_of_two(0) is undefined. As suggested
+> by Kees Cook, use !is_power_of_2() as a condition to call rounddown_pow_of_two
+> and avoid its undefined behavior on the value 0. This issue has been present
+> since commit 1894a253 (ramoops: Move to fs/pstore/ram.c).
+>
+> CC: stable@vger.kernel.org
+> Signed-off-by: Maxime Bizon <mbizon@freebox.fr>
+> Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
 
-File systems that use generic_file_aio_read() and generic_file_aio_write()
-can trivially support generic_file_read_iter() and generic_file_write_iter().
+Thanks for the fix!
 
-This patch adds those file_operations for 9p, ext2, ext3, fat, hfs, hfsplus,
-jfs, nilfs2, and reiserfs.
+Acked-by: Kees Cook <keescook@chromium.org>
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Zach Brown <zab@zabbo.net>
-Cc: v9fs-developer@lists.sourceforge.net
-Cc: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: jfs-discussion@lists.sourceforge.net
-Cc: linux-nilfs@vger.kernel.org
-Cc: reiserfs-devel@vger.kernel.org
----
- fs/9p/vfs_file.c   | 4 ++++
- fs/ext2/file.c     | 2 ++
- fs/ext3/file.c     | 2 ++
- fs/fat/file.c      | 2 ++
- fs/hfs/inode.c     | 2 ++
- fs/hfsplus/inode.c | 2 ++
- fs/jfs/file.c      | 2 ++
- fs/nilfs2/file.c   | 2 ++
- fs/reiserfs/file.c | 2 ++
- 9 files changed, 20 insertions(+)
+-Kees
 
-diff --git a/fs/9p/vfs_file.c b/fs/9p/vfs_file.c
-index c2483e9..d19458b 100644
---- a/fs/9p/vfs_file.c
-+++ b/fs/9p/vfs_file.c
-@@ -748,6 +748,8 @@ const struct file_operations v9fs_cached_file_operations = {
- 	.write = v9fs_cached_file_write,
- 	.aio_read = generic_file_aio_read,
- 	.aio_write = generic_file_aio_write,
-+	.read_iter = generic_file_read_iter,
-+	.write_iter = generic_file_write_iter,
- 	.open = v9fs_file_open,
- 	.release = v9fs_dir_release,
- 	.lock = v9fs_file_lock,
-@@ -761,6 +763,8 @@ const struct file_operations v9fs_cached_file_operations_dotl = {
- 	.write = v9fs_cached_file_write,
- 	.aio_read = generic_file_aio_read,
- 	.aio_write = generic_file_aio_write,
-+	.read_iter = generic_file_read_iter,
-+	.write_iter = generic_file_write_iter,
- 	.open = v9fs_file_open,
- 	.release = v9fs_dir_release,
- 	.lock = v9fs_file_lock_dotl,
-diff --git a/fs/ext2/file.c b/fs/ext2/file.c
-index a5b3a5d..eee8f86 100644
---- a/fs/ext2/file.c
-+++ b/fs/ext2/file.c
-@@ -66,6 +66,8 @@ const struct file_operations ext2_file_operations = {
- 	.write		= do_sync_write,
- 	.aio_read	= generic_file_aio_read,
- 	.aio_write	= generic_file_aio_write,
-+	.read_iter	= generic_file_read_iter,
-+	.write_iter	= generic_file_write_iter,
- 	.unlocked_ioctl = ext2_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl	= ext2_compat_ioctl,
-diff --git a/fs/ext3/file.c b/fs/ext3/file.c
-index 25cb413..86828f7 100644
---- a/fs/ext3/file.c
-+++ b/fs/ext3/file.c
-@@ -54,6 +54,8 @@ const struct file_operations ext3_file_operations = {
- 	.write		= do_sync_write,
- 	.aio_read	= generic_file_aio_read,
- 	.aio_write	= generic_file_aio_write,
-+	.read_iter	= generic_file_read_iter,
-+	.write_iter	= generic_file_write_iter,
- 	.unlocked_ioctl	= ext3_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl	= ext3_compat_ioctl,
-diff --git a/fs/fat/file.c b/fs/fat/file.c
-index a62e0ec..250d1b7 100644
---- a/fs/fat/file.c
-+++ b/fs/fat/file.c
-@@ -166,6 +166,8 @@ const struct file_operations fat_file_operations = {
- 	.write		= do_sync_write,
- 	.aio_read	= generic_file_aio_read,
- 	.aio_write	= generic_file_aio_write,
-+	.read_iter	= generic_file_read_iter,
-+	.write_iter	= generic_file_write_iter,
- 	.mmap		= generic_file_mmap,
- 	.release	= fat_file_release,
- 	.unlocked_ioctl	= fat_generic_ioctl,
-diff --git a/fs/hfs/inode.c b/fs/hfs/inode.c
-index 986cb91..f750dbe 100644
---- a/fs/hfs/inode.c
-+++ b/fs/hfs/inode.c
-@@ -656,8 +656,10 @@ static const struct file_operations hfs_file_operations = {
- 	.llseek		= generic_file_llseek,
- 	.read		= do_sync_read,
- 	.aio_read	= generic_file_aio_read,
-+	.read_iter	= generic_file_read_iter,
- 	.write		= do_sync_write,
- 	.aio_write	= generic_file_aio_write,
-+	.write_iter	= generic_file_write_iter,
- 	.mmap		= generic_file_mmap,
- 	.splice_read	= generic_file_splice_read,
- 	.fsync		= hfs_file_fsync,
-diff --git a/fs/hfsplus/inode.c b/fs/hfsplus/inode.c
-index 94fc092..0191a0d 100644
---- a/fs/hfsplus/inode.c
-+++ b/fs/hfsplus/inode.c
-@@ -369,8 +369,10 @@ static const struct file_operations hfsplus_file_operations = {
- 	.llseek		= generic_file_llseek,
- 	.read		= do_sync_read,
- 	.aio_read	= generic_file_aio_read,
-+	.read_iter	= generic_file_read_iter,
- 	.write		= do_sync_write,
- 	.aio_write	= generic_file_aio_write,
-+	.write_iter	= generic_file_write_iter,
- 	.mmap		= generic_file_mmap,
- 	.splice_read	= generic_file_splice_read,
- 	.fsync		= hfsplus_file_fsync,
-diff --git a/fs/jfs/file.c b/fs/jfs/file.c
-index 9d3afd1..a49ede70 100644
---- a/fs/jfs/file.c
-+++ b/fs/jfs/file.c
-@@ -151,6 +151,8 @@ const struct file_operations jfs_file_operations = {
- 	.read		= do_sync_read,
- 	.aio_read	= generic_file_aio_read,
- 	.aio_write	= generic_file_aio_write,
-+	.read_iter	= generic_file_read_iter,
-+	.write_iter	= generic_file_write_iter,
- 	.mmap		= generic_file_mmap,
- 	.splice_read	= generic_file_splice_read,
- 	.splice_write	= generic_file_splice_write,
-diff --git a/fs/nilfs2/file.c b/fs/nilfs2/file.c
-index 16f35f7..f4c58c9 100644
---- a/fs/nilfs2/file.c
-+++ b/fs/nilfs2/file.c
-@@ -155,6 +155,8 @@ const struct file_operations nilfs_file_operations = {
- 	.write		= do_sync_write,
- 	.aio_read	= generic_file_aio_read,
- 	.aio_write	= generic_file_aio_write,
-+	.read_iter	= generic_file_read_iter,
-+	.write_iter	= generic_file_write_iter,
- 	.unlocked_ioctl	= nilfs_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl	= nilfs_compat_ioctl,
-diff --git a/fs/reiserfs/file.c b/fs/reiserfs/file.c
-index 8375c92..8f86c2b 100644
---- a/fs/reiserfs/file.c
-+++ b/fs/reiserfs/file.c
-@@ -306,6 +306,8 @@ const struct file_operations reiserfs_file_operations = {
- 	.fsync = reiserfs_sync_file,
- 	.aio_read = generic_file_aio_read,
- 	.aio_write = generic_file_aio_write,
-+	.read_iter = generic_file_read_iter,
-+	.write_iter = generic_file_write_iter,
- 	.splice_read = generic_file_splice_read,
- 	.splice_write = generic_file_splice_write,
- 	.llseek = generic_file_llseek,
 -- 
-1.7.12.3
-
+Kees Cook
+Chrome OS Security
