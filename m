@@ -1,104 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001Ab2JVIXs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 04:23:48 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53169 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab2JVIXr (ORCPT
+	id S1751933Ab2JVIZb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 04:25:31 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:43619 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815Ab2JVIZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 04:23:47 -0400
-Message-ID: <50850299.7070405@ti.com>
-Date: Mon, 22 Oct 2012 13:53:53 +0530
-From: Sourav <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Mon, 22 Oct 2012 04:25:29 -0400
 MIME-Version: 1.0
-To: Benoit Cousson <b-cousson@ti.com>
-CC: <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH] arm: dts: omap4-sdp: pinmux configuration for keypad
-References: <1350890955-29553-1-git-send-email-sourav.poddar@ti.com> <5084F99B.1030709@ti.com>
-In-Reply-To: <5084F99B.1030709@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20121022075534.GA4931@avionic-0098.mockup.avionic-design.de>
+References: <1350877903-8578-1-git-send-email-shiraz.hashim@st.com>
+	<CAOh2x=mNWNtwcWB3a=mCsfwC8WqXiisW8zeg9amsXy7b2nLCkA@mail.gmail.com>
+	<20121022060641.GB3900@localhost.localdomain>
+	<CAKohpo=LHjV2tV1R34Q_As4s2Yh071+t-bLyFBDGSZ_u5vKo7Q@mail.gmail.com>
+	<20121022075534.GA4931@avionic-0098.mockup.avionic-design.de>
+Date: Mon, 22 Oct 2012 13:55:29 +0530
+Message-ID: <CAKohpokDscKxhpKjdkbU+Q95VQPF-bDviyL3LAcbgeaQWk6ERw@mail.gmail.com>
+Subject: Re: [PATCH V3] PWM: Add SPEAr PWM chip driver support
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Shiraz Hashim <shiraz.hashim@st.com>, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Lars-Peter Clausen <lars@metafoo.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benoit,
-On Monday 22 October 2012 01:15 PM, Benoit Cousson wrote:
-> Hi Sourav,
+On 22 October 2012 13:25, Thierry Reding
+<thierry.reding@avionic-design.de> wrote:
+> We could probably do that in the core. I've had some discussions about
+> this with Lars-Peter (Cc'ed) who also had doubts about how this is
+> currently handled.
 >
-> On 10/22/2012 09:29 AM, Sourav Poddar wrote:
->> Currently, omap4 keypad mux settings are done in the board file.
->> Populate the mux settings in the dts file for the keypad to
->> work via dt.
-> Have you changed the driver to handle properly the dependency with the
-> pinctrl and thus return EPROBE_DEFER if this is not ready?
-I have send a patch[1] to the mailing list on the driver changes.
-http://www.spinics.net/lists/linux-omap/msg79985.html.
+> What you're proposing is different, however. If we put that code in the
+> core it will mean that once the module is unloaded, all PWM devices will
+> be disabled. There is currently code in the core that prevents the chip
+> from being removed if one or more PWM devices are busy. But as explained
+> above, with the current core code this return value isn't useful at all.
 
-Though, I see I have missed the following EPROBE_DEFER check..
-+               if (PTR_ERR(dev->pins) == -EPROBE_DEFER)
-+                       return -EPROBE_DEFER;
-Will add for the above patch.
-> Seb Guiriec has just sent a patch to do that for the omap-i2c driver
-> ([PATCH] i2c: omap: adopt pinctrl support).
->
->> Cc: Felipe Balbi <balbi@ti.com>
->> Tested on omap4430 sdp with 3.7-rc1.
->>
->> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
->> ---
->>   arch/arm/boot/dts/omap4-sdp.dts |   26 ++++++++++++++++++++++++++
->>   1 files changed, 26 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
->> index 5b7e04f..5efb059 100644
->> --- a/arch/arm/boot/dts/omap4-sdp.dts
->> +++ b/arch/arm/boot/dts/omap4-sdp.dts
->> @@ -194,6 +194,27 @@
->>   			0xbc 0x100	/* abe_mcbsp2_fsx.abe_mcbsp2_fsx INPUT | MODE0 */
->>   		>;
->>   	};
->> +
->> +	keypad_pins: pinmux_keypad_pins {
->> +		pinctrl-single,pins = <
->> +			0x24 0x4119   /* gpmc_a18.kpd_row6 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
->> +			0x26 0x4119   /* gpmc_a19.kpd_row6 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
->> +			0x2c 0x4001   /* gpmc_a22.kpd_col6 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
->> +			0x2e 0x4001   /* gpmc_a23.kpd_col7 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
->> +			0x13c 0x4001  /* kpd_col0.kpd_col0 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
->> +			0x13e 0x4001  /* kpd_col1.kpd_col1 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
->> +			0x140 0x4001  /* kpd_col2.kpd_col2 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
->> +			0x142 0x10F   /* kpd_col3.kpd_col3 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
-> Alway use lower case for hexa value.
-Ok. Will fix and send a new version.
->> +			0x144 0x4001  /* kpd_col4.kpd_col4 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
->> +			0x146 0x4001  /* kpd_col5.kpd_col5 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
->> +			0x148 0xc119  /* kpd_row0.kpd_row0 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
->> +			0x14a 0x4119  /* kpd_row1.kpd_row1 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
->> +			0x14c 0x4119  /* kpd_row2.kpd_row2 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
->> +			0x14e 0x4119  /* kpd_row3.kpd_row3 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
->> +			0x150 0x4119  /* kpd_row4.kpd_row4 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
->> +			0x152 0x4119  /* kpd_row5.kpd_row5 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
->> +		>;
->> +	};
->>   };
->>   
->>   &i2c1 {
->> @@ -406,3 +427,8 @@
->>   &mcbsp3 {
->>   	status = "disabled";
->>   };
->> +
->> +&keypad {
->> +        pinctrl-names = "default";
->> +        pinctrl-0 = <&keypad_pins>;
->> +};
-> Otherwise that looks good.
->
-> Thanks,
-> Benoit
-Thanks,
-Sourav
+This is what many drivers in pwm framework are doing currently too..
+They disable
+pwm and its clock and then do chip remove.
+
+Sorry, i didn't get the conclusion completely :(
+Should we keep code suggested by me in core or spear's driver?
+
+--
+viresh
