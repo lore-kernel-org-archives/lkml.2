@@ -1,47 +1,490 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829Ab2JVRal (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 13:30:41 -0400
-Received: from smtprelay0195.b.hostedemail.com ([64.98.42.195]:59754 "EHLO
-	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755015Ab2JVRaj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 13:30:39 -0400
-X-Panda: scanned!
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,t.artem@lycos.com,:::::::::::::::::::,RULES_HIT:152:355:379:541:582:599:601:960:988:989:1152:1260:1277:1311:1313:1314:1345:1358:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:3027:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3869:3870:3871:5007:6261:9010:10004:10400:10848:11658:11914:12296:12350:12517:12519,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-Session-Marker: 742E617274656D406C79636F732E636F6D
-X-Filterd-Recvd-Size: 1537
-Date: Mon, 22 Oct 2012 17:30:37 +0000 (GMT)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: stern@rowland.harvard.edu
-Cc: zonque@gmail.com, bp@alien8.de, pavel@ucw.cz, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, security@kernel.org,
-        linux-media@vger.kernel.org, linux-usb@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Message-ID: <1985645001.39510.1350927037793.JavaMail.mail@webmail15>
-References: <Pine.LNX.4.44L0.1210221153140.1724-100000@iolanthe.rowland.org>
-Subject: Re: Re: A reliable kernel panic (3.6.2) and system crash when
- visiting a particular website
+	id S1755966Ab2JVRki (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 13:40:38 -0400
+Received: from mx2.compro.net ([12.186.155.4]:20415 "EHLO mx2.compro.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755726Ab2JVRkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 13:40:37 -0400
+X-IronPort-AV: E=Sophos;i="4.80,631,1344225600"; 
+   d="scan'208";a="8820936"
+Message-ID: <50858513.3070909@compro.net>
+Date: Mon, 22 Oct 2012 13:40:35 -0400
+From: Mark Hounschell <markh@compro.net>
+Reply-To: markh@compro.net
+Organization: Compro Computer Svcs.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Mailer: Webmail
-X-Originating-IP: [46.147.62.27]
+To: dmarkh@cfl.rr.com
+CC: =?UTF-8?B?QnJ1bm8gUHLDqW1vbnQ=?= <bonbons@linux-vserver.org>,
+        linux-kernel@vger.kernel.org,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Subject: Re: [Intel-gfx] drm_kms_helper problems
+References: <508409FC.6080805@cfl.rr.com> <20121021165802.578d6d6b@neptune.home> <50843C83.8040801@cfl.rr.com> <20121021211817.58c6ccaf@neptune.home> <50853121.3040803@cfl.rr.com>
+In-Reply-To: <50853121.3040803@cfl.rr.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 22, 2012, Alan Stern <stern@rowland.harvard.edu> wrote: 
+On 10/22/2012 07:42 AM, Mark Hounschell wrote:
+> On 10/21/2012 03:18 PM, Bruno Prémont wrote:
+>> Hi Mark,
+>>
+>> On Sun, 21 October 2012 Mark Hounschell <dmarkh@cfl.rr.com> wrote:
+>>> On 10/21/2012 10:58 AM, Bruno Prémont wrote:
+>>>> On Sun, 21 October 2012 Mark Hounschell <dmarkh@cfl.rr.com> wrote:
+>>>>> I have a TV that appears to not provide proper EDID info to the 
+>>>>> HDMI or DVI
+>>>>> ports of my Intel DH77DF motherboard. I received some pointers 
+>>>>> from this
+>>>>> list that pointed me in the direction of creating my own EDID file 
+>>>>> and I
+>>>>> now have a binary blob that matches what the service manual says 
+>>>>> is the
+>>>>> proper EDID info.
+>>>>>
+>>>>> But I am unable to get the drm_kms_helper module to load and use 
+>>>>> this file.
+>>>>> My relevant kernel config options are.
+>>>>>
+>>>>> CONFIG_DRM_KMS_HELPER=m
+>>>>> CONFIG_DRM_LOAD_EDID_FIRMWARE=y
+>>>>>
+>>>>> my relevant kernel command line contains:
+>>>>>
+>>>>> video=card0-HDMI-A-1:e
+>>>>> drm_kms_helper.edid_firmware=card0-HDMI-A-1:edid/lg42lb9df_hdmi1.edid
+>>>>
+>>>> The variant without card0- should be the right one.
+>>>>
+>>>
+>>> OK. Changed it. What if I had more than one video card?
+>>
+>> Two connectors from two distinct card should not get the same suffix 
+>> number
+>> even if they use same technology, so it should work. (unless 
+>> something was
+>> changed recently)
+>>
+>>>>> The edid file:
+>>>>> # ls -al /lib/firmware/edid/lg42lb9df_hdmi1.edid
+>>>>> -rw-r--r-- 1 root root 256 Oct 16 05:46 
+>>>>> /lib/firmware/edid/lg42lb9df_hdmi1.edid
+>>>>>
+>>>>> connector info from /sys/class/drm/
+>>>>>
+>>>>> card0  card0-DP-1  card0-DP-2  card0-DP-3  card0-HDMI-A-1 
+>>>>> card0-HDMI-A-2
+>>>>> card0-HDMI-A-3  card0-VGA-1  controlD64  version
+>>>>>
+>>>
+>>> Which should I use? HDMI-A-1, HDMI-A-2, or  HDMI-A-3? Why re there 3??
+>>>
+>>>>> And I don't really understand why I have 3 entries for the one 
+>>>>> hdmi port?
+>>>>> Nor do I really understand _exactly_ how to define the connector 
+>>>>> in my
+>>>>> kernel command line or which of the 3 connectors from /sys I 
+>>>>> should be
+>>>>> using. I've tried different variants. Ie. card0-HDMI-A-1and HDMI-A-1.
+>>>>>
+>>>>> The results in the kernel log file remain:
+>>>>>
+>>>>> [    1.879654] drm_kms_helper: Unknown parameter `edid'
+>>>>
+>>>> As your drm_kms_helper is built modular, did you try not putting that
+>>>> parameter on kernel cmdline but rather put it in modprobe's 
+>>>> configuration
+>>>> for that module? (may doing the whole loading manually).
+>>>>
+>>>
+>>> I've created a /etc/modprobe.d/20-drm_kms_helper.conf with:
+>>> options drm_kms_helper edid_firmware=HDMI-A-1:edid/lg42lb9df_hdmi1.edid
+>>> and now I'm getting something different. It looks like it's trying. 
+>>> In fact
+>>> I actually get a screen on the TV now. It's not 1920x1080 but 
+>>> 1024x768 at
+>>> 60hz.
+>>
+>> As things get slightly better now, check what kernel detected:
+>> - /sys/module/drm_kms_helper/parameters/edid_firmware
+>>    (should contain the path to firmware file)
+>>
+>> Make sure both the firmware and modprobe config get included in your 
+>> initrd
+>> if you're using one.
+>>
+>>> [    1.883124] load_module: Calling parse_args for module = 
+>>> drm_kms_helper
+>>> args = edid_firmware=HDMI-A-1:edid/lg42lb9df_hdmi1.edid
+>>> [    1.883126]
+>>> [    1.883126] parse_args: (1) Entered for drm_kms_helper
+>>> [    1.883127]
+>>> [    1.883127] parse_args: (2) Entered for drm_kms_helper
+>>> [    1.883127] parse_args: doing = drm_kms_helper
+>>> [    1.883128] parse_args: args  =
+>>> edid_firmware=HDMI-A-1:edid/lg42lb9df_hdmi1.edid
+>>> F\xffffffc9\xfffffff8h\xffffff89\xffffff86\xffffffc0\xffffff80\xffffffff\xffffffff\xffffffd4R\xffffffc9\xfffffff8TF\xffffffc9\xfffffff88\xffffff89\xffffff86\xffffffc0\xffffffa4\xffffffff\xffffffffdF\xffffffc9\xfffffff8 
+>>>
+>>> [    1.883129] parse_args: num = 2
+>>> [    1.883130] parse_args: min_level = -32768
+>>> [    1.883131] parse_args: max_level = 32767
+>>> [    1.883132]
+>>> F\xffffffc9\xfffffff8h\xffffff89\xffffff86\xffffffc0\xffffff80\xffffffff\xffffffff\xffffffd4R\xffffffc9\xfffffff8TF\xffffffc9\xfffffff88\xffffff89\xffffff86\xffffffc0\xffffffa4\xffffffff\xffffffffdF\xffffffc9\xfffffff8, 
+>>>
+>>> num=2, min_level=-32768, max_level=32767
+>>> [    1.886855]
+>>> .
+>>> .
+>>> .
+>>> [    2.132749] [drm] forcing HDMI-A-1 connector ON
+>>> [    2.132752] [drm] forcing HDMI-A-2 connector ON
+>>> [    2.132753] [drm] forcing HDMI-A-3 connector ON
+>>>
+>>> [    2.189769] [drm:edid_load] *ERROR* Requesting EDID firmware
+>>> "edid/lg42lb9df_hdmi1.edid" failed (err=-2)
+>>
+>> Interesting, kernel/udev can't find the edid file but know what file
+>> to look for... Is the edid file available at that time (initrd?)?
+>>
+>>> I get a couple of the above messages.
+>>>
+>>>
+>>> [    2.388623] [drm:drm_edid_block_valid] *ERROR* EDID checksum is 
+>>> invalid,
+>>> remainder is 130
+>>> [    2.388631] Raw EDID:
+>>> [    2.388635]          00 ff ff ff ff ff ff 00 ff ff ff ff ff ff ff ff
+>>
+>> That's as ago with getting edid from hardware.
+>>
+>>>> # modprobe drm_kms_helper 
+>>>> edid_firmware=HDMI-A-1:edid/lg42lb9df_hdmi1.edid
+>>>>
+>>>
+>>> I can't seem to rm the modules already loaded to try this.
+>>
+>> There are multiple steps needed to be able to rmmod those modules:
+>> - stop DRM users (e.g. X)
+>> - disable fbcon
+>>    echo 1 > /sys/class/vtcon0/bind
+>>    echo 0 > /sys/class/vtcon1/bind
+>>    (assuming vtcon1 is fbcon, vtcon0 is VGA console)
+>> - rmmod i915
+>> - rmmod drm_kms_helper
+>>
+>> Note that at time of modprobing i915 connectors will have different 
+>> names!
+>> (probably HDMI-A-4, HDMI-A-5, HDMI-A-6)
+>>
+>> Alternatively you could blacklist all drm modules so they don't get 
+>> loaded
+>> automatically and you can load them manually one at a time when 
+>> system has
+>> booted.
+>>
+>
+> It turns out the boot params "video=HDMI-A-1:e video=HDMI-A-2:e 
+> video=HDMI-A-3:e" are what actually turned the tv "on". They seem to 
+> default to "d". In any case I now have only that in my grub file 
+> except for the "video=1024x768" and I'm not really sure what that 
+> actually does.
+>
+> My /etc/modprobe.d/20-drm_kms_helper.conf contains:
+> options drm_kms_helper edid_firmware=HDMI-A-1:edid/lg42lb9df_hdmi1.edid
+>
+> How can I add the other connector info to that file BTW?
+>
+> It now looks like it is finding the edid file.
+>  # cat /sys/module/drm_kms_helper/parameters/edid_firmware
+> HDMI-A-1:edid/lg42lb9df_hdmi1.edid
+>
+> What I End up with is a 1024x768 on both the DVI and HDMI port outputs 
+> and then every 5-10 seconds the below gets spewed to the log file and 
+> the system is unresponsive while this occures. I don't understand why 
+> this messes up the DVI port. With no 20-drm_kms_helper.conf file the 
+> DVI port get 1600x1200
+>
+> geexbox:/home/markh # tail -f /var/log/messages
+> Oct 22 03:25:12 geexbox kernel: [  174.716622]          00 ff ff ff ff 
+> ff ff 00 ff ff ff ff ff ff ff ff
+> Oct 22 03:25:12 geexbox kernel: [  174.716623]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:12 geexbox kernel: [  174.716625]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:12 geexbox kernel: [  174.716626]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:12 geexbox kernel: [  174.716628]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:12 geexbox kernel: [  174.716629]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:12 geexbox kernel: [  174.716639]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:12 geexbox kernel: [  174.716640]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:12 geexbox kernel: [  174.716642] i915 0000:00:02.0: 
+> HDMI-A-3: EDID block 0 invalid.
+> Oct 22 03:25:13 geexbox su: (to root) markh on /dev/pts/0
+> Oct 22 03:25:21 geexbox kernel: [  183.760787] 
+> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder 
+> is 130
+> Oct 22 03:25:21 geexbox kernel: [  183.760791] Raw EDID:
+> Oct 22 03:25:21 geexbox kernel: [  183.760794]          00 ff ff ff ff 
+> ff ff 00 ff ff ff ff ff ff ff ff
+> Oct 22 03:25:21 geexbox kernel: [  183.760795]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:21 geexbox kernel: [  183.760797]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:21 geexbox kernel: [  183.760798]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:21 geexbox kernel: [  183.760800]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:21 geexbox kernel: [  183.760801]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:21 geexbox kernel: [  183.760802]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:21 geexbox kernel: [  183.760804]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:21 geexbox kernel: [  183.873788] 
+> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder 
+> is 130
+> Oct 22 03:25:21 geexbox kernel: [  183.873791] Raw EDID:
+> Oct 22 03:25:21 geexbox kernel: [  183.873793]          00 ff ff ff ff 
+> ff ff 00 ff ff ff ff ff ff ff ff
+> Oct 22 03:25:21 geexbox kernel: [  183.873795]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:21 geexbox kernel: [  183.873796]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:21 geexbox kernel: [  183.873798]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:21 geexbox kernel: [  183.873799]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:21 geexbox kernel: [  183.873800]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:21 geexbox kernel: [  183.873802]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:21 geexbox kernel: [  183.873803]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  183.986796] 
+> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder 
+> is 130
+> Oct 22 03:25:22 geexbox kernel: [  183.986799] Raw EDID:
+> Oct 22 03:25:22 geexbox kernel: [  183.986801]          00 ff ff ff ff 
+> ff ff 00 ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  183.986802]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  183.986804]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  183.986805]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  183.986807]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  183.986808]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  183.986810]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  183.986811]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.099814] 
+> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder 
+> is 130
+> Oct 22 03:25:22 geexbox kernel: [  184.099817] Raw EDID:
+> Oct 22 03:25:22 geexbox kernel: [  184.099819]          00 ff ff ff ff 
+> ff ff 00 ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.099821]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.099822]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.099824]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.099825]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.099826]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.099828]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.099829]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.099841] i915 0000:00:02.0: 
+> HDMI-A-3: EDID block 0 invalid.
+> Oct 22 03:25:22 geexbox kernel: [  184.331124] [drm] Got external EDID 
+> base block and 1 extension from "edid/lg42lb9df_hdmi1.edid" for 
+> connector "HDMI-A-1"
+> Oct 22 03:25:22 geexbox kernel: [  184.462110] 
+> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder 
+> is 130
+> Oct 22 03:25:22 geexbox kernel: [  184.462113] Raw EDID:
+> Oct 22 03:25:22 geexbox kernel: [  184.462115]          00 ff ff ff ff 
+> ff ff 00 ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.462117]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.462118]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.462120]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.462121]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.462122]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.462124]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.462134]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.575122] 
+> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder 
+> is 130
+> Oct 22 03:25:22 geexbox kernel: [  184.575125] Raw EDID:
+> Oct 22 03:25:22 geexbox kernel: [  184.575127]          00 ff ff ff ff 
+> ff ff 00 ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.575128]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.575130]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.575131]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.575133]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.575142]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.575143]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.575143]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.688133] 
+> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder 
+> is 130
+> Oct 22 03:25:22 geexbox kernel: [  184.688136] Raw EDID:
+> Oct 22 03:25:22 geexbox kernel: [  184.688138]          00 ff ff ff ff 
+> ff ff 00 ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.688140]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.688141]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.688143]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.688144]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.688145]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.688147]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.688148]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.801139] 
+> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder 
+> is 130
+> Oct 22 03:25:22 geexbox kernel: [  184.801142] Raw EDID:
+> Oct 22 03:25:22 geexbox kernel: [  184.801144]          00 ff ff ff ff 
+> ff ff 00 ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.801145]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.801147]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.801148]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.801150]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.801151]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.801152]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.801162]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:22 geexbox kernel: [  184.801164] i915 0000:00:02.0: 
+> HDMI-A-3: EDID block 0 invalid.
+> Oct 22 03:25:23 geexbox kernel: [  185.017189] 
+> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder 
+> is 130
+> Oct 22 03:25:23 geexbox kernel: [  185.017192] Raw EDID:
+> Oct 22 03:25:23 geexbox kernel: [  185.017194]          00 ff ff ff ff 
+> ff ff 00 ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.017196]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.017197]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.017199]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.017200]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.017202]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.017203]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.017204]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.130197] 
+> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder 
+> is 130
+> Oct 22 03:25:23 geexbox kernel: [  185.130200] Raw EDID:
+> Oct 22 03:25:23 geexbox kernel: [  185.130202]          00 ff ff ff ff 
+> ff ff 00 ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.130204]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.130205]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.130206]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.130208]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.130209]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.130211]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.130212]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.243209] 
+> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder 
+> is 130
+> Oct 22 03:25:23 geexbox kernel: [  185.243212] Raw EDID:
+> Oct 22 03:25:23 geexbox kernel: [  185.243214]          00 ff ff ff ff 
+> ff ff 00 ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.243216]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.243217]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.243218]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.243220]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.243221]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.243223]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.243224]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.356218] 
+> [drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder 
+> is 130
+> Oct 22 03:25:23 geexbox kernel: [  185.356221] Raw EDID:
+> Oct 22 03:25:23 geexbox kernel: [  185.356223]          00 ff ff ff ff 
+> ff ff 00 ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.356224]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.356226]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.356227]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.356228]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.356230]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.356231]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.356233]          ff ff ff ff ff 
+> ff ff ff ff ff ff ff ff ff ff ff
+> Oct 22 03:25:23 geexbox kernel: [  185.356245] i915 0000:00:02.0: 
+> HDMI-A-3: EDID block 0 invalid.
+>
+> Should I maybe add the info for the other connectrs to the modprobe 
+> file? If so what would be the syntax?
+>
+> dmesg attached
 
-> A BUG() at these points would crash the machine hard.  And where we
-> came from doesn't matter; what matters is the values in the pointers.
+One thing I forgot to mention is that I do have the edid file built into 
+the kernel via:
+CONFIG_EXTRA_FIRMWARE="edid/lg42lb9df_hdmi1.edid"
 
-OK, here's what the kernel prints with your patch:
-
-usb 6.1.4: ep 86 list del corruption prev: e5103b54 e5103a94 e51039d4
-
-A small delay before I got thousands of list_del corruption messages would
-have been nice, but I managed to catch the message anyway.
-
-Artem
+Mark
 
