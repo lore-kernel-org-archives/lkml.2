@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab2JVJrK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 05:47:10 -0400
+	id S1752838Ab2JVJrS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 05:47:18 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:54597 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752597Ab2JVJrI (ORCPT
+	with ESMTP id S1751609Ab2JVJrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 05:47:08 -0400
+	Mon, 22 Oct 2012 05:47:16 -0400
 From: Irina Tirdea <irina.tirdea@gmail.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
@@ -15,9 +15,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
         David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
         Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH v5 2/6] perf tools: configure shell path at compile time
-Date: Mon, 22 Oct 2012 12:46:08 +0300
-Message-Id: <1350899172-16965-3-git-send-email-irina.tirdea@gmail.com>
+Subject: [PATCH v5 3/6] perf tools: add --addr2line command line option
+Date: Mon, 22 Oct 2012 12:46:09 +0300
+Message-Id: <1350899172-16965-4-git-send-email-irina.tirdea@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1350899172-16965-1-git-send-email-irina.tirdea@gmail.com>
 References: <1350899172-16965-1-git-send-email-irina.tirdea@gmail.com>
@@ -27,119 +27,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Irina Tirdea <irina.tirdea@intel.com>
 
-Shell path /bin/sh is hardcoded in various places in perf. Android has a
-different folder structure and does not have /bin/sh.
+When analyzing data recorded on a target with a different architecture
+than the host, we must use addr2line from the toolchain for that
+architecture.
 
-Set the shell path at compile time in the Makefile by setting PERF_SHELL_PATH.
-By default it is set to /bin/sh.
+Add a command line option to allow setting addr2line at runtime.
 
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- tools/perf/Makefile         |    4 +++-
- tools/perf/builtin-help.c   |    2 +-
- tools/perf/builtin-script.c |   12 ++++++------
- 3 files changed, 10 insertions(+), 8 deletions(-)
+ tools/perf/Documentation/perf-annotate.txt |    2 ++
+ tools/perf/Documentation/perf-report.txt   |    2 ++
+ tools/perf/builtin-annotate.c              |    3 +++
+ tools/perf/builtin-report.c                |    3 +++
+ tools/perf/util/annotate.c                 |    5 ++++-
+ tools/perf/util/sort.c                     |    3 ++-
+ tools/perf/util/sort.h                     |    1 +
+ 7 files changed, 17 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 5429b5b..78fc6b9 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -142,6 +142,7 @@ ETC_PERFCONFIG = etc/perfconfig
- endif
- lib = lib
- PERF_TMP_DIR = /tmp
-+PERF_SHELL_PATH = /bin/sh
+diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
+index c8ffd9f..177906a 100644
+--- a/tools/perf/Documentation/perf-annotate.txt
++++ b/tools/perf/Documentation/perf-annotate.txt
+@@ -87,6 +87,8 @@ OPTIONS
  
- export prefix bindir sharedir sysconfdir
+ --objdump=<path>::
+         Path to objdump binary.
++--addr2line=<path>::
++        Path to addr2line binary.
  
-@@ -170,7 +171,7 @@ endif
+ SEE ALSO
+ --------
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index f4d91be..b6bb26e 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -170,6 +170,8 @@ OPTIONS
  
- ### --- END CONFIGURATION SECTION ---
+ --objdump=<path>::
+         Path to objdump binary.
++--addr2line=<path>::
++        Path to addr2line binary.
  
--BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)util -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"'
-+BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)util -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' -DPERF_SHELL_PATH='"$(PERF_SHELL_PATH)"'
- BASIC_LDFLAGS =
+ SEE ALSO
+ --------
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index c4bb645..e4df5da 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -292,6 +292,9 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
+ 	OPT_STRING(0, "objdump", &objdump_path, "path",
+ 		   "objdump binary to use for disassembly and annotations"),
++	OPT_STRING(0, "addr2line", &addr2line_path, "path",
++		   "addr2line binary to use for obtaining "
++		   "file names and line numbers"),
+ 	OPT_END()
+ 	};
  
- ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
-@@ -179,6 +180,7 @@ ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
- 	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
- 	BASIC_CFLAGS += -I.
- 	PERF_TMP_DIR = /data/local/tmp
-+	PERF_SHELL_PATH = /system/bin/sh
- endif
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 90d1162..9c0fe68 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -642,6 +642,9 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "use branch records for histogram filling", parse_branch_mode),
+ 	OPT_STRING(0, "objdump", &objdump_path, "path",
+ 		   "objdump binary to use for disassembly and annotations"),
++	OPT_STRING(0, "addr2line", &addr2line_path, "path",
++		   "addr2line binary to use for obtaining "
++		   "file names and line numbers"),
+ 	OPT_END()
+ 	};
  
- # Guard against environment variables
-diff --git a/tools/perf/builtin-help.c b/tools/perf/builtin-help.c
-index 411ee56..542b752 100644
---- a/tools/perf/builtin-help.c
-+++ b/tools/perf/builtin-help.c
-@@ -154,7 +154,7 @@ static void exec_man_cmd(const char *cmd, const char *page)
- {
- 	struct strbuf shell_cmd = STRBUF_INIT;
- 	strbuf_addf(&shell_cmd, "%s %s", cmd, page);
--	execl("/bin/sh", "sh", "-c", shell_cmd.buf, NULL);
-+	execl(PERF_SHELL_PATH, "sh", "-c", shell_cmd.buf, NULL);
- 	warning("failed to exec '%s': %s", cmd, strerror(errno));
- }
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index f0a9103..9c0fa54 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -18,6 +18,7 @@
  
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 04ceb07..d0d3a21 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -1320,7 +1320,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 				goto out;
- 			}
+ const char 	*disassembler_style;
+ const char	*objdump_path;
++const char	*addr2line_path;
  
--			__argv[j++] = "/bin/sh";
-+			__argv[j++] = PERF_SHELL_PATH;
- 			__argv[j++] = rec_script_path;
- 			if (system_wide)
- 				__argv[j++] = "-a";
-@@ -1331,7 +1331,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 				__argv[j++] = argv[i];
- 			__argv[j++] = NULL;
+ static struct ins *ins__find(const char *name);
+ static int disasm_line__parse(char *line, char **namep, char **rawp);
+@@ -915,7 +916,9 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
+ 			continue;
  
--			execvp("/bin/sh", (char **)__argv);
-+			execvp(PERF_SHELL_PATH, (char **)__argv);
- 			free(__argv);
- 			exit(-1);
- 		}
-@@ -1347,7 +1347,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 		}
+ 		offset = start + i;
+-		sprintf(cmd, "addr2line -e %s %016" PRIx64, filename, offset);
++		sprintf(cmd, "%s -e %s %016" PRIx64,
++			addr2line_path ? addr2line_path : "addr2line",
++			filename, offset);
+ 		fp = popen(cmd, "r");
+ 		if (!fp)
+ 			continue;
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index d579406..19cc046 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -268,7 +268,8 @@ static int hist_entry__srcline_snprintf(struct hist_entry *self, char *bf,
+ 	     strlen(PERF_TMP_DIR "/perf-")))
+ 		goto out_ip;
  
- 		j = 0;
--		__argv[j++] = "/bin/sh";
-+		__argv[j++] = PERF_SHELL_PATH;
- 		__argv[j++] = rep_script_path;
- 		for (i = 1; i < rep_args + 1; i++)
- 			__argv[j++] = argv[i];
-@@ -1355,7 +1355,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 		__argv[j++] = "-";
- 		__argv[j++] = NULL;
+-	snprintf(cmd, sizeof(cmd), "addr2line -e %s %016" PRIx64,
++	snprintf(cmd, sizeof(cmd), "%s -e %s %016" PRIx64,
++		 addr2line_path ? addr2line_path : "addr2line",
+ 		 self->ms.map->dso->long_name, self->ip);
+ 	fp = popen(cmd, "r");
+ 	if (!fp)
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 13761d8..c8e58f6 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -139,6 +139,7 @@ struct sort_entry {
  
--		execvp("/bin/sh", (char **)__argv);
-+		execvp(PERF_SHELL_PATH, (char **)__argv);
- 		free(__argv);
- 		exit(-1);
- 	}
-@@ -1384,7 +1384,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 			goto out;
- 		}
+ extern struct sort_entry sort_thread;
+ extern struct list_head hist_entry__sort_list;
++extern const char *addr2line_path;
  
--		__argv[j++] = "/bin/sh";
-+		__argv[j++] = PERF_SHELL_PATH;
- 		__argv[j++] = script_path;
- 		if (system_wide)
- 			__argv[j++] = "-a";
-@@ -1392,7 +1392,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 			__argv[j++] = argv[i];
- 		__argv[j++] = NULL;
- 
--		execvp("/bin/sh", (char **)__argv);
-+		execvp(PERF_SHELL_PATH, (char **)__argv);
- 		free(__argv);
- 		exit(-1);
- 	}
+ void setup_sorting(const char * const usagestr[], const struct option *opts);
+ extern int sort_dimension__add(const char *);
 -- 
 1.7.9.5
 
