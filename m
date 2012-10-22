@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab2JVKRY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 06:17:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22101 "EHLO mx1.redhat.com"
+	id S1752998Ab2JVKSJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 06:18:09 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47161 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245Ab2JVKRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 06:17:23 -0400
-Date: Mon, 22 Oct 2012 12:16:45 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        Dave Airlie <airlied@gmail.com>, Borislav Petkov <bp@alien8.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Asias He <asias.hejun@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: Re: [GIT PULL] Linux KVM tool for v3.7-rc0
-Message-ID: <20121022101645.GL29310@redhat.com>
-References: <20121016134129.2fcd7c8ebe1235065aea929e@canb.auug.org.au>
- <CA+55aFzz66Y1MtOoqEMrQCVzdL-2pgr43e1sXUa=eM5GXL9XSA@mail.gmail.com>
- <20121020180436.c42b7325431fe87104b008fa@canb.auug.org.au>
- <20121020181425.GA11191@liondog.tnic>
- <CAPM=9twcHxUGgYUc27DV1AcYZbzKSbA1Bru8vK1kcWvcG0Jpkw@mail.gmail.com>
- <20121021110329.GA7024@infradead.org>
- <20121021125933.GC19535@gmail.com>
- <CAFLxGvzLOa-BibZ39_yMEC70AseEPbtjcNGk6jLwaAVsU2ujwA@mail.gmail.com>
- <CAOJsxLGm+Qd132i2c7q9p1_yweLiRzC4GR0-Xmx79m2==4_FAw@mail.gmail.com>
- <508510C3.2020901@redhat.com>
+	id S1751842Ab2JVKSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 06:18:07 -0400
+Date: Mon, 22 Oct 2012 12:18:04 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "miaox@cn.fujitsu.com" <miaox@cn.fujitsu.com>,
+        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
+        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] Do not change worker's running cpu in
+ cmci_rediscover().
+Message-ID: <20121022101804.GC8352@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Tang Chen <tangchen@cn.fujitsu.com>,
+	"Luck, Tony" <tony.luck@intel.com>, Borislav Petkov <bp@amd64.org>,
+	"tglx@linutronix.de" <tglx@linutronix.de>,
+	"mingo@redhat.com" <mingo@redhat.com>,
+	"hpa@zytor.com" <hpa@zytor.com>,
+	"miaox@cn.fujitsu.com" <miaox@cn.fujitsu.com>,
+	"laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
+	"wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+	"x86@kernel.org" <x86@kernel.org>,
+	"linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1350625528-1385-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1350625528-1385-3-git-send-email-tangchen@cn.fujitsu.com>
+ <20121019164233.GF11958@aftab.osrc.amd.com>
+ <3908561D78D1C84285E8C5FCA982C28F19D57AA5@ORSMSX108.amr.corp.intel.com>
+ <5084BE7C.4020303@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <508510C3.2020901@redhat.com>
+In-Reply-To: <5084BE7C.4020303@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 11:24:19AM +0200, Avi Kivity wrote:
-> On 10/21/2012 05:39 PM, Pekka Enberg wrote:
-> > 
-> > On Sun, Oct 21, 2012 at 5:02 PM, richard -rw- weinberger
-> > <richard.weinberger@gmail.com> wrote:
-> >> qemu supports all these features.
-> >> E.g. to access the host fs use:
-> >> qemu ... \
-> >>   -fsdev local,security_model=passthrough,id=fsdev-root,path=/your/root/,readonly
-> >> \
-> >>   -device virtio-9p-pci,id=fs-root,fsdev=fsdev-root,mount_tag=rootshare
-> > 
-> > IIRC, QEMU uses SLIRP non-root zero-config networking which is much
-> > more limited than what LKVM offers out of the box.
+On Mon, Oct 22, 2012 at 11:33:16AM +0800, Tang Chen wrote:
+> I have 2 nodes, node0 and node1. node1 could be hotpluged.
+> node0 has cpu0 ~ cpu15, node1 has cpu16 ~ cpu31.
 > 
-> Curious, what are the differences?
-> 
-Me too, especially as we discussed replacing SLIRP with lkvm code for
-userspace networking and decided (for reasons I do not remember) that it
-lacks futures SLIRP has. Was it host port redirection?
+> I online all the cpus on node1, and hot-remove node1 directly.
 
---
-			Gleb.
+Hold on, I need to ask here: you soft-online all cores on node1 and
+*then* you *hot* *remove* it? So with all cores online you physically
+take out the processor from the socket? Am I reading this correctly?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
