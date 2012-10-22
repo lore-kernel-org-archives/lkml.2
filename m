@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932801Ab2JVBZI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 21:25:08 -0400
-Received: from ozlabs.org ([203.10.76.45]:36925 "EHLO ozlabs.org"
+	id S932785Ab2JVBZH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 21:25:07 -0400
+Received: from ozlabs.org ([203.10.76.45]:48152 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932749Ab2JVBZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932729Ab2JVBZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 21 Oct 2012 21:25:04 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: David Howells <dhowells@redhat.com>
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        Josh Boyer <jwboyer@redhat.com>, David Miller <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        pjones@redhat.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>, David Howells <dhowells@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: RFC: sign the modules at install time
-In-Reply-To: <2140.1350645706@warthog.procyon.org.uk>
-References: <87txtrpb1t.fsf@rustcorp.com.au> <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com> <3179.1350512382@warthog.procyon.org.uk> <CA+55aFzEH1jguw8NB90si2uxvyO63FuKPOc8wiEPRCYwruSzRg@mail.gmail.com> <87a9vko0z7.fsf@rustcorp.com.au> <20121018121154.GE2934@hansolo.jdub.homelinux.org> <CA+55aFy677k6zvkc9n_2e6OEmOx-S1AYbOumkUOSkrE8Q+aUKw@mail.gmail.com> <2140.1350645706@warthog.procyon.org.uk>
+In-Reply-To: <CA+55aFyDW4z5x8YcbQ8CYJvwHE3poK9iX8Sfgbg2fVaS3Bio4w@mail.gmail.com>
+References: <CA+55aFwPaSB3a8XNxWMyKhwXVJtdOBO-o8-rz3O-vTbwv8K2Tg@mail.gmail.com> <87txtso9xw.fsf@rustcorp.com.au> <CA+55aFxZdtD51AVKLtKK95ooh8VB8-5Tt8nHsxSUT67CBRrp2g@mail.gmail.com> <871ugwny1n.fsf@rustcorp.com.au> <CA+55aFwTz6xadNL37H6Qb8+rWNefn0cQ0URFPfD=Ea=J54xzGg@mail.gmail.com> <87fw5bp858.fsf@rustcorp.com.au> <CA+55aFx339WquJEjijeRQ+12Aw0sa+MoL+kFttjbJLJ6S1Jy+Q@mail.gmail.com> <CA+55aFyDW4z5x8YcbQ8CYJvwHE3poK9iX8Sfgbg2fVaS3Bio4w@mail.gmail.com>
 User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 22 Oct 2012 10:21:35 +1030
-Message-ID: <87bofvjse0.fsf@rustcorp.com.au>
+Date: Mon, 22 Oct 2012 10:58:11 +1030
+Message-ID: <877gqjjqp0.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> writes:
-> Rusty Russell <rusty@rustcorp.com.au> wrote:
+Linus Torvalds <torvalds@linux-foundation.org> writes:
+> On Fri, Oct 19, 2012 at 12:58 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> Tssk. I fixed it up, and now it works-for-me(tm), but some perl person
+>> probably really should try to make that sign-file and x509keyid merge.
+>> My fix made the thing even slower, doing two extra "wc -c" invocations
+>> since it can't do "${#..}" expansion due to the locale problem.
 >
->> > (Side note: I hope people realize that the random key is generated
->> > with a 100-year lifespan. So if you build a kernel today, you do
->> > potentially have a "year-2112 problem". I'm not horribly worried, but
->> > I *am* a bit worried about 32-bit time_t overflow and I hope 32-bit
->> > openssl doesn't do anything odd)
->> 
->> Yep, David's original patch had that problem; he fixed the kernel's x509
->> handling to use struct tm, not time_t, and now it Just Works.
->
-> That's assuming that 32-bit *openssl* gets it right when generating the key.
+> Hmm. I haven't seen this breakage personally yet, but looking more at
+> Rusty's last changes I'm pretty sure my fixes are potentially not
+> sufficient.
 
-Yes, I am assuming that.  What openssl did you think I ran on my 32-bit
-kernel? :)
+Sorry for posting untested hack :(
+
+Thanks for the rewrite David; modules_install here was 18.6 seconds,
+became 19.1 with my broken hack, now 17.3 seconds.
 
 Cheers,
 Rusty.
