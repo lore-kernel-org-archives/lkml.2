@@ -1,100 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755161Ab2JVGgH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 02:36:07 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:55107 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753964Ab2JVGgF (ORCPT
+	id S932569Ab2JVGiB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 02:38:01 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:54290 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753481Ab2JVGiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 02:36:05 -0400
-Date: Mon, 22 Oct 2012 08:35:58 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 3/3] DOC: PWM: Adding binding document for via,vt8500-pwm
-Message-ID: <20121022063558.GB17181@avionic-0098.mockup.avionic-design.de>
-References: <1350643135-13197-1-git-send-email-linux@prisktech.co.nz>
- <1350643135-13197-3-git-send-email-linux@prisktech.co.nz>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rS8CxjVDS/+yyDmU"
-Content-Disposition: inline
-In-Reply-To: <1350643135-13197-3-git-send-email-linux@prisktech.co.nz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:cfA3xmmz052VsZWroJQtSiXzBsR9DYDrh5Se6+qqdCX
- YKiEl7jIvAOCF+Ssfn8RugyM0UrtiRmUoszwDh20hIQt/tAqOr
- cMhNycNTxb11gc0KXCcLKGApY2/ElmjBZzjS+ZHjNuqTiqsYH2
- TAfP4UiUE5gpOW+QHa8T8KGTKofHQlT96zsOg5elB3CR/A7QzQ
- LnpEP29RIBzweh1d3nQelM18otCM39YAjGrsY46JKdpTddsuU5
- +UncaE/m5fZlo9MEpzib5K3zqQoHwtlPquWJ7sV+y9hbY9LdqI
- OTYDxG8IW2lNno9foe46lF+WZsK0MpMoBUX5Sj9nTM8NYnp9z3
- MwB0sGWG5d0QUyB5iRtEVSnqIeV6g+IsNfcjgnhjhcIt+PN+3q
- hGl95T9vo1OBr/SA0rONNIzXSBQYuX++K2O0tyT8WKpNK4Ymph
- e9jOH
+	Mon, 22 Oct 2012 02:38:00 -0400
+Subject: Re: Major performance regressions in 3.7rc1/2
+From: Jimster480 <jimster480@gmail.com>
+Reply-To: jimster480@gmail.com
+To: Patrik Kullman <patrik.kullman@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAGPN=9Qx1JAr6CGO-JfoR2ksTJG_CLLZY_oBA_TFMzA_OSfiFg@mail.gmail.com>
+References: <CAGPN=9Qx1JAr6CGO-JfoR2ksTJG_CLLZY_oBA_TFMzA_OSfiFg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: 0v1
+Date: Mon, 22 Oct 2012 02:37:57 -0400
+Message-ID: <1350887877.3673.2.camel@jimster480-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Well have you tried building the kernel yourself? It might be the
+options that they are using in the kernel, since the Ubuntu team builds
+the kernel with almost everything on, including debugging and sometimes
+experimental features. 
+You could copy your current conf and then take a look at it. 
+On Mon, 2012-10-22 at 08:03 +0200, Patrik Kullman wrote:
+> Hi,
+> 
+> I'm using an Asus Zenbook UX31E and have been installing all RCs in
+> hope of improving the Wireless and Touchpad functionality.
+> However, when trying 3.7 (rc1 and now rc2) I have major performance issues.
+> 
+> Easiest way to reproduce is to launch and play a game like Nexuiz,
+> where the computer will lag, stutter and freeze until the machine is
+> unresponsive within a couple of minutes.
+> But an easy workload like browsing will also cause lags when switching
+> tabs or redrawing a web page after a tab switch.
+> Basically 3.7 is unusable for this machine.
+> 
+> I have been installing the pre-built kernels from
+> http://kernel.ubuntu.com/~kernel-ppa/mainline/
+> 
+> In case lspci is interesting:
+> 00:00.0 Host bridge: Intel Corporation 2nd Generation Core Processor
+> Family DRAM Controller (rev 09)
+> 00:02.0 VGA compatible controller: Intel Corporation 2nd Generation
+> Core Processor Family Integrated Graphics Controller (rev 09)
+> 00:16.0 Communication controller: Intel Corporation 6 Series/C200
+> Series Chipset Family MEI Controller #1 (rev 04)
+> 00:1b.0 Audio device: Intel Corporation 6 Series/C200 Series Chipset
+> Family High Definition Audio Controller (rev 05)
+> 00:1c.0 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset
+> Family PCI Express Root Port 1 (rev b5)
+> 00:1c.1 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset
+> Family PCI Express Root Port 2 (rev b5)
+> 00:1c.3 PCI bridge: Intel Corporation 6 Series/C200 Series Chipset
+> Family PCI Express Root Port 4 (rev b5)
+> 00:1d.0 USB controller: Intel Corporation 6 Series/C200 Series Chipset
+> Family USB Enhanced Host Controller #1 (rev 05)
+> 00:1f.0 ISA bridge: Intel Corporation QS67 Express Chipset Family LPC
+> Controller (rev 05)
+> 00:1f.2 SATA controller: Intel Corporation 6 Series/C200 Series
+> Chipset Family 6 port SATA AHCI Controller (rev 05)
+> 00:1f.3 SMBus: Intel Corporation 6 Series/C200 Series Chipset Family
+> SMBus Controller (rev 05)
+> 02:00.0 Network controller: Atheros Communications Inc. AR9485
+> Wireless Network Adapter (rev 01)
+> 03:00.0 USB controller: Fresco Logic Device 1009 (rev 02)
+> 
+> 
+> Let me know if there are some simple tests I can do, I'm not sure I'll
+> have time to bisect any time soon.
+> 
+> Thanks in advance,
+> Patrik
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
---rS8CxjVDS/+yyDmU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Fri, Oct 19, 2012 at 11:38:55PM +1300, Tony Prisk wrote:
-> Add a binding document describing the PWM controller found
-> on arch-vt8500 supported SoCs.
->=20
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-> ---
->  .../devicetree/bindings/pwm/vt8500-pwm.txt         |   17 ++++++++++++++=
-+++
->  1 file changed, 17 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/pwm/vt8500-pwm.txt
-
-I think this can be folded into the previous patch. One other comment
-below.
-
-> diff --git a/Documentation/devicetree/bindings/pwm/vt8500-pwm.txt b/Docum=
-entation/devicetree/bindings/pwm/vt8500-pwm.txt
-> new file mode 100644
-> index 0000000..e8ba133
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/pwm/vt8500-pwm.txt
-> @@ -0,0 +1,17 @@
-> +VIA/Wondermedia VT8500/WM8xxx series SoC PWM controller
-> +
-> +Required properties:
-> +- compatible: should be "via,vt8500-pwm"
-> +- reg: physical base address and length of the controller's registers
-> +- #pwm-cells: should be 2.  The first cell specifies the per-chip index
-> +  of the PWM to use and the second cell is the period in nanoseconds.
-> +- clocks: pHandle to the PWM source clock
-
-I think the common spelling is "phandle".
-
-Thierry
-
---rS8CxjVDS/+yyDmU
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQhOlOAAoJEN0jrNd/PrOhzjAP/i6cVI9kMmk9xapzqJeY11U8
-jrr7epbE3plPZiHF/luIk2f2B7rTm3OsKxr9giTZzfl7Tq9ztoXivRUF4wMewkaK
-cYrOA1L1ud9QUmLde+t98I+xhPXcG20uXP3YBmXHwEePzBBad0ZnVLDEktjJY6XC
-AX/1/ebWZQ/wyJx2CFmWkRaKbbQH7SuFo8qBasgVcGDg44xiimbwwpmm0Wkj579B
-8WKG2C6I85LDGuUusonEbMMK2y5a7e6Xu5aUEJ7zDzkCCGwmXwLuZJCWnafsUAdI
-sdJYQ0ag6JNmJj1DZOYpzh8OeC2DAge+Aw/tVS97ute282kS7NZvn0z6B2Toiev9
-CLNnanVeCZsfkAIuCMBS5JTLzjM+RH8n54MgSIJHPMHHr0ZAExocy9S5ApTPshfH
-4l1YRUpljK5+QAA9CUYb67VTWhpvhes95DnFHU67UxgOI8kDztBrYBuoul1+EhWx
-KKA4YgTg8P/VAAIMKFPCM6NZnjrrj9su/I4Uvm7g4vIHF+6fmu1JcMxwnIGbW94L
-L8qCrCl7xfTV2kAF+3q27pSTL/8y5V1NLE9nOiPb3YQrqOuaEutLjoNiowT4JJNc
-1seDArkgDImmYXTSUviNgxN2HygcQBDkUfEwl2930TVp9i33jnRk22oNEnjQBmKK
-fbGHY3rnbaL0PYTEeakQ
-=FaDT
------END PGP SIGNATURE-----
-
---rS8CxjVDS/+yyDmU--
