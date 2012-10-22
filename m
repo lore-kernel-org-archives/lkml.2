@@ -1,108 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab2JVMSL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 08:18:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35548 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952Ab2JVMSJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 08:18:09 -0400
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: Manjunath Hadli <manjunath.hadli@ti.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>
-Subject: [PATCH RESEND] media: davinci: vpbe: fix build warning
-Date: Mon, 22 Oct 2012 17:47:51 +0530
-Message-Id: <1350908271-11448-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753453Ab2JVMSx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 08:18:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3706 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751990Ab2JVMSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 08:18:52 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] UAPI: Fix up empty files in arch/cris/
+To: starvik@axis.com, jesper.nilsson@axis.com
+Cc: linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Date: Mon, 22 Oct 2012 13:18:44 +0100
+Message-ID: <20121022121844.14852.49121.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+Fix up three empty files in arch/cris/ by sticking placeholder comments in
+there to prevent the patch program from deleting them.
 
-Warnings were generated because of the following commit changed data type for
-address pointer
+I decided not to delete the arch-v*/Kbuild files as it's possibly someone might
+want to use them for genhdr-y lines in the future, but they could be deleted
+and the pointer lines removed from asm/Kbuild.  The uapi/arch-v*/Kbuild files
+ought to be uneffected by such a change.
 
-195bbca ARM: 7500/1: io: avoid writeback addressing modes for __raw_ accessors
-add  __iomem annotation to fix following warnings
+asm/swab.h didn't have anything outside of __KERNEL__ so nothing appeared in
+uapi/asm/swab.h.  The latter, however, is exported by Kbuild.asm.
 
-drivers/media/platform/davinci/vpbe_osd.c: In function ‘osd_read’:
-drivers/media/platform/davinci/vpbe_osd.c:49:2: warning: passing
- argument 1 of ‘__raw_readl’ makes pointer from integer without a cast [enabled by default]
-arch/arm/include/asm/io.h:104:19: note: expected ‘const volatile
- void *’ but argument is of type ‘long unsigned int’
+This needs to be applied after the CRIS UAPI disintegration patch.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
-  Resending the patch since, it didn't reach the DLOS mailing list.
 
- drivers/media/platform/davinci/vpbe_osd.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+ arch/cris/include/arch-v10/arch/Kbuild |    1 +
+ arch/cris/include/arch-v32/arch/Kbuild |    1 +
+ arch/cris/include/uapi/asm/swab.h      |    3 +++
+ 3 files changed, 5 insertions(+)
 
-diff --git a/drivers/media/platform/davinci/vpbe_osd.c b/drivers/media/platform/davinci/vpbe_osd.c
-index bba299d..9ab9280 100644
---- a/drivers/media/platform/davinci/vpbe_osd.c
-+++ b/drivers/media/platform/davinci/vpbe_osd.c
-@@ -46,14 +46,14 @@ static inline u32 osd_read(struct osd_state *sd, u32 offset)
- {
- 	struct osd_state *osd = sd;
- 
--	return readl(osd->osd_base + offset);
-+	return readl(IOMEM(osd->osd_base + offset));
- }
- 
- static inline u32 osd_write(struct osd_state *sd, u32 val, u32 offset)
- {
- 	struct osd_state *osd = sd;
- 
--	writel(val, osd->osd_base + offset);
-+	writel(val, IOMEM(osd->osd_base + offset));
- 
- 	return val;
- }
-@@ -63,9 +63,9 @@ static inline u32 osd_set(struct osd_state *sd, u32 mask, u32 offset)
- 	struct osd_state *osd = sd;
- 
- 	u32 addr = osd->osd_base + offset;
--	u32 val = readl(addr) | mask;
-+	u32 val = readl(IOMEM(addr)) | mask;
- 
--	writel(val, addr);
-+	writel(val, IOMEM(addr));
- 
- 	return val;
- }
-@@ -75,9 +75,9 @@ static inline u32 osd_clear(struct osd_state *sd, u32 mask, u32 offset)
- 	struct osd_state *osd = sd;
- 
- 	u32 addr = osd->osd_base + offset;
--	u32 val = readl(addr) & ~mask;
-+	u32 val = readl(IOMEM(addr)) & ~mask;
- 
--	writel(val, addr);
-+	writel(val, IOMEM(addr));
- 
- 	return val;
- }
-@@ -88,9 +88,9 @@ static inline u32 osd_modify(struct osd_state *sd, u32 mask, u32 val,
- 	struct osd_state *osd = sd;
- 
- 	u32 addr = osd->osd_base + offset;
--	u32 new_val = (readl(addr) & ~mask) | (val & mask);
-+	u32 new_val = (readl(IOMEM(addr)) & ~mask) | (val & mask);
- 
--	writel(new_val, addr);
-+	writel(new_val, IOMEM(addr));
- 
- 	return new_val;
- }
--- 
-1.7.4.1
+diff --git a/arch/cris/include/arch-v10/arch/Kbuild b/arch/cris/include/arch-v10/arch/Kbuild
+index e69de29..a286906 100644
+--- a/arch/cris/include/arch-v10/arch/Kbuild
++++ b/arch/cris/include/arch-v10/arch/Kbuild
+@@ -0,0 +1 @@
++# Cris arch V10
+diff --git a/arch/cris/include/arch-v32/arch/Kbuild b/arch/cris/include/arch-v32/arch/Kbuild
+index e69de29..17d19f7 100644
+--- a/arch/cris/include/arch-v32/arch/Kbuild
++++ b/arch/cris/include/arch-v32/arch/Kbuild
+@@ -0,0 +1 @@
++# Cris arch V32
+diff --git a/arch/cris/include/uapi/asm/swab.h b/arch/cris/include/uapi/asm/swab.h
+index e69de29..4adf1e9 100644
+--- a/arch/cris/include/uapi/asm/swab.h
++++ b/arch/cris/include/uapi/asm/swab.h
+@@ -0,0 +1,3 @@
++/*
++ * CRIS byte swapping.
++ */
 
