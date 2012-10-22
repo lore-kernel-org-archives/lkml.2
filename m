@@ -1,42 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab2JVQJA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 12:09:00 -0400
-Received: from smtp.getmail.no ([84.208.15.66]:64406 "EHLO smtp.getmail.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755469Ab2JVQI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 12:08:59 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-Subject: Fwd: Re: [ANNOUNCE] 3.6.2-rt4
-References: <alpine.LFD.2.02.1210202133470.2719@ionos>
- <op.wmk8f6m96426ze@localhost.localdomain>
-Date: Mon, 22 Oct 2012 18:08:57 +0200
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
-Message-id: <op.wmk8g7zu6426ze@localhost.localdomain>
-In-reply-to: <op.wmk8f6m96426ze@localhost.localdomain>
-User-Agent: Opera Mail/12.02 (Linux)
+	id S1755623Ab2JVQJF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 12:09:05 -0400
+Received: from deniol129.nionex.net ([84.201.107.10]:51583 "EHLO
+	deniol129.nionex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755469Ab2JVQJB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 12:09:01 -0400
+From: "webmaster@ibai-institut.de" <webmaster@ibai-institut-newsletter.de>
+Subject: Newsletter-Abmeldung
+Date: Mon, 22 Oct 2012 18:09:00
+X-Mailer: aconon.de Mail on ibai-institut-newsletter.de
+To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Message-Id: <20121022160900.47198AA11A@deniol129.nionex.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Guten Tag,
+
+Sie sind nun aus dem Verteiler ausgetragen.
+Schade, dass Sie sich dafür entschieden haben, unseren Newsletter nicht mehr erhalten zu wollen.
+Selbstverständlich können Sie sich auf unserer Homepage jederzeit wieder anmelden, sollten Sie doch wieder Interesse haben.
+Ihre Anregungen und Kritik helfen uns, unseren Service stetig weiter zu verbessern. Haben Sie sich über uns geärgert? Haben Ihnen die Inhalte nicht gefallen? Was können wir für Sie besser machen? Schreiben Sie uns an mailto:webmaster@ibai-institut-newsletter.de
 
 
-------- Forwarded message -------
-From: "Uwaysi Bin Kareem" <uwaysi.bin.kareem@paradoxuncreated.com>
-To: "Thomas Gleixner" <tglx@linutronix.de>
-Cc:
-Subject: Re: [ANNOUNCE] 3.6.2-rt4
-Date: Mon, 22 Oct 2012 18:08:20 +0200
+http://ibai-institut-newsletter.de/cgi-bin/mail/manager.cgi?group1=mldm&email=linux-kernel@vger.kernel.org
 
-I tried it. Just low-latency desktop, seems slighty of less jitter, than
-mainline.
-Unfortunately the problem of threadedirqs continue, they never worked on
-my machine.
-I saw someone discuss a possibility to run basic realtime without threaded
-irqs, but the full patch required it.
-Could you or anyone detail it? If you want any info, just say what.
-
-Peace Be With You.
+Vielen Dank!
