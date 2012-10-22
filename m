@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932821Ab2JVCLk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 22:11:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:30850 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932742Ab2JVCLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 22:11:39 -0400
-X-IronPort-AV: E=Sophos;i="4.80,627,1344182400"; 
-   d="scan'208";a="6039188"
-Message-ID: <5084AB10.7010807@cn.fujitsu.com>
-Date: Mon, 22 Oct 2012 10:10:24 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: tony.luck@intel.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        miaox@cn.fujitsu.com, laijs@cn.fujitsu.com, wency@cn.fujitsu.com,
-        x86@kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH v2 1/2] Replace if statement with WARN_ON_ONCE() in cmci_rediscover().
-References: <1350625528-1385-1-git-send-email-tangchen@cn.fujitsu.com> <1350625528-1385-2-git-send-email-tangchen@cn.fujitsu.com> <20121019164045.GE11958@aftab.osrc.amd.com>
-In-Reply-To: <20121019164045.GE11958@aftab.osrc.amd.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/22 10:10:59,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/22 10:11:02,
-	Serialize complete at 2012/10/22 10:11:02
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S932816Ab2JVCOh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 22:14:37 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:11713 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932777Ab2JVCOg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Oct 2012 22:14:36 -0400
+X-AuditID: cbfee61a-b7fa66d0000004cf-f9-5084ac0a43be
+Message-id: <5084AC0A.8040608@samsung.com>
+Date: Mon, 22 Oct 2012 11:14:34 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Jenny TC <jenny.tc@intel.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] extcon : register for cable interest by cable name
+References: <1350475725-8457-1-git-send-email-jenny.tc@intel.com>
+In-reply-to: <1350475725-8457-1-git-send-email-jenny.tc@intel.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJLMWRmVeSWpSXmKPExsVy+t9jQV2uNS0BBrPumlpc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6Mjwc/sxfM4Ky4equHsYHxEHsXIyeHhICJxPvu88wQtpjEhXvr
+	2boYuTiEBKYzSqw8O50JwulikmhffYARpIpXQEvie+c0sG4WAVWJdZ2tYN1sQPH9L24AdXNw
+	iApESPzq54AoF5T4MfkeC4gtIqAo8en0fSYQm1nAU6JvRjsbiC0s4CWx8fpWsDFCAo4SN2as
+	ABvPKeAk0b1gIjNEvY7E/tZpbBC2vMTmNW+ZJzAKzEKyYhaSsllIyhYwMq9iFE0tSC4oTkrP
+	NdQrTswtLs1L10vOz93ECA7AZ1I7GFc2WBxiFOBgVOLhnbGwJUCINbGsuDL3EKMEB7OSCO+p
+	eKAQb0piZVVqUX58UWlOavEhRmkOFiVx3maPlAAhgfTEktTs1NSC1CKYLBMHp1QDo3XMgZj5
+	z0SLEzwqaiVfLJVf9oA7dsECu6QFVmnRt//vP620ay0ng+YrJtVX1Tdq3s+bfObdEcugp+ZF
+	19KPXknkXDs5V0654Y7n/CChMrNU/Xv/xHcVCEsKRk3ZnftwqvgPjQSJbyFH3aWDHzxZ+4w1
+	0WHFvsWmm/ds8C49k2b60+SzUvbjBUosxRmJhlrMRcWJACxzWzs8AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2012 12:40 AM, Borislav Petkov wrote:
-> On Fri, Oct 19, 2012 at 01:45:27PM +0800, Tang Chen wrote:
->> cmci_rediscover() is only called by the CPU_POST_DEAD event handler,
->> which means the corresponding cpu has already dead. As a result, it
->> won't be accessed in the for_each_online_cpu loop.
->> So, we could change the if(cpu == dying) statement into a WARN_ON_ONCE().
->>
->> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
->> ---
->>   arch/x86/kernel/cpu/mcheck/mce_intel.c |    4 ++--
->>   1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
->> index 38e49bc..481d152 100644
->> --- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
->> +++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
->> @@ -180,8 +180,8 @@ void cmci_rediscover(int dying)
->>   	cpumask_copy(old,&current->cpus_allowed);
->>
->>   	for_each_online_cpu(cpu) {
->> -		if (cpu == dying)
->> -			continue;
->> +		WARN_ON_ONCE(cpu == dying);
->
-> Ok, I don't understand that:
->
-> we want to warn that the rediscovering is happening on a dying cpu?? And
-> before that, we simply jumped over it and didn't do the rediscovering
-> there? Why should we warn at all?
+On 10/17/2012 09:08 PM, Jenny TC wrote:
+> There are some scnearios where a driver/framework needs to register
+> interest for a particular cable without specifying the extcon device
+> name. One such scenario is charger notifications. The platform will
+> have charger cabel which will be bound to any extcon device. It's
+> not mandatory for the charger driver to know which extcon device
+> it should use. This patch enables the support for registering
+> interest for a cable just by cable name wihtout specifying the
+> extcon device name
+> 
+> Signed-off-by: Jenny TC <jenny.tc@intel.com>
+> ---
+> v1:
+>   Initial submit
+> V2:
+>   Removed the new API and modified the extcon_register_interest
+>   API to accomodate the new requirement
+> 
+>  drivers/extcon/extcon-class.c |   43 +++++++++++++++++++++++++++++++----------
+>  1 file changed, 33 insertions(+), 10 deletions(-)
+> 
+Tested-by: Chanwoo Choi <cw00.choi@samsung.com>
 
-Hi Borislav,
+Applied it and This patch is tested by me on charger-manager.
 
-As far as I know, cmci_rediscover() is only called in
-mce_cpu_callback() to handle CPU_POST_DEAD event.
+You can check it after some hours at extcon tree:
+- http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next
 
-2362         if (action == CPU_POST_DEAD) {
-2363                 /* intentionally ignoring frozen here */
-2364                 cmci_rediscover(cpu);
-2365         }
-
-I didn't find anywhere else using this function. So I think the cpu
-should be dead already when this function is called.
-
-I don't why before we just jumped over it. But I think if we have an
-online cpu == dying here, it must be wrong. So I think we should warn
-it, not just jump over it.
-
-Thanks. :)
-
-
->
-> Huh?
->
-
+Thanks,
+Chanwoo Choi
