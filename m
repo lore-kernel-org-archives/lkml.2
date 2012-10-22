@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab2JVOhM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 10:37:12 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:53273 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754116Ab2JVOhK (ORCPT
+	id S1755090Ab2JVOka (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 10:40:30 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:57140
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754116Ab2JVOk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 10:37:10 -0400
-Date: Mon, 22 Oct 2012 10:37:09 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ming Lei <ming.lei@canonical.com>
-cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [RFC PATCH v2 6/6] USB: forbid memory allocation with I/O during
- bus reset
-In-Reply-To: <1350894794-1494-7-git-send-email-ming.lei@canonical.com>
-Message-ID: <Pine.LNX.4.44L0.1210221035450.1724-100000@iolanthe.rowland.org>
+	Mon, 22 Oct 2012 10:40:29 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 5
+X-BigFish: VPS5(zzbb2dI98dI103dK148cI1432I4015Izz1202h1d1ah1d2ahzz177df4h17326ah8275bh8275dhf73b6uz2dh668h839h944hd25hd2bhf0ah107ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1155h)
+X-WSS-ID: 0MCAU3A-01-6W1-02
+X-M-MSG: 
+Date: Mon, 22 Oct 2012 09:40:20 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: Tom Rini <trini@ti.com>, <hpa@zytor.com>
+CC: Yinghai Lu <yinghai@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: Re: BUG: 1bbbbe7 (x86: Exclude E820_RESERVED regions...) PANIC on
+ boot
+Message-ID: <20121022144020.GA14425@jshin-Toonie>
+References: <903a3ead-98b5-4afa-88a4-3dc723895e82@blur>
+ <d556fc0f-da5d-4531-b331-6dc086461f34@blur>
+ <50833F30.4020802@ti.com>
+ <CAE9FiQWpSvKp=Oh+4Y8OpdOjdRnkYVL2HvNNXc29ESpNsMC0AQ@mail.gmail.com>
+ <20121021041858.GA14809@jshin-Toonie>
+ <50843627.4020103@ti.com>
+ <20121021210633.GA14311@jshin-Toonie>
+ <508467EE.4040807@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <508467EE.4040807@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Oct 2012, Ming Lei wrote:
-
-> If one storage interface or usb network interface(iSCSI case)
-> exists in current configuration, memory allocation with
-> GFP_KERNEL during usb_device_reset() might trigger I/O transfer
-> on the storage interface itself and cause deadlock because
-> the 'us->dev_mutex' is held in .pre_reset() and the storage
-> interface can't do I/O transfer when the reset is triggered
-> by other interface, or the error handling can't be completed
-> if the reset is triggered by the storage itself(error handling path).
+On Sun, Oct 21, 2012 at 02:23:58PM -0700, Tom Rini wrote:
+> On 10/21/12 14:06, Jacob Shin wrote:
+> > Ah, sorry, this one should apply on top of 3.7-rc2:
+> > 
+> > https://lkml.org/lkml/2012/8/24/469
+> > 
+> > Could you try that? Just that single patch, not the whole patchset.
 > 
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: Oliver Neukum <oneukum@suse.de>
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
-> ---
->  drivers/usb/core/hub.c |   11 +++++++++++
->  1 file changed, 11 insertions(+)
+> That fixes it, replied with a note and Tested-by, thanks!
+
+Thanks for testing!
+
+hpa, so sorry, but it looks like we need one more patch [PATCH 2/5] x86:
+find_early_table_space based on memory ranges that are being mapped:
+
+  https://lkml.org/lkml/2012/8/24/469
+
+on top of this, because find_early_table_space calculation does not come out
+correctly for this particular E820 table that Tom has:
+
+  http://pastebin.com/4eSPEAvB
+
+The reason why we hit this now, and never hit it before is because before the
+start was hard coded to 1UL<<32.
+
+Thanks,
+
+-Jacob
+
 > 
-> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> index 522ad57..106a80a 100644
-> --- a/drivers/usb/core/hub.c
-> +++ b/drivers/usb/core/hub.c
-> @@ -5038,6 +5038,7 @@ int usb_reset_device(struct usb_device *udev)
->  {
->  	int ret;
->  	int i;
-> +	unsigned int noio_flag;
->  	struct usb_host_config *config = udev->actconfig;
->  
->  	if (udev->state == USB_STATE_NOTATTACHED ||
-> @@ -5047,6 +5048,15 @@ int usb_reset_device(struct usb_device *udev)
->  		return -EINVAL;
->  	}
->  
-> +	/*
-> +	 * Don't allocate memory with GFP_KERNEL in current
-> +	 * context to avoid possible deadlock if usb mass
-> +	 * storage interface or usbnet interface(iSCSI case)
-> +	 * is included in current configuration. The easiest
-> +	 * approach is to do it for all devices.
-> +	 */
-> +	memalloc_noio_save(noio_flag);
-
-Why not check dev->power.memalloc_noio_resume here too?
-
-Alan Stern
+> -- 
+> Tom
+> 
+> 
 
