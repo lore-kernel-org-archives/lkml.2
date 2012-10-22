@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932386Ab2JVWkS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 18:40:18 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61265 "EHLO
+	id S932400Ab2JVWpM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 18:45:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54414 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932218Ab2JVWkQ (ORCPT
+	with ESMTP id S932218Ab2JVWpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 18:40:16 -0400
-Date: Mon, 22 Oct 2012 15:40:12 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Maxin B John <maxin.john@gmail.com>
-Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Support for OWI/Maplin USB Robotic Arm
-Message-ID: <20121022224012.GB24489@kroah.com>
-References: <20121008212943.GA3986@linux-3ix0.site>
- <20121008235503.GD8157@kroah.com>
- <CAMhs6YxeUJiqzMAj=zBCpZkivDsjHk7Td_Ov50uwFw8vv+qrrg@mail.gmail.com>
+	Mon, 22 Oct 2012 18:45:09 -0400
+Date: Mon, 22 Oct 2012 15:45:05 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>, devel@driverdev.osuosl.org,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/1] staging: Add firewire-serial driver
+Message-ID: <20121022224505.GD24489@kroah.com>
+References: <1350565015.23730.4.camel@thor>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMhs6YxeUJiqzMAj=zBCpZkivDsjHk7Td_Ov50uwFw8vv+qrrg@mail.gmail.com>
+In-Reply-To: <1350565015.23730.4.camel@thor>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 11:52:56PM -0400, Maxin B John wrote:
-> Hi Greg,
+On Thu, Oct 18, 2012 at 08:56:55AM -0400, Peter Hurley wrote:
+> Please consider this serial driver for review for submission to staging.
+> The firewire-serial driver implements TTY over IEEE 1394. In its default
+> configuration, it creates 4 TTY devices and one loopback device per
+> firewire card (respectively, named fwtty<n>~fwtty<n+3> and fwloop<n>).
 > 
-> On Mon, Oct 8, 2012 at 7:55 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Oct 08, 2012 at 05:29:43PM -0400, Maxin B. John wrote:
-> >> Hi Greg,
-> >>
-> >> This driver helps us to control the OWI/Maplin USB Robotic Arm device.
-> >>
-> >> I have tested this driver in my x86 Laptop and it works as expected
-> >> (Some clean-ups and modifications are in the pipeline, though).
-> >>
-> >> After review process and the life in staging,I hope this driver will
-> >> find it's place in "drivers/usb/misc/" :)
-> >>
-> >> The userspace utility program is available from the below URL:
-> >> https://github.com/maxinbjohn/robotic_arm_driver
-> >>
-> >> OWI/Maplin USB Robotic arm is available from:
-> >> http://www.maplin.co.uk/robotic-arm-kit-with-usb-pc-interface-266257
-> >> http://www.owirobots.com/cart/html/owi-535pc-robotic-arm-kit-with-usb-pc-interface-assembled.html
-> >>
-> >> Please let me know your comments.
-> >
-> > Very nice, but are there any real requirement to have this be a kernel
-> > driver, and not just be driven from userspace through libusb/usbfs
-> > instead?
+> Currently, the TTY devices auto-connect to every cabled peer (the TODO
+> list includes plans for providing a sysfs interface to control virtual
+> cabling with whitelist/blacklist support per GUID).
 > 
-> Thanks. A number of people are using the libusb based userspace
-> applications to control these devices. This was an attempt to remove
-> the libusb dependency and control the device easily like:
-> # echo 1 > /sys/bus/usb/drivers/robotic_arm/5-1:1.0/led
+> Efforts are still ongoing for a companion console driver, with plans to
+> eventually add early_printk & kgdb support (via additional drivers).
+> 
+> Some issues did arise with both the TTY and Firewire subsystems which
+> are noted in the TODO file. Please review these workarounds.
+> 
+> Peter Hurley (1):
+>   staging: fwserial: Add TTY-over-Firewire serial driver
 
-I really think that libusb is the best way to control this device.  We
-removed a bunch of drivers from the kernel a number of years ago that
-could be better controlled by userspace.  Because of that, I can't take
-this driver either.
+I'd like to get an Ack from Stefan here, before I'll add this to the
+staging tree.
 
-Sorry,
+thanks,
 
 greg k-h
