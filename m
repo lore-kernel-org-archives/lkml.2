@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751321Ab2JVIvl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 04:51:41 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:41064 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab2JVIvk (ORCPT
+	id S1751781Ab2JVIxg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 04:53:36 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59789 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab2JVIxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 04:51:40 -0400
+	Mon, 22 Oct 2012 04:53:35 -0400
+X-AuditID: 9c930197-b7c4aae000004160-9b-5085098d145f
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 00/11] perf tool: Add PERF_SAMPLE_READ sample read support
+References: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
+	<87ipa3j72c.fsf@sejong.aot.lge.com>
+	<20121022075304.GA984@krava.brq.redhat.com>
+Date: Mon, 22 Oct 2012 17:53:32 +0900
+In-Reply-To: <20121022075304.GA984@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Mon, 22 Oct 2012 09:53:05 +0200")
+Message-ID: <876262khv7.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Date: Mon, 22 Oct 2012 16:51:38 +0800
-Message-ID: <CAPgLHd8NZkYSkZm22FpZxiEh6HcA0q-V=29vdnheiDhgrJZ+yw@mail.gmail.com>
-Subject: [PATCH] perf/x86: remove unused variable in nhmex_rbox_alter_er()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@ghostprotocols.net, tglx@linutronix.de, hpa@zytor.com
-Cc: yongjun_wei@trendmicro.com.cn, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Mon, 22 Oct 2012 09:53:05 +0200, Jiri Olsa wrote:
+> On Mon, Oct 22, 2012 at 04:32:11PM +0900, Namhyung Kim wrote:
+>> It'd be better if you provide a git branch for this series.
+>
+> aaah right, I forgot to mention that.. ;)
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/linux.git
+> perf/group2
 
-The variable port is initialized but never used
-otherwise, so remove the unused variable.
+I couldn't get the branch.  Do you mind rechecking?
 
-dpatch engine is used to auto generate this patch.
-(https://github.com/weiyj/dpatch)
+$ git fetch git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/linux.git perf/group2
+fatal: Couldn't find remote ref perf/group2
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 99d96a4..e7d4061 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -1547,7 +1547,6 @@ void nhmex_rbox_alter_er(struct intel_uncore_box *box, struct perf_event *event)
- {
- 	struct hw_perf_event *hwc = &event->hw;
- 	struct hw_perf_event_extra *reg1 = &hwc->extra_reg;
--	int port;
- 
- 	/* adjust the main event selector and extra register index */
- 	if (reg1->idx % 2) {
-@@ -1559,7 +1558,6 @@ void nhmex_rbox_alter_er(struct intel_uncore_box *box, struct perf_event *event)
- 	}
- 
- 	/* adjust extra register config */
--	port = reg1->idx / 6 + box->pmu->pmu_idx * 4;
- 	switch (reg1->idx % 6) {
- 	case 2:
- 		/* shift the 8~15 bits to the 0~7 bits */
-
+Thanks,
+Namhyung
