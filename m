@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab2JVJZE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 05:25:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18591 "EHLO mx1.redhat.com"
+	id S1752825Ab2JVJ12 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 05:27:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61395 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751252Ab2JVJZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 05:25:03 -0400
-Message-ID: <508510C3.2020901@redhat.com>
-Date: Mon, 22 Oct 2012 11:24:19 +0200
+	id S1751609Ab2JVJ11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 05:27:27 -0400
+Message-ID: <50851163.5050007@redhat.com>
+Date: Mon, 22 Oct 2012 11:26:59 +0200
 From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        Dave Airlie <airlied@gmail.com>, Borislav Petkov <bp@alien8.de>,
+To: Ingo Molnar <mingo@kernel.org>
+CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Borislav Petkov <bp@alien8.de>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, Dave Airlie <airlied@gmail.com>,
         Stephen Rothwell <sfr@canb.auug.org.au>,
+        Pekka Enberg <penberg@kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Asias He <asias.hejun@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
+        linux-kernel@vger.kernel.org
 Subject: Re: [GIT PULL] Linux KVM tool for v3.7-rc0
-References: <alpine.LFD.2.02.1210121434140.10531@tux.localdomain> <20121016134129.2fcd7c8ebe1235065aea929e@canb.auug.org.au> <CA+55aFzz66Y1MtOoqEMrQCVzdL-2pgr43e1sXUa=eM5GXL9XSA@mail.gmail.com> <20121020180436.c42b7325431fe87104b008fa@canb.auug.org.au> <20121020181425.GA11191@liondog.tnic> <CAPM=9twcHxUGgYUc27DV1AcYZbzKSbA1Bru8vK1kcWvcG0Jpkw@mail.gmail.com> <20121021110329.GA7024@infradead.org> <20121021125933.GC19535@gmail.com> <CAFLxGvzLOa-BibZ39_yMEC70AseEPbtjcNGk6jLwaAVsU2ujwA@mail.gmail.com> <CAOJsxLGm+Qd132i2c7q9p1_yweLiRzC4GR0-Xmx79m2==4_FAw@mail.gmail.com>
-In-Reply-To: <CAOJsxLGm+Qd132i2c7q9p1_yweLiRzC4GR0-Xmx79m2==4_FAw@mail.gmail.com>
+References: <CAPM=9twcHxUGgYUc27DV1AcYZbzKSbA1Bru8vK1kcWvcG0Jpkw@mail.gmail.com> <20121021110329.GA7024@infradead.org> <20121021125933.GC19535@gmail.com> <CAFLxGvzLOa-BibZ39_yMEC70AseEPbtjcNGk6jLwaAVsU2ujwA@mail.gmail.com> <20121021150305.GA26108@gmail.com> <20121021171543.GC20642@liondog.tnic> <20121021174041.GA240@x4> <20121021175108.GA3820@gmail.com> <20121021175422.GB240@x4> <20121021180458.GC240@x4> <20121021181031.GB4465@gmail.com>
+In-Reply-To: <20121021181031.GB4465@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2012 05:39 PM, Pekka Enberg wrote:
-> 
-> On Sun, Oct 21, 2012 at 5:02 PM, richard -rw- weinberger
-> <richard.weinberger@gmail.com> wrote:
->> qemu supports all these features.
->> E.g. to access the host fs use:
->> qemu ... \
->>   -fsdev local,security_model=passthrough,id=fsdev-root,path=/your/root/,readonly
->> \
->>   -device virtio-9p-pci,id=fs-root,fsdev=fsdev-root,mount_tag=rootshare
-> 
-> IIRC, QEMU uses SLIRP non-root zero-config networking which is much
-> more limited than what LKVM offers out of the box.
+On 10/21/2012 08:10 PM, Ingo Molnar wrote:
+> Ok, looks useful - will someone on the Qemu side script this up 
+> and integrate it into the kernel in a useful form?
 
-Curious, what are the differences?
+There are going to be as many options as there are users - people will
+want different things, like block device assignment (for fs/iosched
+people), device assignment (driver developers), cpu/memory topology, or
+a dozen other things.  I think the best we can hope for is an example
+script for people to copy and modify, otherwise we'll end up with the
+same number of options that qemu has.
 
 -- 
 error compiling committee.c: too many arguments to function
