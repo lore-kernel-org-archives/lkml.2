@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab2JVOeb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 10:34:31 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48759 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754754Ab2JVOea (ORCPT
+	id S1755101Ab2JVOhM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 10:37:12 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:53273 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754116Ab2JVOhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 10:34:30 -0400
-Date: Mon, 22 Oct 2012 15:39:36 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Guido =?ISO-8859-1?B?R/xudGhlcg==?= <agx@sigxcpu.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Black screen with gma500_gfx on 3.6.2
-Message-ID: <20121022153936.455ac8f8@pyramind.ukuu.org.uk>
-In-Reply-To: <20121021115625.GA2535@bogon.sigxcpu.org>
-References: <20121021115625.GA2535@bogon.sigxcpu.org>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Oct 2012 10:37:10 -0400
+Date: Mon, 22 Oct 2012 10:37:09 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Ming Lei <ming.lei@canonical.com>
+cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [RFC PATCH v2 6/6] USB: forbid memory allocation with I/O during
+ bus reset
+In-Reply-To: <1350894794-1494-7-git-send-email-ming.lei@canonical.com>
+Message-ID: <Pine.LNX.4.44L0.1210221035450.1724-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> [  689.950596] gma500 0000:00:02.0: Backlight lvds set brightness 7a127a12
-> [  689.950627] [drm] Initialized gma500 1.0.0 2011-06-06 for 0000:00:02.0 on minor 0
+On Mon, 22 Oct 2012, Ming Lei wrote:
 
-It's got the LVDS configured it seems and the brightness was already set
-up. That should be harmless.
-
-> Besides the VGA the driver detects a LVDS as well although there's none
-> attached (the board does have a connector for it though):
-
-Ok so it finds both ports which is what I would expect
-
-> # grep -l ^connected /sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-*/status
-> /sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-LVDS-1/status
-> /sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-VGA-1/status
-
-This means it found there was a VGA port and from
-psb_intel_sdvo_output_setup called psb_intel_sdvo_analog_init.
-
+> If one storage interface or usb network interface(iSCSI case)
+> exists in current configuration, memory allocation with
+> GFP_KERNEL during usb_device_reset() might trigger I/O transfer
+> on the storage interface itself and cause deadlock because
+> the 'us->dev_mutex' is held in .pre_reset() and the storage
+> interface can't do I/O transfer when the reset is triggered
+> by other interface, or the error handling can't be completed
+> if the reset is triggered by the storage itself(error handling path).
 > 
-> It also states that both ports are disabled:
-
-Which would explain the black screen.
-
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> Cc: Oliver Neukum <oneukum@suse.de>
+> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> ---
+>  drivers/usb/core/hub.c |   11 +++++++++++
+>  1 file changed, 11 insertions(+)
 > 
-> # cat   /sys/devices/pci0000:00/0000:00:02.0/drm/card0/card0-*/enabled
-> disabled
-> disabled
-> 
-> I didn't find a way to enable any of these ports via sysfs and X.org's
-> modesetting driver fails either. Any pointers on howto debug this
-> further are greatly appreciated.
+> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> index 522ad57..106a80a 100644
+> --- a/drivers/usb/core/hub.c
+> +++ b/drivers/usb/core/hub.c
+> @@ -5038,6 +5038,7 @@ int usb_reset_device(struct usb_device *udev)
+>  {
+>  	int ret;
+>  	int i;
+> +	unsigned int noio_flag;
+>  	struct usb_host_config *config = udev->actconfig;
+>  
+>  	if (udev->state == USB_STATE_NOTATTACHED ||
+> @@ -5047,6 +5048,15 @@ int usb_reset_device(struct usb_device *udev)
+>  		return -EINVAL;
+>  	}
+>  
+> +	/*
+> +	 * Don't allocate memory with GFP_KERNEL in current
+> +	 * context to avoid possible deadlock if usb mass
+> +	 * storage interface or usbnet interface(iSCSI case)
+> +	 * is included in current configuration. The easiest
+> +	 * approach is to do it for all devices.
+> +	 */
+> +	memalloc_noio_save(noio_flag);
 
-My first guess would be that the detection of the VGA failed. That would
-explain all your symptoms and since it relies on the firmware...
+Why not check dev->power.memalloc_noio_resume here too?
 
-First thing to do is turn drm debug on in full and you should then get a
-dump of the SDVO capabilities, particulary output_flags as well as an
-entry giving the clock range etc if it initialized it ok.
+Alan Stern
 
-Alan
