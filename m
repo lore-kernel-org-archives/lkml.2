@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab2JVIqp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 04:46:45 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:61404 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751842Ab2JVIqo (ORCPT
+	id S1752174Ab2JVIvH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 04:51:07 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61935 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab2JVIvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 04:46:44 -0400
+	Mon, 22 Oct 2012 04:51:05 -0400
+X-AuditID: 9c93016f-b7c7bae000000eb7-55-508508f54bee
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 00/11] perf tool: Add PERF_SAMPLE_READ sample read support
+References: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
+	<20121021163848.GB28726@gmail.com>
+	<20121022080930.GB984@krava.brq.redhat.com>
+Date: Mon, 22 Oct 2012 17:51:01 +0900
+In-Reply-To: <20121022080930.GB984@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Mon, 22 Oct 2012 10:09:31 +0200")
+Message-ID: <87a9vekhze.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <98478a02ae69afc01b3c7860e42a4d763b2045e8.1350677395.git.viresh.kumar@linaro.org>
-References: <32e5bed743cc6cc4e614291a7080299f5f0d0933.1350677395.git.viresh.kumar@linaro.org>
-	<98478a02ae69afc01b3c7860e42a4d763b2045e8.1350677395.git.viresh.kumar@linaro.org>
-Date: Mon, 22 Oct 2012 14:16:43 +0530
-Message-ID: <CAKohpo=Jsy9az4PgJ-mkq_U49EOpHGES+-DaROanCOTn-L2s3Q@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpufreq: governors: remove redundant code
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, arvind.chauhan@arm.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 October 2012 01:42, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Initially ondemand governor was written and then using its code conservative
-> governor is written. It used a lot of code from ondemand governor, but copy of
-> code was created instead of using the same routines from both governors. Which
-> increased code redundancy, which is difficult to manage.
+On Mon, 22 Oct 2012 10:09:31 +0200, Jiri Olsa wrote:
+> On Sun, Oct 21, 2012 at 06:38:49PM +0200, Ingo Molnar wrote:
+>> >   #
+>> >   # Samples: 86  of event 'anon group { cycles, cache-misses }'
+>> >   # Event count (approx.): 34863674
+>> >   #
+>> >   #         Overhead                    Period  Command      Shared Object                            Symbol
+>> >   # ................  ........................  .......  .................  ................................
+>> 
+>> Might make sense to consider this column enumeration:
+>> 
+>>     #
+>>     #   cycles
+>>     #   |       cache-misses
+>>     #   |       |
+>> >   #   v       v
+>> >   #
+>> >       16.56%  19.47%       5773450         475       ls  [kernel.kallsyms]  [k] native_sched_clock          
+>> >       10.87%   0.74%       3789088          18       ls  [kernel.kallsyms]  [k] rtl8169_interrupt           
 >
-> This patch is an attempt to move common part of both the governors to
-> cpufreq_governor.c file to come over above mentioned issues.
->
-> This shouldn't change anything from functionality point of view.
->
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->
-> Hi Rafael,
->
-> This patch is *NOT TESTED*... (only compiled)
-> Out of office now, so can't test it on board.
->
-> Floated it, so that i can get some early comments if possible.
+> no problem in '--stdio' mode I guess.. not sure in '--tui/--gtk', Namhyung?
 
-Didn't crashed :)
-Tested both ondemand and conservative governors and they are working
-fine.
+I thought a similar way but met a problem.  We have other output columns
+than 'overhead' like 'period' in this example.  What about others?
+Adding all event names for each column will just increase the column
+width so bothers user IMHO - especially for pmu format events.
 
->  drivers/cpufreq/Makefile               |   4 +-
->  drivers/cpufreq/cpufreq_conservative.c | 558 +++++++------------------
->  drivers/cpufreq/cpufreq_governor.c     | 314 ++++++++++++++
->  drivers/cpufreq/cpufreq_governor.h     | 177 ++++++++
->  drivers/cpufreq/cpufreq_ondemand.c     | 728 ++++++++++-----------------------
->  include/linux/cpufreq.h                |   2 +-
->  6 files changed, 864 insertions(+), 919 deletions(-)
+So I ended up printing those events on the header:
 
-diffstat might not look awesome, but considering two new files with
-file headers, #includes, etc added.. this looks reasonable :)
+  # Samples: 86  of event 'anon group { cycles, cache-misses }'
 
---
-viresh
+Thanks,
+Namhyung
