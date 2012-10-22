@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235Ab2JVIlF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 04:41:05 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:51224 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751883Ab2JVIlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 04:41:03 -0400
-Message-ID: <5085068E.5080304@parallels.com>
-Date: Mon, 22 Oct 2012 12:40:46 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1752155Ab2JVIqp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 04:46:45 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61404 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842Ab2JVIqo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 04:46:44 -0400
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, David Rientjes <rientjes@google.com>,
-        "Pekka Enberg" <penberg@kernel.org>, <devel@openvz.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v5 04/18] slab: don't preemptively remove element from
- list in cache destroy
-References: <1350656442-1523-1-git-send-email-glommer@parallels.com> <1350656442-1523-5-git-send-email-glommer@parallels.com> <0000013a7a84cb28-334eab12-33c4-4a92-bd9c-e5ad938f83d0-000000@email.amazonses.com>
-In-Reply-To: <0000013a7a84cb28-334eab12-33c4-4a92-bd9c-e5ad938f83d0-000000@email.amazonses.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <98478a02ae69afc01b3c7860e42a4d763b2045e8.1350677395.git.viresh.kumar@linaro.org>
+References: <32e5bed743cc6cc4e614291a7080299f5f0d0933.1350677395.git.viresh.kumar@linaro.org>
+	<98478a02ae69afc01b3c7860e42a4d763b2045e8.1350677395.git.viresh.kumar@linaro.org>
+Date: Mon, 22 Oct 2012 14:16:43 +0530
+Message-ID: <CAKohpo=Jsy9az4PgJ-mkq_U49EOpHGES+-DaROanCOTn-L2s3Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] cpufreq: governors: remove redundant code
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com, arvind.chauhan@arm.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2012 11:34 PM, Christoph Lameter wrote:
-> On Fri, 19 Oct 2012, Glauber Costa wrote:
-> 
->> I, however, see no reason why we need to do so, since we are now locked
->> during the whole deletion (which wasn't necessarily true before).  I
->> propose a simplification in which we delete it only when there is no
->> more going back, so we don't need to add it again.
-> 
-> Ok lets hope that holding the lock does not cause issues.
-> 
-> Acked-by: Christoph Lameter <cl@linux.com>
-> 
-BTW: One of the good things about this set, is that we are naturally
-exercising cache destruction a lot more than we did before. So if there
-is any problem, either with this or anything related to cache
-destruction, it should at least show up a lot more frequently. So far,
-this does not seem to cause any problems.
+On 20 October 2012 01:42, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> Initially ondemand governor was written and then using its code conservative
+> governor is written. It used a lot of code from ondemand governor, but copy of
+> code was created instead of using the same routines from both governors. Which
+> increased code redundancy, which is difficult to manage.
+>
+> This patch is an attempt to move common part of both the governors to
+> cpufreq_governor.c file to come over above mentioned issues.
+>
+> This shouldn't change anything from functionality point of view.
+>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>
+> Hi Rafael,
+>
+> This patch is *NOT TESTED*... (only compiled)
+> Out of office now, so can't test it on board.
+>
+> Floated it, so that i can get some early comments if possible.
 
+Didn't crashed :)
+Tested both ondemand and conservative governors and they are working
+fine.
+
+>  drivers/cpufreq/Makefile               |   4 +-
+>  drivers/cpufreq/cpufreq_conservative.c | 558 +++++++------------------
+>  drivers/cpufreq/cpufreq_governor.c     | 314 ++++++++++++++
+>  drivers/cpufreq/cpufreq_governor.h     | 177 ++++++++
+>  drivers/cpufreq/cpufreq_ondemand.c     | 728 ++++++++++-----------------------
+>  include/linux/cpufreq.h                |   2 +-
+>  6 files changed, 864 insertions(+), 919 deletions(-)
+
+diffstat might not look awesome, but considering two new files with
+file headers, #includes, etc added.. this looks reasonable :)
+
+--
+viresh
