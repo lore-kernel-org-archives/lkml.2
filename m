@@ -1,130 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab2JVEJX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 00:09:23 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:56060 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816Ab2JVEJW (ORCPT
+	id S1752402Ab2JVENu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 00:13:50 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:31642 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab2JVENs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 00:09:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <1350877903-8578-1-git-send-email-shiraz.hashim@st.com>
-References: <1350877903-8578-1-git-send-email-shiraz.hashim@st.com>
-Date: Mon, 22 Oct 2012 09:39:21 +0530
-X-Google-Sender-Auth: C79Dcsk5YjnQQL6_3IX_JxTmoTo
-Message-ID: <CAOh2x=mNWNtwcWB3a=mCsfwC8WqXiisW8zeg9amsXy7b2nLCkA@mail.gmail.com>
-Subject: Re: [PATCH V3] PWM: Add SPEAr PWM chip driver support
-From: viresh kumar <viresh.kumar@linaro.org>
-To: Shiraz Hashim <shiraz.hashim@st.com>
-Cc: thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 22 Oct 2012 00:13:48 -0400
+X-AuditID: cbfee61b-b7f616d00000319b-ff-5084c7fb6511
+From: Yadwinder Singh Brar <yadi.brar@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>
+Subject: [PATCH] regulator: max77686: Make max77686_enable() static.
+Date: Mon, 22 Oct 2012 09:39:28 +0530
+Message-id: <1350878968-3020-1-git-send-email-yadi.brar@samsung.com>
+X-Mailer: git-send-email 1.7.0.4
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrELMWRmVeSWpSXmKPExsWyRsSkWvf38ZYAg9+3ZSwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGlAmPWQoes1bcazjO3sD4hqWLkZNDQsBE4vDMB4wQtpjEhXvr
+	2boYuTiEBJYySvyctQGu6Mr9BSwQiUWMEps/7YOqWs4ksfjncdYuRg4ONgEjiVfH7EAaRAQU
+	JDb3PmMFsZkFpjNKrDxWAGILC7hI9J07xwZSziKgKjG9OR8kzAsU/rComw1il4JE67JD7CA2
+	i4CAxLfJh1hAyiUEZCU2HWAG2SohsIVNoqn9M9RtkhIHV9xgmcAouICRYRWjaGpBckFxUnqu
+	kV5xYm5xaV66XnJ+7iZGYECd/vdMegfjqgaLQ4wCHIxKPLwWM1oChFgTy4orcw8xSnAwK4nw
+	nooHCvGmJFZWpRblxxeV5qQWH2L0AbpkIrOUaHI+MNjzSuINjU3MTY1NLY2MzExNcQgrifM2
+	e6QECAmkJ5akZqemFqQWwYxj4uCUamBUi6s+bZbpOZ9dT1blpADnDa7vDhcuhcX/9114cXHZ
+	Y63ZCxrSTq/q4Pl3ViDxfeby4P9/927Vkbd4HldpMdW5vvSHvsCpb+yMZTqqlrv6o47L5cj6
+	VF6KnT43ZHLjlx/zAlhdn90VNjpW+z5DoaNJas+yKo1c6V27tZgl+iwki927k+ecMFFiKc5I
+	NNRiLipOBADcz++FVQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsVy+t9jAd3fx1sCDHY/4rG4vGsOmwOjx+dN
+	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
+	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGVMmPGYpeMxaca/hOHsD
+	4xuWLkZODgkBE4kr9xdA2WISF+6tZ+ti5OIQEljEKLH50z4oZzmTxOKfx1m7GDk42ASMJF4d
+	swNpEBFQkNjc+4wVxGYWmM4osfJYAYgtLOAi0XfuHBtIOYuAqsT05nyQMC9Q+MOibjaIXQoS
+	rcsOsU9g5F7AyLCKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzhcn0nvYFzVYHGIUYCDUYmH
+	12JGS4AQa2JZcWXuIUYJDmYlEd5T8UAh3pTEyqrUovz4otKc1OJDjD5AyycyS4km5wNjKa8k
+	3tDYxNzU2NTSxMLEzBKHsJI4b7NHSoCQQHpiSWp2ampBahHMOCYOTqkGRrdzs4se6y1QKv/w
+	widv1mqJdEapJDUTezPRw4zvVxqvUK7SYGi777Dt8jaOOpZtFuI8xs8vdulO7LTLeZZUczLt
+	8V2Vb99KfCef9tq4ZUnlhftXtrNOWL/qi5r/nrVvns1LnLTdn8Wae3+VrsgOhwMfby3XKNIp
+	VN5YsjzpnVe3fveeMiWHlUosxRmJhlrMRcWJAOl1EL2EAgAA
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Every time you read a code, you figure out new things about it.
-Sorry for these comments Now :(
+This patch fixes a sparse warning. Since max77686_enable() is a callback,so it
+should be static.
 
-On Mon, Oct 22, 2012 at 9:21 AM, Shiraz Hashim <shiraz.hashim@st.com> wrote:
-> diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-> index acfe482..6512786 100644
-> --- a/drivers/pwm/Makefile
-> +++ b/drivers/pwm/Makefile
-> @@ -9,6 +9,7 @@ obj-$(CONFIG_PWM_PUV3)          += pwm-puv3.o
->  obj-$(CONFIG_PWM_PXA)          += pwm-pxa.o
->  obj-$(CONFIG_PWM_SAMSUNG)      += pwm-samsung.o
->  obj-$(CONFIG_PWM_TEGRA)                += pwm-tegra.o
-> +obj-$(CONFIG_PWM_SPEAR)                += pwm-spear.o
+Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+---
+ drivers/regulator/max77686.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I have gone through this on every version of this patch, but couldn't figure
-out that you were trying to add it in alphabetical order, but you couldn't.
+diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
+index 383eb9d..c9bec16 100644
+--- a/drivers/regulator/max77686.c
++++ b/drivers/regulator/max77686.c
+@@ -146,7 +146,7 @@ static int max77686_ldo_set_suspend_mode(struct regulator_dev *rdev,
+ 				  val);
+ }
+ 
+-int max77686_enable(struct regulator_dev *rdev)
++static int max77686_enable(struct regulator_dev *rdev)
+ {
+ 	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
+ 
+-- 
+1.7.0.4
 
-> diff --git a/drivers/pwm/pwm-spear.c b/drivers/pwm/pwm-spear.c
-
-> +static int spear_pwm_probe(struct platform_device *pdev)
-> +{
-> +       pc = devm_kzalloc(&pdev->dev, sizeof(*pc), GFP_KERNEL);
-> +       if (!pc) {
-> +               dev_err(&pdev->dev, "failed to allocate memory\n");
-> +               return -ENOMEM;
-> +       }
-> +
-> +       pc->dev = &pdev->dev;
-
-If you are going to send another version, then please move this
-
-> +       pc->mmio_base = devm_request_and_ioremap(&pdev->dev, r);
-> +       if (!pc->mmio_base)
-> +               return -EADDRNOTAVAIL;
-> +
-> +       platform_set_drvdata(pdev, pc);
-
-and this
-
-> +       pc->clk = devm_clk_get(&pdev->dev, NULL);
-> +       if (IS_ERR(pc->clk))
-> +               return PTR_ERR(pc->clk);
-
-to this place :)
-So, that we don't do these for failure cases.
-
-> +       pc->chip.dev = &pdev->dev;
-> +       pc->chip.ops = &spear_pwm_ops;
-> +       pc->chip.base = -1;
-> +       pc->chip.npwm = NUM_PWM;
-> +
-
-> +       if (np && of_device_is_compatible(np, "st,spear1340-pwm")) {
-
-I have noticed it earlier, but don't know why didn't i gave a comment here?
-you don't need to check for np here. It can't be NULL as you depend on
-CONFIG_OF.
-
-> +               /*
-> +                * Following enables PWM chip, channels would still be
-> +                * enabled individually through their control register
-> +                */
-> +               val = readl_relaxed(pc->mmio_base + PWMMCR);
-> +               val |= PWMMCR_PWM_ENABLE;
-> +               writel_relaxed(val, pc->mmio_base + PWMMCR);
-> +
-> +       }
-> +
-> +       /* only disable the clk and leave it prepared */
-> +       clk_disable(pc->clk);
-> +
-> +       return 0;
-> +}
-> +
-> +static int spear_pwm_remove(struct platform_device *pdev)
-> +{
-> +       struct spear_pwm_chip *pc = platform_get_drvdata(pdev);
-> +       int i;
-> +
-> +       for (i = 0; i < NUM_PWM; i++) {
-> +               struct pwm_device *pwm = &pc->chip.pwms[i];
-> +
-> +               if (test_bit(PWMF_ENABLED, &pwm->flags)) {
-> +                       spear_pwm_writel(pc, i, PWMCR, 0);
-> +                       clk_disable(pc->clk);
-> +               }
-> +       }
-> +
-> +       /* clk was prepared in probe, hence unprepare it here */
-> +       clk_unprepare(pc->clk);
-
-I believe you need to remove the chip first and then do above to
-avoid any race conditions, that might occur.
-
-> +       return pwmchip_remove(&pc->chip);
-> +}
-> +
-
-After all this please add my:
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-
-Sorry Shiraz for so late comments, i can understand your frustration :(
-
---
-viresh
