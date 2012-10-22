@@ -1,70 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab2JVMej (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 08:34:39 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:41000 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753182Ab2JVMei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 08:34:38 -0400
-Message-ID: <50853D47.4030409@parallels.com>
-Date: Mon, 22 Oct 2012 16:34:15 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        <devel@openvz.org>, <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v5 06/14] memcg: kmem controller infrastructure
-References: <1350382611-20579-1-git-send-email-glommer@parallels.com> <1350382611-20579-7-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1210171515290.20712@chino.kir.corp.google.com> <507FCA90.8060307@parallels.com> <alpine.DEB.2.00.1210181454100.30894@chino.kir.corp.google.com> <5081269B.5000603@parallels.com> <alpine.DEB.2.00.1210191331400.17804@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1210191331400.17804@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1753524Ab2JVMoW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 08:44:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52441 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab2JVMoV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 08:44:21 -0400
+Message-ID: <1350909815.2768.100.camel@twins>
+Subject: re: sched, numa, mm: Implement constant, per task Working Set
+ Sampling (WSS) rate
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org
+Date: Mon, 22 Oct 2012 14:43:35 +0200
+In-Reply-To: <20121022115545.GA631@elgon.mountain>
+References: <20121022115545.GA631@elgon.mountain>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2012 12:34 AM, David Rientjes wrote:
-> On Fri, 19 Oct 2012, Glauber Costa wrote:
+On Mon, 2012-10-22 at 14:55 +0300, Dan Carpenter wrote:
+> Hello Peter Zijlstra,
 > 
->>>>> What about gfp & __GFP_FS?
->>>>>
->>>>
->>>> Do you intend to prevent or allow OOM under that flag? I personally
->>>> think that anything that accepts to be OOM-killed should have GFP_WAIT
->>>> set, so that ought to be enough.
->>>>
->>>
->>> The oom killer in the page allocator cannot trigger without __GFP_FS 
->>> because direct reclaim has little chance of being very successful and 
->>> thus we end up needlessly killing processes, and that tends to happen 
->>> quite a bit if we dont check for it.  Seems like this would also happen 
->>> with memcg if mem_cgroup_reclaim() has a large probability of failing?
->>>
->>
->> I can indeed see tests for GFP_FS in some key locations in mm/ before
->> calling the OOM Killer.
->>
->> Should I test for GFP_IO as well?
+> The patch 3d049f8a5398: "sched, numa, mm: Implement constant, per
+> task Working Set Sampling (WSS) rate" from Oct 14, 2012, leads to the
+> following warning:
+> kernel/sched/fair.c:954 task_numa_work()
+> 	 error: we previously assumed 'vma' could be null (see line 948)
 > 
-> It's not really necessary, if __GFP_IO isn't set then it wouldn't make 
-> sense for __GFP_FS to be set.
-> 
->> If the idea is preventing OOM to
->> trigger for allocations that can write their pages back, how would you
->> feel about the following test:
->>
->> may_oom = (gfp & GFP_KERNEL) && !(gfp & __GFP_NORETRY) ?
->>
-> 
-> I would simply copy the logic from the page allocator and only trigger oom 
-> for __GFP_FS and !__GFP_NORETRY.
-> 
+>    943          if (!vma) {
+>    944                  ACCESS_ONCE(mm->numa_scan_seq)++;
+>    945                  offset = 0;
+>    946                  vma = mm->mmap;
+>    947          }
+>    948          while (vma && !vma_migratable(vma)) {
+>                        ^^^
+> If this is NULL,
+>    949                  vma = vma->vm_next;
+>    950                  if (!vma)
+>    951                          goto again;
+>    952          }
+>    953  
+>    954          offset = max(offset, vma->vm_start);
+>                                      ^^^^^^^^^^^^^
+> then it leads to a NULL dereference here.
 
-That seems reasonable to me. Michal ?
+Ah.. indeed so. There's also what looks like an infinite loop in there
+if nothing is migratable or if length is stupid large. The below should
+avoid the reported NULL deref as well as break out when we've reached
+the end of the address space.
+
+
+---
+ kernel/sched/fair.c |   23 ++++++++---------------
+ 1 files changed, 8 insertions(+), 15 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c68b877..5a6d8f5 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -939,29 +939,22 @@ void task_numa_work(struct callback_head *work)
+ 
+ 	down_read(&mm->mmap_sem);
+ 	vma = find_vma(mm, offset);
+-again:
+ 	if (!vma) {
+ 		ACCESS_ONCE(mm->numa_scan_seq)++;
+ 		offset = 0;
+ 		vma = mm->mmap;
+ 	}
+-	while (vma && !vma_migratable(vma)) {
+-		vma = vma->vm_next;
+-		if (!vma)
+-			goto again;
+-	}
+-
+-	offset = max(offset, vma->vm_start);
+-	end = min(ALIGN(offset + length, HPAGE_SIZE), vma->vm_end);
+-	length -= end - offset;
++	for (; vma && length > 0; vma = vma->vm_next) {
++		if (!vma_migratable(vma))
++			continue;
+ 
+-	change_prot_none(vma, offset, end);
++		offset = max(offset, vma->vm_start);
++		end = min(ALIGN(offset + length, HPAGE_SIZE), vma->vm_end);
++		length -= end - offset;
+ 
+-	offset = end;
++		change_prot_none(vma, offset, end);
+ 
+-	if (length > 0) {
+-		vma = vma->vm_next;
+-		goto again;
++		offset = end;
+ 	}
+ 	mm->numa_scan_offset = offset;
+ 	up_read(&mm->mmap_sem);
 
