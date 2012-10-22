@@ -1,105 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524Ab2JVMoW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 08:44:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52441 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828Ab2JVMoV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 08:44:21 -0400
-Message-ID: <1350909815.2768.100.camel@twins>
-Subject: re: sched, numa, mm: Implement constant, per task Working Set
- Sampling (WSS) rate
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org
-Date: Mon, 22 Oct 2012 14:43:35 +0200
-In-Reply-To: <20121022115545.GA631@elgon.mountain>
-References: <20121022115545.GA631@elgon.mountain>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1753681Ab2JVMpp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 08:45:45 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:16396 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750828Ab2JVMpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 08:45:44 -0400
+Message-ID: <50853FF1.8010809@siemens.com>
+Date: Mon, 22 Oct 2012 14:45:37 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH] KVM: x86: fix vcpu->mmio_fragments overflow
+References: <5081033C.4060503@linux.vnet.ibm.com> <20121022091615.GG29310@redhat.com> <50852972.305@linux.vnet.ibm.com> <20121022112314.GO29310@redhat.com> <50852F9C.9020808@siemens.com> <20121022114311.GQ29310@redhat.com> <508531E1.2030307@siemens.com> <508539A8.40404@redhat.com>
+In-Reply-To: <508539A8.40404@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-10-22 at 14:55 +0300, Dan Carpenter wrote:
-> Hello Peter Zijlstra,
+On 2012-10-22 14:18, Avi Kivity wrote:
+> On 10/22/2012 01:45 PM, Jan Kiszka wrote:
 > 
-> The patch 3d049f8a5398: "sched, numa, mm: Implement constant, per
-> task Working Set Sampling (WSS) rate" from Oct 14, 2012, leads to the
-> following warning:
-> kernel/sched/fair.c:954 task_numa_work()
-> 	 error: we previously assumed 'vma' could be null (see line 948)
+>>> Indeed. git pull, recheck and call for kvm_flush_coalesced_mmio_buffer()
+>>> is gone. So this will break new userspace, not old. By global you mean
+>>> shared between devices (or memory regions)?
+>>
+>> Yes. We only have a single ring per VM, so we cannot flush multi-second
+>> VGA access separately from other devices. In theory solvable by
+>> introducing per-region rings that can be driven separately.
 > 
->    943          if (!vma) {
->    944                  ACCESS_ONCE(mm->numa_scan_seq)++;
->    945                  offset = 0;
->    946                  vma = mm->mmap;
->    947          }
->    948          while (vma && !vma_migratable(vma)) {
->                        ^^^
-> If this is NULL,
->    949                  vma = vma->vm_next;
->    950                  if (!vma)
->    951                          goto again;
->    952          }
->    953  
->    954          offset = max(offset, vma->vm_start);
->                                      ^^^^^^^^^^^^^
-> then it leads to a NULL dereference here.
+> But in practice unneeded.  Real time VMs can disable coalescing and not
+> use planar VGA modes.
 
-Ah.. indeed so. There's also what looks like an infinite loop in there
-if nothing is migratable or if length is stupid large. The below should
-avoid the reported NULL deref as well as break out when we've reached
-the end of the address space.
+A) At least right now, we do not differentiate between the VGA modes and
+if flushing is needed. So that device is generally taboo for RT cores of
+the VM.
+B) We need to disable coalescing in E1000 as well - if we want to use
+that model.
+C) Gleb seems to propose using coalescing far beyond those two use cases.
 
+Jan
 
----
- kernel/sched/fair.c |   23 ++++++++---------------
- 1 files changed, 8 insertions(+), 15 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c68b877..5a6d8f5 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -939,29 +939,22 @@ void task_numa_work(struct callback_head *work)
- 
- 	down_read(&mm->mmap_sem);
- 	vma = find_vma(mm, offset);
--again:
- 	if (!vma) {
- 		ACCESS_ONCE(mm->numa_scan_seq)++;
- 		offset = 0;
- 		vma = mm->mmap;
- 	}
--	while (vma && !vma_migratable(vma)) {
--		vma = vma->vm_next;
--		if (!vma)
--			goto again;
--	}
--
--	offset = max(offset, vma->vm_start);
--	end = min(ALIGN(offset + length, HPAGE_SIZE), vma->vm_end);
--	length -= end - offset;
-+	for (; vma && length > 0; vma = vma->vm_next) {
-+		if (!vma_migratable(vma))
-+			continue;
- 
--	change_prot_none(vma, offset, end);
-+		offset = max(offset, vma->vm_start);
-+		end = min(ALIGN(offset + length, HPAGE_SIZE), vma->vm_end);
-+		length -= end - offset;
- 
--	offset = end;
-+		change_prot_none(vma, offset, end);
- 
--	if (length > 0) {
--		vma = vma->vm_next;
--		goto again;
-+		offset = end;
- 	}
- 	mm->numa_scan_offset = offset;
- 	up_read(&mm->mmap_sem);
-
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+Corporate Competence Center Embedded Linux
