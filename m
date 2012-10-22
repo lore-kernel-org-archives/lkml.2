@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932117Ab2JVSDk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 14:03:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45725 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755905Ab2JVSDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 14:03:38 -0400
-Date: Mon, 22 Oct 2012 20:04:45 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 1/7] cgroup: cgroup_subsys->fork() should be called
-	after the task is added to css_set
-Message-ID: <20121022180445.GB21553@redhat.com>
-References: <1350426526-14254-1-git-send-email-tj@kernel.org> <1350426526-14254-2-git-send-email-tj@kernel.org> <20121021191141.GA26218@redhat.com> <20121021192222.GB5951@atj.dyndns.org>
+	id S1756007Ab2JVSFG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 14:05:06 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:58915 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755905Ab2JVSFD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 14:05:03 -0400
+Date: Mon, 22 Oct 2012 20:04:56 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, spi-devel-general@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH] spi: tegra: add spi driver for SLINK controller
+Message-ID: <20121022180456.GA16735@avionic-0098.mockup.avionic-design.de>
+References: <1350557233-31234-1-git-send-email-ldewangan@nvidia.com>
+ <20121022122825.GD4477@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
 Content-Disposition: inline
-In-Reply-To: <20121021192222.GB5951@atj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20121022122825.GD4477@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:Eq8hStsRH+BMnbpsuCvlB6I5BSxXb5jxBW83WuRV97x
+ /nfaEsruA98C0fouoIPFqtnZoKsiaYxhS9/SJxP1PTrFDjzIf9
+ DcBQ+M/YIbJvK6NvsiNPwS3EfT4IZKE2fH6sdniHMF4KAGbV6K
+ UAzLwYtVEJkKmLFY+t0QeFZRPVxOq8olOoWBSxCJqMvyKRJgRC
+ gZ5CZ0zaUNjKFeoplAPptGyUIFy21xDHewmp4SzEZkLIiVy+Or
+ jK3/Uq59alOsm3vVPQ3FsXSLMlEtSZp/bGbl6P0bC6tVcVZukO
+ MYnEt8vLSzN3D0lbqPNeGcANSIPs8MH4eZkSP8VlpADmspDqgw
+ 2KvNJ2COAf6KWieApo5dRyVTdRMduJIN7+NhDCq42aAsmFxeBq
+ kztMaEpnPt7Jlmv5Qtr/y77nEDymrQChGIyZqzBVMrJAsueO2G
+ b+Xc/
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
 
-On 10/21, Tejun Heo wrote:
->
-> On Sun, Oct 21, 2012 at 09:11:41PM +0200, Oleg Nesterov wrote:
->
-> > And it seems that fork() can race with cgroup iterator. post_fork
-> > will notice use_task_css_set_links, but until then the child belongs
-> > to the parent's css and it is not "visible" to iterator (and right
-> > after cgroup_fork() it is not visible to do_each_thread() if
-> > use_task_css_set_links is not set).
-> >
-> > For example. Suppose that the child migrates to another cgroup after
-> > copy_process() makes it visible to the user-space. Then update_if_frozen
-> > sets CGROUP_FROZEN (again, cgroup_iter_next do not see this child).
-> >
-> > Now, post_fork calls freezer_fork() and hits BUG_ON(CGROUP_FROZEN).
-> >
-> > But again, I do not blame this patch.
->
-> I'm planning to update it to,
->
-> * Clear ->cgroup to %NULL during copy_process().
+--fdj2RfSjLxBAspz7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I completely agree. new_child->cgroups copied from parent looks simply
-strange until post_fork. If nothing else, the new task is still under
-construction by the time cgroup_fork() is called.
+On Mon, Oct 22, 2012 at 01:28:26PM +0100, Mark Brown wrote:
+> On Thu, Oct 18, 2012 at 04:17:13PM +0530, Laxman Dewangan wrote:
+[...]
+> > +static struct tegra_spi_platform_data *tegra_slink_parese_dt(
+> > +		struct platform_device *pdev)
+> > +{
+>=20
+> There doens't seem to be any binding documentation; binding
+> documentation is mandatory.
 
-> > I am starting to think again about a big-rw-lock around copy_process.
-> > Recently I tried to add one around dup_mmap for uprobes, but perhaps
-> > cgroups can use it too...
->
-> If some other subsystems need it, maybe just make threadgroup locking
-> coarser?
+Also this should probably be renamed to tegra_slink_parse_dt().
 
-What do you mean?
+Thierry
 
-> I *think* I can make cgroup work correctly without a agiant
-> rwlock
+--fdj2RfSjLxBAspz7
+Content-Type: application/pgp-signature
 
-Yes, probably cgroup doesn't really need it. Although we could probably
-kill signal->group_rwsem, but this is minor and "write-lock" will be much
-slower.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-Oleg.
+iQIcBAEBAgAGBQJQhYrIAAoJEN0jrNd/PrOha2wQAKki4XBdCQf79grlXRu/crBA
+FmtQrnLcI6Gt+EOmT19Q39XCXb48OH05jBYuDWZZV0l/NJIdg5XSkZhxfobxdQXA
+wg5bHBFeiRHtUBqiC/b+Or+Jo4PVGtFETyvKVNNPBaLTj7NpyLP8ezFaJVfYDktq
+suDLxlBcNzQjn6D07kyQijXiSlmMQU7Ci7yk3/Tm3BwYzReUzfg43lR9RBI+ptP2
+DKnT4VdSzPxXGuarjV2CY43dABs13Gm5sNA1taNqleXsLmZbGTedqeKdo0E4sqF8
+qOCzkrocX//xeIISdqmZfG8eI3LvizjAi9BIhADN883y+lJv5KX6GRxUXI6jJWeC
+fMaJ1pEHhGg1R6IJJECKy2anz2D2H2NKJD7rKVLX7DAi2R8zcPq9Kr08N4tX9lJi
+T4pgjgWxBhUobr2dUjX2bp8xtIqjMh7W1UFZzlahK+J1zRav2A3uEXQL1mUrkm5f
+3UCmnLOadtD03tssFT2LBOc88LDe71e70Dl7DvNYLWuhCZuQRCR22YHy7EPsv+pa
+l9rBHt03KfJZ9eOTV+Ig3fDFkhqJMpdU35fIZrYyLzvQJEglGs11MMJtWkodGw2Q
+nYBA1k91Iw+gr5k58ePJu4aDVb5XpTc2BMDJV4OQHLtqVUwzkiGj1V87othrfT5j
+jwldxaskbirg7onkRwjt
+=Yv1o
+-----END PGP SIGNATURE-----
 
+--fdj2RfSjLxBAspz7--
