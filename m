@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220Ab2JVVuF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 17:50:05 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46693 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756110Ab2JVVuD (ORCPT
+	id S1756291Ab2JVVwB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 17:52:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42334 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755396Ab2JVVwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 17:50:03 -0400
-Date: Mon, 22 Oct 2012 14:50:00 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Priit Laes <plaes@plaes.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging: csr: Replace wakelocks with wakeup interface
-Message-ID: <20121022215000.GA10698@kroah.com>
-References: <1349284444-5860-1-git-send-email-plaes@plaes.org>
- <1349287950-7278-1-git-send-email-plaes@plaes.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349287950-7278-1-git-send-email-plaes@plaes.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 22 Oct 2012 17:52:00 -0400
+Date: Mon, 22 Oct 2012 14:51:58 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [rfc 0/2] Introducing VmFlags field into smaps output
+Message-Id: <20121022145158.53bddfc1.akpm@linux-foundation.org>
+In-Reply-To: <20121022213449.GH31440@moon>
+References: <20121022191452.785366817@openvz.org>
+	<20121022122934.d2e2fa57.akpm@linux-foundation.org>
+	<5085B1A8.4020609@parallels.com>
+	<20121022205641.GL2303@moon>
+	<20121022213449.GH31440@moon>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 09:12:30PM +0300, Priit Laes wrote:
-> Wakelocks are an Android-specific API that never made into mainline.
-> Eventually power management wakeup interface appeared, therefore use
-> this interface instead.
-> 
-> Signed-off-by: Priit Laes <plaes@plaes.org>
-> ---
->  drivers/staging/csr/drv.c        |  8 ++++----
->  drivers/staging/csr/sdio_mmc.c   | 23 +++++++----------------
->  drivers/staging/csr/sme_sys.c    | 18 +++++++++---------
->  drivers/staging/csr/unifi_priv.h |  8 --------
->  4 files changed, 20 insertions(+), 37 deletions(-)
-> 
-> diff --git a/drivers/staging/csr/drv.c b/drivers/staging/csr/drv.c
-> index 2497580..262705a 100644
-> --- a/drivers/staging/csr/drv.c
-> +++ b/drivers/staging/csr/drv.c
-> @@ -67,6 +67,8 @@ int bh_priority = -1;
->  int log_hip_signals = 0;
->  #endif
->  
-> +extern struct wakeup_source unifi_sdio_wakeup_source;
+On Tue, 23 Oct 2012 01:34:49 +0400
+Cyrill Gorcunov <gorcunov@openvz.org> wrote:
 
-You obviously didn't run scripts/checkpatch.pl against this patch, did
-you?
+>
+> ...
+>
+> +VmFlags: rd ex mr mw me de
 
-Never put an extern in a .c file, put this in a .h file so that all .c
-files can access it properly.
+ho hum OK, let's do that.
+  
+> +static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
+> +{
+> +	/*
+> +	 * Don't forget to update Documentation/ on changes.
+> +	 */
+> +
+> +#define __seq_show_vmflag(_f, _s)		\
+> +	do {					\
+> +		if (vma->vm_flags & (_f))	\
+> +			seq_puts(m, _s);	\
+> +	} while (0)
+> +
+> +	seq_puts(m, "VmFlags: ");
+> +
+> +	__seq_show_vmflag(VM_READ,	"rd ");
+> +	__seq_show_vmflag(VM_WRITE,	"wr ");
+> +	__seq_show_vmflag(VM_EXEC,	"ex ");
+> +	__seq_show_vmflag(VM_SHARED,	"sh ");
+> +	__seq_show_vmflag(VM_MAYREAD,	"mr ");
+> +	__seq_show_vmflag(VM_MAYWRITE,	"mw ");
+> +	__seq_show_vmflag(VM_MAYEXEC,	"me ");
+> +	__seq_show_vmflag(VM_MAYSHARE,	"ms ");
+> +	__seq_show_vmflag(VM_GROWSDOWN,	"gd ");
+> +	__seq_show_vmflag(VM_PFNMAP,	"pf ");
+> +	__seq_show_vmflag(VM_DENYWRITE,	"dw ");
+> +	__seq_show_vmflag(VM_LOCKED,	"lo ");
+> +	__seq_show_vmflag(VM_IO,	"io ");
+> +	__seq_show_vmflag(VM_SEQ_READ,	"sr ");
+> +	__seq_show_vmflag(VM_RAND_READ,	"rr ");
+> +	__seq_show_vmflag(VM_DONTCOPY,	"dc ");
+> +	__seq_show_vmflag(VM_DONTEXPAND,"de ");
+> +	__seq_show_vmflag(VM_ACCOUNT,	"ac ");
+> +	__seq_show_vmflag(VM_NORESERVE,	"nr ");
+> +	__seq_show_vmflag(VM_HUGETLB,	"ht ");
+> +	__seq_show_vmflag(VM_NONLINEAR,	"nl ");
+> +	__seq_show_vmflag(VM_ARCH_1,	"ar ");
+> +	__seq_show_vmflag(VM_DONTDUMP,	"dd ");
+> +	__seq_show_vmflag(VM_MIXEDMAP,	"mm ");
+> +	__seq_show_vmflag(VM_HUGEPAGE,	"hg ");
+> +	__seq_show_vmflag(VM_NOHUGEPAGE,"nh ");
+> +	__seq_show_vmflag(VM_MERGEABLE,	"mg ");
+> +
+> +	seq_putc(m, '\n');
+> +
+> +#undef __seq_show_vmflag
+> +}
 
-Care to fix this up and resend?
+This code would be much denser if we did the old
 
-thanks,
+	static const char foo[] = "rdwrexshmrmw...";
+	unsigned i;
 
-greg k-h
+	for (i = 0; i < BITS_PER_LONG; i++) {
+		if (flags & (1 << i))
+			seq_printf("%c%c ", foo[i * 2], foo[i * 2 + 1]);
+	}
+
+trick.  But then we'd have to remember to fix foo[] each time we
+alter the flags, so maybe let's not do that.
+
