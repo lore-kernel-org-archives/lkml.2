@@ -1,43 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135Ab2JVOwG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 10:52:06 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48790 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755295Ab2JVOwB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 10:52:01 -0400
-Date: Mon, 22 Oct 2012 15:57:01 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: Re: [PATCH 00/21] TTY buffer in tty_port and other stuff
-Message-ID: <20121022155701.2d51893f@pyramind.ukuu.org.uk>
-In-Reply-To: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
-References: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932141Ab2JVOwg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 10:52:36 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:50403 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754116Ab2JVOvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 10:51:41 -0400
+From: ciminaghi@gnudd.com
+To: sameo@linux.intel.com, rubini@gnudd.com, giancarlo.asnaghi@st.com,
+        broonie@opensource.wolfsonmicro.com
+Cc: linux-kernel@vger.kernel.org, Davide Ciminaghi <ciminaghi@gnudd.com>
+Subject: [PATCH 07/10] drivers/mfd/sta2x11-mfd: use one lock per device instead of one lock per mfd
+Date: Mon, 22 Oct 2012 16:50:38 +0200
+Message-Id: <1350917441-4478-8-git-send-email-ciminaghi@gnudd.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1350917441-4478-1-git-send-email-ciminaghi@gnudd.com>
+References: <1350917441-4478-1-git-send-email-ciminaghi@gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Oct 2012 22:26:26 +0200
-Jiri Slaby <jslaby@suse.cz> wrote:
+From: Davide Ciminaghi <ciminaghi@gnudd.com>
 
-> Hi,
-> 
-> this is the fifth series of patches which finally move tty buffers
-> from tty_struct (present from open to close/hangup) to tty_port
-> (present as long as the device). This allows us to get rid of the tty
-> refcounting in the interrupt service routines and other hot paths
-> after we are done. This is because we do not need to handle races
-> among ISRs, timers, hangups and others, because tty_port lives as long
-> as an interrupt/timer tick may occur. Unlike tty_struct.
+The lock is used to implement atomic operations on each platform
+device's registers, so it looks reasonable having one lock per
+device instead of one common lock for all the devices belonging
+to the same sta2x11 instance.
 
-Looks good to me working through them
+Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
+---
+ drivers/mfd/sta2x11-mfd.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+diff --git a/drivers/mfd/sta2x11-mfd.c b/drivers/mfd/sta2x11-mfd.c
+index d6e1626..2dbb9ea 100644
+--- a/drivers/mfd/sta2x11-mfd.c
++++ b/drivers/mfd/sta2x11-mfd.c
+@@ -46,7 +46,7 @@ static inline int __reg_within_range(unsigned int r,
+ struct sta2x11_mfd {
+ 	struct sta2x11_instance *instance;
+ 	struct regmap *regmap;
+-	spinlock_t lock;
++	spinlock_t lock[sta2x11_n_mfd_plat_devs];
+ 	struct list_head list;
+ 	void __iomem *regs[sta2x11_n_mfd_plat_devs];
+ };
+@@ -78,6 +78,7 @@ static struct sta2x11_mfd *sta2x11_mfd_find(struct pci_dev *pdev)
+ 
+ static int __devinit sta2x11_mfd_add(struct pci_dev *pdev, gfp_t flags)
+ {
++	int i;
+ 	struct sta2x11_mfd *mfd = sta2x11_mfd_find(pdev);
+ 	struct sta2x11_instance *instance;
+ 
+@@ -90,7 +91,8 @@ static int __devinit sta2x11_mfd_add(struct pci_dev *pdev, gfp_t flags)
+ 	if (!mfd)
+ 		return -ENOMEM;
+ 	INIT_LIST_HEAD(&mfd->list);
+-	spin_lock_init(&mfd->lock);
++	for (i = 0; i < ARRAY_SIZE(mfd->lock); i++)
++		spin_lock_init(&mfd->lock[i]);
+ 	mfd->instance = instance;
+ 	list_add(&mfd->list, &sta2x11_mfd_list);
+ 	return 0;
+@@ -124,13 +126,13 @@ u32 __sta2x11_mfd_mask(struct pci_dev *pdev, u32 reg, u32 mask, u32 val,
+ 		dev_warn(&pdev->dev, ": system ctl not initialized\n");
+ 		return 0;
+ 	}
+-	spin_lock_irqsave(&mfd->lock, flags);
++	spin_lock_irqsave(&mfd->lock[index], flags);
+ 	r = readl(regs + reg);
+ 	r &= ~mask;
+ 	r |= val;
+ 	if (mask)
+ 		writel(r, regs + reg);
+-	spin_unlock_irqrestore(&mfd->lock, flags);
++	spin_unlock_irqrestore(&mfd->lock[index], flags);
+ 	return r;
+ }
+ EXPORT_SYMBOL(__sta2x11_mfd_mask);
+-- 
+1.7.10.4
+
