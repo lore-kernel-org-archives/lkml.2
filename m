@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932344Ab2JVW2f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 18:28:35 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:52168 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932281Ab2JVW2e (ORCPT
+	id S932337Ab2JVWaO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 18:30:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42744 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932171Ab2JVWaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 18:28:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <873916h1yi.fsf@deeprootsystems.com>
-References: <1350906877-19410-1-git-send-email-balbi@ti.com>
-	<873916h1yi.fsf@deeprootsystems.com>
-Date: Tue, 23 Oct 2012 00:28:32 +0200
-Message-ID: <CACRpkdY6ox+iJAGdSD=e7Yj55TzDWqOmLqu2fSRXvKJxqwfkhQ@mail.gmail.com>
-Subject: Re: [PATCH] arm: sched: stop sched_clock() during suspend
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Kevin Hilman <khilman@deeprootsystems.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Felipe Balbi <balbi@ti.com>, Russell King <rmk+kernel@arm.linux.org.uk>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Andrew Lunn <andrew@lunn.ch>, Daniel Walker <dwalker@fifo99.com>,
-        Lennert Buytenhek <kernel@wantstofly.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Alexander Schulz <alex@shark-linux.de>,
-        Andrew Victor <linux@maxim.org.za>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Sascha Hauer <kernel@pengutronix.de>, Olof Johansson <olof@lixom.net>,
-        Colin Cross <ccross@android.com>, Barry Song <21cnbao@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 22 Oct 2012 18:30:13 -0400
+Date: Mon, 22 Oct 2012 15:30:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] lp855x_bl: use generic PWM functions
+Message-Id: <20121022153012.253a6954.akpm@linux-foundation.org>
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F641791BB@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F6417916D@DQHE02.ent.ti.com>
+	<20121019082107.GA20659@avionic-0098.mockup.avionic-design.de>
+	<A874F61F95741C4A9BA573A70FE3998F641791BB@DQHE02.ent.ti.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 7:05 PM, Kevin Hilman
-<khilman@deeprootsystems.com> wrote:
+On Fri, 19 Oct 2012 08:45:14 +0000
+"Kim, Milo" <Milo.Kim@ti.com> wrote:
 
-> However, in light of RT throttling, this a correctness issue for process
-> accounting, so I agree that this should be done for all platforms
-> instead of providing an optional 'needs suspend' version of the API,
-> even though it means printk times no longer reflect time spent
-> suspended.
+> > Generally this looks good. Obviously you'll need to update any users of
+> > this driver as well. It might make sense to include those changes in
+> > this patch to avoid interim build failures.
+> 
+> Thanks for your review.
+> So far no usages for this driver in the mainline.
+> I've tested it in my own development environment instead.
+> 
+> > Other than that I have just one smaller comment below.
+> > 
+> > > +	pwm_config(lp->pwm, duty, period);
+> > > +	duty == 0 ? pwm_disable(lp->pwm) : pwm_enable(lp->pwm);
+> > 
+> > This is really ugly and should be written explicitly:
+> > 
+> > 	if (duty == 0)
+> > 		pwm_disable(lp->pwm);
+> > 	else
+> > 		pwm_enable(lp->pwm);
+> 
+> Oh, I prefer using '?' to if-sentence because it looks clear to me.
+> But if it's difficult to read/understand, I'll fix it.
+> I'd like to have others' opinion.
+> 
 
-Maybe we should get printk() to use the best clocksource
-instead.
+Hey, it's better than
 
-The reason AFAICT that printk() is using sched_clock() is that
-it's supposed to be fast. But now it seems that it's not going
-to return what printk() needs anymore.
+	(*(duty ? pwm_enable : pwm_disable))(lp->pwm);
 
-(Dragging Stultz & Gleixner into this...)
+!
 
-Yours,
-Linus Walleij
+
+But yes, the original code is unusual and I think most kernel people
+would have to stare at it for a bit longer than necessary to see
+exactly what it's doing.
+
+--- a/drivers/video/backlight/lp855x_bl.c~drivers-video-backlight-lp855x_blc-use-generic-pwm-functions-fix
++++ a/drivers/video/backlight/lp855x_bl.c
+@@ -139,7 +139,10 @@ static void lp855x_pwm_ctrl(struct lp855
+ 	}
+ 
+ 	pwm_config(lp->pwm, duty, period);
+-	duty == 0 ? pwm_disable(lp->pwm) : pwm_enable(lp->pwm);
++	if (duty)
++		pwm_enable(lp->pwm);
++	else
++		pwm_disable(lp->pwm);
+ }
+ 
+ static int lp855x_bl_update_status(struct backlight_device *bl)
+
