@@ -1,44 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932327Ab2JVXeS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 19:34:18 -0400
-Received: from nm4-vm8.bullet.mail.sg3.yahoo.com ([106.10.148.135]:42650 "EHLO
-	nm4-vm8.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932219Ab2JVXeQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 19:34:16 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 834123.26809.bm@omp1028.mail.sg3.yahoo.com
-X-YMail-OSG: m9u8p5QVM1nfHF5K.qR4.Gohjt9C8TJtaS8gsen090qrvX9
- g4F1IgQzD1rRMOQfzoW48hF52EcezX_2_b9b8WoBGolD1DoO5lHNHmL66.4U
- aNA2IAko2LvvrNKNGl0ZyAR3v77GO7l43fzuL0PXzOJxB9r0Az.M7Msi8cOJ
- imc.p9y3WXJbT8N6TuCm_lWlvo1kjNkamzHIuDijWBwXWVyIp5JvcZpeU4rR
- 87iW5E32N89cn7MZyYgttJulnzI_LC5BUR8k6MOUazcFWwAiIBKxcNjdzdEf
- kcDI9kjNhAh_RxaolSxKmKejfbSxQmE.e6teUjtSWXFJI2AL95ELyRKYx7bq
- IOkmqzouYsNEKudwH1MU7MGB_Lievw4TjpTS6e30oaLXGpWceH1JJhY6uhTy
- BhdXqfRt4VnxTkFXVZ7ReCW1OFd7_whxyXs5CJFhFYcX6CmG4BT3VA6yKr75
- 2pyO_Umozl2v6uzSfkFafjcY7VVwCLu9wLiA4P0fnQ2DUaEbHDf0aiViDau_
- HR1lXoGkABwxMU.JQg2f_q8cM2OCVt1aDLW4ERHxeMWphoj1FUnTGqsakhfT
- apoJtkuJxvvR7zw6vuj5ItBwIODn.Cq7jDVR.6TOmY7BG
-X-Rocket-MIMEInfo: 001.001,CkdyZWV0aW5ncyBmcm9tIEJVUktJTkEgRkFTTzoKTGV0IG1lIHN0YXJ0IGJ5IGludHJvZHVjZSBteXNlbGYsSSBhbSBNcnMgUnV0aCBZb2RhLCBCSUxMIEFORCBFWENIQU5HRSBNQU5BR0VSIChCYW5rIG9mIEFmcmljYSkgT3VhZ2Fkb3Vnb3UsIEJ1cmtpbmEgRmFzby5JIGFtIHdyaXR0aW5nIHlvdSB0aGlzIGxldHRlciBiYXNlZCBvbiB0aGUgbGF0ZXN0IGRldmVsb3BtZW50IGF0IG91ciBiYW5rIHdoaWNoIEkgd2lsbCBsaWtlIHRvIGJyaW5nIHRvIHlvdXIgcGVyc29uYWwgZWRpZmljYXRpb24uKCQxMiwyNTABMAEBAQE-
-X-RocketYMMF: anir82
-X-Mailer: YahooMailClassic/15.0.8 YahooMailWebService/0.8.123.450
-Message-ID: <1350948853.70201.YahooMailClassic@web193105.mail.sg3.yahoo.com>
-Date: Tue, 23 Oct 2012 07:34:13 +0800 (SGT)
-From: Ruth Yoda <ruth_y2@qq.com>
-Reply-To: ruth_y1@qq.com
-Subject: Re:Very Urgent!!!
-To: undisclosed recipients:;
+	id S932381Ab2JVXfX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 19:35:23 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51113 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932219Ab2JVXfW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 19:35:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <5085BA4A.30800@zytor.com>
+References: <903a3ead-98b5-4afa-88a4-3dc723895e82@blur>
+	<d556fc0f-da5d-4531-b331-6dc086461f34@blur>
+	<50833F30.4020802@ti.com>
+	<CAE9FiQWpSvKp=Oh+4Y8OpdOjdRnkYVL2HvNNXc29ESpNsMC0AQ@mail.gmail.com>
+	<20121021041858.GA14809@jshin-Toonie>
+	<50843627.4020103@ti.com>
+	<20121021210633.GA14311@jshin-Toonie>
+	<508467EE.4040807@ti.com>
+	<20121022144020.GA14425@jshin-Toonie>
+	<CAE9FiQWvVNCK8Ka6rq+RMf3u4JFn8D18rGMy4Hpz7Rhnrn6VTA@mail.gmail.com>
+	<20121022183858.GA31185@jshin-Toonie>
+	<CAE9FiQWZmwa6EwsfZzz_e3A-tz2LUS2+i+zh4zpXpR_Jj_FQ1w@mail.gmail.com>
+	<5085ABEF.3060502@linux.intel.com>
+	<CAE9FiQW0rQFUgjiYjByA91XCUUqo59zz2kXc9Z5wXk+3vKPKaQ@mail.gmail.com>
+	<5085B207.5010907@linux.intel.com>
+	<CAE9FiQVt5LN6_wDvS2G+UULD4Ba2CF=zLhg4RULSKbfbct0NLg@mail.gmail.com>
+	<5085BA4A.30800@zytor.com>
+Date: Mon, 22 Oct 2012 16:35:18 -0700
+X-Google-Sender-Auth: zVa5_5A2ov5FrJ1QO4lPy8TgLBE
+Message-ID: <CAE9FiQVZirvaBMFYRfXMmWEcHbKSicQEHz4VAwUv0xFCk51ZNw@mail.gmail.com>
+Subject: Re: BUG: 1bbbbe7 (x86: Exclude E820_RESERVED regions...) PANIC on boot
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Jacob Shin <jacob.shin@amd.com>,
+        Tom Rini <trini@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=0015175d04428367b204ccae4ed6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--0015175d04428367b204ccae4ed6
+Content-Type: text/plain; charset=ISO-8859-1
 
-Greetings from BURKINA FASO:
-Let me start by introduce myself,I am Mrs Ruth Yoda, BILL AND EXCHANGE MANAGER (Bank of Africa) Ouagadougou, Burkina Faso.I am writting you this letter based on the latest development at our bank which I will like to bring to your personal edification.($12,250million transfer claims).This is a legitimate transaction and I agreed to offer you 30% of this money as my foreign partner after confirmation of the fund in your bank account,If you are interested,get back to me.
- 
-Yours faithful,
-Mrs Ruth Yoda.
+On Mon, Oct 22, 2012 at 2:27 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>> We never know that bios guys will not let bios produce crazy e820 map.
+>>
+>
+> Yeah, well, that just *will* happen... that's a given.
+>
+> We can trim those ranges, though.  Who cares if we lose some RAM.
+>
+
+please check attached two patches that handle partial pages for 3.7.
+
+and you still need patch in
+   https://lkml.org/lkml/2012/8/24/469
+
+to address early page table size calculation problem for Tom Rini
+
+Thanks
+
+Yinghai
+
+--0015175d04428367b204ccae4ed6
+Content-Type: application/octet-stream; name="memblock_trim_memory.patch"
+Content-Disposition: attachment; filename="memblock_trim_memory.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h8m80qlj0
+
+U3ViamVjdDogW1BBVENIXSB4ODYsIG1tOiBUcmltIG1lbW9yeSBpbiBtZW1ibG9jayB0byBiZSBw
+YWdlIGFsaWduZWQKCldlIHdpbGwgbm90IG1hcCBwYXJ0aWFsIHBhZ2VzLCBzbyBuZWVkIHRvIG1h
+a2Ugc3VyZSBtZW1ibG9jawphbGxvY2F0aW9uIHdpbGwgbm90IGFsbG9jYXRlIHRob3NlIGJ5dGVz
+IG91dC4KCkFsc28gd2Ugd2lsbCB1c2UgZm9yX2VhY2hfbWVtX3Bmbl9yYW5nZSgpIHRvIGxvb3Ag
+dG8gbWFwIG1lbW9yeQpyYW5nZSB0byBrZWVwIHRoZW0gY29uc2lzdGVudC4KClNpZ25lZC1vZmYt
+Ynk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQogYXJjaC94ODYva2VybmVs
+L2U4MjAuYyAgIHwgICAgMyArKysKIGluY2x1ZGUvbGludXgvbWVtYmxvY2suaCB8ICAgIDEgKwog
+bW0vbWVtYmxvY2suYyAgICAgICAgICAgIHwgICAyNCArKysrKysrKysrKysrKysrKysrKysrKysK
+IDMgZmlsZXMgY2hhbmdlZCwgMjggaW5zZXJ0aW9ucygrKQoKSW5kZXg6IGxpbnV4LTIuNi9hcmNo
+L3g4Ni9rZXJuZWwvZTgyMC5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2
+L2tlcm5lbC9lODIwLmMKKysrIGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwvZTgyMC5jCkBAIC0x
+MDc3LDYgKzEwNzcsOSBAQCB2b2lkIF9faW5pdCBtZW1ibG9ja194ODZfZmlsbCh2b2lkKQogCQlt
+ZW1ibG9ja19hZGQoZWktPmFkZHIsIGVpLT5zaXplKTsKIAl9CiAKKwkvKiB0aHJvdyBhd2F5IHBh
+cnRpYWwgcGFnZXMgKi8KKwltZW1ibG9ja190cmltX21lbW9yeShQQUdFX1NJWkUpOworCiAJbWVt
+YmxvY2tfZHVtcF9hbGwoKTsKIH0KIApJbmRleDogbGludXgtMi42L2luY2x1ZGUvbGludXgvbWVt
+YmxvY2suaAo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9pbmNsdWRlL2xpbnV4L21lbWJs
+b2NrLmgKKysrIGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4L21lbWJsb2NrLmgKQEAgLTU3LDYgKzU3
+LDcgQEAgaW50IG1lbWJsb2NrX2FkZChwaHlzX2FkZHJfdCBiYXNlLCBwaHlzXwogaW50IG1lbWJs
+b2NrX3JlbW92ZShwaHlzX2FkZHJfdCBiYXNlLCBwaHlzX2FkZHJfdCBzaXplKTsKIGludCBtZW1i
+bG9ja19mcmVlKHBoeXNfYWRkcl90IGJhc2UsIHBoeXNfYWRkcl90IHNpemUpOwogaW50IG1lbWJs
+b2NrX3Jlc2VydmUocGh5c19hZGRyX3QgYmFzZSwgcGh5c19hZGRyX3Qgc2l6ZSk7Cit2b2lkIG1l
+bWJsb2NrX3RyaW1fbWVtb3J5KHBoeXNfYWRkcl90IGFsaWduKTsKIAogI2lmZGVmIENPTkZJR19I
+QVZFX01FTUJMT0NLX05PREVfTUFQCiB2b2lkIF9fbmV4dF9tZW1fcGZuX3JhbmdlKGludCAqaWR4
+LCBpbnQgbmlkLCB1bnNpZ25lZCBsb25nICpvdXRfc3RhcnRfcGZuLApJbmRleDogbGludXgtMi42
+L21tL21lbWJsb2NrLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvbW0vbWVtYmxvY2su
+YworKysgbGludXgtMi42L21tL21lbWJsb2NrLmMKQEAgLTkzMCw2ICs5MzAsMzAgQEAgaW50IF9f
+aW5pdF9tZW1ibG9jayBtZW1ibG9ja19pc19yZWdpb25fcgogCXJldHVybiBtZW1ibG9ja19vdmVy
+bGFwc19yZWdpb24oJm1lbWJsb2NrLnJlc2VydmVkLCBiYXNlLCBzaXplKSA+PSAwOwogfQogCit2
+b2lkIF9faW5pdF9tZW1ibG9jayBtZW1ibG9ja190cmltX21lbW9yeShwaHlzX2FkZHJfdCBhbGln
+bikKK3sKKwlpbnQgaTsKKwlwaHlzX2FkZHJfdCBzdGFydCwgZW5kLCBvcmlnX3N0YXJ0LCBvcmln
+X2VuZDsKKwlzdHJ1Y3QgbWVtYmxvY2tfdHlwZSAqbWVtID0gJm1lbWJsb2NrLm1lbW9yeTsKKwor
+CWZvciAoaSA9IDA7IGkgPCBtZW0tPmNudDsgaSsrKSB7CisJCW9yaWdfc3RhcnQgPSBtZW0tPnJl
+Z2lvbnNbaV0uYmFzZTsKKwkJb3JpZ19lbmQgPSBtZW0tPnJlZ2lvbnNbaV0uYmFzZSArIG1lbS0+
+cmVnaW9uc1tpXS5zaXplOworCQlzdGFydCA9IHJvdW5kX3VwKG9yaWdfc3RhcnQsIGFsaWduKTsK
+KwkJZW5kID0gcm91bmRfZG93bihvcmlnX2VuZCwgYWxpZ24pOworCisJCWlmIChzdGFydCA9PSBv
+cmlnX3N0YXJ0ICYmIGVuZCA9PSBvcmlnX2VuZCkKKwkJCWNvbnRpbnVlOworCisJCWlmIChzdGFy
+dCA8IGVuZCkgeworCQkJbWVtLT5yZWdpb25zW2ldLmJhc2UgPSBzdGFydDsKKwkJCW1lbS0+cmVn
+aW9uc1tpXS5zaXplID0gZW5kIC0gc3RhcnQ7CisJCX0gZWxzZSB7CisJCQltZW1ibG9ja19yZW1v
+dmVfcmVnaW9uKG1lbSwgaSk7CisJCQlpLS07CisJCX0KKwl9Cit9CiAKIHZvaWQgX19pbml0X21l
+bWJsb2NrIG1lbWJsb2NrX3NldF9jdXJyZW50X2xpbWl0KHBoeXNfYWRkcl90IGxpbWl0KQogewo=
+--0015175d04428367b204ccae4ed6
+Content-Type: application/octet-stream; 
+	name="use_for_each_mem_pfn_range_setup.patch"
+Content-Disposition: attachment; 
+	filename="use_for_each_mem_pfn_range_setup.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h8m810ig1
+
+U3ViamVjdDogW1BBVENIXSB4ODYsIG1tOiB1c2UgbWVtYmxvY2sgbWVtb3J5IGxvb3AgaW5zdGVh
+ZCBvZiBlODIwX1JBTQoKV2UgbmVlZCB0byBoYW5kbGUgRTgyMF9SQU0gYW5kIEU4MjBfUkVTRVJW
+RURfS0VSTkVMIGF0IHRoZSBzYW1lIHRpbWUuCgpBbHNvIG1lbWJsb2NrIGhhcyBwYWdlIGFsaWdu
+ZWQgcmFuZ2UgZm9yIHJhbSwgc28gd2UgY291bGQgYXZvaWQgbWFwcGluZwpwYXJ0aWFsIHBhZ2Vz
+LgoKU2lnbmVkLW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgoKLS0tCiBh
+cmNoL3g4Ni9rZXJuZWwvc2V0dXAuYyB8ICAgMTUgKysrKysrKystLS0tLS0tCiAxIGZpbGUgY2hh
+bmdlZCwgOCBpbnNlcnRpb25zKCspLCA3IGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9h
+cmNoL3g4Ni9rZXJuZWwvc2V0dXAuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNo
+L3g4Ni9rZXJuZWwvc2V0dXAuYworKysgbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9zZXR1cC5j
+CkBAIC05MjEsMTggKzkyMSwxOSBAQCB2b2lkIF9faW5pdCBzZXR1cF9hcmNoKGNoYXIgKipjbWRs
+aW5lX3ApCiAjaWZkZWYgQ09ORklHX1g4Nl82NAogCWlmIChtYXhfcGZuID4gbWF4X2xvd19wZm4p
+IHsKIAkJaW50IGk7Ci0JCWZvciAoaSA9IDA7IGkgPCBlODIwLm5yX21hcDsgaSsrKSB7Ci0JCQlz
+dHJ1Y3QgZTgyMGVudHJ5ICplaSA9ICZlODIwLm1hcFtpXTsKKwkJdW5zaWduZWQgbG9uZyBzdGFy
+dCwgZW5kOworCQl1bnNpZ25lZCBsb25nIHN0YXJ0X3BmbiwgZW5kX3BmbjsKIAotCQkJaWYgKGVp
+LT5hZGRyICsgZWktPnNpemUgPD0gMVVMIDw8IDMyKQotCQkJCWNvbnRpbnVlOworCQlmb3JfZWFj
+aF9tZW1fcGZuX3JhbmdlKGksIE1BWF9OVU1OT0RFUywgJnN0YXJ0X3BmbiwgJmVuZF9wZm4sCisJ
+CQkJCQkJIE5VTEwpIHsKIAotCQkJaWYgKGVpLT50eXBlID09IEU4MjBfUkVTRVJWRUQpCisJCQll
+bmQgPSBQRk5fUEhZUyhlbmRfcGZuKTsKKwkJCWlmIChlbmQgPD0gKDFVTDw8MzIpKQogCQkJCWNv
+bnRpbnVlOwogCisJCQlzdGFydCA9IFBGTl9QSFlTKHN0YXJ0X3Bmbik7CiAJCQltYXhfcGZuX21h
+cHBlZCA9IGluaXRfbWVtb3J5X21hcHBpbmcoCi0JCQkJZWktPmFkZHIgPCAxVUwgPDwgMzIgPyAx
+VUwgPDwgMzIgOiBlaS0+YWRkciwKLQkJCQllaS0+YWRkciArIGVpLT5zaXplKTsKKwkJCQkJCW1h
+eCgoMVVMPDwzMiksIHN0YXJ0KSwgZW5kKTsKIAkJfQogCiAJCS8qIGNhbiB3ZSBwcmVzZXZlIG1h
+eF9sb3dfcGZuID8qLwo=
+--0015175d04428367b204ccae4ed6--
