@@ -1,76 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab2JVT4M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 15:56:12 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:52059 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755889Ab2JVT4J (ORCPT
+	id S1756134Ab2JVT4j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 15:56:39 -0400
+Received: from server505c.appriver.com ([98.129.35.7]:1703 "EHLO
+	server505.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752877Ab2JVT4h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 15:56:09 -0400
-Date: Mon, 22 Oct 2012 12:56:06 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        cw00.choi@samsung.com, myungjoo.ham@gmail.com
-Subject: Re: [GIT PULL] extcon fixes for Linux 3.7
-Message-ID: <20121022195606.GA13640@kroah.com>
-References: <1350878680-12164-1-git-send-email-myungjoo.ham@samsung.com>
+	Mon, 22 Oct 2012 15:56:37 -0400
+X-Note-AR-ScanTimeLocal: 10/22/2012 2:56:34 PM
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Primary: ecashin@coraid.com
+X-Note: This Email was scanned by AppRiver SecureTide
+X-ALLOW: @coraid.com ALLOWED
+X-Virus-Scan: V-
+X-Note: Spam Tests Failed: 
+X-Country-Path: UNKNOWN->UNITED STATES->UNITED STATES
+X-Note-Sending-IP: 98.129.35.1
+X-Note-Reverse-DNS: 
+X-Note-Return-Path: ecashin@coraid.com
+X-Note: User Rule Hits: 
+X-Note: Global Rule Hits: G329 G330 G331 G332 G336 G337 G348 G444 
+X-Note: Encrypt Rule Hits: 
+X-Note: Mail Class: ALLOWEDSENDER
+X-Note: Headers Injected
+From: Ed Cashin <ecashin@coraid.com>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+CC: "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 22 Oct 2012 14:56:32 -0500
+Subject: Re: [PATCH] aoe: remove unused variable in resend()
+Thread-Topic: [PATCH] aoe: remove unused variable in resend()
+Thread-Index: Ac2wj1Wg/zDxkvqoTCmIods27dIYdw==
+Message-ID: <DFBFBFD3-4B29-4233-B109-C6AFFB57BBF2@coraid.com>
+References: <CAPgLHd9yWbukGH_mNJo0fRmG7q8RctQghPQo8wxBn_n8hzn=zQ@mail.gmail.com>
+In-Reply-To: <CAPgLHd9yWbukGH_mNJo0fRmG7q8RctQghPQo8wxBn_n8hzn=zQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350878680-12164-1-git-send-email-myungjoo.ham@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 01:04:40PM +0900, MyungJoo Ham wrote:
-> Hello Greg,
-> 
-> 
-> The following changes since commit 6f0c0580b70c89094b3422ba81118c7b959c7556:
-> 
->   Linux 3.7-rc2 (2012-10-20 12:11:32 -0700)
-> 
-> are available in the git repository at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/mzx/extcon.git for-next
+Looks good, thanks.
 
-This isn't a signed-tag to pull from, it looks just like a branch
-instead.  Is it really a signed tag?  If so, it sure didn't work like
-one.
+On Oct 22, 2012, at 5:17 AM, Wei Yongjun wrote:
 
-> Axel Lin (4):
->       extcon: adc-jack: Fix checking return value of request_any_context_irq
->       extcon: adc-jack: Add missing MODULE_LICENSE
->       extcon: Fix kerneldoc for extcon_set_cable_state and extcon_set_cable_state_
->       extcon: max77693: Use max77693_update_reg for rmw operations
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 > 
-> Chanwoo Choi (1):
->       extcon: MAX77693: Add platform data for MUIC device to initialize registers
+> The variable ah is initialized but never used
+> otherwise, so remove the unused variable.
 > 
-> Devendra Naga (1):
->       extcon-max8997: remove usage of ret in max8997_muic_handle_charger_type_detach
+> dpatch engine is used to auto generate this patch.
+> (https://github.com/weiyj/dpatch)
 > 
-> Jenny TC (1):
->       extcon : register for cable interest by cable name
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+> drivers/block/aoe/aoecmd.c | 2 --
+> 1 file changed, 2 deletions(-)
 > 
-> Peter Huewe (2):
->       extcon: Unregister compat class at module unload to fix oops
->       extcon: unregister compat link on cleanup
+> diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
+> index 3804a0a..812eb8a 100644
+> --- a/drivers/block/aoe/aoecmd.c
+> +++ b/drivers/block/aoe/aoecmd.c
+> @@ -425,7 +425,6 @@ resend(struct aoedev *d, struct frame *f)
+> 	struct sk_buff *skb;
+> 	struct sk_buff_head queue;
+> 	struct aoe_hdr *h;
+> -	struct aoe_atahdr *ah;
+> 	struct aoetgt *t;
+> 	char buf[128];
+> 	u32 n;
+> @@ -440,7 +439,6 @@ resend(struct aoedev *d, struct frame *f)
+> 		return;
+> 	}
+> 	h = (struct aoe_hdr *) skb_mac_header(skb);
+> -	ah = (struct aoe_atahdr *) (h+1);
 > 
-> Sachin Kamat (2):
->       extcon: Remove duplicate inclusion of extcon.h header file
->       extcon: Fix return value in extcon_register_interest()
+> 	snprintf(buf, sizeof buf,
+> 		"%15s e%ld.%d oldtag=%08x@%08lx newtag=%08x s=%pm d=%pm nout=%d\n",
 > 
-> anish kumar (5):
->       extcon: standard cable names definition and declaration changed
->       extcon: optimising the check_mutually_exclusive function
->       extcon: checkpatch warning removal
 
-Why is a checkpatch cleanup for 3.7?  Shouldn't that wait for 3.8?
+-- 
+  Ed Cashin
+  ecashin@coraid.com
 
-Care to redo this?
 
-thanks,
-
-greg k-h
