@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493Ab2JVP6K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 11:58:10 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48576 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752780Ab2JVP6I (ORCPT
+	id S1755355Ab2JVQAP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 12:00:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55663 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab2JVQAN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 11:58:08 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-To: <alan@linux.intel.com>, <gregkh@linuxfoundation.org>,
-        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Murali Karicheri <m-karicheri2@ti.com>
-Subject: [RESEND PATCH 2/2] Documentation: of-serial.txt - update for clocks phandle for clk
-Date: Mon, 22 Oct 2012 11:58:02 -0400
-Message-ID: <1350921482-22554-2-git-send-email-m-karicheri2@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350921482-22554-1-git-send-email-m-karicheri2@ti.com>
-References: <1350921482-22554-1-git-send-email-m-karicheri2@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 22 Oct 2012 12:00:13 -0400
+Message-ID: <1350921565.2768.105.camel@twins>
+Subject: Re: [PATCH v2 1/2] perf tools: add event modifier to request
+ exclusive PMU access
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <ak@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Date: Mon, 22 Oct 2012 17:59:25 +0200
+In-Reply-To: <CABPqkBTeuD==RY9xORYyUhtZm0cXAFw7FEPocMsdCbcqTUS3bg@mail.gmail.com>
+References: <1350912052-10066-1-git-send-email-eranian@google.com>
+	 <1350912052-10066-2-git-send-email-eranian@google.com>
+	 <20121022135358.GJ2095@tassilo.jf.intel.com>
+	 <CABPqkBTJsZHdvp+Tm3SGJCfJ7eMFaqQR8pd9eoh5KyBo3k6o3Q@mail.gmail.com>
+	 <20121022153952.GM2095@tassilo.jf.intel.com>
+	 <CABPqkBTeuD==RY9xORYyUhtZm0cXAFw7FEPocMsdCbcqTUS3bg@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+On Mon, 2012-10-22 at 17:44 +0200, Stephane Eranian wrote:
+> 
+> I know the answer, because I know what's going on under the
+> hood. But what about the average user? 
 
-diff --git a/Documentation/devicetree/bindings/tty/serial/of-serial.txt b/Documentation/devicetree/bindings/tty/serial/of-serial.txt
-index 0847fde..423b7ff 100644
---- a/Documentation/devicetree/bindings/tty/serial/of-serial.txt
-+++ b/Documentation/devicetree/bindings/tty/serial/of-serial.txt
-@@ -14,7 +14,10 @@ Required properties:
- 	- "serial" if the port type is unknown.
- - reg : offset and length of the register set for the device.
- - interrupts : should contain uart interrupt.
--- clock-frequency : the input clock frequency for the UART.
-+- clock-frequency : the input clock frequency for the UART
-+	 or
-+  clocks phandle to refer to the clk used as per Documentation/devicetree
-+  /bindings/clock/clock-bindings.txt
- 
- Optional properties:
- - current-speed : the current active speed of the UART.
--- 
-1.7.9.5
+I'm still wondering if the avg user really thinks 'instructions' is a
+useful metric for other than obtaining ipc measurements.
+
+The avg user wants time domain measurements, like what's the most
+expensive function, or most expensive cache-miss etc..
+
 
