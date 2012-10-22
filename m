@@ -1,182 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab2JVNia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 09:38:30 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:42894 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200Ab2JVNi3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 09:38:29 -0400
-X-IronPort-AV: E=Sophos;i="4.80,629,1344211200"; 
-   d="scan'208";a="15310441"
-Date: Mon, 22 Oct 2012 14:38:00 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "mukesh.rathor@oracle.com" <mukesh.rathor@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: Re: [PATCH 1/6] xen/pvh: Support ParaVirtualized Hardware
- extensions.
-In-Reply-To: <1350695882-12820-2-git-send-email-konrad.wilk@oracle.com>
-Message-ID: <alpine.DEB.2.02.1210221437520.2689@kaball.uk.xensource.com>
-References: <1350695882-12820-1-git-send-email-konrad.wilk@oracle.com> <1350695882-12820-2-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1754516Ab2JVNkr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 09:40:47 -0400
+Received: from mga01.intel.com ([192.55.52.88]:61637 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754200Ab2JVNkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 09:40:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,628,1344236400"; 
+   d="scan'208";a="238436050"
+From: ling.ma.program@gmail.com
+To: mingo@elte.hu
+Cc: hpa@zytor.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        iant@google.com, Ma Ling <ling.ma.program@gmail.com>
+Subject: [PATCH RFC V2] [x86] Optimize small size memcpy by avoding long latency from decode stage
+Date: Tue, 23 Oct 2012 00:00:38 +0800
+Message-Id: <1350921638-9330-1-git-send-email-ling.ma.program@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 20 Oct 2012, Konrad Rzeszutek Wilk wrote:
-> From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> 
-> PVH allows PV linux guest to utilize hardware extended capabilities, such
-> as running MMU updates in a HVM container.
-> 
-> This patch allows it to be configured and enabled. Also, basic header file
-> changes to add new subcalls to physmap hypercall.
-> 
-> Lastly, mfn_to_local_pfn must return mfn for paging mode translate
-> (since we let the hypervisor - or CPU - do them for us).
-> 
-> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Ma Ling <ling.ma.program@gmail.com>
 
+CISC code has higher instruction density, saving memory and
+improving i-cache hit rate. However decode become challenge,
+only one mulitple-uops(2~3)instruction could be decoded in one cycle,
+and instructions containing more 4 uops(rep movsq/b) have to be handled by MS-ROM,
+the process take long time and eat up the advantage from it for small size. 
 
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+In order to avoid this disavantage, we take use of general instruction code
+for small size copy. The result shows it can get 1~2x improvement
+on Core2, Nehalem, Sandy Bridge, Ivy Bridge, Atom, and Bulldozer as well.
 
->  arch/x86/include/asm/xen/page.h |    3 +++
->  arch/x86/xen/Kconfig            |   10 ++++++++++
->  arch/x86/xen/xen-head.S         |   11 ++++++++++-
->  include/xen/interface/memory.h  |   24 +++++++++++++++++++++++-
->  include/xen/interface/physdev.h |   10 ++++++++++
->  5 files changed, 56 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-> index 472b9b7..6af440d 100644
-> --- a/arch/x86/include/asm/xen/page.h
-> +++ b/arch/x86/include/asm/xen/page.h
-> @@ -159,6 +159,9 @@ static inline xpaddr_t machine_to_phys(xmaddr_t machine)
->  static inline unsigned long mfn_to_local_pfn(unsigned long mfn)
->  {
->  	unsigned long pfn = mfn_to_pfn(mfn);
-> +
-> +	if (xen_feature(XENFEAT_auto_translated_physmap))
-> +		return mfn;
->  	if (get_phys_to_machine(pfn) != mfn)
->  		return -1; /* force !pfn_valid() */
->  	return pfn;
-> diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
-> index fdce49c..822c5a0 100644
-> --- a/arch/x86/xen/Kconfig
-> +++ b/arch/x86/xen/Kconfig
-> @@ -50,3 +50,13 @@ config XEN_DEBUG_FS
->  	  Enable statistics output and various tuning options in debugfs.
->  	  Enabling this option may incur a significant performance overhead.
->  
-> +config XEN_X86_PVH
-> +	bool "Support for running as a PVH guest (EXPERIMENTAL)"
-> +	depends on X86_64 && XEN && EXPERIMENTAL
-> +	default n
-> +	help
-> +	   This option enables support for running as a PVH guest (PV guest
-> +	   using hardware extensions) under a suitably capable hypervisor.
-> +	   This option is EXPERIMENTAL because the hypervisor interfaces
-> +	   which it uses are not yet considered stable therefore backwards and
-> +	   forwards compatibility is not yet guaranteed.  If unsure, say N.
-> diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
-> index 7faed58..1a6bca1 100644
-> --- a/arch/x86/xen/xen-head.S
-> +++ b/arch/x86/xen/xen-head.S
-> @@ -13,6 +13,15 @@
->  #include <xen/interface/elfnote.h>
->  #include <asm/xen/interface.h>
->  
-> +#ifdef CONFIG_XEN_X86_PVH
-> +#define FEATURES_PVH "|writable_descriptor_tables" \
-> +		     "|auto_translated_physmap" \
-> +		     "|supervisor_mode_kernel" \
-> +		     "|hvm_callback_vector"
-> +#else
-> +#define FEATURES_PVH /* Not supported */
-> +#endif
-> +
->  	__INIT
->  ENTRY(startup_xen)
->  	cld
-> @@ -95,7 +104,7 @@ NEXT_HYPERCALL(arch_6)
->  #endif
->  	ELFNOTE(Xen, XEN_ELFNOTE_ENTRY,          _ASM_PTR startup_xen)
->  	ELFNOTE(Xen, XEN_ELFNOTE_HYPERCALL_PAGE, _ASM_PTR hypercall_page)
-> -	ELFNOTE(Xen, XEN_ELFNOTE_FEATURES,       .asciz "!writable_page_tables|pae_pgdir_above_4gb")
-> +	ELFNOTE(Xen, XEN_ELFNOTE_FEATURES,       .asciz "!writable_page_tables|pae_pgdir_above_4gb"FEATURES_PVH)
->  	ELFNOTE(Xen, XEN_ELFNOTE_PAE_MODE,       .asciz "yes")
->  	ELFNOTE(Xen, XEN_ELFNOTE_LOADER,         .asciz "generic")
->  	ELFNOTE(Xen, XEN_ELFNOTE_L1_MFN_VALID,
-> diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-> index b66d04c..8beebdb 100644
-> --- a/include/xen/interface/memory.h
-> +++ b/include/xen/interface/memory.h
-> @@ -169,7 +169,13 @@ struct xen_add_to_physmap {
->      /* Source mapping space. */
->  #define XENMAPSPACE_shared_info 0 /* shared info page */
->  #define XENMAPSPACE_grant_table 1 /* grant table page */
-> -    unsigned int space;
-> +#define XENMAPSPACE_gmfn        2 /* GMFN */
-> +#define XENMAPSPACE_gmfn_range  3 /* GMFN range */
-> +#define XENMAPSPACE_gmfn_foreign 4 /* GMFN from another guest */
-> +    uint16_t space;
-> +    domid_t foreign_domid;         /* IFF XENMAPSPACE_gmfn_foreign */
-> +
-> +#define XENMAPIDX_grant_table_status 0x80000000
->  
->      /* Index into source mapping space. */
->      xen_ulong_t idx;
-> @@ -237,4 +243,20 @@ DEFINE_GUEST_HANDLE_STRUCT(xen_memory_map);
->   * during a driver critical region.
->   */
->  extern spinlock_t xen_reservation_lock;
-> +
-> +/*
-> + * Unmaps the page appearing at a particular GPFN from the specified guest's
-> + * pseudophysical address space.
-> + * arg == addr of xen_remove_from_physmap_t.
-> + */
-> +#define XENMEM_remove_from_physmap      15
-> +struct xen_remove_from_physmap {
-> +    /* Which domain to change the mapping for. */
-> +    domid_t domid;
-> +
-> +    /* GPFN of the current mapping of the page. */
-> +    xen_pfn_t gpfn;
-> +};
-> +DEFINE_GUEST_HANDLE_STRUCT(xen_remove_from_physmap);
-> +
->  #endif /* __XEN_PUBLIC_MEMORY_H__ */
-> diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
-> index 1844d31..83050d3 100644
-> --- a/include/xen/interface/physdev.h
-> +++ b/include/xen/interface/physdev.h
-> @@ -274,6 +274,16 @@ struct physdev_dbgp_op {
->      } u;
->  };
->  
-> +#define PHYSDEVOP_map_iomem        30
-> +struct physdev_map_iomem {
-> +    /* IN */
-> +    uint64_t first_gfn;
-> +    uint64_t first_mfn;
-> +    uint32_t nr_mfns;
-> +    uint32_t add_mapping; /* 1 == add mapping;  0 == unmap */
-> +
-> +};
-> +
->  /*
->   * Notify that some PIRQ-bound event channels have been unmasked.
->   * ** This command is obsolete since interface version 0x00030202 and is **
-> -- 
-> 1.7.7.6
-> 
+Signed-off-by: Ma Ling <ling.ma.program@gmail.com>
+---
+In this version we decrease warm up distance from 512 to 256 for coming CPUs,
+which manage to reduce latency, but long time to decode is still consumed.
+
+Thanks
+Ling
+
+ arch/x86/lib/memcpy_64.S |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/lib/memcpy_64.S b/arch/x86/lib/memcpy_64.S
+index 1c273be..6a24c8c 100644
+--- a/arch/x86/lib/memcpy_64.S
++++ b/arch/x86/lib/memcpy_64.S
+@@ -5,7 +5,6 @@
+ #include <asm/cpufeature.h>
+ #include <asm/dwarf2.h>
+ #include <asm/alternative-asm.h>
+-
+ /*
+  * memcpy - Copy a memory block.
+  *
+@@ -19,6 +18,15 @@
+  */
+ 
+ /*
++ * memcpy_c() and memcpy_c_e() use rep movsq/movsb respectively,
++ * the instruction have to get micro ops from Microcode Sequencser Rom.
++ * And the decode  process take long latency, in order to avoid it, 
++ * we choose loop unrolling routine for small size.
++ * Could vary the warm up  distance.
++ */
++
++
++/*
+  * memcpy_c() - fast string ops (REP MOVSQ) based variant.
+  *
+  * This gets patched over the unrolled variant (below) via the
+@@ -26,6 +34,8 @@
+  */
+ 	.section .altinstr_replacement, "ax", @progbits
+ .Lmemcpy_c:
++	cmpq $256, %rdx
++	jbe  memcpy 	
+ 	movq %rdi, %rax
+ 	movq %rdx, %rcx
+ 	shrq $3, %rcx
+@@ -46,6 +56,8 @@
+  */
+ 	.section .altinstr_replacement, "ax", @progbits
+ .Lmemcpy_c_e:
++	cmpq $256, %rdx
++	jbe  memcpy
+ 	movq %rdi, %rax
+ 	movq %rdx, %rcx
+ 	rep movsb
+-- 
+1.6.5.2
+
