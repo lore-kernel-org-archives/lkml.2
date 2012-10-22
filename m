@@ -1,96 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751134Ab2JVHoB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 03:44:01 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:47165 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab2JVHoA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 03:44:00 -0400
+	id S1751062Ab2JVHpn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 03:45:43 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:47869 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750764Ab2JVHpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 03:45:42 -0400
+Message-ID: <5084F99B.1030709@ti.com>
+Date: Mon, 22 Oct 2012 09:45:31 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20120920235407.GA3769@www.outflux.net>
-References: <20120920235407.GA3769@www.outflux.net>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Mon, 22 Oct 2012 09:43:39 +0200
-Message-ID: <CAKgNAki2vhbgismBWddaEFXVawea_T+eTNQSnDNMGVysbWAm5w@mail.gmail.com>
-Subject: Re: [PATCH] prctl: document PR_SET_NO_NEW_PRIVS, PR_GET_NO_NEW_PRIVS
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-man@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, wad@chromium.org,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH] arm: dts: omap4-sdp: pinmux configuration for keypad
+References: <1350890955-29553-1-git-send-email-sourav.poddar@ti.com>
+In-Reply-To: <1350890955-29553-1-git-send-email-sourav.poddar@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 21, 2012 at 1:54 AM, Kees Cook <keescook@chromium.org> wrote:
-> This adds a short description of the no_new_privs bit, as described in
-> Documentation/prctl/no_new_privs.txt.
+Hi Sourav,
 
-Thanks Kees. Applied.
+On 10/22/2012 09:29 AM, Sourav Poddar wrote:
+> Currently, omap4 keypad mux settings are done in the board file.
+> Populate the mux settings in the dts file for the keypad to
+> work via dt.
 
-Cheers,
+Have you changed the driver to handle properly the dependency with the
+pinctrl and thus return EPROBE_DEFER if this is not ready?
 
-Michael
+Seb Guiriec has just sent a patch to do that for the omap-i2c driver
+([PATCH] i2c: omap: adopt pinctrl support).
 
-
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Tested on omap4430 sdp with 3.7-rc1.
+> 
+> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
 > ---
->  man2/prctl.2 |   15 +++++++++++++++
->  1 files changed, 15 insertions(+), 0 deletions(-)
->
-> diff --git a/man2/prctl.2 b/man2/prctl.2
-> index a44aa32..220c031 100644
-> --- a/man2/prctl.2
-> +++ b/man2/prctl.2
-> @@ -42,6 +42,7 @@
->  .\" 2012-04-25 Michael Kerrisk, Document PR_TASK_PERF_EVENTS_DISABLE and
->  .\"                            PR_TASK_PERF_EVENTS_ENABLE
->  .\" 2012-09-20 Kees Cook, update PR_SET_SECCOMP for mode 2
-> +.\" 2012-09-20 Kees Cook, document PR_SET_NO_NEW_PRIVS, PR_GET_NO_NEW_PRIVS
->  .\"
->  .\" FIXME: Document PR_SET_TIMERSLACK and PR_GET_TIMERSLACK (new in 2.6.28)
->  .\"            commit 6976675d94042fbd446231d1bd8b7de71a980ada
-> @@ -216,6 +217,19 @@ in the buffer pointed to by
->  The buffer should allow space for up to 16 bytes;
->  the returned string will be null-terminated if it is shorter than that.
->  .TP
-> +.BR PR_SET_NO_NEW_PRIVS " (since Linux 3.5)"
-> +Set the current process's \fIno_new_privs\fP bit to the value in
-> +\fIarg2\fP.  With \fIno_new_privs\fP set to 1, execve promises not
-> +to grant the privilege to do anything that could not have been done
-> +without the execve call (for example, rendering setuid, setgid, and file
-> +capabilities non-functional).  When enabled, this value is inherited
-> +across fork, clone, and execve and cannot be unset.
-> +.TP
-> +.BR PR_GET_NO_NEW_PRIVS " (since Linux 3.5)"
-> +Return the value of the \fIno_new_privs\fP bit for the current process. A
-> +value of 0 indicates the regular execve behavior. A value of 1 indicates
-> +execve will operate in the privilege restricting mode described above.
-> +.TP
->  .BR PR_SET_PDEATHSIG " (since Linux 2.1.57)"
->  Set the parent process death signal
->  of the calling process to \fIarg2\fP (either a signal value
-> @@ -567,6 +581,7 @@ option.
->  On success,
->  .BR PR_GET_DUMPABLE ,
->  .BR PR_GET_KEEPCAPS ,
-> +.BR PR_GET_NO_NEW_PRIVS ,
->  .BR PR_CAPBSET_READ ,
->  .BR PR_GET_TIMING ,
->  .BR PR_GET_SECUREBITS ,
-> --
-> 1.7.0.4
->
->
-> --
-> Kees Cook
-> Chrome OS Security
+>  arch/arm/boot/dts/omap4-sdp.dts |   26 ++++++++++++++++++++++++++
+>  1 files changed, 26 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
+> index 5b7e04f..5efb059 100644
+> --- a/arch/arm/boot/dts/omap4-sdp.dts
+> +++ b/arch/arm/boot/dts/omap4-sdp.dts
+> @@ -194,6 +194,27 @@
+>  			0xbc 0x100	/* abe_mcbsp2_fsx.abe_mcbsp2_fsx INPUT | MODE0 */
+>  		>;
+>  	};
+> +
+> +	keypad_pins: pinmux_keypad_pins {
+> +		pinctrl-single,pins = <
+> +			0x24 0x4119   /* gpmc_a18.kpd_row6 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
+> +			0x26 0x4119   /* gpmc_a19.kpd_row6 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
+> +			0x2c 0x4001   /* gpmc_a22.kpd_col6 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
+> +			0x2e 0x4001   /* gpmc_a23.kpd_col7 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
+> +			0x13c 0x4001  /* kpd_col0.kpd_col0 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
+> +			0x13e 0x4001  /* kpd_col1.kpd_col1 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
+> +			0x140 0x4001  /* kpd_col2.kpd_col2 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
+> +			0x142 0x10F   /* kpd_col3.kpd_col3 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
 
+Alway use lower case for hexa value.
 
+> +			0x144 0x4001  /* kpd_col4.kpd_col4 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
+> +			0x146 0x4001  /* kpd_col5.kpd_col5 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
+> +			0x148 0xc119  /* kpd_row0.kpd_row0 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
+> +			0x14a 0x4119  /* kpd_row1.kpd_row1 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
+> +			0x14c 0x4119  /* kpd_row2.kpd_row2 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
+> +			0x14e 0x4119  /* kpd_row3.kpd_row3 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
+> +			0x150 0x4119  /* kpd_row4.kpd_row4 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
+> +			0x152 0x4119  /* kpd_row5.kpd_row5 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
+> +		>;
+> +	};
+>  };
+>  
+>  &i2c1 {
+> @@ -406,3 +427,8 @@
+>  &mcbsp3 {
+>  	status = "disabled";
+>  };
+> +
+> +&keypad {
+> +        pinctrl-names = "default";
+> +        pinctrl-0 = <&keypad_pins>;
+> +};
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+Otherwise that looks good.
+
+Thanks,
+Benoit
