@@ -1,51 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932400Ab2JVWpM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 18:45:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54414 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932218Ab2JVWpJ (ORCPT
+	id S932417Ab2JVWw1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 18:52:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43127 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932319Ab2JVWw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 18:45:09 -0400
-Date: Mon, 22 Oct 2012 15:45:05 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>, devel@driverdev.osuosl.org,
-        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] staging: Add firewire-serial driver
-Message-ID: <20121022224505.GD24489@kroah.com>
-References: <1350565015.23730.4.camel@thor>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350565015.23730.4.camel@thor>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 22 Oct 2012 18:52:26 -0400
+Date: Mon, 22 Oct 2012 15:52:24 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: wency@cn.fujitsu.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
+        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, minchan.kim@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        Greg KH <greg@kroah.com>
+Subject: Re: [PATCH v3 2/9] suppress
+ "Device nodeX does not have a release() function" warning
+Message-Id: <20121022155224.e8f306f9.akpm@linux-foundation.org>
+In-Reply-To: <1350629202-9664-3-git-send-email-wency@cn.fujitsu.com>
+References: <1350629202-9664-1-git-send-email-wency@cn.fujitsu.com>
+	<1350629202-9664-3-git-send-email-wency@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 08:56:55AM -0400, Peter Hurley wrote:
-> Please consider this serial driver for review for submission to staging.
-> The firewire-serial driver implements TTY over IEEE 1394. In its default
-> configuration, it creates 4 TTY devices and one loopback device per
-> firewire card (respectively, named fwtty<n>~fwtty<n+3> and fwloop<n>).
-> 
-> Currently, the TTY devices auto-connect to every cabled peer (the TODO
-> list includes plans for providing a sysfs interface to control virtual
-> cabling with whitelist/blacklist support per GUID).
-> 
-> Efforts are still ongoing for a companion console driver, with plans to
-> eventually add early_printk & kgdb support (via additional drivers).
-> 
-> Some issues did arise with both the TTY and Firewire subsystems which
-> are noted in the TODO file. Please review these workarounds.
-> 
-> Peter Hurley (1):
->   staging: fwserial: Add TTY-over-Firewire serial driver
+On Fri, 19 Oct 2012 14:46:35 +0800
+wency@cn.fujitsu.com wrote:
 
-I'd like to get an Ack from Stefan here, before I'll add this to the
-staging tree.
+> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> 
+> When calling unregister_node(), the function shows following message at
+> device_release().
+> 
+> "Device 'node2' does not have a release() function, it is broken and must
+> be fixed."
+> 
+> The reason is node's device struct does not have a release() function.
+> 
+> So the patch registers node_device_release() to the device's release()
+> function for suppressing the warning message. Additionally, the patch adds
+> memset() to initialize a node struct into register_node(). Because the node
+> struct is part of node_devices[] array and it cannot be freed by
+> node_device_release(). So if system reuses the node struct, it has a garbage.
+> 
+> ...
+>
+> --- a/drivers/base/node.c
+> +++ b/drivers/base/node.c
+> @@ -252,6 +252,9 @@ static inline void hugetlb_register_node(struct node *node) {}
+>  static inline void hugetlb_unregister_node(struct node *node) {}
+>  #endif
+>  
+> +static void node_device_release(struct device *dev)
+> +{
+> +}
+>  
+>  /*
+>   * register_node - Setup a sysfs device for a node.
+> @@ -263,8 +266,11 @@ int register_node(struct node *node, int num, struct node *parent)
+>  {
+>  	int error;
+>  
+> +	memset(node, 0, sizeof(*node));
+> +
+>  	node->dev.id = num;
+>  	node->dev.bus = &node_subsys;
+> +	node->dev.release = node_device_release;
+>  	error = device_register(&node->dev);
+>  
+>  	if (!error){
 
-thanks,
+Greg won't like that empty ->release function ;)
 
-greg k-h
+As you say, this device item does not reside in per-device dynamically
+allocated memory - it is part of an externally managed array.
+
+So a proper fix here would be to convert this storage so that it *is*
+dynamically allocated on a per-device basis.
+
+Or perhaps we should recognize that the whole kobject
+get/put/release-on-last-put model is inappropriate for these objects,
+and stop using it entirely.
+
+>From Kosaki's comment, it does sound that we plan to take the first
+option: convert to per-device dynamically allocated memory?  If so, I
+suggest that we just leave the warning as-is for now, until we fix
+things proprely.
+
