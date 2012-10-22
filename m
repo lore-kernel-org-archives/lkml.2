@@ -1,127 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751075Ab2JVHY7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 03:24:59 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:65528 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab2JVHY6 (ORCPT
+	id S1751222Ab2JVHZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 03:25:28 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54512 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab2JVHZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 03:24:58 -0400
-Date: Mon, 22 Oct 2012 09:24:48 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: devicetree-discuss@lists.ozlabs.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/3] PWM: vt8500: Update vt8500 PWM driver support
-Message-ID: <20121022072448.GB30026@avionic-0098.mockup.avionic-design.de>
-References: <1350643135-13197-1-git-send-email-linux@prisktech.co.nz>
- <1350643135-13197-2-git-send-email-linux@prisktech.co.nz>
- <20121022063423.GA17181@avionic-0098.mockup.avionic-design.de>
- <1350888712.3592.11.camel@gitbox>
- <1350889747.3592.17.camel@gitbox>
+	Mon, 22 Oct 2012 03:25:26 -0400
+X-AuditID: 9c930179-b7c8bae000003559-4c-5084f4e4ea3a
+From: Namhyung Kim <namhyung@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH] perf: Build install-man target when installing
+References: <20120925174658.GD9320@aftab.osrc.amd.com>
+	<1348854427-12746-1-git-send-email-bp@amd64.org>
+	<20121020111625.GB17563@liondog.tnic>
+Date: Mon, 22 Oct 2012 16:25:24 +0900
+In-Reply-To: <20121020111625.GB17563@liondog.tnic> (Borislav Petkov's message
+	of "Sat, 20 Oct 2012 13:16:25 +0200")
+Message-ID: <87mwzfj7dn.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BwCQnh7xodEAoBMC"
-Content-Disposition: inline
-In-Reply-To: <1350889747.3592.17.camel@gitbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:Fm3Ma4AZRzdfUj2SV0PO0sk3jN7MCRakvLzlpgaAmWf
- j29JCqDaSedjjsAIcdY4Pz8iI7mQmo93HZKbuwY7gvqbkLr+qA
- DaS0vcKRnLRls879hh+1CJglOD90P/MQqE6/35gpwwrb6QcH0Z
- nznh1ExZgGfjObJiIKf19+VTE4nnHiU+UIPoMcsi5HNYr/6S+P
- Dsk+bEghyI8NjRTwVDsrKDmWXPPsULjbSeUUIZfts/L+pXRtue
- JTIE8EJ/SpuzcCCiN2ZpYnZkNqbl9n5UxrGw0aE9lVW/3m8f8u
- zy6+ZjwxbLPF9Qc96vVF2D6bE/bjP4A+7IqMQcG3Ra4u3AIHJZ
- 33mvss3zmF2f2ddlaDQ47Y/eTVoU92b5bYCHG/ASed0ixzMwSt
- zVMOaAJosbCGuJ3ZVpchaOkGNOSobyhgC0=
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---BwCQnh7xodEAoBMC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, 20 Oct 2012 13:16:25 +0200, Borislav Petkov wrote:
+> On Fri, Sep 28, 2012 at 07:47:07PM +0200, Borislav Petkov wrote:
+>> From: Borislav Petkov <borislav.petkov@amd.com>
+>> 
+>> There's a portion in the "perf list" output refering to the exact
+>> specification of raw hardware events. Since this description is in
+>> the perf-list manpage, make install-man be built unconditionally when
+>> installing perf tool and change the reference in the "perf list" output
+>> accordingly.
+>> 
+>> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+>> ---
+>>  tools/perf/Makefile            | 2 +-
+>>  tools/perf/util/parse-events.c | 2 +-
+>>  2 files changed, 2 insertions(+), 2 deletions(-)
+>> 
+>> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+>> index 251dcd7fb5ac..e77741e22cfb 100644
+>> --- a/tools/perf/Makefile
+>> +++ b/tools/perf/Makefile
+>> @@ -1027,7 +1027,7 @@ perfexec_instdir = $(prefix)/$(perfexecdir)
+>>  endif
+>>  perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
+>>  
+>> -install: all
+>> +install: all install-man
 
-On Mon, Oct 22, 2012 at 08:09:07PM +1300, Tony Prisk wrote:
-> On Mon, 2012-10-22 at 19:51 +1300, Tony Prisk wrote:
-> > >=20
-> > > >  	chip =3D devm_kzalloc(&pdev->dev, sizeof(*chip), GFP_KERNEL);
-> > > >  	if (chip =3D=3D NULL) {
-> > > >  		dev_err(&pdev->dev, "failed to allocate memory\n");
-> > > > @@ -123,26 +144,32 @@ static int __devinit pwm_probe(struct platfor=
-m_device *pdev)
-> > > >  	chip->chip.ops =3D &vt8500_pwm_ops;
-> > > >  	chip->chip.base =3D -1;
-> > > >  	chip->chip.npwm =3D VT8500_NR_PWMS;
-> > > > +	chip->clk =3D of_clk_get(np, 0);
-> > >=20
-> > > I thought this was supposed to work transparently across OF and !OF
-> > > configurations by using just clk_get() or devm_clk_get()? I guess that
-> > > if the driver depends on OF, then this would be moot, but we should
-> > > probably stick to the standard usage anyway.
-> > >=20
-> > > Furthermore, of_clk_get() doesn't seem to be managed, so you'd need to
-> > > add explicit clk_put() in the error cleanup paths. One more argument =
-in
-> > > favour of using devm_clk_get() instead.
-> >=20
-> > Hmm good point. I stuck with of_ functions because its an OF only driver
-> > and it seemed 'backward' to mix old code with new. It does pose the
-> > question of 'why have of_clk_get() if existing functions work better'.
->=20
-> Was about to fix this but noticed why it wasn't like this to start
-> with :)
->=20
-> struct clk *devm_clk_get(struct device *dev, const char *id);
-> struct clk *of_clk_get(struct device_node *np, int index);
->=20
-> devm_clk_get requires me to 'get' the clock by name. arch-vt8500 (and I
-> believe a lot of other arch's) don't enforce names for clocks defined in
-> devicetree, therefore there is no way for me to know what name the clk
-> has unless I include in the binding that the clock must be named 'xxx'.
+It will add additional dependencies of asciidoc, docbook-xsl and/or
+something to default perf install command.  I don't know it matters
+much, but just wanted to say.  What if a user want to install the perf
+but the required packages for documents are not installed?
 
-I thought clk_get() was supposed to return the first clock specified in
-DT if you pass NULL as the consumer name. I haven't tested this though.
-And I haven't looked at the code.
 
-> of_clk_get retrieves it by the dt-node + index, so it doesn't care as
-> long as its the 1st clock listed.
+>>  	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
+>>  	$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'
+>>  	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'
+>> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+>> index bf5d033ee1b4..f84ac3984708 100644
+>> --- a/tools/perf/util/parse-events.c
+>> +++ b/tools/perf/util/parse-events.c
+>> @@ -1092,7 +1092,7 @@ void print_events(const char *event_glob, bool name_only)
+>>  		printf("  %-50s [%s]\n",
+>>  		       "cpu/t1=v1[,t2=v2,t3 ...]/modifier",
+>>  		       event_type_descriptors[PERF_TYPE_RAW]);
+>> -		printf("   (see 'perf list --help' on how to encode it)\n");
+>> +		printf("   (see 'man perf-list' on how to encode it)\n");
 
-So the usual way to do this, I believe, is:
+Is this needed?  Shouldn't we fix perf --help handling?  Please see my
+other post on the issue.
 
-	clocks =3D <&clk_foo>;
-	clock-names =3D "foo";
+Thanks,
+Namhyung
 
-Then use:
 
-	clk =3D devm_clk_get(&pdev->dev, "foo");
-
-And as I said above, I was under the impression that the default would
-be to use the first clock if NULL was specified instead of "foo".
-
-Thierry
-
---BwCQnh7xodEAoBMC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQhPTAAAoJEN0jrNd/PrOhMKUP/Ro+EHsFO9/l47hs3h6JEupl
-Xz6WFf8xN/Zlhb9kE9OfmtwqwDvSwXjW8VUe+b4VbRQ1MZYXTZrxobdoCQeEdQ9y
-9z8W4XgS2/iroQ8mCPrAnGrxQ2JysF/IkQuzI9YgKCnLh2+8gyUnrZYidXemNTC6
-jEAD8NQEl5r+OQYi+TMDQ3AVtf+XgVTx18d9BzQA8J4w3DVB8CIrYVgX0JiihxKn
-5+NisPYpFAosDxkBJi+kCIwhrTAP+1MSVk292D5NHMcV2Nb3Kdwd5fe6bRFd+v+X
-9081djRSg9wpdZ/Tnsq8mq2WarQvTGDOYVae3Q7UU6KvvHHNsFYv29hpjWPiCUS/
-P1uaanG18/5z4przZhzVsAzXy6dSqwhDxMKyP7g0pB1SuvbpDAyD2ZKMGd6cSHIO
-4T2KtH2OsrADtoBZngV7tQ8IttroTkuw8+OC6+S81a4mZX4y0JHQ0dSINsWme2JP
-0kEnxpfKXXQ8orGKmE/cMGA0WLdef0lopDCLgYCTXzVGJYxTmJCjNauGWgvArE0I
-uNnjgYj/9Rr6bAWiB+j8dsebur9+KxBguplyn0rHhJqGSouONM7M7jvYUAKur4G/
-DQEFQ455dOwiIbSMeyj8gTfaAeMvOjV67GvIrJr+8NKnNi45bSe9sJflM+7m6YPM
-Wr/DO/1itVhiCJy6Rb1F
-=mmbG
------END PGP SIGNATURE-----
-
---BwCQnh7xodEAoBMC--
+>>  		printf("\n");
+>>  
+>>  		printf("  %-50s [%s]\n",
+>> -- 
+>> 1.7.11.rc1
+>> 
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
