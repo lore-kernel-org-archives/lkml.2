@@ -1,98 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719Ab2JVQSM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 12:18:12 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:63961 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222Ab2JVQSL (ORCPT
+	id S1755728Ab2JVQTQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 12:19:16 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:52053 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755561Ab2JVQTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 12:18:11 -0400
+	Mon, 22 Oct 2012 12:19:15 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/Zkc4ShHSBzPh/Fa9huNmK
+Date: Mon, 22 Oct 2012 09:19:10 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+Cc: b-cousson@ti.com, linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH] arm: dts: omap4-sdp: pinmux configuration for keypad
+Message-ID: <20121022161909.GY4730@atomide.com>
+References: <1350890955-29553-1-git-send-email-sourav.poddar@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20121022161040.GC9438@quack.suse.cz>
-References: <20121018212357.GA17646@quack.suse.cz>
-	<1350596425.1366.15.camel@x61.thuisdomein>
-	<20121018220809.GD17646@quack.suse.cz>
-	<20121019124454.316ecfac@notabene.brown>
-	<CADpTngX=6vWV1fv8x-g8ufKTb3gW2=phPZBHZJHATEcqqjwtYg@mail.gmail.com>
-	<CADpTngVnJwmu-E3wJwUaK2CKGBsRoJphRNtDPAO9AHyOnnfeRQ@mail.gmail.com>
-	<20121022134541.GA9438@quack.suse.cz>
-	<CADpTngX9YNq6Own1gvrHnwizUfG0KfjRuXL2F38n2C+CnOTpDA@mail.gmail.com>
-	<20121022154258.GB9438@quack.suse.cz>
-	<CADpTngUxFT+Sj1aZDY3iBMLpwgrj5rziTSibWD3HMC_DszZpDw@mail.gmail.com>
-	<20121022161040.GC9438@quack.suse.cz>
-Date: Mon, 22 Oct 2012 18:18:10 +0200
-Message-ID: <CADpTngVHx_7uzEGM+_XGVK2Neh-dgcfxLnGaXT370SzgXtCZQA@mail.gmail.com>
-Subject: Re: ext3 issue on 3.6.1
-From: Fabio Coatti <fabio.coatti@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: NeilBrown <neilb@suse.de>, "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
-        Jeff Layton <jlayton@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350890955-29553-1-git-send-email-sourav.poddar@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/22 Jan Kara <jack@suse.cz>:
-> On Mon 22-10-12 18:01:56, Fabio Coatti wrote:
->> 2012/10/22 Jan Kara <jack@suse.cz>:
->> >> Uhu, my fault, I was sure to have answered to your request, sorry.
->> >> So yes, we have an ext3 R/O partition mounted on that machine. The
->> >> 3.6.3, with patch applied, dmesg is here:
->> >   Interesting. You seem to be using data=journal on R/O partition, don't
->> > you? Can you also attach /proc/mounts?
->> >
->> >   Also please try running a kernel with the attached patch and report the
->> > warning. Thanks!
->>
->> Do you want to try the kernel without touching the mount
->> configuration, right? (I mean, without (say) mounting ext2 the ext3 ro
->> partition, right?)
->   Yes, leave things as they are now...
->
->> right now I can't access the machine, but I recall that the partition
->> is mounted rw, something is wrote onto it and then changed to r/o and
->> among the options there is data=ordered.
->   /proc/mounts should show us whether data=ordered is in use. Actually the
-> warning is in function which is called only in data=journal mode so that's
-> why I think you are using it...
+* Sourav Poddar <sourav.poddar@ti.com> [121022 00:30]:
+> --- a/arch/arm/boot/dts/omap4-sdp.dts
+> +++ b/arch/arm/boot/dts/omap4-sdp.dts
+> @@ -194,6 +194,27 @@
+>  			0xbc 0x100	/* abe_mcbsp2_fsx.abe_mcbsp2_fsx INPUT | MODE0 */
+>  		>;
+>  	};
+> +
+> +	keypad_pins: pinmux_keypad_pins {
+> +		pinctrl-single,pins = <
+> +			0x24 0x4119   /* gpmc_a18.kpd_row6 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
+> +			0x26 0x4119   /* gpmc_a19.kpd_row6 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
+> +			0x2c 0x4001   /* gpmc_a22.kpd_col6 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
+> +			0x2e 0x4001   /* gpmc_a23.kpd_col7 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
+> +			0x13c 0x4001  /* kpd_col0.kpd_col0 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
+> +			0x13e 0x4001  /* kpd_col1.kpd_col1 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
+> +			0x140 0x4001  /* kpd_col2.kpd_col2 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
+> +			0x142 0x10F   /* kpd_col3.kpd_col3 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
+> +			0x144 0x4001  /* kpd_col4.kpd_col4 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
+> +			0x146 0x4001  /* kpd_col5.kpd_col5 OMAP_WAKEUP_EN | OMAP_MUX_MODE1 */
+> +			0x148 0xc119  /* kpd_row0.kpd_row0 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
+> +			0x14a 0x4119  /* kpd_row1.kpd_row1 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
+> +			0x14c 0x4119  /* kpd_row2.kpd_row2 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
+> +			0x14e 0x4119  /* kpd_row3.kpd_row3 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
+> +			0x150 0x4119  /* kpd_row4.kpd_row4 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
+> +			0x152 0x4119  /* kpd_row5.kpd_row5 OMAP_PULL_ENA | OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
+> +		>;
+> +	};
+>  };
 
-Ok, got the options:
+Please shorten these to leave out OMAP_:
 
-ro,noatime,errors=continue,barrier=1,data=ordered 0 0
+		pinctrl-single,pins = <
+			0x24 0x4119   /* gpmc_a18.kpd_row6 PULL_ENA | PULL_UP | WAKEUP_EN | MUX_MODE1 | INPUT_EN */
+			0x26 0x4119   /* gpmc_a19.kpd_row6 PULL_ENA | PULL_UP | WAKEUP_EN | MUX_MODE1 | INPUT_EN */
+			...
 
-and as expected, the usual warning triggered, but not the message from
-your patch:
+When we convert them over to use the preprocessor, we can still
+easily replace them.
 
-[  173.408622] ------------[ cut here ]------------
-[  173.408725] WARNING: at fs/ext3/inode.c:1754
-ext3_journalled_writepage+0x55/0x1a7()
-[  173.408850] Hardware name: ProLiant BL465c G7
-[  173.408940] Pid: 2142, comm: flush-8:0 Not tainted 3.6.3-p #2
-[  173.409034] Call Trace:
-[  173.409123]  [<ffffffff81057884>] ? warn_slowpath_common+0x73/0x87
-[  173.409219]  [<ffffffff8115cd04>] ? ext3_journalled_writepage+0x55/0x1a7
-[  173.409320]  [<ffffffff810a2833>] ? __writepage+0xa/0x21
-[  173.409414]  [<ffffffff810a31db>] ? write_cache_pages+0x206/0x2f8
-[  173.409509]  [<ffffffff810a2829>] ? set_page_dirty+0x5e/0x5e
-[  173.409604]  [<ffffffff81297cfb>] ? queue_unplugged+0x28/0x34
-[  173.409698]  [<ffffffff810a330b>] ? generic_writepages+0x3e/0x55
-[  173.409793]  [<ffffffff810f4eb0>] ? __writeback_single_inode+0x39/0xd1
-[  173.409889]  [<ffffffff810f5c69>] ? writeback_sb_inodes+0x206/0x392
-[  173.409983]  [<ffffffff810f5e5c>] ? __writeback_inodes_wb+0x67/0xa2
-[  173.410079]  [<ffffffff810f5ffa>] ? wb_writeback+0xfd/0x18b
-[  173.410172]  [<ffffffff810a36d1>] ? bdi_dirty_limit+0x27/0x81
-[  173.410348]  [<ffffffff810f61c5>] ? wb_do_writeback+0x13d/0x1a2
-[  173.410461]  [<ffffffff81061e9b>] ? add_timer_on+0x61/0x61
-[  173.410584]  [<ffffffff810f62a9>] ? bdi_writeback_thread+0x7f/0x13e
-[  173.410700]  [<ffffffff8106a54d>] ? queue_work_on+0x16/0x1e
-[  173.410809]  [<ffffffff810f622a>] ? wb_do_writeback+0x1a2/0x1a2
-[  173.410902]  [<ffffffff810f622a>] ? wb_do_writeback+0x1a2/0x1a2
-[  173.410996]  [<ffffffff8106e134>] ? kthread+0x81/0x89
-[  173.411089]  [<ffffffff81607e74>] ? kernel_thread_helper+0x4/0x10
-[  173.411184]  [<ffffffff8106e0b3>] ? kthread_worker_fn+0xe0/0xe0
-[  173.411277]  [<ffffffff81607e70>] ? gs_change+0xb/0xb
-[  173.411367] ---[ end trace 8243403b245b6cfc ]---
+Regards,
 
--- 
-Fabio
+Tony
