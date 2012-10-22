@@ -1,79 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab2JVOPI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 10:15:08 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:33426 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754426Ab2JVOPG (ORCPT
+	id S1754898Ab2JVOQj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 10:16:39 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:59628 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754560Ab2JVOQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 10:15:06 -0400
-Date: Mon, 22 Oct 2012 10:14:57 -0400
+	Mon, 22 Oct 2012 10:16:38 -0400
+Date: Mon, 22 Oct 2012 10:16:34 -0400
 From: Konrad Rzeszutek Wilk <konrad@kernel.org>
 To: Yinghai Lu <yinghai@kernel.org>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
         Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/19] x86, mm: setup page table in top-down
-Message-ID: <20121022141455.GA14193@konrad-lan.dumpdata.com>
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/19] x86, mm: Align start address to correct big page
+ size
+Message-ID: <20121022141633.GB14193@konrad-lan.dumpdata.com>
 References: <1350593430-24470-1-git-send-email-yinghai@kernel.org>
- <1350593430-24470-10-git-send-email-yinghai@kernel.org>
- <alpine.DEB.2.02.1210191714330.2689@kaball.uk.xensource.com>
- <CAE9FiQX-JBHvjqLyjutKfBUp2DQKEwVMGEkj7Wi6yijAERhP6w@mail.gmail.com>
+ <1350593430-24470-3-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQX-JBHvjqLyjutKfBUp2DQKEwVMGEkj7Wi6yijAERhP6w@mail.gmail.com>
+In-Reply-To: <1350593430-24470-3-git-send-email-yinghai@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Changelog is always problem now. Looks like everyone is complaining about that.
-> 
-> Actually I already tried my best on that, really don't know what to do next.
+>On Thu, Oct 18, 2012 at 01:50:10PM -0700, Yinghai Lu wrote:
 
-Read on. I've some advice.
+
+I am pretty sure I gave you some ideas of how to fix up the commit
+description in earlier reviews, but it looks like you missed them.
+
+Let me write them here once more.
+
+> We are going to use buffer in BRK to pre-map page table buffer.
+
+What buffer? Is buffer the same thing as page table?
 > 
-> >
-> > In particular you should state in clear letters that alloc_low_page is
-> > always going to return a page that is already mapped. You should write
-> > it both in the commit message and in the code as a comment.
-> > This is particularly important because it is going to become part of the
-> > interface between the common x86 code and the other x86 subsystems like
-> > Xen.
+> Page table buffer could be only page aligned, but range around it are
+
+.. ranges
+> ram too, we could use bigger page to map it to avoid small pages.
 > 
-> alloc_low_page() is used in arch/x86/mm/init*.c. How come it becomes
-> interface to
-> other subsystem?
+> We will adjust page_size_mask in next patch to use big page size for
+
+Instead of saying "next patch" - include the title of the patch
+so that one can search for it.
+
+> small ram range.
 > 
-> I'm not sure if we really need that comment in code for that:
+> Before that, this patch will make start address to be aligned down
+
+s/will make/made/
+
+> according to bigger page size, otherwise entry in page page will
+> not have correct value.
+
+
+I would structure this git commit description to first introduce
+the problem.
+
+Say at the start of the patch:
+
+"Before this patch, the start address was aligned down according
+to bigger a page size (1GB, 2MB). This is a problem b/c an
+entry in the page table will not have correct value. "
+
+Here can you explain why it does not have the correct value?
+
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 > ---
-> the page that alloc_low_page return is directed mapped already, could
-> use virtual address
-> to access it.
-> ---
+>  arch/x86/mm/init_32.c |    1 +
+>  arch/x86/mm/init_64.c |    5 +++--
+>  2 files changed, 4 insertions(+), 2 deletions(-)
 > 
-> >
-> > Also, it wouldn't hurt to explain the overall design at the beginning of
-> > the series: I shouldn't have to read your code to understand what you
-> > are doing. I should read the description of the patch, understand what
-> > you are doing, then go and check if the code actually does what you say
-> > it does.
+> diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+> index 11a5800..27f7fc6 100644
+> --- a/arch/x86/mm/init_32.c
+> +++ b/arch/x86/mm/init_32.c
+> @@ -310,6 +310,7 @@ repeat:
+>  					__pgprot(PTE_IDENT_ATTR |
+>  						 _PAGE_PSE);
+>  
+> +				pfn &= PMD_MASK >> PAGE_SHIFT;
+>  				addr2 = (pfn + PTRS_PER_PTE-1) * PAGE_SIZE +
+>  					PAGE_OFFSET + PAGE_SIZE-1;
+>  
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index ab558eb..f40f383 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -461,7 +461,7 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+>  			pages++;
+>  			spin_lock(&init_mm.page_table_lock);
+>  			set_pte((pte_t *)pmd,
+> -				pfn_pte(address >> PAGE_SHIFT,
+> +				pfn_pte((address & PMD_MASK) >> PAGE_SHIFT,
+>  					__pgprot(pgprot_val(prot) | _PAGE_PSE)));
+>  			spin_unlock(&init_mm.page_table_lock);
+>  			last_map_addr = next;
+> @@ -536,7 +536,8 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+>  			pages++;
+>  			spin_lock(&init_mm.page_table_lock);
+>  			set_pte((pte_t *)pud,
+> -				pfn_pte(addr >> PAGE_SHIFT, PAGE_KERNEL_LARGE));
+> +				pfn_pte((addr & PUD_MASK) >> PAGE_SHIFT,
+> +					PAGE_KERNEL_LARGE));
+>  			spin_unlock(&init_mm.page_table_lock);
+>  			last_map_addr = next;
+>  			continue;
+> -- 
+> 1.7.7
 > 
-> Actually I really don't like to read too long change log in commit.
-> Changelog should be concise and precise.
-
-They depend on the patch in question. If it is something simple
-(fix compile warning) sure. But for something that is deep in the bowels
-of complicated code - then it should have a good explanation that
-follows roughly these steps:
-
- 1). Introduce the problem. Explain what is wrong with the existing
-     code.
- 2). Explain how your patch fixes it.
- 3). Explain (if there are any) alternative solutions.
-
-Then re-read it and look at the verb tense. It should be the same tense -
-so don't mix them.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
