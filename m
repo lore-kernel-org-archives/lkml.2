@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755816Ab2JVROG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 13:14:06 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:47175 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755334Ab2JVROE (ORCPT
+	id S1755863Ab2JVRO2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 13:14:28 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56929 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755632Ab2JVRO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 13:14:04 -0400
+	Mon, 22 Oct 2012 13:14:26 -0400
+Message-ID: <50857EEF.2070707@wwwdotorg.org>
+Date: Mon, 22 Oct 2012 11:14:23 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <0000013a88ebfa65-af0fc24b-13fd-400f-b7fc-32230ca70620-000000@email.amazonses.com>
-References: <1350907434-2202-1-git-send-email-elezegarcia@gmail.com>
-	<0000013a88ebfa65-af0fc24b-13fd-400f-b7fc-32230ca70620-000000@email.amazonses.com>
-Date: Mon, 22 Oct 2012 14:14:03 -0300
-Message-ID: <CALF0-+VqGrcjw16rNPH459YAj7dubQnruzV-zOzYn6feOtQ4tQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mm/slob: Mark zone page state to get slab usage at /proc/meminfo
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Tim Bird <tim.bird@am.sony.com>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>
+To: Mark Zhang <markz@nvidia.com>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: dt: tegra: ventana: define pinmux for ddc
+References: <1350626311-18131-1-git-send-email-markz@nvidia.com> <50817668.6020709@wwwdotorg.org> <5084F5D1.7050005@nvidia.com>
+In-Reply-To: <5084F5D1.7050005@nvidia.com>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
-
-On Mon, Oct 22, 2012 at 11:41 AM, Christoph Lameter <cl@linux.com> wrote:
-> On Mon, 22 Oct 2012, Ezequiel Garcia wrote:
->
->> On page allocations, SLAB and SLUB modify zone page state counters
->> NR_SLAB_UNRECLAIMABLE or NR_SLAB_RECLAIMABLE.
->> This allows to obtain slab usage information at /proc/meminfo.
+On 10/22/2012 01:29 AM, Mark Zhang wrote:
+> On 10/19/2012 11:48 PM, Stephen Warren wrote:
+>> On 10/18/2012 11:58 PM, Mark Zhang wrote:
+>>> Define pinmux for DDC. The DDC pinmux in Ventana is 2 pins in I2C2.
 >>
->> Without this patch, /proc/meminfo will show zero Slab usage for SLOB.
+>>> +++ b/arch/arm/boot/dts/tegra20-ventana.dts
 >>
->> Since SLOB discards SLAB_RECLAIM_ACCOUNT flag, we always use
->> NR_SLAB_UNRECLAIMABLE zone state item.
->
+>>> -            ddc {
+>>> -                nvidia,pins = "ddc", "owc", "spdi", "spdo",
+>>> -                    "uac";
+>>> -                nvidia,function = "rsvd2";
+>>> -            };
+>>
+>> So that removes the entries for 5 pin groups, yet below, entries are
+>> only added for the ddc and pta pingroups, so the other 4 pin groups
+>> become unconfigured.
+>>
+> 
+> Right. So I think it should be changed to:
+> 
+>         owc {
+>             nvidia,pins = "owc", "spdi", "spdo", "uac";
+>             nvidia,function = "rsvd2";
+>         };
+> 
+> Is this right?
 
-... and I have a question about this.
+Looks correct, yes.
 
-SLUB handles large kmalloc allocations falling back
-to page-size allocations (kmalloc_large, etc).
-This path doesn't touch NR_SLAB_XXRECLAIMABLE zone item state.
+>>> +
+>>> +        state_i2cmux_ddc: pinmux_i2cmux_ddc {
+>>> +            ddc {
+>>> +                nvidia,pins = "ddc";
+>>> +                nvidia,function = "i2c2";
+>>> +            };
+>>> +            pta {
+>>> +                nvidia,pins = "pta";
+>>> +                nvidia,function = "rsvd4";
+>>> +            };
+>>
+>> Does this actually work? The pta pingroup is configured by the "hog"
+>> pinctrl state of the pinctrl node itself, so this state should fail to
+>> be applied since it attempts to touch the same pingroup.
+> 
+> I know little about kernel pinctrl subsystem. After reading some docs
+> and codes, I think what you mean is, in Ventana's pinmux configuration,
+> pta pingroup has been defined as "hdmi" function and this can't be
+> changed(non-dynamic pinmuxing).
+> So I want to know why we have defined pta pingroup as hdmi function?
+> Can we remove this definition to make the i2cmux above working?
 
-Without fully understanding it, I've decided to implement the same
-behavior for SLOB,
-leaving page-size allocations unaccounted on /proc/meminfo.
-
-Is this expected / wanted ?
-
-SLAB, on the other side, handles every allocation through some slab cache,
-so it always set the zone state.
-
-Thanks!
-
-    Ezequiel
+I don't recall why pta was defined to be HDMI. The issue isn't that this
+patch changes the pinmux selection for the pta pingroup, but simply that
+both the pinctrl node's state definition, and the new I2C mux node's
+state definition both attempt to configure pingroup pta. The solution is
+most likely to simply remove the pta configuration from the main pinctrl
+node.
