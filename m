@@ -1,36 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756216Ab2JVUeK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 16:34:10 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:39553 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756142Ab2JVUeI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 16:34:08 -0400
-Date: Mon, 22 Oct 2012 13:34:05 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Adil Mujeeb <mujeeb.adil@gmail.com>
-Cc: pavel@ucw.cz, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/9] Staging: winbond: Fixed coding style issues
-Message-ID: <20121022203405.GA4395@kroah.com>
-References: <1350059835-5408-1-git-send-email-mujeeb.adil@gmail.com>
+	id S1756206Ab2JVUjY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 16:39:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36070 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754195Ab2JVUjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 16:39:23 -0400
+Message-ID: <5085AEDE.1060806@zytor.com>
+Date: Mon, 22 Oct 2012 13:38:54 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350059835-5408-1-git-send-email-mujeeb.adil@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org, x86@kernel.org, mingo@elte.hu,
+        tglx@linutronix.de, len.brown@intel.com, fenghua.yu@intel.com,
+        vgoyal@redhat.com, grant.likely@secretlab.ca, rob.herring@calxeda.com
+Subject: Re: [PATCH v1 2/2] x86, apic: Disable BSP if boot cpu is AP
+References: <20121016043357.20003.5885.stgit@localhost6.localdomain6> <20121016043528.20003.601.stgit@localhost6.localdomain6> <873916i88t.fsf@xmission.com> <5085A9A8.5020004@zytor.com> <87fw56fduo.fsf@xmission.com> <5085AD7D.106@zytor.com>
+In-Reply-To: <5085AD7D.106@zytor.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 10:07:06PM +0530, Adil Mujeeb wrote:
+On 10/22/2012 01:33 PM, H. Peter Anvin wrote:
+> On 10/22/2012 01:31 PM, Eric W. Biederman wrote:
+>>>
+>>> IIRC Fenghua experimented with that and it didn't work.  Not all BIOSes
+>>> use that bit to determine BSP-ness.
+>>
+>> What does a BIOS have to do with anything?
+>>
+>> The practical issue here is does an INIT IPI cause the cpu to go into
+>> startup-ipi-wait or to start booting at 4G-16 bytes.
+>>
+>> For dealing with BIOSen we may still need to use the bootstrap processor
+>> for firmware calls, cpu suspend, and other firmware weirdness, but that
+>> should all be completely orthogonal to the behavior to what happens
+>> when an INIT IPI is sent to the cpu.
+>>
+>> The only firmware problem I can imagine having is cpu virtualization
+>> bug.
+>>
 > 
-> winbond directory files have lots of coding style issues. The patch set tries to remove *most* (if not all) of the coding style issues. checkpatch.pl script is still complaining (like 80 characters limit) but major part of the serious coding style issues have been rectified. 
+> The whole problem is that some BIOSes go wonky after receiving an INIT
+> (as in INIT-SIPI-SIPI) to the BSP.
+> 
 
-None of your patches can be applied due to the wrong patch level they
-were generated at.  Please redo them, drop the two offending patches,
-and resend the whole series.
+(I presume the failure is SMM-related, but Fenghua might have more
+details...)
 
-thanks,
+	-hpa
 
-greg k-h
