@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab2JVNp5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 09:45:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19465 "EHLO mx1.redhat.com"
+	id S1754779Ab2JVNpz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 09:45:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5415 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754660Ab2JVNpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 09:45:50 -0400
-Message-Id: <20121022134537.447117744@napanee.usersys.redhat.com>
+	id S1754662Ab2JVNpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 09:45:51 -0400
+Message-Id: <20121022134537.125748392@napanee.usersys.redhat.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 22 Oct 2012 09:45:40 -0400
+Date: Mon, 22 Oct 2012 09:45:39 -0400
 From: Aristeu Rozanski <aris@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
@@ -16,16 +16,20 @@ Cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
         James Morris <jmorris@namei.org>, Pavel Emelyanov <xemul@openvz.org>,
         Serge Hallyn <serge.hallyn@canonical.com>, Jiri Slaby <jslaby@suse.cz>,
         cgroups@vger.kernel.org
-Subject: [PATCH 4/4] device_cgroup: add proper checking when changing default behavior
+Subject: [PATCH 3/4] device_cgroup: stop using simple_strtoul()
 References: <20121022134536.172969567@napanee.usersys.redhat.com>
-Content-Disposition: inline; filename=fix-perm.patch
+Content-Disposition: inline; filename=kstrtou32.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before changing a group's default behavior to ALLOW, we must check if its
-parent's behavior is also ALLOW.
+This patch converts the code to use kstrtou32() instead of simple_strtoul()
+which is deprecated. The real size of the variables are u32, so use kstrtou32
+instead of kstrtoul
 
+
+Cc: Dave Jones <davej@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Tejun Heo <tj@kernel.org>
 Cc: Li Zefan <lizefan@huawei.com>
 Cc: James Morris <jmorris@namei.org>
@@ -35,51 +39,58 @@ Cc: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
 ---
- security/device_cgroup.c |   19 ++++++++++++++++++-
- 1 file changed, 18 insertions(+), 1 deletion(-)
+ security/device_cgroup.c |   28 ++++++++++++++++++++++------
+ 1 file changed, 22 insertions(+), 6 deletions(-)
 
---- github.orig/security/device_cgroup.c	2012-10-19 16:36:50.135790476 -0400
-+++ github/security/device_cgroup.c	2012-10-19 16:48:50.710978125 -0400
-@@ -344,6 +344,17 @@ static int parent_has_perm(struct dev_cg
- 	return may_access(parent, ex);
- }
- 
-+/**
-+ * may_allow_all - checks if it's possible to change the behavior to
-+ *		   allow based on parent's rules.
-+ * @parent: device cgroup's parent
-+ * returns: != 0 in case it's allowed, 0 otherwise
-+ */
-+static inline int may_allow_all(struct dev_cgroup *parent)
-+{
-+	return parent->behavior == DEVCG_DEFAULT_ALLOW;
-+}
-+
- /*
-  * Modify the exception list using allow/deny rules.
-  * CAP_SYS_ADMIN is needed for this.  It's at least separate from CAP_MKNOD
-@@ -364,6 +375,8 @@ static int devcgroup_update_access(struc
- 	char temp[12];		/* 11 + 1 characters needed for a u32 */
- 	int count, rc;
+--- github.orig/security/device_cgroup.c	2012-10-19 16:35:46.366102913 -0400
++++ github/security/device_cgroup.c	2012-10-19 16:35:50.801229331 -0400
+@@ -361,8 +361,8 @@ static int devcgroup_update_access(struc
+ 				   int filetype, const char *buffer)
+ {
+ 	const char *b;
+-	char *endp;
+-	int count;
++	char temp[12];		/* 11 + 1 characters needed for a u32 */
++	int count, rc;
  	struct dev_exception_item ex;
-+	struct cgroup *p = devcgroup->css.cgroup;
-+	struct dev_cgroup *parent = cgroup_to_devcgroup(p->parent);
  
  	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
-@@ -375,9 +388,13 @@ 	memset(&ex, 0, sizeof(ex));
- 	case 'a':
- 		switch (filetype) {
- 		case DEVCG_ALLOW:
--			if (!parent_has_perm(devcgroup, &ex))
-+			if (!may_allow_all(parent))
- 				return -EPERM;
- 			dev_exception_clean(devcgroup);
-+			rc = dev_exceptions_copy(&devcgroup->exceptions,
-+						 &parent->exceptions);
-+			if (rc)
-+				return rc;
- 			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
- 			break;
- 		case DEVCG_DENY:
+@@ -405,8 +405,16 @@ 		return 0;
+ 		ex.major = ~0;
+ 		b++;
+ 	} else if (isdigit(*b)) {
+-		ex.major = simple_strtoul(b, &endp, 10);
+-		b = endp;
++		memset(temp, 0, sizeof(temp));
++		for (count = 0; count < sizeof(temp) - 1; count++) {
++			temp[count] = *b;
++			b++;
++			if (!isdigit(*b))
++				break;
++		}
++		rc = kstrtou32(temp, 10, &ex.major);
++		if (rc)
++			return -EINVAL;
+ 	} else {
+ 		return -EINVAL;
+ 	}
+@@ -419,8 +427,16 @@ 		ex.major = simple_strtoul(b, &endp, 10
+ 		ex.minor = ~0;
+ 		b++;
+ 	} else if (isdigit(*b)) {
+-		ex.minor = simple_strtoul(b, &endp, 10);
+-		b = endp;
++		memset(temp, 0, sizeof(temp));
++		for (count = 0; count < sizeof(temp) - 1; count++) {
++			temp[count] = *b;
++			b++;
++			if (!isdigit(*b))
++				break;
++		}
++		rc = kstrtou32(temp, 10, &ex.minor);
++		if (rc)
++			return -EINVAL;
+ 	} else {
+ 		return -EINVAL;
+ 	}
 
