@@ -1,52 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab2JVR6m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 13:58:42 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:55720 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755933Ab2JVR6k (ORCPT
+	id S1756005Ab2JVR7N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 13:59:13 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60160 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755933Ab2JVR7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 13:58:40 -0400
-Date: Mon, 22 Oct 2012 10:59:07 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Anil Nair <anilcoll90@gmail.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: "Steven J. Magnani" <steve@digidescorp.com>
-Subject: Re: usbview 2.0 release
-Message-ID: <20121022175907.GA19113@kroah.com>
-References: <20121022162140.GA10021@kroah.com>
- <CAHkwNT=dvfzwHhK3wag41da3H8oahh27yAAy3-TVmGAArQ=L_A@mail.gmail.com>
- <1350927423.4238.5.camel@iscandar.digidescorp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350927423.4238.5.camel@iscandar.digidescorp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 22 Oct 2012 13:59:11 -0400
+Date: Mon, 22 Oct 2012 13:59:09 -0400 (EDT)
+Message-Id: <20121022.135909.1282399641501646286.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: romieu@fr.zoreil.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jean@google.com
+Subject: Re: [PATCH net-next 1/2] r8169: enable ALDPS for power saving
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1350893153-18320-1-git-send-email-hayeswang@realtek.com>
+References: <1350893153-18320-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 12:37:03PM -0500, Steven J. Magnani wrote:
-> Anil -
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Mon, 22 Oct 2012 16:05:53 +0800
+
+> Enable ALDPS function to save power when link down. Note that the
+> feature should be set after the other PHY settings. And the firmware
+> is necessary. Don't enable it without loading the firmware.
 > 
-> On Mon, 2012-10-22 at 22:49 +0530, Anil Nair wrote: 
-> > Hello Greg,
-> > 
-> > But while compiling it i am getting an error,
-> > 
-> > "checking for GTK... no
-> > configure: error: Package requirements (gtk+-3.0 >= 3.0) were not met:
-> > 
-> > No package 'gtk+-3.0' found
-> ... 
-> > The OS i am using is ubuntu-11.10 amd64.
-> 
-> I can't speak for Ubuntu, but on Fedora installing gtk3-devel eliminated
-> the message you describe.
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 
-Yes, that is required.  Anil, let me know if you have that type of
-package installed, and if after doing so, you still get the same error.
-
-thanks,
-
-greg k-h
+If there are two patches in this series, which the Subject line
+implies, where is the second patch?
