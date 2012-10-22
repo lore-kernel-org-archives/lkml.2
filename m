@@ -1,202 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab2JVPfr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 11:35:47 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:30442 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754816Ab2JVPfq (ORCPT
+	id S1755401Ab2JVPgN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 11:36:13 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57332 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753267Ab2JVPgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 11:35:46 -0400
-Message-ID: <508567C7.6000104@oracle.com>
-Date: Mon, 22 Oct 2012 10:35:35 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121012 Thunderbird/16.0.1
+	Mon, 22 Oct 2012 11:36:10 -0400
+Date: Mon, 22 Oct 2012 08:36:06 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [ 12/37] block: fix request_queue->flags initialization
+Message-ID: <20121022153606.GA13399@kroah.com>
+References: <20121019031302.789593147@linuxfoundation.org>
+ <20121019031304.836071629@linuxfoundation.org>
+ <20121019231604.GF13292@decadent.org.uk>
+ <20121021162529.GA25856@kroah.com>
+ <20121021185618.GA5951@atj.dyndns.org>
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
-Subject: Re: [PATCH 20/22] nfs: add support for read_iter, write_iter
-References: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com> <1350918922-6096-21-git-send-email-dave.kleikamp@oracle.com> <4FA345DA4F4AE44899BD2B03EEEC2FA909288AFD@SACEXCMBX04-PRD.hq.netapp.com>
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA909288AFD@SACEXCMBX04-PRD.hq.netapp.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121021185618.GA5951@atj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2012 10:21 AM, Myklebust, Trond wrote:
->> -----Original Message-----
->> From: Dave Kleikamp [mailto:dave.kleikamp@oracle.com]
->> Sent: Monday, October 22, 2012 11:15 AM
->> To: linux-fsdevel@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org; Zach Brown; Maxim V. Patlasov; Dave
->> Kleikamp; Myklebust, Trond; linux-nfs@vger.kernel.org
->> Subject: [PATCH 20/22] nfs: add support for read_iter, write_iter
->>
->> This patch implements the read_iter and write_iter file operations which
->> allow kernel code to initiate directIO. This allows the loop device to read and
->> write directly to the server, bypassing the page cache.
->>
->> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
->> Cc: Zach Brown <zab@zabbo.net>
->> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
->> Cc: linux-nfs@vger.kernel.org
->> ---
->>  fs/nfs/direct.c        | 169 +++++++++++++++++++++++++++++++++-----------
->> -----
->>  fs/nfs/file.c          |  48 ++++++++++----
->>  fs/nfs/internal.h      |   2 +
->>  fs/nfs/nfs4file.c      |   2 +
->>  include/linux/nfs_fs.h |   6 +-
->>  5 files changed, 155 insertions(+), 72 deletions(-)
->>
->> diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c index 4532781..b1fda1c 100644
->> --- a/fs/nfs/direct.c
->> +++ b/fs/nfs/direct.c
-
->> @@ -429,16 +428,47 @@ static ssize_t
->> nfs_direct_read_schedule_iovec(struct nfs_direct_req *dreq,
->>  	get_dreq(dreq);
->>  	desc.pg_dreq = dreq;
->>
->> -	for (seg = 0; seg < nr_segs; seg++) {
->> -		const struct iovec *vec = &iov[seg];
->> -		result = nfs_direct_read_schedule_segment(&desc, vec,
->> pos, uio);
->> -		if (result < 0)
->> -			break;
->> -		requested_bytes += result;
->> -		if ((size_t)result < vec->iov_len)
->> -			break;
->> -		pos += vec->iov_len;
->> -	}
->> +	if (iov_iter_has_iovec(iter)) {
->> +		const struct iovec *iov = iov_iter_iovec(iter);
->> +		if (uio)
->> +			dreq->flags = NFS_ODIRECT_MARK_DIRTY;
->> +		for (seg = 0; seg < iter->nr_segs; seg++) {
->> +			const struct iovec *vec = &iov[seg];
->> +			result = nfs_direct_read_schedule_segment(&desc,
->> vec,
->> +								  pos, uio);
->> +			if (result < 0)
->> +				break;
->> +			requested_bytes += result;
->> +			if ((size_t)result < vec->iov_len)
->> +				break;
->> +			pos += vec->iov_len;
->> +		}
->> +	} else if (iov_iter_has_bvec(iter)) {
->> +		struct nfs_open_context *ctx = dreq->ctx;
->> +		struct inode *inode = ctx->dentry->d_inode;
->> +		struct bio_vec *bvec = iov_iter_bvec(iter);
->> +		for (seg = 0; seg < iter->nr_segs; seg++) {
->> +			struct nfs_page *req;
->> +			unsigned int req_len = bvec[seg].bv_len;
->> +			req = nfs_create_request(ctx, inode,
->> +						 bvec[seg].bv_page,
->> +						 bvec[seg].bv_offset,
->> req_len);
->> +			if (IS_ERR(req)) {
->> +				result = PTR_ERR(req);
->> +				break;
->> +			}
->> +			req->wb_index = pos >> PAGE_SHIFT;
->> +			req->wb_offset = pos & ~PAGE_MASK;
->> +			if (!nfs_pageio_add_request(&desc, req)) {
->> +				result = desc.pg_error;
->> +				nfs_release_request(req);
->> +				break;
->> +			}
->> +			requested_bytes += req_len;
->> +			pos += req_len;
->> +		}
->> +	} else
->> +		BUG();
+On Sun, Oct 21, 2012 at 11:56:18AM -0700, Tejun Heo wrote:
+> Hello, Greg.
 > 
-> Can we please split the contents of these 2 if statements into 2 helper functions  nfs_direct_do_schedule_read_iovec() and nfs_direct_do_schedule_read_bvec()?
+> On Sun, Oct 21, 2012 at 09:25:29AM -0700, Greg Kroah-Hartman wrote:
+> > > > commit 60ea8226cbd5c8301f9a39edc574ddabcb8150e0 upstream.
+> > > > 
+> > > > A queue newly allocated with blk_alloc_queue_node() has only
+> > > > QUEUE_FLAG_BYPASS set.  For request-based drivers,
+> > > > blk_init_allocated_queue() is called and q->queue_flags is overwritten
+> > > > with QUEUE_FLAG_DEFAULT which doesn't include BYPASS even though the
+> > > > initial bypass is still in effect.
+> > > > 
+> > > > In blk_init_allocated_queue(), or QUEUE_FLAG_DEFAULT to q->queue_flags
+> > > > instead of overwriting.
+> > > [...]
+> > > 
+> > > This is not needed, as there is no QUEUE_FLAG_BYPASS in 3.0.y.
+> > 
+> > Odd, it doesn't break the build.  And for some reason I just missed
+> > this, does it hurt to have it applied?
 > 
+> I don't think it will break anything as it simply changes assignment
+> to |= to avoid overwriting existing flags.  That said, any patch can
+> break anything, so if possible it would be better to drop for 3.0.y.
 
-Sure, no problem.
+Ok, I'll revert this and push out a 3.0.48 to be safe.
 
->> @@ -832,17 +861,48 @@ static ssize_t
->> nfs_direct_write_schedule_iovec(struct nfs_direct_req *dreq,
->>  	get_dreq(dreq);
->>  	atomic_inc(&inode->i_dio_count);
->>
->> -	NFS_I(dreq->inode)->write_io += iov_length(iov, nr_segs);
->> -	for (seg = 0; seg < nr_segs; seg++) {
->> -		const struct iovec *vec = &iov[seg];
->> -		result = nfs_direct_write_schedule_segment(&desc, vec,
->> pos, uio);
->> -		if (result < 0)
->> -			break;
->> -		requested_bytes += result;
->> -		if ((size_t)result < vec->iov_len)
->> -			break;
->> -		pos += vec->iov_len;
->> -	}
->> +	NFS_I(dreq->inode)->write_io += iov_iter_count(iter);
->> +
->> +	if (iov_iter_has_iovec(iter)) {
->> +		const struct iovec *iov = iov_iter_iovec(iter);
->> +		for (seg = 0; seg < iter->nr_segs; seg++) {
->> +			const struct iovec *vec = &iov[seg];
->> +			result = nfs_direct_write_schedule_segment(&desc,
->> vec,
->> +								   pos, uio);
->> +			if (result < 0)
->> +				break;
->> +			requested_bytes += result;
->> +			if ((size_t)result < vec->iov_len)
->> +				break;
->> +			pos += vec->iov_len;
->> +		}
->> +	} else if (iov_iter_has_bvec(iter)) {
->> +		struct nfs_open_context *ctx = dreq->ctx;
->> +		struct bio_vec *bvec = iov_iter_bvec(iter);
->> +		for (seg = 0; seg < iter->nr_segs; seg++) {
->> +			struct nfs_page *req;
->> +			unsigned int req_len = bvec[seg].bv_len;
->> +
->> +			req = nfs_create_request(ctx, inode,
->> bvec[seg].bv_page,
->> +						 bvec[seg].bv_offset,
->> req_len);
->> +			if (IS_ERR(req)) {
->> +				result = PTR_ERR(req);
->> +				break;
->> +			}
->> +			nfs_lock_request(req);
->> +			req->wb_index = pos >> PAGE_SHIFT;
->> +			req->wb_offset = pos & ~PAGE_MASK;
->> +			if (!nfs_pageio_add_request(&desc, req)) {
->> +				result = desc.pg_error;
->> +				nfs_unlock_and_release_request(req);
->> +				break;
->> +			}
->> +			requested_bytes += req_len;
->> +			pos += req_len;
->> +		}
->> +	} else
->> +		BUG();
-> 
-> Ditto...
+thanks,
 
-ok
-
-> 
-> Otherwise, everything looks fine to me...
-> 
-> Acked-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> 
-> Cheers
->   Trond
-
-Thanks,
-Shaggy
+greg k-h
