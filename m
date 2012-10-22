@@ -1,102 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab2JVPSC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 11:18:02 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:53318 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751554Ab2JVPR7 (ORCPT
+	id S1754752Ab2JVPQD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 11:16:03 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:23113 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab2JVPP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 11:17:59 -0400
-Date: Mon, 22 Oct 2012 11:17:58 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-cc: bp@alien8.de, <pavel@ucw.cz>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <security@kernel.org>,
-        <linux-media@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <zonque@gmail.com>, <alsa-devel@alsa-project.org>
-Subject: Re: Re: Re: Re: Re: Re: A reliable kernel panic (3.6.2) and system
- crash when visiting a particular website
-In-Reply-To: <1906833625.122006.1350848941352.JavaMail.mail@webmail16>
-Message-ID: <Pine.LNX.4.44L0.1210221116040.1724-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 22 Oct 2012 11:15:58 -0400
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        fuse-devel@lists.sourceforge.net
+Subject: [PATCH 04/22] fuse: convert fuse to use iov_iter_copy_[to|from]_user
+Date: Mon, 22 Oct 2012 10:15:04 -0500
+Message-Id: <1350918922-6096-5-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.7.12.4
+In-Reply-To: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 21 Oct 2012, Artem S. Tashkinov wrote:
+A future patch hides the internals of struct iov_iter, so fuse should
+be using the supported interface.
 
-> dmesg messages up to a crash can be seen here: https://bugzilla.kernel.org/attachment.cgi?id=84221
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Acked-by: Miklos Szeredi <mszeredi@suse.cz>
+Cc: fuse-devel@lists.sourceforge.net
+---
+ fs/fuse/file.c | 29 ++++++++---------------------
+ 1 file changed, 8 insertions(+), 21 deletions(-)
 
-The first problem in the log is endpoint list corruption.  Here's a 
-debugging patch which should provide a little more information.
-
-Alan Stern
-
-
- drivers/usb/core/hcd.c |   36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
-
-Index: usb-3.6/drivers/usb/core/hcd.c
-===================================================================
---- usb-3.6.orig/drivers/usb/core/hcd.c
-+++ usb-3.6/drivers/usb/core/hcd.c
-@@ -1083,6 +1083,8 @@ EXPORT_SYMBOL_GPL(usb_calc_bus_time);
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 78d2837..4e42e95 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1631,30 +1631,17 @@ static int fuse_ioctl_copy_user(struct page **pages, struct iovec *iov,
+ 	while (iov_iter_count(&ii)) {
+ 		struct page *page = pages[page_idx++];
+ 		size_t todo = min_t(size_t, PAGE_SIZE, iov_iter_count(&ii));
+-		void *kaddr;
++		size_t left;
  
- /*-------------------------------------------------------------------------*/
+-		kaddr = kmap(page);
+-
+-		while (todo) {
+-			char __user *uaddr = ii.iov->iov_base + ii.iov_offset;
+-			size_t iov_len = ii.iov->iov_len - ii.iov_offset;
+-			size_t copy = min(todo, iov_len);
+-			size_t left;
+-
+-			if (!to_user)
+-				left = copy_from_user(kaddr, uaddr, copy);
+-			else
+-				left = copy_to_user(uaddr, kaddr, copy);
+-
+-			if (unlikely(left))
+-				return -EFAULT;
++		if (!to_user)
++			left = iov_iter_copy_from_user(page, &ii, 0, todo);
++		else
++			left = iov_iter_copy_to_user(page, &ii, 0, todo);
  
-+static bool list_error;
-+
- /**
-  * usb_hcd_link_urb_to_ep - add an URB to its endpoint queue
-  * @hcd: host controller to which @urb was submitted
-@@ -1126,6 +1128,20 @@ int usb_hcd_link_urb_to_ep(struct usb_hc
- 	 */
- 	if (HCD_RH_RUNNING(hcd)) {
- 		urb->unlinked = 0;
-+
-+		{
-+			struct list_head *cur = &urb->ep->urb_list;
-+			struct list_head *prev = cur->prev;
-+
-+			if (prev->next != cur && !list_error) {
-+				list_error = true;
-+				dev_err(&urb->dev->dev,
-+					"ep %x list add corruption: %p %p %p\n",
-+					urb->ep->desc.bEndpointAddress,
-+					cur, prev, prev->next);
-+			}
-+		}
-+
- 		list_add_tail(&urb->urb_list, &urb->ep->urb_list);
- 	} else {
- 		rc = -ESHUTDOWN;
-@@ -1193,6 +1209,26 @@ void usb_hcd_unlink_urb_from_ep(struct u
- {
- 	/* clear all state linking urb to this dev (and hcd) */
- 	spin_lock(&hcd_urb_list_lock);
-+	{
-+		struct list_head *cur = &urb->urb_list;
-+		struct list_head *prev = cur->prev;
-+		struct list_head *next = cur->next;
-+
-+		if (prev->next != cur && !list_error) {
-+			list_error = true;
-+			dev_err(&urb->dev->dev,
-+				"ep %x list del corruption prev: %p %p %p\n",
-+				urb->ep->desc.bEndpointAddress,
-+				cur, prev, prev->next);
-+		}
-+		if (next->prev != cur && !list_error) {
-+			list_error = true;
-+			dev_err(&urb->dev->dev,
-+				"ep %x list del corruption next: %p %p %p\n",
-+				urb->ep->desc.bEndpointAddress,
-+				cur, next, next->prev);
-+		}
-+	}
- 	list_del_init(&urb->urb_list);
- 	spin_unlock(&hcd_urb_list_lock);
- }
+-			iov_iter_advance(&ii, copy);
+-			todo -= copy;
+-			kaddr += copy;
+-		}
++		if (unlikely(left))
++			return -EFAULT;
+ 
+-		kunmap(page);
++		iov_iter_advance(&ii, todo);
+ 	}
+ 
+ 	return 0;
+-- 
+1.7.12.3
 
