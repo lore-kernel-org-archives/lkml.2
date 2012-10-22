@@ -1,75 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab2JVUaK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 16:30:10 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48657 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752877Ab2JVUaJ (ORCPT
+	id S932184Ab2JVUbh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 16:31:37 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:38770 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756142Ab2JVUbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 16:30:09 -0400
-Message-ID: <5085ACCD.3040203@wwwdotorg.org>
-Date: Mon, 22 Oct 2012 14:30:05 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Mon, 22 Oct 2012 16:31:36 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org, x86@kernel.org, mingo@elte.hu,
+        tglx@linutronix.de, len.brown@intel.com, fenghua.yu@intel.com,
+        vgoyal@redhat.com, grant.likely@secretlab.ca, rob.herring@calxeda.com
+References: <20121016043357.20003.5885.stgit@localhost6.localdomain6>
+	<20121016043528.20003.601.stgit@localhost6.localdomain6>
+	<873916i88t.fsf@xmission.com> <5085A9A8.5020004@zytor.com>
+Date: Mon, 22 Oct 2012 13:31:27 -0700
+In-Reply-To: <5085A9A8.5020004@zytor.com> (H. Peter Anvin's message of "Mon,
+	22 Oct 2012 13:16:40 -0700")
+Message-ID: <87fw56fduo.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Jean Nicolas Graux <jean-nicolas.graux@stericsson.com>,
-        Loic Pallardy <loic.pallardy@st.com>
-Subject: Re: [PATCH v2] pinctrl: reserve pins when states are activated
-References: <1350651909-5337-1-git-send-email-linus.walleij@stericsson.com> <20121019181019.GP4730@atomide.com> <CACRpkdZazjMoSzkr5t15-GeCnQKCJDsZyvT=KVMyw5XhjDybGQ@mail.gmail.com>
-In-Reply-To: <CACRpkdZazjMoSzkr5t15-GeCnQKCJDsZyvT=KVMyw5XhjDybGQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX196Wnmfq8PIaQc8AVMdC7kVoyrKn95jZ6Q=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"H. Peter Anvin" <hpa@zytor.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v1 2/2] x86, apic: Disable BSP if boot cpu is AP
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2012 02:21 AM, Linus Walleij wrote:
-> On Fri, Oct 19, 2012 at 8:10 PM, Tony Lindgren <tony@atomide.com> wrote:
->> [Me]
->>> Instead: let use reserve the pins when the state is activated
->>> and drop them when the state is disabled, i.e. when we move to
->>> another state. This way different devices/functions can use the
->>> same pins at different times.
->>
->> Hmm doesn't this mean that we are now doing lots of extra
->> reserving and dropping of pins? Performance is important from
->> latency point of view for cases where we need to remux pins
->> constantly runtime PM.
-> 
-> It is only done in case the pinmux state is switched in runtime
-> suspend/resume, so it's e.g. possible to just alter the pin config.
-> 
-> But in general what you say is true.
-> 
-> We used to to the same thing by having drivers call
-> pinctrl_get()/pinctrl_put() in this case instead, but that went
-> away with the introduction of states, so we cannot encode
-> different pin sets with say
-> pinctrl_get(dev, "foo")/pinctrl_get(dev, "bar")
-> anymore since there is only one pinctrl handle per device,
-> but multiple states.
-> 
-> If this turns out to be a severe performance bottleneck, I
-> suggest to add some additional constraint API, like
-> pinctrl_set_pinmux_homegeneous_pinsets(true) that will
-> at runtime select whether the pin allocation is done when
-> getting the pinctrl handle instead.
+"H. Peter Anvin" <hpa@zytor.com> writes:
 
-That API sounds like something system-wide, which seems like it would be
-rather presumptuous (CPU/SoC support code couldn't execute it, since
-that would presume a facet of all board designs that could change in the
-future). Even a driver shouldn't be assuming this; it can't know what
-boards it gets used in ahead of time.
+> On 10/22/2012 01:04 PM, Eric W. Biederman wrote:
+>> HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
+>> 
+>>> We disable BSP if boot cpu is AP.
+>>>
+>>> INIT-INIT-SIPI sequence, a protocal to initiate AP, cannot be used for
+>>> BSP since it causes BSP jump to BIOS init code; typical visible
+>>> behaviour is hang or immediate reset, depending on the BIOS init code.
+>>>
+>>> INIT can be used to reset AP in a fatal system error state as
+>>> described in MP spec 3.7.3 Processor-specific INIT. In contrast, there
+>>> is no processor-specific INIT for BSP to initilize from a fatal system
+>>> error. It might be possible to do so by NMI plus any hand-crafted
+>>> reset code that is carefully designed, but at least I have no idea in
+>>> this direction now.
+>> 
+>> Has anyone looked at clearing bit 8 of the IA32_APIC_BASE_MSR (0x1B) on
+>> the bootstrap processor?  Bit 8 being the bit that indicates we are a
+>> bootstrap processor.
+>> 
+>> If we can clear that bit INIT will always place the processor in
+>> wait-for-startup-ipi mode and we won't have this problem.
+>> 
+>> That would also solve the hotunplug the bootstrap processor without
+>> using an NMI as well.
+>> 
+>
+> IIRC Fenghua experimented with that and it didn't work.  Not all BIOSes
+> use that bit to determine BSP-ness.
 
-Instead, it seems like the map registration code could easily look at
-all states defined for a device, and determine if the set of pins/groups
-used by those states was identical, and switch between up-front or
-dynamic registration as needed by the specific map entries.
+What does a BIOS have to do with anything?
+
+The practical issue here is does an INIT IPI cause the cpu to go into
+startup-ipi-wait or to start booting at 4G-16 bytes.
+
+For dealing with BIOSen we may still need to use the bootstrap processor
+for firmware calls, cpu suspend, and other firmware weirdness, but that
+should all be completely orthogonal to the behavior to what happens
+when an INIT IPI is sent to the cpu.
+
+The only firmware problem I can imagine having is cpu virtualization
+bug.
+
+Eric
