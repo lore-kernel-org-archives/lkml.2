@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440Ab2JVVSa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 17:18:30 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:35747 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756403Ab2JVVS2 (ORCPT
+	id S1756403Ab2JVVS4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 17:18:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41901 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756208Ab2JVVSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 17:18:28 -0400
-Date: Mon, 22 Oct 2012 17:18:22 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH 4/7] cgroup_freezer: don't stall transition to FROZEN for
- PF_NOFREEZE or PF_FREEZER_SKIP tasks
-Message-ID: <20121022211822.GF5951@atj.dyndns.org>
-References: <1350426526-14254-1-git-send-email-tj@kernel.org>
- <1350426526-14254-5-git-send-email-tj@kernel.org>
- <20121022183453.GA24687@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121022183453.GA24687@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 22 Oct 2012 17:18:55 -0400
+Date: Mon, 22 Oct 2012 14:18:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Benjamin Gaignard <benjamin.gaignard@stericsson.com>
+Subject: Re: [PATCH resend] genalloc: stop crashing the system when
+ destroying a pool
+Message-Id: <20121022141854.33f5fcf4.akpm@linux-foundation.org>
+In-Reply-To: <1350820392-25815-1-git-send-email-cascardo@linux.vnet.ibm.com>
+References: <1350820392-25815-1-git-send-email-cascardo@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Sun, 21 Oct 2012 09:52:59 -0200
+Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com> wrote:
 
-On Mon, Oct 22, 2012 at 08:34:53PM +0200, Oleg Nesterov wrote:
-> On 10/16, Tejun Heo wrote:
-> >
-> > cgroup_freezer doesn't transition from FREEZING to FROZEN if the
-> > cgroup contains PF_NOFREEZE tasks or tasks sleeping with
-> > PF_FREEZER_SKIP set.
+> A gen_pool_chunk uses a bitmap to find what addresses ranges it has
+> allocated and bugs when we destroy the pool and a chunk has some bits
+> set.
 > 
-> And thus the patch looks like another bugfix to me.
-
-It is but I'm not gonna send this one -stable.  Nobody has complained
-yet and this is a userland visible behavior change, so I'd rather not
-risk it.
-
-> Just one question, and this question is offtopic again,
+> There is a problem when it allocates the bitmap. It allocates only the
+> number of bytes needed for the bits that represent the size it's
+> allocating. That is, if it needs 16 bits, it will allocate only 2 bytes,
+> if it needs 31 bits, it will allocate 4 bytes.
 > 
-> > Only kernel tasks can be non-freezable (PF_NOFREEZE)
+> However, the bitops functions uses long types. And when the gen_pool_add
+> allocates a bitmap, it only clears the bytes it has allocated. So, it's
+> possible that we have a long word with the contents 0xffffffffffffffff,
+> and only the first (most significant) bytes are cleared by memset.
+> However, the destroy function is going to test for the least significant
+> bits, which will not be clear as expected.
 > 
-> Hmm. We seem to "leak" PF_NOFREEZE if a kernel thread execs?
-> Perhaps do_execve_common() should do set_freezable() before return.
-> 
-> Or, at least, simply clear this flag along with PF_KTHREAD in
-> flush_old_exec().
 
-Ooh, ouch, definitely.  We should clear that.  Can you please make a
-patch?
+When fixing a bug, please do fully describe that bug.  The oops trace
+would be nice, but can be avoided if a suitable description is included.
 
-Thanks.
+Does the BUG() happen in gen_pool_destroy(), or in gen_pool_free()?  In
+either case, from your description it sound like the function which is
+going BUG() is the site which needs fixing because it is checking for
+non-zero bits outside the correct range?
 
---
-tejun
