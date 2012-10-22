@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab2JVMNo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 08:13:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60300 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751897Ab2JVMNm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 08:13:42 -0400
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: LAK <linux-arm-kernel@lists.infradead.org>
-Cc: Manjunath Hadli <manjunath.hadli@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        LMML <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>
-Subject: [PATCH RESEND] ARM: dm365: replace V4L2_OUT_CAP_CUSTOM_TIMINGS with V4L2_OUT_CAP_DV_TIMINGS
-Date: Mon, 22 Oct 2012 17:42:52 +0530
-Message-Id: <1350907972-11256-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752948Ab2JVMPM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 08:15:12 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:35404 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750828Ab2JVMPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 08:15:11 -0400
+Message-ID: <1350908109.5931.28.camel@joe-AO722>
+Subject: Re: [PATCH 1/2] staging: android: checkpatch.pl fixes
+From: Joe Perches <joe@perches.com>
+To: David Howells <dhowells@redhat.com>
+Cc: "Ken O'Brien" <kernel@kenobrien.org>, gregkh@linuxfoundation.org,
+        swetland@google.com, arve@android.com, viro@zeniv.linux.org.uk,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Mon, 22 Oct 2012 05:15:09 -0700
+In-Reply-To: <18159.1350898659@warthog.procyon.org.uk>
+References: <1350781512.16706.3.camel@joe-AO722>
+	 <1350772400-12347-1-git-send-email-kernel@kenobrien.org>
+	 <18159.1350898659@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+waOn Mon, 2012-10-22 at 10:37 +0100, David Howells wrote:
+> Joe Perches <joe@perches.com> wrote:
+> 
+> > On Sat, 2012-10-20 at 23:33 +0100, Ken O'Brien wrote:
+> > ...
+> > > -		pr_err("binder: %d: binder_alloc_buf failed to "
+> > > +		pr_err("binder: %d: binder_alloc_buf failed to " \
+> > >  		       "map pages in userspace, no vma\n", proc->pid);
+> > ...
+> > Nice try, but the "right" way to do this is to coalesce formats like:
+> > 
+> > 		pr_err("binder: %d: binder_alloc_buf failed to map pages in userspace, no vma\n",
+> > 		       proc->pid);
+> 
+> Surely the right way is to fix _checkpatch_ to see ["]\n\s*["] and merge the
+> lines before checking them?  We shouldn't have to fix up the source in either
+> of these fashions just because checkpatch is broken.
 
-This patch replaces V4L2_OUT_CAP_CUSTOM_TIMINGS macro with
-V4L2_OUT_CAP_DV_TIMINGS. As V4L2_OUT_CAP_CUSTOM_TIMINGS is being phased
-out.
+checkpatch is stupid, but it's not broken here.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Cc: Sekhar Nori <nsekhar@ti.com>
----
- Resending the patch since, it didn't reach the DLOS mailing list.
+Formats should be coalesced into a single line to make
+grepping the source for dmesg output easier.
 
- This patch is based on the following patch series,
- ARM: davinci: dm365 EVM: add support for VPBE display
- (https://patchwork.kernel.org/patch/1295071/)
+More likely checkpatch could be changed to bleat yet
+another warning like
 
- arch/arm/mach-davinci/board-dm365-evm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
-index 2924d61..771abb5 100644
---- a/arch/arm/mach-davinci/board-dm365-evm.c
-+++ b/arch/arm/mach-davinci/board-dm365-evm.c
-@@ -514,7 +514,7 @@ static struct vpbe_output dm365evm_vpbe_outputs[] = {
- 			.index		= 1,
- 			.name		= "Component",
- 			.type		= V4L2_OUTPUT_TYPE_ANALOG,
--			.capabilities	= V4L2_OUT_CAP_CUSTOM_TIMINGS,
-+			.capabilities	=  V4L2_OUT_CAP_DV_TIMINGS,
- 		},
- 		.subdev_name	= VPBE_VENC_SUBDEV_NAME,
- 		.default_mode	= "480p59_94",
--- 
-1.7.4.1
+"line continuation used outside macro definition"
 
