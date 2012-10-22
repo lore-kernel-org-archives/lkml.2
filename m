@@ -1,83 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337Ab2JVWaO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 18:30:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42744 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932171Ab2JVWaN (ORCPT
+	id S932356Ab2JVWcs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 18:32:48 -0400
+Received: from condef004-v.nifty.com ([210.131.4.241]:36657 "EHLO
+	condef004-v.nifty.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932241Ab2JVWcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 18:30:13 -0400
-Date: Mon, 22 Oct 2012 15:30:12 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] lp855x_bl: use generic PWM functions
-Message-Id: <20121022153012.253a6954.akpm@linux-foundation.org>
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F641791BB@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F6417916D@DQHE02.ent.ti.com>
-	<20121019082107.GA20659@avionic-0098.mockup.avionic-design.de>
-	<A874F61F95741C4A9BA573A70FE3998F641791BB@DQHE02.ent.ti.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 22 Oct 2012 18:32:47 -0400
+X-Nifty-SrcIP: [172.22.201.188]
+Message-ID: <28086318.27561350944959337.herumi@nifty.com>
+Date: Tue, 23 Oct 2012 07:29:19 +0900 (JST)
+From: MITSUNARI Shigeo <herumi@nifty.com>
+To: linux-fsdevel@vger.kernel.org
+Subject: fs: page cache wrongly left invalidated after revalidate_disk
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-2022-jp"
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: @nifty Webmail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Oct 2012 08:45:14 +0000
-"Kim, Milo" <Milo.Kim@ti.com> wrote:
+Hi, 
 
-> > Generally this looks good. Obviously you'll need to update any users of
-> > this driver as well. It might make sense to include those changes in
-> > this patch to avoid interim build failures.
-> 
-> Thanks for your review.
-> So far no usages for this driver in the mainline.
-> I've tested it in my own development environment instead.
-> 
-> > Other than that I have just one smaller comment below.
-> > 
-> > > +	pwm_config(lp->pwm, duty, period);
-> > > +	duty == 0 ? pwm_disable(lp->pwm) : pwm_enable(lp->pwm);
-> > 
-> > This is really ugly and should be written explicitly:
-> > 
-> > 	if (duty == 0)
-> > 		pwm_disable(lp->pwm);
-> > 	else
-> > 		pwm_enable(lp->pwm);
-> 
-> Oh, I prefer using '?' to if-sentence because it looks clear to me.
-> But if it's difficult to read/understand, I'll fix it.
-> I'd like to have others' opinion.
-> 
+We found that bdev->bd_invalidated was left set once revalidate_disk() 
+is called, which results in page cache flush every time that device 
+is open. 
 
-Hey, it's better than
+Specifically, we found this problem in MD block device.  Once we 
+resize a MD device, mdadm --monitor periodically flush all page cache 
+for that device every 60 or 1000 seconds when it opens the device. 
 
-	(*(duty ? pwm_enable : pwm_disable))(lp->pwm);
+This bug lies since at least 3.2.0 till the latest kernel(3.6.2). 
+Patch is attached. 
 
-!
+Anyone please review this?  Thanks in advance.
 
+--
+>From 4ea0538596b893fe1382c3593efce4514fc4af3a Mon Sep 17 00:00:00 2001
 
-But yes, the original code is unusual and I think most kernel people
-would have to stare at it for a bit longer than necessary to see
-exactly what it's doing.
+Signed-off-by: MITSUNARI Shigeo <herumi@nifty.com>
+---
+ fs/block_dev.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/video/backlight/lp855x_bl.c~drivers-video-backlight-lp855x_blc-use-generic-pwm-functions-fix
-+++ a/drivers/video/backlight/lp855x_bl.c
-@@ -139,7 +139,10 @@ static void lp855x_pwm_ctrl(struct lp855
- 	}
- 
- 	pwm_config(lp->pwm, duty, period);
--	duty == 0 ? pwm_disable(lp->pwm) : pwm_enable(lp->pwm);
-+	if (duty)
-+		pwm_enable(lp->pwm);
-+	else
-+		pwm_disable(lp->pwm);
- }
- 
- static int lp855x_bl_update_status(struct backlight_device *bl)
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 38e721b..2577cf4 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1047,6 +1047,7 @@ int revalidate_disk(struct gendisk *disk)
+
+    mutex_lock(&bdev->bd_mutex);
+    check_disk_size_change(disk, bdev);
++   bdev->bd_invalidated = 0;
+    mutex_unlock(&bdev->bd_mutex);
+    bdput(bdev);
+    return ret;
+--
+1.7.9.5
+--------------
+The following steps will reproduce the problem.
+
+1. prepair a block device(ex. /dev/sdb).
+2. create two partitions.
+
+sudo parted /dev/sdb
+mklabel gpt
+mkpart primary 0% 50%
+mkpart primary 50% 100% 
+
+3. create a md device.
+
+sudo mdadm -C /dev/md/hoge -l 1 -n 2 -e 1.2 --assume-clean --auto=md \
+ --symlink=no /dev/sdb1 /dev/sdb2
+
+4. create file system and mount it
+
+sudo mkfs.ext3 /dev/md/hoge
+sudo mkdir /mnt/test
+sudo mount /dev/md/hoge /mnt/test
+
+5. try to resize the device
+
+sudo mdadm -G /dev/md/hoge --size=max
+
+6. create a file to fill file cache.
+
+sudo dd if=/dev/urandom of=/mnt/test/data bs=1M count=10
+and verity the current status of file by free command.
+
+7. mdadm monitor will open the md device every 1000 seconds
+and you will find all file cache on the device are cleared.
+
+The timing can be reduced by the following steps.
+
+a) kill mdadm and restart it with --delay option
+/sbin/mdadm --monitor --delay=30 --pid-file /var/run/mdadm/monitor.pid \
+ --daemonise --scan --syslog
+
+or open the md device directly.
+
+sudo dd if=/dev/md/hoge of=/dev/null bs=4096 count=1
+--------------
 
