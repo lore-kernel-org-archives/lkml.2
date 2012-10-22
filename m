@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427Ab2JVP00 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 11:26:26 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:51537 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103Ab2JVP0X (ORCPT
+	id S1751745Ab2JVP3g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 11:29:36 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:56868 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751020Ab2JVP3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 11:26:23 -0400
-Date: Mon, 22 Oct 2012 11:14:12 -0400
+	Mon, 22 Oct 2012 11:29:35 -0400
+Date: Mon, 22 Oct 2012 11:17:23 -0400
 From: Konrad Rzeszutek Wilk <konrad@kernel.org>
 To: Yinghai Lu <yinghai@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
@@ -15,164 +15,131 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Tejun Heo <tj@kernel.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/19] x86, mm, xen: Remove mapping_pagatable_reserve
-Message-ID: <20121022151411.GE22780@phenom.dumpdata.com>
+Subject: Re: [PATCH 12/19] x86, mm: Add alloc_low_pages(num)
+Message-ID: <20121022151722.GF22780@phenom.dumpdata.com>
 References: <1350593430-24470-1-git-send-email-yinghai@kernel.org>
- <1350593430-24470-15-git-send-email-yinghai@kernel.org>
+ <1350593430-24470-16-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1350593430-24470-15-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1350593430-24470-16-git-send-email-yinghai@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 01:50:22PM -0700, Yinghai Lu wrote:
-> page table area are pre-mapped now, and mark_page_ro is used to make it RO
-  ^ Page     ^^^^->areas                  ^^^^^^^^^^^-> ? I must have
-missed that patch. Can you include the title of the patch in this
-git commit so one could take a look.
+On Thu, Oct 18, 2012 at 01:50:23PM -0700, Yinghai Lu wrote:
+> 32bit kmap mapping need page table to be used for low to high.
+                                    ^-s
 
-> for xen.
-      ^->Xen
 > 
-> mapping_pagetable_reserve is not used anymore, so remove it.
+> At this point those page table are still from pgt_buf_* from BRK,
+                                ^s
+
+> So it is ok now.
+> But we want to move early_ioremap_page_table_range_init() out of
+> init_memory_mapping() and only call it one time later, that will
+> make page_table_range_init/page_table_kmap_check/alloc_low_page to
+> use memblock to get page.
+> 
+> memblock allocation for page table are from high to low.
+                                    ^s
+> 
+> So will get panic from page_table_kmap_check() that has BUG_ON to do
+> ordering checking.
+> 
+> This patch add alloc_low_pages to make it possible to alloc serveral pages
+> at first, and hand out pages one by one from low to high.
+
+.. But for right now this patch just makes it by default one.
+
+Right?
+
 > 
 > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 > ---
->  arch/x86/include/asm/pgtable_types.h |    1 -
->  arch/x86/include/asm/x86_init.h      |   12 ------------
->  arch/x86/kernel/x86_init.c           |    4 ----
->  arch/x86/mm/init.c                   |    4 ----
->  arch/x86/xen/mmu.c                   |   28 ----------------------------
->  5 files changed, 0 insertions(+), 49 deletions(-)
+>  arch/x86/mm/init.c        |   33 +++++++++++++++++++++------------
+>  arch/x86/mm/mm_internal.h |    6 +++++-
+>  2 files changed, 26 insertions(+), 13 deletions(-)
 > 
-> diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-> index ec8a1fc..79738f2 100644
-> --- a/arch/x86/include/asm/pgtable_types.h
-> +++ b/arch/x86/include/asm/pgtable_types.h
-> @@ -301,7 +301,6 @@ int phys_mem_access_prot_allowed(struct file *file, unsigned long pfn,
->  /* Install a pte for a particular vaddr in kernel space. */
->  void set_pte_vaddr(unsigned long vaddr, pte_t pte);
->  
-> -extern void native_pagetable_reserve(u64 start, u64 end);
->  #ifdef CONFIG_X86_32
->  extern void native_pagetable_init(void);
->  #else
-> diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-> index 5769349..3b2ce8f 100644
-> --- a/arch/x86/include/asm/x86_init.h
-> +++ b/arch/x86/include/asm/x86_init.h
-> @@ -69,17 +69,6 @@ struct x86_init_oem {
->  };
->  
->  /**
-> - * struct x86_init_mapping - platform specific initial kernel pagetable setup
-> - * @pagetable_reserve:	reserve a range of addresses for kernel pagetable usage
-> - *
-> - * For more details on the purpose of this hook, look in
-> - * init_memory_mapping and the commit that added it.
-> - */
-> -struct x86_init_mapping {
-> -	void (*pagetable_reserve)(u64 start, u64 end);
-> -};
-> -
-> -/**
->   * struct x86_init_paging - platform specific paging functions
->   * @pagetable_init:	platform specific paging initialization call to setup
->   *			the kernel pagetables and prepare accessors functions.
-> @@ -136,7 +125,6 @@ struct x86_init_ops {
->  	struct x86_init_mpparse		mpparse;
->  	struct x86_init_irqs		irqs;
->  	struct x86_init_oem		oem;
-> -	struct x86_init_mapping		mapping;
->  	struct x86_init_paging		paging;
->  	struct x86_init_timers		timers;
->  	struct x86_init_iommu		iommu;
-> diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-> index 7a3d075..50cf83e 100644
-> --- a/arch/x86/kernel/x86_init.c
-> +++ b/arch/x86/kernel/x86_init.c
-> @@ -62,10 +62,6 @@ struct x86_init_ops x86_init __initdata = {
->  		.banner			= default_banner,
->  	},
->  
-> -	.mapping = {
-> -		.pagetable_reserve		= native_pagetable_reserve,
-> -	},
-> -
->  	.paging = {
->  		.pagetable_init		= native_pagetable_init,
->  	},
 > diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index 2257727..dd09d20 100644
+> index dd09d20..de71c0d 100644
 > --- a/arch/x86/mm/init.c
 > +++ b/arch/x86/mm/init.c
-> @@ -112,10 +112,6 @@ static void __init probe_page_size_mask(void)
->  		__supported_pte_mask |= _PAGE_GLOBAL;
->  	}
->  }
-> -void __init native_pagetable_reserve(u64 start, u64 end)
-> -{
-> -	memblock_reserve(start, end - start);
-> -}
+> @@ -25,36 +25,45 @@ unsigned long __meminitdata pgt_buf_top;
 >  
->  #ifdef CONFIG_X86_32
->  #define NR_RANGE_MR 3
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index 6226c99..efc5260 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -1178,20 +1178,6 @@ static void xen_exit_mmap(struct mm_struct *mm)
+>  static unsigned long min_pfn_mapped;
 >  
->  static void xen_post_allocator_init(void);
+> -__ref void *alloc_low_page(void)
+> +__ref void *alloc_low_pages(unsigned int num)
+>  {
+>  	unsigned long pfn;
+> -	void *adr;
+> +	int i;
 >  
-> -static __init void xen_mapping_pagetable_reserve(u64 start, u64 end)
-> -{
-> -	/* reserve the range used */
-> -	native_pagetable_reserve(start, end);
-> -
-> -	/* set as RW the rest */
-> -	printk(KERN_DEBUG "xen: setting RW the range %llx - %llx\n", end,
-> -			PFN_PHYS(pgt_buf_top));
-> -	while (end < PFN_PHYS(pgt_buf_top)) {
-> -		make_lowmem_page_readwrite(__va(end));
-> -		end += PAGE_SIZE;
-> -	}
-> -}
-> -
 >  #ifdef CONFIG_X86_64
->  static void __init xen_cleanhighmap(unsigned long vaddr,
->  				    unsigned long vaddr_end)
-> @@ -1484,19 +1470,6 @@ static pte_t __init mask_rw_pte(pte_t *ptep, pte_t pte)
->  #else /* CONFIG_X86_64 */
->  static pte_t __init mask_rw_pte(pte_t *ptep, pte_t pte)
->  {
-> -	unsigned long pfn = pte_pfn(pte);
-> -
-> -	/*
-> -	 * If the new pfn is within the range of the newly allocated
-> -	 * kernel pagetable, and it isn't being mapped into an
-> -	 * early_ioremap fixmap slot as a freshly allocated page, make sure
-> -	 * it is RO.
-> -	 */
-> -	if (((!is_early_ioremap_ptep(ptep) &&
-> -			pfn >= pgt_buf_start && pfn < pgt_buf_top)) ||
-> -			(is_early_ioremap_ptep(ptep) && pfn != (pgt_buf_end - 1)))
-> -		pte = pte_wrprotect(pte);
-> -
->  	return pte;
+>  	if (after_bootmem) {
+> -		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
+> +		unsigned int order;
+>  
+> -		return adr;
+> +		order = get_order((unsigned long)num << PAGE_SHIFT);
+> +		return (void *)__get_free_pages(GFP_ATOMIC | __GFP_NOTRACK |
+> +						__GFP_ZERO, order);
+>  	}
+>  #endif
+>  
+> -	if ((pgt_buf_end + 1) >= pgt_buf_top) {
+> +	if ((pgt_buf_end + num) >= pgt_buf_top) {
+>  		unsigned long ret;
+>  		if (min_pfn_mapped >= max_pfn_mapped)
+>  			panic("alloc_low_page: ran out of memory");
+>  		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
+>  					max_pfn_mapped << PAGE_SHIFT,
+> -					PAGE_SIZE, PAGE_SIZE);
+> +					PAGE_SIZE * num , PAGE_SIZE);
+>  		if (!ret)
+>  			panic("alloc_low_page: can not alloc memory");
+> -		memblock_reserve(ret, PAGE_SIZE);
+> +		memblock_reserve(ret, PAGE_SIZE * num);
+>  		pfn = ret >> PAGE_SHIFT;
+> -	} else
+> -		pfn = pgt_buf_end++;
+> +	} else {
+> +		pfn = pgt_buf_end;
+> +		pgt_buf_end += num;
+> +	}
+> +
+> +	for (i = 0; i < num; i++) {
+> +		void *adr;
+> +
+> +		adr = __va((pfn + i) << PAGE_SHIFT);
+> +		clear_page(adr);
+> +	}
+>  
+> -	adr = __va(pfn * PAGE_SIZE);
+> -	clear_page(adr);
+> -	return adr;
+> +	return __va(pfn << PAGE_SHIFT);
 >  }
->  #endif /* CONFIG_X86_64 */
-> @@ -2178,7 +2151,6 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
 >  
->  void __init xen_init_mmu_ops(void)
->  {
-> -	x86_init.mapping.pagetable_reserve = xen_mapping_pagetable_reserve;
->  	x86_init.paging.pagetable_init = xen_pagetable_init;
->  	pv_mmu_ops = xen_mmu_ops;
+>  /* need 4 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
+> diff --git a/arch/x86/mm/mm_internal.h b/arch/x86/mm/mm_internal.h
+> index b3f993a..7e3b88e 100644
+> --- a/arch/x86/mm/mm_internal.h
+> +++ b/arch/x86/mm/mm_internal.h
+> @@ -1,6 +1,10 @@
+>  #ifndef __X86_MM_INTERNAL_H
+>  #define __X86_MM_INTERNAL_H
 >  
+> -void *alloc_low_page(void);
+> +void *alloc_low_pages(unsigned int num);
+> +static inline void *alloc_low_page(void)
+> +{
+> +	return alloc_low_pages(1);
+> +}
+>  
+>  #endif	/* __X86_MM_INTERNAL_H */
 > -- 
 > 1.7.7
 > 
