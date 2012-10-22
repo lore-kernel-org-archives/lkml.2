@@ -1,110 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211Ab2JVPaU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 11:30:20 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50627 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095Ab2JVPaS (ORCPT
+	id S1754331Ab2JVPbK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 11:31:10 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4744 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913Ab2JVPbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 11:30:18 -0400
-Message-ID: <5085667A.70408@gmail.com>
-Date: Mon, 22 Oct 2012 17:30:02 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	Mon, 22 Oct 2012 11:31:09 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 22 Oct 2012 08:31:07 -0700
+From: Denis Kirjanov <kirjanov@gmail.com>
+To: linux-edac@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, stable@kernel.org,
+        Denis Kirjanov <kirjanov@gmail.com>
+Subject: [PATCH] edac: fix buffer overrun if no suitable bandwidth found
+Date: Mon, 22 Oct 2012 19:30:58 +0400
+Message-ID: <1350919858-26202-1-git-send-email-kirjanov@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: "Artem S. Tashkinov" <t.artem@lycos.com>, bp@alien8.de, pavel@ucw.cz,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        security@kernel.org, linux-media@vger.kernel.org,
-        linux-usb@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: A reliable kernel panic (3.6.2) and system crash when visiting
- a particular website
-References: <Pine.LNX.4.44L0.1210221116040.1724-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1210221116040.1724-100000@iolanthe.rowland.org>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.10.2012 17:17, Alan Stern wrote:
-> On Sun, 21 Oct 2012, Artem S. Tashkinov wrote:
-> 
->> dmesg messages up to a crash can be seen here: https://bugzilla.kernel.org/attachment.cgi?id=84221
-> 
-> The first problem in the log is endpoint list corruption.  Here's a 
-> debugging patch which should provide a little more information.
+fix buffer overrun if no suitable bandwidth found
 
-Maybe add a BUG() after each of these dev_err() so we stop at the first
-occurance and also see where we're coming from?
+Signed-off-by: Denis Kirjanov <kirjanov@gmail.com>
+---
+ drivers/edac/amd64_edac.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-
-
-
->  drivers/usb/core/hcd.c |   36 ++++++++++++++++++++++++++++++++++++
->  1 file changed, 36 insertions(+)
-> 
-> Index: usb-3.6/drivers/usb/core/hcd.c
-> ===================================================================
-> --- usb-3.6.orig/drivers/usb/core/hcd.c
-> +++ usb-3.6/drivers/usb/core/hcd.c
-> @@ -1083,6 +1083,8 @@ EXPORT_SYMBOL_GPL(usb_calc_bus_time);
->  
->  /*-------------------------------------------------------------------------*/
->  
-> +static bool list_error;
-> +
->  /**
->   * usb_hcd_link_urb_to_ep - add an URB to its endpoint queue
->   * @hcd: host controller to which @urb was submitted
-> @@ -1126,6 +1128,20 @@ int usb_hcd_link_urb_to_ep(struct usb_hc
->  	 */
->  	if (HCD_RH_RUNNING(hcd)) {
->  		urb->unlinked = 0;
-> +
-> +		{
-> +			struct list_head *cur = &urb->ep->urb_list;
-> +			struct list_head *prev = cur->prev;
-> +
-> +			if (prev->next != cur && !list_error) {
-> +				list_error = true;
-> +				dev_err(&urb->dev->dev,
-> +					"ep %x list add corruption: %p %p %p\n",
-> +					urb->ep->desc.bEndpointAddress,
-> +					cur, prev, prev->next);
-> +			}
-> +		}
-> +
->  		list_add_tail(&urb->urb_list, &urb->ep->urb_list);
->  	} else {
->  		rc = -ESHUTDOWN;
-> @@ -1193,6 +1209,26 @@ void usb_hcd_unlink_urb_from_ep(struct u
->  {
->  	/* clear all state linking urb to this dev (and hcd) */
->  	spin_lock(&hcd_urb_list_lock);
-> +	{
-> +		struct list_head *cur = &urb->urb_list;
-> +		struct list_head *prev = cur->prev;
-> +		struct list_head *next = cur->next;
-> +
-> +		if (prev->next != cur && !list_error) {
-> +			list_error = true;
-> +			dev_err(&urb->dev->dev,
-> +				"ep %x list del corruption prev: %p %p %p\n",
-> +				urb->ep->desc.bEndpointAddress,
-> +				cur, prev, prev->next);
-> +		}
-> +		if (next->prev != cur && !list_error) {
-> +			list_error = true;
-> +			dev_err(&urb->dev->dev,
-> +				"ep %x list del corruption next: %p %p %p\n",
-> +				urb->ep->desc.bEndpointAddress,
-> +				cur, next, next->prev);
-> +		}
-> +	}
->  	list_del_init(&urb->urb_list);
->  	spin_unlock(&hcd_urb_list_lock);
->  }
-> 
+diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+index 5a297a2..d85ad9e 100644
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -188,6 +188,9 @@ static int __amd64_set_scrub_rate(struct pci_dev *ctl, u32 new_bw, u32 min_rate)
+ 		 * scrubrates array.
+ 		 */
+ 	}
++	if (i == ARRAY_SIZE(scrubrates)) {
++		i--;
++	}
+ 
+ 	scrubval = scrubrates[i].scrubval;
+ 
+-- 
+1.7.9.5
 
