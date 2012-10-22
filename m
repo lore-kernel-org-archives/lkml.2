@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232Ab2JVVjm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 17:39:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42069 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754337Ab2JVVjl (ORCPT
+	id S1756276Ab2JVVns (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 17:43:48 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:55606 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755814Ab2JVVnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 17:39:41 -0400
-Date: Mon, 22 Oct 2012 14:39:40 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB
- v6
-Message-Id: <20121022143940.6bf8103f.akpm@linux-foundation.org>
-In-Reply-To: <20121022132733.GQ16230@one.firstfloor.org>
-References: <1350665289-7288-1-git-send-email-andi@firstfloor.org>
-	<CAHO5Pa0W-WGBaPvzdRJxYPdrg-K9guChswo3KJheK4BaRzsRwQ@mail.gmail.com>
-	<20121022132733.GQ16230@one.firstfloor.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Oct 2012 17:43:46 -0400
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <CAGXu5j+4e_NgSeUjSkFmewSzZLeiSVXcY0oCRxngmc83WWVKRg@mail.gmail.com>
+References: <20120920233700.GA3363@www.outflux.net> <CAKgNAkiYpct9iHwVC38oOF4dRizCRu0v7gwbfv5sVV1gxomuKA@mail.gmail.com>
+ <CAKgNAkiS3KXB943RngX119Wwb8RTN_6i1uKRcDrr5+hn20J1qg@mail.gmail.com> <CAGXu5j+4e_NgSeUjSkFmewSzZLeiSVXcY0oCRxngmc83WWVKRg@mail.gmail.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Mon, 22 Oct 2012 23:43:25 +0200
+Message-ID: <CAKgNAkjBqGn7xnncCvZ3NAUZWPWuNSDA_791s--mu_XFfJCAcQ@mail.gmail.com>
+Subject: Re: [RESEND][PATCH] prctl: update seccomp sections for mode 2 (BPF)
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-man@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, wad@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Oct 2012 15:27:33 +0200
-Andi Kleen <andi@firstfloor.org> wrote:
+>> If the CONFIG_SECCOMP_FILTER permits fork(), is the seccomp setting
+>> inherited across fork()? Similar question for execve().
+>
+> Yes for both. Additionally, the filters are cumulative. (If the
+> filters allows prctl, additional filters can be appended; they are run
+> in order until the first non-allow result is seen.)
 
-> BTW seriously MAP_UNINITIALIZED? Who came up with that? 
-> MAP_COMPLETELY_INSECURE or MAP_INSANE would have been more appropiate.
+Thanks. I'll add some words to the man page.
 
-heh.  It's a NOMMU-only thing.
+Cheers,
+
+Michael
 
 
-config MMAP_ALLOW_UNINITIALIZED
-	bool "Allow mmapped anonymous memory to be uninitialized"
-	depends on EXPERT && !MMU
-	default n
-	help
-	  Normally, and according to the Linux spec, anonymous memory obtained
-	  from mmap() has it's contents cleared before it is passed to
-	  userspace.  Enabling this config option allows you to request that
-	  mmap() skip that if it is given an MAP_UNINITIALIZED flag, thus
-	  providing a huge performance boost.  If this option is not enabled,
-	  then the flag will be ignored.
-
-	  This is taken advantage of by uClibc's malloc(), and also by
-	  ELF-FDPIC binfmt's brk and stack allocator.
-
-	  Because of the obvious security issues, this option should only be
-	  enabled on embedded devices where you control what is run in
-	  userspace.  Since that isn't generally a problem on no-MMU systems,
-	  it is normally safe to say Y here.
-
-	  See Documentation/nommu-mmap.txt for more information.
-
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
