@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab2JVQB6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 12:01:58 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:51183 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab2JVQB5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 12:01:57 -0400
+	id S1755522Ab2JVQDR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 12:03:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60557 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751211Ab2JVQDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 12:03:16 -0400
+Message-ID: <50856DFE.8000601@zytor.com>
+Date: Mon, 22 Oct 2012 09:02:06 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121022154258.GB9438@quack.suse.cz>
-References: <CADpTngUPcX71qjE2QKhYqgDg7tZoz+pu8A6nE9DT-zbFKWGx1g@mail.gmail.com>
-	<20121018212357.GA17646@quack.suse.cz>
-	<1350596425.1366.15.camel@x61.thuisdomein>
-	<20121018220809.GD17646@quack.suse.cz>
-	<20121019124454.316ecfac@notabene.brown>
-	<CADpTngX=6vWV1fv8x-g8ufKTb3gW2=phPZBHZJHATEcqqjwtYg@mail.gmail.com>
-	<CADpTngVnJwmu-E3wJwUaK2CKGBsRoJphRNtDPAO9AHyOnnfeRQ@mail.gmail.com>
-	<20121022134541.GA9438@quack.suse.cz>
-	<CADpTngX9YNq6Own1gvrHnwizUfG0KfjRuXL2F38n2C+CnOTpDA@mail.gmail.com>
-	<20121022154258.GB9438@quack.suse.cz>
-Date: Mon, 22 Oct 2012 18:01:56 +0200
-Message-ID: <CADpTngUxFT+Sj1aZDY3iBMLpwgrj5rziTSibWD3HMC_DszZpDw@mail.gmail.com>
-Subject: Re: ext3 issue on 3.6.1
-From: Fabio Coatti <fabio.coatti@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: NeilBrown <neilb@suse.de>, "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
-        Jeff Layton <jlayton@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+CC: fenghua.yu@intel.com, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org, x86@kernel.org, mingo@elte.hu,
+        tglx@linutronix.de, len.brown@intel.com, vgoyal@redhat.com,
+        ebiederm@xmission.com, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com
+Subject: Re: [PATCH v1 0/2] x86, apic: Disable BSP if boot cpu is AP
+References: <3E5A0FA7E9CA944F9D5414FEC6C7122030B0DD68@ORSMSX105.amr.corp.intel.com> <20121016.140313.279437418.d.hatayama@jp.fujitsu.com> <3E5A0FA7E9CA944F9D5414FEC6C7122030B0DD91@ORSMSX105.amr.corp.intel.com> <20121016.153817.42643171.d.hatayama@jp.fujitsu.com>
+In-Reply-To: <20121016.153817.42643171.d.hatayama@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/22 Jan Kara <jack@suse.cz>:
->> Uhu, my fault, I was sure to have answered to your request, sorry.
->> So yes, we have an ext3 R/O partition mounted on that machine. The
->> 3.6.3, with patch applied, dmesg is here:
->   Interesting. You seem to be using data=journal on R/O partition, don't
-> you? Can you also attach /proc/mounts?
+On 10/15/2012 11:38 PM, HATAYAMA Daisuke wrote:
 >
->   Also please try running a kernel with the attached patch and report the
-> warning. Thanks!
+> Thanks for pointing out this. And I've recalled my investigation in
+> the past now. So I want to stop retrying your patch v9 now. This NMI
+> method is definitely not applicable to 2nd kernel without any change.
+>
+> Your NMI method assumes BSP thread is halting in play dead loop. But
+> on the 2nd kernel, BSP is halting in the 1st kernel (or possibly in a
+> fatail system error). Even if throwing NMI to BSP, it goes back to the
+> 1st kernel soon again. I at least confirmed NMI handler is executed in
+> this case.
+>
+> Also, throwing NMI changes stack in the 1st kernel, which is
+> unpermissible from kdump's perspective. But x86_64 uses Interrupt
+> Stack Table (IST), in which stack switching is not performed. So 2nd
+> kernel's stack is used at least on x86_64.
+>
+> To sum up, to apply NMI method in the 2nd kernel, I think it necessary
+> to modify contexts pushed on the stack so execution goes to the 2nd
+> kernel's start_secondary() while initializing its state
+> appropreately.
+>
+> Also I think it necessary to discuss whether this NMI method is
+> reliable enough for kdump use.
+>
 
-Do you want to try the kernel without touching the mount
-configuration, right? (I mean, without (say) mounting ext2 the ext3 ro
-partition, right?)
-right now I can't access the machine, but I recall that the partition
-is mounted rw, something is wrote onto it and then changed to r/o and
-among the options there is data=ordered.
+I think it's pretty clear it is *not*.  NMI or monitor would either have 
+to rely on context set up by the first kernel, which simply isn't safe. 
+  Out of those two options, a monitor would actually be safer, since it 
+can be self-contained in a completely different way.
 
-I'll run your patch asap, many thanks for the answer.
+However, it seems that running on N-1 CPUs in kdump is perfectly acceptable.
 
+	-hpa
 
 -- 
-Fabio
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
