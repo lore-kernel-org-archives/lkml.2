@@ -1,119 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab2JVMAC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 08:00:02 -0400
-Received: from mail.realvnc.com ([212.69.41.2]:25573 "EHLO mail.realvnc.com"
+	id S1753638Ab2JVMA0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 08:00:26 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:42359 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751864Ab2JVMAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 08:00:00 -0400
-X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Oct 2012 08:00:00 EDT
-Message-ID: <508532DF.7050809@realvnc.com>
-Date: Mon, 22 Oct 2012 12:49:51 +0100
-From: Simon Haggett <simon.haggett@realvnc.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+	id S1753559Ab2JVMAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 08:00:23 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: Russell King <rmk+kernel@arm.linux.org.uk>
+CC: Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH] arm: sched: stop sched_clock() during suspend
+Date: Mon, 22 Oct 2012 14:54:37 +0300
+Message-ID: <1350906877-19410-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.8.0.rc0
 MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: Li Yang-R58472 <r58472@freescale.com>, "balbi@ti.com" <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] usb: gadget: Don't attempt to dequeue requests for
- a disabled USB endpoint on Freescale hardware
-References: <1350667166-3559-1-git-send-email-simon.haggett@realvnc.com> <20121019173718.GA2738@arwen.pp.htv.fi> <94F013E7935FF44C83EBE7784D62AD3F094730DB@039-SN2MPN1-023.039d.mgd.msft.net> <1535820.NU10ADjvOZ@avalon>
-In-Reply-To: <1535820.NU10ADjvOZ@avalon>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+The scheduler imposes a requirement to sched_clock()
+which is to stop the clock during suspend, if we don't
+do that IRQ threads will be rescheduled in the future
+which might cause transfers to timeout depending on
+how driver is written.
 
-On 22/10/12 11:47, Laurent Pinchart wrote:
-> Hi,
->
-> On Monday 22 October 2012 03:33:19 Li Yang-R58472 wrote:
->> On Saturday, October 20, 2012 1:37 AM Felipe Balbi wrote:
->>> On Fri, Oct 19, 2012 at 06:19:26PM +0100, Simon Haggett wrote:
->>>> Some gadget drivers may attempt to dequeue requests for an endpoint
->>>> that has already been disabled. For example, in the UVC gadget driver,
->>>> uvc_function_set_alt() will call usb_ep_disable() when alt setting 0
->>>> is selected. When the userspace application subsequently issues the
->>>> VIDIOC_STREAMOFF ioctl, uvc_video_enable() invokes usb_ep_dequeue() to
->>>
->>> ensure that all requests have been cancelled.
->>>
->>> bug is on uvc gadget, then. Laurent ?
->
-> We've discussed this topic a couple of months before. I believe that's not a
-> bug.
->
-> http://68.183.106.108/lists/linux-usb/msg68869.html
->
->>> Also, fsl should be removed from the tree, I'm trying to persuade iMX
->>> folks to use drivers/usb/chipidea instead.
->>
->> Besides the iMX usage, the driver is also being used by many Freescale
->> PowerPC/Coldfire SoCs.  I agree that it's ideal to move to a common driver.
->> But it is a large task to make the chipidea driver works for all the
->> hardware that fsl_udc had supported and been tested on.
->>
->>>> For the Freescale High Speed Dual-Role USB controller,
->>>> fsl_ep_dequeue() provides the implementation of usb_ep_dequeue(). If
->>>> this is called for a disabled endpoint, a kernel oops will occur when
->>>
->>> the ep->ep.desc field is dereferenced (by ep_index()).
->>>
->>>> fsl_ep_disable() sets this field to NULL, as well as deleting all
->>>> pending requests for the endpoint.
->>>>
->>>> This patch adds an additional check to fsl_ep_dequeue() to ensure that
->>>> the endpoint has not already been disabled before attempting to dequeue
->>>
->>> requests.
->>>
->>>> Signed-off-by: Simon Haggett <simon.haggett@realvnc.com>
->>>> ---
->>>>
->>>>   drivers/usb/gadget/fsl_udc_core.c |    5 ++++-
->>>>   1 files changed, 4 insertions(+), 1 deletions(-)
->>>>
->>>> diff --git a/drivers/usb/gadget/fsl_udc_core.c
->>>> b/drivers/usb/gadget/fsl_udc_core.c
->>>> index 6ae70cb..acd513b 100644
->>>> --- a/drivers/usb/gadget/fsl_udc_core.c
->>>> +++ b/drivers/usb/gadget/fsl_udc_core.c
->>>> @@ -955,7 +955,10 @@ static int fsl_ep_dequeue(struct usb_ep *_ep,
->>> struct usb_request *_req)
->>>
->>>>   	int ep_num, stopped, ret = 0;
->>>>   	u32 epctrl;
->>>>
->>>> -	if (!_ep || !_req)
->>>> +	/* Ensure that the ep and request are valid, and the ep is not
->>>> +	 * disabled
->>>> +	 */
->>>> +	if (!_ep || !_req || !ep->ep.desc)
->>>>   		return -EINVAL;
->
-> Shouldn't that last check be done with a lock taken ?
+This became an issue on OMAP when we converted omap-i2c.c
+to use threaded IRQs, it turned out that depending on how
+much time we spent on suspend, the I2C IRQ thread would
+end up being rescheduled so far in the future that I2C
+transfers would timeout and, because omap_hsmmc depends
+on an I2C-connected device to detect if an MMC card is
+inserted in the slot, our rootfs would just vanish.
 
-I had presumed a lock wasn't necessary because ep->ep.desc is only set 
-to NULL by fsl_ep_disable() which, since it is called by 
-usb_ep_disable(), should only be invoked when no other task is using the 
-endpoint (according to include/linux/usb/gadget.h). Furthermore, the 
-chipidea UDC driver does check the equivalent of this field is not NULL 
-without taking a lock (ep_dequeue() in drivers/usb/chipidea/udc.c).
+arch/arm/kernel/sched_clock.c already had an optional
+implementation (sched_clock_needs_suspend()) which would
+handle scheduler's requirement properly, what this patch
+does is simply to make that implementation non-optional.
 
-However, it is possible that I'm misunderstanding something here, so 
-apologies if I am.
+This has been tested with beagleboard XM (OMAP3630) and
+pandaboard rev A3 (OMAP4430). Suspend to RAM is now working
+after this patch.
 
->
->>>>   	spin_lock_irqsave(&ep->udc->lock, flags);
->
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ arch/arm/include/asm/sched_clock.h |  2 --
+ arch/arm/kernel/sched_clock.c      | 18 ++++--------------
+ 2 files changed, 4 insertions(+), 16 deletions(-)
 
-Many thanks
-
-Simon
+diff --git a/arch/arm/include/asm/sched_clock.h b/arch/arm/include/asm/sched_clock.h
+index 05b8e82..e3f7572 100644
+--- a/arch/arm/include/asm/sched_clock.h
++++ b/arch/arm/include/asm/sched_clock.h
+@@ -10,7 +10,5 @@
+ 
+ extern void sched_clock_postinit(void);
+ extern void setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate);
+-extern void setup_sched_clock_needs_suspend(u32 (*read)(void), int bits,
+-		unsigned long rate);
+ 
+ #endif
+diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
+index e21bac2..fc6692e 100644
+--- a/arch/arm/kernel/sched_clock.c
++++ b/arch/arm/kernel/sched_clock.c
+@@ -107,13 +107,6 @@ static void sched_clock_poll(unsigned long wrap_ticks)
+ 	update_sched_clock();
+ }
+ 
+-void __init setup_sched_clock_needs_suspend(u32 (*read)(void), int bits,
+-		unsigned long rate)
+-{
+-	setup_sched_clock(read, bits, rate);
+-	cd.needs_suspend = true;
+-}
+-
+ void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
+ {
+ 	unsigned long r, w;
+@@ -189,18 +182,15 @@ void __init sched_clock_postinit(void)
+ static int sched_clock_suspend(void)
+ {
+ 	sched_clock_poll(sched_clock_timer.data);
+-	if (cd.needs_suspend)
+-		cd.suspended = true;
++	cd.suspended = true;
+ 	return 0;
+ }
+ 
+ static void sched_clock_resume(void)
+ {
+-	if (cd.needs_suspend) {
+-		cd.epoch_cyc = read_sched_clock();
+-		cd.epoch_cyc_copy = cd.epoch_cyc;
+-		cd.suspended = false;
+-	}
++	cd.epoch_cyc = read_sched_clock();
++	cd.epoch_cyc_copy = cd.epoch_cyc;
++	cd.suspended = false;
+ }
+ 
+ static struct syscore_ops sched_clock_ops = {
+-- 
+1.8.0.rc0
 
