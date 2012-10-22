@@ -1,60 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513Ab2JVHff (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 03:35:35 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:12250 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785Ab2JVHfc (ORCPT
+	id S1751582Ab2JVHgA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 03:36:00 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9957 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785Ab2JVHf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 03:35:32 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAML2hFBbdWOb/2dsb2JhbABFwQuBCIIhAQVnEhAdNEkOBgESiAi6eJJOA5VxkDmCcQ
-X-IronPort-AV: E=Sophos;i="4.80,628,1344204000"; 
-   d="scan'208";a="585119330"
-From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Cc: devel@driverdev.osuosl.org, Jens Taprogge <jens.taprogge@taprogge.org>,
-        industrypack-devel@lists.sourceforge.net,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-Subject: [PATCH] Staging: ipack/carriers: fix missing include linux/slab.h
-Date: Mon, 22 Oct 2012 09:36:48 +0200
-Message-Id: <1350891408-6755-1-git-send-email-siglesias@igalia.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20121020110833.GF5714@localhost>
-References: <20121020110833.GF5714@localhost>
+	Mon, 22 Oct 2012 03:35:58 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 22 Oct 2012 00:29:24 -0700
+Message-ID: <5084F5D1.7050005@nvidia.com>
+Date: Mon, 22 Oct 2012 15:29:21 +0800
+From: Mark Zhang <markz@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: dt: tegra: ventana: define pinmux for ddc
+References: <1350626311-18131-1-git-send-email-markz@nvidia.com> <50817668.6020709@wwwdotorg.org>
+In-Reply-To: <50817668.6020709@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel build failed for parisc architecture:
+On 10/19/2012 11:48 PM, Stephen Warren wrote:
+> On 10/18/2012 11:58 PM, Mark Zhang wrote:
+>> Define pinmux for DDC. The DDC pinmux in Ventana is 2 pins in I2C2.
+>
+>> +++ b/arch/arm/boot/dts/tegra20-ventana.dts
+>
+>> -			ddc {
+>> -				nvidia,pins = "ddc", "owc", "spdi", "spdo",
+>> -					"uac";
+>> -				nvidia,function = "rsvd2";
+>> -			};
+>
+> So that removes the entries for 5 pin groups, yet below, entries are
+> only added for the ddc and pta pingroups, so the other 4 pin groups
+> become unconfigured.
+>
 
-drivers/staging/ipack/carriers/tpci200.c: In function 'tpci200_free_irq':
-drivers/staging/ipack/carriers/tpci200.c:190:2: error: implicit declaration of
-function 'kfree' [-Werror=implicit-function-declaration]
-drivers/staging/ipack/carriers/tpci200.c: In function 'tpci200_request_irq':
-drivers/staging/ipack/carriers/tpci200.c:217:2: error: implicit declaration of
-function 'kzalloc' [-Werror=implicit-function-declaration]
+Right. So I think it should be changed to:
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
----
- drivers/staging/ipack/carriers/tpci200.c |    1 +
- 1 file changed, 1 insertion(+)
+		owc {
+			nvidia,pins = "owc", "spdi", "spdo", "uac";
+			nvidia,function = "rsvd2";
+		};
 
-diff --git a/drivers/staging/ipack/carriers/tpci200.c b/drivers/staging/ipack/carriers/tpci200.c
-index 829fd1a..24e8e6d 100644
---- a/drivers/staging/ipack/carriers/tpci200.c
-+++ b/drivers/staging/ipack/carriers/tpci200.c
-@@ -12,6 +12,7 @@
-  */
- 
- #include <linux/module.h>
-+#include <linux/slab.h>
- #include "tpci200.h"
- 
- static const u16 tpci200_status_timeout[] = {
--- 
-1.7.10.4
+Is this right?
 
+>> +
+>> +		state_i2cmux_ddc: pinmux_i2cmux_ddc {
+>> +			ddc {
+>> +				nvidia,pins = "ddc";
+>> +				nvidia,function = "i2c2";
+>> +			};
+>> +			pta {
+>> +				nvidia,pins = "pta";
+>> +				nvidia,function = "rsvd4";
+>> +			};
+>
+> Does this actually work? The pta pingroup is configured by the "hog"
+> pinctrl state of the pinctrl node itself, so this state should fail to
+> be applied since it attempts to touch the same pingroup.
+>
+
+I know little about kernel pinctrl subsystem. After reading some docs 
+and codes, I think what you mean is, in Ventana's pinmux configuration, 
+pta pingroup has been defined as "hdmi" function and this can't be 
+changed(non-dynamic pinmuxing).
+So I want to know why we have defined pta pingroup as hdmi function?
+Can we remove this definition to make the i2cmux above working?
+
+>> +	i2cmux {
+> ...
+>> +		i2c@1 {
+>> +			reg = <1>;
+>> +			#address-cells = <1>;
+>> +			#size-cells = <0>;
+>> +
+>> +			smart-battery@b {
+>> +				compatible = "ti,bq24617", "smart-battery-1.1";
+>> +				reg = <0xb>;
+>> +				ti,i2c-retry-count = <2>;
+>> +				ti,poll-retry-count = <10>;
+>> +			};
+>
+> That wasn't there before. Does that device actually exist on Ventana?
+> Adding it should be a separate patch if so, since this one is just about
+> introducing the I2C mux, not adding an SBS device. Was this all just
+> cut/paste from Seaboard without validation?
+>
+
+Yes, I didn't validate this. Actually, I don't know how to validate. I 
+have no idea about SBS device. But I have checked the schematic of 
+Ventana and it has this "bq24617" battery charge controller(for 
+seaboard, it's bq20z75).
+So I agree with you not to include this part in the patch.
