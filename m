@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab2JVOqA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 10:46:00 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:48390 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754737Ab2JVOp7 (ORCPT
+	id S1755222Ab2JVOui (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 10:50:38 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:64235 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754116Ab2JVOuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 10:45:59 -0400
-Date: Mon, 22 Oct 2012 14:45:58 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 2/2] slab: move kmem_cache_free to common code
-In-Reply-To: <1350914737-4097-3-git-send-email-glommer@parallels.com>
-Message-ID: <0000013a88eff593-50da3bb8-3294-41db-9c32-4e890ef6940a-000000@email.amazonses.com>
-References: <1350914737-4097-1-git-send-email-glommer@parallels.com> <1350914737-4097-3-git-send-email-glommer@parallels.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 22 Oct 2012 10:50:37 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+In-Reply-To: <0000013a88ebfa65-af0fc24b-13fd-400f-b7fc-32230ca70620-000000@email.amazonses.com>
+References: <1350907434-2202-1-git-send-email-elezegarcia@gmail.com>
+	<0000013a88ebfa65-af0fc24b-13fd-400f-b7fc-32230ca70620-000000@email.amazonses.com>
+Date: Mon, 22 Oct 2012 11:50:36 -0300
+Message-ID: <CALF0-+X2GnTKykYT3pwDHZV-8-qoHQZdBaSscfrOei48ce-HWg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mm/slob: Mark zone page state to get slab usage at /proc/meminfo
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Tim Bird <tim.bird@am.sony.com>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>,
+        uClinux development list <uclinux-dev@uclinux.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Oct 2012, Glauber Costa wrote:
+On Mon, Oct 22, 2012 at 11:41 AM, Christoph Lameter <cl@linux.com> wrote:
+> On Mon, 22 Oct 2012, Ezequiel Garcia wrote:
+>
+>> On page allocations, SLAB and SLUB modify zone page state counters
+>> NR_SLAB_UNRECLAIMABLE or NR_SLAB_RECLAIMABLE.
+>> This allows to obtain slab usage information at /proc/meminfo.
+>>
+>> Without this patch, /proc/meminfo will show zero Slab usage for SLOB.
+>>
+>> Since SLOB discards SLAB_RECLAIM_ACCOUNT flag, we always use
+>> NR_SLAB_UNRECLAIMABLE zone state item.
+>
+> Hmmm... that is unfortunate. The NR_SLAB_RECLAIMABLE stat is used by
+> reclaim to make decisions on when to reclaim inodes and dentries.
+>
+> Could you fix that to properly account the reclaimable/unreclaimable
+> pages?
 
-> + * kmem_cache_free - Deallocate an object
-> + * @cachep: The cache the allocation was from.
-> + * @objp: The previously allocated object.
-> + *
-> + * Free an object which was previously allocated from this
-> + * cache.
-> + */
-> +void kmem_cache_free(struct kmem_cache *s, void *x)
-> +{
-> +	__kmem_cache_free(s, x);
-> +	trace_kmem_cache_free(_RET_IP_, x);
-> +}
-> +EXPORT_SYMBOL(kmem_cache_free);
-> +
+Sure. Does everyone agree on this?
 
-This results in an additional indirection if tracing is off. Wonder if
-there is a performance impact?
+My concern is:
 
+1. SLOB is minimal, designed to have minimal footprint, and I'd like
+to keep it that way. Of course, perhaps the change will add just a few bytes.
+
+2. Since no SLOB user has ever complained on this...
+How will this affect SLOB workings?
+(I'm adding the uclinux guys, so at least they're aware of this)
+
+    Ezequiel
