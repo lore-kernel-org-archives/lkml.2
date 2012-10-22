@@ -1,143 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332Ab2JVN60 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 09:58:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44766 "EHLO mx1.redhat.com"
+	id S1754428Ab2JVOBe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 10:01:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34373 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753182Ab2JVN6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 09:58:25 -0400
-Message-ID: <508550F7.1010605@redhat.com>
-Date: Mon, 22 Oct 2012 15:58:15 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+	id S1753279Ab2JVOBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 10:01:33 -0400
+Date: Mon, 22 Oct 2012 16:00:56 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Avi Kivity <avi@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
 Subject: Re: [PATCH] KVM: x86: fix vcpu->mmio_fragments overflow
-References: <5081033C.4060503@linux.vnet.ibm.com>
-In-Reply-To: <5081033C.4060503@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Message-ID: <20121022140056.GY29310@redhat.com>
+References: <20121022114311.GQ29310@redhat.com>
+ <508531E1.2030307@siemens.com>
+ <508539A8.40404@redhat.com>
+ <50853FF1.8010809@siemens.com>
+ <20121022125301.GS29310@redhat.com>
+ <50854232.8090309@siemens.com>
+ <508542EF.5050401@redhat.com>
+ <508544B6.6070301@siemens.com>
+ <20121022130810.GW29310@redhat.com>
+ <5085495D.6060307@siemens.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5085495D.6060307@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2012 09:37 AM, Xiao Guangrong wrote:
-> After commit b3356bf0dbb349 (KVM: emulator: optimize "rep ins" handling),
-> the pieces of io data can be collected and write them to the guest memory
-> or MMIO together.
+On Mon, Oct 22, 2012 at 03:25:49PM +0200, Jan Kiszka wrote:
+> On 2012-10-22 15:08, Gleb Natapov wrote:
+> > On Mon, Oct 22, 2012 at 03:05:58PM +0200, Jan Kiszka wrote:
+> >> On 2012-10-22 14:58, Avi Kivity wrote:
+> >>> On 10/22/2012 02:55 PM, Jan Kiszka wrote:
+> >>>>> Since the userspace change is needed the idea is dead, but if we could
+> >>>>> implement it I do not see how it can hurt the latency if it would be the
+> >>>>> only mechanism to use coalesced mmio buffer. Checking that the ring buffer
+> >>>>> is empty is cheap and if it is not empty it means that kernel just saved
+> >>>>> you a lot of 8 bytes exists so even after iterating over all the entries there
+> >>>>> you still saved a lot of time.
+> >>>>
+> >>>> When taking an exit for A, I'm not interesting in flushing stuff for B
+> >>>> unless I have a dependency. Thus, buffers would have to be per device
+> >>>> before extending their use.
+> >>>
+> >>> Any mmio exit has to flush everything.  For example a DMA caused by an
+> >>> e1000 write has to see any writes to the framebuffer, in case the guest
+> >>> is transmitting its framebuffer to the outside world.
+> >>
+> >> We already flush when that crazy guest actually accesses the region, no
+> >> need to do this unconditionally.
+> >>
+> > What if framebuffer is accessed from inside the kernel? Is this case handled?
 > 
-> Unfortunately, kvm splits the mmio access into 8 bytes and store them to
-> vcpu->mmio_fragments. If the guest uses "rep ins" to move large data, it
-> will cause vcpu->mmio_fragments overflow
+> Unless I miss a case now, there is no direct access to the framebuffer
+> possible when we are also doing coalescing. Everything needs to go
+> through userspace.
 > 
-> The bug can be exposed by isapc (-M isapc):
-> 
-> [23154.818733] general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
-> [ ......]
-> [23154.858083] Call Trace:
-> [23154.859874]  [<ffffffffa04f0e17>] kvm_get_cr8+0x1d/0x28 [kvm]
-> [23154.861677]  [<ffffffffa04fa6d4>] kvm_arch_vcpu_ioctl_run+0xcda/0xe45 [kvm]
-> [23154.863604]  [<ffffffffa04f5a1a>] ? kvm_arch_vcpu_load+0x17b/0x180 [kvm]
-> 
-> 
-> Actually, we can use one mmio_fragment to store a large mmio access for the
-> mmio access is always continuous then split it when we pass the mmio-exit-info
-> to userspace.
+Yes, with frame buffer is seems to be the case. One can imagine ROMD
+device that is MMIO on write but still can be accessed for read from
+kernel, but it cannot be coalesced even if coalesced buffer is flushed
+on every exit.
 
-Note, there are instructions that can access discontinuous areas.  We don't emulate them and they're unlikely to be used for mmio.
-
-> After that, we only need two entries to store mmio info for
-> the cross-mmio pages access
-
-Patch is good, but is somewhat large for 3.7.  Maybe we can make it smaller with the following:
-
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 8b90dd5..41ceb51 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -3779,9 +3779,6 @@ static int read_exit_mmio(struct kvm_vcpu *vcpu, gpa_t gpa,
->  static int write_exit_mmio(struct kvm_vcpu *vcpu, gpa_t gpa,
->  			   void *val, int bytes)
->  {
-> -	struct kvm_mmio_fragment *frag = &vcpu->mmio_fragments[0];
-> -
-> -	memcpy(vcpu->run->mmio.data, frag->data, frag->len);
->  	return X86EMUL_CONTINUE;
->  }
-> 
-> @@ -3799,6 +3796,64 @@ static const struct read_write_emulator_ops write_emultor = {
->  	.write = true,
->  };
-> 
-> +static bool get_current_mmio_info(struct kvm_vcpu *vcpu, gpa_t *gpa,
-> +				  unsigned *len, void **data)
-> +{
-> +	struct kvm_mmio_fragment *frag;
-> +	int cur = vcpu->mmio_cur_fragment;
-> +
-> +	if (cur >= vcpu->mmio_nr_fragments)
-> +		return false;
-> +
-> +	frag = &vcpu->mmio_fragments[cur];
-> +	if (frag->pos >= frag->len) {
-> +		if (++vcpu->mmio_cur_fragment >= vcpu->mmio_nr_fragments)
-> +			return false;
-> +		frag++;
-> +	}
-
-Instead of having ->pos, just adjust ->gpa, ->data, and ->len in place.  Then get_current_mmio_info would be unneeded, just the min() bit when accessing ->len.
-
-> +
-> +	*gpa = frag->gpa + frag->pos;
-> +	*data = frag->data + frag->pos;
-> +	*len = min(8u, frag->len - frag->pos);
-> +	return true;
-> +}
-> +
-> +static void complete_current_mmio(struct kvm_vcpu *vcpu)
-> +{
-> +	struct kvm_mmio_fragment *frag;
-> +	gpa_t gpa;
-> +	unsigned len;
-> +	void *data;
-> +
-> +	get_current_mmio_info(vcpu, &gpa, &len, &data);
-> +
-> +	if (!vcpu->mmio_is_write)
-> +		memcpy(data, vcpu->run->mmio.data, len);
-> +
-> +	/* Increase frag->pos to switch to the next mmio. */
-> +	frag = &vcpu->mmio_fragments[vcpu->mmio_cur_fragment];
-> +	frag->pos += len;
-> +}
-> +
-
-
-And this would be unneeded, just adjust the code that does mmio_cur_fragment++:
-
- static int complete_emulated_mmio(struct kvm_vcpu *vcpu)
- {
- 	struct kvm_run *run = vcpu->run;
--	struct kvm_mmio_fragment *frag;
-+	struct kvm_mmio_fragment frag;
-
-	BUG_ON(!vcpu->mmio_needed);
-
-	/* Complete previous fragment */
--	frag = &vcpu->mmio_fragments[vcpu->mmio_cur_fragment++];       
-+	frag = vcpu->mmio_fragments[vcpu->mmio_cur_fragment];       
-+       if (frag.len <= 8) {
-+		++vcpu->mmio_cur_fragment;
-+	} else {
-+		vcpu->mmio_fragments[vcpu->mmio_cur_fragment].len -= frag.len;
-                ...
-
-
-
-
-
--- 
-error compiling committee.c: too many arguments to function
+--
+			Gleb.
