@@ -1,53 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab2JVL4L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 07:56:11 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:33659 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922Ab2JVL4J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 07:56:09 -0400
-Date: Mon, 22 Oct 2012 14:55:46 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: a.p.zijlstra@chello.nl
-Cc: linux-kernel@vger.kernel.org
-Subject: re: sched, numa, mm: Implement constant, per task Working Set
- Sampling (WSS) rate
-Message-ID: <20121022115545.GA631@elgon.mountain>
+	id S1753580Ab2JVMAC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 08:00:02 -0400
+Received: from mail.realvnc.com ([212.69.41.2]:25573 "EHLO mail.realvnc.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751864Ab2JVMAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 08:00:00 -0400
+X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Oct 2012 08:00:00 EDT
+Message-ID: <508532DF.7050809@realvnc.com>
+Date: Mon, 22 Oct 2012 12:49:51 +0100
+From: Simon Haggett <simon.haggett@realvnc.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: Li Yang-R58472 <r58472@freescale.com>, "balbi@ti.com" <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] usb: gadget: Don't attempt to dequeue requests for
+ a disabled USB endpoint on Freescale hardware
+References: <1350667166-3559-1-git-send-email-simon.haggett@realvnc.com> <20121019173718.GA2738@arwen.pp.htv.fi> <94F013E7935FF44C83EBE7784D62AD3F094730DB@039-SN2MPN1-023.039d.mgd.msft.net> <1535820.NU10ADjvOZ@avalon>
+In-Reply-To: <1535820.NU10ADjvOZ@avalon>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Peter Zijlstra,
+Hi
 
-The patch 3d049f8a5398: "sched, numa, mm: Implement constant, per
-task Working Set Sampling (WSS) rate" from Oct 14, 2012, leads to the
-following warning:
-kernel/sched/fair.c:954 task_numa_work()
-	 error: we previously assumed 'vma' could be null (see line 948)
+On 22/10/12 11:47, Laurent Pinchart wrote:
+> Hi,
+>
+> On Monday 22 October 2012 03:33:19 Li Yang-R58472 wrote:
+>> On Saturday, October 20, 2012 1:37 AM Felipe Balbi wrote:
+>>> On Fri, Oct 19, 2012 at 06:19:26PM +0100, Simon Haggett wrote:
+>>>> Some gadget drivers may attempt to dequeue requests for an endpoint
+>>>> that has already been disabled. For example, in the UVC gadget driver,
+>>>> uvc_function_set_alt() will call usb_ep_disable() when alt setting 0
+>>>> is selected. When the userspace application subsequently issues the
+>>>> VIDIOC_STREAMOFF ioctl, uvc_video_enable() invokes usb_ep_dequeue() to
+>>>
+>>> ensure that all requests have been cancelled.
+>>>
+>>> bug is on uvc gadget, then. Laurent ?
+>
+> We've discussed this topic a couple of months before. I believe that's not a
+> bug.
+>
+> http://68.183.106.108/lists/linux-usb/msg68869.html
+>
+>>> Also, fsl should be removed from the tree, I'm trying to persuade iMX
+>>> folks to use drivers/usb/chipidea instead.
+>>
+>> Besides the iMX usage, the driver is also being used by many Freescale
+>> PowerPC/Coldfire SoCs.  I agree that it's ideal to move to a common driver.
+>> But it is a large task to make the chipidea driver works for all the
+>> hardware that fsl_udc had supported and been tested on.
+>>
+>>>> For the Freescale High Speed Dual-Role USB controller,
+>>>> fsl_ep_dequeue() provides the implementation of usb_ep_dequeue(). If
+>>>> this is called for a disabled endpoint, a kernel oops will occur when
+>>>
+>>> the ep->ep.desc field is dereferenced (by ep_index()).
+>>>
+>>>> fsl_ep_disable() sets this field to NULL, as well as deleting all
+>>>> pending requests for the endpoint.
+>>>>
+>>>> This patch adds an additional check to fsl_ep_dequeue() to ensure that
+>>>> the endpoint has not already been disabled before attempting to dequeue
+>>>
+>>> requests.
+>>>
+>>>> Signed-off-by: Simon Haggett <simon.haggett@realvnc.com>
+>>>> ---
+>>>>
+>>>>   drivers/usb/gadget/fsl_udc_core.c |    5 ++++-
+>>>>   1 files changed, 4 insertions(+), 1 deletions(-)
+>>>>
+>>>> diff --git a/drivers/usb/gadget/fsl_udc_core.c
+>>>> b/drivers/usb/gadget/fsl_udc_core.c
+>>>> index 6ae70cb..acd513b 100644
+>>>> --- a/drivers/usb/gadget/fsl_udc_core.c
+>>>> +++ b/drivers/usb/gadget/fsl_udc_core.c
+>>>> @@ -955,7 +955,10 @@ static int fsl_ep_dequeue(struct usb_ep *_ep,
+>>> struct usb_request *_req)
+>>>
+>>>>   	int ep_num, stopped, ret = 0;
+>>>>   	u32 epctrl;
+>>>>
+>>>> -	if (!_ep || !_req)
+>>>> +	/* Ensure that the ep and request are valid, and the ep is not
+>>>> +	 * disabled
+>>>> +	 */
+>>>> +	if (!_ep || !_req || !ep->ep.desc)
+>>>>   		return -EINVAL;
+>
+> Shouldn't that last check be done with a lock taken ?
 
-   943          if (!vma) {
-   944                  ACCESS_ONCE(mm->numa_scan_seq)++;
-   945                  offset = 0;
-   946                  vma = mm->mmap;
-   947          }
-   948          while (vma && !vma_migratable(vma)) {
-                       ^^^
-If this is NULL,
-   949                  vma = vma->vm_next;
-   950                  if (!vma)
-   951                          goto again;
-   952          }
-   953  
-   954          offset = max(offset, vma->vm_start);
-                                     ^^^^^^^^^^^^^
-then it leads to a NULL dereference here.
+I had presumed a lock wasn't necessary because ep->ep.desc is only set 
+to NULL by fsl_ep_disable() which, since it is called by 
+usb_ep_disable(), should only be invoked when no other task is using the 
+endpoint (according to include/linux/usb/gadget.h). Furthermore, the 
+chipidea UDC driver does check the equivalent of this field is not NULL 
+without taking a lock (ep_dequeue() in drivers/usb/chipidea/udc.c).
 
-regards,
-dan carpenter
+However, it is possible that I'm misunderstanding something here, so 
+apologies if I am.
+
+>
+>>>>   	spin_lock_irqsave(&ep->udc->lock, flags);
+>
+
+Many thanks
+
+Simon
 
