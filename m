@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998Ab2JVNLt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 09:11:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13744 "EHLO mx1.redhat.com"
+	id S1754074Ab2JVNM4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 09:12:56 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:35858 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752334Ab2JVNLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 09:11:48 -0400
-Date: Mon, 22 Oct 2012 15:11:42 +0200
-From: Andrew Jones <drjones@redhat.com>
-To: namhyung@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: perf: header: Regression
-Message-ID: <20121022131141.GA11455@turtle.usersys.redhat.com>
+	id S1752334Ab2JVNMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 09:12:54 -0400
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <tony@atomide.com>, <b-cousson@ti.com>
+CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-input@vger.kernel.org>,
+        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCHv2] Input: omap4-keypad: Add pinctrl support
+Date: Mon, 22 Oct 2012 18:43:00 +0530
+Message-ID: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Adapt keypad to use pinctrl framework.
 
-The patch series that contains 7e94cfcc9d20 regresses the
-header output. Below is a diff of info from before and
-after the series
+Tested on omap4430 sdp with 3.7-rc1 kernel.
 
-58,64c58,59
-< # node1 meminfo  : total = 16777216 kB, free = 15712440 kB
-< # node1 cpu list : 2,6,10,14,18,22,26,30
-< # node2 meminfo  : total = 16777216 kB, free = 16299132 kB
-< # node2 cpu list : 1,5,9,13,17,21,25,29
-< # node3 meminfo  : total = 16777216 kB, free = 16217192 kB
-< # node3 cpu list : 3,7,11,15,19,23,27,31
-< # pmu mappings: cpu = 4, software = 1, tracepoint = 2, uncore_bbox_0 =
-15, uncore_bbox_1 = 16, uncore_cbox_0 = 7, uncore_cbox_1 = 8,
-uncore_cbox_2 = 9, uncore_cbox_3 = 10, uncore_cbox_4 = 11, uncore_cbox_5 =
-12, uncore_cbox_6 = 13, uncore_cbox_7 = 14, uncore_mbox_0 = 19,
-uncore_mbox_1 = 20, uncore_rbox_0 = 21, uncore_rbox_1 = 22, uncore_sbox_0
-= 17, uncore_sbox_1 = 18, breakpoint = 5, uncore_ubox = 6, uncore_wbox =
-23
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
 ---
-> # numa topology : not available
-> # pmu mappings: cpu = 4, software = 1, tracepoint = 2, uncore_bbox_0 =
-15, uncore_bbox_1 = 16, uncore_cbox_0 = 7, uncore_cbox_1 = 8,
-uncore_cbox_2 = 9, uncore_cbox_3 = 10, uncore_cbox_4 = 11, uncore_cbox_5 =
-12, uncore_cbox_6 = 13, uncore_cbox_7 = 14, uncore_mbox_0 = 19# pmu
-mappings: unable to read
+v1->v2
+- Added "PROBE_DEFER" check 
+ drivers/input/keyboard/omap4-keypad.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-As can be seen in the diff, before the series we had complete
-numa info and pmu mappings info. After we get 
+diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
+index c05f98c..502b832 100644
+--- a/drivers/input/keyboard/omap4-keypad.c
++++ b/drivers/input/keyboard/omap4-keypad.c
+@@ -31,6 +31,7 @@
+ #include <linux/input.h>
+ #include <linux/slab.h>
+ #include <linux/pm_runtime.h>
++#include <linux/pinctrl/consumer.h>
+ 
+ #include <linux/platform_data/omap4-keypad.h>
+ 
+@@ -76,6 +77,7 @@ enum {
+ 
+ struct omap4_keypad {
+ 	struct input_dev *input;
++	struct pinctrl	*pins;
+ 
+ 	void __iomem *base;
+ 	unsigned int irq;
+@@ -298,6 +300,15 @@ static int __devinit omap4_keypad_probe(struct platform_device *pdev)
+ 		goto err_release_mem;
+ 	}
+ 
++	keypad_data->pins = devm_pinctrl_get_select_default(&pdev->dev);
++	if (IS_ERR(keypad_data->pins)) {
++		if (PTR_ERR(keypad_data->pins) == -EPROBE_DEFER)
++			return -EPROBE_DEFER;
++
++		dev_warn(&pdev->dev, "did not get pins for keypad error: %li\n",
++					PTR_ERR(keypad_data->pins));
++		keypad_data->pins = NULL;
++	}
+ 
+ 	/*
+ 	 * Enable clocks for the keypad module so that we can read
+-- 
+1.7.1
 
-"# numa topology : not available" and "# pmu
-mappings: unable to read"
-
-Drew
