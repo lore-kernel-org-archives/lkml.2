@@ -1,109 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756417Ab2JVVy4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 17:54:56 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52580 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755396Ab2JVVyy (ORCPT
+	id S1756386Ab2JVV4Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 17:56:24 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:49840 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755396Ab2JVV4X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 17:54:54 -0400
+	Mon, 22 Oct 2012 17:56:23 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1210202133470.2719@ionos>
-References: <alpine.LFD.2.02.1210202133470.2719@ionos>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Mon, 22 Oct 2012 17:54:24 -0400
-X-Google-Sender-Auth: S7tI-1doSKrcqkE7KhqCAXXb9Ys
-Message-ID: <CAP=VYLr9c13w+CWTDUfgT2dFbmXTBUfBWrJ43u731q9weBmjSg@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.6.2-rt4
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1350925287-15929-1-git-send-email-will.deacon@arm.com>
+References: <1350925287-15929-1-git-send-email-will.deacon@arm.com>
+Date: Mon, 22 Oct 2012 14:56:21 -0700
+Message-ID: <CANN689HrJMyQSXTjwJtMmyxJvccgMd-9EzRA-JsgDCp+STX6qw@mail.gmail.com>
+Subject: Re: [PATCH] rbtree: include linux/compiler.h for definition of __always_inline
+From: Michel Lespinasse <walken@google.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 20, 2012 at 3:40 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Dear RT Folks,
+On Mon, Oct 22, 2012 at 10:01 AM, Will Deacon <will.deacon@arm.com> wrote:
+> rb_erase_augmented is a static function annotated with __always_inline.
+> This causes a compile failure when attempting to use the rbtree
+> implementation as a library (e.g. kvm tool):
 >
-> I'm pleased to announce the 3.6.2-rt4 release. rt4 is just an update
-> to 3.6.2. The not announced 3.6.1-rt3 is an intermediate release with
-> a single change.
+> rbtree_augmented.h:125:24: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘void’
+>
+> This patch includes linux/compiler.h in rbtree_augmented.h so that the
+> __always_inline macro is resolved correctly.
+>
+> Cc: Pekka Enberg <penberg@kernel.org>
+> Cc: Michel Lespinasse <walken@google.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
 
-I've updated the repo of patches to have rt3 and rt4 on master branch.
+Just curious - what are you going to implement with augmented rbtrees
+in kvm tool ?
 
-In my fixes branch (now v3.6.2-rt4-fixes) there is only the cosmetic fix
-of adding a subject to the power-use-generic-rwsem-on-rt.patch,
-everything else is in the main tarballs.
+If the basic rbtree or the interval tree implementations are
+sufficient for your usage, you should try using that (in which case
+you won't need this header fix).
 
-There is a gregkh v3.6.3 release - the series applies onto that with
-only a trivial patch refresh required to kgb-serial-hackaround.patch
+But either way, the header fix is correct and will be required when
+someone wants to use augmented rbtrees outside of the kernel. I just
+didn't think that day would come so fast :)
 
-In fact, quilt may not even bother to warn about it, but git-am will
-stop and ask you to double check things.  If git-am still fails when
-we get to v3.6.3-rt5, then I'll refresh it on the -fixes branch.
+Reviewed-by: Michel Lespinasse <walken@google.com>
 
-http://git.kernel.org/?p=linux/kernel/git/paulg/3.6-rt-patches.git;a=summary
-
-Paul.
---
-
->
-> Changes since 3.6.1-rt2:
->
->         * Remove the softirq noise printk
->
-> The delta patch against 3.6.1-rt2 is appended below and can be found here
->
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/incr/patch-3.6.1-rt2-rt3.patch.xz
->
-> The RT patch against 3.6.2 can be found here:
->
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.2-rt4.patch.xz
->
-> The split quilt queue is available at:
->
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patches-3.6.2-rt4.tar.xz
->
-> Enjoy,
->
->         tglx
->
-> ---------->
->
-> Index: linux-stable/kernel/softirq.c
-> ===================================================================
-> --- linux-stable.orig/kernel/softirq.c
-> +++ linux-stable/kernel/softirq.c
-> @@ -468,8 +468,6 @@ static void do_single_softirq(int which,
->   */
->  static void do_current_softirqs(int need_rcu_bh_qs)
->  {
-> -       int retry = 0;
-> -
->         while (current->softirqs_raised) {
->                 int i = __ffs(current->softirqs_raised);
->                 unsigned int pending, mask = (1U << i);
-> @@ -496,10 +494,6 @@ static void do_current_softirqs(int need
->                 }
->                 unlock_softirq(i);
->                 WARN_ON(current->softirq_nestcnt != 1);
-> -               if (++retry == 20) {
-> -                       printk(KERN_ERR "Crap, %s looping forever in softirq\n",
-> -                              current->comm);
-> -               }
->         }
->  }
->
-> Index: linux-stable/localversion-rt
-> ===================================================================
-> --- linux-stable.orig/localversion-rt
-> +++ linux-stable/localversion-rt
-> @@ -1 +1 @@
-> --rt2
-> +-rt3
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
