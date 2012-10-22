@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab2JVRZp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 13:25:45 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45484 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755843Ab2JVRZo (ORCPT
+	id S1755829Ab2JVRal (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 13:30:41 -0400
+Received: from smtprelay0195.b.hostedemail.com ([64.98.42.195]:59754 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755015Ab2JVRaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 13:25:44 -0400
+	Mon, 22 Oct 2012 13:30:39 -0400
+X-Panda: scanned!
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,t.artem@lycos.com,:::::::::::::::::::,RULES_HIT:152:355:379:541:582:599:601:960:988:989:1152:1260:1277:1311:1313:1314:1345:1358:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:3027:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3869:3870:3871:5007:6261:9010:10004:10400:10848:11658:11914:12296:12350:12517:12519,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-Session-Marker: 742E617274656D406C79636F732E636F6D
+X-Filterd-Recvd-Size: 1537
+Date: Mon, 22 Oct 2012 17:30:37 +0000 (GMT)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: stern@rowland.harvard.edu
+Cc: zonque@gmail.com, bp@alien8.de, pavel@ucw.cz, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, security@kernel.org,
+        linux-media@vger.kernel.org, linux-usb@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Message-ID: <1985645001.39510.1350927037793.JavaMail.mail@webmail15>
+References: <Pine.LNX.4.44L0.1210221153140.1724-100000@iolanthe.rowland.org>
+Subject: Re: Re: A reliable kernel panic (3.6.2) and system crash when
+ visiting a particular website
 MIME-Version: 1.0
-In-Reply-To: <1350925299.8609.978.camel@edumazet-glaptop>
-References: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com>
-	<1350925299.8609.978.camel@edumazet-glaptop>
-Date: Mon, 22 Oct 2012 10:25:42 -0700
-X-Google-Sender-Auth: Lpc5AQbYv5lzv1VzRI4rbaa7dqQ
-Message-ID: <CAN8Q1EeqmHMHD-VUgr7Wzv0Z_DAD1SrEniftg==L14d+hGwu+Q@mail.gmail.com>
-Subject: Re: Process Hang in __read_seqcount_begin
-From: Peter LaDow <petela@gocougs.wsu.edu>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Mailer: Webmail
+X-Originating-IP: [46.147.62.27]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 10:01 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> This looks like a corruption of s->sequence, and is value is odd, even
-> if no writer is alive.
->
-> Does local_bh_disable() disables preemption on RT ?
+On Oct 22, 2012, Alan Stern <stern@rowland.harvard.edu> wrote: 
 
-Hmmm....
+> A BUG() at these points would crash the machine hard.  And where we
+> came from doesn't matter; what matters is the values in the pointers.
 
-With PREEMPT_RT_FULL defined (as we have):
+OK, here's what the kernel prints with your patch:
 
-void local_bh_disable(void)
-{
-        migrate_disable();
-        current->softirq_nestcnt++;
-}
+usb 6.1.4: ep 86 list del corruption prev: e5103b54 e5103a94 e51039d4
 
-And the RT patches add the following:
+A small delay before I got thousands of list_del corruption messages would
+have been nice, but I managed to catch the message anyway.
 
-#ifdef CONFIG_PREEMPT_RT_FULL
-# define preempt_disable_rt()          preempt_disable()
-# define preempt_enable_rt()           preempt_enable()
-# define preempt_disable_nort()                do { } while (0)
-# define preempt_enable_nort()         do { } while (0)
-# ifdef CONFIG_SMP
-   extern void migrate_disable(void);
-   extern void migrate_enable(void);
-# else /* CONFIG_SMP */
-#  define migrate_disable()            do { } while (0)
-#  define migrate_enable()             do { } while (0)
-# endif /* CONFIG_SMP */
-#else
-# define preempt_disable_rt()          do { } while (0)
-# define preempt_enable_rt()           do { } while (0)
-# define preempt_disable_nort()                preempt_disable()
-# define preempt_enable_nort()         preempt_enable()
-# define migrate_disable()             preempt_disable()
-# define migrate_enable()              preempt_enable()
-#endif
+Artem
 
-And since we are not SMP, local_bh_disable() essentially does nothing.
- These definitions are consistent across all the RT patches, up to
-3.6.2-rt4 (as far as I can tell).
-
-Now, is preemption required to be disabled in non-SMP systems?
