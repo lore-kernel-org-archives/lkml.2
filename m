@@ -1,72 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793Ab2JVQXy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 12:23:54 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:49063 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755752Ab2JVQXw (ORCPT
+	id S1752631Ab2JVQ0T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 12:26:19 -0400
+Received: from mailserver6.natinst.com ([130.164.80.6]:59286 "EHLO
+	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855Ab2JVQ0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 12:23:52 -0400
+	Mon, 22 Oct 2012 12:26:18 -0400
+X-Greylist: delayed 2942 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Oct 2012 12:26:18 EDT
+Date: Mon, 22 Oct 2012 10:37:35 -0500
+From: Josh Cartwright <josh.cartwright@ni.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        John Linn <john.linn@xilinx.com>
+Subject: [PATCH 3/4] zynq: remove use of CLKDEV_LOOKUP
+Message-ID: <20121022153735.GC502@beefymiracle.amer.corp.natinst.com>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20121022161151.GS16230@one.firstfloor.org>
-References: <1350665289-7288-1-git-send-email-andi@firstfloor.org>
- <CAHO5Pa0W-WGBaPvzdRJxYPdrg-K9guChswo3KJheK4BaRzsRwQ@mail.gmail.com>
- <20121022132733.GQ16230@one.firstfloor.org> <20121022133534.GR16230@one.firstfloor.org>
- <CAKgNAkgQ6JZdwOsCAQ4Ak_gVXtav=TzgzW2tbk5jMUwxtMqOAg@mail.gmail.com>
- <20121022153633.GK2095@tassilo.jf.intel.com> <CAKgNAki=AL+KdYDdYnE8ZhjK-tUf5cZ163BWPe6GRM0rpi-z7w@mail.gmail.com>
- <20121022161151.GS16230@one.firstfloor.org>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Mon, 22 Oct 2012 18:23:32 +0200
-Message-ID: <CAKgNAkjsGp9HUpvhUfqbXnfrLbBsQRAKvOs=41-w3ZAE7yX+cA@mail.gmail.com>
-Subject: Re: [PATCH] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB v6
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Andi Kleen <ak@linux.intel.com>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-MIMETrack: Itemize by SMTP Server on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/22/2012 10:37:30 AM,
+	Serialize by Router on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/22/2012 10:37:31 AM,
+	Serialize complete at 10/22/2012 10:37:31 AM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-22_02:2012-10-22,2012-10-21,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> >> But there seems an obvious solution here: given your value in those
->> >> bits (call it 'n'), the why not apply a multiplier. I mean, certainly
->> >> you never want a value <= 12 for n, and I suspect that the reasonable
->> >> minimum could be much larger (e.g., 2^16). Call that minimum M. Then
->> >> you could interpret the value in your bits as meaning a page size of
->> >>
->> >>     (2^n) * M
->> >
->> > I considered that, but it would seem ugly and does not add that
->> > many bits.
->> >
->> >>
->> >> > So this will use up all remaining flag bits now.
->> >>
->> >> On the other hand, that seems really bad. It looks like that kills the
->> >> ability to further extend the mmap() API with new flags in the future.
->> >> It doesn't sound like we should be doing that.
->> >
->> > You can always add flags to PROT or add a mmap3(). Has been done before.
->> > Or just don't do any new MAP_SECURITY_HOLEs
->>
->> There seems to be a reasonable argument here for an mmap3() with a
->> 64-bit flags argument...
->
-> It's just a pain to deploy.
->
-> I think I would rather do the offset then. That could still handle
-> PowerPC
->
-> 14 + 31 = 44 = 16GB           (minimum size 16K)
+The Zynq support in mainline does not (yet) make use of any of the
+generic clk or clk lookup functionality.  Remove what is upstream for
+now, until the out-of-tree implementation is in suitable form for
+merging.
 
-Since PowerPC already allows 16GB page sizes, doesn't there need to be
-allowance for the possibility of future expansion? Choosing a larger
-minimum size (like 2^16) would allow that. Does the minimum size need
-to be 16k? (Surely, if you want a HUGEPAGE, you want a bigger page
-than that? I am not sure.)
+Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
+---
+ arch/arm/Kconfig                         |  1 -
+ arch/arm/mach-zynq/common.c              |  1 -
+ arch/arm/mach-zynq/include/mach/clkdev.h | 32 --------------------------------
+ 3 files changed, 34 deletions(-)
+ delete mode 100644 arch/arm/mach-zynq/include/mach/clkdev.h
 
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 73067ef..e37bea3 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -959,7 +959,6 @@ config ARCH_ZYNQ
+ 	bool "Xilinx Zynq ARM Cortex A9 Platform"
+ 	select ARM_AMBA
+ 	select ARM_GIC
+-	select CLKDEV_LOOKUP
+ 	select CPU_V7
+ 	select GENERIC_CLOCKEVENTS
+ 	select ICST
+diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
+index d73963b..6ea86cf 100644
+--- a/arch/arm/mach-zynq/common.c
++++ b/arch/arm/mach-zynq/common.c
+@@ -31,7 +31,6 @@
+ #include <asm/hardware/cache-l2x0.h>
+ 
+ #include <mach/zynq_soc.h>
+-#include <mach/clkdev.h>
+ #include "common.h"
+ 
+ static struct of_device_id zynq_of_bus_ids[] __initdata = {
+diff --git a/arch/arm/mach-zynq/include/mach/clkdev.h b/arch/arm/mach-zynq/include/mach/clkdev.h
+deleted file mode 100644
+index c6e73d8..0000000
+--- a/arch/arm/mach-zynq/include/mach/clkdev.h
++++ /dev/null
+@@ -1,32 +0,0 @@
+-/*
+- * arch/arm/mach-zynq/include/mach/clkdev.h
+- *
+- *  Copyright (C) 2011 Xilinx, Inc.
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-#ifndef __MACH_CLKDEV_H__
+-#define __MACH_CLKDEV_H__
+-
+-#include <plat/clock.h>
+-
+-struct clk {
+-	unsigned long		rate;
+-	const struct clk_ops	*ops;
+-	const struct icst_params *params;
+-	void __iomem		*vcoreg;
+-};
+-
+-#define __clk_get(clk) ({ 1; })
+-#define __clk_put(clk) do { } while (0)
+-
+-#endif
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+1.8.0
+
