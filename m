@@ -1,40 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932316Ab2JVWXU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 18:23:20 -0400
-Received: from mga01.intel.com ([192.55.52.88]:15502 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932215Ab2JVWXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 18:23:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,631,1344236400"; 
-   d="scan'208";a="236943106"
-Message-ID: <5085B207.5010907@linux.intel.com>
-Date: Mon, 22 Oct 2012 13:52:23 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S932328Ab2JVWXw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 18:23:52 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42499 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932171Ab2JVWXu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 18:23:50 -0400
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Jacob Shin <jacob.shin@amd.com>, Tom Rini <trini@ti.com>, hpa@zytor.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: BUG: 1bbbbe7 (x86: Exclude E820_RESERVED regions...) PANIC on
- boot
-References: <903a3ead-98b5-4afa-88a4-3dc723895e82@blur> <d556fc0f-da5d-4531-b331-6dc086461f34@blur> <50833F30.4020802@ti.com> <CAE9FiQWpSvKp=Oh+4Y8OpdOjdRnkYVL2HvNNXc29ESpNsMC0AQ@mail.gmail.com> <20121021041858.GA14809@jshin-Toonie> <50843627.4020103@ti.com> <20121021210633.GA14311@jshin-Toonie> <508467EE.4040807@ti.com> <20121022144020.GA14425@jshin-Toonie> <CAE9FiQWvVNCK8Ka6rq+RMf3u4JFn8D18rGMy4Hpz7Rhnrn6VTA@mail.gmail.com> <20121022183858.GA31185@jshin-Toonie> <CAE9FiQWZmwa6EwsfZzz_e3A-tz2LUS2+i+zh4zpXpR_Jj_FQ1w@mail.gmail.com> <5085ABEF.3060502@linux.intel.com> <CAE9FiQW0rQFUgjiYjByA91XCUUqo59zz2kXc9Z5wXk+3vKPKaQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQW0rQFUgjiYjByA91XCUUqo59zz2kXc9Z5wXk+3vKPKaQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1350913454-26927-1-git-send-email-mathias.nyman@linux.intel.com>
+References: <1350913454-26927-1-git-send-email-mathias.nyman@linux.intel.com>
+Date: Tue, 23 Oct 2012 00:23:49 +0200
+Message-ID: <CACRpkdbxfL+1NQ73ve8Hz4VKaVMzJS-P7H50kSNVODAU9mm7QA@mail.gmail.com>
+Subject: Re: [RFC PATCH] gpiolib: add gpio get direction support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mathias Nyman <mathias.nyman@linux.intel.com>
+Cc: linus.walleij@stericsson.com, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2012 01:50 PM, Yinghai Lu wrote:
-> ok, let's see if we can meet this extreme corner case except user
-> specify not page aligned "memmap="
+On Mon, Oct 22, 2012 at 3:44 PM, Mathias Nyman
+<mathias.nyman@linux.intel.com> wrote:
 
-If it is *only* memmap= there is a very simple solution: if the memmap
-is RAM then we round up the starting address and round down the end
-address; if the memmap is not RAM then we round up instead...
+> Add gpio_get_direction() for checking the current direction of a gpio.
+> Returns 1 for input, 0 for output, or negative error.
+> Gpio drivers need to set the gpio_chip .get_direction callback for this
+> functionality, otherwise gpio_get_direction() returns error.
 
-	-hpa
+OK...
 
+> If the .get_direction callback is set, then gpiolib will use it
+> for showing correct gpio direction in sysfs and debug. If not set
+> then it will work the old way; e.g. guessing everything is input
+> until direction is set.
+
+If the driver cannot report the direction setting you *could*
+cache the result of all calls to gpio_direction_output()
+and gpio_direction_input() somewhere. But I don't know
+if it's a good idea.
+
+Anyway, if the callback is only called internally in the GPIOlib
+why are you making the function public to the entire
+kernel like this?
+
+> include/asm-generic/gpio.h
+> +extern int gpio_get_direction(unsigned gpio);
+
+> include/linux/gpio.h
+> +static inline int gpio_get_direction(unsigned gpio)
+> +{
+> +       return -ENOSYS;
+> +}
+> +
+
+Yours,
+Linus Walleij
