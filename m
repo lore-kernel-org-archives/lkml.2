@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab2JVFin (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 01:38:43 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:44818 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753297Ab2JVFil (ORCPT
+	id S1754834Ab2JVFkM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 01:40:12 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:24051 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752163Ab2JVFkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 01:38:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKWKT+Z-SZb1=3rwLm+urs3fghQ3M6pdOR_rzXKCevoad11a5g@mail.gmail.com>
-References: <op.wmbi5kbrn27o5l@gaoqiang-d1.corp.qihoo.net>
-	<20121019160425.GA10175@dhcp22.suse.cz>
-	<CAKWKT+Z-SZb1=3rwLm+urs3fghQ3M6pdOR_rzXKCevoad11a5g@mail.gmail.com>
-Date: Mon, 22 Oct 2012 11:08:40 +0530
-Message-ID: <CAKTCnzmDhSd-POHSC0wx-ziVPUg9wFverK33Q1_SvCx3Gzuugg@mail.gmail.com>
-Subject: Re: process hangs on do_exit when oom happens
-From: Balbir Singh <bsingharora@gmail.com>
-To: Qiang Gao <gaoqiangscut@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 22 Oct 2012 01:40:10 -0400
+X-AuditID: cbfee61b-b7f616d00000319b-6e-5084dc388bac
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Ben Dooks'" <ben-linux@fluff.org>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH V2] backlight: ili9320: add missing SPI dependency
+Date: Mon, 22 Oct 2012 14:40:08 +0900
+Message-id: <00c901cdb017$b263e540$172bafc0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2wF7JLoYlBFi5hTGWhk1Rwn0rqYQ==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t9jAV2LOy0BBtsnW1pc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6Mxc332Qumc1a0bFzB2sC4n72LkZNDQsBEYtbB76wQtpjEhXvr
+	2boYuTiEBBYxSryf1QSWEBKYzSTxYrUIiM0moCbx5cthsGYRgQiJ5hmzmEFsZoFCiTu/H7OA
+	2MICThJH9m4D6uXgYBFQlVg81Q0kzCtgK9Gw5BErhC0o8WPyPRaIVi2JzdsgVjELyEtsXvOW
+	GaRVQkBd4tFfXYhNehJvNtxlgigRkdj34h3jBEaBWUgmzUIyaRaSSbOQtCxgZFnFKJpakFxQ
+	nJSea6RXnJhbXJqXrpecn7uJERyUz6R3MK5qsDjEKMDBqMTDazGjJUCINbGsuDL3EKMEB7OS
+	CO+peKAQb0piZVVqUX58UWlOavEhRmkOFiVx3maPlAAhgfTEktTs1NSC1CKYLBMHp1QD48zU
+	psyPG9uexvV72fPsvB1lYKLv/8LlhsXOoEffo5686+99U35a9o7j5N2HLz2Ol37CpRXEwhx7
+	sWHNc+tZLIJzpIplLS5+KzC7X/aXs+XdAl/nheuKv/U73pXdcUUj/W9Asn+d83/zbQbf4vZ9
+	M59/+F2rfP2LPUv43c7G5HuLxWaaud/5rsRSnJFoqMVcVJwIAM9oJTVGAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 7:46 AM, Qiang Gao <gaoqiangscut@gmail.com> wrote:
-> I don't know whether  the process will exit finally, bug this stack lasts
-> for hours, which is obviously unnormal.
-> The situation:  we use a command calld "cglimit" to fork-and-exec the worker
-> process,and the "cglimit" will
-> set some limitation on the worker with cgroup. for now,we limit the
-> memory,and we also use cpu cgroup,but with
-> no limiation,so when the worker is running, the cgroup directory looks like
-> following:
->
-> /cgroup/memory/worker : this directory limit the memory
-> /cgroup/cpu/worker :with no limit,but worker process is in.
->
-> for some reason(some other process we didn't consider),  the worker process
-> invoke global oom-killer,
-> not cgroup-oom-killer.  then the worker process hangs there.
->
-> Actually, if we didn't set the worker process into the cpu cgroup, this will
-> never happens.
->
+This patch adds this missing SPI dependency and prevents
+the driver from buiding without SPI, because funtion of
+spi driver is used in this driver. So, it fixes link error
+as belows:
 
-You said you don't use CPU limits right? can you also send in the
-output of /proc/sched_debug. Can you also send in your
-/etc/cgconfig.conf? If the OOM is not caused by cgroup memory limit
-and the global system is under pressure in 2.6.32, it can trigger an
-OOM.
+drivers/video/backlight/ili9320.c:51: undefined reference to `spi_sync'
 
-Also
+Also, prompt string for CONFIG_LCD_ILI9320 is added for
+explicit selection.
 
-1. Have you turned off swapping (seems like it) right?
-2. Do you have a NUMA policy setup for this task?
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: Ben Dooks <ben-linux@fluff.org>
+---
+Changes since v1:
+- commit log is modified to be more specific.
 
-Can you also share the .config (not sure if any special patches are
-being used) in the version you've mentioned.
+ drivers/video/backlight/Kconfig |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Balbir
+diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+index c101697..765a945 100644
+--- a/drivers/video/backlight/Kconfig
++++ b/drivers/video/backlight/Kconfig
+@@ -60,7 +60,8 @@ config LCD_LTV350QV
+ 	  The LTV350QV panel is present on all ATSTK1000 boards.
+ 
+ config LCD_ILI9320
+-	tristate
++	tristate "ILI Technology ILI9320 controller support"
++	depends on SPI
+ 	help
+ 	  If you have a panel based on the ILI9320 controller chip
+ 	  then say y to include a power driver for it.
+-- 
+1.7.1
+
+
