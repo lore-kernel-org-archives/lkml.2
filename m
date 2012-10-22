@@ -1,122 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932753Ab2JVBKs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 21:10:48 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:58235 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754746Ab2JVBKr (ORCPT
+	id S1754860Ab2JVBMq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 21:12:46 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:56825 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754746Ab2JVBMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 21:10:47 -0400
-X-AuditID: cbfee61a-b7fa66d0000004cf-05-50849d15e30f
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Linus Walleij'" <linus.walleij@linaro.org>
-Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "'Ryan Mallon'" <rmallon@gmail.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH V4] gpio: samsung: use pr_* instead of printk
-Date: Mon, 22 Oct 2012 10:10:45 +0900
-Message-id: <00a301cdaff2$10723900$3156ab00$%han@samsung.com>
+	Sun, 21 Oct 2012 21:12:45 -0400
+X-AuditID: cbfee61a-b7fa66d0000004cf-d5-50849d8c7ed2
+Message-id: <50849D8C.3070400@samsung.com>
+Date: Mon, 22 Oct 2012 10:12:44 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
 MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
+To: anish kumar <anish198519851985@gmail.com>
+Cc: gregkh@linuxfoundation.org, myungjoo.ham@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] extcon: trivial: kfree missed from remove path
+References: <1350795539-13206-1-git-send-email-anish198519851985@gmail.com>
+In-reply-to: <1350795539-13206-1-git-send-email-anish198519851985@gmail.com>
+Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2v8hBX5g/bU92AQFab8TCPuR7TTA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFLMWRmVeSWpSXmKPExsVy+t9jAV3RuS0BBrNu6Fpc3jWHzWLG+X1M
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGXsmPCNteCTSMXu0y1sDYxtgl2MnBwSAiYSvz+8ZIOw
-	xSQu3FsPZHNxCAksYpTYt2UJC4Tzi1GiZd9ldpAqNgE1iS9fDoPZIgIxErcnXAIrYhbYwijR
-	NamTBSQhLGArcb3tBCOIzSKgKnFi6SwwmxcovnXCejYIW1Dix+R7YPXMAloSm7c1sULY8hKb
-	17xl7mLkADpJXeLRX10QU0RAT+LpQxOIChGJfS/eMU5gFJiFZNAsJINmIRk0C0nLAkaWVYyi
-	qQXJBcVJ6bmGesWJucWleel6yfm5mxjBIfpMagfjygaLQ4wCHIxKPLxM1s0BQqyJZcWVuYcY
-	JTiYlUR4T8W3BAjxpiRWVqUW5ccXleakFh9ilOZgURLnbfZICRASSE8sSc1OTS1ILYLJMnFw
-	SjUwulyW//nkYs3PzXuyZylInj4+c7pASIUb4yPNS87l09NbV7XEbVFu2cGqdVH/luV2NnW+
-	yjCTuHDlJcZzFFr/OUuoVNw4ueCRzUTHcy23XcsXBpjFMj/c21HxtSTTzY9NumLL1PSUee2n
-	ji7ZemjvjWvGD0+eZjj0pfT8jruZp6c9m8J/LXBTvRJLcUaioRZzUXEiAL/Y5f5NAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t9jAd2euS0BBl+beS0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGrxuHWQq2slTs2bqYqYHxMnMXIyeHhICJRPOWWywQtpjEhXvr
+	2boYuTiEBBYxSrQd388C4XQxSZw6/AWsg1dAS+LB7FlgNouAqsTxB72sIDYbUHz/ixtA3Rwc
+	ogIREr/6OSDKBSV+TL7HAhIWEdCV2LQwBSTMDFQx6dVisL3CAs4Sr3e3gNlCAt4S227OYwIp
+	5xTwkXi4kA2iXEdif+s0KFteYvOat8wTGAVmIVkwC0nZLCRlCxiZVzGKphYkFxQnpeca6hUn
+	5haX5qXrJefnbmIEB98zqR2MKxssDjEKcDAq8fAyWTcHCLEmlhVX5h5ilOBgVhLhPRXfEiDE
+	m5JYWZValB9fVJqTWnyIUZqDRUmct9kjJUBIID2xJDU7NbUgtQgmy8TBKdXAKOv1YsuMnXXp
+	os9V/k+7H1h0PM5D+fYfE6Vrx6an63dc5qyd8frJrh9vrRS0HdS7VQ44OzOE7Y5kczz9WJVv
+	a7K81FvVO32fEtp2rkiWurE5YJVRsIpvtpp7x9xW8VlvqllUqmN0a1yY7iQZdj4vl9U47hoY
+	3vFi88VVRpm7k5oYJNKbHooosRRnJBpqMRcVJwIA/U7LBToCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses pr_* instead of printk. Also, gpio_dbg
-is replaced with pr_debug.
+On 10/21/2012 01:58 PM, anish kumar wrote:
+> From: anish kumar <anish198519851985@gmail.com>
+> 
+> Extcon core doesn't free the memory when we do unregister.
+> Kfree is added in the remove path as it was missing.
+> 
+> Signed-off-by: anish kumar <anish198519851985@gmail.com>
+> ---
+>  drivers/extcon/extcon-max77693.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+Applied, thanks.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
-Change since v3:
-- remove Linus Walleij's Reviewed-by
-Change since v2:
-- remove Ryan Mallon's Signed-off-by
+You can check it after some hours at extcon tree:
+- http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/extcon-for-next
 
- drivers/gpio/gpio-samsung.c |   18 ++++++------------
- 1 files changed, 6 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
-index a006f0d..5c5ccdf 100644
---- a/drivers/gpio/gpio-samsung.c
-+++ b/drivers/gpio/gpio-samsung.c
-@@ -42,12 +42,6 @@
- #include <plat/gpio-fns.h>
- #include <plat/pm.h>
- 
--#ifndef DEBUG_GPIO
--#define gpio_dbg(x...) do { } while (0)
--#else
--#define gpio_dbg(x...) printk(KERN_DEBUG x)
--#endif
--
- int samsung_gpio_setpull_updown(struct samsung_gpio_chip *chip,
- 				unsigned int off, samsung_gpio_pull_t pull)
- {
-@@ -599,7 +593,7 @@ static int samsung_gpiolib_4bit_input(struct gpio_chip *chip,
- 	con &= ~(0xf << con_4bit_shift(offset));
- 	__raw_writel(con, base + GPIOCON_OFF);
- 
--	gpio_dbg("%s: %p: CON now %08lx\n", __func__, base, con);
-+	pr_debug("%s: %p: CON now %08lx\n", __func__, base, con);
- 
- 	return 0;
- }
-@@ -627,7 +621,7 @@ static int samsung_gpiolib_4bit_output(struct gpio_chip *chip,
- 	__raw_writel(con, base + GPIOCON_OFF);
- 	__raw_writel(dat, base + GPIODAT_OFF);
- 
--	gpio_dbg("%s: %p: CON %08lx, DAT %08lx\n", __func__, base, con, dat);
-+	pr_debug("%s: %p: CON %08lx, DAT %08lx\n", __func__, base, con, dat);
- 
- 	return 0;
- }
-@@ -671,7 +665,7 @@ static int samsung_gpiolib_4bit2_input(struct gpio_chip *chip,
- 	con &= ~(0xf << con_4bit_shift(offset));
- 	__raw_writel(con, regcon);
- 
--	gpio_dbg("%s: %p: CON %08lx\n", __func__, base, con);
-+	pr_debug("%s: %p: CON %08lx\n", __func__, base, con);
- 
- 	return 0;
- }
-@@ -706,7 +700,7 @@ static int samsung_gpiolib_4bit2_output(struct gpio_chip *chip,
- 	__raw_writel(con, regcon);
- 	__raw_writel(dat, base + GPIODAT_OFF);
- 
--	gpio_dbg("%s: %p: CON %08lx, DAT %08lx\n", __func__, base, con, dat);
-+	pr_debug("%s: %p: CON %08lx, DAT %08lx\n", __func__, base, con, dat);
- 
- 	return 0;
- }
-@@ -926,10 +920,10 @@ static void __init samsung_gpiolib_add(struct samsung_gpio_chip *chip)
- #ifdef CONFIG_PM
- 	if (chip->pm != NULL) {
- 		if (!chip->pm->save || !chip->pm->resume)
--			printk(KERN_ERR "gpio: %s has missing PM functions\n",
-+			pr_err("gpio: %s has missing PM functions\n",
- 			       gc->label);
- 	} else
--		printk(KERN_ERR "gpio: %s has no PM function\n", gc->label);
-+		pr_err("gpio: %s has no PM function\n", gc->label);
- #endif
- 
- 	/* gpiochip_add() prints own failure message on error. */
--- 
-1.7.1
-
-
+Chanwoo Choi
