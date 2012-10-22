@@ -1,116 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352Ab2JVPUk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 11:20:40 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:33948 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808Ab2JVPPq (ORCPT
+	id S1753540Ab2JVPPp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 11:15:45 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:22967 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752731Ab2JVPPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 11:15:46 -0400
+	Mon, 22 Oct 2012 11:15:42 -0400
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
         Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH 07/22] iov_iter: add a shorten call
-Date: Mon, 22 Oct 2012 10:15:07 -0500
-Message-Id: <1350918922-6096-8-git-send-email-dave.kleikamp@oracle.com>
+Subject: [PATCH 09/22] dio: create a dio_aligned() helper function
+Date: Mon, 22 Oct 2012 10:15:09 -0500
+Message-Id: <1350918922-6096-10-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.7.12.4
 In-Reply-To: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zach Brown <zab@zabbo.net>
 
-The generic direct write path wants to shorten its memory vector.  It
-does this when it finds that it has to perform a partial write due to
-LIMIT_FSIZE.  .direct_IO() always performs IO on all of the referenced
-memory because it doesn't have an argument to specify the length of the
-IO.
-
-We add an iov_iter operation for this so that the generic path can ask
-to shorten the memory vector without having to know what kind it is.
-We're happy to shorten the kernel copy of the iovec array, but we refuse
-to shorten the bio_vec array and return an error in this case.
+__blockdev_direct_IO() had two instances of the same code to determine
+if a given offset wasn't aligned first to the inode's blkbits and then
+to the underlying device's blkbits.   This was confusing enough but
+we're about to add code that performs the same check on offsets in bvec
+arrays.  Rather than add yet more copies of this code let's have
+everyone call a helper.
 
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Cc: Zach Brown <zab@zabbo.net>
 ---
- include/linux/fs.h |  5 +++++
- mm/iov-iter.c      | 14 ++++++++++++++
- 2 files changed, 19 insertions(+)
+ fs/direct-io.c | 59 ++++++++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 37 insertions(+), 22 deletions(-)
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index afb1343..1a986ed 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -240,6 +240,7 @@ struct iov_iter_ops {
- 	void (*ii_advance)(struct iov_iter *, size_t);
- 	int (*ii_fault_in_readable)(struct iov_iter *, size_t);
- 	size_t (*ii_single_seg_count)(struct iov_iter *);
-+	int (*ii_shorten)(struct iov_iter *, size_t);
- };
- 
- static inline size_t iov_iter_copy_to_user_atomic(struct page *page,
-@@ -274,6 +275,10 @@ static inline size_t iov_iter_single_seg_count(struct iov_iter *i)
- {
- 	return i->ops->ii_single_seg_count(i);
- }
-+static inline int iov_iter_shorten(struct iov_iter *i, size_t count)
-+{
-+	return i->ops->ii_shorten(i, count);
-+}
- 
- extern struct iov_iter_ops ii_bvec_ops;
- 
-diff --git a/mm/iov-iter.c b/mm/iov-iter.c
-index c5d0a9e..fcced89 100644
---- a/mm/iov-iter.c
-+++ b/mm/iov-iter.c
-@@ -201,6 +201,11 @@ static size_t ii_bvec_single_seg_count(struct iov_iter *i)
- 		return min(i->count, bvec->bv_len - i->iov_offset);
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index f86c720..035c0a3 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -1020,6 +1020,39 @@ static inline int drop_refcount(struct dio *dio)
  }
  
-+static int ii_bvec_shorten(struct iov_iter *i, size_t count)
+ /*
++ * Returns true if the given offset is aligned to either the IO size
++ * specified by the given blkbits or by the logical block size of the
++ * given block device.
++ *
++ * If the given offset isn't aligned to the blkbits arguments as this is
++ * called then blkbits is set to the block size of the specified block
++ * device.  The call can then return either true or false.
++ *
++ * This bizarre calling convention matches the code paths that
++ * duplicated the functionality that this helper was built from.  We
++ * reproduce the behaviour to avoid introducing subtle bugs.
++ */
++static int dio_aligned(unsigned long offset, unsigned *blkbits,
++		       struct block_device *bdev)
 +{
-+	return -EINVAL;
++	unsigned mask = (1 << *blkbits) - 1;
++
++	/*
++	 * Avoid references to bdev if not absolutely needed to give
++	 * the early prefetch in the caller enough time.
++	 */
++
++	if (offset & mask) {
++		if (bdev)
++			*blkbits = blksize_bits(bdev_logical_block_size(bdev));
++		mask = (1 << *blkbits) - 1;
++		return !(offset & mask);
++	}
++
++	return 1;
 +}
 +
- struct iov_iter_ops ii_bvec_ops = {
- 	.ii_copy_to_user_atomic = ii_bvec_copy_to_user_atomic,
- 	.ii_copy_to_user = ii_bvec_copy_to_user,
-@@ -209,6 +214,7 @@ struct iov_iter_ops ii_bvec_ops = {
- 	.ii_advance = ii_bvec_advance,
- 	.ii_fault_in_readable = ii_bvec_fault_in_readable,
- 	.ii_single_seg_count = ii_bvec_single_seg_count,
-+	.ii_shorten = ii_bvec_shorten,
- };
- EXPORT_SYMBOL(ii_bvec_ops);
++/*
+  * This is a library function for use by filesystem drivers.
+  *
+  * The locking rules are governed by the flags parameter:
+@@ -1054,7 +1087,6 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 	size_t size;
+ 	unsigned long addr;
+ 	unsigned blkbits = inode->i_blkbits;
+-	unsigned blocksize_mask = (1 << blkbits) - 1;
+ 	ssize_t retval = -EINVAL;
+ 	loff_t end = offset;
+ 	struct dio *dio;
+@@ -1067,33 +1099,16 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 	if (rw & WRITE)
+ 		rw = WRITE_ODIRECT;
  
-@@ -358,6 +364,13 @@ static size_t ii_iovec_single_seg_count(struct iov_iter *i)
- 		return min(i->count, iov->iov_len - i->iov_offset);
- }
+-	/*
+-	 * Avoid references to bdev if not absolutely needed to give
+-	 * the early prefetch in the caller enough time.
+-	 */
+-
+-	if (offset & blocksize_mask) {
+-		if (bdev)
+-			blkbits = blksize_bits(bdev_logical_block_size(bdev));
+-		blocksize_mask = (1 << blkbits) - 1;
+-		if (offset & blocksize_mask)
+-			goto out;
+-	}
++	if (!dio_aligned(offset, &blkbits, bdev))
++		goto out;
  
-+static int ii_iovec_shorten(struct iov_iter *i, size_t count)
-+{
-+	struct iovec *iov = (struct iovec *)i->data;
-+	i->nr_segs = iov_shorten(iov, i->nr_segs, count);
-+	return 0;
-+}
-+
- struct iov_iter_ops ii_iovec_ops = {
- 	.ii_copy_to_user_atomic = ii_iovec_copy_to_user_atomic,
- 	.ii_copy_to_user = ii_iovec_copy_to_user,
-@@ -366,5 +379,6 @@ struct iov_iter_ops ii_iovec_ops = {
- 	.ii_advance = ii_iovec_advance,
- 	.ii_fault_in_readable = ii_iovec_fault_in_readable,
- 	.ii_single_seg_count = ii_iovec_single_seg_count,
-+	.ii_shorten = ii_iovec_shorten,
- };
- EXPORT_SYMBOL(ii_iovec_ops);
+ 	/* Check the memory alignment.  Blocks cannot straddle pages */
+ 	for (seg = 0; seg < nr_segs; seg++) {
+ 		addr = (unsigned long)iov[seg].iov_base;
+ 		size = iov[seg].iov_len;
+ 		end += size;
+-		if (unlikely((addr & blocksize_mask) ||
+-			     (size & blocksize_mask))) {
+-			if (bdev)
+-				blkbits = blksize_bits(
+-					 bdev_logical_block_size(bdev));
+-			blocksize_mask = (1 << blkbits) - 1;
+-			if ((addr & blocksize_mask) || (size & blocksize_mask))
+-				goto out;
+-		}
++		if (!dio_aligned(addr|size, &blkbits, bdev))
++			goto out;
+ 	}
+ 
+ 	/* watch out for a 0 len io from a tricksy fs */
 -- 
 1.7.12.3
 
