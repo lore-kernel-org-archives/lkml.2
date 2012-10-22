@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab2JVPgN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 11:36:13 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57332 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753267Ab2JVPgK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 11:36:10 -0400
-Date: Mon, 22 Oct 2012 08:36:06 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [ 12/37] block: fix request_queue->flags initialization
-Message-ID: <20121022153606.GA13399@kroah.com>
-References: <20121019031302.789593147@linuxfoundation.org>
- <20121019031304.836071629@linuxfoundation.org>
- <20121019231604.GF13292@decadent.org.uk>
- <20121021162529.GA25856@kroah.com>
- <20121021185618.GA5951@atj.dyndns.org>
+	id S1755421Ab2JVPgg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 11:36:36 -0400
+Received: from mga01.intel.com ([192.55.52.88]:65203 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751555Ab2JVPgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 11:36:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,630,1344236400"; 
+   d="scan'208";a="238568383"
+Date: Mon, 22 Oct 2012 08:36:33 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB v6
+Message-ID: <20121022153633.GK2095@tassilo.jf.intel.com>
+References: <1350665289-7288-1-git-send-email-andi@firstfloor.org>
+ <CAHO5Pa0W-WGBaPvzdRJxYPdrg-K9guChswo3KJheK4BaRzsRwQ@mail.gmail.com>
+ <20121022132733.GQ16230@one.firstfloor.org>
+ <20121022133534.GR16230@one.firstfloor.org>
+ <CAKgNAkgQ6JZdwOsCAQ4Ak_gVXtav=TzgzW2tbk5jMUwxtMqOAg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121021185618.GA5951@atj.dyndns.org>
+In-Reply-To: <CAKgNAkgQ6JZdwOsCAQ4Ak_gVXtav=TzgzW2tbk5jMUwxtMqOAg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 21, 2012 at 11:56:18AM -0700, Tejun Heo wrote:
-> Hello, Greg.
+> Not sure of your notation there. I assume 31..27 means 5 bits (32
+> through to 28 inclusive, 27 excluded). That gives you just 2^31 ==
+
+[27...31]
+
+You're right it's only 5 bits, so just 2GB.
+
+Thinking about it more PowerPC has a 16GB page, so we probably
+need to move this to prot.
+
+However I'm not sure if any architectures use let's say the high  
+8 bits of prot.
+
 > 
-> On Sun, Oct 21, 2012 at 09:25:29AM -0700, Greg Kroah-Hartman wrote:
-> > > > commit 60ea8226cbd5c8301f9a39edc574ddabcb8150e0 upstream.
-> > > > 
-> > > > A queue newly allocated with blk_alloc_queue_node() has only
-> > > > QUEUE_FLAG_BYPASS set.  For request-based drivers,
-> > > > blk_init_allocated_queue() is called and q->queue_flags is overwritten
-> > > > with QUEUE_FLAG_DEFAULT which doesn't include BYPASS even though the
-> > > > initial bypass is still in effect.
-> > > > 
-> > > > In blk_init_allocated_queue(), or QUEUE_FLAG_DEFAULT to q->queue_flags
-> > > > instead of overwriting.
-> > > [...]
-> > > 
-> > > This is not needed, as there is no QUEUE_FLAG_BYPASS in 3.0.y.
-> > 
-> > Odd, it doesn't break the build.  And for some reason I just missed
-> > this, does it hurt to have it applied?
+> But there seems an obvious solution here: given your value in those
+> bits (call it 'n'), the why not apply a multiplier. I mean, certainly
+> you never want a value <= 12 for n, and I suspect that the reasonable
+> minimum could be much larger (e.g., 2^16). Call that minimum M. Then
+> you could interpret the value in your bits as meaning a page size of
 > 
-> I don't think it will break anything as it simply changes assignment
-> to |= to avoid overwriting existing flags.  That said, any patch can
-> break anything, so if possible it would be better to drop for 3.0.y.
+>     (2^n) * M
 
-Ok, I'll revert this and push out a 3.0.48 to be safe.
+I considered that, but it would seem ugly and does not add that 
+many bits.
 
-thanks,
+> 
+> > So this will use up all remaining flag bits now.
+> 
+> On the other hand, that seems really bad. It looks like that kills the
+> ability to further extend the mmap() API with new flags in the future.
+> It doesn't sound like we should be doing that.
 
-greg k-h
+You can always add flags to PROT or add a mmap3(). Has been done before.
+Or just don't do any new MAP_SECURITY_HOLEs
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
