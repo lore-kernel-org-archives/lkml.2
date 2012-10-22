@@ -1,90 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab2JVSBJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 14:01:09 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:53416 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755971Ab2JVSBH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 14:01:07 -0400
-Date: Mon, 22 Oct 2012 14:01:06 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-cc: zonque@gmail.com, <bp@alien8.de>, <pavel@ucw.cz>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <security@kernel.org>, <linux-media@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <alsa-devel@alsa-project.org>
-Subject: Re: Re: A reliable kernel panic (3.6.2) and system crash when visiting
- a particular website
-In-Reply-To: <1985645001.39510.1350927037793.JavaMail.mail@webmail15>
-Message-ID: <Pine.LNX.4.44L0.1210221353440.1724-100000@iolanthe.rowland.org>
+	id S932117Ab2JVSDk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 14:03:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45725 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755905Ab2JVSDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 14:03:38 -0400
+Date: Mon, 22 Oct 2012 20:04:45 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 1/7] cgroup: cgroup_subsys->fork() should be called
+	after the task is added to css_set
+Message-ID: <20121022180445.GB21553@redhat.com>
+References: <1350426526-14254-1-git-send-email-tj@kernel.org> <1350426526-14254-2-git-send-email-tj@kernel.org> <20121021191141.GA26218@redhat.com> <20121021192222.GB5951@atj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121021192222.GB5951@atj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Oct 2012, Artem S. Tashkinov wrote:
+Hi Tejun,
 
-> OK, here's what the kernel prints with your patch:
-> 
-> usb 6.1.4: ep 86 list del corruption prev: e5103b54 e5103a94 e51039d4
-> 
-> A small delay before I got thousands of list_del corruption messages would
-> have been nice, but I managed to catch the message anyway.
+On 10/21, Tejun Heo wrote:
+>
+> On Sun, Oct 21, 2012 at 09:11:41PM +0200, Oleg Nesterov wrote:
+>
+> > And it seems that fork() can race with cgroup iterator. post_fork
+> > will notice use_task_css_set_links, but until then the child belongs
+> > to the parent's css and it is not "visible" to iterator (and right
+> > after cgroup_fork() it is not visible to do_each_thread() if
+> > use_task_css_set_links is not set).
+> >
+> > For example. Suppose that the child migrates to another cgroup after
+> > copy_process() makes it visible to the user-space. Then update_if_frozen
+> > sets CGROUP_FROZEN (again, cgroup_iter_next do not see this child).
+> >
+> > Now, post_fork calls freezer_fork() and hits BUG_ON(CGROUP_FROZEN).
+> >
+> > But again, I do not blame this patch.
+>
+> I'm planning to update it to,
+>
+> * Clear ->cgroup to %NULL during copy_process().
 
-All right.  Here's a new patch, which will print more information and
-will provide a 10-second delay.
+I completely agree. new_child->cgroups copied from parent looks simply
+strange until post_fork. If nothing else, the new task is still under
+construction by the time cgroup_fork() is called.
 
-For this to be useful, you should capture a usbmon trace at the same
-time.  The relevant entries will show up in the trace shortly before
-_and_ shortly after the error message appears.
+> > I am starting to think again about a big-rw-lock around copy_process.
+> > Recently I tried to add one around dup_mmap for uprobes, but perhaps
+> > cgroups can use it too...
+>
+> If some other subsystems need it, maybe just make threadgroup locking
+> coarser?
 
-Alan Stern
+What do you mean?
 
-P.S.: It will help if you unplug as many of the other USB devices as
-possible before running this test.
+> I *think* I can make cgroup work correctly without a agiant
+> rwlock
 
+Yes, probably cgroup doesn't really need it. Although we could probably
+kill signal->group_rwsem, but this is minor and "write-lock" will be much
+slower.
 
-
-Index: usb-3.6/drivers/usb/core/hcd.c
-===================================================================
---- usb-3.6.orig/drivers/usb/core/hcd.c
-+++ usb-3.6/drivers/usb/core/hcd.c
-@@ -1083,6 +1083,8 @@ EXPORT_SYMBOL_GPL(usb_calc_bus_time);
- 
- /*-------------------------------------------------------------------------*/
- 
-+static bool list_error;
-+
- /**
-  * usb_hcd_link_urb_to_ep - add an URB to its endpoint queue
-  * @hcd: host controller to which @urb was submitted
-@@ -1193,6 +1195,25 @@ void usb_hcd_unlink_urb_from_ep(struct u
- {
- 	/* clear all state linking urb to this dev (and hcd) */
- 	spin_lock(&hcd_urb_list_lock);
-+	{
-+		struct list_head *cur = &urb->urb_list;
-+		struct list_head *prev = cur->prev;
-+		struct list_head *next = cur->next;
-+
-+		if (prev->next != cur && !list_error) {
-+			list_error = true;
-+			dev_err(&urb->dev->dev,
-+				"ep %x list del corruption prev: %p %p %p %p %p\n",
-+				urb->ep->desc.bEndpointAddress,
-+				cur, prev, prev->next, next, next->prev);
-+			dev_err(&urb->dev->dev,
-+				"head %p urb %p urbprev %p urbnext %p\n",
-+				&urb->ep->urb_list, urb,
-+				list_entry(prev, struct urb, urb_list),
-+				list_entry(next, struct urb, urb_list));
-+			mdelay(10000);
-+		}
-+	}
- 	list_del_init(&urb->urb_list);
- 	spin_unlock(&hcd_urb_list_lock);
- }
+Oleg.
 
