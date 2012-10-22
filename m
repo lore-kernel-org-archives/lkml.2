@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab2JVQHX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 12:07:23 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:58765 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755547Ab2JVQHU (ORCPT
+	id S1755569Ab2JVQIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 12:08:13 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:51747 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab2JVQIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 12:07:20 -0400
-Date: Mon, 22 Oct 2012 09:07:05 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jian-Jhong Ding <jj_ding@emc.com.tw>
-Cc: Scott Liu <scott.liu@emc.com.tw>, linux-input@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jesse <jesse@emc.com.tw>, Vincent Wang <vincent.wang@emc.com.tw>,
-        Paul <paul.liang@emc.com.tw>
-Subject: Re: [PATCH v1] Support Elan Touchscreen eKTF product.
-Message-ID: <20121022160705.GC13791@core.coreip.homeip.net>
-References: <1350424679-20725-1-git-send-email-scott.liu@emc.com.tw>
- <87hapnnp5t.fsf@emc.com.tw>
+	Mon, 22 Oct 2012 12:08:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87hapnnp5t.fsf@emc.com.tw>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1350921565.2768.105.camel@twins>
+References: <1350912052-10066-1-git-send-email-eranian@google.com>
+	<1350912052-10066-2-git-send-email-eranian@google.com>
+	<20121022135358.GJ2095@tassilo.jf.intel.com>
+	<CABPqkBTJsZHdvp+Tm3SGJCfJ7eMFaqQR8pd9eoh5KyBo3k6o3Q@mail.gmail.com>
+	<20121022153952.GM2095@tassilo.jf.intel.com>
+	<CABPqkBTeuD==RY9xORYyUhtZm0cXAFw7FEPocMsdCbcqTUS3bg@mail.gmail.com>
+	<1350921565.2768.105.camel@twins>
+Date: Mon, 22 Oct 2012 18:08:10 +0200
+Message-ID: <CABPqkBQ26K9iT6Kkzwg1XFvbz+ByKSoPGcyUDXrTq2+thqFBtA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] perf tools: add event modifier to request
+ exclusive PMU access
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <ak@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 11:47:42AM +0800, Jian-Jhong Ding wrote:
-> Scott Liu <scott.liu@emc.com.tw> writes:
-> > +
-> > +struct mt_device {
-> > +	struct mt_slot curdata;	/* placeholder of incoming data */
-> > +	__u8 num_received;	/* how many contacts we received */
-> > +	__u8 num_expected;	/* expected last contact index */
-> > +	__u8 maxcontacts;
-> > +	bool curvalid;		/* is the current contact valid? */
-> > +	struct mt_slot *slots;
-> > +};
-> 
-> With Benjamin's i2c-hid implimentation, is it possible to make
-> hid-multitouch not depend on USBHID and reuse it to drive this device?
+On Mon, Oct 22, 2012 at 5:59 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2012-10-22 at 17:44 +0200, Stephane Eranian wrote:
+>>
+>> I know the answer, because I know what's going on under the
+>> hood. But what about the average user?
+>
+> I'm still wondering if the avg user really thinks 'instructions' is a
+> useful metric for other than obtaining ipc measurements.
+>
+Yeah, for many users CPI (or IPC) is a useful metric.
 
-Exactly. Before looking any further - is this the same part that Tom Lin
-posted a driver for earlier this summer?
-
-Thanks.
-
--- 
-Dmitry
+> The avg user wants time domain measurements, like what's the most
+> expensive function, or most expensive cache-miss etc..
+>
+Yes, you have those too.
