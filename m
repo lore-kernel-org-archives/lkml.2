@@ -1,157 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617Ab2JVIBu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 04:01:50 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:56419 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815Ab2JVIBs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 04:01:48 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q9M81FiS003509
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jean@google.com>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 1/2] r8169: enable ALDPS for power saving
-Date: Mon, 22 Oct 2012 16:05:53 +0800
-Message-ID: <1350893153-18320-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.7.11.4
+	id S1751741Ab2JVIB4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 04:01:56 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47473 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751627Ab2JVIBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 04:01:53 -0400
+Date: Mon, 22 Oct 2012 10:56:11 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: <balbi@ti.com>, Venu Byravarasu <vbyravarasu@nvidia.com>,
+        <stern@rowland.harvard.edu>, <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 resend] USB: PHY: Re-organize Tegra USB PHY driver
+Message-ID: <20121022075611.GC14033@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1350643085-27294-1-git-send-email-vbyravarasu@nvidia.com>
+ <20121019153555.GC440@arwen.pp.htv.fi>
+ <50817FEF.70107@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jaoouwwPWoQSJZYp"
+Content-Disposition: inline
+In-Reply-To: <50817FEF.70107@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable ALDPS function to save power when link down. Note that the
-feature should be set after the other PHY settings. And the firmware
-is necessary. Don't enable it without loading the firmware.
+--jaoouwwPWoQSJZYp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c | 46 +++++++++++++++++++++++++++++++++++-
- 1 file changed, 45 insertions(+), 1 deletion(-)
+Hi,
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index e7ff886..ba29e4d 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -687,6 +687,7 @@ enum features {
- 	RTL_FEATURE_WOL		= (1 << 0),
- 	RTL_FEATURE_MSI		= (1 << 1),
- 	RTL_FEATURE_GMII	= (1 << 2),
-+	RTL_FEATURE_EXTENDED	= (1 << 3),
- };
- 
- struct rtl8169_counters {
-@@ -2394,8 +2395,10 @@ static void rtl_apply_firmware(struct rtl8169_private *tp)
- 	struct rtl_fw *rtl_fw = tp->rtl_fw;
- 
- 	/* TODO: release firmware once rtl_phy_write_fw signals failures. */
--	if (!IS_ERR_OR_NULL(rtl_fw))
-+	if (!IS_ERR_OR_NULL(rtl_fw)) {
- 		rtl_phy_write_fw(tp, rtl_fw);
-+		tp->features |= RTL_FEATURE_EXTENDED;
-+	}
- }
- 
- static void rtl_apply_firmware_cond(struct rtl8169_private *tp, u8 reg, u16 val)
-@@ -3178,6 +3181,12 @@ static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_w1w0_phy(tp, 0x19, 0x0000, 0x0001);
- 	rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0400);
- 	rtl_writephy(tp, 0x1f, 0x0000);
-+
-+	/* ALDPS enable */
-+	if (tp->features & RTL_FEATURE_EXTENDED) {
-+		rtl_writephy(tp, 0x1f, 0x0000);
-+		rtl_w1w0_phy(tp, 0x15, 0x1000, 0x0000);
-+	}
- }
- 
- static void rtl8168f_hw_phy_config(struct rtl8169_private *tp)
-@@ -3250,6 +3259,12 @@ static void rtl8168f_1_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy(tp, 0x05, 0x8b85);
- 	rtl_w1w0_phy(tp, 0x06, 0x4000, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
-+
-+	/* ALDPS enable */
-+	if (tp->features & RTL_FEATURE_EXTENDED) {
-+		rtl_writephy(tp, 0x1f, 0x0000);
-+		rtl_w1w0_phy(tp, 0x15, 0x1000, 0x0000);
-+	}
- }
- 
- static void rtl8168f_2_hw_phy_config(struct rtl8169_private *tp)
-@@ -3257,6 +3272,12 @@ static void rtl8168f_2_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_apply_firmware(tp);
- 
- 	rtl8168f_hw_phy_config(tp);
-+
-+	/* ALDPS enable */
-+	if (tp->features & RTL_FEATURE_EXTENDED) {
-+		rtl_writephy(tp, 0x1f, 0x0000);
-+		rtl_w1w0_phy(tp, 0x15, 0x1000, 0x0000);
-+	}
- }
- 
- static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
-@@ -3354,6 +3375,12 @@ static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_w1w0_phy(tp, 0x19, 0x0000, 0x0001);
- 	rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0400);
- 	rtl_writephy(tp, 0x1f, 0x0000);
-+
-+	/* ALDPS enable */
-+	if (tp->features & RTL_FEATURE_EXTENDED) {
-+		rtl_writephy(tp, 0x1f, 0x0000);
-+		rtl_w1w0_phy(tp, 0x15, 0x1000, 0x0000);
-+	}
- }
- 
- static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
-@@ -3446,6 +3473,11 @@ static void rtl8105e_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_apply_firmware(tp);
- 
- 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
-+
-+	if (tp->features & RTL_FEATURE_EXTENDED) {
-+		rtl_writephy(tp, 0x1f, 0x0000);
-+		rtl_writephy(tp, 0x18, 0x8310);
-+	}
- }
- 
- static void rtl8402_hw_phy_config(struct rtl8169_private *tp)
-@@ -3463,6 +3495,11 @@ static void rtl8402_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy(tp, 0x10, 0x401f);
- 	rtl_writephy(tp, 0x19, 0x7030);
- 	rtl_writephy(tp, 0x1f, 0x0000);
-+
-+	if (tp->features & RTL_FEATURE_EXTENDED) {
-+		rtl_writephy(tp, 0x1f, 0x0000);
-+		rtl_writephy(tp, 0x18, 0x8310);
-+	}
- }
- 
- static void rtl8106e_hw_phy_config(struct rtl8169_private *tp)
-@@ -3485,6 +3522,11 @@ static void rtl8106e_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
- 
- 	rtl_eri_write(tp, 0x1d0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
-+
-+	if (tp->features & RTL_FEATURE_EXTENDED) {
-+		rtl_writephy(tp, 0x1f, 0x0000);
-+		rtl_writephy(tp, 0x18, 0x8310);
-+	}
- }
- 
- static void rtl_hw_phy_config(struct net_device *dev)
-@@ -6391,6 +6433,8 @@ static void rtl8169_net_suspend(struct net_device *dev)
- {
- 	struct rtl8169_private *tp = netdev_priv(dev);
- 
-+	tp->features &= ~RTL_FEATURE_EXTENDED;
-+
- 	if (!netif_running(dev))
- 		return;
- 
--- 
-1.7.11.4
+On Fri, Oct 19, 2012 at 10:29:35AM -0600, Stephen Warren wrote:
+> On 10/19/2012 09:35 AM, Felipe Balbi wrote:
+> > Hi,
+> >=20
+> > On Fri, Oct 19, 2012 at 04:08:05PM +0530, Venu Byravarasu wrote:
+> >> NVIDIA produces several Tegra SoCs viz Tegra20, Tegra30 etc. In
+> >> order to support USB PHY drivers on these SoCs, existing PHY
+> >> driver is split into SoC agnostic common USB PHY driver and
+> >> Tegra20-specific USB phy driver. This will facilitate easy
+> >> addition and deletion of phy drivers for Tegra SoCs.
+> >>=20
+> >> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> >=20
+> > I was reading this "driver" more closely and I have a bunch of
+> > questions about it, but the most important of all of them is: "why
+> > isn't that a real PHY driver ?". It doesn't have a probe()
+> > function, it doesn't use struct usb_phy to represent the PHY, it
+> > has a bunch of tegra-specific APIs and we can't let those
+> > continue.
+>=20
+> One question here: If the PHY "driver" API changes, there will need to
+> be a bunch of ehci-tegra.c changes too. Will you take all those
 
+hmm.. indeed.
+
+> through the PHY tree? If you expect to do that, then I'd like to
+
+I can take those if Alan is ok with it :-) Alan ?
+
+> request you also take:
+>=20
+> usb: host: tegra remove include of <mach/iomap.h>
+> http://www.spinics.net/lists/linux-usb/msg72429.html
+>=20
+> ... since that should get merged before any large changes to
+> ehci-tegra.c; it's the EHCI equivalent of the PHY patch you already
+> merged.
+>=20
+> (The same request applies to put that into a branch I can pull into
+> the Tegra tree as a basis for cleanup in the Tegra tree)
+
+sure, that should be simple enough to do ;-)
+
+--=20
+balbi
+
+--jaoouwwPWoQSJZYp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQhPwbAAoJEIaOsuA1yqREhEEP/AuXS/9iaH+fwmmOwfjDj/nT
+PZohE+k2/uGNCngqYH5wWGlFpN2ocAnyD4MRdWRr8f1nHwlTctrsmBRTnad3oTo/
+nx5OEfW7YdpXBwSbSBsqQYxycrYzf/yQXEBZ0p04l2vTxjd6SBjG3S7C1GRef42U
+YvaRAijgFUiwa4SO03bBBjcFTA+GH9UalhrNW6zpICKf9yBQdSvMdj1nwTp6PMku
+MRO92cpK24Twq0l+dW8e4+aacPUkS272grsnxOZkfL/RalvKt5oWdJsBo7UMbsv/
+fhytfaIFWB9cow6u/uGEgVUf2OMmNITcTGuEQvyjdlPPC4lxRQU+ZavsV99yW7zG
+txmKQpopEdTz1VZ8UYcNvZB+OpYSBUbWBdi9dDxrUdZ6UMl+T/LyAGwXdKxGDbZb
+vDjiS74NQhO49/2JDkzG5ypLY5PEUw3sa51GmkBakfn8rXonYc1B41dLFo6KoQVA
+T0y0EfxxYKiCk54pZ9sRTMr2wcpewRSW61g0ZWEU88jXdWAsRgz7tGTIpLnx9yzr
+xNk+w5CaOr2bdnZtlLqM4f+ADJlP5KSjVsa5VQ2fNyyx3DfbCBrO89bOJiP0//Iv
+hFN3jEYogdCpFW948MrysZi/UmhobPvfDZnWZR7V/1UGKkTzz4fxZJK1EEUP+E/Y
+rf+Rpo2u/RYe7CO+qTkE
+=KnkI
+-----END PGP SIGNATURE-----
+
+--jaoouwwPWoQSJZYp--
