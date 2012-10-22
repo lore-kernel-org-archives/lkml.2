@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab2JVOui (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 10:50:38 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:64235 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116Ab2JVOuh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 10:50:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <0000013a88ebfa65-af0fc24b-13fd-400f-b7fc-32230ca70620-000000@email.amazonses.com>
-References: <1350907434-2202-1-git-send-email-elezegarcia@gmail.com>
-	<0000013a88ebfa65-af0fc24b-13fd-400f-b7fc-32230ca70620-000000@email.amazonses.com>
-Date: Mon, 22 Oct 2012 11:50:36 -0300
-Message-ID: <CALF0-+X2GnTKykYT3pwDHZV-8-qoHQZdBaSscfrOei48ce-HWg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mm/slob: Mark zone page state to get slab usage at /proc/meminfo
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Tim Bird <tim.bird@am.sony.com>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>,
-        uClinux development list <uclinux-dev@uclinux.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755240Ab2JVOvM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 10:51:12 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:50340 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754116Ab2JVOvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 10:51:10 -0400
+From: ciminaghi@gnudd.com
+To: sameo@linux.intel.com, rubini@gnudd.com, giancarlo.asnaghi@st.com,
+        broonie@opensource.wolfsonmicro.com
+Cc: linux-kernel@vger.kernel.org, Davide Ciminaghi <ciminaghi@gnudd.com>
+Subject: [PATCH v2 00/10] sta2x11-mfd patches
+Date: Mon, 22 Oct 2012 16:50:31 +0200
+Message-Id: <1350917441-4478-1-git-send-email-ciminaghi@gnudd.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 11:41 AM, Christoph Lameter <cl@linux.com> wrote:
-> On Mon, 22 Oct 2012, Ezequiel Garcia wrote:
->
->> On page allocations, SLAB and SLUB modify zone page state counters
->> NR_SLAB_UNRECLAIMABLE or NR_SLAB_RECLAIMABLE.
->> This allows to obtain slab usage information at /proc/meminfo.
->>
->> Without this patch, /proc/meminfo will show zero Slab usage for SLOB.
->>
->> Since SLOB discards SLAB_RECLAIM_ACCOUNT flag, we always use
->> NR_SLAB_UNRECLAIMABLE zone state item.
->
-> Hmmm... that is unfortunate. The NR_SLAB_RECLAIMABLE stat is used by
-> reclaim to make decisions on when to reclaim inodes and dentries.
->
-> Could you fix that to properly account the reclaimable/unreclaimable
-> pages?
+From: Davide Ciminaghi <ciminaghi@gnudd.com>
 
-Sure. Does everyone agree on this?
+Hi,
 
-My concern is:
+this is v2 of a patchset already submitted on 2012/09/12
+(see https://lkml.org/lkml/2012/9/12/139).
+Here's a summary of changes in v2:
 
-1. SLOB is minimal, designed to have minimal footprint, and I'd like
-to keep it that way. Of course, perhaps the change will add just a few bytes.
+* Added regmap support.
+* Added driver for sta2x11 scr (otp) registers.
+* Changelog entries reviewed and fixed.
 
-2. Since no SLOB user has ever complained on this...
-How will this affect SLOB workings?
-(I'm adding the uclinux guys, so at least they're aware of this)
+Davide Ciminaghi (10):
+  drivers/mfd/sta2x11-mfd: add apb-soc regs driver and factor out
+    common code
+  drivers/mfd/sta2x11-mfd: add regmap support
+  drivers/mfd/sta2x11-mfd: add sta2x11_mfd_get_regs_data() function
+  drivers/mfd/sta2x11-mfd: use defines for platform devices' names
+  drivers/mfd/sta2x11-mfd: only add sta2x11_mfd if it hasn't already
+    been added
+  drivers/mfd/sta2x11-mfd: platform probe: don't mind about gpio
+    platform data
+  drivers/mfd/sta2x11-mfd: use one lock per device instead of one lock
+    per mfd
+  drivers/mfd/sta2x11-mfd: add scr (otp registers) platform driver
+  drivers/mfd/sta2x11-mfd: add defines for some sta2x11 sctl registers
+  drivers/mfd/sta2x11-mfd: add myself to copyright
 
-    Ezequiel
+ drivers/mfd/Kconfig             |    1 +
+ drivers/mfd/sta2x11-mfd.c       |  531 +++++++++++++++++++++++++++------------
+ include/linux/mfd/sta2x11-mfd.h |  198 ++++++++++++++-
+ 3 files changed, 572 insertions(+), 158 deletions(-)
+
+-- 
+1.7.10.4
+
