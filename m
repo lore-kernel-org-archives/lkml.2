@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab2JVN0K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 09:26:10 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:33800 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753537Ab2JVN0J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 09:26:09 -0400
-Message-ID: <5085496D.30605@gmail.com>
-Date: Mon, 22 Oct 2012 07:26:05 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1754220Ab2JVN0O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 09:26:14 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:23176 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753537Ab2JVN0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 09:26:11 -0400
+Message-ID: <5085495D.6060307@siemens.com>
+Date: Mon, 22 Oct 2012 15:25:49 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Subject: Re: [BUG] perf list: --help option not implemented
-References: <CABPqkBS9Wm2c=fnaQzKycXnuqRtAocAZ4qQ7ToAaaVDQbtVoyA@mail.gmail.com> <20121019084636.GB980@krava.brq.redhat.com> <87r4orj7zc.fsf@sejong.aot.lge.com>
-In-Reply-To: <87r4orj7zc.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Gleb Natapov <gleb@redhat.com>
+CC: Avi Kivity <avi@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH] KVM: x86: fix vcpu->mmio_fragments overflow
+References: <20121022112314.GO29310@redhat.com> <50852F9C.9020808@siemens.com> <20121022114311.GQ29310@redhat.com> <508531E1.2030307@siemens.com> <508539A8.40404@redhat.com> <50853FF1.8010809@siemens.com> <20121022125301.GS29310@redhat.com> <50854232.8090309@siemens.com> <508542EF.5050401@redhat.com> <508544B6.6070301@siemens.com> <20121022130810.GW29310@redhat.com>
+In-Reply-To: <20121022130810.GW29310@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/12 1:12 AM, Namhyung Kim wrote:
-> It seems that commit cc5848213329 ("perf help: Remove use of die and
-> handle errors") caused the problem - it changed the initial value of
-> 'help_format' from HELP_FORMAT_MAN to HELP_FORMAT_NONE.
->
-> The following patch works well for me:
->
-> diff --git a/tools/perf/builtin-help.c b/tools/perf/builtin-help.c
-> index 411ee5664e98..178b88ae3d2f 100644
-> --- a/tools/perf/builtin-help.c
-> +++ b/tools/perf/builtin-help.c
-> @@ -414,7 +414,7 @@ static int show_html_page(const char *perf_cmd)
->   int cmd_help(int argc, const char **argv, const char *prefix __maybe_unused)
->   {
->   	bool show_all = false;
-> -	enum help_format help_format = HELP_FORMAT_NONE;
-> +	enum help_format help_format = HELP_FORMAT_MAN;
->   	struct option builtin_help_options[] = {
->   	OPT_BOOLEAN('a', "all", &show_all, "print all available commands"),
->   	OPT_SET_UINT('m', "man", &help_format, "show man page", HELP_FORMAT_MAN),
->
+On 2012-10-22 15:08, Gleb Natapov wrote:
+> On Mon, Oct 22, 2012 at 03:05:58PM +0200, Jan Kiszka wrote:
+>> On 2012-10-22 14:58, Avi Kivity wrote:
+>>> On 10/22/2012 02:55 PM, Jan Kiszka wrote:
+>>>>> Since the userspace change is needed the idea is dead, but if we could
+>>>>> implement it I do not see how it can hurt the latency if it would be the
+>>>>> only mechanism to use coalesced mmio buffer. Checking that the ring buffer
+>>>>> is empty is cheap and if it is not empty it means that kernel just saved
+>>>>> you a lot of 8 bytes exists so even after iterating over all the entries there
+>>>>> you still saved a lot of time.
+>>>>
+>>>> When taking an exit for A, I'm not interesting in flushing stuff for B
+>>>> unless I have a dependency. Thus, buffers would have to be per device
+>>>> before extending their use.
+>>>
+>>> Any mmio exit has to flush everything.  For example a DMA caused by an
+>>> e1000 write has to see any writes to the framebuffer, in case the guest
+>>> is transmitting its framebuffer to the outside world.
+>>
+>> We already flush when that crazy guest actually accesses the region, no
+>> need to do this unconditionally.
+>>
+> What if framebuffer is accessed from inside the kernel? Is this case handled?
 
-D'oh. Thanks for debugging, Namhyung.
+Unless I miss a case now, there is no direct access to the framebuffer
+possible when we are also doing coalescing. Everything needs to go
+through userspace.
 
-Acked-by/Tested-by: David Ahern <dsahern@gmail.com>
+Jan
+
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+Corporate Competence Center Embedded Linux
