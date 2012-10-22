@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127Ab2JVULw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 16:11:52 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54242 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950Ab2JVULv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 16:11:51 -0400
-Message-ID: <5085A883.9010803@wwwdotorg.org>
-Date: Mon, 22 Oct 2012 14:11:47 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1756140Ab2JVUOi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 16:14:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40619 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750950Ab2JVUOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 16:14:37 -0400
+Date: Mon, 22 Oct 2012 16:14:22 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        James Morris <jmorris@namei.org>, Pavel Emelyanov <xemul@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>, Jiri Slaby <jslaby@suse.cz>,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH 0/4] Rebase device_cgroup v2 patchset
+Message-ID: <20121022201422.GA14085@redhat.com>
+References: <20121022134536.172969567@napanee.usersys.redhat.com>
+ <20121022125838.20cdc240.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Loic Pallardy <loic.pallardy@st.com>
-Subject: Re: [PATCH] pinctrl: reserve pins when states are activated
-References: <1350893718-12336-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1350893718-12336-1-git-send-email-linus.walleij@stericsson.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121022125838.20cdc240.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2012 02:15 AM, Linus Walleij wrote:
-> This switches the way that pins are reserved for multiplexing:
+Hi Andrew,
+On Mon, Oct 22, 2012 at 12:58:38PM -0700, Andrew Morton wrote:
+> On Mon, 22 Oct 2012 09:45:36 -0400
+> Aristeu Rozanski <aris@redhat.com> wrote:
 > 
-> We used to do this when the map was parsed, at the creation of
-> the settings inside the pinctrl handle, in pinmux_map_to_setting().
+> > This patchset rebases the v2 of the patchset since the v1 was pushed into -rc1
+> > instead. The last patch, not present on previous patchset, fixes the
+> > permission check when allowing everything in a cgroup.
+> > 
 > 
-> However this does not work for us, because we want to use the
-> same set of pins with different devices at different times: the
+> I grabbed all four, thanks.  Shall send them on to Linus in a week or
+> so, after a bit more review and some linux-next testing.
 
-> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+thanks, much appreciated
 
->  void pinmux_free_setting(struct pinctrl_setting const *setting)
-...
-> +	/* This function is currently unused */
+> I've been trying to work out why I merged the v1 patchset rather than
+> v2 and cannot find that v2 patchset anywhere.  When was it sent out?
 
-Being picky: It's not unused; it is used by pinctrl_put_locked(), but
-just doesn't have to do anything given the implementation of
-pinmux_map_to_setting().
+It was sent to linux-kernel and cgroups@vger on Sep 04th, here's the
+msgid of patch 0 for reference:
+<20120904143419.892872876@napanee.usersys.redhat.com> 
+
+-- 
+Aristeu
+
