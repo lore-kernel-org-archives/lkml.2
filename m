@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756327Ab2JVVIQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 17:08:16 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:56433 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932255Ab2JVVIM (ORCPT
+	id S932233Ab2JVVNN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 17:13:13 -0400
+Received: from mailserver6.natinst.com ([130.164.80.6]:57831 "EHLO
+	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755608Ab2JVVNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 17:08:12 -0400
-From: Constantine Shulyupin <const@MakeLinux.com>
-To: gregkh@linuxfoundation.org, oneukum@suse.de
-Cc: Constantine Shulyupin <const@MakeLinux.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RESEND PATCH v3] USB: usb-skeleton.c: fix compilation error and restored kref_put on fail in skel_open
-Date: Mon, 22 Oct 2012 23:08:15 +0200
-Message-Id: <1350940095-1106-1-git-send-email-const@MakeLinux.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Identified-User: {1470:box668.bluehost.com:makelinu:makelinux.net} {sentby:smtp auth 84.229.180.233 authed with poster@makelinux.net}
+	Mon, 22 Oct 2012 17:13:12 -0400
+Date: Mon, 22 Oct 2012 16:10:40 -0500
+From: Josh Cartwright <josh.cartwright@ni.com>
+To: arm@kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        John Linn <john.linn@xilinx.com>
+Subject: [PATCH v2 0/4] zynq subarch cleanups
+Message-ID: <20121022211040.GA31538@beefymiracle.amer.corp.natinst.com>
+MIME-Version: 1.0
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-MIMETrack: Itemize by SMTP Server on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/22/2012 04:10:35 PM,
+	Serialize by Router on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/22/2012 04:10:35 PM,
+	Serialize complete at 10/22/2012 04:10:35 PM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-22_03:2012-10-22,2012-10-22,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Constantine Shulyupin <const@MakeLinux.com>
+Hey all-
 
-Fixing compilaton error.
-Incrementing usage counter only on successful execution of skel_open.
-Removing redundant locking
+Things have been relatively quiet on the Zynq front lately.  This
+patchset does a bit of cleanup of the Zynq subarchitecture.  It was the
+necessary set of things I had to do to get a zynq target booting with
+the upstream qemu model.  It removes some unused clock infrastructure,
+adds DT support for the GIC, and moves around peripheral mappings.
 
-Some last changes in function skel_open and finally commit
-52a7499 Revert "USB: usb-skeleton.c: fix open/disconnect race"
-introduced a bug in function skel_open, which this patch fixes.
-
---
-
-Changelog:
-Changes since v2:
-- refactoring
-- Removing redundant mutex synchronization.
+On the CLKDEV_LOOKUP removal: the plan is to rework the out-of-tree
+Xilinx generic clk support into something suitable for merging.  What's
+in tree now just isn't used at all, and can be removed.
 
 Changes since v1:
-- Fixed accordingly feedback of Oliver Neukum oneukum@suse.de: also need to drop the lock.
+  - Make sure arm@kernel.org was included
+  - Rebased on arm-soc/for-next
+  - Added a cover letter
+  - Elaborated a bit on why I removed CLKDEV_LOOKUP
 
-Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
 ---
- drivers/usb/usb-skeleton.c |   13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
+Josh Cartwright (4):
+  ARM: annotate VMALLOC_END definition with _AC
+  zynq: move static peripheral mappings
+  zynq: use GIC device tree bindings
+  zynq: remove use of CLKDEV_LOOKUP
 
-diff --git a/drivers/usb/usb-skeleton.c b/drivers/usb/usb-skeleton.c
-index 0616f23..ce31017 100644
---- a/drivers/usb/usb-skeleton.c
-+++ b/drivers/usb/usb-skeleton.c
-@@ -105,20 +105,15 @@ static int skel_open(struct inode *inode, struct file *file)
- 		goto exit;
- 	}
- 
--	/* increment our usage count for the device */
--	kref_get(&dev->kref);
--
--	/* lock the device to allow correctly handling errors
--	 * in resumption */
--	mutex_lock(&dev->io_mutex);
--
- 	retval = usb_autopm_get_interface(interface);
- 	if (retval)
--		goto out_err;
-+		goto exit;
-+
-+	/* increment our usage count for the device */
-+	kref_get(&dev->kref);
- 
- 	/* save our object in the file's private structure */
- 	file->private_data = dev;
--	mutex_unlock(&dev->io_mutex);
- 
- exit:
- 	return retval;
+ arch/arm/Kconfig                           |  1 -
+ arch/arm/boot/dts/zynq-ep107.dts           |  8 ++++---
+ arch/arm/include/asm/pgtable.h             |  2 +-
+ arch/arm/mach-zynq/common.c                | 16 ++++++++-----
+ arch/arm/mach-zynq/include/mach/clkdev.h   | 32 --------------------------
+ arch/arm/mach-zynq/include/mach/zynq_soc.h | 36 ++++++++++++++++--------------
+ 6 files changed, 35 insertions(+), 60 deletions(-)
+ delete mode 100644 arch/arm/mach-zynq/include/mach/clkdev.h
+
 -- 
-1.7.9.5
-
+1.8.0
