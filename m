@@ -1,43 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137Ab2JVPQO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 11:16:14 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:34651 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754809Ab2JVPQF (ORCPT
+	id S1755289Ab2JVPQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 11:16:26 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:34176 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754121Ab2JVPQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 11:16:05 -0400
-Message-ID: <50856331.8070403@xenotime.net>
-Date: Mon, 22 Oct 2012 08:16:01 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Compilation options
-References: <op.wmkol7qy6426ze@localhost.localdomain>
-In-Reply-To: <op.wmkol7qy6426ze@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Mon, 22 Oct 2012 11:16:21 -0400
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        ocfs2-devel@oss.oracle.com
+Subject: [PATCH 18/22] ocfs2: add support for read_iter, write_iter, and direct_IO_bvec
+Date: Mon, 22 Oct 2012 10:15:18 -0500
+Message-Id: <1350918922-6096-19-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.7.12.4
+In-Reply-To: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2012 01:59 AM, Uwaysi Bin Kareem wrote:
+From: Zach Brown <zab@zabbo.net>
 
-> Hiya, I compiled the kernel with V=1 and noticed "-mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx". Is there a way to turn this on? Alt, in what file is this string, so I can try without it.
+ocfs2's .aio_read and .aio_write methods are changed to take
+iov_iter and pass it to generic functions.  Wrappers are made to pack
+the iovecs into iters and call these new functions.
 
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Zach Brown <zab@zabbo.net>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: ocfs2-devel@oss.oracle.com
+---
+ fs/ocfs2/file.c        | 82 +++++++++++++++++++++++++++++++++++---------------
+ fs/ocfs2/ocfs2_trace.h |  6 +++-
+ 2 files changed, 63 insertions(+), 25 deletions(-)
 
-Please teach your mail program to wrap lines around column 70-72.  thanks.
-
-
-That string is located in arch/x86/Makefile:
-
-# prevent gcc from generating any FP code by mistake
-KBUILD_CFLAGS += $(call cc-option,-mno-sse -mno-mmx -mno-sse2 -mno-3dnow,)
-KBUILD_CFLAGS += $(call cc-option,-mno-avx,)
-
-
+diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+index 5a4ee77..457b9fb 100644
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -2237,15 +2237,13 @@ out:
+ 	return ret;
+ }
+ 
+-static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
+-				    const struct iovec *iov,
+-				    unsigned long nr_segs,
+-				    loff_t pos)
++static ssize_t ocfs2_file_write_iter(struct kiocb *iocb,
++				     struct iov_iter *iter,
++				     loff_t pos)
+ {
+ 	int ret, direct_io, appending, rw_level, have_alloc_sem  = 0;
+ 	int can_do_direct, has_refcount = 0;
+ 	ssize_t written = 0;
+-	size_t ocount;		/* original count */
+ 	size_t count;		/* after file limit checks */
+ 	loff_t old_size, *ppos = &iocb->ki_pos;
+ 	u32 old_clusters;
+@@ -2256,11 +2254,11 @@ static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
+ 			       OCFS2_MOUNT_COHERENCY_BUFFERED);
+ 	int unaligned_dio = 0;
+ 
+-	trace_ocfs2_file_aio_write(inode, file, file->f_path.dentry,
++	trace_ocfs2_file_write_iter(inode, file, file->f_path.dentry,
+ 		(unsigned long long)OCFS2_I(inode)->ip_blkno,
+ 		file->f_path.dentry->d_name.len,
+ 		file->f_path.dentry->d_name.name,
+-		(unsigned int)nr_segs);
++		(unsigned long long)pos);
+ 
+ 	if (iocb->ki_left == 0)
+ 		return 0;
+@@ -2362,28 +2360,24 @@ relock:
+ 	/* communicate with ocfs2_dio_end_io */
+ 	ocfs2_iocb_set_rw_locked(iocb, rw_level);
+ 
+-	ret = generic_segment_checks(iov, &nr_segs, &ocount,
+-				     VERIFY_READ);
+-	if (ret)
+-		goto out_dio;
+ 
+-	count = ocount;
++	count = iov_iter_count(iter);
+ 	ret = generic_write_checks(file, ppos, &count,
+ 				   S_ISBLK(inode->i_mode));
+ 	if (ret)
+ 		goto out_dio;
+ 
+ 	if (direct_io) {
+-		written = generic_file_direct_write(iocb, iov, &nr_segs, *ppos,
+-						    ppos, count, ocount);
++		written = generic_file_direct_write_iter(iocb, iter, *ppos,
++						    ppos, count);
+ 		if (written < 0) {
+ 			ret = written;
+ 			goto out_dio;
+ 		}
+ 	} else {
+ 		current->backing_dev_info = file->f_mapping->backing_dev_info;
+-		written = generic_file_buffered_write(iocb, iov, nr_segs, *ppos,
+-						      ppos, count, 0);
++		written = generic_file_buffered_write_iter(iocb, iter, *ppos,
++							   ppos, count, 0);
+ 		current->backing_dev_info = NULL;
+ 	}
+ 
+@@ -2447,6 +2441,25 @@ out_sems:
+ 	return ret;
+ }
+ 
++static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
++				    const struct iovec *iov,
++				    unsigned long nr_segs,
++				    loff_t pos)
++{
++	struct iov_iter iter;
++	size_t count;
++	int ret;
++
++	count = 0;
++	ret = generic_segment_checks(iov, &nr_segs, &count, VERIFY_READ);
++	if (ret)
++		return ret;
++
++	iov_iter_init(&iter, iov, nr_segs, count, 0);
++
++	return ocfs2_file_write_iter(iocb, &iter, pos);
++}
++
+ static int ocfs2_splice_to_file(struct pipe_inode_info *pipe,
+ 				struct file *out,
+ 				struct splice_desc *sd)
+@@ -2560,19 +2573,18 @@ bail:
+ 	return ret;
+ }
+ 
+-static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
+-				   const struct iovec *iov,
+-				   unsigned long nr_segs,
++static ssize_t ocfs2_file_read_iter(struct kiocb *iocb,
++				   struct iov_iter *iter,
+ 				   loff_t pos)
+ {
+ 	int ret = 0, rw_level = -1, have_alloc_sem = 0, lock_level = 0;
+ 	struct file *filp = iocb->ki_filp;
+ 	struct inode *inode = filp->f_path.dentry->d_inode;
+ 
+-	trace_ocfs2_file_aio_read(inode, filp, filp->f_path.dentry,
++	trace_ocfs2_file_read_iter(inode, filp, filp->f_path.dentry,
+ 			(unsigned long long)OCFS2_I(inode)->ip_blkno,
+ 			filp->f_path.dentry->d_name.len,
+-			filp->f_path.dentry->d_name.name, nr_segs);
++			filp->f_path.dentry->d_name.name, pos);
+ 
+ 
+ 	if (!inode) {
+@@ -2608,7 +2620,7 @@ static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
+ 	 *
+ 	 * Take and drop the meta data lock to update inode fields
+ 	 * like i_size. This allows the checks down below
+-	 * generic_file_aio_read() a chance of actually working.
++	 * generic_file_read_iter() a chance of actually working.
+ 	 */
+ 	ret = ocfs2_inode_lock_atime(inode, filp->f_vfsmnt, &lock_level);
+ 	if (ret < 0) {
+@@ -2617,8 +2629,8 @@ static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
+ 	}
+ 	ocfs2_inode_unlock(inode, lock_level);
+ 
+-	ret = generic_file_aio_read(iocb, iov, nr_segs, iocb->ki_pos);
+-	trace_generic_file_aio_read_ret(ret);
++	ret = generic_file_read_iter(iocb, iter, iocb->ki_pos);
++	trace_generic_file_read_iter_ret(ret);
+ 
+ 	/* buffered aio wouldn't have proper lock coverage today */
+ 	BUG_ON(ret == -EIOCBQUEUED && !(filp->f_flags & O_DIRECT));
+@@ -2690,6 +2702,24 @@ out:
+ 	return offset;
+ }
+ 
++static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
++				   const struct iovec *iov,
++				   unsigned long nr_segs,
++				   loff_t pos)
++{
++	struct iov_iter iter;
++	size_t count;
++	int ret;
++
++	ret = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
++	if (ret)
++		return ret;
++
++	iov_iter_init(&iter, iov, nr_segs, count, 0);
++
++	return ocfs2_file_read_iter(iocb, &iter, pos);
++}
++
+ const struct inode_operations ocfs2_file_iops = {
+ 	.setattr	= ocfs2_setattr,
+ 	.getattr	= ocfs2_getattr,
+@@ -2723,6 +2753,8 @@ const struct file_operations ocfs2_fops = {
+ 	.open		= ocfs2_file_open,
+ 	.aio_read	= ocfs2_file_aio_read,
+ 	.aio_write	= ocfs2_file_aio_write,
++	.read_iter	= ocfs2_file_read_iter,
++	.write_iter	= ocfs2_file_write_iter,
+ 	.unlocked_ioctl	= ocfs2_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl   = ocfs2_compat_ioctl,
+@@ -2771,6 +2803,8 @@ const struct file_operations ocfs2_fops_no_plocks = {
+ 	.open		= ocfs2_file_open,
+ 	.aio_read	= ocfs2_file_aio_read,
+ 	.aio_write	= ocfs2_file_aio_write,
++	.read_iter	= ocfs2_file_read_iter,
++	.write_iter	= ocfs2_file_write_iter,
+ 	.unlocked_ioctl	= ocfs2_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl   = ocfs2_compat_ioctl,
+diff --git a/fs/ocfs2/ocfs2_trace.h b/fs/ocfs2/ocfs2_trace.h
+index 3b481f4..8409f00 100644
+--- a/fs/ocfs2/ocfs2_trace.h
++++ b/fs/ocfs2/ocfs2_trace.h
+@@ -1312,12 +1312,16 @@ DEFINE_OCFS2_FILE_OPS(ocfs2_sync_file);
+ 
+ DEFINE_OCFS2_FILE_OPS(ocfs2_file_aio_write);
+ 
++DEFINE_OCFS2_FILE_OPS(ocfs2_file_write_iter);
++
+ DEFINE_OCFS2_FILE_OPS(ocfs2_file_splice_write);
+ 
+ DEFINE_OCFS2_FILE_OPS(ocfs2_file_splice_read);
+ 
+ DEFINE_OCFS2_FILE_OPS(ocfs2_file_aio_read);
+ 
++DEFINE_OCFS2_FILE_OPS(ocfs2_file_read_iter);
++
+ DEFINE_OCFS2_ULL_ULL_ULL_EVENT(ocfs2_truncate_file);
+ 
+ DEFINE_OCFS2_ULL_ULL_EVENT(ocfs2_truncate_file_error);
+@@ -1474,7 +1478,7 @@ TRACE_EVENT(ocfs2_prepare_inode_for_write,
+ 		  __entry->direct_io, __entry->has_refcount)
+ );
+ 
+-DEFINE_OCFS2_INT_EVENT(generic_file_aio_read_ret);
++DEFINE_OCFS2_INT_EVENT(generic_file_read_iter_ret);
+ 
+ /* End of trace events for fs/ocfs2/file.c. */
+ 
 -- 
-~Randy
+1.7.12.3
+
