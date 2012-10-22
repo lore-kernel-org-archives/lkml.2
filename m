@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab2JVLK6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 07:10:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51118 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747Ab2JVLK5 convert rfc822-to-8bit (ORCPT
+	id S1753455Ab2JVLTM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 07:19:12 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:43968 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752706Ab2JVLTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 07:10:57 -0400
-Message-ID: <1350904240.2768.95.camel@twins>
-Subject: Re: [PATCH v2 1/3] sched: introduce distinct per-cpu load average
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrea Righi <andrea@betterlinux.com>
-Cc: Paul Menage <paul@paulmenage.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Date: Mon, 22 Oct 2012 13:10:40 +0200
-In-Reply-To: <1350759962-7092-2-git-send-email-andrea@betterlinux.com>
-References: <1350759962-7092-1-git-send-email-andrea@betterlinux.com>
-	 <1350759962-7092-2-git-send-email-andrea@betterlinux.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 22 Oct 2012 07:19:11 -0400
+X-AuditID: cbfee61a-b7fa66d0000004cf-2f-50852bae2590
+From: Jonghwan Choi <jhbird.choi@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: "'Amit Daniel Kachhap'" <amit.kachhap@linaro.org>,
+        "'Sachin Kamat'" <sachin.kamat@linaro.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>
+Subject: [PATCH] thermal: exynos: Fix wrong name of MODULE_DEVICE_TABLE
+Date: Mon, 22 Oct 2012 20:19:10 +0900
+Message-id: <000f01cdb047$0f033f10$2d09bd30$%choi@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2MyUCS5gT50iCTRbSf1QKtZtxEbQAAA55wCN9dkzA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t9jQd112q0BBvs2qVhc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6Mubt3MxX0s1X83ZjYwNjO2sXIySEhYCLx7sF5RghbTOLCvfVs
+	ILaQwHRGiSu/ZbsYuYDseUwSUx7/ZwdJsAnoShxbvwWsWURAQWJz7zNWkCJmgVZGibvrX7KA
+	JIQF3CXeP1oGlODgYBFQlVjeGA4S5hWwk3i29ys7hC0o8WPyPbByZgEtifU7jzNB2PISm9e8
+	ZQZplRBQl3j0VxdilZXEk9/foMpFJPa9eMc4gVFgFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcU
+	J6XnGuoVJ+YWl+al6yXn525iBAflM6kdjCsbLA4xCnAwKvHwaii0BgixJpYVV+YeYpTgYFYS
+	4b0iBhTiTUmsrEotyo8vKs1JLT7EKM3BoiTO2+yREiAkkJ5YkpqdmlqQWgSTZeLglGpgFFHZ
+	bVko+DNfyKZdSHKeXKRUxsrKVVt2nAvUvmUSdOnS920Kc679MTG5cLvY0fLTw8ydf8sWRV68
+	u70lfZlB1kl3MecvJz3nxfr+5/BrdjrjYv38+pdN51a/cNFqqOZKWnb/RLuni1hM8KlQ/4VP
+	FBelvrgleLP+G/+DTL5FJ+/7HPoTkG4hrsRSnJFoqMVcVJwIAGLeJV9GAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-10-20 at 21:06 +0200, Andrea Righi wrote:
-> @@ -383,13 +383,7 @@ struct rq {
->         struct list_head leaf_rt_rq_list;
->  #endif
->  
+exynos4_tmu_driver_ids should be exynos_tmu_driver_ids.
 
-> +       unsigned long __percpu *nr_uninterruptible; 
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+---
+ drivers/thermal/exynos_thermal.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-This is O(nr_cpus^2) memory..
+diff --git a/drivers/thermal/exynos_thermal.c
+b/drivers/thermal/exynos_thermal.c
+index fd03e85..6dd29e4 100644
+--- a/drivers/thermal/exynos_thermal.c
++++ b/drivers/thermal/exynos_thermal.c
+@@ -815,7 +815,7 @@ static struct platform_device_id exynos_tmu_driver_ids[]
+= {
+        },
+        { },
+ };
+-MODULE_DEVICE_TABLE(platform, exynos4_tmu_driver_ids);
++MODULE_DEVICE_TABLE(platform, exynos_tmu_driver_ids);
 
-
-> +unsigned long nr_uninterruptible_cpu(int cpu)
-> +{
-> +       struct rq *this = cpu_rq(cpu);
-> +       unsigned long val = 0;
-> +       int i;
-> +
-> +       for_each_online_cpu(i)
-> +               val += per_cpu(*this->nr_uninterruptible, i);
-> +
-> +       return val;
-> +}
-> 
-> 
-I suspect you've got an accounting leak here on hot-plug.
-> 
->  unsigned long nr_uninterruptible(void)
->  {
->         unsigned long i, sum = 0;
->  
->         for_each_possible_cpu(i)
-> -               sum += cpu_rq(i)->nr_uninterruptible;
-> +               sum += nr_uninterruptible_cpu(i);
->  
->         /*
->          * Since we read the counters lockless, it might be slightly
-
-And this makes O(n^2) runtime!
-
+ static inline struct  exynos_tmu_platform_data *exynos_get_driver_data(
+                        struct platform_device *pdev)
+--
+1.7.1
 
