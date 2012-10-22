@@ -1,100 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932858Ab2JVDe1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 23:34:27 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63529 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932837Ab2JVDe0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 23:34:26 -0400
-X-IronPort-AV: E=Sophos;i="4.80,628,1344182400"; 
-   d="scan'208";a="6039884"
-Message-ID: <5084BE7C.4020303@cn.fujitsu.com>
-Date: Mon, 22 Oct 2012 11:33:16 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>
-CC: Borislav Petkov <bp@amd64.org>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "miaox@cn.fujitsu.com" <miaox@cn.fujitsu.com>,
-        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
-        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+	id S932868Ab2JVDrZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Oct 2012 23:47:25 -0400
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:34164
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932824Ab2JVDrY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Oct 2012 23:47:24 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -7
+X-BigFish: VS-7(zz98dI9371I542M1432Izz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah107ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504hbe9i1155h)
+From: Li Yang-R58472 <r58472@freescale.com>
+To: "balbi@ti.com" <balbi@ti.com>, Simon Haggett <simon.haggett@realvnc.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH v2 2/2] Do not change worker's running cpu in cmci_rediscover().
-References: <1350625528-1385-1-git-send-email-tangchen@cn.fujitsu.com> <1350625528-1385-3-git-send-email-tangchen@cn.fujitsu.com> <20121019164233.GF11958@aftab.osrc.amd.com> <3908561D78D1C84285E8C5FCA982C28F19D57AA5@ORSMSX108.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19D57AA5@ORSMSX108.amr.corp.intel.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/22 11:33:51,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/22 11:33:53,
-	Serialize complete at 2012/10/22 11:33:53
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: RE: [PATCH 1/1] usb: gadget: Don't attempt to dequeue requests for
+ a disabled USB endpoint on Freescale hardware
+Thread-Topic: [PATCH 1/1] usb: gadget: Don't attempt to dequeue requests for
+ a disabled USB endpoint on Freescale hardware
+Thread-Index: AQHNrh30WnHrKXDxaEa6VQcbRmVrJZfA5IqAgAPGudA=
+Date: Mon, 22 Oct 2012 03:33:19 +0000
+Message-ID: <94F013E7935FF44C83EBE7784D62AD3F094730DB@039-SN2MPN1-023.039d.mgd.msft.net>
+References: <1350667166-3559-1-git-send-email-simon.haggett@realvnc.com>
+ <20121019173718.GA2738@arwen.pp.htv.fi>
+In-Reply-To: <20121019173718.GA2738@arwen.pp.htv.fi>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.193.20.78]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2012 01:21 AM, Luck, Tony wrote:
->> In this case, the following BUG_ON in try_to_wake_up_local() will be triggered:
->> BUG_ON(rq != this_rq());
->
-> Logically this looks OK - what is the test case to trigger this?  I've done a moderate
-> amount of testing of cpu online/offline while injecting corrected errors (when testing
-> the CMCI storm patches) ... but didn't see this problem.
 
-Hi Tony, Borislav,
 
-Here is my case.
+> -----Original Message-----
+> From: Felipe Balbi [mailto:balbi@ti.com]
+> Sent: Saturday, October 20, 2012 1:37 AM
+> To: Simon Haggett
+> Cc: Li Yang-R58472; Felipe Balbi; Greg Kroah-Hartman; linux-
+> usb@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; linux-
+> kernel@vger.kernel.org; Laurent Pinchart
+> Subject: Re: [PATCH 1/1] usb: gadget: Don't attempt to dequeue requests
+> for a disabled USB endpoint on Freescale hardware
+> 
+> Hi,
+> 
+> On Fri, Oct 19, 2012 at 06:19:26PM +0100, Simon Haggett wrote:
+> > Some gadget drivers may attempt to dequeue requests for an endpoint
+> > that has already been disabled. For example, in the UVC gadget driver,
+> > uvc_function_set_alt() will call usb_ep_disable() when alt setting 0
+> > is selected. When the userspace application subsequently issues the
+> > VIDIOC_STREAMOFF ioctl, uvc_video_enable() invokes usb_ep_dequeue() to
+> ensure that all requests have been cancelled.
+> 
+> bug is on uvc gadget, then. Laurent ?
+> 
+> Also, fsl should be removed from the tree, I'm trying to persuade iMX
+> folks to use drivers/usb/chipidea instead.
 
-I have 2 nodes, node0 and node1. node1 could be hotpluged.
-node0 has cpu0 ~ cpu15, node1 has cpu16 ~ cpu31.
+Besides the iMX usage, the driver is also being used by many Freescale PowerPC/Coldfire SoCs.  I agree that it's ideal to move to a common driver.  But it is a large task to make the chipidea driver works for all the hardware that fsl_udc had supported and been tested on.
 
-I online all the cpus on node1, and hot-remove node1 directly.
-
-When this problem is triggered, current is a work thread.
-
-For example: cpu20 is dying. current is on cpu21, it migrates
-itself to cpu22.
-
-Assume current is process1, and it is a work thread.
-
-        cpu21                        cpu22
-p1:
-....
-cmci_rediscover()
-|-set_cpus_allowed_ptr()
-   |-stop_one_cpu()
-     |-create a work to excute migration_cpu_stop()
-       |-wait_for_completion()
-         |-wait_for_common()
-           |-might_sleep()
-Here, p1 gives up cpu21.
-
-The work starts:
-migration_cpu_stop()
-|-migrate p1 to cpu22
-
-                                On cpu22, p1 wakes up:
-                                p1:
-                                In wait_for_common()
-                                   |-do_wait_for_common()
-                                     |-schedule_timeout()
-                                       |-schedule()
-                                         |-__schedule()
-                                           |-try_to_wake_up_local()
-                                             |-wq_worker_sleeping()
-                                             |-BUG_ON(rq != this_rq())
-
-On cpu22, wq_worker_sleeping() uses p1's worker_pool to find a worker
-to go on to execute p1. But p1's worker_pool is on cpu21, and p1 is now
-on cpu22. So the BUG_ON(rq != this_rq()) is triggered.
-
-Thanks. :)
-
->
-> -Tony
->
+> 
+> > For the Freescale High Speed Dual-Role USB controller,
+> > fsl_ep_dequeue() provides the implementation of usb_ep_dequeue(). If
+> > this is called for a disabled endpoint, a kernel oops will occur when
+> the ep->ep.desc field is dereferenced (by ep_index()).
+> > fsl_ep_disable() sets this field to NULL, as well as deleting all
+> > pending requests for the endpoint.
+> >
+> > This patch adds an additional check to fsl_ep_dequeue() to ensure that
+> > the endpoint has not already been disabled before attempting to dequeue
+> requests.
+> >
+> > Signed-off-by: Simon Haggett <simon.haggett@realvnc.com>
+> > ---
+> >  drivers/usb/gadget/fsl_udc_core.c |    5 ++++-
+> >  1 files changed, 4 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/drivers/usb/gadget/fsl_udc_core.c
+> > b/drivers/usb/gadget/fsl_udc_core.c
+> > index 6ae70cb..acd513b 100644
+> > --- a/drivers/usb/gadget/fsl_udc_core.c
+> > +++ b/drivers/usb/gadget/fsl_udc_core.c
+> > @@ -955,7 +955,10 @@ static int fsl_ep_dequeue(struct usb_ep *_ep,
+> struct usb_request *_req)
+> >  	int ep_num, stopped, ret = 0;
+> >  	u32 epctrl;
+> >
+> > -	if (!_ep || !_req)
+> > +	/* Ensure that the ep and request are valid, and the ep is not
+> > +	 * disabled
+> > +	 */
+> > +	if (!_ep || !_req || !ep->ep.desc)
+> >  		return -EINVAL;
+> >
+> >  	spin_lock_irqsave(&ep->udc->lock, flags);
+> > --
+> > 1.7.4.1
+> >
+> 
+> --
+> balbi
 
