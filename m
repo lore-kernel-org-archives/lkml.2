@@ -1,187 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab2JVOGG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 10:06:06 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:48167 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754286Ab2JVOGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 10:06:03 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-mm@kvack.org>
-Cc: <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@parallels.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH 2/2] slab: move kmem_cache_free to common code
-Date: Mon, 22 Oct 2012 18:05:37 +0400
-Message-Id: <1350914737-4097-3-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1350914737-4097-1-git-send-email-glommer@parallels.com>
-References: <1350914737-4097-1-git-send-email-glommer@parallels.com>
+	id S1754771Ab2JVOHV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 10:07:21 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35389 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754364Ab2JVOHT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 10:07:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121022133200.GG4477@opensource.wolfsonmicro.com>
+References: <1350909125-20189-1-git-send-email-ulf.hansson@stericsson.com>
+	<1350909125-20189-2-git-send-email-ulf.hansson@stericsson.com>
+	<20121022133200.GG4477@opensource.wolfsonmicro.com>
+Date: Mon, 22 Oct 2012 16:07:18 +0200
+Message-ID: <CAPDyKFpUTjkc3rm4iDCioiiB9=EWbtqv+UQFsJRzBBv+SV7A_g@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ASoC: Ux500: Control apb clock
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Ulf Hansson <ulf.hansson@stericsson.com>, Liam Girdwood <lrg@ti.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the effort of commonizing the slab allocators, it would be better if
-we had a single entry-point for kmem_cache_free. The low-level freeing
-is still left to the allocators, But at least the tracing can be done in
-slab_common.c
+On 22 October 2012 15:32, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Mon, Oct 22, 2012 at 02:32:05PM +0200, Ulf Hansson wrote:
+>> From: Ulf Hansson <ulf.hansson@linaro.org>
+>>
+>> When switching to common clock driver for ux500 this clock needs to
+>> be handled as well. Before this clock was internally managed by the
+>> clock driver itself.
+>
+> Applied but why isn't this a deficiency in the common clock
+> implementation for the platform?
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@kernel.org>
-CC: David Rientjes <rientjes@google.com>
+Good question. :-) Patches have just been sent to Mike Turquette clk
+tree for adding the clock lookups.
+First, I thought I might wanted to group them all in a series but
+decided that splitting them are probably easier to handle.
 
----
- mm/slab.c        | 13 +------------
- mm/slab.h        |  1 +
- mm/slab_common.c | 17 +++++++++++++++++
- mm/slob.c        | 11 ++++-------
- mm/slub.c        |  5 +----
- 5 files changed, 24 insertions(+), 23 deletions(-)
-
-diff --git a/mm/slab.c b/mm/slab.c
-index 98b3460..b8171ab 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3903,15 +3903,7 @@ void *__kmalloc(size_t size, gfp_t flags)
- EXPORT_SYMBOL(__kmalloc);
- #endif
- 
--/**
-- * kmem_cache_free - Deallocate an object
-- * @cachep: The cache the allocation was from.
-- * @objp: The previously allocated object.
-- *
-- * Free an object which was previously allocated from this
-- * cache.
-- */
--void kmem_cache_free(struct kmem_cache *cachep, void *objp)
-+void __kmem_cache_free(struct kmem_cache *cachep, void *objp)
- {
- 	unsigned long flags;
- 
-@@ -3921,10 +3913,7 @@ void kmem_cache_free(struct kmem_cache *cachep, void *objp)
- 		debug_check_no_obj_freed(objp, cachep->object_size);
- 	__cache_free(cachep, objp, __builtin_return_address(0));
- 	local_irq_restore(flags);
--
--	trace_kmem_cache_free(_RET_IP_, objp);
- }
--EXPORT_SYMBOL(kmem_cache_free);
- 
- /**
-  * kfree - free previously allocated memory
-diff --git a/mm/slab.h b/mm/slab.h
-index 66a62d3..dc1024f 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -34,6 +34,7 @@ extern struct kmem_cache *kmem_cache;
- 
- /* Functions provided by the slab allocators */
- extern int __kmem_cache_create(struct kmem_cache *, unsigned long flags);
-+extern void __kmem_cache_free(struct kmem_cache *s, void *x);
- 
- #ifdef CONFIG_SLUB
- struct kmem_cache *__kmem_cache_alias(const char *name, size_t size,
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index bf4b4f1..3b9d5c5 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -19,6 +19,8 @@
- #include <asm/tlbflush.h>
- #include <asm/page.h>
- 
-+#include <trace/events/kmem.h>
-+
- #include "slab.h"
- 
- enum slab_state slab_state;
-@@ -168,6 +170,21 @@ out_locked:
- }
- EXPORT_SYMBOL(kmem_cache_create);
- 
-+/**
-+ * kmem_cache_free - Deallocate an object
-+ * @cachep: The cache the allocation was from.
-+ * @objp: The previously allocated object.
-+ *
-+ * Free an object which was previously allocated from this
-+ * cache.
-+ */
-+void kmem_cache_free(struct kmem_cache *s, void *x)
-+{
-+	__kmem_cache_free(s, x);
-+	trace_kmem_cache_free(_RET_IP_, x);
-+}
-+EXPORT_SYMBOL(kmem_cache_free);
-+
- void kmem_cache_destroy(struct kmem_cache *s)
- {
- 	get_online_cpus();
-diff --git a/mm/slob.c b/mm/slob.c
-index 3edfeaa..d131f75 100644
---- a/mm/slob.c
-+++ b/mm/slob.c
-@@ -555,7 +555,7 @@ void *kmem_cache_alloc_node(struct kmem_cache *c, gfp_t flags, int node)
- }
- EXPORT_SYMBOL(kmem_cache_alloc_node);
- 
--static void __kmem_cache_free(void *b, int size)
-+static void do_kmem_cache_free(void *b, int size)
- {
- 	if (size < PAGE_SIZE)
- 		slob_free(b, size);
-@@ -568,10 +568,10 @@ static void kmem_rcu_free(struct rcu_head *head)
- 	struct slob_rcu *slob_rcu = (struct slob_rcu *)head;
- 	void *b = (void *)slob_rcu - (slob_rcu->size - sizeof(struct slob_rcu));
- 
--	__kmem_cache_free(b, slob_rcu->size);
-+	do_kmem_cache_free(b, slob_rcu->size);
- }
- 
--void kmem_cache_free(struct kmem_cache *c, void *b)
-+void __kmem_cache_free(struct kmem_cache *c, void *b)
- {
- 	kmemleak_free_recursive(b, c->flags);
- 	if (unlikely(c->flags & SLAB_DESTROY_BY_RCU)) {
-@@ -580,12 +580,9 @@ void kmem_cache_free(struct kmem_cache *c, void *b)
- 		slob_rcu->size = c->size;
- 		call_rcu(&slob_rcu->head, kmem_rcu_free);
- 	} else {
--		__kmem_cache_free(b, c->size);
-+		do_kmem_cache_free(b, c->size);
- 	}
--
--	trace_kmem_cache_free(_RET_IP_, b);
- }
--EXPORT_SYMBOL(kmem_cache_free);
- 
- unsigned int kmem_cache_size(struct kmem_cache *c)
- {
-diff --git a/mm/slub.c b/mm/slub.c
-index 259bc2c..0c512de 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2606,7 +2606,7 @@ redo:
- 
- }
- 
--void kmem_cache_free(struct kmem_cache *s, void *x)
-+void __kmem_cache_free(struct kmem_cache *s, void *x)
- {
- 	struct page *page;
- 
-@@ -2620,10 +2620,7 @@ void kmem_cache_free(struct kmem_cache *s, void *x)
- 	}
- 
- 	slab_free(s, page, x, _RET_IP_);
--
--	trace_kmem_cache_free(_RET_IP_, x);
- }
--EXPORT_SYMBOL(kmem_cache_free);
- 
- /*
-  * Object placement in a slab is made very easy because we always start at
--- 
-1.7.11.7
-
+Kind regards
+Ulf Hansson
