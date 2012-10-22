@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab2JVTRy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 15:17:54 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:52285 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811Ab2JVTRx (ORCPT
+	id S1754644Ab2JVTSc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 15:18:32 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:53484 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752813Ab2JVTSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 15:17:53 -0400
+	Mon, 22 Oct 2012 15:18:30 -0400
+Date: Mon, 22 Oct 2012 15:18:29 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Ming Lei <ming.lei@canonical.com>
+cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-mm@kvack.org>, Eric Dumazet <eric.dumazet@gmail.com>,
+        David Decotigny <david.decotigny@google.com>,
+        Tom Herbert <therbert@google.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC PATCH v2 4/6] net/core: apply pm_runtime_set_memalloc_noio
+ on network devices
+In-Reply-To: <1350894794-1494-5-git-send-email-ming.lei@canonical.com>
+Message-ID: <Pine.LNX.4.44L0.1210221516280.1724-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <CAH2r5mvofR7UDiDf0CW8Euk0645ZQDH9fC8cBCyDB82Ov7Vf7A@mail.gmail.com>
-References: <1350923660-8083-1-git-send-email-standby24x7@gmail.com>
-	<CAH2r5mvofR7UDiDf0CW8Euk0645ZQDH9fC8cBCyDB82Ov7Vf7A@mail.gmail.com>
-Date: Mon, 22 Oct 2012 14:17:52 -0500
-Message-ID: <CAH2r5mvhf+Hb9fW5KicYL+9Q3q3jzhqd-mM5Pht3wt0bYrKQ1w@mail.gmail.com>
-Subject: Re: [PATCH] [trivial] fs: cifs: Fix typo in fs/cifs
-From: Steve French <smfrench@gmail.com>
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks trivial/non-controversial - I will plan to merge this.
->
->
->
-> On Mon, Oct 22, 2012 at 11:34 AM, Masanari Iida <standby24x7@gmail.com> wrote:
->>
->> Correct spelling typo in fs/cifs.
->>
->> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
->> ---
->>  fs/cifs/link.c    | 2 +-
->>  fs/cifs/readdir.c | 2 +-
->>  2 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/fs/cifs/link.c b/fs/cifs/link.c
->> index 51dc2fb..9f6c4c4 100644
->> --- a/fs/cifs/link.c
->> +++ b/fs/cifs/link.c
->> @@ -76,7 +76,7 @@ symlink_hash(unsigned int link_len, const char *link_str, u8 *md5_hash)
->>         }
->>         rc = crypto_shash_update(&sdescmd5->shash, link_str, link_len);
->>         if (rc) {
->> -               cERROR(1, "%s: Could not update iwth link_str", __func__);
->> +               cERROR(1, "%s: Could not update with link_str", __func__);
->>                 goto symlink_hash_err;
->>         }
->>         rc = crypto_shash_final(&sdescmd5->shash, md5_hash);
->> diff --git a/fs/cifs/readdir.c b/fs/cifs/readdir.c
->> index b0f4a42..dc3433f 100644
->> --- a/fs/cifs/readdir.c
->> +++ b/fs/cifs/readdir.c
->> @@ -408,7 +408,7 @@ static void cifs_fill_dirent_std(struct cifs_dirent *de,
->>                 const FIND_FILE_STANDARD_INFO *info)
->>  {
->>         de->name = &info->FileName[0];
->> -       /* one byte length, no endianess conversion */
->> +       /* one byte length, no endianness conversion */
->>         de->namelen = info->FileNameLength;
->>         de->resume_key = info->ResumeKey;
->>  }
->> --
->> 1.8.0.rc3.16.g8ead1bf
->>
->
->
->
-> --
-> Thanks,
->
-> Steve
+On Mon, 22 Oct 2012, Ming Lei wrote:
 
+> Deadlock might be caused by allocating memory with GFP_KERNEL in
+> runtime_resume callback of network devices in iSCSI situation, so
+> mark network devices and its ancestor as 'memalloc_noio_resume'
+> with the introduced pm_runtime_set_memalloc_noio().
 
+Is this really needed?  Even with iSCSI, doesn't register_disk() have
+to be called for the underlying block device?  And given your 3/6
+patch, wouldn't that mark the network device?
 
+Alan Stern
 
---
-Thanks,
-
-Steve
