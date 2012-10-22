@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab2JVJF4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 05:05:56 -0400
-Received: from antcom.de ([188.40.178.216]:39285 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750907Ab2JVJFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 05:05:55 -0400
-Message-ID: <50850C6D.1050300@antcom.de>
-Date: Mon, 22 Oct 2012 11:05:49 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.5) Gecko/20120624 Icedove/10.0.5
+	id S1752560Ab2JVJGa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 05:06:30 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:41088 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab2JVJG3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 05:06:29 -0400
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
-        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
-        rmallon@gmail.com
-Subject: Re: [PATCH RFC 02/15 v5] gpio: Add sysfs support to block GPIO API
-References: <1350477107-26512-1-git-send-email-stigge@antcom.de> <1350477107-26512-3-git-send-email-stigge@antcom.de> <20121017190520.GC25996@kroah.com> <507FD4EB.1080204@antcom.de> <CACRpkda35jKs9YVNDAo96=0QzdMi+jkvJAzM=nX+HCK-d5+e9Q@mail.gmail.com> <50813EB0.9040102@antcom.de> <CACRpkdagQhUjdbda55JaY-J33MTNsEMMFJ=1je8V428ZkEMb9A@mail.gmail.com>
-In-Reply-To: <CACRpkdagQhUjdbda55JaY-J33MTNsEMMFJ=1je8V428ZkEMb9A@mail.gmail.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20121016152153.GD6807@ghostprotocols.net>
+References: <1350344020-8071-1-git-send-email-irina.tirdea@gmail.com>
+ <1350344020-8071-4-git-send-email-irina.tirdea@gmail.com> <20121016152153.GD6807@ghostprotocols.net>
+From: Irina Tirdea <irina.tirdea@gmail.com>
+Date: Mon, 22 Oct 2012 12:06:08 +0300
+Message-ID: <CANg8OWLMvYgTnQjNL+pNgGqi9fJzEMDAuaR6qD=SdqPKxQJrBg@mail.gmail.com>
+Subject: Re: [PATCH v4 3/6] perf tools: add --addr2line command line option
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Irina Tirdea <irina.tirdea@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2012 10:55 AM, Linus Walleij wrote:
-> On Fri, Oct 19, 2012 at 1:51 PM, Roland Stigge <stigge@antcom.de> wrote:
->> So what do you think about my just proposed idea of always having the
->> "value" argument present, but only useable when "exported" is "1"? Now
->> only talking about the block gpios, but later maybe also for gpios?
-> 
-> We should atleast be consistent and do it the same way for
-> blocks as individual gpios.
+On Tue, Oct 16, 2012 at 6:21 PM, Arnaldo Carvalho de Melo
+<acme@ghostprotocols.net> wrote:
+> Em Tue, Oct 16, 2012 at 02:33:37AM +0300, Irina Tirdea escreveu:
+>> From: Irina Tirdea <irina.tirdea@intel.com>
+>>
+>> When analyzing data recorded on a target with a different architecture
+>> than the host, we must use addr2line from the toolchain for that
+>> architecture.
+>>
+>> Add a command line option to allow setting addr2line at runtime.
+>
+> You're doing two things here:
+>
+> 1. Adding --addr2line
+>
+> 2. fixing a bug for unresolved symbols
+>
+> Please try not to do that, instead provide two patches, one addressing
+> each issue.
+>
 
-OK, I'll leave it as creating-attribute-on-export.
+You're absolutely right. Missed this.
 
->> But I would only do this if you and Greg consider it reasonable.
-> 
-> I'm still afraid of this whole thing and would seek Grant's consent.
-
-Yes, he acked. :-)
+> Furthermore, Namhyung fixed #2 already:
+>
+> commit a2c1311c4cbd47a087e95be18fee79ead3d0744b
+> Author: Namhyung Kim <namhyung.kim@lge.com>
+> Date:   Mon Oct 15 12:39:42 2012 +0900
+>
+>     perf tools: Fix segfault when using srcline sort key
+>
+> - Arnaldo
 
 Thanks,
-
-Roland
+Irina
