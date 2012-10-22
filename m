@@ -1,65 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303Ab2JVLCx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 07:02:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60776 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752747Ab2JVLCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 07:02:52 -0400
-Message-ID: <508527D8.9020004@draigBrady.com>
-Date: Mon, 22 Oct 2012 12:02:48 +0100
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: abhishek agarwal <abhigem.126@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [Perf] Adding timeout option
-References: <CAMjzKwXZLGX7EM7dVOHWcN-8Ay40bbhiR4v5M352Xd2g2uHY1g@mail.gmail.com> <5081B7F8.7040302@draigBrady.com> <CAMjzKwVn4Y+ocZ7Ud_CSM34KP=zO1N84ZApG1s6CG6onSP_x-g@mail.gmail.com>
-In-Reply-To: <CAMjzKwVn4Y+ocZ7Ud_CSM34KP=zO1N84ZApG1s6CG6onSP_x-g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1753374Ab2JVLDS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 07:03:18 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51060 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752732Ab2JVLDQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 07:03:16 -0400
+Message-ID: <1350903750.2768.90.camel@twins>
+Subject: Re: [tip:numa/core] x86, mm: Prevent gcc to re-read the pagetables
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
+        torvalds@linux-foundation.org, riel@redhat.com,
+        akpm@linux-foundation.org, aarcange@redhat.com, tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Date: Mon, 22 Oct 2012 13:02:30 +0200
+In-Reply-To: <tip-cee8868763f827194e3b8ef1371ff9a96eae3b48@git.kernel.org>
+References: <tip-cee8868763f827194e3b8ef1371ff9a96eae3b48@git.kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2012 05:18 AM, abhishek agarwal wrote:
+On Sun, 2012-10-21 at 05:56 -0700, tip-bot for Andrea Arcangeli wrote:
 
-> perfmon had "timeout" option and i guess, same do oprofile.
->
-> On Sat, Oct 20, 2012 at 1:58 AM, Pádraig Brady <P@draigbrady.com> wrote:
->> On 10/13/2012 08:54 AM, abhishek agarwal wrote:
->>>
->>> Hi folks..
->>>
->>> I was thinking that why cant we have a timeout option in perf stat
->>> command.  The timeout feature will help us to profile a process for a
->>> stipulated time (preferably in millisecs) and make perf stat return
->>> after that time.
->>> Eg:
->>>
->>> perf stat --timeout=10 sleep 100
->>>
->>> This will make perf return and report stats after 10 ms...
->>>
->>> Hope anyone can shed some more light on the idea
->>
->>
->> It seems preferable to use the timeout program to do this.
->> Either sending a handled signal to the perf process like:
->>
->>      timeout -s HUP 10 perf stat sleep 100
->>
->> Or even better, just use that to kill the monitored process itself
->>
->>      perf stat timeout 10 sleep 100
+> In get_user_pages_fast() the TLB shootdown code can clear the pagetables
+> before firing any TLB flush (the page can't be freed until the TLB
+> flushing IPI has been delivered but the pagetables will be cleared well
+> before sending any TLB flushing IPI).
 
- > sleep does not offer a good timeout resolution and it is not a good
- > option (according to me) either.
+I think we want to do this for all gup_fast() implementations. When I
+reported this issue I also proposed adding something like
+page_table_deref() which we could use through-out. Not sure we want to,
+but at least all archs need an audit for this.
 
-sleep was just following on the command example.
-timeout(1) supports subsecond resolution,
-through timer_create (CLOCK_REALTIME...) and
-timeout indication through signals.
 
-thanks,
-Pádraig.
+> ---
+>  arch/x86/mm/gup.c |   23 ++++++++++++++++++++---
+>  mm/memory.c       |    2 +-
+>  2 files changed, 21 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
+> index dd74e46..6dc9921 100644
+> --- a/arch/x86/mm/gup.c
+> +++ b/arch/x86/mm/gup.c
+> @@ -150,7 +150,13 @@ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
+>  
+>  	pmdp = pmd_offset(&pud, addr);
+>  	do {
+> -		pmd_t pmd = *pmdp;
+> +		/*
+> +		 * With THP and hugetlbfs the pmd can change from
+> +		 * under us and it can be cleared as well by the TLB
+> +		 * shootdown, so read it with ACCESS_ONCE to do all
+> +		 * computations on the same sampling.
+> +		 */
+> +		pmd_t pmd = ACCESS_ONCE(*pmdp);
+>  
+>  		next = pmd_addr_end(addr, end);
+>  		/*
+> @@ -220,7 +226,13 @@ static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
+>  
+>  	pudp = pud_offset(&pgd, addr);
+>  	do {
+> -		pud_t pud = *pudp;
+> +		/*
+> +		 * With hugetlbfs giga pages the pud can change from
+> +		 * under us and it can be cleared as well by the TLB
+> +		 * shootdown, so read it with ACCESS_ONCE to do all
+> +		 * computations on the same sampling.
+> +		 */
+> +		pud_t pud = ACCESS_ONCE(*pudp);
+>  
+>  		next = pud_addr_end(addr, end);
+>  		if (pud_none(pud))
+> @@ -280,7 +292,12 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
+>  	local_irq_save(flags);
+>  	pgdp = pgd_offset(mm, addr);
+>  	do {
+> -		pgd_t pgd = *pgdp;
+> +		/*
+> +		 * The pgd could be cleared by the TLB shootdown from
+> +		 * under us so read it with ACCESS_ONCE to do all
+> +		 * computations on the same sampling.
+> +		 */
+> +		pgd_t pgd = ACCESS_ONCE(*pgdp);
+>  
+>  		next = pgd_addr_end(addr, end);
+>  		if (pgd_none(pgd))
+> diff --git a/mm/memory.c b/mm/memory.c
+> index cc8e280..c0de477 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -3555,7 +3555,7 @@ int handle_pte_fault(struct mm_struct *mm,
+>  	pte_t entry;
+>  	spinlock_t *ptl;
+>  
+> -	entry = *pte;
+> +	entry = ACCESS_ONCE(*pte);
+>  	if (!pte_present(entry)) {
+>  		if (pte_none(entry)) {
+>  			if (vma->vm_ops) {
+
