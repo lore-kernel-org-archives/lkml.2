@@ -1,53 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab2JVUrw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 16:47:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36141 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756204Ab2JVUrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 16:47:51 -0400
-Message-ID: <5085B0D0.9020508@zytor.com>
-Date: Mon, 22 Oct 2012 13:47:12 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1756247Ab2JVUul (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 16:50:41 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55790 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756167Ab2JVUuk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 16:50:40 -0400
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
-        kexec@lists.infradead.org, x86@kernel.org, mingo@elte.hu,
-        tglx@linutronix.de, len.brown@intel.com, fenghua.yu@intel.com,
-        vgoyal@redhat.com, grant.likely@secretlab.ca, rob.herring@calxeda.com
-Subject: Re: [PATCH v1 2/2] x86, apic: Disable BSP if boot cpu is AP
-References: <20121016043357.20003.5885.stgit@localhost6.localdomain6> <20121016043528.20003.601.stgit@localhost6.localdomain6> <873916i88t.fsf@xmission.com> <5085A9A8.5020004@zytor.com> <87fw56fduo.fsf@xmission.com> <5085AD7D.106@zytor.com> <87a9vedyqe.fsf@xmission.com>
-In-Reply-To: <87a9vedyqe.fsf@xmission.com>
-X-Enigmail-Version: 1.4.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5085ABEF.3060502@linux.intel.com>
+References: <903a3ead-98b5-4afa-88a4-3dc723895e82@blur>
+	<d556fc0f-da5d-4531-b331-6dc086461f34@blur>
+	<50833F30.4020802@ti.com>
+	<CAE9FiQWpSvKp=Oh+4Y8OpdOjdRnkYVL2HvNNXc29ESpNsMC0AQ@mail.gmail.com>
+	<20121021041858.GA14809@jshin-Toonie>
+	<50843627.4020103@ti.com>
+	<20121021210633.GA14311@jshin-Toonie>
+	<508467EE.4040807@ti.com>
+	<20121022144020.GA14425@jshin-Toonie>
+	<CAE9FiQWvVNCK8Ka6rq+RMf3u4JFn8D18rGMy4Hpz7Rhnrn6VTA@mail.gmail.com>
+	<20121022183858.GA31185@jshin-Toonie>
+	<CAE9FiQWZmwa6EwsfZzz_e3A-tz2LUS2+i+zh4zpXpR_Jj_FQ1w@mail.gmail.com>
+	<5085ABEF.3060502@linux.intel.com>
+Date: Mon, 22 Oct 2012 13:50:38 -0700
+X-Google-Sender-Auth: 2QebPaw7CMvfFJyZdmozHCSFYm0
+Message-ID: <CAE9FiQW0rQFUgjiYjByA91XCUUqo59zz2kXc9Z5wXk+3vKPKaQ@mail.gmail.com>
+Subject: Re: BUG: 1bbbbe7 (x86: Exclude E820_RESERVED regions...) PANIC on boot
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Jacob Shin <jacob.shin@amd.com>, Tom Rini <trini@ti.com>, hpa@zytor.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2012 01:43 PM, Eric W. Biederman wrote:
-> 
-> The reason the BIOSen go wonky is the INIT cause the cpu to go to the
-> reset vector at 4G-16 bytes.  So it is very much expected that the
-> BIOSen start acting like you just came out of reset.
-> 
-> If you can clear bit 8 of IA32_APIC_BASE_MSR and inform the cpu to not
-> send the cpu to 4G-16 bytes and instead send the cpu into it's magic
-> startup-ipi-wait mode then the BIOSen will not be involved on that path.
-> 
-> It is a simple question of does the cpu support clearing bit 8
-> meaningfully.
-> 
-> If the cpu allows bit 8 to be cleared and sends the cpu to the reset
-> vector on receipt of the INIT IPI I would call that a deviation from the
-> x86 cpu specification.
-> 
-> So clearing bit 8 is not a question about BIOSen it is a question of can
-> we avoid the BIOSen, by using an obscure under-documented cpu feature.
-> 
+On Mon, Oct 22, 2012 at 1:26 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>>>> 2. partial page:
+>>>>    E820 or user could pass memmap that  is not page aligned.
+>>>>    old cold will guarded by max_low_pfn and max_pfn. so the end partial
+>>>>    page will be trimmed down, and memblock can one use it.
+>>>>    middle partial page will still get covered by directly mapping, and
+>>>> memblock still can use them.
+>>>>    Now we will not map middle partial page and memblock still try to use it
+>>>> we could get panic when accessing those pages.
+>>>>
+>>>> So I would suggest to just revert that temporary patch at this time,
+>>>> and later come out one complete patch for stable kernels.
+>>>
+>>> Hm okay, I was hoping not, but if it has to be ..
+>>
+>> It's hpa's call.
+>
+> So the issue is that two E820 RAM ranges (or ACPI, or kernel-reserved)
+> are immediately adjacent on a non-page-aligned address?
 
-As I said, I thought Fenghua tried that but it didn't work, experimentally.
+yes. or the user take out range that is not page aligned.
 
-	-hpa
+> Or is there a
+> gap in between and memblock is still expecting to use it?
 
+yes, current implementation is.  and init_memory_mapping map those partial pages
+and holes.
+
+>
+> We should not map a partial page at the end of RAM; it is functionally
+> lost.
+
+Now we did not, we have max_low_pfn, and max_pfn to cap out end partial page.
+
+> Two immediately adjacent pages could be coalesced, but not a
+> partial page that abuts I/O space (and yes, such abortions can happen in
+> the real world.)
+>
+> However, the issue obviously is that what we can realistically put in
+> 3.7 or stable is limited at this point.
+
+ok, let's see if we can meet this extreme corner case except user
+specify not page aligned "memmap="
+
+Thanks
+
+Yinghai
