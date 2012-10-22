@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556Ab2JVQ7n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 12:59:43 -0400
-Received: from mga01.intel.com ([192.55.52.88]:10960 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755416Ab2JVQ7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 12:59:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,630,1344236400"; 
-   d="scan'208";a="236863360"
-Date: Mon, 22 Oct 2012 09:29:29 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB v6
-Message-ID: <20121022162929.GN2095@tassilo.jf.intel.com>
-References: <1350665289-7288-1-git-send-email-andi@firstfloor.org>
- <CAHO5Pa0W-WGBaPvzdRJxYPdrg-K9guChswo3KJheK4BaRzsRwQ@mail.gmail.com>
- <20121022132733.GQ16230@one.firstfloor.org>
- <20121022133534.GR16230@one.firstfloor.org>
- <CAKgNAkgQ6JZdwOsCAQ4Ak_gVXtav=TzgzW2tbk5jMUwxtMqOAg@mail.gmail.com>
- <20121022153633.GK2095@tassilo.jf.intel.com>
- <CAKgNAki=AL+KdYDdYnE8ZhjK-tUf5cZ163BWPe6GRM0rpi-z7w@mail.gmail.com>
- <20121022161151.GS16230@one.firstfloor.org>
- <CAKgNAkjsGp9HUpvhUfqbXnfrLbBsQRAKvOs=41-w3ZAE7yX+cA@mail.gmail.com>
+	id S1755615Ab2JVRAI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 13:00:08 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:34362 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755416Ab2JVRAF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 13:00:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKgNAkjsGp9HUpvhUfqbXnfrLbBsQRAKvOs=41-w3ZAE7yX+cA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121022164444.2b0775ce@pyramind.ukuu.org.uk>
+References: <50819140.8030806@linux.vnet.ibm.com> <508565FA.4040908@redhat.com>
+ <20121022164444.2b0775ce@pyramind.ukuu.org.uk>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 22 Oct 2012 10:59:44 -0600
+Message-ID: <CAErSpo7-BEiBWBYNdEdx_UhqYaMkqvaMck5uYCivVDVYX+qPuQ@mail.gmail.com>
+Subject: Re: radeon: RFC speed cap detection on ppc64
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Adam Jackson <ajax@redhat.com>,
+        Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>,
+        dri-devel@lists.freedesktop.org,
+        Benjamin Herrenschmidt <benh@au1.ibm.com>, linux-pci@vger.kernel.org,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Brian King <brking@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Since PowerPC already allows 16GB page sizes, doesn't there need to be
-> allowance for the possibility of future expansion? Choosing a larger
-> minimum size (like 2^16) would allow that. Does the minimum size need
-> to be 16k? (Surely, if you want a HUGEPAGE, you want a bigger page
-> than that? I am not sure.)
+On Mon, Oct 22, 2012 at 9:44 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> That (walking all parent nodes) is probably the safest thing to do.  I'm
+>> not sure whether it's optimal.  It would likely depend on whether you
+>> can meaningfully have a bridge that's faster on the downstream side than
+>> on the upstream.
+>
+> This is architecture goo at heart - would this be better as a helper in
+> the PCI and arch PCI code ?
 
-Some architectures have configurable huge page sizes, so it depends on
-the user. I thought 16K is reasonable.  Can make it larger too. 
+Good point.
 
-But I personally consider even 16GB pages somewhat too big.
+POWER is not the only architecture where host bridges do not appear as
+devices in PCI config space -- ia64 has that, too.  So the comment is
+too specific.
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+The link is a point-to-point thing, so this should be a local
+negotiation between the radeon device and the upstream bridge.  I
+don't see the point of walking any farther up the chain.
+
+drm_pcie_get_speed_cap_mask() should also be changed to use
+pcie_capability_read_dword() to avoid any issues with v1/v2 PCI
+Express Capability structures.
+
+Bjorn
