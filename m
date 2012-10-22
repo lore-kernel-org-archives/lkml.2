@@ -1,41 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554Ab2JWCA6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 22:00:58 -0400
-Received: from ozlabs.org ([203.10.76.45]:60139 "EHLO ozlabs.org"
+	id S1756542Ab2JWCA5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 22:00:57 -0400
+Received: from ozlabs.org ([203.10.76.45]:57270 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756491Ab2JWCA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756472Ab2JWCA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Oct 2012 22:00:56 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
-Cc: levinsasha928@gmail.com, Marc.Zyngier@arm.com,
-        virtualization@lists.linux-foundation.org, akpm@linux-foundation.org,
-        ericvh@gmail.com, Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v2 1/3] mm: highmem: export kmap_to_page for modules
-In-Reply-To: <1350651813-8694-1-git-send-email-will.deacon@arm.com>
-References: <1350651813-8694-1-git-send-email-will.deacon@arm.com>
+To: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH] arch/tile: avoid build warnings from duplicate ELF_R_xxx #defines
+In-Reply-To: <201210192039.q9JKdUE5003952@farm-0010.internal.tilera.com>
+References: <201210192039.q9JKdUE5003952@farm-0010.internal.tilera.com>
 User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Tue, 23 Oct 2012 10:25:57 +1030
-Message-ID: <87objuhxiq.fsf@rustcorp.com.au>
+Date: Mon, 22 Oct 2012 13:46:27 +1030
+Message-ID: <87vce3i4c4.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will Deacon <will.deacon@arm.com> writes:
+Chris Metcalf <cmetcalf@tilera.com> writes:
 
-> Some virtio device drivers (9p) need to translate high virtual addresses
-> to physical addresses, which are inserted into the virtqueue for
-> processing by userspace.
+> These are now provided in <asm-generic/module.h>, so clean up warning
+> by not re-defining them in module.c.
 >
-> This patch exports the kmap_to_page symbol, so that the affected drivers
-> can be compiled as modules.
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 
-Thanks Will!
+This change was in linux-next for quite a while, BTW, so there would
+have been over a month of warnings...
 
-I've applied these, and add cc:stable.  I'll push them to Linus after a
-little time in linux-next.
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
 Cheers,
 Rusty.
