@@ -1,104 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305Ab2JVHAV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 03:00:21 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:55220 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750912Ab2JVHAR (ORCPT
+	id S1750976Ab2JVHJG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 03:09:06 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:59555 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703Ab2JVHJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 03:00:17 -0400
-Message-ID: <5084EF0E.20300@metafoo.de>
-Date: Mon, 22 Oct 2012 09:00:30 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120922 Icedove/3.0.11
-MIME-Version: 1.0
-To: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
-CC: cbou@mail.ru, dwmw2@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2 v2] drivers: power: jz4740_battery: Use devm_request_and_ioremap
-References: <1350868425-26852-1-git-send-email-marcos.souza.org@gmail.com> <1350868425-26852-3-git-send-email-marcos.souza.org@gmail.com>
-In-Reply-To: <1350868425-26852-3-git-send-email-marcos.souza.org@gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 22 Oct 2012 03:09:03 -0400
+Message-ID: <1350889747.3592.17.camel@gitbox>
+Subject: Re: [PATCH 2/3] PWM: vt8500: Update vt8500 PWM driver support
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: devicetree-discuss@lists.ozlabs.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Mon, 22 Oct 2012 20:09:07 +1300
+In-Reply-To: <1350888712.3592.11.camel@gitbox>
+References: <1350643135-13197-1-git-send-email-linux@prisktech.co.nz>
+	 <1350643135-13197-2-git-send-email-linux@prisktech.co.nz>
+	 <20121022063423.GA17181@avionic-0098.mockup.avionic-design.de>
+	 <1350888712.3592.11.camel@gitbox>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2012 03:13 AM, Marcos Paulo de Souza wrote:
-> And remove all checks abvout request_mem_region and ioremap.
-> This is just a cleanup. Not functional changes here.
+On Mon, 2012-10-22 at 19:51 +1300, Tony Prisk wrote:
+> > 
+> > >  	chip = devm_kzalloc(&pdev->dev, sizeof(*chip), GFP_KERNEL);
+> > >  	if (chip == NULL) {
+> > >  		dev_err(&pdev->dev, "failed to allocate memory\n");
+> > > @@ -123,26 +144,32 @@ static int __devinit pwm_probe(struct platform_device *pdev)
+> > >  	chip->chip.ops = &vt8500_pwm_ops;
+> > >  	chip->chip.base = -1;
+> > >  	chip->chip.npwm = VT8500_NR_PWMS;
+> > > +	chip->clk = of_clk_get(np, 0);
+> > 
+> > I thought this was supposed to work transparently across OF and !OF
+> > configurations by using just clk_get() or devm_clk_get()? I guess that
+> > if the driver depends on OF, then this would be moot, but we should
+> > probably stick to the standard usage anyway.
+> > 
+> > Furthermore, of_clk_get() doesn't seem to be managed, so you'd need to
+> > add explicit clk_put() in the error cleanup paths. One more argument in
+> > favour of using devm_clk_get() instead.
 > 
-> Signed-off-by: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+> Hmm good point. I stuck with of_ functions because its an OF only driver
+> and it seemed 'backward' to mix old code with new. It does pose the
+> question of 'why have of_clk_get() if existing functions work better'.
 
-Thanks, looks almost good. But you could also have removed the check and error
-message after platform_get_resource since devm_request_and_ioremap also does
-this internally. Also you can remove the mem field from jz_battery struct since
-it now only is used in the probe function.
+Was about to fix this but noticed why it wasn't like this to start
+with :)
 
-> ---
->  drivers/power/jz4740-battery.c |   23 +++++------------------
->  1 file changed, 5 insertions(+), 18 deletions(-)
-> 
-> diff --git a/drivers/power/jz4740-battery.c b/drivers/power/jz4740-battery.c
-> index 59900c6..1df7be8 100644
-> --- a/drivers/power/jz4740-battery.c
-> +++ b/drivers/power/jz4740-battery.c
-> @@ -272,19 +272,12 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
->  		return -ENOENT;
->  	}
->  
-> -	jz_battery->mem = request_mem_region(jz_battery->mem->start,
-> -				resource_size(jz_battery->mem),	pdev->name);
-> -	if (!jz_battery->mem) {
-> -		dev_err(&pdev->dev, "Failed to request mmio memory region\n");
-> -		return -EBUSY;
-> -	}
-> +	jz_battery->base = devm_request_and_ioremap(&pdev->dev
-> +							, jz_battery->mem);
+struct clk *devm_clk_get(struct device *dev, const char *id);
+struct clk *of_clk_get(struct device_node *np, int index);
 
-The comma should go on the previous line, after the dev.
+devm_clk_get requires me to 'get' the clock by name. arch-vt8500 (and I
+believe a lot of other arch's) don't enforce names for clocks defined in
+devicetree, therefore there is no way for me to know what name the clk
+has unless I include in the binding that the clock must be named 'xxx'.
 
->  
-> -	jz_battery->base = ioremap_nocache(jz_battery->mem->start,
-> -				resource_size(jz_battery->mem));
->  	if (!jz_battery->base) {
-> -		ret = -EBUSY;
->  		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
-> -		goto err_release_mem_region;
-> +		return -EBUSY;
->  	}
->  
->  	battery = &jz_battery->battery;
-> @@ -308,7 +301,7 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
->  			jz_battery);
->  	if (ret) {
->  		dev_err(&pdev->dev, "Failed to request irq %d\n", ret);
-> -		goto err_iounmap;
-> +		goto err_irq;
->  	}
->  	disable_irq(jz_battery->irq);
->  
-> @@ -365,11 +358,8 @@ err_free_gpio:
->  		gpio_free(jz_battery->pdata->gpio_charge);
->  err_free_irq:
->  	free_irq(jz_battery->irq, jz_battery);
-> -err_iounmap:
-> +err_irq:
->  	platform_set_drvdata(pdev, NULL);
-> -	iounmap(jz_battery->base);
-> -err_release_mem_region:
-> -	release_mem_region(jz_battery->mem->start, resource_size(jz_battery->mem));
->  	return ret;
->  }
->  
-> @@ -389,9 +379,6 @@ static int __devexit jz_battery_remove(struct platform_device *pdev)
->  
->  	free_irq(jz_battery->irq, jz_battery);
->  
-> -	iounmap(jz_battery->base);
-> -	release_mem_region(jz_battery->mem->start, resource_size(jz_battery->mem));
-> -
->  	return 0;
->  }
->  
+of_clk_get retrieves it by the dt-node + index, so it doesn't care as
+long as its the 1st clock listed.
+
+
+Welcome your feedback.
+
+Regards
+Tony P
 
