@@ -1,106 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751474Ab2JVH64 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 03:58:56 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59712 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750848Ab2JVH6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 03:58:55 -0400
-Date: Mon, 22 Oct 2012 10:53:08 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Li Yang-R58472 <r58472@freescale.com>
-CC: "balbi@ti.com" <balbi@ti.com>, Simon Haggett <simon.haggett@realvnc.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCH 1/1] usb: gadget: Don't attempt to dequeue requests for a
- disabled USB endpoint on Freescale hardware
-Message-ID: <20121022075308.GA14033@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1350667166-3559-1-git-send-email-simon.haggett@realvnc.com>
- <20121019173718.GA2738@arwen.pp.htv.fi>
- <94F013E7935FF44C83EBE7784D62AD3F094730DB@039-SN2MPN1-023.039d.mgd.msft.net>
+	id S1751617Ab2JVIBu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 04:01:50 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:56419 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815Ab2JVIBs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 04:01:48 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q9M81FiS003509
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jean@google.com>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next 1/2] r8169: enable ALDPS for power saving
+Date: Mon, 22 Oct 2012 16:05:53 +0800
+Message-ID: <1350893153-18320-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.11.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hUH5gZbnpyIv7Mn4"
-Content-Disposition: inline
-In-Reply-To: <94F013E7935FF44C83EBE7784D62AD3F094730DB@039-SN2MPN1-023.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---hUH5gZbnpyIv7Mn4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Enable ALDPS function to save power when link down. Note that the
+feature should be set after the other PHY settings. And the firmware
+is necessary. Don't enable it without loading the firmware.
 
-On Mon, Oct 22, 2012 at 03:33:19AM +0000, Li Yang-R58472 wrote:
->=20
->=20
-> > -----Original Message-----
-> > From: Felipe Balbi [mailto:balbi@ti.com]
-> > Sent: Saturday, October 20, 2012 1:37 AM
-> > To: Simon Haggett
-> > Cc: Li Yang-R58472; Felipe Balbi; Greg Kroah-Hartman; linux-
-> > usb@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; linux-
-> > kernel@vger.kernel.org; Laurent Pinchart
-> > Subject: Re: [PATCH 1/1] usb: gadget: Don't attempt to dequeue requests
-> > for a disabled USB endpoint on Freescale hardware
-> >=20
-> > Hi,
-> >=20
-> > On Fri, Oct 19, 2012 at 06:19:26PM +0100, Simon Haggett wrote:
-> > > Some gadget drivers may attempt to dequeue requests for an endpoint
-> > > that has already been disabled. For example, in the UVC gadget driver,
-> > > uvc_function_set_alt() will call usb_ep_disable() when alt setting 0
-> > > is selected. When the userspace application subsequently issues the
-> > > VIDIOC_STREAMOFF ioctl, uvc_video_enable() invokes usb_ep_dequeue() to
-> > ensure that all requests have been cancelled.
-> >=20
-> > bug is on uvc gadget, then. Laurent ?
-> >=20
-> > Also, fsl should be removed from the tree, I'm trying to persuade iMX
-> > folks to use drivers/usb/chipidea instead.
->=20
-> Besides the iMX usage, the driver is also being used by many Freescale
-> PowerPC/Coldfire SoCs.  I agree that it's ideal to move to a common
-> driver.  But it is a large task to make the chipidea driver works for
-> all the hardware that fsl_udc had supported and been tested on.
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/ethernet/realtek/r8169.c | 46 +++++++++++++++++++++++++++++++++++-
+ 1 file changed, 45 insertions(+), 1 deletion(-)
 
-I understand that, but we just can't keep so many duplicated drivers in
-mainline. chipidea udc had at least 3 different implementations. Now
-it's the time to combine all of those and stick to a single driver.
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index e7ff886..ba29e4d 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -687,6 +687,7 @@ enum features {
+ 	RTL_FEATURE_WOL		= (1 << 0),
+ 	RTL_FEATURE_MSI		= (1 << 1),
+ 	RTL_FEATURE_GMII	= (1 << 2),
++	RTL_FEATURE_EXTENDED	= (1 << 3),
+ };
+ 
+ struct rtl8169_counters {
+@@ -2394,8 +2395,10 @@ static void rtl_apply_firmware(struct rtl8169_private *tp)
+ 	struct rtl_fw *rtl_fw = tp->rtl_fw;
+ 
+ 	/* TODO: release firmware once rtl_phy_write_fw signals failures. */
+-	if (!IS_ERR_OR_NULL(rtl_fw))
++	if (!IS_ERR_OR_NULL(rtl_fw)) {
+ 		rtl_phy_write_fw(tp, rtl_fw);
++		tp->features |= RTL_FEATURE_EXTENDED;
++	}
+ }
+ 
+ static void rtl_apply_firmware_cond(struct rtl8169_private *tp, u8 reg, u16 val)
+@@ -3178,6 +3181,12 @@ static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_w1w0_phy(tp, 0x19, 0x0000, 0x0001);
+ 	rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0400);
+ 	rtl_writephy(tp, 0x1f, 0x0000);
++
++	/* ALDPS enable */
++	if (tp->features & RTL_FEATURE_EXTENDED) {
++		rtl_writephy(tp, 0x1f, 0x0000);
++		rtl_w1w0_phy(tp, 0x15, 0x1000, 0x0000);
++	}
+ }
+ 
+ static void rtl8168f_hw_phy_config(struct rtl8169_private *tp)
+@@ -3250,6 +3259,12 @@ static void rtl8168f_1_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy(tp, 0x05, 0x8b85);
+ 	rtl_w1w0_phy(tp, 0x06, 0x4000, 0x0000);
+ 	rtl_writephy(tp, 0x1f, 0x0000);
++
++	/* ALDPS enable */
++	if (tp->features & RTL_FEATURE_EXTENDED) {
++		rtl_writephy(tp, 0x1f, 0x0000);
++		rtl_w1w0_phy(tp, 0x15, 0x1000, 0x0000);
++	}
+ }
+ 
+ static void rtl8168f_2_hw_phy_config(struct rtl8169_private *tp)
+@@ -3257,6 +3272,12 @@ static void rtl8168f_2_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_apply_firmware(tp);
+ 
+ 	rtl8168f_hw_phy_config(tp);
++
++	/* ALDPS enable */
++	if (tp->features & RTL_FEATURE_EXTENDED) {
++		rtl_writephy(tp, 0x1f, 0x0000);
++		rtl_w1w0_phy(tp, 0x15, 0x1000, 0x0000);
++	}
+ }
+ 
+ static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
+@@ -3354,6 +3375,12 @@ static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_w1w0_phy(tp, 0x19, 0x0000, 0x0001);
+ 	rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0400);
+ 	rtl_writephy(tp, 0x1f, 0x0000);
++
++	/* ALDPS enable */
++	if (tp->features & RTL_FEATURE_EXTENDED) {
++		rtl_writephy(tp, 0x1f, 0x0000);
++		rtl_w1w0_phy(tp, 0x15, 0x1000, 0x0000);
++	}
+ }
+ 
+ static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
+@@ -3446,6 +3473,11 @@ static void rtl8105e_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_apply_firmware(tp);
+ 
+ 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
++
++	if (tp->features & RTL_FEATURE_EXTENDED) {
++		rtl_writephy(tp, 0x1f, 0x0000);
++		rtl_writephy(tp, 0x18, 0x8310);
++	}
+ }
+ 
+ static void rtl8402_hw_phy_config(struct rtl8169_private *tp)
+@@ -3463,6 +3495,11 @@ static void rtl8402_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy(tp, 0x10, 0x401f);
+ 	rtl_writephy(tp, 0x19, 0x7030);
+ 	rtl_writephy(tp, 0x1f, 0x0000);
++
++	if (tp->features & RTL_FEATURE_EXTENDED) {
++		rtl_writephy(tp, 0x1f, 0x0000);
++		rtl_writephy(tp, 0x18, 0x8310);
++	}
+ }
+ 
+ static void rtl8106e_hw_phy_config(struct rtl8169_private *tp)
+@@ -3485,6 +3522,11 @@ static void rtl8106e_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
+ 
+ 	rtl_eri_write(tp, 0x1d0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
++
++	if (tp->features & RTL_FEATURE_EXTENDED) {
++		rtl_writephy(tp, 0x1f, 0x0000);
++		rtl_writephy(tp, 0x18, 0x8310);
++	}
+ }
+ 
+ static void rtl_hw_phy_config(struct net_device *dev)
+@@ -6391,6 +6433,8 @@ static void rtl8169_net_suspend(struct net_device *dev)
+ {
+ 	struct rtl8169_private *tp = netdev_priv(dev);
+ 
++	tp->features &= ~RTL_FEATURE_EXTENDED;
++
+ 	if (!netif_running(dev))
+ 		return;
+ 
+-- 
+1.7.11.4
 
-Just make a plan to slowly move towards chipidea in the upcoming few
-merge windows. I can continue to take in bugfixes for fsl_udc, but only
-if I see that you guys are working towards merging with chipidea driver.
-
---=20
-balbi
-
---hUH5gZbnpyIv7Mn4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQhPtkAAoJEIaOsuA1yqREJjsP/iibVj4fB03dHEu9GRKmuWcz
-CB6ZfyFqpdcwQHT4AZ0/Dc8dfuDh3Tl58PPW6jshkyVd1s55vjarW8YTVagD7TQz
-3idDHHjPSvXz9ZgDa1u3+dF07kKrehLXEuJNHxwbFLXZiRKGDhHSwr39swRv3CHP
-6a63FeOopBuT7anPvWK0jJ4ywaXioKB4OctNTSeplaHg8EPGmjnzO2O4UhBVamSi
-1n9znfm0UaXwVsDE1dpVgy2jFTV1NFCs50o8qheW8qiqeb9xPxkJqsoWivJgqwXI
-H8Ss7hglR6YVzzeLJE2e2994enNSFSEPmYSBT39vq14sviaRbT5vhsPqeqEvebFC
-uLAIuWx4xbPfNZfe9c/GJ5RndOW8K7cQ6h//zrv0bLCOAHhheFs7gHDwF1MdNn1+
-NFpKFUs8XNQ6G5YUHHIBd5MdAELysAwsafzqlnYRw3VYNOIdcAHqjxJd7u6daYSF
-G923H2IDhdkfltv2zXe4myEjYvVfmL4zYaGCrc9VSA5ZgNfL+ytPCn9tYEt65Ljq
-8RjTHEUkEjGv/K+8H88g6ZTi0p+2/6vzlD7CX1Is38T/wfI39EGuADML7l8RrKmY
-mhHf9Heysu+clKDs0Q+UH8oy8/igGi8PjWec5fjQm9vP3OSlleMyk+INhlkoPQDc
-v1nECQC76RS0om4Nf17B
-=khOJ
------END PGP SIGNATURE-----
-
---hUH5gZbnpyIv7Mn4--
