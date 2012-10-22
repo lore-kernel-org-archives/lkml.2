@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096Ab2JVSSs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 14:18:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40088 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753386Ab2JVSSp (ORCPT
+	id S932151Ab2JVSTL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 14:19:11 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:36632 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755277Ab2JVSTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 14:18:45 -0400
-Date: Mon, 22 Oct 2012 11:18:43 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: David Miller <davem@davemloft.net>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "mhocko@suse.cz" <mhocko@suse.cz>,
-        "kirill@shutemov.name" <kirill@shutemov.name>,
-        "aarcange@redhat.com" <aarcange@redhat.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        Steve Capper <Steve.Capper@arm.com>
-Subject: Re: [PATCH v2] mm: thp: Set the accessed flag for old pages on
- access fault.
-Message-Id: <20121022111843.4406850d.akpm@linux-foundation.org>
-In-Reply-To: <20121022103503.GA26619@mudshark.cambridge.arm.com>
-References: <1349197151-19645-1-git-send-email-will.deacon@arm.com>
-	<20121002150104.da57fa94.akpm@linux-foundation.org>
-	<20121017130125.GH5973@mudshark.cambridge.arm.com>
-	<20121017.112620.1865348978594874782.davem@davemloft.net>
-	<20121017155401.GJ5973@mudshark.cambridge.arm.com>
-	<20121018150502.3dee7899.akpm@linux-foundation.org>
-	<20121019091016.GA4582@mudshark.cambridge.arm.com>
-	<20121019114955.3a0c2b66.akpm@linux-foundation.org>
-	<20121022103503.GA26619@mudshark.cambridge.arm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Oct 2012 14:19:08 -0400
+Date: Mon, 22 Oct 2012 11:19:04 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Florian Fainelli <florian@openwrt.org>
+Cc: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        Thomas Meyer <thomas@m3y3r.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/32 v4] MIPS: Alchemy: use the ehci platform driver
+Message-ID: <20121022181904.GA6077@kroah.com>
+References: <1349701906-16481-1-git-send-email-florian@openwrt.org>
+ <1349701906-16481-9-git-send-email-florian@openwrt.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349701906-16481-9-git-send-email-florian@openwrt.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Oct 2012 11:35:03 +0100
-Will Deacon <will.deacon@arm.com> wrote:
+On Mon, Oct 08, 2012 at 03:11:22PM +0200, Florian Fainelli wrote:
+> Use the ehci platform driver power_{on,suspend,off} callbacks to perform the
+> USB block gate enabling/disabling as what the ehci-au1xxx.c driver does.
+> Update the db1200 and db1300 defconfigs to now select the EHCI platform
+> driver.
+> 
+> Signed-off-by: Florian Fainelli <florian@openwrt.org>
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> ---
+> Changes in v4:
+> - rebased against greg's latest usb-next
+> 
+> No changes in v3
+> 
+> Changes in v2:
+> - update impacted alchemy defconfigs accordingly
+> 
+>  arch/mips/alchemy/common/platform.c |   23 ++++++++++++++++++++++-
+>  arch/mips/configs/db1200_defconfig  |    1 +
+>  arch/mips/configs/db1300_defconfig  |    1 +
 
-> On Fri, Oct 19, 2012 at 07:49:55PM +0100, Andrew Morton wrote:
-> > On Fri, 19 Oct 2012 10:10:16 +0100
-> > Will Deacon <will.deacon@arm.com> wrote:
-> > 
-> > > On Thu, Oct 18, 2012 at 11:05:02PM +0100, Andrew Morton wrote:
-> > > > On Wed, 17 Oct 2012 16:54:02 +0100
-> > > > Will Deacon <will.deacon@arm.com> wrote:
-> > > > 
-> > > > > On x86 memory accesses to pages without the ACCESSED flag set result in the
-> > > > > ACCESSED flag being set automatically. With the ARM architecture a page access
-> > > > > fault is raised instead (and it will continue to be raised until the ACCESSED
-> > > > > flag is set for the appropriate PTE/PMD).
-> > > > > 
-> > > > > For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
-> > > > > setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
-> > > > > be called for a write fault.
-> > > > > 
-> > > > > This patch ensures that faults on transparent hugepages which do not result
-> > > > > in a CoW update the access flags for the faulting pmd.
-> > > > 
-> > > > Confused.  Where is the arm implementation of update_mmu_cache_pmd()?
-> > > 
-> > > Right at the end of this patch, which was posted to the ARM list yesterday:
-> > > 
-> > >   http://lists.infradead.org/pipermail/linux-arm-kernel/2012-October/126387.html
-> > 
-> > I received and then merged a patch which won't compile!
-> 
-> Eek, that certainly wasn't intentional and it's compiling fine for me on
-> -rc1 and -rc2 for both ARM (no THP) and x86 (with and without THP).
-> 
-> Please can you send the build failure?
-> 
-> > Ho hum.  I'll drop
-> > mm-thp-set-the-accessed-flag-for-old-pages-on-access-fault.patch and
-> > shall assume that you'll sort things out at the appropriate time.
-> 
-> Happy to sort it out once I work out what's going wrong!
+These two defconfig files are no longer in Linus's tree, so I'll just
+remove them from this patch.  If that's not ok, can you send a follow-on
+patch that adds the config option to the correct defconfig file?
 
-The patch "ARM: mm: Transparent huge page support for LPAE systems" is
-not present in linux-next, so this patch ("mm: thp: Set the accessed
-flag for old pages on access fault") will not compile?
+thanks,
+
+greg k-h
