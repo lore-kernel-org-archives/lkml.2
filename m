@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab2JVIGr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 04:06:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57200 "EHLO mx2.suse.de"
+	id S1751995Ab2JVIHg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 04:07:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57230 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750848Ab2JVIGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 04:06:45 -0400
-Date: Mon, 22 Oct 2012 08:58:57 +0100
+	id S1750848Ab2JVIHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 04:07:34 -0400
 From: Mel Gorman <mgorman@suse.de>
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        hannes@cmpxchg.org, akpm@linux-foundation.org, tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:numa/core] sched/numa/mm: Improve migration
-Message-ID: <20121022075857.GA2198@suse.de>
-References: <tip-yv9vbiz2s455zxq1ffzx3fye@git.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <tip-yv9vbiz2s455zxq1ffzx3fye@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linux-MM <linux-mm@kvack.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, LKML <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH 0/5] vmstats for compaction, migration and autonuma
+Date: Mon, 22 Oct 2012 08:59:46 +0100
+Message-Id: <1350892791-2682-1-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 10:05:39AM -0700, tip-bot for Peter Zijlstra wrote:
-> Commit-ID:  713f937655c4b15131b5a0eae4610918a4febe17
-> Gitweb:     http://git.kernel.org/tip/713f937655c4b15131b5a0eae4610918a4febe17
-> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> AuthorDate: Fri, 12 Oct 2012 19:30:14 +0200
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Mon, 15 Oct 2012 14:18:40 +0200
-> 
-> sched/numa/mm: Improve migration
-> 
-> Add THP migration. Extend task_numa_fault() to absorb THP faults.
-> 
-> [ Would be nice if the gents on Cc: expressed their opinion about
->   this change. A missing detail might be cgroup page accounting,
->   plus the fact that some architectures might cache PMD_NONE pmds
->   in their TLBs, needing some extra TLB magic beyond what we already
->   do here? ]
-> 
+I'm travelling for a conference at the moment so these patches are not
+tested but with the ongoing NUMA migration work I figured it was best to
+post these sooner rather than later.
 
-I'm travelling for a conference at the moment so will not get the chance
-to properly review this until I get back. Is there any plan to post the
-schednuma patches to linux-mm so the full series can be reviewed? I can
-extract the patches from -tip when I get back but it's still less than
-ideal from a review standpoint.
+This series adds vmstat counters and tracepoints for migration, compaction
+and autonuma. Using them it's possible to create a basic cost model to
+estimate the overhead due to compaction or autonuma. Using the stats it
+is also possible to measure if a workload is converging on autonuma or
+not and potentially measure how quickly it is converging.
 
-Superficially, the patch looks ok but as I lack context on what the
-rest of schednuma looks like I cannot be sure so I'm not going to ack
-it. Basically this is very similar to __unmap_and_move except it doesn't
-deal with migration PTEs -- presumably because the PTE is PROT_NONE so it
-gets queued up behind it. There is a downside of that. With migration PTEs,
-faults during migration will wait on the PTE. With this approach, I think
-multiple faults will alloc a hugepage, realise the ptes are no longer the
-same and back off. It should still work but it's potentially more expensive.
-Was that considered? Is it deliberate? If so, why?
+Ideally the same stats would be available for schednuma but I did not
+review the series when it was last posted in July and had not seen a
+recent posting. I only recently heard they were in the -tip tree but will
+not get the chance to look at them until I've finished travelling in a
+weeks time.  If schednuma had similar stats it would then be possible to
+compare schednuma and autonuma in terms of how quickly a workload converges
+with either approach.
 
-It also feels like the migration part should have been a helper function
-called unmap_and_move_thp() in migrate.c instead of being buried in
-mm/huge_memory.c
+ include/linux/migrate.h        |   14 +++++++++-
+ include/linux/vm_event_item.h  |   12 ++++++++-
+ include/trace/events/migrate.h |   52 ++++++++++++++++++++++++++++++++++++++++
+ mm/autonuma.c                  |   22 +++++++++++++----
+ mm/compaction.c                |   15 +++++++----
+ mm/memory-failure.c            |    3 +-
+ mm/memory_hotplug.c            |    3 +-
+ mm/mempolicy.c                 |    6 +++-
+ mm/migrate.c                   |   16 ++++++++++-
+ mm/page_alloc.c                |    3 +-
+ mm/vmstat.c                    |   16 ++++++++++--
+ 11 files changed, 139 insertions(+), 23 deletions(-)
+ create mode 100644 include/trace/events/migrate.h
 
 -- 
-Mel Gorman
-SUSE Labs
+1.7.7
+
