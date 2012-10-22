@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914Ab2JVRmc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 13:42:32 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:57172 "EHLO mx2.netapp.com"
+	id S1755962Ab2JVRnB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 13:43:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21395 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755600Ab2JVRmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 13:42:31 -0400
-X-IronPort-AV: E=Sophos;i="4.80,631,1344236400"; 
-   d="scan'208";a="703033999"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        "Linux Kernel mailing list" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Please pull NFS client bugfixes...
-Thread-Topic: [GIT PULL] Please pull NFS client bugfixes...
-Thread-Index: AQHNsHyajL9XhJlKjUG5J4Ve8yCD/A==
-Date: Mon, 22 Oct 2012 17:42:28 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA909289258@SACEXCMBX04-PRD.hq.netapp.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <12B320E4EC0AEE448105EDA60D4DB07F@tahoe.netapp.com>
+	id S1755781Ab2JVRm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 13:42:58 -0400
+Date: Mon, 22 Oct 2012 19:44:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 2/7] freezer: add missing mb's to freezer_count() and
+	freezer_should_skip()
+Message-ID: <20121022174404.GA21553@redhat.com>
+References: <1350426526-14254-1-git-send-email-tj@kernel.org> <1350426526-14254-3-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350426526-14254-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9MHgdQp030676
 
-Hi Linus,
+On 10/16, Tejun Heo wrote:
+>
+> +/**
+> + * freezer_count - tell freezer to stop ignoring %current
+> + *
+> + * Undo freezer_do_not_count().  It tells freezers that %current should be
+> + * considered again and tries to freeze if freezing condition is already in
+> + * effect.
+>   */
+>  static inline void freezer_count(void)
+>  {
+>  	current->flags &= ~PF_FREEZER_SKIP;
+> +	/*
+> +	 * If freezing is in progress, the following paired with smp_mb()
+> +	 * in freezer_should_skip() ensures that either we see %true
+> +	 * freezing() or freezer_should_skip() sees !PF_FREEZER_SKIP.
+> +	 */
+> +	smp_mb();
+>  	try_to_freeze();
 
-The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
+I agree, this looks like a bug fix.
 
-  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
+> -static inline int freezer_should_skip(struct task_struct *p)
+> +static inline bool freezer_should_skip(struct task_struct *p)
+>  {
+> -	return !!(p->flags & PF_FREEZER_SKIP);
+> +	/*
+> +	 * The following smp_mb() paired with the one in freezer_count()
+> +	 * ensures that either freezer_count() sees %true freezing() or we
+> +	 * see cleared %PF_FREEZER_SKIP and return %false.  This makes it
+> +	 * impossible for a task to slip frozen state testing after
+> +	 * clearing %PF_FREEZER_SKIP.
+> +	 */
+> +	smp_mb();
+> +	return p->flags & PF_FREEZER_SKIP;
+>  }
 
-are available in the git repository at:
+I am not sure we really need smp_mb() here. Speaking of cgroup_freezer,
+it seems that a single mb() after "->state = CGROUP_FREEZING" should be
+enough.
 
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.7-2
+But even if I am right, I agree that it looks better in freezer_should_skip()
+and this is more robust.
 
-for you to fetch changes up to e9b7e91745fa9df94900c8ab08e633f336686098:
+So I think the patch is fine and fixes the bug.
 
-  NFSv4: Fix the return value for nfs_callback_start_svc (2012-10-16 13:14:42 -0400)
 
-----------------------------------------------------------------
-NFS client bugfixes for Linux 3.7
 
-- Do not call pnfs_return_layout() from an rpciod context
-- nfs4_ds_disconnect can cause Oopses. Kill it...
-- Fix the return value for nfs_callback_start_svc
-- Fix a number of compile warnings
 
-----------------------------------------------------------------
-Trond Myklebust (6):
-      NFSv4.1: Kill nfs4_ds_disconnect()
-      NFSv4.1: Do not call pnfs_return_layout() from an rpciod context
-      NFSv4.1: Use kcalloc() to allocate zeroed arrays instead of kzalloc()
-      NFSv4: fs/nfs/nfs4getroot.c needs to include "internal.h"
-      NFSv4.1: Declare osd_pri_2_pnfs_err(), objio_init_read/write to be static
-      NFSv4: Fix the return value for nfs_callback_start_svc
 
- fs/nfs/callback.c            |  2 +-
- fs/nfs/nfs4filelayout.c      | 21 ++++++++++++++++-----
- fs/nfs/nfs4filelayout.h      |  1 -
- fs/nfs/nfs4filelayoutdev.c   | 22 ----------------------
- fs/nfs/nfs4getroot.c         |  1 +
- fs/nfs/objlayout/objio_osd.c |  6 +++---
- fs/nfs/pnfs.h                |  1 +
- 7 files changed, 22 insertions(+), 32 deletions(-)
+We probably have another similar race. If ptrace_stop()->may_ptrace_stop()
+returns false, the task does
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+	__set_current_state(TASK_RUNNING);
+	// no mb in between
+	try_to_freeze();
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+And this can race with task_is_stopped_or_traced() check in the same way.
+(of course this is only theoretical).
+
+
+do_signal_stop() is probably fine, we can rely on ->siglock.
+
+Oleg.
+
