@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab2JVJMl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 05:12:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14036 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751251Ab2JVJMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 05:12:40 -0400
-Date: Mon, 22 Oct 2012 11:12:20 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 09/11] perf test: Add parse events tests for leader
- sampling
-Message-ID: <20121022091220.GB6759@krava.brq.redhat.com>
-References: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
- <1350743599-4805-10-git-send-email-jolsa@redhat.com>
- <87wqyij32p.fsf@sejong.aot.lge.com>
+	id S1752221Ab2JVJNv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 05:13:51 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:38259 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822Ab2JVJNu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 05:13:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87wqyij32p.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 22 Oct 2012 17:13:48 +0800
+Message-ID: <CAPgLHd_WQ_uRDV_yYcQ1GoN301bkGMYkYpg2Jqfts+n=Yr82XQ@mail.gmail.com>
+Subject: [PATCH] aoe: remove unused variable in resend()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: ecashin@coraid.com
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 05:58:22PM +0900, Namhyung Kim wrote:
-> On Sat, 20 Oct 2012 16:33:17 +0200, Jiri Olsa wrote:
-> > Adding 2 more tests to the automated parse events suite
-> > for following event config:
-> >
-> >   '{cycles,cache-misses,branch-misses}:S'
-> >   '{instructions,branch-misses}:Su'
-> [snip]
-> > +static int test__leader_sample2(struct perf_evlist *evlist __maybe_unused)
-> > +{
-> > +	struct perf_evsel *evsel, *leader;
-> > +
-> > +	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-> > +
-> > +	/* cycles - sampling group leader */
-> 
-> s/cycles/instructions/ ?
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-right
+The variable ah is initialized but never used
+otherwise, so remove the unused variable.
 
-thanks,
-jirka
+dpatch engine is used to auto generate this patch.
+(https://github.com/weiyj/dpatch)
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/block/aoe/aoecmd.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
+index 3804a0a..812eb8a 100644
+--- a/drivers/block/aoe/aoecmd.c
++++ b/drivers/block/aoe/aoecmd.c
+@@ -425,7 +425,6 @@ resend(struct aoedev *d, struct frame *f)
+ 	struct sk_buff *skb;
+ 	struct sk_buff_head queue;
+ 	struct aoe_hdr *h;
+-	struct aoe_atahdr *ah;
+ 	struct aoetgt *t;
+ 	char buf[128];
+ 	u32 n;
+@@ -440,7 +439,6 @@ resend(struct aoedev *d, struct frame *f)
+ 		return;
+ 	}
+ 	h = (struct aoe_hdr *) skb_mac_header(skb);
+-	ah = (struct aoe_atahdr *) (h+1);
+ 
+ 	snprintf(buf, sizeof buf,
+ 		"%15s e%ld.%d oldtag=%08x@%08lx newtag=%08x s=%pm d=%pm nout=%d\n",
+
