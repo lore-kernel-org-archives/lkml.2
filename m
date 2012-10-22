@@ -1,105 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab2JVNWN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 09:22:13 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:14421 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279Ab2JVNWL (ORCPT
+	id S1754179Ab2JVNWe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 09:22:34 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:50607 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754016Ab2JVNWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 09:22:11 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 22 Oct 2012 06:22:11 -0700
-From: Denis Kirjanov <kirjanov@gmail.com>
-To: davem@davemloft.net
-CC: linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Denis Kirjanov <kirjanov@gmail.com>
-Subject: [PATCH RESEND net-next] bluetooth: hci_core: Replace list_for_each with list_for_each_entry() helper
-Date: Mon, 22 Oct 2012 17:22:01 +0400
-Message-ID: <1350912121-24171-1-git-send-email-kirjanov@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 22 Oct 2012 09:22:33 -0400
+Message-ID: <1350912148.4951.7.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH V2 08/10] efi: Enable secure boot lockdown automatically
+ when enabled in firmware
+From: Matt Fleming <matt@console-pimps.org>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Date: Mon, 22 Oct 2012 14:22:28 +0100
+In-Reply-To: <1348152065-31353-9-git-send-email-mjg@redhat.com>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+	 <1348152065-31353-9-git-send-email-mjg@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace list_for_each with list_for_each_entry() helper
+On Thu, 2012-09-20 at 10:41 -0400, Matthew Garrett wrote:
+> The firmware has a set of flags that indicate whether secure boot is enabled
+> and enforcing. Use them to indicate whether the kernel should lock itself
+> down.
+> 
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> ---
+>  Documentation/x86/zero-page.txt  |  2 ++
+>  arch/x86/boot/compressed/eboot.c | 32 ++++++++++++++++++++++++++++++++
+>  arch/x86/include/asm/bootparam.h |  3 ++-
+>  arch/x86/kernel/setup.c          |  3 +++
+>  include/linux/cred.h             |  2 ++
+>  5 files changed, 41 insertions(+), 1 deletion(-)
 
-Signed-off-by: Denis Kirjanov <kirjanov@gmail.com>
----
- include/net/bluetooth/hci_core.h |   20 ++++++++------------
- 1 files changed, 8 insertions(+), 12 deletions(-)
+Probably wants an update to Documentation/x86/boot.txt too. But
+otherwise,
 
-diff --git a/include/net/bluetooth/hci_core.h b/include/net/bluetooth/hci_core.h
-index 475b8c0..fcf839f 100644
---- a/include/net/bluetooth/hci_core.h
-+++ b/include/net/bluetooth/hci_core.h
-@@ -852,7 +852,7 @@ struct hci_cb {
- 
- static inline void hci_auth_cfm(struct hci_conn *conn, __u8 status)
- {
--	struct list_head *p;
-+	struct hci_cb *cb;
- 	__u8 encrypt;
- 
- 	hci_proto_auth_cfm(conn, status);
-@@ -863,8 +863,7 @@ static inline void hci_auth_cfm(struct hci_conn *conn, __u8 status)
- 	encrypt = (conn->link_mode & HCI_LM_ENCRYPT) ? 0x01 : 0x00;
- 
- 	read_lock(&hci_cb_list_lock);
--	list_for_each(p, &hci_cb_list) {
--		struct hci_cb *cb = list_entry(p, struct hci_cb, list);
-+	list_for_each_entry(cb, &hci_cb_list, list) {
- 		if (cb->security_cfm)
- 			cb->security_cfm(conn, status, encrypt);
- 	}
-@@ -874,7 +873,7 @@ static inline void hci_auth_cfm(struct hci_conn *conn, __u8 status)
- static inline void hci_encrypt_cfm(struct hci_conn *conn, __u8 status,
- 								__u8 encrypt)
- {
--	struct list_head *p;
-+	struct hci_cb *cb;
- 
- 	if (conn->sec_level == BT_SECURITY_SDP)
- 		conn->sec_level = BT_SECURITY_LOW;
-@@ -885,8 +884,7 @@ static inline void hci_encrypt_cfm(struct hci_conn *conn, __u8 status,
- 	hci_proto_encrypt_cfm(conn, status, encrypt);
- 
- 	read_lock(&hci_cb_list_lock);
--	list_for_each(p, &hci_cb_list) {
--		struct hci_cb *cb = list_entry(p, struct hci_cb, list);
-+	list_for_each_entry(cb, &hci_cb_list, list) {
- 		if (cb->security_cfm)
- 			cb->security_cfm(conn, status, encrypt);
- 	}
-@@ -895,11 +893,10 @@ static inline void hci_encrypt_cfm(struct hci_conn *conn, __u8 status,
- 
- static inline void hci_key_change_cfm(struct hci_conn *conn, __u8 status)
- {
--	struct list_head *p;
-+	struct hci_cb *cb;
- 
- 	read_lock(&hci_cb_list_lock);
--	list_for_each(p, &hci_cb_list) {
--		struct hci_cb *cb = list_entry(p, struct hci_cb, list);
-+	list_for_each_entry(cb, &hci_cb_list, list) {
- 		if (cb->key_change_cfm)
- 			cb->key_change_cfm(conn, status);
- 	}
-@@ -909,11 +906,10 @@ static inline void hci_key_change_cfm(struct hci_conn *conn, __u8 status)
- static inline void hci_role_switch_cfm(struct hci_conn *conn, __u8 status,
- 								__u8 role)
- {
--	struct list_head *p;
-+	struct hci_cb *cb;
- 
- 	read_lock(&hci_cb_list_lock);
--	list_for_each(p, &hci_cb_list) {
--		struct hci_cb *cb = list_entry(p, struct hci_cb, list);
-+	list_for_each_entry(cb, &hci_cb_list, list) {
- 		if (cb->role_switch_cfm)
- 			cb->role_switch_cfm(conn, status, role);
- 	}
--- 
-1.7.1
+Acked-by: Matt Fleming <matt.fleming@intel.com>
+
 
