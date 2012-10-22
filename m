@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932332Ab2JVWZG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 18:25:06 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:43649 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932171Ab2JVWZE (ORCPT
+	id S932344Ab2JVW2f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 18:28:35 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:52168 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932281Ab2JVW2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 18:25:04 -0400
-Message-ID: <5085C7B6.2030108@oracle.com>
-Date: Mon, 22 Oct 2012 17:24:54 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121012 Thunderbird/16.0.1
+	Mon, 22 Oct 2012 18:28:34 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>, jfs-discussion@lists.sourceforge.net
-Subject: [GIT PULL] jfs bug fix for 3.7
-X-Enigmail-Version: 1.4.5
+In-Reply-To: <873916h1yi.fsf@deeprootsystems.com>
+References: <1350906877-19410-1-git-send-email-balbi@ti.com>
+	<873916h1yi.fsf@deeprootsystems.com>
+Date: Tue, 23 Oct 2012 00:28:32 +0200
+Message-ID: <CACRpkdY6ox+iJAGdSD=e7Yj55TzDWqOmLqu2fSRXvKJxqwfkhQ@mail.gmail.com>
+Subject: Re: [PATCH] arm: sched: stop sched_clock() during suspend
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Kevin Hilman <khilman@deeprootsystems.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Felipe Balbi <balbi@ti.com>, Russell King <rmk+kernel@arm.linux.org.uk>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Andrew Lunn <andrew@lunn.ch>, Daniel Walker <dwalker@fifo99.com>,
+        Lennert Buytenhek <kernel@wantstofly.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Alexander Schulz <alex@shark-linux.de>,
+        Andrew Victor <linux@maxim.org.za>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Olof Johansson <olof@lixom.net>,
+        Colin Cross <ccross@android.com>, Barry Song <21cnbao@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 8d2b6b3ae280dcf6f6c7a95623670a57cdf562ed:
+On Mon, Oct 22, 2012 at 7:05 PM, Kevin Hilman
+<khilman@deeprootsystems.com> wrote:
 
-  Merge tag 'sh-for-linus' of git://github.com/pmundt/linux-sh (2012-10-16 19:24:00 -0700)
+> However, in light of RT throttling, this a correctness issue for process
+> accounting, so I agree that this should be done for all platforms
+> instead of providing an optional 'needs suspend' version of the API,
+> even though it means printk times no longer reflect time spent
+> suspended.
 
-are available in the git repository at:
+Maybe we should get printk() to use the best clocksource
+instead.
 
+The reason AFAICT that printk() is using sched_clock() is that
+it's supposed to be fast. But now it seems that it's not going
+to return what printk() needs anymore.
 
-  git://github.com/kleikamp/linux-shaggy.git tags/jfs-3.7-2
+(Dragging Stultz & Gleixner into this...)
 
-for you to fetch changes up to 4e7a4b01222343481d8ff084dbef9b80f7089a19:
-
-  jfs: Fix FITRIM argument handling (2012-10-17 09:18:38 -0500)
-
-----------------------------------------------------------------
-Bug fix: Fix FITRIM argument handling
-
-----------------------------------------------------------------
-Lukas Czerner (1):
-      jfs: Fix FITRIM argument handling
-
- fs/jfs/jfs_discard.c | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+Yours,
+Linus Walleij
