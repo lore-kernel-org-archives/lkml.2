@@ -1,113 +1,612 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab2JVMA0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 08:00:26 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42359 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753559Ab2JVMAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 08:00:23 -0400
-From: Felipe Balbi <balbi@ti.com>
-To: Russell King <rmk+kernel@arm.linux.org.uk>
-CC: Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH] arm: sched: stop sched_clock() during suspend
-Date: Mon, 22 Oct 2012 14:54:37 +0300
-Message-ID: <1350906877-19410-1-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.8.0.rc0
+	id S1753555Ab2JVMCK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 08:02:10 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:47824 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753064Ab2JVMCI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 08:02:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <50840E3D.1060204@gmail.com>
+References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
+	<1350387889-15324-6-git-send-email-hongbo.zhang@linaro.com>
+	<50840E3D.1060204@gmail.com>
+Date: Mon, 22 Oct 2012 20:02:06 +0800
+Message-ID: <CAJLyvQxC8eNRmB40o18JR0k7f38+=fpt4UimSYxDCNzNH03Cfw@mail.gmail.com>
+Subject: Re: [PATCH 5/5] Thermal: Add ST-Ericsson db8500 thermal dirver.
+From: Hongbo Zhang <hongbo.zhang@linaro.org>
+To: Francesco Lavra <francescolavra.fl@gmail.com>
+Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        kernel@igloocommunity.org, linaro-kernel@lists.linaro.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The scheduler imposes a requirement to sched_clock()
-which is to stop the clock during suspend, if we don't
-do that IRQ threads will be rescheduled in the future
-which might cause transfers to timeout depending on
-how driver is written.
+On 21 October 2012 23:01, Francesco Lavra <francescolavra.fl@gmail.com> wrote:
+> Hi Hongbo,
+Hi Francesco,
+Thanks for your review, I will accept all the comments except the ones
+I have some comments under them.
 
-This became an issue on OMAP when we converted omap-i2c.c
-to use threaded IRQs, it turned out that depending on how
-much time we spent on suspend, the I2C IRQ thread would
-end up being rescheduled so far in the future that I2C
-transfers would timeout and, because omap_hsmmc depends
-on an I2C-connected device to detect if an MMC card is
-inserted in the slot, our rootfs would just vanish.
+>
+> On 10/16/2012 01:44 PM, hongbo.zhang wrote:
+>> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
+>>
+>> This diver is based on the thermal management framework in thermal_sys.c.
+>> A thermal zone device is created with the trip points to which cooling
+>> devices can be bound, the current cooling device is cpufreq, e.g. CPU
+>> frequency is clipped down to cool the CPU, and other cooling devices can
+>> be added and bound to the trip points dynamically.
+>> The platform specific PRCMU interrupts are used to active thermal update
+>> when trip points are reached.
+> [...]
+>> diff --git a/drivers/thermal/db8500_cpufreq_cooling.c b/drivers/thermal/db8500_cpufreq_cooling.c
+>> new file mode 100644
+>> index 0000000..bb065d4
+>> --- /dev/null
+>> +++ b/drivers/thermal/db8500_cpufreq_cooling.c
+>> @@ -0,0 +1,118 @@
+>> +/*
+>> + * db8500_cpufreq_cooling.c - db8500 cpufreq works as cooling device.
+>> + *
+>> + * Copyright (C) 2012 ST-Ericsson
+>> + * Copyright (C) 2012 Linaro Ltd.
+>> + *
+>> + * Author: Hongbo Zhang <hognbo.zhang@stericsson.com>
+>
+> Your e-mail address is misspelled :)
+>
+> [...]
+>> diff --git a/drivers/thermal/db8500_thermal.c b/drivers/thermal/db8500_thermal.c
+>> new file mode 100644
+>> index 0000000..34dcc52
+>> --- /dev/null
+>> +++ b/drivers/thermal/db8500_thermal.c
+>> @@ -0,0 +1,507 @@
+>> +/*
+>> + * db8500_thermal.c - db8500 Thermal Management Implementation
+>> + *
+>> + * Copyright (C) 2012 ST-Ericsson
+>> + * Copyright (C) 2012 Linaro Ltd.
+>> + *
+>> + * Author: Hongbo Zhang <hognbo.zhang@stericsson.com>
+>
+> Misspelled address
+>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License as published by
+>> + * the Free Software Foundation; either version 2 of the License, or
+>> + * (at your option) any later version.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + *
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/thermal.h>
+>> +#include <linux/cpu_cooling.h>
+>> +#include <linux/mfd/dbx500-prcmu.h>
+>> +#include <linux/platform_data/db8500_thermal.h>
+>> +
+>> +#define PRCMU_DEFAULT_MEASURE_TIME 0xFFF
+>> +#define PRCMU_DEFAULT_LOW_TEMP 0
+>> +
+>> +struct db8500_thermal_zone {
+>> +     struct thermal_zone_device *therm_dev;
+>> +     struct mutex th_lock;
+>> +     struct platform_device *thsens_pdev;
+>
+> This member is set in db8500_thermal_probe(), but is never used. I would
+> suggest removing it.
+>
+>> +     struct work_struct therm_work;
+>> +     struct db8500_thsens_platform_data *trip_tab;
+>> +     enum thermal_device_mode mode;
+>> +     enum thermal_trend trend;
+>> +     unsigned long cur_temp_pseudo;
+>> +     unsigned int cur_index;
+>> +     int low_irq;
+>> +     int high_irq;
+>
+> Same story as thsens_pdev, low_irq and high_irq are set in
+> db8500_thermal_probe(), but are never used. Should be removed.
+>
+>> +};
+>> +
+>> +/* Callback to bind cooling device to thermal zone */
+>> +static int db8500_cdev_bind(struct thermal_zone_device *thermal,
+>> +                     struct thermal_cooling_device *cdev)
+>> +{
+>> +     struct db8500_thermal_zone *pzone;
+>> +     struct db8500_thsens_platform_data *ptrips;
+>> +     char *cdev_name;
+>> +     unsigned long max_state, upper, lower;
+>> +     int i, j, ret;
+>> +
+>> +     pzone = (struct db8500_thermal_zone *)thermal->devdata;
+>> +     ptrips = pzone->trip_tab;
+>> +
+>> +     if (!cdev->type)
+>> +             return -EINVAL;
+>
+> cdev->type is an array, not a simple pointer, so it cannot be NULL.
+>
+>> +
+>> +     ret = -ENODEV;
+>> +     for (i = 0; i < ptrips->num_trips; i++)
+>> +             for (j = 0; j < COOLING_DEV_MAX; j++) {
+>> +                     cdev_name = ptrips->trip_points[i].cooling_dev_name[j];
+>> +                     if (!cdev_name)
+>> +                             continue;
+>> +
+>> +                     if (strcmp(cdev_name, cdev->type))
+>> +                             continue;
+>> +
+>> +                     cdev->ops->get_max_state(cdev, &max_state);
+>> +                     upper = (i > max_state) ? max_state : i;
+>> +                     lower = (i > max_state) ? max_state : i;
+>
+> You may want to merge these two lines: upper = lower = ...
+>
+>> +
+>> +                     ret = thermal_zone_bind_cooling_device(thermal, i,
+>> +                             cdev, upper, lower);
+>> +                     if (ret)
+>> +                             pr_err("Error binding cooling device.\n");
+>> +                     else
+>> +                             pr_info("Cdev %s bound.\n", cdev->type);
+>> +             }
+>> +
+>> +     return ret;
+>> +}
+>> +
+>> +/* Callback to unbind cooling device from thermal zone */
+>> +static int db8500_cdev_unbind(struct thermal_zone_device *thermal,
+>> +                       struct thermal_cooling_device *cdev)
+>> +{
+>> +     struct db8500_thermal_zone *pzone;
+>> +     struct db8500_thsens_platform_data *ptrips;
+>> +     char *cdev_name;
+>> +     int i, j, ret;
+>> +
+>> +     pzone = (struct db8500_thermal_zone *)thermal->devdata;
+>> +     ptrips = pzone->trip_tab;
+>> +
+>> +     if (!cdev->type)
+>> +             return -EINVAL;
+>
+> cdev->type cannot be NULL.
+>
+>> +
+>> +     ret = -ENODEV;
+>> +     for (i = 0; i < ptrips->num_trips; i++)
+>> +             for (j = 0; j < COOLING_DEV_MAX; j++) {
+>> +                     cdev_name = ptrips->trip_points[i].cooling_dev_name[j];
+>> +                     if (!cdev_name)
+>> +                             continue;
+>> +
+>> +                     if (strcmp(cdev_name, cdev->type))
+>> +                             continue;
+>> +
+>> +                     ret = thermal_zone_unbind_cooling_device(
+>> +                             thermal, i, cdev);
+>> +                     if (ret)
+>> +                             pr_err("Error unbinding cooling device.\n");
+>> +                     else
+>> +                             pr_info("Cdev %s unbound.\n", cdev->type);
+>> +             }
+>> +
+>> +     return ret;
+>> +}
+>> +
+>> +/* Callback to get current temperature */
+>> +static int db8500_sys_get_temp(struct thermal_zone_device *thermal,
+>> +                               unsigned long *temp)
+>> +{
+>> +     struct db8500_thermal_zone *pzone;
+>> +     pzone = (struct db8500_thermal_zone *)thermal->devdata;
+>> +
+>> +     /* TODO: There is no PRCMU interface to get temperature data currently,
+>> +     so a pseudo temperature is returned , it works for the thermal framework
+>> +     and this will be fixed when the PRCMU interface is available */
+>> +     *temp = pzone->cur_temp_pseudo;
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +/* Callback to get temperature changing trend */
+>> +static int db8500_sys_get_trend(struct thermal_zone_device *thermal,
+>> +                     int trip, enum thermal_trend *trend)
+>> +{
+>> +     struct db8500_thermal_zone *pzone;
+>> +     pzone = (struct db8500_thermal_zone *)thermal->devdata;
+>> +
+>> +     *trend = pzone->trend;
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +/* Callback to get thermal zone mode */
+>> +static int db8500_sys_get_mode(struct thermal_zone_device *thermal,
+>> +                         enum thermal_device_mode *mode)
+>> +{
+>> +     struct db8500_thermal_zone *pzone;
+>> +     pzone = (struct db8500_thermal_zone *)thermal->devdata;
+>> +
+>> +     mutex_lock(&pzone->th_lock);
+>> +     *mode = pzone->mode;
+>> +     mutex_unlock(&pzone->th_lock);
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +/* Callback to set thermal zone mode */
+>> +static int db8500_sys_set_mode(struct thermal_zone_device *thermal,
+>> +                     enum thermal_device_mode mode)
+>> +{
+>> +     struct db8500_thermal_zone *pzone;
+>> +     struct thermal_zone_device *pthdev;
+>> +
+>> +     pzone = (struct db8500_thermal_zone *)thermal->devdata;
+>> +     pthdev = pzone->therm_dev;
+>> +
+>> +     if (!pthdev) {
+>> +             pr_err("Thermal zone not registered.\n");
+>> +             return 0;
+>> +     }
+>
+> If this function is called, you are sure the thermal zone has been
+> registered.
+>
+>> +
+>> +     mutex_lock(&pzone->th_lock);
+>> +
+>> +     pzone->mode = mode;
+>> +
+>> +     if (mode == THERMAL_DEVICE_ENABLED)
+>> +             schedule_work(&pzone->therm_work);
+>> +
+>> +     mutex_unlock(&pzone->th_lock);
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +/* Callback to get trip point type */
+>> +static int db8500_sys_get_trip_type(struct thermal_zone_device *thermal,
+>> +                              int trip, enum thermal_trip_type *type)
+>> +{
+>> +     struct db8500_thermal_zone *pzone;
+>> +     struct db8500_thsens_platform_data *ptrips;
+>> +
+>> +     pzone = (struct db8500_thermal_zone *)thermal->devdata;
+>> +     ptrips = pzone->trip_tab;
+>> +
+>> +     if (trip >= ptrips->num_trips)
+>> +             return -EINVAL;
+>> +
+>> +     *type = ptrips->trip_points[trip].type;
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +/* Callback to get trip point temperature */
+>> +static int db8500_sys_get_trip_temp(struct thermal_zone_device *thermal,
+>> +                              int trip, unsigned long *temp)
+>> +{
+>> +     struct db8500_thermal_zone *pzone;
+>> +     struct db8500_thsens_platform_data *ptrips;
+>> +
+>> +     pzone = (struct db8500_thermal_zone *)thermal->devdata;
+>> +     ptrips = pzone->trip_tab;
+>> +
+>> +     if (trip >= ptrips->num_trips)
+>> +             return -EINVAL;
+>> +
+>> +     *temp = ptrips->trip_points[trip].temp;
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +/* Callback to get critical trip point temperature */
+>> +static int db8500_sys_get_crit_temp(struct thermal_zone_device *thermal,
+>> +                              unsigned long *temp)
+>> +{
+>> +     struct db8500_thermal_zone *pzone;
+>> +     struct db8500_thsens_platform_data *ptrips;
+>> +     int i;
+>> +
+>> +     pzone = (struct db8500_thermal_zone *)thermal->devdata;
+>> +     ptrips = pzone->trip_tab;
+>> +
+>> +     for (i = (ptrips->num_trips - 1); i > 0; i--) {
+>> +             if (ptrips->trip_points[i].type == THERMAL_TRIP_CRITICAL) {
+>> +                     *temp = ptrips->trip_points[i].temp;
+>> +                     return 0;
+>> +             }
+>> +     }
+>> +
+>> +     return -EINVAL;
+>> +}
+>> +
+>> +static struct thermal_zone_device_ops thdev_ops = {
+>> +     .bind = db8500_cdev_bind,
+>> +     .unbind = db8500_cdev_unbind,
+>> +     .get_temp = db8500_sys_get_temp,
+>> +     .get_trend = db8500_sys_get_trend,
+>> +     .get_mode = db8500_sys_get_mode,
+>> +     .set_mode = db8500_sys_set_mode,
+>> +     .get_trip_type = db8500_sys_get_trip_type,
+>> +     .get_trip_temp = db8500_sys_get_trip_temp,
+>> +     .get_crit_temp = db8500_sys_get_crit_temp,
+>> +};
+>> +
+>> +static irqreturn_t prcmu_low_irq_handler(int irq, void *irq_data)
+>> +{
+>> +     struct db8500_thermal_zone *pzone = irq_data;
+>> +     struct db8500_thsens_platform_data *ptrips;
+>> +     unsigned long next_low, next_high;
+>> +     unsigned int idx;
+>> +
+>> +     ptrips = pzone->trip_tab;
+>> +     idx = pzone->cur_index;
+>> +     if (unlikely(idx == 0))
+>> +             /* Meaningless for thermal management, ignoring it */
+>> +             return IRQ_HANDLED;
+>> +
+>> +     if (idx == 1) {
+>> +             next_high = ptrips->trip_points[0].temp;
+>> +             next_low = PRCMU_DEFAULT_LOW_TEMP;
+>> +     } else {
+>> +             next_high = ptrips->trip_points[idx-1].temp;
+>> +             next_low = ptrips->trip_points[idx-2].temp;
+>> +     }
+>> +
+>> +     pzone->cur_index -= 1;
+>> +     pzone->cur_temp_pseudo = (next_high + next_low)/2;
+>> +
+>> +     prcmu_stop_temp_sense();
+>> +     prcmu_config_hotmon((u8)(next_low/1000), (u8)(next_high/1000));
+>> +     prcmu_start_temp_sense(PRCMU_DEFAULT_MEASURE_TIME);
+>> +
+>> +     pr_debug("PRCMU set max %ld, set min %ld\n", next_high, next_low);
+>> +
+>> +     pzone->trend = THERMAL_TREND_DROPPING;
+>> +     schedule_work(&pzone->therm_work);
+>> +
+>> +     return IRQ_HANDLED;
+>> +}
+>> +
+>> +static irqreturn_t prcmu_high_irq_handler(int irq, void *irq_data)
+>> +{
+>> +     struct db8500_thermal_zone *pzone = irq_data;
+>> +     struct db8500_thsens_platform_data *ptrips;
+>> +     unsigned long next_low, next_high;
+>> +     unsigned int idx;
+>> +
+>> +     ptrips = pzone->trip_tab;
+>> +     idx = pzone->cur_index;
+>> +
+>> +     if (idx < ptrips->num_trips - 1) {
+>> +             next_high = ptrips->trip_points[idx+1].temp;
+>> +             next_low = ptrips->trip_points[idx].temp;
+>> +
+>> +             pzone->cur_index += 1;
+>> +             pzone->cur_temp_pseudo = (next_high + next_low)/2;
+>> +
+>> +             prcmu_stop_temp_sense();
+>> +             prcmu_config_hotmon((u8)(next_low/1000), (u8)(next_high/1000));
+>> +             prcmu_start_temp_sense(PRCMU_DEFAULT_MEASURE_TIME);
+>> +
+>> +             pr_debug("PRCMU set max %ld, min %ld\n", next_high, next_low);
+>> +     }
+>> +
+>> +     if (idx == ptrips->num_trips - 1)
+>
+> } else if ()
+There is no else condition here, because it it the highest critical
+trip point, system will be shut down in thermal_work.
+But I'd like to add some comments here to state this situation.
+>
+>> +             pzone->cur_temp_pseudo = ptrips->trip_points[idx].temp + 1;
+>> +
+>> +     pzone->trend = THERMAL_TREND_RAISING;
+>> +     schedule_work(&pzone->therm_work);
+>> +
+>> +     return IRQ_HANDLED;
+>> +}
+>> +
+>> +static void db8500_thermal_work(struct work_struct *work)
+>> +{
+>> +     enum thermal_device_mode cur_mode;
+>> +     struct db8500_thermal_zone *pzone;
+>> +
+>> +     pzone = container_of(work, struct db8500_thermal_zone, therm_work);
+>> +
+>> +     mutex_lock(&pzone->th_lock);
+>> +     cur_mode = pzone->mode;
+>> +     mutex_unlock(&pzone->th_lock);
+>> +
+>> +     if (cur_mode == THERMAL_DEVICE_DISABLED) {
+>> +             pr_warn("Warning: thermal function disabled.\n");
+>> +             return;
+>> +     }
+>> +
+>> +     thermal_zone_device_update(pzone->therm_dev);
+>> +     pr_debug("db8500_thermal_work finished.\n");
+>> +}
+>> +
+>> +static int __devinit db8500_thermal_probe(struct platform_device *pdev)
+>> +{
+>> +     struct db8500_thermal_zone *pzone = NULL;
+>> +     struct db8500_thsens_platform_data *ptrips;
+>> +     int low_irq, high_irq, ret = 0;
+>> +     unsigned long dft_low, dft_high;
+>> +
+>> +     pzone = devm_kzalloc(&pdev->dev,
+>> +                     sizeof(struct db8500_thermal_zone), GFP_KERNEL);
+>> +     if (!pzone)
+>> +             return -ENOMEM;
+>> +
+>> +     pzone->thsens_pdev = pdev;
+>> +
+>> +     low_irq = platform_get_irq_byname(pdev, "IRQ_HOTMON_LOW");
+>> +     if (low_irq < 0) {
+>> +             pr_err("Get IRQ_HOTMON_LOW failed.\n");
+>> +             return low_irq;
+>> +     }
+>> +
+>> +     ret = devm_request_threaded_irq(&pdev->dev, low_irq, NULL,
+>> +             prcmu_low_irq_handler,
+>> +             IRQF_NO_SUSPEND | IRQF_ONESHOT, "dbx500_temp_low", pzone);
+>> +     if (ret < 0) {
+>> +             pr_err("Failed to allocate temp low irq.\n");
+>> +             return ret;
+>> +     }
+>> +
+>> +     high_irq = platform_get_irq_byname(pdev, "IRQ_HOTMON_HIGH");
+>> +     if (high_irq < 0) {
+>> +             pr_err("Get IRQ_HOTMON_HIGH failed.\n");
+>> +             return high_irq;
+>> +     }
+>> +
+>> +     ret = devm_request_threaded_irq(&pdev->dev, high_irq, NULL,
+>> +             prcmu_high_irq_handler,
+>> +             IRQF_NO_SUSPEND | IRQF_ONESHOT, "dbx500_temp_high", pzone);
+>> +     if (ret < 0) {
+>> +             pr_err("Failed to allocate temp high irq.\n");
+>> +             return ret;
+>> +     }
+>> +
+>> +     pzone->low_irq = low_irq;
+>> +     pzone->high_irq = high_irq;
+>> +
+>> +     pzone->mode = THERMAL_DEVICE_DISABLED;
+>> +
+>> +     mutex_init(&pzone->th_lock);
+>> +
+>> +     INIT_WORK(&pzone->therm_work, db8500_thermal_work);
+>> +
+>> +     ptrips = pdev->dev.platform_data;
+>> +     pzone->trip_tab = ptrips;
+>> +
+>> +     pzone->therm_dev = thermal_zone_device_register("db8500_thermal_zone",
+>> +             ptrips->num_trips, 0, pzone, &thdev_ops, 0, 0);
+>> +
+>> +     if (IS_ERR(pzone->therm_dev)) {
+>> +             pr_err("Failed to register thermal zone device\n");
+>> +             return PTR_ERR(pzone->therm_dev);
+>> +     }
+>> +
+>> +     dft_low = PRCMU_DEFAULT_LOW_TEMP;
+>> +     dft_high = ptrips->trip_points[0].temp;
+>> +
+>> +     prcmu_stop_temp_sense();
+>> +     prcmu_config_hotmon((u8)(dft_low/1000), (u8)(dft_high/1000));
+>> +     prcmu_start_temp_sense(PRCMU_DEFAULT_MEASURE_TIME);
+>> +
+>> +     pzone->cur_index = 0;
+>> +     pzone->cur_temp_pseudo = (dft_low + dft_high)/2;
+>> +     pzone->trend = THERMAL_TREND_STABLE;
+>
+> All the stuff from prcmu_stop_temp_sense() up to this line can race with
+> the irq handlers, I would suggest doing it before requesting the irqs.
+>
+>> +     pzone->mode = THERMAL_DEVICE_ENABLED;
+>
+> Shouldn't this be protected by pzone->th_lock? Otherwise it should be
+> set before the thermal zone is registered.
+>
+>> +
+>> +     platform_set_drvdata(pdev, pzone);
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static int __devexit db8500_thermal_remove(struct platform_device *pdev)
+>> +{
+>> +     struct db8500_thermal_zone *pzone;
+>> +     pzone = platform_get_drvdata(pdev);
+>> +
+>> +     cancel_work_sync(&pzone->therm_work);
+>> +
+>> +     if (pzone->therm_dev)
+>> +             thermal_zone_device_unregister(pzone->therm_dev);
+>> +
+>> +     return 0;
+>> +}
+>
+> mutex_destroy() should be called on pzone->th_lock
+>
+>> +
+>> +static int db8500_thermal_suspend(struct platform_device *pdev,
+>> +             pm_message_t state)
+>> +{
+>> +     struct db8500_thermal_zone *pzone;
+>> +     pzone = platform_get_drvdata(pdev);
+>> +
+>> +     flush_work_sync(&pzone->therm_work);
+>> +     prcmu_stop_temp_sense();
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static int db8500_thermal_resume(struct platform_device *pdev)
+>> +{
+>> +     struct db8500_thermal_zone *pzone;
+>> +     struct db8500_thsens_platform_data *ptrips;
+>> +     unsigned long dft_low, dft_high;
+>> +
+>> +     pzone = platform_get_drvdata(pdev);
+>> +     ptrips = pzone->trip_tab;
+>> +     dft_low = PRCMU_DEFAULT_LOW_TEMP;
+>> +     dft_high = ptrips->trip_points[0].temp;
+>> +
+>> +     prcmu_config_hotmon((u8)(dft_low/1000), (u8)(dft_high/1000));
+>> +     prcmu_start_temp_sense(PRCMU_DEFAULT_MEASURE_TIME);
+>
+> Shouldn't cur_index and cur_temp_pseudo be updated as well? You may want
+> to define a helper function with all the code shared by irq handlers
+> (both high and low), probe and resume.
+No, they cannot be update because we don't know the actual current
+temp[1] after short or long time suspend, everything goes as
+beginning.
+If a helper function is introduced, it can be only used in probe and
+resume I think, different and a bit complicated algorithm in irq
+handlers.
+[1] due to lack of corresponding interface, search "TODO" in this file
+to get more explanation.
 
-arch/arm/kernel/sched_clock.c already had an optional
-implementation (sched_clock_needs_suspend()) which would
-handle scheduler's requirement properly, what this patch
-does is simply to make that implementation non-optional.
-
-This has been tested with beagleboard XM (OMAP3630) and
-pandaboard rev A3 (OMAP4430). Suspend to RAM is now working
-after this patch.
-
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
- arch/arm/include/asm/sched_clock.h |  2 --
- arch/arm/kernel/sched_clock.c      | 18 ++++--------------
- 2 files changed, 4 insertions(+), 16 deletions(-)
-
-diff --git a/arch/arm/include/asm/sched_clock.h b/arch/arm/include/asm/sched_clock.h
-index 05b8e82..e3f7572 100644
---- a/arch/arm/include/asm/sched_clock.h
-+++ b/arch/arm/include/asm/sched_clock.h
-@@ -10,7 +10,5 @@
- 
- extern void sched_clock_postinit(void);
- extern void setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate);
--extern void setup_sched_clock_needs_suspend(u32 (*read)(void), int bits,
--		unsigned long rate);
- 
- #endif
-diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
-index e21bac2..fc6692e 100644
---- a/arch/arm/kernel/sched_clock.c
-+++ b/arch/arm/kernel/sched_clock.c
-@@ -107,13 +107,6 @@ static void sched_clock_poll(unsigned long wrap_ticks)
- 	update_sched_clock();
- }
- 
--void __init setup_sched_clock_needs_suspend(u32 (*read)(void), int bits,
--		unsigned long rate)
--{
--	setup_sched_clock(read, bits, rate);
--	cd.needs_suspend = true;
--}
--
- void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
- {
- 	unsigned long r, w;
-@@ -189,18 +182,15 @@ void __init sched_clock_postinit(void)
- static int sched_clock_suspend(void)
- {
- 	sched_clock_poll(sched_clock_timer.data);
--	if (cd.needs_suspend)
--		cd.suspended = true;
-+	cd.suspended = true;
- 	return 0;
- }
- 
- static void sched_clock_resume(void)
- {
--	if (cd.needs_suspend) {
--		cd.epoch_cyc = read_sched_clock();
--		cd.epoch_cyc_copy = cd.epoch_cyc;
--		cd.suspended = false;
--	}
-+	cd.epoch_cyc = read_sched_clock();
-+	cd.epoch_cyc_copy = cd.epoch_cyc;
-+	cd.suspended = false;
- }
- 
- static struct syscore_ops sched_clock_ops = {
--- 
-1.8.0.rc0
-
+>
+>> +
+>> +     return 0;
+>> +}
+> [...]
+>> diff --git a/include/linux/platform_data/db8500_thermal.h b/include/linux/platform_data/db8500_thermal.h
+>> new file mode 100644
+>> index 0000000..0b6d164
+>> --- /dev/null
+>> +++ b/include/linux/platform_data/db8500_thermal.h
+>> @@ -0,0 +1,39 @@
+>> +/*
+>> + * db8500_thermal.h - db8500 Thermal Management Implementation
+>> + *
+>> + * Copyright (C) 2012 ST-Ericsson
+>> + * Copyright (C) 2012 Linaro Ltd.
+>> + *
+>> + * Author: Hongbo Zhang <hognbo.zhang@stericsson.com>
+>
+> Misspelled address
+>
+> --
+> Francesco
