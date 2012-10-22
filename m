@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174Ab2JVIvH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 04:51:07 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61935 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532Ab2JVIvF (ORCPT
+	id S1751321Ab2JVIvl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 04:51:41 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:41064 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab2JVIvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 04:51:05 -0400
-X-AuditID: 9c93016f-b7c7bae000000eb7-55-508508f54bee
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 00/11] perf tool: Add PERF_SAMPLE_READ sample read support
-References: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
-	<20121021163848.GB28726@gmail.com>
-	<20121022080930.GB984@krava.brq.redhat.com>
-Date: Mon, 22 Oct 2012 17:51:01 +0900
-In-Reply-To: <20121022080930.GB984@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Mon, 22 Oct 2012 10:09:31 +0200")
-Message-ID: <87a9vekhze.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 22 Oct 2012 04:51:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Date: Mon, 22 Oct 2012 16:51:38 +0800
+Message-ID: <CAPgLHd8NZkYSkZm22FpZxiEh6HcA0q-V=29vdnheiDhgrJZ+yw@mail.gmail.com>
+Subject: [PATCH] perf/x86: remove unused variable in nhmex_rbox_alter_er()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@ghostprotocols.net, tglx@linutronix.de, hpa@zytor.com
+Cc: yongjun_wei@trendmicro.com.cn, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Oct 2012 10:09:31 +0200, Jiri Olsa wrote:
-> On Sun, Oct 21, 2012 at 06:38:49PM +0200, Ingo Molnar wrote:
->> >   #
->> >   # Samples: 86  of event 'anon group { cycles, cache-misses }'
->> >   # Event count (approx.): 34863674
->> >   #
->> >   #         Overhead                    Period  Command      Shared Object                            Symbol
->> >   # ................  ........................  .......  .................  ................................
->> 
->> Might make sense to consider this column enumeration:
->> 
->>     #
->>     #   cycles
->>     #   |       cache-misses
->>     #   |       |
->> >   #   v       v
->> >   #
->> >       16.56%  19.47%       5773450         475       ls  [kernel.kallsyms]  [k] native_sched_clock          
->> >       10.87%   0.74%       3789088          18       ls  [kernel.kallsyms]  [k] rtl8169_interrupt           
->
-> no problem in '--stdio' mode I guess.. not sure in '--tui/--gtk', Namhyung?
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-I thought a similar way but met a problem.  We have other output columns
-than 'overhead' like 'period' in this example.  What about others?
-Adding all event names for each column will just increase the column
-width so bothers user IMHO - especially for pmu format events.
+The variable port is initialized but never used
+otherwise, so remove the unused variable.
 
-So I ended up printing those events on the header:
+dpatch engine is used to auto generate this patch.
+(https://github.com/weiyj/dpatch)
 
-  # Samples: 86  of event 'anon group { cycles, cache-misses }'
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-Thanks,
-Namhyung
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 99d96a4..e7d4061 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -1547,7 +1547,6 @@ void nhmex_rbox_alter_er(struct intel_uncore_box *box, struct perf_event *event)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	struct hw_perf_event_extra *reg1 = &hwc->extra_reg;
+-	int port;
+ 
+ 	/* adjust the main event selector and extra register index */
+ 	if (reg1->idx % 2) {
+@@ -1559,7 +1558,6 @@ void nhmex_rbox_alter_er(struct intel_uncore_box *box, struct perf_event *event)
+ 	}
+ 
+ 	/* adjust extra register config */
+-	port = reg1->idx / 6 + box->pmu->pmu_idx * 4;
+ 	switch (reg1->idx % 6) {
+ 	case 2:
+ 		/* shift the 8~15 bits to the 0~7 bits */
+
