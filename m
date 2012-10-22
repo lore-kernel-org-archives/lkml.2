@@ -1,60 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab2JVN0O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 09:26:14 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:23176 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753537Ab2JVN0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 09:26:11 -0400
-Message-ID: <5085495D.6060307@siemens.com>
-Date: Mon, 22 Oct 2012 15:25:49 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1754246Ab2JVN0a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 09:26:30 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:64983 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754169Ab2JVN0M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 09:26:12 -0400
+X-IronPort-AV: E=Sophos;i="4.80,629,1344211200"; 
+   d="scan'208";a="15309956"
+Date: Mon, 22 Oct 2012 14:25:43 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "mukesh.rathor@oracle.com" <mukesh.rathor@oracle.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: Re: [PATCH 5/6] xen/pvh: balloon and grant changes.
+In-Reply-To: <1350695882-12820-6-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.DEB.2.02.1210221423510.2689@kaball.uk.xensource.com>
+References: <1350695882-12820-1-git-send-email-konrad.wilk@oracle.com> <1350695882-12820-6-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Avi Kivity <avi@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: x86: fix vcpu->mmio_fragments overflow
-References: <20121022112314.GO29310@redhat.com> <50852F9C.9020808@siemens.com> <20121022114311.GQ29310@redhat.com> <508531E1.2030307@siemens.com> <508539A8.40404@redhat.com> <50853FF1.8010809@siemens.com> <20121022125301.GS29310@redhat.com> <50854232.8090309@siemens.com> <508542EF.5050401@redhat.com> <508544B6.6070301@siemens.com> <20121022130810.GW29310@redhat.com>
-In-Reply-To: <20121022130810.GW29310@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-10-22 15:08, Gleb Natapov wrote:
-> On Mon, Oct 22, 2012 at 03:05:58PM +0200, Jan Kiszka wrote:
->> On 2012-10-22 14:58, Avi Kivity wrote:
->>> On 10/22/2012 02:55 PM, Jan Kiszka wrote:
->>>>> Since the userspace change is needed the idea is dead, but if we could
->>>>> implement it I do not see how it can hurt the latency if it would be the
->>>>> only mechanism to use coalesced mmio buffer. Checking that the ring buffer
->>>>> is empty is cheap and if it is not empty it means that kernel just saved
->>>>> you a lot of 8 bytes exists so even after iterating over all the entries there
->>>>> you still saved a lot of time.
->>>>
->>>> When taking an exit for A, I'm not interesting in flushing stuff for B
->>>> unless I have a dependency. Thus, buffers would have to be per device
->>>> before extending their use.
->>>
->>> Any mmio exit has to flush everything.  For example a DMA caused by an
->>> e1000 write has to see any writes to the framebuffer, in case the guest
->>> is transmitting its framebuffer to the outside world.
->>
->> We already flush when that crazy guest actually accesses the region, no
->> need to do this unconditionally.
->>
-> What if framebuffer is accessed from inside the kernel? Is this case handled?
+On Sat, 20 Oct 2012, Konrad Rzeszutek Wilk wrote:
+> From: Mukesh Rathor <mukesh.rathor@oracle.com>
+> 
+> For balloon changes we skip setting of local P2M as it's updated
+> in Xen. For grant, the shared grant frame is the pfn and not mfn,
+> hence its mapped via the same code path as HVM.
+> 
+> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/xen/balloon.c     |   15 +++++++++------
+>  drivers/xen/gntdev.c      |    3 ++-
+>  drivers/xen/grant-table.c |   26 ++++++++++++++++++++++----
+>  3 files changed, 33 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
+> index 31ab82f..c825b63 100644
+> --- a/drivers/xen/balloon.c
+> +++ b/drivers/xen/balloon.c
+> @@ -361,7 +361,9 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
+>  		set_phys_to_machine(pfn, frame_list[i]);
+>  
+>  		/* Link back into the page tables if not highmem. */
+> -		if (xen_pv_domain() && !PageHighMem(page)) {
+> +		if (xen_pv_domain() && !PageHighMem(page) &&
+> +		    !xen_feature(XENFEAT_auto_translated_physmap)) {
+> +
+>  			int ret;
+>  			ret = HYPERVISOR_update_va_mapping(
+>  				(unsigned long)__va(pfn << PAGE_SHIFT),
+> @@ -418,12 +420,13 @@ static enum bp_state decrease_reservation(unsigned long nr_pages, gfp_t gfp)
+>  		scrub_page(page);
+>  
+>  		if (xen_pv_domain() && !PageHighMem(page)) {
+> -			ret = HYPERVISOR_update_va_mapping(
+> -				(unsigned long)__va(pfn << PAGE_SHIFT),
+> -				__pte_ma(0), 0);
+> -			BUG_ON(ret);
+> +			if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+> +				ret = HYPERVISOR_update_va_mapping(
+> +					(unsigned long)__va(pfn << PAGE_SHIFT),
+> +					__pte_ma(0), 0);
+> +				BUG_ON(ret);
+> +			}
+>  		}
 
-Unless I miss a case now, there is no direct access to the framebuffer
-possible when we are also doing coalescing. Everything needs to go
-through userspace.
+this change, unlike the one before, actually makes things different for
+traditional pv domains in case PageHighMem(page).
 
-Jan
+The rest looks good.
 
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-Corporate Competence Center Embedded Linux
+>  	}
+>  
+>  	/* Ensure that ballooned highmem pages don't have kmaps. */
+> diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+> index 610bfc6..d39d54e 100644
+> --- a/drivers/xen/gntdev.c
+> +++ b/drivers/xen/gntdev.c
+> @@ -803,7 +803,8 @@ static int __init gntdev_init(void)
+>  	if (!xen_domain())
+>  		return -ENODEV;
+>  
+> -	use_ptemod = xen_pv_domain();
+> +	use_ptemod = xen_pv_domain() &&
+> +		     !xen_feature(XENFEAT_auto_translated_physmap);
+>  
+>  	err = misc_register(&gntdev_miscdev);
+>  	if (err != 0) {
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index b2b0a37..9c0019d 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -1029,14 +1029,19 @@ static void gnttab_unmap_frames_v2(void)
+>  static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
+>  {
+>  	struct gnttab_setup_table setup;
+> -	unsigned long *frames;
+> +	unsigned long *frames, start_gpfn;
+>  	unsigned int nr_gframes = end_idx + 1;
+>  	int rc;
+>  
+> -	if (xen_hvm_domain()) {
+> +	if (xen_hvm_domain() || xen_feature(XENFEAT_auto_translated_physmap)) {
+>  		struct xen_add_to_physmap xatp;
+>  		unsigned int i = end_idx;
+>  		rc = 0;
+> +
+> +		if (xen_hvm_domain())
+> +			start_gpfn = xen_hvm_resume_frames >> PAGE_SHIFT;
+> +		else
+> +			start_gpfn = virt_to_pfn(gnttab_shared.addr);
+>  		/*
+>  		 * Loop backwards, so that the first hypercall has the largest
+>  		 * index, ensuring that the table will grow only once.
+> @@ -1045,7 +1050,7 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
+>  			xatp.domid = DOMID_SELF;
+>  			xatp.idx = i;
+>  			xatp.space = XENMAPSPACE_grant_table;
+> -			xatp.gpfn = (xen_hvm_resume_frames >> PAGE_SHIFT) + i;
+> +			xatp.gpfn = start_gpfn + i;
+>  			rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp);
+>  			if (rc != 0) {
+>  				printk(KERN_WARNING
+> @@ -1108,7 +1113,7 @@ static void gnttab_request_version(void)
+>  	int rc;
+>  	struct gnttab_set_version gsv;
+>  
+> -	if (xen_hvm_domain())
+> +	if (xen_hvm_domain() || xen_feature(XENFEAT_auto_translated_physmap))
+>  		gsv.version = 1;
+>  	else
+>  		gsv.version = 2;
+> @@ -1136,12 +1141,25 @@ static void gnttab_request_version(void)
+>  int gnttab_resume(void)
+>  {
+>  	unsigned int max_nr_gframes;
+> +	char *kmsg = "Failed to kmalloc pages for pv in hvm grant frames\n";
+>  
+>  	gnttab_request_version();
+>  	max_nr_gframes = gnttab_max_grant_frames();
+>  	if (max_nr_gframes < nr_grant_frames)
+>  		return -ENOSYS;
+>  
+> +	/* PVH note: xen will free existing kmalloc'd mfn in
+> +	 * XENMEM_add_to_physmap. TBD/FIXME: use xen ballooning instead of
+> +	 * kmalloc(). */
+> +	if (xen_pv_domain() && xen_feature(XENFEAT_auto_translated_physmap) &&
+> +	    !gnttab_shared.addr) {
+> +		gnttab_shared.addr =
+> +			kmalloc(max_nr_gframes * PAGE_SIZE, GFP_KERNEL);
+> +		if (!gnttab_shared.addr) {
+> +			pr_warn("%s", kmsg);
+> +			return -ENOMEM;
+> +		}
+> +	}
+>  	if (xen_pv_domain())
+>  		return gnttab_map(0, nr_grant_frames - 1);
+>  
+> -- 
+> 1.7.7.6
+> 
