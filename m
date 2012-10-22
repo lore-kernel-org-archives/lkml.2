@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351Ab2J2AJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 20:09:27 -0400
-Received: from mailserver5.natinst.com ([130.164.80.5]:44408 "EHLO
-	spamkiller05.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756038Ab2J2AJX (ORCPT
+	id S1757406Ab2J2AJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 20:09:57 -0400
+Received: from mailserver6.natinst.com ([130.164.80.6]:59740 "EHLO
+	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756203Ab2J2AJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 20:09:23 -0400
-Message-Id: <079dc4cc1d0abd19cef111045ba305c474eb0e4c.1351466765.git.josh.cartwright@ni.com>
+	Sun, 28 Oct 2012 20:09:22 -0400
+Message-Id: <7a663040dc05b79262d7bd8bf8224ca49eb00162.1351466765.git.josh.cartwright@ni.com>
 In-Reply-To: <cover.1351466765.git.josh.cartwright@ni.com>
 References: <cover.1351466765.git.josh.cartwright@ni.com>
 From: Josh Cartwright <josh.cartwright@ni.com>
-Date: Sun, 21 Oct 2012 11:17:10 -0500
-Subject: [PATCH v4 3/5] zynq: remove use of CLKDEV_LOOKUP
+Date: Sun, 21 Oct 2012 21:15:37 -0500
+Subject: [PATCH v4 5/5] zynq: move static peripheral mappings
 To: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         John Linn <john.linn@xilinx.com>,
         Nick Bowler <nbowler@elliptictech.com>,
         Michal Simek <michal.simek@xilinx.com>
-X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+X-MIMETrack: Itemize by SMTP Server on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
  14, 2012) at 10/28/2012 07:08:53 PM,
-	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+	Serialize by Router on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
  14, 2012) at 10/28/2012 07:08:53 PM,
 	Serialize complete at 10/28/2012 07:08:53 PM
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
@@ -29,138 +29,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Zynq support in mainline does not (yet) make use of any of the
-generic clk or clk lookup functionality.  Remove what is upstream for
-now, until the out-of-tree implementation is in suitable form for
-merging.
+Shifting them up into the vmalloc region prevents the following warning,
+when booting a zynq qemu target with more than 512mb of RAM:
 
-An important side effect of this patch is that it allows the building of
-a Zynq kernel without running into unresolved symbol problems:
+  BUG: mapping for 0xe0000000 at 0xe0000000 out of vmalloc space
 
-   drivers/built-in.o: In function `amba_get_enable_pclk':
-   clkdev.c:(.text+0x444): undefined reference to `clk_enable'
-   drivers/built-in.o: In function `amba_remove':
-   clkdev.c:(.text+0x488): undefined reference to `clk_disable'
-   drivers/built-in.o: In function `amba_probe':
-   clkdev.c:(.text+0x540): undefined reference to `clk_disable'
-   drivers/built-in.o: In function `amba_device_add':
-   clkdev.c:(.text+0x77c): undefined reference to `clk_disable'
-   drivers/built-in.o: In function `enable_clock':
-   clkdev.c:(.text+0x29738): undefined reference to `clk_enable'
-   drivers/built-in.o: In function `disable_clock':
-   clkdev.c:(.text+0x29778): undefined reference to `clk_disable'
-   drivers/built-in.o: In function `__pm_clk_remove':
-   clkdev.c:(.text+0x297f8): undefined reference to `clk_disable'
-   drivers/built-in.o: In function `pm_clk_suspend':
-   clkdev.c:(.text+0x29bc8): undefined reference to `clk_disable'
-   drivers/built-in.o: In function `pm_clk_resume':
-   clkdev.c:(.text+0x29c28): undefined reference to `clk_enable'
-   make[2]: *** [vmlinux] Error 1
-   make[1]: *** [sub-make] Error 2
-   make: *** [all] Error 2
+In addition, it allows for reuse of these mappings when the proper
+drivers issue requests via ioremap().
 
-In addition, eliminate Zynq's "use" of the versatile platform, as it is no longer
-needed.  As Nick Bowler points out:
-
-	For the record, I think this was introduced by commit 56a34b03ff427
-	("ARM: versatile: Make plat-versatile clock optional") which forgot to
-	select PLAT_VERSATILE_CLOCK on Zynq.  This is not all that surprising,
-	because the fact that Zynq "uses" PLAT_VERSATILE is secretly hidden in
-	the Makefile.
-
-	Nevertheless, the only feature from versatile that Zynq needed was the
-	clock support, so this patch should *also* delete the secret use of
-	plat-versatile by removing this line from arch/arm/Makefile:
-
-	  plat-$(CONFIG_ARCH_ZYNQ)      += versatile
+There are currently unknown issues with the early uart mapping.  For
+now, the uart will be mapped to a known working address.
 
 Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
 Cc: John Linn <john.linn@xilinx.com>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
-Tested-by: Michal Simek <michal.simek@xilinx.com>
 ---
- arch/arm/Kconfig                         |  1 -
- arch/arm/Makefile                        |  1 -
- arch/arm/mach-zynq/common.c              |  1 -
- arch/arm/mach-zynq/include/mach/clkdev.h | 32 --------------------------------
- 4 files changed, 35 deletions(-)
- delete mode 100644 arch/arm/mach-zynq/include/mach/clkdev.h
+ arch/arm/mach-zynq/common.c                |  6 +++---
+ arch/arm/mach-zynq/include/mach/zynq_soc.h | 25 +++++++++++++++----------
+ 2 files changed, 18 insertions(+), 13 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index ef6d059..3ab72e1 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -948,7 +948,6 @@ config ARCH_ZYNQ
- 	bool "Xilinx Zynq ARM Cortex A9 Platform"
- 	select ARM_AMBA
- 	select ARM_GIC
--	select CLKDEV_LOOKUP
- 	select CPU_V7
- 	select GENERIC_CLOCKEVENTS
- 	select ICST
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index 451757d..8dbab2d 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -197,7 +197,6 @@ machine-$(CONFIG_ARCH_ZYNQ)		+= zynq
- # by CONFIG_* macro name.
- plat-$(CONFIG_ARCH_OMAP)	+= omap
- plat-$(CONFIG_ARCH_S3C64XX)	+= samsung
--plat-$(CONFIG_ARCH_ZYNQ)	+= versatile
- plat-$(CONFIG_PLAT_IOP)		+= iop
- plat-$(CONFIG_PLAT_NOMADIK)	+= nomadik
- plat-$(CONFIG_PLAT_ORION)	+= orion
 diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-index 056091a..ba48f06 100644
+index ba48f06..ba8d14f 100644
 --- a/arch/arm/mach-zynq/common.c
 +++ b/arch/arm/mach-zynq/common.c
-@@ -31,7 +31,6 @@
- #include <asm/hardware/cache-l2x0.h>
+@@ -73,12 +73,12 @@ static struct map_desc io_desc[] __initdata = {
+ 	{
+ 		.virtual	= TTC0_VIRT,
+ 		.pfn		= __phys_to_pfn(TTC0_PHYS),
+-		.length		= SZ_4K,
++		.length		= TTC0_SIZE,
+ 		.type		= MT_DEVICE,
+ 	}, {
+ 		.virtual	= SCU_PERIPH_VIRT,
+ 		.pfn		= __phys_to_pfn(SCU_PERIPH_PHYS),
+-		.length		= SZ_8K,
++		.length		= SCU_PERIPH_SIZE,
+ 		.type		= MT_DEVICE,
+ 	},
  
- #include <mach/zynq_soc.h>
--#include <mach/clkdev.h>
- #include "common.h"
+@@ -86,7 +86,7 @@ static struct map_desc io_desc[] __initdata = {
+ 	{
+ 		.virtual	= UART0_VIRT,
+ 		.pfn		= __phys_to_pfn(UART0_PHYS),
+-		.length		= SZ_4K,
++		.length		= UART0_SIZE,
+ 		.type		= MT_DEVICE,
+ 	},
+ #endif
+diff --git a/arch/arm/mach-zynq/include/mach/zynq_soc.h b/arch/arm/mach-zynq/include/mach/zynq_soc.h
+index 218283a..1b8bf0e 100644
+--- a/arch/arm/mach-zynq/include/mach/zynq_soc.h
++++ b/arch/arm/mach-zynq/include/mach/zynq_soc.h
+@@ -15,27 +15,32 @@
+ #ifndef __MACH_XILINX_SOC_H__
+ #define __MACH_XILINX_SOC_H__
  
- static struct of_device_id zynq_of_bus_ids[] __initdata = {
-diff --git a/arch/arm/mach-zynq/include/mach/clkdev.h b/arch/arm/mach-zynq/include/mach/clkdev.h
-deleted file mode 100644
-index c6e73d8..0000000
---- a/arch/arm/mach-zynq/include/mach/clkdev.h
-+++ /dev/null
-@@ -1,32 +0,0 @@
++#include <asm/pgtable.h>
++
+ #define PERIPHERAL_CLOCK_RATE		2500000
+ 
+-/* For now, all mappings are flat (physical = virtual)
++/* Static peripheral mappings are mapped at the top of the vmalloc region.  The
++ * early uart mapping causes intermediate problems/failure at certain
++ * addresses, including the very top of the vmalloc region.  Map it at an
++ * address that is known to work.
+  */
+-#define UART0_PHYS			0xE0000000
+-#define UART0_VIRT			UART0_PHYS
++#define UART0_PHYS		0xE0000000
++#define UART0_SIZE		SZ_4K
++#define UART0_VIRT		0xF0001000
+ 
+-#define TTC0_PHYS			0xF8001000
+-#define TTC0_VIRT			TTC0_PHYS
++#define TTC0_PHYS		0xF8001000
++#define TTC0_SIZE		SZ_4K
++#define TTC0_VIRT		(VMALLOC_END - TTC0_SIZE)
+ 
+-#define SCU_PERIPH_PHYS			0xF8F00000
+-#define SCU_PERIPH_VIRT			SCU_PERIPH_PHYS
++#define SCU_PERIPH_PHYS		0xF8F00000
++#define SCU_PERIPH_SIZE		SZ_8K
++#define SCU_PERIPH_VIRT		(TTC0_VIRT - SCU_PERIPH_SIZE)
+ 
+ /* The following are intended for the devices that are mapped early */
+ 
+ #define TTC0_BASE			IOMEM(TTC0_VIRT)
+ #define SCU_PERIPH_BASE			IOMEM(SCU_PERIPH_VIRT)
+ 
 -/*
-- * arch/arm/mach-zynq/include/mach/clkdev.h
-- *
-- *  Copyright (C) 2011 Xilinx, Inc.
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
+- * Mandatory for CONFIG_LL_DEBUG, UART is mapped virtual = physical
 - */
--
--#ifndef __MACH_CLKDEV_H__
--#define __MACH_CLKDEV_H__
--
--#include <plat/clock.h>
--
--struct clk {
--	unsigned long		rate;
--	const struct clk_ops	*ops;
--	const struct icst_params *params;
--	void __iomem		*vcoreg;
--};
--
--#define __clk_get(clk) ({ 1; })
--#define __clk_put(clk) do { } while (0)
--
--#endif
+ #define LL_UART_PADDR	UART0_PHYS
+ #define LL_UART_VADDR	UART0_VIRT
+ 
 -- 
 1.8.0
-
 
