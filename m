@@ -1,127 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135Ab2JVINI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 04:13:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57489 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751603Ab2JVINH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 04:13:07 -0400
-Date: Mon, 22 Oct 2012 09:05:25 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Linux-MM <linux-mm@kvack.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/5] mm: compaction: Add scanned and isolated counters for
- compaction
-Message-ID: <20121022080525.GB2198@suse.de>
-References: <1350892791-2682-1-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1350892791-2682-1-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752185Ab2JVINm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 04:13:42 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:49568 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab2JVINk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 04:13:40 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: thierry.reding@avionic-design.de
+Cc: devicetree-discuss@lists.ozlabs.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH v2] pwm: vt8500: Update vt8500 PWM driver support
+Date: Mon, 22 Oct 2012 21:13:35 +1300
+Message-Id: <1350893615-14723-1-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20121022080414.GB4931@avionic-0098.mockup.avionic-design.de>
+References: <20121022080414.GB4931@avionic-0098.mockup.avionic-design.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compaction already has tracepoints to count scanned and isolated pages
-but it requires that ftrace be enabled and if that information has to be
-written to disk then it can be disruptive. This patch adds vmstat counters
-for compaction called compact_migrate_scanned, compact_free_scanned and
-compact_isolated.
+This patch updates pwm-vt8500.c to support devicetree probing and
+make use of the common clock subsystem.
 
-With these counters, it is possible to define a basic cost model for
-compaction. This approximates of how much work compaction is doing and can
-be compared that with an oprofile showing TLB misses and see if the cost of
-compaction is being offset by THP for example. Minimally a compaction patch
-can be evaluated in terms of whether it increases or decreases cost. The
-basic cost model looks like this
+A binding document describing the PWM controller found on
+arch-vt8500 is also included.
 
-Fundamental unit u:	a word	sizeof(void *)
-
-Ca  = cost of struct page access = sizeof(struct page) / u
-
-Cmc = Cost migrate page copy = (Ca + PAGE_SIZE/u) * 2
-Cmf = Cost migrate failure   = Ca * 2
-Ci  = Cost page isolation    = (Ca + Wi)
-	where Wi is a constant that should reflect the approximate
-	cost of the locking operation.
-
-Csm = Cost migrate scanning = Ca
-Csf = Cost free    scanning = Ca
-
-Overall cost =	(Csm * compact_migrate_scanned) +
-	      	(Csf * compact_free_scanned)    +
-	      	(Ci  * compact_isolated)	+
-		(Cmc * pgmigrate_success)	+
-		(Cmf * pgmigrate_failed)
-
-Where the values are read from /proc/vmstat.
-
-This is very basic and ignores certain costs such as the allocation cost
-to do a migrate page copy but any improvement to the model would still
-use the same vmstat counters.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 ---
- include/linux/vm_event_item.h |    2 ++
- mm/compaction.c               |    8 ++++++++
- mm/vmstat.c                   |    3 +++
- 3 files changed, 13 insertions(+), 0 deletions(-)
+v2 changes:
+Merged binding doc patch with main code patch
+Fixes as requested by Thierry Reding.
 
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index 5ce5c5f..83ea0b6 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -42,6 +42,8 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		PGMIGRATE_SUCCESS, PGMIGRATE_FAIL,
- #endif
- #ifdef CONFIG_COMPACTION
-+		COMPACTMIGRATE_SCANNED, COMPACTFREE_SCANNED,
-+		COMPACTISOLATED,
- 		COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
- #endif
- #ifdef CONFIG_HUGETLB_PAGE
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 11b455b..8422dd4 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -143,6 +143,10 @@ static unsigned long isolate_freepages_block(unsigned long blockpfn,
+ .../devicetree/bindings/pwm/vt8500-pwm.txt         |   17 ++++
+ drivers/pwm/pwm-vt8500.c                           |   87 +++++++++++++++-----
+ 2 files changed, 82 insertions(+), 22 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pwm/vt8500-pwm.txt
+
+diff --git a/Documentation/devicetree/bindings/pwm/vt8500-pwm.txt b/Documentation/devicetree/bindings/pwm/vt8500-pwm.txt
+new file mode 100644
+index 0000000..bcc6367
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pwm/vt8500-pwm.txt
+@@ -0,0 +1,17 @@
++VIA/Wondermedia VT8500/WM8xxx series SoC PWM controller
++
++Required properties:
++- compatible: should be "via,vt8500-pwm"
++- reg: physical base address and length of the controller's registers
++- #pwm-cells: should be 2.  The first cell specifies the per-chip index
++  of the PWM to use and the second cell is the period in nanoseconds.
++- clocks: phandle to the PWM source clock
++
++Example:
++
++pwm1: pwm@d8220000 {
++	#pwm-cells = <2>;
++	compatible = "via,vt8500-pwm";
++	reg = <0xd8220000 0x1000>;
++	clocks = <&clkpwm>;
++};
+diff --git a/drivers/pwm/pwm-vt8500.c b/drivers/pwm/pwm-vt8500.c
+index ad14389..36fef69 100644
+--- a/drivers/pwm/pwm-vt8500.c
++++ b/drivers/pwm/pwm-vt8500.c
+@@ -1,7 +1,8 @@
+ /*
+  * drivers/pwm/pwm-vt8500.c
+  *
+- *  Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
++ * Copyright (C) 2012 Tony Prisk <linux@prisktech.co.nz>
++ * Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
+  *
+  * This software is licensed under the terms of the GNU General Public
+  * License version 2, as published by the Free Software Foundation, and
+@@ -21,14 +22,25 @@
+ #include <linux/io.h>
+ #include <linux/pwm.h>
+ #include <linux/delay.h>
++#include <linux/clk.h>
+ 
+ #include <asm/div64.h>
+ 
+-#define VT8500_NR_PWMS 4
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/of_address.h>
++
++/*
++ * SoC architecture allocates register space for 4 PWMs but only
++ * 2 are currently implemented.
++ */
++#define VT8500_NR_PWMS	2
+ 
+ struct vt8500_chip {
+ 	struct pwm_chip chip;
+ 	void __iomem *base;
++	struct clk *clk;
++	int enable_cnt;
+ };
+ 
+ #define to_vt8500_chip(chip)	container_of(chip, struct vt8500_chip, chip)
+@@ -52,7 +64,7 @@ static int vt8500_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+ 	unsigned long long c;
+ 	unsigned long period_cycles, prescale, pv, dc;
+ 
+-	c = 25000000/2; /* wild guess --- need to implement clocks */
++	c = clk_get_rate(vt8500->clk);
+ 	c = c * period_ns;
+ 	do_div(c, 1000000000);
+ 	period_cycles = c;
+@@ -87,6 +99,11 @@ static int vt8500_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+ {
+ 	struct vt8500_chip *vt8500 = to_vt8500_chip(chip);
+ 
++	if (vt8500->enable_cnt == 0)
++		clk_enable(vt8500->clk);
++
++	vt8500->enable_cnt++;
++
+ 	pwm_busy_wait(vt8500->base + 0x40 + pwm->hwpwm, (1 << 0));
+ 	writel(5, vt8500->base + (pwm->hwpwm << 4));
+ 	return 0;
+@@ -98,6 +115,11 @@ static void vt8500_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ 
+ 	pwm_busy_wait(vt8500->base + 0x40 + pwm->hwpwm, (1 << 0));
+ 	writel(0, vt8500->base + (pwm->hwpwm << 4));
++
++	vt8500->enable_cnt--;
++
++	if (vt8500->enable_cnt == 0)
++		clk_disable(vt8500->clk);
+ }
+ 
+ static struct pwm_ops vt8500_pwm_ops = {
+@@ -107,12 +129,25 @@ static struct pwm_ops vt8500_pwm_ops = {
+ 	.owner = THIS_MODULE,
+ };
+ 
+-static int __devinit pwm_probe(struct platform_device *pdev)
++static const struct of_device_id vt8500_pwm_dt_ids[] = {
++	{ .compatible = "via,vt8500-pwm", },
++	{ /* Sentinel */ }
++};
++
++MODULE_DEVICE_TABLE(of, vt8500_pwm_dt_ids);
++
++static int vt8500_pwm_probe(struct platform_device *pdev)
+ {
+ 	struct vt8500_chip *chip;
+ 	struct resource *r;
++	struct device_node *np = pdev->dev.of_node;
+ 	int ret;
+ 
++	if (!np) {
++		dev_err(&pdev->dev, "invalid devicetree node\n");
++		return -EINVAL;
++	}
++
+ 	chip = devm_kzalloc(&pdev->dev, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL) {
+ 		dev_err(&pdev->dev, "failed to allocate memory\n");
+@@ -123,6 +158,13 @@ static int __devinit pwm_probe(struct platform_device *pdev)
+ 	chip->chip.ops = &vt8500_pwm_ops;
+ 	chip->chip.base = -1;
+ 	chip->chip.npwm = VT8500_NR_PWMS;
++	chip->clk = devm_clk_get(&pdev->dev, NULL);
++	chip->enable_cnt = 0;
++
++	if (!chip->clk) {
++		dev_err(&pdev->dev, "clock source not specified\n");
++		return -EINVAL;
++	}
+ 
+ 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (r == NULL) {
+@@ -131,18 +173,24 @@ static int __devinit pwm_probe(struct platform_device *pdev)
  	}
  
- 	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
-+	count_vm_events(COMPACTFREE_SCANNED, nr_scanned);
-+	if (total_isolated)
-+		count_vm_events(COMPACTISOLATED, total_isolated);
+ 	chip->base = devm_request_and_ioremap(&pdev->dev, r);
+-	if (chip->base == NULL)
++	if (!chip->base) {
++		dev_err(&pdev->dev, "memory resource not available\n");
+ 		return -EADDRNOTAVAIL;
++	}
 +
- 	return total_isolated;
++	clk_prepare(chip->clk);
+ 
+ 	ret = pwmchip_add(&chip->chip);
+-	if (ret < 0)
++	if (ret < 0) {
++		dev_err(&pdev->dev, "failed to add pwmchip\n");
+ 		return ret;
++	}
+ 
+ 	platform_set_drvdata(pdev, chip);
+ 	return ret;
  }
  
-@@ -402,6 +406,10 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+-static int __devexit pwm_remove(struct platform_device *pdev)
++static int vt8500_pwm_remove(struct platform_device *pdev)
+ {
+ 	struct vt8500_chip *chip;
  
- 	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
+@@ -150,28 +198,23 @@ static int __devexit pwm_remove(struct platform_device *pdev)
+ 	if (chip == NULL)
+ 		return -ENODEV;
  
-+	count_vm_events(COMPACTMIGRATE_SCANNED, nr_scanned);
-+	if (nr_isolated)
-+		count_vm_events(COMPACTISOLATED, nr_isolated);
++	clk_unprepare(chip->clk);
 +
- 	return low_pfn;
+ 	return pwmchip_remove(&chip->chip);
  }
  
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 4849241..ab0b1b1 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -766,6 +766,9 @@ const char * const vmstat_text[] = {
- 	"pgmigrate_fail",
- #endif
- #ifdef CONFIG_COMPACTION
-+	"compact_migrate_scanned",
-+	"compact_free_scanned",
-+	"compact_isolated",
- 	"compact_stall",
- 	"compact_fail",
- 	"compact_success",
+-static struct platform_driver pwm_driver = {
++static struct platform_driver vt8500_pwm_driver = {
++	.probe		= vt8500_pwm_probe,
++	.remove		= vt8500_pwm_remove,
+ 	.driver		= {
+ 		.name	= "vt8500-pwm",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = vt8500_pwm_dt_ids,
+ 	},
+-	.probe		= pwm_probe,
+-	.remove		= __devexit_p(pwm_remove),
+ };
+ 
+-static int __init pwm_init(void)
+-{
+-	return platform_driver_register(&pwm_driver);
+-}
+-arch_initcall(pwm_init);
+-
+-static void __exit pwm_exit(void)
+-{
+-	platform_driver_unregister(&pwm_driver);
+-}
+-module_exit(pwm_exit);
++module_platform_driver(vt8500_pwm_driver);
+ 
+-MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("VT8500 PWM Driver");
++MODULE_AUTHOR("Tony Prisk <linux@prisktech.co.nz>");
++MODULE_LICENSE("GPL v2");
 -- 
-1.7.7
+1.7.9.5
+
