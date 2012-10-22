@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756299Ab2JVVsI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 17:48:08 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:37642 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755865Ab2JVVsG (ORCPT
+	id S932220Ab2JVVuF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 17:50:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46693 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756110Ab2JVVuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 17:48:06 -0400
+	Mon, 22 Oct 2012 17:50:03 -0400
+Date: Mon, 22 Oct 2012 14:50:00 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Priit Laes <plaes@plaes.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] staging: csr: Replace wakelocks with wakeup interface
+Message-ID: <20121022215000.GA10698@kroah.com>
+References: <1349284444-5860-1-git-send-email-plaes@plaes.org>
+ <1349287950-7278-1-git-send-email-plaes@plaes.org>
 MIME-Version: 1.0
-In-Reply-To: <20121022204308.GA23993@kroah.com>
-References: <1349916138-9011-1-git-send-email-ngupta@vflare.org>
-	<20121022204308.GA23993@kroah.com>
-Date: Mon, 22 Oct 2012 14:48:03 -0700
-Message-ID: <CAPkvG_eVF-ZiwLr=i9gRodqfrSuehSoMOAL9hkpUBtOFRXE8LQ@mail.gmail.com>
-Subject: Re: [PATCH] [staging][zram] Fix handling of incompressible pages
-From: Nitin Gupta <ngupta@vflare.org>
-To: Greg KH <greg@kroah.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Sam Hansen <solid.se7en@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349287950-7278-1-git-send-email-plaes@plaes.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 1:43 PM, Greg KH <greg@kroah.com> wrote:
-> On Wed, Oct 10, 2012 at 05:42:18PM -0700, Nitin Gupta wrote:
->> Change 130f315a (staging: zram: remove special handle of uncompressed page)
->> introduced a bug in the handling of incompressible pages which resulted in
->> memory allocation failure for such pages.
->>
->> When a page expands on compression, say from 4K to 4K+30, we were trying to
->> do zsmalloc(pool, 4K+30). However, the maximum size which zsmalloc can
->> allocate is PAGE_SIZE (for obvious reasons), so such allocation requests
->> always return failure (0).
->>
->> For a page that has compressed size larger than the original size (this may
->> happen with already compressed or random data), there is no point storing
->> the compressed version as that would take more space and would also require
->> time for decompression when needed again. So, the fix is to store any page,
->> whose compressed size exceeds a threshold (max_zpage_size), as-it-is i.e.
->> without compression.  Memory required for storing this uncompressed page can
->> then be requested from zsmalloc which supports PAGE_SIZE sized allocations.
->>
->> Lastly, the fix checks that we do not attempt to "decompress" the page which
->> we stored in the uncompressed form -- we just memcpy() out such pages.
->
-> So this fix needs to go to the stable 3.6 release also, right?
->
+On Wed, Oct 03, 2012 at 09:12:30PM +0300, Priit Laes wrote:
+> Wakelocks are an Android-specific API that never made into mainline.
+> Eventually power management wakeup interface appeared, therefore use
+> this interface instead.
+> 
+> Signed-off-by: Priit Laes <plaes@plaes.org>
+> ---
+>  drivers/staging/csr/drv.c        |  8 ++++----
+>  drivers/staging/csr/sdio_mmc.c   | 23 +++++++----------------
+>  drivers/staging/csr/sme_sys.c    | 18 +++++++++---------
+>  drivers/staging/csr/unifi_priv.h |  8 --------
+>  4 files changed, 20 insertions(+), 37 deletions(-)
+> 
+> diff --git a/drivers/staging/csr/drv.c b/drivers/staging/csr/drv.c
+> index 2497580..262705a 100644
+> --- a/drivers/staging/csr/drv.c
+> +++ b/drivers/staging/csr/drv.c
+> @@ -67,6 +67,8 @@ int bh_priority = -1;
+>  int log_hip_signals = 0;
+>  #endif
+>  
+> +extern struct wakeup_source unifi_sdio_wakeup_source;
 
-Forgot to mention -- yes, this needs to be in 3.6 also.
+You obviously didn't run scripts/checkpatch.pl against this patch, did
+you?
 
-Thanks,
-Nitin
+Never put an extern in a .c file, put this in a .h file so that all .c
+files can access it properly.
+
+Care to fix this up and resend?
+
+thanks,
+
+greg k-h
