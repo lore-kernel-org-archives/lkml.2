@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402Ab2JVENu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 00:13:50 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:31642 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab2JVENs (ORCPT
+	id S1753139Ab2JVE0y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 00:26:54 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:64878 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab2JVE0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 00:13:48 -0400
-X-AuditID: cbfee61b-b7f616d00000319b-ff-5084c7fb6511
-From: Yadwinder Singh Brar <yadi.brar@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: sameo@linux.intel.com, Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>
-Subject: [PATCH] regulator: max77686: Make max77686_enable() static.
-Date: Mon, 22 Oct 2012 09:39:28 +0530
-Message-id: <1350878968-3020-1-git-send-email-yadi.brar@samsung.com>
-X-Mailer: git-send-email 1.7.0.4
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrELMWRmVeSWpSXmKPExsWyRsSkWvf38ZYAg9+3ZSwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGlAmPWQoes1bcazjO3sD4hqWLkZNDQsBE4vDMB4wQtpjEhXvr
-	2boYuTiEBJYySvyctQGu6Mr9BSwQiUWMEps/7YOqWs4ksfjncdYuRg4ONgEjiVfH7EAaRAQU
-	JDb3PmMFsZkFpjNKrDxWAGILC7hI9J07xwZSziKgKjG9OR8kzAsU/rComw1il4JE67JD7CA2
-	i4CAxLfJh1hAyiUEZCU2HWAG2SohsIVNoqn9M9RtkhIHV9xgmcAouICRYRWjaGpBckFxUnqu
-	kV5xYm5xaV66XnJ+7iZGYECd/vdMegfjqgaLQ4wCHIxKPLwWM1oChFgTy4orcw8xSnAwK4nw
-	nooHCvGmJFZWpRblxxeV5qQWH2L0AbpkIrOUaHI+MNjzSuINjU3MTY1NLY2MzExNcQgrifM2
-	e6QECAmkJ5akZqemFqQWwYxj4uCUamBUi6s+bZbpOZ9dT1blpADnDa7vDhcuhcX/9114cXHZ
-	Y63ZCxrSTq/q4Pl3ViDxfeby4P9/927Vkbd4HldpMdW5vvSHvsCpb+yMZTqqlrv6o47L5cj6
-	VF6KnT43ZHLjlx/zAlhdn90VNjpW+z5DoaNJas+yKo1c6V27tZgl+iwki927k+ecMFFiKc5I
-	NNRiLipOBADcz++FVQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsVy+t9jAd3fx1sCDHY/4rG4vGsOmwOjx+dN
-	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGVMmPGYpeMxaca/hOHsD
-	4xuWLkZODgkBE4kr9xdA2WISF+6tZ+ti5OIQEljEKLH50z4oZzmTxOKfx1m7GDk42ASMJF4d
-	swNpEBFQkNjc+4wVxGYWmM4osfJYAYgtLOAi0XfuHBtIOYuAqsT05nyQMC9Q+MOibjaIXQoS
-	rcsOsU9g5F7AyLCKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzhcn0nvYFzVYHGIUYCDUYmH
-	12JGS4AQa2JZcWXuIUYJDmYlEd5T8UAh3pTEyqrUovz4otKc1OJDjD5AyycyS4km5wNjKa8k
-	3tDYxNzU2NTSxMLEzBKHsJI4b7NHSoCQQHpiSWp2ampBahHMOCYOTqkGRrdzs4se6y1QKv/w
-	widv1mqJdEapJDUTezPRw4zvVxqvUK7SYGi777Dt8jaOOpZtFuI8xs8vdulO7LTLeZZUczLt
-	8V2Vb99KfCef9tq4ZUnlhftXtrNOWL/qi5r/nrVvns1LnLTdn8Wae3+VrsgOhwMfby3XKNIp
-	VN5YsjzpnVe3fveeMiWHlUosxRmJhlrMRcWJAOl1EL2EAgAA
-X-CFilter-Loop: Reflected
+	Mon, 22 Oct 2012 00:26:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121019160425.GA10175@dhcp22.suse.cz>
+References: <op.wmbi5kbrn27o5l@gaoqiang-d1.corp.qihoo.net>
+	<20121019160425.GA10175@dhcp22.suse.cz>
+Date: Mon, 22 Oct 2012 12:26:51 +0800
+Message-ID: <CAKWKT+ZxC9H_03Kz48i+r2EAh3mtoobcdt1koiSp2KTpb=svHg@mail.gmail.com>
+Subject: Re: process hangs on do_exit when oom happens
+From: Qiang Gao <gaoqiangscut@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a sparse warning. Since max77686_enable() is a callback,so it
-should be static.
+I don't know whether  the process will exit finally, bug this stack
+lasts for hours, which is obviously unnormal.
+The situation:  we use a command calld "cglimit" to fork-and-exec the
+worker process,and the "cglimit" will
+set some limitation on the worker with cgroup. for now,we limit the
+memory,and we also use cpu cgroup,but with
+no limiation,so when the worker is running, the cgroup directory looks
+like following:
 
-Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
----
- drivers/regulator/max77686.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+/cgroup/memory/worker : this directory limit the memory
+/cgroup/cpu/worker :with no limit,but worker process is in.
 
-diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
-index 383eb9d..c9bec16 100644
---- a/drivers/regulator/max77686.c
-+++ b/drivers/regulator/max77686.c
-@@ -146,7 +146,7 @@ static int max77686_ldo_set_suspend_mode(struct regulator_dev *rdev,
- 				  val);
- }
- 
--int max77686_enable(struct regulator_dev *rdev)
-+static int max77686_enable(struct regulator_dev *rdev)
- {
- 	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
- 
--- 
-1.7.0.4
+for some reason(some other process we didn't consider),  the worker
+process invoke global oom-killer,
+not cgroup-oom-killer.  then the worker process hangs there.
 
+Actually, if we didn't set the worker process into the cpu cgroup,
+this will never happens.
+
+On Sat, Oct 20, 2012 at 12:04 AM, Michal Hocko <mhocko@suse.cz> wrote:
+>
+> On Wed 17-10-12 18:23:34, gaoqiang wrote:
+> > I looked up nothing useful with google,so I'm here for help..
+> >
+> > when this happens:  I use memcg to limit the memory use of a
+> > process,and when the memcg cgroup was out of memory,
+> > the process was oom-killed   however,it cannot really complete the
+> > exiting. here is the some information
+>
+> How many tasks are in the group and what kind of memory do they use?
+> Is it possible that you were hit by the same issue as described in
+> 79dfdacc memcg: make oom_lock 0 and 1 based rather than counter.
+>
+> > OS version:  centos6.2    2.6.32.220.7.1
+>
+> Your kernel is quite old and you should be probably asking your
+> distribution to help you out. There were many fixes since 2.6.32.
+> Are you able to reproduce the same issue with the current vanila kernel?
+>
+> > /proc/pid/stack
+> > ---------------------------------------------------------------
+> >
+> > [<ffffffff810597ca>] __cond_resched+0x2a/0x40
+> > [<ffffffff81121569>] unmap_vmas+0xb49/0xb70
+> > [<ffffffff8112822e>] exit_mmap+0x7e/0x140
+> > [<ffffffff8105b078>] mmput+0x58/0x110
+> > [<ffffffff81061aad>] exit_mm+0x11d/0x160
+> > [<ffffffff81061c9d>] do_exit+0x1ad/0x860
+> > [<ffffffff81062391>] do_group_exit+0x41/0xb0
+> > [<ffffffff81077cd8>] get_signal_to_deliver+0x1e8/0x430
+> > [<ffffffff8100a4c4>] do_notify_resume+0xf4/0x8b0
+> > [<ffffffff8100b281>] int_signal+0x12/0x17
+> > [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> This looks strange because this is just an exit part which shouldn't
+> deadlock or anything. Is this stack stable? Have you tried to take check
+> it more times?
+>
+> --
+> Michal Hocko
+> SUSE Labs
