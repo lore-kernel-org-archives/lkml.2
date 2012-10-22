@@ -1,74 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab2JVNBf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 09:01:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34262 "EHLO mx1.redhat.com"
+	id S1754037Ab2JVNBn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 09:01:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39463 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753182Ab2JVNBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 09:01:31 -0400
-Date: Mon, 22 Oct 2012 15:01:02 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: x86: fix vcpu->mmio_fragments overflow
-Message-ID: <20121022130102.GU29310@redhat.com>
-References: <20121022091615.GG29310@redhat.com>
- <50852972.305@linux.vnet.ibm.com>
- <20121022112314.GO29310@redhat.com>
- <50852F9C.9020808@siemens.com>
- <20121022114311.GQ29310@redhat.com>
- <508531E1.2030307@siemens.com>
- <508539A8.40404@redhat.com>
- <50853FF1.8010809@siemens.com>
- <20121022125301.GS29310@redhat.com>
- <5085423C.2020908@redhat.com>
+	id S1753974Ab2JVNBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 09:01:40 -0400
+Date: Mon, 22 Oct 2012 15:01:37 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Qiang Gao <gaoqiangscut@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: process hangs on do_exit when oom happens
+Message-ID: <20121022130137.GB8344@dhcp22.suse.cz>
+References: <op.wmbi5kbrn27o5l@gaoqiang-d1.corp.qihoo.net>
+ <20121019160425.GA10175@dhcp22.suse.cz>
+ <CAKWKT+Z-SZb1=3rwLm+urs3fghQ3M6pdOR_rzXKCevoad11a5g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5085423C.2020908@redhat.com>
+In-Reply-To: <CAKWKT+Z-SZb1=3rwLm+urs3fghQ3M6pdOR_rzXKCevoad11a5g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 02:55:24PM +0200, Avi Kivity wrote:
-> On 10/22/2012 02:53 PM, Gleb Natapov wrote:
-> > On Mon, Oct 22, 2012 at 02:45:37PM +0200, Jan Kiszka wrote:
-> >> On 2012-10-22 14:18, Avi Kivity wrote:
-> >> > On 10/22/2012 01:45 PM, Jan Kiszka wrote:
-> >> > 
-> >> >>> Indeed. git pull, recheck and call for kvm_flush_coalesced_mmio_buffer()
-> >> >>> is gone. So this will break new userspace, not old. By global you mean
-> >> >>> shared between devices (or memory regions)?
-> >> >>
-> >> >> Yes. We only have a single ring per VM, so we cannot flush multi-second
-> >> >> VGA access separately from other devices. In theory solvable by
-> >> >> introducing per-region rings that can be driven separately.
-> >> > 
-> >> > But in practice unneeded.  Real time VMs can disable coalescing and not
-> >> > use planar VGA modes.
-> >> 
-> >> A) At least right now, we do not differentiate between the VGA modes and
-> >> if flushing is needed. So that device is generally taboo for RT cores of
-> >> the VM.
-> >> B) We need to disable coalescing in E1000 as well - if we want to use
-> >> that model.
-> >> C) Gleb seems to propose using coalescing far beyond those two use cases.
-> >> 
-> > Since the userspace change is needed the idea is dead, but if we could
-> > implement it I do not see how it can hurt the latency if it would be the
-> > only mechanism to use coalesced mmio buffer. Checking that the ring buffer
-> > is empty is cheap and if it is not empty it means that kernel just saved
-> > you a lot of 8 bytes exists so even after iterating over all the entries there
-> > you still saved a lot of time.
+On Mon 22-10-12 10:16:43, Qiang Gao wrote:
+> I don't know whether  the process will exit finally, bug this stack lasts
+> for hours, which is obviously unnormal.
+> The situation:  we use a command calld "cglimit" to fork-and-exec the
+> worker process,and the "cglimit" will
+> set some limitation on the worker with cgroup. for now,we limit the
+> memory,and we also use cpu cgroup,but with
+> no limiation,so when the worker is running, the cgroup directory looks like
+> following:
 > 
-> It's time where the guest cannot take interrupts, and time in a high
-> priority guest thread that is spent processing low guest priority requests.
+> /cgroup/memory/worker : this directory limit the memory
+> /cgroup/cpu/worker :with no limit,but worker process is in.
 > 
-Proposed fix has exactly same issue. Until all data is transfered to
-userspace no interrupt will be served.
+> for some reason(some other process we didn't consider),  the worker process
+> invoke global oom-killer,
 
---
-			Gleb.
+Are you sure that this is really global oom? What was the limit for the
+group?
+
+> not cgroup-oom-killer.  then the worker process hangs there.
+> 
+> Actually, if we didn't set the worker process into the cpu cgroup, this
+> will never happens.
+
+Strange and it smells like a misconfiguration. Could you provide the
+compllete setting for both controllers?
+grep . -r /cgroup/
+
+> On Sat, Oct 20, 2012 at 12:04 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > On Wed 17-10-12 18:23:34, gaoqiang wrote:
+> > > I looked up nothing useful with google,so I'm here for help..
+> > >
+> > > when this happens:  I use memcg to limit the memory use of a
+> > > process,and when the memcg cgroup was out of memory,
+> > > the process was oom-killed   however,it cannot really complete the
+> > > exiting. here is the some information
+> >
+> > How many tasks are in the group and what kind of memory do they use?
+> > Is it possible that you were hit by the same issue as described in
+> > 79dfdacc memcg: make oom_lock 0 and 1 based rather than counter.
+> >
+> > > OS version:  centos6.2    2.6.32.220.7.1
+> >
+> > Your kernel is quite old and you should be probably asking your
+> > distribution to help you out. There were many fixes since 2.6.32.
+> > Are you able to reproduce the same issue with the current vanila kernel?
+> >
+> > > /proc/pid/stack
+> > > ---------------------------------------------------------------
+> > >
+> > > [<ffffffff810597ca>] __cond_resched+0x2a/0x40
+> > > [<ffffffff81121569>] unmap_vmas+0xb49/0xb70
+> > > [<ffffffff8112822e>] exit_mmap+0x7e/0x140
+> > > [<ffffffff8105b078>] mmput+0x58/0x110
+> > > [<ffffffff81061aad>] exit_mm+0x11d/0x160
+> > > [<ffffffff81061c9d>] do_exit+0x1ad/0x860
+> > > [<ffffffff81062391>] do_group_exit+0x41/0xb0
+> > > [<ffffffff81077cd8>] get_signal_to_deliver+0x1e8/0x430
+> > > [<ffffffff8100a4c4>] do_notify_resume+0xf4/0x8b0
+> > > [<ffffffff8100b281>] int_signal+0x12/0x17
+> > > [<ffffffffffffffff>] 0xffffffffffffffff
+> >
+> > This looks strange because this is just an exit part which shouldn't
+> > deadlock or anything. Is this stack stable? Have you tried to take check
+> > it more times?
+> >
+> > --
+> > Michal Hocko
+> > SUSE Labs
+> >
+
+-- 
+Michal Hocko
+SUSE Labs
