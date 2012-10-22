@@ -1,63 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab2JVQKn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 12:10:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47173 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755543Ab2JVQKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 12:10:42 -0400
-Date: Mon, 22 Oct 2012 18:10:40 +0200
-From: Jan Kara <jack@suse.cz>
-To: Fabio Coatti <fabio.coatti@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, NeilBrown <neilb@suse.de>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
-        Jeff Layton <jlayton@redhat.com>
-Subject: Re: ext3 issue on 3.6.1
-Message-ID: <20121022161040.GC9438@quack.suse.cz>
-References: <20121018212357.GA17646@quack.suse.cz>
- <1350596425.1366.15.camel@x61.thuisdomein>
- <20121018220809.GD17646@quack.suse.cz>
- <20121019124454.316ecfac@notabene.brown>
- <CADpTngX=6vWV1fv8x-g8ufKTb3gW2=phPZBHZJHATEcqqjwtYg@mail.gmail.com>
- <CADpTngVnJwmu-E3wJwUaK2CKGBsRoJphRNtDPAO9AHyOnnfeRQ@mail.gmail.com>
- <20121022134541.GA9438@quack.suse.cz>
- <CADpTngX9YNq6Own1gvrHnwizUfG0KfjRuXL2F38n2C+CnOTpDA@mail.gmail.com>
- <20121022154258.GB9438@quack.suse.cz>
- <CADpTngUxFT+Sj1aZDY3iBMLpwgrj5rziTSibWD3HMC_DszZpDw@mail.gmail.com>
+	id S1755661Ab2JVQLl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 12:11:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42783 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755563Ab2JVQLj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 12:11:39 -0400
+Date: Mon, 22 Oct 2012 11:11:30 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, James Morris <jmorris@namei.org>,
+        Pavel Emelyanov <xemul@openvz.org>, Jiri Slaby <jslaby@suse.cz>,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH 1/4] cgroup: fix invalid rcu dereference
+Message-ID: <20121022161130.GA23199@sergelap>
+References: <20121022134536.172969567@napanee.usersys.redhat.com>
+ <20121022134536.543579196@napanee.usersys.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CADpTngUxFT+Sj1aZDY3iBMLpwgrj5rziTSibWD3HMC_DszZpDw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121022134536.543579196@napanee.usersys.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 22-10-12 18:01:56, Fabio Coatti wrote:
-> 2012/10/22 Jan Kara <jack@suse.cz>:
-> >> Uhu, my fault, I was sure to have answered to your request, sorry.
-> >> So yes, we have an ext3 R/O partition mounted on that machine. The
-> >> 3.6.3, with patch applied, dmesg is here:
-> >   Interesting. You seem to be using data=journal on R/O partition, don't
-> > you? Can you also attach /proc/mounts?
-> >
-> >   Also please try running a kernel with the attached patch and report the
-> > warning. Thanks!
+Quoting Aristeu Rozanski (aris@redhat.com):
+> From: Jiri Slaby <jslaby@suse.cz>
 > 
-> Do you want to try the kernel without touching the mount
-> configuration, right? (I mean, without (say) mounting ext2 the ext3 ro
-> partition, right?)
-  Yes, leave things as they are now...
+> Commit "device_cgroup: convert device_cgroup internally to policy +
+> exceptions" removed rcu locks which are needed in task_devcgroup
+> called in this chain: devcgroup_inode_mknod OR
+> __devcgroup_inode_permission -> __devcgroup_inode_permission ->
+> task_devcgroup -> task_subsys_state -> task_subsys_state_check.
+> 
+> Change the code so that task_devcgroup is safely called with rcu read
+> lock held.
+> 
+> ===============================
+> [ INFO: suspicious RCU usage. ]
+> 3.6.0-rc5-next-20120913+ #42 Not tainted
+> -------------------------------
+> include/linux/cgroup.h:553 suspicious rcu_dereference_check() usage!
+> 
+> other info that might help us debug this:
+> 
+> rcu_scheduler_active = 1, debug_locks = 0
+> 2 locks held by kdevtmpfs/23:
+>  #0:  (sb_writers){.+.+.+}, at: [<ffffffff8116873f>]
+> mnt_want_write+0x1f/0x50
+>  #1:  (&sb->s_type->i_mutex_key#3/1){+.+.+.}, at: [<ffffffff811558af>]
+> kern_path_create+0x7f/0x170
+> 
+> stack backtrace:
+> Pid: 23, comm: kdevtmpfs Not tainted 3.6.0-rc5-next-20120913+ #42
+> Call Trace:
+>  [<ffffffff810c638d>] lockdep_rcu_suspicious+0xfd/0x130
+>  [<ffffffff8121541d>] devcgroup_inode_mknod+0x19d/0x240
+>  [<ffffffff8107bf54>] ? ns_capable+0x44/0x80
+>  [<ffffffff81156b21>] vfs_mknod+0x71/0xf0
+>  [<ffffffff813a8332>] handle_create.isra.2+0x72/0x200
+>  [<ffffffff813a85d4>] devtmpfsd+0x114/0x140
+>  [<ffffffff813a84c0>] ? handle_create.isra.2+0x200/0x200
+>  [<ffffffff81093ad6>] kthread+0xd6/0xe0
+>  [<ffffffff81654f24>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff8165369d>] ? retint_restore_args+0xe/0xe
+>  [<ffffffff81093a00>] ? kthread_create_on_node+0x140/0x140
+>  [<ffffffff81654f20>] ? gs_change+0xb/0xb
+> 
+> Cc: Dave Jones <davej@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Li Zefan <lizefan@huawei.com>
+> Cc: James Morris <jmorris@namei.org>
+> Cc: Pavel Emelyanov <xemul@openvz.org>
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
 
-> right now I can't access the machine, but I recall that the partition
-> is mounted rw, something is wrote onto it and then changed to r/o and
-> among the options there is data=ordered.
-  /proc/mounts should show us whether data=ordered is in use. Actually the
-warning is in function which is called only in data=journal mode so that's
-why I think you are using it...
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> 
+> ---
+> 
+> And this should fix it.
+> 
+>  security/device_cgroup.c |   15 +++++++--------
+>  1 file changed, 7 insertions(+), 8 deletions(-)
+> 
+> --- github.orig/security/device_cgroup.c	2012-10-17 11:11:08.514793906 -0400
+> +++ github/security/device_cgroup.c	2012-10-19 16:35:37.936804289 -0400
+> @@ -533,10 +533,10 @@ struct cgroup_subsys devices_subsys = {
+>   *
+>   * returns 0 on success, -EPERM case the operation is not permitted
+>   */
+> -static int __devcgroup_check_permission(struct dev_cgroup *dev_cgroup,
+> -					short type, u32 major, u32 minor,
+> +static int __devcgroup_check_permission(short type, u32 major, u32 minor,
+>  				        short access)
+>  {
+> +	struct dev_cgroup *dev_cgroup;
+>  	struct dev_exception_item ex;
+>  	int rc;
+>  
+> @@ -547,6 +547,7 @@ 	memset(&ex, 0, sizeof(ex));
+>  	ex.access = access;
+>  
+>  	rcu_read_lock();
+> +	dev_cgroup = task_devcgroup(current);
+>  	rc = may_access(dev_cgroup, &ex);
+>  	rcu_read_unlock();
+>  
+> @@ -558,7 +559,6 @@ 	return 0;
+>  
+>  int __devcgroup_inode_permission(struct inode *inode, int mask)
+>  {
+> -	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
+>  	short type, access = 0;
+>  
+>  	if (S_ISBLK(inode->i_mode))
+> @@ -570,13 +570,12 @@ 	short type, access = 0;
+>  	if (mask & MAY_READ)
+>  		access |= ACC_READ;
+>  
+> -	return __devcgroup_check_permission(dev_cgroup, type, imajor(inode),
+> -					    iminor(inode), access);
+> +	return __devcgroup_check_permission(type, imajor(inode), iminor(inode),
+> +			access);
+>  }
+>  
+>  int devcgroup_inode_mknod(int mode, dev_t dev)
+>  {
+> -	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
+>  	short type;
+>  
+>  	if (!S_ISBLK(mode) && !S_ISCHR(mode))
+> @@ -587,7 +586,7 @@ 		return 0;
+>  	else
+>  		type = DEV_CHAR;
+>  
+> -	return __devcgroup_check_permission(dev_cgroup, type, MAJOR(dev),
+> -					    MINOR(dev), ACC_MKNOD);
+> +	return __devcgroup_check_permission(type, MAJOR(dev), MINOR(dev),
+> +			ACC_MKNOD);
+>  
+>  }
+> 
