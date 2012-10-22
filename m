@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab2JVV6v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 17:58:51 -0400
-Received: from us-mx3.synaptics.com ([12.239.217.85]:27164 "EHLO
-	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756219Ab2JVV6u (ORCPT
+	id S1756435Ab2JVWFd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 18:05:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42367 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756219Ab2JVWFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 17:58:50 -0400
-Message-ID: <5085C197.7020906@synaptics.com>
-Date: Mon, 22 Oct 2012 14:58:47 -0700
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Alexandra Chin <alexandra.chin@tw.synaptics.com>
-Subject: Re: [RFC PATCH 02/06] input/rmi4: Core files
-References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com>  <1349496603-20775-3-git-send-email-cheiny@synaptics.com>  ,<1349525982.2008.86.camel@joe-AO722>  <BFABBC009FBA1C43B207B15FD485ABD922C22B7B@USW-MAIL1.synaptics-inc.local> <1349924771.2243.16.camel@joe-AO722>
-In-Reply-To: <1349924771.2243.16.camel@joe-AO722>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Mon, 22 Oct 2012 18:05:31 -0400
+Date: Mon, 22 Oct 2012 15:05:30 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
+        levinsasha928@gmail.com, Marc.Zyngier@arm.com,
+        virtualization@lists.linux-foundation.org, ericvh@gmail.com
+Subject: Re: [PATCH v2 2/3] virtio: 9p: correctly pass physical address to
+ userspace for high pages
+Message-Id: <20121022150530.99caaecf.akpm@linux-foundation.org>
+In-Reply-To: <1350651813-8694-2-git-send-email-will.deacon@arm.com>
+References: <1350651813-8694-1-git-send-email-will.deacon@arm.com>
+	<1350651813-8694-2-git-send-email-will.deacon@arm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2012 08:06 PM, Joe Perches wrote:
-> On Thu, 2012-10-11 at 02:49 +0000, Christopher Heiny wrote:
->> Joe Perches wrote:
-> []
->>>> +     list_for_each_entry(entry, &data->rmi_functions.list, list)
->>>> +             if (entry->irq_mask)
->>>> +                     process_one_interrupt(entry, irq_status,
->>>> +                                           data);
->>>
->>> style nit, it'd be nicer with braces.
->>
->> I agree with you, but checkpatch.pl doesn't. :-(
->
-> Sure it does.
->
-> $ cat t.c
-> {
-> 	list_for_each_entry(entry, &data->rmi_functions.list, list) {
-> 		if (entry->irq_mask)
-> 			process_one_interrupt(entry, irq_status, data);
-> 	}
-> }
-> $ ./scripts/checkpatch.pl --strict -f t.c
-> total: 0 errors, 0 warnings, 0 checks, 7 lines checked
->
-> t.c has no obvious style problems and is ready for submission.
+On Fri, 19 Oct 2012 14:03:32 +0100
+Will Deacon <will.deacon@arm.com> wrote:
 
-I stand corrected.  Thanks!
+> When using a virtio transport, the 9p net device may pass the physical
+> address of a kernel buffer to userspace via a scatterlist inside a
+> virtqueue. If the kernel buffer is mapped outside of the linear mapping
+> (e.g. highmem), then virt_to_page will return a bogus value and we will
+> populate the scatterlist with junk.
+> 
+> This patch uses kmap_to_page when populating the page array for a kernel
+> buffer.
+> 
+> ...
+>
+> --- a/net/9p/trans_virtio.c
+> +++ b/net/9p/trans_virtio.c
+> @@ -39,6 +39,7 @@
+>  #include <linux/inet.h>
+>  #include <linux/idr.h>
+>  #include <linux/file.h>
+> +#include <linux/highmem.h>
+>  #include <linux/slab.h>
+>  #include <net/9p/9p.h>
+>  #include <linux/parser.h>
+> @@ -325,7 +326,7 @@ static int p9_get_mapped_pages(struct virtio_chan *chan,
+>  		int count = nr_pages;
+>  		while (nr_pages) {
+>  			s = rest_of_page(data);
+> -			pages[index++] = virt_to_page(data);
+> +			pages[index++] = kmap_to_page(data);
+>  			data += s;
+>  			nr_pages--;
+
+I am suspecting that this code has been busted for a while on x86
+highmem, but nobody noticed.  True or false?  If "true" then I expect
+that a -stable backport is appropriate?
+
